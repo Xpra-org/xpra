@@ -7,7 +7,7 @@
 import socket
 from time import sleep, time, monotonic
 from queue import Queue
-from typing import Dict, Any, Callable, Tuple
+from typing import Any, Callable
 
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
@@ -87,8 +87,8 @@ class ProxyInstance:
         self.encode_queue = None            #holds draw packets to encode
         self.encode_thread = None
         #setup protocol wrappers:
-        self.server_packets : Queue[Tuple] = Queue(PROXY_QUEUE_SIZE)
-        self.client_packets : Queue[Tuple] = Queue(PROXY_QUEUE_SIZE)
+        self.server_packets : Queue[tuple] = Queue(PROXY_QUEUE_SIZE)
+        self.client_packets : Queue[tuple] = Queue(PROXY_QUEUE_SIZE)
         self.video_encoding_defs = None
         self.video_encoders = None
         self.video_encoders_last_used_time = None
@@ -189,7 +189,7 @@ class ProxyInstance:
 
     ################################################################################
 
-    def get_proxy_info(self, proto) -> Dict[str,Any]:
+    def get_proxy_info(self, proto) -> dict[str,Any]:
         sinfo = {"threads" : get_thread_info(proto)}
         sinfo.update(get_server_info())
         linfo = {}
@@ -206,7 +206,7 @@ class ProxyInstance:
             "window" : self.get_window_info(),
             }
 
-    def get_window_info(self) -> Dict[int,Dict[str,Any]]:
+    def get_window_info(self) -> dict[int,dict[str,Any]]:
         info = {}
         now = monotonic()
         for wid, encoder in self.video_encoders.items():
@@ -222,13 +222,13 @@ class ProxyInstance:
         return info
 
 
-    def get_connection_info(self) -> Dict[str,Any]:
+    def get_connection_info(self) -> dict[str,Any]:
         return {
             "client" : self.client_protocol.get_info(),
             "server" : self.server_protocol.get_info(),
             }
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         return {"connection" : self.get_connection_info()}
 
 
@@ -244,11 +244,11 @@ class ProxyInstance:
         self.queue_server_packet(("hello", hello))
 
 
-    def sanitize_session_options(self, options) -> Dict[str,Any]:
+    def sanitize_session_options(self, options) -> dict[str,Any]:
         d = {}
         def number(k, v):
             return parse_number(int, k, v)
-        OPTION_WHITELIST : Dict[str,Callable] = {
+        OPTION_WHITELIST : dict[str,Callable] = {
             "compression_level" : number,
             "lz4"               : parse_bool,
             "rencodeplus"       : parse_bool,
@@ -264,7 +264,7 @@ class ProxyInstance:
                     log.warn("failed to parse value %s for %s using %s: %s", v, k, parser, e)
         return d
 
-    def filter_client_caps(self, caps, remove=CLIENT_REMOVE_CAPS) -> Dict:
+    def filter_client_caps(self, caps, remove=CLIENT_REMOVE_CAPS) -> dict:
         fc = self.filter_caps(caps, remove, self.server_protocol)
         #the display string may override the username:
         username = self.disp_desc.get("username")
@@ -278,11 +278,11 @@ class ProxyInstance:
             fc["encoding.proxy.video.encodings"] = self.video_encoding_defs
         return fc
 
-    def filter_server_caps(self, caps:Dict) -> Dict:
+    def filter_server_caps(self, caps:dict) -> dict:
         self.server_protocol.enable_encoder_from_caps(caps)
         return self.filter_caps(caps, ("aliases", ), self.client_protocol)
 
-    def filter_caps(self, caps:Dict, prefixes, proto=None) -> Dict:
+    def filter_caps(self, caps:dict, prefixes, proto=None) -> dict:
         #removes caps that the proxy overrides / does not use:
         pcaps = {}
         removed = []

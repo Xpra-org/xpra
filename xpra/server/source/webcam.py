@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any
+from typing import Any
 
 from xpra.os_util import POSIX, OSX, bytestostr
 from xpra.util import envint, csv, typedict
@@ -64,13 +64,13 @@ class WebcamMixin(StubSourceMixin):
 
     def init_state(self) -> None:
         #for each webcam device_id, the actual device used
-        self.webcam_forwarding_devices : Dict = {}
+        self.webcam_forwarding_devices : dict = {}
 
     def cleanup(self) -> None:
         self.stop_all_virtual_webcams()
 
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         return {
             "webcam" : {
                 "encodings"         : self.webcam_encodings,
@@ -79,7 +79,7 @@ class WebcamMixin(StubSourceMixin):
             }
 
 
-    def get_device_options(self, device_id : int) -> Dict[Any,Any]:  #pylint: disable=unused-argument
+    def get_device_options(self, device_id : int) -> dict[Any,Any]:  #pylint: disable=unused-argument
         if not POSIX or OSX or not self.webcam_enabled:
             return {}
         if self.webcam_device:

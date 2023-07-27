@@ -8,7 +8,7 @@
 
 from math import sqrt
 from time import monotonic
-from typing import Dict, Any, Tuple, List
+from typing import Any
 from collections import deque
 
 from xpra.server.cystats import (                                           #@UnresolvedImport
@@ -114,7 +114,7 @@ class GlobalPerformanceStatistics:
         self.client_latency.append((wid, now, pixels, net_total_latency))
         self.frame_total_latency.append((wid, now, pixels, latency))
 
-    def get_damage_pixels(self, wid:int) -> Tuple[Tuple[float,int],...]:
+    def get_damage_pixels(self, wid:int) -> tuple[tuple[float,int],...]:
         """ returns the tuple of (event_time, pixelcount) for the given window id """
         return tuple((event_time, value) for event_time, dwid, value in tuple(self.damage_packet_qpixels) if dwid==wid)
 
@@ -168,9 +168,9 @@ class GlobalPerformanceStatistics:
             #(wid, event_time, no_of_pixels, latency)
             self.avg_frame_total_latency = safeint(calculate_size_weighted_average(edata)[1])
 
-    def get_factors(self, pixel_count:int) -> List[Tuple[str,Dict,float,float]]:
+    def get_factors(self, pixel_count:int) -> list[tuple[str,dict,float,float]]:
         factors = []
-        def mayaddfac(metric:str, info:Dict, factor:float, weight:float):
+        def mayaddfac(metric:str, info:dict, factor:float, weight:float):
             if weight>0.01:
                 factors.append((metric, info, factor, weight))
         if self.client_latency:
@@ -210,7 +210,7 @@ class GlobalPerformanceStatistics:
             mayaddfac("congestion", {}, 1+self.congestion_value, self.congestion_value*10)
         return factors
 
-    def get_connection_info(self) -> Dict[str,Any]:
+    def get_connection_info(self) -> dict[str,Any]:
         latencies = tuple(int(x*1000) for (_, _, _, x) in tuple(self.client_latency))
         now = monotonic()
         info = {
@@ -232,14 +232,14 @@ class GlobalPerformanceStatistics:
         return info
 
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         cwqsizes = tuple(x[1] for x in tuple(self.compression_work_qsizes))
         pqsizes = tuple(x[1] for x in tuple(self.packet_qsizes))
         now = monotonic()
         time_limit = now-60             #ignore old records (60s)
         client_latency = max(0, self.avg_frame_total_latency-
                              int((self.avg_client_ping_latency+self.avg_server_ping_latency)//2))
-        info : Dict[str,Any] = {
+        info : dict[str,Any] = {
             "damage" : {
                 "events"        : self.damage_events_count,
                 "packets_sent"  : self.packet_count,
@@ -254,7 +254,7 @@ class GlobalPerformanceStatistics:
                 },
             "connection" : self.get_connection_info(),
             }
-        einfo : Dict[str,Any] = {
+        einfo : dict[str,Any] = {
             "decode_errors" : self.decode_errors,
         }
         info["encoding"] = einfo

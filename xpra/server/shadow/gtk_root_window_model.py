@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from typing import Tuple
 from gi.repository import Gdk  # @UnresolvedImport
 
 from xpra.common import ScreenshotData
@@ -16,7 +15,7 @@ from xpra.log import Logger
 log = Logger("shadow")
 
 
-def get_rgb_rawdata(window, x:int, y:int, width:int, height:int) -> Tuple[int,int,int,int,bytes,str,int,int,int] | None:
+def get_rgb_rawdata(window, x:int, y:int, width:int, height:int) -> tuple[int,int,int,int,bytes,str,int,int,int] | None:
     """
         Extracts pixels from the given pixmap
     """

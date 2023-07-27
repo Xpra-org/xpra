@@ -6,7 +6,6 @@
 import os
 import logging
 import binascii
-from typing import Tuple
 
 from xpra.os_util import load_binary_file, strtobytes, osexpand, bytestostr
 from xpra.log import Logger, is_debug_enabled
@@ -27,7 +26,7 @@ class Handler:
     def get_digest() -> str:
         return "u2f"
 
-    def handle(self, challenge, digest:str, prompt:str) -> Tuple[bytes,bytes] | None:  # pylint: disable=unused-argument
+    def handle(self, challenge, digest:str, prompt:str) -> tuple[bytes,bytes] | None:  # pylint: disable=unused-argument
         if not digest.startswith("u2f:"):
             log("%s is not a u2f challenge", digest)
             return None

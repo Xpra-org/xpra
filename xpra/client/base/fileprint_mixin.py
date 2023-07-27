@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any
+from typing import Any
 
 from xpra.util import envbool, envint, csv, typedict
 from xpra.net.file_transfer import FileTransferHandler
@@ -43,7 +43,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             "send-file-chunk"   : self._process_send_file_chunk,
             }, False)
 
-    def get_caps(self) -> Dict[str,Any]:
+    def get_caps(self) -> dict[str,Any]:
         return self.get_file_transfer_features()
 
     def cleanup(self) -> None:

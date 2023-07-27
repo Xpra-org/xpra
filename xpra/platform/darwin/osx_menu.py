@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import List, Callable
+from typing import Callable
 
 import gi
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
@@ -190,7 +190,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
                 macapp = get_OSXApplication()
                 macapp.set_window_menu(self.window_menu_item)
 
-    def get_extra_menus(self) -> List:
+    def get_extra_menus(self) -> list:
         menus = []
         def add(menu, item):
             if item:

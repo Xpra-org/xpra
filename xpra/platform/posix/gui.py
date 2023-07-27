@@ -6,7 +6,7 @@
 
 import os
 import sys
-from typing import List, Type, Tuple, Dict, Any, Callable
+from typing import Any, Callable
 
 from xpra.os_util import (
     bytestostr, get_saved_env,
@@ -106,18 +106,18 @@ def get_clipboard_native_class() -> str:
         return gtk_clipboard_class
     return "xpra.x11.gtk_x11.clipboard.X11Clipboard"
 
-def get_native_system_tray_classes() -> List[Type | None]:
+def get_native_system_tray_classes() -> list[type | None]:
     c = [_try_load_appindicator()]
     traylog("get_native_system_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
     return c
 
-def get_native_tray_classes() -> List[Type | None]:
+def get_native_tray_classes() -> list[type | None]:
     #could restrict to only DEs that have a broken system tray like "GNOME Shell"?
     c = [_try_load_appindicator()]
     traylog("get_native_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
     return c
 
-def _try_load_appindicator() -> Type | None:
+def _try_load_appindicator() -> type | None:
     if not USE_NATIVE_TRAY:
         return None
     try:
@@ -135,8 +135,8 @@ def _try_load_appindicator() -> Type | None:
     return None
 
 
-def get_native_notifier_classes() -> List[Callable]:
-    ncs : List[Callable] = []
+def get_native_notifier_classes() -> list[Callable]:
+    ncs : list[Callable] = []
     try:
         from xpra.notifications.dbus_notifier import DBUS_Notifier_factory
         ncs.append(DBUS_Notifier_factory)
@@ -189,7 +189,7 @@ def _get_xsettings_dpi() -> int:
                     return actual_value
     return -1
 
-def _get_randr_dpi() -> Tuple[int,int]:
+def _get_randr_dpi() -> tuple[int,int]:
     if RANDR_DPI and x11_bindings():
         from xpra.x11.common import get_randr_dpi
         from xpra.gtk_common.error import xlog
@@ -210,7 +210,7 @@ def get_ydpi() -> int:
     return _get_randr_dpi()[1]
 
 
-def get_icc_info() -> Dict[str,Any]:
+def get_icc_info() -> dict[str,Any]:
     if x11_bindings():
         from xpra.x11.common import get_icc_data as get_x11_icc_data
         from xpra.gtk_common.error import xsync
@@ -220,8 +220,8 @@ def get_icc_info() -> Dict[str,Any]:
     return default_get_icc_info()
 
 
-def get_antialias_info() -> Dict[str,Any]:
-    info : Dict[str,Any] = {}
+def get_antialias_info() -> dict[str,Any]:
+    info : dict[str,Any] = {}
     if not x11_bindings():
         return info
     try:
@@ -281,7 +281,7 @@ def get_number_of_desktops() -> int:
             return get_x11_number_of_desktops()
     return 0
 
-def get_desktop_names() -> Tuple[str,...]:
+def get_desktop_names() -> tuple[str,...]:
     if x11_bindings():
         from xpra.x11.common import get_desktop_names as get_x11_desktop_names
         from xpra.gtk_common.error import xsync
@@ -321,11 +321,11 @@ def _get_xsettings_int(name:str, default_value:int) -> int:
 def get_double_click_time() -> int:
     return _get_xsettings_int("Net/DoubleClickTime", -1)
 
-def get_double_click_distance() -> Tuple[int,int]:
+def get_double_click_distance() -> tuple[int,int]:
     v = _get_xsettings_int("Net/DoubleClickDistance", -1)
     return v, v
 
-def get_window_frame_sizes() -> Dict:
+def get_window_frame_sizes() -> dict:
     #for X11, have to create a window and then check the
     #_NET_FRAME_EXTENTS value after sending a _NET_REQUEST_FRAME_EXTENTS message,
     #so this is done in the gtk client instead of here...
@@ -412,20 +412,20 @@ def set_shaded(window, shaded:bool) -> None:
 
 
 
-WINDOW_ADD_HOOKS : List[Callable] = []
+WINDOW_ADD_HOOKS : list[Callable] = []
 def add_window_hooks(window) -> None:
     for x in WINDOW_ADD_HOOKS:
         x(window)
     log("add_window_hooks(%s) added %s", window, WINDOW_ADD_HOOKS)
 
-WINDOW_REMOVE_HOOKS : List[Callable] = []
+WINDOW_REMOVE_HOOKS : list[Callable] = []
 def remove_window_hooks(window):
     for x in WINDOW_REMOVE_HOOKS:
         x(window)
     log("remove_window_hooks(%s) added %s", window, WINDOW_REMOVE_HOOKS)
 
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> dict[str,Any]:
     from xpra.platform.gui import get_info_base  # pylint: disable=import-outside-toplevel
     i = get_info_base()
     s = _get_xsettings()
@@ -452,7 +452,7 @@ class XI2_Window:
         self.X11Window = X11WindowBindings()
         self.window = window
         self.xid = window.get_window().get_xid()
-        self.windows : Tuple[int,...] = ()
+        self.windows : tuple[int,...] = ()
         self.motion_valuators = {}
         window.connect("configure-event", self.configured)
         self.configured()
@@ -488,7 +488,7 @@ class XI2_Window:
         self.motion_valuators = {}
 
 
-    def get_parent_windows(self, oxid:int) -> Tuple[int,...]:
+    def get_parent_windows(self, oxid:int) -> tuple[int,...]:
         windows = [oxid]
         root = self.X11Window.get_root_xid()
         xid = oxid
@@ -587,7 +587,7 @@ class XI2_Window:
             #normalize (xinput is always using 15 degrees?)
             client.wheel_event(event.device, wid, dx/XINPUT_WHEEL_DIV, dy/XINPUT_WHEEL_DIV, pointer_data, props)
 
-    def get_pointer_extra_args(self, event) -> Dict[str,Any]:
+    def get_pointer_extra_args(self, event) -> dict[str,Any]:
         def intscaled(f):
             return int(f*1000000), 1000000
         def dictscaled(d):

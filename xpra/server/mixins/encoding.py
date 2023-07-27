@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
-from typing import Dict, Any, Tuple
+from typing import Any
 
 from xpra.scripts.config import parse_bool_or_int, csvstrl
 from xpra.util import envint
@@ -35,15 +35,15 @@ class EncodingServer(StubServerMixin):
         self.default_min_quality = 0
         self.default_speed = -1
         self.default_min_speed = 0
-        self.allowed_encodings : Tuple[str,...] = ()
-        self.core_encodings : Tuple[str,...] = ()
-        self.encodings : Tuple[str,...] = ()
-        self.lossless_encodings : Tuple[str,...] = ()
-        self.lossless_mode_encodings : Tuple[str,...] = ()
+        self.allowed_encodings : tuple[str,...] = ()
+        self.core_encodings : tuple[str,...] = ()
+        self.encodings : tuple[str,...] = ()
+        self.lossless_encodings : tuple[str,...] = ()
+        self.lossless_mode_encodings : tuple[str,...] = ()
         self.default_encoding : str = ""
         self.scaling_control = None
-        self.video_encoders : Tuple[str,...] = ()
-        self.csc_modules : Tuple[str,...] = ()
+        self.video_encoders : tuple[str,...] = ()
+        self.csc_modules : tuple[str,...] = ()
 
     def init(self, opts) -> None:
         self.encoding = opts.encoding
@@ -101,12 +101,12 @@ class EncodingServer(StubServerMixin):
         getVideoHelper().cleanup()
 
 
-    def get_server_features(self, _source=None) -> Dict[str,Any]:
+    def get_server_features(self, _source=None) -> dict[str,Any]:
         return {
             "auto-video-encoding"   : True,     #from v4.0, clients assume this is available
             }
 
-    def get_info(self, _proto)  -> Dict[str,Any]:
+    def get_info(self, _proto)  -> dict[str,Any]:
         info = {
             "encodings" : self.get_encoding_info(),
             "video"     : getVideoHelper().get_info(),
@@ -116,7 +116,7 @@ class EncodingServer(StubServerMixin):
                 info.setdefault("encoding", {}).setdefault(k, {})["version"] = vtrim(v)
         return info
 
-    def get_encoding_info(self)  -> Dict[str,Any]:
+    def get_encoding_info(self)  -> dict[str,Any]:
         return  {
              ""                     : self.encodings,
              "core"                 : self.core_encodings,

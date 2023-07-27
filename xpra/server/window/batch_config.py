@@ -8,7 +8,7 @@
 
 import os
 from time import monotonic
-from typing import Dict, Any, Deque, Tuple
+from typing import Any, Deque
 
 from collections import deque
 from xpra.simple_stats import get_list_stats
@@ -84,20 +84,20 @@ class DamageBatchConfig:
         self.saved : int = START_DELAY
         self.locked : bool = False                             #to force a specific delay
         self.last_event : int = 0
-        self.last_delays : Deque[Tuple[float,int]] = deque(maxlen=64)             #the delays we have tried to use (milliseconds)
+        self.last_delays : Deque[tuple[float,int]] = deque(maxlen=64)             #the delays we have tried to use (milliseconds)
         self.last_delay = None
-        self.last_actual_delays : Deque[Tuple[float,int]] = deque(maxlen=64)      #the delays we actually used (milliseconds)
+        self.last_actual_delays : Deque[tuple[float,int]] = deque(maxlen=64)      #the delays we actually used (milliseconds)
         self.last_actual_delay = None
         self.last_updated : int = 0
         #the metrics derived from statistics which we use for calculating the new batch delay:
         #(see batch delay calculator)
-        self.factors : Tuple[Tuple[str,Dict,int,int],...] = ()
+        self.factors : tuple[tuple[str,dict,int,int],...] = ()
 
     def cleanup(self) -> None:
         self.factors = ()
 
-    def get_info(self) -> Dict[str,Any]:
-        info : Dict[str,Any] = {
+    def get_info(self) -> dict[str,Any]:
+        info : dict[str,Any] = {
             "min-delay"         : self.min_delay,
             "max-delay"         : self.max_delay,
             "expire"            : self.expire_delay,

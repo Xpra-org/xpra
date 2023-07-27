@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
-from typing import List
 from gi.repository import GLib
 
 from xpra.platform.gui import get_native_tray_classes, get_native_tray_menu_helper_class
@@ -123,7 +122,7 @@ class TrayClient(StubClientMixin):
         return make_instance(tc, self, *args)
 
     def get_tray_title(self) -> str:
-        t : List[str] = []
+        t : list[str] = []
         if self.session_name or self.server_session_name:
             t.append(self.session_name or self.server_session_name)
         p = self._protocol

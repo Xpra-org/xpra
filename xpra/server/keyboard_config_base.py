@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Tuple, Any
+from typing import Any
 
 
 class KeyboardConfigBase:
@@ -15,12 +15,12 @@ class KeyboardConfigBase:
         self.enabled = True
         self.owner = None
         self.sync = True
-        self.pressed_translation : Dict[int,Tuple[int,int]] = {}
+        self.pressed_translation : dict[int,tuple[int,int]] = {}
 
     def __repr__(self):
         return "KeyboardConfigBase"
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         return {
                 "enabled"   : self.enabled,
                 "owner"     : self.owner or "",
@@ -46,7 +46,7 @@ class KeyboardConfigBase:
         """ should be overridden to match the modifier state specified """
 
     def get_keycode(self, client_keycode:int, keyname:str, pressed:bool,
-                    modifiers, keyval:int, keystr:str, group:int) -> Tuple[int,int]:
+                    modifiers, keyval:int, keystr:str, group:int) -> tuple[int,int]:
         if not keyname and client_keycode<0:
             return -1, group
         if not pressed:
@@ -61,7 +61,7 @@ class KeyboardConfigBase:
         return keycode, group
 
     def do_get_keycode(self, client_keycode:int, keyname:str, pressed:bool,
-                       modifiers, keyval:int, keystr:str, group:int) -> Tuple[int,int]:
+                       modifiers, keyval:int, keystr:str, group:int) -> tuple[int,int]:
         from xpra.log import Logger  # pylint: disable=import-outside-toplevel
         log = Logger("keyboard")
         log("do_get_keycode%s", (client_keycode, keyname, pressed, modifiers, keyval, keystr, group))

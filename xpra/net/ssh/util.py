@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import List
 
 from xpra.os_util import osexpand, nomodule_context
 
@@ -16,7 +15,7 @@ class nogssapi_context(nomodule_context):
         super().__init__("gssapi")
 
 
-def get_default_keyfiles() -> List[str]:
+def get_default_keyfiles() -> list[str]:
     dkf = os.environ.get("XPRA_SSH_DEFAULT_KEYFILES", None)
     if dkf is not None:
         return [x for x in dkf.split(os.pathsep) if x]

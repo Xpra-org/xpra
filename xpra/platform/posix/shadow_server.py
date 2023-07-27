@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Type
 
 from xpra.util import envbool
 from xpra.log import Logger
@@ -16,7 +15,7 @@ def warn(*messages) -> None:
     for m in messages:
         log.warn(m)
 
-def load_screencast() -> Type | None:
+def load_screencast() -> type | None:
     if envbool("XPRA_SHADOW_SCREENCAST", True):
         try:
             from xpra.platform.posix import screencast
@@ -26,7 +25,7 @@ def load_screencast() -> Type | None:
                  f" {e}")
     return None
 
-def load_remotedesktop() -> Type | None:
+def load_remotedesktop() -> type | None:
     if envbool("XPRA_SHADOW_REMOTEDESKTOP", True):
         try:
             from xpra.platform.posix import remotedesktop
@@ -36,7 +35,7 @@ def load_remotedesktop() -> Type | None:
                  f" {e}")
     return None
 
-def load_shadow_wayland(display_name=None) -> Type | None:
+def load_shadow_wayland(display_name=None) -> type | None:
     c = load_remotedesktop() or load_screencast()
     if c:
         os.environ["GDK_BACKEND"] = "wayland"
@@ -46,7 +45,7 @@ def load_shadow_wayland(display_name=None) -> Type | None:
             os.environ["XPRA_NOX11"] = "1"
     return c
 
-def load_shadow_x11() -> Type | None:
+def load_shadow_x11() -> type | None:
     if envbool("XPRA_SHADOW_X11", True):
         try:
             os.environ["GDK_BACKEND"] = "x11"
@@ -59,7 +58,7 @@ def load_shadow_x11() -> Type | None:
 
 
 def ShadowServer(display_name:str="", multi_window:bool=True):
-    c  : Type | None = None
+    c  : type | None = None
     if display_name.startswith("wayland-") or os.path.isabs(display_name):
         c = load_shadow_wayland(display_name)
     elif display_name.startswith(":"):

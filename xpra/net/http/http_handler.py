@@ -9,7 +9,7 @@ import posixpath
 import mimetypes
 from urllib.parse import unquote
 from http.server import BaseHTTPRequestHandler
-from typing import Dict, Tuple, Any, Iterable
+from typing import Any, Iterable
 
 from xpra.common import DEFAULT_XDG_DATA_DIRS
 from xpra.net.http.directory_listing import list_directory
@@ -35,7 +35,7 @@ EXTENSION_TO_MIMETYPE = {
 
 
 #should be converted to use standard library
-def parse_url(handler) -> Dict[str,str]:
+def parse_url(handler) -> dict[str,str]:
     try:
         args_str = handler.path.split("?", 1)[1]
     except IndexError:
@@ -50,10 +50,10 @@ def parse_url(handler) -> Dict[str,str]:
             args[v[0]] = v[1]
     return args
 
-http_headers_cache : Dict[str,str] = {}
-http_headers_time : Dict[str,float] = {}
+http_headers_cache : dict[str,str] = {}
+http_headers_time : dict[str,float] = {}
 def may_reload_headers(http_headers_dirs):
-    mtimes : Dict[str,float] = {}
+    mtimes : dict[str,float] = {}
     global http_headers_cache
     if http_headers_cache:
         #do we need to refresh the cache?
@@ -65,7 +65,7 @@ def may_reload_headers(http_headers_dirs):
         if not mtimes:
             return http_headers_cache.copy()
         log("headers directories have changed: %s", mtimes)
-    headers : Dict[str,str] = {}
+    headers : dict[str,str] = {}
     for d in http_headers_dirs:
         if not os.path.exists(d) or not os.path.isdir(d):
             continue
@@ -75,7 +75,7 @@ def may_reload_headers(http_headers_dirs):
             if not os.path.isfile(header_file):
                 continue
             log("may_reload_headers() loading from '%s'", header_file)
-            h : Dict[str,str] = {}
+            h : dict[str,str] = {}
             with open(header_file, "r", encoding="latin1") as hf:
                 for line in hf:
                     sline = line.strip().rstrip("\r\n").strip()
@@ -136,9 +136,9 @@ def translate_path(path:str, web_root:str="/usr/share/xpra/www") -> str:
     log("translate_path(%s)=%s", s, path)
     return path
 
-def load_path(headers:Dict[str,Any], path:str) -> Tuple[int,Dict[str,Any],bytes]:
+def load_path(headers:dict[str,Any], path:str) -> tuple[int,dict[str,Any],bytes]:
     ext = os.path.splitext(path)[1]
-    extra_headers : Dict[str,Any] = {}
+    extra_headers : dict[str,Any] = {}
     with open(path, "rb") as f:
         # Always read in binary mode. Opening files in text mode may cause
         # newline translations, making the actual size of the content
@@ -234,7 +234,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         server = AdHocStruct()
         server.logger = log
         self.directory_listing = DIRECTORY_LISTING
-        self.extra_headers : Dict[str,Any] = {}
+        self.extra_headers : dict[str,Any] = {}
         super().__init__(sock, addr, server)
 
 

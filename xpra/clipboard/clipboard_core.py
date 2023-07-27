@@ -9,7 +9,7 @@ import struct
 import re
 from time import monotonic
 from io import BytesIO
-from typing import Tuple, List, Dict, Callable, Any, Iterable
+from typing import Callable, Any, Iterable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.common import noop
@@ -27,8 +27,8 @@ MAX_CLIPBOARD_PACKET_SIZE : int = 16*1024*1024
 MAX_CLIPBOARD_RECEIVE_SIZE : int = envint("XPRA_MAX_CLIPBOARD_RECEIVE_SIZE", -1)
 MAX_CLIPBOARD_SEND_SIZE : int = envint("XPRA_MAX_CLIPBOARD_SEND_SIZE", -1)
 
-ALL_CLIPBOARDS : Tuple[str, ...] = tuple(PLATFORM_CLIPBOARDS)
-CLIPBOARDS : List[str] = list(PLATFORM_CLIPBOARDS)
+ALL_CLIPBOARDS : tuple[str, ...] = tuple(PLATFORM_CLIPBOARDS)
+CLIPBOARDS : list[str] = list(PLATFORM_CLIPBOARDS)
 CLIPBOARDS_ENV : str | None = os.environ.get("XPRA_CLIPBOARDS")
 if CLIPBOARDS_ENV is not None:
     CLIPBOARDS = [x.upper().strip() for x in CLIPBOARDS_ENV.split(",")]
@@ -38,7 +38,7 @@ TEST_DROP_CLIPBOARD_REQUESTS = envint("XPRA_TEST_DROP_CLIPBOARD")
 DELAY_SEND_TOKEN = envint("XPRA_DELAY_SEND_TOKEN", 100)
 
 
-def get_discard_targets(envname:str="DISCARD", default_value:Tuple[str,...]=()):
+def get_discard_targets(envname:str="DISCARD", default_value:tuple[str,...]=()):
     _discard_target_strs_ = os.environ.get("XPRA_%s_TARGETS" % envname)
     if _discard_target_strs_ is None:
         return default_value
@@ -65,9 +65,9 @@ log("DISCARD_TARGETS=%s", csv(DISCARD_TARGETS))
 log("DISCARD_EXTRA_TARGETS=%s", csv(DISCARD_EXTRA_TARGETS))
 
 
-TEXT_TARGETS : Tuple[str, ...] = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
+TEXT_TARGETS : tuple[str, ...] = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
 
-TRANSLATED_TARGETS : Dict[str, str] = {
+TRANSLATED_TARGETS : dict[str, str] = {
     "application/x-moz-nativehtml" : "UTF8_STRING"
     }
 
@@ -84,7 +84,7 @@ def must_discard_extra(target:str) -> bool:
     return any(x for x in DISCARD_EXTRA_TARGETS if x.match(target))
 
 
-def _filter_targets(targets : Iterable[str]) -> Tuple[str, ...]:
+def _filter_targets(targets : Iterable[str]) -> tuple[str, ...]:
     targets_strs = tuple(bytestostr(x) for x in targets)
     f = tuple(target for target in targets_strs if not must_discard(target))
     log("_filter_targets(%s)=%s", csv(targets_strs), f)
@@ -131,8 +131,8 @@ class ClipboardProxyCore:
         self._want_targets = want_targets
 
 
-    def get_info(self) -> Dict[str,Any]:
-        info : Dict[str,Any] = {
+    def get_info(self) -> dict[str,Any]:
+        info : dict[str,Any] = {
                 "have_token"            : self._have_token,
                 "enabled"               : self._enabled,
                 "greedy_client"         : self._greedy_client,
@@ -325,7 +325,7 @@ class ClipboardProtocolHelperCore:
         self.max_clipboard_receive_size : int = d.intget("max-receive-size", MAX_CLIPBOARD_RECEIVE_SIZE)
         self.max_clipboard_send_size : int = d.intget("max-send-size", MAX_CLIPBOARD_SEND_SIZE)
         self.filter_res = []
-        filter_res : Tuple[str,...] = d.strtupleget("filters")
+        filter_res : tuple[str,...] = d.strtupleget("filters")
         if filter_res:
             for x in filter_res:
                 try:
@@ -334,9 +334,9 @@ class ClipboardProtocolHelperCore:
                     log.error("Error: invalid clipboard filter regular expression")
                     log.error(" '%s': %s", x, e)
         self._clipboard_request_counter : int = 0
-        self._clipboard_outstanding_requests : Dict[int,Tuple[int, str, str]] = {}
-        self._local_to_remote : Dict[str,str] = {}
-        self._remote_to_local : Dict[str,str] = {}
+        self._clipboard_outstanding_requests : dict[int,tuple[int, str, str]] = {}
+        self._local_to_remote : dict[str,str] = {}
+        self._remote_to_local : dict[str,str] = {}
         self.init_translation(kwargs)
         self._want_targets : bool = False
         self.init_packet_handlers()
@@ -344,7 +344,7 @@ class ClipboardProtocolHelperCore:
         self.remote_clipboards = d.strtupleget("clipboards.remote", CLIPBOARDS)
 
     def init_proxies(self, selections : Iterable[str]) -> None:
-        self._clipboard_proxies : Dict[str, ClipboardProxyCore] = {}
+        self._clipboard_proxies : dict[str, ClipboardProxyCore] = {}
         for selection in selections:
             proxy = self.make_proxy(selection)
             self._clipboard_proxies[selection] = proxy
@@ -373,7 +373,7 @@ class ClipboardProtocolHelperCore:
     def remote_to_local(self, selection:str) -> str:
         return self._remote_to_local.get(selection, selection)
 
-    def get_remote_selections(self) -> List[str]:
+    def get_remote_selections(self) -> list[str]:
         #figure out which remote selections we are interested in:
         selections = []
         for selection in self._clipboard_proxies.keys():
@@ -383,7 +383,7 @@ class ClipboardProtocolHelperCore:
     def __repr__(self):
         return "ClipboardProtocolHelperCore"
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = {
                 "type"      :       str(self).replace("ClipboardProtocolHelper", ""),
                 "max_size"  :       self.max_clipboard_packet_size,
@@ -447,7 +447,7 @@ class ClipboardProtocolHelperCore:
 
 
     def init_packet_handlers(self):
-        self._packet_handlers : Dict[str,Callable] = {
+        self._packet_handlers : dict[str,Callable] = {
             "clipboard-token"               : self._process_clipboard_token,
             "clipboard-request"             : self._process_clipboard_request,
             "clipboard-contents"            : self._process_clipboard_contents,
@@ -527,7 +527,7 @@ class ClipboardProtocolHelperCore:
     def remote_targets(self, local_targets:Iterable[str]):
         return _filter_targets(local_targets)
 
-    def _munge_raw_selection_to_wire(self, target:str, dtype:str, dformat:int, data) -> Tuple[Any,Any]:
+    def _munge_raw_selection_to_wire(self, target:str, dtype:str, dformat:int, data) -> tuple[Any,Any]:
         log("_munge_raw_selection_to_wire%s", (target, dtype, dformat, repr_ellipsized(bytestostr(data))))
         # Some types just cannot be marshalled:
         if dtype in ("WINDOW", "PIXMAP", "BITMAP", "DRAWABLE",
@@ -547,7 +547,7 @@ class ClipboardProtocolHelperCore:
             log.error(" dtype=%s, dformat=%s, data=%s (%s)", dtype, dformat, repr_ellipsized(str(data)), type(data))
             raise
 
-    def _do_munge_raw_selection_to_wire(self, target:str, dtype:str, dformat:int, data) -> Tuple[Any,Any]:
+    def _do_munge_raw_selection_to_wire(self, target:str, dtype:str, dformat:int, data) -> tuple[Any,Any]:
         """ this method is overridden in xclipboard to parse X11 atoms """
         # Other types need special handling, and all types need to be
         # converting into an endian-neutral format:

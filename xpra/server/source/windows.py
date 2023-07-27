@@ -8,7 +8,7 @@
 import os
 from io import BytesIO
 from time import monotonic
-from typing import Union, Dict, Tuple, Any, Callable, List
+from typing import Any, Callable
 
 try:
     from PIL import Image
@@ -73,22 +73,22 @@ class WindowsMixin(StubSourceMixin):
 
     def init_state(self) -> None:
         #WindowSource for each Window ID
-        self.window_sources : Dict[int,Any] = {}
-        self.window_frame_sizes : Dict = {}
+        self.window_sources : dict[int,Any] = {}
+        self.window_frame_sizes : dict = {}
         self.suspended = False
         self.send_cursors = False
-        self.cursor_encodings : Tuple[str,...] = ()
+        self.cursor_encodings : tuple[str,...] = ()
         self.send_bell = False
         self.send_windows = True
         self.pointer_grabs = False
-        self.window_min_size : Tuple[int,int] = (0, 0)
-        self.window_max_size : Tuple[int,int] = (0, 0)
+        self.window_min_size : tuple[int,int] = (0, 0)
+        self.window_max_size : tuple[int,int] = (0, 0)
         self.window_restack = False
         self.window_pre_map = False
         self.system_tray = False
-        self.metadata_supported : Tuple[str,...] = ()
+        self.metadata_supported : tuple[str,...] = ()
         self.cursor_timer = 0
-        self.last_cursor_sent : Tuple = ()
+        self.last_cursor_sent : tuple = ()
 
     def cleanup(self) -> None:
         for window_source in self.all_window_sources():
@@ -96,11 +96,11 @@ class WindowsMixin(StubSourceMixin):
         self.window_sources = {}
         self.cancel_cursor_timer()
 
-    def all_window_sources(self) -> Tuple:
+    def all_window_sources(self) -> tuple:
         return tuple(self.window_sources.values())
 
 
-    def suspend(self, ui:bool, wd:Dict[int,Any]) -> None:
+    def suspend(self, ui:bool, wd:dict[int,Any]) -> None:
         eventslog("suspend(%s, %s) suspended=%s", ui, wd, self.suspended)
         if ui:
             self.suspended = True
@@ -109,7 +109,7 @@ class WindowsMixin(StubSourceMixin):
             if ws:
                 ws.suspend()
 
-    def resume(self, ui, wd:Dict[int,Any]) -> None:
+    def resume(self, ui, wd:dict[int,Any]) -> None:
         eventslog("resume(%s, %s) suspended=%s", ui, wd, self.suspended)
         if ui:
             self.suspended = False
@@ -160,13 +160,13 @@ class WindowsMixin(StubSourceMixin):
             filterslog.error("Error parsing window-filters: %s", e)
 
 
-    def get_caps(self) -> Dict[str,Any]:
+    def get_caps(self) -> dict[str,Any]:
         return {}
 
 
     ######################################################################
     # info:
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = {
             "windows"       : self.send_windows,
             "cursors"       : self.send_cursors,
@@ -176,7 +176,7 @@ class WindowsMixin(StubSourceMixin):
             "restack"       : self.window_restack,
             "pre-map"       : self.window_pre_map,
             }
-        wsize : Dict[str,Any] = {
+        wsize : dict[str,Any] = {
             "min"   : self.window_min_size,
             "max"   : self.window_max_size,
             }
@@ -186,7 +186,7 @@ class WindowsMixin(StubSourceMixin):
         info.update(self.get_window_info())
         return info
 
-    def get_window_info(self) -> Dict[str,Any]:
+    def get_window_info(self) -> dict[str,Any]:
         """
             Adds encoding and window specific information
         """
@@ -212,7 +212,7 @@ class WindowsMixin(StubSourceMixin):
             total_pixels = 0
             total_time = 0.0
             in_latencies, out_latencies = [], []
-            winfo:Dict[int,Any] = {}
+            winfo:dict[int,Any] = {}
             for wid, ws in list(self.window_sources.items()):
                 # per-window source stats:
                 winfo[wid] = ws.get_info()
@@ -282,7 +282,7 @@ class WindowsMixin(StubSourceMixin):
         #compress pixels if needed:
         encoding = "raw"
         if pixels is not None:
-            cpixels : Union[bytes,Compressed] = memoryview_to_bytes(pixels)
+            cpixels : bytes | Compressed = memoryview_to_bytes(pixels)
             if "png" in self.cursor_encodings and Image:
                 cursorlog(f"do_send_cursor() got {len(cpixels)} bytes of pixel data for {w}x{h} cursor named {name!r}")
                 img = Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)
@@ -327,7 +327,7 @@ class WindowsMixin(StubSourceMixin):
     def reset_window_filters(self) -> None:
         self.window_filters = [(uuid, f) for uuid, f in self.window_filters if uuid!=self.uuid]
 
-    def get_all_window_filters(self) -> List:
+    def get_all_window_filters(self) -> list:
         return [f for uuid, f in self.window_filters if uuid==self.uuid]
 
     def add_window_filter(self, object_name:str, property_name:str, operator:str, value:Any) -> None:
@@ -393,7 +393,7 @@ class WindowsMixin(StubSourceMixin):
 
     # Takes the name of a WindowModel property, and returns a dictionary of
     # xpra window metadata values that depend on that property
-    def _make_metadata(self, window, propname:str, skip_defaults=False) -> Dict[str,Any]:
+    def _make_metadata(self, window, propname:str, skip_defaults=False) -> dict[str,Any]:
         if propname not in self.metadata_supported:
             metalog("make_metadata: client does not support '%s'", propname)
             return {}
@@ -419,7 +419,7 @@ class WindowsMixin(StubSourceMixin):
             metadata.update(self._make_metadata(window, propname, skip_defaults=True))
         self.send_async("new-tray", wid, w, h, metadata)
 
-    def new_window(self, packet_type:str, wid:int, window, x:int, y:int, w:int, h:int, client_properties:Dict) -> None:
+    def new_window(self, packet_type:str, wid:int, window, x:int, y:int, w:int, h:int, client_properties:dict) -> None:
         if not self.can_send_window(window):
             return
         send_props = list(window.get_property_names())

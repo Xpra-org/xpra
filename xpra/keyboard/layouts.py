@@ -4,8 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import List, Dict, Tuple
-
 # The data for this table can be found mostly here:
 # http://msdn.microsoft.com/en-us/library/aa912040.aspx
 # and here:
@@ -16,12 +14,12 @@ from typing import List, Dict, Tuple
 # This is used for converting the layout we detect using win32api into
 # something that can be used by X11 (a layout with optional variant)
 UNICODE=-1
-LATAM_VARIANTS  : Tuple[str, ...] = ("nodeadkeys", "deadtilde", "sundeadkeys")
-ARA_VARIANTS    : Tuple[str, ...] = ("azerty", "azerty_digits", "digits", "qwerty", "qwerty_digits", "buckwalter")
-ES_VARIANTS     : Tuple[str, ...] = ("nodeadkeys", "deadtilde", "sundeadkeys", "dvorak", "est", "cat", "mac")
-RS_VARIANTS     : Tuple[str, ...] = ("yz", "latin", "latinunicode", "latinyz", "latinunicodeyz", "alternatequotes", "latinalternatequotes", "rue")
-FR_VARIANTS     : Tuple[str, ...] = ("nodeadkeys", "sundeadkeys", "oss", "oss_latin9", "oss_nodeadkeys", "oss_sundeadkeys", "latin9", "latin9_nodeadkeys", "latin9_sundeadkeys", "bepo", "bepo_latin9", "dvorak", "mac", "bre", "oci", "geo")
-WIN32_LAYOUTS : Dict[int,Tuple[str, str, str, int, str, Tuple[str, ...]]]= {
+LATAM_VARIANTS  : tuple[str, ...] = ("nodeadkeys", "deadtilde", "sundeadkeys")
+ARA_VARIANTS    : tuple[str, ...] = ("azerty", "azerty_digits", "digits", "qwerty", "qwerty_digits", "buckwalter")
+ES_VARIANTS     : tuple[str, ...] = ("nodeadkeys", "deadtilde", "sundeadkeys", "dvorak", "est", "cat", "mac")
+RS_VARIANTS     : tuple[str, ...] = ("yz", "latin", "latinunicode", "latinyz", "latinunicodeyz", "alternatequotes", "latinalternatequotes", "rue")
+FR_VARIANTS     : tuple[str, ...] = ("nodeadkeys", "sundeadkeys", "oss", "oss_latin9", "oss_nodeadkeys", "oss_sundeadkeys", "latin9", "latin9_nodeadkeys", "latin9_sundeadkeys", "bepo", "bepo_latin9", "dvorak", "mac", "bre", "oci", "geo")
+WIN32_LAYOUTS : dict[int,tuple[str, str, str, int, str, tuple[str, ...]]]= {
     1025: ("ARA", "Saudi Arabia",   "Arabic",                   1356,   "ar", ()),
     1026: ("BGR", "Bulgaria",       "Bulgarian",                1251,   "bg", ("phonetic", "bas_phonetic")),
     1027: ("CAT", "Spain",          "Catalan",                  1252,   "ad", ()),
@@ -169,7 +167,7 @@ WIN32_LAYOUTS : Dict[int,Tuple[str, str, str, int, str, Tuple[str, ...]]]= {
 #map win32 keyboard codes to x11 names:
 #based on
 #https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/windows-language-pack-default-values
-WIN32_KEYBOARDS : Dict[int, Tuple[str, str]] = {
+WIN32_KEYBOARDS : dict[int, tuple[str, str]] = {
     0x0000041c  : ("al", "Albania"),
     0x00000401  : ("ar", "Arabic (101)"),
     0x00010401  : ("ar", "Arabic (102)"),
@@ -377,10 +375,10 @@ WIN32_KEYBOARDS : Dict[int, Tuple[str, str]] = {
 # This is generated from the table above,
 # so we can let the user choose his own layout.
 # (country,language) : (layout,variant)
-X11_LAYOUTS : Dict[Tuple[str,str],Tuple[str,Tuple[str, ...]]] = {}
+X11_LAYOUTS : dict[tuple[str,str],tuple[str,tuple[str, ...]]] = {}
 for ccode, country, language, codepage, layout, variants in WIN32_LAYOUTS.values():
     X11_LAYOUTS[(country, language)] = (layout, variants)
-LAYOUT_VARIANTS : Dict[str, List[str]] = {}
+LAYOUT_VARIANTS : dict[str, list[str]] = {}
 for win32layout in WIN32_LAYOUTS.values():
     layout, variants = win32layout[-2:]
     l = LAYOUT_VARIANTS.setdefault(layout, [])
@@ -388,7 +386,7 @@ for win32layout in WIN32_LAYOUTS.values():
         if variant not in l:
             l.append(variant)
 
-def parse_xkbmap_query(xkbmap_query:str) -> Dict[str,str]:
+def parse_xkbmap_query(xkbmap_query:str) -> dict[str,str]:
     """ parses the output of "setxkbmap -query" into a dict """
     import re
     settings = {}
@@ -401,7 +399,7 @@ def parse_xkbmap_query(xkbmap_query:str) -> Dict[str,str]:
                 settings[m.group(1)] = v
     return settings
 
-def xkbmap_query_tostring(query_dict:Dict) -> str:
+def xkbmap_query_tostring(query_dict:dict) -> str:
     """ converts an xkb query dict back into a string """
     s = ""
     for k in ("rules", "model", "layout", "variant", "options"):

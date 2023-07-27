@@ -7,7 +7,7 @@ import os
 import re
 import socket
 from time import sleep, monotonic
-from typing import Dict, List, Tuple, Any
+from typing import Any
 
 from xpra.scripts.main import (
     InitException, InitExit,
@@ -103,12 +103,12 @@ class SSHSocketConnection(SocketConnection):
             return b""
         return self._raw_socket.recv(n, socket.MSG_PEEK)
 
-    def get_socket_info(self) -> Dict[str,Any]:
+    def get_socket_info(self) -> dict[str,Any]:
         if not self._raw_socket:
             return {}
         return self.do_get_socket_info(self._raw_socket)
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         i = super().get_info()
         s = self._socket
         if s:
@@ -133,7 +133,7 @@ class SSHProxyCommandConnection(SSHSocketConnection):
                 return True
         return super().error_is_closed(e)
 
-    def get_socket_info(self) -> Dict[str,Any]:
+    def get_socket_info(self) -> dict[str,Any]:
         p = self.process
         if not p:
             return {}
@@ -155,7 +155,7 @@ class SSHProxyCommandConnection(SSHSocketConnection):
             log("SSHProxyCommandConnection.close()", exc_info=True)
 
 
-def safe_lookup(config_obj, host:str) -> Dict[Any,Any]:
+def safe_lookup(config_obj, host:str) -> dict[Any,Any]:
     try:
         return config_obj.lookup(host) or {}
     except ImportError as e:
@@ -361,9 +361,9 @@ def connect_to(display_desc):
         return conn
 
 
-AUTH_MODES : Tuple[str, ...] = ("none", "agent", "key", "password")
+AUTH_MODES : tuple[str, ...] = ("none", "agent", "key", "password")
 
-def get_auth_modes(paramiko_config, host_config, password) -> List[str]:
+def get_auth_modes(paramiko_config, host_config, password) -> list[str]:
     def configvalue(key):
         #if the paramiko config has a setting, honour it:
         if paramiko_config and key in paramiko_config:
@@ -394,7 +394,7 @@ class iauthhandler:
     def __init__(self, password):
         self.authcount = 0
         self.password = password
-    def handle_request(self, title:str, instructions, prompt_list) -> List:
+    def handle_request(self, title:str, instructions, prompt_list) -> list:
         log("handle_request%s counter=%i", (title, instructions, prompt_list), self.authcount)
         p = []
         for pent in prompt_list:
@@ -482,7 +482,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
                     log.info("cannot check SSHFP DNS records")
                     log.info(" %s", e)
             log("dnscheck=%s", dnscheck)
-            def adddnscheckinfo(q : List[str]):
+            def adddnscheckinfo(q : list[str]):
                 if dnscheck is not True:
                     if dnscheck:
                         q.append("SSHFP validation failed:")
@@ -494,7 +494,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
                 log.info("found a valid SSHFP record for host %s", host)
             elif known_host_key:
                 log.warn("Warning: SSH server key mismatch")
-                qinfo : List[str] = [
+                qinfo : list[str] = [
                     "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!",
                     "IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!",
                     "Someone could be eavesdropping on you right now (man-in-the-middle attack)!",
@@ -567,7 +567,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
         log("ssh host key verification skipped")
 
 
-    auth_errors : Dict[str,List[str]] = {}
+    auth_errors : dict[str,list[str]] = {}
 
     def auth_agent() -> None:
         agent = Agent()
@@ -755,7 +755,7 @@ class SSHAuthenticationError(InitExit):
         super().__init__(ExitCode.CONNECTION_FAILED, f"SSH Authentication failed for {host!r}")
         self.errors = errors
 
-def run_test_command(transport, cmd:str) -> Tuple[bytes,bytes,int]:
+def run_test_command(transport, cmd:str) -> tuple[bytes,bytes,int]:
     from paramiko import SSHException
     log(f"run_test_command(transport, {cmd})")
     try:

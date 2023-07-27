@@ -4,8 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple, Type
-
 from xpra.util import csv, parse_simple_dict
 from xpra.os_util import getuid, getgid
 from xpra.server.auth.sys_auth_base import SysAuthenticator, SessionData, log
@@ -25,7 +23,7 @@ class SQLAuthenticator(SysAuthenticator):
     def db_cursor(self, *sqlargs):
         raise NotImplementedError()
 
-    def get_passwords(self) -> Tuple[str,...]:
+    def get_passwords(self) -> tuple[str,...]:
         cursor = self.db_cursor(self.password_query, (self.username,))
         data = cursor.fetchall()
         if not data:
@@ -91,7 +89,7 @@ class DatabaseUtilBase:
 
     def remove_user(self, username:str, password:str="") -> None:
         sql = "DELETE FROM users WHERE username=%s" % self.param
-        sqlargs : Tuple[str,...] = (username, )
+        sqlargs : tuple[str,...] = (username, )
         if password:
             sql += " AND password=%s" % self.param
             sqlargs = (username, password)
@@ -140,7 +138,7 @@ class DatabaseUtilBase:
         assert sessions, "no sessions found"
         log("sql authentication success, found sessions: %s", sessions)
 
-    def get_authenticator_class(self) -> Type:
+    def get_authenticator_class(self) -> type:
         raise NotImplementedError()
 
 

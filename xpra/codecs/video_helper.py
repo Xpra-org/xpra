@@ -8,7 +8,7 @@
 import sys
 import traceback
 from threading import Lock
-from typing import Dict, Tuple, List, Any
+from typing import Any
 
 from xpra.scripts.config import csvstrl
 from xpra.codecs.loader import load_codec, get_codec, get_codec_error
@@ -19,7 +19,7 @@ log = Logger("codec", "video")
 
 #the codec loader uses the names...
 #but we need the module name to be able to probe without loading the codec:
-CODEC_TO_MODULE : Dict[str,str] = {
+CODEC_TO_MODULE : dict[str,str] = {
     "enc_vpx"       : "vpx.encoder",
     "dec_vpx"       : "vpx.decoder",
     "enc_x264"      : "x264.encoder",
@@ -51,7 +51,7 @@ def has_codec_module(module_name:str) -> bool:
 def autoprefix(prefix:str, name:str) -> str:
     return (name if (name.startswith(prefix) or name.endswith(prefix)) else prefix+"_"+name).replace("-", "_")
 
-def try_import_modules(prefix:str, *codec_names) -> List[str]:
+def try_import_modules(prefix:str, *codec_names) -> list[str]:
     names = []
     for codec_name in codec_names:
         codec_name = autoprefix(prefix, codec_name)
@@ -62,12 +62,12 @@ def try_import_modules(prefix:str, *codec_names) -> List[str]:
 
 
 #all the codecs we know about:
-ALL_VIDEO_ENCODER_OPTIONS : Tuple[str,...] = ("x264", "openh264", "vpx", "x265", "nvenc", "nvjpeg", "jpeg", "webp", "gstreamer")
-HARDWARE_ENCODER_OPTIONS : Tuple[str,...] = ("nvenc", "nvjpeg")
-ALL_CSC_MODULE_OPTIONS : Tuple[str,...] = ("cython", "libyuv")
-ALL_VIDEO_DECODER_OPTIONS : Tuple[str,...] = ("openh264", "vpx", "gstreamer", "nvdec")
+ALL_VIDEO_ENCODER_OPTIONS : tuple[str,...] = ("x264", "openh264", "vpx", "x265", "nvenc", "nvjpeg", "jpeg", "webp", "gstreamer")
+HARDWARE_ENCODER_OPTIONS : tuple[str,...] = ("nvenc", "nvjpeg")
+ALL_CSC_MODULE_OPTIONS : tuple[str,...] = ("cython", "libyuv")
+ALL_VIDEO_DECODER_OPTIONS : tuple[str,...] = ("openh264", "vpx", "gstreamer", "nvdec")
 
-PREFERRED_ENCODER_ORDER : Tuple[str,...] = tuple(autoprefix("enc", x) for x in ("nvenc", "nvjpeg", "x264", "vpx", "jpeg", "webp", "x265", "gstreamer"))
+PREFERRED_ENCODER_ORDER : tuple[str,...] = tuple(autoprefix("enc", x) for x in ("nvenc", "nvjpeg", "x264", "vpx", "jpeg", "webp", "x265", "gstreamer"))
 log("video_helper: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
 log("video_helper: ALL_CSC_MODULE_OPTIONS=%s", ALL_CSC_MODULE_OPTIONS)
 log("video_helper: ALL_VIDEO_DECODER_OPTIONS=%s", ALL_VIDEO_DECODER_OPTIONS)
@@ -132,8 +132,8 @@ def filt(prefix, name, inlist, all_fn, all_list):
     return r
 
 
-VDictEntry = Dict[str,List[str]]
-VDict = Dict[str,VDictEntry]
+VdictEntry = dict[str,list[str]]
+Vdict = dict[str,VdictEntry]
 
 class VideoHelper:
     """
@@ -144,9 +144,9 @@ class VideoHelper:
     """
 
     def __init__(self, vencspecs=None, cscspecs=None, vdecspecs=None, init=False):
-        self._video_encoder_specs : VDict = vencspecs or {}
-        self._csc_encoder_specs : VDict = cscspecs or {}
-        self._video_decoder_specs : VDict = vdecspecs or {}
+        self._video_encoder_specs : Vdict = vencspecs or {}
+        self._csc_encoder_specs : Vdict = cscspecs or {}
+        self._video_decoder_specs : Vdict = vdecspecs or {}
         self.video_encoders = []
         self.csc_modules = []
         self.video_decoders = []
@@ -201,7 +201,7 @@ class VideoHelper:
             self.init()
         #manual deep-ish copy: make new dictionaries and lists,
         #but keep the same codec specs:
-        def deepish_clone_dict(indict:VDict) -> VDict:
+        def deepish_clone_dict(indict:Vdict) -> Vdict:
             outd = {}
             for enc, d in indict.items():
                 for ifmt, l in d.items():
@@ -213,8 +213,8 @@ class VideoHelper:
         vds = deepish_clone_dict(self._video_decoder_specs)
         return VideoHelper(ves, ces, vds, True)
 
-    def get_info(self) -> Dict[str,Any]:
-        d : Dict[str,Any] = {}
+    def get_info(self) -> dict[str,Any]:
+        d : dict[str,Any] = {}
         einfo = d.setdefault("encoding", {})
         dinfo = d.setdefault("decoding", {})
         cinfo = d.setdefault("csc", {})
@@ -259,23 +259,23 @@ class VideoHelper:
             self._initialized = True
         log("VideoHelper.init() done")
 
-    def get_encodings(self) -> Tuple[str,...]:
+    def get_encodings(self) -> tuple[str,...]:
         return tuple(self._video_encoder_specs.keys())
 
-    def get_decodings(self) -> Tuple[str,...]:
+    def get_decodings(self) -> tuple[str,...]:
         return tuple(self._video_decoder_specs.keys())
 
-    def get_csc_inputs(self) -> Tuple[str,...]:
+    def get_csc_inputs(self) -> tuple[str,...]:
         return tuple(self._csc_encoder_specs.keys())
 
 
-    def get_encoder_specs(self, encoding) -> VDictEntry:
+    def get_encoder_specs(self, encoding) -> VdictEntry:
         return self._video_encoder_specs.get(encoding, {})
 
-    def get_csc_specs(self, src_format) -> VDictEntry:
+    def get_csc_specs(self, src_format) -> VdictEntry:
         return self._csc_encoder_specs.get(src_format, {})
 
-    def get_decoder_specs(self, encoding) -> VDictEntry:
+    def get_decoder_specs(self, encoding) -> VdictEntry:
         return self._video_decoder_specs.get(encoding, {})
 
 
@@ -415,7 +415,7 @@ class VideoHelper:
         """
         log("get_server_full_csc_modes(%s) decoder encodings=%s",
             client_supported_csc_modes, csv(self._video_decoder_specs.keys()))
-        full_csc_modes : Dict[str,List[str]] = {}
+        full_csc_modes : dict[str,list[str]] = {}
         for encoding, encoding_specs in self._video_decoder_specs.items():
             assert encoding_specs is not None
             for colorspace, decoder_specs in sorted(encoding_specs.items()):

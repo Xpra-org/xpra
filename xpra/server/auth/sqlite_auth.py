@@ -6,7 +6,6 @@
 
 import os
 import sys
-from typing import Type, List
 
 from xpra.util import parse_simple_dict
 from xpra.server.auth.sys_auth_base import log, parse_uid, parse_gid, SessionData
@@ -46,7 +45,7 @@ class Authenticator(SQLAuthenticator):
         try:
             uid = parse_uid(data["uid"])
             gid = parse_gid(data["gid"])
-            displays : List[str] = []
+            displays : list[str] = []
             env_options = {}
             session_options = {}
             if data["displays"]:
@@ -82,7 +81,7 @@ class SqliteDatabaseUtil(DatabaseUtilBase):
         db.commit()
         return cursor
 
-    def get_authenticator_class(self) -> Type:
+    def get_authenticator_class(self) -> type:
         return Authenticator
 
 

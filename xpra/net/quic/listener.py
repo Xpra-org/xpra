@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, List, Union
+from typing import Union
 
 import asyncio
 from aioquic.asyncio import QuicConnectionProtocol
@@ -45,7 +45,7 @@ class HttpServerProtocol(QuicConnectionProtocol):
         self._xpra_server = kwargs.pop("xpra_server", None)
         log(f"HttpServerProtocol({args}, {kwargs}) xpra-server={self._xpra_server}")
         super().__init__(*args, **kwargs)
-        self._handlers: Dict[int, Handler] = {}
+        self._handlers: dict[int, Handler] = {}
         self._http: HttpConnection | None = None
 
     def quic_event_received(self, event: QuicEvent) -> None:
@@ -128,7 +128,7 @@ class HttpServerProtocol(QuicConnectionProtocol):
             "transport-info" : einfo,
         }
         if method == "CONNECT" and protocol == "websocket":
-            subprotocols: List[str] = []
+            subprotocols: list[str] = []
             for header, value in event.headers:
                 if header == b"sec-websocket-protocol":
                     subprotocols = [x.strip() for x in value.decode().split(",")]
@@ -153,7 +153,7 @@ class HttpServerProtocol(QuicConnectionProtocol):
             return WebTransportHandler(connection=self._http, scope=scope,
                                        stream_id=event.stream_id,
                                        transmit=self.transmit)
-        #extensions: Dict[str, Dict] = {}
+        #extensions: dict[str, dict] = {}
         #if isinstance(self._http, H3Connection):
         #    extensions["http.response.push"] = {}
         scope.update({
@@ -205,7 +205,7 @@ async def do_listen(sock, xpra_server, cert, key, retry):
         log.error(f"Error: listening on {sock}", exc_info=True)
         raise
 
-def listen_quic(sock, xpra_server, socket_options : Dict):
+def listen_quic(sock, xpra_server, socket_options : dict):
     log(f"listen_quic({sock}, {xpra_server}, {socket_options})")
     ssl_socket_options = xpra_server.get_ssl_socket_options(socket_options)
     cert = ssl_socket_options.get("cert")

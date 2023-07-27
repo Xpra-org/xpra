@@ -7,7 +7,7 @@
 #pylint: disable-msg=E1101
 
 from time import monotonic
-from typing import List, Dict, Any
+from typing import Any
 
 from xpra.os_util import bytestostr
 from xpra.util import typedict, envbool
@@ -42,8 +42,8 @@ class InputServer(StubServerMixin):
         self.key_repeat_interval = -1
         #store list of currently pressed keys
         #(using a dict only so we can display their names in debug messages)
-        self.keys_pressed : Dict[int,str] = {}
-        self.keys_timedout : Dict[int,float] = {}
+        self.keys_pressed : dict[int,str] = {}
+        self.keys_timedout : dict[int,float] = {}
         #timers for cancelling key repeat when we get jitter
         self.key_repeat_timer = 0
 
@@ -71,16 +71,16 @@ class InputServer(StubServerMixin):
     def last_client_exited(self) -> None:
         self.clear_keys_pressed()
 
-    def get_info(self, _proto) -> Dict[str,Any]:
+    def get_info(self, _proto) -> dict[str,Any]:
         return {"keyboard" : self.get_keyboard_info()}
 
-    def get_server_features(self, _source=None) -> Dict[str,Any]:
+    def get_server_features(self, _source=None) -> dict[str,Any]:
         return {
             "input-devices"         : self.input_devices,
             "pointer.relative"      : True,
             }
 
-    def get_caps(self, _source) -> Dict[str,Any]:
+    def get_caps(self, _source) -> dict[str,Any]:
         if not self.key_repeat:
             return {}
         return {
@@ -96,7 +96,7 @@ class InputServer(StubServerMixin):
         """ GTK servers will start listening for the 'keys-changed' signal """
 
     def parse_hello_ui_keyboard(self, ss, c:typedict) -> None:
-        other_ui_clients : List[str] = [s.uuid for s in self._server_sources.values() if s!=ss and s.ui_client]
+        other_ui_clients : list[str] = [s.uuid for s in self._server_sources.values() if s!=ss and s.ui_client]
         #parse client config:
         ss.keyboard_config = self.get_keyboard_config(c)    #pylint: disable=assignment-from-none
 
@@ -112,7 +112,7 @@ class InputServer(StubServerMixin):
         self.key_repeat_delay, self.key_repeat_interval = self.key_repeat
         self.set_keymap(ss)
 
-    def get_keyboard_info(self) -> Dict[str,Any]:
+    def get_keyboard_info(self) -> dict[str,Any]:
         start = monotonic()
         info = {
              "repeat"           : {
@@ -196,13 +196,13 @@ class InputServer(StubServerMixin):
         ss.user_event()
 
     def get_keycode(self, ss, client_keycode:int, keyname:str,
-                    pressed:bool, modifiers:List, keyval:int, keystr:str, group:int):
+                    pressed:bool, modifiers:list, keyval:int, keystr:str, group:int):
         return ss.get_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
 
     def fake_key(self, keycode, press):
         keylog("fake_key%s is not implemented", (keycode, press))
 
-    def _handle_key(self, wid:int, pressed:bool, name:str, keyval:int, keycode:int, modifiers:List, is_mod:bool=False, sync:bool=True):
+    def _handle_key(self, wid:int, pressed:bool, name:str, keyval:int, keycode:int, modifiers:list, is_mod:bool=False, sync:bool=True):
         """
             Does the actual press/unpress for keys
             Either from a packet (_process_key_action) or timeout (_key_repeat_timeout)
@@ -250,7 +250,7 @@ class InputServer(StubServerMixin):
             self.source_remove(krt)
 
     def _key_repeat(self, wid:int, pressed:bool, keyname:str, keyval:int, keycode:int,
-                    modifiers:List, is_mod:bool, delay_ms:int=0) -> None:
+                    modifiers:list, is_mod:bool, delay_ms:int=0) -> None:
         """ Schedules/cancels the key repeat timeouts """
         self.cancel_key_repeat_timer()
         if pressed:
@@ -261,7 +261,7 @@ class InputServer(StubServerMixin):
                                                      now, delay_ms, wid, keyname, keyval, keycode, modifiers, is_mod)
 
     def _key_repeat_timeout(self, when, delay_ms:int, wid:int, keyname:str, keyval:int, keycode:int,
-                            modifiers:List, is_mod:bool) -> None:
+                            modifiers:list, is_mod:bool) -> None:
         self.key_repeat_timer = 0
         now = monotonic()
         keylog("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s",
@@ -468,7 +468,7 @@ class InputServer(StubServerMixin):
             return
         ss.user_event()
         self.last_mouse_user = ss.uuid
-        props : Dict[str,Any] = {}
+        props : dict[str,Any] = {}
         device_id = -1
         if len(packet)>=6:
             device_id = packet[5]

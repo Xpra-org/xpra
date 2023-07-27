@@ -6,7 +6,7 @@
 
 import os
 import sys
-from typing import Dict, Any, List
+from typing import Any
 
 #default implementation uses pycups
 from xpra.platform import platform_import
@@ -19,16 +19,16 @@ log = Logger("printing")
 RAW_MODE = envbool("XPRA_PRINTER_RAW", False)
 
 
-def get_printers() -> Dict[str,Any]:
+def get_printers() -> dict[str,Any]:
     return {}
 
-def get_printer_attributes(_name:str) -> List:
+def get_printer_attributes(_name:str) -> list:
     return []
 
 def get_default_printer() -> str:
     return ""
 
-def print_files(printer:Dict, filenames, title:str, options):
+def print_files(printer:dict, filenames, title:str, options):
     raise RuntimeError("no print implementation available")
 
 def printing_finished(_printpid) -> bool:
@@ -43,7 +43,7 @@ def cleanup_printing() -> None:
 
 DEFAULT_MIMETYPES = ["application/pdf", "application/postscript"]
 
-MIMETYPES : List[str]|None = None
+MIMETYPES : list[str]|None = None
 def get_mimetypes():
     global MIMETYPES
     if MIMETYPES is None:
@@ -67,10 +67,10 @@ def get_mimetypes():
     return MIMETYPES
 
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> dict[str,Any]:
     return default_get_info()
 
-def default_get_info() -> Dict[str,Any]:
+def default_get_info() -> dict[str,Any]:
     return {
             "mimetypes" :   {
                 ""         : get_mimetypes(),

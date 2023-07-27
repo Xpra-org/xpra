@@ -5,7 +5,7 @@
 
 import os
 import socket
-from typing import Dict, Any
+from typing import Any
 
 from libc.stdint cimport uint32_t, uint16_t, uint8_t  #pylint: disable=syntax-error
 
@@ -79,7 +79,7 @@ cdef extern from "sys/ioctl.h":
     int ioctl(int fd, unsigned long request, ...)
 
 #linux kernel: if_arp.h
-ARPHRD : Dict[int,str] = {
+ARPHRD : dict[int,str] = {
     0   : "netrom",
     1   : "ether",
     2   : "eether",
@@ -144,7 +144,7 @@ ARPHRD : Dict[int,str] = {
     822 : "caif",
     }
 
-def get_interface_info(int sockfd, ifname) -> Dict[str,Any]:
+def get_interface_info(int sockfd, ifname) -> dict[str,Any]:
     if sockfd==0:
         return {}
     info = {}
@@ -179,7 +179,7 @@ def get_interface_info(int sockfd, ifname) -> Dict[str,Any]:
         info.update(get_ethtool_info(sockfd, ifname))
     return info
 
-def get_ethtool_info(int sockfd, ifname:str) -> Dict[str,Any]:
+def get_ethtool_info(int sockfd, ifname:str) -> dict[str,Any]:
     if len(ifname)>=IFNAMSIZ:
         log.warn("Warning: invalid interface name '%s'", ifname)
         log.warn(" maximum length is %i", IFNAMSIZ)
@@ -213,7 +213,7 @@ def get_ethtool_info(int sockfd, ifname:str) -> Dict[str,Any]:
     return info
 
 
-def get_socket_tcp_info(sock) -> Dict[str,Any]:
+def get_socket_tcp_info(sock) -> dict[str,Any]:
     if not LINUX:
         #should be added for BSDs
         return {}
@@ -277,7 +277,7 @@ def get_socket_tcp_info(sock) -> Dict[str,Any]:
     from xpra.net.socket_util import get_sockopt_tcp_info
     return get_sockopt_tcp_info(sock, socket.TCP_INFO, ALL_FIELDS)
 
-def get_send_buffer_info(sock) -> Dict[str,Any]:
+def get_send_buffer_info(sock) -> dict[str,Any]:
     import fcntl
     import struct
     send_buffer_size = sock.getsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF)
@@ -295,7 +295,7 @@ def get_send_buffer_info(sock) -> Dict[str,Any]:
         info["sndbuf_bytes"] = getioctl(SIOCOUTQNSD)
     return info
 
-def get_tcp_info(sock) -> Dict[str,Any]:
+def get_tcp_info(sock) -> dict[str,Any]:
     info = {}
     info.update(get_socket_tcp_info(sock))
     info.update(get_send_buffer_info(sock))

@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from queue import Queue
-from typing import Callable, Dict, Any
+from typing import Callable, Any
 
 from aioquic.h3.events import (
     DatagramReceived,
@@ -19,7 +19,7 @@ log = Logger("quic")
 
 
 class WebTransportHandler(XpraQuicConnection):
-    def __init__(self, connection: HttpConnection, scope: Dict, stream_id: int, transmit: Callable[[], None]) -> None:
+    def __init__(self, connection: HttpConnection, scope: dict, stream_id: int, transmit: Callable[[], None]) -> None:
         super().__init__(connection, stream_id, transmit, "", 0, info=None, options=None)
         self.http_event_queue: Queue[DataReceived] = Queue()
         self.read_datagram_queue = Queue()
@@ -38,7 +38,7 @@ class WebTransportHandler(XpraQuicConnection):
 
     def send_accept(self) -> None:
         self.accepted = True
-        headers : Dict[str,Any] = {
+        headers : dict[str,Any] = {
             ":status"   : "200",
             "server"    : SERVER_NAME,
             "date"      : http_date(),

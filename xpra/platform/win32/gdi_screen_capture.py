@@ -10,7 +10,7 @@ from ctypes import (
     Structure, create_string_buffer, addressof, byref, c_ubyte,
     )
 from io import BytesIO
-from typing import Dict, Any, List, Tuple
+from typing import Any
 from PIL import Image
 
 from xpra.log import Logger
@@ -33,7 +33,7 @@ log = Logger("shadow", "win32")
 NULLREGION = 1      #The region is empty.
 SIMPLEREGION = 2    #The region is a single rectangle.
 COMPLEXREGION = 3   #The region is more than a single rectangle.
-REGION_CONSTS : Dict[int,str] = {
+REGION_CONSTS : dict[int,str] = {
                 NULLREGION      : "the region is empty",
                 SIMPLEREGION    : "the region is a single rectangle",
                 COMPLEXREGION   : "the region is more than a single rectangle",
@@ -69,7 +69,7 @@ def get_desktop_bit_depth() -> int:
     ReleaseDC(desktop_wnd, dc)
     return bit_depth
 
-def get_palette(dc) -> List:
+def get_palette(dc) -> list:
     count = GetSystemPaletteEntries(dc, 0, 0, None)
     log("palette size: %s", count)
     palette = []
@@ -104,7 +104,7 @@ class GDICapture:
     def __repr__(self):
         return "GDICapture(%i-bits)" % self.bit_depth
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         return {
             "type"  : "gdi",
             "depth" : self.bit_depth,
@@ -133,7 +133,7 @@ class GDICapture:
             self.memdc = None
             DeleteDC(memdc)
 
-    def get_capture_coords(self, x:int, y:int, width:int, height:int) -> Tuple[int,int,int,int]:
+    def get_capture_coords(self, x:int, y:int, width:int, height:int) -> tuple[int,int,int,int]:
         metrics = get_virtualscreenmetrics()
         if self.metrics is None or self.metrics!=metrics:
             #new metrics, start from scratch:
@@ -233,7 +233,7 @@ class GDICapture:
         log("get_image%s=%s took %ims", (x, y, width, height), v, (time.time()-start)*1000)
         return v
 
-    def take_screenshot(self) -> Tuple[int,int,str,int,bytes] | None:
+    def take_screenshot(self) -> tuple[int,int,str,int,bytes] | None:
         x, y, w, h = get_virtualscreenmetrics()
         image = self.get_image(x, y, w, h)
         if not image:

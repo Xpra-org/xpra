@@ -5,7 +5,6 @@
 
 import base64
 import binascii
-from typing import Tuple
 
 from xpra.util import envbool, obsc
 from xpra.net.digest import get_salt
@@ -54,7 +53,7 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return True
 
-    def get_challenge(self, digests) -> Tuple[bytes,str] | None:
+    def get_challenge(self, digests) -> tuple[bytes,str] | None:
         if self.salt is not None:
             log.error("Error: authentication challenge already sent!")
             return None

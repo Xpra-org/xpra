@@ -5,7 +5,6 @@
 # License:
 # https://creativecommons.org/licenses/by-sa/3.0/legalcode
 
-from typing import Tuple, List
 import ctypes
 from ctypes import wintypes
 
@@ -376,7 +375,7 @@ def wait_for_print_job(printer_filter=PRINTER_CHANGE_ADD_JOB,
     finally:
         winspool.ClosePrinter(hPrinter)
 
-DEFAULT_FIELDS : Tuple[int,...] = (
+DEFAULT_FIELDS : tuple[int,...] = (
     JOB_NOTIFY_FIELD_PRINTER_NAME,
     JOB_NOTIFY_FIELD_STATUS,
     JOB_NOTIFY_FIELD_DOCUMENT,
@@ -387,7 +386,7 @@ DEFAULT_FIELDS : Tuple[int,...] = (
 
 def wait_for_print_job_info(fields=DEFAULT_FIELDS,
                             timeout=INFINITE,
-                            printer_name=None) -> List[List]:
+                            printer_name=None) -> list[list]:
     if timeout != INFINITE:
         timeout = int(timeout * 1000)
     hPrinter = wintypes.HANDLE()
@@ -396,7 +395,7 @@ def wait_for_print_job_info(fields=DEFAULT_FIELDS,
             pTypes=PRINTER_NOTIFY_OPTIONS_TYPE(
                     Type=JOB_NOTIFY_TYPE, pFields=fields))
     pinfo = PPRINTER_NOTIFY_INFO_GC() # note: GC subclass
-    result : List[List] = []
+    result : list[list] = []
     winspool.OpenPrinterW(printer_name, ctypes.byref(hPrinter), None)
     try:
         hChange = winspool.FindFirstPrinterChangeNotification(

@@ -7,7 +7,6 @@
 import os
 import shlex
 from subprocess import Popen, PIPE
-from typing import Tuple, Dict
 
 from xpra.os_util import POSIX
 from xpra.scripts.config import FALSE_OPTIONS
@@ -16,7 +15,7 @@ from xpra.log import Logger
 log = Logger("dbus")
 
 
-def start_dbus(dbus_launch) -> Tuple[int,Dict]:
+def start_dbus(dbus_launch) -> tuple[int,dict]:
     if not dbus_launch or dbus_launch.lower() in FALSE_OPTIONS:
         log("start_dbus(%s) disabled", dbus_launch)
         return 0, {}
@@ -40,7 +39,7 @@ def start_dbus(dbus_launch) -> Tuple[int,Dict]:
         out = proc.communicate()[0]
         assert proc.poll()==0, "exit code is %s" % proc.poll()
         #parse and add to global env:
-        dbus_env : Dict[str,str] = {}
+        dbus_env : dict[str,str] = {}
         log("out(%s)=%r", cmd, out)
         for l in out.splitlines():
             if l.startswith("export "):

@@ -14,7 +14,7 @@ from time import monotonic
 from socket import error as socket_error
 from threading import Lock, RLock, Event, Thread, current_thread
 from queue import Queue
-from typing import Dict, List, Tuple, Any, ByteString, Callable, Iterable
+from typing import Any, ByteString, Callable, Iterable
 
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr
 from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict
@@ -112,7 +112,7 @@ class SocketProtocol:
         self._process_packet_cb : Callable[[PacketType],None] = process_packet_cb
         self.make_chunk_header : Callable = self.make_xpra_header
         self.make_frame_header : Callable[[str,Iterable], ByteString] = self.noframe_header
-        self._write_queue : Queue[Tuple] = Queue(1)
+        self._write_queue : Queue[tuple] = Queue(1)
         self._read_queue : Queue[ByteString] = Queue(20)
         self._pre_read = None
         self._process_read : Callable = self.read_queue_put
@@ -164,20 +164,20 @@ class SocketProtocol:
         self.source_has_more = self.source_has_more_start
         self.flush_then_close = self.do_flush_then_close
 
-    STATE_FIELDS : Tuple[str,...] = (
+    STATE_FIELDS : tuple[str,...] = (
         "max_packet_size", "large_packets", "send_aliases", "receive_aliases",
         "cipher_in", "cipher_in_name", "cipher_in_block_size", "cipher_in_padding",
         "cipher_out", "cipher_out_name", "cipher_out_block_size", "cipher_out_padding",
         "compression_level", "encoder", "compressor",
         )
 
-    def save_state(self) -> Dict[str,Any]:
+    def save_state(self) -> dict[str,Any]:
         state = {}
         for x in self.STATE_FIELDS:
             state[x] = getattr(self, x)
         return state
 
-    def restore_state(self, state:Dict[str,Any]) -> None:
+    def restore_state(self, state:dict[str,Any]) -> None:
         assert state is not None
         for x in self.STATE_FIELDS:
             assert x in state, f"field {x!r} is missing"
@@ -235,7 +235,7 @@ class SocketProtocol:
     def __repr__(self):
         return f"Protocol({self._conn})"
 
-    def get_threads(self) -> Tuple[Thread,...]:
+    def get_threads(self) -> tuple[Thread,...]:
         return tuple(x for x in (
             self._write_thread,
             self._read_thread,
@@ -250,10 +250,10 @@ class SocketProtocol:
         set_socket_timeout(self._conn, SOCKET_TIMEOUT)
 
 
-    def set_receive_aliases(self, aliases:Dict) -> None:
+    def set_receive_aliases(self, aliases:dict) -> None:
         self.receive_aliases = aliases
 
-    def get_info(self, alias_info:bool=True) -> Dict[str,Any]:
+    def get_info(self, alias_info:bool=True) -> dict[str,Any]:
         shm = self._source_has_more
         info = {
             "large_packets"         : self.large_packets,
@@ -375,7 +375,7 @@ class SocketProtocol:
         if packet is None:
             return
         #log("add_packet_to_queue(%s ... %s, %s, %s)", packet[0], synchronous, has_more, wait_for_more)
-        packet_type : Union[str,int] = packet[0]
+        packet_type : str | int = packet[0]
         chunks : NetPacketType = self.encode(packet)
         with self._write_lock:
             if self._closed:
@@ -528,7 +528,7 @@ class SocketProtocol:
         log(f"enable_compressor({compressor}): {self._compress}")
 
 
-    def encode(self, packet_in : PacketType) -> List[NetPacketType]:
+    def encode(self, packet_in : PacketType) -> list[NetPacketType]:
         """
         Given a packet (tuple or list of items), converts it for the wire.
         This method returns all the binary packets to send, as an array of:
@@ -542,7 +542,7 @@ class SocketProtocol:
             (0,                 0, rencoded(["blah", '', "hello", 200]))
         ]
         """
-        packets : List[NetPacketType] = []
+        packets : list[NetPacketType] = []
         packet = list(packet_in)
         level = self.compression_level
         size_check = LARGE_PACKET_SIZE

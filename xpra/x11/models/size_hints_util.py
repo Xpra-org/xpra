@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any
+from typing import Any
 
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.log import Logger
@@ -14,7 +14,7 @@ log = Logger("x11", "window")
 MAX_ASPECT = 2**15-1
 
 
-def sanitize_size_hints(size_hints : Dict[str,Any]) -> None:
+def sanitize_size_hints(size_hints : dict[str,Any]) -> None:
     """
         Some applications may set nonsensical values,
         try our best to come up with something that can actually be used.

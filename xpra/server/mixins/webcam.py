@@ -6,7 +6,7 @@
 #pylint: disable-msg=E1101
 
 import os.path
-from typing import Dict, Tuple, Any
+from typing import Any
 
 from xpra.os_util import OSX, POSIX, bytestostr
 from xpra.util import engs
@@ -27,7 +27,7 @@ class WebcamServer(StubServerMixin):
 
     def __init__(self):
         self.webcam_device = ""
-        self.webcam_encodings : Tuple[str, ...] = ()
+        self.webcam_encodings : tuple[str, ...] = ()
         self.webcam_enabled : bool = False
         self.webcam_virtual_video_devices : int = 0
 
@@ -44,7 +44,7 @@ class WebcamServer(StubServerMixin):
         self.init_webcam()
 
 
-    def get_server_features(self, _source) -> Dict[str,Any]:
+    def get_server_features(self, _source) -> dict[str,Any]:
         return {
             "webcam"                       : self.webcam_enabled,
             "webcam.encodings"             : self.webcam_encodings,
@@ -52,8 +52,8 @@ class WebcamServer(StubServerMixin):
             }
 
 
-    def get_info(self, _proto) -> Dict[str,Any]:
-        info : Dict[str,Any] = {
+    def get_info(self, _proto) -> dict[str,Any]:
+        info : dict[str,Any] = {
                 ""                      : self.webcam_enabled,
                 }
         if self.webcam_enabled:

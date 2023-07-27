@@ -9,7 +9,7 @@
 
 from collections import namedtuple
 from threading import Lock
-from typing import Callable, Any, Tuple, Dict
+from typing import Callable, Any
 
 from xpra.log import Logger
 from xpra.net.protocol.header import (
@@ -20,15 +20,15 @@ from xpra.os_util import strtobytes
 from xpra.util import envbool
 
 #all the encoders we know about:
-ALL_ENCODERS : Tuple[str, ...] = ("rencodeplus", "bencode", "yaml", "rencode", "none")
+ALL_ENCODERS : tuple[str, ...] = ("rencodeplus", "bencode", "yaml", "rencode", "none")
 #the encoders we may have, in the best compatibility order
-TRY_ENCODERS : Tuple[str, ...] = ("rencodeplus", "yaml", "none")
+TRY_ENCODERS : tuple[str, ...] = ("rencodeplus", "yaml", "none")
 #order for performance:
-PERFORMANCE_ORDER : Tuple[str, ...] = ("rencodeplus", "yaml")
+PERFORMANCE_ORDER : tuple[str, ...] = ("rencodeplus", "yaml")
 
 Encoding = namedtuple("Encoding", ["name", "flag", "version", "encode", "decode"])
 
-ENCODERS : Dict[str,Encoding] = {}
+ENCODERS : dict[str,Encoding] = {}
 
 
 def init_rencodeplus() -> Encoding:
@@ -79,8 +79,8 @@ def init_all() -> None:
     init_encoders(*(list(TRY_ENCODERS)+["none"]))
 
 
-def get_packet_encoding_caps(full_info : int=1) -> Dict[str,Any]:
-    caps : Dict[str,Any] = {}
+def get_packet_encoding_caps(full_info : int=1) -> dict[str,Any]:
+    caps : dict[str,Any] = {}
     for name in TRY_ENCODERS:
         d = caps.setdefault(name, {})
         e = ENCODERS.get(name)
@@ -91,7 +91,7 @@ def get_packet_encoding_caps(full_info : int=1) -> Dict[str,Any]:
             d["version"] = e.version
     return caps
 
-def get_enabled_encoders(order: Tuple[str, ...]=TRY_ENCODERS) -> Tuple[str, ...]:
+def get_enabled_encoders(order: tuple[str, ...]=TRY_ENCODERS) -> tuple[str, ...]:
     return tuple(x for x in order if x in ENCODERS)
 
 
@@ -116,7 +116,7 @@ class InvalidPacketEncodingException(Exception):
     pass
 
 
-def pack_one_packet(packet:Tuple) -> bytes:
+def pack_one_packet(packet:tuple) -> bytes:
     ee = get_enabled_encoders()
     if ee:
         e = get_encoder(ee[0])

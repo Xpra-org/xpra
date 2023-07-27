@@ -5,7 +5,7 @@
 
 import sys
 import time
-from typing import List, Dict, Any
+from typing import Any
 
 from xpra.util import typedict
 from xpra.net.compression import Compressed
@@ -14,7 +14,7 @@ from xpra.net.common import PacketHandlerType
 
 class StubClientMixin:
 
-    __signals__ : List[str] = []
+    __signals__ : list[str] = []
     def __init__(self):
         self.exit_code = None
         self.start_time = int(time.time())
@@ -65,13 +65,13 @@ class StubClientMixin:
         Prepare to run using this connection to the server.
         """
 
-    def get_caps(self) -> Dict[str,Any]:
+    def get_caps(self) -> dict[str,Any]:
         """
         Return the capabilities provided by this mixin.
         """
         return {}
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         """
         Information contained in this mixin
         """
@@ -108,7 +108,7 @@ class StubClientMixin:
     def add_packet_handler(self, packet_type : str, handler : PacketHandlerType, main_thread=True) -> None:  # pragma: no cover
         raise NotImplementedError()
 
-    def add_packet_handlers(self, defs : Dict[str,PacketHandlerType], main_thread=True) -> None:  # pragma: no cover
+    def add_packet_handlers(self, defs : dict[str,PacketHandlerType], main_thread=True) -> None:  # pragma: no cover
         raise NotImplementedError()
 
     def show_progress(self, pct, text="") -> None:

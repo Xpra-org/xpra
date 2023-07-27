@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Callable, Tuple, Any
+from typing import Callable, Any
 
 from xpra.log import (
     Logger,
@@ -62,7 +62,7 @@ class ArgsControlCommand(ControlCommand):
         args = self.get_validated_args(*args)
         return super().run(*args)
 
-    def get_validated_args(self, *targs) -> Tuple[Any,...]:
+    def get_validated_args(self, *targs) -> tuple[Any,...]:
         args = list(targs)
         for i,validation in enumerate(self.validation):
             if i>=len(args):

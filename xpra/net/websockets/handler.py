@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Callable, Tuple
+from typing import Callable
 
 from xpra.util import envbool
 from xpra.net.websockets.common import make_websocket_accept_hash
@@ -17,7 +17,7 @@ WEBSOCKET_ONLY_UPGRADE = envbool("XPRA_WEBSOCKET_ONLY_UPGRADE", False)
 # HyBi-07 report version 7
 # HyBi-08 - HyBi-12 report version 8
 # HyBi-13 reports version 13
-SUPPORT_HyBi_PROTOCOLS : Tuple[str,...] = ("7", "8", "13")
+SUPPORT_HyBi_PROTOCOLS : tuple[str,...] = ("7", "8", "13")
 
 
 class WebSocketRequestHandler(HTTPRequestHandler):

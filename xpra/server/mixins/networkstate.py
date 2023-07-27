@@ -7,7 +7,7 @@
 
 import os
 from time import sleep
-from typing import Dict, Any, Callable
+from typing import Any, Callable
 from gi.repository import GLib
 
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -42,9 +42,9 @@ class NetworkStateServer(StubServerMixin):
         self.ping_timer : int = 0
         self.bandwidth_limit = 0
         self.mem_bytes = 0
-        self.cpu_info : Dict = {}
+        self.cpu_info : dict = {}
         self.print_memleaks : Callable | None = None
-        self.fds : Set[int] = set()
+        self.fds : set[int] = set()
 
     def init(self, opts) -> None:
         self.pings = opts.pings
@@ -69,7 +69,7 @@ class NetworkStateServer(StubServerMixin):
         if pm:
             pm()
 
-    def get_info(self, _source=None) -> Dict[str,Any]:
+    def get_info(self, _source=None) -> dict[str,Any]:
         info = {
             "pings"             : self.pings,
             "bandwidth-limit"   : self.bandwidth_limit or 0,
@@ -82,7 +82,7 @@ class NetworkStateServer(StubServerMixin):
             info["cpuinfo"] = dict((k,v) for k,v in self.cpu_info.items() if k!="python_version")
         return info
 
-    def get_server_features(self, _source) -> Dict[str,Any]:
+    def get_server_features(self, _source) -> dict[str,Any]:
         return {
             "connection-data" : True,           #added in v2.3
             "network" : {

@@ -7,7 +7,6 @@
 import sys
 import os
 from threading import RLock
-from typing import Dict, Tuple
 
 from xpra.util import pver, print_nested_dict, envbool, csv
 from xpra.os_util import bytestostr, strtobytes, load_binary_file, POSIX
@@ -319,7 +318,7 @@ def parse_nvfbc_hex_key(s):
     return binascii.unhexlify(hexstr)
 
 
-license_keys : Dict[str, Tuple] = {}
+license_keys : dict[str, tuple] = {}
 def get_license_keys(version=0, basefilename="nvenc"):
     filename = f"{basefilename}%s.keys" % (version or "")
     keys = license_keys.get(filename)

@@ -10,7 +10,7 @@
 
 import sys
 from time import monotonic
-from typing import Dict, Tuple, Any, Callable
+from typing import Any, Callable
 
 import gi
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
@@ -141,7 +141,7 @@ class GTKServerBase(ServerBase):
         log("do_run() end of gtk.main()")
 
 
-    def make_hello(self, source) -> Dict[str,Any]:
+    def make_hello(self, source) -> dict[str,Any]:
         capabilities = super().make_hello(source)
         if "display" in source.wants:
             display = Gdk.Display.get_default()
@@ -156,7 +156,7 @@ class GTKServerBase(ServerBase):
             capabilities.update(flatten_dict(get_gtk_version_info()))
         return capabilities
 
-    def get_ui_info(self, proto, *args) -> Dict[str,Any]:
+    def get_ui_info(self, proto, *args) -> dict[str,Any]:
         info = super().get_ui_info(proto, *args)
         display = Gdk.Display.get_default()
         if display:
@@ -191,7 +191,7 @@ class GTKServerBase(ServerBase):
             ss.send_cursor()
 
 
-    def get_cursor_sizes(self) -> Tuple[int,int]:
+    def get_cursor_sizes(self) -> tuple[int,int]:
         display = Gdk.Display.get_default()
         if not display:
             return (0, 0)
@@ -203,7 +203,7 @@ class GTKServerBase(ServerBase):
         cursorlog("send_initial_cursors() cursor_sizes=%s", self.cursor_sizes)
         ss.send_cursor()
 
-    def get_ui_cursor_info(self) -> Dict[str,Any]:
+    def get_ui_cursor_info(self) -> dict[str,Any]:
         #(from UI thread)
         #now cursor size info:
         display = Gdk.Display.get_default()
@@ -220,7 +220,7 @@ class GTKServerBase(ServerBase):
             cinfo[f"{prop}_size"] = size
         return cinfo
 
-    def do_get_info(self, proto, *args) -> Dict[str,Any]:
+    def do_get_info(self, proto, *args) -> dict[str,Any]:
         start = monotonic()
         info = super().do_get_info(proto, *args)
         vi = dict_version_trim(get_gtk_version_info())
@@ -229,13 +229,13 @@ class GTKServerBase(ServerBase):
         log("GTKServerBase.do_get_info took %ims", (monotonic()-start)*1000)
         return info
 
-    def get_root_window_size(self) -> Tuple[int,int]:
+    def get_root_window_size(self) -> tuple[int,int]:
         return get_root_size(None)
 
-    def get_max_screen_size(self) -> Tuple[int,int]:
+    def get_max_screen_size(self) -> tuple[int,int]:
         return get_root_size(None)
 
-    def configure_best_screen_size(self)-> Tuple[int,int]:
+    def configure_best_screen_size(self)-> tuple[int,int]:
         return self.get_root_window_size()
 
     def calculate_workarea(self, maxw:int, maxh:int) -> None:
@@ -304,7 +304,7 @@ class GTKServerBase(ServerBase):
         log.info("_process_configure_window(%s, %s)", proto, packet)
 
 
-    def get_notification_icon(self, icon_string:str) -> Tuple[str,int,int,bytes] | None:
+    def get_notification_icon(self, icon_string:str) -> tuple[str,int,int,bytes] | None:
         try:
             from xpra.notifications.common import get_notification_icon
         except ImportError:

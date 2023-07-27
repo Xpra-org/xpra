@@ -8,7 +8,7 @@
 import os
 import sys
 import binascii
-from typing import Dict, Any, Tuple, Type
+from typing import Any
 
 from xpra.platform import platform_import
 from xpra.os_util import bytestostr
@@ -61,22 +61,22 @@ def get_clipboard_native_class() -> str:
     return ""
 
 #defaults:
-def get_native_tray_menu_helper_class() -> Type | None:
+def get_native_tray_menu_helper_class() -> type | None:
     #classes that generate menus for xpra's system tray
     #let the toolkit classes use their own
     return None
-def get_native_tray_classes(*_args) -> Tuple[Type | None,...]:
+def get_native_tray_classes(*_args) -> tuple[type | None,...]:
     #the classes we can use for our system tray:
     #let the toolkit classes use their own
     return ()
-def get_native_system_tray_classes(*_args) -> Tuple[Type | None,...]:
+def get_native_system_tray_classes(*_args) -> tuple[type | None,...]:
     #the classes we can use for application system tray forwarding:
     #let the toolkit classes use their own
     return ()
 def system_bell(*_args) -> bool:
     #let the toolkit classes use their own
     return False
-def get_native_notifier_classes() -> Tuple[Type,...]:
+def get_native_notifier_classes() -> tuple[type,...]:
     return ()
 
 
@@ -91,7 +91,7 @@ def get_ydpi() -> int:
     return -1
 
 
-def get_monitors_info(xscale=1, yscale=1) -> Dict[int,Any]:
+def get_monitors_info(xscale=1, yscale=1) -> dict[int,Any]:
     from xpra.gtk_common import gtk_util
     return gtk_util.get_monitors_info(xscale, yscale)
 
@@ -111,17 +111,17 @@ def get_icon_size() -> int:
         return 24
     return 16
 
-def get_antialias_info() -> Dict[str,Any]:
+def get_antialias_info() -> dict[str,Any]:
     return {}
 
-def get_display_icc_info() -> Dict[str,Any]:
+def get_display_icc_info() -> dict[str,Any]:
     #per display info
     return {}
 
-def get_icc_info() -> Dict[str,Any]:
+def get_icc_info() -> dict[str,Any]:
     return default_get_icc_info()
 
-def default_get_icc_info() -> Dict[str,Any]:
+def default_get_icc_info() -> dict[str,Any]:
     ENV_ICC_DATA = os.environ.get("XPRA_ICC_DATA")
     if ENV_ICC_DATA:
         return {
@@ -130,13 +130,13 @@ def default_get_icc_info() -> Dict[str,Any]:
             }
     return get_pillow_icc_info()
 
-def get_pillow_icc_info() -> Dict[str,Any]:
+def get_pillow_icc_info() -> dict[str,Any]:
     screenlog = Logger("screen")
     info = {}
     try:
         from PIL import ImageCms
         from PIL.ImageCms import get_display_profile
-        INTENT_STR : Dict[Any, str] = {}
+        INTENT_STR : dict[Any, str] = {}
         for x in ("PERCEPTUAL", "RELATIVE_COLORIMETRIC", "SATURATION", "ABSOLUTE_COLORIMETRIC"):
             intent = getattr(ImageCms, "Intent", None)
             if intent:
@@ -193,7 +193,7 @@ def get_workareas():
 def get_number_of_desktops() -> int:
     return 1
 
-def get_desktop_names()  -> Tuple[str,...]:
+def get_desktop_names()  -> tuple[str,...]:
     return ()
 
 def get_vrefresh() -> int:
@@ -205,19 +205,19 @@ def get_mouse_config():
 def get_double_click_time() -> int:
     return -1
 
-def get_double_click_distance() -> Tuple[int,int]:
+def get_double_click_distance() -> tuple[int,int]:
     return -1, -1
 
-def get_fixed_cursor_size() -> Tuple[int,int]:
+def get_fixed_cursor_size() -> tuple[int,int]:
     return -1, -1
 
 def get_cursor_size() -> int:
     return -1
 
-def get_window_min_size() -> Tuple[int,int]:
+def get_window_min_size() -> tuple[int,int]:
     return 0, 0
 
-def get_window_max_size() -> Tuple[int,int]:
+def get_window_max_size() -> tuple[int,int]:
     return 2**15-1, 2**15-1
 
 def get_window_frame_size(_x, _y, _w, _h):
@@ -284,7 +284,7 @@ take_screenshot = None
 ClientExtras = None
 
 
-def get_info_base() -> Dict[str,Any]:
+def get_info_base() -> dict[str,Any]:
     def fname(v):
         try:
             return v.__name__

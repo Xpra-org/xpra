@@ -8,7 +8,7 @@ import sys
 import os.path
 from queue import Queue
 from time import monotonic
-from typing import Dict, Any
+from typing import Any
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.os_util import SIGNAMES
@@ -185,7 +185,7 @@ class AudioSource(AudioPipeline):
         self.sink = None
         self.caps = None
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = super().get_info()
         if self.queue:
             info["queue"] = {"cur" : self.queue.get_property("current-level-time")//MS_TO_NS}

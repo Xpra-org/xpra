@@ -4,8 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple
-
 # Platform-specific settings for Win32.
 CAN_DAEMONIZE = False
 REINIT_WINDOWS = True
@@ -13,7 +11,7 @@ REINIT_WINDOWS = True
 CLIPBOARDS = ("CLIPBOARD", )
 CLIPBOARD_GREEDY = True
 
-SOURCE : Tuple[str, ...] = ()
+SOURCE : tuple[str, ...] = ()
 
 EXECUTABLE_EXTENSION = "exe"
 

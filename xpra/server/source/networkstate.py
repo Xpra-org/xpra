@@ -7,7 +7,7 @@
 import os
 import time
 from time import monotonic
-from typing import Dict, Any
+from typing import Any
 
 from xpra.util import envbool, envint, typedict, ConnectionMessage
 from xpra.os_util import POSIX
@@ -30,20 +30,20 @@ class NetworkStateMixin(StubSourceMixin):
 
     def init_state(self) -> None:
         self.last_ping_echoed_time = 0
-        self.check_ping_echo_timers : Dict[int,int] = {}
+        self.check_ping_echo_timers : dict[int,int] = {}
         self.ping_timer = 0
         self.bandwidth_limit = 0
         self.client_load = (0,0,0)
-        self.client_connection_data : Dict[str,Any] = {}
+        self.client_connection_data : dict[str,Any] = {}
 
     def cleanup(self) -> None:
         self.cancel_ping_echo_timers()
         self.cancel_ping_timer()
 
-    def get_caps(self) -> Dict[str,Any]:
+    def get_caps(self) -> dict[str,Any]:
         return {"ping-echo-sourceid" : True}
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         lpe = 0
         if self.last_ping_echoed_time>0:
             lpe = int(monotonic()*1000-self.last_ping_echoed_time)

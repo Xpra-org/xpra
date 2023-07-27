@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, Any, Set
+from typing import Any
 
 from xpra.util import envbool, typedict
 from xpra.os_util import get_machine_id
@@ -27,8 +27,8 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
 
 
     def init_state(self) -> None:
-        self.printers : Dict[str,Dict] = {}
-        self.printers_added : Set[str] = set()
+        self.printers : dict[str,dict] = {}
+        self.printers_added : set[str] = set()
         #duplicated from clientinfo mixin
         self.machine_id = ""
 
@@ -39,7 +39,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
         FileTransferHandler.parse_file_transfer_caps(self, c)
         self.machine_id = c.strget("machine_id")
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         return {
             "printers"          : self.printers,
             "file-transfers"    : FileTransferHandler.get_info(self),

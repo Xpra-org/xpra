@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 from collections import namedtuple
-from typing import Type
 
 from xpra.client.gtk3.gtk3_client_window import GTK3ClientWindow
 from xpra.gtk_common.gtk_util import set_visual
@@ -25,7 +24,7 @@ class GLClientWindowBase(GTK3ClientWindow):
     def __repr__(self):
         return "GLClientWindow(%s : %s)" % (self.wid, self._backing)
 
-    def get_backing_class(self) -> Type:
+    def get_backing_class(self) -> type:
         raise NotImplementedError()
 
     def is_GL(self) -> bool:

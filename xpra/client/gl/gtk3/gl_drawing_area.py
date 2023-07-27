@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import sys
-from typing import Callable, List, Tuple, Any
+from typing import Callable, Any
 from gi.repository import GLib, Gtk, Gdk  # @UnresolvedImport
 
 from xpra.util import ellipsizer
@@ -21,7 +21,7 @@ log = Logger("opengl", "paint")
 class GLDrawingArea(GLWindowBackingBase):
 
     def __init__(self, wid : int, window_alpha : bool, pixel_depth : int=0):
-        self.on_realize_cb : List[Tuple[Callable,Tuple[Any,...]]] = []
+        self.on_realize_cb : list[tuple[Callable,tuple[Any,...]]] = []
         super().__init__(wid, window_alpha, pixel_depth)
 
     def __repr__(self):

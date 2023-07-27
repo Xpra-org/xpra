@@ -5,7 +5,7 @@
 
 import os
 from queue import Queue, Empty
-from typing import Tuple, Dict, Any, Callable
+from typing import Any, Callable
 
 from xpra.util import typedict, envint, parse_simple_dict
 from xpra.os_util import OSX
@@ -20,8 +20,8 @@ FRAME_QUEUE_TIMEOUT = envint("XPRA_GSTREAMER_FRAME_QUEUE_TIMEOUT", 1)
 FRAME_QUEUE_INITIAL_TIMEOUT = envint("XPRA_GSTREAMER_FRAME_QUEUE_INITIAL_TIMEOUT", 3)
 
 
-def get_default_encoder_options() -> Dict[str,Dict[str,Any]]:
-    options : Dict[str,Dict[str,Any]] = {
+def get_default_encoder_options() -> dict[str,dict[str,Any]]:
+    options : dict[str,dict[str,Any]] = {
         "vaapih264enc" : {
             "max-bframes"   : 0,    #int(options.boolget("b-frames", False))
             #"tune"          : 3,    #low-power
@@ -127,8 +127,8 @@ def get_default_encoder_options() -> Dict[str,Dict[str,Any]]:
             options[element] = encoder_options
     return options
 
-def get_default_decoder_options() -> Dict[str,Dict[str,Any]]:
-    options : Dict[str,Dict[str,Any]] = {
+def get_default_decoder_options() -> dict[str,dict[str,Any]]:
+    options : dict[str,dict[str,Any]] = {
         "av1dec"    : {
             "stream-format": "obu-stream",
             "alignment": "tu",
@@ -137,13 +137,13 @@ def get_default_decoder_options() -> Dict[str,Dict[str,Any]]:
     return options
 
 
-def get_version() -> Tuple[int, ...]:
+def get_version() -> tuple[int, ...]:
     return (5, 0)
 
 def get_type() -> str:
     return "gstreamer"
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> dict[str,Any]:
     return {"version"   : get_version()}
 
 def init_module() -> None:
@@ -176,7 +176,7 @@ def get_gst_rgb_format(rgb_format : str) -> str:
         }[rgb_format]
 
 
-def get_video_encoder_caps(encoder:str="x264enc") -> Dict[str,Any]:
+def get_video_encoder_caps(encoder:str="x264enc") -> dict[str,Any]:
     if encoder=="jpeg":
         return {}
     if encoder=="av1enc":
@@ -212,7 +212,7 @@ def get_gst_encoding(encoding:str) -> str:
 
 
 class VideoPipeline(Pipeline):
-    __generic_signals__ : Dict[str,Tuple] = Pipeline.__generic_signals__.copy()
+    __generic_signals__ : dict[str,tuple] = Pipeline.__generic_signals__.copy()
     """
     Dispatch video encoding or decoding to a gstreamer pipeline
     """
@@ -269,8 +269,8 @@ class VideoPipeline(Pipeline):
             return None
 
 
-    def get_info(self) -> Dict[str,Any]:
-        info : Dict[str,Any] = get_info()
+    def get_info(self) -> dict[str,Any]:
+        info : dict[str,Any] = get_info()
         if not self.colorspace:
             return info
         info.update({

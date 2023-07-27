@@ -7,7 +7,7 @@ import os
 from io import BytesIO
 import PIL
 from PIL import Image, ImagePalette     #@UnresolvedImport
-from typing import Dict, Tuple, List, Any
+from typing import Any
 
 from xpra.codecs.codec_debug import may_save_image
 from xpra.util import csv, typedict
@@ -41,9 +41,9 @@ def get_version() -> str:
 def get_type() -> str:
     return "pillow"
 
-def do_get_encodings() -> Tuple[str, ...]:
+def do_get_encodings() -> tuple[str, ...]:
     log("PIL.Image.SAVE=%s", Image.SAVE)
-    encodings : List[str] = []
+    encodings : list[str] = []
     for encoding in ENCODE_FORMATS:
         #strip suffix (so "png/L" -> "png")
         stripped = encoding.split("/")[0].upper()
@@ -52,19 +52,19 @@ def do_get_encodings() -> Tuple[str, ...]:
     log("do_get_encodings()=%s", encodings)
     return tuple(encodings)
 
-def get_encodings() -> Tuple[str, ...]:
+def get_encodings() -> tuple[str, ...]:
     return ENCODINGS
 
-ENCODINGS : Tuple[str, ...] = do_get_encodings()
+ENCODINGS : tuple[str, ...] = do_get_encodings()
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> dict[str,Any]:
     return  {
             "version"       : get_version(),
             "encodings"     : get_encodings(),
             }
 
 
-def encode(coding : str, image, options=None) -> Tuple[str,Compressed,Dict[str,Any],int,int,int,int]:
+def encode(coding : str, image, options=None) -> tuple[str,Compressed,dict[str,Any],int,int,int,int]:
     if coding not in ("jpeg", "webp", "png", "png/P", "png/L"):
         raise ValueError(f"unsupported encoding: {coding}")
     log("pillow.encode%s", (coding, image, options))
@@ -171,7 +171,7 @@ def encode(coding : str, image, options=None) -> Tuple[str,Compressed,Dict[str,A
         raise
     scaled_width = options.intget("scaled-width", w)
     scaled_height = options.intget("scaled-height", h)
-    client_options : Dict[str,Any] = {}
+    client_options : dict[str,Any] = {}
     if scaled_width!=w or scaled_height!=h:
         if speed>=95:
             resample = NEAREST
@@ -267,7 +267,7 @@ def selftest(full=False) -> None:
     from xpra.os_util import hexstr
     from xpra.codecs.codec_checks import make_test_image
     img = make_test_image("BGRA", 128, 128)
-    vrange : Tuple[int, ...] = (50, )
+    vrange : tuple[int, ...] = (50, )
     if full:
         vrange = (0, 50, 100)
     for encoding in tuple(ENCODINGS):
@@ -288,7 +288,7 @@ def selftest(full=False) -> None:
             l = log.warn
             l("Pillow error saving %s with quality=%s, speed=%s, alpha=%s", encoding, q, s, alpha)
             l(" %s", e, exc_info=True)
-            encs : List[str] = list(ENCODINGS)
+            encs : list[str] = list(ENCODINGS)
             encs.remove(encoding)
             ENCODINGS = tuple(encs)
 

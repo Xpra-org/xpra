@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
-from typing import Dict, Any
+from typing import Any
 
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import get_native_notifier_classes
@@ -68,7 +68,7 @@ class NotificationClient(StubClientMixin):
         return True
 
 
-    def get_caps(self) -> Dict[str,Any]:
+    def get_caps(self) -> dict[str,Any]:
         enabled = self.client_supports_notifications
         actions = bool(self.client_supports_notifications and self.notifier and self.notifier.handles_actions)
         return {

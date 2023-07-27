@@ -6,15 +6,13 @@
 #authentication from a file containing a list of entries of the form:
 # username|password|uid|gid|displays|env_options|session_options
 
-from typing import Dict, List, Tuple
-
 from xpra.server.auth.sys_auth_base import parse_uid, parse_gid, SessionData
 from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase
 from xpra.os_util import bytestostr, hexstr
 from xpra.util import parse_simple_dict, typedict
 from xpra.net.digest import verify_digest
 
-AuthLine = Tuple[str,str,int,int,List[str],Dict[str,str],Dict[str,str]]
+AuthLine = tuple[str,str,int,int,list[str],dict[str,str],dict[str,str]]
 
 def parse_auth_line(line:str) -> AuthLine:
     ldata = line.split("|")
@@ -49,10 +47,10 @@ class Authenticator(FileAuthenticatorBase):
         super().__init__(**kwargs)
         self.sessions : SessionData | None = None
 
-    def parse_filedata(self, data:str) -> Dict[str,AuthLine]:
+    def parse_filedata(self, data:str) -> dict[str,AuthLine]:
         if not data:
             return {}
-        auth_data : Dict[str,AuthLine] = {}
+        auth_data : dict[str,AuthLine] = {}
         i = 0
         for line in data.splitlines():
             i += 1

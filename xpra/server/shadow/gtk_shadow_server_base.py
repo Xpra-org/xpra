@@ -6,7 +6,7 @@
 
 import os
 import gi
-from typing import List, Dict, Type, Any, Tuple
+from typing import Any
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
@@ -32,7 +32,7 @@ log = Logger("shadow")
 MULTI_WINDOW = envbool("XPRA_SHADOW_MULTI_WINDOW", True)
 
 
-def parse_geometry(s) -> List[int]:
+def parse_geometry(s) -> list[int]:
     try:
         parts = s.split("@")
         if len(parts)==1:
@@ -49,7 +49,7 @@ def parse_geometry(s) -> List[int]:
         screenlog.error(" use the format: WIDTHxHEIGHT@x,y")
         raise
 
-def parse_geometries(s) -> List:
+def parse_geometries(s) -> list:
     g = []
     for geometry_str in s.split("/"):
         if geometry_str:
@@ -101,7 +101,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         GTKServerBase.last_client_exited(self)
 
 
-    def make_hello(self, source) -> Dict[str,Any]:
+    def make_hello(self, source) -> dict[str,Any]:
         caps = ShadowServerBase.make_hello(self, source)
         caps.update(GTKServerBase.make_hello(self, source))
         if "features" in source.wants:
@@ -109,7 +109,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         return caps
 
 
-    def get_info(self, proto=None, *args) -> Dict[str,Any]:
+    def get_info(self, proto=None, *args) -> dict[str,Any]:
         info = ShadowServerBase.get_info(self, proto, *args)
         info.update(GTKServerBase.get_info(self, proto, *args))
         return info
@@ -173,10 +173,10 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def setup_capture(self):
         raise NotImplementedError()
 
-    def get_root_window_model_class(self) -> Type:
+    def get_root_window_model_class(self) -> type:
         return RootWindowModel
 
-    def get_shadow_monitors(self) -> List:
+    def get_shadow_monitors(self) -> list:
         display = self.root.get_display()
         if not display:
             return []
@@ -204,7 +204,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         screenlog("get_shadow_monitors()=%s", monitors)
         return monitors
 
-    def makeRootWindowModels(self) -> List:
+    def makeRootWindowModels(self) -> list:
         screenlog("makeRootWindowModels() root=%s, display_options=%s", self.root, self.display_options)
         self.capture = self.setup_capture()
         if not self.capture:
@@ -302,7 +302,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             self.refresh_window(window)
 
 
-    def _adjust_pointer(self, proto, device_id, wid:int, opointer) -> List[int] | None:
+    def _adjust_pointer(self, proto, device_id, wid:int, opointer) -> list[int] | None:
         window = self._id_to_window.get(wid)
         if not window:
             self.suspend_cursor(proto)
@@ -331,7 +331,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def get_notification_tray(self):
         return self.tray_widget
 
-    def get_notifier_classes(self) -> Tuple[Type,...]:
+    def get_notifier_classes(self) -> tuple[type,...]:
         ncs = list(ShadowServerBase.get_notifier_classes(self))
         try:
             from xpra.gtk_common.gtk_notifier import GTK_Notifier   # pylint: disable=import-outside-toplevel

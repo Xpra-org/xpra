@@ -10,7 +10,7 @@ import logging
 import traceback
 from time import monotonic
 from threading import Lock
-from typing import Dict, Any, Callable
+from typing import Any, Callable
 
 from xpra.os_util import bytestostr
 from xpra.util import repr_ellipsized
@@ -34,7 +34,7 @@ class LoggingServer(StubServerMixin):
         self.log_both : bool = False
         self.in_remote_logging : bool = False
         self.local_logging : Callable | None = None
-        self.logging_clients : Dict[Any,float] = {}
+        self.logging_clients : dict[Any,float] = {}
 
     def init(self, opts) -> None:
         self.log_both = (opts.remote_logging or "").lower()=="both"
@@ -47,7 +47,7 @@ class LoggingServer(StubServerMixin):
         self.stop_capturing_logging()
 
 
-    def get_server_features(self, _source=None) -> Dict[str,Any]:
+    def get_server_features(self, _source=None) -> dict[str,Any]:
         return {
             "remote-logging"            : {
                 "receive"       : self.remote_logging_receive,

@@ -7,7 +7,7 @@
 #cython: wraparound=False
 
 import os
-from typing import Dict, Tuple, Any
+from typing import Any
 
 from xpra.log import Logger
 log = Logger("webcam")
@@ -236,7 +236,7 @@ print_nested_dict({
     }, print_fn=log.debug)
 
 
-def query_video_device(device="/dev/video0") -> Dict[str,Any]:
+def query_video_device(device="/dev/video0") -> dict[str,Any]:
     cdef v4l2_capability vid_caps
     try:
         log("v4l2 using device %s", device)
@@ -269,13 +269,13 @@ def get_version():
 def get_type():
     return "v4l2"
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> dict[str,Any]:
     global COLORSPACES, MAX_WIDTH, MAX_HEIGHT
     return {
         "version"   : get_version(),
         }
 
-def get_input_colorspaces() -> Tuple:
+def get_input_colorspaces() -> tuple:
     return ("YUV420P", )     #,"YUV422P"
 
 
@@ -383,7 +383,7 @@ cdef class Pusher:
             self.device = None
             d.close()
 
-    def get_info(self) -> Dict[str,Any]:             #@DuplicatedSignature
+    def get_info(self) -> dict[str,Any]:             #@DuplicatedSignature
         info = get_info()
         info.update({
             "frames"    : int(self.frames),

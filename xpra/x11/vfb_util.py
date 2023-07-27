@@ -14,7 +14,6 @@ import signal
 from time import monotonic
 from subprocess import Popen, PIPE, call
 import os.path
-from typing import Tuple, List, Dict
 
 from xpra.common import RESOLUTION_ALIASES, DEFAULT_REFRESH_RATE, get_refresh_rate_for_value
 from xpra.scripts.config import InitException, get_Xdummy_confdir, FALSE_OPTIONS
@@ -34,7 +33,7 @@ VFB_WAIT = envint("XPRA_VFB_WAIT", 3)
 XVFB_EXTRA_ARGS = os.environ.get("XPRA_XVFB_EXTRA_ARGS", "")
 
 
-def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> Tuple[int,...] | None:
+def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tuple[int,...] | None:
     if not s:
         return None
     s = s.upper()       #ie: 4K60
@@ -60,7 +59,7 @@ def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> Tupl
     reshz = list(res)
     reshz.append(int(hz))
     return tuple(reshz)
-def parse_resolutions(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> Tuple | None:
+def parse_resolutions(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tuple | None:
     if not s or s.lower() in FALSE_OPTIONS:
         return None
     if s.lower() in ("none", "default"):
@@ -110,7 +109,7 @@ def create_xorg_device_configs(xorg_conf_dir:str, device_uuid, uid:int, gid:int)
 
     #create conf dir if needed:
     d = xorg_conf_dir
-    dirs : List[str] = []
+    dirs : list[str] = []
     while d and not os.path.exists(d):
         log("create_device_configs: dir does not exist: %s", d)
         dirs.insert(0, d)
@@ -118,7 +117,7 @@ def create_xorg_device_configs(xorg_conf_dir:str, device_uuid, uid:int, gid:int)
     for d in dirs:
         makedir(d)
 
-    conf_files : List[str] = []
+    conf_files : list[str] = []
     for i, dev_type in (
         (0, "pointer"),
         (1, "touchpad"),
@@ -191,7 +190,7 @@ def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, u
     if XVFB_EXTRA_ARGS:
         xvfb_str += " "+XVFB_EXTRA_ARGS
 
-    subs : Dict[str,str] = {}
+    subs : dict[str,str] = {}
     def pathexpand(s):
         return osexpand(s, actual_username=username, uid=uid, gid=gid, subs=subs)
     etc_prefix = os.environ.get("XPRA_INSTALL_PREFIX", "")

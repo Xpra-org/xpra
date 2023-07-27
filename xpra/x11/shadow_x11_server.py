@@ -7,7 +7,7 @@
 
 import re
 from time import monotonic
-from typing import Dict, Any, Tuple
+from typing import Any
 
 from xpra.x11.x11_server_core import X11ServerCore
 from xpra.net.compression import Compressed
@@ -392,7 +392,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         X11ServerCore.last_client_exited(self)
 
 
-    def do_get_cursor_data(self) -> Tuple[Any,Any]:
+    def do_get_cursor_data(self) -> tuple[Any,Any]:
         return X11ServerCore.get_cursor_data(self)
 
 
@@ -429,20 +429,20 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
             ss.may_notify(nid, "Shadow Error", f"Error shadowing the display:\n{e}", icon_name="bugs")
 
 
-    def make_hello(self, source) -> Dict[str,Any]:
+    def make_hello(self, source) -> dict[str,Any]:
         capabilities = X11ServerCore.make_hello(self, source)
         capabilities.update(GTKShadowServerBase.make_hello(self, source))
         capabilities["server_type"] = "X11 Shadow"
         return capabilities
 
-    def get_info(self, proto, *_args) -> Dict[str,Any]:
+    def get_info(self, proto, *_args) -> dict[str,Any]:
         info = X11ServerCore.get_info(self, proto)
         merge_dicts(info, ShadowServerBase.get_info(self, proto))
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {})["type"] = "Python/gtk3/x11-shadow"
         return info
 
-    def do_make_screenshot_packet(self) -> Tuple[str,int,int,str,int,Compressed]:
+    def do_make_screenshot_packet(self) -> tuple[str,int,int,str,int,Compressed]:
         capture = GTKImageCapture(self.root)
         w, h, encoding, rowstride, data = capture.take_screenshot()
         assert encoding=="png"  #use fixed encoding for now

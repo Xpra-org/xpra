@@ -13,7 +13,7 @@ import os
 import sys
 import glob
 from time import monotonic
-from typing import Type, Tuple, List, Dict, Any, Generator as generator       #@UnresolvedImport, @UnusedImport
+from typing import Any, Generator as generator       #@UnresolvedImport, @UnusedImport
 
 from xpra.util import envbool, first_time
 from xpra.os_util import DummyContextManager, OSEnvContext, get_saved_env
@@ -29,10 +29,10 @@ LOAD_FROM_THEME : bool = envbool("XPRA_XDG_LOAD_FROM_THEME", True)
 LOAD_GLOB : bool = envbool("XPRA_XDG_LOAD_GLOB", False)
 
 EXPORT_ICONS : bool = envbool("XPRA_XDG_EXPORT_ICONS", True)
-DEBUG_COMMANDS : List[str] = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
+DEBUG_COMMANDS : list[str] = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
 EXPORT_TERMINAL_APPLICATIONS : bool = envbool("XPRA_XDG_EXPORT_TERMINAL_APPLICATIONS", False)
 EXPORT_SELF : bool = envbool("XPRA_XDG_EXPORT_SELF", False)
-LOAD_APPLICATIONS : List[str] = os.environ.get("XPRA_MENU_LOAD_APPLICATIONS", f"{sys.prefix}/share/applications").split(":")
+LOAD_APPLICATIONS : list[str] = os.environ.get("XPRA_MENU_LOAD_APPLICATIONS", f"{sys.prefix}/share/applications").split(":")
 
 
 def isvalidtype(v) -> bool:
@@ -42,9 +42,9 @@ def isvalidtype(v) -> bool:
         return all(isvalidtype(x) for x in v)
     return isinstance(v, (bytes, str, bool, int))
 
-def export(entry, properties : Tuple[str, ...]) -> Dict[str,Any]:
+def export(entry, properties : tuple[str, ...]) -> dict[str,Any]:
     name = entry.getName()
-    props : Dict[str,Any] = {}
+    props : dict[str,Any] = {}
     if any(x and name.lower().find(x.lower())>=0 for x in DEBUG_COMMANDS):
         l = log.info
     else:
@@ -72,10 +72,10 @@ def export(entry, properties : Tuple[str, ...]) -> Dict[str,Any]:
 
 
 MAX_THEMES : int = 2
-IconTheme : Type | None = None
-Config : Type | None = None
-themes : Dict[str,Any] = {}
-IconLoadingContext : Type = DummyContextManager
+IconTheme : type | None = None
+Config : type | None = None
+themes : dict[str,Any] = {}
+IconLoadingContext : type = DummyContextManager
 if LOAD_FROM_THEME:
     try:
         import xdg
@@ -120,7 +120,7 @@ if LOAD_FROM_THEME:
             log(f"icon themes={themes}")
         init_themes()
 
-EXTENSIONS : Tuple[str, ...] = ("png", "svg", "xpm")
+EXTENSIONS : tuple[str, ...] = ("png", "svg", "xpm")
 
 
 def check_xdg() -> bool:
@@ -146,7 +146,7 @@ def clear_cache() -> None:
     IconTheme.icon_cache = {}
 
 
-def load_entry_icon(props:Dict):
+def load_entry_icon(props:dict):
     #load icon binary data
     names = []
     for x in ("Icon", "Name", "GenericName"):
@@ -248,15 +248,15 @@ def find_glob_icon(*names, category:str="categories"):
     return None
 
 
-def noicondata(d:Dict) -> Dict:
+def noicondata(d:dict) -> dict:
     return dict((k,v) for k,v in d.items() if k and v and k!="IconData")
 
 
-def load_xdg_entry(de) -> Dict[str,Any]:
+def load_xdg_entry(de) -> dict[str,Any]:
     # not exposed:
     # * `MimeType` is a `re`
     # * `Version` is a `float`
-    props : Dict[str,Any] = export(de, (
+    props : dict[str,Any] = export(de, (
         "Type", "VersionString", "Name", "GenericName", "NoDisplay",
         "Comment", "Icon", "Hidden", "OnlyShowIn", "NotShowIn",
         "Exec", "TryExec", "Path", "Terminal", "MimeTypes",
@@ -289,9 +289,9 @@ def load_xdg_entry(de) -> Dict[str,Any]:
             props["IconType"] = ext
     return props
 
-def load_xdg_menu(submenu) -> Dict[str,Any]:
+def load_xdg_menu(submenu) -> dict[str,Any]:
     #log.info("submenu %s: %s, %s", name, submenu, dir(submenu))
-    submenu_data : Dict[str,Any] = export(submenu, (
+    submenu_data : dict[str,Any] = export(submenu, (
         "Name", "GenericName", "Comment",
         "Path", "Icon",
         ))
@@ -472,7 +472,7 @@ def load_xdg_menu_data():
     return menu_data
 
 def load_applications(menu_data=None):
-    entries : Dict[str,Any] = {}
+    entries : dict[str,Any] = {}
     if not LOAD_APPLICATIONS:
         return entries
     def already_has_name(name):
@@ -504,8 +504,8 @@ def load_applications(menu_data=None):
     return entries
 
 
-def load_desktop_sessions() -> Dict[str,Any]:
-    xsessions : Dict[str,Any] = {}
+def load_desktop_sessions() -> dict[str,Any]:
+    xsessions : dict[str,Any] = {}
     if not check_xdg():
         return xsessions
     xsessions_dir = f"{sys.prefix}/share/xsessions"
@@ -537,7 +537,7 @@ def load_desktop_sessions() -> Dict[str,Any]:
     return xsessions
 
 
-def get_icon_names_for_session(name:str) -> List[str]:
+def get_icon_names_for_session(name:str) -> list[str]:
     ALIASES = {
         "deepin"    : ["deepin-launcher", "deepin-show-desktop"],
         "xfce"      : ["org.xfce.xfdesktop", ]

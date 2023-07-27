@@ -17,7 +17,7 @@ PATH = "/org/gnome/ScreenSaver"
 
 def main():
     from xpra.platform import program_context
-    with program_context("ScreenSaver-Listener", "ScreenSaver Listener"):
+    with program_context("ScreenSaver-listener", "ScreenSaver listener"):
         dbus_session = dbus.SessionBus()
         def active_changed(active):
             print("screensaver active status changed: %s" % (active, ))

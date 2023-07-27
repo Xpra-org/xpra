@@ -5,7 +5,6 @@
 
 import os
 import sys
-from typing import Tuple
 
 from xpra.util import envbool
 from xpra.os_util import strtobytes, getuid
@@ -53,7 +52,7 @@ class Authenticator(SysAuthenticator):
             return False
         return check(self.username, password, self.service, self.check_account)
 
-    def get_challenge(self, digests) -> Tuple[bytes,str]:
+    def get_challenge(self, digests) -> tuple[bytes,str]:
         self.req_xor(digests)
         return super().do_get_challenge(["xor"])
 

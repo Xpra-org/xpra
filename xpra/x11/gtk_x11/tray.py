@@ -5,7 +5,6 @@
 
 import struct
 from enum import IntEnum
-from typing import Dict
 from gi.repository import GObject, Gdk, GdkX11  # @UnresolvedImport
 
 from xpra.util import envint
@@ -109,9 +108,9 @@ class SystemTray(GObject.GObject):
         self.tray_window : GdkX11.X11Window | None = None
         self.xid : int = 0
         #map xid to the gdk window:
-        self.window_trays : Dict[int,Gdk.Window] = {}
+        self.window_trays : dict[int,Gdk.Window] = {}
         #map gdk windows to their corral window:
-        self.tray_windows : Dict[GdkX11.X11Window,GdkX11.X11Window] = {}
+        self.tray_windows : dict[GdkX11.X11Window,GdkX11.X11Window] = {}
         self.setup_tray_window()
 
     def cleanup(self) -> None:

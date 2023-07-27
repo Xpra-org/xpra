@@ -5,13 +5,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict
 import sys
 
 def main() -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.util import pver, flatten_dict, print_nested_dict
-    def print_version_dict(d:Dict, vformat=pver):
+    def print_version_dict(d:dict, vformat=pver):
         for k in sorted(d.keys()):
             v = d[k]
             print("* %-48s : %r" % (str(k).replace(".version", "").ljust(12), vformat(v)))

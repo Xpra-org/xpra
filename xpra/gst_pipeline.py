@@ -8,7 +8,7 @@
 
 from time import monotonic
 from types import ModuleType
-from typing import List, Tuple, Dict, Callable, Any
+from typing import Callable, Any
 
 from xpra.gst_common import GST_FLOW_OK, import_gst
 gst = import_gst()
@@ -28,7 +28,7 @@ class Pipeline(GObject.GObject):
 
     generation = AtomicInteger()
 
-    __generic_signals__ : Dict[str,Tuple] = {
+    __generic_signals__ : dict[str,tuple] = {
         "state-changed"     : one_arg_signal,
         "error"             : one_arg_signal,
         "new-stream"        : one_arg_signal,
@@ -41,10 +41,10 @@ class Pipeline(GObject.GObject):
         self.bitrate : int = -1
         self.pipeline : Gst.Pipeline | None = None
         self.pipeline_str = ""
-        self.element_handlers : Dict[Any,List[int]] = {}
+        self.element_handlers : dict[Any,list[int]] = {}
         self.start_time : float = 0
         self.state : str = "stopped"
-        self.info : Dict[str,Any] = {}
+        self.info : dict[str,Any] = {}
         self.idle_add = GLib.idle_add
         self.timeout_add = GLib.timeout_add
         self.source_remove = GLib.source_remove
@@ -101,7 +101,7 @@ class Pipeline(GObject.GObject):
             self.source_remove(eit)
 
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         return self.info.copy()
 
     def setup_pipeline_and_bus(self, elements) -> bool:
@@ -312,7 +312,7 @@ class Pipeline(GObject.GObject):
         log("do_parse_element_message%s", (message, name, props))
 
 
-    def get_element_properties(self, element, *properties, ignore_missing=False) -> Dict[str,Any]:
+    def get_element_properties(self, element, *properties, ignore_missing=False) -> dict[str,Any]:
         info = {}
         for x in properties:
             try:

@@ -10,7 +10,7 @@ import time
 from time import monotonic
 from multiprocessing import Queue as MQueue, freeze_support #@UnresolvedImport
 from gi.repository import GLib  # @UnresolvedImport
-from typing import Dict, List, Tuple, Any
+from typing import Any
 
 from xpra.util import (
     ConnectionMessage,
@@ -60,7 +60,7 @@ if WIN32:
     #                        "USERDOMAIN,WORKGROUP,USERNAME,USERPROFILE,WINDIR,"+
     #                        "XPRA_REDIRECT_OUTPUT,XPRA_LOG_FILENAME,XPRA_ALL_DEBUG"
     DEFAULT_ENV_WHITELIST = "*"
-ENV_WHITELIST : List[str] = os.environ.get("XPRA_PROXY_ENV_WHITELIST", DEFAULT_ENV_WHITELIST).split(",")
+ENV_WHITELIST : list[str] = os.environ.get("XPRA_PROXY_ENV_WHITELIST", DEFAULT_ENV_WHITELIST).split(",")
 
 
 def get_socktype(proto):
@@ -575,7 +575,7 @@ class ProxyServer(ServerCore):
         start_thread(start_proxy_process, f"start_proxy({client_proto})")
 
     def start_new_session(self, username:str, _password, uid:int, gid:int,
-                          new_session_dict=None, displays=()) -> Tuple[Any,str,str]:
+                          new_session_dict=None, displays=()) -> tuple[Any,str,str]:
         log("start_new_session%s", (username, "..", uid, gid, new_session_dict, displays))
         sns = typedict(new_session_dict or {})
         mode = sns.strget("mode", "start")
@@ -643,7 +643,7 @@ class ProxyServer(ServerCore):
         log("start_new_session(..) pid=%s, socket_path=%s, display=%s, ", proc.pid, socket_path, display)
         return proc, socket_path, display
 
-    def get_proxy_env(self) -> Dict[str,str]:
+    def get_proxy_env(self) -> dict[str,str]:
         env = dict((k,v) for k,v in os.environ.items() if k in ENV_WHITELIST or "*" in ENV_WHITELIST)
         #env var to add to environment of subprocess:
         extra_env_str = os.environ.get("XPRA_PROXY_START_ENV", "")
@@ -670,7 +670,7 @@ class ProxyServer(ServerCore):
             del self.instances[p]
 
 
-    def get_info(self, proto, *_args) -> Dict[str,Any]:
+    def get_info(self, proto, *_args) -> dict[str,Any]:
         authenticated = proto and proto.authenticators
         if not authenticated:
             info = self.get_minimal_server_info()

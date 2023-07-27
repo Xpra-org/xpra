@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from typing import Dict, Tuple, Any, Callable
+from typing import Any, Callable
 
 from xpra.util import envint, typedict, ConnectionMessage, NotificationID
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -28,7 +28,7 @@ class IdleMixin(StubSourceMixin):
     def __init__(self) -> None:
         self.idle_timeout = 0
         #duplicated from clientconnection:
-        self.notification_callbacks : Dict[int,Callable] = {}
+        self.notification_callbacks : dict[int,Callable] = {}
         self.send_notifications = False
         self.send_notifications_actions = False
 
@@ -47,7 +47,7 @@ class IdleMixin(StubSourceMixin):
         self.cancel_idle_grace_timeout()
         self.cancel_idle_timeout()
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         return {
                 "idle_time"         : int(monotonic()-self.last_user_event),
                 "idle"              : self.idle,
@@ -106,7 +106,7 @@ class IdleMixin(StubSourceMixin):
         nid = NotificationID.IDLE
         if nid in self.notification_callbacks:
             return
-        actions : Tuple[str,...] = ()
+        actions : tuple[str,...] = ()
         if self.send_notifications_actions:
             actions = ("cancel", "Cancel Timeout")
         if self.session_name!="Xpra":

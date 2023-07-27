@@ -5,7 +5,7 @@
 
 from time import monotonic
 from collections import deque
-from typing import Dict, Any, Tuple
+from typing import Any
 
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.util import typedict
@@ -15,16 +15,16 @@ from xpra.log import Logger
 log = Logger("encoder", "proxy")
 
 
-def get_version() -> Tuple[int, ...]:
+def get_version() -> tuple[int, ...]:
     return (0, 2)
 
 def get_type() -> str:
     return "proxy"
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> dict[str,Any]:
     return {"version"   : get_version()}
 
-def get_encodings() -> Tuple[str, ...]:
+def get_encodings() -> tuple[str, ...]:
     return ("proxy", )
 
 def init_module() -> None:
@@ -55,7 +55,7 @@ class Encoder:
     def is_ready(self) -> bool:
         return True
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = get_info()
         if self.src_format is None:
             return info
@@ -115,7 +115,7 @@ class Encoder:
         self.time = 0
         self.first_frame_timestamp = 0
 
-    def compress_image(self, image:ImageWrapper, options=None) -> Tuple[bytes,dict]:
+    def compress_image(self, image:ImageWrapper, options=None) -> tuple[bytes,dict]:
         log("compress_image(%s, %s)", image, options)
         #pass the pixels as they are
         if image.get_planes()!=ImageWrapper.PACKED:

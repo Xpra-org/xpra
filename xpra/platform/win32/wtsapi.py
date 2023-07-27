@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any
+from typing import Any
 from ctypes import (
     POINTER, Structure, c_int, byref, cast, sizeof,
     WinDLL,  # @UnresolvedImport
@@ -45,7 +45,7 @@ WTSConnectQuery = 2
 WTSShadow       = 3
 WTSDisconnected = 4
 WTSIdle         = 5
-WTSListen       = 6
+WTSlisten       = 6
 WTSReset        = 7
 WTSDown         = 8
 WTSInit         = 9
@@ -56,7 +56,7 @@ CONNECT_STATE = {
     WTSShadow       : "Shadow",
     WTSDisconnected : "Disconnected",
     WTSIdle         : "Idle",
-    WTSListen       : "Listen",
+    WTSlisten       : "listen",
     WTSReset        : "Reset",
     WTSDown         : "Down",
     WTSInit         : "Init",
@@ -168,8 +168,8 @@ WTSTerminateProcess.argtypes = [HANDLE, DWORD, DWORD]
 #WTSWaitSystemEvent
 
 
-def get_session_info(session) -> Dict[str,Any]:
-    info : Dict[str,Any] = {
+def get_session_info(session) -> dict[str,Any]:
+    info : dict[str,Any] = {
         "StationName"  : session.pWinStationName.decode("latin1"),
         "State"        : CONNECT_STATE.get(session.State, str(session.State)),
         }

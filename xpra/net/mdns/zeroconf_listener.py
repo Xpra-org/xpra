@@ -15,7 +15,7 @@ log = Logger("network", "mdns")
 class Zeroconflistener:
 
     def __init__(self, service_type, mdns_found=None, mdns_add=None, mdns_remove=None, mdns_update=None):
-        log("ZeroconfListener%s", (service_type, mdns_found, mdns_add, mdns_remove, mdns_update))
+        log("Zeroconflistener%s", (service_type, mdns_found, mdns_add, mdns_remove, mdns_update))
         self.zeroconf = Zeroconf()
         self.browser : ServiceBrowser | None = None
         if not service_type.endswith("local."):
@@ -27,7 +27,7 @@ class Zeroconflistener:
         self.mdns_update = mdns_update
 
     def __repr__(self):
-        return "ZeroconfListener(%s)" % self.service_type
+        return "Zeroconflistener(%s)" % self.service_type
 
     def update_service(self, zeroconf, stype:str, name:str) -> None:
         log("update_service%s", (zeroconf, stype, name))
@@ -97,10 +97,10 @@ def main():
 
     from xpra.platform import program_context
     with program_context("zeroconf-listener", "zeroconf-listener"):
-        listeners : list[ZeroconfListener] = []
+        listeners : list[Zeroconflistener] = []
         from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
         def add(service_type):
-            listener = ZeroconfListener(service_type+"local.", mdns_found, mdns_add, mdns_remove, mdns_update)
+            listener = Zeroconflistener(service_type+"local.", mdns_found, mdns_add, mdns_remove, mdns_update)
             log(f"listener={listener}")
             listener.start()
         add(XPRA_TCP_MDNS_TYPE)

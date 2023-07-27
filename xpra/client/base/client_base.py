@@ -11,7 +11,7 @@ import signal
 import socket
 import string
 from time import monotonic
-from typing import Dict, Any, Callable
+from typing import Any, Callable
 
 from xpra.log import Logger
 from xpra.scripts.config import InitExit
@@ -416,7 +416,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self.warn_and_quit(ExitCode.TIMEOUT, "connection timed out")
 
 
-    def make_hello_base(self) -> Dict[str,Any]:
+    def make_hello_base(self) -> dict[str,Any]:
         capabilities = flatten_dict(get_network_caps(FULL_INFO))
         #add "kerberos", "gss" and "u2f" digests if enabled:
         for handler in self.challenge_handlers:
@@ -467,7 +467,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         capabilities.update(self.hello_extra)
         return capabilities
 
-    def get_cipher_caps(self) -> Dict[str,Any]:
+    def get_cipher_caps(self) -> dict[str,Any]:
         encryption = self.get_encryption()
         cryptolog(f"encryption={encryption}")
         if not encryption:
@@ -486,7 +486,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         key_salt = get_salt()
         iterations = get_iterations()
         padding = choose_padding(self.server_padding_options)
-        cipher_caps : Dict[str,Any] = {
+        cipher_caps : dict[str,Any] = {
             ""                      : enc,
             "mode"                  : mode,
             "iv"                    : iv,
@@ -505,10 +505,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         return cipher_caps
 
 
-    def get_version_info(self) -> Dict[str, Any]:
+    def get_version_info(self) -> dict[str, Any]:
         return get_version_info(FULL_INFO)
 
-    def make_hello(self) -> Dict[str,Any]:
+    def make_hello(self) -> dict[str,Any]:
         return {"aliases" : self.get_network_aliases()}
 
     def get_network_aliases(self):
@@ -1195,8 +1195,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 d.pop(k, None)
 
     def init_packet_handlers(self) -> None:
-        self._packet_handlers : Dict[str,PacketHandlerType] = {}
-        self._ui_packet_handlers : Dict[str,PacketHandlerType] = {}
+        self._packet_handlers : dict[str,PacketHandlerType] = {}
+        self._ui_packet_handlers : dict[str,PacketHandlerType] = {}
         self.add_packet_handler("hello", self._process_hello, False)
         if SSL_UPGRADE:
             self.add_packet_handler("ssl-upgrade", self._process_ssl_upgrade)

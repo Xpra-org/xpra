@@ -7,7 +7,7 @@
 
 import sys
 import logging
-from typing import Any, Tuple, Dict, List
+from typing import Any
 
 from xpra.util import envbool, envint, csv
 from xpra.os_util import bytestostr
@@ -19,7 +19,7 @@ from xpra.client.gl.gl_drivers import (
 
 log = Logger("opengl")
 
-required_extensions : Tuple[str, ...] = ("GL_ARB_texture_rectangle", "GL_ARB_vertex_program")
+required_extensions : tuple[str, ...] = ("GL_ARB_texture_rectangle", "GL_ARB_vertex_program")
 
 
 GL_ALPHA_SUPPORTED : bool = envbool("XPRA_ALPHA", True)
@@ -38,7 +38,7 @@ gl_check_error = raise_error
 gl_fatal_error = raise_fatal_error
 
 
-def parse_pyopengl_version(vstr : str) -> Tuple[int,...]:
+def parse_pyopengl_version(vstr : str) -> tuple[int,...]:
     def numv(s):
         try:
             return int(s)
@@ -88,14 +88,14 @@ def get_max_texture_size() -> int:
     return min(rect_texture_size, texture_size)
 
 
-def check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
-    props : Dict[str,Any] = {
+def check_PyOpenGL_support(force_enable) -> dict[str,Any]:
+    props : dict[str,Any] = {
         "platform"  : sys.platform,
         }
     def unsafe():
         props["safe"] = False
     # pylint: disable=import-outside-toplevel
-    redirected_loggers: Dict[str, Tuple[Logger,List,bool]] = {}
+    redirected_loggers: dict[str, tuple[Logger,list,bool]] = {}
     try:
         if CRASH:
             import ctypes
@@ -348,7 +348,7 @@ def check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
         props["max-viewport-dims"] = max_viewport_dims
         return props
     finally:
-        def recs(name) -> List[str]:
+        def recs(name) -> list[str]:
             rlog = redirected_loggers.get(name)
             if not rlog:
                 return []

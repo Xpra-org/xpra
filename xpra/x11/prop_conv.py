@@ -266,7 +266,7 @@ PROP_TYPES = {
     "utf8": (str, "UTF8_STRING", 8, _to_utf8, _from_utf8, b"\0"),
     # In theory, there should be something clever about COMPOUND_TEXT here.  I
     # am not sufficiently clever to deal with COMPOUNT_TEXT.  Even knowing
-    # that Xutf8TextPropertyToTextList exists.
+    # that Xutf8TextPropertyToTextlist exists.
     "latin1": (str, "STRING", 8, _to_latin1, _from_latin1, b"\0"),
     "state": (int, "WM_STATE", 32, _to_long, _from_long, b""),
     "u32": (int, "CARDINAL", 32, _to_long, _from_long, b""),

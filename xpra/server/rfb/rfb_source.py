@@ -6,7 +6,7 @@
 
 import struct
 from threading import Event
-from typing import Dict, Any
+from typing import Any
 
 from xpra.net.rfb.rfb_const import RFBEncoding
 from xpra.net.rfb.rfb_encode import (
@@ -43,7 +43,7 @@ class RFBSource:
         self.pixel_format = (32, 24, 0, 1, 255, 255, 255, 16, 8, 0)
         self.quality = 0
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         return {
             "protocol"  : "rfb",
             "uuid"      : self.uuid,

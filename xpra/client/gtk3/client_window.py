@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Type
 from gi.repository import GObject               #@UnresolvedImport @UnusedImport
 
 from xpra.client.gtk3.cairo_backing import CairoBacking
@@ -17,7 +16,7 @@ class ClientWindow(GTK3ClientWindow):
 
     __gsignals__ = GTK3ClientWindow.__common_gsignals__
 
-    def get_backing_class(self) -> Type:
+    def get_backing_class(self) -> type:
         return CairoBacking
 
 GObject.type_register(ClientWindow)

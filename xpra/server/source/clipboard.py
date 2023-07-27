@@ -6,7 +6,7 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from typing import Dict, Any, Deque, Tuple
+from typing import Any, Deque
 from collections import deque
 from gi.repository import GLib
 
@@ -38,7 +38,7 @@ class ClipboardConnection(StubSourceMixin):
         self.clipboard_greedy = False
         self.clipboard_want_targets = False
         self.clipboard_selections = CLIPBOARDS
-        self.clipboard_preferred_targets : Tuple[str,...] = ()
+        self.clipboard_preferred_targets : tuple[str,...] = ()
 
     def cleanup(self) -> None:
         self.cancel_clipboard_progress_timer()
@@ -66,7 +66,7 @@ class ClipboardConnection(StubSourceMixin):
         log("client clipboard: greedy=%s, want_targets=%s, selections=%s",
             self.clipboard_greedy, self.clipboard_want_targets, self.clipboard_selections)
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         return {
             "clipboard" : {
                 "enabled"               : self.clipboard_enabled,

@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from queue import Queue, Empty, Full
-from typing import Dict, Any
+from typing import Any
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.util import typedict
@@ -159,7 +159,7 @@ class CaptureAndEncode(Capture):
         self.profile = get_profile(options, encoding, csc_mode="YUV444P", default_profile="high" if encoder=="x264enc" else "")
         eopts = get_video_encoder_options(encoder, self.profile, options)
         vcaps = get_video_encoder_caps(encoder)
-        self.extra_client_info : Dict[str,Any] = vcaps.copy()
+        self.extra_client_info : dict[str,Any] = vcaps.copy()
         if self.profile:
             vcaps["profile"] = profile
             self.extra_client_info["profile"] = profile

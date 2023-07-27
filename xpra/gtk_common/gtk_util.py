@@ -7,7 +7,7 @@
 import os.path
 import cairo
 import gi
-from typing import Dict, Tuple, Any, Callable
+from typing import Any, Callable
 
 from xpra.util import first_time, envint, envbool, print_nested_dict
 from xpra.os_util import strtobytes, WIN32, OSX, POSIX, is_X11
@@ -28,8 +28,8 @@ SHOW_ALL_VISUALS = False
 #try to get workarea from GTK:
 GTK_WORKAREA = envbool("XPRA_GTK_WORKAREA", True)
 
-GTK_VERSION_INFO : Dict[str,Dict[str,Tuple]] = {}
-def get_gtk_version_info() -> Dict[str,Any]:
+GTK_VERSION_INFO : dict[str,dict[str,tuple]] = {}
+def get_gtk_version_info() -> dict[str,Any]:
     #update props given:
     global GTK_VERSION_INFO
     def av(k, v):
@@ -156,7 +156,7 @@ def get_default_root_window() -> Gdk.Window | None:
         return None
     return screen.get_root_window()
 
-def get_root_size(default:Tuple[int,int]=(1920, 1024)) -> Tuple[int,int]:
+def get_root_size(default:tuple[int,int]=(1920, 1024)) -> tuple[int,int]:
     if OSX:
         #the easy way:
         root = get_default_root_window()
@@ -186,7 +186,7 @@ def get_default_cursor() -> Gdk.Cursor:
     display = Gdk.Display.get_default()
     return Gdk.Cursor.new_from_name(display, "default")
 
-BUTTON_MASK : Dict[int, int] = {
+BUTTON_MASK : dict[int, int] = {
     Gdk.ModifierType.BUTTON1_MASK : 1,
     Gdk.ModifierType.BUTTON2_MASK : 2,
     Gdk.ModifierType.BUTTON3_MASK : 3,
@@ -230,9 +230,9 @@ BYTE_ORDER_NAMES = {
                 }
 
 
-def get_screens_info() -> Dict[int,Dict]:
+def get_screens_info() -> dict[int,dict]:
     display = Gdk.Display.get_default()
-    info : Dict[int,Dict] = {}
+    info : dict[int,dict] = {}
     assert display.get_n_screens()==1, "GTK3: The number of screens is always 1"
     screen = display.get_screen(0)
     info[0] = get_screen_info(display, screen)
@@ -345,7 +345,7 @@ def get_screen_sizes(xscale:float=1, yscale:float=1):
     screenlog(" screen: %s", screen0)
     return [screen0]
 
-def get_screen_info(display, screen) -> Dict[str,Any]:
+def get_screen_info(display, screen) -> dict[str,Any]:
     info = {}
     if not WIN32:
         try:
@@ -413,7 +413,7 @@ def get_screen_info(display, screen) -> Dict[str,Any]:
         sinfo[x] = v
     return info
 
-FONT_CONV : Dict[str,Dict[Any,Any]] = {
+FONT_CONV : dict[str,dict[Any,Any]] = {
     "antialias" : {
         cairo.ANTIALIAS_DEFAULT     : "default",
         cairo.ANTIALIAS_NONE        : "none",
@@ -441,16 +441,16 @@ FONT_CONV : Dict[str,Dict[Any,Any]] = {
         }
     }
 
-def get_font_info(font_options) -> Dict[str,Any]:
+def get_font_info(font_options) -> dict[str,Any]:
     #pylint: disable=no-member
-    font_info : Dict[str,Any] = {}
+    font_info : dict[str,Any] = {}
     for x,vdict in FONT_CONV.items():
         fn = getattr(font_options, "get_"+x)
         val = fn()
         font_info[x] = vdict.get(val, val)
     return font_info
 
-VINFO_CONV : Dict[str,Dict[Any,str]] = {
+VINFO_CONV : dict[str,dict[Any,str]] = {
         "bits_per_rgb"          : {},
         "byte_order"            : BYTE_ORDER_NAMES,
         "colormap_size"         : {},
@@ -461,10 +461,10 @@ VINFO_CONV : Dict[str,Dict[Any,str]] = {
         "visual_type"           : VISUAL_NAMES,
         }
 
-def get_visual_info(v) -> Dict[str,Any]:
+def get_visual_info(v) -> dict[str,Any]:
     if not v:
         return {}
-    vinfo : Dict[str,Any] = {}
+    vinfo : dict[str,Any] = {}
     for x, vdict in VINFO_CONV.items():
         val = None
         try:
@@ -481,8 +481,8 @@ def get_visual_info(v) -> Dict[str,Any]:
             vinfo[x] = vdict.get(val, val)
     return vinfo
 
-def get_screen_monitor_info(screen, i) -> Dict[str,Any]:
-    info : Dict[str,Any] = {}
+def get_screen_monitor_info(screen, i) -> dict[str,Any]:
+    info : dict[str,Any] = {}
     geom = screen.get_monitor_geometry(i)
     for x in ("x", "y", "width", "height"):
         info[x] = getattr(geom, x)
@@ -498,9 +498,9 @@ def get_screen_monitor_info(screen, i) -> Dict[str,Any]:
         workarea_info[x] = getattr(rectangle, x)
     return info
 
-def get_monitors_info(xscale:float=1, yscale:float=1) -> Dict[int,Any]:
+def get_monitors_info(xscale:float=1, yscale:float=1) -> dict[int,Any]:
     display = Gdk.Display.get_default()
-    info : Dict[int,Any] = {}
+    info : dict[int,Any] = {}
     n = display.get_n_monitors()
     for i in range(n):
         minfo = info.setdefault(i, {})
@@ -537,14 +537,14 @@ def get_monitors_info(xscale:float=1, yscale:float=1) -> Dict[int,Any]:
                 minfo[attr] = value
     return info
 
-def get_display_info(xscale=1, yscale=1) -> Dict[str,Any]:
+def get_display_info(xscale=1, yscale=1) -> dict[str,Any]:
     display = Gdk.Display.get_default()
     def xy(v):
         return round(xscale*v[0]), round(yscale*v[1])
     def avg(v):
         return round((xscale*v+yscale*v)/2)
     root_size = get_root_size()
-    info : Dict[str, Any] = {
+    info : dict[str, Any] = {
             "root-size"             : xy(root_size),
             "screens"               : display.get_n_screens(),
             "name"                  : display.get_name(),

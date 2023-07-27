@@ -5,7 +5,7 @@
 
 import os
 import struct
-from typing import List, ByteString, Callable
+from typing import ByteString, Callable
 
 from xpra.net.websockets.mask import hybi_mask     #@UnresolvedImport
 from xpra.net.websockets.header import encode_hybi_header, decode_hybi, close_packet
@@ -30,7 +30,7 @@ class WebSocketProtocol(SocketProtocol):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ws_data : ByteString = b""
-        self.ws_payload : List[ByteString] = []
+        self.ws_payload : list[ByteString] = []
         self.ws_payload_opcode : int = 0
         self.ws_mask : bool = MASK
         self._process_read = self.parse_ws_frame

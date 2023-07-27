@@ -6,7 +6,6 @@
 
 #cython: boundscheck=False, wraparound=False
 
-from typing import Tuple, Dict
 from time import monotonic
 
 cdef extern from "math.h":
@@ -24,7 +23,7 @@ def smn(fn):
     return str(SMOOTHING_NAMES.get(fn, fn))
 
 
-def calculate_time_weighted_average(data) -> Tuple[float,float]:
+def calculate_time_weighted_average(data) -> tuple[float,float]:
     """
         Given a list of items of the form [(event_time, value)],
         this method calculates a time-weighted average where
@@ -73,7 +72,7 @@ def time_weighted_average(data, double min_offset=0.1, double rpow=2.0) -> float
         tw += w
     return tv / tw
 
-def calculate_timesize_weighted_average_score(data) -> Tuple[int,int]:
+def calculate_timesize_weighted_average_score(data) -> tuple[int,int]:
     """
         This is a time weighted average where the size
         of each record also gives it a weight boost.
@@ -105,13 +104,13 @@ def calculate_timesize_weighted_average_score(data) -> Tuple[int,int]:
         rw += w
     return round(tv / tw), round(rv / rw)
 
-def calculate_timesize_weighted_average(data, float unit=1.0) -> Tuple[float,float]:
+def calculate_timesize_weighted_average(data, float unit=1.0) -> tuple[float,float]:
     #the value is elapsed time,
     #so we want to divide by the value:
     recs = tuple((a,b,unit/c) for a,b,c in data)
     return calculate_size_weighted_average(recs)
 
-def calculate_size_weighted_average(data) -> Tuple[float,float]:
+def calculate_size_weighted_average(data) -> tuple[float,float]:
     """
         This is a time weighted average where the size
         of each record also gives it a weight boost.
@@ -153,7 +152,7 @@ def calculate_size_weighted_average(data) -> Tuple[float,float]:
 
 def calculate_for_target(metric, float target_value, float avg_value, float recent_value,
                          float aim=0.5, float div=1.0, float slope=0.1,
-                         smoothing=logp, float weight_multiplier=1.0) -> Tuple[str,Dict,float,float]:
+                         smoothing=logp, float weight_multiplier=1.0) -> tuple[str,dict,float,float]:
     """
         Calculates factor and weight to try to bring us closer to 'target_value'.
 
@@ -185,7 +184,7 @@ def calculate_for_target(metric, float target_value, float avg_value, float rece
 
 def calculate_for_average(metric, float avg_value, float recent_value,
                           float div=1.0, float weight_offset=0.5,
-                          float weight_div=1.0)  -> Tuple[str,Dict,float,float]:
+                          float weight_div=1.0)  -> tuple[str,dict,float,float]:
     """
         Calculates factor and weight based on how far we are from the average value.
         This is used by metrics for which we do not know the optimal target value.
@@ -199,7 +198,7 @@ def calculate_for_average(metric, float avg_value, float recent_value,
     return metric, info, float(factor), float(weight)
 
 def queue_inspect(metric, time_values, float target=1.0, float div=1.0,
-                  smoothing=logp) -> Tuple[str,Dict,float,float]:
+                  smoothing=logp) -> tuple[str,dict,float,float]:
     """
         Given an historical list of values and a current value,
         figure out if things are getting better or worse.

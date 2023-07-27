@@ -5,7 +5,7 @@
 
 import os
 import struct
-from typing import List, Dict, Tuple, Iterable, Callable, Any
+from typing import Iterable, Callable, Any
 from gi.repository import GLib, GObject, Gdk  # @UnresolvedImport
 
 from xpra.gtk_common.error import xsync, xswallow
@@ -48,10 +48,10 @@ sizeof_long = struct.calcsize(b'@L')
 
 MAX_DATA_SIZE : int = 4*1024*1024
 
-BLACKLISTED_CLIPBOARD_CLIENTS : List[str] = os.environ.get("XPRA_BLACKLISTED_CLIPBOARD_CLIENTS", "clipit").split(",")
+BLACKLISTED_CLIPBOARD_CLIENTS : list[str] = os.environ.get("XPRA_BLACKLISTED_CLIPBOARD_CLIENTS", "clipit").split(",")
 log("BLACKLISTED_CLIPBOARD_CLIENTS=%s", BLACKLISTED_CLIPBOARD_CLIENTS)
-def parse_translated_targets(v:str) -> Dict[str,List[str]]:
-    trans : Dict[str,List[str]] = {}
+def parse_translated_targets(v:str) -> dict[str,list[str]]:
+    trans : dict[str,list[str]] = {}
     #we can't use ";" or "/" as separators
     #because those are used in mime-types
     #and we use "," and ":" ourselves..
@@ -77,7 +77,7 @@ TRANSLATED_TARGETS = parse_translated_targets(os.environ.get("XPRA_CLIPBOARD_TRA
 log("TRANSLATED_TARGETS=%s", TRANSLATED_TARGETS)
 
 
-def xatoms_to_strings(data:bytes) -> Tuple[str, ...]:
+def xatoms_to_strings(data:bytes) -> tuple[str, ...]:
     l = len(data)
     if l%sizeof_long!=0:
         raise ValueError(f"invalid length for atom array: {l}, value={repr_ellipsized(data)}")
@@ -112,17 +112,17 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.xid : int = xid
         self.owned : bool = False
         self._want_targets : bool = False
-        self.remote_requests : Dict[str, List[Tuple]] = {}
-        self.local_requests : Dict[str,Dict[int,Tuple[int,Callable]]] = {}
+        self.remote_requests : dict[str, list[tuple]] = {}
+        self.local_requests : dict[str,dict[int,tuple[int,Callable]]] = {}
         self.local_request_counter : int = 0
-        self.targets : Tuple[str,...] = ()
-        self.target_data : Dict[str,Tuple] = {}
+        self.targets : tuple[str,...] = ()
+        self.target_data : dict[str,tuple] = {}
         self.reset_incr_data()
 
     def reset_incr_data(self) -> None:
         self.incr_data_size : int = 0
         self.incr_data_type : str = ""
-        self.incr_data_chunks : List[bytes] = []
+        self.incr_data_chunks : list[bytes] = []
         self.incr_data_timer : int = 0
 
     def __repr__(self):
@@ -446,7 +446,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             with_targets(self.targets)
         self.get_contents("TARGETS", got_targets)
 
-    def choose_targets(self, targets) -> Tuple[str, ...]:
+    def choose_targets(self, targets) -> tuple[str, ...]:
         if self.preferred_targets:
             #prefer PNG, but only if supported by the client:
             fmts = []
@@ -718,7 +718,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
     # x11 specific munging support:
     ############################################################################
 
-    def _munge_raw_selection_to_wire(self, target, dtype, dformat, data) -> Tuple[Any,Any]:
+    def _munge_raw_selection_to_wire(self, target, dtype, dformat, data) -> tuple[Any,Any]:
         if dformat==32 and dtype in ("ATOM", "ATOM_PAIR"):
             return "atoms", self.remote_targets(xatoms_to_strings(data))
         return super()._munge_raw_selection_to_wire(target, dtype, dformat, data)

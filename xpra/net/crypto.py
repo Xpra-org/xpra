@@ -8,7 +8,7 @@ import os
 import sys
 import secrets
 from struct import pack
-from typing import Dict, Tuple, Any, Iterable, List
+from typing import Any, Iterable
 
 from xpra.util import envint, envbool, csv
 from xpra.version_util import parse_version
@@ -48,20 +48,20 @@ if PREFERRED_PADDING not in ALL_PADDING_OPTIONS:
 if INITIAL_PADDING not in ALL_PADDING_OPTIONS:
     raise ValueError(f"invalid padding: {INITIAL_PADDING}")
 #make sure the preferred one is first in the list:
-def get_padding_options() -> Tuple[str,...]:
+def get_padding_options() -> tuple[str,...]:
     options = [PREFERRED_PADDING]
     for x in ALL_PADDING_OPTIONS:
         if x not in options:
             options.append(x)
     return tuple(options)
-PADDING_OPTIONS : Tuple[str,...] = get_padding_options()
+PADDING_OPTIONS : tuple[str,...] = get_padding_options()
 
 
 # pylint: disable=import-outside-toplevel
-CIPHERS : Tuple[str,...] = ()
-MODES : Tuple[str,...] = ()
-KEY_HASHES : Tuple[str,...] = ()
-KEY_STRETCHING : Tuple[str,...] = ()
+CIPHERS : tuple[str,...] = ()
+MODES : tuple[str,...] = ()
+KEY_HASHES : tuple[str,...] = ()
+KEY_STRETCHING : tuple[str,...] = ()
 def crypto_backend_init():
     global cryptography, CIPHERS, MODES, KEY_HASHES, KEY_STRETCHING
     log("crypto_backend_init() pycryptography=%s", cryptography)
@@ -101,7 +101,7 @@ def patch_crypto_be_discovery() -> None:
     Objective: support pyinstaller / cx_freeze / pyexe / py2app freezing.
     """
     from cryptography.hazmat import backends
-    available : List = []
+    available : list = []
     try:
         from cryptography.hazmat.backends.commoncrypto.backend import backend as be_cc
         available.append(be_cc)
@@ -121,13 +121,13 @@ def patch_crypto_be_discovery() -> None:
         be for be in available if be is not None
     ])
 
-def get_ciphers() -> Tuple[str, ...]:
+def get_ciphers() -> tuple[str, ...]:
     return CIPHERS
 
-def get_modes() -> Tuple[str, ...]:
+def get_modes() -> tuple[str, ...]:
     return MODES
 
-def get_key_hashes() -> Tuple[str, ...]:
+def get_key_hashes() -> tuple[str, ...]:
     return KEY_HASHES
 
 def validate_backend() -> None:
@@ -190,7 +190,7 @@ def get_iterations() -> int:
     return DEFAULT_ITERATIONS
 
 
-def new_cipher_caps(proto, cipher:str, cipher_mode:str, encryption_key, padding_options) -> Dict[str,Any]:
+def new_cipher_caps(proto, cipher:str, cipher_mode:str, encryption_key, padding_options) -> dict[str,Any]:
     iv = get_iv()
     key_salt = get_salt()
     key_size = DEFAULT_KEYSIZE
@@ -215,16 +215,16 @@ def new_cipher_caps(proto, cipher:str, cipher_mode:str, encryption_key, padding_
         "padding.options"       : PADDING_OPTIONS,
         }
     #v5 onwards with namespace:
-    caps : Dict[str,Any] = {"encryption" : attrs}
+    caps : dict[str,Any] = {"encryption" : attrs}
     #add unprefixed copy for older versions:
     for k,v in attrs.items():
         caps[f"cipher.{k}"] = v
     caps["cipher"] = cipher
     return caps
 
-def get_crypto_caps(full=True) -> Dict[str,Any]:
+def get_crypto_caps(full=True) -> dict[str,Any]:
     crypto_backend_init()
-    caps : Dict[str,Any] = {
+    caps : dict[str,Any] = {
             "padding"       : {"options"    : PADDING_OPTIONS},
             "modes"         : {"options"    : MODES},
             "stretch"       : {"options"    : KEY_STRETCHING},

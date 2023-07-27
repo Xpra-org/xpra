@@ -6,7 +6,7 @@
 
 import re
 import os.path
-from typing import Dict, Callable, Any, Tuple
+from typing import Callable, Any
 
 from xpra.util import ellipsizer, envbool
 from xpra.os_util import getuid, OSX, POSIX, get_proc_cmdline
@@ -34,7 +34,7 @@ def getprop(window, prop):
 # generic file parsing functions
 ################################################################
 
-def _load_dict_file(filename:str, parser:Callable) -> Dict:
+def _load_dict_file(filename:str, parser:Callable) -> dict:
     #filter out comments and remove line endings
     lines = []
     with open(filename, "r", encoding="utf8") as f:
@@ -46,7 +46,7 @@ def _load_dict_file(filename:str, parser:Callable) -> Dict:
     log("_load_dict_file(%s)=%s", filename, ellipsizer(lines))
     return parser(lines)
 
-def _load_dict_dir(d:str, parser:Callable) -> Dict:
+def _load_dict_dir(d:str, parser:Callable) -> dict:
     #load all the .conf files from the directory
     if not os.path.exists(d) or not os.path.isdir(d):
         log("load_content_categories_dir(%s) directory not found", d)
@@ -65,7 +65,7 @@ def _load_dict_dir(d:str, parser:Callable) -> Dict:
     log("_load_dict_dir(%s)=%s", d, v)
     return v
 
-def _load_dict_dirs(dirname:str, parser:Callable) -> Dict:
+def _load_dict_dirs(dirname:str, parser:Callable) -> dict:
     if not GUESS_CONTENT:
         return {}
     #finds all the ".conf" files from the dirname specified
@@ -86,8 +86,8 @@ def _load_dict_dirs(dirname:str, parser:Callable) -> Dict:
 # `content-type` mapping:
 ################################################################
 
-content_type_defs : Dict | None = None
-def load_content_type_defs() -> Dict:
+content_type_defs : dict | None = None
+def load_content_type_defs() -> dict:
     global content_type_defs
     if content_type_defs is None:
         content_type_defs = _load_dict_dirs("content-type", parse_content_types)
@@ -96,8 +96,8 @@ def load_content_type_defs() -> Dict:
             content_type_defs.update(parse_content_types(CONTENT_TYPE_DEFS.split(",")))
     return content_type_defs
 
-def parse_content_types(lines) -> Dict[str,Dict[Any,Tuple[str,str]]]:
-    defs : Dict[str,Dict[Any,Tuple[str,str]]] = {}
+def parse_content_types(lines) -> dict[str,dict[Any,tuple[str,str]]]:
+    defs : dict[str,dict[Any,tuple[str,str]]] = {}
     for line in lines:
         if not line:
             continue
@@ -164,7 +164,7 @@ def guess_content_type_from_defs(window) -> str:
 # `content-categories` mapping:
 ################################################################
 
-def parse_content_categories_file(lines) -> Dict:
+def parse_content_categories_file(lines) -> dict:
     d = {}
     for line in lines:
         parts = line.rsplit(":", 1)
@@ -178,7 +178,7 @@ def parse_content_categories_file(lines) -> Dict:
     log("parse_content_categories_file(%s)=%s", lines, d)
     return d
 
-def load_categories_to_type() -> Dict:
+def load_categories_to_type() -> dict:
     return _load_dict_dirs("content-categories", parse_content_categories_file)
 
 
@@ -186,7 +186,7 @@ def load_categories_to_type() -> Dict:
 # command mapping: using menu data
 ################################################################
 
-command_to_type : Dict[str,str] | None = None
+command_to_type : dict[str,str] | None = None
 def load_command_to_type():
     global command_to_type
     if command_to_type is None:
@@ -238,7 +238,7 @@ def guess_content_type_from_command(window):
 # `content-parent` mapping:
 ################################################################
 
-def parse_content_parent(lines) -> Dict[str,str]:
+def parse_content_parent(lines) -> dict[str,str]:
     v = {}
     for line in lines:
         parts = line.split(":", 1)

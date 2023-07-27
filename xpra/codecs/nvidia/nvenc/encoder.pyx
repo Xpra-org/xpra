@@ -8,7 +8,7 @@ import os
 import platform
 from collections import deque
 from time import monotonic
-from typing import Dict, Any
+from typing import Any
 import ctypes
 from ctypes import cdll, POINTER
 from threading import Lock
@@ -1443,7 +1443,7 @@ def get_version():
 def get_type() -> str:
     return "nvenc"
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> dict[str,Any]:
     global last_context_failure, context_counter, context_gen_counter
     info = {
             "version"           : PRETTY_VERSION,
@@ -2094,7 +2094,7 @@ cdef class Encoder:
             raise RuntimeError("bitstream buffer pointer is null")
 
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         global YUV444_CODEC_SUPPORT, YUV444_ENABLED, LOSSLESS_CODEC_SUPPORT, LOSSLESS_ENABLED
         cdef double pps
         info = get_info()

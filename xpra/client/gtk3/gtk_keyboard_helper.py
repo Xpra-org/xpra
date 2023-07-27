@@ -5,7 +5,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple
 import gi
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
 from gi.repository import GLib, Gdk  # @UnresolvedImport
@@ -87,7 +86,7 @@ class GTKKeyboardHelper(KeyboardHelper):
         log("update() modifier_map=%s, old hash=%s, new hash=%s", self.keyboard.modifier_map, old_hash, self.hash)
         return old_hash!=self.hash
 
-    def get_full_keymap(self) -> Tuple[Tuple[int,str,int,int,int],...]:
+    def get_full_keymap(self) -> tuple[tuple[int,str,int,int,int],...]:
         return get_gtk_keymap()
 
     def cleanup(self):

@@ -13,7 +13,7 @@ import tempfile
 import uuid
 import hmac
 from time import monotonic
-from typing import Tuple, Callable
+from typing import Callable
 
 from xpra.os_util import (
     strtobytes, bytestostr,
@@ -279,7 +279,7 @@ class TestAuth(unittest.TestCase):
             a.load_password_file()
 
     def test_multifile(self):
-        def genfiledata(a) -> Tuple[str,str]:
+        def genfiledata(a) -> tuple[str,str]:
             password = uuid.uuid4().hex
             lines = [
                 "#comment",
@@ -292,7 +292,7 @@ class TestAuth(unittest.TestCase):
                 ]
             return password, "\n".join(lines)
         self._test_file_auth("multifile", genfiledata, 1)
-        def nodata(_a) -> Tuple[str,str]:
+        def nodata(_a) -> tuple[str,str]:
             return "abc", ""
         try:
             self._test_file_auth("multifile", nodata, 1)

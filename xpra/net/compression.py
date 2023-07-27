@@ -6,24 +6,24 @@
 # later version. See the file COPYING for details.
 
 from collections import namedtuple
-from typing import Any, Tuple, Dict, Callable
+from typing import Any, Callable
 
 from xpra.util import envbool
 from xpra.common import MIN_COMPRESS_SIZE, MAX_DECOMPRESSED_SIZE
 
 
 # all the compressors we know about:
-ALL_COMPRESSORS : Tuple[str, ...] = ("lz4", "zlib", "brotli", "none")
+ALL_COMPRESSORS : tuple[str, ...] = ("lz4", "zlib", "brotli", "none")
 # the compressors we may want to use, in the best compatibility order:
-TRY_COMPRESSORS : Tuple[str, ...] = ("lz4", "brotli", "none")
+TRY_COMPRESSORS : tuple[str, ...] = ("lz4", "brotli", "none")
 # order for performance:
-PERFORMANCE_ORDER : Tuple[str, ...] = ("none", "lz4", "brotli")
+PERFORMANCE_ORDER : tuple[str, ...] = ("none", "lz4", "brotli")
 # require compression (disallow 'none'):
-PERFORMANCE_COMPRESSION : Tuple[str, ...] = ("lz4", "brotli")
+PERFORMANCE_COMPRESSION : tuple[str, ...] = ("lz4", "brotli")
 
 Compression = namedtuple("Compression", ["name", "version", "compress", "decompress"])
 
-COMPRESSION : Dict[str,Compression] = {}
+COMPRESSION : dict[str,Compression] = {}
 
 
 def init_lz4() -> Compression:
@@ -97,8 +97,8 @@ def use(compressor) -> bool:
     return compressor in COMPRESSION
 
 
-def get_compression_caps(full_info : int=1) -> Dict[str,Any]:
-    caps : Dict[str,Any] = {}
+def get_compression_caps(full_info : int=1) -> dict[str,Any]:
+    caps : dict[str,Any] = {}
     for x in TRY_COMPRESSORS:
         c = COMPRESSION.get(x)
         if c is None:
@@ -109,7 +109,7 @@ def get_compression_caps(full_info : int=1) -> Dict[str,Any]:
         ccaps[""] = True
     return caps
 
-def get_enabled_compressors(order=TRY_COMPRESSORS) -> Tuple[str,...]:
+def get_enabled_compressors(order=TRY_COMPRESSORS) -> tuple[str,...]:
     return tuple(x for x in order if x in COMPRESSION)
 
 def get_compressor(name) -> Callable:

@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os.path
-from typing import Dict, Any
+from typing import Any
 
 from xpra.scripts.config import parse_bool
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -29,7 +29,7 @@ class MMAP_Server(StubServerMixin):
             self.supports_mmap = bool(parse_bool("mmap", opts.mmap.lower()))
 
 
-    def get_info(self, _proto=None) -> Dict[str,Any]:
+    def get_info(self, _proto=None) -> dict[str,Any]:
         return {
             "mmap" : {
                 "supported"     : self.supports_mmap,

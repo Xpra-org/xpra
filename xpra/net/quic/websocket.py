@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Callable, Dict, Any
+from typing import Callable, Any
 
 from aioquic.h3.events import HeadersReceived, H3Event
 from aioquic.h3.exceptions import NoAvailablePushIDError
@@ -22,14 +22,14 @@ SUBSTREAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get("XPRA_QUIC_SUBS
 
 
 class ServerWebSocketConnection(XpraQuicConnection):
-    def __init__(self, connection, scope: Dict,
+    def __init__(self, connection, scope: dict,
                  stream_id: int, transmit: Callable[[], None]) -> None:
         super().__init__(connection, stream_id, transmit, "", 0, info=None, options=None)
-        self.scope: Dict = scope
-        self._packet_type_streams : Dict[str,int] = {}
+        self.scope: dict = scope
+        self._packet_type_streams : dict[str,int] = {}
         self._use_substreams = bool(SUBSTREAM_PACKET_TYPES)
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = super().get_info()
         info.setdefault("quic", {})["scope"] = self.scope
         return info

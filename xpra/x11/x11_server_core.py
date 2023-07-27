@@ -9,7 +9,7 @@
 import os
 import threading
 from time import monotonic
-from typing import Dict, List,Tuple, Any
+from typing import Any
 
 from xpra.x11.bindings.core import set_context_check, X11CoreBindings     #@UnresolvedImport
 from xpra.x11.bindings.randr import RandRBindings  #@UnresolvedImport
@@ -108,10 +108,10 @@ class X11ServerCore(GTKServerBase):
         self.pointer_device = XTestPointerDevice()
         self.touchpad_device = None
         self.pointer_device_map : dict = {}
-        self.keys_pressed : Dict[int,Any] = {}
+        self.keys_pressed : dict[int,Any] = {}
         self.initial_resolution = None
         self.x11_filter = False
-        self.randr_sizes_added : List[Tuple[int,int]] = []
+        self.randr_sizes_added : list[tuple[int,int]] = []
 
         self.initial_resolutions = ()
         self.randr = False
@@ -324,7 +324,7 @@ class X11ServerCore(GTKServerBase):
                 X11Keyboard.set_key_repeat_rate(500, 30)
                 keylog("keyboard repeat disabled")
 
-    def make_hello(self, source) -> Dict[str,Any]:
+    def make_hello(self, source) -> dict[str,Any]:
         capabilities = super().make_hello(source)
         capabilities["server_type"] = "Python/gtk/x11"
         if "features" in source.wants:
@@ -362,7 +362,7 @@ class X11ServerCore(GTKServerBase):
             cursorlog.error("Error sending default cursor", exc_info=True)
 
 
-    def do_get_info(self, proto, server_sources) -> Dict[str,Any]:
+    def do_get_info(self, proto, server_sources) -> dict[str,Any]:
         start = monotonic()
         info = super().do_get_info(proto, server_sources)
         sinfo = info.setdefault("server", {})
@@ -377,7 +377,7 @@ class X11ServerCore(GTKServerBase):
         log("X11ServerCore.do_get_info took %ims", (monotonic()-start)*1000)
         return info
 
-    def get_ui_info(self, proto, wids=None, *args) -> Dict[str,Any]:
+    def get_ui_info(self, proto, wids=None, *args) -> dict[str,Any]:
         log("do_get_info thread=%s", threading.current_thread())
         info = super().get_ui_info(proto, wids, *args)
         #this is added here because the server keyboard config doesn't know about "keys_pressed"..
@@ -417,7 +417,7 @@ class X11ServerCore(GTKServerBase):
         return info
 
 
-    def get_cursor_info(self) -> Dict[str,Any]:
+    def get_cursor_info(self) -> dict[str,Any]:
         #(NOT from UI thread)
         #copy to prevent race:
         cd = self.last_cursor_image
@@ -434,7 +434,7 @@ class X11ServerCore(GTKServerBase):
                 cinfo[x] = v
         return cinfo
 
-    def get_window_info(self, window) -> Dict[str,Any]:
+    def get_window_info(self, window) -> dict[str,Any]:
         info = super().get_window_info(window)
         info["XShm"] = window.uses_XShm()
         info["geometry"] = window.get_geometry()
@@ -510,7 +510,7 @@ class X11ServerCore(GTKServerBase):
         with xlog:
             return X11Keyboard.get_cursor_image()
 
-    def get_cursor_data(self, skip_default=True) -> Tuple:
+    def get_cursor_data(self, skip_default=True) -> tuple:
         #must be called from the UI thread!
         cursor_image = self.get_cursor_image()
         if cursor_image is None:
@@ -527,7 +527,7 @@ class X11ServerCore(GTKServerBase):
         return (cursor_image, cursor_sizes)
 
 
-    def get_all_screen_sizes(self) -> Tuple:
+    def get_all_screen_sizes(self) -> tuple:
         #workaround for #2910: the resolutions we add are not seen by XRRSizes!
         # so we keep track of the ones we have added ourselves:
         sizes = list(RandR.get_xrr_screen_sizes())
@@ -536,7 +536,7 @@ class X11ServerCore(GTKServerBase):
                 sizes.append((w, h))
         return tuple(sizes)
 
-    def get_max_screen_size(self) -> Tuple[int,int]:
+    def get_max_screen_size(self) -> tuple[int,int]:
         max_w, max_h = self.root_window.get_geometry()[2:4]
         if self.randr:
             sizes = self.get_all_screen_sizes()
@@ -769,7 +769,7 @@ class X11ServerCore(GTKServerBase):
         return root_w, root_h
 
 
-    def mirror_client_monitor_layout(self) -> Dict[int,Any]:
+    def mirror_client_monitor_layout(self) -> dict[int,Any]:
         with xsync:
             assert RandR.is_dummy16(), "cannot match monitor layout without RandR 1.6"
         #if we have a single UI client,
@@ -958,7 +958,7 @@ class X11ServerCore(GTKServerBase):
         return device
 
 
-    def _get_pointer_abs_coordinates(self, wid:int, pos) -> Tuple[int,int]:
+    def _get_pointer_abs_coordinates(self, wid:int, pos) -> tuple[int,int]:
         #simple absolute coordinates
         x, y = pos[:2]
         from xpra.server.mixins.window import WindowServer
@@ -1037,7 +1037,7 @@ class X11ServerCore(GTKServerBase):
             ss.record_scroll_event(wid)
 
     @staticmethod
-    def make_screenshot_packet_from_regions(regions) -> Tuple[str,int,int,str,int,Any]:
+    def make_screenshot_packet_from_regions(regions) -> tuple[str,int,int,str,int,Any]:
         #regions = array of (wid, x, y, PIL.Image)
         if not regions:
             log("screenshot: no regions found, returning empty 0x0 image!")

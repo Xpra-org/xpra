@@ -9,7 +9,7 @@ from time import monotonic
 from hashlib import sha1
 from base64 import b64encode
 from urllib.parse import quote
-from typing import Dict, Callable, Any
+from typing import Callable, Any
 
 from xpra.os_util import strtobytes, bytestostr
 from xpra.log import Logger
@@ -29,7 +29,7 @@ OPCODE_CLOSE = 8
 OPCODE_PING = 9
 OPCODE_PONG = 10
 
-OPCODES : Dict[int,str] = {
+OPCODES : dict[int,str] = {
     OPCODE_CONTINUE     : "CONTINUE",
     OPCODE_TEXT         : "TEXT",
     OPCODE_BINARY       : "BINARY",
@@ -44,7 +44,7 @@ def make_websocket_accept_hash(key:str) -> bytes:
     accept = sha1(strtobytes(key) + GUID).digest()
     return b64encode(accept)
 
-def get_headers(host:str, port:int) -> Dict:
+def get_headers(host:str, port:int) -> dict:
     headers = {}
     for mod_name in HEADERS_MODULES:
         try:
@@ -113,7 +113,7 @@ def parse_response_header(response:bytes):
             headers[parts[0].lower()] = parts[1]
     return headers
 
-def verify_response_headers(headers:Dict[str,Any], key):
+def verify_response_headers(headers:dict[str,Any], key):
     log(f"verify_response_headers({headers!r}, {key!r})")
     if not headers:
         raise ValueError("no http headers found in response")

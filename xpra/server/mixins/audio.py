@@ -10,7 +10,7 @@ import os.path
 from time import monotonic
 from subprocess import Popen, PIPE
 from threading import Event
-from typing import Dict, Any, Callable
+from typing import Any, Callable
 
 from xpra.os_util import pollwait, osexpand, OSX, POSIX
 from xpra.util import typedict, envbool, csv, engs
@@ -88,7 +88,7 @@ class AudioServer(StubServerMixin):
         self.cleanup_pulseaudio()
 
 
-    def get_info(self, _proto) -> Dict[str,Any]:
+    def get_info(self, _proto) -> dict[str,Any]:
         self.audio_init_done.wait(5)
         info = {}
         if self.pulseaudio is not False:
@@ -98,7 +98,7 @@ class AudioServer(StubServerMixin):
         return {}
 
 
-    def get_server_features(self, source) -> Dict[str,Any]:
+    def get_server_features(self, source) -> dict[str,Any]:
         d = {
             "av-sync" : {
                 ""          : self.av_sync,
@@ -109,7 +109,7 @@ class AudioServer(StubServerMixin):
         return d
 
 
-    def get_http_scripts(self) -> Dict[str,Callable]:
+    def get_http_scripts(self) -> dict[str,Callable]:
         return {}
 
 
@@ -369,7 +369,7 @@ class AudioServer(StubServerMixin):
         audiolog("init_audio_options audio properties=%s", self.audio_properties)
 
 
-    def get_pulseaudio_info(self) -> Dict[str,Any]:
+    def get_pulseaudio_info(self) -> dict[str,Any]:
         info = {
             "command"               : self.pulseaudio_command,
             "configure-commands"    : self.pulseaudio_configure_commands,

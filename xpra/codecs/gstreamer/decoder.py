@@ -5,7 +5,7 @@
 
 import os
 from gi.repository import GObject  # @UnresolvedImport
-from typing import Dict, Tuple, Any
+from typing import Any
 
 from xpra.gst_common import (
     GST_FLOW_OK, STREAM_TYPE, GST_FORMAT_BYTES,
@@ -30,9 +30,9 @@ log(f"decoder: {get_type()} {get_version()}, {init_module}, {cleanup_module}")
 FORMATS = os.environ.get("XPRA_GSTREAMER_DECODER_FORMATS", "h264,hevc,vp8,vp9,av1").split(",")
 
 
-def get_default_mappings() -> Dict[str,Tuple[str,...]]:
+def get_default_mappings() -> dict[str,tuple[str,...]]:
     #should always be available:
-    m : Dict[str,Tuple[str,...]] = {
+    m : dict[str,tuple[str,...]] = {
         "vp8"   : ("vp8dec", ),
         "vp9"   : ("vp9dec", ),
         }
@@ -54,7 +54,7 @@ def get_default_mappings() -> Dict[str,Tuple[str,...]]:
     return m
 
 
-def get_codecs_options() -> Dict[str,Tuple[str,...]]:
+def get_codecs_options() -> dict[str,tuple[str,...]]:
     dm = os.environ.get("XPRA_GSTREAMER_DECODER_MAPPINGS")
     if not dm:
         return get_default_mappings()
@@ -69,8 +69,8 @@ def get_codecs_options() -> Dict[str,Tuple[str,...]]:
             codec_options[enc] = tuple(elements_str.split(","))
     return codec_options
 
-def find_codecs(options) -> Dict[str,str]:
-    codecs : Dict[str,str] = {}
+def find_codecs(options) -> dict[str,str]:
+    codecs : dict[str,str] = {}
     for encoding, elements in options.items():
         if encoding in FORMATS and elements:
             found = [x for x in elements if has_plugins(x)]
@@ -83,13 +83,13 @@ def find_codecs(options) -> Dict[str,str]:
 CODECS = find_codecs(get_codecs_options())
 
 
-def get_encodings() -> Tuple[str,...]:
+def get_encodings() -> tuple[str,...]:
     return tuple(CODECS.keys())
 
 def get_min_size(_encoding:str):
     return 48, 16
 
-def get_input_colorspaces(encoding:str) -> Tuple[str,...]:
+def get_input_colorspaces(encoding:str) -> tuple[str,...]:
     if encoding not in CODECS:
         raise ValueError(f"unsupported encoding {encoding}")
     return ("YUV420P", )
@@ -106,7 +106,7 @@ def get_output_colorspace(encoding:str, input_colorspace:str) -> str:
 
 
 class Decoder(VideoPipeline):
-    __gsignals__ : Dict[str,Tuple] = VideoPipeline.__generic_signals__.copy()
+    __gsignals__ : dict[str,tuple] = VideoPipeline.__generic_signals__.copy()
     """
     Dispatch video decoding to a gstreamer pipeline
     """
@@ -117,7 +117,7 @@ class Decoder(VideoPipeline):
         decoder = CODECS.get(self.encoding)
         if not decoder:
             raise RuntimeError(f"invalid encoding {self.encoding}")
-        stream_attrs : Dict[str,Any] = {
+        stream_attrs : dict[str,Any] = {
             "width"     : self.width,
             "height"    : self.height,
             }
@@ -164,8 +164,8 @@ class Decoder(VideoPipeline):
             Ystride = roundup(self.width, 4)
             Ysize = Ystride*roundup(self.height, 2)
             Y = mem[:Ysize]
-            planes : Tuple[memoryview,...]
-            strides : Tuple[int,...]
+            planes : tuple[memoryview,...]
+            strides : tuple[int,...]
             if self.output_format=="YUV420P":
                 UVstride = roundup(roundup(self.width, 2)//2, 4)
                 UVsize = UVstride*roundup(self.height, 2)//2

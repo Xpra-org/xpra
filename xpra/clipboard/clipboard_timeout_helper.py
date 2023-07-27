@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Tuple, List, Any
+from typing import Any
 
 from gi.repository import GLib  # @UnresolvedImport
 
@@ -29,7 +29,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
     #a clipboard superclass that handles timeouts
     def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
         super().__init__(send_packet_cb, progress_cb, **kwargs)
-        self._clipboard_outstanding_requests : Dict[int, Tuple[int,str,str]] = {}
+        self._clipboard_outstanding_requests : dict[int, tuple[int,str,str]] = {}
 
     def cleanup(self) -> None:
         #reply to outstanding requests with "no data":
@@ -62,7 +62,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         if log.is_debug_enabled():
             log("_send_clipboard_token_handler(%s, %s)", proxy, repr_ellipsized(packet_data))
         remote = self.local_to_remote(proxy._selection)
-        packet : List[Any] = ["clipboard-token", remote]
+        packet : list[Any] = ["clipboard-token", remote]
         if packet_data:
             #append 'TARGETS' unchanged:
             packet.append(packet_data[0])

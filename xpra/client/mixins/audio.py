@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any, Callable, Tuple
+from typing import Any, Callable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.platform.paths import get_icon_filename
@@ -81,8 +81,8 @@ class AudioClient(StubClientMixin):
         self.server_av_sync : bool = False
         self.server_pulseaudio_id = ""
         self.server_pulseaudio_server = ""
-        self.server_audio_decoders : Tuple[str,...] = ()
-        self.server_audio_encoders : Tuple[str,...] = ()
+        self.server_audio_decoders : tuple[str,...] = ()
+        self.server_audio_encoders : tuple[str,...] = ()
         self.server_audio_receive : bool = False
         self.server_audio_send : bool = False
         self.queue_used_sent : int = 0
@@ -99,7 +99,7 @@ class AudioClient(StubClientMixin):
         if self.microphone_allowed and len(mic)==2:
             self.microphone_device = mic[1]
         self.audio_source_plugin = opts.audio_source
-        def nooptions(*_args) -> Tuple[str,...]:
+        def nooptions(*_args) -> tuple[str,...]:
             return ()
         audio_option_fn : Callable = nooptions
         if self.speaker_allowed or self.microphone_allowed:
@@ -170,8 +170,8 @@ class AudioClient(StubClientMixin):
             self.stop_receiving_audio()
 
 
-    def get_info(self) -> Dict[str,Any]:
-        info : Dict[str,Any] = {
+    def get_info(self) -> dict[str,Any]:
+        info : dict[str,Any] = {
             "speaker" : self.speaker_enabled,
             "microphone" : self.microphone_enabled,
             "properties" : dict(self.audio_properties),
@@ -185,25 +185,25 @@ class AudioClient(StubClientMixin):
         return {"audio" : info}
 
 
-    def get_caps(self) -> Dict[str,Any]:
-        d : Dict[str,Any] = {}
+    def get_caps(self) -> dict[str,Any]:
+        d : dict[str,Any] = {}
         avcaps = self.get_avsync_capabilities()
         acaps = self.get_audio_capabilities()
         d["av-sync"] = avcaps
         d["audio"] = acaps
         return d
 
-    def get_audio_capabilities(self) -> Dict[str,Any]:
+    def get_audio_capabilities(self) -> dict[str,Any]:
         if not self.audio_properties:
             return {}
-        caps : Dict[str,Any] = {
+        caps : dict[str,Any] = {
             "decoders"   : self.speaker_codecs,
             "encoders"   : self.microphone_codecs,
             "send"       : self.microphone_allowed,
             "receive"    : self.speaker_allowed,
             }
         #make mypy happy about the type: convert typedict to dict with string keys
-        sp : Dict[str,Any] = dict((str(k), v) for k,v in self.audio_properties.items())
+        sp : dict[str,Any] = dict((str(k), v) for k,v in self.audio_properties.items())
         if FULL_INFO<2:
             #only expose these specific keys:
             sp = dict((k,v) for k,v in sp.items() if k in (
@@ -213,7 +213,7 @@ class AudioClient(StubClientMixin):
         log("audio capabilities: %s", caps)
         return caps
 
-    def get_avsync_capabilities(self) -> Dict[str,Any]:
+    def get_avsync_capabilities(self) -> dict[str,Any]:
         if not self.av_sync:
             return {}
         delay = max(0, DEFAULT_AV_SYNC_DELAY + AV_SYNC_DELTA)

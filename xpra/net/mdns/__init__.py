@@ -28,16 +28,16 @@ def get_listener_class():
             #on macOS, an import side effect is to patch the ctypes loader
             assert xpra.platform
         try:
-            from xpra.net.mdns.zeroconf_listener import ZeroconfListener
-            log("ZeroconfListener=%s", ZeroconfListener)
-            return ZeroconfListener
+            from xpra.net.mdns.zeroconf_listener import Zeroconflistener
+            log("Zeroconflistener=%s", Zeroconflistener)
+            return Zeroconflistener
         except (ImportError, OSError):
-            log("failed to import ZeroconfListener", exc_info=True)
+            log("failed to import Zeroconflistener", exc_info=True)
     if AVAHI:
         try:
-            from xpra.net.mdns.avahi_listener import AvahiListener
-            log("AvahiListener=%s", AvahiListener)
-            return AvahiListener
+            from xpra.net.mdns.avahi_listener import Avahilistener
+            log("Avahilistener=%s", Avahilistener)
+            return Avahilistener
         except ImportError:
-            log("failed to import AvahiListener", exc_info=True)
+            log("failed to import Avahilistener", exc_info=True)
     return None

@@ -8,11 +8,11 @@ import ctypes
 from ctypes.wintypes import HANDLE
 from ctypes import create_string_buffer, byref
 from ctypes.wintypes import DWORD
-from typing import List, Dict, Tuple, Callable
+from typing import Callable
 
 from xpra.platform.win32.common import (
     ActivateKeyboardLayout,
-    GetKeyState, GetKeyboardLayoutList, GetKeyboardLayout,
+    GetKeyState, GetKeyboardLayoutlist, GetKeyboardLayout,
     GetIntSystemParametersInfo, GetKeyboardLayoutName,
     GetWindowThreadProcessId,
     )
@@ -27,18 +27,18 @@ from xpra.log import Logger
 log = Logger("keyboard")
 
 
-def _GetKeyboardLayoutList() -> List[int]:
+def _GetKeyboardLayoutlist() -> list[int]:
     max_items = 32
     #PHANDLE = ctypes.POINTER(HANDLE)
     handle_list = (HANDLE*max_items)()
-    GetKeyboardLayoutList.argtypes = [ctypes.c_int, ctypes.POINTER(HANDLE*max_items)]
-    count = GetKeyboardLayoutList(max_items, ctypes.byref(handle_list))
+    GetKeyboardLayoutlist.argtypes = [ctypes.c_int, ctypes.POINTER(HANDLE*max_items)]
+    count = GetKeyboardLayoutlist(max_items, ctypes.byref(handle_list))
     layouts = []
     for i in range(count):
         layouts.append(int(handle_list[i]))
     return layouts
 
-def x11_layouts_to_win32_hkl() -> Dict[str,int]:
+def x11_layouts_to_win32_hkl() -> dict[str,int]:
     KMASKS = {
         0xffffffff : (0, 16),
         0xffff  : (0, ),
@@ -48,7 +48,7 @@ def x11_layouts_to_win32_hkl() -> Dict[str,int]:
     max_items = 32
     try:
         handle_list = (HANDLE*max_items)()
-        count = GetKeyboardLayoutList(max_items, ctypes.byref(handle_list))
+        count = GetKeyboardLayoutlist(max_items, ctypes.byref(handle_list))
         for i in range(count):
             hkl = handle_list[i]
             hkli = int(hkl)
@@ -118,7 +118,7 @@ class Keyboard(KeyboardBase):
                 log("set_modifier_mappings found 'AltGr'='%s' with modifier value: %s", x, self.altgr_modifier)
                 break
 
-    def mask_to_names(self, mask) -> List[str]:
+    def mask_to_names(self, mask) -> list[str]:
         """ Patch NUMLOCK and AltGr """
         names = super().mask_to_names(mask)
         if EMULATE_ALTGR:
@@ -164,7 +164,7 @@ class Keyboard(KeyboardBase):
         return  {}, [], ["lock"]
 
 
-    def get_all_x11_layouts(self) -> Dict[str,str]:
+    def get_all_x11_layouts(self) -> dict[str,str]:
         x11_layouts = {}
         for win32_layout in WIN32_LAYOUTS.values():
             #("ARA", "Saudi Arabia",   "Arabic",                   1356,   "ar", []),
@@ -176,7 +176,7 @@ class Keyboard(KeyboardBase):
         return x11_layouts
 
 
-    def get_layout_spec(self) -> Tuple[str,List[str],str,List[str],str]:
+    def get_layout_spec(self) -> tuple[str,list[str],str,list[str],str]:
         KMASKS = {
             0xffffffff : (0, 16),
             0xffff  : (0, ),
@@ -189,8 +189,8 @@ class Keyboard(KeyboardBase):
         options = ""
         layout_code = 0
         try:
-            l = _GetKeyboardLayoutList()
-            log("GetKeyboardLayoutList()=%s", csv(hex(v) for v in l))
+            l = _GetKeyboardLayoutlist()
+            log("GetKeyboardLayoutlist()=%s", csv(hex(v) for v in l))
             for hkl in l:
                 for mask, bitshifts in KMASKS.items():
                     kbid = 0
@@ -207,7 +207,7 @@ class Keyboard(KeyboardBase):
                             break
         except Exception as e:
             log("get_layout_spec()", exc_info=True)
-            log.error("Error: failed to detect keyboard layouts using GetKeyboardLayoutList:")
+            log.error("Error: failed to detect keyboard layouts using GetKeyboardLayoutlist:")
             log.estr(e)
 
         descr = None
@@ -281,7 +281,7 @@ class Keyboard(KeyboardBase):
             self.last_layout_message = layout
         return layout, layouts, variant, variants, options
 
-    def get_keyboard_repeat(self) -> Tuple[int,int] | None:
+    def get_keyboard_repeat(self) -> tuple[int,int] | None:
         try:
             _delay = GetIntSystemParametersInfo(win32con.SPI_GETKEYBOARDDELAY)
             _speed = GetIntSystemParametersInfo(win32con.SPI_GETKEYBOARDSPEED)

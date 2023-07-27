@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple
 from gi.repository import GObject, GLib  # @UnresolvedImport
 
 from xpra.scripts.config import InitExit
@@ -163,7 +162,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
         pass
 
 
-    def makeRootWindowModels(self) -> Tuple[EVDIModel,...]:
+    def makeRootWindowModels(self) -> tuple[EVDIModel,...]:
         #TODO: remove root window
         root = get_default_root_window()
         geom = (0, 0, 800, 600)

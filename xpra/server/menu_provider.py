@@ -6,7 +6,7 @@
 
 import os.path
 from threading import Lock
-from typing import Dict, Any, List, Callable
+from typing import Any, Callable
 
 from gi.repository import GLib  # @UnresolvedImport
 
@@ -27,7 +27,7 @@ MENU_RELOAD_DELAY = envint("XPRA_MENU_RELOAD_DELAY", 5)
 EXPORT_XDG_MENU_DATA = envbool("XPRA_EXPORT_XDG_MENU_DATA", True)
 
 
-def noicondata(menu_data:Dict) -> Dict:
+def noicondata(menu_data:dict) -> dict:
     newdata = {}
     for k,v in menu_data.items():
         if k in ("IconData", b"IconData"):
@@ -57,9 +57,9 @@ class MenuProvider:
         self.watch_manager = None
         self.watch_notifier = None
         self.xdg_menu_reload_timer = 0
-        self.on_reload : List[Callable] = []
-        self.menu_data : Dict[str,Any] | None = None
-        self.desktop_sessions : Dict[str,Any] | None = None
+        self.on_reload : list[Callable] = []
+        self.menu_data : dict[str,Any] | None = None
+        self.desktop_sessions : dict[str,Any] | None = None
         self.load_lock = Lock()
 
     def setup(self) -> None:
@@ -154,7 +154,7 @@ class MenuProvider:
                 self.clear_cache()
         start_thread(load, "load-menu-data", True)
 
-    def get_menu_data(self, force_reload=False, remove_icons=False, wait=True) -> Dict[str,Any]:
+    def get_menu_data(self, force_reload=False, remove_icons=False, wait=True) -> dict[str,Any]:
         log("get_menu_data%s", (force_reload, remove_icons, wait))
         if not EXPORT_XDG_MENU_DATA:
             return {}
@@ -224,7 +224,7 @@ class MenuProvider:
         return app.get("IconType"), app.get("IconData")
 
 
-    def get_desktop_sessions(self, force_reload:bool=False, remove_icons:bool=False) -> Dict[str,Any]:
+    def get_desktop_sessions(self, force_reload:bool=False, remove_icons:bool=False) -> dict[str,Any]:
         if not POSIX or OSX:
             return {}
         if force_reload or self.desktop_sessions is None:
@@ -241,5 +241,5 @@ class MenuProvider:
         return de.get("IconType"), de.get("IconData")
 
 
-    def get_info(self, _proto) -> Dict[str,Any]:
+    def get_info(self, _proto) -> dict[str,Any]:
         return self.get_menu_data(remove_icons=True)

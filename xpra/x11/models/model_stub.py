@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Callable, List
+from typing import Callable
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.gtk_common.gobject_util import AutoPropGObjectMixin
@@ -23,10 +23,10 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
     """
 
     #things that we expose:
-    _property_names : List[str]        = []
+    _property_names : list[str]        = []
     #exposed and changing (should be watched for notify signals):
-    _dynamic_property_names : List[str] = []
-    _internal_property_names : List[str] = []
+    _dynamic_property_names : list[str] = []
+    _internal_property_names : list[str] = []
     _MODELTYPE : str = "Stub"
 
     def __init__(self):
@@ -34,7 +34,7 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
         GObject.GObject.__init__(self)
         self._setup_done : bool = False            #so we can ignore notify() events during setup
         self._managed : bool = False
-        self._managed_handlers : List[int] = []
+        self._managed_handlers : list[int] = []
 
 
     #########################################
@@ -76,15 +76,15 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
     # Properties we choose to expose
     #########################################
 
-    def get_property_names(self) -> List[str]:
+    def get_property_names(self) -> list[str]:
         """ The properties that should be exposed to clients """
         return self._property_names
 
-    def get_dynamic_property_names(self) -> List[str]:
+    def get_dynamic_property_names(self) -> list[str]:
         """ The properties that may change over time """
         return self._dynamic_property_names
 
-    def get_internal_property_names(self) -> List[str]:
+    def get_internal_property_names(self) -> list[str]:
         """ The properties that should not be exposed to the client """
         return self._internal_property_names
 

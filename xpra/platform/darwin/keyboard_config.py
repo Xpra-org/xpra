@@ -4,8 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple, Dict
-
 from xpra.server.keyboard_config_base import KeyboardConfigBase
 from xpra.log import Logger
 
@@ -23,7 +21,7 @@ class KeyboardConfig(KeyboardConfigBase):
 
 
     def do_get_keycode(self, client_keycode:int, keyname:str, pressed:bool,
-                       modifiers, keyval:int, keystr:str, group:int) -> Tuple[int,int]:
+                       modifiers, keyval:int, keystr:str, group:int) -> tuple[int,int]:
         global KEYCODES
         keycode = KEYCODES.get(keyname, -1)
         if keycode==-1:
@@ -35,7 +33,7 @@ class KeyboardConfig(KeyboardConfigBase):
 #we currently assume that all key events are sent using X11 names,
 #so we need to translate them to osx keys
 #http://x86osx.com/bbs/c_data/pds_comment/MacintoshToolboxEssentials.pdf
-KEYCODES : Dict[str,int] = {
+KEYCODES : dict[str,int] = {
             #Standardkeys
             "A"     : 0,
             "B"     : 11,

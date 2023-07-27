@@ -5,7 +5,7 @@
 
 import os
 import sys
-from typing import Dict, Tuple, Type, Any
+from typing import Any
 
 from xpra.util import parse_simple_dict
 from xpra.os_util import WIN32
@@ -15,7 +15,7 @@ from xpra.log import Logger
 log = Logger("auth")
 
 
-def get_auth_module(auth_str, cwd=os.getcwd(), **auth_options) -> Tuple[str,Any,Type,Dict]:
+def get_auth_module(auth_str, cwd=os.getcwd(), **auth_options) -> tuple[str,Any,type,dict]:
     log("get_auth_module(%s, {..})", auth_str)
     #separate options from the auth module name
     #either with ":" or "," as separator

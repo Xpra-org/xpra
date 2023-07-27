@@ -6,7 +6,7 @@
 
 import math
 from time import monotonic
-from typing import Dict, List, Tuple, Any, Set, Callable
+from typing import Any, Callable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util import envint, envbool
@@ -62,7 +62,7 @@ class VideoSubregion:
         self.supported = supported
         self.enabled = True
         self.detection = True
-        self.exclusion_zones : List[rectangle] = []
+        self.exclusion_zones : list[rectangle] = []
         self.init_vars()
 
     def init_vars(self) -> None:
@@ -75,9 +75,9 @@ class VideoSubregion:
         self.counter = 0        #value of the "damage event count" recorded at "time"
         self.time : float = 0           #see above
         self.refresh_timer = 0
-        self.refresh_regions : List[rectangle] = []
-        self.last_scores : Dict[rectangle | None,int] = {}
-        self.nonvideo_regions : List[rectangle] = []
+        self.refresh_regions : list[rectangle] = []
+        self.last_scores : dict[rectangle | None,int] = {}
+        self.nonvideo_regions : list[rectangle] = []
         self.nonvideo_refresh_timer = 0
         #keep track of how much extra we batch non-video regions (milliseconds):
         self.non_max_wait = 150
@@ -136,7 +136,7 @@ class VideoSubregion:
             self.refresh_timer = 0
             GLib.source_remove(rt)
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         r = self.rectangle
         info = {
                 "supported" : self.supported,
@@ -271,7 +271,7 @@ class VideoSubregion:
         self.fps = 0
         self.damaged = 0
 
-    def excluded_rectangles(self, rect, ww:int, wh:int) -> List:
+    def excluded_rectangles(self, rect, ww:int, wh:int) -> list:
         rects = [rect]
         if self.exclusion_zones:
             for e in self.exclusion_zones:
@@ -315,7 +315,7 @@ class VideoSubregion:
         sslog("identify_video_subregion%s",
               (ww, wh, damage_events_count, last_damage_events, starting_at, children))
 
-        children_rects : Tuple[rectangle,...] = ()
+        children_rects : tuple[rectangle,...] = ()
         if children:
             children_rects = tuple(rectangle(x, y, w, h)
                                    for _xid, x, y, w, h, _border, _depth in children
@@ -363,9 +363,9 @@ class VideoSubregion:
             self.novideoregion("not enough damage events yet (%s)", dc)
             return
         #structures for counting areas and sizes:
-        wc : Dict[int,Dict[int,Set[rectangle]]] = {}
-        hc : Dict[int,Dict[int,Set[rectangle]]] = {}
-        dec : Dict[rectangle,int] = {}
+        wc : dict[int,dict[int,set[rectangle]]] = {}
+        hc : dict[int,dict[int,set[rectangle]]] = {}
+        dec : dict[rectangle,int] = {}
         #count how many times we see each area, each width/height and where,
         #after removing any exclusion zones:
         for _,x,y,w,h in lde:
@@ -397,7 +397,7 @@ class VideoSubregion:
         def damaged_ratio(rect:rectangle):
             if all_damaged:
                 return 1
-            rects : List[rectangle] = [rect, ]
+            rects : list[rectangle] = [rect, ]
             for _,x,y,w,h in lde:
                 r = rectangle(x,y,w,h)
                 new_rects = []

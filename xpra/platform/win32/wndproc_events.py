@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 #found those here:
-#http://wiki.winehq.org/List_Of_Windows_Messages
+#http://wiki.winehq.org/list_Of_Windows_Messages
 #which was extracted from MSDN somehow
 WNDPROC_EVENT_NAMES = {
     0x0000: "WM_NULL",

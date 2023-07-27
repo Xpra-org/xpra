@@ -7,7 +7,7 @@
 import os.path
 import sys
 from time import monotonic
-from typing import Dict, Any
+from typing import Any
 
 from gi.repository import GLib, GObject  # @UnresolvedImport
 
@@ -100,7 +100,7 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
         self.glib_mainloop = GLib.MainLoop()
         self.glib_mainloop.run()
 
-    def make_hello(self) -> Dict[str,Any]:
+    def make_hello(self) -> dict[str,Any]:
         capabilities = XpraClientBase.make_hello(self)
         capabilities["keyboard"] = False
         return capabilities
@@ -204,7 +204,7 @@ class HelloRequestClient(SendCommandConnectClient):
         as part of the hello packet.
     """
 
-    def make_hello_base(self) -> Dict[str,Any]:
+    def make_hello_base(self) -> dict[str,Any]:
         caps = super().make_hello_base()
         caps.update(self.hello_request())
         return caps
@@ -592,7 +592,7 @@ class VersionXpraClient(HelloRequestClient):
         it queries the server for version information and prints it out
     """
 
-    def hello_request(self) -> Dict[str,Any]:
+    def hello_request(self) -> dict[str,Any]:
         return {
             "request"               : "version",
             "full-version-request"  : True,
@@ -634,7 +634,7 @@ class ControlXpraClient(CommandConnectClient):
             return
         self.warn_and_quit(ExitCode.OK, text)
 
-    def make_hello(self) -> Dict[str,Any]:
+    def make_hello(self) -> dict[str,Any]:
         capabilities = super().make_hello()
         log("make_hello() adding command request '%s' to %s", self.command, capabilities)
         capabilities["command_request"] = tuple(self.command)
@@ -696,7 +696,7 @@ class PrintClient(SendCommandConnectClient):
         log("print: sending %s as %s for printing", self.filename, blob)
         self.idle_add(self.send, "disconnect", ConnectionMessage.DONE, "detaching")
 
-    def make_hello(self) -> Dict[str,Any]:
+    def make_hello(self) -> dict[str,Any]:
         capabilities = super().make_hello()
         capabilities.setdefault("wants", []).append("features")
         capabilities["request"] = "print"
@@ -709,7 +709,7 @@ class ExitXpraClient(HelloRequestClient):
         but without killing the Xvfb or clients.
     """
 
-    def hello_request(self) -> Dict[str,Any]:
+    def hello_request(self) -> dict[str,Any]:
         return {
             "request"       : "exit",
             }
@@ -721,7 +721,7 @@ class ExitXpraClient(HelloRequestClient):
 class StopXpraClient(HelloRequestClient):
     """ stop a server """
 
-    def hello_request(self) -> Dict[str,Any]:
+    def hello_request(self) -> dict[str,Any]:
         return {
             "request"       : "stop",
             }
@@ -744,7 +744,7 @@ class StopXpraClient(HelloRequestClient):
 class DetachXpraClient(HelloRequestClient):
     """ run the detach subcommand """
 
-    def hello_request(self) -> Dict[str,Any]:
+    def hello_request(self) -> dict[str,Any]:
         return {
             "request"           : "detach",
             }
@@ -775,7 +775,7 @@ class RequestStartClient(HelloRequestClient):
         errwrite("\n")
         super()._process_connection_lost(packet)
 
-    def hello_request(self) -> Dict[str,Any]:
+    def hello_request(self) -> dict[str,Any]:
         if first_time("hello-request"):
             #this can be called again if we receive a challenge,
             #but only print this message once:

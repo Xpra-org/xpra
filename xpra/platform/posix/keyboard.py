@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, Tuple, List
 import json
 
 from xpra.platform.keyboard_base import KeyboardBase
@@ -41,7 +40,7 @@ class Keyboard(KeyboardBase):
         self.keymap_modifiers = None
         self.keyboard_bindings = None
         self.__dbus_helper = DBusHelper()
-        self.__input_sources : Dict[str,int] = {}
+        self.__input_sources : dict[str,int] = {}
         self._dbus_gnome_shell_eval_ism(".inputSources", self._store_input_sources)
 
     def _store_input_sources(self, input_sources) -> None:
@@ -120,7 +119,7 @@ class Keyboard(KeyboardBase):
             log.error("failed to use native get_modifier_mappings", exc_info=True)
         return {}, [], []
 
-    def get_x11_keymap(self) -> Dict[int,List[str]]:
+    def get_x11_keymap(self) -> dict[int,list[str]]:
         if not self.keyboard_bindings:
             return  {}
         try:
@@ -130,7 +129,7 @@ class Keyboard(KeyboardBase):
             log.error("Error: failed to use raw x11 keymap", exc_info=True)
         return {}
 
-    def get_locale_status(self) -> Dict[str,str]:
+    def get_locale_status(self) -> dict[str,str]:
         #parse the output into a dictionary:
         # $ localectl status
         # System Locale: LANG=en_GB.UTF-8
@@ -148,7 +147,7 @@ class Keyboard(KeyboardBase):
         log("locale(%s)=%s", out, locale)
         return locale
 
-    def get_keymap_spec(self) -> Dict[str,str]:
+    def get_keymap_spec(self) -> dict[str,str]:
         log("get_keymap_spec() keyboard_bindings=%s", self.keyboard_bindings)
         if is_Wayland() or not self.keyboard_bindings:
             locale = self.get_locale_status()
@@ -165,11 +164,11 @@ class Keyboard(KeyboardBase):
         return query_struct
 
 
-    def get_xkb_rules_names_property(self) -> Tuple[str,...]:
+    def get_xkb_rules_names_property(self) -> tuple[str,...]:
         #parses the "_XKB_RULES_NAMES" X11 property
         if not is_X11():
             return ()
-        xkb_rules_names : List[str] = []
+        xkb_rules_names : list[str] = []
         # pylint: disable=import-outside-toplevel
         from xpra.gtk_common.error import xlog
         from xpra.x11.common import get_X11_root_property
@@ -184,7 +183,7 @@ class Keyboard(KeyboardBase):
         return tuple(xkb_rules_names)
 
 
-    def get_all_x11_layouts(self) -> Dict[str,str]:
+    def get_all_x11_layouts(self) -> dict[str,str]:
         repository = "/usr/share/X11/xkb/rules/base.xml"
         if os.path.exists(repository):
             try:
@@ -202,7 +201,7 @@ class Keyboard(KeyboardBase):
                     for layout in tree.xpath("//layout"):
                         layout = layout.xpath("./configItem/name")[0].text
                         x11_layouts[layout] = layout
-                        #for variant in layout.xpath("./variantList/variant/configItem/name"):
+                        #for variant in layout.xpath("./variantlist/variant/configItem/name"):
                         #    variant_name = variant.text
                     return x11_layouts
         from subprocess import Popen, PIPE  #pylint: disable=import-outside-toplevel
@@ -254,7 +253,7 @@ class Keyboard(KeyboardBase):
         return layout, [x for x in layouts], variant, [], options
 
 
-    def get_keyboard_repeat(self) -> Tuple[int,int] | None:
+    def get_keyboard_repeat(self) -> tuple[int,int] | None:
         if self.keyboard_bindings:
             try:
                 v = self.keyboard_bindings.get_key_repeat_rate()

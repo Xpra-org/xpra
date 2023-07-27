@@ -8,7 +8,7 @@
 
 from math import sqrt
 from time import monotonic
-from typing import Dict, Tuple, List, Deque, Any
+from typing import Deque, Any
 
 from collections import deque
 from xpra.simple_stats import get_list_stats, get_weighted_list_stats
@@ -47,23 +47,23 @@ class WindowPerformanceStatistics:
         self.init_time : float = monotonic()
         #records how long it took the client to decode frames:
         #(ack_time, no of pixels, decoding_time*1000*1000)
-        self.client_decode_time : Deque[Tuple[float,int,int]] = deque(maxlen=NRECS)
+        self.client_decode_time : Deque[tuple[float,int,int]] = deque(maxlen=NRECS)
         #encoding: (time, coding, pixels, bpp, compressed_size, encoding_time)
-        self.encoding_stats : Deque[Tuple[float,str,int,int,int,float]] = deque(maxlen=NRECS)
+        self.encoding_stats : Deque[tuple[float,str,int,int,int,float]] = deque(maxlen=NRECS)
         #records how long it took for a damage request to be sent
         #last NRECS: (sent_time, no of pixels, actual batch delay, damage_latency)
-        self.damage_in_latency : Deque[Tuple[float,int,int,float]] = deque(maxlen=NRECS)
+        self.damage_in_latency : Deque[tuple[float,int,int,float]] = deque(maxlen=NRECS)
         #records how long it took for a damage request to be processed
         #last NRECS: (processed_time, no of pixels, actual batch delay, damage_latency)
-        self.damage_out_latency : Deque[Tuple[float,int,float,float]] = deque(maxlen=NRECS)
-        self.damage_ack_pending : Dict[int,List] = {}       #records when damage packets are sent
+        self.damage_out_latency : Deque[tuple[float,int,float,float]] = deque(maxlen=NRECS)
+        self.damage_ack_pending : dict[int,list] = {}       #records when damage packets are sent
                                                             #so we can calculate the "client_latency" when the client sends
                                                             #the corresponding ack ("damage-sequence" packet - see "client_ack_damage")
-        self.encoding_totals : Dict[str,List[int]] = {}     #for each encoding, how many frames we sent and how many pixels in total
-        self.encoding_pending : Dict = {}                   #damage regions waiting to be picked up by the encoding thread:
+        self.encoding_totals : dict[str,list[int]] = {}     #for each encoding, how many frames we sent and how many pixels in total
+        self.encoding_pending : dict = {}                   #damage regions waiting to be picked up by the encoding thread:
                                                             #for each sequence no: (damage_time, w, h)
         #every time we get a damage event, we record: time,x,y,w,h
-        self.last_damage_events : Deque[Tuple[float,int,int,int,int]] = deque(maxlen=4*NRECS)
+        self.last_damage_events : Deque[tuple[float,int,int,int,int]] = deque(maxlen=4*NRECS)
         self.last_damage_event_time = 0
         self.last_recalculate = 0
         self.damage_events_count = 0
@@ -113,7 +113,7 @@ class WindowPerformanceStatistics:
                  self.avg_damage_out_latency, self.recent_damage_out_latency]
         self.max_latency = max(all_l)
 
-    def get_factors(self, bandwidth_limit=0) -> List[Tuple[str,str,float,float]]:
+    def get_factors(self, bandwidth_limit=0) -> list[tuple[str,str,float,float]]:
         factors = []
         def mayaddfac(metric, info, factor, weight):
             if weight>0.01:
@@ -171,7 +171,7 @@ class WindowPerformanceStatistics:
         return factors
 
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = {"damage"    : {"events"         : self.damage_events_count,
                                "packets_sent"   : self.packet_count,
                                "target-latency" : int(1000*self.target_latency),
@@ -192,7 +192,7 @@ class WindowPerformanceStatistics:
                         comp_times_ns.append((1000.0*1000*1000*compression_time/pixels, pixels))
                         total_pixels += pixels
                         total_time += compression_time
-                einfo : Dict[str,Any] = info.setdefault(encoding or "encoding", {})
+                einfo : dict[str,Any] = info.setdefault(encoding or "encoding", {})
                 einfo["ratio_pct"] = get_weighted_list_stats(comp_ratios_pct)
                 einfo["pixels_per_ns"] = get_weighted_list_stats(comp_times_ns)
                 if total_time>0:
@@ -233,7 +233,7 @@ class WindowPerformanceStatistics:
         max_latency = min(avg_latency, 4.0*min_latency+0.100)
         return max(abs_min, min(max_latency, sqrt(min_latency*avg_latency))) + decoding_latency + jitter/1000.0
 
-    def get_client_backlog(self) -> Tuple[int,int,int]:
+    def get_client_backlog(self) -> tuple[int,int,int]:
         packets_backlog, pixels_backlog, bytes_backlog = 0, 0, 0
         if self.damage_ack_pending:
             sent_before = monotonic()-(self.target_latency+TARGET_LATENCY_TOLERANCE)
@@ -276,7 +276,7 @@ class WindowPerformanceStatistics:
             1000*latency, late, len(self.damage_ack_pending))
         return late
 
-    def get_pixels_encoding_backlog(self) -> Tuple[int,int]:
+    def get_pixels_encoding_backlog(self) -> tuple[int,int]:
         pixels, count = 0, 0
         for _, w, h in self.encoding_pending.values():
             pixels += w*h

@@ -5,7 +5,7 @@
 
 import os
 import threading
-from typing import Tuple, Callable, List, Dict, Any, ByteString, Union, TypeAlias
+from typing import Callable, Any, ByteString, Union, TypeAlias
 
 from xpra.net.compression import Compressed, Compressible, LargeStructure
 from xpra.util import repr_ellipsized, envint, envbool
@@ -15,7 +15,7 @@ log = Logger("network")
 
 DEFAULT_PORT : int = 14500
 
-DEFAULT_PORTS : Dict[str,int] = {
+DEFAULT_PORTS : dict[str,int] = {
     "ws"    : 80,
     "wss"   : 443,
     "ssl"   : DEFAULT_PORT, #could also default to 443?
@@ -25,7 +25,7 @@ DEFAULT_PORTS : Dict[str,int] = {
     "quic"  : 20000,
     }
 
-PacketElement : TypeAlias = Union[Tuple,List,Dict,int,bool,str,bytes,memoryview,Compressible,Compressed,LargeStructure]
+PacketElement : TypeAlias = Union[tuple,list,dict,int,bool,str,bytes,memoryview,Compressible,Compressed,LargeStructure]
 
 # packet type followed by attributes:
 # in 3.11: tuple[str, *tuple[int, ...]]
@@ -33,16 +33,16 @@ PacketElement : TypeAlias = Union[Tuple,List,Dict,int,bool,str,bytes,memoryview,
 
 try:
     from typing import Unpack
-    PacketType : TypeAlias = Tuple[str, Unpack[Tuple[PacketElement, ...]]]
+    PacketType : TypeAlias = tuple[str, Unpack[tuple[PacketElement, ...]]]
 except ImportError:
-    PacketType: TypeAlias = Tuple
+    PacketType: TypeAlias = tuple
 
 # client packet handler:
 PacketHandlerType = Callable[[PacketType], None]
 # server packet handler:
 ServerPacketHandlerType = Callable[[Any, PacketType], None]
 
-NetPacketType : TypeAlias = Tuple[int, int, int, ByteString]
+NetPacketType : TypeAlias = tuple[int, int, int, ByteString]
 
 class ConnectionClosedException(Exception):
     pass
@@ -52,12 +52,12 @@ MAX_PACKET_SIZE : int = envint("XPRA_MAX_PACKET_SIZE", 16*1024*1024)
 FLUSH_HEADER : bool = envbool("XPRA_FLUSH_HEADER", True)
 SSL_UPGRADE : bool = envbool("XPRA_SSL_UPGRADE", True)
 
-SOCKET_TYPES : Tuple[str, ...] = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "socket", "named-pipe", "quic")
+SOCKET_TYPES : tuple[str, ...] = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "socket", "named-pipe", "quic")
 
-IP_SOCKTYPES : Tuple[str, ...] = ("tcp", "ssl", "ws", "wss", "ssh", "quic")
-TCP_SOCKTYPES : Tuple[str, ...] = ("tcp", "ssl", "ws", "wss", "ssh")
+IP_SOCKTYPES : tuple[str, ...] = ("tcp", "ssl", "ws", "wss", "ssh", "quic")
+TCP_SOCKTYPES : tuple[str, ...] = ("tcp", "ssl", "ws", "wss", "ssh")
 
-URL_MODES : Dict[str,str] = {
+URL_MODES : dict[str,str] = {
     "xpra"      : "tcp",
     "xpras"     : "ssl",
     "xpra+tcp"  : "tcp",
@@ -77,7 +77,7 @@ URL_MODES : Dict[str,str] = {
 
 
 #this is used for generating aliases:
-PACKET_TYPES : List[str] = [
+PACKET_TYPES : list[str] = [
     #generic:
     "hello",
     "challenge",
@@ -121,7 +121,7 @@ PACKET_TYPES : List[str] = [
     "notify_show", "notify_close",
     ]
 
-def get_log_packets(exclude=False) -> Tuple[str, ...]:
+def get_log_packets(exclude=False) -> tuple[str, ...]:
     lp = os.environ.get("XPRA_LOG_PACKETS")
     if not lp:
         return ()
@@ -143,8 +143,8 @@ def _may_log_packet(sending, packet_type, packet) -> None:
                 s = repr_ellipsized(s, PACKET_LOG_MAX_SIZE)
             log.info(s)
 
-LOG_PACKETS : Tuple[str, ...] = ()
-NOLOG_PACKETS : Tuple[str, ...] = ()
+LOG_PACKETS : tuple[str, ...] = ()
+NOLOG_PACKETS : tuple[str, ...] = ()
 LOG_PACKET_TYPE : bool = False
 PACKET_LOG_MAX_SIZE : int = 500
 

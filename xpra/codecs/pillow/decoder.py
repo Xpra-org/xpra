@@ -8,7 +8,7 @@ import struct
 from io import BytesIO
 import PIL                      #@UnresolvedImport
 from PIL import Image           #@UnresolvedImport
-from typing import Callable, Tuple, Dict, Any, List
+from typing import Callable, Any
 
 from xpra.util import csv, typedict
 from xpra.os_util import hexstr, strtobytes
@@ -48,7 +48,7 @@ def is_tiff(data) -> bool:
     return False
 
 
-HEADERS : Dict[Callable, str] = {
+HEADERS : dict[Callable, str] = {
     is_png  : "png",
     is_webp : "webp",
     is_jpeg : "jpeg",
@@ -82,7 +82,7 @@ def get_version() -> str:
 def get_type() -> str:
     return "pillow"
 
-def do_get_encodings() -> List[str]:
+def do_get_encodings() -> list[str]:
     log("PIL.Image.OPEN=%s", Image.OPEN)
     encodings = []
     for encoding in DECODE_FORMATS:
@@ -93,18 +93,18 @@ def do_get_encodings() -> List[str]:
     log("do_get_encodings()=%s", encodings)
     return encodings
 
-def get_encodings() -> Tuple[str,...]:
+def get_encodings() -> tuple[str,...]:
     return ENCODINGS
 
-ENCODINGS : Tuple[str,...] = tuple(do_get_encodings())
+ENCODINGS : tuple[str,...] = tuple(do_get_encodings())
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> dict[str,Any]:
     return  {
             "version"       : get_version(),
             "encodings"     : get_encodings(),
             }
 
-def decompress(coding:str, img_data:bytes, options:typedict) -> Tuple[str,bytes,int,int,int]:
+def decompress(coding:str, img_data:bytes, options:typedict) -> tuple[str,bytes,int,int,int]:
     # can be called from any thread
     actual = get_image_type(img_data)
     if not actual or not coding.startswith(actual):

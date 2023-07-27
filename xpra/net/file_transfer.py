@@ -12,7 +12,7 @@ import hashlib
 import uuid
 from time import monotonic
 from dataclasses import dataclass
-from typing import Dict, Any, Set, Tuple
+from typing import Any
 
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import bytestostr, strtobytes, umask_context, POSIX, WIN32
@@ -157,12 +157,12 @@ class FileTransferAttributes:
         self.open_url = oua or pbool("open-url", open_url)
         self.file_ask_timeout = SEND_REQUEST_TIMEOUT
         self.open_command = open_command
-        self.files_requested : Dict[str,bool] = {}
-        self.files_accepted : Dict[str,bool] = {}
-        self.file_request_callback : Dict[str,callable] = {}
+        self.files_requested : dict[str,bool] = {}
+        self.files_accepted : dict[str,bool] = {}
+        self.file_request_callback : dict[str,callable] = {}
         filelog("file transfer attributes=%s", self.get_file_transfer_features())
 
-    def get_file_transfer_features(self) -> Dict[str,Any]:
+    def get_file_transfer_features(self) -> dict[str,Any]:
         #used in hello packets,
         #duplicated with namespace (old caps to be removed in v6)
         return {
@@ -181,10 +181,10 @@ class FileTransferAttributes:
                 "file" : self.get_file_transfer_info(),
                 }
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         return self.get_file_transfer_info()
 
-    def get_file_transfer_info(self) -> Dict[str,Any]:
+    def get_file_transfer_info(self) -> dict[str,Any]:
         #slightly different from above... for legacy reasons
         #this one is used for get_info() in a proper "file." namespace from server_base.py
         return {
@@ -221,11 +221,11 @@ class FileTransferHandler(FileTransferAttributes):
         self.remote_file_ask_timeout = SEND_REQUEST_TIMEOUT
         self.remote_file_size_limit = 0
         self.remote_file_chunks = 0
-        self.pending_send_data : Dict[str,Tuple[str,str,str,bytes,int,bool,bool,Dict]] = {}
-        self.pending_send_data_timers : Dict[str,int] = {}
-        self.send_chunks_in_progress : Dict[str,SendChunkState] = {}
-        self.receive_chunks_in_progress : Dict[str,ReceiveChunkState] = {}
-        self.file_descriptors : Set[int] = set()
+        self.pending_send_data : dict[str,tuple[str,str,str,bytes,int,bool,bool,dict]] = {}
+        self.pending_send_data_timers : dict[str,int] = {}
+        self.send_chunks_in_progress : dict[str,SendChunkState] = {}
+        self.receive_chunks_in_progress : dict[str,ReceiveChunkState] = {}
+        self.file_descriptors : set[int] = set()
         if not getattr(self, "timeout_add", None):
             from gi.repository import GLib  # pylint: disable=import-outside-toplevel @UnresolvedImport
             self.timeout_add = GLib.timeout_add
@@ -273,7 +273,7 @@ class FileTransferHandler(FileTransferAttributes):
         filelog(" open-url=%-5s        (ask=%s)", self.remote_open_url, self.remote_open_url_ask)
         filelog(" file-size-limit=%s", self.remote_file_size_limit)
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = super().get_info()
         info["remote"] = {
             "file-transfer"     : self.remote_file_transfer,
@@ -433,7 +433,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.process_downloaded_file(filename, chunk_state.mimetype,
                                      chunk_state.printit, chunk_state.openit, chunk_state.filesize, options)
 
-    def accept_data(self, send_id:str, dtype, basefilename:str, printit:bool, openit:bool) -> Tuple[bool,bool]:
+    def accept_data(self, send_id:str, dtype, basefilename:str, printit:bool, openit:bool) -> tuple[bool,bool]:
         #subclasses should check the flags,
         #and if ask is True, verify they have accepted this specific send_id
         filelog("accept_data%s", (send_id, dtype, basefilename, printit, openit))
@@ -637,7 +637,7 @@ class FileTransferHandler(FileTransferAttributes):
             self.timeout_add(10000, check_printing_finished)
 
 
-    def get_open_env(self) -> Dict[str,str]:
+    def get_open_env(self) -> dict[str,str]:
         env = os.environ.copy()
         #prevent loops:
         env["XPRA_XDG_OPEN"] = "1"

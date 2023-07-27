@@ -8,7 +8,7 @@
 
 import os
 from time import monotonic
-from typing import Type, Dict, List, Tuple, Callable, Any
+from typing import Callable, Any
 
 from xpra.server.server_core import ServerCore
 from xpra.server.background_worker import add_work_item
@@ -25,8 +25,8 @@ from xpra.server import EXITING_CODE
 from xpra.log import Logger
 
 
-def get_server_base_classes() -> Tuple[Type,...]:
-    classes : List[Type] = [ServerCore]
+def get_server_base_classes() -> tuple[type,...]:
+    classes : list[type] = [ServerCore]
     if server_features.control:
         from xpra.server.mixins.controlcommands import ServerBaseControlCommands
         classes.append(ServerBaseControlCommands)
@@ -75,7 +75,7 @@ def get_server_base_classes() -> Tuple[Type,...]:
     return tuple(classes)
 
 SERVER_BASES = get_server_base_classes()
-ServerBaseClass : Type[ServerCore] = type('ServerBaseClass', SERVER_BASES, {})
+ServerBaseClass : type[ServerCore] = type('ServerBaseClass', SERVER_BASES, {})
 
 log = Logger("server")
 netlog = Logger("network")
@@ -105,12 +105,12 @@ class ServerBase(ServerBaseClass):
         log("ServerBase.__init__()")
         self.init_uuid()
 
-        self._authenticated_packet_handlers : Dict[str,Callable] = {}
-        self._authenticated_ui_packet_handlers : Dict[str,Callable] = {}
+        self._authenticated_packet_handlers : dict[str,Callable] = {}
+        self._authenticated_ui_packet_handlers : dict[str,Callable] = {}
 
         self.display_pid : int = 0
-        self._server_sources : Dict = {}
-        self.client_properties : Dict[int,Dict] = {}
+        self._server_sources : dict = {}
+        self.client_properties : dict[int,dict] = {}
         self.ui_driver = None
         self.sharing : bool | None = None
         self.lock : bool | None = None
@@ -208,11 +208,11 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # override http scripts to expose just the current session / display
-    def get_displays(self) -> Dict[str,Any]:
+    def get_displays(self) -> dict[str,Any]:
         from xpra.scripts.main import get_displays  #pylint: disable=import-outside-toplevel
         return get_displays(self.dotxpra, display_names=(os.environ.get("DISPLAY"), ))
 
-    def get_xpra_sessions(self) -> Dict[str,Any]:
+    def get_xpra_sessions(self) -> dict[str,Any]:
         from xpra.scripts.main import get_xpra_sessions #pylint: disable=import-outside-toplevel
         return get_xpra_sessions(self.dotxpra, matching_display=os.environ.get("DISPLAY"))
 
@@ -237,7 +237,7 @@ class ServerBase(ServerBaseClass):
         self.timeout_add(500, self.clean_quit)
 
 
-    def get_mdns_info(self) -> Dict[str,Any]:
+    def get_mdns_info(self) -> dict[str,Any]:
         mdns_info = ServerCore.get_mdns_info(self)
         if MDNS_CLIENT_COUNT:
             mdns_info["clients"] = len(self._server_sources)
@@ -246,7 +246,7 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # handle new connections:
-    def handle_sharing(self, proto, ui_client:bool=True, detach_request:bool=False, share:bool=False, uuid=None) -> Tuple[bool,int,int]:
+    def handle_sharing(self, proto, ui_client:bool=True, detach_request:bool=False, share:bool=False, uuid=None) -> tuple[bool,int,int]:
         share_count = 0
         disconnected = 0
         existing_sources = set(ss for p,ss in self._server_sources.items() if p!=proto)
@@ -301,7 +301,7 @@ class ServerBase(ServerBaseClass):
             accepted = False
         return accepted, share_count, disconnected
 
-    def hello_oked(self, proto, c:typedict, auth_caps:Dict) -> None:
+    def hello_oked(self, proto, c:typedict, auth_caps:dict) -> None:
         if self._server_sources.get(proto):
             log.warn("Warning: received another 'hello' packet")
             log.warn(" from an existing connection: %s", proto)
@@ -411,7 +411,7 @@ class ServerBase(ServerBaseClass):
         #process ui half in ui thread:
         self.idle_add(self.process_hello_ui, ss, c, auth_caps, send_ui, share_count)
 
-    def get_client_connection_class(self, caps) -> Type:
+    def get_client_connection_class(self, caps) -> type:
         # pylint: disable=import-outside-toplevel
         from xpra.server.source.client_connection_factory import get_client_connection_class
         return get_client_connection_class(caps)
@@ -497,7 +497,7 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # hello:
-    def get_server_features(self, server_source=None) -> Dict[str,Any]:
+    def get_server_features(self, server_source=None) -> dict[str,Any]:
         #these are flags that have been added over time with new versions
         #to expose new server features:
         f = {
@@ -510,7 +510,7 @@ class ServerBase(ServerBaseClass):
                 merge_dicts(f, bf)
         return f
 
-    def make_hello(self, source) -> Dict[str,Any]:
+    def make_hello(self, source) -> dict[str,Any]:
         capabilities = super().make_hello(source)
         for c in SERVER_BASES:
             if c!=ServerCore:
@@ -541,7 +541,7 @@ class ServerBase(ServerBaseClass):
         capabilities["configure.pointer"] = True    #v4 clients assume this is enabled
         return capabilities
 
-    def send_hello(self, server_source, root_size, server_cipher:Dict) -> None:
+    def send_hello(self, server_source, root_size, server_cipher:dict) -> None:
         capabilities = self.make_hello(server_source)
         from xpra.server.source.encodings import EncodingsMixin
         if "encodings" in server_source.wants and server_features.windows and isinstance(server_source, EncodingsMixin):
@@ -585,7 +585,7 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # utility method:
-    def window_sources(self) -> Tuple:
+    def window_sources(self) -> tuple:
         from xpra.server.source.windows import WindowsMixin  #pylint: disable=import-outside-toplevel
         return tuple(x for x in self._server_sources.values() if isinstance(x, WindowsMixin))
 
@@ -620,7 +620,7 @@ class ServerBase(ServerBaseClass):
                      proto._conn, (end-start)*1000)
         self.get_all_info(cb, proto, None)
 
-    def get_ui_info(self, proto, client_uuids=None, *args) -> Dict[str,Any]:
+    def get_ui_info(self, proto, client_uuids=None, *args) -> dict[str,Any]:
         """ info that must be collected from the UI thread
             (ie: things that query the display)
         """
@@ -637,7 +637,7 @@ class ServerBase(ServerBaseClass):
         return info
 
 
-    def get_info(self, proto=None, client_uuids=None) -> Dict[str,Any]:
+    def get_info(self, proto=None, client_uuids=None) -> dict[str,Any]:
         log("ServerBase.get_info%s", (proto, client_uuids))
         start = monotonic()
         if client_uuids:
@@ -649,7 +649,7 @@ class ServerBase(ServerBaseClass):
         log("ServerBase.get_info took %.1fms", 1000.0*(monotonic()-start))
         return info
 
-    def get_packet_handlers_info(self) -> Dict[str,Any]:
+    def get_packet_handlers_info(self) -> dict[str,Any]:
         info = ServerCore.get_packet_handlers_info(self)
         info.update({
             "authenticated" : sorted(self._authenticated_packet_handlers.keys()),
@@ -658,7 +658,7 @@ class ServerBase(ServerBaseClass):
         return info
 
 
-    def get_features_info(self) -> Dict[str,Any]:
+    def get_features_info(self) -> dict[str,Any]:
         i = {
              "sharing"          : self.sharing is not False,
              "idle_timeout"     : self.idle_timeout,
@@ -666,7 +666,7 @@ class ServerBase(ServerBaseClass):
         i.update(self.get_server_features())
         return i
 
-    def do_get_info(self, proto, server_sources=None) -> Dict[str,Any]:
+    def do_get_info(self, proto, server_sources=None) -> dict[str,Any]:
         log("ServerBase.do_get_info%s", (proto, server_sources))
         start = monotonic()
         info = {}
@@ -717,7 +717,7 @@ class ServerBase(ServerBaseClass):
         pass
 
 
-    def _set_client_properties(self, proto, wid:int, window, new_client_properties:Dict) -> None:
+    def _set_client_properties(self, proto, wid:int, window, new_client_properties:dict) -> None:
         """
         Allows us to keep window properties for a client after disconnection.
         (we keep it in a map with the client's uuid as key)
@@ -786,12 +786,12 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # http server and http audio stream:
-    def get_http_info(self) -> Dict[str,Any]:
+    def get_http_info(self) -> dict[str,Any]:
         info = ServerCore.get_http_info(self)
         info["clients"] = len(self._server_sources)
         return info
 
-    def get_http_scripts(self) -> Dict[str,Any]:
+    def get_http_scripts(self) -> dict[str,Any]:
         scripts = {}
         for c in SERVER_BASES:
             scripts.update(c.get_http_scripts(self))
@@ -896,7 +896,7 @@ class ServerBase(ServerBaseClass):
                 c.reset_focus(self)
 
 
-    def get_all_protocols(self) -> List:
+    def get_all_protocols(self) -> list:
         return list(self._potential_protocols) + list(self._server_sources.keys())
 
 
@@ -924,7 +924,7 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # packets:
-    def add_packet_handlers(self, defs : Dict[str,ServerPacketHandlerType], main_thread=True) -> None:
+    def add_packet_handlers(self, defs : dict[str,ServerPacketHandlerType], main_thread=True) -> None:
         for packet_type, handler in defs.items():
             self.add_packet_handler(packet_type, handler, main_thread)
 

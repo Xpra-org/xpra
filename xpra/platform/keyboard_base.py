@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any, List, Tuple, Callable
+from typing import Any, Callable
 
 from xpra.common import KeyEvent
 from xpra.keyboard.mask import mask_to_names, MODIFIER_MAP
@@ -19,9 +19,9 @@ class KeyboardBase:
         self.init_vars()
 
     def init_vars(self) -> None:
-        self.modifier_keys : Dict[str,str] = {}
-        self.modifier_names : Dict[str,str] = {}
-        self.modifier_keycodes : Dict[str,List[int]] = {}
+        self.modifier_keys : dict[str,str] = {}
+        self.modifier_names : dict[str,str] = {}
+        self.modifier_keycodes : dict[str,list[int]] = {}
         self.modifier_mappings = {}
         #FIXME: this only allows a single modifier per mask
         #and in some cases we want to allow other modifier names
@@ -77,26 +77,26 @@ class KeyboardBase:
         log(f"modifier_names={self.modifier_names}")
         log(f"modifier_keycodes={self.modifier_keycodes}")
 
-    def mask_to_names(self, mask) -> List[str]:
+    def mask_to_names(self, mask) -> list[str]:
         return mask_to_names(mask, self.modifier_map)
 
-    def get_keymap_modifiers(self) -> Tuple[Dict,List,List[str]]:
+    def get_keymap_modifiers(self) -> tuple[dict,list,list[str]]:
         """
             ask the server to manage capslock ('lock') which can be missing from mouse events
             (or maybe this is virtualbox causing it?)
         """
         return  {}, [], ["lock"]
 
-    def get_keymap_spec(self) -> Dict[str,Any]:
+    def get_keymap_spec(self) -> dict[str,Any]:
         return {}
 
-    def get_x11_keymap(self) -> Dict[int,List[str]]:
+    def get_x11_keymap(self) -> dict[int,list[str]]:
         return {}
 
-    def get_layout_spec(self) -> Tuple[str,List[str],str,List[str],str]:
+    def get_layout_spec(self) -> tuple[str,list[str],str,list[str],str]:
         return "", [], "", [], ""
 
-    def get_keyboard_repeat(self) -> Tuple[int,int] | None:
+    def get_keyboard_repeat(self) -> tuple[int,int] | None:
         return None
 
     def update_modifier_map(self, display, mod_meanings) -> None:

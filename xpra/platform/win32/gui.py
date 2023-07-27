@@ -9,7 +9,7 @@
 import os
 import sys
 import types
-from typing import Callable, List, Tuple, Dict, Any, Type
+from typing import Callable, Any
 from ctypes import (
     WinDLL, WinError, get_last_error,  # @UnresolvedImport
     CDLL, pythonapi, py_object,
@@ -162,7 +162,7 @@ def get_clipboard_native_class() -> str:
     return "xpra.platform.win32.clipboard.Win32Clipboard"
 
 
-def get_native_notifier_classes() -> List[Type]:
+def get_native_notifier_classes() -> list[type]:
     try:
         from xpra.platform.win32.win32_notifier import Win32_Notifier
         return [Win32_Notifier]
@@ -309,7 +309,7 @@ def win32_propsys_set_group_leader(self, leader):
         log.error("Error: failed to set group leader")
         log.estr(e)
 
-WS_NAMES : Dict[int,str] = {
+WS_NAMES : dict[int,str] = {
             win32con.WS_BORDER              : "BORDER",
             win32con.WS_CAPTION             : "CAPTION",
             win32con.WS_CHILD               : "CHILD",
@@ -442,7 +442,7 @@ def window_state_updated(window):
     log("window_state_updated(%s)", window)
     fixup_window_style(window)
 
-def apply_maxsize_hints(window, hints:Dict[str,Any]):
+def apply_maxsize_hints(window, hints:dict[str,Any]):
     """ extracts the max-size hints from the hints,
         and passes it to the win32hooks class which can implement it
         (as GTK2 does not honour it properly on win32)
@@ -489,7 +489,7 @@ def apply_maxsize_hints(window, hints:Dict[str,Any]):
         hints.pop(x, None)
     window_state_updated(window)
 
-def apply_geometry_hints(self, hints:Dict):
+def apply_geometry_hints(self, hints:dict):
     log("apply_geometry_hints(%s)", hints)
     apply_maxsize_hints(self, hints)
     return self.__apply_geometry_hints(hints)   #call the original saved method
@@ -649,27 +649,27 @@ FE_FONTSMOOTHINGORIENTATIONVRGB = 0x0003
 SPI_GETFONTSMOOTHINGTYPE        = 0x200A
 FE_FONTSMOOTHINGCLEARTYPE       = 0x0002
 FE_FONTSMOOTHINGDOCKING         = 0x8000
-FE_ORIENTATION_STR : Dict[int,str] = {
+FE_ORIENTATION_STR : dict[int,str] = {
                       FE_FONTSMOOTHINGORIENTATIONBGR    : "BGR",
                       FE_FONTSMOOTHINGORIENTATIONRGB    : "RGB",
                       FE_FONTSMOOTHINGORIENTATIONVBGR   : "VBGR",
                       FE_FONTSMOOTHINGORIENTATIONVRGB   : "VRGB",
                       }
-FE_FONTSMOOTHING_STR : Dict[int,str] = {
+FE_FONTSMOOTHING_STR : dict[int,str] = {
     0                           : "Normal",
     FE_FONTSMOOTHINGCLEARTYPE   : "ClearType",
     }
 
 
-def _add_SPI(info:Dict[str,Any], constant:int, name:str, convert:Callable, default:Any=None) -> None:
+def _add_SPI(info:dict[str,Any], constant:int, name:str, convert:Callable, default:Any=None) -> None:
     v = GetIntSystemParametersInfo(constant)
     if v is not None:
         info[name] = convert(v)
     elif default is not None:
         info[name] = default
 
-def get_antialias_info() -> Dict[str,Any]:
-    info : Dict[str,Any] = {}
+def get_antialias_info() -> dict[str,Any]:
+    info : dict[str,Any] = {}
     try:
         _add_SPI(info, SPI_GETFONTSMOOTHING, "enabled", bool)
         #"Valid contrast values are from 1000 to 2200. The default value is 1400."
@@ -685,7 +685,7 @@ def get_antialias_info() -> Dict[str,Any]:
         log.warn("failed to query antialias info: %s", e)
     return info
 
-def get_mouse_config() -> Dict[str,Any]:
+def get_mouse_config() -> dict[str,Any]:
     #not all are present in win32con?
     SM_CMOUSEBUTTONS = 43
     SM_CXDRAG = 68
@@ -704,7 +704,7 @@ def get_mouse_config() -> Dict[str,Any]:
     #rate for each direction:
     _add_SPI(wheel_info, SPI_GETWHEELSCROLLLINES, "lines", int, 3)
     _add_SPI(wheel_info, SPI_GETWHEELSCROLLCHARS, "chars", int, 3)
-    info : Dict[str,Any] = {
+    info : dict[str,Any] = {
             "present"       : bool(GetSystemMetrics(SM_MOUSEPRESENT)),
             "wheel"         : wheel_info,
             "buttons"       : GetSystemMetrics(SM_CMOUSEBUTTONS),
@@ -762,9 +762,9 @@ def get_workarea():
 #ie: for a 60 pixel bottom bar on the second monitor at 1280x800:
 # [(0,0,1920,1080), (0,0,1280,740)]
 MONITORINFOF_PRIMARY = 1
-def get_workareas() -> List[Tuple[int,int,int,int]]:
+def get_workareas() -> list[tuple[int,int,int,int]]:
     try:
-        workareas : List[Tuple[int,int,int,int]] = []
+        workareas : list[tuple[int,int,int,int]] = []
         for m in EnumDisplayMonitors():
             mi = GetMonitorInfo(m)
             screenlog("get_workareas() GetMonitorInfo(%s)=%s", m, mi)
@@ -981,7 +981,7 @@ def getTaskbar():
             TaskbarLib = False
     if not TaskbarLib:
         return None
-    taskbar = cc.CreateObject("{56FDF344-FD6D-11d0-958A-006097C9A090}", interface=TaskbarLib.ITaskbarList3)
+    taskbar = cc.CreateObject("{56FDF344-FD6D-11d0-958A-006097C9A090}", interface=TaskbarLib.ITaskbarlist3)
     taskbar.HrInit()
     return taskbar
 
@@ -1006,7 +1006,7 @@ WTS_SESSION_LOGOFF          = 0x6
 WTS_SESSION_LOCK            = 0x7
 WTS_SESSION_UNLOCK          = 0x8
 WTS_SESSION_REMOTE_CONTROL  = 0x9
-WTS_SESSION_EVENTS : Dict[int, str] = {
+WTS_SESSION_EVENTS : dict[int, str] = {
                       WTS_CONSOLE_CONNECT       : "CONSOLE CONNECT",
                       WTS_CONSOLE_DISCONNECT    : "CONSOLE_DISCONNECT",
                       WTS_REMOTE_CONNECT        : "REMOTE_CONNECT",
@@ -1145,7 +1145,7 @@ class ClientExtras:
                            win32con.VK_RWIN   : "Super_R",
                            win32con.VK_TAB    : "Tab",
                            }.get(vk_code)
-                modifiers : List[str] = []
+                modifiers : list[str] = []
                 kh = self.client.keyboard_helper
                 key_event_type = ALL_KEY_EVENTS.get(wParam)
                 #log("low_level_keyboard_handler(%s, %s, %s) vk_code=%i, scan_code=%i, keyname=%s, key_event_type=%s, focused=%s, keyboard_grabbed=%s", nCode, wParam, lParam, vk_code, scan_code, keyname, key_event_type, focused, self.client.keyboard_grabbed)

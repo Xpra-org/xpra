@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any, Tuple
+from typing import Any
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.x11.desktop.desktop_server_base import DesktopServerBase
@@ -51,7 +51,7 @@ class XpraDesktopServer(DesktopServerBase):
             set_initial_resolution(res, self.dpi or self.default_dpi)
 
 
-    def configure_best_screen_size(self) -> Tuple[int,int]:
+    def configure_best_screen_size(self) -> tuple[int,int]:
         """ for the first client, honour desktop_mode_size if set """
         root_w, root_h = self.root_window.get_geometry()[2:4]
         if not self.randr:
@@ -108,7 +108,7 @@ class XpraDesktopServer(DesktopServerBase):
     def get_server_mode(self) -> str:
         return "X11 desktop"
 
-    def make_hello(self, source) -> Dict[str,Any]:
+    def make_hello(self, source) -> dict[str,Any]:
         capabilities = super().make_hello(source)
         if "features" in source.wants:
             capabilities["desktop"] =True

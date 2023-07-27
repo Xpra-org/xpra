@@ -7,7 +7,7 @@
 # later version. See the file COPYING for details.
 
 import sys
-from typing import Dict, Any, Tuple, Callable, Union, List, TypeAlias
+from typing import Any, Callable, Union, TypeAlias
 from time import sleep, monotonic
 from threading import Event
 from collections import deque
@@ -35,7 +35,7 @@ YIELD = envbool("XPRA_YIELD", False)
 
 counter = AtomicInteger()
 
-ENCODE_WORK_ITEM : TypeAlias = Tuple[bool, Callable, Tuple[Any,...]] | None
+ENCODE_WORK_ITEM : TypeAlias = tuple[bool, Callable, tuple[Any,...]] | None
 
 
 class ClientConnection(StubSourceMixin):
@@ -79,9 +79,9 @@ class ClientConnection(StubSourceMixin):
         #this queue will hold functions to call to compress data (pixels, clipboard)
         #items placed in this queue are picked off by the "encode" thread,
         #the functions should add the packets they generate to the 'packet_queue'
-        self.encode_work_queue : Queue[Union[None,Tuple[bool,Callable,Tuple[Any,...]]]] = Queue()
+        self.encode_work_queue : Queue[Union[None,tuple[bool,Callable,tuple[Any,...]]]] = Queue()
         self.encode_thread = None
-        self.ordinary_packets : List[Tuple[PacketType,bool,Callable,Callable]] = []
+        self.ordinary_packets : list[tuple[PacketType,bool,Callable,Callable]] = []
         self.socket_dir = socket_dir
         self.unix_socket_paths = unix_socket_paths
         self.log_disconnect = log_disconnect
@@ -105,7 +105,7 @@ class ClientConnection(StubSourceMixin):
         self.hello_sent = False
         self.share = False
         self.lock = False
-        self.control_commands : Tuple[str,...] = ()
+        self.control_commands : tuple[str,...] = ()
         self.xdg_menu = True
         self.bandwidth_limit = self.server_bandwidth_limit
         self.soft_bandwidth_limit = self.bandwidth_limit
@@ -342,7 +342,7 @@ class ClientConnection(StubSourceMixin):
 
     ######################################################################
     # info:
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         if not FULL_INFO:
             return {"protocol" : "xpra"}
         info = {
@@ -368,7 +368,7 @@ class ClientConnection(StubSourceMixin):
         info.update(self.get_features_info())
         return info
 
-    def get_features_info(self) -> Dict[str,Any]:
+    def get_features_info(self) -> dict[str,Any]:
         info = {
             "lock"  : bool(self.lock),
             "share" : bool(self.share),

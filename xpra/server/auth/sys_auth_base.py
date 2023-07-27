@@ -5,7 +5,7 @@
 
 import os
 from collections import deque
-from typing import Tuple, Deque, List, Dict, Callable
+from typing import Deque, Callable
 
 from xpra.platform.info import get_username
 from xpra.platform.dotxpra import DotXpra
@@ -23,7 +23,7 @@ DEFAULT_UID = os.environ.get("XPRA_AUTHENTICATION_DEFAULT_UID", "nobody")
 DEFAULT_GID = os.environ.get("XPRA_AUTHENTICATION_DEFAULT_GID", "nobody")
 
 # uid, gid, displays, env_options, session_options
-SessionData = Tuple[int,int,List[str],Dict[str,str],Dict[str,str]]
+SessionData = tuple[int,int,list[str],dict[str,str],dict[str,str]]
 
 
 def xor(s1,s2):
@@ -106,19 +106,19 @@ class SysAuthenticatorBase:
         if required not in digests:
             raise RuntimeError(f"{self!r} authenticator requires the {required!r} digest")
 
-    def get_challenge(self, digests) -> Tuple[bytes,str] | None:
+    def get_challenge(self, digests) -> tuple[bytes,str] | None:
         if self.salt is not None:
             log.error("Error: authentication challenge already sent!")
             return None
         return self.do_get_challenge(digests)
 
-    def do_get_challenge(self, digests) -> Tuple[bytes,str]:
+    def do_get_challenge(self, digests) -> tuple[bytes,str]:
         self.salt = get_salt()
         self.digest = choose_digest(digests)
         self.challenge_sent = True
         return self.salt, self.digest
 
-    def get_passwords(self) -> Tuple[str,...]:
+    def get_passwords(self) -> tuple[str,...]:
         """ this default implementation just returns a tuple
             with the password from `get_password` if there is one """
         p = self.get_password()     #pylint: disable=assignment-from-none

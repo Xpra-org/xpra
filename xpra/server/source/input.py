@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple, Dict, Any
+from typing import Any
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
@@ -30,11 +30,11 @@ class InputMixin(StubSourceMixin):
         self.pointer_relative : bool = False
         self.keyboard_config = None
         self.double_click_time : int = -1
-        self.double_click_distance : Tuple[int, int] | None = None
+        self.double_click_distance : tuple[int, int] | None = None
         # mouse echo:
         self.mouse_show : bool = False
-        self.mouse_last_position : Tuple[int,int] | None = None
-        self.mouse_last_relative_position : Tuple[int,int] | None = None
+        self.mouse_last_position : tuple[int,int] | None = None
+        self.mouse_last_relative_position : tuple[int,int] | None = None
 
     def cleanup(self) -> None:
         self.keyboard_config = None
@@ -53,8 +53,8 @@ class InputMixin(StubSourceMixin):
         self.mouse_last_position = c.intpair("mouse.initial-position")
 
 
-    def get_info(self) -> Dict[str,Any]:
-        dc_info : Dict[str,Any] = {}
+    def get_info(self) -> dict[str,Any]:
+        dc_info : dict[str,Any] = {}
         dct = self.double_click_time
         if dct:
             dc_info["time"] = dct
@@ -69,7 +69,7 @@ class InputMixin(StubSourceMixin):
             info["keyboard"] = kc.get_info()
         return info
 
-    def get_caps(self) -> Dict[str,Any]:
+    def get_caps(self) -> dict[str,Any]:
         #expose the "modifier_client_keycodes" defined in the X11 server keyboard config object,
         #so clients can figure out which modifiers map to which keys:
         kc = self.keyboard_config
@@ -134,7 +134,7 @@ class InputMixin(StubSourceMixin):
 
 
     def get_keycode(self, client_keycode:int, keyname:str, pressed:bool,
-                    modifiers, keyval, keystr:str, group:int) -> Tuple[int, int]:
+                    modifiers, keyval, keystr:str, group:int) -> tuple[int, int]:
         kc = self.keyboard_config
         if kc is None:
             log.info("ignoring client key %s / %s since keyboard is not configured", client_keycode, keyname)

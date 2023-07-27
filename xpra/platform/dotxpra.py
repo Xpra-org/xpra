@@ -8,7 +8,6 @@ import os.path
 import glob
 import socket
 import errno
-from typing import Dict, Tuple, List
 
 from xpra.os_util import get_util_logger, osexpand, umask_context, is_socket
 from xpra.platform.dotxpra_common import PREFIX, LIVE, DEAD, UNKNOWN, INACCESSIBLE
@@ -46,7 +45,7 @@ class DotXpra:
         elif sockdir not in sockdirs:
             sockdirs.insert(0, sockdir)
         self._sockdir = self.osexpand(sockdir)
-        self._sockdirs : List[str] = [self.osexpand(x) for x in sockdirs]
+        self._sockdirs : list[str] = [self.osexpand(x) for x in sockdirs]
 
     def osexpand(self, v:str) -> str:
         return osexpand(v, self.username, self.uid, self.gid)
@@ -91,7 +90,7 @@ class DotXpra:
     def socket_expand(self, path:str) -> str:
         return osexpand(path, self.username, uid=self.uid, gid=self.gid)
 
-    def norm_socket_paths(self, local_display_name:str) -> List[str]:
+    def norm_socket_paths(self, local_display_name:str) -> list[str]:
         return [norm_makepath(x, local_display_name) for x in self._sockdirs]
 
     def socket_path(self, local_display_name:str) -> str:
@@ -133,15 +132,15 @@ class DotXpra:
                 debug("%s.close()", sock, exc_info=True)
 
 
-    def displays(self, check_uid=None, matching_state=None) -> List[str]:
+    def displays(self, check_uid=None, matching_state=None) -> list[str]:
         return list(set(v[1] for v in self.sockets(check_uid, matching_state)))
 
-    def sockets(self, check_uid=None, matching_state=None) -> List:
+    def sockets(self, check_uid=None, matching_state=None) -> list:
         #flatten the dictionary into a list:
         return list(set((v[0], v[1]) for details_values in
                         self.socket_details(check_uid, matching_state).values() for v in details_values))
 
-    def socket_paths(self, check_uid=None, matching_state=None, matching_display=None) -> List[str]:
+    def socket_paths(self, check_uid=None, matching_state=None, matching_display=None) -> list[str]:
         paths = []
         for details in self.socket_details(check_uid, matching_state, matching_display).values():
             for _, _, socket_path in details:
@@ -194,11 +193,11 @@ class DotXpra:
     #find the matching sockets, and return:
     #(state, local_display, sockpath) for each socket directory we probe
     def socket_details(self, check_uid=None, matching_state=None, matching_display=None):
-        sd : Dict[str,List[Tuple[str,str,str]]] = {}
+        sd : dict[str,list[tuple[str,str,str]]] = {}
         debug("socket_details%s sockdir=%s, sockdirs=%s",
               (check_uid, matching_state, matching_display), self._sockdir, self._sockdirs)
-        def add_result(d:str, item:Tuple[str,str,str]):
-            results : List[Tuple[str,str,str]] = sd.setdefault(d, [])
+        def add_result(d:str, item:tuple[str,str,str]):
+            results : list[tuple[str,str,str]] = sd.setdefault(d, [])
             if item not in results:
                 results.append(item)
         def local(display:str):

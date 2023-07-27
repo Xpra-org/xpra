@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from collections import namedtuple
-from typing import Tuple, Dict, Any
+from typing import Any
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.gtk_common.error import xlog
@@ -36,11 +36,11 @@ class MonitorDesktopModel(DesktopModelBase):
     def __repr__(self):
         return f"MonitorDesktopModel({self.name} : {self.monitor_geometry})"
 
-    def __init__(self, monitor:Dict[str,Any]):
+    def __init__(self, monitor:dict[str,Any]):
         super().__init__()
         self.init(monitor)
 
-    def init(self, monitor:Dict[str,Any]) -> None:
+    def init(self, monitor:dict[str,Any]) -> None:
         self.name = monitor.get("name", "")
         self.resize_delta = 0, 0
         x = monitor.get("x", 0)
@@ -62,14 +62,14 @@ class MonitorDesktopModel(DesktopModelBase):
             title += f" on {self.name}"
         return title
 
-    def get_geometry(self) -> Tuple[int,int,int,int]:
+    def get_geometry(self) -> tuple[int,int,int,int]:
         return self.monitor_geometry
 
-    def get_dimensions(self) -> Tuple[int,int]:
+    def get_dimensions(self) -> tuple[int,int]:
         return self.monitor_geometry[2:4]
 
 
-    def get_definition(self) -> Dict[str,Any]:
+    def get_definition(self) -> dict[str,Any]:
         x, y, width, height = self.monitor_geometry
         return {
             "geometry"  : self.monitor_geometry,

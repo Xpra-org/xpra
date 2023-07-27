@@ -10,7 +10,7 @@ import signal
 import os.path
 from time import monotonic
 from subprocess import Popen
-from typing import Dict, List, Callable, Any, Tuple, Union
+from typing import Callable, Any
 from gi.repository import GLib
 
 from xpra.platform.features import COMMAND_SIGNALS
@@ -58,12 +58,12 @@ class ChildCommandServer(StubServerMixin):
         self.children_count : int = 0
         self.start_after_connect_done : bool = False
         self.start_new_commands : bool = False
-        self.source_env : Dict[str, str] = {}
-        self.start_env : Dict[str, str] = {}
+        self.source_env : dict[str, str] = {}
+        self.start_env : dict[str, str] = {}
         self.exec_cwd : str = os.getcwd()
-        self.exec_wrapper : List[str] = []
+        self.exec_wrapper : list[str] = []
         self.terminate_children : bool = False
-        self.children_started : List[ProcInfo] = []
+        self.children_started : list[ProcInfo] = []
         self.child_reaper = None
         self.reaper_exit : Callable = self.reaper_exit_check
         #does not belong here...
@@ -129,7 +129,7 @@ class ChildCommandServer(StubServerMixin):
         reaper_cleanup()
 
 
-    def get_server_features(self, _source) -> Dict[str,Any]:
+    def get_server_features(self, _source) -> dict[str,Any]:
         return {
             "start-new-commands"        : self.start_new_commands,
             "exit-with-children"        : self.exit_with_children,
@@ -138,15 +138,15 @@ class ChildCommandServer(StubServerMixin):
             }
 
 
-    def _get_xdg_menu_data(self) -> Dict[str,Any] | None:
+    def _get_xdg_menu_data(self) -> dict[str,Any] | None:
         if not self.start_new_commands:
             return None
         assert self.menu_provider
         return self.menu_provider.get_menu_data()
 
 
-    def get_caps(self, source) -> Dict[str,Any]:
-        caps : Dict[str,Any] = {}
+    def get_caps(self, source) -> dict[str,Any]:
+        caps : dict[str,Any] = {}
         if not source:
             return caps
         #don't assume we have a real ClientConnection object:
@@ -179,8 +179,8 @@ class ChildCommandServer(StubServerMixin):
                 source.send_setting_change("xdg-menu", xdg_menu or {})
 
 
-    def get_info(self, _proto) -> Dict[str,Any]:
-        info : Dict[Any,Any] = {
+    def get_info(self, _proto) -> dict[str,Any]:
+        info : dict[Any,Any] = {
             "start"                     : self.start_commands,
             "start-late"                : self.start_late_commands,
             "start-child"               : self.start_child_commands,
@@ -203,7 +203,7 @@ class ChildCommandServer(StubServerMixin):
             })
         for i,procinfo in enumerate(self.children_started):
             info[i] = procinfo.get_info()
-        cinfo : Dict[str,Any] = {"commands": info}
+        cinfo : dict[str,Any] = {"commands": info}
         return cinfo
 
 
@@ -211,7 +211,7 @@ class ChildCommandServer(StubServerMixin):
         self._exec_commands(self.start_on_last_client_exit, self.start_child_on_last_client_exit)
 
 
-    def get_child_env(self) -> Dict[str,str]:
+    def get_child_env(self) -> dict[str,str]:
         #subclasses may add more
         env = restore_script_env(super().get_child_env())
         env.update(self.source_env)
@@ -220,7 +220,7 @@ class ChildCommandServer(StubServerMixin):
             env["DISPLAY"] = self.child_display
         return env
 
-    def get_full_child_command(self, cmd, use_wrapper=True) -> List[str]:
+    def get_full_child_command(self, cmd, use_wrapper=True) -> list[str]:
         #make sure we have it as a list:
         cmd = super().get_full_child_command(cmd, use_wrapper)
         if not use_wrapper or not self.exec_wrapper:
@@ -377,7 +377,7 @@ class ChildCommandServer(StubServerMixin):
             log.warn(" but the feature is currently disabled")
             return
         name, command, ignore = packet[1:4]
-        cmd : Union[str,Tuple]
+        cmd : str | tuple
         if isinstance(command, (list, tuple)):
             cmd = tuple(command)
         else:

@@ -6,13 +6,12 @@
 
 import re
 import sys
-from typing import Dict, Type
 
 from xpra.server.auth.sys_auth_base import log
 from xpra.server.auth.sqlauthbase import SQLAuthenticator, DatabaseUtilBase, run_dbutil
 
 
-def url_path_to_dict(path:str) -> Dict[str,str]:
+def url_path_to_dict(path:str) -> dict[str,str]:
     pattern = (r'^'
                r'((?P<schema>.+?)://)?'
                r'((?P<user>.+?)(:(?P<password>.*?))?@)?'
@@ -80,7 +79,7 @@ class MySQLDatabaseUtil(DatabaseUtilBase):
         db.commit()
         return cursor
 
-    def get_authenticator_class(self) -> Type:
+    def get_authenticator_class(self) -> type:
         return Authenticator
 
 

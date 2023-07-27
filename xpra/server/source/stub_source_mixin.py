@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any, Union, Tuple, Callable
+from typing import Any, Union, Callable
 from xpra.util import typedict
 
 class StubSourceMixin:
@@ -46,13 +46,13 @@ class StubSourceMixin:
         Parse client attributes specified in the hello capabilities.
         """
 
-    def get_caps(self) -> Dict[str,Any]:
+    def get_caps(self) -> dict[str,Any]:
         """
         Return the capabilities provided by this mixin.
         """
         return {}
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         """
         Runtime information on this mixin, includes state and settings.
         Somewhat overlaps with the capabilities,
@@ -72,7 +72,7 @@ class StubSourceMixin:
         This dummy implementation makes it easier to test without a network connection.
         """
 
-    def queue_encode(self, item : Union[None,Tuple[bool,Callable,Tuple]]):
+    def queue_encode(self, item : Union[None,tuple[bool,Callable,tuple]]):
         """
         Used by the window source to send data to be processed in the encode thread
         """

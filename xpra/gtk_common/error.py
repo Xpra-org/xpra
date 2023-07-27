@@ -28,7 +28,6 @@
 # computers... does being this careful to avoid sync's actually matter?)
 
 import traceback
-from typing import Dict
 
 import gi
 gi.require_version("Gdk", "3.0")  # @UndefinedVariable
@@ -71,7 +70,7 @@ class XError(Exception):
         return "XError: %s" % self.msg
 
 
-xerror_to_name : Dict[int,str] = {}
+xerror_to_name : dict[int,str] = {}
 def get_X_error(xerror) -> str:
     global xerror_to_name
     if not isinstance(xerror, int):

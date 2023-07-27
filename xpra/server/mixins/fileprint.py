@@ -9,7 +9,7 @@
 
 import os.path
 import hashlib
-from typing import Dict, Any
+from typing import Any
 
 from xpra.simple_stats import to_std_unit, std_unit
 from xpra.os_util import bytestostr, osexpand, load_binary_file, WIN32, POSIX
@@ -61,7 +61,7 @@ class FilePrintServer(StubServerMixin):
             self.file_transfer.printing = False
 
 
-    def get_server_features(self, _source) -> Dict[str,Any]:
+    def get_server_features(self, _source) -> dict[str,Any]:
         f = self.file_transfer.get_file_transfer_features()
         f["printer.attributes"] = ("printer-info", "device-uri")
         ftf = self.file_transfer.get_file_transfer_features()
@@ -70,7 +70,7 @@ class FilePrintServer(StubServerMixin):
         f.update(ftf)
         return f
 
-    def get_info(self, _proto) -> Dict[str,Any]:
+    def get_info(self, _proto) -> dict[str,Any]:
         d = {}
         if POSIX:
             d.update({

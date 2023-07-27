@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Any, Optional
 from xpra.gtk_common.error import XError
 
 from xpra.x11.bindings.xlib cimport (
@@ -1124,7 +1124,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XSetClassHint(self.display, xwindow, classhints)
         XFree(classhints)
 
-    def getClassHint(self, Window xwindow) -> Optional[Tuple[str,str]]:
+    def getClassHint(self, Window xwindow) -> Optional[tuple[str,str]]:
         self.context_check("getClassHint")
         cdef XClassHint *classhints = XAllocClassHint()
         assert classhints!=NULL
@@ -1141,7 +1141,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         log("XGetClassHint(%#x) classhints: %s, %s", xwindow, _name, _class)
         return (_name, _class)
 
-    def getGeometry(self, Drawable d) -> Tuple[int,int,int,int,int,int]:
+    def getGeometry(self, Drawable d) -> tuple[int,int,int,int,int,int]:
         self.context_check("getGeometry")
         cdef Window root_return
         cdef int x, y                                           #@pydev dupe
@@ -1182,7 +1182,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         return pychildren
 
 
-    def getSizeHints(self, Window xwindow) -> Dict[str,Any]:
+    def getSizeHints(self, Window xwindow) -> dict[str,Any]:
         self.context_check("getSizeHints")
         cdef XSizeHints *size_hints = XAllocSizeHints()
         cdef long supplied_return   #ignored!
@@ -1214,7 +1214,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XFree(size_hints)
         return hints
 
-    def setSizeHints(self, Window xwindow, hints : Dict[str,Any]):
+    def setSizeHints(self, Window xwindow, hints : dict[str,Any]):
         self.context_check("setSizeHints")
         cdef XSizeHints *size_hints = XAllocSizeHints()
         assert size_hints!=NULL
@@ -1253,7 +1253,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XSetWMNormalHints(self.display, xwindow, size_hints)
         XFree(size_hints)
 
-    def getWMHints(self, Window xwindow) -> Dict[str,Any]:
+    def getWMHints(self, Window xwindow) -> dict[str,Any]:
         self.context_check("getWMHints")
         cdef XWMHints *wm_hints = XGetWMHints(self.display, xwindow)
         if wm_hints==NULL:
@@ -1278,7 +1278,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XFree(wm_hints)
         return hints
 
-    def XGetWMProtocols(self, Window xwindow) -> List[str]:
+    def XGetWMProtocols(self, Window xwindow) -> list[str]:
         self.context_check("XGetWMProtocols")
         cdef Atom *protocols_return
         cdef int count_return

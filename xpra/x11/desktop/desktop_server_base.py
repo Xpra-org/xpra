@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, Any, Tuple, List, Type
+from typing import Any
 from gi.repository import GObject, Gdk, Gio  # @UnresolvedImport
 
 from xpra.util import updict, log_screen_sizes, envbool, csv
@@ -38,15 +38,15 @@ MULTI_MONITORS : bool = envbool("XPRA_DESKTOP_MULTI_MONITORS", True)
 
 
 
-def get_desktop_server_base_classes() -> Tuple[Type,...]:
-    classes : List[Type] = [GObject.GObject]
+def get_desktop_server_base_classes() -> tuple[type,...]:
+    classes : list[type] = [GObject.GObject]
     if server_features.rfb:
         from xpra.server.rfb.rfb_server import RFBServer
         classes.append(RFBServer)
     classes.append(X11ServerBase)
     return tuple(classes)
 DESKTOPSERVER_BASES = get_desktop_server_base_classes()
-DesktopServerBaseClass : Type[X11ServerBase] = type('DesktopServerBaseClass', DESKTOPSERVER_BASES, {})
+DesktopServerBaseClass : type[X11ServerBase] = type('DesktopServerBaseClass', DESKTOPSERVER_BASES, {})
 log("DesktopServerBaseClass%s", DESKTOPSERVER_BASES)
 
 
@@ -55,7 +55,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         A server base class for RFB / VNC-like virtual desktop or virtual monitors,
         used with the "start-desktop" subcommand.
     """
-    __common_gsignals__ : Dict[str,Tuple] = {
+    __common_gsignals__ : dict[str,tuple] = {
         "xpra-xkb-event"        : one_arg_signal,
         "xpra-cursor-event"     : one_arg_signal,
         "xpra-motion-event"     : one_arg_signal,
@@ -67,7 +67,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         for c in DESKTOPSERVER_BASES:
             if c!=X11ServerBase:
                 c.__init__(self)  # pylint: disable=non-parent-init-called
-        self.gsettings_modified : Dict[str,Any] = {}
+        self.gsettings_modified : dict[str,Any] = {}
         self.root_prop_watcher = None
 
     def init(self, opts) -> None:
@@ -107,7 +107,7 @@ class DesktopServerBase(DesktopServerBaseClass):
             "com.deepin.wrap.gnome.desktop.interface" : ("enable-animations",),
             })
 
-    def do_modify_gsettings(self, defs:Dict[str,Any], value=False) -> Dict[str,Any]:
+    def do_modify_gsettings(self, defs:dict[str,Any], value=False) -> dict[str,Any]:
         modified = {}
         schemas = Gio.Settings.list_schemas()
         for schema, attributes in defs.items():
@@ -169,7 +169,7 @@ class DesktopServerBase(DesktopServerBaseClass):
     def get_server_mode(self) -> str:
         return "X11 desktop"
 
-    def make_hello(self, source) -> Dict[str,Any]:
+    def make_hello(self, source) -> dict[str,Any]:
         capabilities = super().make_hello(source)
         if "features" in source.wants:
             capabilities.update({
@@ -210,7 +210,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         self.refresh_window_area(window, event.x, event.y, event.width, event.height)
 
 
-    def _set_window_state(self, proto, wid:int, window, new_window_state) -> List[str]:
+    def _set_window_state(self, proto, wid:int, window, new_window_state) -> list[str]:
         if not new_window_state:
             return []
         metadatalog("set_window_state%s", (proto, wid, window, new_window_state))
@@ -225,7 +225,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         return changes
 
 
-    def get_window_position(self, _window) -> Tuple[int,int]:
+    def get_window_position(self, _window) -> tuple[int,int]:
         #we export the whole desktop as a window:
         return 0, 0
 
@@ -342,7 +342,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         log.warn("Warning: show_all_windows not implemented for desktop server")
 
 
-    def do_make_screenshot_packet(self) -> Tuple:
+    def do_make_screenshot_packet(self) -> tuple:
         log("grabbing screenshot")
         regions = []
         offset_x, offset_y = 0, 0

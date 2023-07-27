@@ -8,7 +8,7 @@
 
 import socket
 import sys
-from typing import Dict, Tuple, Any, Callable
+from typing import Any, Callable
 
 from xpra.os_util import WIN32
 from xpra.version_util import parse_version
@@ -19,7 +19,7 @@ from xpra.log import Logger
 log = Logger("network", "util")
 
 
-netifaces_version : Tuple[Any, ...] = ()
+netifaces_version : tuple[Any, ...] = ()
 _netifaces = None
 def import_netifaces() -> object:
     global _netifaces, netifaces_version
@@ -53,7 +53,7 @@ def get_interfaces():
         return []
     return netifaces.interfaces()           #@UndefinedVariable pylint: disable=no-member
 
-def get_interfaces_addresses() -> Dict:
+def get_interfaces_addresses() -> dict:
     d = {}
     netifaces = import_netifaces()
     if netifaces:
@@ -75,7 +75,7 @@ def get_interface(address):
                     return iface
     return None
 
-def get_gateways() -> Dict:
+def get_gateways() -> dict:
     netifaces = import_netifaces()
     if not netifaces:
         return {}
@@ -271,8 +271,8 @@ else:
     if_indextoname = socket_if_indextoname
 
 
-net_sys_config : Dict[str,Any] = {}
-def get_net_sys_config() -> Dict[str,Any]:
+net_sys_config : dict[str,Any] = {}
+def get_net_sys_config() -> dict[str,Any]:
     global net_sys_config
     if net_sys_config or not os.path.exists("/proc"):
         return net_sys_config
@@ -322,7 +322,7 @@ def get_net_sys_config() -> Dict[str,Any]:
         "icmp_ignore_bogus_error_responses", "icmp_errors_use_inbound_ifaddr",
         ):
         addproc(f"/proc/sys/net/ipv4/{k}",  "ipv4", k)
-    def parsenums(v:str) -> Tuple[int,...]:
+    def parsenums(v:str) -> tuple[int,...]:
         return tuple(int(x.strip()) for x in v.split("\t") if len(x.strip())>0)
     for k in ("tcp_mem", "tcp_rmem", "tcp_wmem", "ip_local_port_range", "ip_local_reserved_ports", ):
         addproc(f"/proc/sys/net/ipv4/{k}",  "ipv4", k, parsenums)
@@ -345,7 +345,7 @@ def get_net_sys_config() -> Dict[str,Any]:
         addproc(f"/proc/sys/net/ipv4/{k}",  "ipv4", k, int)
     return net_sys_config
 
-def get_net_config() -> Dict[str,Any]:
+def get_net_config() -> dict[str,Any]:
     config = {}
     try:
         from xpra.net.bytestreams import VSOCK_TIMEOUT, SOCKET_TIMEOUT, SOCKET_NODELAY  # pylint: disable=import-outside-toplevel
@@ -360,18 +360,18 @@ def get_net_config() -> Dict[str,Any]:
     return config
 
 
-SSL_CONV : Dict[str, Tuple[str,Callable]] = {
+SSL_CONV : dict[str, tuple[str,Callable]] = {
     ""           : ("version-str", str),
     "_INFO"      : ("version", parse_version),
     "_NUMBER"    : ("version-number", int),
     }
-def get_ssl_info(show_constants=False) -> Dict[str,Any]:
+def get_ssl_info(show_constants=False) -> dict[str,Any]:
     try:
         import ssl  # pylint: disable=import-outside-toplevel
     except ImportError as e:    # pragma: no cover
         log("no ssl: %s", e)
         return {}
-    info : Dict[str,Any] = {}
+    info : dict[str,Any] = {}
     if show_constants:
         protocols = dict((k,int(getattr(ssl, k))) for k in dir(ssl) if k.startswith("PROTOCOL_"))
         ops = dict((k,int(getattr(ssl, k))) for k in dir(ssl) if k.startswith("OP_"))
@@ -400,7 +400,7 @@ def get_ssl_info(show_constants=False) -> Dict[str,Any]:
     return info
 
 
-def get_network_caps(full_info : int=1) -> Dict[str,Any]:
+def get_network_caps(full_info : int=1) -> dict[str,Any]:
     # pylint: disable=import-outside-toplevel
     from xpra.net.digest import get_digests
     from xpra.net.compression import get_enabled_compressors, get_compression_caps
@@ -408,7 +408,7 @@ def get_network_caps(full_info : int=1) -> Dict[str,Any]:
     digests = get_digests()
     #"hmac" is the legacy name, "xor" and "des" should not be used for salt:
     salt_digests = tuple(x for x in digests if x not in ("hmac", "xor", "des"))
-    caps : Dict[str,Any] = {
+    caps : dict[str,Any] = {
         "digest"                : digests,
         "salt-digest"           : salt_digests,
         "compressors"           : get_enabled_compressors(),
@@ -420,7 +420,7 @@ def get_network_caps(full_info : int=1) -> Dict[str,Any]:
     return caps
 
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> dict[str,Any]:
     i = get_network_caps()
     netifaces = import_netifaces()
     if netifaces:

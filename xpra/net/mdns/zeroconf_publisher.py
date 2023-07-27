@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import socket
-from typing import Dict
 from zeroconf import ServiceInfo, Zeroconf, __version__ as zeroconf_version #@UnresolvedImport
 
 from xpra.log import Logger
@@ -39,7 +38,7 @@ def inet_ton(af, addr):
     return socket.inet_pton(af, addr)   #@UndefinedVariable
 
 
-def txt_rec(text_dict) -> Dict:
+def txt_rec(text_dict) -> dict:
     #prevent zeroconf from mangling our ints into booleans:
     new_dict = {}
     for k,v in text_dict.items():
@@ -97,7 +96,7 @@ class ZeroconfPublishers:
                         log("try XPRA_ZEROCONF_IPV6_LOOPBACK=1 to enable it at your own risk")
                     #means that IPV6 is False and "::" is not supported
                     #at time of writing, https://pypi.org/project/zeroconf/ says:
-                    #_Listening on localhost (::1) does not work. Help with understanding why is appreciated._
+                    #_listening on localhost (::1) does not work. Help with understanding why is appreciated._
                     continue
                 #annoying: we have to enumerate all interfaces
                 for iface, addresses in get_interfaces_addresses().items():

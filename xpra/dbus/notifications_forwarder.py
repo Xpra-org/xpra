@@ -5,7 +5,7 @@
 
 import os
 import dbus.service
-from typing import Dict, Any
+from typing import Any
 
 from xpra.notifications.common import parse_image_data, parse_image_path
 from xpra.dbus.helper import dbus_to_native
@@ -41,7 +41,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         bus_name = dbus.service.BusName(BUS_NAME, bus=bus)
         super().__init__(bus_name, BUS_PATH)
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         return {
             "active"        : tuple(self.active_notifications),
             "counter"       : self.counter,

@@ -7,7 +7,7 @@
 
 import os
 from math import sqrt
-from typing import Dict, Any, Tuple, Set
+from typing import Any
 from time import sleep, monotonic
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -44,11 +44,11 @@ class EncodingsMixin(StubSourceMixin):
         self.global_batch_config = self.default_batch_config.clone()      #global batch config
 
         self.encoding = ""                          #the default encoding for all windows
-        self.encodings : Tuple[str,...] = ()        #all the encodings supported by the client
-        self.core_encodings : Tuple[str,...] = ()
+        self.encodings : tuple[str,...] = ()        #all the encodings supported by the client
+        self.core_encodings : tuple[str,...] = ()
         self.encodings_packet = False               #supports delayed encodings initialization?
-        self.window_icon_encodings : Tuple[str,...] = ()
-        self.rgb_formats : Tuple[str,...] = ("RGB",)
+        self.window_icon_encodings : tuple[str,...] = ()
+        self.rgb_formats : tuple[str,...] = ("RGB",)
         self.encoding_options = typedict()
         self.icons_encoding_options = typedict()
         self.default_encoding_options = typedict()
@@ -58,7 +58,7 @@ class EncodingsMixin(StubSourceMixin):
 
         #for managing the recalculate_delays work:
         self.calculate_window_pixels = {}
-        self.calculate_window_ids : Set[int] = set()
+        self.calculate_window_ids : set[int] = set()
         self.calculate_timer = 0
         self.calculate_last_time = 0
 
@@ -100,13 +100,13 @@ class EncodingsMixin(StubSourceMixin):
             self.cuda_device_context = None
             cdd.free()
 
-    def all_window_sources(self) -> Tuple:
+    def all_window_sources(self) -> tuple:
         #we can't assume that the window mixin is loaded:
         window_sources = getattr(self, "window_sources", {})
         return tuple(window_sources.values())
 
 
-    def get_caps(self) -> Dict[str,Any]:
+    def get_caps(self) -> dict[str,Any]:
         caps = {}
         if "encodings" in self.wants and self.encoding:
             caps["encoding"] = self.encoding
@@ -469,7 +469,7 @@ class EncodingsMixin(StubSourceMixin):
             self.encoding = encoding
 
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = {
                 "auto_refresh"      : self.auto_refresh_delay,
                 "lz4"               : self.lz4,

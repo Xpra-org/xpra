@@ -7,7 +7,7 @@
 import os
 import time
 from time import monotonic
-from typing import Dict, Tuple, Any, Callable, Iterable, List
+from typing import Any, Callable, Iterable
 from contextlib import AbstractContextManager
 from gi.repository import GLib  # @UnresolvedImport
 
@@ -104,7 +104,7 @@ if SAVE_BUFFERS:
     from PIL import Image, ImageOps         # @UnresolvedImport
 
 
-PIXEL_FORMAT_TO_CONSTANT : Dict[str,IntConstant] = {
+PIXEL_FORMAT_TO_CONSTANT : dict[str,IntConstant] = {
     "r210"  : GL_BGRA,
     "R210"  : GL_RGBA,
     "BGR"   : GL_BGR,
@@ -116,7 +116,7 @@ PIXEL_FORMAT_TO_CONSTANT : Dict[str,IntConstant] = {
     "BGR565": GL_RGB,
     "RGB565": GL_RGB,
     }
-PIXEL_INTERNAL_FORMAT : Dict[str,Tuple[IntConstant,...]] = {
+PIXEL_INTERNAL_FORMAT : dict[str,tuple[IntConstant,...]] = {
     #defaults to: GL_R8, GL_R8, GL_R8
     #(meaning: 3 planes, 8 bits each)
     #override for formats that use 16 bit per channel:
@@ -126,12 +126,12 @@ PIXEL_INTERNAL_FORMAT : Dict[str,Tuple[IntConstant,...]] = {
     "YUV444P10" : (GL_R16, GL_R16, GL_R16),
     "YUV444P16" : (GL_R16, GL_R16, GL_R16),
     }
-PIXEL_DATA_FORMAT : Dict[str,Tuple[IntConstant,...]] = {
+PIXEL_DATA_FORMAT : dict[str,tuple[IntConstant,...]] = {
     #defaults to: (GL_RED, GL_RED, GL_RED))
     #(meaning: uploading one channel at a time)
     "NV12"  : (GL_LUMINANCE, GL_LUMINANCE_ALPHA),  #Y is one channel, UV contains two channels
     }
-PIXEL_UPLOAD_FORMAT : Dict[str,Any] = {
+PIXEL_UPLOAD_FORMAT : dict[str,Any] = {
     "r210"  : GL_UNSIGNED_INT_2_10_10_10_REV,
     "R210"  : GL_UNSIGNED_INT_10_10_10_2,
     "RGB565": GL_UNSIGNED_SHORT_5_6_5,
@@ -152,13 +152,13 @@ PIXEL_UPLOAD_FORMAT : Dict[str,Any] = {
     "YUV444P10" : (GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT),
     "YUV444P16" : (GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT),
     }
-CONSTANT_TO_PIXEL_FORMAT : Dict[IntConstant,str] = {
+CONSTANT_TO_PIXEL_FORMAT : dict[IntConstant,str] = {
     GL_BGR   : "BGR",
     GL_RGB   : "RGB",
     GL_BGRA  : "BGRA",
     GL_RGBA  : "RGBA",
     }
-INTERNAL_FORMAT_TO_STR : Dict[IntConstant,str] = {
+INTERNAL_FORMAT_TO_STR : dict[IntConstant,str] = {
     GL_RGB10_A2     : "RGB10_A2",
     GL_RGBA8        : "RGBA8",
     GL_RGB8         : "RGB8",
@@ -167,7 +167,7 @@ INTERNAL_FORMAT_TO_STR : Dict[IntConstant,str] = {
     GL_RGBA4        : "RGBA4",
     GL_RGBA16       : "GL_RGBA16",
     }
-DATATYPE_TO_STR : Dict[IntConstant,str] = {
+DATATYPE_TO_STR : dict[IntConstant,str] = {
     GL_UNSIGNED_INT_2_10_10_10_REV  : "UNSIGNED_INT_2_10_10_10_REV",
     GL_UNSIGNED_INT_10_10_10_2      : "UNSIGNED_INT_10_10_10_2",
     GL_UNSIGNED_BYTE                : "UNSIGNED_BYTE",
@@ -267,7 +267,7 @@ or offscreen window movement.
 """
 class GLWindowBackingBase(WindowBackingBase):
 
-    RGB_MODES : List[str] = ["YUV420P", "YUV422P", "YUV444P", "GBRP", "BGRA", "BGRX", "RGBA", "RGBX", "RGB", "BGR", "NV12"]
+    RGB_MODES : list[str] = ["YUV420P", "YUV422P", "YUV444P", "GBRP", "BGRA", "BGRX", "RGBA", "RGBX", "RGB", "BGR", "NV12"]
     HAS_ALPHA : bool = GL_ALPHA_SUPPORTED
 
     def __init__(self, wid : int, window_alpha : bool, pixel_depth : int=0):
@@ -278,7 +278,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.pixel_format : str = ""
         self.textures = None # OpenGL texture IDs
         self.shaders = None
-        self.texture_size : Tuple[int,int] = (0, 0)
+        self.texture_size : tuple[int,int] = (0, 0)
         self.gl_setup : bool = False
         self.debug_setup : bool = False
         self.border : WindowBorder = WindowBorder(shown=False)
@@ -303,7 +303,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.repaint_all : bool = True
         self._backing.show()
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = super().get_info()
         tpf = self.texture_pixel_format
         tif = self.internal_format
@@ -379,7 +379,7 @@ class GLWindowBackingBase(WindowBackingBase):
             INTERNAL_FORMAT_TO_STR.get(self.internal_format),
             self.RGB_MODES)
 
-    def get_encoding_properties(self) -> Dict[str,Any]:
+    def get_encoding_properties(self) -> dict[str,Any]:
         props = super().get_encoding_properties()
         if SCROLL_ENCODING:
             props["encoding.scrolling"] = True
@@ -1044,7 +1044,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glEnd()
 
 
-    def pixels_for_upload(self, img_data) -> Tuple[str, Any]:
+    def pixels_for_upload(self, img_data) -> tuple[str, Any]:
         #prepare the pixel buffer for upload:
         if isinstance(img_data, memoryview):
             if not zerocopy_upload:

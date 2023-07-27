@@ -10,7 +10,6 @@ import unittest
 import tempfile
 from time import monotonic
 from subprocess import Popen
-from typing import List
 
 from xpra.util import repr_ellipsized, envint
 from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
@@ -248,7 +247,7 @@ class ServerSocketsTest(ServerTestUtil):
                     openssl = self.run_command(openssl_verify_command, stdin=devnull, shell=True)
                     r = pollwait(openssl, 10)
                     assert r==0, "openssl certificate verification failed, returned %s" % r
-                errors : List[str] = []
+                errors : list[str] = []
                 def tc(mode:str, port:int):
                     uri = f"{mode}://foo:bar@127.0.0.1:{port}/"
                     stype = ports_proto.get(port, "").rjust(5)

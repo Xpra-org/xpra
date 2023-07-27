@@ -4,8 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict
-
 from uinput import (
     BTN_LEFT, BTN_RIGHT, BTN_MIDDLE, BTN_SIDE, BTN_EXTRA,   # @UnresolvedImport
     REL_WHEEL, REL_HWHEEL,                                  # @UnresolvedImport
@@ -48,7 +46,7 @@ class UInputDevice:
     def __init__(self, device, device_path):
         self.device = device
         self.device_path : str = device_path
-        self.wheel_delta : Dict[int,float] = {}
+        self.wheel_delta : dict[int,float] = {}
         #the first event always goes MIA:
         #http://who-t.blogspot.co.at/2012/06/xi-21-protocol-design-issues.html
         #so synthesize a dummy one now:

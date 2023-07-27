@@ -11,7 +11,7 @@ import traceback
 from math import sqrt, ceil
 from functools import reduce
 from time import monotonic
-from typing import Callable, Tuple, Dict, Any
+from typing import Callable, Any
 
 from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
@@ -63,7 +63,7 @@ SCALING_HARDCODED = parse_scaling_value(os.environ.get("XPRA_SCALING_HARDCODED",
 SCALING_PPS_TARGET = envint("XPRA_SCALING_PPS_TARGET", 25*1920*1080)
 SCALING_MIN_PPS = envint("XPRA_SCALING_MIN_PPS", 25*320*240)
 DEFAULT_SCALING_OPTIONS = (1, 10), (1, 5), (1, 4), (1, 3), (1, 2), (2, 3), (1, 1)
-def parse_scaling_options_str(scaling_options_str) -> Tuple:
+def parse_scaling_options_str(scaling_options_str) -> tuple:
     if not scaling_options_str:
         return DEFAULT_SCALING_OPTIONS
     #parse 1/10,1/5,1/4,1/3,1/2,2/3,1/1
@@ -113,7 +113,7 @@ COMPRESS_SCROLL_FMT = COMPRESS_FMT_PREFIX+" as %3i rectangles  (%5iKB to     0KB
 
 def get_pipeline_score_info(score, scaling,
                             csc_scaling, csc_width : int, csc_height : int, csc_spec,
-                            enc_in_format, encoder_scaling, enc_width : int, enc_height : int, encoder_spec) -> Dict[str,Any]:
+                            enc_in_format, encoder_scaling, enc_width : int, enc_height : int, encoder_spec) -> dict[str,Any]:
     def specinfo(x):
         try:
             return x.codec_type
@@ -126,7 +126,7 @@ def get_pipeline_score_info(score, scaling,
         }
     if encoder_scaling!=(1, 1):
         ei["scaling"] = encoder_scaling
-    pi : Dict[str,Any] = {
+    pi : dict[str,Any] = {
            "score"             : score,
            "format"            : str(enc_in_format),
            "encoder"           : ei,
@@ -134,7 +134,7 @@ def get_pipeline_score_info(score, scaling,
     if scaling!=(1, 1):
         pi["scaling"] = scaling
     if csc_spec:
-        csci : Dict[str,Any] = {
+        csci : dict[str,Any] = {
             ""         : specinfo(csc_spec),
             "width"    : csc_width,
             "height"   : csc_height,
@@ -160,7 +160,7 @@ class WindowVideoSource(WindowSource):
         self.supports_scrolling : bool = False
         self.scroll_min_percent : int = self.encoding_options.intget("scrolling.min-percent", SCROLL_MIN_PERCENT)
         self.scroll_preference : int = self.encoding_options.intget("scrolling.preference", 100)
-        self.supports_video_b_frames : Tuple[str,...] = self.encoding_options.strtupleget("video_b_frames", ())
+        self.supports_video_b_frames : tuple[str,...] = self.encoding_options.strtupleget("video_b_frames", ())
         self.video_max_size = self.encoding_options.inttupleget("video_max_size", (8192, 8192), 2, 2)
         self.video_stream_file = None
 
@@ -179,19 +179,19 @@ class WindowVideoSource(WindowSource):
         self.height_mask : int = 0xFFFF
         self.actual_scaling = (1, 1)
 
-        self.last_pipeline_params : Tuple = ()
-        self.last_pipeline_scores : Tuple = ()
+        self.last_pipeline_params : tuple = ()
+        self.last_pipeline_scores : tuple = ()
         self.last_pipeline_time : int = 0
 
-        self.video_encodings : Tuple[str,...] = ()
-        self.common_video_encodings : Tuple[str,...] = ()
-        self.non_video_encodings : Tuple[str,...] = ()
-        self.video_fallback_encodings : Dict = {}
+        self.video_encodings : tuple[str,...] = ()
+        self.common_video_encodings : tuple[str,...] = ()
+        self.non_video_encodings : tuple[str,...] = ()
+        self.video_fallback_encodings : dict = {}
         self.edge_encoding : str = ""
         self.start_video_frame : int = 0
         self.video_encoder_timer : int = 0
         self.b_frame_flush_timer : int = 0
-        self.b_frame_flush_data : Tuple = ()
+        self.b_frame_flush_data : tuple = ()
         self.encode_from_queue_timer : int = 0
         self.encode_from_queue_due = 0
         self.scroll_data = None
@@ -264,7 +264,7 @@ class WindowVideoSource(WindowSource):
         self.may_update_av_sync_delay()
 
 
-    def get_property_info(self) -> Dict[str,Any]:
+    def get_property_info(self) -> dict[str,Any]:
         i = super().get_property_info()
         if self.scaling_control is None:
             i["scaling.control"] = "auto"
@@ -273,7 +273,7 @@ class WindowVideoSource(WindowSource):
         i["scaling"] = self.scaling or (1, 1)
         return i
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = super().get_info()
         sr = self.video_subregion
         if sr:
@@ -312,14 +312,14 @@ class WindowVideoSource(WindowSource):
             einfo["pipeline_last_check"] = int(1000*(monotonic()-self._last_pipeline_check))
         lps = self.last_pipeline_scores
         if lps:
-            popts : Dict[int,Dict[str,Any]] = {}
+            popts : dict[int,dict[str,Any]] = {}
             for i, lp in enumerate(lps):
                 popts[i] = get_pipeline_score_info(*lp)
             einfo["pipeline_option"] = popts
         info.setdefault("encoding", {}).update(einfo)
         return info
 
-    def get_pipeline_info(self) -> Dict[str,Any]:
+    def get_pipeline_info(self) -> dict[str,Any]:
         lp = self.last_pipeline_params
         if not lp:
             return {}
@@ -584,7 +584,7 @@ class WindowVideoSource(WindowSource):
                 return nonvideo(info=f"not enough pixels: {pixel_count}<{max_nvp}")
         return current_encoding
 
-    def get_best_nonvideo_encoding(self, ww : int, wh : int, options : Dict,
+    def get_best_nonvideo_encoding(self, ww : int, wh : int, options : dict,
                                    current_encoding=None, encoding_options=()) -> str:
         if self.encoding=="grayscale":
             return self.encoding_is_grayscale(ww, wh, options, current_encoding or self.encoding)
@@ -643,7 +643,7 @@ class WindowVideoSource(WindowSource):
             self.gstreamer_pipeline = None
             gp.stop()
 
-    def new_gstreamer_frame(self, _capture_pipeline, coding:str, data, client_info:Dict) -> None:
+    def new_gstreamer_frame(self, _capture_pipeline, coding:str, data, client_info:dict) -> None:
         self.direct_queue_draw(coding, data, client_info)
 
     def update_window_dimensions(self, ww, wh):
@@ -666,7 +666,7 @@ class WindowVideoSource(WindowSource):
         self.cleanup_codecs()
 
 
-    def full_quality_refresh(self, damage_options : Dict) -> None:
+    def full_quality_refresh(self, damage_options : dict) -> None:
         vs = self.video_subregion
         if vs and vs.rectangle:
             if vs.detection:
@@ -1356,7 +1356,7 @@ class WindowVideoSource(WindowSource):
         #everything is still valid:
         return True
 
-    def get_video_pipeline_options(self, encodings : Tuple[str,...], width : int, height : int, src_format : str) -> Tuple:
+    def get_video_pipeline_options(self, encodings : tuple[str,...], width : int, height : int, src_format : str) -> tuple:
         """
             Given a picture format (width, height and src pixel format),
             we find all the pipeline options that will allow us to compress
@@ -1499,14 +1499,14 @@ class WindowVideoSource(WindowSource):
                 return int(pixels/(width*height)/(now - otime))
         return 0
 
-    def calculate_scaling(self, width : int, height : int, max_w : int=4096, max_h : int=4096) -> Tuple[int,int]:
+    def calculate_scaling(self, width : int, height : int, max_w : int=4096, max_h : int=4096) -> tuple[int,int]:
         if width==0 or height==0:
             return (1, 1)
         now = monotonic()
         crs = None
         if DOWNSCALE:
             crs = self.client_render_size
-        def get_min_required_scaling(default_value=(1, 1)) -> Tuple[int, int]:
+        def get_min_required_scaling(default_value=(1, 1)) -> tuple[int, int]:
             mw = max_w
             mh = max_h
             if crs:
@@ -1716,7 +1716,7 @@ class WindowVideoSource(WindowSource):
         scores = self.get_video_pipeline_options(encodings, w, h, src_format)
         return self.setup_pipeline(scores, width, height, src_format)
 
-    def do_check_pipeline(self, encodings : Tuple[str,...], width : int, height : int, src_format : str):
+    def do_check_pipeline(self, encodings : tuple[str,...], width : int, height : int, src_format : str):
         """
             Checks that the current pipeline is still valid
             for the given input.
@@ -1782,7 +1782,7 @@ class WindowVideoSource(WindowSource):
         return True
 
 
-    def setup_pipeline(self, scores : Tuple, width : int, height : int, src_format : str):
+    def setup_pipeline(self, scores : tuple, width : int, height : int, src_format : str):
         """
             Given a list of pipeline options ordered by their score
             and an input format (width, height and source pixel format),
@@ -1907,7 +1907,7 @@ class WindowVideoSource(WindowSource):
         scalinglog("setup_pipeline: scaling=%s, encoder_scaling=%s", scaling, encoder_scaling)
         return True
 
-    def get_video_encoder_options(self, encoding, width, height) -> Dict[str,Any]:
+    def get_video_encoder_options(self, encoding, width, height) -> dict[str,Any]:
         #tweaks for "real" video:
         opts = {"cuda-device-context" : self.cuda_device_context}
         if not self._fixed_quality and not self._fixed_speed and self._fixed_min_quality<50:
@@ -1936,7 +1936,7 @@ class WindowVideoSource(WindowSource):
 
 
     def make_draw_packet(self, x : int, y : int, w : int, h : int,
-                         coding : str, data, outstride : int, client_options, options) -> Tuple:
+                         coding : str, data, outstride : int, client_options, options) -> tuple:
         #overridden so we can invalidate the scroll data:
         #log.error("make_draw_packet%s", (x, y, w, h, coding, "..", outstride, client_options)
         packet = super().make_draw_packet(x, y, w, h, coding, data, outstride, client_options, options)
@@ -2225,7 +2225,7 @@ class WindowVideoSource(WindowSource):
         super().do_schedule_auto_refresh(encoding, data, region, client_options, options)
 
 
-    def video_fallback(self, image : ImageWrapper, options, warn=False) -> Tuple:
+    def video_fallback(self, image : ImageWrapper, options, warn=False) -> tuple:
         if warn and first_time(f"non-video-{self.wid}"):
             videolog.warn("Warning: using non-video fallback encoding")
             videolog.warn(f" for {image} of window {self.wid}")
@@ -2239,13 +2239,13 @@ class WindowVideoSource(WindowSource):
         encode_fn = self.video_fallback_encodings[encoding][0]
         return encode_fn(encoding, image, options)
 
-    def video_encode(self, encoding : str, image : ImageWrapper, options : Dict) -> Tuple:
+    def video_encode(self, encoding : str, image : ImageWrapper, options : dict) -> tuple:
         try:
             return self.do_video_encode(encoding, image, options)
         finally:
             self.free_image_wrapper(image)
 
-    def do_video_encode(self, encoding : str, image : ImageWrapper, options : Dict) -> Tuple:
+    def do_video_encode(self, encoding : str, image : ImageWrapper, options : dict) -> tuple:
         """
             This method is used by make_data_packet to encode frames using video encoders.
             Video encoders only deal with fixed dimensions,
@@ -2544,7 +2544,7 @@ class WindowVideoSource(WindowSource):
         self.video_context_clean()
 
 
-    def csc_image(self, image, width, height) -> Tuple:
+    def csc_image(self, image, width, height) -> tuple:
         """
             Takes a source image and converts it
             using the current csc_encoder.

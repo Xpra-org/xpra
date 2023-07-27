@@ -7,7 +7,6 @@
 import os
 import sys
 
-from typing import Tuple
 from xpra.util import obsc, typedict, stderr_print
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
 from xpra.log import enable_debug_for, is_debug_enabled
@@ -53,7 +52,7 @@ class Authenticator(SysAuthenticatorBase):
     def __repr__(self):
         return "ldap3"
 
-    def get_challenge(self, digests) -> Tuple[bytes,str]:
+    def get_challenge(self, digests) -> tuple[bytes,str]:
         self.req_xor(digests)
         return super().get_challenge(["xor"])
 

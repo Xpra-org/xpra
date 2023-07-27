@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Tuple, Any
+from typing import Any
 
 from xpra.util import engs, log_screen_sizes, typedict
 from xpra.os_util import bytestostr, is_Wayland
@@ -34,12 +34,12 @@ class DisplayManager(StubServerMixin):
         self.dpi = 0
         self.xdpi = 0
         self.ydpi = 0
-        self.antialias : Dict[str,Any] = {}
+        self.antialias : dict[str,Any] = {}
         self.cursor_size = 0
         self.double_click_time  = -1
         self.double_click_distance = -1, -1
         self.opengl = "no"
-        self.opengl_props : Dict[str,Any] = {}
+        self.opengl_props : dict[str,Any] = {}
         self.refresh_rate = "auto"
 
     def init(self, opts) -> None:
@@ -70,8 +70,8 @@ class DisplayManager(StubServerMixin):
         self.opengl_props = self.query_opengl()
 
 
-    def query_opengl(self) -> Dict[str,Any]:
-        props : Dict[str,Any] = {}
+    def query_opengl(self) -> dict[str,Any]:
+        props : dict[str,Any] = {}
         if self.opengl.lower()=="noprobe" or self.opengl.lower() in FALSE_OPTIONS:
             gllog("query_opengl() skipped because opengl=%s", self.opengl)
             return props
@@ -139,8 +139,8 @@ class DisplayManager(StubServerMixin):
         return props
 
 
-    def get_caps(self, source)  -> Dict[str,Any]:
-        caps : Dict[str,Any] = {
+    def get_caps(self, source)  -> dict[str,Any]:
+        caps : dict[str,Any] = {
             "bell"          : self.bell,
             "cursors"       : self.cursors,
             }
@@ -151,7 +151,7 @@ class DisplayManager(StubServerMixin):
             caps["opengl"] = dict_version_trim(self.opengl_props)
         return caps
 
-    def get_info(self, _proto) -> Dict[str,Any]:
+    def get_info(self, _proto) -> dict[str,Any]:
         i = {
                 "randr" : self.randr,
                 "bell"  : self.bell,
@@ -205,10 +205,10 @@ class DisplayManager(StubServerMixin):
         self.set_desktop_geometry(w, h)
 
 
-    def parse_screen_info(self, ss) -> Tuple[int,int]:
+    def parse_screen_info(self, ss) -> tuple[int,int]:
         return self.do_parse_screen_info(ss, ss.desktop_size)
 
-    def do_parse_screen_info(self, ss, desktop_size) -> Tuple[int,int]:
+    def do_parse_screen_info(self, ss, desktop_size) -> tuple[int,int]:
         log("do_parse_screen_info%s", (ss, desktop_size))
         dw, dh = None, None
         if desktop_size:
@@ -263,7 +263,7 @@ class DisplayManager(StubServerMixin):
         self.set_screen_geometry_attributes(w, h)
         self.idle_add(self.send_updated_screen_size)
 
-    def get_root_window_size(self) -> Tuple[int,int]:
+    def get_root_window_size(self) -> tuple[int,int]:
         raise NotImplementedError()
 
     def send_updated_screen_size(self) -> None:
@@ -285,10 +285,10 @@ class DisplayManager(StubServerMixin):
             log.info("sent updated screen size to %s client%s: %sx%s (max %sx%s)",
                      count, engs(count), root_w, root_h, max_w, max_h)
 
-    def get_max_screen_size(self) -> Tuple[int,int]:
+    def get_max_screen_size(self) -> tuple[int,int]:
         return self.get_root_window_size()
 
-    def _get_desktop_size_capability(self, server_source, root_w:int, root_h:int) -> Tuple[int,int]:
+    def _get_desktop_size_capability(self, server_source, root_w:int, root_h:int) -> tuple[int,int]:
         client_size = server_source.desktop_size
         log("client resolution is %s, current server resolution is %sx%s", client_size, root_w, root_h)
         if not client_size:
@@ -299,7 +299,7 @@ class DisplayManager(StubServerMixin):
         h = min(client_h, root_h)
         return w, h
 
-    def configure_best_screen_size(self) -> Tuple[int,int]:
+    def configure_best_screen_size(self) -> tuple[int,int]:
         return self.get_root_window_size()
 
 

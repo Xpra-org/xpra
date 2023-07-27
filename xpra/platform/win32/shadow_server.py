@@ -7,7 +7,7 @@
 import os
 import re
 from time import monotonic
-from typing import Dict, Any, Tuple, Type, List
+from typing import Any
 from ctypes import create_unicode_buffer, sizeof, byref, c_ulong
 from ctypes.wintypes import RECT, POINT, BYTE
 
@@ -73,12 +73,12 @@ GDI = envbool("XPRA_SHADOW_GDI", True)
 GSTREAMER = envbool("XPRA_SHADOW_GSTREAMER", True)
 
 
-def get_root_window_size() -> Tuple[int,int]:
+def get_root_window_size() -> tuple[int,int]:
     w = GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
     h = GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
     return w, h
 
-def get_monitors() -> List[Dict[str,Any]]:
+def get_monitors() -> List[dict[str,Any]]:
     monitors = []
     for m in EnumDisplayMonitors():
         mi = GetMonitorInfo(m)
@@ -154,7 +154,7 @@ class SeamlessRootWindowModel(RootWindowModel):
         shapelog("refresh_shape() sending notify for updated rectangles: %s", rectangles)
         self.notify("shape")
 
-    def get_shape_rectangles(self, logit=False) -> List:
+    def get_shape_rectangles(self, logit=False) -> list:
         #get the list of windows
         l = log
         if logit or envbool("XPRA_SHAPE_DEBUG", False):
@@ -328,7 +328,7 @@ class ShadowServer(GTKShadowServerBase):
         return init_capture(w, h, self.pixel_depth)
 
 
-    def get_root_window_model_class(self) -> Type:
+    def get_root_window_model_class(self) -> type:
         if SEAMLESS:
             return SeamlessRootWindowModel
         return RootWindowModel
@@ -401,7 +401,7 @@ class ShadowServer(GTKShadowServerBase):
         return models
 
 
-    def get_shadow_monitors(self) -> List:
+    def get_shadow_monitors(self) -> list:
         #convert to the format expected by GTKShadowServerBase:
         monitors = []
         for i, monitor in enumerate(get_monitors()):
@@ -423,7 +423,7 @@ class ShadowServer(GTKShadowServerBase):
         log("refresh()=%s", v)
         return v
 
-    def do_get_cursor_data(self) -> Tuple | None:
+    def do_get_cursor_data(self) -> tuple | None:
         ci = CURSORINFO()
         ci.cbSize = sizeof(CURSORINFO)
         GetCursorInfo(byref(ci))
@@ -448,7 +448,7 @@ class ShadowServer(GTKShadowServerBase):
             ((w,h), [(w,h), ]),
             )
 
-    def get_pointer_position(self) -> Tuple[int,int]:
+    def get_pointer_position(self) -> tuple[int,int]:
         pos = POINT()
         GetPhysicalCursorPos(byref(pos))
         return pos.x, pos.y
@@ -525,13 +525,13 @@ class ShadowServer(GTKShadowServerBase):
         x, y = pointer[:2]
         mouse_event(dwFlags, x, y, dwData, 0)
 
-    def make_hello(self, source) -> Dict[str,Any]:
+    def make_hello(self, source) -> dict[str,Any]:
         capabilities = GTKServerBase.make_hello(self, source)
         capabilities["shadow"] = True
         capabilities["server_type"] = "Python/gtk2/win32-shadow"
         return capabilities
 
-    def get_info(self, proto, *_args) -> Dict[str,Any]:
+    def get_info(self, proto, *_args) -> dict[str,Any]:
         info = GTKServerBase.get_info(self, proto)
         info.update(GTKShadowServerBase.get_info(self, proto))
         info.setdefault("features", {})["shadow"] = True

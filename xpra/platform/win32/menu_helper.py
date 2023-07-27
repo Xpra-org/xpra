@@ -18,7 +18,7 @@ def parse_link(content):
     # read the LinkFlags structure (4 bytes)
     lflags = struct.unpack('I', content[0x14:0x18])[0]
     position = 0x18
-    # if the HasLinkTargetIDList bit is set then skip the stored IDList
+    # if the HasLinkTargetIDlist bit is set then skip the stored IDlist
     # structure and header
     if (lflags & 0x01) == 1:
         position = struct.unpack('H', content[0x4C:0x4E])[0] + 0x4E

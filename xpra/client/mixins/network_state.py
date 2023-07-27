@@ -9,7 +9,7 @@ import re
 import sys
 from time import monotonic
 from collections import deque
-from typing import Dict, Any, Tuple, Callable
+from typing import Any, Callable
 from gi.repository import GLib
 
 from xpra.os_util import POSIX
@@ -82,7 +82,7 @@ def get_NM_adapter_type(device_name) -> str:
 def parse_speed(v):
     return parse_with_unit("speed", v)
 
-def get_device_value(coptions : Dict, device_info : Dict, attr: str, conv: Callable = str, default_value: Any = ""):
+def get_device_value(coptions : dict, device_info : dict, attr: str, conv: Callable = str, default_value: Any = ""):
     # first try an env var:
     v = os.environ.get("XPRA_NETWORK_%s" % attr.upper().replace("-", "_"))
     # next try device options (ie: from connection URI)
@@ -165,18 +165,18 @@ class NetworkState(StubClientMixin):
         self.server_session_name : str = ""
 
         #info requests
-        self.server_last_info : Dict = {}
+        self.server_last_info : dict = {}
         self.info_request_pending : bool = False
 
         #network state:
-        self.server_packet_encoders : Tuple[str, ...] = ()
-        self.server_ping_latency : deque[Tuple[float,float]] = deque(maxlen=1000)
+        self.server_packet_encoders : tuple[str, ...] = ()
+        self.server_ping_latency : deque[tuple[float,float]] = deque(maxlen=1000)
         self.server_load = (0, 0, 0)
-        self.client_ping_latency : deque[Tuple[float,float]] = deque(maxlen=1000)
+        self.client_ping_latency : deque[tuple[float,float]] = deque(maxlen=1000)
         self._server_ok : bool = True
         self.last_ping_echoed_time = 0
         self.ping_timer : int = 0
-        self.ping_echo_timers : Dict[int,int] = {}
+        self.ping_echo_timers : dict[int,int] = {}
         self.ping_echo_timeout_timer = 0
 
 
@@ -193,7 +193,7 @@ class NetworkState(StubClientMixin):
         self.cancel_ping_echo_timeout_timer()
 
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         return {
             "network" : {
                 "bandwidth-limit"       : self.bandwidth_limit,
@@ -202,8 +202,8 @@ class NetworkState(StubClientMixin):
                 }
             }
 
-    def get_caps(self) -> Dict[str,Any]:
-        caps : Dict[str, Any] = {
+    def get_caps(self) -> dict[str,Any]:
+        caps : dict[str, Any] = {
             "network-state" : True,
             }
         ssh_auth_sock = os.environ.get("SSH_AUTH_SOCK")
@@ -285,7 +285,7 @@ class NetworkState(StubClientMixin):
             GLib.source_remove(pt)
 
     def cancel_ping_echo_timers(self) -> None:
-        pet : Tuple[int,...] = tuple(self.ping_echo_timers.values())
+        pet : tuple[int,...] = tuple(self.ping_echo_timers.values())
         self.ping_echo_timers = {}
         for t in pet:
             GLib.source_remove(t)
@@ -364,7 +364,7 @@ class NetworkState(StubClientMixin):
         wait = 1000*MIN_PING_TIMEOUT
         aspl = tuple(self.server_ping_latency)
         if aspl:
-            spl : Tuple[float,...] = tuple(x[1] for x in aspl)
+            spl : tuple[float,...] = tuple(x[1] for x in aspl)
             avg = sum(spl) / len(spl)
             wait = max(1000*MIN_PING_TIMEOUT, min(1000*MAX_PING_TIMEOUT, round(1000+avg*2000)))
             log("send_ping() timestamp=%s, average server latency=%ims, using max wait %ims",

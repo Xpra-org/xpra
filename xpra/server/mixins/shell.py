@@ -6,7 +6,7 @@
 #pylint: disable-msg=E1101
 
 from collections import deque
-from typing import Dict, Any, Deque
+from typing import Any, Deque
 
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.net.common import PacketType
@@ -20,7 +20,7 @@ class ShellServer(StubServerMixin):
         self.counter = 0
         self.commands : Deque[str] = deque(maxlen=10)
 
-    def get_info(self, _source=None) -> Dict[str,Any]:
+    def get_info(self, _source=None) -> dict[str,Any]:
         return {
             "shell" : {
                 "counter" : self.counter,
@@ -28,7 +28,7 @@ class ShellServer(StubServerMixin):
                 },
             }
 
-    def get_server_features(self, _source) -> Dict[str,Any]:
+    def get_server_features(self, _source) -> dict[str,Any]:
         return {
             "shell" : True,
             }

@@ -6,7 +6,7 @@
 import socket
 import ipaddress
 from queue import Queue
-from typing import Dict, Callable, Union, cast, Tuple
+from typing import Callable, Union, cast
 
 from aioquic.quic.configuration import QuicConfiguration
 from aioquic.quic.events import QuicEvent
@@ -98,8 +98,8 @@ class WebSocketClient(QuicConnectionProtocol):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._http: HttpConnection | None = None
-        self._push_types: Dict[str, int] = {}
-        self._websockets: Dict[int, ClientWebSocketConnection] = {}
+        self._push_types: dict[str, int] = {}
+        self._websockets: dict[int, ClientWebSocketConnection] = {}
         if self._quic.configuration.alpn_protocols[0].startswith("hq-"):
             self._http = H0Connection(self._quic)
         else:
@@ -162,7 +162,7 @@ def create_local_socket(family=socket.AF_INET):
     log(f"create_udp_socket({pretty_socket(addr)}, {family})={sock}")
     return sock, addr
 
-async def get_address_options(host:str, port:int) -> Tuple:
+async def get_address_options(host:str, port:int) -> tuple:
     if IPV6:
         family = socket.AF_UNSPEC
         family_options = (socket.AF_INET, socket.AF_INET6)

@@ -5,7 +5,7 @@
 
 import struct
 from threading import RLock
-from typing import Dict, Callable
+from typing import Callable
 
 from xpra.net.rfb.rfb_protocol import RFBProtocol
 from xpra.net.rfb.rfb_const import (
@@ -28,7 +28,7 @@ class RFBClientProtocol(RFBProtocol):
         self.rectangles = 0
         self.position = 0, 0
         #translate xpra packets into rfb packets:
-        self._rfb_converters : Dict[str,Callable] = {
+        self._rfb_converters : dict[str,Callable] = {
             "pointer-position"  : self.send_pointer_position,
             "button-action"     : self.send_button_action,
             "key-action"        : self.send_key_action,

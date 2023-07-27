@@ -8,7 +8,7 @@ import sys
 import os
 import errno
 import socket
-from typing import Dict, Any, Union, Callable
+from typing import Any, Callable
 
 from xpra.net.common import ConnectionClosedException, IP_SOCKTYPES, TCP_SOCKTYPES
 from xpra.util import envint, envbool, hasenv, csv
@@ -38,7 +38,7 @@ SOCKET_TIMEOUT : int = envint("XPRA_SOCKET_TIMEOUT", 20)
 SOCKET_SHUTDOWN : bool = envbool("XPRA_SOCKET_SHUTDOWN", False)
 LOG_TIMEOUTS : int = envint("XPRA_LOG_TIMEOUTS", 1)
 
-ABORT : Dict[int, str] = {
+ABORT : dict[int, str] = {
          errno.ENXIO            : "ENXIO",
          errno.ECONNRESET       : "ECONNRESET",
          errno.EPIPE            : "EPIPE",
@@ -57,7 +57,7 @@ del x
 CAN_RETRY_EXCEPTIONS = ()
 CLOSED_EXCEPTIONS = ()
 
-def can_retry(e) -> Union[bool,str]:
+def can_retry(e) -> bool | str:
     if isinstance(e, socket.timeout):
         return "socket.timeout"
     if isinstance(e, BlockingIOError):
@@ -142,7 +142,7 @@ class Connection:
     def close(self) -> None:
         self.set_active(False)
 
-    def can_retry(self, e) -> Union[bool,str]:
+    def can_retry(self, e) -> bool | str:
         return can_retry(e)
 
     def untilConcludes(self, *args):
@@ -166,7 +166,7 @@ class Connection:
         self.input_readcount += 1
         return r
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = self.info.copy()
         if self.socktype_wrapped!=self.socktype:
             info["wrapped"] = self.socktype_wrapped
@@ -252,7 +252,7 @@ class TwoFileConnection(Connection):
     def __repr__(self):
         return f"Pipe({self.target})"
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         d = super().get_info()
         d.update({
             "type"  : "pipe",
@@ -385,7 +385,7 @@ class SocketConnection(Connection):
                 )
         return f"{self.socktype} {self.protocol_type}:{pretty_socket(self.local)}"
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         d = super().get_info()
         try:
             d["remote"] = self.remote or ""
@@ -398,10 +398,10 @@ class SocketConnection(Connection):
             log.error("Error accessing socket information", exc_info=True)
         return d
 
-    def get_socket_info(self) -> Dict[str,Any]:
+    def get_socket_info(self) -> dict[str,Any]:
         return self.do_get_socket_info(self._socket)
 
-    def do_get_socket_info(self, s) -> Dict[str,Any]:
+    def do_get_socket_info(self, s) -> dict[str,Any]:
         if not s:
             return {}
         info = {}
@@ -474,7 +474,7 @@ class SocketConnection(Connection):
         return info
 
 
-def get_socket_options(sock, level, options) -> Dict:
+def get_socket_options(sock, level, options) -> dict:
     opts = {}
     errs = []
     for k in options:
@@ -587,7 +587,7 @@ class PeekableSocketConnection(SocketConnection):
 class SSLSocketConnection(PeekableSocketConnection):
     SSL_TIMEOUT_MESSAGES = ("The read operation timed out", "The write operation timed out")
 
-    def can_retry(self, e) -> Union[bool,str]:
+    def can_retry(self, e) -> bool | str:
         if getattr(e, "library", None)=="SSL":
             reason = getattr(e, "reason", None)
             if reason in ("WRONG_VERSION_NUMBER", "UNEXPECTED_RECORD"):
@@ -600,7 +600,7 @@ class SSLSocketConnection(PeekableSocketConnection):
             return True
         return super().can_retry(e)
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         i = super().get_info()
         i["ssl"] = True
         for k,fn in {

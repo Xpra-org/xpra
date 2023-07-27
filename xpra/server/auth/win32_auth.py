@@ -4,8 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple
-
 from xpra.platform.win32.auth import check
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 
@@ -26,7 +24,7 @@ class Authenticator(SysAuthenticator):
     def get_password(self) -> str:
         return self.password
 
-    def get_challenge(self, digests) -> Tuple[bytes,str]:
+    def get_challenge(self, digests) -> tuple[bytes,str]:
         self.req_xor(digests)
         return super().do_get_challenge(["xor"])
 

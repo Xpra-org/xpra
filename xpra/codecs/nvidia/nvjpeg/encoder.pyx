@@ -5,7 +5,7 @@
 
 from time import monotonic
 from math import ceil
-from typing import Dict, Any
+from typing import Any
 
 from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
@@ -292,7 +292,7 @@ cdef class Encoder:
     def get_src_format(self):
         return self.src_format
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = get_info()
         info.update({
             "frames"        : int(self.frames),

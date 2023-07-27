@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from time import time
-from typing import Type, Dict, Any
+from typing import Any
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.client.gui.client_widget_base import ClientWidgetBase
@@ -59,7 +59,7 @@ class ClientTray(ClientWidgetBase):
         trays aren't really windows and transparency is always supported
         """
 
-    def get_backing_class(self) -> Type:
+    def get_backing_class(self) -> type:
         return TrayBacking
 
     def is_OR(self) -> bool:
@@ -218,7 +218,7 @@ class TrayBacking(WindowBackingBase):
         super().__init__(wid, True)
         self._backing = object()    #pretend we have a backing structure
 
-    def get_encoding_properties(self) -> Dict[str,Any]:
+    def get_encoding_properties(self) -> dict[str,Any]:
         #override so we skip all csc caps:
         return {
             "encodings.rgb_formats" : self.get_rgb_formats(),

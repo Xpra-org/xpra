@@ -7,7 +7,7 @@
 import sys
 import hashlib
 import os.path
-from typing import Tuple, Dict, Any
+from typing import Any
 
 from xpra.audio.pulseaudio.pulseaudio_common_util import get_pulse_server_x11_property, get_pulse_id_x11_property
 from xpra.util import print_nested_dict
@@ -29,7 +29,7 @@ def get_pactl_bin() -> str:
             pactl_bin = which("pactl") or ""
     return pactl_bin
 
-def pactl_output(log_errors=True, *pactl_args) -> Tuple[int,Any,Any]:
+def pactl_output(log_errors=True, *pactl_args) -> tuple[int,Any,Any]:
     pactl_bin = get_pactl_bin()
     if not pactl_bin:
         return -1, None, None
@@ -140,7 +140,7 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
     device_class = ""
     device_description = ""
     name = ""
-    devices : Dict[str,str] = {}
+    devices : dict[str,str] = {}
     for line in bytestostr(pactl_list_output).splitlines():
         if not line.startswith(" ") and not line.startswith("\t"):        #clear vars when we encounter a new section
             if name and device_class:
@@ -174,7 +174,7 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
     return devices
 
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> dict[str,Any]:
     i = 0
     dinfo = {}
     status, out, _ = pactl_output(False, "list")

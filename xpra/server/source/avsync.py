@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any
+from typing import Any
 
 from xpra.util import envint, typedict
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -44,7 +44,7 @@ class AVSyncMixin(StubSourceMixin):
         self.av_sync_delta = AV_SYNC_DELTA
 
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         return {
             "av-sync" : {
                 ""          : self.av_sync,

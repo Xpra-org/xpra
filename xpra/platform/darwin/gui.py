@@ -9,7 +9,7 @@ import math
 import ctypes
 import struct
 from weakref import WeakValueDictionary
-from typing import Any, Callable, Dict, List, Type, Tuple
+from typing import Any, Callable
 
 from gi.repository import GLib      #@UnresolvedImport
 import objc                         #@UnresolvedImport
@@ -164,7 +164,7 @@ def get_clipboard_native_class() -> str:
     return "xpra.platform.darwin.osx_clipboard.OSXClipboardProtocolHelper"
 
 
-def get_native_notifier_classes() -> List[Type]:
+def get_native_notifier_classes() -> list[type]:
     v = []
     if NATIVE_NOTIFIER and NSUserNotificationCenter.defaultUserNotificationCenter():
         v.append(OSX_Notifier)
@@ -177,7 +177,7 @@ def get_native_tray_menu_helper_class() -> Callable | None:
         return getOSXMenuHelper
     return None
 
-def get_native_tray_classes() -> List[Type]:
+def get_native_tray_classes() -> list[type]:
     if get_OSXApplication():
         from xpra.platform.darwin.osx_tray import OSXTray
         return [OSXTray]
@@ -188,9 +188,9 @@ def system_bell(*_args) -> bool:
     return True
 
 
-def _sizetotuple(s) -> Tuple[int,int]:
+def _sizetotuple(s) -> tuple[int,int]:
     return int(s.width), int(s.height)
-def _recttotuple(r) -> Tuple[int,int,int,int]:
+def _recttotuple(r) -> tuple[int,int,int,int]:
     return int(r.origin.x), int(r.origin.y), int(r.size.width), int(r.size.height)
 
 def get_double_click_time() -> int:
@@ -207,7 +207,7 @@ def get_double_click_time() -> int:
     return -1
 
 
-def get_window_min_size() -> Tuple[int,int]:
+def get_window_min_size() -> tuple[int,int]:
     #roughly enough to see the window buttons:
     return 120, 1
 
@@ -285,7 +285,7 @@ def get_vrefresh() -> int:
     return -1
 
 
-def get_display_icc_info() -> Dict[Any,Dict]:
+def get_display_icc_info() -> dict[Any,dict]:
     info = {}
     try:
         err, active_displays, no = CG.CGGetActiveDisplayList(99, None, None)
@@ -307,7 +307,7 @@ def get_icc_info():
     return info
 
 
-def get_colorspace_info(cs) -> Dict[str,Any]:
+def get_colorspace_info(cs) -> dict[str,Any]:
     MODELS : Dict[Any, str] = {
               CG.kCGColorSpaceModelUnknown     : "unknown",
               CG.kCGColorSpaceModelMonochrome  : "monochrome",
@@ -346,11 +346,11 @@ def get_display_mode_info(mode) -> Dict[str,Any]:
             )
     return _call_CG_conv(defs, mode)
 
-def get_display_modes_info(modes) -> Dict[int,Any]:
+def get_display_modes_info(modes) -> dict[int,Any]:
     return dict((i,get_display_mode_info(mode)) for i,mode in enumerate(modes))
 
 
-def _call_CG_conv(defs:Tuple[Tuple[str,str,Callable],...], argument) -> Dict[str,Any]:
+def _call_CG_conv(defs:tuple[tuple[str,str,Callable],...], argument) -> dict[str,Any]:
     #utility for calling functions on CG with an argument,
     #then convert the return value using another function
     #missing functions are ignored, and None values are skipped
@@ -372,7 +372,7 @@ def _call_CG_conv(defs:Tuple[Tuple[str,str,Callable],...], argument) -> Dict[str
             log("function %s does not exist", fn_name)
     return info
 
-def get_display_info(did) -> Dict[str,Any]:
+def get_display_info(did) -> dict[str,Any]:
     defs = (
             ("height",                  "CGDisplayPixelsHigh",              int),
             ("width",                   "CGDisplayPixelsWide",              int),
@@ -407,9 +407,9 @@ def get_display_info(did) -> Dict[str,Any]:
         log("failed to query display modes: %s", e)
     return info
 
-def get_displays_info() -> Dict[str,Any]:
+def get_displays_info() -> dict[str,Any]:
     did = CG.CGMainDisplayID()
-    info : Dict[str,Any] = {
+    info : dict[str,Any] = {
             "main" : get_display_info(did),
             }
     err, active_displays, no = CG.CGGetActiveDisplayList(99, None, None)
@@ -422,7 +422,7 @@ def get_displays_info() -> Dict[str,Any]:
             info.setdefault("online", {})[i] = get_display_info(odid)
     return info
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> dict[str,Any]:
     from xpra.platform.gui import get_info_base
     i = get_info_base()
     try:
@@ -484,7 +484,7 @@ def get_CG_imagewrapper(rect=None):
     argb = CG.CGDataProviderCopyData(prov)
     return ImageWrapper(x, y, width, height, argb, "BGRX", 24, rowstride)
 
-def take_screenshot() -> Tuple[int,int,str,int,bytes]:
+def take_screenshot() -> tuple[int,int,str,int,bytes]:
     log("grabbing screenshot")
     from PIL import Image                       #@UnresolvedImport
     from io import BytesIO
@@ -577,7 +577,7 @@ class AppDelegate(NSObject):
 
     def init(self) -> None:
         super().init()
-        self.callbacks : Dict[str,Callable] = {}
+        self.callbacks : dict[str,Callable] = {}
         self.workspace = None
         self.notificationCenter = None
 

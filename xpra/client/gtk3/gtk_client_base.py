@@ -10,7 +10,7 @@ import weakref
 from time import monotonic
 from subprocess import Popen, PIPE
 from threading import Event
-from typing import Dict, Any, List, Type, Tuple
+from typing import Any
 from gi.repository import Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.client.gtk3.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
@@ -85,8 +85,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     for signal_name in UIXpraClient.__signals__:
         __gsignals__[signal_name] = no_arg_signal
 
-    ClientWindowClass : Type | None = None
-    GLClientWindowClass : Type | None = None
+    ClientWindowClass : type | None = None
+    GLClientWindowClass : type | None = None
 
     def __init__(self):
         GObjectXpraClient.__init__(self)
@@ -254,7 +254,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return rate
 
 
-    def get_notifier_classes(self) -> List[Type]:
+    def get_notifier_classes(self) -> list[type]:
         #subclasses may add their toolkit specific variants
         #by overriding this method
         #use the native ones first:
@@ -800,7 +800,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return wfs
 
 
-    def _add_statusicon_tray(self, tray_list) -> List[Type]:
+    def _add_statusicon_tray(self, tray_list) -> list[type]:
         #add Gtk.StatusIcon tray, but not under wayland:
         if not is_Wayland():
             try:
@@ -810,11 +810,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 log.warn("failed to load StatusIcon tray: %s" % e)
         return tray_list
 
-    def get_tray_classes(self) -> List[Type]:
+    def get_tray_classes(self) -> list[type]:
         from xpra.client.mixins.tray import TrayClient
         return self._add_statusicon_tray(TrayClient.get_tray_classes(self))
 
-    def get_system_tray_classes(self) -> List[Type]:
+    def get_system_tray_classes(self) -> list[type]:
         return self._add_statusicon_tray(WindowClient.get_system_tray_classes(self))
 
 
@@ -840,7 +840,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         p = self.get_raw_mouse_position()
         return self.cp(p[0], p[1])
 
-    def get_current_modifiers(self) -> List[str]:
+    def get_current_modifiers(self) -> list[str]:
         root = self.get_root_window()
         if root is None:
             return []
@@ -848,7 +848,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return self.mask_to_names(modifiers_mask)
 
 
-    def make_hello(self) -> Dict[str,Any]:
+    def make_hello(self) -> dict[str,Any]:
         capabilities = UIXpraClient.make_hello(self)
         capabilities["named_cursors"] = len(cursor_types)>0
         capabilities["encoding.transparency"] = self.has_transparency()
@@ -924,10 +924,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return screen.get_rgba_visual() is not None
 
 
-    def get_monitors_info(self) -> Dict[int,Any]:
+    def get_monitors_info(self) -> dict[int,Any]:
         return get_monitors_info(self.xscale, self.yscale)
 
-    def get_screen_sizes(self, xscale=1, yscale=1) -> List:
+    def get_screen_sizes(self, xscale=1, yscale=1) -> list:
         return get_screen_sizes(xscale, yscale)
 
 
@@ -1339,7 +1339,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             opengllog(f"init_opengl({enable_opengl})", exc_info=True)
             err("Error loading OpenGL support:", e)
 
-    def get_client_window_classes(self, w : int, h : int, metadata : typedict, override_redirect : bool) -> Tuple[Type,...]:
+    def get_client_window_classes(self, w : int, h : int, metadata : typedict, override_redirect : bool) -> tuple[type,...]:
         log("get_client_window_class%s ClientWindowClass=%s, GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, encoding=%s",
             (w, h, metadata, override_redirect),
             self.ClientWindowClass, self.GLClientWindowClass,

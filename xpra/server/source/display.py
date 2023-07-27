@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import List, Tuple, Any, Dict, Iterable, Callable
+from typing import Any, Iterable, Callable
 
 from xpra.os_util import bytestostr
 from xpra.util import get_screen_info, first_time, typedict
@@ -25,22 +25,22 @@ class ClientDisplayMixin(StubSourceMixin):
 
     def init_state(self) -> None:
         self.vrefresh : int = -1
-        self.icc : Dict = {}
-        self.display_icc : Dict = {}
-        self.desktop_size : Tuple[int, int] | None = None
-        self.desktop_mode_size : Tuple[int, int] | None = None
-        self.desktop_size_unscaled : Tuple[int, int] | None = None
-        self.desktop_size_server : Tuple[int, int] | None = None
+        self.icc : dict = {}
+        self.display_icc : dict = {}
+        self.desktop_size : tuple[int, int] | None = None
+        self.desktop_mode_size : tuple[int, int] | None = None
+        self.desktop_size_unscaled : tuple[int, int] | None = None
+        self.desktop_size_server : tuple[int, int] | None = None
         self.desktop_fullscreen : bool = False
-        self.screen_sizes : List = []
-        self.monitors : Dict[int,Any] = {}
+        self.screen_sizes : list = []
+        self.monitors : dict[int,Any] = {}
         self.screen_resize_bigger : bool = True
         self.desktops : int = 1
-        self.desktop_names : Tuple[str, ...] = ()
+        self.desktop_names : tuple[str, ...] = ()
         self.show_desktop_allowed : bool = False
-        self.opengl_props : Dict[str, Any] = {}
+        self.opengl_props : dict[str, Any] = {}
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = {
             "vertical-refresh"  : self.vrefresh,
             "desktop_size"  : self.desktop_size or "",
@@ -78,13 +78,13 @@ class ClientDisplayMixin(StubSourceMixin):
         self.display_icc = c.dictget("display-icc", {})
         self.opengl_props = c.dictget("opengl", {})
 
-    def set_monitors(self, monitors:Dict[int,Dict]) -> None:
+    def set_monitors(self, monitors:dict[int,dict]) -> None:
         self.monitors = {}
         if monitors:
             for i, mon_def in monitors.items():
                 vdef = self.monitors.setdefault(i, {})
                 td = typedict(mon_def)
-                aconv : Dict[str,Callable] = {
+                aconv : dict[str,Callable] = {
                     "geometry"      : td.inttupleget,
                     "primary"       : td.boolget,
                     "refresh-rate"  : td.intget,
@@ -176,7 +176,7 @@ class ClientDisplayMixin(StubSourceMixin):
             self.send_async("show-desktop", show)
 
 
-    def get_monitor_definitions(self) -> Dict[int,Any] | None:
+    def get_monitor_definitions(self) -> dict[int,Any] | None:
         if self.monitors:
             return self.monitors
         #no? try to extract it from the legacy "screen_sizes" data:

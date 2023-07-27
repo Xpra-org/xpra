@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, List, Callable, Tuple
+from typing import Callable
 
 import gi
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
@@ -18,7 +18,7 @@ from xpra.platform.darwin.osx_menu import getOSXMenuHelper
 NUM_LOCK_KEYCODE = 71           #HARDCODED!
 # a key and the keys we want to translate it into when swapping keys
 # (in a list with the best options first)
-KEYS_TRANSLATION_OPTIONS : Dict[str,List[str]] = {
+KEYS_TRANSLATION_OPTIONS : dict[str,list[str]] = {
     #try to swap with "Meta" first, fallback to "Alt":
     "Control_L"     : ["Meta_L", "Meta_R", "Alt_L", "Alt_R"],
     "Control_R"     : ["Meta_R", "Meta_L", "Alt_R", "Alt_L"],
@@ -31,7 +31,7 @@ KEYS_TRANSLATION_OPTIONS : Dict[str,List[str]] = {
     }
 #keys we always want to swap,
 #irrespective of the swap-keys option:
-ALWAYS_SWAP : List[str] = os.environ.get("XPRA_MACOS_KEYS_ALWAYS_SWAP", "Alt_L,Alt_R").split(",")
+ALWAYS_SWAP : list[str] = os.environ.get("XPRA_MACOS_KEYS_ALWAYS_SWAP", "Alt_L,Alt_R").split(",")
 
 
 #data extracted from:
@@ -39,7 +39,7 @@ ALWAYS_SWAP : List[str] = os.environ.get("XPRA_MACOS_KEYS_ALWAYS_SWAP", "Alt_L,A
 #"How to identify keyboard localizations"
 #maps Apple's names into standard X11 keyboard identifiers
 
-APPLE_LAYOUTS : Dict[str,str] = {
+APPLE_LAYOUTS : dict[str,str] = {
     "Arabic"    : "ar",
     "Belgian"   : "be",
     "Bulgarian" : "bg",
@@ -88,15 +88,15 @@ class Keyboard(KeyboardBase):
         self.num_lock_modifier = ""
         self.num_lock_state = True
         self.num_lock_keycode = NUM_LOCK_KEYCODE
-        self.key_translations : Dict[str,Tuple[int,str]] = {}
+        self.key_translations : dict[str,tuple[int,str]] = {}
 
 
     def __repr__(self):
         return "darwin.Keyboard"
 
 
-    def get_all_x11_layouts(self) -> Dict[str,str]:
-        x11_layouts : Dict[str,str] = {}
+    def get_all_x11_layouts(self) -> dict[str,str]:
+        x11_layouts : dict[str,str] = {}
         for name, layout in APPLE_LAYOUTS.items():
             x11_layouts[layout] = name
         return x11_layouts

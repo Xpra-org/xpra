@@ -7,7 +7,7 @@ import os
 import sys
 import subprocess
 from queue import Queue
-from typing import Dict, Any
+from typing import Any
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.util import repr_ellipsized, envint, envbool, csv
@@ -290,7 +290,7 @@ class subprocess_callee:
         INJECT_FAULT(proto)
 
 
-def exec_kwargs() -> Dict[str,Any]:
+def exec_kwargs() -> dict[str,Any]:
     kwargs = {}
     stderr = sys.stderr.fileno()
     if WIN32:
@@ -307,7 +307,7 @@ def exec_kwargs() -> Dict[str,Any]:
     kwargs["stderr"] = stderr
     return kwargs
 
-def exec_env(blacklist=("LS_COLORS", )) -> Dict[str,str]:
+def exec_env(blacklist=("LS_COLORS", )) -> dict[str,str]:
     env = os.environ.copy()
     env["XPRA_SKIP_UI"] = "1"
     env["XPRA_FORCE_COLOR_LOG"] = "1"
@@ -395,7 +395,7 @@ class subprocess_caller:
         getChildReaper().add_process(proc, self.description, self.command, True, True, callback=self.subprocess_exit)
         return proc
 
-    def get_env(self) -> Dict[str,str]:
+    def get_env(self) -> dict[str,str]:
         env = exec_env()
         env["XPRA_LOG_PREFIX"] = "%s " % self.description
         env["XPRA_FIX_UNICODE_OUT"] = "0"

@@ -4,8 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple
-
 from gi.repository import GObject   # @UnresolvedImport
 
 from xpra.util import envint, envbool, typedict
@@ -247,7 +245,7 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("client-geometry", None)
 
 
-    def _clamp_to_desktop(self, x:int, y:int, w:int, h:int) -> Tuple[int,int]:
+    def _clamp_to_desktop(self, x:int, y:int, w:int, h:int) -> tuple[int,int]:
         if self.desktop_geometry:
             dw, dh = self.desktop_geometry
             if x+w<0:
@@ -641,7 +639,7 @@ class WindowModel(BaseWindowModel):
             return True
         return super().process_client_message_event(event)
 
-    def calc_constrained_size(self, w, h, hints) -> Tuple[int,int]:
+    def calc_constrained_size(self, w, h, hints) -> tuple[int,int]:
         mhints = typedict(hints)
         cw, ch = calc_constrained_size(w, h, mhints)
         geomlog("calc_constrained_size%s=%s (size_constraints=%s)", (w, h, mhints), (cw, ch), self.size_constraints)

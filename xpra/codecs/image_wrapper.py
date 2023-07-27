@@ -8,7 +8,6 @@ from enum import IntEnum
 from time import monotonic
 from xpra.util import roundup
 from xpra.os_util import memoryview_to_bytes
-from typing import Tuple
 
 def clone_plane(plane):
     if isinstance(plane, memoryview):
@@ -30,7 +29,7 @@ class ImageWrapper:
     PLANAR_2 : PlanarFormat = PlanarFormat.PLANAR_2
     PLANAR_3 : PlanarFormat = PlanarFormat.PLANAR_3
     PLANAR_4 : PlanarFormat = PlanarFormat.PLANAR_4
-    PLANE_OPTIONS : Tuple[PlanarFormat, PlanarFormat, PlanarFormat, PlanarFormat] = (PACKED, PLANAR_2, PLANAR_3, PLANAR_4)
+    PLANE_OPTIONS : tuple[PlanarFormat, PlanarFormat, PlanarFormat, PlanarFormat] = (PACKED, PLANAR_2, PLANAR_3, PLANAR_4)
 
     def __init__(self, x : int, y : int, width : int, height : int, pixels, pixel_format, depth : int, rowstride,
                  bytesperpixel : int=4, planes : PlanarFormat=PACKED, thread_safe : bool=True, palette=None):
@@ -62,7 +61,7 @@ class ImageWrapper:
     def __repr__(self) -> str:
         return "%s(%s:%s:%s)" % (self._cn(), self.pixel_format, self.get_geometry(), self.planes)
 
-    def get_geometry(self) -> Tuple[int,int,int,int,int]:
+    def get_geometry(self) -> tuple[int,int,int,int,int]:
         return self.x, self.y, self.width, self.height, self.depth
 
     def get_x(self) -> int:

@@ -6,7 +6,7 @@
 
 import os
 import sys
-from typing import Dict, Any
+from typing import Any
 
 from xpra.version_util import version_str
 from xpra.util import envint, envfloat, envbool, typedict, ConnectionMessage
@@ -29,7 +29,7 @@ REQUEST_TIMEOUT = envint("XPRA_CLIENT_REQUEST_TIMEOUT", 10)
 WIN32_LOCAL_SOCKETS = envbool("XPRA_WIN32_LOCAL_SOCKETS", False)
 
 
-class NetworkListener(StubClientMixin):
+class Networklistener(StubClientMixin):
     """
     Mixin for adding listening sockets to the client,
     those can be used for
@@ -244,7 +244,7 @@ class NetworkListener(StubClientMixin):
         tid = self.timeout_add(REQUEST_TIMEOUT*1000, close)
         self._close_timers[proto] = tid
 
-    def get_id_info(self) -> Dict[str,Any]:
+    def get_id_info(self) -> dict[str,Any]:
         #minimal information for identifying the session
         return {
             "session-type"  : "client",

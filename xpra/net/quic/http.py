@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os.path
-from typing import Callable, Dict, Union
+from typing import Callable, Union
 
 from aioquic.asyncio import QuicConnectionProtocol
 from aioquic.h0.connection import H0Connection
@@ -30,7 +30,7 @@ class HttpRequestHandler:
                  authority: bytes,
                  connection: HttpConnection,
                  protocol: QuicConnectionProtocol,
-                 scope: Dict,
+                 scope: dict,
                  stream_id: int,
                  transmit: Callable[[], None],
     ) -> None:
@@ -43,13 +43,13 @@ class HttpRequestHandler:
         self.transmit = transmit
 
 
-    def send_http3_response(self, code, headers : Dict = None, body : bytes = b""):
+    def send_http3_response(self, code, headers : dict = None, body : bytes = b""):
         self.send_response_header(code, headers)
         if body:
             self.send_response_body(body)
         self.transmit()
 
-    def send_response_header(self, status : int = 200, headers : Dict = None) -> None:
+    def send_response_header(self, status : int = 200, headers : dict = None) -> None:
         headers = [
                 (b":status", str(status).encode()),
                 (b"server", SERVER_NAME.encode()),

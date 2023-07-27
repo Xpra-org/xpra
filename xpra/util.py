@@ -16,7 +16,7 @@ try:
     from enum import StrEnum
 except ImportError:
     StrEnum = Enum      # type: ignore
-from typing import Dict, Tuple, Any, List, Set, Callable, Iterable, Union
+from typing import Any, Callable, Iterable
 
 # this is imported in a lot of places,
 # so don't import too much at the top:
@@ -207,12 +207,12 @@ class AdHocStruct:
                 % (type(self).__name__, self.__dict__))
 
 
-def remove_dupes(seq:Iterable[Any]) -> List[Any]:
-    seen : Set[Any] = set()
+def remove_dupes(seq:Iterable[Any]) -> list[Any]:
+    seen : set[Any] = set()
     seen_add : Callable = seen.add
     return [x for x in seq if not (x in seen or seen_add(x))]
 
-def merge_dicts(a : Dict[str,Any], b : Dict[str,Any], path:List[str] | None=None) -> Dict[str,Any]:
+def merge_dicts(a : dict[str,Any], b : dict[str,Any], path:list[str] | None=None) -> dict[str,Any]:
     """ merges b into a """
     if path is None:
         path = []
@@ -365,7 +365,7 @@ def checkdict(v):
 class typedict(dict):
     __slots__ = ("warn", ) # no __dict__ - that would be redundant
     @staticmethod # because this doesn't make sense as a global function.
-    def _process_args(mapping=(), **kwargs) -> Dict[str,Any]:
+    def _process_args(mapping=(), **kwargs) -> dict[str,Any]:
         if hasattr(mapping, "items"):
             mapping = getattr(mapping, "items")()
         return dict((bytestostr(k), v) for k, v in chain(mapping, getattr(kwargs, "items")()))
@@ -443,10 +443,10 @@ class typedict(dict):
     def boolget(self, k : str, default:bool | None=False) -> bool:
         return self.conv_get(k, default, bool)
 
-    def dictget(self, k : str, default:dict | None=None) -> Dict:
+    def dictget(self, k : str, default:dict | None=None) -> dict:
         return self.conv_get(k, default, checkdict)
 
-    def intpair(self, k : str, default_value:Tuple[int,int] | None=None) -> Tuple[int, int] | None:
+    def intpair(self, k : str, default_value:tuple[int,int] | None=None) -> tuple[int, int] | None:
         v = self.inttupleget(k, default_value)
         if v is None:
             return default_value
@@ -458,17 +458,17 @@ class typedict(dict):
         except ValueError:
             return default_value
 
-    def strtupleget(self, k : str, default_value=(), min_items:int | None=None, max_items:int | None=None) -> Tuple[str, ...]:
+    def strtupleget(self, k : str, default_value=(), min_items:int | None=None, max_items:int | None=None) -> tuple[str, ...]:
         return self.tupleget(k, default_value, str, min_items, max_items)
 
-    def inttupleget(self, k : str, default_value=(), min_items:int | None=None, max_items:int | None=None) -> Tuple[int, ...]:
+    def inttupleget(self, k : str, default_value=(), min_items:int | None=None, max_items:int | None=None) -> tuple[int, ...]:
         return self.tupleget(k, default_value, int, min_items, max_items)
 
-    def tupleget(self, k : str, default_value=(), item_type=None, min_items:int | None=None, max_items:int | None=None) -> Tuple[Any, ...]:
+    def tupleget(self, k : str, default_value=(), item_type=None, min_items:int | None=None, max_items:int | None=None) -> tuple[Any, ...]:
         v = self._listget(k, default_value, item_type, min_items, max_items)
         return tuple(v or ())
 
-    def _listget(self, k : str, default_value, item_type=None, min_items:int | None=None, max_items:int | None=None) -> List[Any]:
+    def _listget(self, k : str, default_value, item_type=None, min_items:int | None=None, max_items:int | None=None) -> list[Any]:
         v = self.get(k)
         if v is None:
             return default_value
@@ -505,7 +505,7 @@ class typedict(dict):
         return aslist
 
 
-def parse_scaling_value(v) -> Tuple[int,int] | None:
+def parse_scaling_value(v) -> tuple[int,int] | None:
     if not v:
         return None
     if v.endswith("%"):
@@ -637,15 +637,15 @@ def do_log_screen_sizes(root_w, root_h, sizes):
             continue
         log.info("    "+istr)
 
-def get_screen_info(screen_sizes) -> Dict[int, Dict[str, Any]]:
+def get_screen_info(screen_sizes) -> dict[int, dict[str, Any]]:
     #same format as above
     if not screen_sizes:
         return {}
-    info : Dict[int, Dict[str, Any]] = {}
+    info : dict[int, dict[str, Any]] = {}
     for i, x in enumerate(screen_sizes):
         if not isinstance(x, (tuple, list)):
             continue
-        sinfo : Dict[str,Any] = info.setdefault(i, {})
+        sinfo : dict[str,Any] = info.setdefault(i, {})
         sinfo["display"] = x[0]
         if len(x)>=3:
             sinfo["size"] = x[1], x[2]
@@ -655,7 +655,7 @@ def get_screen_info(screen_sizes) -> Dict[int, Dict[str, Any]]:
             monitors = x[5]
             for j, monitor in enumerate(monitors):
                 if len(monitor)>=7:
-                    minfo : Dict[str,Any] = sinfo.setdefault("monitor", {}).setdefault(j, {})
+                    minfo : dict[str,Any] = sinfo.setdefault("monitor", {}).setdefault(j, {})
                     for k,v in {
                                 "name"      : monitor[0],
                                 "geometry"  : monitor[1:5],
@@ -770,23 +770,23 @@ def repr_ellipsized(obj, limit=100) -> str:
     return repr_ellipsized(repr(obj), limit)
 
 
-def rindex(alist:Union[List,Tuple], avalue:Any) -> int:
+def rindex(alist:list | tuple, avalue:Any) -> int:
     return len(alist) - alist[::-1].index(avalue) - 1
 
 
-def notypedict(d:Dict) -> Dict:
+def notypedict(d:dict) -> dict:
     for k in list(d.keys()):
         v = d[k]
         if isinstance(v, dict):
             d[k] = notypedict(v)
     return dict(d)
 
-def flatten_dict(info:Dict[str,Any], sep:str=".") -> Dict[str,Any]:
-    to : Dict[str, Any] = {}
+def flatten_dict(info:dict[str,Any], sep:str=".") -> dict[str,Any]:
+    to : dict[str, Any] = {}
     _flatten_dict(to, sep, "", info)
     return to
 
-def _flatten_dict(to:Dict[str, Any], sep:str, path:str, d:Dict[str,Any]):
+def _flatten_dict(to:dict[str, Any], sep:str, path:str, d:dict[str,Any]):
     for k,v in d.items():
         if path:
             if k:
@@ -800,15 +800,15 @@ def _flatten_dict(to:Dict[str, Any], sep:str, path:str, d:Dict[str,Any]):
         elif v is not None:
             to[npath] = v
 
-def parse_simple_dict(s:str="", sep:str=",") -> Dict[str, Union[str,List[str]]]:
+def parse_simple_dict(s:str="", sep:str=",") -> dict[str, str | list[str]]:
     #parse the options string and add the pairs:
-    d : Dict[str, Union[str,List[str]]] = {}
+    d : dict[str, str | list[str]] = {}
     for el in s.split(sep):
         if not el:
             continue
         try:
             k, v = el.split("=", 1)
-            def may_add() -> Union[str,List[str]]:
+            def may_add() -> str| list[str]:
                 cur = d.get(k)
                 if cur is None:
                     return v
@@ -825,7 +825,7 @@ def parse_simple_dict(s:str="", sep:str=",") -> Dict[str, Union[str,List[str]]]:
 
 #used for merging dicts with a prefix and suffix
 #non-None values get added to <todict> with a prefix and optional suffix
-def updict(todict:Dict, prefix:str, d:Dict, suffix:str="", flatten_dicts:bool=False) -> Dict:
+def updict(todict:dict, prefix:str, d:dict, suffix:str="", flatten_dicts:bool=False) -> dict:
     if not d:
         return todict
     for k,v in d.items():
@@ -869,7 +869,7 @@ def sorted_nicely(l:Iterable):
     alphanum_key = lambda key: [convert(c) for c in re.split(r"(\d+)", bytestostr(key))]
     return sorted(l, key = alphanum_key)
 
-def print_nested_dict(d:Dict, prefix:str="", lchar:str="*", pad:int=32, vformat=None, print_fn:Callable|None=None,
+def print_nested_dict(d:dict, prefix:str="", lchar:str="*", pad:int=32, vformat=None, print_fn:Callable|None=None,
                       version_keys=("version", "revision"), hex_keys=("data", )):
     #"smart" value formatting function:
     def sprint(arg):
@@ -908,7 +908,7 @@ def print_nested_dict(d:Dict, prefix:str="", lchar:str="*", pad:int=32, vformat=
         else:
             sprint("%s%s %s : %s" % (prefix, lchar, bytestostr(k).ljust(l), vf(k, v)))
 
-def reverse_dict(d:Dict) -> Dict:
+def reverse_dict(d:dict) -> dict:
     reversed_d = {}
     for k,v in d.items():
         reversed_d[v] = k

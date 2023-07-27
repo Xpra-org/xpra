@@ -5,7 +5,7 @@
 
 import os
 from random import randint
-from typing import Dict, Any, Tuple
+from typing import Any
 
 from xpra.util import envbool, typedict
 from xpra.os_util import get_int_uuid
@@ -58,7 +58,7 @@ class MmapClient(StubClientMixin):
             self.init_mmap(self.mmap_filename, self.mmap_group, conn.filename)
 
 
-    def get_root_size(self) -> Tuple[int,int]:
+    def get_root_size(self) -> tuple[int,int]:
         #subclasses should provide real values
         return 1024, 1024
 
@@ -88,7 +88,7 @@ class MmapClient(StubClientMixin):
         return True
 
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         if not self.mmap_enabled:
             return {}
         mmap_info = self.get_raw_caps()
@@ -97,14 +97,14 @@ class MmapClient(StubClientMixin):
             "mmap" : mmap_info,
             }
 
-    def get_caps(self) -> Dict[str,Any]:
+    def get_caps(self) -> dict[str,Any]:
         if not self.mmap_enabled:
             return {}
         return {
             "mmap" : self.get_raw_caps(),
             }
 
-    def get_raw_caps(self) -> Dict[str,Any]:
+    def get_raw_caps(self) -> dict[str,Any]:
         return {
             "file"          : self.mmap_filename,
             "size"          : self.mmap_size,

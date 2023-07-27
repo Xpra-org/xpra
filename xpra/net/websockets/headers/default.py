@@ -3,8 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict
-
 from xpra.os_util import strtobytes
 
 HEADERS = {
@@ -15,7 +13,7 @@ HEADERS = {
     }
 
 
-def get_headers(host:str, port:int) -> Dict[bytes,bytes]:    #pylint: disable=unused-argument
+def get_headers(host:str, port:int) -> dict[bytes,bytes]:    #pylint: disable=unused-argument
     headers = HEADERS.copy()
     if host:
         headers[b"Host"] = strtobytes(f"{host}:{port}")

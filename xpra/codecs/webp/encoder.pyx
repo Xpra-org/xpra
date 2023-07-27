@@ -5,7 +5,7 @@
 
 import os
 from time import monotonic
-from typing import Dict, Any
+from typing import Any
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t   #pylint: disable=syntax-error
 from libc.stdlib cimport free   #pylint: disable=syntax-error
@@ -497,7 +497,7 @@ cdef class Encoder:
     def get_src_format(self):
         return self.src_format
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = get_info()
         info.update({
             "frames"        : int(self.frames),

@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from typing import Dict, Any
+from typing import Any
 import cairo
 from cairo import (  #pylint: disable=no-name-in-module
     Context, ImageSurface,  # @UnresolvedImport
@@ -77,7 +77,7 @@ class CairoBackingBase(WindowBackingBase):
         if mod:
             self.create_surface()
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = super().get_info()
         info.update({
             "type"  : "Cairo",
@@ -211,7 +211,7 @@ class CairoBackingBase(WindowBackingBase):
         raise NotImplementedError()
 
 
-    def get_encoding_properties(self) -> Dict[str,Any]:
+    def get_encoding_properties(self) -> dict[str,Any]:
         props = super().get_encoding_properties()
         if SCROLL_ENCODING:
             props["encoding.scrolling"] = True

@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, List, Tuple, Any
+from typing import Any
 
 from xpra.log import Logger
 
@@ -14,10 +14,10 @@ log = Logger("keyboard")
 #this allows platforms to inject keyname workarounds
 # the key is a tuple (keyname, keyval, keycode)
 # the value is the keyname override
-KEY_TRANSLATIONS : Dict[Tuple, str] = {}
+KEY_TRANSLATIONS : dict[tuple, str] = {}
 
 
-def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")) -> Tuple[Tuple[int,str,int,int,int],...]:
+def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")) -> tuple[tuple[int,str,int,int,int],...]:
     """
         Augment the keymap we get from gtk.gdk.keymap_get_default()
         by adding the keyval_name.
@@ -29,7 +29,7 @@ def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")) -> Tuple[Tuple[
     display = Gdk.Display.get_default()
     return do_get_gtk_keymap(display, ignore_keys)
 
-def do_get_gtk_keymap(display, ignore_keys:Tuple[Any]) -> Tuple[Tuple[int,str,int,int,int],...]:
+def do_get_gtk_keymap(display, ignore_keys:tuple[Any]) -> tuple[tuple[int,str,int,int,int],...]:
     if not display:
         return ()
     import gi
@@ -38,7 +38,7 @@ def do_get_gtk_keymap(display, ignore_keys:Tuple[Any]) -> Tuple[Tuple[int,str,in
     keymap = Gdk.Keymap.get_for_display(display)
     log("keymap_get_for_display(%s)=%s, direction=%s, bidirectional layouts: %s",
         display, keymap, keymap.get_direction(), keymap.have_bidi_layouts())
-    keycodes : List[Tuple[int,str,int,int,int]] = []
+    keycodes : list[tuple[int,str,int,int,int]] = []
     for i in range(0, 2**8):
         entries = keymap.get_entries_for_keycode(i)
         if not entries: # pragma: no cover

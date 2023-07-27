@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, Any
+from typing import Any
 from gi.repository import GObject, Gdk  # @UnresolvedImport
 
 from xpra.util import envbool
@@ -189,7 +189,7 @@ class Wm(GObject.GObject):
         self._wm_name = wm_name
         self._ewmh_window = None
 
-        self._windows : Dict[int,Any] = {}
+        self._windows : dict[int,Any] = {}
         # EWMH says we have to know the order of our windows oldest to
         # youngest...
         self._windows_in_order = []

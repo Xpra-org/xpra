@@ -9,7 +9,7 @@ import os
 import random
 from dbus.types import UInt32
 from dbus.types import Dictionary
-from typing import List, Dict, Any
+from typing import Any
 
 from xpra.exit_codes import ExitCode
 from xpra.util import typedict, envbool, ConnectionMessage, NotificationID
@@ -82,11 +82,11 @@ class PortalShadow(GTKShadowServerBase):
             self.cleanup_source(ac)
 
 
-    def makeRootWindowModels(self) -> List:
+    def makeRootWindowModels(self) -> list:
         log("makeRootWindowModels()")
         return []
 
-    def makeDynamicWindowModels(self) -> List:
+    def makeDynamicWindowModels(self) -> list:
         log("makeDynamicWindowModels()")
         return []
 
@@ -131,7 +131,7 @@ class PortalShadow(GTKShadowServerBase):
         session_counter += 1
         token = f"u{session_counter}"
         self.session_path = f"/org/freedesktop/portal/desktop/session/{dbus_sender_name}/{token}"
-        options : Dict[str,Any] = {
+        options : dict[str,Any] = {
             "session_handle_token"  : token,
             }
         log(f"create_session() session_counter={session_counter}")
@@ -293,7 +293,7 @@ class PortalShadow(GTKShadowServerBase):
         self.do_add_new_window_common(node_id, model)
         self._send_new_window_packet(model)
 
-    def capture_new_image(self, capture, coding:str, data, client_info:Dict) -> None:
+    def capture_new_image(self, capture, coding:str, data, client_info:dict) -> None:
         wid = capture.node_id
         model = self._id_to_window.get(wid)
         log(f"capture_new_image({capture}, {coding}, {type(data)}, {client_info}) model({wid})={model}")

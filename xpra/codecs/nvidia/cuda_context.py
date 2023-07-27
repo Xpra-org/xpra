@@ -11,7 +11,7 @@ import os
 import sys
 from time import monotonic
 from threading import RLock
-from typing import Tuple, Dict, Any
+from typing import Any
 
 from xpra.codecs.nvidia.nv_util import numpy_import_lock
 from xpra.codecs.codec_constants import TransientCodecException
@@ -42,7 +42,7 @@ log = Logger("cuda")
 MIN_FREE_MEMORY = envint("XPRA_CUDA_MIN_FREE_MEMORY", 10)
 
 #record when we get failures/success:
-DEVICE_STATE : Dict[int,bool] = {}
+DEVICE_STATE : dict[int,bool] = {}
 
 def record_device_failure(device_id:int):
     DEVICE_STATE[device_id] = False
@@ -71,11 +71,11 @@ def compute_capability(d):
     return (SMmajor<<4) + SMminor
 
 
-def get_pycuda_version() -> Tuple[int,...]:
+def get_pycuda_version() -> tuple[int,...]:
     return pycuda.VERSION
 
 
-def get_pycuda_info() -> Dict[str,Any]:
+def get_pycuda_info() -> dict[str,Any]:
     init_all_devices()
     i = {
         "version" : {
@@ -87,7 +87,7 @@ def get_pycuda_info() -> Dict[str,Any]:
         i["version.status"] = pycuda.VERSION_STATUS
     return i
 
-def get_cuda_info() -> Dict[str,Any]:
+def get_cuda_info() -> dict[str,Any]:
     init_all_devices()
     return {
         "driver"    : {
@@ -97,23 +97,23 @@ def get_cuda_info() -> Dict[str,Any]:
         }
 
 
-DEVICE_INFO : Dict[int,str] = {}
+DEVICE_INFO : dict[int,str] = {}
 def get_device_info(i:int) -> str:
     return DEVICE_INFO.get(i, "")
-DEVICE_NAME : Dict[int,str] = {}
+DEVICE_NAME : dict[int,str] = {}
 def get_device_name(i:int) -> str:
     return DEVICE_NAME.get(i, "")
 
 
 PREFS = None
-def get_prefs() -> Dict[str,Any]:
+def get_prefs() -> dict[str,Any]:
     global PREFS
     if PREFS is None:
         PREFS = do_get_prefs()
     return PREFS or {}
 
-def do_get_prefs() -> Dict[str,Any]:
-    prefs : Dict[str,Any] = {}
+def do_get_prefs() -> dict[str,Any]:
+    prefs : dict[str,Any] = {}
     dirs = get_default_conf_dirs() + get_system_conf_dirs() + get_user_conf_dirs()
     log(f"get_prefs() will try to load cuda.conf from: {dirs}")
     for d in dirs:
@@ -124,7 +124,7 @@ def do_get_prefs() -> Dict[str,Any]:
         if not os.path.isfile(conf_file):
             log(f"get_prefs() {conf_file!r} is not a file!")
             continue
-        c_prefs: Dict[str, Any] = {}
+        c_prefs: dict[str, Any] = {}
         try:
             with open(conf_file, "rb") as f:
                 for line in f:
@@ -200,7 +200,7 @@ def driver_init() -> bool:
     return driver_init_done
 
 
-DEVICES : List[int] | None = None
+DEVICES : list[int] | None = None
 def init_all_devices():
     global DEVICES, DEVICE_INFO
     if DEVICES is not None:
@@ -369,7 +369,7 @@ def select_round_robin(min_compute:int):
     return device_id, device
 
 
-def select_best_free_memory(min_compute:int=0) -> Tuple[int,Any]:
+def select_best_free_memory(min_compute:int=0) -> tuple[int,Any]:
     #load preferences:
     preferred_device_name = get_pref("device-name")
     devices = init_all_devices()
@@ -523,8 +523,8 @@ class cuda_device_context:
         extra = " - locked" if self.lock._is_owned() else ""
         return f"cuda_device_context({self.device_id}{extra})"
 
-    def get_info(self) -> Dict[str,Any]:
-        info : Dict[str,Any] = {
+    def get_info(self) -> dict[str,Any]:
+        info : dict[str,Any] = {
             "id" : self.device_id,
             "device" : {
                 "name"         : self.device.name(),
@@ -553,7 +553,7 @@ class cuda_device_context:
 
 
 #cache kernel fatbin files:
-KERNELS : Dict[str,bytes] = {}
+KERNELS : dict[str,bytes] = {}
 def get_CUDA_function(function_name):
     """
         Returns the compiled kernel for the given device

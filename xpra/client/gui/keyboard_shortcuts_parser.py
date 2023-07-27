@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, List
 
 from xpra.util import csv, print_nested_dict
 from xpra.os_util import POSIX
@@ -15,12 +14,12 @@ from xpra.log import Logger
 log = Logger("keyboard")
 
 
-def get_modifier_names(mod_meanings) -> Dict[str,str]:
+def get_modifier_names(mod_meanings) -> dict[str,str]:
     #modifier names contains the internal modifiers list, ie: "mod1", "control", ...
     #but the user expects the name of the key to be used, ie: "alt" or "super"
     #whereas at best, we keep "Alt_L" : "mod1" mappings... (posix)
     #so generate a map from one to the other:
-    modifier_names : Dict[str,str] = {}
+    modifier_names : dict[str,str] = {}
     meanings = mod_meanings or DEFAULT_MODIFIER_MEANINGS
     DEFAULT_MODIFIER_IGNORE_KEYNAMES = ["Caps_Lock", "Num_Lock", "Scroll_Lock"]
     for pub_name,mod_name in meanings.items():
@@ -40,7 +39,7 @@ def get_modifier_names(mod_meanings) -> Dict[str,str]:
     return modifier_names
 
 
-def parse_shortcut_modifiers(s, modifier_names=()) -> List[str]:
+def parse_shortcut_modifiers(s, modifier_names=()) -> list[str]:
     #figure out the default shortcut modifiers
     #accept "," or "+" as delimiter:
     shortcut_modifiers = s.lower().replace(",", "+").split("+")
@@ -72,7 +71,7 @@ def parse_shortcut_modifiers(s, modifier_names=()) -> List[str]:
     log("shortcut modifiers=%s", shortcut_modifiers)
     return shortcut_modifiers
 
-def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> Dict[str,List]:
+def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> dict[str,list]:
     """
     if none are defined, add this as default
     it would be nicer to specify it via OptionParser in main,
@@ -82,7 +81,7 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> Dict[s
     if not strs:
         strs = ["meta+shift+F4:quit"]
     log("parse_shortcuts(%s)", strs)
-    shortcuts : Dict[str,List] = {}
+    shortcuts : dict[str,list] = {}
     #figure out the default shortcut modifiers
     #accept "," or "+" as delimiter:
     for s in strs:

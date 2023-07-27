@@ -10,7 +10,7 @@ from libc.stdio cimport printf
 from xpra.buffers.membuf cimport getbuf, buffer_context, MemBuf #pylint: disable=syntax-error
 
 from weakref import WeakValueDictionary
-from typing import Dict, Any
+from typing import Any
 from threading import Event
 
 from xpra.util import csv, AtomicInteger
@@ -593,7 +593,7 @@ cdef class Decoder:
     def __repr__(self):
         return f"nvdec({self.encoding})"
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         return {
                 "type"      : self.get_type(),
                 "width"     : self.width,

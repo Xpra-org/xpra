@@ -6,7 +6,7 @@
 
 import os
 import sys
-from typing import Dict, List, Any
+from typing import Any
 from ctypes.wintypes import HDC
 from ctypes import (
     WinDLL,  # @UnresolvedImport
@@ -151,7 +151,7 @@ def print_pdf(printer_name, title, pdf_data):
 
 
 EXIT = False
-JOBS_INFO : Dict[int, Dict[str, Any]] = {}
+JOBS_INFO : dict[int, dict[str, Any]] = {}
 def watch_print_job_status():
     from xpra.log import Logger
     log = Logger("printing", "win32")
@@ -208,7 +208,7 @@ def main():
     if job_id<0:
         return job_id
     #wait for job to end:
-    job_status : List[str] = []
+    job_status : list[str] = []
     while True:
         job_info = JOBS_INFO.get(job_id, {})
         log("job_info[%i]=%s", job_id, job_info)

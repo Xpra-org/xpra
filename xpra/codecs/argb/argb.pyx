@@ -6,7 +6,7 @@
 
 #cython: boundscheck=False, wraparound=False
 
-from typing import ByteString, List, Tuple
+from typing import ByteString
 
 from xpra.util import first_time
 from xpra.buffers.membuf cimport getbuf, MemBuf, buffer_context #pylint: disable=syntax-error
@@ -710,7 +710,7 @@ def argb_swap(image, rgb_formats, supports_transparency=False) -> bool:
     return False
 
 
-def bit_to_rectangles(buf, unsigned int w, unsigned int h) -> List[Tuple[int,int,int,int]]:
+def bit_to_rectangles(buf, unsigned int w, unsigned int h) -> list[tuple[int,int,int,int]]:
     cdef const unsigned char* bits
     with buffer_context(buf) as bc:
         bits = <const unsigned char*> (<uintptr_t> int(bc))

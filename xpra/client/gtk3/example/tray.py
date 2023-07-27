@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Callable, Tuple
+from typing import Callable
 
 from xpra.platform import program_context
 from xpra.platform.gui import get_native_tray_menu_helper_class, get_native_tray_classes
@@ -128,7 +128,7 @@ class FakeApplication:
     def connect(self, *args) -> None:
         """ this method is part of the GUI client "interface" """
 
-    def get_encodings(self) -> Tuple[str,...]:
+    def get_encodings(self) -> tuple[str,...]:
         from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
         return PREFERRED_ENCODING_ORDER
 

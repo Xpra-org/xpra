@@ -7,7 +7,7 @@
 #pylint: disable=wrong-import-position
 
 import os
-from typing import Dict, Any
+from typing import Any
 
 from xpra.util import AtomicInteger
 from xpra.os_util import register_SIGUSR_signals
@@ -43,7 +43,7 @@ class AudioPipeline(Pipeline):
         self.byte_count = 0
         self.emit_info_timer = 0
         self.volume = None
-        self.info : Dict[str,Any] = {
+        self.info : dict[str,Any] = {
                      "codec"        : self.codec,
                      "state"        : self.state,
                      }

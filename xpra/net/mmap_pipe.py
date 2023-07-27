@@ -6,7 +6,7 @@
 import os
 import sys
 from ctypes import c_ubyte, c_char, c_uint32
-from typing import Tuple, Any
+from typing import Any
 
 from xpra.util import roundup
 from xpra.os_util import memoryview_to_bytes, shellsub, get_group_id, WIN32, POSIX
@@ -43,7 +43,7 @@ def xpra_group() -> int:
     return 0
 
 
-def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*1024, filename:str="") -> Tuple[bool, bool, Any, int, Any, str]:
+def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*1024, filename:str="") -> tuple[bool, bool, Any, int, Any, str]:
     """
         Initializes a mmap area, writes the token in it and returns:
             (success flag, mmap_area, mmap_size, temp_file, mmap_filename)
@@ -202,7 +202,7 @@ def read_mmap_token(mmap_area, index:int, count:int=DEFAULT_TOKEN_BYTES) -> int:
     return v
 
 
-def init_server_mmap(mmap_filename:str, mmap_size:int=0) -> Tuple[Any | None,int]:
+def init_server_mmap(mmap_filename:str, mmap_size:int=0) -> tuple[Any | None,int]:
     """
         Reads the mmap file provided by the client
         and verifies the token if supplied.

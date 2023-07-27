@@ -8,7 +8,7 @@ import json
 import shlex
 import os.path
 from subprocess import Popen, PIPE
-from typing import Dict, Any, Tuple, List
+from typing import Any
 
 from xpra.util import envbool
 from xpra.os_util import (
@@ -27,7 +27,7 @@ UINPUT_UUID_LEN : int = 12
 
 # pylint: disable=import-outside-toplevel
 
-def source_env(source=()) -> Dict[str, str]:
+def source_env(source=()) -> dict[str, str]:
     log = get_util_logger()
     log("source_env(%s)", source)
     env = {}
@@ -45,7 +45,7 @@ def source_env(source=()) -> Dict[str, str]:
     return env
 
 
-def decode_dict(out:str) -> Dict[str, str]:
+def decode_dict(out:str) -> dict[str, str]:
     env = {}
     for line in out.splitlines():
         parts = line.split("=", 1)
@@ -59,9 +59,9 @@ def decode_json(out):
 
 # credit: https://stackoverflow.com/a/47080959/428751
 # returns a dictionary of the environment variables resulting from sourcing a file
-def env_from_sourcing(file_to_source_path:str, include_unexported_variables:bool=False) -> Dict[str, str]:
+def env_from_sourcing(file_to_source_path:str, include_unexported_variables:bool=False) -> dict[str, str]:
     log = Logger("exec")
-    cmd : List[str] = shlex.split(file_to_source_path)
+    cmd : list[str] = shlex.split(file_to_source_path)
     def abscmd(s:str):
         if os.path.isabs(s):
             return s
@@ -123,7 +123,7 @@ def env_from_sourcing(file_to_source_path:str, include_unexported_variables:bool
         except UnicodeDecodeError:
             log.error(f"Error decoding {fdname} from {filename!r}", exc_info=True)
         return ""
-    env : Dict[str,str] = {}
+    env : dict[str,str] = {}
     env.update(decode(proc_str(out, "stdout")))
     env.update(decode_dict(proc_str(err, "stderr")))
     log("env_from_sourcing%s=%s", (file_to_source_path, include_unexported_variables), env)
@@ -133,7 +133,7 @@ def env_from_sourcing(file_to_source_path:str, include_unexported_variables:bool
 def sh_quotemeta(s:str) -> str:
     return "'" + s.replace("'", "'\\''") + "'"
 
-def xpra_env_shell_script(socket_dir, env : Dict[str,str]) -> str:
+def xpra_env_shell_script(socket_dir, env : dict[str,str]) -> str:
     script = ["#!/bin/sh", ""]
     for var, value in env.items():
         if var in ("PATH", "LD_LIBRARY_PATH", "PYTHONPATH"):
@@ -427,7 +427,7 @@ def has_uinput() -> bool:
         return False
     return True
 
-def create_uinput_device(uid:int, events, name:str) -> Tuple[str, Any, str] | None:
+def create_uinput_device(uid:int, events, name:str) -> tuple[str, Any, str] | None:
     log = get_util_logger()
     import uinput  # @UnresolvedImport
     BUS_USB = 0x03
@@ -454,7 +454,7 @@ def create_uinput_device(uid:int, events, name:str) -> Tuple[str, Any, str] | No
         return None
     return name, device, dev_path
 
-def create_uinput_pointer_device(uuid, uid)-> Tuple[str, Any, str] | None:
+def create_uinput_pointer_device(uuid, uid)-> tuple[str, Any, str] | None:
     if not envbool("XPRA_UINPUT_POINTER", True):
         return None
     from uinput import (
@@ -472,7 +472,7 @@ def create_uinput_pointer_device(uuid, uid)-> Tuple[str, Any, str] | None:
     name = f"Xpra Virtual Pointer {uuid}"
     return create_uinput_device(uid, events, name)
 
-def create_uinput_touchpad_device(uuid, uid:int)-> Tuple[str, Any, str] | None:
+def create_uinput_touchpad_device(uuid, uid:int)-> tuple[str, Any, str] | None:
     if not envbool("XPRA_UINPUT_TOUCHPAD", False):
         return None
     from uinput import (
@@ -489,7 +489,7 @@ def create_uinput_touchpad_device(uuid, uid:int)-> Tuple[str, Any, str] | None:
     return create_uinput_device(uid, events, name)
 
 
-def create_uinput_devices(uinput_uuid, uid:int) -> Dict[str,Any]:
+def create_uinput_devices(uinput_uuid, uid:int) -> dict[str,Any]:
     log = get_util_logger()
     try:
         import uinput  # @UnresolvedImport
@@ -516,5 +516,5 @@ def create_uinput_devices(uinput_uuid, uid:int) -> Dict[str,Any]:
         "touchpad"  : i(touchpad),
         }
 
-def create_input_devices(uinput_uuid, uid:int) -> Dict[str,Any]:
+def create_input_devices(uinput_uuid, uid:int) -> dict[str,Any]:
     return create_uinput_devices(uinput_uuid, uid)

@@ -63,7 +63,7 @@ cdef enum:
     # Positive integers with value embedded in typecode.
     INT_POS_FIXED_START = 0
     INT_POS_FIXED_COUNT = 44
-    # Dictionaries with length embedded in typecode.
+    # dictionaries with length embedded in typecode.
     DICT_FIXED_START = 102
     DICT_FIXED_COUNT = 25
     # Negative integers with value embedded in typecode.
@@ -72,7 +72,7 @@ cdef enum:
     # Strings with length embedded in typecode.
     STR_FIXED_START = 128
     STR_FIXED_COUNT = 64
-    # Lists with length embedded in typecode.
+    # lists with length embedded in typecode.
     LIST_FIXED_START = STR_FIXED_START+STR_FIXED_COUNT
     LIST_FIXED_COUNT = 64
 #assert LIST_FIXED_START + LIST_FIXED_COUNT == 256

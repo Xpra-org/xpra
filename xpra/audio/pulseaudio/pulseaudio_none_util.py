@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import sys
-from typing import Dict, Any
+from typing import Any
 
 from xpra.log import Logger
 log = Logger("audio")
@@ -36,10 +36,10 @@ def get_pulse_cookie_hash() -> str:
 def get_pactl_server() -> str:
     return ""
 
-def get_pa_device_options(*_args) -> Dict[str,Any]:
+def get_pa_device_options(*_args) -> dict[str,Any]:
     return {}
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> dict[str,Any]:
     return {
             "pulseaudio.wrapper": "none",
             "pulseaudio.found"  : has_pa(),

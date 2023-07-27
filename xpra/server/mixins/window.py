@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
-from typing import Any, Tuple
+from typing import Any
 
 from xpra.util import typedict
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -336,7 +336,7 @@ class WindowServer(StubServerMixin):
             if not isinstance(ss, WindowsMixin):
                 self.do_refresh_windows(ss, self._id_to_window)
 
-    def get_window_position(self, _window) -> Tuple[int,int] | None:
+    def get_window_position(self, _window) -> tuple[int,int] | None:
         #where the window is actually mapped on the server screen:
         return None
 

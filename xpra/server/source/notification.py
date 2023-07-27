@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.util import typedict
-from typing import Dict, Any, Callable
+from typing import Any, Callable
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
@@ -28,7 +28,7 @@ class NotificationMixin(StubSourceMixin):
     def init_state(self) -> None:
         self.send_notifications : bool = False
         self.send_notifications_actions : bool = False
-        self.notification_callbacks : Dict[int,Callable] = {}
+        self.notification_callbacks : dict[int,Callable] = {}
 
     def parse_client_caps(self, c : typedict) -> None:
         v = c.get("notifications")
@@ -41,7 +41,7 @@ class NotificationMixin(StubSourceMixin):
             self.send_notifications_actions = c.boolget("notifications.actions")
         log("notifications=%s, actions=%s", self.send_notifications, self.send_notifications_actions)
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         return {
             "notifications" : self.send_notifications,
             }

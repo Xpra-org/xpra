@@ -5,7 +5,7 @@
 
 import os
 import shlex
-from typing import Callable, Any, List, Dict
+from typing import Callable, Any
 
 from xpra.util import typedict
 from xpra.os_util import WIN32
@@ -68,13 +68,13 @@ class StubServerMixin:
         Prepare to handle connections from the given sockets.
         """
 
-    def get_caps(self, _source) -> Dict[str,Any]:
+    def get_caps(self, _source) -> dict[str,Any]:
         """
         Capabilities provided by this mixin.
         """
         return {}
 
-    def get_server_features(self, _source) -> Dict[str,Any]:
+    def get_server_features(self, _source) -> dict[str,Any]:
         """
         Features provided by this mixin.
         (the difference with capabilities is that those will only
@@ -88,7 +88,7 @@ class StubServerMixin:
         this method will be called.
         """
 
-    def get_info(self, _proto) -> Dict[str,Any]:
+    def get_info(self, _proto) -> dict[str,Any]:
         """
         Runtime information on this mixin, includes state and settings.
         Somewhat overlaps with the capabilities and features,
@@ -96,7 +96,7 @@ class StubServerMixin:
         """
         return {}
 
-    def get_ui_info(self, proto, client_uuids=None, *args) -> Dict[str,Any]:
+    def get_ui_info(self, proto, client_uuids=None, *args) -> dict[str,Any]:
         """
         Runtime information on this mixin,
         unlike get_info() this method will be called
@@ -131,11 +131,11 @@ class StubServerMixin:
         """
 
 
-    def get_child_env(self) -> Dict[str,str]:
+    def get_child_env(self) -> dict[str,str]:
         return os.environ.copy()
 
 
-    def get_full_child_command(self, cmd, _use_wrapper : bool=True) -> List[str]:
+    def get_full_child_command(self, cmd, _use_wrapper : bool=True) -> list[str]:
         #make sure we have it as a list:
         if isinstance(cmd, (list, tuple)):
             return list(cmd)
@@ -144,14 +144,14 @@ class StubServerMixin:
         return shlex.split(str(cmd))
 
 
-    def get_http_scripts(self) -> Dict[str,Callable]:
+    def get_http_scripts(self) -> dict[str,Callable]:
         return {}
 
 
     def add_packet_handler(self, packet_type : str, handler : ServerPacketHandlerType, main_thread=True) -> None:
         """ register a packet handler """
 
-    def add_packet_handlers(self, defs : Dict[str,ServerPacketHandlerType], main_thread=True) -> None:
+    def add_packet_handlers(self, defs : dict[str,ServerPacketHandlerType], main_thread=True) -> None:
         """ register multiple packet handlers """
 
     def get_server_source(self, proto):

@@ -14,7 +14,7 @@ from ctypes import (
     get_last_error, WinError, WinDLL, HRESULT,  # @UnresolvedImport
     )
 from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, CHAR, WCHAR, DWORD, HMODULE, RECT
-from typing import Dict, List, Tuple, Any, Callable
+from typing import Any, Callable
 
 from xpra.util import typedict, csv, envbool, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
 from xpra.os_util import bytestostr
@@ -147,7 +147,7 @@ WM_XBUTTONDOWN  = 0x020B
 WM_XBUTTONUP    = 0x020C
 WM_XBUTTONDBLCLK= 0x020D
 
-BUTTON_MAP : Dict[int, List] = {
+BUTTON_MAP : dict[int, list] = {
             win32con.WM_LBUTTONDOWN     : [(1, 1)],
             win32con.WM_LBUTTONUP       : [(1, 0)],
             win32con.WM_MBUTTONDOWN     : [(2, 1)],
@@ -167,7 +167,7 @@ class win32NotifyIcon:
 
     #we register the windows event handler on the class,
     #this allows us to know which hwnd refers to which instance:
-    instances : Dict[int,Any] = {}
+    instances : dict[int,Any] = {}
 
     def __init__(self, app_id:int=0, title:str="",
                  move_callbacks:Callable=noop,
@@ -184,8 +184,8 @@ class win32NotifyIcon:
         self.click_callback = click_callback
         self.exit_callback = exit_callback
         self.command_callback = command_callback
-        self.reset_function : Tuple[Callable,Tuple[Any,...]] | None = None
-        self.image_cache : Dict[str,Any] = {}
+        self.reset_function : tuple[Callable,tuple[Any,...]] | None = None
+        self.image_cache : dict[str,Any] = {}
         # Create the Window.
         if iconPathName:
             self.current_icon = self.LoadImage(iconPathName) or FALLBACK_ICON
@@ -445,7 +445,7 @@ class win32NotifyIcon:
 
 WM_TRAY_EVENT = win32con.WM_MENUCOMMAND     #a message id we choose
 TASKBAR_CREATED = RegisterWindowMessageA("TaskbarCreated")
-message_map : Dict[int,Callable] = {
+message_map : dict[int,Callable] = {
     TASKBAR_CREATED                     : win32NotifyIcon.OnTrayRestart,
     win32con.WM_DESTROY                 : win32NotifyIcon.OnDestroy,
     win32con.WM_COMMAND                 : win32NotifyIcon.OnCommand,

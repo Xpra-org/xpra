@@ -7,7 +7,7 @@
 import os
 from subprocess import Popen
 from shutil import which
-from typing import Dict, Tuple, Any
+from typing import Any
 
 from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -68,12 +68,12 @@ class AudioMixin(StubSourceMixin):
         self.pulseaudio_id = ""
         self.pulseaudio_cookie_hash = ""
         self.pulseaudio_server = ""
-        self.audio_decoders : Tuple[str,...] = ()
-        self.audio_encoders : Tuple[str,...]= ()
+        self.audio_decoders : tuple[str,...] = ()
+        self.audio_encoders : tuple[str,...]= ()
         self.audio_receive = False
         self.audio_send = False
         self.audio_fade_timer = 0
-        self.new_stream_timers : Dict[Popen,int] = {}
+        self.new_stream_timers : dict[Popen,int] = {}
 
     def cleanup(self) -> None:
         log("%s.cleanup()", self)
@@ -130,7 +130,7 @@ class AudioMixin(StubSourceMixin):
                  self.pulseaudio_id, self.pulseaudio_cookie_hash, self.pulseaudio_server,
                  self.audio_decoders, self.audio_encoders, self.audio_receive, self.audio_send)
 
-    def get_caps(self) -> Dict[str,Any]:
+    def get_caps(self) -> dict[str,Any]:
         if not self.wants_audio or not self.audio_properties:
             return {}
         audio_props = dict(self.audio_properties)
@@ -556,10 +556,10 @@ class AudioMixin(StubSourceMixin):
         return encoder_latency
 
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         return {"audio" : self.get_audio_info()}
 
-    def get_audio_info(self) -> Dict[str,Any]:
+    def get_audio_info(self) -> dict[str,Any]:
         def audio_info(supported, subprocess_wrapper, codecs):
             i = {"codecs" : codecs}
             if not supported:

@@ -10,7 +10,6 @@ import traceback
 from time import monotonic
 from subprocess import Popen, PIPE, DEVNULL
 from datetime import datetime, timedelta
-from typing import Dict, Tuple
 
 from xpra.version_util import caps_to_version, full_version_str
 from xpra.util import u, noerr, typedict, std, envint, csv
@@ -97,7 +96,7 @@ def box(stdscr, x, y, w, h, ul, ur, ll, lr):
     stdscr.addch(y + h - 1, x, ll)
     stdscr.addch(y + h - 1, x + w - 1, lr)
 
-def get_display_id_info(path:str) -> Dict[str,str]:
+def get_display_id_info(path:str) -> dict[str,str]:
     d = {}
     try:
         cmd = get_nodock_command()+["id", f"socket://{path}"]
@@ -114,7 +113,7 @@ def get_display_id_info(path:str) -> Dict[str,str]:
         d["error"] = str(e)
     return d
 
-def get_window_info(wi : typedict) -> Tuple[Tuple[str,int],...]:
+def get_window_info(wi : typedict) -> tuple[tuple[str,int],...]:
     #version info:
     geom = wi.inttupleget("geometry")
     g_str = "%ix%i at %i,%i" % (geom[2], geom[3], geom[0], geom[1])

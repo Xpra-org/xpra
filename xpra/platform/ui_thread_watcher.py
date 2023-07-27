@@ -7,7 +7,7 @@ import time
 import threading
 from time import monotonic
 from threading import Event
-from typing import Callable, List
+from typing import Callable
 
 from xpra.make_thread import start_thread
 from xpra.util import envint
@@ -40,9 +40,9 @@ class UI_thread_watcher:
         self.init_vars()
 
     def init_vars(self) -> None:
-        self.alive_callbacks : List[Callable] = []
-        self.fail_callbacks : List[Callable] = []
-        self.resume_callbacks : List[Callable] = []
+        self.alive_callbacks : list[Callable] = []
+        self.fail_callbacks : list[Callable] = []
+        self.resume_callbacks : list[Callable] = []
         self.UI_blocked : bool = False
         self.announced_blocked : bool = False
         self.last_UI_thread_time : float = 0
@@ -92,7 +92,7 @@ class UI_thread_watcher:
 
 
     @staticmethod
-    def run_callbacks(callbacks:List[Callable]) -> None:
+    def run_callbacks(callbacks:list[Callable]) -> None:
         for x in callbacks:
             try:
                 x()

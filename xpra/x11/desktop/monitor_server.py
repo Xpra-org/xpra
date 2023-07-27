@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, Any
+from typing import Any
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.scripts.config import InitException
@@ -59,7 +59,7 @@ class XpraMonitorServer(DesktopServerBase):
     def get_server_mode(self) -> str:
         return "X11 monitor"
 
-    def make_hello(self, source) -> Dict[str,Any]:
+    def make_hello(self, source) -> dict[str,Any]:
         capabilities = super().make_hello(source)
         if "features" in source.wants:
             capabilities.update({
@@ -283,7 +283,7 @@ class XpraMonitorServer(DesktopServerBase):
                 })
             model.init(mdef)
 
-    def get_monitor_config(self) -> Dict[int,Dict]:
+    def get_monitor_config(self) -> dict[int,dict]:
         monitor_defs = {}
         for wid, model in self._id_to_window.items():
             monitor = model.get_definition()
@@ -292,7 +292,7 @@ class XpraMonitorServer(DesktopServerBase):
             monitor_defs[i] = monitor
         return monitor_defs
 
-    def apply_monitor_config(self, monitor_defs : Dict) -> None:
+    def apply_monitor_config(self, monitor_defs : dict) -> None:
         with xsync:
             RandR.set_crtc_config(monitor_defs)
 

@@ -6,7 +6,7 @@
 import os
 import hmac
 import hashlib
-from typing import List, Callable, ByteString
+from typing import Callable, ByteString
 
 from xpra.util import csv, envint
 from xpra.log import Logger
@@ -18,7 +18,7 @@ BLACKLISTED_HASHES = ("sha1", "md5")
 DEFAULT_SALT_LENGTH = envint("XPRA_DEFAULT_SALT_LENGTH", 64)
 
 
-def get_digests() -> List[str]:
+def get_digests() -> list[str]:
     digests = ["xor"]
     digests += [f"hmac+{x}" for x in tuple(reversed(sorted(hashlib.algorithms_available)))
                 if not x.startswith("shake_") and x not in BLACKLISTED_HASHES

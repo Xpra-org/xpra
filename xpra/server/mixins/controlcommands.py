@@ -7,7 +7,6 @@
 
 import os.path
 from time import monotonic
-from typing import List
 
 from xpra.util import parse_scaling_value, csv, from0to100, typedict, ConnectionMessage
 from xpra.os_util import load_binary_file
@@ -613,7 +612,7 @@ class ServerBaseControlCommands(StubServerMixin):
         self.setting_changed("clipboard-limits", {'send': max_send, 'recv': max_recv})
         return msg
 
-    def _control_video_subregions_from_wid(self, wid:int) -> List:
+    def _control_video_subregions_from_wid(self, wid:int) -> list:
         if wid not in self._id_to_window:
             raise ControlError(f"invalid window {wid}")
         video_subregions = []

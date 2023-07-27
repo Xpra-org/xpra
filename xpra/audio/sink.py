@@ -8,7 +8,7 @@ import sys
 from time import monotonic
 from collections import deque
 from threading import Lock
-from typing import Dict, Any
+from typing import Any
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.audio.audio_pipeline import AudioPipeline
@@ -34,10 +34,10 @@ from xpra.log import Logger
 log = Logger("audio")
 gstlog = Logger("gstreamer")
 
-SINK_SHARED_DEFAULT_ATTRIBUTES : Dict[str,Any] = {
+SINK_SHARED_DEFAULT_ATTRIBUTES : dict[str,Any] = {
     "sync"    : False,
     }
-NON_AUTO_SINK_ATTRIBUTES : Dict[str,Any] = {
+NON_AUTO_SINK_ATTRIBUTES : dict[str,Any] = {
     "async"     : True,
     "qos"       : True,
     }
@@ -343,7 +343,7 @@ class AudioSink(AudioPipeline):
         self.cleanup()
         return GST_FLOW_OK
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = super().get_info()
         if QUEUE_TIME>0 and self.queue:
             clt = self.queue.get_property("current-level-time")

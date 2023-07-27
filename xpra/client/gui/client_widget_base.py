@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any, Type
+from typing import Any
 
 from xpra.util import envbool
 from xpra.log import Logger
@@ -34,7 +34,7 @@ class ClientWidgetBase:
         self._backing = None
         self.pixel_depth = 24
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = {
             "has-alpha"     : self._has_alpha,
             "window-alpha"  : self._window_alpha,
@@ -45,7 +45,7 @@ class ClientWidgetBase:
             info["backing"] = b.get_info()
         return info
 
-    def make_new_backing(self, backing_class:Type, ww:int, wh:int, bw:int, bh:int):
+    def make_new_backing(self, backing_class:type, ww:int, wh:int, bw:int, bh:int):
         # size of the backing, which should be the same as the server's window source:
         bw = max(1, bw)
         bh = max(1, bh)

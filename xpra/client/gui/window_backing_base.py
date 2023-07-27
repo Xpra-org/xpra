@@ -9,7 +9,7 @@ import hashlib
 from time import monotonic
 from threading import Lock
 from collections import deque
-from typing import Dict, Any, Tuple, Callable, Union, Iterable
+from typing import Any, Callable, Iterable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.net.mmap_pipe import mmap_read
@@ -83,7 +83,7 @@ def load_video_decoders():
     return VIDEO_DECODERS
 
 
-def fire_paint_callbacks(callbacks:Iterable[Callable], success:Union[int,bool]=True, message=""):
+def fire_paint_callbacks(callbacks:Iterable[Callable], success:int|bool=True, message=""):
     for x in callbacks:
         try:
             x(success, message)
@@ -126,18 +126,18 @@ class WindowBackingBase:
     Generic superclass for all Backing code,
     see CairoBackingBase and GTK2WindowBacking subclasses for actual implementations
     """
-    RGB_MODES : Tuple[str, ...] = ()
+    RGB_MODES : tuple[str, ...] = ()
 
     def __init__(self, wid : int, window_alpha : bool):
         load_csc_options()
         load_video_decoders()
         self.wid : int = wid
-        self.size : Tuple[int,int] = (0, 0)
-        self.render_size : Tuple[int,int] = (0, 0)
+        self.size : tuple[int,int] = (0, 0)
+        self.render_size : tuple[int,int] = (0, 0)
         #padding between the window contents and where we actually draw the backing
         #(ie: if the window is bigger than the backing,
         # we may be rendering the backing in the center of the window)
-        self.offsets : Tuple[int,int,int,int] = (0, 0, 0, 0)       #top,left,bottom,right
+        self.offsets : tuple[int,int,int,int] = (0, 0, 0, 0)       #top,left,bottom,right
         self.gravity : int = 0
         self._alpha_enabled = window_alpha
         self._backing = None
@@ -167,11 +167,11 @@ class WindowBackingBase:
         self.mmap = None
         self.mmap_enabled : bool = False
         self.fps_events : deque = deque(maxlen=120)
-        self.fps_buffer_size : Tuple[int,int] = (0, 0)
+        self.fps_buffer_size : tuple[int,int] = (0, 0)
         self.fps_buffer_update_time : float = 0
         self.fps_value : int = 0
         self.fps_refresh_timer : int = 0
-        self.paint_stats : Dict[str,int] = {}
+        self.paint_stats : dict[str,int] = {}
 
     def idle_add(self, *_args, **_kwargs):
         raise NotImplementedError()
@@ -179,14 +179,14 @@ class WindowBackingBase:
     def recpaint(self, encoding):
         self.paint_stats[encoding] = self.paint_stats.get(encoding, 0) + 1
 
-    def get_rgb_formats(self) -> Tuple[str,...]:
+    def get_rgb_formats(self) -> tuple[str,...]:
         if self._alpha_enabled:
             return self.RGB_MODES
         #remove modes with alpha:
         return tuple(x for x in self.RGB_MODES if x.find("A")<0)
 
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = {
             "rgb-formats"   : self.get_rgb_formats(),
             "transparency"  : self._alpha_enabled,
@@ -438,7 +438,7 @@ class WindowBackingBase:
             self._csc_decoder = None
 
 
-    def get_encoding_properties(self) -> Dict[str,Any]:
+    def get_encoding_properties(self) -> dict[str,Any]:
         return {
                  "encodings.rgb_formats"    : self.get_rgb_formats(),
                  "encoding.transparency"    : self._alpha_enabled,
@@ -447,7 +447,7 @@ class WindowBackingBase:
                  "encoding.render-size"     : self.render_size,
                  }
 
-    def _get_full_csc_modes(self, rgb_modes) -> Dict[str,Any]:
+    def _get_full_csc_modes(self, rgb_modes) -> dict[str,Any]:
         #calculate the server CSC modes the server is allowed to use
         #based on the client CSC modes we can convert to in the backing class we use
         #and trim the transparency if we cannot handle it

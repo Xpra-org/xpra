@@ -17,7 +17,7 @@ from urllib.parse import urlparse, parse_qsl, unquote
 from weakref import WeakKeyDictionary
 from time import sleep, time, monotonic
 from threading import Thread, Lock
-from typing import Callable, List, Tuple, Dict, Any, Type, Union, ByteString
+from typing import Callable, Any, ByteString
 
 from xpra.version_util import (
     XPRA_VERSION, vparts, version_str, full_version_str, version_compat_check, get_version_info,
@@ -126,7 +126,7 @@ class ClientException(Exception):
     pass
 
 
-def get_server_info() -> Dict[str,Any]:
+def get_server_info() -> dict[str,Any]:
     #this function is for non UI thread info
     info = {
             "platform"  : get_platform_info(),
@@ -134,7 +134,7 @@ def get_server_info() -> Dict[str,Any]:
             }
     return info
 
-def get_thread_info(proto=None)-> Dict[Any,Any]:
+def get_thread_info(proto=None)-> dict[Any,Any]:
     #threads:
     if proto:
         info_threads = proto.get_threads()
@@ -143,7 +143,7 @@ def get_thread_info(proto=None)-> Dict[Any,Any]:
     return get_frame_info(info_threads)
 
 
-def proto_crypto_caps(proto)-> Dict[str,Any]:
+def proto_crypto_caps(proto)-> dict[str,Any]:
     if not proto:
         return {}
     if FULL_INFO>1 or proto.encryption:
@@ -184,32 +184,32 @@ class ServerCore:
         self._closing : bool = False
         self._upgrading = None
         #networking bits:
-        self._socket_info : Dict = {}
-        self._potential_protocols : List[SocketProtocol] = []
+        self._socket_info : dict = {}
+        self._potential_protocols : list[SocketProtocol] = []
         self._rfb_upgrade : int = 0
-        self._ssl_attributes : Dict = {}
+        self._ssl_attributes : dict = {}
         self._accept_timeout : int = SOCKET_TIMEOUT + 1
         self.ssl_mode : str = ""
         self.ssl_upgrade = False
         self.websocket_upgrade = has_websocket_handler()
         self.ssh_upgrade = False
         self._html : bool = False
-        self._http_scripts : Dict[str,Callable] = {}
+        self._http_scripts : dict[str,Callable] = {}
         self._www_dir : str = ""
-        self._http_headers_dirs : List[str] = []
-        self._aliases : Dict = {}
-        self.socket_info : Dict = {}
-        self.socket_options : Dict = {}
-        self.socket_cleanup : List = []
+        self._http_headers_dirs : list[str] = []
+        self._aliases : dict = {}
+        self.socket_info : dict = {}
+        self.socket_options : dict = {}
+        self.socket_cleanup : list = []
         self.socket_verify_timer : WeakKeyDictionary[SocketProtocol,int] = WeakKeyDictionary()
         self.socket_rfb_upgrade_timer : WeakKeyDictionary[SocketProtocol,int] = WeakKeyDictionary()
         self._max_connections : int = MAX_CONCURRENT_CONNECTIONS
         self._socket_timeout : float = SERVER_SOCKET_TIMEOUT
         self._ws_timeout : int = 5
         self._socket_dir : str = ""
-        self._socket_dirs : List = []
+        self._socket_dirs : list = []
         self.dbus_pid : int = 0
-        self.dbus_env : Dict[str,str] = {}
+        self.dbus_env : dict[str,str] = {}
         self.dbus_control : bool = False
         self.dbus_server = None
         self.unix_socket_paths = []
@@ -217,13 +217,13 @@ class ServerCore:
         self.exec_cwd = os.getcwd()
         self.pidfile = None
         self.pidinode : int = 0
-        self.session_files : List[str] = [
+        self.session_files : list[str] = [
             "cmdline", "server.env", "config", "server.log*",
             #notifications may use a TMP dir:
             "tmp/*", "tmp",
             ]
         self.splash_process = None
-        self.control_commands : Dict[str,Any] = {}
+        self.control_commands : dict[str,Any] = {}
 
         self.session_name = ""
 
@@ -248,7 +248,7 @@ class ServerCore:
         self.menu_provider = None
 
         self.init_uuid()
-        self._default_packet_handlers : Dict[str,Callable] = {}
+        self._default_packet_handlers : dict[str,Callable] = {}
 
     def get_server_mode(self) -> str:
         return "core"
@@ -548,7 +548,7 @@ class ServerCore:
 
     ######################################################################
     # dbus:
-    def init_dbus(self, dbus_pid : int, dbus_env : Dict[str,str]) -> None:
+    def init_dbus(self, dbus_pid : int, dbus_env : dict[str,str]) -> None:
         if not POSIX:
             return
         self.dbus_pid = dbus_pid
@@ -754,7 +754,7 @@ class ServerCore:
 
     def init_http_scripts(self, http_scripts:str):
         if http_scripts.lower() not in FALSE_OPTIONS:
-            script_options : Dict[str,Callable] = {
+            script_options : dict[str,Callable] = {
                 "/Status"           : self.http_status_request,
                 "/Info"             : self.http_info_request,
                 "/Sessions"         : self.http_sessions_request,
@@ -794,7 +794,7 @@ class ServerCore:
             self.auth_classes[x] = self.get_auth_modules(x, opts_value)
         authlog(f"init_auth(..) auth={self.auth_classes}")
 
-    def get_auth_modules(self, socket_type:str, auth_strs) -> Tuple[Tuple[str,Any,Type,Dict],...]:
+    def get_auth_modules(self, socket_type:str, auth_strs) -> tuple[tuple[str,Any,type,dict],...]:
         authlog(f"get_auth_modules({socket_type}, {auth_strs}, ..)")
         if not auth_strs:
             return ()
@@ -945,7 +945,7 @@ class ServerCore:
                 ap.start()
                 self.mdns_publishers[ap] = mdns_mode
 
-    def can_upgrade(self, socktype:str, tosocktype:str, options:Dict[str,str]):
+    def can_upgrade(self, socktype:str, tosocktype:str, options:dict[str,str]):
         to_option_str = options.get(tosocktype, "")
         to_option = to_option_str.lower() in TRUE_OPTIONS
         if tosocktype in ("ws", "wss") and not has_websocket_handler():
@@ -980,7 +980,7 @@ class ServerCore:
             return self.ssh_upgrade
         return False
 
-    def get_mdns_socktypes(self, socktype:str, options:Dict[str,str]) -> Tuple[str,...]:
+    def get_mdns_socktypes(self, socktype:str, options:dict[str,str]) -> tuple[str,...]:
         #for a given socket type,
         #what socket types we should expose via mdns
         if socktype in ("vsock", "named-pipe"):
@@ -997,7 +997,7 @@ class ServerCore:
             socktypes = ["ssh"]
         return tuple(socktypes)
 
-    def get_mdns_info(self) -> Dict[str,Any]:
+    def get_mdns_info(self) -> dict[str,Any]:
         mdns_info = {
             "display"  : self.display_name,
             "username" : get_username(),
@@ -1100,7 +1100,7 @@ class ServerCore:
         protocols = self.get_all_protocols()
         self.cleanup_protocols(protocols, reason=reason, force=force)
 
-    def get_all_protocols(self) -> Tuple[SocketProtocol]:
+    def get_all_protocols(self) -> tuple[SocketProtocol]:
         return tuple(self._potential_protocols)
 
     def cleanup_protocols(self, protocols, reason=None, force=False) -> None:
@@ -1349,7 +1349,7 @@ class ServerCore:
             t = self.timeout_add(self._rfb_upgrade*1000, self.try_upgrade_to_rfb, proto)
             self.socket_rfb_upgrade_timer[proto] = t
 
-    def get_ssl_socket_options(self, socket_options) -> Dict[str,Any]:
+    def get_ssl_socket_options(self, socket_options) -> dict[str,Any]:
         ssllog("get_ssl_socket_options(%s)", socket_options)
         kwargs = dict((k.replace("-", "_"), v) for k,v in self._ssl_attributes.items())
         for k,v in socket_options.items():
@@ -1505,7 +1505,7 @@ class ServerCore:
         self.schedule_verify_connection_accepted(protocol, self._accept_timeout)
         return protocol
 
-    def may_wrap_socket(self, conn, socktype:str, socket_info, socket_options:Dict, peek_data=b"") -> Tuple[bool,Any,bytes]:
+    def may_wrap_socket(self, conn, socktype:str, socket_info, socket_options:dict, peek_data=b"") -> tuple[bool,Any,bytes]:
         """
             Returns:
             * a flag indicating if we should continue processing this connection
@@ -1593,7 +1593,7 @@ class ServerCore:
 
     ######################################################################
     # http / websockets:
-    def start_http_socket(self, socktype:str, conn, socket_options:Dict, is_ssl:bool=False, peek_data:bytes=b""):
+    def start_http_socket(self, socktype:str, conn, socket_options:dict, is_ssl:bool=False, peek_data:bytes=b""):
         frominfo = pretty_socket(conn.remote)
         line1 = peek_data.split(b"\n")[0]
         http_proto = "http"+["","s"][int(is_ssl)]
@@ -1613,7 +1613,7 @@ class ServerCore:
         start_thread(self.start_http, "%s-for-%s" % (tname, frominfo),
                      daemon=True, args=(socktype, conn, socket_options, is_ssl, req_info, line1, conn.remote))
 
-    def start_http(self, socktype:str, conn, socket_options:Dict, is_ssl:bool, req_info:str, line1:bytes, frominfo:str) -> None:
+    def start_http(self, socktype:str, conn, socket_options:dict, is_ssl:bool, req_info:str, line1:bytes, frominfo:str) -> None:
         httplog("start_http(%s, %s, %s, %s, %s, %r, %s) www dir=%s, headers dir=%s",
                 socktype, conn, socket_options, is_ssl, req_info, line1, frominfo,
                 self._www_dir, self._http_headers_dirs)
@@ -1662,10 +1662,10 @@ class ServerCore:
             wslog("error closing connection following error: %s", ce)
 
 
-    def get_http_scripts(self) -> Dict[str,Any]:
+    def get_http_scripts(self) -> dict[str,Any]:
         return self._http_scripts
 
-    def http_query_dict(self, path) -> Dict:
+    def http_query_dict(self, path) -> dict:
         return dict(parse_qsl(urlparse(path).query))
 
     def send_json_response(self, data):
@@ -1752,7 +1752,7 @@ class ServerCore:
         displays_info = self._filter_display_dict(displays, "state", "wmname", "xpra-server-mode")
         return self.send_json_response(displays_info)
 
-    def get_displays(self) -> Dict[str,Any]:
+    def get_displays(self) -> dict[str,Any]:
         from xpra.scripts.main import get_displays_info #pylint: disable=import-outside-toplevel
         return get_displays_info(self.dotxpra)
 
@@ -1761,14 +1761,14 @@ class ServerCore:
         sessions_info = self._filter_display_dict(sessions, "state", "username", "session-type", "session-name", "uuid")
         return self.send_json_response(sessions_info)
 
-    def get_xpra_sessions(self) -> Dict[str,Any]:
+    def get_xpra_sessions(self) -> dict[str,Any]:
         from xpra.scripts.main import get_xpra_sessions #pylint: disable=import-outside-toplevel
         return get_xpra_sessions(self.dotxpra)
 
     def http_info_request(self, _path:str):
         return self.send_json_response(self.get_http_info())
 
-    def get_http_info(self) -> Dict[str,Any]:
+    def get_http_info(self) -> dict[str,Any]:
         return {
             "mode"              : self.get_server_mode(),
             "type"              : "Python",
@@ -1842,7 +1842,7 @@ class ServerCore:
         self.cancel_upgrade_to_rfb_timer(proto)
         proto.close()
 
-    def disconnect_client(self, protocol:SocketProtocol, reason:Union[str,ConnectionMessage], *extra):
+    def disconnect_client(self, protocol:SocketProtocol, reason:str | ConnectionMessage, *extra):
         netlog("disconnect_client(%s, %s, %s)", protocol, reason, extra)
         if protocol and not protocol.is_closed():
             self.disconnect_protocol(protocol, str(reason), *extra)
@@ -1952,7 +1952,7 @@ class ServerCore:
         #in which case we'll end up here parsing the hello again
         start_thread(self.verify_auth, "authenticate connection", daemon=True, args=(proto, packet, c))
 
-    def make_authenticators(self, socktype:str, remote, conn) -> Tuple[Any]:
+    def make_authenticators(self, socktype:str, remote, conn) -> tuple[Any]:
         authlog("make_authenticators%s socket options=%s", (socktype, remote, conn), conn.options)
         sock_options = conn.options
         sock_auth = sock_options.get("auth", "")
@@ -1999,7 +1999,7 @@ class ServerCore:
                 i += 1
         return tuple(authenticators)
 
-    def send_challenge(self, proto:SocketProtocol, salt, auth_caps:Dict, digest, salt_digest, prompt:str="password") -> None:
+    def send_challenge(self, proto:SocketProtocol, salt, auth_caps:dict, digest, salt_digest, prompt:str="password") -> None:
         proto.send_now(("challenge", salt, auth_caps or {}, digest, salt_digest, prompt))
         self.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
 
@@ -2125,7 +2125,7 @@ class ServerCore:
         c = typedict(capabilities)
         self.auth_verified(proto, c, auth_caps)
 
-    def auth_verified(self, proto:SocketProtocol, caps:typedict, auth_caps:Dict) -> None:
+    def auth_verified(self, proto:SocketProtocol, caps:typedict, auth_caps:dict) -> None:
         command_req = tuple(str(x) for x in caps.tupleget("command_request"))
         if command_req:
             #call from UI thread:
@@ -2168,7 +2168,7 @@ class ServerCore:
         ssllog.info("upgraded %s to %s", conn, new_socktype)
 
 
-    def setup_encryption(self, proto:SocketProtocol, c : typedict) -> Dict[str,Any] | None:
+    def setup_encryption(self, proto:SocketProtocol, c : typedict) -> dict[str,Any] | None:
         def auth_failed(msg):
             self.auth_failed(proto, msg)
             return None
@@ -2242,7 +2242,7 @@ class ServerCore:
             return auth_failed("missing encryption tokens from client")
         return {}
 
-    def get_encryption_key(self, authenticators:Tuple=(), keyfile:str=None) -> bytes:
+    def get_encryption_key(self, authenticators:tuple=(), keyfile:str=None) -> bytes:
         #if we have a keyfile specified, use that:
         authlog(f"get_encryption_key({authenticators}, {keyfile})")
         if keyfile:
@@ -2263,7 +2263,7 @@ class ServerCore:
                     return v
         return b""
 
-    def call_hello_oked(self, proto:SocketProtocol, c:typedict, auth_caps:Dict) -> None:
+    def call_hello_oked(self, proto:SocketProtocol, c:typedict, auth_caps:dict) -> None:
         try:
             if SIMULATE_SERVER_HELLO_ERROR:
                 raise RuntimeError("Simulating a server error")
@@ -2279,7 +2279,7 @@ class ServerCore:
             log.error("server error processing new connection from %s: %s", proto, e, exc_info=True)
             self.disconnect_client(proto, ConnectionMessage.CONNECTION_ERROR, "error accepting new connection")
 
-    def hello_oked(self, proto:SocketProtocol, c:typedict, _auth_caps:Dict) -> bool:
+    def hello_oked(self, proto:SocketProtocol, c:typedict, _auth_caps:dict) -> bool:
         generic_request = c.strget("request")
         def is_req(mode):
             return generic_request==mode or c.boolget("%s_request" % mode)
@@ -2331,7 +2331,7 @@ class ServerCore:
         self.clean_quit(False)
 
 
-    def make_hello(self, source) -> Dict[str,Any]:
+    def make_hello(self, source) -> dict[str,Any]:
         now = time()
         ncaps = get_network_caps(FULL_INFO)
         ncaps.update(proto_crypto_caps(None if source is None else source.protocol))
@@ -2371,7 +2371,7 @@ class ServerCore:
         log("id info request from %s", proto._conn)
         proto.send_now(("hello", self.get_session_id_info()))
 
-    def get_session_id_info(self) -> Dict[str,Any]:
+    def get_session_id_info(self) -> dict[str,Any]:
         #minimal information for identifying the session
         id_info = {
             "session-type"  : self.session_type,
@@ -2394,17 +2394,17 @@ class ServerCore:
             self.do_send_info(proto, info)
         self.get_all_info(cb, proto)
 
-    def do_send_info(self, proto:SocketProtocol, info:Dict[str,Any]) -> None:
+    def do_send_info(self, proto:SocketProtocol, info:dict[str,Any]) -> None:
         proto.send_now(("hello", notypedict(info)))
 
     def get_all_info(self, callback:Callable, proto:SocketProtocol=None, *args):
         start = monotonic()
-        ui_info : Dict[str,Any] = self.get_ui_info(proto, *args)
+        ui_info : dict[str,Any] = self.get_ui_info(proto, *args)
         end = monotonic()
         log("get_all_info: ui info collected in %ims", (end-start)*1000)
         start_thread(self._get_info_in_thread, "Info", daemon=True, args=(callback, ui_info, proto, args))
 
-    def _get_info_in_thread(self, callback:Callable, ui_info:Dict[str,Any], proto:SocketProtocol, args):
+    def _get_info_in_thread(self, callback:Callable, ui_info:dict[str,Any], proto:SocketProtocol, args):
         log("get_info_in_thread%s", (callback, {}, proto, args))
         start = monotonic()
         #this runs in a non-UI thread
@@ -2417,14 +2417,14 @@ class ServerCore:
         log("get_all_info: non ui info collected in %ims", (end-start)*1000)
         callback(proto, ui_info)
 
-    def get_ui_info(self, _proto:SocketProtocol, *_args) -> Dict[str,Any]:
+    def get_ui_info(self, _proto:SocketProtocol, *_args) -> dict[str,Any]:
         #this function is for info which MUST be collected from the UI thread
         return {}
 
-    def get_thread_info(self, proto:SocketProtocol) -> Dict[str,Any]:
+    def get_thread_info(self, proto:SocketProtocol) -> dict[str,Any]:
         return get_thread_info(proto)
 
-    def get_minimal_server_info(self) -> Dict[str,Any]:
+    def get_minimal_server_info(self) -> dict[str,Any]:
         return {
             "mode"              : self.get_server_mode(),
             "session-type"      : self.session_type,
@@ -2432,7 +2432,7 @@ class ServerCore:
             "machine-id"        : get_machine_id(),
             }
 
-    def get_server_info(self) -> Dict[str,Any]:
+    def get_server_info(self) -> dict[str,Any]:
         #this function is for non UI thread info
         info = get_server_info()
         now = time()
@@ -2445,7 +2445,7 @@ class ServerCore:
             })
         return info
 
-    def get_server_load_info(self) -> Dict[str,Any]:
+    def get_server_load_info(self) -> dict[str,Any]:
         if POSIX:
             try:
                 return {"load" : tuple(int(x*1000) for x in os.getloadavg())}
@@ -2453,7 +2453,7 @@ class ServerCore:
                 log("cannot get load average", exc_info=True)
         return {}
 
-    def get_server_exec_info(self) -> Dict[str,Any]:
+    def get_server_exec_info(self) -> dict[str,Any]:
         info = {
             "argv"              : sys.argv,
             "path"              : sys.path,
@@ -2474,7 +2474,7 @@ class ServerCore:
             info["original-desktop-display"] = self.original_desktop_display
         return info
 
-    def get_info(self, proto, *_args) -> Dict[str,Any]:
+    def get_info(self, proto, *_args) -> dict[str,Any]:
         start = monotonic()
         #this function is for non UI thread info
         info = {}
@@ -2529,12 +2529,12 @@ class ServerCore:
         log("ServerCore.get_info took %ims", (end-start)*1000)
         return info
 
-    def get_packet_handlers_info(self) -> Dict[str,Any]:
+    def get_packet_handlers_info(self) -> dict[str,Any]:
         return {
             "default"   : sorted(self._default_packet_handlers.keys()),
             }
 
-    def get_socket_info(self) -> Dict[str,Any]:
+    def get_socket_info(self) -> dict[str,Any]:
         si = {}
         def add_listener(socktype, info):
             si.setdefault(socktype, {}).setdefault("listeners", []).append(info)

@@ -9,12 +9,12 @@ import sys
 import logging
 import weakref
 import itertools
-from typing import Callable, Dict, List, Tuple, Any, Set
+from typing import Callable, Any
 # This module is used by non-GUI programs and thus must not import gtk.
 
 LOG_PREFIX : str = ""
 LOG_FORMAT : str = "%(asctime)s %(message)s"
-DEBUG_MODULES : Tuple[str, ...] = ()
+DEBUG_MODULES : tuple[str, ...] = ()
 if os.name!="posix" or os.getuid()!=0:
     LOG_FORMAT = os.environ.get("XPRA_LOG_FORMAT", LOG_FORMAT)
     LOG_PREFIX = os.environ.get("XPRA_LOG_PREFIX", LOG_PREFIX)
@@ -25,10 +25,10 @@ NOPREFIX_FORMAT : str = "%(message)s"
 logging.basicConfig(format=LOG_FORMAT)
 logging.root.setLevel(logging.INFO)
 
-debug_enabled_categories : Set[str] = set()
-debug_disabled_categories : Set[str] = set()
+debug_enabled_categories : set[str] = set()
+debug_disabled_categories : set[str] = set()
 
-def get_debug_args() -> List[str]:
+def get_debug_args() -> list[str]:
     args = []
     if debug_enabled_categories:
         args += list(debug_enabled_categories)
@@ -138,7 +138,7 @@ def enable_format(format_string:str) -> None:
         pass
 
 
-STRUCT_KNOWN_FILTERS : Dict[str,Dict[str,str]] = {
+STRUCT_KNOWN_FILTERS : dict[str,dict[str,str]] = {
     "Client" : {
                 "client"        : "All client code",
                 "paint"         : "Client window paint code",
@@ -289,7 +289,7 @@ STRUCT_KNOWN_FILTERS : Dict[str,Dict[str,str]] = {
     }
 
 #flatten it:
-KNOWN_FILTERS : Dict[str,str] = {}
+KNOWN_FILTERS : dict[str,str] = {}
 for d in STRUCT_KNOWN_FILTERS.values():
     for k,v in d.items():
         KNOWN_FILTERS[k] = v
@@ -299,7 +299,7 @@ def isenvdebug(category : str) -> bool:
     return os.environ.get("XPRA_%s_DEBUG" % category.upper().replace("-", "_").replace("+", "_"), "0")=="1"
 
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> dict[str,Any]:
     info = {
         "categories" : {
             "enabled"   : tuple(debug_enabled_categories),
@@ -376,7 +376,7 @@ class Logger:
         if self.debug_enabled:
             self.debug("debug enabled for %s / %s", caller, categories)
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         return {
             "categories"    : self.categories,
             "debug"         : self.debug_enabled,
@@ -437,7 +437,7 @@ class Logger:
 # we want to keep a reference to all the loggers in use,
 # and we may have multiple loggers for the same key,
 # but we don't want to prevent garbage collection so use a list of `weakref`s
-all_loggers : Dict[str, Set['weakref.ReferenceType[Logger]']] = {}
+all_loggers : dict[str, set['weakref.ReferenceType[Logger]']] = {}
 def add_logger(categories, logger:Logger) -> None:
     categories = list(categories)
     categories.append("all")
@@ -445,7 +445,7 @@ def add_logger(categories, logger:Logger) -> None:
     for cat in categories:
         all_loggers.setdefault(cat, set()).add(l)
 
-def get_all_loggers() -> Set[Logger]:
+def get_all_loggers() -> set[Logger]:
     a = set()
     for loggers_set in all_loggers.values():
         for logger in tuple(loggers_set):
@@ -455,7 +455,7 @@ def get_all_loggers() -> Set[Logger]:
                 a.add(instance)
     return a
 
-def get_loggers_for_categories(*cat) -> List[Logger]:
+def get_loggers_for_categories(*cat) -> list[Logger]:
     if not cat:
         return  []
     if "all" in cat:
@@ -467,16 +467,16 @@ def get_loggers_for_categories(*cat) -> List[Logger]:
             matches.add(l)
     return list(matches)
 
-def enable_debug_for(*cat) -> List[Logger]:
-    loggers : List[Logger] = []
+def enable_debug_for(*cat) -> list[Logger]:
+    loggers : list[Logger] = []
     for l in get_loggers_for_categories(*cat):
         if not l.is_debug_enabled():
             l.enable_debug()
             loggers.append(l)
     return loggers
 
-def disable_debug_for(*cat) -> List[Logger]:
-    loggers : List[Logger] = []
+def disable_debug_for(*cat) -> list[Logger]:
+    loggers : list[Logger] = []
     for l in get_loggers_for_categories(*cat):
         if l.is_debug_enabled():
             l.disable_debug()

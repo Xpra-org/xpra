@@ -5,11 +5,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Tuple, TypeAlias
+from typing import TypeAlias
 
 #These chipsets will use OpenGL,
 #there will not be any warnings, even if the vendor is greylisted:
-GL_MATCH_LIST : TypeAlias = Dict[str, Tuple[str,...]]
+GL_MATCH_LIST : TypeAlias = dict[str, tuple[str,...]]
 
 WHITELIST : GL_MATCH_LIST = {
     "renderer"  : (

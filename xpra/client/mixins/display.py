@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from typing import Dict, Any, Tuple
+from typing import Any
 
 from xpra.exit_codes import ExitCode
 from xpra.platform.features import REINIT_WINDOWS
@@ -106,7 +106,7 @@ class DisplayClient(StubClientMixin):
 
     ######################################################################
     # hello:
-    def get_caps(self) -> Dict[str,Any]:
+    def get_caps(self) -> dict[str,Any]:
         caps = {
             "show-desktop"  : True,
             "vrefresh"      : self.get_vrefresh(),
@@ -153,7 +153,7 @@ class DisplayClient(StubClientMixin):
             }))
         return caps
 
-    def get_dpi_caps(self) -> Dict[str,Any]:
+    def get_dpi_caps(self) -> dict[str,Any]:
         #command line (or config file) override supplied:
         caps = {}
         dpi = 0
@@ -179,7 +179,7 @@ class DisplayClient(StubClientMixin):
         log("get_dpi_caps()=%s", caps)
         return caps
 
-    def get_scaling_caps(self) -> Dict[str,Any]:
+    def get_scaling_caps(self) -> dict[str,Any]:
         return {
             "" : True,
             "enabled"   : self.xscale!=1 or self.yscale!=1,
@@ -189,7 +189,7 @@ class DisplayClient(StubClientMixin):
     def get_vrefresh(self):
         return get_vrefresh()
 
-    def get_screen_caps(self) -> Dict[str,Any]:
+    def get_screen_caps(self) -> dict[str,Any]:
         caps = {
             "vrefresh"      : self.get_vrefresh(),
             "cursor" : {
@@ -203,7 +203,7 @@ class DisplayClient(StubClientMixin):
 
     #this is the format we should be moving towards
     #with proper namespace:
-    #def get_info(self) -> Dict:
+    #def get_info(self) -> dict:
     #    sinfo = self.get_screen_caps()
     #    sinfo["scaling"] = self.get_scaling_caps()
     #    sinfo["dpi"] = self.get_dpi_caps()
@@ -322,10 +322,10 @@ class DisplayClient(StubClientMixin):
     def has_transparency(self) -> bool:
         return False
 
-    def get_icc_info(self) -> Dict[str,Any]:
+    def get_icc_info(self) -> dict[str,Any]:
         return get_icc_info()
 
-    def get_display_icc_info(self) -> Dict[str,Any]:
+    def get_display_icc_info(self) -> dict[str,Any]:
         return get_display_icc_info()
 
     def get_monitors_info(self):
@@ -416,10 +416,10 @@ class DisplayClient(StubClientMixin):
     def sy(self, v) -> int:
         """ convert Y coordinate from server to client """
         return round(self.fsy(v))
-    def srect(self, x, y, w, h) -> Tuple[int, int, int, int]:
+    def srect(self, x, y, w, h) -> tuple[int, int, int, int]:
         """ convert rectangle coordinates from server to client """
         return self.sx(x), self.sy(y), self.sx(w), self.sy(h)
-    def sp(self, x, y) -> Tuple[float, float]:
+    def sp(self, x, y) -> tuple[float, float]:
         """ convert X,Y coordinates from server to client """
         return self.sx(x), self.sy(y)
 
@@ -429,10 +429,10 @@ class DisplayClient(StubClientMixin):
     def cy(self, v) -> int:
         """ convert Y coordinate from client to server """
         return round(v/self.yscale)
-    def crect(self, x, y, w, h) -> Tuple[int, int, int, int]:
+    def crect(self, x, y, w, h) -> tuple[int, int, int, int]:
         """ convert rectangle coordinates from client to server """
         return self.cx(x), self.cy(y), self.cx(w), self.cy(h)
-    def cp(self, x, y) -> Tuple[int, int]:
+    def cp(self, x, y) -> tuple[int, int]:
         """ convert X,Y coordinates from client to server """
         return self.cx(x), self.cy(y)
 
@@ -476,7 +476,7 @@ class DisplayClient(StubClientMixin):
             self.reinit_window_icons()
 
 
-    def get_screen_settings(self) -> Tuple:
+    def get_screen_settings(self) -> tuple:
         u_root_w, u_root_h = self.get_root_size()
         root_w, root_h = self.cp(u_root_w, u_root_h)
         self._current_screen_sizes = self.get_screen_sizes()

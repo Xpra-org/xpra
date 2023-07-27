@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, List, Callable
+from typing import Callable
 from ctypes import (
     sizeof, byref,
     WinError, get_last_error,  # @UnresolvedImport
@@ -91,12 +91,12 @@ WINDOW_EVENTS = envbool("XPRA_WIN32_WINDOW_EVENTS", True)
 
 EVENT_CALLBACK_TYPE = Callable[[int,int],None]
 
-class Win32EventListener:
+class Win32Eventlistener:
 
     def __init__(self):
         assert singleton is None
         self.hwnd = None
-        self.event_callbacks : Dict[int,List[EVENT_CALLBACK_TYPE]] = {}
+        self.event_callbacks : dict[int,list[EVENT_CALLBACK_TYPE]] = {}
         self.ignore_events = IGNORE_EVENTS
         self.log_events = LOG_EVENTS
 
@@ -134,11 +134,11 @@ class Win32EventListener:
         #http://msdn.microsoft.com/en-us/library/aa383841.aspx
         #http://msdn.microsoft.com/en-us/library/aa383828.aspx
         WTSRegisterSessionNotification(self.hwnd, NOTIFY_FOR_THIS_SESSION)
-        log("Win32EventListener created with hwnd=%s", self.hwnd)
+        log("Win32Eventlistener created with hwnd=%s", self.hwnd)
 
 
     def cleanup(self):
-        log("Win32EventListener.cleanup()")
+        log("Win32Eventlistener.cleanup()")
         self.event_callback = {}
 
         hwnd = self.hwnd
@@ -205,9 +205,9 @@ class Win32EventListener:
         log("DefWindowProc%s=%s", (hWnd, msg, wParam, lParam), r)
         return r
 
-singleton : Win32EventListener | None = None
-def get_win32_event_listener(create=True) -> Win32EventListener | None:
+singleton : Win32Eventlistener | None = None
+def get_win32_event_listener(create=True) -> Win32Eventlistener | None:
     global singleton
     if not singleton and create:
-        singleton = Win32EventListener()
+        singleton = Win32Eventlistener()
     return singleton

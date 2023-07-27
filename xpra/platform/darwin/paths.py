@@ -5,7 +5,6 @@
 
 import sys
 import os.path
-from typing import List
 
 from xpra.util import envbool, get_util_logger
 
@@ -69,13 +68,13 @@ def do_get_icon_dir() -> str:
     return i
 
 
-def do_get_default_conf_dirs() -> List[str]:
+def do_get_default_conf_dirs() -> list[str]:
     #the default config file we install into the Resources folder:
     #ie: /Volumes/Xpra/Xpra.app/Contents/Resources/etc
     from xpra.platform.paths import get_resources_dir
     return [os.path.join(get_resources_dir(), "etc", "xpra")]
 
-def do_get_system_conf_dirs() -> List[str]:
+def do_get_system_conf_dirs() -> list[str]:
     #the system-wide configuration directory
     dirs = []
     try:
@@ -95,10 +94,10 @@ def do_get_system_conf_dirs() -> List[str]:
     dirs.append("/etc/xpra")
     return dirs
 
-def do_get_ssh_conf_dirs() -> List[str]:
+def do_get_ssh_conf_dirs() -> list[str]:
     return ["/private/etc", "/etc/ssh", "/usr/local/etc/ssh", "~/.ssh", "~/ssh"]
 
-def do_get_user_conf_dirs(_uid) -> List[str]:
+def do_get_user_conf_dirs(_uid) -> list[str]:
     #the system wide configuration directory
     dirs = []
     try:
@@ -117,7 +116,7 @@ def do_get_user_conf_dirs(_uid) -> List[str]:
     dirs.append("~/.xpra")
     return dirs
 
-def do_get_default_log_dirs() -> List[str]:
+def do_get_default_log_dirs() -> list[str]:
     dirs = []
     try:
         from Foundation import (
@@ -137,12 +136,12 @@ def do_get_default_log_dirs() -> List[str]:
 def do_get_sessions_dir() -> str:
     return "~/.xpra/sessions"
 
-def do_get_socket_dirs() -> List[str]:
+def do_get_socket_dirs() -> list[str]:
     #return ["/var/tmp/%s-Xpra" % os.getuid(), "~/.xpra"]
     import tempfile
     return [tempfile.gettempdir(), "~/.xpra"]
 
-def do_get_client_socket_dirs() -> List[str]:
+def do_get_client_socket_dirs() -> list[str]:
     return ["~/.xpra/clients"]
 
 
@@ -161,7 +160,7 @@ def do_get_download_dir() -> str:
     return d
 
 
-def do_get_desktop_background_paths() -> List[str]:
+def do_get_desktop_background_paths() -> list[str]:
     return [
         "/System/Library/CoreServices/DefaultDesktop.jpg",
         "/Library/Desktop Pictures/*jpg",
@@ -176,7 +175,7 @@ def do_get_sshpass_command() -> str:
         return p
     return ""
 
-def do_get_xpra_command() -> List[str]:
+def do_get_xpra_command() -> list[str]:
     if sys.argv and sys.argv[0].lower().endswith("/xpra"):
         return [sys.argv[0]]
     #try to use the one from the app bundle:
@@ -194,7 +193,7 @@ def _get_helpers_dir() -> str:
     p = os.path.join(base, "Helpers")
     return p
 
-def do_get_nodock_command() -> List[str]:
+def do_get_nodock_command() -> list[str]:
     # try to use the sub-app:
     from xpra.platform.paths import get_app_dir
     base = get_app_dir()
@@ -212,12 +211,12 @@ def do_get_nodock_command() -> List[str]:
         return get_xpra_command()
     return [helper]
 
-def do_get_audio_command() -> List[str]:
+def do_get_audio_command() -> list[str]:
     return do_get_nodock_command()
 
 
-def do_get_python_exec_command() -> List[str]:
+def do_get_python_exec_command() -> list[str]:
     return [os.path.join(_get_helpers_dir(), "Python"), "-c"]
 
-def do_get_python_execfile_command() -> List[str]:
+def do_get_python_execfile_command() -> list[str]:
     return [os.path.join(_get_helpers_dir(), "Python")]

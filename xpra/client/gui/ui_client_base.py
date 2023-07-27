@@ -7,7 +7,7 @@
 
 import os
 import sys
-from typing import Type, Dict, List, Any, Callable, Tuple
+from typing import Any, Callable
 
 from xpra.client.base.client_base import XpraClientBase
 from xpra.client.gui.keyboard_helper import KeyboardHelper
@@ -36,7 +36,7 @@ from xpra.client.gui import mixin_features
 from xpra.log import Logger, get_info as get_log_info
 
 
-CLIENT_BASES : List[Type] = [XpraClientBase]
+CLIENT_BASES : list[type] = [XpraClientBase]
 if mixin_features.display:
     from xpra.client.mixins.display import DisplayClient
     CLIENT_BASES.append(DisplayClient)
@@ -65,8 +65,8 @@ if mixin_features.network_state:
     from xpra.client.mixins.network_state import NetworkState
     CLIENT_BASES.append(NetworkState)
 if mixin_features.network_listener:
-    from xpra.client.mixins.network_listener import NetworkListener
-    CLIENT_BASES.append(NetworkListener)
+    from xpra.client.mixins.network_listener import Networklistener
+    CLIENT_BASES.append(Networklistener)
 if mixin_features.encoding:
     from xpra.client.mixins.encodings import Encodings
     CLIENT_BASES.append(Encodings)
@@ -74,8 +74,8 @@ if mixin_features.tray:
     from xpra.client.mixins.tray import TrayClient
     CLIENT_BASES.append(TrayClient)
 
-CLIENT_BASES = tuple(CLIENT_BASES)
-ClientBaseClass : Type[XpraClientBase] = type('ClientBaseClass', CLIENT_BASES, {})
+CLIENT_BASES : Tuple[type,...] = tuple(CLIENT_BASES)
+ClientBaseClass : type[XpraClientBase] = type('ClientBaseClass', CLIENT_BASES, {})
 
 log = Logger("client")
 keylog = Logger("client", "keyboard")
@@ -131,7 +131,7 @@ class UIXpraClient(ClientBaseClass):
 
         #features:
         self.opengl_enabled : bool = False
-        self.opengl_props : Dict[str,Any] = {}
+        self.opengl_props : dict[str,Any] = {}
         self.readonly : bool = False
         self.xsettings_enabled : bool = False
         self.server_start_new_commands : bool = False
@@ -150,7 +150,7 @@ class UIXpraClient(ClientBaseClass):
         self.server_keyboard : bool = True
         self.server_pointer : bool = True
         self.server_commands_info = False
-        self.server_commands_signals : Tuple[str,...] = ()
+        self.server_commands_signals : tuple[str,...] = ()
         self.server_readonly = False
 
         self.client_supports_opengl : bool = False
@@ -160,7 +160,7 @@ class UIXpraClient(ClientBaseClass):
         #helpers and associated flags:
         self.client_extras = None
         self._mouse_position_delay = 5
-        self.keyboard_helper_class : Type = KeyboardHelper
+        self.keyboard_helper_class : type = KeyboardHelper
         self.keyboard_helper = None
         self.keyboard_grabbed : bool = False
         self.keyboard_sync : bool = False
@@ -170,8 +170,8 @@ class UIXpraClient(ClientBaseClass):
         self.menu_helper = None
 
         #state:
-        self._on_handshake : List[Callable] = []
-        self._on_server_setting_changed : Dict[str,List[Callable]] = {}
+        self._on_handshake : list[Callable] = []
+        self._on_server_setting_changed : dict[str,list[Callable]] = {}
 
     def init(self, opts) -> None:
         """ initialize variables from configuration """
@@ -284,8 +284,8 @@ class UIXpraClient(ClientBaseClass):
         log("UIXpraClient.signal_cleanup() done")
 
 
-    def get_info(self) -> Dict[str,Any]:
-        info : Dict[str,Any] = {}
+    def get_info(self) -> dict[str,Any]:
+        info : dict[str,Any] = {}
         if FULL_INFO>0:
             info.update({
                 "pid"       : os.getpid(),
@@ -345,7 +345,7 @@ class UIXpraClient(ClientBaseClass):
             cmd_parts = shlex.split(cmd)
             self.send_start_command(cmd_parts[0], cmd, False)
 
-    def send_start_command(self, name:str, command:List[str], ignore:bool, sharing:bool=True) -> None:
+    def send_start_command(self, name:str, command:list[str], ignore:bool, sharing:bool=True) -> None:
         log("send_start_command%s", (name, command, ignore, sharing))
         assert name is not None and command is not None and ignore is not None
         self.send("start-command", name, command, ignore, sharing)
@@ -800,7 +800,7 @@ class UIXpraClient(ClientBaseClass):
         kh.process_key_event(wid, key_event)
         return False
 
-    def mask_to_names(self, mask) -> List[str]:
+    def mask_to_names(self, mask) -> list[str]:
         if self.keyboard_helper is None:
             return []
         return self.keyboard_helper.mask_to_names(mask)
@@ -808,7 +808,7 @@ class UIXpraClient(ClientBaseClass):
 
     ######################################################################
     # windows overrides
-    def cook_metadata(self, _new_window, metadata:Dict):
+    def cook_metadata(self, _new_window, metadata:dict):
         #convert to a typedict and apply client-side overrides:
         metadata = typedict(metadata)
         if self.server_is_desktop and self.desktop_fullscreen:

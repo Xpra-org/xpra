@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import sys
-from typing import Dict, Any
+from typing import Any
 import notify2                 #@UnresolvedImport
 
 from xpra.notifications.notifier_base import NotifierBase
@@ -13,7 +13,7 @@ from xpra.notifications.notifier_base import NotifierBase
 
 class PyNotify_Notifier(NotifierBase):
 
-    CACHE : Dict[int,Any] = {}
+    CACHE : dict[int,Any] = {}
 
     def show_notify(self, dbus_id, tray, nid:int,
                     app_name:str, replaces_nid:int, app_icon,

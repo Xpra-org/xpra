@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any, List, Tuple
+from typing import Any
 
 import Quartz.CoreGraphics as CG    #@UnresolvedImport
 
@@ -25,7 +25,7 @@ log = Logger("shadow", "osx")
 
 USE_TIMER = envbool("XPRA_OSX_SHADOW_USE_TIMER", False)
 
-ALPHA : Dict[int,str] = {
+ALPHA : dict[int,str] = {
          CG.kCGImageAlphaNone                  : "AlphaNone",
          CG.kCGImageAlphaPremultipliedLast     : "PremultipliedLast",
          CG.kCGImageAlphaPremultipliedFirst    : "PremultipliedFirst",
@@ -67,12 +67,12 @@ class OSXRootCapture:
         rect = (x, y, width, height)
         return get_CG_imagewrapper(rect)
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         return {
             "type" : "CoreGraphics",
             }
 
-    def take_screenshot(self) -> Tuple[int,int,str,int,bytes]:
+    def take_screenshot(self) -> tuple[int,int,str,int,bytes]:
         log("grabbing screenshot")
         return take_screenshot()
 
@@ -83,8 +83,8 @@ class ShadowServer(GTKShadowServerBase):
         super().__init__(multi_window)
         #sanity check:
         check_display()
-        image = CG.CGWindowListCreateImage(CG.CGRectInfinite,
-                    CG.kCGWindowListOptionOnScreenOnly,
+        image = CG.CGWindowlistCreateImage(CG.CGRectInfinite,
+                    CG.kCGWindowlistOptionOnScreenOnly,
                     CG.kCGNullWindowID,
                     CG.kCGWindowImageDefault)
         if image is None:
@@ -126,7 +126,7 @@ class ShadowServer(GTKShadowServerBase):
         #return quickly, and process the list copy via idle add:
         self.idle_add(self.do_screen_refresh, rlist)
 
-    def do_screen_refresh(self, rlist:List) -> None:
+    def do_screen_refresh(self, rlist:list) -> None:
         #TODO: improve damage method to handle lists directly:
         from xpra.rectangle import rectangle     #@UnresolvedImport
         model_rects = {}
@@ -221,13 +221,13 @@ class ShadowServer(GTKShadowServerBase):
         r = CG.CGPostScrollWheelEvent(*event)
         log("CG.CGPostScrollWheelEvent%s=%s", event, r)
 
-    def make_hello(self, source) -> Dict[str,Any]:
+    def make_hello(self, source) -> dict[str,Any]:
         capabilities = GTKServerBase.make_hello(self, source)
         capabilities["shadow"] = True
         capabilities["server_type"] = "Python/gtk2/osx-shadow"
         return capabilities
 
-    def get_info(self, proto, *_args) -> Dict[str,Any]:
+    def get_info(self, proto, *_args) -> dict[str,Any]:
         info = GTKServerBase.get_info(self, proto)
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {})["type"] = "Python/gtk2/osx-shadow"

@@ -6,7 +6,6 @@
 
 import os
 import sys
-from typing import Dict, List
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "keyboard")
@@ -417,7 +416,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             "layout"   : "us",
             }
 
-    def getXkbProperties(self) -> Dict[str,str]:
+    def getXkbProperties(self) -> dict[str,str]:
         self.context_check("getXkbProperties")
         if not self.hasXkb():
             log.warn("Warning: no Xkb support")
@@ -493,7 +492,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                 XFreeModifiermap(xmodmap)
 
 
-    def get_xkb_keycode_mappings(self) -> Dict[int,List[str]]:
+    def get_xkb_keycode_mappings(self) -> dict[int,list[str]]:
         self.context_check("get_xkb_keycode_mappings")
         if not self.hasXkb():
             return {}
@@ -696,7 +695,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         XFree(keyboard_map)
         return mappings
 
-    def get_keycode_mappings(self) -> Dict[str,List[str]]:
+    def get_keycode_mappings(self) -> dict[str,list[str]]:
         """
         the mappings from _get_raw_keycode_mappings are in raw format
         (keysyms as numbers), so here we convert into names:

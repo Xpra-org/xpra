@@ -16,7 +16,7 @@ from collections import deque
 from time import sleep, time, monotonic
 from queue import Queue
 from threading import Thread
-from typing import Dict, List, Tuple, Any, Type, Callable
+from typing import Any, Callable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.platform.gui import (
@@ -58,11 +58,11 @@ PAINT_FAULT_RATE : int = envint("XPRA_PAINT_FAULT_INJECTION_RATE")
 PAINT_FAULT_TELL : bool = envbool("XPRA_PAINT_FAULT_INJECTION_TELL", True)
 PAINT_DELAY : int = envint("XPRA_PAINT_DELAY", -1)
 
-WM_CLASS_CLOSEEXIT : List[str] = os.environ.get("XPRA_WM_CLASS_CLOSEEXIT", "Xephyr").split(",")
-TITLE_CLOSEEXIT : List[str] = os.environ.get("XPRA_TITLE_CLOSEEXIT", "Xnest").split(",")
+WM_CLASS_CLOSEEXIT : list[str] = os.environ.get("XPRA_WM_CLASS_CLOSEEXIT", "Xephyr").split(",")
+TITLE_CLOSEEXIT : list[str] = os.environ.get("XPRA_TITLE_CLOSEEXIT", "Xnest").split(",")
 
 OR_FORCE_GRAB_STR : str = os.environ.get("XPRA_OR_FORCE_GRAB", "DIALOG:sun-awt-X11")
-OR_FORCE_GRAB : Dict[str,List[str]] = {}
+OR_FORCE_GRAB : dict[str,list[str]] = {}
 for s in OR_FORCE_GRAB_STR.split(","):
     if not s:
         continue
@@ -98,7 +98,7 @@ MOUSE_SCROLL_MULTIPLIER : int = envint("XPRA_MOUSE_SCROLL_MULTIPLIER", 100)
 PRE_MAP : bool = envbool("XPRA_PRE_MAP_WINDOWS", True)
 SHOW_DELAY : int = envint("XPRA_SHOW_DELAY", -1)
 
-DRAW_TYPES : Dict[type,str] = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
+DRAW_TYPES : dict[type,str] = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
 
 
 def kill_signalwatcher(proc) -> None:
@@ -137,12 +137,12 @@ class WindowClient(StubClientMixin):
 
     def __init__(self):
         super().__init__()
-        self._window_to_id : Dict[Any,int] = {}
-        self._id_to_window : Dict[int,Any] = {}
+        self._window_to_id : dict[Any,int] = {}
+        self._id_to_window : dict[int,Any] = {}
 
         self.auto_refresh_delay : int = -1
-        self.min_window_size : Tuple[int, int] = (0, 0)
-        self.max_window_size : Tuple[int, int] = (0, 0)
+        self.min_window_size : tuple[int, int] = (0, 0)
+        self.max_window_size : tuple[int, int] = (0, 0)
 
         #draw thread:
         self._draw_queue = Queue()
@@ -158,8 +158,8 @@ class WindowClient(StubClientMixin):
 
         self.server_window_frame_extents : bool = False
         self.server_is_desktop : bool = False
-        self.server_window_states : Tuple[str,...] = ()
-        self.server_window_signals : Tuple[str,...] = ()
+        self.server_window_states : tuple[str,...] = ()
+        self.server_window_signals : tuple[str,...] = ()
 
         self.server_input_devices = None
         self.server_precise_wheel : bool = False
@@ -339,8 +339,8 @@ class WindowClient(StubClientMixin):
         raise NotImplementedError()
 
 
-    def get_info(self) -> Dict[str,Any]:
-        info : Dict[Any,Any] = {
+    def get_info(self) -> dict[str,Any]:
+        info : dict[Any,Any] = {
             "count"         : len(self._window_to_id),
             "min-size"      : self.min_window_size,
             "max-size"      : self.max_window_size,
@@ -357,13 +357,13 @@ class WindowClient(StubClientMixin):
         }
         for wid, window in tuple(self._id_to_window.items()):
             info[wid] = window.get_info()
-        winfo : Dict[str,Any] = {"windows" : info}
+        winfo : dict[str,Any] = {"windows" : info}
         return winfo
 
 
     ######################################################################
     # hello:
-    def get_caps(self) -> Dict[str,Any]:
+    def get_caps(self) -> dict[str,Any]:
         #FIXME: the messy bits without proper namespace:
         caps = {
             #generic server flags:
@@ -391,7 +391,7 @@ class WindowClient(StubClientMixin):
             })
         return caps
 
-    def get_window_caps(self) -> Dict[str,Any]:
+    def get_window_caps(self) -> dict[str,Any]:
         return {
             #implemented in the gtk client:
             "min-size"                  : self.min_window_size,
@@ -450,7 +450,7 @@ class WindowClient(StubClientMixin):
 
     def send_wheel_delta(self, device_id:int, wid:int, button:int, distance, pointer=None, props=None) -> float:
         modifiers = self.get_current_modifiers()
-        buttons : Tuple[int,...] = ()
+        buttons : tuple[int,...] = ()
         mouselog("send_wheel_deltas%s precise wheel=%s, modifiers=%s, pointer=%s",
                  (device_id, wid, button, distance, pointer, props), self.server_precise_wheel, modifiers, pointer)
         if self.server_precise_wheel:
@@ -539,7 +539,7 @@ class WindowClient(StubClientMixin):
         mouselog("button packet: %s", packet)
         self.send_positional(packet)
 
-    def scale_pointer(self, pointer) -> Tuple[int,int]:
+    def scale_pointer(self, pointer) -> tuple[int,int]:
         #subclass may scale this:
         #return int(pointer[0]/self.xscale), int(pointer[1]/self.yscale)
         return round(pointer[0]), round(pointer[1])
@@ -624,7 +624,7 @@ class WindowClient(StubClientMixin):
         return make_instance(tc, self, *args)
 
     # noinspection PyMethodMayBeStatic
-    def get_system_tray_classes(self) -> Tuple[Type | None,...]:
+    def get_system_tray_classes(self) -> tuple[type | None,...]:
         #subclasses may add their toolkit specific variants, if any
         #by overriding this method
         #use the native ones first:
@@ -1111,7 +1111,7 @@ class WindowClient(StubClientMixin):
         return None
 
 
-    def get_client_window_classes(self, _w, _h, _metadata, _override_redirect) -> Tuple[Type,...]:
+    def get_client_window_classes(self, _w, _h, _metadata, _override_redirect) -> tuple[type,...]:
         return (self.ClientWindowClass,)
 
 
@@ -1595,10 +1595,10 @@ class WindowClient(StubClientMixin):
     def sy(v) -> int:
         """ convert Y coordinate from server to client """
         return round(v)
-    def srect(self, x, y, w, h) -> Tuple[int,int,int,int]:
+    def srect(self, x, y, w, h) -> tuple[int,int,int,int]:
         """ convert rectangle coordinates from server to client """
         return self.sx(x), self.sy(y), self.sx(w), self.sy(h)
-    def sp(self, x, y) -> Tuple[int,int]:
+    def sp(self, x, y) -> tuple[int,int]:
         """ convert X,Y coordinates from server to client """
         return self.sx(x), self.sy(y)
 
@@ -1610,10 +1610,10 @@ class WindowClient(StubClientMixin):
     def cy(v) -> int:
         """ convert Y coordinate from client to server """
         return round(v)
-    def crect(self, x, y, w, h)-> Tuple[int,int,int,int]:
+    def crect(self, x, y, w, h)-> tuple[int,int,int,int]:
         """ convert rectangle coordinates from client to server """
         return self.cx(x), self.cy(y), self.cx(w), self.cy(h)
-    def cp(self, x, y) -> Tuple[int,int]:
+    def cp(self, x, y) -> tuple[int,int]:
         """ convert X,Y coordinates from client to server """
         return self.cx(x), self.cy(y)
 

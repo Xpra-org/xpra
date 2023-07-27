@@ -7,7 +7,7 @@ import os.path
 import socket
 from time import sleep, monotonic
 from ctypes import Structure, c_uint8, sizeof
-from typing import Callable, Dict, List, Any, ByteString
+from typing import Callable, Any, ByteString
 
 from xpra.common import GROUP
 from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
@@ -113,7 +113,7 @@ def has_dual_stack() -> bool:
     except socket.error:
         return False
 
-def hosts(host_str:str) -> List[str]:
+def hosts(host_str:str) -> list[str]:
     if host_str=="*":
         if has_dual_stack():
             #IPv6 will also listen for IPv4:
@@ -215,13 +215,13 @@ def peek_connection(conn, timeout:int=PEEK_TIMEOUT_MS, size:int=PEEK_SIZE):
 POSIX_TCP_INFO = (
         ("state",           c_uint8),
         )
-def get_sockopt_tcp_info(sock, TCP_INFO, attributes=POSIX_TCP_INFO) -> Dict[str,Any]:
+def get_sockopt_tcp_info(sock, TCP_INFO, attributes=POSIX_TCP_INFO) -> dict[str,Any]:
     def get_tcpinfo_class(fields):
         class TCPInfo(Structure):
             _fields_ = tuple(fields)
             def __repr__(self):
                 return f"TCPInfo({self.getdict()})"
-            def getdict(self) -> Dict[str,Any]:
+            def getdict(self) -> dict[str,Any]:
                 return {k[0] : getattr(self, k[0]) for k in self._fields_}
         return TCPInfo
     #calculate full structure size with all the fields defined:
@@ -616,7 +616,7 @@ def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
     dotxpra = DotXpra(socket_dir or socket_dirs[0], socket_dirs, username, uid, gid)
     if display_name is not None and not WIN32:
         display_name = normalize_local_display_name(display_name)
-    defs : Dict[Any, Callable] = {}
+    defs : dict[Any, Callable] = {}
     try:
         sockpaths = {}
         log(f"setup_local_sockets: bind={bind}, dotxpra={dotxpra}")
@@ -661,10 +661,10 @@ def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
         log(f"sockpaths={sockpaths}")
         #create listeners:
         if WIN32:
-            from xpra.platform.win32.namedpipes.listener import NamedPipeListener
+            from xpra.platform.win32.namedpipes.listener import NamedPipelistener
             from xpra.platform.win32.dotxpra import PIPE_PATH
             for sockpath, options in sockpaths.items():
-                npl = NamedPipeListener(sockpath)
+                npl = NamedPipelistener(sockpath)
                 ppath = sockpath
                 if ppath.startswith(PIPE_PATH):
                     ppath = ppath[len(PIPE_PATH):]
@@ -900,7 +900,7 @@ SSL_ATTRIBUTES = (
     "options", "ciphers",
     )
 
-def get_ssl_attributes(opts, server_side:bool=True, overrides:dict|None=None) -> Dict[str,Any]:
+def get_ssl_attributes(opts, server_side:bool=True, overrides:dict|None=None) -> dict[str,Any]:
     args = {
         "server-side"   : server_side,
         }
@@ -968,7 +968,7 @@ SSL_VERIFY_SELF_SIGNED = 18
 SSL_VERIFY_UNTRUSTED_ROOT = 19
 SSL_VERIFY_IP_MISMATCH = 64
 SSL_VERIFY_HOSTNAME_MISMATCH = 62
-SSL_VERIFY_CODES : Dict[int,str] = {
+SSL_VERIFY_CODES : dict[int,str] = {
     SSL_VERIFY_EXPIRED          : "expired",    #also revoked!
     SSL_VERIFY_WRONG_HOST       : "wrong host",
     SSL_VERIFY_SELF_SIGNED      : "self-signed",
@@ -1174,7 +1174,7 @@ def do_wrap_socket(tcp_socket, context, **kwargs):
     return ssl_sock
 
 
-def ssl_retry(e, ssl_ca_certs) -> Dict[str,Any]|None:
+def ssl_retry(e, ssl_ca_certs) -> dict[str,Any]|None:
     SSL_RETRY = envbool("XPRA_SSL_RETRY", True)
     from xpra.log import Logger
     ssllog = Logger("ssl")
@@ -1259,7 +1259,7 @@ def ssl_retry(e, ssl_ca_certs) -> Dict[str,Any]|None:
             return options
     return None
 
-def load_ssl_options(server_hostname:str, port:int) -> Dict[str,Any]:
+def load_ssl_options(server_hostname:str, port:int) -> dict[str,Any]:
     from xpra.log import Logger
     ssllog = Logger("ssl")
     f = find_ssl_config_file(server_hostname, port, "options")

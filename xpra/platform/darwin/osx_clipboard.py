@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 from io import BytesIO
-from typing import Tuple
 
 from AppKit import (
     NSStringPboardType, NSTIFFPboardType, NSPasteboardTypePNG, NSPasteboardTypeURL,  #@UnresolvedImport
@@ -30,7 +29,7 @@ TARGET_TRANS = {
 
 IMAGE_FORMATS = ["image/png", "image/jpeg", "image/tiff"]
 
-def filter_targets(targets) -> Tuple[str,...]:
+def filter_targets(targets) -> tuple[str,...]:
     return _filter_targets(TARGET_TRANS.get(x, x) for x in targets)
 
 

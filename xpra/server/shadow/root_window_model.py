@@ -6,7 +6,7 @@
 
 import socket
 from collections import namedtuple
-from typing import Dict, Any, List, Tuple
+from typing import Any
 
 from xpra.os_util import (
     get_generic_os_name, do_get_generic_os_name,
@@ -18,7 +18,7 @@ from xpra.log import Logger
 log = Logger("shadow")
 
 
-def get_os_icons() -> Tuple[Tuple[int,int,str,bytes],...]:
+def get_os_icons() -> tuple[tuple[int,int,str,bytes],...]:
     try:
         from PIL import Image  # pylint: disable=import-outside-toplevel
     except ImportError:
@@ -55,20 +55,20 @@ class RootWindowModel:
         self.title : str= title
         self.geometry = geometry
         self.capture = capture
-        self.property_names : List[str] = [
+        self.property_names : list[str] = [
             "title", "class-instance",
             "client-machine", "window-type",
             "size-hints", "icons", "shadow",
             "depth",
             ]
-        self.dynamic_property_names : List[str] = []
-        self.internal_property_names : List[str] = ["content-type"]
-        self.signal_listeners : Dict[str,List[Tuple]] = {}
+        self.dynamic_property_names : list[str] = []
+        self.internal_property_names : list[str] = ["content-type"]
+        self.signal_listeners : dict[str,list[tuple]] = {}
 
     def __repr__(self):
         return f"RootWindowModel({self.capture} : {str(self.geometry):24})"
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = {}
         c = self.capture
         if c:
@@ -126,13 +126,13 @@ class RootWindowModel:
         return self.geometry
 
 
-    def get_property_names(self) -> List[str]:
+    def get_property_names(self) -> list[str]:
         return self.property_names
 
-    def get_dynamic_property_names(self) -> List[str]:
+    def get_dynamic_property_names(self) -> list[str]:
         return self.dynamic_property_names
 
-    def get_internal_property_names(self) -> List[str]:
+    def get_internal_property_names(self) -> list[str]:
         return self.internal_property_names
 
     def get_property(self, prop:str):

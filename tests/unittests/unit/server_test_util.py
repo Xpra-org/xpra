@@ -8,7 +8,6 @@ import os
 import time
 import tempfile
 import subprocess
-from typing import List, Dict
 
 from unit.process_test_util import ProcessTestUtil
 from xpra.util import envint
@@ -48,7 +47,7 @@ class ServerTestUtil(ProcessTestUtil):
         ProcessTestUtil.setUpClass()
         tmpdir = tempfile.gettempdir()
         cls.dotxpra = DotXpra(tmpdir, [tmpdir])
-        cls.default_xpra_args : List[str] = ["--speaker=no", "--microphone=no"]
+        cls.default_xpra_args : list[str] = ["--speaker=no", "--microphone=no"]
         if not WIN32:
             cls.default_xpra_args += ["--systemd-run=no", "--pulseaudio=no"]
             for x in cls.dotxpra._sockdirs:
@@ -89,7 +88,7 @@ class ServerTestUtil(ProcessTestUtil):
 
 
     @classmethod
-    def get_xpra_cmd(cls) -> List[str]:
+    def get_xpra_cmd(cls) -> list[str]:
         return ProcessTestUtil.get_xpra_cmd() + cls.default_xpra_args
 
 
@@ -100,7 +99,7 @@ class ServerTestUtil(ProcessTestUtil):
         return server
 
     def check_fast_start_server(self, display:str, *args):
-        defaults : Dict[str,str] = dict((k, "no") for k in (
+        defaults : dict[str,str] = dict((k, "no") for k in (
             "av-sync", "remote-logging",
             "windows",
             "mdns",
@@ -135,7 +134,7 @@ class ServerTestUtil(ProcessTestUtil):
             self.show_proc_error(server_proc, "server failed to start")
         if display:
             #wait until the socket shows up:
-            live : List[str] = []
+            live : list[str] = []
             for _ in range(20):
                 live = self.dotxpra.displays()
                 if display in live:

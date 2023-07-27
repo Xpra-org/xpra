@@ -16,7 +16,7 @@ import os
 import sys
 import struct
 from enum import IntEnum
-from typing import List, Tuple, Dict, Any
+from typing import Any
 
 from xpra.log import Logger
 from xpra.util import envbool
@@ -25,7 +25,7 @@ from xpra.os_util import strtobytes, bytestostr, hexstr
 
 log : Logger = Logger("x11", "xsettings")
 
-BLACKLISTED_XSETTINGS : List[str] = os.environ.get("XPRA_BLACKLISTED_XSETTINGS",
+BLACKLISTED_XSETTINGS : list[str] = os.environ.get("XPRA_BLACKLISTED_XSETTINGS",
                                        "Gdk/WindowScalingFactor,Gtk/SessionBusId,Gtk/IMModule").split(",")
 
 
@@ -45,15 +45,15 @@ class XSettingsType(IntEnum):
     String = 1
     Color = 2
 
-XSettingsNames : Dict[int,str] = {
+XSettingsNames : dict[int,str] = {
                 XSettingsType.Integer    : "Integer",
                 XSettingsType.String     : "String",
                 XSettingsType.Color      : "Color",
                 }
 
 
-XSETTINGS_CACHE : Tuple[int, List[Tuple]] = (0, [])
-def bytes_to_xsettings(d:bytes) -> Tuple[int,List[Tuple[int,str,Any,int]]]:
+XSETTINGS_CACHE : tuple[int, list[tuple]] = (0, [])
+def bytes_to_xsettings(d:bytes) -> tuple[int,list[tuple[int,str,Any,int]]]:
     global XSETTINGS_CACHE
     DEBUG_XSETTINGS = envbool("XPRA_XSETTINGS_DEBUG", False)
     #parse xsettings according to
@@ -68,7 +68,7 @@ def bytes_to_xsettings(d:bytes) -> Tuple[int,List[Tuple[int,str,Any,int]]]:
     if cache and cache[0]==serial:
         log("bytes_to_xsettings(..) returning value from cache")
         return cache
-    settings : List[Tuple] = []
+    settings : list[tuple] = []
     pos = 12
     while n_settings>len(settings):
         log("bytes_to_xsettings(..) pos=%i (len=%i), data=%s", pos, len(d), hexstr(d[pos:]))
@@ -119,7 +119,7 @@ def bytes_to_xsettings(d:bytes) -> Tuple[int,List[Tuple[int,str,Any,int]]]:
     XSETTINGS_CACHE = (serial, settings)
     return serial, settings
 
-def xsettings_to_bytes(d : Tuple[int,List[Tuple[int,str,Any,int]]]) -> bytes:
+def xsettings_to_bytes(d : tuple[int,list[tuple[int,str,Any,int]]]) -> bytes:
     if len(d)!=2:
         raise ValueError(f"invalid format for XSETTINGS: {d!r}")
     serial, settings = d

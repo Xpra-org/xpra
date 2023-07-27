@@ -6,13 +6,13 @@
 #legacy compatibility file
 
 import signal
-from typing import Dict, Callable
+from typing import Callable
 
 from xpra.util import dump_all_frames, dump_gc_frames, stderr_print
 from xpra.os_util import SIGNAMES, POSIX, get_util_logger
 
 
-_glib_unix_signals : Dict[int, int] = {}
+_glib_unix_signals : dict[int, int] = {}
 def register_os_signals(callback:Callable, commandtype:str="", signals=(signal.SIGINT, signal.SIGTERM)):
     for signum in signals:
         register_os_signal(callback, commandtype, signum)

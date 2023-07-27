@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Callable, Dict
+from typing import Callable
 from ctypes import (
     Structure, cast, POINTER,
     WinDLL,  # @UnresolvedImport
@@ -56,7 +56,7 @@ class Win32Hooks:
 
     def __init__(self, hwnd:int):
         self._hwnd = hwnd
-        self._message_map : Dict[int,Callable] = {}
+        self._message_map : dict[int,Callable] = {}
         self.max_size = None
         self.min_size = None
         self.frame_width = 4

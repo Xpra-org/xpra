@@ -14,7 +14,6 @@ import os.path
 import ctypes
 from ctypes import WINFUNCTYPE, WinDLL, POINTER, byref, c_int, wintypes, create_unicode_buffer  # @UnresolvedImport
 from ctypes.wintypes import BOOL, HANDLE, DWORD, LPWSTR, LPCWSTR, LPVOID, POINT, WORD, SMALL_RECT
-from typing import Union
 
 from xpra.util import envbool
 from xpra.platform.win32 import constants as win32con
@@ -190,7 +189,7 @@ def fix_unicode_out():
                                 _complain("%s.flush: %r from %r" % (self.name, e, self._stream))
                                 raise
 
-                def write(self, value:Union[str,bytes]):
+                def write(self, value:str | bytes):
                     try:
                         if self._hConsole is None:
                             if isinstance(value, str):

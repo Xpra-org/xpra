@@ -3,8 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple
-
 from xpra.server.auth.sys_auth_base import SessionData
 from xpra.net.digest import get_salt, choose_digest
 from xpra.util import typedict
@@ -19,7 +17,7 @@ class Authenticator:
     def requires_challenge(self) -> bool:
         return True
 
-    def get_challenge(self, digests) -> Tuple[bytes,str]:
+    def get_challenge(self, digests) -> tuple[bytes,str]:
         self.challenge_sent = True
         return get_salt(), choose_digest(digests)
 
@@ -32,7 +30,7 @@ class Authenticator:
     def get_gid(self) -> int:
         return -1
 
-    def get_passwords(self) -> Tuple[str,...]:
+    def get_passwords(self) -> tuple[str,...]:
         return ()
 
     def get_password(self) -> str:

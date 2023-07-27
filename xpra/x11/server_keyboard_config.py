@@ -7,7 +7,7 @@
 # later version. See the file COPYING for details.
 
 import hashlib
-from typing import Dict, Tuple, List, Any
+from typing import Any
 
 import gi
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
@@ -38,7 +38,7 @@ X11Keyboard = X11KeyboardBindings()
 MAP_MISSING_MODIFIERS : bool = envbool("XPRA_MAP_MISSING_MODIFIERS", True)
 SHIFT_LOCK : bool = envbool("XPRA_SHIFT_LOCK", False)
 
-ALL_X11_MODIFIERS : Dict[str,int] = {
+ALL_X11_MODIFIERS : dict[str,int] = {
                     "shift"     : 0,
                     "lock"      : 1,
                     "control"   : 2,
@@ -54,7 +54,7 @@ class KeyboardConfig(KeyboardConfigBase):
         super().__init__()
         self.raw : bool = False
         self.query_struct = None
-        self.modifier_map : Dict[str,int] = {}
+        self.modifier_map : dict[str,int] = {}
         self.mod_meanings = {}
         self.mod_managed = []
         self.mod_pointermissing = []
@@ -80,7 +80,7 @@ class KeyboardConfig(KeyboardConfigBase):
     def __repr__(self):
         return "KeyboardConfig(%s / %s / %s)" % (self.layout, self.variant, self.options)
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = super().get_info()
         #keycodes:
         if self.keycode_translation:
@@ -409,7 +409,7 @@ class KeyboardConfig(KeyboardConfigBase):
             keycode_to_keynames = get_keycode_mappings()
             self.keycode_translation = {}
             #prefer keycodes that don't use the lowest level+mode:
-            default_for_keyname : Dict[str,Tuple[int,int]] = {}
+            default_for_keyname : dict[str,tuple[int,int]] = {}
             for keycode, keynames in keycode_to_keynames.items():
                 for i, keyname in enumerate(keynames):
                     self.keycode_translation[(keyname, i)] = keycode
@@ -470,7 +470,7 @@ class KeyboardConfig(KeyboardConfigBase):
         return self.find_matching_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
 
     def find_matching_keycode(self, client_keycode:int, keyname:str,
-                              pressed:bool, modifiers, keyval, keystr:str, group) -> Tuple[int,int]:
+                              pressed:bool, modifiers, keyval, keystr:str, group) -> tuple[int,int]:
         """
         from man xmodmap:
         The list of keysyms is assigned to the indicated keycode (which may be specified in decimal,
@@ -575,7 +575,7 @@ class KeyboardConfig(KeyboardConfigBase):
                         return entry.keycode, entry.group
         return keycode or 0, rgroup or 0
 
-    def get_current_mask(self) -> List:
+    def get_current_mask(self) -> list:
         root = get_default_root_window()
         if not root:
             return []

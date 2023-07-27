@@ -16,7 +16,7 @@ import glob
 import os.path
 import datetime
 from subprocess import Popen  #pylint: disable=import-outside-toplevel
-from typing import Dict, Tuple, Any
+from typing import Any
 
 from xpra import __version__
 from xpra.scripts.main import (
@@ -164,7 +164,7 @@ def configure_imsettings_env(input_method) -> str:
         warn(" if it is correct, you may want to file a bug to get it recognized")
     return im
 
-def imsettings_env(disabled, gtk_im_module, qt_im_module, clutter_im_module, imsettings_module, xmodifiers) -> Dict[str,str]:
+def imsettings_env(disabled, gtk_im_module, qt_im_module, clutter_im_module, imsettings_module, xmodifiers) -> dict[str,str]:
     #for more information, see imsettings:
     #https://code.google.com/p/imsettings/source/browse/trunk/README
     if disabled is True:
@@ -486,12 +486,12 @@ def clean_session_path(path) -> None:
             log.error(f"Error removing session path {path}")
             log.estr(e)
 
-SERVER_SAVE_SKIP_OPTIONS : Tuple[str,...] = (
+SERVER_SAVE_SKIP_OPTIONS : tuple[str,...] = (
     "systemd-run",
     "daemon",
     )
 
-SERVER_LOAD_SKIP_OPTIONS : Tuple[str,...] = (
+SERVER_LOAD_SKIP_OPTIONS : tuple[str,...] = (
     "systemd-run",
     "daemon",
     "start",
@@ -535,7 +535,7 @@ def get_options_file_contents(opts, mode:str="seamless") -> str:
     diff_contents.append("")
     return "\n".join(diff_contents)
 
-def load_options() -> Dict[str,Any]:
+def load_options() -> dict[str,Any]:
     config_file = session_file_path("config")
     return read_config(config_file)
 
@@ -575,7 +575,7 @@ def apply_config(opts, mode:str, cmdline:str) -> str:
     return mode
 
 
-def reload_dbus_attributes(display_name:str) -> Tuple[int,Dict[str,str]]:
+def reload_dbus_attributes(display_name:str) -> tuple[int,dict[str,str]]:
     from xpra.log import Logger
     dbuslog = Logger("dbus")
     try:
@@ -644,7 +644,7 @@ def is_splash_enabled(mode:str, daemon:bool, splash:bool, display:str):
         return True
     return False
 
-MODE_TO_NAME : Dict[str,str] = {
+MODE_TO_NAME : dict[str,str] = {
     "seamless"          : "Seamless",
     "desktop"           : "Desktop",
     "monitor"           : "Monitor",
@@ -1230,7 +1230,7 @@ def _do_run_server(script_file:str, cmdline,
                     return b"".join(chars[random.randint(0, len(chars)-1):][:1] for _ in range(l))
                 uinput_uuid = get_rand_chars(UINPUT_UUID_LEN)
                 write_session_file("uinput-uuid", uinput_uuid)
-            vfb_geom : Tuple | None = ()
+            vfb_geom : tuple | None = ()
             if opts.resize_display.lower() not in ALL_BOOLEAN_OPTIONS:
                 vfb_geom = parse_resolutions(opts.resize_display, opts.refresh_rate)[0]
 
@@ -1353,7 +1353,7 @@ def _do_run_server(script_file:str, cmdline,
         os.chdir(osexpand(opts.chdir))
 
     dbus_pid = 0
-    dbus_env : Dict[str,str] = {}
+    dbus_env : dict[str,str] = {}
     if not shadowing and POSIX and not OSX:
         dbuslog = Logger("dbus")
         dbus_pid, dbus_env = reload_dbus_attributes(display_name)

@@ -7,7 +7,7 @@
 
 import os
 import re
-from typing import Tuple, Dict, Any
+from typing import Any
 
 from xpra.client.gui.client_widget_base import ClientWidgetBase
 from xpra.client.gui.window_backing_base import fire_paint_callbacks
@@ -126,7 +126,7 @@ class ClientWindowBase(ClientWidgetBase):
         """ subclasses override this method """
 
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         attributes = []
         for attr in (
             "fullscreen", "maximized",
@@ -179,10 +179,10 @@ class ClientWindowBase(ClientWidgetBase):
     def sy(self, v) -> int:
         """ convert Y coordinate from server to client """
         return round(self.fsy(v))
-    def srect(self, x, y, w, h) -> Tuple[int,int,int,int]:
+    def srect(self, x, y, w, h) -> tuple[int,int,int,int]:
         """ convert rectangle coordinates from server to client """
         return self.sx(x), self.sy(y), self.sx(w), self.sy(h)
-    def sp(self, x, y) -> Tuple[int,int]:
+    def sp(self, x, y) -> tuple[int,int]:
         """ convert X,Y coordinates from server to client """
         return self.sx(x), self.sy(y)
 
@@ -192,10 +192,10 @@ class ClientWindowBase(ClientWidgetBase):
     def cy(self, v) -> int:
         """ convert Y coordinate from client to server """
         return round(v/self._yscale)
-    def crect(self, x, y, w, h) -> Tuple[int,int,int,int]:
+    def crect(self, x, y, w, h) -> tuple[int,int,int,int]:
         """ convert rectangle coordinates from client to server """
         return self.cx(x), self.cy(y), self.cx(w), self.cy(h)
-    def cp(self, x, y) -> Tuple[int,int]:
+    def cp(self, x, y) -> tuple[int,int]:
         """ convert X,Y coordinates from client to server """
         return self.cx(x), self.cy(y)
 
@@ -284,7 +284,7 @@ class ClientWindowBase(ClientWidgetBase):
         except Exception:
             metalog.warn("failed to set window metadata to '%s'", metadata, exc_info=True)
 
-    def _force_size_constraint(self, *size) -> Dict[str,Dict[str,Any]]:
+    def _force_size_constraint(self, *size) -> dict[str,dict[str,Any]]:
         return {
             "size-constraints" : {
                 "maximum-size" : size,
@@ -583,7 +583,7 @@ class ClientWindowBase(ClientWidgetBase):
     def reset_size_constraints(self) -> None:
         self.set_size_constraints(self.size_constraints, self.max_window_size)
 
-    def set_size_constraints(self, size_constraints:typedict, max_window_size:Tuple[int,int]):
+    def set_size_constraints(self, size_constraints:typedict, max_window_size:tuple[int,int]):
         if not SET_SIZE_CONSTRAINTS:
             return
         geomlog("set_size_constraints(%s, %s)", size_constraints, max_window_size)

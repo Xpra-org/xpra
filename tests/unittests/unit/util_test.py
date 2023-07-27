@@ -56,7 +56,7 @@ class TestIntegerClasses(unittest.TestCase):
         self._test_IntegerClass(MutableInteger)
 
 
-class TestTypeDict(unittest.TestCase):
+class TestTypedict(unittest.TestCase):
 
     def test_typedict(self):
         d = typedict({

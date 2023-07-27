@@ -4,13 +4,12 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict
 
 from xpra.platform import platform_import
 
 
-def get_posix_sys_info() -> Dict[str,Dict[str,Dict[str,int]]]:
-    meminfo : Dict[str,Dict[str,int]] = {}
+def get_posix_sys_info() -> dict[str,dict[str,dict[str,int]]]:
+    meminfo : dict[str,dict[str,int]] = {}
     try:
         import resource
         for k, constant in {
@@ -23,7 +22,7 @@ def get_posix_sys_info() -> Dict[str,Dict[str,Dict[str,int]]]:
             except (NameError, AttributeError):
                 continue
             stats = resource.getrusage(v)
-            kinfo : Dict[str,int] = {}
+            kinfo : dict[str,int] = {}
             meminfo[k] = kinfo
             for var in (
                 "utime", "stime", "maxrss",

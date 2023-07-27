@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any
+from typing import Any
 from ctypes import c_int, byref, cast, POINTER
 from OpenGL import GLX
 from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
@@ -21,7 +21,7 @@ log = Logger("opengl")
 DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", True)
 
 
-GLX_ATTRIBUTES : Dict[Any,str] = {
+GLX_ATTRIBUTES : dict[Any,str] = {
     GLX.GLX_ACCUM_RED_SIZE      : "accum-red-size",
     GLX.GLX_ACCUM_GREEN_SIZE    : "accum-green-size",
     GLX.GLX_ACCUM_BLUE_SIZE     : "accum-blue-size",
@@ -98,7 +98,7 @@ class GLXWindowContext:
 class GLXContext:
 
     def __init__(self, alpha:bool=False):
-        self.props : Dict[str,Any] = {}
+        self.props : dict[str,Any] = {}
         self.xdisplay : int = 0
         self.context = None
         self.bit_depth : int = 0
@@ -178,7 +178,7 @@ class GLXContext:
         self.props["renderer"] = getstr(GL_RENDERER)
         log("GLXContext(%s) context=%s, props=%s", alpha, self.context, self.props)
 
-    def check_support(self, force_enable:bool=False) -> Dict[str,Any]:
+    def check_support(self, force_enable:bool=False) -> dict[str,Any]:
         i = self.props
         if not self.xdisplay:
             return {
@@ -226,7 +226,7 @@ class GLXContext:
 GLContext = GLXContext
 
 
-def check_support() -> Dict[str,Any]:
+def check_support() -> dict[str,Any]:
     ptr = get_display_ptr()
     if not ptr:
         from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source    #@UnresolvedImport, @UnusedImport

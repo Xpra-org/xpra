@@ -7,7 +7,7 @@
 import sys
 from io import BytesIO
 from math import cos, sin
-from typing import Type, Tuple, Dict, Any
+from typing import Any
 
 from xpra.common import noop
 from xpra.util import typedict, envint, AtomicInteger
@@ -19,7 +19,7 @@ from xpra.client.gui.fake_client import FakeClient
 log = Logger("opengl", "paint")
 
 
-def get_gl_client_window_module(force_enable=False) -> Tuple[Dict,Any]:
+def get_gl_client_window_module(force_enable=False) -> tuple[dict,Any]:
     log("get_gl_client_window_module()")
     try:
         from xpra.client.gl.gtk3 import nativegl_client_window
@@ -72,7 +72,7 @@ def get_test_gl_icon():
 def no_idle_add(fn, *args, **kwargs):
     fn(*args, **kwargs)
 
-def test_gl_client_window(gl_client_window_class : Type, max_window_size=(1024, 1024), pixel_depth=24, show=False):
+def test_gl_client_window(gl_client_window_class : type, max_window_size=(1024, 1024), pixel_depth=24, show=False):
     #try to render using a temporary window:
     draw_result = {}
     window = None

@@ -5,7 +5,7 @@
 #pylint: disable-msg=E1101
 
 import os
-from typing import Dict, Any, Callable
+from typing import Any, Callable
 
 from xpra.util import envbool
 from xpra.os_util import is_Ubuntu, is_Debian
@@ -41,7 +41,7 @@ def check_virtual_dir(warn=True) -> bool:
         return False
     return True
 
-def query_video_device(device) -> Dict[str,Any]:
+def query_video_device(device) -> dict[str,Any]:
     try:
         # pylint: disable=import-outside-toplevel
         from xpra.codecs.v4l2.pusher import query_video_device as v4l_query_video_device
@@ -51,7 +51,7 @@ def query_video_device(device) -> Dict[str,Any]:
         return {}
 
 
-def get_virtual_video_devices(capture_only=True) -> Dict[int, Dict]:
+def get_virtual_video_devices(capture_only=True) -> dict[int, dict]:
     log(f"get_virtual_video_devices({capture_only}) CHECK_VIRTUAL_CAPTURE={CHECK_VIRTUAL_CAPTURE}")
     if not check_virtual_dir(False):
         return {}
@@ -89,9 +89,9 @@ def get_virtual_video_devices(capture_only=True) -> Dict[int, Dict]:
     log(f"found {len(devices)} virtual video devices")
     return devices
 
-def get_all_video_devices(capture_only=True) -> Dict[int,Dict[str,Any]]:
+def get_all_video_devices(capture_only=True) -> dict[int,dict[str,Any]]:
     contents = os.listdir("/dev")
-    devices : Dict[int,Dict[str,Any]] = {}
+    devices : dict[int,dict[str,Any]] = {}
     device_paths = set()
     for f in contents:
         if not f.startswith("video"):

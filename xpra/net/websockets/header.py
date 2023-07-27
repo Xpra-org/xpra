@@ -6,7 +6,7 @@
 # Licensed under LGPL version 3 (see docs/LICENSE.LGPL-3)
 
 import struct
-from typing import Tuple, ByteString
+from typing import ByteString
 
 from xpra.net.websockets.common import OPCODE_CLOSE
 from xpra.net.websockets.mask import hybi_unmask   #@UnresolvedImport
@@ -34,7 +34,7 @@ def encode_hybi_header(opcode, payload_len, has_mask=False, fin=True) -> bytes:
     return struct.pack('>BBQ', b1, 127 | mask_bit, payload_len)
 
 
-def decode_hybi(buf:ByteString) -> Tuple[int,ByteString,int,int] | None:
+def decode_hybi(buf:ByteString) -> tuple[int,ByteString,int,int] | None:
     """ Decode HyBi style WebSocket packets """
     blen = len(buf)
     hlen = 2

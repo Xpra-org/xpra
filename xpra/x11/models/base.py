@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, List, Tuple, Callable
+from typing import Callable
 from gi.repository import GObject
 
 from xpra.util import WORKSPACE_UNSET, WORKSPACE_ALL
@@ -29,20 +29,20 @@ X11Window = X11WindowBindings()
 _NET_WM_STATE_REMOVE = 0
 _NET_WM_STATE_ADD    = 1
 _NET_WM_STATE_TOGGLE = 2
-STATE_STRING : Dict[int,str] = {
+STATE_STRING : dict[int,str] = {
     _NET_WM_STATE_REMOVE    : "REMOVE",
     _NET_WM_STATE_ADD       : "ADD",
     _NET_WM_STATE_TOGGLE    : "TOGGLE",
     }
 IconicState = constants["IconicState"]
 NormalState = constants["NormalState"]
-ICONIC_STATE_STRING : Dict[int,str] = {
+ICONIC_STATE_STRING : dict[int,str] = {
     IconicState  : "Iconic",
     NormalState  : "Normal",
     }
 
 #add user friendly workspace logging:
-WORKSPACE_STR : Dict[int,str] = {
+WORKSPACE_STR : dict[int,str] = {
     WORKSPACE_UNSET    : "UNSET",
     WORKSPACE_ALL      : "ALL",
     }
@@ -88,7 +88,7 @@ class BaseWindowModel(CoreX11WindowModel):
                        GObject.ParamFlags.READABLE),
         #from _NET_WM_FULLSCREEN_MONITORS
         "fullscreen-monitors": (GObject.TYPE_PYOBJECT,
-                         "List of 4 monitor indices indicating the top, bottom, left, and right edges"+
+                         "list of 4 monitor indices indicating the top, bottom, left, and right edges"+
                          " of the window when the fullscreen state is enabled", "",
                          GObject.ParamFlags.READABLE),
         #from _NET_WM_STRUT_PARTIAL or _NET_WM_STRUT
@@ -206,7 +206,7 @@ class BaseWindowModel(CoreX11WindowModel):
                               "_XPRA_SPEED",
                               "_XPRA_ENCODING",
                               ]
-    _DEFAULT_NET_WM_ALLOWED_ACTIONS : List[str] = [f"_NET_WM_ACTION_{x}" for x in (
+    _DEFAULT_NET_WM_ALLOWED_ACTIONS : list[str] = [f"_NET_WM_ACTION_{x}" for x in (
         "CLOSE", "MOVE", "RESIZE", "FULLSCREEN",
         "MINIMIZE", "SHADE", "STICK",
         "MAXIMIZE_HORZ", "MAXIMIZE_VERT",
@@ -296,7 +296,7 @@ class BaseWindowModel(CoreX11WindowModel):
             self._state_remove("_NET_WM_STATE_HIDDEN")
 
 
-    _py_property_handlers : Dict[str,Callable] = dict(CoreX11WindowModel._py_property_handlers)
+    _py_property_handlers : dict[str,Callable] = dict(CoreX11WindowModel._py_property_handlers)
     _py_property_handlers.update({
         "state"         : _sync_state,
         "iconic"        : _sync_iconic,
@@ -421,7 +421,7 @@ class BaseWindowModel(CoreX11WindowModel):
         self._updateprop("encoding", encoding)
 
 
-    _x11_property_handlers : Dict[str,Callable] = CoreX11WindowModel._x11_property_handlers.copy()
+    _x11_property_handlers : dict[str,Callable] = CoreX11WindowModel._x11_property_handlers.copy()
     _x11_property_handlers.update({
         "WM_TRANSIENT_FOR"              : _handle_transient_for_change,
         "_NET_WM_WINDOW_TYPE"           : _handle_window_type_change,
@@ -458,7 +458,7 @@ class BaseWindowModel(CoreX11WindowModel):
     #      directly by the "state" property, and reading/writing them in fact
     #      accesses the "state" set directly.  This is done by overriding
     #      do_set_property and do_get_property.
-    _state_properties : Dict[str,Tuple[str,...]] = {
+    _state_properties : dict[str,tuple[str,...]] = {
         "attention-requested"   : ("_NET_WM_STATE_DEMANDS_ATTENTION", ),
         "fullscreen"            : ("_NET_WM_STATE_FULLSCREEN", ),
         "maximized"             : ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"),
@@ -507,7 +507,7 @@ class BaseWindowModel(CoreX11WindowModel):
     def _state_isset(self, state_name) -> bool:
         return state_name in self.get_property("state")
 
-    def _read_wm_state(self) -> List[str]:
+    def _read_wm_state(self) -> list[str]:
         wm_state = self.prop_get("_NET_WM_STATE", ["atom"])
         metalog("read _NET_WM_STATE=%s", wm_state)
         return wm_state or []

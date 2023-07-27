@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any
+from typing import Any
 
 from xpra.util import envbool
 from xpra.gtk_common.error import xsync, xlog
@@ -35,7 +35,7 @@ def get_ewmh_xid() -> int:
                 ewmh_xid = 0
     return 0
 
-def get_wm_info() -> Dict[str,Any]:
+def get_wm_info() -> dict[str,Any]:
     with xsync:
         X11Window = X11WindowBindings()
         root_xid = X11Window.get_root_xid()

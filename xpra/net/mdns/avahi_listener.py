@@ -17,10 +17,10 @@ from xpra.log import Logger
 log = Logger("network", "mdns")
 
 
-class AvahiListener:
+class Avahilistener:
 
     def __init__(self, service_type=XPRA_TCP_MDNS_TYPE, mdns_found=None, mdns_add=None, mdns_remove=None, mdns_update=None):
-        log("AvahiListener%s", (service_type, mdns_found, mdns_add, mdns_remove, mdns_update))
+        log("Avahilistener%s", (service_type, mdns_found, mdns_add, mdns_remove, mdns_update))
         try:
             self.bus = init_system_bus()
             assert self.bus
@@ -42,11 +42,11 @@ class AvahiListener:
 
     @staticmethod
     def resolve_error(*args) -> None:
-        log.error("AvahiListener.resolve_error%s", args)
+        log.error("Avahilistener.resolve_error%s", args)
 
     def service_resolved(self, interface, protocol, name:str, stype:str,
                          domain:str, host:str, x, address, port:int, text_array, v) -> None:
-        log("AvahiListener.service_resolved%s",
+        log("Avahilistener.service_resolved%s",
         (interface, protocol, name, stype, domain, host, x, address, port, "..", v))
         if self.mdns_add:
             #parse text data:
@@ -85,13 +85,13 @@ class AvahiListener:
 
     def start(self) -> None:
         self.server = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME, '/'), 'org.freedesktop.Avahi.Server')
-        log("AvahiListener.start() server=%s", self.server)
+        log("Avahilistener.start() server=%s", self.server)
 
         self.sbrowser = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME,
                                 self.server.ServiceBrowserNew(avahi.IF_UNSPEC,
                                 avahi.PROTO_UNSPEC, self.service_type, 'local', dbus.UInt32(0))),
                                 avahi.DBUS_INTERFACE_SERVICE_BROWSER)
-        log("AvahiListener.start() service browser=%s", self.sbrowser)
+        log("Avahilistener.start() service browser=%s", self.sbrowser)
         s = self.sbrowser.connect_to_signal("ItemNew", self.service_found)
         self.signal_match.append(s)
         s = self.sbrowser.connect_to_signal("ItemRemove", self.service_removed)
@@ -120,7 +120,7 @@ def main():
     from gi.repository import GLib  # @UnresolvedImport
     listeners = []
     def add(service_type):
-        listener = AvahiListener(service_type, mdns_found, mdns_add, mdns_remove)
+        listener = Avahilistener(service_type, mdns_found, mdns_add, mdns_remove)
         listeners.append(listener)
         GLib.idle_add(listener.start)
     add(XPRA_TCP_MDNS_TYPE)

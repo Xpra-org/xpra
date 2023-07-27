@@ -7,7 +7,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, Any, List, Tuple
+from typing import Any
 
 from xpra.os_util import bytestostr, strtobytes, hexstr
 from xpra.util import typedict, envbool
@@ -63,8 +63,8 @@ class X11ServerBase(X11ServerCore):
 
     def __init__(self):
         super().__init__()
-        self._default_xsettings : Tuple[int,List[Tuple]] = (0, [])
-        self._settings : Dict[str,Any] = {}
+        self._default_xsettings : tuple[int,list[tuple]] = (0, [])
+        self._settings : dict[str,Any] = {}
         self.double_click_time : int = 0
         self.double_click_distance : int = 0
         self.dpi : int = 0
@@ -128,7 +128,7 @@ class X11ServerBase(X11ServerCore):
         self.kill_display()
 
 
-    def configure_best_screen_size(self) -> Tuple[int,int]:
+    def configure_best_screen_size(self) -> tuple[int,int]:
         root_w, root_h = super().configure_best_screen_size()
         if self.touchpad_device:
             self.touchpad_device.root_w = root_w
@@ -136,7 +136,7 @@ class X11ServerBase(X11ServerCore):
         return root_w, root_h
 
 
-    def init_dbus(self, dbus_pid:int, dbus_env:Dict[str,str]) -> None:
+    def init_dbus(self, dbus_pid:int, dbus_env:dict[str,str]) -> None:
         dbuslog("init_dbus(%s, %s)", dbus_pid, dbus_env)
         if dbus_pid and dbus_env:
             os.environ.update(dbus_env)
@@ -173,7 +173,7 @@ class X11ServerBase(X11ServerCore):
         self.reset_settings()
         super().last_client_exited()
 
-    def init_virtual_devices(self, devices:Dict[str,Any]) -> None:
+    def init_virtual_devices(self, devices:dict[str,Any]) -> None:
         # pylint: disable=import-outside-toplevel
         #(this runs in the main thread - before the main loop starts)
         #for the time being, we only use the pointer if there is one:
@@ -227,7 +227,7 @@ class X11ServerBase(X11ServerCore):
         self.update_server_settings()
 
 
-    def get_info(self, proto=None, client_uuids=None) -> Dict[str,Any]:
+    def get_info(self, proto=None, client_uuids=None) -> dict[str,Any]:
         info = super().get_info(proto=proto, client_uuids=client_uuids)
         display_info = info.setdefault("display", {})
         if self.display_pid:
@@ -235,8 +235,8 @@ class X11ServerBase(X11ServerCore):
         display_info["icc"] = self.get_icc_info()
         return info
 
-    def get_icc_info(self) -> Dict[str,Any]:
-        icc_info : Dict[str,Any] = {
+    def get_icc_info(self) -> dict[str,Any]:
+        icc_info : dict[str,Any] = {
             "sync"  : SYNC_ICC,
             }
         if SYNC_ICC:

@@ -24,7 +24,6 @@
 #OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from typing import Dict
 from aioquic.tls import SessionTicket
 
 
@@ -34,7 +33,7 @@ class SessionTicketStore:
     """
 
     def __init__(self) -> None:
-        self.tickets: Dict[bytes, SessionTicket] = {}
+        self.tickets: dict[bytes, SessionTicket] = {}
 
     def add(self, ticket: SessionTicket) -> None:
         self.tickets[ticket.ticket] = ticket

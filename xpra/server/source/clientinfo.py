@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, List, Any, Tuple
+from typing import Any
 
 from xpra.util import std, typedict
 from xpra.common import FULL_INFO
@@ -32,7 +32,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.username = ""
         self.user = ""
         self.name = ""
-        self.argv : Tuple[str,...] = ()
+        self.argv : tuple[str,...] = ()
         self.sharing = False
         # client capabilities/options:
         self.client_setting_change = False
@@ -44,7 +44,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.client_machine = ""
         self.client_processor = ""
         self.client_release = ""
-        self.client_linux_distribution : Tuple[str,...] = ()
+        self.client_linux_distribution : tuple[str,...] = ()
         self.client_proxy = False
         self.client_wm_name = ""
         self.client_session_type = ""
@@ -88,7 +88,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.proxy_version = c.strget("proxy.build.version", self.proxy_version)
         log(f"client uuid {self.uuid}")
 
-    def get_connect_info(self) -> List[str]:
+    def get_connect_info(self) -> list[str]:
         #client platform / version info:
         pinfo = [std(self.client_type)]
         if FULL_INFO>0:
@@ -139,8 +139,8 @@ class ClientInfoMixin(StubSourceMixin):
         return cinfo
 
 
-    def get_info(self) -> Dict[str,Any]:
-        info : Dict[str,Any] = {
+    def get_info(self) -> dict[str,Any]:
+        info : dict[str,Any] = {
                 "sharing"           : bool(self.sharing),
                 }
         if self.client_version:

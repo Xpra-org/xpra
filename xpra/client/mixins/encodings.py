@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, Any, Tuple
+from typing import Any
 
 from xpra.codecs.codec_constants import preforder, STREAM_ENCODINGS
 from xpra.codecs.loader import load_codec, codec_versions, has_codec, get_codec
@@ -78,11 +78,11 @@ class Encodings(StubClientMixin):
         self.video_scaling = None
         self.video_max_size = VIDEO_MAX_SIZE
 
-        self.server_encodings : Tuple[str,...] = ()
-        self.server_core_encodings : Tuple[str,...] = ()
-        self.server_encodings_with_speed : Tuple[str,...] = ()
-        self.server_encodings_with_quality : Tuple[str,...] = ()
-        self.server_encodings_with_lossless_mode : Tuple[str,...] = ()
+        self.server_encodings : tuple[str,...] = ()
+        self.server_core_encodings : tuple[str,...] = ()
+        self.server_encodings_with_speed : tuple[str,...] = ()
+        self.server_encodings_with_quality : tuple[str,...] = ()
+        self.server_encodings_with_lossless_mode : tuple[str,...] = ()
 
         #what we told the server about our encoding defaults:
         self.encoding_defaults = {}
@@ -135,7 +135,7 @@ class Encodings(StubClientMixin):
         self._parse_server_capabilities(caps)
 
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         return {
             "encodings" : {
                 "core"          : self.get_core_encodings(),
@@ -152,7 +152,7 @@ class Encodings(StubClientMixin):
             }
 
 
-    def get_caps(self) -> Dict[str,Any]:
+    def get_caps(self) -> dict[str,Any]:
         caps = {
             "encodings"                 : self.get_encodings(),
             "encodings.core"            : self.get_core_encodings(),
@@ -185,7 +185,7 @@ class Encodings(StubClientMixin):
             self.encoding = e
 
 
-    def get_batch_caps(self) -> Dict[str,Any]:
+    def get_batch_caps(self) -> dict[str,Any]:
         #batch options:
         caps = {}
         for bprop in ("always", "min_delay", "max_delay", "delay", "max_events", "max_pixels", "time_unit"):
@@ -198,7 +198,7 @@ class Encodings(StubClientMixin):
         log("get_batch_caps()=%s", caps)
         return caps
 
-    def get_encodings_caps(self) -> Dict[str,Any]:
+    def get_encodings_caps(self) -> dict[str,Any]:
         if B_FRAMES:
             video_b_frames = ("h264", ) #only tested with dec_avcodec2
         else:
@@ -270,7 +270,7 @@ class Encodings(StubClientMixin):
         log("encoding capabilities: %s", caps)
         return caps
 
-    def get_encodings(self) -> Tuple[str,...]:
+    def get_encodings(self) -> tuple[str,...]:
         """
             Unlike get_core_encodings(), this method returns "rgb" for both "rgb24" and "rgb32".
             That's because although we may support both, the encoding chosen is plain "rgb",

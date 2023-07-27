@@ -5,8 +5,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict
-
 MODIFIER_MAP = {
             "shift":    1 << 0,
             "lock":     1 << 1,
@@ -24,7 +22,7 @@ DEFAULT_MODIFIER_NUISANCE_KEYNAMES = ["Num_Lock", "Caps_Lock", "Scroll_Lock"]
 DEFAULT_MODIFIER_NUISANCE = ["lock"]
 DEFAULT_ALL_MODIFIER_NAMES = DEFAULT_MODIFIER_NAMES+DEFAULT_MODIFIER_NUISANCE+["mod1", "mod2", "mod3", "mod4", "mod5"]
 
-DEFAULT_MODIFIER_MEANINGS : Dict[str,str] = {
+DEFAULT_MODIFIER_MEANINGS : dict[str,str] = {
         "Shift_L"   : "shift",
         "Shift_R"   : "shift",
         "Caps_Lock" : "lock",

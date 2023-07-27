@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import List, Type, Dict, Tuple, Any
+from typing import Any
 
 from xpra.server.window import batch_config
 from xpra.server.shadow.root_window_model import RootWindowModel
@@ -30,7 +30,7 @@ SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 NOTIFY_STARTUP = envbool("XPRA_SHADOW_NOTIFY_STARTUP", True)
 
 
-SHADOWSERVER_BASE_CLASS : Type = object
+SHADOWSERVER_BASE_CLASS : type = object
 if server_features.rfb:
     from xpra.server.rfb.rfb_server import RFBServer
     SHADOWSERVER_BASE_CLASS = RFBServer
@@ -141,10 +141,10 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             self.set_refresh_delay(max(10, 1000//rrate))
 
 
-    def make_hello(self, _source) -> Dict[str,Any]:
+    def make_hello(self, _source) -> dict[str,Any]:
         return {"shadow" : True}
 
-    def get_info(self, _proto=None, *args) -> Dict[str,Any]:
+    def get_info(self, _proto=None, *args) -> dict[str,Any]:
         info = {
             "sharing"       : self.sharing is not False,
             "refresh-delay" : self.refresh_delay,
@@ -154,7 +154,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         return info
 
 
-    def get_window_position(self, _window) -> Tuple[int,int]:
+    def get_window_position(self, _window) -> tuple[int,int]:
         #we export the whole desktop as a window:
         return 0, 0
 
@@ -200,7 +200,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             except Exception:
                 notifylog("failed to instantiate %s", x, exc_info=True)
 
-    def get_notifier_classes(self) -> Tuple[Type,...]:
+    def get_notifier_classes(self) -> tuple[type,...]:
         #subclasses will generally add their toolkit specific variants
         #by overriding this method
         #use the native ones first:
@@ -217,8 +217,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             nid = NotificationID.NEW_USER
             title = "User '%s' connected to the session" % (ss.name or ss.username or ss.uuid)
             body = "\n".join(ss.get_connect_info())
-            actions : List = []
-            hints : Dict[str,Any] = {}
+            actions : list = []
+            hints : dict[str,Any] = {}
             icon_filename = os.path.join(get_icon_dir(), "user.png")
             icon = parse_image_path(icon_filename)
             self.notifier.show_notify("", tray, nid, "Xpra", 0, "", title, body, actions, hints, 10*1000, icon)

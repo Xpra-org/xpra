@@ -4,8 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple
-
 from xpra.version_util import version_compat_check, parse_version
 from xpra.os_util import bytestostr
 from xpra.util import typedict, get_util_logger
@@ -70,7 +68,7 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_platform_linux_distribution = None
         self._remote_python_version = ""
         self._remote_lib_versions = {}
-        self._remote_subcommands : Tuple[str,...] = ()
+        self._remote_subcommands : tuple[str,...] = ()
         self._remote_server_log = None
         self._remote_server_mode = ""
 

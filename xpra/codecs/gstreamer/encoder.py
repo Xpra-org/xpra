@@ -5,7 +5,7 @@
 
 import os
 from gi.repository import GObject  # @UnresolvedImport
-from typing import List, Dict, Any, Tuple
+from typing import Any
 
 from xpra.os_util import WIN32, OSX
 from xpra.util import envbool, csv, roundup, first_time, typedict
@@ -40,16 +40,16 @@ log(f"encoder: {get_type()} {get_version()}, {init_module}, {cleanup_module}")
 PACKED_RGB_FORMATS = ("RGBA", "BGRA", "ARGB", "ABGR", "RGB", "BGR", "BGRX", "XRGB", "XBGR")
 
 assert get_type() #all codecs must define this function
-COLORSPACES : Dict[str,Dict[str,List[str]]] = {}
-def get_encodings() -> Tuple[str,...]:
+COLORSPACES : dict[str,dict[str,list[str]]] = {}
+def get_encodings() -> tuple[str,...]:
     return tuple(COLORSPACES.keys())
 
-def get_input_colorspaces(encoding:str) -> Tuple[str,...]:
+def get_input_colorspaces(encoding:str) -> tuple[str,...]:
     colorspaces = COLORSPACES.get(encoding)
     assert colorspaces, f"invalid input colorspace for {encoding}"
     return tuple(colorspaces.keys())
 
-def get_output_colorspaces(encoding:str, input_colorspace:str) -> Tuple[str,...]:
+def get_output_colorspaces(encoding:str, input_colorspace:str) -> tuple[str,...]:
     colorspaces = COLORSPACES.get(encoding)
     assert colorspaces, f"invalid input colorspace for {encoding}"
     out_colorspaces = colorspaces.get(input_colorspace)
@@ -63,7 +63,7 @@ def ElementEncoderClass(element:str):
     ElementEncoder.encoder_element = element
     return ElementEncoder
 
-def make_spec(element:str, encoding:str, cs_in:str, css_out:Tuple[str,...], cpu_cost:int=50, gpu_cost:int=50):
+def make_spec(element:str, encoding:str, cs_in:str, css_out:tuple[str,...], cpu_cost:int=50, gpu_cost:int=50):
     #use a metaclass so all encoders are gstreamer.encoder.Encoder subclasses,
     #each with different pipeline arguments based on the make_spec parameters:
     if cs_in in PACKED_RGB_FORMATS:
@@ -83,7 +83,7 @@ def make_spec(element:str, encoding:str, cs_in:str, css_out:Tuple[str,...], cpu_
     spec.gstreamer_element = element
     return spec
 
-SPECS : Dict[str,Dict[str,video_spec]] = {}
+SPECS : dict[str,dict[str,video_spec]] = {}
 def get_specs(encoding:str, colorspace:str) -> video_spec | None:
     colorspaces = SPECS.get(encoding)
     assert colorspaces, f"invalid encoding: {encoding} (must be one of %s)" % csv(SPECS.keys())
@@ -93,9 +93,9 @@ def get_specs(encoding:str, colorspace:str) -> video_spec | None:
 def init_all_specs(*exclude) -> None:
     #by default, try to enable everything
     #the self-tests should disable what isn't available / doesn't work
-    specs : Dict[str,Dict[str,List]] = {}
-    colorspaces : Dict[str,Dict[str,List]] = {}
-    missing : List[str] = []
+    specs : dict[str,dict[str,list]] = {}
+    colorspaces : dict[str,dict[str,list]] = {}
+    missing : list[str] = []
     def add(element:str, encoding:str, cs_in:str, css_out, *args):
         if element in missing:
             return
@@ -174,7 +174,7 @@ class Encoder(VideoPipeline):
             raise ValueError(f"invalid encoding {self.encoding!r}")
         self.dst_formats = options.strtupleget("dst-formats")
         gst_rgb_format = get_gst_rgb_format(self.colorspace)
-        vcaps : Dict[str,Any] = {
+        vcaps : dict[str,Any] = {
             "width" : self.width,
             "height" : self.height,
             "format" : gst_rgb_format,
@@ -221,7 +221,7 @@ class Encoder(VideoPipeline):
     def get_src_format(self) -> str:
         return self.colorspace
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = super().get_info()
         if self.dst_formats:
             info["dst_formats"] = self.dst_formats

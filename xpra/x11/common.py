@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import struct
-from typing import Callable, Tuple, Any, Dict, cast
+from typing import Callable, Any, cast
 
 from xpra.util import u, ellipsizer
 from xpra.os_util import hexstr, bytestostr
@@ -16,7 +16,7 @@ class Unmanageable(Exception):
     pass
 
 
-REPR_FUNCTIONS : Dict[type,Callable] = {}
+REPR_FUNCTIONS : dict[type,Callable] = {}
 
 
 # Just to make it easier to pass around and have a helpful debug logging.
@@ -84,7 +84,7 @@ def get_wm_name() -> str:
     return ""
 
 
-def get_icc_data() -> Dict[str,Any]:
+def get_icc_data() -> dict[str,Any]:
     icc = {}
     try:
         data = get_X11_root_property("_ICC_PROFILE", "CARDINAL")
@@ -140,7 +140,7 @@ def get_number_of_desktops() -> int:
     log("get_number_of_desktops() %s=%s", hexstr(d or ""), v)
     return v
 
-def get_workarea() -> Tuple[int,int,int,int] | None:
+def get_workarea() -> tuple[int,int,int,int] | None:
     try:
         d = get_current_desktop()
         if d<0:
@@ -156,7 +156,7 @@ def get_workarea() -> Tuple[int,int,int,int] | None:
             log.warn(f"Warning: invalid `_NET_WORKAREA` value length: {workarea!r}")
         else:
             cur_workarea = workarea[d*4*sizeof_long:(d+1)*4*sizeof_long]
-            v = cast(Tuple[int,int,int,int], struct.unpack(b"@LLLL", cur_workarea))
+            v = cast(tuple[int,int,int,int], struct.unpack(b"@LLLL", cur_workarea))
             log("get_workarea() %s=%s", hexstr(cur_workarea), v)
             return v
     except Exception as e:
@@ -165,8 +165,8 @@ def get_workarea() -> Tuple[int,int,int,int] | None:
         log.estr(e)
     return None
 
-def get_desktop_names() -> Tuple[str, ...]:
-    v : Tuple[str, ...] = ("Main", )
+def get_desktop_names() -> tuple[str, ...]:
+    v : tuple[str, ...] = ("Main", )
     d = None
     try:
         d = get_X11_root_property("_NET_DESKTOP_NAMES", "UTF8_STRING")
@@ -246,8 +246,8 @@ def get_xsettings():
     from xpra.x11.xsettings_prop import bytes_to_xsettings
     return bytes_to_xsettings(data)
 
-def xsettings_to_dict(v) -> Dict[str, Tuple[int, Any]]:
-    d : Dict[str, Tuple[int, Any]] = {}
+def xsettings_to_dict(v) -> dict[str, tuple[int, Any]]:
+    d : dict[str, tuple[int, Any]] = {}
     if v:
         _, values = v
         for setting_type, prop_name, value, _ in values:
@@ -255,7 +255,7 @@ def xsettings_to_dict(v) -> Dict[str, Tuple[int, Any]]:
     return d
 
 
-def get_randr_dpi() -> Tuple[int,int]:
+def get_randr_dpi() -> tuple[int,int]:
     from xpra.x11.bindings.randr import RandRBindings  # @UnresolvedImport
     randr_bindings = RandRBindings()
     if randr_bindings and randr_bindings.has_randr():
@@ -270,14 +270,14 @@ def get_randr_dpi() -> Tuple[int,int]:
 
 
 
-def get_xresources() -> Dict[str,str] | None:
+def get_xresources() -> dict[str,str] | None:
     try:
         value = get_X11_root_property("RESOURCE_MANAGER", "STRING")
         log(f"RESOURCE_MANAGER={value}")
         if value is None:
             return None
         #parse the resources into a dict:
-        values : Dict[str,str] = {}
+        values : dict[str,str] = {}
         options = bytestostr(value).split("\n")
         for option in options:
             if not option:

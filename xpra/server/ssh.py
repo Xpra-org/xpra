@@ -12,7 +12,7 @@ import hashlib
 import binascii
 from subprocess import Popen, PIPE
 from threading import Event
-from typing import Tuple, ByteString, Callable
+from typing import ByteString, Callable
 import paramiko
 
 from xpra.net.ssh.paramiko_client import SSHSocketConnection
@@ -137,7 +137,7 @@ class SSHServer(paramiko.ServerInterface):
         self.agent = None
         self.transport = None
 
-    def get_banner(self) -> Tuple[str,str]:
+    def get_banner(self) -> tuple[str,str]:
         return f"{BANNER}\n\r", "EN"
 
     def get_allowed_auths(self, username:str) -> str:

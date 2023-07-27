@@ -9,7 +9,7 @@ import math
 import os.path
 from time import monotonic
 from urllib.parse import unquote
-from typing import Set, List, Tuple, Dict, Callable, Union
+from typing import Callable
 from cairo import ( #pylint: disable=no-name-in-module
     RectangleInt, Region,  # @UnresolvedImport
     OPERATOR_OVER, LINE_CAP_ROUND,  # @UnresolvedImport
@@ -129,7 +129,7 @@ AUTOGRAB_WITH_FOCUS = envbool("XPRA_AUTOGRAB_WITH_FOCUS", False)
 AUTOGRAB_WITH_POINTER = envbool("XPRA_AUTOGRAB_WITH_POINTER", True)
 
 
-def parse_padding_colors(colors_str:str) -> Tuple[int,int,int]:
+def parse_padding_colors(colors_str:str) -> tuple[int,int,int]:
     padding_colors = 0, 0, 0
     if colors_str:
         try:
@@ -145,7 +145,7 @@ def parse_padding_colors(colors_str:str) -> Tuple[int,int,int]:
 PADDING_COLORS = parse_padding_colors(os.environ.get("XPRA_PADDING_COLORS"))
 
 #window types we map to POPUP rather than TOPLEVEL
-POPUP_TYPE_HINTS : Set[str] = {
+POPUP_TYPE_HINTS : set[str] = {
                     #"DIALOG",
                     #"MENU",
                     #"TOOLBAR",
@@ -161,7 +161,7 @@ POPUP_TYPE_HINTS : Set[str] = {
                     #"DND",
                     }
 #window types for which we skip window decorations (title bar)
-UNDECORATED_TYPE_HINTS : Set[str] = {
+UNDECORATED_TYPE_HINTS : set[str] = {
                     #"DIALOG",
                     "MENU",
                     #"TOOLBAR",
@@ -197,7 +197,7 @@ GDK_SCROLL_MAP = {
     Gdk.ScrollDirection.RIGHT    : 7,
     }
 
-ALL_WINDOW_TYPES : Tuple[Gdk.WindowTypeHint, ...] = (
+ALL_WINDOW_TYPES : tuple[Gdk.WindowTypeHint, ...] = (
     Gdk.WindowTypeHint.NORMAL,
     Gdk.WindowTypeHint.DIALOG,
     Gdk.WindowTypeHint.MENU,
@@ -213,15 +213,15 @@ ALL_WINDOW_TYPES : Tuple[Gdk.WindowTypeHint, ...] = (
     Gdk.WindowTypeHint.COMBO,
     Gdk.WindowTypeHint.DND,
     )
-WINDOW_NAME_TO_HINT : Dict[str,Gdk.WindowTypeHint] = dict(
+WINDOW_NAME_TO_HINT : dict[str,Gdk.WindowTypeHint] = dict(
     (wth.value_name.replace("GDK_WINDOW_TYPE_HINT_", ""), wth) for wth in ALL_WINDOW_TYPES
     )
-def get_follow_window_types() -> Tuple[Gdk.WindowTypeHint,...]:
-    types_strs : List[str] = os.environ.get("XPRA_FOLLOW_WINDOW_TYPES",
+def get_follow_window_types() -> tuple[Gdk.WindowTypeHint,...]:
+    types_strs : list[str] = os.environ.get("XPRA_FOLLOW_WINDOW_TYPES",
                                             "DIALOG,MENU,TOOLBAR,DROPDOWN_MENU,POPUP_MENU,TOOLTIP,COMBO,DND").upper().split(",")
     if "*" in types_strs or "ALL" in types_strs:
         return ALL_WINDOW_TYPES
-    types : List[Gdk.WindowTypeHint] = []
+    types : list[Gdk.WindowTypeHint] = []
     for v in types_strs:
         try:
             hint = WINDOW_NAME_TO_HINT[v]
@@ -268,7 +268,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._monitor = None
         self._frozen : bool = False
         self._focus_latest = None
-        self._ondeiconify : List[Callable] = []
+        self._ondeiconify : list[Callable] = []
         self._follow = None
         self._follow_handler = 0
         self._follow_position = None
@@ -797,7 +797,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if b:
             self.when_realized("cursor", b.set_cursor_data, cursor_data)
 
-    def adjusted_position(self, ox, oy) -> Tuple[int,int]:
+    def adjusted_position(self, ox, oy) -> tuple[int,int]:
         if AWT_RECENTER and self.is_awt(self._metadata):
             ss = self._client._current_screen_sizes
             if ss and len(ss)==1:
@@ -831,7 +831,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         return ox, oy
 
 
-    def calculate_window_offset(self, wx:int, wy:int, ww:int, wh:int) -> Tuple[int,int] | None:
+    def calculate_window_offset(self, wx:int, wy:int, ww:int, wh:int) -> tuple[int,int] | None:
         ss = self._client._current_screen_sizes
         if not ss:
             return None
@@ -982,14 +982,14 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def window_state_updated(self, widget, event) -> None:
         statelog("%s.window_state_updated(%s, %s) changed_mask=%s, new_window_state=%s",
                  self, widget, repr(event), event.changed_mask, event.new_window_state)
-        state_updates : Dict[str,bool] = {}
+        state_updates : dict[str,bool] = {}
         for flag in ("fullscreen", "above", "below", "sticky", "iconified", "maximized", "focused"):
             wstate = getattr(Gdk.WindowState, flag.upper()) #ie: Gdk.WindowState.FULLSCREEN
             if event.changed_mask & wstate:
                 state_updates[flag] = bool(event.new_window_state & wstate)
         self.update_window_state(state_updates)
 
-    def update_window_state(self, state_updates:Dict[str,bool]):
+    def update_window_state(self, state_updates:dict[str,bool]):
         if self._client.readonly:
             log("update_window_state(%s) ignored in readonly mode", state_updates)
             return
@@ -1005,7 +1005,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 self.repaint(0, 0, ww, wh)
         #decide if this is really an update by comparing with our local state vars:
         #(could just be a notification of a state change we already know about)
-        actual_updates : Dict[str,bool] = {}
+        actual_updates : dict[str,bool] = {}
         for state,value in state_updates.items():
             var = "_" + state.replace("-", "_")     #ie: "skip-pager" -> "_skip_pager"
             cur = getattr(self, var)                #ie: self._maximized
@@ -1013,7 +1013,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 setattr(self, var, value)           #ie: self._maximized = True
                 actual_updates[state] = value
                 statelog("%s=%s (was %s)", var, value, cur)
-        server_updates : Dict[str,bool] = dict((k,v) for k,v in actual_updates.items() if k in self._client.server_window_states)
+        server_updates : dict[str,bool] = dict((k,v) for k,v in actual_updates.items() if k in self._client.server_window_states)
         #iconification is handled a bit differently...
         iconified = server_updates.pop("iconified", None)
         if iconified is not None:
@@ -1143,7 +1143,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                         X11Window.XShapeCombineRectangles(xid, kind, x_off, y_off, rectangles)
         self.when_realized("shape", do_set_shape)
 
-    def lazy_scale_shape(self, rectangles) -> List:
+    def lazy_scale_shape(self, rectangles) -> list:
         # scale the rectangles without a bitmap...
         # results aren't so good! (but better than nothing?)
         return [self.srect(*x) for x in rectangles]
@@ -1297,7 +1297,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.when_realized("set-opaque-region", do_set_region)
 
 
-    def set_xid(self, xid:Union[str,int]):
+    def set_xid(self, xid:str | int):
         if xid.startswith("0x") and xid.endswith("L"):
             xid = xid[:-1]
         try:
@@ -2328,7 +2328,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         return True
 
 
-    def get_mouse_position(self) -> Tuple[int,int]:
+    def get_mouse_position(self) -> tuple[int,int]:
         #this method is used on some platforms
         #to get the pointer position for events that don't include it
         #(ie: wheel events)
@@ -2336,24 +2336,24 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         return self._offset_pointer(x, y)
 
 
-    def _offset_pointer(self, x:int, y:int) -> Tuple[int,int]:
+    def _offset_pointer(self, x:int, y:int) -> tuple[int,int]:
         if self.window_offset:
             x -= self.window_offset[0]
             y -= self.window_offset[1]
         return self.cp(x, y)
 
-    def _get_pointer(self, event) -> Tuple[int,int]:
+    def _get_pointer(self, event) -> tuple[int,int]:
         return event.x_root, event.y_root
 
-    def _get_relative_pointer(self, event) -> Tuple[int,int]:
+    def _get_relative_pointer(self, event) -> tuple[int,int]:
         return event.x, event.y
 
-    def get_pointer_data(self, event) -> Tuple[int,int,int,int]:
+    def get_pointer_data(self, event) -> tuple[int,int,int,int]:
         x, y = self._get_pointer(event)
         rx, ry = self._get_relative_pointer(event)#
         return self.adjusted_pointer_data(x, y, rx, ry)
 
-    def adjusted_pointer_data(self, x:int, y:int, rx:int=0, ry:int=0) -> Tuple[int,int,int,int]:
+    def adjusted_pointer_data(self, x:int, y:int, rx:int=0, ry:int=0) -> tuple[int,int,int,int]:
         #regular pointer coordinates are translated and scaled,
         #relative coordinates are scaled only:
         data = self._offset_pointer(x, y)
@@ -2361,7 +2361,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             data = list(data) + list(self.cp(rx, ry))
         return tuple(data)
 
-    def _pointer_modifiers(self, event) -> Tuple[Tuple[int,int,int,int],List[str],List[int]]:
+    def _pointer_modifiers(self, event) -> tuple[tuple[int,int,int,int],list[str],list[int]]:
         pointer_data = self.get_pointer_data(event)
         #FIXME: state is used for both mods and buttons??
         modifiers = self._client.mask_to_names(event.state)

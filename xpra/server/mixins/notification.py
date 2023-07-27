@@ -6,7 +6,7 @@
 #pylint: disable-msg=E1101
 
 import os.path
-from typing import Any, Dict
+from typing import Any
 from gi.repository import GLib
 
 from xpra.os_util import OSX, POSIX
@@ -40,12 +40,12 @@ class NotificationForwarder(StubServerMixin):
             self.notifications_forwarder = None
             start_thread(nf.release, "notifier-release", daemon=True)
 
-    def get_info(self, _source=None)-> Dict[str,Any]:
+    def get_info(self, _source=None)-> dict[str,Any]:
         if not self.notifications_forwarder:
             return {}
         return {"notifications" : self.notifications_forwarder.get_info()}
 
-    def get_server_features(self, _source=None)-> Dict[str,Any]:
+    def get_server_features(self, _source=None)-> dict[str,Any]:
         return {
             "notifications"                : {
                 "close"     : self.notifications,

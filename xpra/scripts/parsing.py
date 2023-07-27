@@ -13,7 +13,7 @@ import shlex
 import os.path
 import optparse
 from urllib import parse
-from typing import Any, List, Dict, Tuple, Callable
+from typing import Any, Callable
 
 from xpra.version_util import full_version_str
 from xpra.util import envbool, csv, parse_simple_dict, stderr_print
@@ -29,7 +29,7 @@ from xpra.scripts.config import (
     )
 
 
-MODE_ALIAS : Dict[str,str] = {
+MODE_ALIAS : dict[str,str] = {
     "start"             : "seamless",
     "start-seamless"    : "seamless",
     "start-desktop"     : "desktop",
@@ -133,8 +133,8 @@ def ignore_options(args, options) -> None:
                 args.remove(r)
 
 
-def parse_env(env) -> Dict[str, str]:
-    d : Dict[str, str] = {}
+def parse_env(env) -> dict[str, str]:
+    d : dict[str, str] = {}
     for ev in env:
         try:
             if ev.startswith("#"):
@@ -150,7 +150,7 @@ def parse_env(env) -> Dict[str, str]:
     return d
 
 
-def parse_URL(url:str) -> Tuple[str,Dict]:
+def parse_URL(url:str) -> tuple[str,dict]:
     from urllib.parse import urlparse, parse_qs
     up = urlparse(url)
     address = up.netloc
@@ -159,7 +159,7 @@ def parse_URL(url:str) -> Tuple[str,Dict]:
     if qpos>0:
         params_str = url[qpos+1:]
         params = parse_qs(params_str, keep_blank_values=True)
-        f_params : Dict[str,Any] = {}
+        f_params : dict[str,Any] = {}
         for k,v in params.items():
             t = OPTION_TYPES.get(k)
             if t is not None and t not in (list, tuple):
@@ -186,7 +186,7 @@ def _sep_pos(display_name):
     return min(scpos, slpos)
 
 
-def auto_proxy(scheme, host:str) -> Dict[str,Any]:
+def auto_proxy(scheme, host:str) -> dict[str,Any]:
     try:
         from xpra.net.libproxy import ProxyFactory
     except ImportError as e:
@@ -211,7 +211,7 @@ def auto_proxy(scheme, host:str) -> Dict[str,Any]:
         options["proxy-password"] = url.password
     return options
 
-def parse_remote_display(s:str) -> Dict[str,Any]:
+def parse_remote_display(s:str) -> dict[str,Any]:
     if not s:
         return {}
     qpos = s.find("?")
@@ -269,7 +269,7 @@ def parse_remote_display(s:str) -> Dict[str,Any]:
                 desc[k] = v
     return desc
 
-def parse_username_and_password(s:str) -> Dict[str,str]:
+def parse_username_and_password(s:str) -> dict[str,str]:
     ppos = s.find(":")
     if ppos>=0:
         password = s[ppos+1:]
@@ -370,7 +370,7 @@ def normalize_display_name(display_name:str) -> str:
     return display_name
 
 
-def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_session_by_name:Callable|None=None) -> Dict[str,Any]:
+def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_session_by_name:Callable|None=None) -> dict[str,Any]:
     display_name = normalize_display_name(display_name)
     #last chance to find it by name:
     if display_name.find(":")<0 and display_name.find("wayland-")<0:
@@ -414,7 +414,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
             desc["password"] = password
             opts.password = password
 
-    def add_host_port(default_port=DEFAULT_PORT) -> Tuple[str,int]:
+    def add_host_port(default_port=DEFAULT_PORT) -> tuple[str,int]:
         host = parsed.hostname or "127.0.0.1"
         port = parsed.port or default_port
         desc["host"] = host
@@ -579,7 +579,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
     assert False
 
 
-def get_ssl_options(desc, opts, cmdline) -> Dict[str,Any]:
+def get_ssl_options(desc, opts, cmdline) -> dict[str,Any]:
     port = desc["port"]
     ssl_host = opts.ssl_server_hostname or desc["host"]
     from xpra.net.socket_util import get_ssl_attributes, load_ssl_options
@@ -601,7 +601,7 @@ def get_ssl_options(desc, opts, cmdline) -> Dict[str,Any]:
         ssl_options["server-verify-mode"] = "none"
     return ssl_options
 
-def parse_ssh_option(ssh_setting:str) -> List[str]:
+def parse_ssh_option(ssh_setting:str) -> list[str]:
     ssh_cmd = shlex.split(ssh_setting, posix=not WIN32)
     if ssh_cmd[0]=="auto":
         #try paramiko:
@@ -623,14 +623,14 @@ def parse_ssh_option(ssh_setting:str) -> List[str]:
             ssh_cmd = shlex.split(DEFAULT_SSH_COMMAND)
     return ssh_cmd
 
-def get_ssh_display_attributes(args, ssh_option="auto") -> Dict[str,Any]:
+def get_ssh_display_attributes(args, ssh_option="auto") -> dict[str,Any]:
     #ie: ssh=["/usr/bin/ssh", "-v"]
     ssh = parse_ssh_option(ssh_option)
     ssh_cmd = ssh[0].lower()
     is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
     is_paramiko = ssh_cmd.split(":")[0]=="paramiko"
     agent_forwarding = envbool("XPRA_SSH_AGENT", "-A" in ssh)
-    desc : Dict[str,Any] = {}
+    desc : dict[str,Any] = {}
     if is_paramiko:
         ssh[0] = "paramiko"
         desc["is_paramiko"] = is_paramiko
@@ -653,7 +653,7 @@ def get_ssh_display_attributes(args, ssh_option="auto") -> Dict[str,Any]:
     return desc
 
 
-def get_ssh_args(desc, ssh=("paramiko",), prefix:str="") -> List[str]:
+def get_ssh_args(desc, ssh=("paramiko",), prefix:str="") -> list[str]:
     ssh_cmd = ssh[0]
     ssh_port = desc.get(f"{prefix}port", 22)
     username = desc.get(f"{prefix}username")
@@ -686,7 +686,7 @@ def get_ssh_args(desc, ssh=("paramiko",), prefix:str="") -> List[str]:
             args += ["-i", key_path]
     return args
 
-def get_ssh_proxy_args(desc, ssh) -> List[str]:
+def get_ssh_proxy_args(desc, ssh) -> list[str]:
     is_putty = ssh[0].endswith("plink") or ssh[0].endswith("plink.exe")
     is_paramiko = ssh[0]=="paramiko"
     args = []
@@ -714,11 +714,11 @@ def supports_x11_server() -> bool:
         return False
 
 
-def get_subcommands() -> Tuple[str,...]:
+def get_subcommands() -> tuple[str,...]:
     return tuple(x.split(" ")[0] for x in get_usage())
 
 
-def get_usage() -> List[str]:
+def get_usage() -> list[str]:
     RDISPLAY = "REMOTE-DISPLAY" if not supports_x11_server() else "DISPLAY"
     command_options = [
         "",
@@ -1036,55 +1036,55 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--bind", action="append",
                       dest="bind", default=[],
                       metavar="SOCKET",
-                      help="Listen for connections over %s." % ("named pipes" if WIN32 else "unix domain sockets")
+                      help="listen for connections over %s." % ("named pipes" if WIN32 else "unix domain sockets")
                       +" You may specify this option multiple times to listen on different locations."
                       +" Default: %s" % dcsv(defaults_bind))
     group.add_option("--bind-tcp", action="append",
                       dest="bind_tcp", default=list(defaults.bind_tcp or []),
                       metavar="[HOST]:[PORT]",
-                      help="Listen for connections over TCP."
+                      help="listen for connections over TCP."
                       + " Use --tcp-auth to secure it."
                       + " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-ws", action="append",
                       dest="bind_ws", default=list(defaults.bind_ws or []),
                       metavar="[HOST]:[PORT]",
-                      help="Listen for connections over Websocket."
+                      help="listen for connections over Websocket."
                       + " Use --ws-auth to secure it."
                       + " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-wss", action="append",
                       dest="bind_wss", default=list(defaults.bind_wss or []),
                       metavar="[HOST]:[PORT]",
-                      help="Listen for connections over HTTPS / wss (secure Websocket)."
+                      help="listen for connections over HTTPS / wss (secure Websocket)."
                       + " Use --wss-auth to secure it."
                       + " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-ssl", action="append",
                       dest="bind_ssl", default=list(defaults.bind_ssl or []),
                       metavar="[HOST]:PORT",
-                      help="Listen for connections over SSL."
+                      help="listen for connections over SSL."
                       + " Use --ssl-auth to secure it."
                       + " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-ssh", action="append",
                       dest="bind_ssh", default=list(defaults.bind_ssh or []),
                       metavar="[HOST]:PORT",
-                      help="Listen for connections using SSH transport."
+                      help="listen for connections using SSH transport."
                       + " Use --ssh-auth to secure it."
                       + " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-rfb", action="append",
                       dest="bind_rfb", default=list(defaults.bind_rfb or []),
                       metavar="[HOST]:PORT",
-                      help="Listen for RFB connections."
+                      help="listen for RFB connections."
                       + " Use --rfb-auth to secure it."
                       + " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-quic", action="append",
                       dest="bind_quic", default=list(defaults.bind_quic or []),
                       metavar="[HOST]:PORT",
-                      help="Listen for QUIC HTTP/3 or WebTransport connections."
+                      help="listen for QUIC HTTP/3 or WebTransport connections."
                       + " Use --quic-auth to secure it."
                       + " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-vsock", action="append",
                       dest="bind_vsock", default=list(defaults.bind_vsock or []),
                       metavar="[CID]:[PORT]",
-                      help="Listen for connections over VSOCK."
+                      help="listen for connections over VSOCK."
                         + " You may specify this option multiple times with different CID and port combinations")
     legacy_bool_parse("mdns")
     group.add_option("--mdns", action="store", metavar="yes|no",
@@ -1592,7 +1592,7 @@ When unspecified, all the available codecs are allowed and the first one is used
                       +" (in seconds). Default: %default.")
     group.add_option("-d", "--debug", action="store",
                       dest="debug", default=defaults.debug, metavar="FILTER1,FILTER2,...",
-                      help="List of categories to enable debugging for"
+                      help="list of categories to enable debugging for"
                       +" (you can also use \"all\" or \"help\", default: '%default')")
     group.add_option("--ssh", action="store",
                       dest="ssh", default=defaults.ssh, metavar="CMD",
@@ -1806,7 +1806,7 @@ When unspecified, all the available codecs are allowed and the first one is used
         options.tcp_encryption = f"AES-{DEFAULT_MODE}"
     return options, args
 
-def validated_encodings(encodings) -> Tuple[str, ...]:
+def validated_encodings(encodings) -> tuple[str, ...]:
     try:
         from xpra.codecs.codec_constants import preforder
     except ImportError:
@@ -1864,7 +1864,7 @@ def do_validate_encryption(auth, tcp_auth,
     #        raise InitException("tcp-encryption %s should not use the same file"
     #                            +" as the password authentication file" % tcp_encryption)
 
-def show_audio_codec_help(is_server, speaker_codecs, microphone_codecs) -> List[str]:
+def show_audio_codec_help(is_server, speaker_codecs, microphone_codecs) -> list[str]:
     from xpra.audio.wrapper import query_audio
     props = query_audio()
     if not props:

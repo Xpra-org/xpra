@@ -6,7 +6,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import List, Callable, Dict, Tuple, Any
+from typing import Callable, Any
 
 from xpra.common import KeyEvent
 from xpra.client.gui.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
@@ -56,22 +56,22 @@ class KeyboardHelper:
         if hasattr(self.keyboard, "set_platform_layout"):
             self.keyboard.set_platform_layout(layout)
 
-    def mask_to_names(self, mask) -> List[str]:
+    def mask_to_names(self, mask) -> list[str]:
         return self.keyboard.mask_to_names(mask)
 
     def set_modifier_mappings(self, mappings):
         self.keyboard.set_modifier_mappings(mappings)
 
     def reset_state(self) -> None:
-        self.keycodes : Tuple[Tuple[int,str,int,int,int],...] = ()
+        self.keycodes : tuple[tuple[int,str,int,int,int],...] = ()
         self.x11_keycodes = {}
-        self.mod_meanings : Dict[str,Any] = {}
-        self.mod_managed : List[str] = []
-        self.mod_pointermissing : List[str] = []
+        self.mod_meanings : dict[str,Any] = {}
+        self.mod_managed : list[str] = []
+        self.mod_pointermissing : list[str] = []
         self.layout = ""
-        self.layouts : List[str] = []
+        self.layouts : list[str] = []
         self.variant = ""
-        self.variants : List[str] = []
+        self.variants : list[str] = []
         self.options = ""
         self.query = ""
         self.query_struct = {}
@@ -95,17 +95,17 @@ class KeyboardHelper:
         """ This method is overridden in the GTK Keyboard Helper """
 
 
-    def parse_shortcuts(self) -> Dict[str,List]:
+    def parse_shortcuts(self) -> dict[str,list]:
         #parse shortcuts:
         modifier_names = self.get_modifier_names()
         self.shortcut_modifiers = parse_shortcut_modifiers(self.shortcut_modifiers_str, modifier_names)
         self.key_shortcuts = parse_shortcuts(self.key_shortcuts_strs, self.shortcut_modifiers, modifier_names)
         return self.key_shortcuts
 
-    def get_modifier_names(self) -> Dict[str,str]:
+    def get_modifier_names(self) -> dict[str,str]:
         return get_modifier_names(self.mod_meanings)
 
-    def key_handled_as_shortcut(self, window, key_name:str, modifiers:List[str], depressed:bool):
+    def key_handled_as_shortcut(self, window, key_name:str, modifiers:list[str], depressed:bool):
         #find the shortcuts that may match this key:
         shortcuts = self.key_shortcuts.get(key_name)
         log("key_handled_as_shortcut%s shortcuts_enabled=%s, shortcuts=%s",
@@ -127,7 +127,7 @@ class KeyboardHelper:
                 return True
         return False
 
-    def _check_shortcut(self, window, key_name:str, modifiers:List[str], depressed:bool, shortcut):
+    def _check_shortcut(self, window, key_name:str, modifiers:list[str], depressed:bool, shortcut):
         req_mods, action, args = shortcut
         extra_modifiers = list(modifiers)
         for rm in req_mods:
@@ -225,7 +225,7 @@ class KeyboardHelper:
         self.send(*packet)
 
 
-    def get_layout_spec(self) -> Tuple[str,List[str],str,List[str],str]:
+    def get_layout_spec(self) -> tuple[str,list[str],str,list[str],str]:
         """ add / honour overrides """
         layout, layouts, variant, variants, options = self.keyboard.get_layout_spec()
         log("%s.get_layout_spec()=%s", self.keyboard, (layout, layouts, variant, variants, options))
@@ -246,7 +246,7 @@ class KeyboardHelper:
         log("get_layout_spec()=%s", val)
         return val
 
-    def get_keymap_spec(self) -> Dict[str,Any]:
+    def get_keymap_spec(self) -> dict[str,Any]:
         query_struct = self.keyboard.get_keymap_spec()
         if query_struct:
             if self.layout_option:
@@ -323,7 +323,7 @@ class KeyboardHelper:
                 hashadd(self.query_struct.get(k))
         self.hash = "/".join([str(x) for x in (self.layout, self.variant, h.hexdigest()) if bool(x)])
 
-    def get_full_keymap(self) -> Tuple[Tuple[int,str,int,int,int],...]:
+    def get_full_keymap(self) -> tuple[tuple[int,str,int,int,int],...]:
         return ()
 
 

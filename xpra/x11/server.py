@@ -11,7 +11,7 @@ import signal
 import math
 from time import monotonic, sleep
 from collections import deque
-from typing import Dict, Any, Tuple
+from typing import Any
 from gi.repository import GObject, Gdk, GdkX11  # @UnresolvedImport
 
 from xpra.version_util import XPRA_VERSION
@@ -75,7 +75,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         self.clobber = clobber
         self.root_overlay = None
         self.repaint_root_overlay_timer = 0
-        self.configure_damage_timers : Dict[int,int] = {}
+        self.configure_damage_timers : dict[int,int] = {}
         self._tray = None
         self._has_grab = 0
         self._has_focus = 0
@@ -255,7 +255,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         self.emit("server-event", args)
 
 
-    def make_hello(self, source) -> Dict[str,Any]:
+    def make_hello(self, source) -> dict[str,Any]:
         capabilities = super().make_hello(source)
         if "features" in source.wants:
             capabilities["pointer.grabs"] = True
@@ -277,7 +277,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
     ##########################################################################
     # info:
     #
-    def do_get_info(self, proto, server_sources) -> Dict[str,Any]:
+    def do_get_info(self, proto, server_sources) -> dict[str,Any]:
         info = super().do_get_info(proto, server_sources)
         info["exit-with-windows"] = self._exit_with_windows
         info.setdefault("state", {}).update({
@@ -286,7 +286,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                                              })
         return info
 
-    def get_ui_info(self, proto, wids=None, *args) -> Dict[str,Any]:
+    def get_ui_info(self, proto, wids=None, *args) -> dict[str,Any]:
         info = super().get_ui_info(proto, wids, *args)
         #_NET_WM_NAME:
         wm = self._wm
@@ -294,7 +294,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             info.setdefault("state", {})["window-manager-name"] = wm.get_net_wm_name()
         return info
 
-    def get_window_info(self, window) -> Dict[str,Any]:
+    def get_window_info(self, window) -> dict[str,Any]:
         info = super().get_window_info(window)
         info.update({
                      "focused"  : bool(self._has_focus and self._window_to_id.get(window, -1)==self._has_focus),
@@ -814,14 +814,14 @@ class XpraServer(GObject.GObject, X11ServerBase):
             ss.restack_window(wid, window, detail, sibling)
 
 
-    def _set_window_state(self, proto, wid:int, window, new_window_state) -> Tuple[str,...]:
+    def _set_window_state(self, proto, wid:int, window, new_window_state) -> tuple[str,...]:
         if proto not in self._server_sources:
             return ()
         if not new_window_state:
             return ()
         nws = typedict(new_window_state)
         metadatalog("set_window_state%s", (wid, window, new_window_state))
-        changes : Dict[str, Any] = {}
+        changes : dict[str, Any] = {}
         if "frame" in new_window_state:
             #the size of the window frame may have changed
             frame = nws.inttupleget("frame", (0, 0, 0, 0))
@@ -855,7 +855,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         return tuple(changes.keys())
 
 
-    def get_window_position(self, window) -> Tuple[int,int] | None:
+    def get_window_position(self, window) -> tuple[int,int] | None:
         #used to adjust the pointer position with multiple clients
         if window is None or window.is_OR() or window.is_tray():
             return None

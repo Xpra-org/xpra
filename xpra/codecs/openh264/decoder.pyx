@@ -6,7 +6,7 @@
 #cython: wraparound=False
 
 from time import monotonic
-from typing import Dict, Any
+from typing import Any
 
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
@@ -157,7 +157,7 @@ cdef class Decoder:
         self.height = 0
         self.colorspace = ""
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = get_info()
         info.update({
             "frames"        : int(self.frames),

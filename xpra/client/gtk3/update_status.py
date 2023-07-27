@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import sys
-from typing import Tuple, Union
+from typing import Union
 
 import gi
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
@@ -76,7 +76,7 @@ class UpdateStatusWindow:
         vbox.show_all()
         self.window.vbox = vbox
         self.window.add(vbox)
-        self.newer_version : Union[None,bool,Tuple[int,...]] = None
+        self.newer_version : Union[None,bool,tuple[int,...]] = None
 
 
     def check(self):

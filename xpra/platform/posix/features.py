@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple
 from xpra.os_util import is_Wayland
 
 AUTOSTART = True
@@ -37,7 +36,7 @@ DEFAULT_START_ENV = (
 
 DEFAULT_SSH_CMD = "ssh"
 
-CLIPBOARDS: Tuple[str, ...] = ("CLIPBOARD", "PRIMARY", "SECONDARY")
+CLIPBOARDS: tuple[str, ...] = ("CLIPBOARD", "PRIMARY", "SECONDARY")
 CLIPBOARD_GREEDY = False
 if is_Wayland():
     CLIPBOARDS = ("CLIPBOARD", "PRIMARY")

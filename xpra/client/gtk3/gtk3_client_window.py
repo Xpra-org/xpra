@@ -5,7 +5,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple, Dict, Type
 from gi.repository import Gdk, Gtk, Gio, GdkPixbuf  # @UnresolvedImport
 
 from xpra.client.gtk3.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
@@ -118,7 +117,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
         self.menu_helper.build()
         self.menu_helper.popup(0, 0)
 
-    def get_backing_class(self) -> Type:
+    def get_backing_class(self) -> type:
         raise NotImplementedError()
 
 
@@ -137,7 +136,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
         except Exception as e:
             metalog.error("xget_u32_property error on %s / %s: %s", target, name, e)
 
-    def get_drawing_area_geometry(self) -> Tuple[int,int,int,int]:
+    def get_drawing_area_geometry(self) -> tuple[int,int,int,int]:
         gdkwindow = self.drawing_area.get_window()
         if gdkwindow:
             x, y = gdkwindow.get_origin()[1:]
@@ -146,7 +145,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
         w, h = self.get_size()
         return (x, y, w, h)
 
-    def apply_geometry_hints(self, hints:Dict) -> None:
+    def apply_geometry_hints(self, hints:dict) -> None:
         """ we convert the hints as a dict into a gdk.Geometry + gdk.WindowHints """
         wh = Gdk.WindowHints
         name_to_hint = {

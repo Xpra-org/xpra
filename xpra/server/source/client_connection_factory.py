@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any, Tuple, Type, List
+from typing import Any
 
 from xpra.server import server_features
 from xpra.util import merge_dicts, typedict, print_nested_dict
@@ -14,10 +14,10 @@ from xpra.log import Logger
 log = Logger("server")
 
 
-def get_enabled_mixins() -> Tuple[Type,...]:
+def get_enabled_mixins() -> tuple[type,...]:
     # pylint: disable=import-outside-toplevel
     from xpra.server.source.clientinfo import ClientInfoMixin
-    mixins : List[Type] = [ClientInfoMixin]
+    mixins : list[type] = [ClientInfoMixin]
     if server_features.notifications:
         from xpra.server.source.notification import NotificationMixin
         mixins.append(NotificationMixin)
@@ -66,7 +66,7 @@ def get_enabled_mixins() -> Tuple[Type,...]:
     return tuple(mixins)
 
 
-def get_needed_based_classes(caps:typedict) -> Tuple[Type,...]:
+def get_needed_based_classes(caps:typedict) -> tuple[type,...]:
     from xpra.server.source.client_connection import ClientConnection
     classes = [ClientConnection]
     mixins = get_enabled_mixins()
@@ -132,7 +132,7 @@ def get_client_connection_class(caps):
             self.send("hello", capabilities)
             self.hello_sent = True
 
-        def get_info(self) -> Dict[str,Any]:
+        def get_info(self) -> dict[str,Any]:
             def module_name(m):
                 name = str(m.__name__.split(".")[-1])
                 return name.replace("Mixin", "").replace("Connection", "").rstrip("_")
@@ -151,7 +151,7 @@ def get_client_connection_class(caps):
 
         def parse_hello(self, c : typedict):
             self.ui_client = c.boolget("ui_client", True)
-            self.wants : List[str] = list(c.strtupleget("wants", self.wants))
+            self.wants : list[str] = list(c.strtupleget("wants", self.wants))
             for x, enabled in {
                 "encodings" : self.ui_client,
                 "display"   : self.ui_client,
