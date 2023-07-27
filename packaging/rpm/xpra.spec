@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 5.0
+%define version 6.0
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-enc_x265 --without-cuda_rebuild
@@ -749,6 +749,8 @@ fi
 
 
 %changelog
+* Thu Jul 27 2023 Antoine Martin <antoine@xpra.org> 6.0-10
+- TODO
 * Sun Oct 02 2022 Antoine Martin <antoine@xpra.org> 5.0-10
 - TODO
 * Sat Oct 01 2022 Antoine Martin <antoine@xpra.org> 4.4-10
