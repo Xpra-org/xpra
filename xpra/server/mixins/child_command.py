@@ -10,7 +10,7 @@ import signal
 import os.path
 from time import monotonic
 from subprocess import Popen
-from typing import Dict, List, Callable, Any, Optional, Tuple, Union
+from typing import Dict, List, Callable, Any, Tuple, Union
 from gi.repository import GLib
 
 from xpra.platform.features import COMMAND_SIGNALS
@@ -138,7 +138,7 @@ class ChildCommandServer(StubServerMixin):
             }
 
 
-    def _get_xdg_menu_data(self) -> Optional[Dict[str,Any]]:
+    def _get_xdg_menu_data(self) -> Dict[str,Any] | None:
         if not self.start_new_commands:
             return None
         assert self.menu_provider
@@ -263,7 +263,7 @@ class ChildCommandServer(StubServerMixin):
         if not self.session_name:
             GLib.idle_add(self.guess_session_name, procs)
 
-    def start_command(self, name:str, child_cmd, ignore:bool=False, callback:Optional[Callable]=None,
+    def start_command(self, name:str, child_cmd, ignore:bool=False, callback:Callable|None=None,
                       use_wrapper:bool=True, shell:bool=False, **kwargs):
         env = self.get_child_env()
         log("start_command%s exec_wrapper=%s, exec_cwd=%s",
@@ -293,7 +293,7 @@ class ChildCommandServer(StubServerMixin):
             return None
 
 
-    def add_process(self, process, name:str, command, ignore:bool=False, callback:Optional[Callable]=None) -> ProcInfo:
+    def add_process(self, process, name:str, command, ignore:bool=False, callback:Callable|None=None) -> ProcInfo:
         return self.child_reaper.add_process(process, name, command, ignore, callback=callback)
 
     @staticmethod

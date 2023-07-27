@@ -6,7 +6,7 @@
 
 import os.path
 from threading import Lock
-from typing import Dict, Any, Optional, List, Callable
+from typing import Dict, Any, List, Callable
 
 from gi.repository import GLib  # @UnresolvedImport
 
@@ -58,8 +58,8 @@ class MenuProvider:
         self.watch_notifier = None
         self.xdg_menu_reload_timer = 0
         self.on_reload : List[Callable] = []
-        self.menu_data : Optional[Dict[str,Any]] = None
-        self.desktop_sessions : Optional[Dict[str,Any]] = None
+        self.menu_data : Dict[str,Any] | None = None
+        self.desktop_sessions : Dict[str,Any] | None = None
         self.load_lock = Lock()
 
     def setup(self) -> None:

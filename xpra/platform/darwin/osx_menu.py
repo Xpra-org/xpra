@@ -3,13 +3,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import List, Optional, Callable
+from typing import List, Callable
 
 import gi
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 from gi.repository import GLib, Gtk  # @UnresolvedImport
 
 from xpra.util import envbool, csv
+from xpra.common import noop
 from xpra.gtk_common.gtk_util import scaled_image
 from xpra.gtk_common.about import about
 from xpra.client.gtk3.gtk_tray_menu_base import (
@@ -290,7 +291,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
         self._clipboard_change_pending = False
         self.set_new_remote_clipboard(remote_clipboard)
 
-    def make_clipboard_submenuitem(self, label:str, cb:Optional[Callable]=None):
+    def make_clipboard_submenuitem(self, label:str, cb:Callable=noop):
         clipboard_item = self.checkitem(label)
         clipboard_item.set_draw_as_radio(True)
         def clipboard_option_changed(item):

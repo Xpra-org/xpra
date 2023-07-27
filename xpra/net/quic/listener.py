@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Union
 
 import asyncio
 from aioquic.asyncio import QuicConnectionProtocol
@@ -46,7 +46,7 @@ class HttpServerProtocol(QuicConnectionProtocol):
         log(f"HttpServerProtocol({args}, {kwargs}) xpra-server={self._xpra_server}")
         super().__init__(*args, **kwargs)
         self._handlers: Dict[int, Handler] = {}
-        self._http: Optional[HttpConnection] = None
+        self._http: HttpConnection | None = None
 
     def quic_event_received(self, event: QuicEvent) -> None:
         log("hsp:quic_event_received(%s)", ellipsizer(event))

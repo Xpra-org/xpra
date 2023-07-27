@@ -6,7 +6,7 @@
 #authentication from a file containing a list of entries of the form:
 # username|password|uid|gid|displays|env_options|session_options
 
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple
 
 from xpra.server.auth.sys_auth_base import parse_uid, parse_gid, SessionData
 from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase
@@ -47,7 +47,7 @@ class Authenticator(FileAuthenticatorBase):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.sessions : Optional[SessionData] = None
+        self.sessions : SessionData | None = None
 
     def parse_filedata(self, data:str) -> Dict[str,AuthLine]:
         if not data:
@@ -77,7 +77,7 @@ class Authenticator(FileAuthenticatorBase):
         log(f"parsed auth data from file {self.password_filename!r}: {auth_data}")
         return auth_data
 
-    def get_auth_info(self) -> Optional[AuthLine]:
+    def get_auth_info(self) -> AuthLine | None:
         self.load_password_file()
         if not self.password_filedata:
             return None
@@ -114,7 +114,7 @@ class Authenticator(FileAuthenticatorBase):
         self.sessions = uid, gid, displays, env_options, session_options
         return True
 
-    def get_sessions(self) -> Optional[SessionData]:
+    def get_sessions(self) -> SessionData | None:
         return self.sessions
 
     def __repr__(self):

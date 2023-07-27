@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, Tuple, List, Optional
+from typing import Dict, Tuple, List
 import json
 
 from xpra.platform.keyboard_base import KeyboardBase
@@ -254,7 +254,7 @@ class Keyboard(KeyboardBase):
         return layout, [x for x in layouts], variant, [], options
 
 
-    def get_keyboard_repeat(self) -> Optional[Tuple[int,int]]:
+    def get_keyboard_repeat(self) -> Tuple[int,int] | None:
         if self.keyboard_bindings:
             try:
                 v = self.keyboard_bindings.get_key_repeat_rate()

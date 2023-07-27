@@ -7,7 +7,7 @@ import os.path
 import socket
 from time import sleep, monotonic
 from ctypes import Structure, c_uint8, sizeof
-from typing import Callable, Optional, Dict, List, Any, ByteString
+from typing import Callable, Dict, List, Any, ByteString
 
 from xpra.common import GROUP
 from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
@@ -122,7 +122,7 @@ def hosts(host_str:str) -> List[str]:
         return ["0.0.0.0", "::"]
     return [host_str]
 
-def add_listen_socket(socktype:str, sock, info, server, new_connection_cb, options=None) -> Optional[Callable]:
+def add_listen_socket(socktype:str, sock, info, server, new_connection_cb, options=None) -> Callable | None:
     log = get_network_logger()
     log("add_listen_socket%s", (socktype, sock, info, server, new_connection_cb, options))
     try:
@@ -900,7 +900,7 @@ SSL_ATTRIBUTES = (
     "options", "ciphers",
     )
 
-def get_ssl_attributes(opts, server_side:bool=True, overrides:Optional[dict]=None) -> Dict[str,Any]:
+def get_ssl_attributes(opts, server_side:bool=True, overrides:dict|None=None) -> Dict[str,Any]:
     args = {
         "server-side"   : server_side,
         }
@@ -1174,7 +1174,7 @@ def do_wrap_socket(tcp_socket, context, **kwargs):
     return ssl_sock
 
 
-def ssl_retry(e, ssl_ca_certs) -> Optional[Dict[str,Any]]:
+def ssl_retry(e, ssl_ca_certs) -> Dict[str,Any]|None:
     SSL_RETRY = envbool("XPRA_SSL_RETRY", True)
     from xpra.log import Logger
     ssllog = Logger("ssl")
@@ -1288,7 +1288,7 @@ def load_ssl_options(server_hostname:str, port:int) -> Dict[str,Any]:
     ssllog("load_ssl_options%s=%s (from %r)", (server_hostname, port), options, f)
     return options
 
-def save_ssl_options(server_hostname:str, port=443, options=b"") -> Optional[str]:
+def save_ssl_options(server_hostname:str, port=443, options=b"") -> str:
     from xpra.log import Logger
     ssllog = Logger("ssl")
     boptions = b"\n".join(("%s=%s" % (k.replace("_", "-"), v)).encode("latin1") for k, v in options.items())
@@ -1313,7 +1313,7 @@ def find_ssl_config_file(server_hostname:str, port=443, filename="cert.pem"):
             return f
     return None
 
-def save_ssl_config_file(server_hostname:str, port=443, filename="cert.pem", fileinfo="certificate", filedata=b""):
+def save_ssl_config_file(server_hostname:str, port=443, filename="cert.pem", fileinfo="certificate", filedata=b"") -> str:
     from xpra.log import Logger
     ssllog = Logger("ssl")
     from xpra.platform.paths import get_ssl_hosts_config_dirs
@@ -1354,7 +1354,7 @@ def save_ssl_config_file(server_hostname:str, port=443, filename="cert.pem", fil
             return f
         except OSError:
             ssllog(f"failed to save cert data to {d!r}", exc_info=True)
-    return None
+    return ""
 
 def socket_connect(host:str, port:int, timeout:float=SOCKET_TIMEOUT):
     socktype = socket.SOCK_STREAM

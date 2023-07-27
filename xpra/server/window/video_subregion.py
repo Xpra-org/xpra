@@ -6,7 +6,7 @@
 
 import math
 from time import monotonic
-from typing import Dict, List, Tuple, Any, Optional, Set, Callable
+from typing import Dict, List, Tuple, Any, Set, Callable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util import envint, envbool
@@ -66,7 +66,7 @@ class VideoSubregion:
         self.init_vars()
 
     def init_vars(self) -> None:
-        self.rectangle : Optional[rectangle] = None
+        self.rectangle : rectangle | None = None
         self.inout = 0, 0       #number of damage pixels within / outside the region
         self.score = 0
         self.fps = 0
@@ -76,7 +76,7 @@ class VideoSubregion:
         self.time : float = 0           #see above
         self.refresh_timer = 0
         self.refresh_regions : List[rectangle] = []
-        self.last_scores : Dict[Optional[rectangle],int] = {}
+        self.last_scores : Dict[rectangle | None,int] = {}
         self.nonvideo_regions : List[rectangle] = []
         self.nonvideo_refresh_timer = 0
         #keep track of how much extra we batch non-video regions (milliseconds):

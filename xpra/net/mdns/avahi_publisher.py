@@ -34,7 +34,7 @@ def get_interface_index(host) -> int:
 
     iface = get_iface(host)
     log("get_iface(%s)=%s", host, iface)
-    if iface is None:
+    if not iface:
         return avahi.IF_UNSPEC
 
     index = if_nametoindex(iface)

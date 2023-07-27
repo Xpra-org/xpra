@@ -5,7 +5,7 @@
 
 import os.path
 from io import BytesIO
-from typing import Tuple, Optional, TypeAlias
+from typing import Tuple, TypeAlias
 
 from xpra.util import first_time
 from xpra.os_util import load_binary_file
@@ -27,7 +27,7 @@ def PIL_Image():
         return None
 
 
-def parse_image_data(data) -> Optional[IconData]:
+def parse_image_data(data) -> IconData | None:
     try:
         width, height, rowstride, has_alpha, bpp, channels, pixels = data
         log("parse_image_data(%i, %i, %i, %s, %i, %i, %i bytes)",
@@ -54,7 +54,7 @@ def parse_image_data(data) -> Optional[IconData]:
         log.estr(e)
     return None
 
-def parse_image_path(path:str) -> Optional[IconData]:
+def parse_image_path(path:str) -> IconData | None:
     if path and os.path.exists(path):
         Image = PIL_Image()
         if not Image:
@@ -81,7 +81,7 @@ def image_data(img) -> IconData:
     return ("png", w, h, data)
 
 
-def get_notification_icon(icon_string:str) -> Optional[IconData]:
+def get_notification_icon(icon_string:str) -> IconData | None:
     #this method *must* be called from the UI thread
     #since we may end up calling svg_to_png which uses Cairo
     #

@@ -6,7 +6,7 @@
 
 import signal
 import threading
-from typing import Optional, Callable
+from typing import Callable
 
 from xpra.net.bytestreams import untilConcludes
 from xpra.util import repr_ellipsized, envint, envbool
@@ -34,7 +34,7 @@ class XpraProxy:
     def __repr__(self):
         return f"XpraProxy({self._name}: {self._client_conn} - {self._server_conn})"
 
-    def __init__(self, name, client_conn, server_conn, quit_cb:Optional[Callable]=None):
+    def __init__(self, name, client_conn, server_conn, quit_cb:Callable|None=None):
         self._name = name
         self._client_conn = client_conn
         self._server_conn = server_conn

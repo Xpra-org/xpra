@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import socket
-from typing import Optional, List
 from zeroconf import ServiceBrowser, Zeroconf        #@UnresolvedImport
 
 from xpra.log import Logger
@@ -13,12 +12,12 @@ from xpra.log import Logger
 log = Logger("network", "mdns")
 
 
-class ZeroconfListener:
+class Zeroconflistener:
 
     def __init__(self, service_type, mdns_found=None, mdns_add=None, mdns_remove=None, mdns_update=None):
         log("ZeroconfListener%s", (service_type, mdns_found, mdns_add, mdns_remove, mdns_update))
         self.zeroconf = Zeroconf()
-        self.browser : Optional[ServiceBrowser] = None
+        self.browser : ServiceBrowser | None = None
         if not service_type.endswith("local."):
             service_type += "local."
         self.service_type = service_type
@@ -98,7 +97,7 @@ def main():
 
     from xpra.platform import program_context
     with program_context("zeroconf-listener", "zeroconf-listener"):
-        listeners : List[ZeroconfListener] = []
+        listeners : list[ZeroconfListener] = []
         from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
         def add(service_type):
             listener = ZeroconfListener(service_type+"local.", mdns_found, mdns_add, mdns_remove, mdns_update)

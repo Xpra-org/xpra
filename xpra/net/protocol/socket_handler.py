@@ -14,7 +14,7 @@ from time import monotonic
 from socket import error as socket_error
 from threading import Lock, RLock, Event, Thread, current_thread
 from queue import Queue
-from typing import Dict, List, Tuple, Any, ByteString, Callable, Optional, Iterable
+from typing import Dict, List, Tuple, Any, ByteString, Callable, Iterable
 
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr
 from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict
@@ -96,7 +96,7 @@ class SocketProtocol:
 
     TYPE = "xpra"
 
-    def __init__(self, scheduler, conn, process_packet_cb:Callable, get_packet_cb:Optional[Callable]=None):
+    def __init__(self, scheduler, conn, process_packet_cb:Callable, get_packet_cb:Callable|None=None):
         """
             You must call this constructor and source_has_more() from the main thread.
         """
@@ -118,7 +118,7 @@ class SocketProtocol:
         self._process_read : Callable = self.read_queue_put
         self._read_queue_put : Callable = self.read_queue_put
         # Invariant: if .source is None, then _source_has_more == False
-        self._get_packet_cb : Optional[Callable] = get_packet_cb
+        self._get_packet_cb : Callable|None = get_packet_cb
         #counters:
         self.input_stats = {}
         self.input_packetcount = 0
@@ -154,10 +154,10 @@ class SocketProtocol:
         self.cipher_out_padding = INITIAL_PADDING
         self._threading_lock = RLock()
         self._write_lock = Lock()
-        self._write_thread : Optional[Thread] = None
-        self._read_thread : Optional[Thread]= make_thread(self._read_thread_loop, "read", daemon=True)
-        self._read_parser_thread : Optional[Thread]= None         #started when needed
-        self._write_format_thread : Optional[Thread]= None        #started when needed
+        self._write_thread : Thread|None = None
+        self._read_thread : Thread|None= make_thread(self._read_thread_loop, "read", daemon=True)
+        self._read_parser_thread : Thread|None = None         #started when needed
+        self._write_format_thread : Thread|None = None        #started when needed
         self._source_has_more = Event()
         self.receive_pending = False
         self.wait_for_header = False
@@ -366,7 +366,7 @@ class SocketProtocol:
             self._internal_error("error in network packet write/format", e, exc_info=True)
 
     def _add_packet_to_queue(self, packet : PacketType,
-                             start_cb:Optional[Callable]=None, end_cb:Optional[Callable]=None, fail_cb:Optional[Callable]=None,
+                             start_cb:Callable|None=None, end_cb:Callable|None=None, fail_cb:Callable|None=None,
                              synchronous=True, has_more=False, wait_for_more=False) -> None:
         if not has_more:
             shm = self._source_has_more
@@ -390,7 +390,7 @@ class SocketProtocol:
                 raise
 
     def _add_chunks_to_queue(self, packet_type:str, chunks,
-                             start_cb:Optional[Callable]=None, end_cb:Optional[Callable]=None, fail_cb:Optional[Callable]=None,
+                             start_cb:Callable|None=None, end_cb:Callable|None=None, fail_cb:Callable|None=None,
                              synchronous=True, more=False) -> None:
         """ the write_lock must be held when calling this function """
         items = []
@@ -465,7 +465,7 @@ class SocketProtocol:
             self._write_thread = start_thread(self._write_thread_loop, "write", daemon=True)
 
     def raw_write(self, items, packet_type=None,
-                  start_cb:Optional[Callable]=None, end_cb:Optional[Callable]=None, fail_cb:Optional[Callable]=None,
+                  start_cb:Callable|None=None, end_cb:Callable|None=None, fail_cb:Callable|None=None,
                   synchronous=True, more=False) -> None:
         """ Warning: this bypasses the compression and packet encoder! """
         if self._write_thread is None:
@@ -697,8 +697,8 @@ class SocketProtocol:
         return self.write_items(*items)
 
     def write_items(self, buf_data, packet_type:str="",
-                    start_cb:Optional[Callable]=None, end_cb:Optional[Callable]=None,
-                    fail_cb:Optional[Callable]=None, synchronous:bool=True, more:bool=False):
+                    start_cb:Callable|None=None, end_cb:Callable|None=None,
+                    fail_cb:Callable|None=None, synchronous:bool=True, more:bool=False):
         conn = self._conn
         if not conn:
             return False
@@ -735,7 +735,7 @@ class SocketProtocol:
                     log.error(f"Error on write end callback {end_cb}", exc_info=True)
         return True
 
-    def write_buffers(self, buf_data, packet_type:str, _fail_cb:Optional[Callable], _synchronous:bool):
+    def write_buffers(self, buf_data, packet_type:str, _fail_cb:Callable|None, _synchronous:bool):
         con = self._conn
         if not con:
             return
@@ -1119,7 +1119,7 @@ class SocketProtocol:
                 self._process_packet_cb(self, tuple(packet))
                 del packet
 
-    def do_flush_then_close(self, encoder:Optional[Callable]=None,
+    def do_flush_then_close(self, encoder:Callable|None=None,
                          last_packet=None,
                          done_callback:Callable=noop) -> None:    #pylint: disable=method-hidden
         """ Note: this is best-effort only
@@ -1247,7 +1247,7 @@ class SocketProtocol:
         self.idle_add(self.clean)
         log("Protocol.close(%s) done", message)
 
-    def steal_connection(self, read_callback:Optional[Callable]=None):
+    def steal_connection(self, read_callback:Callable|None=None):
         #so we can re-use this connection somewhere else
         #(frees all protocol threads and resources)
         #Note: this method can only be used with non-blocking sockets,

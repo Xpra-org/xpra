@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.util import typedict
-from typing import Dict, Any, Callable, Optional
+from typing import Dict, Any, Callable
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
@@ -51,7 +51,7 @@ class NotificationMixin(StubSourceMixin):
     # Utility functions for mixins (makes notifications optional)
     def may_notify(self, nid:int=0, summary:str="", body:str="",    #pylint: disable=arguments-differ
                    actions=(), hints=None, expire_timeout=10*1000,
-                   icon_name:str="", user_callback:Optional[Callable]=None) -> None:
+                   icon_name:str="", user_callback:Callable|None=None) -> None:
         try:
             from xpra.platform.paths import get_icon_filename
             from xpra.notifications.common import parse_image_path
@@ -65,7 +65,7 @@ class NotificationMixin(StubSourceMixin):
                         expire_timeout, icon, user_callback)
 
     def notify(self, dbus_id, nid:int, app_name:str, replaces_nid:int, app_icon,
-               summary:str, body:str, actions, hints, expire_timeout:int, icon, user_callback:Optional[Callable]=None) -> bool:
+               summary:str, body:str, actions, hints, expire_timeout:int, icon, user_callback:Callable|None=None) -> bool:
         args = (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
         log("notify%s types=%s", args, tuple(type(x) for x in args))
         if not self.send_notifications:

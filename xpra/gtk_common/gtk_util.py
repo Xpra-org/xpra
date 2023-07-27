@@ -7,7 +7,7 @@
 import os.path
 import cairo
 import gi
-from typing import Dict, Tuple, Any, Optional, Callable
+from typing import Dict, Tuple, Any, Callable
 
 from xpra.util import first_time, envint, envbool, print_nested_dict
 from xpra.os_util import strtobytes, WIN32, OSX, POSIX, is_X11
@@ -109,7 +109,7 @@ def new_GDKWindow(gdk_window_class,
     mask = Gdk.WindowAttributesType(attributes_mask)
     return gdk_window_class(parent, attributes, mask)
 
-def set_visual(window, alpha : bool=True) -> Optional[Gdk.Visual]:
+def set_visual(window, alpha : bool=True) -> Gdk.Visual | None:
     screen = window.get_screen()
     if alpha:
         visual = screen.get_rgba_visual()
@@ -140,7 +140,7 @@ def get_pixbuf_from_data(rgb_data, has_alpha : bool, w : int, h : int, rowstride
     return GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB,
                                            has_alpha, 8, w, h, rowstride)
 
-def color_parse(*args) -> Optional[Gdk.Color]:
+def color_parse(*args) -> Gdk.Color | None:
     v = Gdk.RGBA()
     ok = v.parse(*args)
     if ok:
@@ -150,7 +150,7 @@ def color_parse(*args) -> Optional[Gdk.Color]:
         return v
     return None
 
-def get_default_root_window() -> Optional[Gdk.Window]:
+def get_default_root_window() -> Gdk.Window | None:
     screen = Gdk.Screen.get_default()
     if screen is None:
         return None
@@ -580,7 +580,7 @@ def get_display_info(xscale=1, yscale=1) -> Dict[str,Any]:
     return info
 
 
-def scaled_image(pixbuf, icon_size:int=0) -> Optional[Gtk.Image]:
+def scaled_image(pixbuf, icon_size:int=0) -> Gtk.Image | None:
     if not pixbuf:
         return None
     if icon_size:
@@ -625,7 +625,7 @@ def get_icon_pixbuf(icon_name):
     return None
 
 
-def imagebutton(title, icon=None, tooltip="", clicked_callback:Optional[Callable]=None, icon_size=32,
+def imagebutton(title, icon=None, tooltip="", clicked_callback:Callable|None=None, icon_size=32,
                 default=False, min_size=None, label_color=None, label_font=None) -> Gtk.Button:
     button = Gtk.Button(label=title)
     settings = button.get_settings()
@@ -764,14 +764,13 @@ def choose_files(parent_window, title, action=Gtk.FileChooserAction.OPEN, action
     return filenames
 
 def choose_file(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_button=Gtk.STOCK_OPEN,
-                callback=None, file_filter=None) -> Optional[str]:
+                callback=None, file_filter=None):
     filenames = choose_files(parent_window, title, action, action_button, callback, file_filter, False)
     if not filenames or len(filenames)!=1:
-        return None
+        return
     filename = filenames[0]
     if callback:
         callback(filename)
-    return filename
 
 
 dsinit : bool = False

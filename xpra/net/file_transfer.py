@@ -12,7 +12,7 @@ import hashlib
 import uuid
 from time import monotonic
 from dataclasses import dataclass
-from typing import Dict, Any, Optional, Callable, Set, Tuple
+from typing import Dict, Any, Set, Tuple
 
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import bytestostr, strtobytes, umask_context, POSIX, WIN32
@@ -107,7 +107,7 @@ class ReceiveChunkState:
     openit : bool
     filesize: int
     options: typedict
-    digest: Optional[hashlib._Hash]
+    digest: hashlib._Hash | None
     written: int
     cancelled: bool
     send_id: str
@@ -159,7 +159,7 @@ class FileTransferAttributes:
         self.open_command = open_command
         self.files_requested : Dict[str,bool] = {}
         self.files_accepted : Dict[str,bool] = {}
-        self.file_request_callback : Dict[str,Callable] = {}
+        self.file_request_callback : Dict[str,callable] = {}
         filelog("file transfer attributes=%s", self.get_file_transfer_features())
 
     def get_file_transfer_features(self) -> Dict[str,Any]:
@@ -504,7 +504,7 @@ class FileTransferHandler(FileTransferAttributes):
                 self.send("ack-file-chunk", chunk_id, False, f"failed to create file: {e}", 0)
             return
         self.file_descriptors.add(fd)
-        digest : Optional[hashlib._Hash] = None
+        digest : hashlib._Hash | None = None
         for hash_fn in ("sha512", "sha384", "sha256", "sha224", "sha1"):
             if options.get(hash_fn):
                 digest = getattr(hashlib, hash_fn)()
@@ -717,13 +717,13 @@ class FileTransferHandler(FileTransferAttributes):
             filelog("url '%s' not accepted", url)
 
 
-    def send_open_url(self, url:str):
+    def send_open_url(self, url:str) -> bool:
         if not self.remote_open_url:
             filelog.warn("Warning: remote end does not accept URLs")
             return False
         if self.remote_open_url_ask:
             #ask the client if it is OK to send
-            return self.send_data_request("open", "url", url)
+            return bool(self.send_data_request("open", "url", url))
         self.do_send_open_url(url)
         return True
 
@@ -775,13 +775,13 @@ class FileTransferHandler(FileTransferAttributes):
         return True
 
     def send_data_request(self, action, dtype, url, mimetype="", data="", filesize=0,
-                          printit=False, openit=True, options=None) -> Optional[str]:
+                          printit=False, openit=True, options=None) -> str:
         send_id = uuid.uuid4().hex
         if len(self.pending_send_data)>=MAX_CONCURRENT_FILES:
             filelog.warn("Warning: %s dropped", action)
             filelog.warn(" %i transfer%s already waiting for a response",
                          len(self.pending_send_data), engs(self.pending_send_data))
-            return None
+            return ""
         self.pending_send_data[send_id] = (dtype, url, mimetype, data, filesize, printit, openit, options or {})
         delay = self.remote_file_ask_timeout*1000
         self.pending_send_data_timers[send_id] = self.timeout_add(delay, self.send_data_ask_timeout, send_id)
@@ -845,7 +845,7 @@ class FileTransferHandler(FileTransferAttributes):
         else:
             self.ask_data_request(cb_answer, send_id, dtype, url, filesize, printit, openit)
 
-    def ask_data_request(self, cb_answer:Callable, send_id:str, dtype:str, url:str, filesize:int,
+    def ask_data_request(self, cb_answer:callable, send_id:str, dtype:str, url:str, filesize:int,
                          printit:bool, openit:bool) -> None:
         #subclasses may prompt the user here instead
         filelog("ask_data_request%s", (send_id, dtype, url, filesize, printit, openit))

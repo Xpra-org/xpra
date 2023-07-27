@@ -17,7 +17,7 @@ from urllib.parse import urlparse, parse_qsl, unquote
 from weakref import WeakKeyDictionary
 from time import sleep, time, monotonic
 from threading import Thread, Lock
-from typing import Callable, List, Tuple, Dict, Any, Type, Union, Optional, ByteString
+from typing import Callable, List, Tuple, Dict, Any, Type, Union, ByteString
 
 from xpra.version_util import (
     XPRA_VERSION, vparts, version_str, full_version_str, version_compat_check, get_version_info,
@@ -2168,7 +2168,7 @@ class ServerCore:
         ssllog.info("upgraded %s to %s", conn, new_socktype)
 
 
-    def setup_encryption(self, proto:SocketProtocol, c : typedict) -> Optional[Dict[str,Any]]:
+    def setup_encryption(self, proto:SocketProtocol, c : typedict) -> Dict[str,Any] | None:
         def auth_failed(msg):
             self.auth_failed(proto, msg)
             return None

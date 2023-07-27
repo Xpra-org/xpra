@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import List, Tuple, Any, Optional, Dict, Iterable, Callable
+from typing import List, Tuple, Any, Dict, Iterable, Callable
 
 from xpra.os_util import bytestostr
 from xpra.util import get_screen_info, first_time, typedict
@@ -27,10 +27,10 @@ class ClientDisplayMixin(StubSourceMixin):
         self.vrefresh : int = -1
         self.icc : Dict = {}
         self.display_icc : Dict = {}
-        self.desktop_size : Optional[Tuple[int, int]] = None
-        self.desktop_mode_size : Optional[Tuple[int, int]] = None
-        self.desktop_size_unscaled : Optional[Tuple[int, int]] = None
-        self.desktop_size_server : Optional[Tuple[int, int]] = None
+        self.desktop_size : Tuple[int, int] | None = None
+        self.desktop_mode_size : Tuple[int, int] | None = None
+        self.desktop_size_unscaled : Tuple[int, int] | None = None
+        self.desktop_size_server : Tuple[int, int] | None = None
         self.desktop_fullscreen : bool = False
         self.screen_sizes : List = []
         self.monitors : Dict[int,Any] = {}
@@ -176,7 +176,7 @@ class ClientDisplayMixin(StubSourceMixin):
             self.send_async("show-desktop", show)
 
 
-    def get_monitor_definitions(self) -> Optional[Dict[int,Any]]:
+    def get_monitor_definitions(self) -> Dict[int,Any] | None:
         if self.monitors:
             return self.monitors
         #no? try to extract it from the legacy "screen_sizes" data:

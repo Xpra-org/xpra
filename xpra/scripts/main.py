@@ -18,7 +18,7 @@ from subprocess import Popen, PIPE, TimeoutExpired
 import signal
 import shlex
 import traceback
-from typing import Callable, Iterable, Tuple, List, Optional, Union, Dict, Any, Type
+from typing import Callable, Iterable, Tuple, List, Union, Dict, Any, Type
 
 from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra
@@ -1619,7 +1619,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode:str):
     return app
 
 
-def make_progress_process(title="Xpra") -> Optional[Popen]:
+def make_progress_process(title="Xpra") -> Popen|None:
     #start the splash subprocess
     env = os.environ.copy()
     env["XPRA_LOG_PREFIX"] = "splash: "
@@ -2178,7 +2178,7 @@ def stat_display_socket(socket_path:str, timeout=VERIFY_SOCKET_TIMEOUT) -> Dict[
             warn(f"display path {socket_path!r} is not a socket!")
             return {}
         if timeout>0:
-            sock : Optional[socket.socket] = None
+            sock : socket.socket|None = None
             try:
                 sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                 sock.settimeout(timeout)

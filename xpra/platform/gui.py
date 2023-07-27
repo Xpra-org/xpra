@@ -8,7 +8,7 @@
 import os
 import sys
 import binascii
-from typing import Dict, Any, Tuple, Optional, Type
+from typing import Dict, Any, Tuple, Type
 
 from xpra.platform import platform_import
 from xpra.os_util import bytestostr
@@ -61,15 +61,15 @@ def get_clipboard_native_class() -> str:
     return ""
 
 #defaults:
-def get_native_tray_menu_helper_class() -> Optional[Type]:
+def get_native_tray_menu_helper_class() -> Type | None:
     #classes that generate menus for xpra's system tray
     #let the toolkit classes use their own
     return None
-def get_native_tray_classes(*_args) -> Tuple[Optional[Type],...]:
+def get_native_tray_classes(*_args) -> Tuple[Type | None,...]:
     #the classes we can use for our system tray:
     #let the toolkit classes use their own
     return ()
-def get_native_system_tray_classes(*_args) -> Tuple[Optional[Type],...]:
+def get_native_system_tray_classes(*_args) -> Tuple[Type | None,...]:
     #the classes we can use for application system tray forwarding:
     #let the toolkit classes use their own
     return ()

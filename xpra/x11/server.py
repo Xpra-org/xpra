@@ -11,7 +11,7 @@ import signal
 import math
 from time import monotonic, sleep
 from collections import deque
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Tuple
 from gi.repository import GObject, Gdk, GdkX11  # @UnresolvedImport
 
 from xpra.version_util import XPRA_VERSION
@@ -855,7 +855,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         return tuple(changes.keys())
 
 
-    def get_window_position(self, window) -> Optional[Tuple[int,int]]:
+    def get_window_position(self, window) -> Tuple[int,int] | None:
         #used to adjust the pointer position with multiple clients
         if window is None or window.is_OR() or window.is_tray():
             return None

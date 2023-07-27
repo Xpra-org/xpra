@@ -5,7 +5,7 @@
 
 import time
 import asyncio
-from typing import Any, Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable
 
 from queue import Queue
 from collections import namedtuple
@@ -36,7 +36,7 @@ class threaded_asyncio_loop:
      (for calling async functions from regular threads)
     """
     def __init__(self):
-        self.loop : Optional[asyncio.AbstractEventLoop] = None
+        self.loop : asyncio.AbstractEventLoop | None = None
         start_thread(self.run_forever, "asyncio-thread", True)
         self.wait_for_loop()
 
@@ -117,7 +117,7 @@ class threaded_asyncio_loop:
         return r
 
 
-singleton : Optional[threaded_asyncio_loop] = None
+singleton : threaded_asyncio_loop | None = None
 def get_threaded_loop() -> threaded_asyncio_loop:
     global singleton
     if not singleton:

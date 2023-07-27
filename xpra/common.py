@@ -4,12 +4,11 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, Tuple, List
 
 from xpra.util import envint, envbool, csv
 
 
-RESOLUTION_ALIASES : Dict[str,Tuple[int,int]] = {
+RESOLUTION_ALIASES : dict[str,tuple[int,int]] = {
     "QVGA"  : (320, 240),
     "VGA"   : (640, 480),
     "SVGA"  : (800, 600),
@@ -21,7 +20,7 @@ RESOLUTION_ALIASES : Dict[str,Tuple[int,int]] = {
     "8K"    : (7680, 4320),
     }
 
-def get_default_video_max_size() -> Tuple[int,int]:
+def get_default_video_max_size() -> tuple[int,int]:
     svalues = os.environ.get("XPRA_VIDEO_MAX_SIZE", "").replace("x", ",").split(",")
     if len(svalues)==2:
         try:
@@ -103,14 +102,14 @@ WINDOW_DECODE_ERROR : int = -1
 WINDOW_NOT_FOUND : int = -2
 
 
-ScreenshotData = Tuple[int,int,str,int,bytes]
+ScreenshotData = tuple[int,int,str,int,bytes]
 
 
 class KeyEvent:
     __slots__ = ("modifiers", "keyname", "keyval", "keycode", "group", "string", "pressed")
 
     def __init__(self):
-        self.modifiers : List[str] = []
+        self.modifiers : list[str] = []
         self.keyname : str = ""
         self.keyval : int = 0
         self.keycode : int = 0
@@ -149,7 +148,7 @@ def get_refresh_rate_for_value(refresh_rate_str, invalue) -> int:
     return i(invalue)
 
 
-def adjust_monitor_refresh_rate(refresh_rate_str, mdef) -> Dict[int,Dict]:
+def adjust_monitor_refresh_rate(refresh_rate_str, mdef) -> dict[int,dict]:
     adjusted = {}
     for i, monitor in mdef.items():
         #make a copy, don't modify in place!

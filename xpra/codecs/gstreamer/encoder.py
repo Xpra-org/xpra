@@ -5,7 +5,7 @@
 
 import os
 from gi.repository import GObject  # @UnresolvedImport
-from typing import List, Dict, Any, Tuple, Optional
+from typing import List, Dict, Any, Tuple
 
 from xpra.os_util import WIN32, OSX
 from xpra.util import envbool, csv, roundup, first_time, typedict
@@ -84,7 +84,7 @@ def make_spec(element:str, encoding:str, cs_in:str, css_out:Tuple[str,...], cpu_
     return spec
 
 SPECS : Dict[str,Dict[str,video_spec]] = {}
-def get_specs(encoding:str, colorspace:str) -> Optional[video_spec]:
+def get_specs(encoding:str, colorspace:str) -> video_spec | None:
     colorspaces = SPECS.get(encoding)
     assert colorspaces, f"invalid encoding: {encoding} (must be one of %s)" % csv(SPECS.keys())
     assert colorspace in colorspaces, f"invalid colorspace: {colorspace} (must be one of %s)" % csv(colorspaces.keys())

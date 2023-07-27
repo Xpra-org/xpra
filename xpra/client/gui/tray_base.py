@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple, Callable, Optional, Deque
+from typing import Tuple, Callable, Deque
 from time import monotonic
 from collections import deque
 
@@ -33,7 +33,7 @@ class TrayBase:
         self.tray_widget = None
         self.default_icon_filename = icon_filename      #ie: "xpra" or "/path/to/xpra.png"
         #some implementations need this for guessing the geometry (see recalculate_geometry):
-        self.geometry_guess : Optional[Tuple[int,int,int,int]] = None
+        self.geometry_guess : Tuple[int,int,int,int] | None = None
         self.tray_event_locations : Deque[Tuple[int,int]] = deque(maxlen=512)
         self.default_icon_extension = "png"
         self.icon_timestamp = 0.0
@@ -67,7 +67,7 @@ class TrayBase:
     def get_geometry(self):
         raise NotImplementedError
 
-    def get_size(self) -> Optional[Tuple[int,int]]:
+    def get_size(self) -> Tuple[int,int] | None:
         g = self.get_geometry()
         if g is None:
             return None

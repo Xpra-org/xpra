@@ -17,7 +17,7 @@ import binascii
 import threading
 from time import monotonic, sleep
 from subprocess import PIPE, Popen
-from typing import Optional, Tuple, Dict, Any, Set, List, Callable
+from typing import Any, Callable
 from threading import Thread
 
 # only minimal imports go at the top
@@ -25,7 +25,7 @@ from threading import Thread
 # without too many side effects
 # pylint: disable=import-outside-toplevel
 
-SIGNAMES : Dict[int,str] = {}
+SIGNAMES : dict[int,str] = {}
 for signame in (sig for sig in dir(signal) if sig.startswith("SIG") and not sig.startswith("SIG_")):
     try:
         SIGNAMES[int(getattr(signal, signame))] = signame
@@ -50,8 +50,8 @@ def is_main_thread() -> bool:
     return threading.current_thread()==main_thread
 
 
-def get_frame_info(ignore_threads:Tuple[Thread,...]=()) -> Dict[Any,Any]:
-    info : Dict[Any,Any] = {
+def get_frame_info(ignore_threads:tuple[Thread,...]=()) -> dict[Any,Any]:
+    info : dict[Any,Any] = {
         "count"        : threading.active_count() - len(ignore_threads),
         }
     try:
@@ -60,7 +60,7 @@ def get_frame_info(ignore_threads:Tuple[Thread,...]=()) -> Dict[Any,Any]:
             if x is None:
                 return ""
             return str(x)
-        thread_ident : Dict[Optional[int],Optional[str]] = {}
+        thread_ident : dict[int | None, str | None] = {}
         for t in threading.enumerate():
             if t not in ignore_threads:
                 thread_ident[t.ident] = t.name
@@ -90,7 +90,7 @@ def get_frame_info(ignore_threads:Tuple[Thread,...]=()) -> Dict[Any,Any]:
         get_util_logger().error("failed to get frame info: %s", e)
     return info
 
-def get_info_env() -> Dict[str,str]:
+def get_info_env() -> dict[str,str]:
     filtered_env = os.environ.copy()
     if filtered_env.get('XPRA_PASSWORD'):
         filtered_env['XPRA_PASSWORD'] = "*****"
@@ -98,9 +98,9 @@ def get_info_env() -> Dict[str,str]:
         filtered_env['XPRA_ENCRYPTION_KEY'] = "*****"
     return filtered_env
 
-def get_sysconfig_info() -> Dict[str,Any]:
+def get_sysconfig_info() -> dict[str,Any]:
     import sysconfig
-    sysinfo : Dict[str,Any] = {}
+    sysinfo : dict[str,Any] = {}
     log = get_util_logger()
     for attr in (
         "platform",
@@ -197,7 +197,7 @@ def get_home_for_uid(uid) -> str:
             pass
     return ""
 
-def get_groups(username) -> List[str]:
+def get_groups(username) -> list[str]:
     if POSIX:
         import grp      #@UnresolvedImport
         return [gr.gr_name for gr in grp.getgrall() if username in gr.gr_mem]
@@ -328,7 +328,7 @@ def restore_script_env(env):
 
 
 _saved_env = os.environ.copy()
-def get_saved_env() -> Dict[str,str]:
+def get_saved_env() -> dict[str,str]:
     return _saved_env.copy()
 
 def get_saved_env_var(var, default=None):
@@ -337,7 +337,7 @@ def get_saved_env_var(var, default=None):
 def is_Wayland() -> bool:
     return _is_Wayland(_saved_env)
 
-def _is_Wayland(env : Dict) -> bool:
+def _is_Wayland(env : dict) -> bool:
     backend = env.get("GDK_BACKEND", "")
     if backend=="wayland":
         return True
@@ -377,7 +377,7 @@ def get_distribution_version_id() -> str:
         pass
     return ""
 
-os_release_file_data : Optional[bytes] = None
+os_release_file_data : bytes | None = None
 def load_os_release_file() -> bytes:
     global os_release_file_data
     if os_release_file_data is None:
@@ -427,7 +427,7 @@ def is_arm() -> bool:
 
 
 _linux_distribution = ("", "", "")
-def get_linux_distribution() -> Tuple[str,str,str]:
+def get_linux_distribution() -> tuple[str,str,str]:
     global _linux_distribution
     if LINUX and _linux_distribution==("", "", ""):
         # linux_distribution is deprecated in Python 3.5,
@@ -525,7 +525,7 @@ def load_binary_file(filename) -> bytes:
         get_util_logger().warn(f" {e}")
         return b""
 
-def get_proc_cmdline(pid:int) -> Tuple[str, ...]:
+def get_proc_cmdline(pid:int) -> tuple[str, ...]:
     if pid and LINUX:
         #try to find the command via /proc:
         proc_cmd_line = os.path.join("/proc", f"{pid}", "cmdline")
@@ -581,7 +581,7 @@ def register_SIGUSR_signals(idle_add=no_idle) -> None:
     signal.signal(signal.SIGUSR2, sigusr2)
 
 
-def livefds() -> Set[int]:
+def livefds() -> set[int]:
     live = set()
     try:
         MAXFD = os.sysconf("SC_OPEN_MAX")
@@ -661,7 +661,7 @@ def osexpand(s : str, actual_username="", uid=0, gid=0, subs=None) -> str:
     return os.path.expandvars(expanduser(shellsub(expanduser(s), ssub)))
 
 
-def path_permission_info(filename : str, ftype=None) -> Tuple[str, ...]:
+def path_permission_info(filename : str, ftype=None) -> tuple[str, ...]:
     if not POSIX:
         return ()
     info = []
@@ -836,7 +836,7 @@ def find_lib(libname:str):
     return None
 
 
-def pollwait(process, timeout=5) -> Optional[int]:
+def pollwait(process, timeout=5) -> int | None:
     start = monotonic()
     v = None
     while monotonic()-start<timeout:
@@ -847,7 +847,7 @@ def pollwait(process, timeout=5) -> Optional[int]:
     return v
 
 
-def find_in_PATH(command) -> Optional[str]:
+def find_in_PATH(command) -> str | None:
     path = os.environ.get("PATH", None)
     if not path:
         return None
@@ -859,7 +859,7 @@ def find_in_PATH(command) -> Optional[str]:
     return None
 
 
-def get_which_impl() -> Callable[[Any],Optional[str]]:
+def get_which_impl() -> Callable[[Any],str] | None:
     try:
         from shutil import which
         return which
@@ -872,7 +872,7 @@ def get_which_impl() -> Callable[[Any],Optional[str]]:
         return find_in_PATH
 
 
-def which(command) -> Optional[str]:
+def which(command) -> str | None:
     find_executable = get_which_impl()
     try:
         return find_executable(command)
@@ -880,7 +880,7 @@ def which(command) -> Optional[str]:
         get_util_logger().debug(f"find_executable({command})", exc_info=True)
         return None
 
-def get_status_output(*args, **kwargs) -> Tuple[int,Any,Any]:
+def get_status_output(*args, **kwargs) -> tuple[int,Any,Any]:
     kwargs.update({
         "stdout"    : PIPE,
         "stderr"    : PIPE,
@@ -953,7 +953,7 @@ def setuidgid(uid:int, gid:int) -> None:
         log.error(f" continuing with uid={os.getuid()}")
     log(f"new uid={os.getuid()}, gid={os.getgid()}")
 
-def get_peercred(sock) -> Optional[Tuple[int,int,int]]:
+def get_peercred(sock) -> tuple[int,int,int] | None:
     log = get_util_logger()
     if LINUX:
         SO_PEERCRED = 17
@@ -972,7 +972,7 @@ def get_peercred(sock) -> Optional[Tuple[int,int,int]]:
         #then pwd to get the gid?
     return None
 
-def is_socket(sockpath:str, check_uid:Optional[int]=None) -> bool:
+def is_socket(sockpath:str, check_uid:int|None=None) -> bool:
     try:
         s = os.stat(sockpath)
     except OSError as e:

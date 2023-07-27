@@ -5,12 +5,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Optional, Type
+from typing import Type
 
 from xpra.platform import platform_import
 
 #default:
-Keyboard : Optional[Type] = None
+Keyboard : Type|None = None
 
 platform_import(globals(), "keyboard", True,
                 "Keyboard")

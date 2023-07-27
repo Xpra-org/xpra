@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Optional, Tuple
+from typing import Tuple
 from gi.repository import GObject, GLib  # @UnresolvedImport
 
 from xpra.scripts.config import InitExit
@@ -24,7 +24,7 @@ class EVDIModel(RootWindowModel):
     def __repr__(self):
         return f"EVDIModel({self.capture} : {self.geometry})"
 
-    def get_image(self, x, y, width, height) -> Optional[ImageWrapper]:
+    def get_image(self, x, y, width, height) -> ImageWrapper | None:
         dev = self.capture.evdi_device
         log.warn(f"get_image({x}, {y}, {width}, {height}) using {self.capture}, device={dev}")
         #import traceback

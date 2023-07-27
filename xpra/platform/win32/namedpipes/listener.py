@@ -9,7 +9,7 @@
 from ctypes.wintypes import HANDLE, DWORD
 from ctypes import byref, sizeof, create_string_buffer, cast, c_void_p, c_long, pointer, POINTER
 from threading import Thread
-from typing import Callable, Optional
+from typing import Callable
 
 from xpra.common import  noop
 from xpra.log import Logger
@@ -87,8 +87,8 @@ class NamedPipeListener(Thread):
         self.exit_loop = False
         super().__init__(name="NamedPipeListener-%s" % pipe_name)
         self.daemon = True
-        self.security_attributes : Optional[SECURITY_ATTRIBUTES] = None
-        self.security_descriptor : Optional[SECURITY_DESCRIPTOR] = None
+        self.security_attributes : SECURITY_ATTRIBUTES | None = None
+        self.security_descriptor : SECURITY_DESCRIPTOR | None = None
         self.token_process = HANDLE()
         cur_proc = GetCurrentProcess()
         log("GetCurrentProcess()=%#x", cur_proc)

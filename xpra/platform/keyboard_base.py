@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any, List, Tuple, Callable, Optional
+from typing import Dict, Any, List, Tuple, Callable
 
 from xpra.common import KeyEvent
 from xpra.keyboard.mask import mask_to_names, MODIFIER_MAP
@@ -96,7 +96,7 @@ class KeyboardBase:
     def get_layout_spec(self) -> Tuple[str,List[str],str,List[str],str]:
         return "", [], "", [], ""
 
-    def get_keyboard_repeat(self) -> Optional[Tuple[int,int]]:
+    def get_keyboard_repeat(self) -> Tuple[int,int] | None:
         return None
 
     def update_modifier_map(self, display, mod_meanings) -> None:

@@ -9,7 +9,7 @@ import math
 import os.path
 from time import monotonic
 from urllib.parse import unquote
-from typing import Set, List, Tuple, Dict, Callable, Optional, Union
+from typing import Set, List, Tuple, Dict, Callable, Union
 from cairo import ( #pylint: disable=no-name-in-module
     RectangleInt, Region,  # @UnresolvedImport
     OPERATOR_OVER, LINE_CAP_ROUND,  # @UnresolvedImport
@@ -831,7 +831,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         return ox, oy
 
 
-    def calculate_window_offset(self, wx:int, wy:int, ww:int, wh:int) -> Optional[Tuple[int,int]]:
+    def calculate_window_offset(self, wx:int, wy:int, ww:int, wh:int) -> Tuple[int,int] | None:
         ss = self._client._current_screen_sizes
         if not ss:
             return None

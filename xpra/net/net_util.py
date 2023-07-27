@@ -8,7 +8,7 @@
 
 import socket
 import sys
-from typing import Dict, Tuple, Any, Optional, Callable
+from typing import Dict, Tuple, Any, Callable
 
 from xpra.os_util import WIN32
 from xpra.version_util import parse_version
@@ -159,17 +159,17 @@ def do_get_bind_ifacemask(iface):
     log("do_get_bind_ifacemask(%s)=%s", iface, ipmasks)
     return ipmasks
 
-def get_iface(ip) -> Optional[str]:
+def get_iface(ip) -> str:
     log("get_iface(%s)", ip)
     if not ip:
-        return None
+        return ""
     if ip.find("%")>=0:
         iface = ip.split("%", 1)[1]
         if if_nametoindex:
             try:
                 if_nametoindex(iface)
             except OSError:
-                return None
+                return ""
             else:
                 return iface
     ipv6 = ip.find(":")>=0
@@ -186,7 +186,7 @@ def get_iface(ip) -> Optional[str]:
         except Exception as e:
             log("socket.getaddrinfo(%s, None)", ip, exc_info=True)
             log.error(f"Error resolving {ip!r}: {e}")
-            return None
+            return ""
         for i, x in enumerate(v):
             family, socktype, proto, canonname, sockaddr = x
             log("get_iface(%s) [%i]=%s", ip, i, (family, socktype, proto, canonname, sockaddr))
@@ -202,9 +202,9 @@ def get_iface(ip) -> Optional[str]:
     else:
         ip_parts = ip.split(".")
         if len(ip_parts)!=4:
-            return None
+            return ""
 
-    best_match = None
+    best_match = ""
     get_bind_IPs()
     for iface, ipmasks in iface_ipmasks.items():
         for test_ip, mask in ipmasks:

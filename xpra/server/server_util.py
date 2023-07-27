@@ -8,7 +8,7 @@ import json
 import shlex
 import os.path
 from subprocess import Popen, PIPE
-from typing import Dict, Optional, Any, Tuple, List
+from typing import Dict, Any, Tuple, List
 
 from xpra.util import envbool
 from xpra.os_util import (
@@ -364,7 +364,7 @@ def rm_pidfile(pidfile : str, inode : int) -> None:
         log("rm_pidfile(%s, %s)", pidfile, inode, exc_info=True)
 
 
-def get_uinput_device_path(device) -> Optional[str]:
+def get_uinput_device_path(device) -> str:
     log = get_util_logger()
     try:
         log("get_uinput_device_path(%s)", device)
@@ -397,7 +397,7 @@ def get_uinput_device_path(device) -> Optional[str]:
         log("get_uinput_device_path(%s)", device, exc_info=True)
         log.error("Error: cannot query uinput device path:")
         log.estr(e)
-    return None
+    return ""
 
 def has_uinput() -> bool:
     if not envbool("XPRA_UINPUT", True):
@@ -427,7 +427,7 @@ def has_uinput() -> bool:
         return False
     return True
 
-def create_uinput_device(uid:int, events, name:str) -> Optional[Tuple[str, Any, str]]:
+def create_uinput_device(uid:int, events, name:str) -> Tuple[str, Any, str] | None:
     log = get_util_logger()
     import uinput  # @UnresolvedImport
     BUS_USB = 0x03
@@ -454,7 +454,7 @@ def create_uinput_device(uid:int, events, name:str) -> Optional[Tuple[str, Any, 
         return None
     return name, device, dev_path
 
-def create_uinput_pointer_device(uuid, uid)-> Optional[Tuple[str, Any, str]]:
+def create_uinput_pointer_device(uuid, uid)-> Tuple[str, Any, str] | None:
     if not envbool("XPRA_UINPUT_POINTER", True):
         return None
     from uinput import (
@@ -472,7 +472,7 @@ def create_uinput_pointer_device(uuid, uid)-> Optional[Tuple[str, Any, str]]:
     name = f"Xpra Virtual Pointer {uuid}"
     return create_uinput_device(uid, events, name)
 
-def create_uinput_touchpad_device(uuid, uid:int)-> Optional[Tuple[str, Any, str]]:
+def create_uinput_touchpad_device(uuid, uid:int)-> Tuple[str, Any, str] | None:
     if not envbool("XPRA_UINPUT_TOUCHPAD", False):
         return None
     from uinput import (

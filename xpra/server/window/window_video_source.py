@@ -11,7 +11,7 @@ import traceback
 from math import sqrt, ceil
 from functools import reduce
 from time import monotonic
-from typing import Callable, Tuple, Dict, Any, Optional
+from typing import Callable, Tuple, Dict, Any
 
 from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
@@ -1928,7 +1928,7 @@ class WindowVideoSource(WindowSource):
         return opts
 
 
-    def get_fail_cb(self, packet) -> Optional[Callable]:
+    def get_fail_cb(self, packet) -> Callable | None:
         coding = packet[6]
         if coding in self.common_video_encodings:
             return None

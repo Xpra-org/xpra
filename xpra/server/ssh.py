@@ -12,7 +12,7 @@ import hashlib
 import binascii
 from subprocess import Popen, PIPE
 from threading import Event
-from typing import Tuple, ByteString, Optional, Callable
+from typing import Tuple, ByteString, Callable
 import paramiko
 
 from xpra.net.ssh.paramiko_client import SSHSocketConnection
@@ -397,7 +397,7 @@ class SSHServer(paramiko.ServerInterface):
         channel.proxy_process = proc
 
 
-def make_ssh_server_connection(conn, socket_options, none_auth:bool=False, password_auth:Optional[Callable]=None):
+def make_ssh_server_connection(conn, socket_options, none_auth:bool=False, password_auth:Callable|None=None):
     log("make_ssh_server_connection%s", (conn, socket_options, none_auth, password_auth))
     ssh_server = SSHServer(none_auth=none_auth, password_auth=password_auth, options=socket_options)
     DoGSSAPIKeyExchange = parse_bool("ssh-gss-key-exchange", socket_options.get("ssh-gss-key-exchange", False), False)

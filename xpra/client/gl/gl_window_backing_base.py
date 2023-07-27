@@ -7,7 +7,7 @@
 import os
 import time
 from time import monotonic
-from typing import Dict, Tuple, Any, Optional, Callable, Iterable, List
+from typing import Dict, Tuple, Any, Callable, Iterable, List
 from contextlib import AbstractContextManager
 from gi.repository import GLib  # @UnresolvedImport
 
@@ -272,7 +272,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def __init__(self, wid : int, window_alpha : bool, pixel_depth : int=0):
         self.wid : int = wid
-        self.texture_pixel_format : Optional[IntConstant] = None
+        self.texture_pixel_format : IntConstant | None = None
         #this is the pixel format we are currently updating the fbo with
         #can be: "YUV420P", "YUV422P", "YUV444P", "GBRP" or None when not initialized yet.
         self.pixel_format : str = ""

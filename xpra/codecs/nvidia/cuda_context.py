@@ -11,7 +11,7 @@ import os
 import sys
 from time import monotonic
 from threading import RLock
-from typing import Tuple, Dict, Any, Optional
+from typing import Tuple, Dict, Any
 
 from xpra.codecs.nvidia.nv_util import numpy_import_lock
 from xpra.codecs.codec_constants import TransientCodecException
@@ -98,11 +98,11 @@ def get_cuda_info() -> Dict[str,Any]:
 
 
 DEVICE_INFO : Dict[int,str] = {}
-def get_device_info(i:int):
-    return DEVICE_INFO.get(i, None)
+def get_device_info(i:int) -> str:
+    return DEVICE_INFO.get(i, "")
 DEVICE_NAME : Dict[int,str] = {}
-def get_device_name(i:int) -> Optional[str]:
-    return DEVICE_NAME.get(i, None)
+def get_device_name(i:int) -> str:
+    return DEVICE_NAME.get(i, "")
 
 
 PREFS = None
@@ -200,7 +200,7 @@ def driver_init() -> bool:
     return driver_init_done
 
 
-DEVICES : Optional[List[int]] = None
+DEVICES : List[int] | None = None
 def init_all_devices():
     global DEVICES, DEVICE_INFO
     if DEVICES is not None:

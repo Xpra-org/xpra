@@ -6,7 +6,7 @@
 
 import re
 import os.path
-from typing import Optional, Dict, Callable, Any, Tuple
+from typing import Dict, Callable, Any, Tuple
 
 from xpra.util import ellipsizer, envbool
 from xpra.os_util import getuid, OSX, POSIX, get_proc_cmdline
@@ -86,7 +86,7 @@ def _load_dict_dirs(dirname:str, parser:Callable) -> Dict:
 # `content-type` mapping:
 ################################################################
 
-content_type_defs : Optional[Dict] = None
+content_type_defs : Dict | None = None
 def load_content_type_defs() -> Dict:
     global content_type_defs
     if content_type_defs is None:
@@ -186,7 +186,7 @@ def load_categories_to_type() -> Dict:
 # command mapping: using menu data
 ################################################################
 
-command_to_type : Optional[Dict[str,str]] = None
+command_to_type : Dict[str,str] | None = None
 def load_command_to_type():
     global command_to_type
     if command_to_type is None:

@@ -6,7 +6,7 @@
 
 import os
 import sys
-from typing import List, Optional, Type, Tuple, Dict, Any, Callable
+from typing import List, Type, Tuple, Dict, Any, Callable
 
 from xpra.os_util import (
     bytestostr, get_saved_env,
@@ -106,18 +106,18 @@ def get_clipboard_native_class() -> str:
         return gtk_clipboard_class
     return "xpra.x11.gtk_x11.clipboard.X11Clipboard"
 
-def get_native_system_tray_classes() -> List[Optional[Type]]:
+def get_native_system_tray_classes() -> List[Type | None]:
     c = [_try_load_appindicator()]
     traylog("get_native_system_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
     return c
 
-def get_native_tray_classes() -> List[Optional[Type]]:
+def get_native_tray_classes() -> List[Type | None]:
     #could restrict to only DEs that have a broken system tray like "GNOME Shell"?
     c = [_try_load_appindicator()]
     traylog("get_native_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
     return c
 
-def _try_load_appindicator() -> Optional[Type]:
+def _try_load_appindicator() -> Type | None:
     if not USE_NATIVE_TRAY:
         return None
     try:

@@ -8,7 +8,7 @@
 
 from time import monotonic
 from types import ModuleType
-from typing import List, Tuple, Dict, Callable, Any, Optional
+from typing import List, Tuple, Dict, Callable, Any
 
 from xpra.gst_common import GST_FLOW_OK, import_gst
 gst = import_gst()
@@ -39,7 +39,7 @@ class Pipeline(GObject.GObject):
         super().__init__()
         self.bus = None
         self.bitrate : int = -1
-        self.pipeline : Optional[Gst.Pipeline] = None
+        self.pipeline : Gst.Pipeline | None = None
         self.pipeline_str = ""
         self.element_handlers : Dict[Any,List[int]] = {}
         self.start_time : float = 0

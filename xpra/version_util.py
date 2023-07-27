@@ -8,7 +8,7 @@ import sys
 import os
 import socket
 import platform
-from typing import Any, Dict, Tuple, Optional
+from typing import Any
 
 #tricky: use xpra.scripts.config to get to the python "platform" module
 import xpra
@@ -87,7 +87,7 @@ def make_revision_str(revision, local_modifications, branch, commit) -> str:
     return rstr
 
 
-def version_compat_check(remote_version) -> Optional[str]:
+def version_compat_check(remote_version) -> str | None:
     if remote_version is None:
         msg = "remote version not available!"
         log(msg)
@@ -117,9 +117,9 @@ def version_compat_check(remote_version) -> Optional[str]:
     return None
 
 
-def get_host_info(full_info:int=1) -> Dict[str, Any]:
+def get_host_info(full_info:int=1) -> dict[str, Any]:
     #this function is for non UI thread info
-    info : Dict[str, Any] = {}
+    info : dict[str, Any] = {}
     if full_info>1:
         info.update({
         "byteorder"             : sys.byteorder,
@@ -143,8 +143,8 @@ def get_host_info(full_info:int=1) -> Dict[str, Any]:
                 })
     return info
 
-def get_version_info(full:int=1) -> Dict[str, Any]:
-    info : Dict[str, Any] = {"version" : vparts(XPRA_VERSION, full+1)}
+def get_version_info(full:int=1) -> dict[str, Any]:
+    info : dict[str, Any] = {"version" : vparts(XPRA_VERSION, full+1)}
     if full>0:
         try:
             # pylint: disable=import-outside-toplevel
@@ -163,8 +163,8 @@ def get_version_info(full:int=1) -> Dict[str, Any]:
         info["build"] = get_build_info()
     return info
 
-def get_build_info(full:int=1) -> Dict[str, Any]:
-    info : Dict[str, Any] = {}
+def get_build_info(full:int=1) -> dict[str, Any]:
+    info : dict[str, Any] = {}
     try:
         from xpra import build_info  # pylint: disable=import-outside-toplevel
         #rename these build info properties:
@@ -192,7 +192,7 @@ def get_build_info(full:int=1) -> Dict[str, Any]:
     log(f"get_build_info({full})={info}")
     return info
 
-def parse_version(v) -> Tuple[Any, ...]:
+def parse_version(v) -> tuple[Any, ...]:
     if isinstance(v, str):
         def maybeint(v):
             try:
@@ -220,7 +220,7 @@ def dict_version_trim(d, parts=FULL_INFO+1):
     return dict(vfilt(k,v) for k,v in d.items())
 
 
-def do_get_platform_info() -> Dict[str, Any]:
+def do_get_platform_info() -> dict[str, Any]:
     # pylint: disable=import-outside-toplevel
     from xpra.os_util import platform_name, platform_release
     pp = sys.modules.get("platform", platform)
@@ -240,7 +240,7 @@ def do_get_platform_info() -> Dict[str, Any]:
                 if "model name" in line:
                     return re.sub(".*model name.*:", "", line,1).strip()
         return pp.processor()
-    info : Dict[str, Any] = {}
+    info : dict[str, Any] = {}
     ld = get_linux_distribution()
     if ld:
         info["linux_distribution"] = ld
@@ -269,7 +269,7 @@ def get_platform_info():
     return platform_info_cache
 
 
-def get_version_from_url(url) -> Optional[Tuple[int,...]]:
+def get_version_from_url(url) -> tuple[int,...] | None:
     try:
         from urllib.request import urlopen
     except ImportError as e:

@@ -8,7 +8,7 @@ import ctypes
 from ctypes.wintypes import HANDLE
 from ctypes import create_string_buffer, byref
 from ctypes.wintypes import DWORD
-from typing import List, Dict, Tuple, Optional, Callable
+from typing import List, Dict, Tuple, Callable
 
 from xpra.platform.win32.common import (
     ActivateKeyboardLayout,
@@ -281,7 +281,7 @@ class Keyboard(KeyboardBase):
             self.last_layout_message = layout
         return layout, layouts, variant, variants, options
 
-    def get_keyboard_repeat(self) -> Optional[Tuple[int,int]]:
+    def get_keyboard_repeat(self) -> Tuple[int,int] | None:
         try:
             _delay = GetIntSystemParametersInfo(win32con.SPI_GETKEYBOARDDELAY)
             _speed = GetIntSystemParametersInfo(win32con.SPI_GETKEYBOARDSPEED)

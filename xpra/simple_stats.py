@@ -7,7 +7,6 @@
 # Simple statistical functions
 
 import math
-from typing import List, Optional
 
 def to_std_unit(v, unit=1000):
     if v>=unit**3:
@@ -61,7 +60,7 @@ def values_to_scaled_values(data, scale_unit=10, min_scaled_value=10, num_values
         scale *= scale_unit
     if scale==1:
         return scale, data
-    sdata : List[Optional[float]] = []
+    sdata : list[float | None] = []
     for x in data:
         if x is None:
             sdata.append(None)

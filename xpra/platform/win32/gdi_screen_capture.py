@@ -10,7 +10,7 @@ from ctypes import (
     Structure, create_string_buffer, addressof, byref, c_ubyte,
     )
 from io import BytesIO
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Dict, Any, List, Tuple
 from PIL import Image
 
 from xpra.log import Logger
@@ -158,7 +158,7 @@ class GDICapture:
             height = dh
         return x, y, width, height
 
-    def get_image(self, x:int=0, y:int=0, width:int=0, height:int=0) -> Optional[ImageWrapper]:
+    def get_image(self, x:int=0, y:int=0, width:int=0, height:int=0) -> ImageWrapper | None:
         start = time.time()
         x, y, width, height = self.get_capture_coords(x, y, width, height)
         if not self.dc:
@@ -233,7 +233,7 @@ class GDICapture:
         log("get_image%s=%s took %ims", (x, y, width, height), v, (time.time()-start)*1000)
         return v
 
-    def take_screenshot(self) -> Optional[Tuple[int,int,str,int,bytes]]:
+    def take_screenshot(self) -> Tuple[int,int,str,int,bytes] | None:
         x, y, w, h = get_virtualscreenmetrics()
         image = self.get_image(x, y, w, h)
         if not image:

@@ -10,7 +10,7 @@
 
 import sys
 from time import monotonic
-from typing import Dict, Tuple, Any, Callable, Optional
+from typing import Dict, Tuple, Any, Callable
 
 import gi
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
@@ -304,7 +304,7 @@ class GTKServerBase(ServerBase):
         log.info("_process_configure_window(%s, %s)", proto, packet)
 
 
-    def get_notification_icon(self, icon_string:str) -> Optional[Tuple[str,int,int,bytes]]:
+    def get_notification_icon(self, icon_string:str) -> Tuple[str,int,int,bytes] | None:
         try:
             from xpra.notifications.common import get_notification_icon
         except ImportError:

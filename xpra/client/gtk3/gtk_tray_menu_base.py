@@ -7,7 +7,6 @@
 import os
 import re
 from gi.repository import GLib, Gtk  # @UnresolvedImport
-from typing import Optional
 
 from xpra.util import (
     ConnectionMessage,
@@ -926,7 +925,7 @@ class GTKTrayMenuBase(MenuHelper):
         current_value = 0
         if not self.client.av_sync:
             current_value = None
-        def syncitem(label, delta:Optional[int]=0):
+        def syncitem(label, delta:int|None=0):
             c = Gtk.CheckMenuItem(label=label)
             c.set_draw_as_radio(True)
             c.set_active(current_value==delta)

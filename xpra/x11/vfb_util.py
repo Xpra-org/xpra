@@ -14,7 +14,7 @@ import signal
 from time import monotonic
 from subprocess import Popen, PIPE, call
 import os.path
-from typing import Tuple, Optional, List, Dict
+from typing import Tuple, List, Dict
 
 from xpra.common import RESOLUTION_ALIASES, DEFAULT_REFRESH_RATE, get_refresh_rate_for_value
 from xpra.scripts.config import InitException, get_Xdummy_confdir, FALSE_OPTIONS
@@ -34,7 +34,7 @@ VFB_WAIT = envint("XPRA_VFB_WAIT", 3)
 XVFB_EXTRA_ARGS = os.environ.get("XPRA_XVFB_EXTRA_ARGS", "")
 
 
-def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> Optional[Tuple[int,...]]:
+def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> Tuple[int,...] | None:
     if not s:
         return None
     s = s.upper()       #ie: 4K60
@@ -60,7 +60,7 @@ def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> Opti
     reshz = list(res)
     reshz.append(int(hz))
     return tuple(reshz)
-def parse_resolutions(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> Optional[Tuple]:
+def parse_resolutions(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> Tuple | None:
     if not s or s.lower() in FALSE_OPTIONS:
         return None
     if s.lower() in ("none", "default"):

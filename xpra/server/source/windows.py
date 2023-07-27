@@ -8,7 +8,7 @@
 import os
 from io import BytesIO
 from time import monotonic
-from typing import Union, Dict, Tuple, Any, Callable, List, Optional
+from typing import Union, Dict, Tuple, Any, Callable, List
 
 try:
     from PIL import Image
@@ -54,9 +54,9 @@ class WindowsMixin(StubSourceMixin):
 
 
     def __init__(self):
-        self.get_focus : Optional[Callable] = None
-        self.get_cursor_data_cb : Optional[Callable] = None
-        self.get_window_id : Optional[Callable] = None
+        self.get_focus : Callable | None = None
+        self.get_cursor_data_cb : Callable | None = None
+        self.get_window_id : Callable | None = None
         self.window_filters = []
         self.readonly = False
         #duplicated from encodings:

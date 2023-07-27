@@ -16,7 +16,7 @@ import glob
 import os.path
 import datetime
 from subprocess import Popen  #pylint: disable=import-outside-toplevel
-from typing import Dict, Tuple, Any, Optional
+from typing import Dict, Tuple, Any
 
 from xpra import __version__
 from xpra.scripts.main import (
@@ -689,7 +689,7 @@ def do_run_server(script_file:str, cmdline, error_cb, opts, extra_args, mode:str
         return show_encoding_help(opts)
     ################################################################################
     # splash screen:
-    splash_process : Optional[Popen]= None
+    splash_process : Popen|None = None
     if is_splash_enabled(mode, opts.daemon, opts.splash, display_name):
         # use splash screen to show server startup progress:
         mode_str = MODE_TO_NAME.get(mode, "").split(" Upgrade")[0]
@@ -1230,7 +1230,7 @@ def _do_run_server(script_file:str, cmdline,
                     return b"".join(chars[random.randint(0, len(chars)-1):][:1] for _ in range(l))
                 uinput_uuid = get_rand_chars(UINPUT_UUID_LEN)
                 write_session_file("uinput-uuid", uinput_uuid)
-            vfb_geom : Optional[Tuple] = ()
+            vfb_geom : Tuple | None = ()
             if opts.resize_display.lower() not in ALL_BOOLEAN_OPTIONS:
                 vfb_geom = parse_resolutions(opts.resize_display, opts.refresh_rate)[0]
 

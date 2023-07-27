@@ -11,7 +11,7 @@
 
 import os
 import signal
-from typing import Dict, Any, Optional, Callable
+from typing import Any, Callable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util import envint, envbool
@@ -33,13 +33,13 @@ class ProcInfo:
     ignore : bool
     forget : bool
     dead : bool
-    returncode : Optional[int]
-    callback : Optional[Callable]
+    returncode : int | None
+    callback : Callable | None
     process : Any
     def __repr__(self):
         return f"ProcInfo({self.pid} : {self.command})"
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = {
             "pid"       : self.pid,
             "name"      : self.name,
@@ -120,7 +120,7 @@ class ChildReaper:
                 self.add_dead_process(procinfo)
         return True
 
-    def set_quit_callback(self, cb:Callable) -> None:
+    def set_quit_callback(self, cb:callable) -> None:
         self._quit = cb
 
     def check(self) -> bool:
@@ -149,7 +149,7 @@ class ChildReaper:
         log("sigchld(%s, %s)", signum, frame_str)
         self.reap()
 
-    def get_proc_info(self, pid : int) -> Optional[ProcInfo]:
+    def get_proc_info(self, pid : int) -> ProcInfo | None:
         for proc_info in tuple(self._proc_info):
             if proc_info.pid==pid:
                 return proc_info
@@ -210,9 +210,9 @@ class ChildReaper:
                 break
             self.add_dead_pid(pid)
 
-    def get_info(self) -> Dict[Any,Any]:
+    def get_info(self) -> dict[Any,Any]:
         iv = tuple(self._proc_info)
-        info : Dict[Any,Any] = {
+        info : dict[Any,Any] = {
                 "children"  : {
                                "total"      : len(iv),
                                "dead"       : len(tuple(True for x in iv if x.dead)),
@@ -220,7 +220,7 @@ class ChildReaper:
                                }
                 }
         pi = sorted(self._proc_info, key=lambda x: x.pid, reverse=True)
-        cinfo : Dict[int,Any] = info.setdefault("child", {})
+        cinfo : dict[int,Any] = info.setdefault("child", {})
         for i, procinfo in enumerate(pi):
             d = {}
             for k in ("name", "command", "ignore", "forget", "returncode", "dead", "pid"):
@@ -231,7 +231,7 @@ class ChildReaper:
             cinfo[i] = d
         return info
 
-singleton : Optional[ChildReaper] = None
+singleton : ChildReaper | None = None
 def getChildReaper() -> ChildReaper:
     global singleton
     if singleton is None:

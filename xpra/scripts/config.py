@@ -8,7 +8,7 @@ import re
 import sys
 import os
 import shlex
-from typing import Tuple, Dict, Union, List, Callable, Any, Optional
+from typing import Tuple, Dict, Union, List, Callable, Any
 
 from xpra.common import noop
 from xpra.util import csv, stderr_print, sorted_nicely, remove_dupes
@@ -65,7 +65,7 @@ def has_audio_support():
     return _has_audio_support
 
 
-def get_xorg_bin() -> Optional[str]:
+def get_xorg_bin() -> str:
     xorg = os.environ.get("XPRA_XORG_BIN")
     if xorg:
         return xorg
@@ -87,7 +87,7 @@ def get_xorg_bin() -> Optional[str]:
         xorg = os.path.join(x, "Xorg")
         if os.path.isfile(xorg):
             return xorg
-    return None
+    return ""
 
 
 def get_Xdummy_confdir():
@@ -164,7 +164,7 @@ def detect_xvfb_command(conf_dir:str="/etc/xpra/", bin_dir:str="",
     return detect_xdummy_command(conf_dir, bin_dir, Xdummy_wrapper_ENABLED, warn_fn)
 
 def detect_xdummy_command(conf_dir:str="/etc/xpra/", bin_dir:str="",
-                          Xdummy_wrapper_ENABLED:Optional[bool]=None, warn_fn:Callable=warn) -> List[str]:
+                          Xdummy_wrapper_ENABLED:bool|None=None, warn_fn:Callable=warn) -> List[str]:
     if not POSIX or OSX:
         return get_Xvfb_command()
     xorg_bin = get_xorg_bin()
@@ -411,7 +411,7 @@ def read_xpra_conf(conf_dir:str, xpra_conf_filename:str=DEFAULT_XPRA_CONF_FILENA
         d.update(cd)
     return d
 
-def read_xpra_defaults(username:Optional[str]=None, uid=None, gid=None):
+def read_xpra_defaults(username:str|None=None, uid=None, gid=None):
     """
         Reads the global <xpra_conf_filename> from the <conf_dir>
         and then the user-specific one.
@@ -427,7 +427,7 @@ def read_xpra_defaults(username:Optional[str]=None, uid=None, gid=None):
     may_create_user_config()
     return defaults
 
-def get_xpra_defaults_dirs(username:Optional[str]=None, uid=None, gid=None):
+def get_xpra_defaults_dirs(username:str|None=None, uid=None, gid=None):
     from xpra.platform.paths import get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs
     # load config files in this order (the later ones override earlier ones):
     # * application defaults   (ie: "/Volumes/Xpra/Xpra.app/Contents/Resources/" on OSX)
@@ -1143,7 +1143,7 @@ FALSE_OPTIONS : Tuple[Any, ...] = ("no", "false", "0", "off", False)
 ALL_BOOLEAN_OPTIONS : Tuple[Any, ...] = tuple(list(TRUE_OPTIONS)+list(FALSE_OPTIONS))
 OFF_OPTIONS : Tuple[str, ...] = ("off", )
 
-def parse_bool(k:str, v, auto=None) -> Optional[bool]:
+def parse_bool(k:str, v, auto=None) -> bool|None:
     if isinstance(v, str):
         v = v.lower().strip()
     if v in TRUE_OPTIONS:

@@ -7,7 +7,7 @@
 import os.path
 import sys
 import time
-from typing import Dict, Optional, Callable, Tuple
+from typing import Dict, Callable, Tuple
 from gi.repository import Gtk, Gdk  # @UnresolvedImport
 
 from xpra.common import ScreenshotData, noop
@@ -33,15 +33,15 @@ class BugReport:
         self.checkboxes = {}
         self.server_log = None
         self.show_about = True
-        self.get_server_info : Optional[Callable] = None
+        self.get_server_info : Callable | None = None
         self.opengl_info : Dict = {}
         self.includes : Dict = {}
-        self.window : Optional[Gtk.Window] = None
-        self.description : Optional[Gtk.TextView] = None
+        self.window : Gtk.Window | None = None
+        self.description : Gtk.TextView | None = None
         self.toggles : Tuple = ()
 
     def init(self, show_about:bool=True,
-             get_server_info:Optional[Callable]=None,
+             get_server_info:Callable | None=None,
              opengl_info=None, includes=None):
         self.show_about = show_about
         self.get_server_info = get_server_info

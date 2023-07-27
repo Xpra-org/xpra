@@ -6,7 +6,7 @@
 import os
 import sys
 from ctypes import c_ubyte, c_char, c_uint32
-from typing import Tuple, Optional, Any
+from typing import Tuple, Any
 
 from xpra.util import roundup
 from xpra.os_util import memoryview_to_bytes, shellsub, get_group_id, WIN32, POSIX
@@ -202,7 +202,7 @@ def read_mmap_token(mmap_area, index:int, count:int=DEFAULT_TOKEN_BYTES) -> int:
     return v
 
 
-def init_server_mmap(mmap_filename:str, mmap_size:int=0) -> Tuple[Optional[Any],int]:
+def init_server_mmap(mmap_filename:str, mmap_size:int=0) -> Tuple[Any | None,int]:
     """
         Reads the mmap file provided by the client
         and verifies the token if supplied.

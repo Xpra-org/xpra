@@ -7,7 +7,7 @@
 #pylint: disable=line-too-long
 
 import binascii
-from typing import Dict, Tuple, Optional, Callable
+from typing import Dict, Tuple, Callable
 
 from xpra.util import csv, typedict, roundup
 from xpra.log import Logger
@@ -312,7 +312,7 @@ def testdecoder(decoder_module, full:bool):
     return tuple(codecs)
 
 def testdecoding(decoder_module, encoding:str, full:bool):
-    test_data_set : Optional[Dict[str,Dict[Tuple[int,int],Tuple[bytes,...]]]] = TEST_COMPRESSED_DATA.get(encoding)
+    test_data_set : Dict[str,Dict[Tuple[int,int],Tuple[bytes,...]]] | None = TEST_COMPRESSED_DATA.get(encoding)
     for cs in decoder_module.get_input_colorspaces(encoding):
         min_w, min_h = decoder_module.get_min_size(encoding)
         test_data : Dict[Tuple[int,int],Tuple[bytes,...]] = {}

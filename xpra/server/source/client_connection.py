@@ -7,7 +7,7 @@
 # later version. See the file COPYING for details.
 
 import sys
-from typing import Dict, Any, Optional, Tuple, Callable, Union, List, TypeAlias
+from typing import Dict, Any, Tuple, Callable, Union, List, TypeAlias
 from time import sleep, monotonic
 from threading import Event
 from collections import deque
@@ -35,7 +35,7 @@ YIELD = envbool("XPRA_YIELD", False)
 
 counter = AtomicInteger()
 
-ENCODE_WORK_ITEM : TypeAlias = Optional[Tuple[bool, Callable, Tuple[Any,...]]]
+ENCODE_WORK_ITEM : TypeAlias = Tuple[bool, Callable, Tuple[Any,...]] | None
 
 
 class ClientConnection(StubSourceMixin):

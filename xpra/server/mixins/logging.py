@@ -10,7 +10,7 @@ import logging
 import traceback
 from time import monotonic
 from threading import Lock
-from typing import Dict, Any, Optional, Callable
+from typing import Dict, Any, Callable
 
 from xpra.os_util import bytestostr
 from xpra.util import repr_ellipsized
@@ -33,7 +33,7 @@ class LoggingServer(StubServerMixin):
         self.logging_lock : Lock = Lock()
         self.log_both : bool = False
         self.in_remote_logging : bool = False
-        self.local_logging : Optional[Callable] = None
+        self.local_logging : Callable | None = None
         self.logging_clients : Dict[Any,float] = {}
 
     def init(self, opts) -> None:

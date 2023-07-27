@@ -6,7 +6,7 @@
 
 import os
 import sys
-from typing import Optional, Type, List
+from typing import Type, List
 
 from xpra.util import parse_simple_dict
 from xpra.server.auth.sys_auth_base import log, parse_uid, parse_gid, SessionData
@@ -42,7 +42,7 @@ class Authenticator(SQLAuthenticator):
         log("db_cursor(%s)=%s", sqlargs, cursor)
         return cursor
 
-    def parse_session_data(self, data) -> Optional[SessionData]:
+    def parse_session_data(self, data) -> SessionData | None:
         try:
             uid = parse_uid(data["uid"])
             gid = parse_gid(data["gid"])

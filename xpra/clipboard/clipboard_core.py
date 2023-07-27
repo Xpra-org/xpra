@@ -9,7 +9,7 @@ import struct
 import re
 from time import monotonic
 from io import BytesIO
-from typing import Tuple, List, Dict, Callable, Optional, Any, Iterable
+from typing import Tuple, List, Dict, Callable, Any, Iterable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.common import noop
@@ -29,7 +29,7 @@ MAX_CLIPBOARD_SEND_SIZE : int = envint("XPRA_MAX_CLIPBOARD_SEND_SIZE", -1)
 
 ALL_CLIPBOARDS : Tuple[str, ...] = tuple(PLATFORM_CLIPBOARDS)
 CLIPBOARDS : List[str] = list(PLATFORM_CLIPBOARDS)
-CLIPBOARDS_ENV : Optional[str] = os.environ.get("XPRA_CLIPBOARDS")
+CLIPBOARDS_ENV : str | None = os.environ.get("XPRA_CLIPBOARDS")
 if CLIPBOARDS_ENV is not None:
     CLIPBOARDS = [x.upper().strip() for x in CLIPBOARDS_ENV.split(",")]
 del CLIPBOARDS_ENV
@@ -351,7 +351,7 @@ class ClipboardProtocolHelperCore:
         log("%s.init_proxies : %s", self, self._clipboard_proxies)
 
     def init_translation(self, kwargs) -> None:
-        def getselection(name) -> Optional[str]:
+        def getselection(name) -> str | None:
             v = kwargs.get(f"clipboard.{name}")           #ie: clipboard.remote
             env_value = os.environ.get(f"XPRA_TRANSLATEDCLIPBOARD_{name.upper()}_SELECTION")
             selections = kwargs.get(f"clipboards.{name}") #ie: clipboards.remote
@@ -412,14 +412,14 @@ class ClipboardProtocolHelperCore:
         """ overriden in subclasses to try to reset the state """
 
     def set_direction(self, can_send:bool, can_receive:bool,
-                      max_send_size:Optional[int]=None, max_receive_size:Optional[int]=None) -> None:
+                      max_send_size:int|None=None, max_receive_size:int|None=None) -> None:
         self.can_send = can_send
         self.can_receive = can_receive
         self.set_limits(max_send_size, max_receive_size)
         for proxy in self._clipboard_proxies.values():
             proxy.set_direction(can_send, can_receive)
 
-    def set_limits(self, max_send_size:Optional[int], max_receive_size:Optional[int]) -> None:
+    def set_limits(self, max_send_size:int|None, max_receive_size:int|None) -> None:
         if max_send_size is not None:
             self.max_clipboard_send_size = max_send_size
         if max_receive_size is not None:

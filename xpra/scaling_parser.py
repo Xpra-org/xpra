@@ -7,7 +7,6 @@ import os
 from xpra.util import envfloat
 from xpra.log import Logger
 from xpra.scripts.config import TRUE_OPTIONS
-from typing import List, Tuple
 
 log = Logger("scaling")
 
@@ -28,14 +27,14 @@ def scaleup_value(scaling):
 def scaledown_value(scaling):
     return tuple(v for v in SCALING_OPTIONS if r4cmp(v, 10)<r4cmp(scaling, 10))
 
-def parse_scaling(desktop_scaling, root_w, root_h, min_scaling=MIN_SCALING, max_scaling=MAX_SCALING) -> Tuple[float,float]:
+def parse_scaling(desktop_scaling, root_w, root_h, min_scaling=MIN_SCALING, max_scaling=MAX_SCALING) -> tuple[float,float]:
     log("parse_scaling(%s)", (desktop_scaling, root_w, root_h, min_scaling, max_scaling))
     if desktop_scaling in TRUE_OPTIONS:
         return 1, 1
     if desktop_scaling.startswith("auto"):
         #figure out if the command line includes settings to use for auto mode:
         #here are our defaults:
-        limits : List[Tuple[int,int,float,float]] = [
+        limits : list[tuple[int,int,float,float]] = [
             (3960, 2160, 1.0, 1.0),         #100% no auto scaling up to 4k
             (7680, 4320, 1.25, 1.25),       #125%
             (8192, 8192, 1.5, 1.5),         #150%

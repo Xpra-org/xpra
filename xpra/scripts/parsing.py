@@ -13,7 +13,7 @@ import shlex
 import os.path
 import optparse
 from urllib import parse
-from typing import Any, List, Dict, Tuple, Optional, Callable
+from typing import Any, List, Dict, Tuple, Callable
 
 from xpra.version_util import full_version_str
 from xpra.util import envbool, csv, parse_simple_dict, stderr_print
@@ -87,7 +87,7 @@ class ModifiedOptionParser(optparse.OptionParser):
         raise InitExit(status, msg)
 
 
-def fixup_defaults(defaults:XpraConfig):
+def fixup_defaults(defaults:XpraConfig) -> None:
     for k in ("debug", "encoding", "audio-source", "microphone-codec", "speaker-codec"):
         fn = k.replace("-", "_")
         v = getattr(defaults, fn)
@@ -101,22 +101,22 @@ def fixup_defaults(defaults:XpraConfig):
             else:
                 v.remove("help")
 
-def do_replace_option(cmdline, oldoption:str, newoption:str):
+def do_replace_option(cmdline, oldoption:str, newoption:str) -> None:
     for i, x in enumerate(cmdline):
         if x==oldoption:
             cmdline[i] = newoption
         elif newoption.find("=")<0 and x.startswith(f"{oldoption}="):
             cmdline[i] = f"{newoption}=" + x.split("=", 1)[1]
 
-def do_legacy_bool_parse(cmdline, optionname:str, newoptionname:Optional[str]=None):
+def do_legacy_bool_parse(cmdline, optionname:str, newoptionname:str="") -> None:
     #find --no-XYZ or --XYZ
     #and replace it with --XYZ=yes|no
-    if newoptionname is None:
+    if not newoptionname:
         newoptionname = optionname
     do_replace_option(cmdline, f"--no-{optionname}", f"--{newoptionname}=no")
     do_replace_option(cmdline, f"--{optionname}", f"--{newoptionname}=yes")
 
-def ignore_options(args, options):
+def ignore_options(args, options) -> None:
     for x in options:
         o = f"--{x}"      #ie: --use-display
         while o in args:
@@ -370,7 +370,7 @@ def normalize_display_name(display_name:str) -> str:
     return display_name
 
 
-def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_session_by_name:Optional[Callable]=None) -> Dict[str,Any]:
+def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_session_by_name:Callable|None=None) -> Dict[str,Any]:
     display_name = normalize_display_name(display_name)
     #last chance to find it by name:
     if display_name.find(":")<0 and display_name.find("wayland-")<0:

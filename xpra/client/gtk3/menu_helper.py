@@ -6,7 +6,7 @@
 
 import os
 import re
-from typing import Callable, Optional
+from typing import Callable
 
 import gi
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
@@ -99,7 +99,7 @@ def load_pixbuf(data) -> GdkPixbuf.Pixbuf:
     loader.close()
     return loader.get_pixbuf()
 
-def get_appimage(app_name, icondata=None, menu_icon_size=24) -> Optional[Gtk.Image]:
+def get_appimage(app_name, icondata=None, menu_icon_size=24) -> Gtk.Image | None:
     pixbuf = None
     if app_name and not icondata:
         #try to load from our icons:
@@ -425,7 +425,7 @@ class MenuHelper:
                 image = self.get_image(icon_name, icon_size)
         return menuitem(title, image, tooltip, cb)
 
-    def checkitem(self, title, cb:Optional[Callable]=None, active=False) -> Gtk.CheckMenuItem:
+    def checkitem(self, title, cb:Callable|None=None, active=False) -> Gtk.CheckMenuItem:
         """ Utility method for easily creating a CheckMenuItem """
         check_item = Gtk.CheckMenuItem(label=title)
         check_item.set_active(active)

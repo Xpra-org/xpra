@@ -7,7 +7,7 @@
 import sys
 import os
 from types import ModuleType
-from typing import Dict, Tuple, List, Any, Optional
+from typing import Any
 
 from xpra.util import csv
 from xpra.log import Logger
@@ -25,14 +25,14 @@ GST_APP_STREAM_TYPE_STREAM : int = 0
 STREAM_TYPE : int = GST_APP_STREAM_TYPE_STREAM
 
 
-Gst : Optional[ModuleType] = None
-def get_gst_version() -> Tuple[int,...]:
+Gst : ModuleType | None = None
+def get_gst_version() -> tuple[int,...]:
     if not Gst:
         return ()
     return tuple(Gst.version())
 
 
-def import_gst() -> Optional[ModuleType]:
+def import_gst() -> ModuleType | None:
     global Gst
     if Gst is not None:
         return Gst
@@ -55,7 +55,7 @@ def import_gst() -> Optional[ModuleType]:
     return Gst
 
 
-def get_default_appsink_attributes() -> Dict[str,Any]:
+def get_default_appsink_attributes() -> dict[str,Any]:
     return {
         "name"          : "sink",
         "emit-signals"  : True,
@@ -66,7 +66,7 @@ def get_default_appsink_attributes() -> Dict[str,Any]:
         "qos"           : False,
         }
 
-def get_default_appsrc_attributes() -> Dict[str,Any]:
+def get_default_appsrc_attributes() -> dict[str,Any]:
     return {
         "name"          : "src",
         "emit-signals"  : False,
@@ -95,8 +95,8 @@ def normv(v:int) -> int:
     return int(v)
 
 
-all_plugin_names : List[str] = []
-def get_all_plugin_names() -> List[str]:
+all_plugin_names : list[str] = []
+def get_all_plugin_names() -> list[str]:
     global all_plugin_names
     if not all_plugin_names and Gst:
         registry = Gst.Registry.get()
@@ -143,7 +143,7 @@ def get_element_str(element:str, eopts=None) -> str:
 def format_element_options(options) -> str:
     return csv(f"{k}={v}" for k,v in options.items())
 
-def plugin_str(plugin, options:Dict) -> str:
+def plugin_str(plugin, options:dict) -> str:
     assert plugin is not None
     s = str(plugin)
     def qstr(v):

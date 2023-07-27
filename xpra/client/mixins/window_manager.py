@@ -16,7 +16,7 @@ from collections import deque
 from time import sleep, time, monotonic
 from queue import Queue
 from threading import Thread
-from typing import Dict, List, Tuple, Any, Type, Callable, Optional
+from typing import Dict, List, Tuple, Any, Type, Callable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.platform.gui import (
@@ -146,7 +146,7 @@ class WindowClient(StubClientMixin):
 
         #draw thread:
         self._draw_queue = Queue()
-        self._draw_thread : Optional[Thread] = None
+        self._draw_thread : Thread | None = None
         self._draw_counter : int = 0
 
         #statistics and server info:
@@ -624,7 +624,7 @@ class WindowClient(StubClientMixin):
         return make_instance(tc, self, *args)
 
     # noinspection PyMethodMayBeStatic
-    def get_system_tray_classes(self) -> Tuple[Optional[Type],...]:
+    def get_system_tray_classes(self) -> Tuple[Type | None,...]:
         #subclasses may add their toolkit specific variants, if any
         #by overriding this method
         #use the native ones first:

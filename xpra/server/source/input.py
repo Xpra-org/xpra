@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple, Optional, Dict, Any
+from typing import Tuple, Dict, Any
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
@@ -30,11 +30,11 @@ class InputMixin(StubSourceMixin):
         self.pointer_relative : bool = False
         self.keyboard_config = None
         self.double_click_time : int = -1
-        self.double_click_distance : Optional[Tuple[int, int]] = None
+        self.double_click_distance : Tuple[int, int] | None = None
         # mouse echo:
         self.mouse_show : bool = False
-        self.mouse_last_position : Optional[Tuple[int,int]] = None
-        self.mouse_last_relative_position : Optional[Tuple[int,int]] = None
+        self.mouse_last_position : Tuple[int,int] | None = None
+        self.mouse_last_relative_position : Tuple[int,int] | None = None
 
     def cleanup(self) -> None:
         self.keyboard_config = None

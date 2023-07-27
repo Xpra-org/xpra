@@ -9,7 +9,7 @@ import os
 import random
 from dbus.types import UInt32
 from dbus.types import Dictionary
-from typing import Optional, List, Dict, Any
+from typing import List, Dict, Any
 
 from xpra.exit_codes import ExitCode
 from xpra.util import typedict, envbool, ConnectionMessage, NotificationID
@@ -52,7 +52,7 @@ class PortalShadow(GTKShadowServerBase):
         self.session_path : str = ""
         self.session_handle : str = ""
         self.authenticating_client = None
-        self.capture : Optional[Capture] = None
+        self.capture : Capture | None = None
         self.portal_interface = get_portal_interface()
         log(f"setup_capture() self.portal_interface={self.portal_interface}")
         #we're not using X11, so no need for this check:

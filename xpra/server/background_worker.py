@@ -8,7 +8,7 @@
 from weakref import WeakSet
 from threading import Thread, Lock
 from queue import Queue
-from typing import Optional, Callable
+from typing import Callable
 
 from xpra.log import Logger
 log = Logger("util")
@@ -24,7 +24,7 @@ class Worker_Thread(Thread):
 
     def __init__(self):
         super().__init__(name="Worker_Thread", daemon=True)
-        self.items : Queue[Optional[Callable]] = Queue()
+        self.items : Queue[Callable|None] = Queue()
         self.exit = False
         self.daemon_work_items : WeakSet[Callable] = WeakSet()
 
@@ -76,11 +76,11 @@ class Worker_Thread(Thread):
 
 
 # only one worker thread for now:
-singleton : Optional[Worker_Thread]= None
+singleton : Worker_Thread | None= None
 # locking to ensure multithreaded code doesn't create more than one
 lock = Lock()
 
-def get_worker(create:bool=True) -> Optional[Worker_Thread]:
+def get_worker(create:bool=True) -> Worker_Thread | None:
     global singleton
     #fast path (no lock):
     if singleton is not None or not create:

@@ -6,7 +6,7 @@
 
 import os
 import sys
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, List
 
 #default implementation uses pycups
 from xpra.platform import platform_import
@@ -43,7 +43,7 @@ def cleanup_printing() -> None:
 
 DEFAULT_MIMETYPES = ["application/pdf", "application/postscript"]
 
-MIMETYPES : Optional[List[str]] = None
+MIMETYPES : List[str]|None = None
 def get_mimetypes():
     global MIMETYPES
     if MIMETYPES is None:

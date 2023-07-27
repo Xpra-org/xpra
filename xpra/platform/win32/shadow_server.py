@@ -7,7 +7,7 @@
 import os
 import re
 from time import monotonic
-from typing import Dict, Any, Tuple, Optional, Type, List
+from typing import Dict, Any, Tuple, Type, List
 from ctypes import create_unicode_buffer, sizeof, byref, c_ulong
 from ctypes.wintypes import RECT, POINT, BYTE
 
@@ -423,7 +423,7 @@ class ShadowServer(GTKShadowServerBase):
         log("refresh()=%s", v)
         return v
 
-    def do_get_cursor_data(self) -> Optional[Tuple]:
+    def do_get_cursor_data(self) -> Tuple | None:
         ci = CURSORINFO()
         ci.cbSize = sizeof(CURSORINFO)
         GetCursorInfo(byref(ci))

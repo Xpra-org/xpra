@@ -16,7 +16,7 @@ try:
     from enum import StrEnum
 except ImportError:
     StrEnum = Enum      # type: ignore
-from typing import Dict, Tuple, Optional, Any, List, Set, Callable, Iterable, Union
+from typing import Dict, Tuple, Any, List, Set, Callable, Iterable, Union
 
 # this is imported in a lot of places,
 # so don't import too much at the top:
@@ -212,7 +212,7 @@ def remove_dupes(seq:Iterable[Any]) -> List[Any]:
     seen_add : Callable = seen.add
     return [x for x in seq if not (x in seen or seen_add(x))]
 
-def merge_dicts(a : Dict[str,Any], b : Dict[str,Any], path:Optional[List[str]]=None) -> Dict[str,Any]:
+def merge_dicts(a : Dict[str,Any], b : Dict[str,Any], path:List[str] | None=None) -> Dict[str,Any]:
     """ merges b into a """
     if path is None:
         path = []
@@ -431,22 +431,22 @@ class typedict(dict):
     def uget(self, k, default=None):
         return self.conv_get(k, default, u)
 
-    def strget(self, k, default:Optional[str]=None) -> str:
+    def strget(self, k, default:str | None=None) -> str:
         return self.conv_get(k, default, bytestostr)
 
-    def bytesget(self, k : str, default:Optional[bytes]=None) -> bytes:
+    def bytesget(self, k : str, default:bytes | None=None) -> bytes:
         return self.conv_get(k, default, strtobytes)
 
-    def intget(self, k : str, default:Optional[int]=0) -> int:
+    def intget(self, k : str, default:int | None=0) -> int:
         return self.conv_get(k, default, int)
 
-    def boolget(self, k : str, default:Optional[bool]=False) -> bool:
+    def boolget(self, k : str, default:bool | None=False) -> bool:
         return self.conv_get(k, default, bool)
 
-    def dictget(self, k : str, default:Optional[dict]=None) -> Dict:
+    def dictget(self, k : str, default:dict | None=None) -> Dict:
         return self.conv_get(k, default, checkdict)
 
-    def intpair(self, k : str, default_value:Optional[Tuple[int,int]]=None) -> Optional[Tuple[int, int]]:
+    def intpair(self, k : str, default_value:Tuple[int,int] | None=None) -> Tuple[int, int] | None:
         v = self.inttupleget(k, default_value)
         if v is None:
             return default_value
@@ -458,17 +458,17 @@ class typedict(dict):
         except ValueError:
             return default_value
 
-    def strtupleget(self, k : str, default_value=(), min_items:Optional[int]=None, max_items:Optional[int]=None) -> Tuple[str, ...]:
+    def strtupleget(self, k : str, default_value=(), min_items:int | None=None, max_items:int | None=None) -> Tuple[str, ...]:
         return self.tupleget(k, default_value, str, min_items, max_items)
 
-    def inttupleget(self, k : str, default_value=(), min_items:Optional[int]=None, max_items:Optional[int]=None) -> Tuple[int, ...]:
+    def inttupleget(self, k : str, default_value=(), min_items:int | None=None, max_items:int | None=None) -> Tuple[int, ...]:
         return self.tupleget(k, default_value, int, min_items, max_items)
 
-    def tupleget(self, k : str, default_value=(), item_type=None, min_items:Optional[int]=None, max_items:Optional[int]=None) -> Tuple[Any, ...]:
+    def tupleget(self, k : str, default_value=(), item_type=None, min_items:int | None=None, max_items:int | None=None) -> Tuple[Any, ...]:
         v = self._listget(k, default_value, item_type, min_items, max_items)
         return tuple(v or ())
 
-    def _listget(self, k : str, default_value, item_type=None, min_items:Optional[int]=None, max_items:Optional[int]=None) -> List[Any]:
+    def _listget(self, k : str, default_value, item_type=None, min_items:int | None=None, max_items:int | None=None) -> List[Any]:
         v = self.get(k)
         if v is None:
             return default_value
@@ -505,7 +505,7 @@ class typedict(dict):
         return aslist
 
 
-def parse_scaling_value(v) -> Optional[Tuple[int,int]]:
+def parse_scaling_value(v) -> Tuple[int,int] | None:
     if not v:
         return None
     if v.endswith("%"):
@@ -869,7 +869,7 @@ def sorted_nicely(l:Iterable):
     alphanum_key = lambda key: [convert(c) for c in re.split(r"(\d+)", bytestostr(key))]
     return sorted(l, key = alphanum_key)
 
-def print_nested_dict(d:Dict, prefix:str="", lchar:str="*", pad:int=32, vformat=None, print_fn:Optional[Callable]=None,
+def print_nested_dict(d:Dict, prefix:str="", lchar:str="*", pad:int=32, vformat=None, print_fn:Callable|None=None,
                       version_keys=("version", "revision"), hex_keys=("data", )):
     #"smart" value formatting function:
     def sprint(arg):

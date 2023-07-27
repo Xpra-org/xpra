@@ -7,7 +7,7 @@
 
 import os
 from time import sleep
-from typing import Dict, Any, Optional, Callable
+from typing import Dict, Any, Callable
 from gi.repository import GLib
 
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -43,7 +43,7 @@ class NetworkStateServer(StubServerMixin):
         self.bandwidth_limit = 0
         self.mem_bytes = 0
         self.cpu_info : Dict = {}
-        self.print_memleaks : Optional[Callable] = None
+        self.print_memleaks : Callable | None = None
         self.fds : Set[int] = set()
 
     def init(self, opts) -> None:

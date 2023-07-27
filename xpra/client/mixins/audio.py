@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any, Callable, Tuple, Optional
+from typing import Dict, Any, Callable, Tuple
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.platform.paths import get_icon_filename
@@ -70,7 +70,7 @@ class AudioClient(StubClientMixin):
         self.av_sync_delta : int = AV_SYNC_DELTA
         self.audio_properties : typedict = typedict()
         #audio state:
-        self.on_sink_ready : Optional[Callable] = None
+        self.on_sink_ready : Callable | None = None
         self.audio_sink = None
         self.audio_sink_sequence : int = 0
         self.server_audio_eos_sequence : bool = False

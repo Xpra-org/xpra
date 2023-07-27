@@ -9,7 +9,7 @@ import math
 import ctypes
 import struct
 from weakref import WeakValueDictionary
-from typing import Any, Callable, Dict, List, Type, Optional, Tuple
+from typing import Any, Callable, Dict, List, Type, Tuple
 
 from gi.repository import GLib      #@UnresolvedImport
 import objc                         #@UnresolvedImport
@@ -171,7 +171,7 @@ def get_native_notifier_classes() -> List[Type]:
     notifylog("get_native_notifier_classes()=%s", v)
     return v
 
-def get_native_tray_menu_helper_class() -> Optional[Callable]:
+def get_native_tray_menu_helper_class() -> Callable | None:
     if get_OSXApplication():
         from xpra.platform.darwin.osx_menu import getOSXMenuHelper
         return getOSXMenuHelper

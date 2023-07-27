@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Optional, Dict, List, Callable
+from typing import Dict, List, Callable
 from ctypes import (
     sizeof, byref,
     WinError, get_last_error,  # @UnresolvedImport
@@ -205,8 +205,8 @@ class Win32EventListener:
         log("DefWindowProc%s=%s", (hWnd, msg, wParam, lParam), r)
         return r
 
-singleton : Optional[Win32EventListener] = None
-def get_win32_event_listener(create=True) -> Optional[Win32EventListener]:
+singleton : Win32EventListener | None = None
+def get_win32_event_listener(create=True) -> Win32EventListener | None:
     global singleton
     if not singleton and create:
         singleton = Win32EventListener()

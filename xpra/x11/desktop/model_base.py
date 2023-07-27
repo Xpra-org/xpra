@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import socket
-from typing import Optional, Tuple, Any
+from typing import Tuple, Any
 from gi.repository import GObject, Gdk, GLib  # @UnresolvedImport
 
 from xpra.os_util import get_generic_os_name, load_binary_file
@@ -145,7 +145,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
     def uses_XShm(self) -> bool:
         return bool(self._xshm_handle)
 
-    def get_default_window_icon(self, _size) -> Optional[Tuple[int,int,str,bytes]]:
+    def get_default_window_icon(self, _size) -> Tuple[int,int,str,bytes] | None:
         icon_name = get_generic_os_name()+".png"
         icon = get_icon(icon_name)
         if not icon:

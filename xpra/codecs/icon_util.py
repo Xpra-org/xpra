@@ -11,7 +11,7 @@ Utility functions for loading icons from files
 import os
 import re
 from io import BytesIO
-from typing import Optional, Tuple
+from typing import Tuple
 
 from xpra.util import envint, envbool, first_time, ellipsizer
 from xpra.os_util import load_binary_file
@@ -47,10 +47,10 @@ def load_Rsvg():
     return _Rsvg
 
 
-def load_icon_from_file(filename : str, max_size:int=MAX_ICON_SIZE) -> Optional[Tuple]:
+def load_icon_from_file(filename : str, max_size:int=MAX_ICON_SIZE) -> Tuple:
     if os.path.isdir(filename):
         log("load_icon_from_file(%s, %i) path is a directory!", filename, max_size)
-        return None
+        return ()
     log("load_icon_from_file(%s, %i)", filename, max_size)
     if filename.endswith("xpm"):
         from PIL import Image  #pylint: disable=import-outside-toplevel
@@ -69,7 +69,7 @@ def load_icon_from_file(filename : str, max_size:int=MAX_ICON_SIZE) -> Optional[
             log.estr(e)
     icondata = load_binary_file(filename)
     if not icondata:
-        return None
+        return ()
     if filename.endswith("svg") and max_size and len(icondata)>max_size:
         #try to resize it
         size = len(icondata)
@@ -84,13 +84,13 @@ def load_icon_from_file(filename : str, max_size:int=MAX_ICON_SIZE) -> Optional[
         large_icons.append((filename, len(icondata)))
     return icondata, os.path.splitext(filename)[1].lstrip(".")
 
-def svg_to_png(filename:str, icondata, w:int=128, h:int=128) -> Optional[bytes]:
+def svg_to_png(filename:str, icondata, w:int=128, h:int=128) -> bytes:
     if not SVG_TO_PNG:
-        return None
+        return b""
     Rsvg = load_Rsvg()
     log("svg_to_png%s Rsvg=%s", (filename, f"{len(icondata)} bytes", w, h), Rsvg)
     if not Rsvg:
-        return None
+        return b""
     try:
         from cairo import ImageSurface, Context, FORMAT_ARGB32  #pylint: disable=no-name-in-module, import-outside-toplevel
         #'\sinkscape:[a-zA-Z]*=["a-zA-Z0-9]*'
@@ -122,4 +122,4 @@ def svg_to_png(filename:str, icondata, w:int=128, h:int=128) -> Optional[bytes]:
         if filename:
             log.error(" '%s':", filename)
         log.error(" %i bytes, %s", len(icondata), ellipsizer(icondata))
-        return None
+        return b""

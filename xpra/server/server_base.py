@@ -8,7 +8,7 @@
 
 import os
 from time import monotonic
-from typing import Type, Dict, List, Tuple, Callable, Any, Optional
+from typing import Type, Dict, List, Tuple, Callable, Any
 
 from xpra.server.server_core import ServerCore
 from xpra.server.background_worker import add_work_item
@@ -112,8 +112,8 @@ class ServerBase(ServerBaseClass):
         self._server_sources : Dict = {}
         self.client_properties : Dict[int,Dict] = {}
         self.ui_driver = None
-        self.sharing : Optional[bool] = None
-        self.lock : Optional[bool] = None
+        self.sharing : bool | None = None
+        self.lock : bool | None = None
 
         self.start_after_connect_done = True
         self.bandwidth_detection = False
@@ -961,7 +961,7 @@ class ServerBase(ServerBaseClass):
 
     def process_packet(self, proto, packet) -> None:
         packet_type = ""
-        handler : Optional[Callable] = None
+        handler : Callable | None = None
         try:
             packet_type = bytestostr(packet[0])
             def call_handler():

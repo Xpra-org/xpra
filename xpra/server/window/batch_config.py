@@ -8,7 +8,7 @@
 
 import os
 from time import monotonic
-from typing import Dict, Any, Optional, Deque, Tuple
+from typing import Dict, Any, Deque, Tuple
 
 from collections import deque
 from xpra.simple_stats import get_list_stats
@@ -26,7 +26,7 @@ MAX_VREFRESH : int = envint("XPRA_MAX_VREFRESH", 250)
 
 log = Logger("damage")
 
-def ival(key, default:int, minv:Optional[int]=0, maxv:Optional[int]=None) -> int:
+def ival(key, default:int, minv:int|None=0, maxv:int|None=None) -> int:
     v = os.environ.get(f"XPRA_BATCH_{key}")
     if v is None:
         return default

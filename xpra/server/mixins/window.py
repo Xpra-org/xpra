@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
-from typing import Dict, Any, Optional, Tuple
+from typing import Any, Tuple
 
 from xpra.util import typedict
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -28,8 +28,8 @@ class WindowServer(StubServerMixin):
     def __init__(self):
         # Window id 0 is reserved for "not a window"
         self._max_window_id = 1
-        self._window_to_id : Dict[Any,int] = {}
-        self._id_to_window : Dict[int,Any] = {}
+        self._window_to_id : dict[Any,int] = {}
+        self._id_to_window : dict[int,Any] = {}
         self.window_filters = []
         self.window_min_size = 0, 0
         self.window_max_size = 2**15-1, 2**15-1
@@ -77,13 +77,13 @@ class WindowServer(StubServerMixin):
         self._focus(None, 0, [])
 
 
-    def get_server_features(self, _source) -> Dict[str,Any]:
+    def get_server_features(self, _source) -> dict[str,Any]:
         return {
             "window_refresh_config" : True,     #v4 clients assume this is available
             "window-filters"        : True,     #v4 clients assume this is available
             }
 
-    def get_info(self, _proto) -> Dict[str,Any]:
+    def get_info(self, _proto) -> dict[str,Any]:
         return {
             "state" : {
                 "windows" : sum(int(window.is_managed()) for window in tuple(self._id_to_window.values())),
@@ -91,7 +91,7 @@ class WindowServer(StubServerMixin):
             "filters" : tuple((uuid,repr(f)) for uuid, f in self.window_filters),
             }
 
-    def get_ui_info(self, _proto, _client_uuids=None, wids=None, *_args) -> Dict[str,Any]:
+    def get_ui_info(self, _proto, _client_uuids=None, wids=None, *_args) -> dict[str,Any]:
         """ info that must be collected from the UI thread
             (ie: things that query the display)
         """
@@ -155,7 +155,7 @@ class WindowServer(StubServerMixin):
         self.window_filters = []
 
 
-    def get_windows_info(self, window_ids) -> Dict[int,Dict[str,Any]]:
+    def get_windows_info(self, window_ids) -> dict[int,dict[str,Any]]:
         info = {}
         for wid, window in self._id_to_window.items():
             if window_ids is not None and wid not in window_ids:
@@ -163,7 +163,7 @@ class WindowServer(StubServerMixin):
             info[wid] = self.get_window_info(window)
         return info
 
-    def get_window_info(self, window) -> Dict[str,Any]:
+    def get_window_info(self, window) -> dict[str,Any]:
         from xpra.server.window.metadata import make_window_metadata
         info = {}
         for prop in window.get_property_names():
@@ -336,7 +336,7 @@ class WindowServer(StubServerMixin):
             if not isinstance(ss, WindowsMixin):
                 self.do_refresh_windows(ss, self._id_to_window)
 
-    def get_window_position(self, _window) -> Optional[Tuple[int,int]]:
+    def get_window_position(self, _window) -> Tuple[int,int] | None:
         #where the window is actually mapped on the server screen:
         return None
 
@@ -364,7 +364,7 @@ class WindowServer(StubServerMixin):
     def _process_configure_window(self, proto, packet : PacketType) -> None:
         log.info("_process_configure_window(%s, %s)", proto, packet)
 
-    def _get_window_dict(self, wids) -> Dict[int,Any]:
+    def _get_window_dict(self, wids) -> dict[int,Any]:
         wd = {}
         for wid in wids:
             window = self._id_to_window.get(wid)

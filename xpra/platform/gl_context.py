@@ -4,11 +4,11 @@
 # later version. See the file COPYING for details.
 
 import sys
-from typing import Optional, Callable
+from typing import Callable
 
 from xpra.platform import platform_import
 
-GLContext : Optional[Callable] = None
+GLContext : Callable|None = None
 
 def check_support():
     if not GLContext:

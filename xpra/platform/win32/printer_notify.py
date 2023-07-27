@@ -5,7 +5,7 @@
 # License:
 # https://creativecommons.org/licenses/by-sa/3.0/legalcode
 
-from typing import Optional, Tuple, List
+from typing import Tuple, List
 import ctypes
 from ctypes import wintypes
 
@@ -358,7 +358,7 @@ kernel32.WaitForSingleObject.argtypes = (
 
 def wait_for_print_job(printer_filter=PRINTER_CHANGE_ADD_JOB,
                        timeout:int=INFINITE,
-                       printer_name:Optional[str]=None) -> int:
+                       printer_name:str|None=None) -> int:
     if timeout != INFINITE:
         timeout = int(timeout * 1000)
     hPrinter = wintypes.HANDLE()

@@ -13,7 +13,7 @@ import tempfile
 from subprocess import PIPE, Popen
 import shlex
 from threading import Lock
-from typing import Callable, Optional
+from typing import Callable
 from cups import Connection  # @UnresolvedImport
 
 from xpra.common import DEFAULT_XDG_DATA_DIRS
@@ -318,7 +318,7 @@ def remove_printer(name):
 
 
 dbus_init = None
-printers_modified_callback : Optional[Callable] = None
+printers_modified_callback : Callable | None = None
 DBUS_PATH="/com/redhat/PrinterSpooler"
 DBUS_IFACE="com.redhat.PrinterSpooler"
 def handle_dbus_signal(*args):

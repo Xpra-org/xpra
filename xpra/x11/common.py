@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import struct
-from typing import Callable, Tuple, Optional, Any, Dict, cast
+from typing import Callable, Tuple, Any, Dict, cast
 
 from xpra.util import u, ellipsizer
 from xpra.os_util import hexstr, bytestostr
@@ -140,7 +140,7 @@ def get_number_of_desktops() -> int:
     log("get_number_of_desktops() %s=%s", hexstr(d or ""), v)
     return v
 
-def get_workarea() -> Optional[Tuple[int,int,int,int]]:
+def get_workarea() -> Tuple[int,int,int,int] | None:
     try:
         d = get_current_desktop()
         if d<0:
@@ -270,7 +270,7 @@ def get_randr_dpi() -> Tuple[int,int]:
 
 
 
-def get_xresources() -> Optional[Dict[str,str]]:
+def get_xresources() -> Dict[str,str] | None:
     try:
         value = get_X11_root_property("RESOURCE_MANAGER", "STRING")
         log(f"RESOURCE_MANAGER={value}")

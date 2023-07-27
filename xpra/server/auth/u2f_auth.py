@@ -11,7 +11,7 @@ import os.path
 import binascii
 import base64
 from hashlib import sha256
-from typing import Tuple, Optional
+from typing import Tuple
 
 from xpra.util import csv, typedict
 from xpra.os_util import hexstr, osexpand, load_binary_file, getuid, strtobytes, POSIX
@@ -81,7 +81,7 @@ class Authenticator(SysAuthenticator):
         if not self.public_keys:
             raise RuntimeError("u2f authenticator requires at least one public key")
 
-    def get_challenge(self, digests) -> Optional[Tuple[bytes,str]]:
+    def get_challenge(self, digests) -> Tuple[bytes,str] | None:
         if "u2f" not in digests:
             log.error("Error: client does not support u2f authentication")
             return None

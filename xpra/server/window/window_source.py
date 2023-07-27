@@ -12,7 +12,7 @@ import threading
 from math import sqrt, ceil
 from collections import deque
 from time import monotonic
-from typing import Callable, Dict, List, Tuple, Iterable, ContextManager, Any, Optional
+from typing import Callable, Dict, List, Tuple, Iterable, ContextManager, Any
 
 from xpra.os_util import bytestostr, POSIX, OSX, DummyContextManager
 from xpra.util import envint, envbool, csv, typedict, first_time, decode_str, repr_ellipsized
@@ -121,7 +121,7 @@ if POSIX and not OSX:
 
 
 class DelayedRegions:
-    def __init__(self, damage_time:float, regions:List[rectangle], encoding:str, options:Optional[Dict]):
+    def __init__(self, damage_time:float, regions:List[rectangle], encoding:str, options:Dict|None):
         self.expired : bool = False
         self.damage_time : float = damage_time
         self.regions = regions
@@ -2052,9 +2052,9 @@ class WindowSource(WindowIconSource):
             self.idle_add(do_free_image)
 
 
-    def get_damage_image(self, x:int, y:int, w:int, h:int) -> Optional[ImageWrapper]:
+    def get_damage_image(self, x:int, y:int, w:int, h:int) -> ImageWrapper | None:
         self.ui_thread_check()
-        def nodata(msg, *args) -> Optional[ImageWrapper]:
+        def nodata(msg, *args) -> ImageWrapper | None:
             log("get_damage_image: "+msg, *args)
             return None
         if not self.window.is_managed():
@@ -2138,7 +2138,7 @@ class WindowSource(WindowIconSource):
                 self.wid, sequence, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
         return True
 
-    def scaled_size(self, image : ImageWrapper) -> Optional[Tuple[int,int]]:
+    def scaled_size(self, image : ImageWrapper) -> Tuple[int,int] | None:
         crs = self.client_render_size
         if not crs or not DOWNSCALE:
             return None
@@ -2639,7 +2639,7 @@ class WindowSource(WindowIconSource):
 
 
     def make_data_packet(self, damage_time, process_damage_time,
-                         image : ImageWrapper, coding : str, sequence : int, options, flush) -> Optional[Tuple]:
+                         image : ImageWrapper, coding : str, sequence : int, options, flush) -> Tuple | None:
         """
             Picture encoding - non-UI thread.
             Converts a damage item picked from the 'compression_work_queue'

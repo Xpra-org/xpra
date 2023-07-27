@@ -14,10 +14,11 @@ from ctypes import (
     get_last_error, WinError, WinDLL, HRESULT,  # @UnresolvedImport
     )
 from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, CHAR, WCHAR, DWORD, HMODULE, RECT
-from typing import Dict, List, Tuple, Any, Optional, Callable
+from typing import Dict, List, Tuple, Any, Callable
 
 from xpra.util import typedict, csv, envbool, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
 from xpra.os_util import bytestostr
+from xpra.common import noop
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.icon_util import image_to_ICONINFO
 from xpra.platform.win32.common import (
@@ -169,10 +170,10 @@ class win32NotifyIcon:
     instances : Dict[int,Any] = {}
 
     def __init__(self, app_id:int=0, title:str="",
-                 move_callbacks:Optional[Callable]=None,
-                 click_callback:Optional[Callable]=None,
-                 exit_callback:Optional[Callable]=None,
-                 command_callback:Optional[Callable]=None,
+                 move_callbacks:Callable=noop,
+                 click_callback:Callable=noop,
+                 exit_callback:Callable=noop,
+                 command_callback:Callable=noop,
                  iconPathName:str=""):
         log("win32NotifyIcon: app_id=%i, title=%r", app_id, title)
         self.app_id = app_id
@@ -183,7 +184,7 @@ class win32NotifyIcon:
         self.click_callback = click_callback
         self.exit_callback = exit_callback
         self.command_callback = command_callback
-        self.reset_function : Optional[Tuple[Callable,Tuple[Any,...]]] = None
+        self.reset_function : Tuple[Callable,Tuple[Any,...]] | None = None
         self.image_cache : Dict[str,Any] = {}
         # Create the Window.
         if iconPathName:
@@ -535,7 +536,8 @@ def main():
     if os.path.exists(wdir):
         idir = wdir
     iconPathName = os.path.join(idir, "xpra.ico")
-    tray = win32NotifyIcon(0, "test", move_callbacks=None, click_callback=click_callback, exit_callback=win32_quit, command_callback=command_callback, iconPathName=iconPathName)
+    tray = win32NotifyIcon(0, "test", move_callbacks=noop, click_callback=click_callback, exit_callback=win32_quit,
+                           command_callback=command_callback, iconPathName=iconPathName)
     #pump messages:
     msg = ctypes.wintypes.MSG()
     pMsg = ctypes.pointer(msg)

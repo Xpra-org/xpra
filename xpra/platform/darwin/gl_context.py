@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 import objc #@UnresolvedImport
 from Cocoa import (
@@ -68,9 +68,9 @@ class AGLContext:
 
     def __init__(self, alpha=True):
         self.alpha = alpha
-        self.gl_context : Optional[NSOpenGLContext] = None
+        self.gl_context : NSOpenGLContext | None = None
         self.nsview_ptr : int = 0
-        self.window_context : Optional[AGLWindowContext] = None
+        self.window_context : AGLWindowContext | None = None
         self.pixel_format = NSOpenGLPixelFormat.new()
         attrs = [
             NSOpenGLPFAWindow,

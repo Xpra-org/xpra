@@ -7,7 +7,7 @@ import time
 import threading
 from time import monotonic
 from threading import Event
-from typing import Callable, List, Optional
+from typing import Callable, List
 
 from xpra.make_thread import start_thread
 from xpra.util import envint
@@ -161,8 +161,8 @@ class UI_thread_watcher:
             self.source_remove(uiwt)
 
 
-UI_watcher : Optional[UI_thread_watcher] = None
-def get_UI_watcher(timeout_add=None, source_remove=None) -> Optional[UI_thread_watcher]:
+UI_watcher : UI_thread_watcher|None = None
+def get_UI_watcher(timeout_add=None, source_remove=None) -> UI_thread_watcher|None:
     global UI_watcher
     if UI_watcher is None and timeout_add:
         UI_watcher = UI_thread_watcher(timeout_add, source_remove, POLLING, ANNOUNCE_TIMEOUT)

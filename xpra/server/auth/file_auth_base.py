@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os.path
-from typing import Union, Optional, Tuple
+from typing import Union, Tuple
 
 from xpra.net.digest import get_salt, choose_digest
 from xpra.server.auth.sys_auth_base import SysAuthenticator
@@ -47,7 +47,7 @@ class FileAuthenticatorBase(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return True
 
-    def get_challenge(self, digests) -> Optional[Tuple[bytes,str]]:
+    def get_challenge(self, digests) -> Tuple[bytes,str] | None:
         if self.salt is not None:
             log.error("challenge already sent!")
             if self.salt is not False:

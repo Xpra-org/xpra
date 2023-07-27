@@ -6,7 +6,7 @@
 import os
 import hmac
 import hashlib
-from typing import List, Optional, Callable, ByteString
+from typing import List, Callable, ByteString
 
 from xpra.util import csv, envint
 from xpra.log import Logger
@@ -31,7 +31,7 @@ def get_digests() -> List[str]:
         pass
     return digests
 
-def get_digest_module(digest : str) -> Optional[Callable]:
+def get_digest_module(digest : str) -> Callable|None:
     log(f"get_digest_module({digest})")
     if not digest or not digest.startswith("hmac"):
         return None

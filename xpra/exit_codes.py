@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import List
 from enum import IntEnum
 
 class ExitCode(IntEnum):
@@ -44,7 +43,8 @@ def exit_str(code) -> str:
     except ValueError:
         return f"unknown error {code}"
 
-RETRY_EXIT_CODES : List[ExitCode] = [
+
+RETRY_EXIT_CODES : list[ExitCode] = [
     ExitCode.CONNECTION_LOST,
     ExitCode.PACKET_FAILURE,
     ExitCode.UPGRADE,

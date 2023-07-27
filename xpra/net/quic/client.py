@@ -6,7 +6,7 @@
 import socket
 import ipaddress
 from queue import Queue
-from typing import Dict, Callable, Optional, Union, cast, Tuple
+from typing import Dict, Callable, Union, cast, Tuple
 
 from aioquic.quic.configuration import QuicConfiguration
 from aioquic.quic.events import QuicEvent
@@ -97,7 +97,7 @@ class ClientWebSocketConnection(XpraQuicConnection):
 class WebSocketClient(QuicConnectionProtocol):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._http: Optional[HttpConnection] = None
+        self._http: HttpConnection | None = None
         self._push_types: Dict[str, int] = {}
         self._websockets: Dict[int, ClientWebSocketConnection] = {}
         if self._quic.configuration.alpn_protocols[0].startswith("hq-"):
@@ -130,7 +130,7 @@ class WebSocketClient(QuicConnectionProtocol):
             log.warn(f"Warning: unexpected http event type: {event}")
             return
         stream_id = event.stream_id
-        websocket : Optional[ClientWebSocketConnection] = self._websockets.get(stream_id)
+        websocket : ClientWebSocketConnection | None = self._websockets.get(stream_id)
         if not websocket:
             #perhaps this is a new substream?
             sub = -1
