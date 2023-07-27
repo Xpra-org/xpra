@@ -6,7 +6,7 @@
 
 import os
 import sys
-from typing import List
+from typing import List, Dict
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "keyboard")

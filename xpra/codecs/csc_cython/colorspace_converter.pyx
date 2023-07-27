@@ -9,7 +9,7 @@
 import os
 import sys
 import time
-from typing import Any, Tuple
+from typing import Any, Tuple, List, Dict
 
 from xpra.log import Logger
 log = Logger("csc", "cython")

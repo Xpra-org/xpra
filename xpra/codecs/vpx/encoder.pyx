@@ -7,7 +7,7 @@ import os
 import math
 from collections import deque
 from time import monotonic
-from typing import Any
+from typing import Any, Dict
 
 from xpra.log import Logger
 log = Logger("encoder", "vpx")
