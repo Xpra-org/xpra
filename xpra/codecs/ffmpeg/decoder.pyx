@@ -732,8 +732,6 @@ cdef class Decoder:
             return  False
         self.actual_pix_fmt = self.pix_fmt
 
-        register_all()
-
         cdef AVCodecID CodecID
         if self.encoding=="h264":
             CodecID = AV_CODEC_ID_H264
