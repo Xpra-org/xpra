@@ -379,7 +379,7 @@ class X11ServerCore(GTKServerBase):
         enabled = getattr(self, "cursors", False)
         if not (enabled and ("default" in ce) and dci):
             return
-        cursorlog(f"default_cursor_image={dci}, cursors_enabled=%s, encodings={ce}", )
+        cursorlog(f"default_cursor_image={dci}, cursors_enabled={enabled}, encodings={ce}")
         try:
             ss.do_send_cursor(0, dci, self.get_cursor_sizes(), encoding_prefix="default:")
         except Exception:
