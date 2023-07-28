@@ -6,7 +6,7 @@
 import os
 import sys
 import subprocess
-from queue import Queue
+from queue import SimpleQueue
 from typing import Any
 
 from xpra.gtk_common.gobject_compat import register_os_signals
@@ -97,7 +97,7 @@ class subprocess_callee:
         self.large_packets = []
         #the gobject instance which is wrapped:
         self.wrapped_object = wrapped_object
-        self.send_queue = Queue()
+        self.send_queue = SimpleQueue()
         self.protocol = None
         register_os_signals(self.handle_signal, self.name)
         self.setup_mainloop()
@@ -338,7 +338,7 @@ class subprocess_caller:
         self.protocol = None
         self.command = None
         self.description = description
-        self.send_queue = Queue()
+        self.send_queue = SimpleQueue()
         self.signal_callbacks = {}
         self.large_packets = []
         #hook a default packet handlers:

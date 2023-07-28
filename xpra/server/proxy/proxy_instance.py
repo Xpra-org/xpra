@@ -6,7 +6,7 @@
 
 import socket
 from time import sleep, time, monotonic
-from queue import Queue
+from queue import SimpleQueue, Queue
 from typing import Any, Callable
 
 from xpra.net.net_util import get_network_caps
@@ -117,7 +117,7 @@ class ProxyInstance:
         self.server_protocol.enable_default_encoder()
 
         self.lost_windows = set()
-        self.encode_queue = Queue()
+        self.encode_queue = SimpleQueue()
         self.encode_thread = start_thread(self.encode_loop, "encode")
 
         self.start_network_threads()
@@ -581,7 +581,7 @@ class ProxyInstance:
         q = self.encode_queue
         if q:
             q.put_nowait(None)
-            q = Queue()
+            q = SimpleQueue()
             q.put(None)
             self.encode_queue = q
 

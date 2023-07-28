@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from queue import Queue, Empty
+from queue import SimpleQueue, Empty
 from typing import Any, Callable
 
 from xpra.util import typedict, envint, parse_simple_dict
@@ -223,7 +223,7 @@ class VideoPipeline(Pipeline):
         self.height : int = height
         self.colorspace : str = colorspace
         self.frames : int = 0
-        self.frame_queue : Queue[Any] = Queue()
+        self.frame_queue : SimpleQueue[Any] = SimpleQueue()
         self.pipeline_str : str = ""
         self.create_pipeline(options)
         self.src : Gst.Element = self.pipeline.get_by_name("src")

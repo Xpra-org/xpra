@@ -7,7 +7,7 @@ import time
 import asyncio
 from typing import Any, Awaitable, Callable
 
-from queue import Queue
+from queue import SimpleQueue
 from collections import namedtuple
 from collections.abc import Coroutine, Generator
 
@@ -79,7 +79,7 @@ class threaded_asyncio_loop:
 
 
     def sync(self, async_fn:Callable[..., Awaitable[Any]], *args) -> Any:
-        response : Queue[Any] = Queue()
+        response : SimpleQueue[Any] = SimpleQueue()
 
         async def awaitable():
             log("awaitable()")

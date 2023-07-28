@@ -6,7 +6,7 @@
 
 import os
 import signal
-from queue import Queue
+from queue import SimpleQueue
 from multiprocessing import Process
 
 from xpra.server.proxy.proxy_instance import ProxyInstance
@@ -165,7 +165,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             return
         self.control_socket_thread = start_thread(self.control_socket_loop, "control", daemon=True)
 
-        self.main_queue = Queue()
+        self.main_queue = SimpleQueue()
 
         ProxyInstance.run(self)
 

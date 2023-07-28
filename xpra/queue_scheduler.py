@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from queue import Queue
+from queue import SimpleQueue
 from threading import Timer, RLock
 from typing import Any, TypeAlias
 
@@ -20,7 +20,7 @@ class QueueScheduler:
     __slots__ = ("main_queue", "exit", "timer_id", "timers", "timer_lock")
 
     def __init__(self):
-        self.main_queue : Queue[ScheduledItemType | None] = Queue()
+        self.main_queue : SimpleQueue[ScheduledItemType | None] = SimpleQueue()
         self.exit = False
         self.timer_id = AtomicInteger()
         self.timers : dict[int, Timer | None] = {}
@@ -109,6 +109,6 @@ class QueueScheduler:
     def stop_main_queue(self) -> None:
         self.main_queue.put(None)
         #empty the main queue:
-        q : Queue = Queue()
+        q : SimpleQueue = SimpleQueue()
         q.put(None)
         self.main_queue = q

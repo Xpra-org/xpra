@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from queue import Queue
+from queue import SimpleQueue
 from gi.repository import GObject, GLib               #@UnresolvedImport
 
 from xpra.gtk_common.gobject_util import one_arg_signal
@@ -32,7 +32,7 @@ class loopback_connection(Connection):
     """ a fake connection which just writes back whatever is sent to it """
     def __init__(self, *args):
         Connection.__init__(self, *args)
-        self.queue = Queue()
+        self.queue = SimpleQueue()
 
     def read(self, _n):
         self.may_abort("read")

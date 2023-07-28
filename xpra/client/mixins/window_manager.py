@@ -14,7 +14,7 @@ import datetime
 import math
 from collections import deque
 from time import sleep, time, monotonic
-from queue import Queue
+from queue import SimpleQueue
 from threading import Thread
 from typing import Any, Callable
 from gi.repository import GLib  # @UnresolvedImport
@@ -145,7 +145,7 @@ class WindowClient(StubClientMixin):
         self.max_window_size : tuple[int, int] = (0, 0)
 
         #draw thread:
-        self._draw_queue = Queue()
+        self._draw_queue = SimpleQueue()
         self._draw_thread : Thread | None = None
         self._draw_counter : int = 0
 

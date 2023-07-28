@@ -5,7 +5,7 @@
 
 import socket
 import ipaddress
-from queue import Queue
+from queue import SimpleQueue
 from typing import Callable, Union, cast
 
 from aioquic.quic.configuration import QuicConfiguration
@@ -56,7 +56,7 @@ class ClientWebSocketConnection(XpraQuicConnection):
     def __init__(self, connection : HttpConnection, stream_id: int, transmit: Callable[[], None],
                  host : str, port : int, info=None, options=None) -> None:
         super().__init__(connection, stream_id, transmit, host, port, info, options)
-        self.write_buffer = Queue()
+        self.write_buffer = SimpleQueue()
 
     def flush_writes(self):
         #flush the buffered writes:

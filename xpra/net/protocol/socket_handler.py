@@ -13,7 +13,7 @@ from enum import Enum, IntEnum
 from time import monotonic
 from socket import error as socket_error
 from threading import Lock, RLock, Event, Thread, current_thread
-from queue import Queue
+from queue import Queue, SimpleQueue
 from typing import Any, ByteString, Callable, Iterable
 
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr
@@ -67,8 +67,8 @@ def noop():  # pragma: no cover
     pass
 
 
-def exit_queue() -> Queue:
-    queue = Queue()
+def exit_queue() -> SimpleQueue:
+    queue = SimpleQueue()
     for _ in range(10):     #just 2 should be enough!
         queue.put(None)
     return queue

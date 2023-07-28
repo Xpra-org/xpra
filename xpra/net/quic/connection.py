@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from queue import Queue
+from queue import SimpleQueue
 from typing import Callable, Union, Any
 
 from aioquic.h0.connection import H0Connection
@@ -35,7 +35,7 @@ class XpraQuicConnection(Connection):
         Connection.__init__(self, (host, port), "wss", info=info, options=options)
         self.socktype_wrapped = "quic"
         self.connection: HttpConnection = connection
-        self.read_queue: Queue[bytes] = Queue()
+        self.read_queue: SimpleQueue[bytes] = SimpleQueue()
         self.stream_id: int = stream_id
         self.transmit: Callable[[], None] = transmit
         self.accepted : bool = False

@@ -6,7 +6,6 @@
 
 import sys
 import os.path
-from queue import Queue
 from time import monotonic
 from typing import Any
 from gi.repository import GObject  # @UnresolvedImport
@@ -144,7 +143,8 @@ class AudioSource(AudioPipeline):
         self.sink.set_property("enable-last-sample", False)
         self.skipped_caps = set()
         if JITTER>0:
-            self.jitter_queue = Queue()
+            from queue import SimpleQueue
+            self.jitter_queue = SimpleQueue()
         self.sink.connect("new-sample", self.on_new_sample)
         self.sink.connect("new-preroll", self.on_new_preroll)
         self.src = self.pipeline.get_by_name("src")
