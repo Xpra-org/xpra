@@ -53,6 +53,9 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
+* Mon Jul 17 2023 Antoine Martin <antoine@xpra.org> 3.0.0-1
+- new upstream release
+
 * Thu Jul 13 2023 Antoine Martin <antoine@xpra.org> 3.0.0rc2-1
 - new upstream release
 
