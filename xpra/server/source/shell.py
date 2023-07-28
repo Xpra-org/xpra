@@ -67,9 +67,8 @@ class ShellMixin(StubSourceMixin):
                 }
             stdout = io.StringIO()
             stderr = io.StringIO()
-            with redirect_stdout(stdout):
-                with redirect_stderr(stderr):
-                    exec(code, _globals, {})  #pylint: disable=exec-used
+            with redirect_stdout(stdout), redirect_stderr(stderr):
+                exec(code, _globals, {})  #pylint: disable=exec-used
             return stdout.getvalue(), stderr.getvalue()
         except Exception as e:
             log("shell_exec(..)", exc_info=True)

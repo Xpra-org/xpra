@@ -4,7 +4,8 @@
 # later version. See the file COPYING for details.
 
 import os
-from xpra.os_util import HideStdErr
+from io import StringIO
+from contextlib import redirect_stderr
 from xpra.x11.bindings.xlib cimport (
     Success,
     Display, Window, Atom, Status,
@@ -25,11 +26,11 @@ def isX11(display_name : str=os.environ.get("DISPLAY", "")):
     b = display_name.encode()
     cdef char* display = b
     cdef Display *d = NULL
-    with HideStdErr():
+    with redirect_stderr(StringIO()) as f:
         d = XOpenDisplay(display)
-        if not d:
-            log(f"isX11({display_name}) cannot open display")
-            return False
+    if not d:
+        log(f"isX11({display_name}) cannot open display: %s", f.getvalue())
+        return False
     return True
 
 
@@ -37,11 +38,11 @@ def isxwayland(display_name : str=os.environ.get("DISPLAY", "")):
     b = display_name.encode()
     cdef char* display = b
     cdef Display *d = NULL
-    with HideStdErr():
+    with redirect_stderr(StringIO()) as f:
         d = XOpenDisplay(display)
-        if not d:
-            log(f"isxwayland({display_name}) cannot open display")
-            return False
+    if not d:
+        log(f"isxwayland({display_name}) cannot open display: %s", f.getvalue())
+        return False
     cdef int opcode, event, error
     try:
         #the easy way:
