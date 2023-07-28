@@ -45,7 +45,7 @@ apt-get install libx11-dev libxtst-dev libxcomposite-dev libxdamage-dev \
                 libxkbfile-dev python-all-dev python-gobject-dev python-gtk2-dev \
                 libx264-dev libvpx-dev \
                 xvfb xauth x11-xkb-utils \
-                zlib1g zlib1g-dev liblzo2-2 liblzo2-dev
+                zlib1g zlib1g-dev
 ```
 some system-supplied Python tools may just be too old, so get new ones directly from the world of Python:
 ```shell
@@ -58,7 +58,7 @@ to be able to use most of xpra's features, you may also want to install:
 apt-get install python-netifaces dbus-x11 python-dbus \
     hicolor-icon-theme python-avahi python-numpy \
     gstreamer1.0-x gstreamer1.0-tools \
-    python-pil python-lzo python-setuptools
+    python-pil python-setuptools
 ```
 build xpra from source as per [wiki](./README.md)
 
