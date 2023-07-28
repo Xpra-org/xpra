@@ -5,10 +5,10 @@
 
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
-%define package_prefix %{nil}
+%define package_prefix xpra
 %else
 %global python3 %{getenv:PYTHON3}
-%define package_prefix %{python3}-
+%define package_prefix %{python3}-xpra
 %undefine __pythondist_requires
 %undefine __python_requires
 %endif
@@ -61,7 +61,7 @@ exit 1
 %define revision_no 10
 %endif
 
-Name:				%{package_prefix}xpra
+Name:				%{package_prefix}
 Version:			%{version}
 Release:			%{revision_no}%{?dist}
 Summary:			Xpra gives you "persistent remote applications" for X.
@@ -75,19 +75,19 @@ Source:				https://xpra.org/src/xpra-%{version}.tar.xz
 #BuildArch: noarch
 BuildRoot:			%{_tmppath}/%{name}-%{version}-root
 Requires:			xpra-html5 >= 5
-Requires:			%{package_prefix}xpra-common = %{version}-%{release}
-Requires:			%{package_prefix}xpra-codecs = %{version}-%{release}
-Recommends:			%{package_prefix}xpra-codecs-extra = %{version}-%{release}
-Recommends:			%{package_prefix}xpra-codecs-nvidia = %{version}-%{release}
-Requires:			%{package_prefix}xpra-client = %{version}-%{release}
-Requires:			%{package_prefix}xpra-client-gtk3 = %{version}-%{release}
-Requires:			%{package_prefix}xpra-server = %{version}-%{release}
+Requires:			%{package_prefix}-common = %{version}-%{release}
+Requires:			%{package_prefix}-codecs = %{version}-%{release}
+Recommends:			%{package_prefix}-codecs-extra = %{version}-%{release}
+Recommends:			%{package_prefix}-codecs-nvidia = %{version}-%{release}
+Requires:			%{package_prefix}-client = %{version}-%{release}
+Requires:			%{package_prefix}-client-gtk3 = %{version}-%{release}
+Requires:			%{package_prefix}-server = %{version}-%{release}
 %if 0%{?fedora}
-Requires:			%{package_prefix}xpra-audio = %{version}-%{release}
+Requires:			%{package_prefix}-audio = %{version}-%{release}
 %else
-Recommends:			%{package_prefix}xpra-audio = %{version}-%{release}
+Recommends:			%{package_prefix}-audio = %{version}-%{release}
 %endif
-%description
+%description -n %{package_prefix}
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
 
 So basically it's screen for remote X apps.
@@ -101,7 +101,7 @@ BuildRequires:		pkgconfig
 BuildRequires:		%{python3}-setuptools
 %endif
 
-%package common
+%package -n %{package_prefix}-common
 Summary:			Common files for xpra packages
 Group:				Networking
 Requires(pre):		shadow-utils
@@ -157,11 +157,11 @@ BuildRequires:		pkgconfig(gobject-introspection-1.0)
 BuildRequires:		%{python3}-cryptography
 BuildRequires:		%{python3}-numpy
 %endif
-%description common
+%description -n %{package_prefix}-common
 This package contains the files which are shared between the xpra client and server packages.
 
 
-%package codecs
+%package -n %{package_prefix}-codecs
 Summary:			Picture and video codecs for xpra clients and servers.
 Group:				Networking
 Suggests:			xpra-codecs-extra
@@ -194,10 +194,10 @@ Requires:			libspng
 #Requires:			libevdi
 #this is a downstream package - it should not be installed:
 Conflicts:			xpra-codecs-freeworld
-%description codecs
+%description -n %{package_prefix}-codecs
 This package contains extra picture and video codecs used by xpra clients and servers.
 
-%package codecs-extras
+%package -n %{package_prefix}-codecs-extras
 Summary:			Extra picture and video codecs for xpra clients and servers.
 #before switching to EPEL / rpmfusion, we were using private libraries:
 #Conflicts:			x264-xpra
@@ -220,25 +220,25 @@ Recommends:			gstreamer1-plugins-ugly
 Recommends:			gstreamer1-plugins-bad-free-extras
 #pipewire:
 Recommends:			pipewire-gstreamer
-%description codecs-extras
+%description -n %{package_prefix}-codecs-extras
 This package contains extra picture and video codecs used by xpra clients and servers.
 These codecs may have patent or licensing issues.
 
 %if 0%{?nvidia_codecs}
-%package codecs-nvidia
+%package -n %{package_prefix}-codecs-nvidia
 Summary:			Picture and video codecs that rely on NVidia GPUs and CUDA.
 Group:				Networking
 BuildRequires:		cuda
 Requires:			xpra-codecs = %{version}-%{release}
 Requires:			%{python3}-pycuda
 Recommends:			%{python3}-pynvml
-%description codecs-nvidia
+%description -n %{package_prefix}-codecs-nvidia
 This package contains the picture and video codecs that rely on NVidia GPUs and CUDA,
 this is used by both xpra clients and servers. 
 %endif
 
 
-%package audio
+%package -n %{package_prefix}-audio
 Summary:			%{python3} build of xpra audio support
 Group:				Networking
 Obsoletes:			%{python3}-xpra-audio < 5.0-10.r32075
@@ -259,11 +259,11 @@ BuildRequires:		gstreamer1-plugins-good
 BuildRequires:		pulseaudio
 BuildRequires:		pulseaudio-utils
 %endif
-%description audio
+%description -n %{package_prefix}-audio
 This package contains audio support for xpra.
 
 
-%package client
+%package -n %{package_prefix}-client
 Summary:			xpra client
 Group:				Networking
 Obsoletes:			%{python3}-xpra-client < 5.0-10.r32075
@@ -275,11 +275,11 @@ Recommends:			%{python3}-cups
 Recommends:		    %{python3}-pysocks
 Recommends:         NetworkManager-libnm
 Suggests:			sshpass
-%description client
+%description -n %{package_prefix}-client
 This package contains the xpra client.
 
 
-%package client-gtk3
+%package -n %{package_prefix}-client-gtk3
 Summary:			GTK3 xpra client
 Group:				Networking
 Requires:			xpra-client = %{version}-%{release}
@@ -305,11 +305,11 @@ BuildRequires:		xclip
 BuildRequires:		zlib-devel
 %endif
 %endif
-%description client-gtk3
+%description -n%{package_prefix}-client-gtk3
 This package contains the GTK3 xpra client.
 
 
-%package x11
+%package -n %{package_prefix}-x11
 Summary:			X11 bindings
 BuildRequires:		pkgconfig(xkbfile)
 BuildRequires:		pkgconfig(xtst)
@@ -338,11 +338,11 @@ Requires:			xorg-x11-xauth
 Recommends:			xterm
 Recommends:			mesa-dri-drivers
 Recommends:         %{python3}-lxml
-%description x11
+%description -n %{package_prefix}-x11
 This package contains the x11 bindings
 
 
-%package server
+%package -n %{package_prefix}-server
 Summary:			xpra server
 Group:				Networking
 Obsoletes:			%{python3}-xpra-server < 5.0-10.r32075
@@ -367,7 +367,10 @@ Suggests:			tcp_wrappers-libs
 Suggests:			%{python3}-ldap3
 Suggests:			%{python3}-ldap
 Suggests:			%{python3}-oauthlib
+%if "%{package_prefix}"==""
+#python prefixed builds would need this new package:
 BuildRequires:		%{python3}-cups
+%endif
 BuildRequires:		pkgconfig(libsystemd)
 BuildRequires:		checkpolicy
 BuildRequires:		selinux-policy-devel
@@ -397,7 +400,7 @@ BuildRequires:		%{python3}-pyxdg
 %endif
 Requires(post):		/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
 Requires(postun):	/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
-%description server
+%description -n %{package_prefix}-server
 This package contains the xpra server.
 
 
@@ -472,7 +475,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 
-%files common
+%files -n %{package_prefix}-common
 %defattr(-,root,root)
 %{_bindir}/xpra
 %{_datadir}/xpra/README.md
@@ -519,11 +522,11 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra-*.egg-info
 
 
-%files x11
+%files -n %{package_prefix}-x11
 %{python3_sitearch}/xpra/x11/
 
 
-%files codecs
+%files -n %{package_prefix}-codecs
 %{python3_sitearch}/xpra/codecs/drm
 #/xpra/codecs/evdi
 %{python3_sitearch}/xpra/codecs/jpeg
@@ -539,29 +542,29 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/spng
 %endif
 
-%files codecs-extras
+%files -n %{package_prefix}-codecs-extras
 %{python3_sitearch}/xpra/codecs/x26?
 %{python3_sitearch}/xpra/codecs/gstreamer
 
 %if 0%{?nvidia_codecs}
-%files codecs-nvidia
+%files -n %{package_prefix}-codecs-nvidia
 %{_datadir}/xpra/cuda
 %config(noreplace) %{_sysconfdir}/xpra/cuda.conf
 %config(noreplace) %{_sysconfdir}/xpra/*.keys
 %{python3_sitearch}/xpra/codecs/nvidia
 %endif
 
-%files audio
+%files -n %{package_prefix}-audio
 %config %{_sysconfdir}/xpra/conf.d/20_audio.conf
 %{python3_sitearch}/xpra/audio/
 
-%files client
+%files -n %{package_prefix}-client
 %{python3_sitearch}/xpra/client/auth/
 %{python3_sitearch}/xpra/client/base/
 %pycached %{python3_sitearch}/xpra/client/__init__.py
 %config %{_sysconfdir}/xpra/conf.d/40_client.conf
 
-%files client-gtk3
+%files -n %{package_prefix}-client-gtk3
 %{_bindir}/xpra_launcher
 %{_bindir}/run_scaled*
 %{python3_sitearch}/xpra/client/gui/
@@ -576,7 +579,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/mime/packages/application-x-xpraconfig.xml
 %{_datadir}/xpra/autostart.desktop
 
-%files server
+%files -n %{package_prefix}-server
 %{python3_sitearch}/xpra/server
 %{python3_sitearch}/xpra/codecs/proxy
 %{_sysconfdir}/dbus-1/system.d/xpra.conf
@@ -639,7 +642,7 @@ popd
 %endif
 
 
-%post server
+%post -n %{package_prefix}-server
 %tmpfiles_create xpra.conf
 #fedora can use sysusers.d instead
 %sysusers_create xpra.conf
@@ -698,14 +701,14 @@ fi
 #reload dbus to get our new policy:
 systemctl reload dbus
 
-%post client
+%post -n %{package_prefix}-client
 /usr/bin/update-mime-database &> /dev/null || :
 
-%post client-gtk3
+%post -n %{package_prefix}-client-gtk3
 /usr/bin/update-desktop-database &> /dev/null || :
 /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
 
-%preun server
+%preun -n %{package_prefix}-server
 if [ $1 -eq 0 ] ; then
 	/bin/systemctl daemon-reload >/dev/null 2>&1 || :
 	/bin/systemctl disable xpra.service > /dev/null 2>&1 || :
@@ -714,7 +717,7 @@ if [ $1 -eq 0 ] ; then
 	/bin/systemctl stop xpra.socket > /dev/null 2>&1 || :
 fi
 
-%postun server
+%postun -n %{package_prefix}-server
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 %if 0%{update_firewall}
 if [ $1 -eq 0 ]; then
@@ -744,17 +747,17 @@ if [ $1 -eq 0 ] ; then
 fi
 %endif
 
-%postun client
+%postun -n %{package_prefix}-client
 /usr/bin/update-mime-database &> /dev/null || :
 
-%postun client-gtk3
+%postun -n %{package_prefix}-client-gtk3
 /usr/bin/update-desktop-database &> /dev/null || :
 if [ $1 -eq 0 ] ; then
 	/bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null
 	/usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 fi
 
-%posttrans common
+%posttrans -n %{package_prefix}-common
 /usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 
 
