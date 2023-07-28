@@ -7,7 +7,7 @@
 import os
 import unittest
 
-from xpra.os_util import DummyContextManager
+from contextlib import nullcontext
 from xpra.util import AdHocStruct
 from xpra.client.mixins import mmap
 
@@ -24,7 +24,7 @@ class MixinsTest(ClientMixinTest):
 		import tempfile
 		tmp_dir = tempfile.gettempdir()
 		for mmap_option, ctx in {
-			"off" : DummyContextManager(),
+			"off" : nullcontext(),
 			"on"  : silence_info(mmap),
 			tmp_dir+"/xpra-mmap-test-file-%i" % os.getpid() : silence_info(mmap),
 			tmp_dir+"/xpra-fail-mmap-test-file-%i" % os.getpid() : silence_error(mmap),

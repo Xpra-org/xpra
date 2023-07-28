@@ -739,16 +739,6 @@ class OSEnvContext:
         return "OSEnvContext"
 
 
-class DummyContextManager:
-    __slots__ = ()
-    def __enter__(self):
-        """ do nothing """
-    def __exit__(self, *_args):
-        """ do nothing """
-    def __repr__(self):
-        return "DummyContextManager"
-
-
 #workaround incompatibility between paramiko and gssapi:
 class nomodule_context:
     __slots__ = ("module_name", "saved_module")

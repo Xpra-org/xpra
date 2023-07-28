@@ -13,10 +13,11 @@ import os
 import sys
 import glob
 from time import monotonic
+from contextlib import nullcontext
 from typing import Any, Generator as generator       #@UnresolvedImport, @UnusedImport
 
 from xpra.util import envbool, first_time
-from xpra.os_util import DummyContextManager, OSEnvContext, get_saved_env
+from xpra.os_util import OSEnvContext, get_saved_env
 from xpra.codecs import icon_util
 from xpra.platform.paths import get_icon_filename
 from xpra.log import Logger
@@ -75,7 +76,7 @@ MAX_THEMES : int = 2
 IconTheme : type | None = None
 Config : type | None = None
 themes : dict[str,Any] = {}
-IconLoadingContext : type = DummyContextManager
+IconLoadingContext : type = nullcontext
 if LOAD_FROM_THEME:
     try:
         import xdg

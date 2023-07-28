@@ -8,7 +8,7 @@ import os
 import time
 from time import monotonic
 from typing import Any, Callable, Iterable
-from contextlib import AbstractContextManager
+from contextlib import AbstractContextManager, nullcontext
 from gi.repository import GLib  # @UnresolvedImport
 
 from OpenGL import version as OpenGL_version
@@ -59,7 +59,6 @@ from OpenGL.GL.ARB.framebuffer_object import (
 from xpra.os_util import (
     strtobytes, bytestostr, hexstr,
     POSIX, OSX,
-    DummyContextManager,
     )
 from xpra.util import envint, envbool, repr_ellipsized, first_time, roundup
 from xpra.common import noop
@@ -228,7 +227,7 @@ if envbool("XPRA_ZEROCOPY_OPENGL_UPLOAD", True):
     else:
         zerocopy_upload = OpenGL_version.__version__==OpenGL_accelerate.__version__
 
-paint_context_manager: AbstractContextManager = DummyContextManager()
+paint_context_manager: AbstractContextManager = nullcontext()
 if POSIX and not OSX:
     # pylint: disable=ungrouped-imports
     from xpra.gtk_common.error import xsync

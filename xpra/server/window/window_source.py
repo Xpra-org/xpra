@@ -12,9 +12,10 @@ import threading
 from math import sqrt, ceil
 from collections import deque
 from time import monotonic
+from contextlib import nullcontext
 from typing import Callable, Iterable, ContextManager, Any
 
-from xpra.os_util import bytestostr, POSIX, OSX, DummyContextManager
+from xpra.os_util import bytestostr, POSIX, OSX
 from xpra.util import envint, envbool, csv, typedict, first_time, decode_str, repr_ellipsized
 from xpra.common import MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
 from xpra.server.window.windowicon_source import WindowIconSource
@@ -114,7 +115,7 @@ COMPRESS_FMT_SUFFIX : str = ", sequence %5i, client_options=%-50s, options=%s"
 COMPRESS_FMT        : str = COMPRESS_FMT_PREFIX+" with ratio %5.1f%%  (%5iKB to %5iKB)"+COMPRESS_FMT_SUFFIX
 
 
-ui_context : ContextManager = DummyContextManager()
+ui_context : ContextManager = nullcontext()
 if POSIX and not OSX:
     from xpra.gtk_common.error import xlog
     ui_context = xlog

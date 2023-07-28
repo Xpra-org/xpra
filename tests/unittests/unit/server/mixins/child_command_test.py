@@ -7,8 +7,9 @@
 import os
 import time
 import unittest
+from contextlib import nullcontext
 
-from xpra.os_util import POSIX, DummyContextManager
+from xpra.os_util import POSIX
 from xpra.util import AdHocStruct
 from unit.test_util import silence_info
 from unit.server.mixins.servermixintest_util import ServerMixinTest
@@ -21,7 +22,7 @@ class ChildCommandMixinTest(ServerMixinTest):
             from xpra.platform.posix.xdg_helper import log
             c = silence_info(log)
         except ImportError:
-            c = DummyContextManager()
+            c = nullcontext()
         with c:
             self.do_test_command_server()
 

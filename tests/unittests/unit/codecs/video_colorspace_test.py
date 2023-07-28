@@ -7,6 +7,7 @@
 import sys
 import unittest
 import binascii
+from contextlib import nullcontext
 
 from xpra.util import typedict
 from xpra.os_util import hexstr
@@ -116,8 +117,7 @@ class Test_Roundtrip(unittest.TestCase):
         decodings = vh.get_decodings()
         common = [x for x in encodings if x in decodings]
         options = {"max-delayed" : 0}
-        from xpra.os_util import DummyContextManager
-        ctx = DummyContextManager()
+        ctx = nullcontext()
         try:
             from xpra.codecs.nvidia.cuda_context import get_default_device_context
             ctx = get_default_device_context()
