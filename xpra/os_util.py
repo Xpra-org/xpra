@@ -814,10 +814,8 @@ def find_lib(libname:str):
     # it found the library in
     assert POSIX
     libpaths = os.environ.get("LD_LIBRARY_PATH", "").split(":")
-    if BITS==64 and os.path.exists("/usr/lib64"):
-        libpaths.append("/usr/lib64")
-    else:
-        libpaths.append("/usr/lib")
+    if sys.platlibdir not in libpaths:
+        libpaths.append(sys.platlibdir)
     for libpath in libpaths:
         if not libpath or not os.path.exists(libpath):
             continue
