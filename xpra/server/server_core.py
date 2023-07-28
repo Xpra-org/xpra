@@ -1570,7 +1570,7 @@ class ServerCore:
             is_ssl = False
         if http:
             if not has_websocket_handler():
-                conn_err(f"websocket module is not installed")
+                conn_err("websocket module is not installed")
                 return False, None, b""
             ws_protocol = "wss" if is_ssl else "ws"
             if not can_upgrade_to(ws_protocol):
