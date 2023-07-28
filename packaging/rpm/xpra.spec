@@ -270,8 +270,6 @@ Requires:			xpra-common = %{version}-%{release}
 BuildRequires:		desktop-file-utils
 Requires(post):		desktop-file-utils
 Requires(postun):	desktop-file-utils
-BuildRequires:		python3-pyxdg
-BuildRequires:		python3-cups
 Recommends:			python3-cups
 Recommends:		    python3-pysocks
 Recommends:         NetworkManager-libnm
@@ -371,6 +369,7 @@ Suggests:			tcp_wrappers-libs
 Suggests:			python3-ldap3
 Suggests:			python3-ldap
 Suggests:			python3-oauthlib
+BuildRequires:		python3-cups
 BuildRequires:		pkgconfig(libsystemd)
 BuildRequires:		checkpolicy
 BuildRequires:		selinux-policy-devel
@@ -391,6 +390,7 @@ Recommends:			gnome-icon-theme
 #allows the server to use software opengl:
 Recommends:			mesa-libOSMesa
 %if 0%{?run_tests}
+BuildRequires:		python3-pyxdg
 BuildRequires:		dbus-x11
 BuildRequires:		dbus-tools
 BuildRequires:		tigervnc
