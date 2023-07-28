@@ -34,7 +34,7 @@ def native_to_dbus(value, signature=None):
     try:
         from dbus import types
     except ImportError as e:
-        raise RuntimeError("the dbus bindings are missing: {e}")
+        raise RuntimeError(f"the dbus bindings are missing: {e}")
     if value is None:
         return None
     if isinstance(value, int):
