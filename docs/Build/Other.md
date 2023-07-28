@@ -125,7 +125,7 @@ apt-get install libx11-dev libxtst-dev libxcomposite-dev \
 ```
 A decent set of runtime dependencies:
 ```shell
-apt-get install python-lz4 python-cryptography
+apt-get install python-cryptography
 pip install pyopengl pyopengl-accelerate rencode \
     netifaces websocket-client websockify pillow
 ```
