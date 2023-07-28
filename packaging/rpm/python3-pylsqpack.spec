@@ -1,6 +1,14 @@
 %define _disable_source_fetch 0
+%if "%{getenv:PYTHON3}" == ""
+%global python3 python3
+%else
+%global python3 %{getenv:PYTHON3}
+%undefine __pythondist_requires
+%undefine __python_requires
+%endif
+%define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))")
 
-Name:           python3-pylsqpack
+Name:           %{python3}-pylsqpack
 Version:        0.3.17
 Release:        1%{?dist}
 Summary:        pylsqpack is a wrapper around the ls-qpack library
@@ -9,10 +17,10 @@ License:        MIT
 URL:            https://github.com/aiortc/pylsqpack
 Source0:        https://files.pythonhosted.org/packages/40/15/e38751187d1db74efce30d45e72ae0035e506101585e28eee525bc465f7e/pylsqpack-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  python3-devel
-BuildRequires:  python3-setuptools
+BuildRequires:  %{python3}-devel
+BuildRequires:  %{python3}-setuptools
 BuildRequires:  gcc
-Requires:       python3
+Requires:       %{python3}
 
 %description
 It provides Python Decoder and Encoder objects
@@ -29,12 +37,12 @@ fi
 
 
 %build
-%{__python3} setup.py build
+%{python3} setup.py build
 
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%{__python3} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT
+%{python3} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT
 # RHEL stream setuptools bug?
 rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 

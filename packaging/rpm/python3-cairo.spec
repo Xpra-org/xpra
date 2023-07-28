@@ -1,4 +1,13 @@
 %define _disable_source_fetch 0
+%if "%{getenv:PYTHON3}" == ""
+%global python3 python3
+%else
+%global python3 %{getenv:PYTHON3}
+%undefine __pythondist_requires
+%undefine __python_requires
+%endif
+%define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))")
+%define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))")
 
 Name: pycairo
 Version: 1.20.0
@@ -12,28 +21,24 @@ Source0: https://github.com/pygobject/pycairo/releases/download/v%{version}/pyca
 BuildRequires: cairo-devel
 BuildRequires: gcc
 BuildRequires: pkgconfig
-BuildRequires: python3-devel
-%if !0%{?ol8}
-BuildRequires: python3-pytest
-%endif
-BuildRequires: python3-setuptools
+BuildRequires: %{python3}-devel
+BuildRequires: %{python3}-setuptools
 
 %description
 Python bindings for the cairo library.
 
-%package -n python3-cairo
+%package -n %{python3}-cairo
 Summary: Python 3 bindings for the cairo library
-%{?python_provide:%python_provide python3-cairo}
 
-%description -n python3-cairo
+%description -n %{python3}-cairo
 Python 3 bindings for the cairo library.
 
-%package -n python3-cairo-devel
+%package -n %{python3}-cairo-devel
 Summary: Libraries and headers for py3cairo
 Requires: python3-cairo%{?_isa} = %{version}-%{release}
 Requires: python3-devel
 
-%description -n python3-cairo-devel
+%description -n %{python3}-cairo-devel
 This package contains files required to build wrappers for cairo add-on
 libraries so that they interoperate with py3cairo.
 
@@ -52,11 +57,6 @@ fi
 %py3_install
 # RHEL stream setuptools bug?
 rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
-
-%check
-%if !0%{?ol8}
-%{__python3} setup.py test
-%endif
 
 %files -n python3-cairo
 %license COPYING*

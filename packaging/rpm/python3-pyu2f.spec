@@ -4,10 +4,20 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
+%if "%{getenv:PYTHON3}" == ""
+%global python3 python3
+%else
+%global python3 %{getenv:PYTHON3}
+%undefine __pythondist_requires
+%undefine __python_requires
+%endif
+%define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))")
+%define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))")
+
 #this is a pure python package so debug is meaningless here:
 %define debug_package %{nil}
 
-Name:           python3-pyu2f
+Name:           %{python3}-pyu2f
 Version:        0.1.5
 Release:        3
 URL:            https://github.com/google/pyu2f
@@ -30,10 +40,10 @@ fi
 %setup -q -n pyu2f-0.1.5
 
 %build
-%{__python3} ./setup.py build
+%{python3} ./setup.py build
 
 %install
-%{__python3} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
+%{python3} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
 # RHEL stream setuptools bug?
 rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 

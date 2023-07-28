@@ -3,12 +3,25 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define _disable_source_fetch 0
+%if "%{getenv:PYTHON3}" == ""
+%global python3 python3
+%define package_prefix %{nil}
+%else
+%global python3 %{getenv:PYTHON3}
+%define package_prefix %{python3}-
+%undefine __pythondist_requires
+%undefine __python_requires
+%endif
+%define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))")
+%define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))")
+
 %define version 6.0
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-enc_x265 --without-cuda_rebuild
 %global __requires_exclude ^(libnvjpeg|libnvidia-).*\\.so.*$
+%{!?python3: %define python3 %{getenv:PYTHON3}}
+%{!?python3: %define python3 python3}
 
 %{!?nthreads: %global nthreads %(nproc)}
 %{!?update_firewall: %define update_firewall 1}
@@ -48,7 +61,7 @@ exit 1
 %define revision_no 10
 %endif
 
-Name:				xpra
+Name:				%{package_prefix}xpra
 Version:			%{version}
 Release:			%{revision_no}%{?dist}
 Summary:			Xpra gives you "persistent remote applications" for X.
@@ -62,17 +75,17 @@ Source:				https://xpra.org/src/xpra-%{version}.tar.xz
 #BuildArch: noarch
 BuildRoot:			%{_tmppath}/%{name}-%{version}-root
 Requires:			xpra-html5 >= 5
-Requires:			xpra-common = %{version}-%{release}
-Requires:			xpra-codecs = %{version}-%{release}
-Recommends:			xpra-codecs-extra = %{version}-%{release}
-Recommends:			xpra-codecs-nvidia = %{version}-%{release}
-Requires:			xpra-client = %{version}-%{release}
-Requires:			xpra-client-gtk3 = %{version}-%{release}
-Requires:			xpra-server = %{version}-%{release}
+Requires:			%{package_prefix}xpra-common = %{version}-%{release}
+Requires:			%{package_prefix}xpra-codecs = %{version}-%{release}
+Recommends:			%{package_prefix}xpra-codecs-extra = %{version}-%{release}
+Recommends:			%{package_prefix}xpra-codecs-nvidia = %{version}-%{release}
+Requires:			%{package_prefix}xpra-client = %{version}-%{release}
+Requires:			%{package_prefix}xpra-client-gtk3 = %{version}-%{release}
+Requires:			%{package_prefix}xpra-server = %{version}-%{release}
 %if 0%{?fedora}
-Requires:			xpra-audio = %{version}-%{release}
+Requires:			%{package_prefix}xpra-audio = %{version}-%{release}
 %else
-Recommends:			xpra-audio = %{version}-%{release}
+Recommends:			%{package_prefix}xpra-audio = %{version}-%{release}
 %endif
 %description
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
@@ -82,10 +95,10 @@ So basically it's screen for remote X apps.
 This metapackage installs the xpra in full, including the python client, server and HTML5 client.
 BuildRequires:		gcc
 BuildRequires:		gcc-c++
-BuildRequires:		python3-Cython
+BuildRequires:		%{python3}-Cython
 BuildRequires:		pkgconfig
 %if 0%{?fedora}>=38
-BuildRequires:		python3-setuptools
+BuildRequires:		%{python3}-setuptools
 %endif
 
 %package common
@@ -101,26 +114,26 @@ Obsoletes:			xpra-common-server < 5.0-10.r32075
 Obsoletes:			python3-xpra < 5.0-10.r32075
 BuildRequires:		pandoc
 BuildRequires:		which
-Requires:			python3
-Requires:			python3-gobject
-Recommends:			python3-pillow
-Recommends:			python3-cryptography
-Recommends:			python3-inotify
-Recommends:			python3-netifaces
-Recommends:			python3-dbus
-Recommends:			python3-dns
-Recommends:			python3-paramiko
-Suggests:			python3-kerberos
-Suggests:			python3-gssapi
-Suggests:			python3-ldap
-Suggests:			python3-ldap3
-#Suggests:           python3-cpuinfo
-Recommends:			python3-aioquic
+Requires:			%{python3}
+Requires:			%{python3}-gobject
+Recommends:			%{python3}-pillow
+Recommends:			%{python3}-cryptography
+Recommends:			%{python3}-inotify
+Recommends:			%{python3}-netifaces
+Recommends:			%{python3}-dbus
+Recommends:			%{python3}-dns
+Recommends:			%{python3}-paramiko
+Suggests:			%{python3}-kerberos
+Suggests:			%{python3}-gssapi
+Suggests:			%{python3}-ldap
+Suggests:			%{python3}-ldap3
+Suggests:           %{python3}-cpuinfo
+Recommends:			%{python3}-aioquic
 %if 0%{?el9}
-Recommends:			python3-avahi
+Recommends:			%{python3}-avahi
 %endif
 %if 0%{?fedora}
-Recommends:			python3-zeroconf
+Recommends:			%{python3}-zeroconf
 %endif
 BuildRequires:		pkgconfig(liblz4)
 Requires:			lz4-libs
@@ -132,17 +145,17 @@ Recommends:			qrencode
 BuildRequires:		coreutils
 BuildRequires:		gcc
 BuildRequires:		gcc-c++
-BuildRequires:		python3
-BuildRequires:		python3-devel
-BuildRequires:		python3-Cython
-BuildRequires:		python3-gobject
+BuildRequires:		%{python3}
+BuildRequires:		%{python3}-devel
+BuildRequires:		%{python3}-Cython
+BuildRequires:		%{python3}-gobject
 BuildRequires:		pkgconfig(pygobject-3.0)
 BuildRequires:		pkgconfig(py3cairo)
 BuildRequires:		pkgconfig(gtk+-3.0)
 BuildRequires:		pkgconfig(gobject-introspection-1.0)
 %if 0%{?run_tests}
-BuildRequires:		python3-cryptography
-BuildRequires:		python3-numpy
+BuildRequires:		%{python3}-cryptography
+BuildRequires:		%{python3}-numpy
 %endif
 %description common
 This package contains the files which are shared between the xpra client and server packages.
@@ -154,7 +167,7 @@ Group:				Networking
 Suggests:			xpra-codecs-extra
 Suggests:			xpra-codecs-nvidia
 Requires:			xpra-common = %{version}-%{release}
-Requires:			python3-pillow
+Requires:			%{python3}-pillow
 BuildRequires:		pkgconfig(libdrm)
 Requires:			libdrm
 BuildRequires:		pkgconfig(vpx)
@@ -217,8 +230,8 @@ Summary:			Picture and video codecs that rely on NVidia GPUs and CUDA.
 Group:				Networking
 BuildRequires:		cuda
 Requires:			xpra-codecs = %{version}-%{release}
-Requires:			python3-pycuda
-Recommends:			python3-pynvml
+Requires:			%{python3}-pycuda
+Recommends:			%{python3}-pynvml
 %description codecs-nvidia
 This package contains the picture and video codecs that rely on NVidia GPUs and CUDA,
 this is used by both xpra clients and servers. 
@@ -226,10 +239,9 @@ this is used by both xpra clients and servers.
 
 
 %package audio
-Summary:			python3 build of xpra audio support
+Summary:			%{python3} build of xpra audio support
 Group:				Networking
-#Provides:			python3-xpra-audio
-Obsoletes:			python3-xpra-audio < 5.0-10.r32075
+Obsoletes:			%{python3}-xpra-audio < 5.0-10.r32075
 Requires:			xpra-common = %{version}-%{release}
 Requires:			gstreamer1
 Requires:			gstreamer1-plugins-base
@@ -254,16 +266,13 @@ This package contains audio support for xpra.
 %package client
 Summary:			xpra client
 Group:				Networking
-#Provides:			python3-xpra-client
-Obsoletes:			python3-xpra-client < 5.0-10.r32075
+Obsoletes:			%{python3}-xpra-client < 5.0-10.r32075
 Requires:			xpra-common = %{version}-%{release}
 BuildRequires:		desktop-file-utils
 Requires(post):		desktop-file-utils
 Requires(postun):	desktop-file-utils
-BuildRequires:		python3-pyxdg
-BuildRequires:		python3-cups
-Recommends:			python3-cups
-Recommends:		    python3-pysocks
+Recommends:			%{python3}-cups
+Recommends:		    %{python3}-pysocks
 Recommends:         NetworkManager-libnm
 Suggests:			sshpass
 %description client
@@ -279,10 +288,10 @@ Recommends:			xpra-codecs = %{version}-%{release}
 Recommends:			xpra-x11 = %{version}-%{release}
 Recommends:			pinentry
 Recommends:			xpra-audio
-Recommends:			python3-pyopengl
-Recommends:			python3-pyu2f
-Recommends:         python3-psutil
-Suggests:			python3-opencv
+Recommends:			%{python3}-pyopengl
+Recommends:			%{python3}-pyu2f
+Recommends:         %{python3}-psutil
+Suggests:			%{python3}-opencv
 Suggests:			sshpass
 #without this, the system tray is unusable with gnome!
 %if 0%{?el9}
@@ -328,7 +337,7 @@ Requires:			xorg-x11-drv-dummy
 Requires:			xorg-x11-xauth
 Recommends:			xterm
 Recommends:			mesa-dri-drivers
-Recommends:         python3-lxml
+Recommends:         %{python3}-lxml
 %description x11
 This package contains the x11 bindings
 
@@ -336,8 +345,7 @@ This package contains the x11 bindings
 %package server
 Summary:			xpra server
 Group:				Networking
-#Provides:			python3-xpra-server
-Obsoletes:			python3-xpra-server < 5.0-10.r32075
+Obsoletes:			%{python3}-xpra-server < 5.0-10.r32075
 Requires:			xpra-common = %{version}-%{release}
 Requires:			gtk3
 Recommends:			xpra-x11 = %{version}-%{release}
@@ -347,18 +355,19 @@ Recommends:			xpra-codecs-extra = %{version}-%{release}
 Recommends:			xpra-codecs-nvidia = %{version}-%{release}
 Recommends:			cups-filters
 Recommends:			cups-pdf
-Recommends:			python3-cups
+Recommends:			%{python3}-cups
 Recommends:			dbus-x11
 Recommends:			gtk3-immodule-xim
-Recommends:			python3-setproctitle
+Recommends:			%{python3}-setproctitle
 Recommends:			librsvg2
 Recommends:			ibus
-Recommends:			python3-pyxdg
+Recommends:			%{python3}-pyxdg
 Recommends:			xdg-menu
 Suggests:			tcp_wrappers-libs
-Suggests:			python3-ldap3
-Suggests:			python3-ldap
-Suggests:			python3-oauthlib
+Suggests:			%{python3}-ldap3
+Suggests:			%{python3}-ldap
+Suggests:			%{python3}-oauthlib
+BuildRequires:		%{python3}-cups
 BuildRequires:		pkgconfig(libsystemd)
 BuildRequires:		checkpolicy
 BuildRequires:		selinux-policy-devel
@@ -384,6 +393,7 @@ BuildRequires:		dbus-tools
 BuildRequires:		tigervnc
 BuildRequires:		xorg-x11-server-Xvfb
 BuildRequires:		xorg-x11-drv-dummy
+BuildRequires:		%{python3}-pyxdg
 %endif
 Requires(post):		/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
 Requires(postun):	/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
@@ -407,7 +417,7 @@ xzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.xz | tar -xf -
 pushd xpra-%{version}
 rm -rf build install
 # set pkg_config_path for xpra video libs:
-CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{__python3} setup.py build \
+CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{python3} setup.py build \
 	-j %{nthreads} \
 	%{build_args} \
 	--without-printing --without-cuda_kernels
@@ -431,7 +441,7 @@ popd
 %install
 rm -rf $RPM_BUILD_ROOT
 pushd xpra-%{version}
-%{__python3} setup.py install \
+%{python3} setup.py install \
 	%{build_args} \
 	--prefix /usr --skip-build --root %{buildroot}
 %if 0%{?with_selinux}
@@ -623,7 +633,7 @@ XPRA_COMMAND="${XPRA_COMMAND}" \
 XPRA_CONF_DIR="${XPRA_CONF_DIR}" \
 XPRA_TEST_COVERAGE=0 \
 GDK_BACKEND=x11 \
-%{__python3} ./unit/run.py
+%{python3} ./unit/run.py
 popd
 popd
 %endif

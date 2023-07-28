@@ -1,6 +1,16 @@
 %define _disable_source_fetch 0
+%if "%{getenv:PYTHON3}" == ""
+%global python3 python3
+%filter_provides_in %{python3_sitearch}/.*\.so$
+%filter_setup
+%else
+%global python3 %{getenv:PYTHON3}
+%undefine __pythondist_requires
+%undefine __python_requires
+%endif
+%define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))")
 
-Name:           python3-uinput
+Name:           %{python3}-uinput
 Version:        0.11.2
 Release:        6%{?dist}
 Summary:        Pythonic API to the Linux uinput kernel module
@@ -9,13 +19,9 @@ URL:            http://pypi.python.org/pypi/python-uinput/
 Source0:        https://pypi.python.org/packages/54/b7/be7d0e8bbbbd440fef31242974d92d4edd21eb95ed96078b18cf207c7ccb/python-uinput-0.11.2.tar.gz
 
 BuildRequires:  gcc
-BuildRequires:  python3-devel
+BuildRequires:  %{python3}-devel
 BuildRequires:  kernel-headers
 BuildRequires:  libudev-devel
-
-
-%filter_provides_in %{python3_sitearch}/.*\.so$
-%filter_setup
 
 
 %description
@@ -34,17 +40,16 @@ fi
 # Use unversioned .so
 sed -i "s/libudev.so.0/libudev.so/" setup.py
 
-find . -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python3}|'
+find . -name '*.py' | xargs sed -i '1s|^#!python|#!%{python3}|'
 
 
 %build
-CFLAGS="$RPM_OPT_FLAGS" %{__python3} setup.py build
+CFLAGS="$RPM_OPT_FLAGS" %{python3} setup.py build
 
 
 %install
-%{__python3} setup.py install --skip-build --root %{buildroot}
+%{python3} setup.py install --skip-build --root %{buildroot}
 chmod a-x examples/*
-# RHEL stream setuptools bug?
 rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 

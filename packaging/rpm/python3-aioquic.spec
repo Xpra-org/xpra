@@ -1,6 +1,14 @@
 %define _disable_source_fetch 0
+%if "%{getenv:PYTHON3}" == ""
+%global python3 python3
+%else
+%global python3 %{getenv:PYTHON3}
+%undefine __pythondist_requires
+%undefine __python_requires
+%endif
+%define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))")
 
-Name:           python3-aioquic
+Name:           %{python3}-aioquic
 Version:        0.9.21
 Release:        1%{?dist}
 Summary:        aioquic is a library for the QUIC network protocol in Python
@@ -9,17 +17,17 @@ License:        MIT
 URL:            https://github.com/aiortc/aioquic
 Source0:        https://files.pythonhosted.org/packages/29/fe/1099419da44ce9ee372463a7ba8b6cd94c0187e7bb1e9fa5e7a997b09683/aioquic-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  python3-devel
-BuildRequires:  python3-setuptools
-BuildRequires:  python3-wheel
+BuildRequires:  %{python3}-devel
+BuildRequires:  %{python3}-setuptools
+BuildRequires:  %{python3}-wheel
 BuildRequires:  openssl-devel
 BuildRequires:  gcc
-Requires:       python3
-Requires:       python3-cryptography
-Requires:       python3-certifi
-Requires:       python3-pyOpenSSL
-Requires:       python3-pylsqpack
-Recommends:     python3-uvloop
+Requires:       %{python3}
+Requires:       %{python3}-cryptography
+Requires:       %{python3}-certifi
+Requires:       %{python3}-pyOpenSSL
+Requires:       %{python3}-pylsqpack
+Recommends:     %{python3}-uvloop
 
 %description
 It features a minimal TLS 1.3 implementation, a QUIC stack and an HTTP/3 stack.
@@ -40,12 +48,12 @@ fi
 
 
 %build
-%{__python3} setup.py build
+%{python3} setup.py build
 
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%{__python3} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT
+%{python3} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT
 # RHEL stream setuptools bug?
 rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 

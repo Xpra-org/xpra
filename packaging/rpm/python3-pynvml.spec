@@ -4,10 +4,20 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
+%if "%{getenv:PYTHON3}" == ""
+%global python3 python3
+%else
+%global python3 %{getenv:PYTHON3}
+%undefine __pythondist_requires
+%undefine __python_requires
+%endif
+%define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))")
+%define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))")
+
 #this is a pure python package so debug is meaningless here:
 %define debug_package %{nil}
 
-Name:           python3-pynvml
+Name:           %{python3}-pynvml
 Version:        12.535.77
 Release:        1
 URL:            http://pythonhosted.org/nvidia-ml-py/
@@ -16,8 +26,7 @@ License:        BSD
 Group:          Development/Libraries/Python
 Source0:        https://files.pythonhosted.org/packages/d8/91/a16342ef37f198add82ef03abb84299d5cfbe7a04dab495bb1ade83fd433/nvidia-ml-py-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-Provides:       python-pynvml
-BuildRequires:  python3-devel
+BuildRequires:  %{python3}-devel
 
 %description
 Python Bindings for the NVIDIA Management Library
@@ -31,13 +40,12 @@ fi
 %setup -q -n nvidia-ml-py-%{version}
 
 %build
-%{__python3} ./setup.py build
+%{python3} ./setup.py build
 
 %install
-%{__python3} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
+%{python3} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
 rm -f %{buildroot}/%{python3_sitelib}/__pycache__/example.*
 rm -f %{buildroot}/%{python3_sitelib}/example.py
-# RHEL stream setuptools bug?
 rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 %clean

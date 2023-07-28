@@ -8,6 +8,15 @@
 %define __requires_exclude ^libcuda.*$
 
 %define _disable_source_fetch 0
+%if "%{getenv:PYTHON3}" == ""
+%global python3 python3
+%else
+%global python3 %{getenv:PYTHON3}
+%undefine __pythondist_requires
+%undefine __python_requires
+%endif
+%define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))")
+
 %global debug_package %{nil}
 
 %define STUBS_DIR targets/x86_64-linux/lib/stubs/
@@ -15,7 +24,7 @@
 %define STUBS_DIR targets/sbsa-linux/lib/stubs/
 %endif
 
-Name:           python3-pycuda
+Name:           %{python3}-pycuda
 %if !0%{?el8}
 Version:        2022.2.2
 %else
@@ -32,13 +41,13 @@ Source0:        https://files.pythonhosted.org/packages/78/09/9df5358ffb74d22524
 Source0:        https://files.pythonhosted.org/packages/2d/1f/48a3a5b2c715345e7af1e09361100bd98c3d72b4025371692ab233f523d3/pycuda-%{version}.tar.gz
 %endif
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-Provides:       python3-pycuda
+Provides:       %{python3}-pycuda
 
 BuildRequires:  make
 BuildRequires:  gcc-c++
-BuildRequires:  python3-devel
-BuildRequires:  python3-setuptools
-BuildRequires:  python3-numpy
+BuildRequires:  %{python3}-devel
+BuildRequires:  %{python3}-setuptools
+BuildRequires:  %{python3}-numpy
 BuildRequires:  boost-python3-devel
 BuildRequires:  libglvnd-devel
 BuildRequires:  cuda
@@ -46,10 +55,11 @@ BuildRequires:  cuda
 %description
 PyCUDA lets you access Nvidia‘s CUDA parallel computation API from Python.
 
-Requires:       python3-decorator
-Requires:       python3-numpy
-Requires:       python3-pytools
-Requires:       python3-six
+
+Requires:       %{python3}-decorator
+Requires:       %{python3}-numpy
+Requires:       %{python3}-pytools
+Requires:       %{python3}-six
 
 Suggests:       nvidia-driver-cuda-libs
 
@@ -67,7 +77,7 @@ fi
 
 %build
 CUDA=/opt/cuda
-%{__python3} ./configure.py \
+%{python3} ./configure.py \
 	--cuda-enable-gl \
 	--cuda-root=$CUDA \
 	--cudadrv-lib-dir=%{_libdir} \
@@ -76,12 +86,12 @@ CUDA=/opt/cuda
 	--no-cuda-enable-curand
 #	--boost-python-libname=boost_python37
 #	--boost-thread-libname=boost_thread
-LDFLAGS=-L$CUDA/%{STUBS_DIR} CXXFLAGS=-L$CUDA/%{STUBS_DIR} %{__python3} setup.py build
+LDFLAGS=-L$CUDA/%{STUBS_DIR} CXXFLAGS=-L$CUDA/%{STUBS_DIR} %{python3} setup.py build
 #make
 
 %install
 CUDA=/opt/cuda
-LDFLAGS=-L$CUDA/%{STUBS_DIR} CXXFLAGS=-L$CUDA/%{STUBS_DIR} %{__python3} setup.py install --prefix=%{_prefix} --root=%{buildroot}
+LDFLAGS=-L$CUDA/%{STUBS_DIR} CXXFLAGS=-L$CUDA/%{STUBS_DIR} %{python3} setup.py install --prefix=%{_prefix} --root=%{buildroot}
 # RHEL stream setuptools bug?
 rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 

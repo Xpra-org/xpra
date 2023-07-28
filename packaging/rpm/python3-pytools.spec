@@ -1,6 +1,15 @@
 %define _disable_source_fetch 0
+%if "%{getenv:PYTHON3}" == ""
+%global python3 python3
+%else
+%global python3 %{getenv:PYTHON3}
+%undefine __pythondist_requires
+%undefine __python_requires
+%endif
+%define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))")
+%define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))")
 
-Name:           python3-pytools
+Name:           %{python3}-pytools
 Version:        2022.1.14
 Release:        2%{?dist}
 Summary:        A collection of tools for python
@@ -9,9 +18,10 @@ License:        MIT
 URL:            http://pypi.python.org/pypi/pytools
 Source0:        https://files.pythonhosted.org/packages/b5/00/b7350b62803926f1d8fbbcaa50e38bcc93354aa73894c13155825eec897f/pytools-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-Provides:		python3-pytools = %{version}-%{release}
+Provides:		%{python3}-pytools = %{version}-%{release}
 BuildArch:      noarch
-BuildRequires:  python3-devel python3-setuptools
+BuildRequires:  %{python3}-devel
+BuildRequires:  %{python3}-setuptools
 
 %description
 Pytools are a few interesting things that are missing from the Python Standard
@@ -41,12 +51,12 @@ fi
 
 
 %build
-%{__python3} setup.py build
+%{python3} setup.py build
 
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%{__python3} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT
+%{python3} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT
 # RHEL stream setuptools bug?
 rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
