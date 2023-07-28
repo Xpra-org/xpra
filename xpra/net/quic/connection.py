@@ -50,20 +50,20 @@ class XpraQuicConnection(Connection):
         quic = getattr(self.connection, "_quic", None)
         if quic:
             config = quic.configuration
-            qinfo.update({
+            qinfo |= {
                 "alpn-protocols" : config.alpn_protocols,
                 "idle-timeout"  : config.idle_timeout,
                 "client"        : config.is_client,
                 "max-data"      : config.max_data,
                 "max-stream-data" : config.max_stream_data,
                 "server-name"   : config.server_name or "",
-                })
-        qinfo.update({
+            }
+        qinfo |= {
             "read-queue"    : self.read_queue.qsize(),
             "stream-id"     : self.stream_id,
             "accepted"      : self.accepted,
             "closed"        : self.closed,
-            })
+        }
         return info
 
     def http_event_received(self, event: H3Event) -> None:

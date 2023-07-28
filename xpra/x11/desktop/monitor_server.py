@@ -62,13 +62,13 @@ class XpraMonitorServer(DesktopServerBase):
     def make_hello(self, source) -> dict[str,Any]:
         capabilities = super().make_hello(source)
         if "features" in source.wants:
-            capabilities.update({
-                                 "monitor"          : True,
-                                 "multi-monitors"   : True,
-                                 "monitors"         : self.get_monitor_config(),
-                                 "monitors.min-size" : MIN_SIZE,
-                                 "monitors.max-size" : MAX_SIZE,
-                                 })
+            capabilities |= {
+                "monitor"          : True,
+                "multi-monitors"   : True,
+                "monitors"         : self.get_monitor_config(),
+                "monitors.min-size" : MIN_SIZE,
+                "monitors.max-size" : MAX_SIZE,
+            }
         return capabilities
 
 
@@ -253,10 +253,10 @@ class XpraMonitorServer(DesktopServerBase):
             if x+width>=MAX_SIZE[0] or y+height>=MAX_SIZE[1]:
                 new_x, new_y = 0, 0
                 mdef = model.get_definition()
-                mdef.update({
+                mdef |= {
                     "x"         : new_x,
                     "y"         : new_y,
-                    })
+                }
                 model.init(mdef)
 
     def _adjust_monitors(self, after_wid : int, delta_x : int, delta_y : int) -> None:
@@ -277,10 +277,10 @@ class XpraMonitorServer(DesktopServerBase):
         if new_x!=x or new_y!=y:
             screenlog(f"adjusting monitor {model} from {x},{y} to {new_x},{new_y}")
             mdef = model.get_definition()
-            mdef.update({
+            mdef |= {
                 "x"         : new_x,
                 "y"         : new_y,
-                })
+            }
             model.init(mdef)
 
     def get_monitor_config(self) -> dict[int,dict]:

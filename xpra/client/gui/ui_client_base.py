@@ -287,14 +287,14 @@ class UIXpraClient(ClientBaseClass):
     def get_info(self) -> dict[str,Any]:
         info : dict[str,Any] = {}
         if FULL_INFO>0:
-            info.update({
+            info |= {
                 "pid"       : os.getpid(),
                 "sys"       : get_sys_info(),
                 "network"   : get_net_info(),
                 "logging"   : get_log_info(),
                 "threads"   : get_frame_info(),
                 "env"       : get_info_env(),
-                })
+            }
         if SYSCONFIG:
             info["sysconfig"] = get_sysconfig_info()
         for c in CLIENT_BASES:
@@ -408,12 +408,12 @@ class UIXpraClient(ClientBaseClass):
             ):
             caps[x] = True
         caps.setdefault("wants", []).append("events")
-        caps.update({
+        caps |= {
             #generic server flags:
             "share"                     : self.client_supports_sharing,
             "lock"                      : self.client_lock,
             "xdg-menu"                  : self.start_new_commands,
-            })
+        }
         caps.update(self.get_keyboard_caps())
         for c in CLIENT_BASES:
             caps.update(c.get_caps(self))

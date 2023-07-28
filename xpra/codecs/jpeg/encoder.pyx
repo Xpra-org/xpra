@@ -221,14 +221,14 @@ cdef class Encoder:
 
     def get_info(self) -> Dict[str,Any]:
         info = get_info()
-        info.update({
+        info |= {
             "frames"        : int(self.frames),
             "encoding"      : self.encoding,
             "width"         : self.width,
             "height"        : self.height,
             "quality"       : self.quality,
             "grayscale"     : bool(self.grayscale),
-            })
+        }
         return info
 
     def compress_image(self, image, options=None):

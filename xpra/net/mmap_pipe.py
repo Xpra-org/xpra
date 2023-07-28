@@ -101,11 +101,11 @@ def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*
                 from xpra.platform.paths import get_mmap_dir
                 mmap_dir = get_mmap_dir()
                 subs = os.environ.copy()
-                subs.update({
+                subs |= {
                     "UID"               : str(os.getuid()),
                     "GID"               : str(os.getgid()),
                     "PID"               : str(os.getpid()),
-                    })
+                }
                 mmap_dir = shellsub(mmap_dir, subs)
                 if mmap_dir and not os.path.exists(mmap_dir):
                     os.mkdir(mmap_dir, 0o700)

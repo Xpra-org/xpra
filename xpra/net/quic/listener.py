@@ -132,11 +132,11 @@ class HttpServerProtocol(QuicConnectionProtocol):
             for header, value in event.headers:
                 if header == b"sec-websocket-protocol":
                     subprotocols = [x.strip() for x in value.decode().split(",")]
-            scope.update({
+            scope |= {
                 "subprotocols"  : subprotocols,
                 "type"          : "websocket",
                 "scheme"        : "wss",
-                })
+            }
             wsc = ServerWebSocketConnection(connection=self._http, scope=scope,
                                     stream_id=event.stream_id,
                                     transmit=self.transmit)
@@ -145,10 +145,10 @@ class HttpServerProtocol(QuicConnectionProtocol):
             return wsc
 
         if method == "CONNECT" and protocol == "webtransport":
-            scope.update({
+            scope |= {
                 "scheme"        : "https",
                 "type"          : "webtransport",
-            })
+            }
             log.info("WebTransport request at %s", path)
             return WebTransportHandler(connection=self._http, scope=scope,
                                        stream_id=event.stream_id,
@@ -156,10 +156,10 @@ class HttpServerProtocol(QuicConnectionProtocol):
         #extensions: dict[str, dict] = {}
         #if isinstance(self._http, H3Connection):
         #    extensions["http.response.push"] = {}
-        scope.update({
+        scope |= {
             "scheme": "https",
             "type": "http",
-        })
+        }
         return HttpRequestHandler(xpra_server=self._xpra_server,
                                   authority=authority, connection=self._http,
                                   protocol=self,

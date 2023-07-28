@@ -23,12 +23,12 @@ def add_audio_tagging_env(env_dict:dict=os.environ, icon_path:str="") -> None:
         http://0pointer.de/blog/projects/tagging-audio.html
     """
     from xpra.version_util import XPRA_VERSION
-    env_dict.update({
-                     "PULSE_PROP_application.name"      : "xpra",
-                     "PULSE_PROP_application.id"        : "xpra",
-                     "PULSE_PROP_application.version"   : XPRA_VERSION,
-                     "PULSE_PROP_media.role"            : "music",
-                     })
+    env_dict |= {
+        "PULSE_PROP_application.name"      : "xpra",
+        "PULSE_PROP_application.id"        : "xpra",
+        "PULSE_PROP_application.version"   : XPRA_VERSION,
+        "PULSE_PROP_media.role"            : "music",
+    }
     if not icon_path:
         icon_path = default_icon_path
     if icon_path and os.path.exists(icon_path):

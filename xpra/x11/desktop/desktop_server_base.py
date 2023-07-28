@@ -172,10 +172,10 @@ class DesktopServerBase(DesktopServerBaseClass):
     def make_hello(self, source) -> dict[str,Any]:
         capabilities = super().make_hello(source)
         if "features" in source.wants:
-            capabilities.update({
-                                 "pointer.grabs"    : True,
-                                 "desktop"          : True,
-                                 })
+            capabilities |= {
+                "pointer.grabs"    : True,
+                "desktop"          : True,
+            }
             updict(capabilities, "window", {
                 "decorations"            : True,
                 "states"                 : ["iconified", "focused"],

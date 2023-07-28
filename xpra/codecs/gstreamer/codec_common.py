@@ -196,11 +196,11 @@ def get_video_encoder_options(encoder:str="x264", profile:str="", options:typedi
         from xpra.codecs.codec_constants import get_x264_quality, get_x264_preset
         q = get_x264_quality(options.intget("quality", 50), profile)
         s = options.intget("speed", 50)
-        eopts.update({
+        eopts |= {
             "pass"  : "qual",
             "quantizer" : q,
             "speed-preset" : get_x264_preset(s),
-            })
+        }
     #should check for "bframes" flag in options?
     return eopts
 
@@ -273,14 +273,14 @@ class VideoPipeline(Pipeline):
         info : dict[str,Any] = get_info()
         if not self.colorspace:
             return info
-        info.update({
+        info |= {
             "frames"    : self.frames,
             "width"     : self.width,
             "height"    : self.height,
             "encoding"  : self.encoding,
             "colorspace": self.colorspace,
             "version"   : get_version(),
-            })
+        }
         return info
 
     def __repr__(self):

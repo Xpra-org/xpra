@@ -17,14 +17,14 @@ def grok_modifier_map(display, meanings) -> dict[str,int]:
     bitmasks."""
     #is this still correct for GTK3?
     modifier_map = MODIFIER_MAP.copy()
-    modifier_map.update({
+    modifier_map |= {
         "scroll":   0,
         "num":      0,
         "meta":     0,
         "super":    0,
         "hyper":    0,
         "alt":      0,
-        })
+    }
     if not meanings:
         meanings = DEFAULT_MODIFIER_MEANINGS
 

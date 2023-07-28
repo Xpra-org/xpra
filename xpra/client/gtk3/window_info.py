@@ -203,11 +203,11 @@ class WindowInfo(Gtk.Window):
         #backing:
         b = w._backing
         if b:
-            info.update({
+            info |= {
                 "size"              : csv(b.size),
                 "render-size"       : csv(b.render_size),
                 "backing-offsets"   : csv(b.offsets),
-                })
+            }
         text = "\n".join("%s=%s" % (k,v) for k,v in info.items())
         clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         clipboard.set_text(text, len(text))

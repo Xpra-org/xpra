@@ -30,14 +30,14 @@ iconlog = Logger("icon")
 
 class DesktopModelBase(WindowModelStub, WindowDamageHandler):
     __common_gsignals__ = {}
-    __common_gsignals__.update(WindowDamageHandler.__common_gsignals__)
-    __common_gsignals__.update({
-                         "resized"                  : no_arg_signal,
-                         "client-contents-changed"  : one_arg_signal,
-                         "motion"                   : one_arg_signal,
-                         "xpra-motion-event"        : one_arg_signal,
-                         "xpra-property-notify-event" : one_arg_signal,
-                         })
+    __common_gsignals__ |= WindowDamageHandler.__common_gsignals__
+    __common_gsignals__ |= {
+        "resized"                  : no_arg_signal,
+        "client-contents-changed"  : one_arg_signal,
+        "motion"                   : one_arg_signal,
+        "xpra-motion-event"        : one_arg_signal,
+        "xpra-property-notify-event" : one_arg_signal,
+    }
 
     __gproperties__ = {
         "iconic": (GObject.TYPE_BOOLEAN,

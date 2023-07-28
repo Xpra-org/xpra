@@ -79,10 +79,10 @@ class CairoBackingBase(WindowBackingBase):
 
     def get_info(self) -> dict[str,Any]:
         info = super().get_info()
-        info.update({
+        info |= {
             "type"  : "Cairo",
             "rgb-formats" : self.get_rgb_formats(),
-            })
+        }
         return info
 
 

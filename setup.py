@@ -90,13 +90,15 @@ if "pkg-info" in sys.argv:
     def write_PKG_INFO():
         with open("PKG-INFO", "wb") as f:
             pkg_info_values = setup_options.copy()
-            pkg_info_values.update({
-                                    "metadata_version"  : "1.1",
-                                    "summary"           :  description,
-                                    "home_page"         : url,
-                                    })
-            for k in ("Metadata-Version", "Name", "Version", "Summary", "Home-page",
-                      "Author", "Author-email", "License", "Download-URL", "Description"):
+            pkg_info_values |= {
+                "metadata_version"  : "1.1",
+                "summary"           :  description,
+                "home_page"         : url,
+                }
+            for k in (
+                "Metadata-Version", "Name", "Version", "Summary", "Home-page",
+                "Author", "Author-email", "License", "Download-URL", "Description"
+            ):
                 v = pkg_info_values[k.lower().replace("-", "_")]
                 f.write(("%s: %s\n" % (k, v)).encode())
     write_PKG_INFO()
@@ -1883,11 +1885,11 @@ else:
                     dirtodir(f"fs/etc/xpra/{etc_dir}", f"/etc/xpra/{etc_dir}")
 
     # add build_conf to build step
-    cmdclass.update({
-             'build'        : build_override,
-             'build_conf'   : build_conf,
-             'install_data' : install_data_override,
-             })
+    cmdclass |= {
+        'build'        : build_override,
+        'build_conf'   : build_conf,
+        'install_data' : install_data_override,
+    }
 
     if OSX:
         #pyobjc needs email.parser
@@ -2364,18 +2366,18 @@ if ext_modules:
         Options.docstrings = False
         Options.buffer_max_dims = 3
     if strict_ENABLED and verbose_ENABLED:
-        compiler_directives.update({
+        compiler_directives |= {
             #"warn.undeclared"       : True,
             #"warn.maybe_uninitialized" : True,
             "warn.unused"           : True,
             "warn.unused_result"    : True,
-            })
+        }
     if cython_tracing_ENABLED:
-        compiler_directives.update({
+        compiler_directives |= {
             "linetrace" : True,
             "binding" : True,
             "profile" : True,
-            })
+        }
 
     nthreads = int(os.environ.get("NTHREADS", 0 if (debug_ENABLED or WIN32 or OSX or ARM or RISCV) else os.cpu_count()))
     setup_options["ext_modules"] = cythonize(ext_modules,

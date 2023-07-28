@@ -164,15 +164,13 @@ def run_audio(mode, error_cb, options, args):
                  "demuxers"         : get_demuxers(),
                  }
             if FULL_INFO>=1:
-                d.update({
-                 "gst.version"      : [int(x) for x in get_gst_version()],
-                })
+                d["gst.version"] = tuple(int(x) for x in get_gst_version())
             if FULL_INFO>=2:
-                d.update({
-                 "plugins"          : plugins,
-                 "python.version"   : sys.version_info[:3],
-                 "python.bits"      : BITS,
-                })
+                d |= {
+                    "plugins"          : plugins,
+                    "python.version"   : sys.version_info[:3],
+                    "python.bits"      : BITS,
+                }
             for k,v in d.items():
                 if isinstance(v, (list, tuple)):
                     v = ",".join(str(x) for x in v)

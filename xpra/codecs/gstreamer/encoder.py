@@ -191,13 +191,13 @@ class Encoder(VideoPipeline):
             vcaps["profile"] = self.profile
             self.extra_client_info["profile"] = self.profile
         appsrc_opts = get_default_appsrc_attributes()
-        appsrc_opts.update({
+        appsrc_opts |= {
             "is-live"       : True,
             "do-timestamp"  : True,
             "format"        : BUFFER_FORMAT,
             "caps"          : CAPS,
             #"leaky-type"    : 0,        #default is 0 and this is not available before GStreamer 1.20
-            })
+        }
         gst_encoding = get_gst_encoding(self.encoding)  #ie: "hevc" -> "video/x-h265"
         elements = [
             get_element_str("appsrc", appsrc_opts),

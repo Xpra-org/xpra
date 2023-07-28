@@ -92,12 +92,12 @@ def query():
                 #dev_info["kms"] = kms
                 version = drmGetVersion(fd)
                 if version:
-                    dev_info.update({
+                    dev_info |= {
                         "version"   : (version.version_major, version.version_minor, version.version_patchlevel),
                         "name"      : bytestostr(version.name[:version.name_len]),
                         "date"      : bytestostr(version.date[:version.date_len]),
                         "desc"      : bytestostr(version.desc[:version.desc_len]),
-                        })
+                    }
                     drmFreeVersion(version)
                     #drmModeGetResources
         except OSError as e:

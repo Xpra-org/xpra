@@ -57,7 +57,7 @@ class BaseWindowModel(CoreX11WindowModel):
         Also wraps access to _NET_WM_STATE using simpler gobject booleans.
     """
     __common_properties__ = CoreX11WindowModel.__common_properties__.copy()
-    __common_properties__.update({
+    __common_properties__ |= {
         #from WM_TRANSIENT_FOR
         "transient-for": (GObject.TYPE_PYOBJECT,
                           "Transient for (or None)", "",
@@ -173,7 +173,7 @@ class BaseWindowModel(CoreX11WindowModel):
                        "Is the window's position fixed on the screen", "",
                        False,
                        GObject.ParamFlags.READWRITE),
-        })
+    }
     _property_names = CoreX11WindowModel._property_names + [
                       "transient-for", "fullscreen-monitors", "bypass-compositor",
                       "group-leader", "window-type", "workspace", "strut", "opacity",
@@ -297,10 +297,10 @@ class BaseWindowModel(CoreX11WindowModel):
 
 
     _py_property_handlers : dict[str,Callable] = dict(CoreX11WindowModel._py_property_handlers)
-    _py_property_handlers.update({
+    _py_property_handlers |= {
         "state"         : _sync_state,
         "iconic"        : _sync_iconic,
-        })
+    }
 
 
     #########################################
@@ -422,7 +422,7 @@ class BaseWindowModel(CoreX11WindowModel):
 
 
     _x11_property_handlers : dict[str,Callable] = CoreX11WindowModel._x11_property_handlers.copy()
-    _x11_property_handlers.update({
+    _x11_property_handlers |= {
         "WM_TRANSIENT_FOR"              : _handle_transient_for_change,
         "_NET_WM_WINDOW_TYPE"           : _handle_window_type_change,
         "_NET_WM_DESKTOP"               : _handle_workspace_change,
@@ -436,7 +436,7 @@ class BaseWindowModel(CoreX11WindowModel):
         "_XPRA_QUALITY"                 : _handle_xpra_quality_change,
         "_XPRA_SPEED"                   : _handle_xpra_speed_change,
         "_XPRA_ENCODING"                : _handle_xpra_encoding_change,
-        })
+    }
 
 
     #########################################

@@ -306,13 +306,13 @@ class GLWindowBackingBase(WindowBackingBase):
         info = super().get_info()
         tpf = self.texture_pixel_format
         tif = self.internal_format
-        info.update({
+        info |= {
             "type"                  : "OpenGL",
             "bit-depth"             : self.bit_depth,
             "pixel-format"          : self.pixel_format,
             "texture-pixel-format"  : CONSTANT_TO_PIXEL_FORMAT.get(tpf) or str(tpf),
             "internal-format"       : INTERNAL_FORMAT_TO_STR.get(tif) or str(tif),
-            })
+        }
         return info
 
 

@@ -67,10 +67,10 @@ def get_frame_info(ignore_threads:tuple[Thread,...]=()) -> dict[Any,Any]:
                 thread_ident[t.ident] = t.name
             else:
                 thread_ident[t.ident] = None
-        thread_ident.update({
+        thread_ident |= {
                 threading.current_thread().ident  : "info",
                 main_thread.ident                 : "main",
-                })
+                }
         frames = sys._current_frames()  #pylint: disable=protected-access
         stack = None
         for i,frame_pair in enumerate(frames.items()):
@@ -637,15 +637,15 @@ def osexpand(s : str, actual_username="", uid=0, gid=0, subs=None) -> str:
             return os.path.expanduser("~%s/%s" % (actual_username, s[2:]))
         return os.path.expanduser(s)
     d = dict(subs or {})
-    d.update({
+    d |= {
         "PID"   : os.getpid(),
         "HOME"  : expanduser("~/"),
-        })
+    }
     if os.name=="posix":
-        d.update({
+        d |= {
             "UID"   : uid or os.geteuid(),
             "GID"   : gid or os.getegid(),
-            })
+        }
         if not OSX:
             from xpra.platform.posix.paths import get_runtime_dir
             rd = get_runtime_dir()
@@ -872,11 +872,11 @@ def which(command) -> str | None:
         return None
 
 def get_status_output(*args, **kwargs) -> tuple[int,Any,Any]:
-    kwargs.update({
+    kwargs |= {
         "stdout"    : PIPE,
         "stderr"    : PIPE,
         "universal_newlines"    : True,
-        })
+    }
     try:
         p = Popen(*args, **kwargs)
     except Exception as e:

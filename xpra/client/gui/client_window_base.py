@@ -138,7 +138,7 @@ class ClientWindowBase(ClientWidgetBase):
             if getattr(self, "_%s" % attr.replace("-", "_"), False):
                 attributes.append(attr)
         info = super().get_info()
-        info.update({
+        info |= {
             "override-redirect"     : self._override_redirect,
             #"group-leader"          : self.group_leader,
             "position"              : self._pos,
@@ -155,7 +155,7 @@ class ClientWindowBase(ClientWidgetBase):
             "max-size"              : self.max_window_size,
             "button-state"          : self.button_state,
             "offset"                : self.window_offset or (0, 0),
-            })
+        }
         return info
 
     def get_desktop_workspace(self):

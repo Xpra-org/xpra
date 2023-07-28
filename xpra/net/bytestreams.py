@@ -170,19 +170,19 @@ class Connection:
         info = self.info.copy()
         if self.socktype_wrapped!=self.socktype:
             info["wrapped"] = self.socktype_wrapped
-        info.update({
-                "type"              : self.socktype or "",
-                "endpoint"          : self.endpoint or (),
-                "active"            : self.active,
-                "input"             : {
-                                       "bytecount"      : self.input_bytecount,
-                                       "readcount"      : self.input_readcount,
-                                       },
-                "output"            : {
-                                       "bytecount"      : self.output_bytecount,
-                                       "writecount"     : self.output_writecount,
-                                       },
-                })
+        info |= {
+            "type"              : self.socktype or "",
+            "endpoint"          : self.endpoint or (),
+            "active"            : self.active,
+            "input"             : {
+                "bytecount"      : self.input_bytecount,
+                "readcount"      : self.input_readcount,
+            },
+            "output"            : {
+                "bytecount"      : self.output_bytecount,
+                "writecount"     : self.output_writecount,
+            },
+        }
         return info
 
 
@@ -254,13 +254,13 @@ class TwoFileConnection(Connection):
 
     def get_info(self) -> dict[str,Any]:
         d = super().get_info()
-        d.update({
+        d |= {
             "type"  : "pipe",
             "pipe"  : {
                 "read"     : {"fd" : self._read_fd},
                 "write"    : {"fd" : self._write_fd},
-                }
-            })
+            },
+        }
         return d
 
 
@@ -406,12 +406,12 @@ class SocketConnection(Connection):
             return {}
         info = {}
         try:
-            info.update({
+            info |= {
                 "proto"         : s.proto,
                 "family"        : FAMILY_STR.get(s.family, int(s.family)),
                 "type"          : PROTOCOL_STR.get(s.type, int(s.type)),
                 "cork"          : self.cork,
-                })
+            }
         except AttributeError:
             log("do_get_socket_info()", exc_info=True)
         if self.nodelay is not None:

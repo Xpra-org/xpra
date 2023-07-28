@@ -374,11 +374,11 @@ cdef class Encoder:
 
     def get_info(self) -> Dict[str,Any]:
         info = get_info()
-        info.update({
+        info |= {
             "frames"        : int(self.frames),
             "width"         : self.width,
             "height"        : self.height,
-            })
+        }
         return info
 
     def __repr__(self):

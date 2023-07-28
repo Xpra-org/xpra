@@ -93,10 +93,10 @@ def get_icc_data() -> dict[str,Any]:
             version = get_X11_root_property("_ICC_PROFILE_IN_X_VERSION", "CARDINAL")
             log("get_icc_info() found _ICC_PROFILE_IN_X_VERSION=%s, _ICC_PROFILE=%s",
                       hexstr(version or ""), hexstr(data))
-            icc.update({
-                    "source"    : "_ICC_PROFILE",
-                    "data"      : data,
-                    })
+            icc |= {
+                "source"    : "_ICC_PROFILE",
+                "data"      : data,
+            }
             if version:
                 try:
                     version = ord(version)

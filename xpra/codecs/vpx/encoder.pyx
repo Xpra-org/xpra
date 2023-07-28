@@ -471,7 +471,7 @@ cdef class Encoder:
 
     def get_info(self) -> Dict[str,Any]:
         info = get_info()
-        info.update({
+        info |= {
             "frames"    : int(self.frames),
             "width"     : self.width,
             "height"    : self.height,
@@ -483,7 +483,7 @@ cdef class Encoder:
             "src_format": self.src_format,
             "max_threads": self.max_threads,
             "bandwidth-limit" : int(self.bandwidth_limit),
-            })
+        }
         #calculate fps:
         cdef unsigned int f = 0
         cdef double now = monotonic()
@@ -498,13 +498,13 @@ cdef class Encoder:
         if f>0 and last_time<now:
             info["fps"] = int(0.5+f/(now-last_time))
             info["ms_per_frame"] = int(1000.0*ms_per_frame/f)
-        info.update({
+        info |= {
             "target_bitrate"   : self.cfg.rc_target_bitrate,
             "min-quantizer"    : self.cfg.rc_min_quantizer,
             "max-quantizer"    : self.cfg.rc_max_quantizer,
             "undershoot-pct"   : self.cfg.rc_undershoot_pct,
             "overshoot-pct"    : self.cfg.rc_overshoot_pct,
-            })
+        }
         return info
 
     def get_encoding(self):

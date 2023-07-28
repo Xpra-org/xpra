@@ -524,7 +524,7 @@ class ServerBase(ServerBaseClass):
             if display:
                 capabilities["display"] = display
         if "features" in source.wants:
-            capabilities.update({
+            capabilities |= {
                  "client-shutdown"              : self.client_shutdown,
                  "sharing"                      : self.sharing is not False,
                  "sharing-toggle"               : self.sharing is None,
@@ -533,7 +533,7 @@ class ServerBase(ServerBaseClass):
                  "windows"                      : server_features.windows,
                  "keyboard"                     : server_features.input_devices,
                  "pointer"                      : server_features.input_devices,
-                 })
+            }
             sf = self.get_server_features(source)
             #for older clients, without namespace:
             capabilities.update(flatten_dict(sf))
@@ -572,10 +572,10 @@ class ServerBase(ServerBaseClass):
                 if getattr(self, "mmap_size", 0)==0:
                     self.after_threaded_init(server_source.print_encoding_info)
         if "display" in server_source.wants and root_size:
-            capabilities.update({
-                         "actual_desktop_size"  : root_size,
-                         "root_window_size"     : root_size,
-                         })
+            capabilities |= {
+                "actual_desktop_size"  : root_size,
+                "root_window_size"     : root_size,
+            }
         if "aliases" in self._aliases and server_source.wants:
             capabilities["aliases"] = dict((v, k) for k,v in self._aliases.items())
         if server_cipher:
@@ -651,10 +651,10 @@ class ServerBase(ServerBaseClass):
 
     def get_packet_handlers_info(self) -> dict[str,Any]:
         info = ServerCore.get_packet_handlers_info(self)
-        info.update({
+        info |= {
             "authenticated" : sorted(self._authenticated_packet_handlers.keys()),
             "ui"            : sorted(self._authenticated_ui_packet_handlers.keys()),
-            })
+        }
         return info
 
 

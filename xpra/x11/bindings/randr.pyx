@@ -297,7 +297,7 @@ cdef get_mode_info(XRRModeInfo *mi, with_sync : bool):
     if mi.name and mi.nameLength:
         info["name"] = bytestostr(mi.name[:mi.nameLength])
     if with_sync:
-        info.update({
+        info |= {
         "dot-clock"     : mi.dotClock,
         "h-sync-start"  : mi.hSyncStart,
         "h-sync-end"    : mi.hSyncEnd,
@@ -307,7 +307,7 @@ cdef get_mode_info(XRRModeInfo *mi, with_sync : bool):
         "v-sync-end"    : mi.vSyncEnd,
         "v-total"       : mi.vTotal,
         "mode-flags"    : tuple(name for v,name in MODE_FLAGS_STR.items() if mi.modeFlags & v),
-        })
+        }
     return info
 
 cdef get_output_info(Display *display, XRRScreenResources *rsc, RROutput output):
@@ -319,11 +319,11 @@ cdef get_output_info(Display *display, XRRScreenResources *rsc, RROutput output)
         "connection"        : CONNECTION_STR.get(oi.connection, "%i" % oi.connection),
         }
     if oi.connection!=RR_Disconnected:
-        info.update({
-        "width-mm"          : oi.mm_width,
-        "height-mm"         : oi.mm_height,
-        "preferred-mode"    : oi.npreferred,
-        })
+        info |= {
+            "width-mm"          : oi.mm_width,
+            "height-mm"         : oi.mm_height,
+            "preferred-mode"    : oi.npreferred,
+        }
         if TIMESTAMPS:
             info["timestamp"] = oi.timestamp
         so = SUBPIXEL_STR.get(oi.subpixel_order)
@@ -470,13 +470,13 @@ cdef get_crtc_info(Display *display, XRRScreenResources *rsc, RRCrtc crtc):
         info["timestamp"] = int(ci.timestamp)
     cdef XRRCrtcGamma *gamma
     if ci.mode or ci.width or ci.height or ci.noutput:
-        info.update({
+        info |= {
             "x"         : ci.x,
             "y"         : ci.y,
             "width"     : ci.width,
             "height"    : ci.height,
             "mode"      : ci.mode,
-            })
+        }
         if GAMMA:
             gamma = XRRGetCrtcGamma(display, crtc)
             if gamma and gamma.size:

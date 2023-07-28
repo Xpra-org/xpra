@@ -2098,44 +2098,45 @@ cdef class Encoder:
         global YUV444_CODEC_SUPPORT, YUV444_ENABLED, LOSSLESS_CODEC_SUPPORT, LOSSLESS_ENABLED
         cdef double pps
         info = get_info()
-        info.update({
-                "width"     : self.width,
-                "height"    : self.height,
-                "frames"    : int(self.frames),
-                "codec"     : self.codec_name,
-                "encoder_width"     : self.encoder_width,
-                "encoder_height"    : self.encoder_height,
-                "bitrate"           : self.target_bitrate,
-                "quality"           : self.quality,
-                "speed"             : self.speed,
-                "lossless"  : {
-                               ""          : self.lossless,
-                               "supported" : LOSSLESS_CODEC_SUPPORT.get(self.encoding, LOSSLESS_ENABLED),
-                               "threshold" : LOSSLESS_THRESHOLD
-                    },
-                "yuv444" : {
-                            "supported" : YUV444_CODEC_SUPPORT.get(self.encoding, YUV444_ENABLED),
-                            "threshold" : YUV444_THRESHOLD,
-                            },
-                "cuda-device"   : self.cuda_device_info or {},
-                "cuda"          : self.cuda_info or {},
-                "pycuda"        : self.pycuda_info or {},
-                })
+        info |= {
+            "width"     : self.width,
+            "height"    : self.height,
+            "frames"    : int(self.frames),
+            "codec"     : self.codec_name,
+            "encoder_width"     : self.encoder_width,
+            "encoder_height"    : self.encoder_height,
+            "bitrate"           : self.target_bitrate,
+            "quality"           : self.quality,
+            "speed"             : self.speed,
+            "lossless"  : {
+                           ""          : self.lossless,
+                           "supported" : LOSSLESS_CODEC_SUPPORT.get(self.encoding, LOSSLESS_ENABLED),
+                           "threshold" : LOSSLESS_THRESHOLD
+                },
+            "yuv444" : {
+                        "supported" : YUV444_CODEC_SUPPORT.get(self.encoding, YUV444_ENABLED),
+                        "threshold" : YUV444_THRESHOLD,
+                        },
+            "cuda-device"   : self.cuda_device_info or {},
+            "cuda"          : self.cuda_info or {},
+            "pycuda"        : self.pycuda_info or {},
+        }
         if self.scaling:
-            info.update({
+            info |= {
                 "input_width"       : self.input_width,
                 "input_height"      : self.input_height,
-                })
+            }
         if self.src_format:
             info["src_format"] = self.src_format
         if self.pixel_format:
             info["pixel_format"] = self.pixel_format
         cdef unsigned long long b = self.bytes_in
         if b>0 and self.bytes_out>0:
-            info.update({
+            info |= {
                 "bytes_in"  : self.bytes_in,
                 "bytes_out" : self.bytes_out,
-                "ratio_pct" : int(100 * self.bytes_out // b)})
+                "ratio_pct" : int(100 * self.bytes_out // b)
+            }
         if self.preset_name:
             info["preset"] = self.preset_name
         if self.profile_name:
@@ -2906,11 +2907,11 @@ cdef class Encoder:
                     presets = self.query_presets(encode_GUID)
                     profiles = self.query_profiles(encode_GUID)
                     input_formats = self.query_input_formats(encode_GUID)
-                    codec.update({
-                                  "presets"         : presets,
-                                  "profiles"        : profiles,
-                                  "input-formats"   : input_formats,
-                                  })
+                    codec |= {
+                        "presets"         : presets,
+                        "profiles"        : profiles,
+                        "input-formats"   : input_formats,
+                    }
                 codecs[codec_name] = codec
         finally:
             free(encode_GUIDs)

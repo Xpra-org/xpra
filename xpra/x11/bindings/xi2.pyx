@@ -685,30 +685,30 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
                 keys.append(key.keycodes[i])
         elif class_info.type==XIValuatorClass:
             valuator = <XIValuatorClassInfo*> class_info
-            info.update({
+            info |= {
                 "number"    : valuator.number,
                 "min"       : valuator.min,
                 "max"       : valuator.max,
                 "value"     : valuator.value,
                 "resolution": valuator.resolution,
                 "mode"      : valuator.mode,
-                })
+            }
             if valuator.label:
                 info["label"] = self.XGetAtomName(valuator.label)
         elif class_info.type==XIScrollClass:
             scroll = <XIScrollClassInfo*> class_info
-            info.update({
+            info |= {
                 "number"        : scroll.number,
                 "scroll-type"   : scroll.scroll_type,
                 "increment"     : scroll.increment,
                 "flags"         : scroll.flags,
-                })
+            }
         elif class_info.type==XITouchClass:
             touch = <XITouchClassInfo*> class_info
-            info.update({
+            info |= {
                 "mode"          : touch.mode,
                 "num-touches"   : touch.num_touches,
-                })
+            }
         return info
 
 

@@ -21,12 +21,12 @@ class TrayGeometryChanged:  # pylint: disable=too-few-public-methods
 
 class SystemTrayWindowModel(CoreX11WindowModel):
     __gproperties__ = CoreX11WindowModel.__common_properties__.copy()
-    __gproperties__.update({
+    __gproperties__ |= {
         "tray": (GObject.TYPE_BOOLEAN,
                  "Is the window a system tray icon", "",
                  False,
                  GObject.ParamFlags.READABLE),
-                })
+    }
     __gsignals__ = CoreX11WindowModel.__common_signals__.copy()
     _property_names = CoreX11WindowModel._property_names + ["tray"]
     #these aren't useful, and could actually cause us problems

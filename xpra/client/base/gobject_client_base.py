@@ -347,12 +347,12 @@ class ConnectTestXpraClient(CommandConnectClient):
     def __init__(self, opts, **kwargs):
         super().__init__(opts)
         self.value = get_hex_uuid()
-        self.hello_extra.update({
+        self.hello_extra |= {
             "connect_test_request"      : self.value,
             "request"                   : "connect_test",
             #tells proxy servers we don't want to connect to the real / new instance:
             "connect"                   : False,
-            })
+        }
         self.hello_extra.update(kwargs)
 
     def timeout(self, *_args):

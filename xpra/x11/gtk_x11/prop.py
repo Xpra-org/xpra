@@ -61,10 +61,9 @@ def get_python_type(scalar_type:str) -> str:
 def _to_atom(a) -> bytes:
     return struct.pack(b"@L", _get_xatom(a))
 
+
 #add the GTK / GDK types to the conversion function list:
-PROP_TYPES.update({
-    "atom": (str, "ATOM", 32, _to_atom, _get_atom, b""),
-    })
+PROP_TYPES["atom"] = (str, "ATOM", 32, _to_atom, _get_atom, b"")
 
 
 def prop_set(xid:int, key:str, etype, value) -> None:

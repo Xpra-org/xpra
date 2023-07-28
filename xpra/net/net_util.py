@@ -376,18 +376,18 @@ def get_ssl_info(show_constants=False) -> dict[str,Any]:
         protocols = dict((k,int(getattr(ssl, k))) for k in dir(ssl) if k.startswith("PROTOCOL_"))
         ops = dict((k,int(getattr(ssl, k))) for k in dir(ssl) if k.startswith("OP_"))
         vers = dict((k,int(getattr(ssl, k))) for k in dir(ssl) if k.startswith("VERIFY_"))
-        info.update({
-                "protocols"    : protocols,
-                "options"    : ops,
-                "verify"    : vers,
-                })
+        info |= {
+            "protocols"    : protocols,
+            "options"    : ops,
+            "verify"    : vers,
+        }
     for k,name in {
-                    "HAS_ALPN"                : "alpn",
-                    "HAS_ECDH"                : "ecdh",
-                    "HAS_SNI"                : "sni",
-                    "HAS_NPN"                : "npn",
-                    "CHANNEL_BINDING_TYPES"    : "channel-binding-types",
-                    }.items():
+        "HAS_ALPN"                : "alpn",
+        "HAS_ECDH"                : "ecdh",
+        "HAS_SNI"                : "sni",
+        "HAS_NPN"                : "npn",
+        "CHANNEL_BINDING_TYPES"    : "channel-binding-types",
+    }.items():
         v = getattr(ssl, k, None)
         if v is not None:
             info[name] = v

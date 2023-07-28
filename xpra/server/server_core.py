@@ -762,12 +762,12 @@ class ServerCore:
                 }
             if self.menu_provider:
                 #we have menu data we can expose:
-                script_options.update({
-                "/Menu"             : self.http_menu_request,
-                "/MenuIcon"         : self.http_menu_icon_request,
-                "/DesktopMenu"      : self.http_desktop_menu_request,
-                "/DesktopMenuIcon"  : self.http_desktop_menu_icon_request,
-                })
+                script_options |= {
+                    "/Menu"             : self.http_menu_request,
+                    "/MenuIcon"         : self.http_menu_icon_request,
+                    "/DesktopMenu"      : self.http_desktop_menu_request,
+                    "/DesktopMenuIcon"  : self.http_desktop_menu_icon_request,
+                }
             if http_scripts.lower() in ("all", "*"):
                 self._http_scripts = script_options
             else:
@@ -2338,21 +2338,21 @@ class ServerCore:
         capabilities = flatten_dict(ncaps)
         if source is None or "versions" in source.wants:
             capabilities.update(flatten_dict(self.get_minimal_server_info()))
-        capabilities.update({
-                        "version"               : vparts(XPRA_VERSION, FULL_INFO+1),
-                        "start_time"            : int(self.start_time),
-                        "current_time"          : int(now),
-                        "elapsed_time"          : int(now - self.start_time),
-                        "server_type"           : "core",
-                        "server.mode"           : self.get_server_mode(),
-                        "hostname"              : socket.gethostname(),
-                        })
+        capabilities |= {
+            "version"               : vparts(XPRA_VERSION, FULL_INFO+1),
+            "start_time"            : int(self.start_time),
+            "current_time"          : int(now),
+            "elapsed_time"          : int(now - self.start_time),
+            "server_type"           : "core",
+            "server.mode"           : self.get_server_mode(),
+            "hostname"              : socket.gethostname(),
+        }
         if source is None or "features" in source.wants:
-            capabilities.update({
+            capabilities |= {
                 "readonly-server"   : True,
                 "readonly"          : self.readonly,
                 "server-log"        : os.environ.get("XPRA_SERVER_LOG", ""),
-                })
+            }
         if source and "packet-types" in source.wants:
             capabilities["packet-types"] = tuple(self._aliases.values())
         if source is None or "versions" in source.wants:
@@ -2436,13 +2436,13 @@ class ServerCore:
         #this function is for non UI thread info
         info = get_server_info()
         now = time()
-        info.update({
+        info |= {
             "type"              : "Python",
             "python"            : {"version" : parse_version(platform.python_version())[:FULL_INFO+1]},
             "start_time"        : int(self.start_time),
             "current_time"      : int(now),
             "elapsed_time"      : int(now - self.start_time),
-            })
+        }
         return info
 
     def get_server_load_info(self) -> dict[str,Any]:
@@ -2498,20 +2498,20 @@ class ServerCore:
 
         if full:
             ni = get_net_info()
-            ni.update({
-                       "sockets"        : self.get_socket_info(),
-                       "encryption"     : self.encryption or "",
-                       "tcp-encryption" : self.tcp_encryption or "",
-                       "bandwidth-limit": self.bandwidth_limit or 0,
-                       "packet-handlers" : self.get_packet_handlers_info(),
-                       "www"    : {
-                           ""                   : self._html,
-                           "websocket-upgrade"  : self.websocket_upgrade,
-                           "dir"                : self._www_dir or "",
-                           "http-headers-dirs"   : self._http_headers_dirs or "",
-                           },
-                       "mdns"           : self.mdns,
-                       })
+            ni |= {
+                "sockets"        : self.get_socket_info(),
+                "encryption"     : self.encryption or "",
+                "tcp-encryption" : self.tcp_encryption or "",
+                "bandwidth-limit": self.bandwidth_limit or 0,
+                "packet-handlers" : self.get_packet_handlers_info(),
+                "www"    : {
+                   ""                   : self._html,
+                   "websocket-upgrade"  : self.websocket_upgrade,
+                   "dir"                : self._www_dir or "",
+                   "http-headers-dirs"   : self._http_headers_dirs or "",
+                   },
+                "mdns"           : self.mdns,
+            }
             up("network", ni)
             up("threads",   self.get_thread_info(proto))
             up("logging", get_log_info())

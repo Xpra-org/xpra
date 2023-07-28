@@ -93,11 +93,11 @@ class ScreenDesktopModel(DesktopModelBase):
         size_hints = {}
         def use_fixed_size():
             size = w, h
-            size_hints.update({
+            size_hints |= {
                 "maximum-size"  : size,
                 "minimum-size"  : size,
                 "base-size"     : size,
-                })
+            }
         if RandR.has_randr():
             if self.resize_exact:
                 #assume resize_exact is enabled
@@ -139,13 +139,13 @@ class ScreenDesktopModel(DesktopModelBase):
                                 if inc_hits[inc]==max_hits:
                                     break
                             #TODO: also get these values from the screen sizes:
-                            size_hints.update({
+                            size_hints |= {
                                 "base-size"             : (640, 640),
                                 "minimum-size"          : (640, 640),
                                 "increment"             : (128, 128),
                                 "minimum-aspect-ratio"  : (1, 3),
                                 "maximum-aspect-ratio"  : (3, 1),
-                                })
+                            }
         else:
             use_fixed_size()
         screenlog("size-hints=%s", size_hints)

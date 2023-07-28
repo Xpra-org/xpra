@@ -341,27 +341,27 @@ COLORSPACE_FORMATS : Dict[str,tuple] = {
     "YUV422P"   : (X264_CSP_I422,    PROFILE_HIGH422,       I422_PROFILES),
     "YUV444P"   : (X264_CSP_I444,    PROFILE_HIGH444,       I444_PROFILES),
     "BGRX"      : (X264_CSP_BGRA,    PROFILE_HIGH444,       RGB_PROFILES),
-    }
+}
 if SUPPORT_24BPP:
-    COLORSPACE_FORMATS.update({
+    COLORSPACE_FORMATS |= {
         "BGR"       : (X264_CSP_BGR,     PROFILE_HIGH444,    RGB_PROFILES),
         "RGB"       : (X264_CSP_RGB,     PROFILE_HIGH444,    RGB_PROFILES),
-        })
+    }
 
 COLORSPACES : Dict[str,str] = {
     "YUV420P"   : "YUV420P",
     "YUV422P"   : "YUV422P",
     "YUV444P"   : "YUV444P",
     "BGRX"      : "BGRX",
-    }
+}
 if SUPPORT_30BPP:
     COLORSPACE_FORMATS["BGR48"] = (X264_CSP_BGR | X264_CSP_HIGH_DEPTH,    PROFILE_HIGH444,    RGB_PROFILES)
     COLORSPACES["BGR48"] = "GBRP10"
 if SUPPORT_24BPP:
-    COLORSPACES.update({
+    COLORSPACES |= {
         "BGR"       : "BGR",
         "RGB"       : "RGB",
-        })
+    }
 
 
 def init_module() -> None:
@@ -676,7 +676,7 @@ cdef class Encoder:
         if self.profile is None:
             return {}
         info = get_info()
-        info.update({
+        info |= {
             "profile"       : self.profile,
             "preset"        : get_preset_names()[self.preset],
             "fast-decode"   : bool(self.fast_decode),
@@ -696,22 +696,22 @@ cdef class Encoder:
             "frame-types"   : self.frame_types,
             "delayed"       : self.delayed_frames,
             "bandwidth-limit" : int(self.bandwidth_limit),
-            })
+        }
         cdef x264_param_t param
         x264_encoder_parameters(self.context, &param)
         info["params"] = self.get_param_info(&param)
         if self.bytes_in>0 and self.bytes_out>0:
-            info.update({
+            info |= {
                 "bytes_in"  : int(self.bytes_in),
                 "bytes_out" : int(self.bytes_out),
                 "ratio_pct" : int(100.0 * self.bytes_out / self.bytes_in),
-                })
+            }
         if self.frames>0 and self.time>0:
             pps = self.width * self.height * self.frames / self.time
-            info.update({
+            info |= {
                 "total_time_ms"     : int(self.time*1000.0),
                 "pixels_per_second" : int(pps),
-                })
+            }
         #calculate fps:
         cdef unsigned int f = 0
         cdef double now = monotonic()
@@ -724,10 +724,10 @@ cdef class Encoder:
                 last_time = min(last_time, end)
                 ms_per_frame += (end-start)
         if f>0 and last_time<now:
-            info.update({
+            info |= {
                 "fps"           : int(0.5+f/(now-last_time)),
                 "ms_per_frame"  : int(1000.0*ms_per_frame/f),
-                })
+            }
         return info
 
     cdef get_param_info(self, x264_param_t *param):

@@ -352,14 +352,14 @@ cdef class ColorspaceConverter:
 
     def get_info(self) -> Dict[str,Any]:
         info = get_info()
-        info.update({
-                "frames"    : int(self.frames),
-                "src_width" : self.src_width,
-                "src_height": self.src_height,
-                "dst_width" : self.dst_width,
-                "dst_height": self.dst_height,
-                "planes"    : self.planes,
-                })
+        info |= {
+            "frames"    : int(self.frames),
+            "src_width" : self.src_width,
+            "src_height": self.src_height,
+            "dst_width" : self.dst_width,
+            "dst_height": self.dst_height,
+            "planes"    : self.planes,
+        }
         if self.yuv_scaling:
             info["yuv-scaling"] = True
         if self.rgb_scaling:

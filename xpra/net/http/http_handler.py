@@ -200,10 +200,10 @@ def load_path(headers:dict[str,Any], path:str) -> tuple[int,dict[str,Any],bytes]
                     log("gzip compressed '%s': %i down to %i bytes", path, content_length, len(compressed_content))
                     extra_headers["Content-Encoding"] = "gzip"
                     content = compressed_content
-        extra_headers.update({
+        extra_headers |= {
             "Content-Length"    : len(content),
             "Last-Modified"     : fs.st_mtime,
-            })
+        }
         return 200, extra_headers, content
 
 

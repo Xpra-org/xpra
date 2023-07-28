@@ -296,10 +296,10 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
     def get_window_info(self, window) -> dict[str,Any]:
         info = super().get_window_info(window)
-        info.update({
-                     "focused"  : bool(self._has_focus and self._window_to_id.get(window, -1)==self._has_focus),
-                     "grabbed"  : bool(self._has_grab and self._window_to_id.get(window, -1)==self._has_grab),
-                     })
+        info |= {
+            "focused"  : bool(self._has_focus and self._window_to_id.get(window, -1)==self._has_focus),
+            "grabbed"  : bool(self._has_grab and self._window_to_id.get(window, -1)==self._has_grab),
+        }
         if not (window.is_OR() or window.is_tray()):
             info["shown"] = window.get_property("shown")
             try:

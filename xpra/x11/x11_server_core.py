@@ -328,15 +328,15 @@ class X11ServerCore(GTKServerBase):
         capabilities = super().make_hello(source)
         capabilities["server_type"] = "Python/gtk/x11"
         if "features" in source.wants:
-            capabilities.update({
-                    "resize_screen"             : self.randr,
-                    "resize_exact"              : self.randr_exact_size,
-                    "force_ungrab"              : True,
-                    "keyboard.fast-switching"   : True,
-                    "wheel.precise"             : self.pointer_device.has_precise_wheel(),
-                    "pointer.optional"          : True,
-                    "touchpad-device"           : bool(self.touchpad_device),
-                    })
+            capabilities |= {
+                "resize_screen"             : self.randr,
+                "resize_exact"              : self.randr_exact_size,
+                "force_ungrab"              : True,
+                "keyboard.fast-switching"   : True,
+                "wheel.precise"             : self.pointer_device.has_precise_wheel(),
+                "pointer.optional"          : True,
+                "touchpad-device"           : bool(self.touchpad_device),
+            }
             if self.randr:
                 sizes = self.get_all_screen_sizes()
                 if len(sizes)>1:
@@ -400,10 +400,10 @@ class X11ServerCore(GTKServerBase):
         #cursor:
         info.setdefault("cursor", {}).update(self.get_cursor_info())
         with xswallow:
-            sinfo.update({
+            sinfo |= {
                 "Xkb"                   : X11Keyboard.hasXkb(),
                 "XTest"                 : X11Keyboard.hasXTest(),
-                })
+            }
         #randr:
         if self.randr:
             with xlog:

@@ -16,12 +16,12 @@ X11Window = X11WindowBindings()
 class OverrideRedirectWindowModel(BaseWindowModel):
     __gsignals__ = dict(BaseWindowModel.__common_signals__)
     __gproperties__ = dict(BaseWindowModel.__common_properties__)
-    __gproperties__.update({
+    __gproperties__ |= {
         "override-redirect": (GObject.TYPE_BOOLEAN,
                        "Is the window of type override-redirect", "",
                        True,
                        GObject.ParamFlags.READABLE),
-                        })
+    }
     _property_names = BaseWindowModel._property_names + ["override-redirect"]
     _MODELTYPE = "OR-Window"
 

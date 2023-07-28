@@ -37,18 +37,18 @@ QUALITY_OPTIONS_COMMON = {
                 30      : "Low",
                 }
 MIN_QUALITY_OPTIONS = QUALITY_OPTIONS_COMMON.copy()
-MIN_QUALITY_OPTIONS.update({
+MIN_QUALITY_OPTIONS | {
     0 : "None",
     75  : "High",
-    })
+}
 MIN_QUALITY_OPTIONS = dict(sorted(MIN_QUALITY_OPTIONS.items()))
 QUALITY_OPTIONS = QUALITY_OPTIONS_COMMON.copy()
-QUALITY_OPTIONS.update({
+QUALITY_OPTIONS |= {
     0 : "Auto",
     1   : "Lowest",
     90  : "Best",
     100 : LOSSLESS,
-    })
+}
 QUALITY_OPTIONS = dict(sorted(QUALITY_OPTIONS.items()))
 
 
@@ -61,11 +61,11 @@ MIN_SPEED_OPTIONS = SPEED_OPTIONS_COMMON.copy()
 MIN_SPEED_OPTIONS[0] = "None"
 MIN_SPEED_OPTIONS = dict(sorted(MIN_SPEED_OPTIONS.items()))
 SPEED_OPTIONS = SPEED_OPTIONS_COMMON.copy()
-SPEED_OPTIONS.update({
+SPEED_OPTIONS |= {
     0   : "Auto",
     1   : "Lowest Bandwidth",
     100 : "Lowest Latency",
-    })
+}
 SPEED_OPTIONS = dict(sorted(SPEED_OPTIONS.items()))
 
 def get_bandwidth_menu_options():

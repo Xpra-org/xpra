@@ -371,11 +371,12 @@ class X11ServerBase(X11ServerCore):
                         ds_scaled = getattr(ss, "desktop_size", None)
                         if SCALED_FONT_ANTIALIAS or (not ds_unscaled or ds_unscaled==ds_scaled):
                             subpixel_order = ad.strget("orientation", "none").lower()
-                    values.update({
-                                   "Xft.antialias"  : ad.intget("enabled", -1),
-                                   "Xft.hinting"    : ad.intget("hinting", -1),
-                                   "Xft.rgba"       : subpixel_order,
-                                   "Xft.hintstyle"  : _get_antialias_hintstyle(ad)})
+                    values |= {
+                        "Xft.antialias"  : ad.intget("enabled", -1),
+                        "Xft.hinting"    : ad.intget("hinting", -1),
+                        "Xft.rgba"       : subpixel_order,
+                        "Xft.hintstyle"  : _get_antialias_hintstyle(ad),
+                    }
                 log(f"server_settings: resource-manager {values=}")
                 #convert the dict back into a resource string:
                 value = ''

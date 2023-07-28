@@ -27,10 +27,10 @@ StructureNotifyMask = constants["StructureNotifyMask"]
 class CompositeHelper(WindowDamageHandler, GObject.GObject):
 
     __gsignals__ = WindowDamageHandler.__common_gsignals__.copy()
-    __gsignals__.update({
+    __gsignals__ |= {
         #emit:
         "contents-changed"      : one_arg_signal,
-        })
+    }
 
     # This may raise XError.
     def __init__(self, xid:int):

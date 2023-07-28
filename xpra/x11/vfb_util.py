@@ -196,11 +196,11 @@ def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, u
     etc_prefix = os.environ.get("XPRA_INSTALL_PREFIX", "")
     if etc_prefix.endswith("/usr"):
         etc_prefix = etc_prefix[:-4]
-    subs.update({
+    subs |= {
         "DISPLAY"       : display_name,
         "XPRA_LOG_DIR"  : pathexpand(os.environ.get("XPRA_LOG_DIR")),
         "XORG_CONFIG_PREFIX" : os.environ.get("XORG_CONFIG_PREFIX", etc_prefix),
-        })
+    }
 
     #identify logfile argument if it exists,
     #as we may have to rename it, or create the directory for it:

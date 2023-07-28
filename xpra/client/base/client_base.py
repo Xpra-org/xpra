@@ -429,28 +429,28 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if self.username:
             #set for authentication:
             capabilities["username"] = self.username
-        capabilities.update({
-                "uuid"                  : self.uuid,
-                "compression_level"     : self.compression_level,
-                "version"               : vparts(XPRA_VERSION, FULL_INFO+1),
-                "packet-types"          : tuple(self._aliases.values()),
-                })
+        capabilities |= {
+            "uuid"                  : self.uuid,
+            "compression_level"     : self.compression_level,
+            "version"               : vparts(XPRA_VERSION, FULL_INFO+1),
+            "packet-types"          : tuple(self._aliases.values()),
+        }
         if self.display:
             capabilities["display"] = self.display
         if FULL_INFO>0:
-            capabilities.update({
+            capabilities |= {
                 "client_type"           : self.client_type(),
                 "session-id"            : self.session_id,
-                })
+            }
         if FULL_INFO>1:
-            capabilities.update({
+            capabilities |= {
                 "python.version"        : sys.version_info[:3],
                 "python.bits"           : BITS,
                 "hostname"              : socket.gethostname(),
                 "user"                  : get_username(),
                 "name"                  : get_name(),
                 "argv"                  : sys.argv,
-                })
+            }
         capabilities.update(self.get_file_transfer_features())
         def up(prefix, d):
             updict(capabilities, prefix, d)

@@ -121,14 +121,14 @@ def get_host_info(full_info:int=1) -> dict[str, Any]:
     #this function is for non UI thread info
     info : dict[str, Any] = {}
     if full_info>1:
-        info.update({
-        "byteorder"             : sys.byteorder,
-        "python"                : {
-            "bits"                  : BITS,
-            "full_version"          : sys.version,
-            "version"               : ".".join(str(x) for x in sys.version_info[:3]),
-            },
-        })
+        info |= {
+            "byteorder"             : sys.byteorder,
+            "python"                : {
+                "bits"                  : BITS,
+                "full_version"          : sys.version,
+                "version"               : ".".join(str(x) for x in sys.version_info[:3]),
+                },
+            }
     if full_info>0:
         try:
             hostname = socket.gethostname()
@@ -137,10 +137,10 @@ def get_host_info(full_info:int=1) -> dict[str, Any]:
         except OSError:
             pass
         if POSIX:
-            info.update({
+            info |= {
                 "uid"   : os.getuid(),
                 "gid"   : os.getgid(),
-                })
+                }
     return info
 
 def get_version_info(full:int=1) -> dict[str, Any]:
@@ -249,16 +249,16 @@ def do_get_platform_info() -> dict[str, Any]:
     except OSError:
         log("do_get_platform_info()", exc_info=True)
         release = "unknown"
-    info.update({
-            ""          : sys.platform,
-            "name"      : platform_name(sys.platform, info.get("linux_distribution") or release),
-            "release"   : pp.release(),
-            "sysrelease": release,
-            "platform"  : pp.platform(),
-            "machine"   : pp.machine(),
-            "architecture" : pp.architecture(),
-            "processor" : get_processor_name(),
-            })
+    info |= {
+        ""          : sys.platform,
+        "name"      : platform_name(sys.platform, info.get("linux_distribution") or release),
+        "release"   : pp.release(),
+        "sysrelease": release,
+        "platform"  : pp.platform(),
+        "machine"   : pp.machine(),
+        "architecture" : pp.architecture(),
+        "processor" : get_processor_name(),
+    }
     return info
 #cache the output:
 platform_info_cache = None

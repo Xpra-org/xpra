@@ -159,12 +159,12 @@ cdef class Decoder:
 
     def get_info(self) -> Dict[str,Any]:
         info = get_info()
-        info.update({
+        info |= {
             "frames"        : int(self.frames),
             "width"         : self.width,
             "height"        : self.height,
             "colorspace"    : self.colorspace,
-            })
+        }
         return info
 
 

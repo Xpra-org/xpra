@@ -45,9 +45,9 @@ CUTTER_RUN_LENGTH = envint("XPRA_CUTTER_RUN_LENGTH", 1000)
 class AudioSource(AudioPipeline):
 
     __gsignals__ = AudioPipeline.__generic_signals__.copy()
-    __gsignals__.update({
+    __gsignals__ |= {
         "new-buffer"    : n_arg_signal(3),
-        })
+    }
 
     def __init__(self, src_type=None, src_options=None, codecs=(), codec_options=None, volume=1.0):
         if not src_type:

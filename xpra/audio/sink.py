@@ -61,9 +61,9 @@ CLOCK_SYNC = envbool("XPRA_CLOCK_SYNC", False)
 class AudioSink(AudioPipeline):
 
     __gsignals__ = AudioPipeline.__generic_signals__.copy()
-    __gsignals__.update({
+    __gsignals__ |= {
         "eos"       : one_arg_signal,
-        })
+    }
 
     def __init__(self, sink_type=None, sink_options=None, codecs=(), codec_options=None, volume=1.0):
         if not sink_type:

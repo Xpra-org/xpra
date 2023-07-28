@@ -75,7 +75,7 @@ class WindowModel(BaseWindowModel):
         "CHANGE_DESKTOP", "ABOVE", "BELOW")]
 
     __gproperties__ = dict(BaseWindowModel.__common_properties__)
-    __gproperties__.update({
+    __gproperties__ |= {
         # Client(s) state, is this window shown somewhere?
         # (then it can't be iconified)
         "shown": (GObject.TYPE_BOOLEAN,
@@ -132,13 +132,13 @@ class WindowModel(BaseWindowModel):
         "children" : (GObject.TYPE_PYOBJECT,
                         "Sub-windows", None,
                         GObject.ParamFlags.READABLE),
-        })
+    }
     __gsignals__ = dict(BaseWindowModel.__common_signals__)
-    __gsignals__.update({
+    __gsignals__ |= {
         "child-map-request-event"       : one_arg_signal,
         "child-configure-request-event" : one_arg_signal,
         "xpra-destroy-event"            : one_arg_signal,
-        })
+    }
 
     _property_names         = BaseWindowModel._property_names + [
                               "size-hints", "icon-title", "icons", "decorations",
@@ -754,13 +754,13 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("icons", icons)
 
     _x11_property_handlers = dict(BaseWindowModel._x11_property_handlers)
-    _x11_property_handlers.update({
+    _x11_property_handlers |= {
         "WM_ICON_NAME"                  : _handle_icon_title_change,
         "_NET_WM_ICON_NAME"             : _handle_icon_title_change,
         "_MOTIF_WM_HINTS"               : _handle_motif_wm_hints_change,
         "WM_NORMAL_HINTS"               : _handle_wm_normal_hints_change,
         "_NET_WM_ICON"                  : _handle_net_wm_icon_change,
-       })
+    }
 
 
     def get_default_window_icon(self, size:int=48):
