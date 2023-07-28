@@ -101,7 +101,7 @@ def main():
         from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
         def add(service_type):
             listener = Zeroconflistener(service_type+"local.", mdns_found, mdns_add, mdns_remove, mdns_update)
-            log(f"listener={listener}")
+            log(f"{listener=}")
             listener.start()
         add(XPRA_TCP_MDNS_TYPE)
         add(XPRA_UDP_MDNS_TYPE)

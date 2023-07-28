@@ -127,7 +127,7 @@ class SplashScreen(Gtk.Window):
             return
         has = self.has_toplevel_focus()
         had = self.had_top_level_focus
-        log(f"_focus_change{args} had={had}, has={has}")
+        log(f"_focus_change{args} {had=}, {has=}")
         if had and not has:
             if FOCUS_EXIT:
                 self.exit()

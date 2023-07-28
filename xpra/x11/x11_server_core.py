@@ -351,11 +351,11 @@ class X11ServerCore(GTKServerBase):
 
     def send_initial_cursors(self, ss, sharing:bool=False) -> None:
         dci = self.default_cursor_image
-        ce = getattr(ss, "cursor_encodings", ())
+        encodings = getattr(ss, "cursor_encodings", ())
         enabled = getattr(self, "cursors", False)
-        if not (enabled and ("default" in ce) and dci):
+        if not (enabled and ("default" in encodings) and dci):
             return
-        cursorlog(f"default_cursor_image={dci}, cursors_enabled=%s, encodings={ce}", )
+        cursorlog(f"default_cursor_image={dci}, {enabled=}, {encodings=}", )
         try:
             ss.do_send_cursor(0, dci, self.get_cursor_sizes(), encoding_prefix="default:")
         except Exception:
@@ -865,7 +865,7 @@ class X11ServerCore(GTKServerBase):
         log("server do_xpra_xkb_event(%r)" % event)
         if event.subtype!="bell":
             log.error(f"Error: unknown event subtype: {event.subtype!r}")
-            log.error(f" event={event}")
+            log.error(f" {event=}")
             return
         #bell events on our windows will come through the bell signal,
         #this method is a catch-all for events on windows we don't manage,

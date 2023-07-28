@@ -413,7 +413,7 @@ def set_initial_resolution(resolutions, dpi:int=0) -> None:
         res = resolutions[0][:2]
         sizes = randr.get_xrr_screen_sizes()
         size = randr.get_screen_size()
-        log(f"RandR available, current size={size}, sizes available={sizes}")
+        log(f"RandR available, current {size=}, sizes available={sizes}")
         if res not in sizes:
             log.warn(f"Warning: cannot set resolution to {res}")
             log.warn(" (this resolution is not available)")

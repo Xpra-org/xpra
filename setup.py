@@ -169,7 +169,7 @@ skip_build = "--skip-build" in sys.argv
 ARCH = get_status_output(["uname", "-m"])[1]
 ARM = ARCH.startswith("arm") or ARCH.startswith("aarch")
 RISCV = ARCH.startswith("riscv")
-print(f"ARCH={ARCH}")
+print(f"{ARCH=}")
 
 INCLUDE_DIRS = os.environ.get("INCLUDE_DIRS", os.path.join(sys.prefix, "include")).split(os.pathsep)
 if os.environ.get("INCLUDE_DIRS", None) is None and not WIN32:
@@ -185,8 +185,8 @@ print("using INCLUDE_DIRS=%s" % (INCLUDE_DIRS, ))
 
 CPP = os.environ.get("CPP", "cpp")
 CC = os.environ.get("CC", "gcc")
-print(f"CPP={CPP}")
-print(f"CC={CPP}")
+print(f"{CC=}")
+print(f"{CPP=}")
 
 shadow_ENABLED = DEFAULT
 server_ENABLED = DEFAULT
@@ -848,7 +848,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
             }.items():
             pkg_config_cmd = ["pkg-config", pc_arg] + list(pkgs_options)
             if verbose_ENABLED:
-                print(f"pkg_config_cmd={pkg_config_cmd}")
+                print(f"{pkg_config_cmd=}")
             r, pkg_config_out, err = get_status_output(pkg_config_cmd)
             if r!=0:
                 sys.exit("ERROR: call to '%s' failed (err=%s)" % (" ".join(pkg_config_cmd), err))
@@ -856,7 +856,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 print(f"pkg-config output: {pkg_config_out}")
             add_tokens(pkg_config_out, add_to)
             if verbose_ENABLED:
-                print(f"pkg-config kw={kw}")
+                print(f"pkg-config {kw=}")
     if warn_ENABLED:
         addcflags("-Wall")
         addldflags("-Wall")
@@ -903,8 +903,8 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     LDFLAGS = os.environ.get("LDFLAGS")
     #win32 remove double "-march=x86-64 -mtune=generic -O2 -pipe -O3"?
     if verbose_ENABLED:
-        print(f"adding CFLAGS={CFLAGS}")
-        print(f"adding LDFLAGS={LDFLAGS}")
+        print(f"adding {CFLAGS=}")
+        print(f"adding {LDFLAGS=}")
     add_tokens(CFLAGS, "extra_compile_args")
     add_tokens(LDFLAGS, "extra_link_args")
     #add_to_keywords(kw, 'include_dirs', '.')
@@ -1038,7 +1038,7 @@ def build_xpra_conf(install_dir):
             print("probing cups printer definitions")
             pdf = get_printer_definition("pdf")
             postscript = get_printer_definition("postscript") or DEFAULT_POSTSCRIPT_PRINTER
-            print(f"pdf={pdf}, postscript={postscript}")
+            print(f"{pdf=}, {postscript=}")
         except Exception as e:
             print(f"could not probe for pdf/postscript printers: {e}")
     def pretty_cmd(cmd):
@@ -1084,7 +1084,7 @@ def build_xpra_conf(install_dir):
         dirname = os.path.join(*(["fs", "etc", "xpra"] + subdirs))
         #get conf dir for install, without stripping the build root
         target_dir = os.path.join(get_conf_dir(install_dir, stripbuildroot=False), *subdirs)
-        print(f"convert_templates({subdirs}) dirname={dirname}, target_dir={target_dir}")
+        print(f"convert_templates({subdirs}) {dirname=}, {target_dir=}")
         if not os.path.exists(target_dir):
             try:
                 os.makedirs(target_dir)

@@ -92,7 +92,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
         devices = find_evdi_devices()
         dev = EvdiDevice(devices[0], self.evdi_damage)
         self.evdi_device = dev
-        log(f"evdi_setup() evdi_device={dev}")
+        log(f"evdi_setup() {dev=}")
         dev.open()
         dev.connect()
         dev.enable_cursor_events()

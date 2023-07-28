@@ -115,7 +115,7 @@ def bytes_to_xsettings(d:bytes) -> tuple[int,list[tuple[int,str,Any,int]]]:
         else:
             log.error("invalid setting type: %s, cannot continue parsing XSETTINGS!", setting_type)
             break
-    log(f"bytes_to_xsettings(..) serial={serial} ,settings={settings}")
+    log(f"bytes_to_xsettings(..) {serial=} ,{settings=}")
     XSETTINGS_CACHE = (serial, settings)
     return serial, settings
 

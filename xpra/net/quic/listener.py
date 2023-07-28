@@ -186,7 +186,7 @@ async def do_listen(sock, xpra_server, cert, key, retry):
         log.estr(e)
         return None
     try:
-        log(f"quic configuration={configuration}")
+        log(f"quic {configuration=}")
         session_ticket_store = SessionTicketStore()
 
         def create_server():

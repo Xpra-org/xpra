@@ -246,7 +246,7 @@ def connect_to(display_desc):
                     getChildReaper().add_process(sock.process, "paramiko-ssh-client", cmd, True, True,
                                                  callback=proxycommand_ended)
                     proxy_keys = get_keyfiles(host_config, "proxy_key")
-                    log(f"proxy keys={proxy_keys}")
+                    log(f"{proxy_keys=}")
                     from paramiko.client import SSHClient
                     ssh_client = SSHClient()
                     ssh_client.load_system_host_keys()
@@ -891,7 +891,7 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
                         found = True
         if not found or xpra_cmd in tried:
             continue
-        log(f"adding xpra_cmd={xpra_cmd!r}")
+        log(f"adding {xpra_cmd=!r}")
         tried.add(xpra_cmd)
         cmd = '"' + xpra_cmd + '" ' + ' '.join(shellquote(x) for x in xpra_proxy_command)
         if socket_dir:
@@ -912,7 +912,7 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
             raise InitExit(ExitCode.SSH_FAILURE, f"failed to open SSH session: {e}") from None
         else:
             agent_option = str((paramiko_config or {}).get("agent", SSH_AGENT)) or "no"
-            log(f"paramiko agent_option={agent_option}")
+            log(f"paramiko {agent_option=}")
             if agent_option.lower() in TRUE_OPTIONS:
                 log.info("paramiko SSH agent forwarding enabled")
                 from paramiko.agent import AgentRequestHandler

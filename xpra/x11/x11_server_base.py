@@ -101,7 +101,7 @@ class X11ServerBase(X11ServerCore):
         if not pid:
             log.info("xvfb pid not found")
         else:
-            log.info(f"xvfb pid={pid}")
+            log.info(f"xvfb {pid=}")
         self.display_pid = pid
 
     def kill_display(self) -> None:
@@ -329,9 +329,9 @@ class X11ServerBase(X11ServerCore):
         old_settings = dict(self._settings)
         log("server_settings: old=%r, updating with=%r", old_settings, settings)
         log("overrides: ")
-        log(f" dpi={dpi}")
-        log(f" double click time={double_click_time}, double click distance={double_click_distance}")
-        log(f" antialias={antialias}")
+        log(f" {dpi=}")
+        log(f" {double_click_time=}, {double_click_distance=}")
+        log(f" {antialias=}")
         #older versions may send keys as "bytes":
         settings = dict((bytestostr(k), v) for k,v in settings.items())
         self._settings.update(settings)
@@ -376,7 +376,7 @@ class X11ServerBase(X11ServerCore):
                                    "Xft.hinting"    : ad.intget("hinting", -1),
                                    "Xft.rgba"       : subpixel_order,
                                    "Xft.hintstyle"  : _get_antialias_hintstyle(ad)})
-                log(f"server_settings: resource-manager values={values}")
+                log(f"server_settings: resource-manager {values=}")
                 #convert the dict back into a resource string:
                 value = ''
                 for vk, vv in values.items():

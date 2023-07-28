@@ -94,7 +94,7 @@ def safe_open_download_file(basefilename:str, mimetype:str):
         pass
     with umask_context(0o133):
         fd = os.open(filename, flags)
-    filelog(f"using filename {filename!r}, file descriptor={fd}")
+    filelog(f"using {filename=!r}, {fd=}")
     return filename, fd
 
 @dataclass

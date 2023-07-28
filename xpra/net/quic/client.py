@@ -231,7 +231,7 @@ def quic_connect(host : str, port : int, path : str,
         af = addr_info[0]
         sock, local_addr = create_local_socket(af)
         transport, protocol = await tl.loop.create_datagram_endpoint(create_protocol, sock=sock)
-        log(f"transport={transport}, protocol={protocol}")
+        log(f"{transport=}, {protocol=}")
         protocol = cast(QuicConnectionProtocol, protocol)
         addr = addr_info[4]     #ie: ('192.168.0.10', 10000)
         log(f"connecting from {pretty_socket(local_addr)} to {pretty_socket(addr)}")
@@ -249,7 +249,7 @@ def quic_connect(host : str, port : int, path : str,
                 quic_conn = getattr(protocol, "_quic", None)
                 if quic_conn:
                     close_event = getattr(quic_conn, "_close_event", None)
-                    log(f"close_event={close_event}, {dir(close_event)}")
+                    log(f"{close_event=}, {dir(close_event)}")
                     if close_event:
                         err = close_event.error_code
                         msg = close_event.reason_phrase
