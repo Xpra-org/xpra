@@ -52,7 +52,8 @@ def is_main_thread() -> bool:
 
 def get_frame_info(ignore_threads:tuple[Thread,...]=()) -> dict[Any,Any]:
     info : dict[Any,Any] = {
-        "count"        : threading.active_count() - len(ignore_threads),
+        "count"         : threading.active_count() - len(ignore_threads),
+        "native-id"     : threading.get_native_id(),
         }
     try:
         import traceback
