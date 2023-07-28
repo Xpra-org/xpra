@@ -922,7 +922,7 @@ def get_defaults():
         conf_dirs.append("/etc/xpra")
     else:
         conf_dirs.append(os.path.join(sys.prefix, "etc", "xpra"))
-    conf_dir = os.getcwd()
+    conf_dirs.append(os.getcwd())
     for conf_dir in conf_dirs:
         if conf_dir and os.path.exists(conf_dir):
             break
