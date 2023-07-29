@@ -176,9 +176,9 @@ BuildRequires:		pkgconfig(libyuv)
 Requires:			libyuv
 BuildRequires:		pkgconfig(libavif)
 Requires:			libavif
+%if 0%{?fedora}
 BuildRequires:		pkgconfig(openh264)
 Requires:			openh264
-%if 0%{?fedora}
 BuildRequires:		pkgconfig(spng)
 Requires:			libspng
 %endif
@@ -528,8 +528,8 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/v4l2
 %{python3_sitearch}/xpra/codecs/vpx
 %{python3_sitearch}/xpra/codecs/webp
-%{python3_sitearch}/xpra/codecs/openh264
 %if 0%{?fedora}
+%{python3_sitearch}/xpra/codecs/openh264
 %{python3_sitearch}/xpra/codecs/spng
 %endif
 
