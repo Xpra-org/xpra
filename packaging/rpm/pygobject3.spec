@@ -33,9 +33,11 @@ BuildRequires:  meson
 BuildRequires:  %{python3}-devel >= %{python3_version}
 BuildRequires:  %{python3}-setuptools
 
+%if 0%{?fedora}
 # https://docs.fedoraproject.org/en-US/packaging-guidelines/Python_Appendix/#_byte_compilation_reproducibility
 %global py_reproducible_pyc_path %{buildroot}%{python3_sitelib}
 BuildRequires:  /usr/bin/marshalparser
+%endif
 
 %description
 The %{name} package provides a convenient wrapper for the GObject library
