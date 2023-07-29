@@ -10,4 +10,18 @@ python3-uinput
 python3-cairo
 python3-pylsqpack
 python3-aioquic
+# default python version is too old,
+# so don't build xpra:
+# xpra
+
+
+PYTHON3=python3.11
+python3-setuptools
+python3-Cython
+python3-pynvml
+python3-pyu2f
+python3-uinput
+python3-pylsqpack
+pycairo
+pygobject3
 xpra
