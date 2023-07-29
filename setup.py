@@ -252,7 +252,6 @@ openh264_ENABLED        = DEFAULT and pkg_config_version("2.0", "openh264")
 openh264_decoder_ENABLED = openh264_ENABLED
 openh264_encoder_ENABLED = openh264_ENABLED
 #crashes on 32-bit windows:
-enc_x265_ENABLED        = False #(not WIN32) and pkg_config_ok("--exists", "x265")
 pillow_ENABLED          = DEFAULT
 argb_ENABLED            = DEFAULT
 spng_decoder_ENABLED    = DEFAULT and pkg_config_version("0.6", "spng")
@@ -297,7 +296,7 @@ rebuild_ENABLED         = not skip_build
 
 #allow some of these flags to be modified on the command line:
 CODEC_SWITCHES = [
-    "enc_x264", "enc_x265",
+    "enc_x264",
     "enc_proxy",
     "cuda_kernels", "cuda_rebuild",
     "openh264", "openh264_decoder", "openh264_encoder",
@@ -1167,7 +1166,6 @@ def clean():
                    "xpra/codecs/avif/encoder.c",
                    "xpra/codecs/avif/decoder.c",
                    "xpra/codecs/x264/encoder.c",
-                   "xpra/codecs/x265/encoder.c",
                    "xpra/codecs/spng/encoder.c",
                    "xpra/codecs/spng/decoder.c",
                    "xpra/codecs/jpeg/encoder.c",
@@ -2290,8 +2288,6 @@ toggle_packages(drm_ENABLED, "xpra.codecs.drm")
 tace(drm_ENABLED, "xpra.codecs.drm.drm", "libdrm")
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.x264")
 tace(enc_x264_ENABLED, "xpra.codecs.x264.encoder", "x264")
-toggle_packages(enc_x265_ENABLED, "xpra.codecs.x265")
-tace(enc_x265_ENABLED, "xpra.codecs.x265.encoder", "x265")
 toggle_packages(openh264_ENABLED, "xpra.codecs.openh264")
 tace(openh264_decoder_ENABLED, "xpra.codecs.openh264.decoder", "openh264", language="c++")
 tace(openh264_encoder_ENABLED, "xpra.codecs.openh264.encoder", "openh264", language="c++")

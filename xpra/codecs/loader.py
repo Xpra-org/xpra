@@ -19,7 +19,7 @@ log = Logger("codec", "loader")
 
 #these codecs may well not load because we
 #do not require the libraries to be installed
-NOWARN = ["nvenc", "nvdec", "enc_nvjpeg", "dec_nvjpeg", "nvfbc", "enc_x265", "dec_openh264", "enc_gstreamer", "dec_gstreamer", "csc_cython"]
+NOWARN = ["nvenc", "nvdec", "enc_nvjpeg", "dec_nvjpeg", "nvfbc", "dec_openh264", "enc_gstreamer", "dec_gstreamer", "csc_cython"]
 
 SELFTEST = envbool("XPRA_CODEC_SELFTEST", True)
 FULL_SELFTEST = envbool("XPRA_CODEC_FULL_SELFTEST", False)
@@ -33,14 +33,14 @@ log("codec loader settings: SELFTEST=%s, FULL_SELFTEST=%s, CODEC_FAIL_IMPORT=%s,
 
 SKIP_LIST : tuple[str,...] = ()
 if OSX:
-    SKIP_LIST = ("avif", "nvenc", "nvdec", "nvjpeg", "x265")
+    SKIP_LIST = ("avif", "nvenc", "nvdec", "nvjpeg")
 def filt(*values) -> tuple[str,...]:
     return tuple(x for x in values if all(x.find(s)<0 for s in SKIP_LIST))
 
 
 CSC_CODECS : tuple[str,...] = filt("csc_cython", "csc_libyuv")
 ENCODER_CODECS : tuple[str,...] = filt("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg", "enc_avif")
-ENCODER_VIDEO_CODECS : tuple[str,...] = filt("enc_vpx", "enc_x264", "enc_x265", "enc_openh264", "nvenc", "enc_gstreamer")
+ENCODER_VIDEO_CODECS : tuple[str,...] = filt("enc_vpx", "enc_x264", "enc_openh264", "nvenc", "enc_gstreamer")
 DECODER_CODECS : tuple[str,...] = filt("dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_nvjpeg", "dec_avif", "dec_gstreamer")
 DECODER_VIDEO_CODECS : tuple[str,...] = filt("dec_vpx", "dec_openh264", "nvdec")
 SOURCES : tuple[str,...] = filt("v4l2", "evdi", "drm", "nvfbc")
@@ -199,7 +199,6 @@ CODEC_OPTIONS : dict[str,tuple[str,str,str,str]] = {
     #video encoders:
     "enc_vpx"       : ("vpx encoder",       "vpx",          "encoder", "Encoder"),
     "enc_x264"      : ("x264 encoder",      "x264",         "encoder", "Encoder"),
-    "enc_x265"      : ("x265 encoder",      "x265",         "encoder", "Encoder"),
     "enc_openh264"  : ("openh264 encoder",  "openh264",     "encoder", "Encoder"),
     "nvenc"         : ("nvenc encoder",     "nvidia.nvenc", "encoder", "Encoder"),
     "enc_gstreamer" : ("gstreamer encoder", "gstreamer",    "encoder", "Encoder"),

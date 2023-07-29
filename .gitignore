@@ -120,7 +120,6 @@ tests/unittests/test-file*
 /xpra/codecs/openh264/decoder.cpp
 /xpra/codecs/openh264/encoder.cpp
 /xpra/codecs/x264/encoder.c
-/xpra/codecs/x265/encoder.c
 /xpra/codecs/spng/decoder.c
 /xpra/codecs/spng/encoder.c
 /xpra/codecs/jpeg/decoder.c

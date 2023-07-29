@@ -18,7 +18,7 @@
 %define version 6.0
 
 %define CFLAGS -O2
-%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-enc_x265 --without-cuda_rebuild
+%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild
 %global __requires_exclude ^(libnvjpeg|libnvidia-).*\\.so.*$
 %{!?python3: %define python3 %{getenv:PYTHON3}}
 %{!?python3: %define python3 python3}

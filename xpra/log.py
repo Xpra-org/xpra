@@ -210,7 +210,6 @@ STRUCT_KNOWN_FILTERS : dict[str,dict[str,str]] = {
                 "nvdec"         : "nvidia nvdec video hardware decoder",
                 "nvfbc"         : "nvidia nvfbc screen capture",
                 "x264"          : "libx264 encoder",
-                "x265"          : "libx265 encoder",
                 "openh264"      : "openh264 decoder",
                 "webp"          : "libwebp encoder and decoder",
                 "avif"          : "libavif encoder and decoder",
