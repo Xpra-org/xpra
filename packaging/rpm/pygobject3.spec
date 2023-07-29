@@ -57,30 +57,30 @@ for use in Python 3 programs.
 %package     -n %{python3}-gobject-base
 Summary:        Python 3 bindings for GObject Introspection base package
 Requires:       gobject-introspection%{?_isa} >= %{gobject_introspection_version}
-Requires:       python3-gobject-base-noarch = %{version}-%{release}
+Requires:       %{python3}-gobject-base-noarch = %{version}-%{release}
 
 %description -n %{python3}-gobject-base
 This package provides the non-cairo specific bits of the GObject Introspection
 library that are architecture specific.
 
-%package     -n python3-gobject-base-noarch
+%package     -n %{python3}-gobject-base-noarch
 Summary:        Python 3 bindings for GObject Introspection base (not architecture dependent)
 BuildArch:      noarch
-Requires:       python3-gobject-base = %{version}-%{release}
+Requires:       %{python3}-gobject-base = %{version}-%{release}
 
-%description -n python3-gobject-base-noarch
+%description -n %{python3}-gobject-base-noarch
 This package provides the non-cairo specific bits of the GObject Introspection
 library that are not architecture specific.
 
-%package     -n python3-gobject-devel
+%package     -n %{python3}-gobject-devel
 Summary:        Development files for embedding PyGObject introspection support
-Requires:       python3-gobject%{?_isa} = %{version}-%{release}
+Requires:       %{python3}-gobject%{?_isa} = %{version}-%{release}
 Requires:       gobject-introspection-devel%{?_isa}
 # Renamed in F31
 Obsoletes:      pygobject3-devel < 3.34.0-2
 Provides:       pygobject3-devel = %{version}-%{release}
 
-%description -n python3-gobject-devel
+%description -n %{python3}-gobject-devel
 This package contains files required to embed PyGObject
 
 %prep
@@ -104,11 +104,15 @@ fi
 
 %files -n %{python3}-gobject-base
 %dir %{python3_sitearch}/gi/
+%if 0%{?fedora}%{?el9}
 %pycached %{python3_sitearch}/gi/*.py
+%else
+%{python3_sitearch}/gi/*.py
+%endif
 %{python3_sitearch}/gi/_gi.*.so
 %{python3_sitearch}/PyGObject-*.egg-info
 
-%files -n python3-gobject-base-noarch
+%files -n %{python3}-gobject-base-noarch
 %license COPYING
 %doc NEWS
 %dir %{python3_sitelib}/gi/
@@ -116,7 +120,7 @@ fi
 %{python3_sitelib}/gi/repository/
 %{python3_sitelib}/pygtkcompat/
 
-%files -n python3-gobject-devel
+%files -n %{python3}-gobject-devel
 %dir %{_includedir}/pygobject-3.0/
 %{_includedir}/pygobject-3.0/pygobject.h
 %{_libdir}/pkgconfig/pygobject-3.0.pc
