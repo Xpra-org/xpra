@@ -46,7 +46,12 @@ class XpraQuicConnection(Connection):
 
     def get_info(self) -> dict[str,Any]:
         info = super().get_info()
-        qinfo = info.setdefault("quic", {})
+        qinfo = {
+            "read-queue"    : self.read_queue.qsize(),
+            "stream-id"     : self.stream_id,
+            "accepted"      : self.accepted,
+            "closed"        : self.closed,
+        }
         quic = getattr(self.connection, "_quic", None)
         if quic:
             config = quic.configuration
@@ -58,12 +63,7 @@ class XpraQuicConnection(Connection):
                 "max-stream-data" : config.max_stream_data,
                 "server-name"   : config.server_name or "",
             }
-        qinfo |= {
-            "read-queue"    : self.read_queue.qsize(),
-            "stream-id"     : self.stream_id,
-            "accepted"      : self.accepted,
-            "closed"        : self.closed,
-        }
+        info["quic"] = qinfo
         return info
 
     def http_event_received(self, event: H3Event) -> None:
