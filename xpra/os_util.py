@@ -685,46 +685,6 @@ def path_permission_info(filename : str, ftype=None) -> tuple[str, ...]:
     return tuple(info)
 
 
-# code to temporarily redirect stderr and restore it afterwards, adapted from:
-# http://stackoverflow.com/questions/5081657/how-do-i-prevent-a-c-shared-library-to-print-on-stdout-in-python
-# used by the audio code to get rid of the stupid gst warning below:
-# "** Message: pygobject_register_sinkfunc is deprecated (GstObject)"
-# ideally we would redirect to a buffer,
-# so we could still capture and show these messages in debug out
-class HideStdErr:
-    __slots__ = ("savedstderr", )
-    def __init__(self, *_args):
-        self.savedstderr = None
-
-    def __enter__(self):
-        if POSIX and os.getppid()==1:
-            #this interferes with server daemonizing?
-            return
-        sys.stderr.flush() # <--- important when redirecting to files
-        self.savedstderr = os.dup(2)
-        devnull = os.open(os.devnull, os.O_WRONLY)
-        os.dup2(devnull, 2)
-        os.close(devnull)
-        sys.stderr = os.fdopen(self.savedstderr, 'w')
-
-    def __exit__(self, *_args):
-        if self.savedstderr is not None:
-            os.dup2(self.savedstderr, 2)
-
-class HideSysArgv:
-    __slots__ = ("savedsysargv", )
-    def __init__(self, *_args):
-        self.savedsysargv = None
-
-    def __enter__(self):
-        self.savedsysargv = sys.argv
-        sys.argv = sys.argv[:1]
-
-    def __exit__(self, *_args):
-        if self.savedsysargv is not None:
-            sys.argv = self.savedsysargv
-
-
 class OSEnvContext:
     __slots__ = ("env", "kwargs")
     def __init__(self, **kwargs):
