@@ -8,7 +8,7 @@ import sys
 from ctypes import c_ubyte, c_char, c_uint32
 from typing import Any
 
-from xpra.util import roundup
+from xpra.util import roundup, envbool
 from xpra.os_util import memoryview_to_bytes, shellsub, get_group_id, WIN32, POSIX
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.simple_stats import std_unit
@@ -17,7 +17,8 @@ from xpra.log import Logger
 log = Logger("mmap")
 
 MMAP_GROUP = os.environ.get("XPRA_MMAP_GROUP", "xpra")
-
+MADVISE = envbool("XPRA_MMAP_MADVISE", True)
+MADVISE_FLAGS = os.environ.get("XPRA_MMAP_MADVISE_FLAGS", "SEQUENTIAL,DONTFORK,UNMERGEABLE,DONTDUMP").split(",")
 
 """
 Utility functions for communicating via mmap
@@ -153,6 +154,18 @@ def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*
             assert os.write(fd, b'\x00')
             os.lseek(fd, 0, os.SEEK_SET)
             mmap_area = mmap.mmap(fd, length=mmap_size)
+            if MADVISE:
+                log(f"setting {MADVISE_FLAGS=}")
+                try:
+                    for flag in MADVISE_FLAGS:
+                        flag_value = getattr(mmap, f"MADV_{flag}", 0)
+                        log(f"MADV_{flag}={flag_value}")
+                        if flag_value:
+                            mmap_area.madvise(flag_value)
+                except OSError as e:
+                    log(f"{mmap_area}.madvise(..)")
+                    log.error("Error: failed to set madvise flags")
+                    log.estr(e)
         return True, delete, mmap_area, mmap_size, mmap_temp_file, mmap_filename
     except Exception as e:
         log("failed to setup mmap: %s", e, exc_info=True)
