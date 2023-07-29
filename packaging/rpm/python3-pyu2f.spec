@@ -10,9 +10,9 @@
 %global python3 %{getenv:PYTHON3}
 %undefine __pythondist_requires
 %undefine __python_requires
+%define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
+%define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
-%define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))")
-%define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))")
 
 #this is a pure python package so debug is meaningless here:
 %define debug_package %{nil}
@@ -44,7 +44,6 @@ fi
 
 %install
 %{python3} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
-# RHEL stream setuptools bug?
 rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 %clean

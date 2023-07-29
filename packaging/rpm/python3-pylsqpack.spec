@@ -5,8 +5,8 @@
 %global python3 %{getenv:PYTHON3}
 %undefine __pythondist_requires
 %undefine __python_requires
+%define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
-%define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))")
 
 Name:           %{python3}-pylsqpack
 Version:        0.3.17

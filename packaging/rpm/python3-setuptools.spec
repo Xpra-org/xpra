@@ -6,8 +6,8 @@
 %global python3 %{getenv:PYTHON3}
 %undefine __pythondist_requires
 %undefine __python_requires
+%define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
-%define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))")
 
 Name:           %{python3}-%{srcname}
 Version:        68.0.0
