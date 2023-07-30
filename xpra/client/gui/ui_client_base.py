@@ -116,6 +116,8 @@ class UIXpraClient(ClientBaseClass):
             pinfo = get_platform_info()
             osinfo = "%s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
             log.info(f" running on {osinfo}")
+            vinfo = ".".join(str(x) for x in sys.version_info[:FULL_INFO+1])
+            log.info(f" {sys.implementation.name} {vinfo}")
         except Exception:
             log("platform name error:", exc_info=True)
         wm = get_wm_name()      #pylint: disable=assignment-from-none

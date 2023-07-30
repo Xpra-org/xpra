@@ -878,6 +878,8 @@ class ServerCore:
                 log("failed to get user and group information", exc_info=True)
                 log.info(" uid=%i, gid=%i", uid, gid)
         log.info(" running with pid %s%s", os.getpid(), osinfo)
+        vinfo = ".".join(str(x) for x in sys.version_info[:FULL_INFO+1])
+        log.info(f" {sys.implementation.name} {vinfo}")
         self.idle_add(self.print_screen_info)
 
     def notify_new_user(self, ss) -> None:
