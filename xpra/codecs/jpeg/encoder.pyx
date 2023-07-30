@@ -142,7 +142,8 @@ def get_specs(encoding, colorspace):
         height_mask=0xFFFE
     return (
         video_spec(
-            encoding, input_colorspace=colorspace, output_colorspaces=(colorspace, ), has_lossless_mode=False,
+            encoding=encoding, input_colorspace=colorspace, output_colorspaces=(colorspace, ),
+            has_lossless_mode=False,
             codec_class=Encoder, codec_type="jpeg",
             setup_cost=0, cpu_cost=100, gpu_cost=0,
             min_w=16, min_h=16, max_w=16*1024, max_h=16*1024,

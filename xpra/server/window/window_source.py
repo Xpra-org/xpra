@@ -11,6 +11,7 @@ import hashlib
 import threading
 from math import sqrt, ceil
 from collections import deque
+from dataclasses import dataclass
 from time import monotonic
 from contextlib import nullcontext
 from typing import Callable, Iterable, ContextManager, Any
@@ -121,13 +122,13 @@ if POSIX and not OSX:
     ui_context = xlog
 
 
+@dataclass
 class DelayedRegions:
-    def __init__(self, damage_time:float, regions:list[rectangle], encoding:str, options:dict|None):
-        self.expired : bool = False
-        self.damage_time : float = damage_time
-        self.regions = regions
-        self.encoding : str = encoding
-        self.options : dict = options or {}
+    damage_time : float
+    encoding : str
+    options : dict
+    regions : list[rectangle]
+    expired : bool = False
 
     def __repr__(self):
         return "DelayedRegion(time=%i, expired=%s, encoding=%s, regions=%s, options=%s)" % (
@@ -1604,7 +1605,7 @@ class WindowSource(WindowIconSource):
         target_delay = delay
         delay = max(0, delay-elapsed)
         actual_encoding = options.get("encoding", self.encoding)
-        self._damage_delayed = DelayedRegions(now, regions, actual_encoding, options)
+        self._damage_delayed = DelayedRegions(damage_time=now, regions=regions, encoding=actual_encoding, options=options)
         lad = (now, delay)
         self.batch_config.last_delays.append(lad)
         self.batch_config.last_delay = lad
@@ -2400,7 +2401,7 @@ class WindowSource(WindowIconSource):
         #just refresh the whole window:
         regions = [rectangle(0, 0, w, h)]
         now = monotonic()
-        damage = DelayedRegions(now, regions, encoding, new_options)
+        damage = DelayedRegions(damage_time=now, regions=regions, encoding=encoding, options=new_options)
         self.send_delayed_regions(damage)
 
     def get_refresh_options(self) -> dict[str,Any]:

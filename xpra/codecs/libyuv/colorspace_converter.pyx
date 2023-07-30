@@ -157,8 +157,8 @@ def get_output_colorspaces(input_colorspace):
 def get_spec(in_colorspace, out_colorspace):
     assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, COLORSPACES)
     assert out_colorspace in COLORSPACES[in_colorspace], "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, COLORSPACES[in_colorspace])
-    return csc_spec(in_colorspace, out_colorspace,
-                    ColorspaceConverter, codec_type=get_type(),
+    return csc_spec(input_colorspace=in_colorspace, output_colorspace=out_colorspace,
+                    codec_class=ColorspaceConverter, codec_type=get_type(),
                     quality=100, speed=100,
                     setup_cost=0, min_w=8, min_h=2, can_scale=in_colorspace!="NV12",
                     max_w=MAX_WIDTH, max_h=MAX_HEIGHT)

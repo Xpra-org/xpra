@@ -120,8 +120,8 @@ def get_spec(in_colorspace:str, out_colorspace:str):
         #safer not to try to handle odd dimensions as input:
         width_mask = height_mask = 0xFFFE
     #low score as this should be used as fallback only:
-    return csc_spec(in_colorspace, out_colorspace,
-                    ColorspaceConverter, codec_type=get_type(),
+    return csc_spec(input_colorspace=in_colorspace, output_colorspace=out_colorspace,
+                    codec_class=ColorspaceConverter, codec_type=get_type(),
                     quality=50, speed=0, setup_cost=0, min_w=2, min_h=2,
                     max_w=16*1024, max_h=16*1024,
                     can_scale=can_scale,

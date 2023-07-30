@@ -6,6 +6,7 @@
 
 import os
 from weakref import WeakSet
+from dataclasses import dataclass, field
 from typing import Any
 
 from xpra.util import envint, typedict
@@ -130,46 +131,29 @@ class CodecStateException(Exception):
     pass
 
 
+@dataclass(kw_only=True)
 class _codec_spec:
 
-    def __init__(self, codec_class, codec_type : str="",
-                    quality:int=50, speed:int=50,
-                    size_efficiency:int=50,
-                    setup_cost:int=50, cpu_cost:int=100, gpu_cost:int=0,
-                    min_w:int=1, min_h:int=1, max_w:int=4*1024, max_h:int=4*1024,
-                    can_scale:bool=False,
-                    score_boost:int=0,
-                    width_mask:int=0xFFFF, height_mask:int=0xFFFF):
-        self.codec_class = codec_class          #ie: xpra.codecs.x264.encoder.Encoder
-        self.codec_type : str = codec_type            #ie: "nvenc"
-        self.quality : int = quality
-        self.speed : int = speed
-        self.size_efficiency : int = size_efficiency
-        self.setup_cost : int = setup_cost
-        self.cpu_cost : int = cpu_cost
-        self.gpu_cost : int = gpu_cost
-        self.score_boost : int = score_boost
-        self.min_w : int = min_w
-        self.min_h : int = min_h
-        self.max_w : int = max_w
-        self.max_h : int = max_h
-        self.width_mask : int = width_mask
-        self.height_mask : int = height_mask
-        self.can_scale : bool = can_scale
-        self.max_instances : int = 0
-        self._exported_fields = [
-            "codec_class", "codec_type",
-            "quality", "speed",
-            "setup_cost", "cpu_cost", "gpu_cost", "score_boost",
-            "min_w", "min_h", "max_w", "max_h",
-            "width_mask", "height_mask",
-            "can_scale",
-            "max_instances",
-            ]
-        #not exported:
-        self.instances : WeakSet[Any] = WeakSet()
-        self._all_fields = list(self._exported_fields)+["instances"]
-
+    codec_class     : callable
+    codec_type      : str
+    quality         : int = 50
+    speed           : int = 50
+    size_efficiency : int = 50
+    setup_cost      : int = 50
+    cpu_cost        : int = 100
+    gpu_cost        : int = 0
+    min_w           : int = 1
+    min_h           : int = 1
+    max_w           : int = 4 * 1024
+    max_h           : int = 4 * 1024
+    can_scale       : bool = False
+    score_boost     : int = 0
+    width_mask      : int = 0xFFFF
+    height_mask     : int = 0xFFFF
+    max_instances   : int = 0
+    skipped_fields  : tuple[str] = ("instances", "skipped_fields", )
+    # not exported:
+    instances       : WeakSet[Any] = field(default_factory=WeakSet)
 
     def make_instance(self) -> object:
         # pylint: disable=import-outside-toplevel
@@ -200,9 +184,9 @@ class _codec_spec:
         return len(self.instances)
 
     def to_dict(self) -> dict[str,Any]:
-        d = {}
-        for k in self._exported_fields:
-            d[k] = getattr(self, k)
+        v = self.asdict()
+        for k in self.skipped_fields:
+            v.pop(k, None)
         return d
 
     def get_runtime_factor(self) -> float:
@@ -220,28 +204,23 @@ class _codec_spec:
         return 1.0
 
 
+@dataclass(kw_only=True)
 class video_spec(_codec_spec):
 
-    def __init__(self, encoding : str, input_colorspace : str, output_colorspaces : tuple, has_lossless_mode : bool,
-                 codec_class, codec_type : str, min_w:int=2, min_h:int=2, **kwargs):
-        self.encoding : str = encoding                        #ie: "h264"
-        self.input_colorspace : str = input_colorspace
-        self.output_colorspaces = output_colorspaces    #ie: ["YUV420P" : "YUV420P", ...]
-        self.has_lossless_mode : bool = has_lossless_mode
-        super().__init__(codec_class, codec_type, min_w=min_w, min_h=min_h, **kwargs)
-        self._exported_fields += ["encoding", "input_colorspace", "output_colorspaces", "has_lossless_mode"]
+    encoding            : str
+    input_colorspace    : str
+    output_colorspaces  : tuple[str,...]      # ie: ["YUV420P" : "YUV420P", ...]
+    has_lossless_mode   : bool = False
 
     def __repr__(self):
         return f"{self.codec_type}({self.input_colorspace} to {self.encoding}"
 
 
+@dataclass(kw_only=True)
 class csc_spec(_codec_spec):
 
-    def __init__(self, input_colorspace:str, output_colorspace:str, codec_class, codec_type:str, **kwargs):
-        self.input_colorspace : str = input_colorspace
-        self.output_colorspace : str = output_colorspace
-        super().__init__(codec_class, codec_type, **kwargs)
-        self._exported_fields += ["input_colorspace", "output_colorspace"]
+    input_colorspace: str
+    output_colorspace: str
 
     def __repr__(self):
         return f"{self.codec_type}({self.input_colorspace} to {self.output_colorspace})"
