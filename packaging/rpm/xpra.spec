@@ -1313,39 +1313,39 @@ fi
 - NVENC support for MS Windows shadow servers
 
 * Tue Apr 28 2015 Antoine Martin <antoine@xpra.org> 0.15.0-1
--printer forwarding
--functional HTML5 client
--add session idle timeout switch
--add html command line switch for easily setting up an HTML5 xpra server
--dropped support for Python 2.5 and older, allowing many code cleanups and improvements
--include manual in html format with MS Windows and OSX builds
--add option to control socket permissions (easier setup of containers)
--client log output forwarding to the server
--fixed workarea coordinates detection for MS Windows clients
--improved video region detection and handling
--more complete support for window states (keep above, below, sticky, etc..) and general window manager responsabilities
--allow environment variables passed to children to be specified in the config files
--faster reformatting of window pixels before compression stage
--support multiple delta regions and expire them (better compression)
--allow new child commands to be started on the fly, also from the client's system tray (disabled by default)
--detect mismatch between some codecs and their shared library dependencies
--NVENC SDK support for versions 4 and 5, YUV444 and lossless mode
--libvpx support for vp9 lossless mode, much improved performance tuning
--add support for child commands that do not interfere with "exit-with-children"
--add scaling command line and config file switch for controlling automatic scaling aggressiveness
--sound processing is now done in a separate process (lower latency, and more reliable)
--add more control over sound command line options, so sound can start disabled and still be turned on manually later
--add command line option for selecting the sound source (pulseaudio, alsa, etc)
--show sound bandwidth usage
--better window icon forwarding, especially for non X11 clients
--optimized OpenGL rendering for X11 clients
--handle screen update storms better
--window group-leader support on MS Windows (correct window grouping in the task bar)
--GTK3 port improvements (still work in progress)
--added unit tests which are run automatically during packaging
--more detailed information in xpra info (cursor, CPU, connection, etc)
--more detailed bug report information
--more minimal MS Windows and OSX builds
+- printer forwarding
+- functional HTML5 client
+- add session idle timeout switch
+- add html command line switch for easily setting up an HTML5 xpra server
+- dropped support for Python 2.5 and older, allowing many code cleanups and improvements
+- include manual in html format with MS Windows and OSX builds
+- add option to control socket permissions (easier setup of containers)
+- client log output forwarding to the server
+- fixed workarea coordinates detection for MS Windows clients
+- improved video region detection and handling
+- more complete support for window states (keep above, below, sticky, etc..) and general window manager responsabilities
+- allow environment variables passed to children to be specified in the config files
+- faster reformatting of window pixels before compression stage
+- support multiple delta regions and expire them (better compression)
+- allow new child commands to be started on the fly, also from the client's system tray (disabled by default)
+- detect mismatch between some codecs and their shared library dependencies
+- NVENC SDK support for versions 4 and 5, YUV444 and lossless mode
+- libvpx support for vp9 lossless mode, much improved performance tuning
+- add support for child commands that do not interfere with "exit-with-children"
+- add scaling command line and config file switch for controlling automatic scaling aggressiveness
+- sound processing is now done in a separate process (lower latency, and more reliable)
+- add more control over sound command line options, so sound can start disabled and still be turned on manually later
+- add command line option for selecting the sound source (pulseaudio, alsa, etc)
+- show sound bandwidth usage
+- better window icon forwarding, especially for non X11 clients
+- optimized OpenGL rendering for X11 clients
+- handle screen update storms better
+- window group-leader support on MS Windows (correct window grouping in the task bar)
+- GTK3 port improvements (still work in progress)
+- added unit tests which are run automatically during packaging
+- more detailed information in xpra info (cursor, CPU, connection, etc)
+- more detailed bug report information
+- more minimal MS Windows and OSX builds
 
 * Thu Aug 14 2014 Antoine Martin <antoine@xpra.org> 0.14.0-1
 - support for lzo compression
