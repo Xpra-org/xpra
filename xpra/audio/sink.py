@@ -8,7 +8,7 @@ import sys
 from time import monotonic
 from collections import deque
 from threading import Lock
-from typing import Any
+from typing import Any, Literal
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.audio.audio_pipeline import AudioPipeline
@@ -199,19 +199,19 @@ class AudioSink(AudioPipeline):
         return True
 
 
-    def queue_pushing(self, *_args) -> bool:
+    def queue_pushing(self, *_args) -> Literal[True]:
         gstlog("queue_pushing")
         self.queue_state = "pushing"
         self.emit_info()
         return True
 
-    def queue_running(self, *_args) -> bool:
+    def queue_running(self, *_args) -> Literal[True]:
         gstlog("queue_running")
         self.queue_state = "running"
         self.emit_info()
         return True
 
-    def queue_underrun(self, *_args) -> bool:
+    def queue_underrun(self, *_args) -> Literal[True]:
         now = monotonic()
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
             gstlog("ignoring underrun during startup")
@@ -242,7 +242,7 @@ class AudioSink(AudioPipeline):
             return maxl-minl
         return 0
 
-    def queue_overrun(self, *_args) -> bool:
+    def queue_overrun(self, *_args) -> Literal[True]:
         now = monotonic()
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
             gstlog("ignoring overrun during startup")
