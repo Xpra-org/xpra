@@ -59,7 +59,8 @@ def print_iface(iface):
 def main():
     # pylint: disable=import-outside-toplevel
     import sys
-    from xpra.net.net_util import get_interfaces, if_nametoindex
+    from xpra.net.net_util import get_interfaces
+    from socket import if_nametoindex
     from xpra.platform import program_context
     from xpra.log import Logger, enable_color, add_debug_category, enable_debug_for
     log = Logger("network")
@@ -73,9 +74,9 @@ def main():
 
         print("Network interfaces found:")
         for iface in get_interfaces():
-            if if_nametoindex:
+            try:
                 print("* %s (index=%s)" % (iface.ljust(20), if_nametoindex(iface)))
-            else:
+            except OSError:
                 print(f"* {iface}")
             print_iface(iface)
 

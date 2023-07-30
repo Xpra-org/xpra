@@ -12,7 +12,7 @@ from xpra.net.net_util import (
     get_info, get_interfaces, get_interfaces_addresses, #get_interface,
     get_gateways, get_bind_IPs, do_get_bind_ifacemask,
     get_ssl_info, get_interface,
-    if_nametoindex, if_indextoname, get_iface,
+    get_iface,
     get_free_tcp_port,
     )
 from unit.test_util import silence_error
@@ -29,15 +29,6 @@ class TestVersionUtilModule(unittest.TestCase):
             return
         ip_ifaces = defaultdict(list)
         for iface in ifaces:
-            if if_nametoindex:
-                try:
-                    i = if_nametoindex(iface)
-                except Exception:
-                    pass
-                else:
-                    if if_indextoname:
-                        assert if_indextoname(i)==iface, "expected interface %s for index %i but got %s" % (
-                            iface, i, if_indextoname(i))
             ipmasks = do_get_bind_ifacemask(iface)
             for ip, _ in ipmasks:
                 ip_ifaces[ip].append(iface)
@@ -53,9 +44,6 @@ class TestVersionUtilModule(unittest.TestCase):
         get_bind_IPs()
         get_ssl_info()
         get_info()
-
-        if if_indextoname:
-            assert if_indextoname(-1) is None
 
         def invalid_iface(s):
             v = get_iface(s)

@@ -6,6 +6,7 @@
 
 # taken from the code I wrote for winswitch
 
+import os
 import socket
 import sys
 from typing import Any, Callable
@@ -165,13 +166,12 @@ def get_iface(ip) -> str:
         return ""
     if ip.find("%")>=0:
         iface = ip.split("%", 1)[1]
-        if if_nametoindex:
-            try:
-                if_nametoindex(iface)
-            except OSError:
-                return ""
-            else:
-                return iface
+        try:
+            socket.if_nametoindex(iface)
+        except OSError:
+            return ""
+        else:
+            return iface
     ipv6 = ip.find(":")>=0
     af = socket.AF_INET6 if ipv6 else socket.AF_INET
     ipchars = ".:0123456789"
@@ -246,29 +246,6 @@ def get_iface(ip) -> str:
                 log.error(f"Error parsing IP {test_ip!r} or its mask {mask!r}: {e}")
     log("get_iface(%s)=%s", ip, best_match)
     return best_match
-
-
-# Found this recipe here:
-# http://code.activestate.com/recipes/442490/
-if_nametoindex = None
-if_indextoname = None
-
-if WIN32:   # pragma: no cover
-    def int_if_nametoindex(iface):
-        #IPv6 addresses give us the interface as a string:
-        #fe80:....%11, so try to convert "11" into 11
-        try:
-            return int(iface)
-        except (TypeError, ValueError):
-            return None
-    if_nametoindex = int_if_nametoindex
-else:
-    if_nametoindex = socket.if_nametoindex
-    def socket_if_indextoname(index):
-        if index<0:
-            return None
-        return socket.if_indextoname(index)
-    if_indextoname = socket_if_indextoname
 
 
 net_sys_config : dict[str,Any] = {}
@@ -461,9 +438,9 @@ def main(): # pragma: no cover
         print("Network interfaces found:")
         netifaces = import_netifaces()
         for iface in get_interfaces():
-            if if_nametoindex:
-                print("* %s (index=%s)" % (iface.ljust(20), if_nametoindex(iface)))
-            else:
+            try:
+                print("* %s (index=%s)" % (iface.ljust(20), socket.if_nametoindex(iface)))
+            except OSError:
                 print(f"* {iface}")
             addresses = netifaces.ifaddresses(iface)     #@UndefinedVariable pylint: disable=no-member
             for addr, defs in addresses.items():

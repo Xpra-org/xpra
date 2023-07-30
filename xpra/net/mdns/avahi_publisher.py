@@ -8,6 +8,7 @@
 
 import avahi  # @UnresolvedImport
 import dbus
+from socket import if_nametoindex, if_indextoname
 try:
     from dbus.exceptions import DBusException
 except ImportError:
@@ -16,7 +17,7 @@ except ImportError:
 
 from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE, SHOW_INTERFACE
 from xpra.dbus.common import init_system_bus
-from xpra.net.net_util import get_iface, if_nametoindex, if_indextoname
+from xpra.net.net_util import get_iface
 from xpra.log import Logger
 
 log = Logger("network", "mdns")
@@ -65,9 +66,12 @@ class AvahiPublishers:
             iface_index = get_interface_index(host)
             log("iface_index(%s)=%s", host, iface_index)
             td = text_dict or {}
-            if SHOW_INTERFACE and if_indextoname and iface_index is not None:
+            if SHOW_INTERFACE and iface_index is not None:
                 td = text_dict.copy()
-                td["iface"] = if_indextoname(iface_index)
+                try:
+                    td["iface"] = if_indextoname(iface_index)
+                except OSError:
+                    pass
             txt = []
             if text_dict:
                 for k,v in td.items():

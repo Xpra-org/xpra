@@ -28,7 +28,6 @@ from xpra.gtk_common.gtk_util import (
     )
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.net.common import DEFAULT_PORTS
-from xpra.net.net_util import if_indextoname
 from xpra.util import typedict
 from xpra.os_util import bytestostr, WIN32
 from xpra.log import Logger
@@ -349,9 +348,12 @@ class SessionsGUI(Gtk.Window):
         if display and display.startswith(":"):
             dstr = display[1:]
         #append interface to IPv6 host URI for link local addresses ("fe80:"):
-        if interface and if_indextoname and address.lower().startswith("fe80:"):
+        if interface and address.lower().startswith("fe80:"):
             #ie: "fe80::c1:ac45:7351:ea69%eth1"
-            address += "%%%s" % if_indextoname(interface)
+            try:
+                address += "%%%s" % socket.if_indextoname(interface)
+            except OSError:
+                pass
         if username:
             if password:
                 uri = "%s://%s:%s@%s" % (mode, username, password, address)

@@ -3098,7 +3098,6 @@ def run_list_mdns(error_cb, extra_args) -> int:
             listener_class = Zeroconflistener
         except ImportError:
             error_cb("sorry, 'list-mdns' requires an mdns module")
-    from xpra.net.net_util import if_indextoname
     from xpra.dbus.common import loop_init
     from gi.repository import GLib  # @UnresolvedImport
     loop_init()
@@ -3135,8 +3134,11 @@ def run_list_mdns(error_cb, extra_args) -> int:
     def mdns_add(interface, _protocol, name, _stype, domain, host, address, port, text):
         text = typedict(text or {})
         iface = interface
-        if if_indextoname and iface is not None:
-            iface = if_indextoname(interface)
+        if iface is not None:
+            try:
+                iface = socket.if_indextoname(interface)
+            except OSError:
+                pass
         username = text.strget("username", "")
         uq = text.strget("uuid", str(len(found))), username, host
         found.setdefault(uq, []).append((iface or "", name, domain, host, address, port, text))
