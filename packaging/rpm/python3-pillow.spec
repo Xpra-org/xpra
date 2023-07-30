@@ -45,14 +45,12 @@ This library provides extensive file format support, an efficient
 internal representation, and powerful image processing capabilities.
 
 
-%package -n %{package_prefix}-%{srcname}
+%package -n %{package_prefix}%{srcname}
 Summary:        Python 3 image processing library
-%{?python_provide:%python_provide %{package_prefix}-%{srcname}}
-Provides:       %{package_prefix}-imaging = %{version}-%{release}
-# For MicImagePlugin.py, FpxImagePlugin.py
-Requires:       %{package_prefix}-olefile
+%{?python_provide:%python_provide %{package_prefix}%{srcname}}
+Provides:       %{package_prefix}imaging = %{version}-%{release}
 
-%description -n %{package_prefix}-%{srcname}
+%description -n %{package_prefix}%{srcname}
 Python image processing library, fork of the Python Imaging Library (PIL)
 
 This library provides extensive file format support, an efficient
@@ -76,7 +74,7 @@ CFLAGS="$RPM_OPT_FLAGS" %{python3} setup.py build
 %install
 %{python3} setup.py install -O1 --skip-build --root %{buildroot}
 
-%files -n %{package_prefix}-%{srcname}
+%files -n %{package_prefix}%{srcname}
 %doc README.md CHANGES.rst
 %license docs/COPYING
 %{python3_sitearch}/PIL/
