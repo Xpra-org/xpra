@@ -45,21 +45,6 @@ This library provides extensive file format support, an efficient
 internal representation, and powerful image processing capabilities.
 
 
-%package -n %{package_prefix}%{srcname}
-Summary:        Python 3 image processing library
-%{?python_provide:%python_provide %{package_prefix}%{srcname}}
-Provides:       %{package_prefix}imaging = %{version}-%{release}
-
-%description -n %{package_prefix}%{srcname}
-Python image processing library, fork of the Python Imaging Library (PIL)
-
-This library provides extensive file format support, an efficient
-internal representation, and powerful image processing capabilities.
-
-There are four subpackages: tk (tk interface), qt (PIL image wrapper for Qt),
-devel (development) and doc (documentation).
-
-
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 if [ "${sha256}" != "535d17e830427bec163027114ded1def9ab0350c99bf1d8cb10535032967f3a5" ]; then
