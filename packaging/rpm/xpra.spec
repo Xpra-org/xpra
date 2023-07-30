@@ -70,6 +70,7 @@ Source:				https://xpra.org/src/xpra-%{version}.tar.xz
 #BuildArch: noarch
 BuildRoot:			%{_tmppath}/%{name}-%{version}-root
 Requires:			xpra-html5 >= 5
+Requires:			xpra-filesystem >= 5
 Requires:			%{package_prefix}-common = %{version}-%{release}
 Requires:			%{package_prefix}-codecs = %{version}-%{release}
 Recommends:			%{package_prefix}-codecs-extra = %{version}-%{release}
@@ -96,6 +97,24 @@ BuildRequires:		pkgconfig
 BuildRequires:		%{python3}-setuptools
 %endif
 
+%package -n xpra-filesystem
+Summary:			Common filesystem files for all xpra packages
+Group:				Networking
+BuildArch:          noarch
+Conflicts:			xpra < 5
+Conflicts:			python2-xpra
+Conflicts:			python2-xpra-client
+Conflicts:			python2-xpra-server
+Obsoletes:			xpra-common-client < 5.0-10.r32075
+Obsoletes:			xpra-common-server < 5.0-10.r32075
+Obsoletes:			python3-xpra < 5.0-10.r32075
+
+%description -n xpra-filesystem
+This package contains the files (mostly configuration files and top level scripts)
+which are shared between all installations of xpra.
+This package is independent of the python version used.
+
+
 %package -n %{package_prefix}-common
 Summary:			Common files for xpra packages
 Group:				Networking
@@ -111,6 +130,7 @@ BuildRequires:		pandoc
 BuildRequires:		which
 Requires:			%{python3}
 Requires:			%{python3}-gobject
+Recommends:         xpra-filesystem >= 5
 Recommends:			%{python3}-pillow
 Recommends:			%{python3}-cryptography
 Recommends:			%{python3}-inotify
@@ -235,7 +255,7 @@ this is used by both xpra clients and servers.
 Summary:			%{python3} build of xpra audio support
 Group:				Networking
 Obsoletes:			python3-xpra-audio < 5.0-10.r32075
-Requires:			%{python3}-xpra-common = %{version}-%{release}
+Requires:			%{package_prefix}-common = %{version}-%{release}
 Requires:			gstreamer1
 Requires:			gstreamer1-plugins-base
 Requires:			gstreamer1-plugins-good
@@ -310,6 +330,7 @@ BuildRequires:		pkgconfig(xdamage)
 BuildRequires:		pkgconfig(xres)
 BuildRequires:		pkgconfig(xfixes)
 BuildRequires:		pkgconfig(xrandr)
+Requires:			%{package_prefix}-common = %{version}-%{release}
 Requires:			libxkbfile
 Requires:			libXtst
 Requires:			libXcomposite
@@ -458,8 +479,7 @@ find %{buildroot}%{python3_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
 #remove the tests, not meant to be installed in the first place
 #(but I can't get distutils to play nice: I want them built, not installed)
 rm -fr ${RPM_BUILD_ROOT}/%{python3_sitearch}/unittests
-# RHEL stream setuptools bug?
-rm -fr %{RPM_BUILD_ROOT}%{python3_sitearch}/UNKNOWN-*.egg-info
+rm -fr ${RPM_BUILD_ROOT}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %clean
@@ -467,30 +487,60 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 
-%files -n %{package_prefix}-common
+%files -n xpra-filesystem
 %defattr(-,root,root)
 %{_bindir}/xpra
+%{_bindir}/xpra_launcher
+%{_bindir}/run_scaled*
+%{_prefix}/lib/cups/backend/xpraforwarder
+%{_docdir}/xpra
 %{_datadir}/xpra/README.md
 %{_datadir}/xpra/COPYING
 %{_datadir}/xpra/icons
 %{_datadir}/xpra/*.wav
 %{_datadir}/man/man1/xpra*.1*
 %{_datadir}/man/man1/run_scaled.1*
-%{_docdir}/xpra
 %{_datadir}/metainfo/xpra.appdata.xml
 %{_datadir}/icons/xpra.png
 %{_datadir}/icons/xpra-mdns.png
 %{_datadir}/icons/xpra-shadow.png
 %dir %{_sysconfdir}/xpra
+%config(noreplace) %{_sysconfdir}/sysconfig/xpra
+%config %{_prefix}/lib/tmpfiles.d/xpra.conf
+%config %{_prefix}/lib/sysusers.d/xpra.conf
+%config %{_sysconfdir}/pam.d/xpra
+# the xpra config:
 %config %{_sysconfdir}/xpra/xpra.conf
 %config %{_sysconfdir}/xpra/conf.d/05_features.conf
 %config %{_sysconfdir}/xpra/conf.d/10_network.conf
 %config %{_sysconfdir}/xpra/conf.d/12_ssl.conf
 %config %{_sysconfdir}/xpra/conf.d/15_file_transfers.conf
 %config %{_sysconfdir}/xpra/conf.d/16_printing.conf
+%config %{_sysconfdir}/xpra/conf.d/20_audio.conf
 %config %{_sysconfdir}/xpra/conf.d/30_picture.conf
 %config %{_sysconfdir}/xpra/conf.d/35_webcam.conf
+%config %{_sysconfdir}/xpra/conf.d/40_client.conf
+%config %{_sysconfdir}/xpra/conf.d/42_client_keyboard.conf
+%config %{_sysconfdir}/xpra/conf.d/50_server_network.conf
+%config %{_sysconfdir}/xpra/conf.d/55_server_x11.conf
+%config %{_sysconfdir}/xpra/conf.d/60_server.conf
+%config %{_sysconfdir}/xpra/conf.d/65_proxy.conf
+%if 0%{?nvidia_codecs}
+%config(noreplace) %{_sysconfdir}/xpra/cuda.conf
+%config(noreplace) %{_sysconfdir}/xpra/*.keys
+%endif
+%config(noreplace) %{_sysconfdir}/X11/xorg.conf.d/90-xpra-virtual.conf
+%config(noreplace) %{_sysconfdir}/xpra/xorg.conf
+%config(noreplace) %{_sysconfdir}/xpra/xorg-uinput.conf
+%config %{_sysconfdir}/xpra/content-type/*
+%config %{_sysconfdir}/xpra/content-categories/*
+%config %{_sysconfdir}/xpra/content-parent/*
+%config %{_sysconfdir}/xpra/http-headers/*
+%if 0%{?with_selinux}
+%{_datadir}/selinux/*/*.pp
+%endif
 
+%files -n %{package_prefix}-common
 %{python3_sitearch}/xpra/buffers/
 %{python3_sitearch}/xpra/clipboard/
 %{python3_sitearch}/xpra/notifications/
@@ -513,10 +563,8 @@ rm -rf $RPM_BUILD_ROOT
 %pycached %{python3_sitearch}/xpra/*.py
 %{python3_sitearch}/xpra-*.egg-info
 
-
 %files -n %{package_prefix}-x11
 %{python3_sitearch}/xpra/x11/
-
 
 %files -n %{package_prefix}-codecs
 %{python3_sitearch}/xpra/codecs/drm
@@ -539,30 +587,23 @@ rm -rf $RPM_BUILD_ROOT
 %if 0%{?nvidia_codecs}
 %files -n %{package_prefix}-codecs-nvidia
 %{_datadir}/xpra/cuda
-%config(noreplace) %{_sysconfdir}/xpra/cuda.conf
-%config(noreplace) %{_sysconfdir}/xpra/*.keys
 %{python3_sitearch}/xpra/codecs/nvidia
 %endif
 
 %files -n %{package_prefix}-audio
-%config %{_sysconfdir}/xpra/conf.d/20_audio.conf
 %{python3_sitearch}/xpra/audio/
 
 %files -n %{package_prefix}-client
 %{python3_sitearch}/xpra/client/auth/
 %{python3_sitearch}/xpra/client/base/
 %pycached %{python3_sitearch}/xpra/client/__init__.py
-%config %{_sysconfdir}/xpra/conf.d/40_client.conf
 
 %files -n %{package_prefix}-client-gtk3
-%{_bindir}/xpra_launcher
-%{_bindir}/run_scaled*
 %{python3_sitearch}/xpra/client/gui/
 %{python3_sitearch}/xpra/client/gtk3/
 %{python3_sitearch}/xpra/client/gl/
 %{python3_sitearch}/xpra/client/mixins/
 %{_libexecdir}/xpra/xpra_signal_listener
-%config %{_sysconfdir}/xpra/conf.d/42_client_keyboard.conf
 %{_datadir}/applications/xpra-launcher.desktop
 %{_datadir}/applications/xpra-gui.desktop
 %{_datadir}/applications/xpra.desktop
@@ -575,7 +616,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_sysconfdir}/dbus-1/system.d/xpra.conf
 /lib/systemd/system/xpra.service
 /lib/systemd/system/xpra.socket
-%{_prefix}/lib/cups/backend/xpraforwarder
 %{_prefix}/lib/udev/rules.d/71-xpra-virtual-pointer.rules
 %{_datadir}/xpra/css
 %{_datadir}/applications/xpra-shadow.desktop
@@ -584,24 +624,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libexecdir}/xpra/gnome-open
 %{_libexecdir}/xpra/gvfs-open
 %{_libexecdir}/xpra/auth_dialog
-%config(noreplace) %{_sysconfdir}/sysconfig/xpra
-%config %{_prefix}/lib/tmpfiles.d/xpra.conf
-%config %{_prefix}/lib/sysusers.d/xpra.conf
-%config %{_sysconfdir}/pam.d/xpra
-%config(noreplace) %{_sysconfdir}/X11/xorg.conf.d/90-xpra-virtual.conf
-%config(noreplace) %{_sysconfdir}/xpra/xorg.conf
-%config(noreplace) %{_sysconfdir}/xpra/xorg-uinput.conf
-%config %{_sysconfdir}/xpra/conf.d/50_server_network.conf
-%config %{_sysconfdir}/xpra/conf.d/55_server_x11.conf
-%config %{_sysconfdir}/xpra/conf.d/60_server.conf
-%config %{_sysconfdir}/xpra/conf.d/65_proxy.conf
-%config %{_sysconfdir}/xpra/content-type/*
-%config %{_sysconfdir}/xpra/content-categories/*
-%config %{_sysconfdir}/xpra/content-parent/*
-%config %{_sysconfdir}/xpra/http-headers/*
-%if 0%{?with_selinux}
-%{_datadir}/selinux/*/*.pp
-%endif
 
 %check
 /usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra-launcher.desktop
@@ -631,6 +653,12 @@ popd
 popd
 %endif
 
+
+%post -n xpra-filesystem
+/bin/chmod 700 /usr/lib/cups/backend/xpraforwarder
+%if 0%{?with_selinux}
+restorecon -R /usr/lib/cups/backend/xpraforwarder || :
+%endif
 
 %post -n %{package_prefix}-server
 %tmpfiles_create xpra.conf
@@ -662,7 +690,6 @@ if [ ! -z "${ZONE}" ]; then
 	set -e
 fi
 %endif
-/bin/chmod 700 /usr/lib/cups/backend/xpraforwarder
 %if 0%{?with_selinux}
 for mod in %{selinux_modules}
 do
@@ -675,7 +702,6 @@ done
 semanage port -a -t xpra_port_t -p tcp 14500 2>&1 | grep -v "already defined" || :
 restorecon -R /etc/xpra /usr/lib/systemd/system/xpra* /usr/bin/xpra* || :
 restorecon -R /run/xpra* /run/user/*/xpra 2> /dev/null || :
-restorecon -R /usr/lib/cups/backend/xpraforwarder || :
 %endif
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 if [ $1 -eq 1 ]; then
@@ -742,12 +768,14 @@ fi
 
 %postun -n %{package_prefix}-client-gtk3
 /usr/bin/update-desktop-database &> /dev/null || :
+
+%postun -n xpra-filesystem
 if [ $1 -eq 0 ] ; then
 	/bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null
 	/usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 fi
 
-%posttrans -n %{package_prefix}-common
+%posttrans -n xpra-filesystem
 /usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 
 
