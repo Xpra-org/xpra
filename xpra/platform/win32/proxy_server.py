@@ -60,11 +60,9 @@ class ProxyServer(_ProxyServer):
         session_info = find_session(username)
         if not session_info:
             #first, Logon:
-            try:
+            with log.trap_error(f"Error: failed to logon as {username!r}"):
                 from xpra.platform.win32.desktoplogon_lib import Logon
                 Logon(strtobytes(username), strtobytes(password))
-            except Exception:
-                log.error("Error: failed to logon as '%s'", username, exc_info=True)
         #hwinstaold = set_window_station("winsta0")
         app_dir = get_app_dir()
         shadow_command = os.path.join(app_dir, "Xpra-Shadow.exe")

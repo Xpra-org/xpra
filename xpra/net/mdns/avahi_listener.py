@@ -51,7 +51,7 @@ class Avahilistener:
         if self.mdns_add:
             #parse text data:
             text = {}
-            try:
+            with log.trap_error("Error parsing text record"):
                 for text_line in text_array:
                     line = ""
                     for b in text_line:
@@ -60,8 +60,6 @@ class Avahilistener:
                     if len(parts)==2:
                         text[parts[0]] = parts[1]
                 log(" text=%s", text)
-            except Exception:
-                log.error("failed to parse text record", exc_info=True)
             nargs = (dbus_to_native(x) for x in (interface, protocol, name, stype, domain, host, address, port, text))
             self.mdns_add(*nargs)
 

@@ -75,7 +75,7 @@ class DBUS_Notifier(NotifierBase):
         if not self.dbus_check(dbus_id):
             return
         self.may_retry = True
-        try:
+        with log.trap_error("Error: dbus notify failed"):
             icon_string = self.get_icon_string(nid, app_icon, icon)
             log("get_icon_string%s=%s", (nid, app_icon, ellipsizer(icon)), icon_string)
             if app_name=="Xpra":
@@ -99,8 +99,6 @@ class DBUS_Notifier(NotifierBase):
             self.dbusnotify.Notify(app_str, 0, icon_string, summary, body, actions, dbus_hints, timeout,
                  reply_handler = NotifyReply,
                  error_handler = self.NotifyError)
-        except Exception:
-            log.error("Error: dbus notify failed", exc_info=True)
 
     def _find_nid(self, actual_id : int):
         aid = int(actual_id)

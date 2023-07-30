@@ -10,6 +10,7 @@ import logging
 import weakref
 import itertools
 from typing import Callable, Any
+from contextlib import AbstractContextManager
 # This module is used by non-GUI programs and thus must not import gtk.
 
 LOG_PREFIX : str = ""
@@ -431,6 +432,24 @@ class Logger:
 
     def handle(self, record) -> None:
         self.log(record.levelno, record.msg, *record.args, exc_info=record.exc_info)
+
+    def trap_error(self, message:str, *args) -> AbstractContextManager:
+        return ErrorTrapper(self, message, args)
+
+
+class ErrorTrapper(AbstractContextManager):
+    def __init__(self, logger, message, args):
+        self.logger = logger
+        self.message = message
+        self.args = args
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            self.logger.error(self.message, *self.args, exc_info=True)
+            return True
+
+    def __repr__(self):
+        return "ErrorTrapper"
 
 
 # we want to keep a reference to all the loggers in use,

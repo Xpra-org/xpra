@@ -145,12 +145,10 @@ class Win32Hooks:
         #since we assume the window is closed, restoring the wnd proc may be redundant here:
         if not self._oldwndproc or not self._hwnd:
             return
-        try:
+        with log.trap_error("Error: window hooks cleanup failure"):
             SetWindowLongW(self._hwnd, win32con.GWL_WNDPROC, self._oldwndproc)
             self._oldwndproc = None
             self._hwnd = None
-        except Exception:
-            log.error("Error: window hooks cleanup failure", exc_info=True)
 
     def _wndproc(self, hwnd:int, msg, wparam:int, lparam:int):
         event_name = WNDPROC_EVENT_NAMES.get(msg, msg)

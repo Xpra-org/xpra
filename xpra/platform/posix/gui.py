@@ -360,22 +360,16 @@ def system_bell(*args) -> bool:
 
 def pointer_grab(gdk_window) -> bool:
     if x11_bindings():
-        try:
-            from xpra.gtk_common.error import xsync
-            with xsync:
-                return X11WindowBindings().pointer_grab(gdk_window.get_xid())
-        except Exception:
-            log.error("Error: failed to grab pointer", exc_info=True)
+        from xpra.gtk_common.error import xlog
+        with xlog:
+            return X11WindowBindings().pointer_grab(gdk_window.get_xid())
     return False
 
 def pointer_ungrab(_window) -> bool:
     if x11_bindings():
-        try:
-            from xpra.gtk_common.error import xsync
-            with xsync:
-                return X11WindowBindings().UngrabPointer()==0
-        except Exception:
-            log.error("Error: failed to ungrab pointer", exc_info=True)
+        from xpra.gtk_common.error import xlog
+        with xlog:
+            return X11WindowBindings().UngrabPointer()==0
     return False
 
 
@@ -862,10 +856,8 @@ class ClientExtras:
     def _get_xsettings(self):
         xw = self._xsettings_watcher
         if xw:
-            try:
+            with log.trap_error("Error retrieving XSETTINGS"):
                 return xw.get_settings()
-            except Exception:
-                log.error("failed to get XSETTINGS", exc_info=True)
         return None
 
     def _handle_xsettings_changed(self, *_args) -> None:

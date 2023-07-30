@@ -183,10 +183,8 @@ class ServerBase(ServerBaseClass):
         log("threaded_init() serverbase start")
         for c in SERVER_BASES:
             if c!=ServerCore:
-                try:
+                with log.trap_error(f"Error during threaded setup of %s", c):
                     c.threaded_setup(self)
-                except Exception:
-                    log.error("Error during threaded setup of %s", c, exc_info=True)
         log("threaded_init() serverbase end")
         super().call_init_thread_callbacks()
 
@@ -630,10 +628,8 @@ class ServerBase(ServerBaseClass):
         else:
             info = {}
         for c in SERVER_BASES:
-            try:
+            with log.trap_error("Error collecting UI info from %s", c):
                 merge_dicts(info, c.get_ui_info(self, proto, client_uuids, *args))
-            except Exception:
-                log.error("Error gathering UI info on %s", c, exc_info=True)
         return info
 
 
@@ -674,13 +670,11 @@ class ServerBase(ServerBaseClass):
             merge_dicts(info, {prefix : d})
 
         for c in SERVER_BASES:
-            try:
+            with log.trap_error(f"Error collecting information from {c}"):
                 cstart = monotonic()
                 merge_dicts(info, c.get_info(self, proto))
                 cend = monotonic()
                 log("%s.get_info(%s) took %ims", c, proto, int(1000*(cend-cstart)))
-            except Exception:
-                log.error("Error collecting information from %s", c, exc_info=True)
 
         up("features",  self.get_features_info())
         up("network", {

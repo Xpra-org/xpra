@@ -82,19 +82,15 @@ class Networklistener(StubClientMixin):
         log("cleanup_sockets() socket_cleanup=%s", socket_cleanup)
         self.socket_cleanup = []
         for c in socket_cleanup:
-            try:
+            with log.trap_error("Error during socket listener cleanup %s", c):
                 c()
-            except Exception:
-                log.error("Error during socket listener cleanup", exc_info=True)
         sockets = self.sockets
         self.sockets = {}
         log("cleanup_sockets() sockets=%s", sockets)
         for sdef in sockets.keys():
             c = sdef[-1]
-            try:
+            with log.trap_error("Error during socket cleanup %s", c):
                 c()
-            except Exception:
-                log.error("Error during socket cleanup", exc_info=True)
 
 
     def start_listen_sockets(self) -> None:
@@ -122,10 +118,8 @@ class Networklistener(StubClientMixin):
         if self.exit_code is not None:
             log("ignoring new connection during shutdown")
             return False
-        try:
+        with log.trap_error(f"Error handling new {socktype} connection"):
             self.handle_new_connection(socktype, listener, handle)
-        except Exception:
-            log.error("Error handling new connection", exc_info=True)
         return self.exit_code is None
 
     def handle_new_connection(self, socktype, listener, handle) -> None:

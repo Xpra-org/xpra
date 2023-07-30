@@ -1115,13 +1115,11 @@ class SessionInfo(Gtk.Window):
         window_dict = self.client.server_last_info.get("window")
         if window_dict and isinstance(window_dict, dict):
             for k,v in window_dict.items():
-                try:
+                with log.trap_error("Error: cannot lookup window dict"):
                     wid = int(k)
                     encoder_stats = v.get("encoder")
                     if encoder_stats:
                         window_encoder_stats[wid] = encoder_stats
-                except Exception:
-                    log.error("Error: cannot lookup window dict", exc_info=True)
         return window_encoder_stats
 
 

@@ -456,11 +456,8 @@ class DisplayManager(StubServerMixin):
             ss.send(*packet)
 
     def make_screenshot_packet(self):
-        try:
+        with log.trap_error("Error making screenshot packet"):
             return self.do_make_screenshot_packet()
-        except Exception:
-            log.error("make_screenshot_packet()", exc_info=True)
-            return None
 
     def do_make_screenshot_packet(self):
         raise NotImplementedError("no screenshot capability in %s" % type(self))

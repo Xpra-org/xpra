@@ -28,7 +28,7 @@ def get_os_icons() -> tuple[tuple[int,int,str,bytes],...]:
     if not icon_name:
         log(f"get_os_icons() no icon matching {filename!r}")
         return ()
-    try:
+    with log.trap_error(f"Error: failed to load window icon {icon_name!r}"):
         img = Image.open(icon_name)
         log(f"Image({icon_name})={img}")
         if img:
@@ -41,8 +41,6 @@ def get_os_icons() -> tuple[tuple[int,int,str,bytes],...]:
             icon = (w, h, "png", icon_data)
             icons = (icon,)
             return icons
-    except Exception:   # pragma: no cover
-        log.error(f"Error: failed to load window icon {icon_name!r}", exc_info=True)
     return ()
 
 
@@ -193,10 +191,8 @@ class RootWindowModel:
         PSpec = namedtuple("PSpec", "name")
         pspec = PSpec(name=prop)
         for listener, *args in listeners:
-            try:
+            with log.trap_error(f"Error on {prop!r} signal listener {listener}"):
                 listener(self, pspec, *args)
-            except Exception:
-                log.error(f"Error on {prop!r} signal listener {listener}", exc_info=True)
 
     def managed_connect(self, signal:str, *args):   # pragma: no cover
         self.connect(signal, *args)

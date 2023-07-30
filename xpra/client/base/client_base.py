@@ -637,10 +637,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.cancel_progress_timer()
         self.stop_progress_process()
         reaper_cleanup()
-        try:
+        with log.trap_error("Error cleaning file-print handler"):
             FilePrintMixin.cleanup(self)
-        except Exception:
-            log.error("%s", FilePrintMixin.cleanup, exc_info=True)
         p = self._protocol
         log("XpraClientBase.cleanup() protocol=%s", p)
         if p:

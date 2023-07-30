@@ -75,7 +75,7 @@ def get_X_error(xerror) -> str:
     global xerror_to_name
     if not isinstance(xerror, int):
         return str(xerror)
-    try:
+    with log.trap_error("Error retrieving error string for %s", xerror):
         from xpra.x11.bindings.window import constants     #@UnresolvedImport
         if not xerror_to_name:
             xerror_to_name[0] = "OK"
@@ -87,8 +87,6 @@ def get_X_error(xerror) -> str:
             return xerror_to_name.get(xerror) or str(xerror)
         from xpra.x11.bindings.core import X11CoreBindings     #@UnresolvedImport
         return X11CoreBindings().get_error_text(xerror)
-    except Exception as e:
-        log.error("get_X_error(%s) %s", xerror, e, exc_info=True)
     return str(xerror)
 
 

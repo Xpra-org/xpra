@@ -611,17 +611,15 @@ def get_icon_from_file(filename):
 
 
 def get_icon_pixbuf(icon_name):
-    try:
-        if not icon_name:
-            log("get_icon_pixbuf(%s)=None", icon_name)
-            return None
+    if not icon_name:
+        log("get_icon_pixbuf(%s)=None", icon_name)
+        return None
+    with log.trap_error("Error loading icon pixbuf %s", icon_name):
         from xpra.platform.paths import get_icon_filename
         icon_filename = get_icon_filename(icon_name)
         log("get_pixbuf(%s) icon_filename=%s", icon_name, icon_filename)
         if icon_filename:
             return GdkPixbuf.Pixbuf.new_from_file(filename=icon_filename)
-    except Exception:
-        log.error("get_icon_pixbuf(%s)", icon_name, exc_info=True)
     return None
 
 

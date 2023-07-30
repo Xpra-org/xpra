@@ -425,10 +425,8 @@ def get_displays_info() -> dict[str,Any]:
 def get_info() -> dict[str,Any]:
     from xpra.platform.gui import get_info_base
     i = get_info_base()
-    try:
+    with log.trap_error("Error: OSX get_display_info failed"):
         i["displays"] = get_displays_info()
-    except Exception:
-        log.error("Error: OSX get_display_info failed", exc_info=True)
     return i
 
 
@@ -638,7 +636,7 @@ class AppDelegate(NSObject):
         workspacelog("receiveWorkspaceChangeNotification_(%s)", aNotification)
         if not CGWindowListCopyWindowInfo:
             return
-        try:
+        with workspacelog.trap_error("Error querying workspace info"):
             ourpid = os.getpid()
             windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionAll | kCGWindowListOptionOnScreenOnly, kCGNullWindowID)
             our_windows = {}
@@ -653,8 +651,6 @@ class AppDelegate(NSObject):
                 self.delegate_cb("wake")
             else:
                 self.delegate_cb("sleep")
-        except Exception:
-            workspacelog.error("Error querying workspace info", exc_info=True)
 
     #def application_openFile_(self, application, fileName):
     #    log.warn("application_openFile_(%s, %s)", application, fileName)
@@ -674,10 +670,8 @@ class AppDelegate(NSObject):
         callback = self.callbacks.get(name)
         log("delegate_cb(%s)=%s", name, callback)
         if callback:
-            try:
+            with log.trap_error("Error in %s callback %s", name, callback):
                 callback()
-            except Exception:
-                log.error("Error in %s callback %s", name, callback, exc_info=True)
 
 
 def disable_focus_workaround() -> None:
@@ -746,10 +740,8 @@ class ClientExtras:
 
     def ready(self) -> None:
         if EVENT_LISTENER:
-            try:
+            with log.trap_error("Error setting up OSX event listener"):
                 self.setup_event_listener()
-            except Exception:
-                log.error("Error setting up OSX event listener", exc_info=True)
 
     def setup_event_listener(self) -> None:
         self.shared_app = NSApplication.sharedApplication()

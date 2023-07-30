@@ -274,13 +274,11 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         return may_reload_headers(self.http_headers_dirs)
 
     def do_POST(self) -> None:
-        try:
+        with log.trap_error("Error processing POST request"):
             length = int(self.headers.get('content-length'))
             data = self.rfile.read(length)
             log("POST data=%s (%i bytes)", data, length)
             self.handle_request()
-        except Exception:
-            log.error("Error processing POST request", exc_info=True)
 
     def do_GET(self) -> None:
         self.handle_request()

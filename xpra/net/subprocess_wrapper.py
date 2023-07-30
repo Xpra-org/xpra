@@ -471,8 +471,6 @@ class subprocess_caller:
         log("firing callback for '%s': %s", signal_name, callbacks)
         if callbacks:
             for cb, args in callbacks:
-                try:
+                with log.trap_error(f"Error processing callback {cb} for {signal_name} packet"):
                     all_args = list(args) + list(extra_args)
                     self.idle_add(cb, self, *all_args)
-                except Exception:
-                    log.error("error processing callback %s for %s packet", cb, signal_name, exc_info=True)

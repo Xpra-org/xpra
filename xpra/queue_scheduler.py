@@ -93,13 +93,11 @@ class QueueScheduler:
                 break
             fn, args, kwargs = v
             log("run() %s%s%s", fn, args, kwargs)
-            try:
+            with log.trap_error(f"Error during main loop callback {fn}"):
                 r = fn(*args, **kwargs)
                 if bool(r):
                     #re-run it
                     self.main_queue.put(v)
-            except Exception:
-                log.error(f"Error during main loop callback {fn}", exc_info=True)
         self.exit = True
 
     def stop(self) -> None:

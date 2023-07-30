@@ -2410,11 +2410,9 @@ class ServerCore:
         log("get_info_in_thread%s", (callback, {}, proto, args))
         start = monotonic()
         #this runs in a non-UI thread
-        try:
+        with log.trap_error("Error during info collection"):
             info = self.get_info(proto, *args)
             merge_dicts(ui_info, info)
-        except Exception:
-            log.error("Error during info collection using %s", self.get_info, exc_info=True)
         end = monotonic()
         log("get_all_info: non ui info collected in %ims", (end-start)*1000)
         callback(proto, ui_info)

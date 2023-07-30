@@ -269,10 +269,8 @@ class UIXpraClient(ClientBaseClass):
             if x is None:
                 continue
             log(f"UIXpraClient.cleanup() calling {type(x)}.cleanup()")
-            try:
+            with log.trap_error(f"Error on {type(x)} cleanup"):
                 x.cleanup()
-            except Exception:
-                log.error(f"error on {type(x)} cleanup", exc_info=True)
         #the protocol has been closed, it is now safe to close all the windows:
         #(cleaner and needed when we run embedded in the client launcher)
         reaper_cleanup()
@@ -300,11 +298,9 @@ class UIXpraClient(ClientBaseClass):
         if SYSCONFIG:
             info["sysconfig"] = get_sysconfig_info()
         for c in CLIENT_BASES:
-            try:
+            with log.trap_error("Error collection information from %s", c):
                 i = c.get_info(self)
                 info = merge_dicts(info, i)
-            except Exception:
-                log.error(f"Error collection information from {c}", exc_info=True)
         return info
 
 
@@ -576,10 +572,8 @@ class UIXpraClient(ClientBaseClass):
         oh = self._on_handshake
         self._on_handshake = None
         for cb, args in oh:
-            try:
+            with log.trap_error("Error processing handshake callback %s", cb):
                 cb(*args)
-            except Exception:
-                log.error("Error processing handshake callback %s", cb, exc_info=True)
 
     def after_handshake(self, cb, *args):
         log("after_handshake(%s, %s) on_handshake=%s", cb, args, ellipsizer(self._on_handshake))

@@ -275,10 +275,8 @@ class SocketProtocol:
             info["receive_alias"] = self.receive_aliases
         c = self._conn
         if c:
-            try:
+            with log.trap_error(f"Error collecting connection information on %s", c):
                 info.update(c.get_info())
-            except Exception:
-                log.error("error collecting connection information on %s", c, exc_info=True)
         #add stats to connection info:
         info.setdefault("input", {}).update({
                        "buffer-size"            : self.read_buffer_size,
@@ -1228,7 +1226,7 @@ class SocketProtocol:
         self.idle_add(self._process_packet_cb, self, packet)
         if c:
             self._conn = None
-            try:
+            with log.trap_error(f"Error closing %s", c):
                 log("Protocol.close(%s) calling %s", message, c.close)
                 c.close()
                 if self._log_stats is None and c.input_bytecount==0 and c.output_bytecount==0:
@@ -1241,8 +1239,6 @@ class SocketProtocol:
                          std_unit(self.input_packetcount), std_unit_dec(c.input_bytecount),
                          std_unit(self.output_packetcount), std_unit_dec(c.output_bytecount)
                          )
-            except Exception:
-                log.error("error closing %s", c, exc_info=True)
         self.terminate_queue_threads()
         self.idle_add(self.clean)
         log("Protocol.close(%s) done", message)

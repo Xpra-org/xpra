@@ -79,10 +79,8 @@ class GTKKeyboardHelper(KeyboardHelper):
         old_hash = self.hash
         super().update()
         if is_X11():
-            try:
+            with log.trap_error("Error querying modifier map"):
                 self.keyboard.update_modifier_map(Gdk.Display.get_default(), self.mod_meanings)
-            except Exception:
-                log.error("error querying modifier map", exc_info=True)
         log("update() modifier_map=%s, old hash=%s, new hash=%s", self.keyboard.modifier_map, old_hash, self.hash)
         return old_hash!=self.hash
 

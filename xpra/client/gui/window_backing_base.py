@@ -85,10 +85,8 @@ def load_video_decoders():
 
 def fire_paint_callbacks(callbacks:Iterable[Callable], success:int|bool=True, message=""):
     for x in callbacks:
-        try:
+        with log.trap_error("Error calling %s with %s", x, (success, message)):
             x(success, message)
-        except Exception:
-            log.error("Error calling %s(%s)", x, success, exc_info=True)
 
 
 def verify_checksum(img_data, options):

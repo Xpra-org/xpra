@@ -61,10 +61,8 @@ class ClipboardClient(StubClientMixin):
         log("ClipboardClient.cleanup() clipboard_helper=%s", ch)
         if ch:
             self.clipboard_helper = None
-            try:
+            with log.trap_error(f"Error on clipboard helper {ch} cleanup"):
                 ch.cleanup()
-            except Exception:
-                log.error("error on clipboard helper '%s' cleanup", ch, exc_info=True)
 
 
     def get_info(self) -> dict[str,dict[str,Any]]:

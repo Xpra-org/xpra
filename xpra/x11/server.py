@@ -388,11 +388,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
     def add_system_tray(self) -> None:
         # Tray handler:
-        try:
-            with xsync:
-                self._tray = SystemTray()
-        except Exception as e:
-            log.error("cannot setup tray forwarding: %s", e, exc_info=True)
+        with xlog:
+            self._tray = SystemTray()
 
 
     ##########################################################################

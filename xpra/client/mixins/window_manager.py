@@ -285,11 +285,8 @@ class WindowClient(StubClientMixin):
                 except ImportError:
                     log.info("window icon overlay requires python-pillow")
                 else:
-                    try:
+                    with log.trap_error(f"Error: failed to load overlay icon {icon_filename!r}"):
                         self.overlay_image = Image.open(icon_filename)
-                    except Exception as e:
-                        log.error("Error: failed to load overlay icon '%s':", icon_filename, exc_info=True)
-                        log.estr(e)
         traylog("overlay_image=%s", self.overlay_image)
 
 
@@ -1496,11 +1493,9 @@ class WindowClient(StubClientMixin):
             if packet is None:
                 log("draw queue found exit marker")
                 break
-            try:
+            with log.trap_error(f"Error processing {packet[0]} packet"):
                 self._do_draw(packet)
                 sleep(0)
-            except Exception as e:
-                log.error("Error '%s' processing %s packet", e, packet[0], exc_info=True)
         self._draw_thread = None
         log("draw thread ended")
 

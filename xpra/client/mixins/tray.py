@@ -64,10 +64,8 @@ class TrayClient(StubClientMixin):
         t = self.tray
         if t:
             self.tray = None
-            try:
+            with log.trap_error("Error during tray cleanup"):
                 t.cleanup()
-            except Exception:
-                log.error("error on tray cleanup", exc_info=True)
 
 
     def get_tray_classes(self):

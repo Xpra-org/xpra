@@ -907,10 +907,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         cb = self.on_realize_cb
         self.on_realize_cb = {}
         for x, args in cb.values():
-            try:
+            with eventslog.trap_error(f"Error on realize callback {x} for window {self.wid}"):
                 x(*args)
-            except Exception:
-                log.error("Error on realize callback %s for window %i", x, self.wid, exc_info=True)
         if HAS_X11_BINDINGS:
             #request frame extents if the window manager supports it
             self._client.request_frame_extents(self)

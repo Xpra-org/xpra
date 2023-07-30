@@ -433,12 +433,10 @@ class win32NotifyIcon:
         hwnd = self.hwnd
         log("destroy() hwnd=%#x, exit callback=%s", hwnd, cb)
         self.delete_tray_window()
-        try:
-            if cb:
-                self.exit_callback = None
+        if cb:
+            self.exit_callback = None
+            with log.trap_error(f"Error on exit callback %s", cb):
                 cb()
-        except Exception:
-            log.error("Error removing tray", exc_info=True)
         if hwnd:
             win32NotifyIcon.instances.pop(hwnd, None)
 

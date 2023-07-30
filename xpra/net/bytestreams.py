@@ -229,10 +229,8 @@ class TwoFileConnection(Connection):
         if cc:
             self._close_cb = None
             log("%s.close() calling %s", self, cc)
-            try:
+            with log.trap_error(f"{self}.close() error on callback {cc}"):
                 cc()
-            except Exception:
-                log.error("%s.close() error on callback %s", self, cc, exc_info=True)
         def close_files_thread() -> None:
             log("close_files_thread() _readable=%s", self._readable)
             log("close_files_thread() calling %s", self._readable.close)

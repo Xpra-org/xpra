@@ -67,11 +67,9 @@ class Worker_Thread(Thread):
                 log("Worker_Thread.run() found end of queue marker")
                 self.exit = True
                 break
-            try:
+            with log.trap_error(f"Error in worker thread processing item %s", item):
                 log("Worker_Thread.run() calling %s (queue size=%s)", item, self.items.qsize())
                 item()
-            except Exception:
-                log.error("Error in worker thread processing item %s", item, exc_info=True)
         log("Worker_Thread.run() ended (queue size=%s)", self.items.qsize())
 
 

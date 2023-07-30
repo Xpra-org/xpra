@@ -21,14 +21,11 @@ CONTENT_TYPE_DEFS = os.environ.get("XPRA_CONTENT_TYPE_DEFS","")
 
 
 def getprop(window, prop):
-    try:
+    with log.trap_error(f"Error querying %r on %r", prop, window):
         if prop not in window.get_property_names():
             log("no '%s' property on window %s", prop, window)
             return None
         return window.get_property(prop)
-    except TypeError:
-        log.error("Error querying %s on %s", prop, window, exc_info=True)
-        return None
 
 ################################################################
 # generic file parsing functions

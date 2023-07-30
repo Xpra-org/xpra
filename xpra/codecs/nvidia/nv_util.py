@@ -332,7 +332,7 @@ def get_license_keys(version=0, basefilename="nvenc"):
     else:
         #try to load the license file
         keys = []
-        try:
+        with log.trap_error(f"Error loading {basefilename!r} license keys"):
             #see read_xpra_defaults for an explanation of paths
             dirs = get_default_conf_dirs() + get_system_conf_dirs() + get_user_conf_dirs()
             for d in dirs:
@@ -358,8 +358,6 @@ def get_license_keys(version=0, basefilename="nvenc"):
                         log(f"added key: {sline}")
                     log(f"added {len(fkeys)} keys from {keys_file}")
                     keys += fkeys
-        except Exception:
-            log.error(f"Error loading {basefilename} license keys", exc_info=True)
     license_keys[filename] = keys
     log(f"get_nvenc_license_keys({version})={keys}")
     return keys

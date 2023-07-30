@@ -183,10 +183,8 @@ class VideoHelper:
             self._cleanup_modules = []
             log("VideoHelper.cleanup() cleanup modules=%s", cmods)
             for module in cmods:
-                try:
+                with log.trap_error(f"Error cleaning up {module}"):
                     module.cleanup_module()
-                except Exception:
-                    log.error("Error cleaning up %s", module, exc_info=True)
             self._video_encoder_specs = {}
             self._csc_encoder_specs = {}
             self._video_decoder_specs = {}

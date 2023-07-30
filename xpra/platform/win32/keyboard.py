@@ -246,7 +246,7 @@ class Keyboard(KeyboardBase):
                     log.warn(" please file a bug report")
                     self.last_layout_message = layout
 
-        try:
+        with log.trap_error("Error: failed to detect keyboard layout using GetKeyboardLayout"):
             pid = DWORD(0)
             GetWindowThreadProcessId(0, byref(pid))
             tid = GetWindowThreadProcessId(0, pid)
@@ -265,8 +265,6 @@ class Keyboard(KeyboardBase):
                 if not layout and layout0:
                     layout = layout0
                     layout_code = hkl
-        except Exception:
-            log.error("Error: failed to detect keyboard layout using GetKeyboardLayout", exc_info=True)
 
         layouts = list(layouts_defs.keys())
         if layouts and not layout:

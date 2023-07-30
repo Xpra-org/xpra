@@ -461,15 +461,12 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def get_image(self, icon_name:str, size:int=0):
         from xpra.gtk_common.gtk_util import scaled_image
-        try:
+        with log.trap_error(f"Error loading image from icon {icon_name!r} with size {size}"):
             pixbuf = get_icon_pixbuf(icon_name)
             traylog("get_image(%s, %s) pixbuf=%s", icon_name, size, pixbuf)
             if not pixbuf:
                 return  None
             return scaled_image(pixbuf, size)
-        except Exception:
-            traylog.error("get_image(%s, %s)", icon_name, size, exc_info=True)
-            return None
 
 
     def tray_menu_deactivated(self, *_args) -> None:

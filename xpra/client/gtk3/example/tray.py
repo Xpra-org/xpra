@@ -145,7 +145,7 @@ class FakeApplication:
 
 
     def get_image(self, icon_name:str, size=None):
-        try:
+        with log.trap_error(f"Error loading image for icon {icon_name!r} and size {size}"):
             if not icon_name:
                 return None
             icon_filename = get_icon_filename(icon_name)
@@ -155,9 +155,6 @@ class FakeApplication:
             if not pixbuf:
                 return  None
             return scaled_image(pixbuf, size)
-        except Exception:
-            log.error("get_image(%s, %s)", icon_name, size, exc_info=True)
-            return None
 
 
     def xpra_tray_click(self, button:int, pressed:bool, time:int=0):

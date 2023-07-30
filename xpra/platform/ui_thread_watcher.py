@@ -94,10 +94,8 @@ class UI_thread_watcher:
     @staticmethod
     def run_callbacks(callbacks:list[Callable]) -> None:
         for x in callbacks:
-            try:
+            with log.trap_error(f"Error running UI watcher callback %s", x):
                 x()
-            except Exception:
-                log.error("failed to run %s", x, exc_info=True)
 
     def UI_thread_wakeup(self, scheduled_at:float=0) -> bool:
         if scheduled_at:

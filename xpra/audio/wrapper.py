@@ -370,7 +370,7 @@ class sink_subprocess_wrapper(audio_subprocess_wrapper):
 def start_sending_audio(plugins, audio_source_plugin, device, codec, volume, want_monitor_device, remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id):
     log("start_sending_audio%s",
         (plugins, audio_source_plugin, device, codec, volume, want_monitor_device, remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id))
-    try:
+    with log.trap_error("Error setting up audio source"):
         #info about the remote end:
         PAInfo = namedtuple("PAInfo", "pulseaudio_server,pulseaudio_id,remote_decoders")
         remote = PAInfo(pulseaudio_server=remote_pulseaudio_server,
@@ -384,19 +384,12 @@ def start_sending_audio(plugins, audio_source_plugin, device, codec, volume, wan
         log("plugin=%s", plugin)
         log("options=%s", options)
         return source_subprocess_wrapper(plugin, options, remote_decoders, volume, options)
-    except Exception as e:
-        log("start_sending_audio", exc_info=True)
-        log.error("Error setting up audio: %s", e, exc_info=True)
-        return None
 
 
 def start_receiving_audio(codec):
     log("start_receiving_audio(%s)", codec)
-    try:
+    with log.trap_error("Error starting audio sink"):
         return sink_subprocess_wrapper(None, codec, 1.0, {})
-    except Exception:
-        log.error("Error starting audio sink", exc_info=True)
-        return None
 
 def query_audio() -> typedict:
     import subprocess

@@ -153,14 +153,12 @@ class EncodingsMixin(StubSourceMixin):
             ws = self.window_sources.get(wid)
             if ws is None:
                 continue
-            try:
+            with log.trap_error(f"Error calculating delays for window %s", wid):
                 ws.statistics.update_averages()
                 ws.calculate_batch_delay(wid==focus,
                                          len(fullscreen_wids)>0 and wid not in fullscreen_wids,
                                          len(maximized_wids)>0 and wid not in maximized_wids)
                 ws.reconfigure()
-            except Exception:
-                log.error("error on window %s", wid, exc_info=True)
             if self.is_closed():
                 return
             #allow other threads to run
@@ -327,10 +325,8 @@ class EncodingsMixin(StubSourceMixin):
         proxylog("proxy.video=%s", pv)
         if pv:
             #enabling video proxy:
-            try:
+            with proxylog.trap_error("Error parsing proxy video"):
                 self.parse_proxy_video()
-            except Exception:
-                proxylog.error("failed to parse proxy video", exc_info=True)
 
         sc = self.encoding_options.get("scaling.control", self.scaling_control)
         if sc is not None:

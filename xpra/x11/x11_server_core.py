@@ -356,10 +356,8 @@ class X11ServerCore(GTKServerBase):
         if not (enabled and ("default" in encodings) and dci):
             return
         cursorlog(f"default_cursor_image={dci}, {enabled=}, {encodings=}", )
-        try:
+        with cursorlog.trap_error("Error sending default cursor"):
             ss.do_send_cursor(0, dci, self.get_cursor_sizes(), encoding_prefix="default:")
-        except Exception:
-            cursorlog.error("Error sending default cursor", exc_info=True)
 
 
     def do_get_info(self, proto, server_sources) -> dict[str,Any]:
@@ -711,7 +709,7 @@ class X11ServerCore(GTKServerBase):
         if w==root_w and h==root_h:
             screenlog.info("best resolution matching %sx%s is unchanged: %sx%s", desired_w, desired_h, w, h)
             return root_w, root_h
-        try:
+        with screenlog.trap_error("Error: failed to set new resolution"):
             with xsync:
                 RandR.get_screen_size()
             #Xdummy with randr 1.2:
@@ -764,8 +762,6 @@ class X11ServerCore(GTKServerBase):
                         l("%s%s", ["", " "][i>0], message)
             #show dpi via idle_add so server has time to change the screen size (mm)
             self.idle_add(show_dpi)
-        except Exception as e:
-            screenlog.error("ouch, failed to set new resolution: %s", e, exc_info=True)
         return root_w, root_h
 
 

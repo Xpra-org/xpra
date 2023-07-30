@@ -731,15 +731,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     def get_image(self, icon_name, size=None):
-        try:
+        with log.trap_error(f"Error getting image for icon name {icon_name} and size {size}"):
             pixbuf = get_icon_pixbuf(icon_name)
             log(f"get_image({icon_name!r}, {size}) pixbuf={pixbuf}")
             if not pixbuf:
                 return  None
             return scaled_image(pixbuf, size)
-        except Exception:
-            log.error(f"Error: get_image({icon_name!r}, {size})", icon_name, size, exc_info=True)
-            return None
 
 
     def request_frame_extents(self, window) -> None:

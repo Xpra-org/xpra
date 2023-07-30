@@ -55,10 +55,8 @@ class NotificationClient(StubClientMixin):
         log("NotificationClient.cleanup() notifier=%s", n)
         if n:
             self.notifier = None
-            try:
+            with log.trap_error(f"Error on notifier {n!r} cleanup"):
                 n.cleanup()
-            except Exception:
-                log.error("Error on notifier cleanup", exc_info=True)
 
 
     def parse_server_capabilities(self, c : typedict) -> bool:

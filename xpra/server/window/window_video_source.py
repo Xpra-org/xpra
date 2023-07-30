@@ -285,12 +285,10 @@ class WindowVideoSource(WindowSource):
         def addcinfo(prefix, x):
             if not x:
                 return
-            try:
+            with log.trap_error(f"Error collecting codec information from {x}"):
                 i = x.get_info()
                 i[""] = x.get_type()
                 info[prefix] = i
-            except Exception:
-                log.error("Error collecting codec information from %s", x, exc_info=True)
         addcinfo("csc", self._csc_encoder)
         addcinfo("encoder", self._video_encoder)
         info.setdefault("encodings", {}).update({
@@ -390,10 +388,8 @@ class WindowVideoSource(WindowSource):
         vsf = self.video_stream_file
         if vsf:
             self.video_stream_file = None
-            try:
+            with log.trap_error(f"Error closing video stream file {vsf}"):
                 vsf.close()
-            except OSError:
-                log.error("Error closing video stream file", exc_info=True)
 
     def ui_cleanup(self) -> None:
         super().ui_cleanup()
@@ -1061,10 +1057,9 @@ class WindowVideoSource(WindowSource):
             return
         self.encode_queue = []
         for item in eq:
-            try:
-                self.free_image_wrapper(item[4])
-            except Exception:
-                log.error("Error: cannot free image wrapper %s", item[4], exc_info=True)
+            image = item[4]
+            with log.trap_error(f"Error: cannot free image wrapper {image}"):
+                self.free_image_wrapper(image)
 
     def schedule_encode_from_queue(self, av_delay : int) -> None:
         #must be called from the UI thread for synchronization

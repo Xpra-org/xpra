@@ -259,7 +259,7 @@ class KeyboardConfig(KeyboardConfigBase):
 
     def compute_client_modifier_keycodes(self) -> None:
         """ The keycodes for all modifiers (those are *client* keycodes!) """
-        try:
+        with log.trap_error("Error computing client modifier keycodes"):
             server_mappings = X11Keyboard.get_modifier_mappings()
             log("compute_client_modifier_keycodes() server mappings=%s", server_mappings)
             #update the mappings to use the keycodes the client knows about:
@@ -293,8 +293,6 @@ class KeyboardConfig(KeyboardConfigBase):
                 self.modifier_client_keycodes[modifier] = client_keydefs
             log("compute_client_modifier_keycodes() mappings=%s", self.modifier_client_keycodes)
             log("compute_client_modifier_keycodes() mod nuisance=%s", self.mod_nuisance)
-        except Exception as e:
-            log.error("Error: compute_client_modifier_keycodes: %s" % e, exc_info=True)
 
     def compute_modifier_map(self) -> None:
         with xlog:

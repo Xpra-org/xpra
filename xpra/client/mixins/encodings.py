@@ -120,10 +120,8 @@ class Encodings(StubClientMixin):
 
 
     def cleanup(self) -> None:
-        try:
+        with log.trap_error("Error during video helper cleanup"):
             getVideoHelper().cleanup()
-        except Exception:   # pragma: no cover
-            log.error("error on video cleanup", exc_info=True)
 
 
     def init_authenticated_packet_handlers(self) -> None:

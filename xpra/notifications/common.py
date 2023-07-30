@@ -28,7 +28,7 @@ def PIL_Image():
 
 
 def parse_image_data(data) -> IconData | None:
-    try:
+    with log.trap_error("Error parsing icon data for notification"):
         width, height, rowstride, has_alpha, bpp, channels, pixels = data
         log("parse_image_data(%i, %i, %i, %s, %i, %i, %i bytes)",
             width, height, rowstride, bool(has_alpha), bpp, channels, len(pixels))
@@ -49,9 +49,6 @@ def parse_image_data(data) -> IconData | None:
         if channels==4 and not has_alpha:
             img = img.convert("RGB")
         return image_data(img)
-    except Exception as e:
-        log.error("Error parsing icon data for notification:", exc_info=True)
-        log.estr(e)
     return None
 
 def parse_image_path(path:str) -> IconData | None:
