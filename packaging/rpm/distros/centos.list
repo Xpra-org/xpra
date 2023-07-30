@@ -22,6 +22,6 @@ python3-pynvml
 python3-pyu2f
 python3-uinput
 python3-pylsqpack
-pycairo
+python3-cairo
 pygobject3
 xpra
