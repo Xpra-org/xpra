@@ -159,9 +159,9 @@ This package contains the files which are shared between the xpra client and ser
 %package -n %{package_prefix}-codecs
 Summary:			Picture and video codecs for xpra clients and servers.
 Group:				Networking
-Suggests:			xpra-codecs-extra
-Suggests:			xpra-codecs-nvidia
-Requires:			xpra-common = %{version}-%{release}
+Suggests:			%{package_prefix}-codecs-extra
+Suggests:			%{package_prefix}-codecs-nvidia
+Requires:			%{package_prefix}-common = %{version}-%{release}
 Requires:			%{python3}-pillow
 BuildRequires:		pkgconfig(libdrm)
 Requires:			libdrm
@@ -222,7 +222,7 @@ These codecs may have patent or licensing issues.
 Summary:			Picture and video codecs that rely on NVidia GPUs and CUDA.
 Group:				Networking
 BuildRequires:		cuda
-Requires:			xpra-codecs = %{version}-%{release}
+Requires:			%{package_prefix}-codecs = %{version}-%{release}
 Requires:			%{python3}-pycuda
 Recommends:			%{python3}-pynvml
 %description -n %{package_prefix}-codecs-nvidia
@@ -234,8 +234,8 @@ this is used by both xpra clients and servers.
 %package -n %{package_prefix}-audio
 Summary:			%{python3} build of xpra audio support
 Group:				Networking
-Obsoletes:			%{python3}-xpra-audio < 5.0-10.r32075
-Requires:			xpra-common = %{version}-%{release}
+Obsoletes:			python3-xpra-audio < 5.0-10.r32075
+Requires:			%{python3}-xpra-common = %{version}-%{release}
 Requires:			gstreamer1
 Requires:			gstreamer1-plugins-base
 Requires:			gstreamer1-plugins-good
@@ -259,8 +259,8 @@ This package contains audio support for xpra.
 %package -n %{package_prefix}-client
 Summary:			xpra client
 Group:				Networking
-Obsoletes:			%{python3}-xpra-client < 5.0-10.r32075
-Requires:			xpra-common = %{version}-%{release}
+Obsoletes:			python3-xpra-client < 5.0-10.r32075
+Requires:			%{package_prefix}-common = %{version}-%{release}
 BuildRequires:		desktop-file-utils
 Requires(post):		desktop-file-utils
 Requires(postun):	desktop-file-utils
@@ -275,16 +275,15 @@ This package contains the xpra client.
 %package -n %{package_prefix}-client-gtk3
 Summary:			GTK3 xpra client
 Group:				Networking
-Requires:			xpra-client = %{version}-%{release}
+Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			gtk3
-Recommends:			xpra-codecs = %{version}-%{release}
-Recommends:			xpra-x11 = %{version}-%{release}
+Recommends:			%{package_prefix}-codecs = %{version}-%{release}
+Recommends:			%{package_prefix}-x11 = %{version}-%{release}
 Recommends:			pinentry
-Recommends:			xpra-audio
+Recommends:			%{package_prefix}-audio
 Recommends:			%{python3}-pyopengl
 Recommends:			%{python3}-pyu2f
 Recommends:         %{python3}-psutil
-Suggests:			%{python3}-opencv
 Suggests:			sshpass
 #without this, the system tray is unusable with gnome!
 %if 0%{?el9}
@@ -338,14 +337,14 @@ This package contains the x11 bindings
 %package -n %{package_prefix}-server
 Summary:			xpra server
 Group:				Networking
-Obsoletes:			%{python3}-xpra-server < 5.0-10.r32075
-Requires:			xpra-common = %{version}-%{release}
+Obsoletes:			python3-server < 5.0-10.r32075
+Requires:			%{package_prefix}-common = %{version}-%{release}
 Requires:			gtk3
-Recommends:			xpra-x11 = %{version}-%{release}
-Recommends:			xpra-client = %{version}-%{release}
-Recommends:			xpra-codecs = %{version}-%{release}
-Recommends:			xpra-codecs-extra = %{version}-%{release}
-Recommends:			xpra-codecs-nvidia = %{version}-%{release}
+Recommends:			%{package_prefix}-x11 = %{version}-%{release}
+Recommends:			%{package_prefix}-client = %{version}-%{release}
+Recommends:			%{package_prefix}-codecs = %{version}-%{release}
+Recommends:			%{package_prefix}-codecs-extra = %{version}-%{release}
+Recommends:			%{package_prefix}-codecs-nvidia = %{version}-%{release}
 Recommends:			cups-filters
 Recommends:			cups-pdf
 Recommends:			%{python3}-cups
