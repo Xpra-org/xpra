@@ -69,7 +69,7 @@ def basename(filename:str) -> str:
             tmp += char
     return tmp
 
-def safe_open_download_file(basefilename:str, mimetype:str):
+def safe_open_download_file(basefilename:str, mimetype:str) -> tuple[str,int]:
     from xpra.platform.paths import get_download_dir  # pylint: disable=import-outside-toplevel
     dd = os.path.expanduser(get_download_dir())
     filename = os.path.abspath(os.path.join(dd, basename(basefilename)))
