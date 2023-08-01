@@ -101,7 +101,8 @@ BuildRequires:		%{python3}-setuptools
 Summary:			Common filesystem files for all xpra packages
 Group:				Networking
 BuildArch:          noarch
-Conflicts:			xpra < 5
+Conflicts:			xpra < 6
+Conflicts:			xpra-common < 6
 Conflicts:			python2-xpra
 Conflicts:			python2-xpra-client
 Conflicts:			python2-xpra-server
