@@ -95,6 +95,7 @@ Conflicts:			xpra < 5
 Conflicts:			python2-xpra
 Conflicts:			python2-xpra-client
 Conflicts:			python2-xpra-server
+Conflicts:			xpra-filesystem >= 6.0
 Obsoletes:			xpra-common-client < 5.0-10.r32075
 Obsoletes:			xpra-common-server < 5.0-10.r32075
 Obsoletes:			python3-xpra < 5.0-10.r32075
