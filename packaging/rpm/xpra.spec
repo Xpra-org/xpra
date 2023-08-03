@@ -3,6 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+#we manage the scripts for multiple python versions, so don't mangle the shebangs:
+%undefine __brp_mangle_shebangs
+
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
 %define package_prefix xpra
@@ -461,6 +464,15 @@ pushd xpra-%{version}
 %{python3} setup.py install \
 	%{build_args} \
 	--prefix /usr --skip-build --root %{buildroot}
+%if "%{python3}"!="python3"
+#the 'xpra' script should always use the default python interpreter,
+#use a prefixed copy for other python3 builds:
+cp %{buildroot}/usr/bin/xpra %{buildroot}/usr/bin/%{package_prefix}
+%endif
+#make sure the shebang is the canonical one,
+#no matter which python3 was used for building the package:
+sed -i '1s=^#!/usr/bin/\(python\|env python\)[0-9.]*=#!/usr/bin/env python3=' %{buildroot}/usr/bin/xpra
+sed -i '1s=^#!/usr/bin/\(python\|env python\)[0-9.]*=#!/usr/bin/env python3=' %{buildroot}/usr/bin/xpra_launcher
 %if 0%{?with_selinux}
 for mod in %{selinux_modules}
 do
@@ -542,6 +554,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %files -n %{package_prefix}-common
+%if "%{python3}"!="python3"
+%{_bindir}/%{package_prefix}
+%endif
 %{python3_sitearch}/xpra/buffers/
 %{python3_sitearch}/xpra/clipboard/
 %{python3_sitearch}/xpra/notifications/
