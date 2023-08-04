@@ -110,7 +110,10 @@ def filt(prefix, name, inlist, all_fn, all_list):
         return autoprefix(prefix, v)
     def apl(l):
         return [ap(v) for v in l]
-    inlist = [x for x in csvstrl(inlist or ()).split(",") if x.strip()]
+    instr = csvstrl(inlist or ()).strip(",")
+    if instr=="none":
+        return []
+    inlist = [x for x in instr.split(",") if x.strip()]
     while "all" in inlist:
         i = inlist.index("all")
         inlist = inlist[:i]+all_fn()+inlist[i+1:]

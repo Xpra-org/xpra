@@ -552,6 +552,7 @@ OPTION_TYPES = {
                     "debug"             : str,
                     "input-method"      : str,
                     "video-scaling"     : str,
+                    "video"             : bool,
                     "audio"             : bool,
                     "microphone"        : str,
                     "speaker"           : str,
@@ -728,7 +729,7 @@ OPTIONS_ADDED_SINCE_V3 : list[str] = [
     "refresh-rate",
     "exit-with-windows",
     "bind-quic",
-    "audio",
+    "audio", "video",
     ]
 OPTIONS_COMPAT_NAMES : dict[str,str] = {
     "--compression_level=" : "-z"
@@ -789,6 +790,7 @@ PROXY_START_OVERRIDABLE_OPTIONS : list[str] = [
     "title", "session-name",
     "clipboard", "clipboard-direction", "clipboard-filter-file",
     "input-method",
+    "video",
     "audio", "microphone", "speaker", "audio-source", "pulseaudio",
     "idle-timeout", "server-idle-timeout",
     "use-display",
@@ -1045,6 +1047,7 @@ def get_defaults():
                     "dbus-proxy"        : not OSX and not WIN32,
                     "mmap"              : "yes",
                     "mmap-group"        : "auto",
+                    "video"             : True,
                     "audio"             : True,
                     "speaker"           : ["disabled", "on"][has_audio_support() and not is_arm()],
                     "microphone"        : ["disabled", "off"][has_audio_support()],
@@ -1429,6 +1432,10 @@ def fixup_encodings(options) -> None:
             except ValueError:
                 break
     options.encodings = encodings
+    if not options.video:
+        options.csc_modules = ["none"]
+        options.video_encoders = ["none"]
+        options.video_decoders = ["none"]
 
 def fixup_compression(options) -> None:
     #packet compression:

@@ -1241,6 +1241,11 @@ When unspecified, all the available codecs are allowed and the first one is used
                       help="Which image compression algorithm to use, specify 'help' to get a list of options."
                             " Default: %default."
                       )
+    legacy_bool_parse("video")
+    group.add_option("--video", action="store", metavar="yes|no",
+                  dest="video", default=defaults.video,
+                  help="Enable or disable all video encoding support."
+                  +" Default: %s." % enabled_str(defaults.video))
     group.add_option("--video-encoders", action="append",
                       dest="video_encoders", default=[],
                       help="Specify which video encoders to enable, to get a list of all the options specify 'help'")
