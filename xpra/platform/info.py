@@ -44,7 +44,8 @@ def get_posix_sys_info() -> dict[str,dict[str,dict[str,int]]]:
     }
 
 def get_sys_info():
-    if os.name=="posix":
+    from xpra.common import FULL_INFO
+    if os.name=="posix" and FULL_INFO>1:
         return get_posix_sys_info()
     return {}           # pragma: no cover
 

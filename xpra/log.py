@@ -312,7 +312,7 @@ def get_info() -> dict[str,Any]:
         #all_loggers
         }
     from xpra.common import FULL_INFO
-    if FULL_INFO:
+    if FULL_INFO>1:
         info["filters"] = STRUCT_KNOWN_FILTERS
     return info
 
