@@ -1757,7 +1757,7 @@ def make_client(error_cb:Callable, opts):
         mixin_features.webcam           = bo(opts.webcam) and impcheck("codecs")
         mixin_features.clipboard        = b(opts.clipboard) and impcheck("clipboard")
         mixin_features.notifications    = opts.notifications and impcheck("notifications")
-        mixin_features.dbus             = opts.dbus_proxy and impcheck("dbus")
+        mixin_features.dbus             = impcheck("dbus")
         mixin_features.mmap             = b(opts.mmap)
         mixin_features.logging          = b(opts.remote_logging)
         mixin_features.tray             = b(opts.tray)
@@ -3918,7 +3918,7 @@ def run_showconfig(options, args) -> int:
             #these options don't make sense on win32 or osx:
             HIDDEN += ["socket-dirs", "socket-dir",
                        "wm-name", "pulseaudio-command", "pulseaudio", "xvfb", "input-method",
-                       "socket-permissions", "dbus-proxy", "xsettings",
+                       "socket-permissions", "xsettings",
                        "exit-with-children", "start-new-commands",
                        "start", "start-child",
                        "start-after-connect", "start-child-after-connect",

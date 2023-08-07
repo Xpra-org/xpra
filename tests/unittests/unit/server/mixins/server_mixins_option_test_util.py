@@ -35,7 +35,6 @@ OPTIONS = [
 if not WIN32:
     OPTIONS += [
     "mmap",
-    "dbus-proxy",
     ]
 
 

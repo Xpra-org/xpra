@@ -1070,7 +1070,6 @@ def build_xpra_conf(install_dir):
         "source"                : source,
         'mdns'                  : bstr(mdns),
         'notifications'         : bstr(OSX or WIN32 or dbus_ENABLED),
-        'dbus_proxy'            : bstr(not OSX and not WIN32 and dbus_ENABLED),
         'pdf_printer'           : pdf,
         'postscript_printer'    : postscript,
         'webcam'                : ["no", "auto"][webcam],

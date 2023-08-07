@@ -1230,11 +1230,7 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--mdns", action="store", metavar="yes|no",
                      dest="mdns", default=defaults.mdns,
                      help="Publish the session information via mDNS. Default: %s." % enabled_str(defaults.mdns))
-    legacy_bool_parse("dbus-proxy")
     legacy_bool_parse("dbus-control")
-    group.add_option("--dbus-proxy", action="store", metavar="yes|no",
-                     dest="dbus_proxy", default=defaults.dbus_proxy,
-                     help="Forward dbus calls from the client. Default: %s." % enabled_str(defaults.dbus_proxy))
     group.add_option("--dbus-control", action="store", metavar="yes|no",
                      dest="dbus_control", default=defaults.dbus_control,
                      help="Allows the server to be controlled via its dbus interface."

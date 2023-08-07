@@ -602,7 +602,7 @@ class UIXpraClient(ClientBaseClass):
             #FIXME: this should update the limits?
             pass
         elif setting in (
-            "bell", "randr", "cursors", "notifications", "dbus-proxy", "clipboard",
+            "bell", "randr", "cursors", "notifications", "clipboard",
             "clipboard-direction", "session_name",
             "sharing", "sharing-toggle", "lock", "lock-toggle",
             "start-new-commands", "client-shutdown", "webcam",

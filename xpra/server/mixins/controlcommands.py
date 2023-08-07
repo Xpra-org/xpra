@@ -20,7 +20,7 @@ from xpra.log import Logger
 log = Logger("command")
 
 TOGGLE_FEATURES = (
-    "bell", "randr", "cursors", "notifications", "dbus-proxy", "clipboard",
+    "bell", "randr", "cursors", "notifications", "clipboard",
     "start-new-commands", "client-shutdown", "webcam",
     )
 

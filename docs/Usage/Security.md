@@ -68,7 +68,7 @@ There are obvious privacy concerns here and it may be desirable to turn off the 
 "_D-Bus is a message bus system, a simple way for applications to talk to one another_.
 _In addition to interprocess communication, D-Bus helps coordinate process lifecycle_."  
 This makes `dbus` both a very useful desktop environment component and a wide attack target.  
-The limited `--dbus-proxy` calls can safely be turned off and the `--dbus-control` channel should be turned off if unused.
+The `--dbus-control` channel should be turned off if unused.
 
 ### Hardware Access
 Any subsystem that accesses hardware directly is an inherent security risk.  

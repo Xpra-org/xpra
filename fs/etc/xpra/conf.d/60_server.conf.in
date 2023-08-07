@@ -73,11 +73,6 @@ dbus-launch = dbus-launch --sh-syntax --close-stderr
 #dbus-control = no
 dbus-control = %(dbus_control)s
 
-# Forward client dbus rpc requests:
-# (requires client configuration)
-#dbus-proxy = no
-dbus-proxy = %(dbus_proxy)s
-
 # A wrapper for executing all sub-commands:
 # exec-wrapper = vglrun --
 # exec-wrapper = vglrun -d :1 --
