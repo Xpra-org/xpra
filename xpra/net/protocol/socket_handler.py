@@ -1226,7 +1226,7 @@ class SocketProtocol:
         self.idle_add(self._process_packet_cb, self, packet)
         if c:
             self._conn = None
-            with log.trap_error(f"Error closing %s", c):
+            with log.trap_error("Error closing %s", c):
                 log("Protocol.close(%s) calling %s", message, c.close)
                 c.close()
                 if self._log_stats is None and c.input_bytecount==0 and c.output_bytecount==0:

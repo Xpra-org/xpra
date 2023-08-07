@@ -175,7 +175,7 @@ class Win32Eventlistener:
         if hWnd==self.hwnd:
             if callbacks:
                 for c in callbacks:
-                    with log.trap_error(f"Error on event callback %s", c):
+                    with log.trap_error("Error on event callback %s", c):
                         c(wParam, lParam)
             elif msg in self.ignore_events:
                 log("%s: %s / %s", self.ignore_events.get(msg), wParam, lParam)
