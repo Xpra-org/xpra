@@ -23,6 +23,7 @@ class EncodingClientTest(ClientMixinTest):
 		opts.speed = 0
 		opts.min_speed = 20
 		opts.video_scaling = "no"
+		opts.video = True
 		opts.video_decoders = []
 		opts.csc_modules = []
 		opts.video_encoders = []
