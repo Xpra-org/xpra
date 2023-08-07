@@ -215,6 +215,9 @@ class VideoHelper:
 
     def get_info(self) -> dict[str,Any]:
         d : dict[str,Any] = {}
+        if not (self.video_encoders or self.csc_modules or self.video_decoders):
+            #shortcut out: nothing to show
+            return d
         einfo = d.setdefault("encoding", {})
         dinfo = d.setdefault("decoding", {})
         cinfo = d.setdefault("csc", {})
