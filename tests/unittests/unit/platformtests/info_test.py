@@ -14,7 +14,13 @@ class PlatformInfoTest(unittest.TestCase):
 
     def test_all_info(self):
         if POSIX:
-            assert get_sys_info()
+            from xpra import common
+            saved = common.FULL_INFO
+            try:
+                common.FULL_INFO = 2
+                assert get_sys_info()
+            finally:
+                common.FULL_INFO = saved
         assert isinstance(get_version_info(), dict)
         assert isinstance(get_user_info(), dict)
 
