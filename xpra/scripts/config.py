@@ -608,6 +608,7 @@ OPTION_TYPES = {
                     #float options:
                     "auto-refresh-delay": float,
                     #boolean options:
+                    "minimal"           : bool,
                     "daemon"            : bool,
                     "start-via-proxy"   : bool,
                     "attach"            : bool,
@@ -1036,6 +1037,7 @@ def get_defaults():
                     "min-port"          : 1024,
                     "rfb-upgrade"       : 5,
                     "auto-refresh-delay": 0.15,
+                    "minimal"           : False,
                     "daemon"            : CAN_DAEMONIZE,
                     "start-via-proxy"   : False,
                     "attach"            : None,
