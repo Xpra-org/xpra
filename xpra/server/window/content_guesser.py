@@ -21,7 +21,7 @@ CONTENT_TYPE_DEFS = os.environ.get("XPRA_CONTENT_TYPE_DEFS","")
 
 
 def getprop(window, prop):
-    with log.trap_error(f"Error querying %r on %r", prop, window):
+    with log.trap_error("Error querying %r on %r", prop, window):
         if prop not in window.get_property_names():
             log("no '%s' property on window %s", prop, window)
             return None

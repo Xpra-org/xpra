@@ -153,7 +153,7 @@ class EncodingsMixin(StubSourceMixin):
             ws = self.window_sources.get(wid)
             if ws is None:
                 continue
-            with log.trap_error(f"Error calculating delays for window %s", wid):
+            with log.trap_error("Error calculating delays for window %s", wid):
                 ws.statistics.update_averages()
                 ws.calculate_batch_delay(wid==focus,
                                          len(fullscreen_wids)>0 and wid not in fullscreen_wids,

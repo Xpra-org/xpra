@@ -275,7 +275,7 @@ class SocketProtocol:
             info["receive_alias"] = self.receive_aliases
         c = self._conn
         if c:
-            with log.trap_error(f"Error collecting connection information on %s", c):
+            with log.trap_error("Error collecting connection information on %s", c):
                 info.update(c.get_info())
         #add stats to connection info:
         info.setdefault("input", {}).update({

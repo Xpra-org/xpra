@@ -183,7 +183,7 @@ class ServerBase(ServerBaseClass):
         log("threaded_init() serverbase start")
         for c in SERVER_BASES:
             if c!=ServerCore:
-                with log.trap_error(f"Error during threaded setup of %s", c):
+                with log.trap_error("Error during threaded setup of %s", c):
                     c.threaded_setup(self)
         log("threaded_init() serverbase end")
         super().call_init_thread_callbacks()
