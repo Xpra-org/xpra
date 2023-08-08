@@ -22,6 +22,7 @@ class EncodingMixinTest(ServerMixinTest):
         opts.min_quality = 20
         opts.speed = 0
         opts.min_speed = 20
+        opts.video = True
         opts.video_scaling = "auto"
         opts.video_encoders = []
         opts.csc_modules = []
