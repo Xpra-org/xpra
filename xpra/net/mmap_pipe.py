@@ -20,6 +20,9 @@ MMAP_GROUP = os.environ.get("XPRA_MMAP_GROUP", "xpra")
 MADVISE = envbool("XPRA_MMAP_MADVISE", True)
 MADVISE_FLAGS = os.environ.get("XPRA_MMAP_MADVISE_FLAGS", "SEQUENTIAL,DONTFORK,UNMERGEABLE,DONTDUMP").split(",")
 
+DEFAULT_TOKEN_BYTES : int = 128
+
+
 """
 Utility functions for communicating via mmap
 """
@@ -191,7 +194,6 @@ def clean_mmap(mmap_filename:str) -> None:
             log.error("Error: failed to remove the mmap file '%s':", mmap_filename)
             log.estr(e)
 
-DEFAULT_TOKEN_BYTES : int = 128
 
 def write_mmap_token(mmap_area, token, index:int, count:int=DEFAULT_TOKEN_BYTES) -> None:
     assert count>0
