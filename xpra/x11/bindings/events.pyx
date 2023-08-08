@@ -494,16 +494,21 @@ cdef parse_xevent(Display *d, XEvent *e):
             return None
         pyev.message_type = atom(e.xclient.message_type)
         pyev.format = e.xclient.format
-        # I am lazy.  Add this later if needed for some reason.
-        if pyev.format != 32:
-            #things like _KDE_SPLASH_PROGRESS and _NET_STARTUP_INFO will come through here
-            log.warn(f"Warning: ignoring ClientMessage type={pyev.message_type} with format={pyev.format} (!=32)")
-            return None
         pieces = []
-        for i in range(5):
-            # Mask with 0xffffffff to prevent sign-extension on
-            # architectures where Python's int is 64-bits.
-            pieces.append(int(e.xclient.data.l[i]) & 0xffffffff)
+        if pyev.format == 32:
+            for i in range(5):
+                # Mask with 0xffffffff to prevent sign-extension on
+                # architectures where Python's int is 64-bits.
+                pieces.append(int(e.xclient.data.l[i]) & 0xffffffff)
+        elif pyev.format == 16:
+            for i in range(10):
+                pieces.append(int(e.xclient.data.s[i]))
+        elif pyev.format == 8:
+            for i in range(20):
+                pieces.append(int(e.xclient.data.b[i]))
+        else:
+            log.warn(f"Warning: ignoring ClientMessage type={pyev.message_type} with format={pyev.format}")
+            return None
         pyev.data = tuple(pieces)
     elif etype == CreateNotify:
         pyev.window = e.xcreatewindow.window
