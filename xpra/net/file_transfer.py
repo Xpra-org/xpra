@@ -122,6 +122,17 @@ class SendChunkState:
     chunk: int
 
 
+@dataclass
+class SendPendingData:
+    datatype : str
+    url : str
+    mimetype : str
+    data : bytes
+    filesize : int
+    printit : bool
+    openit : bool
+    options : dict
+
 class FileTransferAttributes:
 
     def __init__(self):
@@ -221,7 +232,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.remote_file_ask_timeout = SEND_REQUEST_TIMEOUT
         self.remote_file_size_limit = 0
         self.remote_file_chunks = 0
-        self.pending_send_data : dict[str,tuple[str,str,str,bytes,int,bool,bool,dict]] = {}
+        self.pending_send_data : dict[str,SendPendingData] = {}
         self.pending_send_data_timers : dict[str,int] = {}
         self.send_chunks_in_progress : dict[str,SendChunkState] = {}
         self.receive_chunks_in_progress : dict[str,ReceiveChunkState] = {}
@@ -774,7 +785,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.do_send_file(filename, mimetype, data, filesize, printit, openit, options, send_id)
         return True
 
-    def send_data_request(self, action, dtype, url, mimetype="", data="", filesize=0,
+    def send_data_request(self, action, dtype, url, mimetype="", data=b"", filesize=0,
                           printit=False, openit=True, options=None) -> str:
         send_id = uuid.uuid4().hex
         if len(self.pending_send_data)>=MAX_CONCURRENT_FILES:
@@ -782,7 +793,8 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.warn(" %i transfer%s already waiting for a response",
                          len(self.pending_send_data), engs(self.pending_send_data))
             return ""
-        self.pending_send_data[send_id] = (dtype, url, mimetype, data, filesize, printit, openit, options or {})
+        spd = SendPendingData(dtype, url, mimetype, data, filesize, printit, openit, options or {})
+        self.pending_send_data[send_id] = spd
         delay = self.remote_file_ask_timeout*1000
         self.pending_send_data_timers[send_id] = self.timeout_add(delay, self.send_data_ask_timeout, send_id)
         filelog("sending data request for %s '%s' with send-id=%s",
@@ -853,49 +865,46 @@ class FileTransferHandler(FileTransferAttributes):
         cb_answer(v)
 
     def _process_send_data_response(self, packet : PacketType) -> None:
-        send_id, accept = packet[1:3]
+        send_id = str(packet[1])
+        accept = int(packet[2])
         filelog("process send-data-response: send_id=%s, accept=%s", send_id, accept)
         timer = self.pending_send_data_timers.pop(send_id, None)
         if timer:
             self.source_remove(timer)
-        v = self.pending_send_data.pop(send_id, None)
-        if v is None:
-            filelog.warn("Warning: cannot find send-file entry")
+        try:
+            spd : SendPendingData = self.pending_send_data[send_id]
+        except KeyError:
+            filelog.warn(f"Warning: cannot find send-file entry for {send_id!r}")
             return
-        dtype = str(v[0])
-        url = str(v[1])
         if accept==DENY:
-            filelog.info("the request to send %s '%s' has been denied", dtype, url)
+            filelog.info("the request to send %s '%s' has been denied", spd.datatype, spd.url)
             return
         if accept not in (ACCEPT, OPEN):
             raise ValueError(f"unknown value for send-data response: {accept!r}")
-        if dtype=="file":
-            mimetype, data, filesize, printit, openit, options = v[2:]
+        if spd.datatype=="file":
             if accept==ACCEPT:
-                self.do_send_file(url, mimetype, data, filesize, printit, openit, options, send_id)
+                self.do_send_file(spd.url, spd.mimetype, spd.data, spd.filesize, spd.printit, spd.openit, spd.options, send_id)
             else:
-                assert openit and accept==OPEN
+                assert spd.openit and accept==OPEN
                 #try to open at this end:
                 self._open_file(url)
-        elif dtype=="url":
+        elif spd.datatype=="url":
             if accept==ACCEPT:
-                self.do_send_open_url(url, send_id)
+                self.do_send_open_url(spd.url, send_id)
             else:
                 assert accept==OPEN
                 #open it at this end:
-                self._open_url(url)
+                self._open_url(spd.url)
         else:
-            filelog.error("Error: unknown datatype '%s'", dtype)
+            filelog.error("Error: unknown datatype '%s'", spd.datatype)
 
-    def send_data_ask_timeout(self, send_id) -> bool:
-        v = self.pending_send_data.pop(send_id, None)
+    def send_data_ask_timeout(self, send_id:str) -> bool:
         self.pending_send_data_timers.pop(send_id, None)
-        if not v:
-            filelog.warn("Warning: send timeout, id '%s' not found!", send_id)
+        spd = self.pending_send_data.pop(send_id, None)
+        if not spd:
+            filelog.warn(f"Warning: send timeout, id {send_id!r} not found!")
             return False
-        filename = v[1]
-        printit = v[5]
-        filelog.warn("Warning: failed to %s file '%s',", ["send", "print"][printit], filename)
+        filelog.warn("Warning: failed to %s file '%s',", ["send", "print"][spd.printit], spd.filename)
         filelog.warn(" the send approval request timed out")
         return False
 
