@@ -6,7 +6,7 @@
 # later version. See the file COPYING for details.
 
 import re
-from time import monotonic
+from time import monotonic_ns
 from typing import Any
 
 from xpra.x11.x11_server_core import X11ServerCore
@@ -233,7 +233,7 @@ class XImageCapture:
         if self.xshm is None:
             log("no xshm, cannot get image")
             return None
-        start = monotonic()
+        start = monotonic_ns()
         try:
             with xsync:
                 log("X11 shadow get_image, xshm=%s", self.xshm)
@@ -243,9 +243,9 @@ class XImageCapture:
             self._err(e)
             return None
         finally:
-            end = monotonic()
+            end = monotonic_ns()
             log("X11 shadow captured %s pixels at %i MPixels/s using %s",
-                width*height, (width*height/(end-start))//1024//1024, ["GTK", "XSHM"][XSHM])
+                width*height, (width*height/(end-start)), ["GTK", "XSHM"][XSHM])
 
 
 def setup_capture(window):

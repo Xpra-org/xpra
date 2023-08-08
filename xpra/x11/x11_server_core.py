@@ -8,7 +8,7 @@
 
 import os
 import threading
-from time import monotonic
+from time import monotonic_ns
 from typing import Any
 
 from xpra.x11.bindings.core import set_context_check, X11CoreBindings     #@UnresolvedImport
@@ -361,7 +361,7 @@ class X11ServerCore(GTKServerBase):
 
 
     def do_get_info(self, proto, server_sources) -> dict[str,Any]:
-        start = monotonic()
+        start = monotonic_ns()
         info = super().do_get_info(proto, server_sources)
         sinfo = info.setdefault("server", {})
         sinfo["type"] = "Python/gtk/x11"
@@ -372,7 +372,7 @@ class X11ServerCore(GTKServerBase):
                 log(f"no drm query: {e}")
             else:
                 sinfo["drm"] = query()
-        log("X11ServerCore.do_get_info took %ims", (monotonic()-start)*1000)
+        log("X11ServerCore.do_get_info took %ims", (monotonic_ns()-start)//1_000_000)
         return info
 
     def get_ui_info(self, proto, wids=None, *args) -> dict[str,Any]:
