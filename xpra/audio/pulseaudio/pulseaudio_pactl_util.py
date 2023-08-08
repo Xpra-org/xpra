@@ -137,14 +137,18 @@ def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=
 
 def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=None,
                              ignored_devices=("bell-window-system",)):
-    def are_properties_acceptable(name: Optional[str], device_class: Optional[str]) -> bool:
-        if name is None or device_class is None:
+    def are_properties_acceptable(name: Optional[str], device_class: Optional[str],
+                                  monitor_of_sink: Optional[str]) -> bool:
+        if (name is None) or (device_class is None and monitor_of_sink is None):
             return False
         if name in ignored_devices:
             return False
         #Verify against monitor flag if set:
         if monitors is not None:
-            is_monitor = device_class == '"monitor"'
+            if device_class is not None:
+                is_monitor = device_class == '"monitor"'
+            else:  # monitor_of_sink is not None
+                is_monitor = monitor_of_sink != "n/a"
             if is_monitor != monitors:
                 return False
         #Verify against input flag (if set):
@@ -159,23 +163,27 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
 
     name : Optional[str] = None
     device_class : Optional[str] = None
+    monitor_of_sink : Optional[str] = None
     device_description : Optional[str] = None
     devices : dict[str,str] = {}
     for line in bytestostr(pactl_list_output).splitlines():
         if not line.startswith(" ") and not line.startswith("\t"):        #clear vars when we encounter a new section
-            if are_properties_acceptable(name, device_class):
+            if are_properties_acceptable(name, device_class, monitor_of_sink):
                 assert type(name) is str
                 if not device_description:
                     device_description = name
                 devices[name] = device_description
             name = None
             device_class = None
+            monitor_of_sink = None
             device_description = None
         line = line.strip()
         if line.startswith("Name: "):
             name = line[len("Name: "):]
         if line.startswith("device.class = "):
             device_class = line[len("device-class = "):]
+        if line.startswith("Monitor of Sink: "):
+            monitor_of_sink = line[len("Monitor of Sink: "):]
         if line.startswith("device.description = "):
             device_description = line[len("device.description = "):].strip('"')
     return devices
