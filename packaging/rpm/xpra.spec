@@ -675,11 +675,23 @@ popd
 %if 0%{?with_selinux}
 restorecon -R /usr/lib/cups/backend/xpraforwarder || :
 %endif
+%tmpfiles_create xpra.conf
+%sysusers_create xpra.conf
+%if 0%{?with_selinux}
+for mod in %{selinux_modules}
+do
+	for selinuxvariant in %{selinux_variants}
+	do
+	  /usr/sbin/semodule -s ${selinuxvariant} -i \
+	    %{_datadir}/selinux/${selinuxvariant}/${mod}.pp &> /dev/null || :
+	done
+done
+semanage port -a -t xpra_port_t -p tcp 14500 2>&1 | grep -v "already defined" || :
+restorecon -R /etc/xpra /usr/lib/systemd/system/xpra* /usr/bin/xpra* || :
+restorecon -R /run/xpra* /run/user/*/xpra 2> /dev/null || :
+%endif
 
 %post -n %{package_prefix}-server
-%tmpfiles_create xpra.conf
-#fedora can use sysusers.d instead
-%sysusers_create xpra.conf
 if [ ! -e "/etc/xpra/ssl-cert.pem" ]; then
 	umask=`umask`
 	umask 077
@@ -705,19 +717,6 @@ if [ ! -z "${ZONE}" ]; then
 	fi
 	set -e
 fi
-%endif
-%if 0%{?with_selinux}
-for mod in %{selinux_modules}
-do
-	for selinuxvariant in %{selinux_variants}
-	do
-	  /usr/sbin/semodule -s ${selinuxvariant} -i \
-	    %{_datadir}/selinux/${selinuxvariant}/${mod}.pp &> /dev/null || :
-	done
-done
-semanage port -a -t xpra_port_t -p tcp 14500 2>&1 | grep -v "already defined" || :
-restorecon -R /etc/xpra /usr/lib/systemd/system/xpra* /usr/bin/xpra* || :
-restorecon -R /run/xpra* /run/user/*/xpra 2> /dev/null || :
 %endif
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 if [ $1 -eq 1 ]; then
@@ -766,6 +765,8 @@ if [ $1 -eq 0 ]; then
 	fi
 fi
 %endif
+
+%preun -n xpra-filesystem
 %if 0%{?with_selinux}
 if [ $1 -eq 0 ] ; then
 	semanage port -d -p tcp 14500
