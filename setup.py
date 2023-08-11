@@ -266,7 +266,7 @@ webcam_ENABLED          = DEFAULT and not OSX and not WIN32
 notifications_ENABLED   = DEFAULT
 keyboard_ENABLED        = DEFAULT
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and not OPENBSD)
-evdi_ENABLED            = DEFAULT and LINUX and pkg_config_version("1.9", "evdi")
+evdi_ENABLED            = DEFAULT and LINUX and pkg_config_version("1.10", "evdi")
 drm_ENABLED             = DEFAULT and LINUX and pkg_config_version("2.4", "libdrm")
 csc_cython_ENABLED      = DEFAULT
 nvidia_ENABLED          = DEFAULT and not OSX and BITS==64
