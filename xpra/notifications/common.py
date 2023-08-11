@@ -86,7 +86,7 @@ def get_notification_icon(icon_string:str) -> IconData | None:
     # * a path which we will load using pillow
     # * a name we lookup in the current theme
     if not icon_string:
-        return ()
+        return None
     MAX_SIZE = 256
     img = None
     w = h = 0

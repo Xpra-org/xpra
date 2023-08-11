@@ -1468,8 +1468,8 @@ def fixup_keyboard(options) -> None:
     #variants and layouts can be specified as CSV, convert them to lists:
     def p(v) -> list[str]:
         try:
-            r = remove_dupes(x.strip() for x in v.split(","))
-            #remove empty string if that's the only value:
+            r = remove_dupes(x.strip() for x in str(v).split(","))
+            # remove empty string if that's the only value:
             if r and len(r)==1 and r[0]=="":
                 r = []
             return r

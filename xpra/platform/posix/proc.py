@@ -4,34 +4,38 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+get_parent_pid : callable | None = None
 try:
-    from xpra.platform.posix.proc_libproc import get_parent_pid
-except ImportError:
+    from xpra.platform.posix import proc_libproc
+    get_parent_pid = proc_libproc.get_parent_pid
+except (ImportError, AttributeError):
     try:
-        from xpra.platform.posix.proc_procps import get_parent_pid
-    except ImportError:
-        get_parent_pid = None
+        from xpra.platform.posix import proc_procps
+        get_parent_pid = proc_procps.get_parent_pid
+    except (ImportError, AttributeError):
+        pass
 
 
 def main(argv) -> int:
     from xpra.platform import program_context
     with program_context("Get-Parent-Pid", "Get Parent Pid"):
-        if not get_parent_pid:
+        if not callable(get_parent_pid):
             print("`get_parent_pid` is not available!")
             return 1
         print(f"using `get_parent_pid`={get_parent_pid}")
         try:
             print(f"from {get_parent_pid.__module__}")
-        except AttributeError:  #`__module__` is CPython only?
+        except AttributeError:  # `__module__` is CPython only?
             pass
         for pid_str in argv[1:]:
             try:
                 pid = int(pid_str)
-            except Exception:
+            except ValueError:
                 print(f"{pid_str} is not a valid pid number")
             else:
                 print(f" get_parent_pid({pid})={get_parent_pid(pid)}")
     return 0
+
 
 if __name__ == "__main__":
     import sys

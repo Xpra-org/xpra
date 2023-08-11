@@ -118,10 +118,12 @@ WINDOW_OVERFLOW_TOP = envbool("XPRA_WINDOW_OVERFLOW_TOP", False)
 AWT_RECENTER = envbool("XPRA_AWT_RECENTER", True)
 UNDECORATED_TRANSIENT_IS_OR = envint("XPRA_UNDECORATED_TRANSIENT_IS_OR", 1)
 XSHAPE = envbool("XPRA_XSHAPE", True)
+bit_to_rectangles : callable | None = None
 try:
-    from xpra.codecs.argb.argb import bit_to_rectangles
-except ImportError:
-    bit_to_rectangles = None
+    from xpra.codecs.argb import argb
+    bit_to_rectangles = argb.bit_to_rectangles
+except (ImportError, AttributeError):
+    pass
 LAZY_SHAPE = envbool("XPRA_LAZY_SHAPE", not callable(bit_to_rectangles))
 
 AUTOGRAB_MODES = os.environ.get("XPRA_AUTOGRAB_MODES", "shadow,desktop,monitors").split(",")
@@ -1163,10 +1165,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         shapelog("drawing complete")
         img = img.resize((ww, wh), resample=Image.BICUBIC)
         shapelog("resized %s bitmap to window size %sx%s: %s", kind_name, ww, wh, img)
-        #now convert back to rectangles...
+        # now convert back to rectangles...
         monodata = img.tobytes("raw", "1")
         shapelog("got %i bytes", len(monodata))
-        #log.warn("monodata: %s (%i bytes) %ix%i", repr_ellipsized(monodata), len(monodata), ww, wh)
+        # log.warn("monodata: %s (%i bytes) %ix%i", repr_ellipsized(monodata), len(monodata), ww, wh)
+        assert callable(bit_to_rectangles)
         rectangles = bit_to_rectangles(monodata, ww, wh)
         shapelog("back to rectangles")
         return rectangles

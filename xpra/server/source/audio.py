@@ -33,6 +33,18 @@ class FakeSink:
         log("FakeSink.cleanup%s ignored", args)
 
 
+def stop_proc(proc) -> None:
+    r = proc.poll()
+    log("stop_proc(%s) exit code=%s", proc, r)
+    if r is not None:
+        #already ended
+        return
+    try:
+        proc.terminate()
+    except Exception:
+        log("failed to stop subprocess %s", proc)
+
+
 class AudioMixin(StubSourceMixin):
 
     @classmethod
@@ -94,15 +106,7 @@ class AudioMixin(StubSourceMixin):
             self.stop_new_stream_notification(proc)
 
     def stop_new_stream_notification(self, proc) -> None:
-        r = proc.poll()
-        log("stop_new_stream_notification(%s) exit code=%s", proc, r)
-        if r is not None:
-            #already ended
-            return
-        try:
-            proc.terminate()
-        except Exception:
-            log("failed to stop stream notification %s", proc)
+        stop_proc(proc)
 
 
     def parse_client_caps(self, c:typedict) -> None:

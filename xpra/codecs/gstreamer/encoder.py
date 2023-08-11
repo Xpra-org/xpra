@@ -83,12 +83,14 @@ def make_spec(element:str, encoding:str, cs_in:str, css_out:tuple[str,...], cpu_
     spec.gstreamer_element = element
     return spec
 
-SPECS : dict[str,dict[str,video_spec]] = {}
+
+SPECS : dict[str,dict[str,list[video_spec]]] = {}
 def get_specs(encoding:str, colorspace:str) -> video_spec | None:
     colorspaces = SPECS.get(encoding)
     assert colorspaces, f"invalid encoding: {encoding} (must be one of %s)" % csv(SPECS.keys())
     assert colorspace in colorspaces, f"invalid colorspace: {colorspace} (must be one of %s)" % csv(colorspaces.keys())
     return colorspaces.get(colorspace)
+
 
 def init_all_specs(*exclude) -> None:
     #by default, try to enable everything

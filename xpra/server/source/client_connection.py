@@ -35,7 +35,8 @@ YIELD = envbool("XPRA_YIELD", False)
 
 counter = AtomicInteger()
 
-ENCODE_WORK_ITEM : TypeAlias = tuple[bool, Callable, tuple[Any,...]] | None
+ENCODE_WORK_ITEM_TUPLE = tuple[bool, Callable, tuple[Any,...]]
+ENCODE_WORK_ITEM : TypeAlias = ENCODE_WORK_ITEM_TUPLE | None
 
 
 class ClientConnection(StubSourceMixin):
@@ -91,7 +92,7 @@ class ClientConnection(StubSourceMixin):
         # network constraints:
         self.server_bandwidth_limit = bandwidth_limit
         self.bandwidth_detection = bandwidth_detection
-        self.queue_encode : Callable[ENCODE_WORK_ITEM, None] = self.start_queue_encode
+        self.queue_encode : Callable[[ENCODE_WORK_ITEM], None] = self.start_queue_encode
 
     def run(self):
         # ready for processing:

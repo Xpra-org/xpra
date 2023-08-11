@@ -207,9 +207,9 @@ class _codec_spec:
 @dataclass(kw_only=True)
 class video_spec(_codec_spec):
 
-    encoding            : str
-    input_colorspace    : str
-    output_colorspaces  : tuple[str,...]      # ie: ["YUV420P" : "YUV420P", ...]
+    encoding            : str = "invalid"
+    input_colorspace    : str = "invalid"
+    output_colorspaces  : tuple[str,...] = ()      # ie: ("YUV420P" : "YUV420P", ...)
     has_lossless_mode   : bool = False
 
     def __repr__(self):
@@ -219,8 +219,8 @@ class video_spec(_codec_spec):
 @dataclass(kw_only=True)
 class csc_spec(_codec_spec):
 
-    input_colorspace: str
-    output_colorspace: str
+    input_colorspace: str = "invalid"
+    output_colorspace: str = "invalid"
 
     def __repr__(self):
         return f"{self.codec_type}({self.input_colorspace} to {self.output_colorspace})"

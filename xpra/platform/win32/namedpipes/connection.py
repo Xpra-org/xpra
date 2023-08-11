@@ -163,15 +163,7 @@ class NamedPipeConnection(Connection):
             return
         self.pipe_handle = None
         def _close_err(fn, e):
-            l = log.error
-            try:
-                code = e[0]
-            except (IndexError, TypeError):
-                #python3?
-                code = 0
-            if code==ERROR_PIPE_NOT_CONNECTED:
-                l = log.debug
-            l("Error: %s(%s) %i: %s", fn, ph, code, e)
+            log.error("Error: %s(%s) %s", fn, ph, e)
         def logerr(fn, *args):
             try:
                 fn(*args)
