@@ -4,7 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-get_parent_pid : callable | None = None
+from typing import Optional
+
+get_parent_pid : Optional[callable] = None
 try:
     from xpra.platform.posix import proc_libproc
     get_parent_pid = proc_libproc.get_parent_pid
