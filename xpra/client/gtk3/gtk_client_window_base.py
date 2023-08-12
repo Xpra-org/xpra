@@ -9,7 +9,7 @@ import math
 import os.path
 from time import monotonic
 from urllib.parse import unquote
-from typing import Callable
+from typing import Callable, Optional
 from cairo import ( #pylint: disable=no-name-in-module
     RectangleInt, Region,  # @UnresolvedImport
     OPERATOR_OVER, LINE_CAP_ROUND,  # @UnresolvedImport
@@ -118,7 +118,7 @@ WINDOW_OVERFLOW_TOP = envbool("XPRA_WINDOW_OVERFLOW_TOP", False)
 AWT_RECENTER = envbool("XPRA_AWT_RECENTER", True)
 UNDECORATED_TRANSIENT_IS_OR = envint("XPRA_UNDECORATED_TRANSIENT_IS_OR", 1)
 XSHAPE = envbool("XPRA_XSHAPE", True)
-bit_to_rectangles : callable | None = None
+bit_to_rectangles : Optional[callable] = None
 try:
     from xpra.codecs.argb import argb
     bit_to_rectangles = argb.bit_to_rectangles
