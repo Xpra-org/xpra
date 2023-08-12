@@ -1,3 +1,4 @@
+%define _disable_source_fetch 0
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
 %define package_prefix %{nil}
@@ -44,6 +45,11 @@ This package contains files required to build wrappers for cairo add-on
 libraries so that they interoperate with py3cairo.
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "9b61ac818723adc04367301317eb2e814a83522f07bbd1f409af0dada463c44c" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %autosetup -p1
 
 %build
