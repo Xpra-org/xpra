@@ -18,6 +18,9 @@ import os.path
 import subprocess
 from time import sleep
 
+if sys.version_info<(3, 10):
+    raise RuntimeError("xpra no longer supports Python versions older than 3.10")
+
 try:
     from distutils.core import setup
     from distutils.command.build import build
@@ -37,8 +40,6 @@ from xpra.os_util import (
     is_CentOS, is_AlmaLinux, is_RockyLinux, is_RedHat, is_openSUSE, is_OracleLinux,
     )
 
-if sys.version_info<(3, 10):
-    raise RuntimeError("xpra no longer supports Python versions older than 3.10")
 if BITS!=64:
     print(f"Warning: {BITS}-bit architecture, only 64-bits are officially supported")
     for _ in range(5):
