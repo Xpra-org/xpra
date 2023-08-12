@@ -464,6 +464,8 @@ pushd xpra-%{version}
 %{python3} setup.py install \
 	%{build_args} \
 	--prefix /usr --skip-build --root %{buildroot}
+%if 0%{?fedora}
+#on Fedora, we can have multiple python builds:
 %if "%{python3}"!="python3"
 #the 'xpra' script should always use the default python interpreter,
 #use a prefixed copy for other python3 builds:
@@ -483,6 +485,7 @@ do
 	    %{buildroot}%{_datadir}/selinux/${selinuxvariant}/${mod}.pp
 	done
 done
+%endif
 %endif
 popd
 
