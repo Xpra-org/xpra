@@ -557,8 +557,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %files -n %{package_prefix}-common
+%if 0%{?fedora}
 %if "%{python3}"!="python3"
 %{_bindir}/%{package_prefix}
+%endif
 %endif
 %{python3_sitearch}/xpra/buffers/
 %{python3_sitearch}/xpra/clipboard/
