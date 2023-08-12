@@ -62,6 +62,7 @@ def parse_scaling(desktop_scaling, root_w, root_h, min_scaling=MIN_SCALING, max_
                         sy = float(scaleparts[1])
                     limits.append((x, y, sx, sy))
                     log("parsed desktop-scaling auto limits: %s", limits)
+                    del x, y
                 except Exception as e:
                     log.warn("Warning: failed to parse limit string '%s':", l)
                     log.warn(" %s", e)
@@ -77,7 +78,6 @@ def parse_scaling(desktop_scaling, root_w, root_h, min_scaling=MIN_SCALING, max_
                 break
         log("matched=%s : %sx%s with limits %s: %sx%s", matched, root_w, root_h, limits, sx, sy)
         return sx,sy
-    del x, y
     def parse_item(v) -> float:
         div = 1
         try:
