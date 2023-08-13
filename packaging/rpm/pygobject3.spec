@@ -1,4 +1,6 @@
 %define _disable_source_fetch 0
+%global debug_package %{nil}
+
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
 %define package_prefix %{nil}
