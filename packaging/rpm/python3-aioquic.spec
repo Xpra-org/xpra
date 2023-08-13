@@ -1,10 +1,11 @@
 %define _disable_source_fetch 0
+%undefine __pythondist_requires
+%undefine __python_requires
+
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
 %else
 %global python3 %{getenv:PYTHON3}
-%undefine __pythondist_requires
-%undefine __python_requires
 %endif
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))")
 
