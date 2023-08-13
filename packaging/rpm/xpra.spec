@@ -81,11 +81,7 @@ Recommends:			%{package_prefix}-codecs-nvidia = %{version}-%{release}
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{package_prefix}-client-gtk3 = %{version}-%{release}
 Requires:			%{package_prefix}-server = %{version}-%{release}
-%if 0%{?fedora}
-Requires:			%{package_prefix}-audio = %{version}-%{release}
-%else
 Recommends:			%{package_prefix}-audio = %{version}-%{release}
-%endif
 %description -n %{package_prefix}
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
 
