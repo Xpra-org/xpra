@@ -75,6 +75,11 @@ Source:				https://xpra.org/src/xpra-%{version}.tar.xz
 #rpm falls over itself if we try to make the top-level package noarch:
 #BuildArch: noarch
 BuildRoot:			%{_tmppath}/%{name}-%{version}-root
+BuildRequires:		gcc
+BuildRequires:		gcc-c++
+BuildRequires:		%{python3}-Cython
+BuildRequires:		pkgconfig
+BuildRequires:		%{python3}-setuptools
 Requires:			xpra-html5 >= 5
 Requires:			xpra-filesystem >= 5
 Requires:			%{package_prefix}-common = %{version}-%{release}
@@ -91,13 +96,6 @@ Xpra gives you "persistent remote applications" for X. That is, unlike normal X 
 So basically it's screen for remote X apps.
 
 This metapackage installs the xpra in full, including the python client, server and HTML5 client.
-BuildRequires:		gcc
-BuildRequires:		gcc-c++
-BuildRequires:		%{python3}-Cython
-BuildRequires:		pkgconfig
-%if 0%{?fedora}>=38
-BuildRequires:		%{python3}-setuptools
-%endif
 
 %package -n xpra-filesystem
 Summary:			Common filesystem files for all xpra packages
