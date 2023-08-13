@@ -60,6 +60,9 @@
 %endif
 
 Name:				%{package_prefix}
+%if "%{package_prefix}"!="xpra"
+Provides:           xpra = %{version}
+%endif
 Version:			%{version}
 Release:			%{revision_no}%{?dist}
 Summary:			Xpra gives you "persistent remote applications" for X.
