@@ -6,14 +6,24 @@
 #we manage the scripts for multiple python versions, so don't mangle the shebangs:
 %undefine __brp_mangle_shebangs
 
+#on RHEL, there is only one python>=3.10 build at present,
+#so this package can use the canonical name 'xpra',
+#but on Fedora, we only use the main package for the default python
+%define main_package 1
+
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
 %define package_prefix xpra
 %else
 %global python3 %{getenv:PYTHON3}
 %define package_prefix %{python3}-xpra
+%if 0%{?fedora}
+%define main_package 0
+%endif
+
 %undefine __pythondist_requires
 %undefine __python_requires
+
 %define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
@@ -59,19 +69,18 @@
 %define revision_no 10
 %endif
 
-%if 0%{?fedora}
-Name:				%{package_prefix}
-%if "%{package_prefix}"!="xpra"
-Provides:           xpra = %{version}
-%endif
-%else
-#on RHEL, there is only one python>=3.10 build at present,
-#so this package can use the canonical name 'xpra':
-Name:				xpra
-Provides:           %{package_prefix}
-%endif
+
 Version:			%{version}
 Release:			%{revision_no}%{?dist}
+
+%if %{main_package}
+Name:				xpra
+Provides:           %{python3}-xpra = %{version}-%{release}
+%else
+Name:               %{python3}-xpra
+Provides:           xpra = %{version}-%{release}
+%endif
+
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -97,7 +106,11 @@ Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{package_prefix}-client-gtk3 = %{version}-%{release}
 Requires:			%{package_prefix}-server = %{version}-%{release}
 Recommends:			%{package_prefix}-audio = %{version}-%{release}
-%description -n %{package_prefix}
+%if %{main_package}
+%description -n xpra
+%else
+%description -n %{python3}-xpra
+%endif
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
 
 So basically it's screen for remote X apps.
