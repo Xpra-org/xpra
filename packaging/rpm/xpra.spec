@@ -70,7 +70,7 @@ autoprov: no
 %endif
 
 
-Name:				%{package_prefix}
+Name:				xpra
 Version:			6.0
 Release:			%{revision_no}%{?dist}
 Provides:           xpra = %{version}-%{release}
@@ -89,6 +89,37 @@ BuildRequires:		gcc-c++
 BuildRequires:		%{python3}-Cython
 BuildRequires:		pkgconfig
 BuildRequires:		%{python3}-setuptools
+%if "%{package_prefix}"!="xpra"
+#this is just a meta-package that redirects to the python variant:
+Requires:			%{package_prefix} = %{version}-%{release}
+%else
+Requires:			xpra-html5 >= 5
+Requires:			xpra-filesystem >= 5
+Requires:			%{package_prefix}-common = %{version}-%{release}
+Requires:			%{package_prefix}-codecs = %{version}-%{release}
+Recommends:			%{package_prefix}-codecs-extra = %{version}-%{release}
+Recommends:			%{package_prefix}-codecs-nvidia = %{version}-%{release}
+Recommends:			%{package_prefix}-x11 = %{version}-%{release}
+Requires:			%{package_prefix}-client = %{version}-%{release}
+Requires:			%{package_prefix}-client-gtk3 = %{version}-%{release}
+Requires:			%{package_prefix}-server = %{version}-%{release}
+Recommends:			%{package_prefix}-audio = %{version}-%{release}
+%endif
+%description
+Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
+
+So basically it's screen for remote X apps.
+
+This metapackage installs the %{python3} build of xpra in full,
+including the python client, server and HTML5 client.
+
+
+%if "%{package_prefix}"!="xpra"
+%package -n %{package_prefix}
+Version:			%{version}
+Release:			%{release}
+Summary:			Xpra gives you "persistent remote applications" for X.
+Group:				Networking
 Requires:			xpra-html5 >= 5
 Requires:			xpra-filesystem >= 5
 Requires:			%{package_prefix}-common = %{version}-%{release}
@@ -105,8 +136,9 @@ Xpra gives you "persistent remote applications" for X. That is, unlike normal X 
 
 So basically it's screen for remote X apps.
 
-This metapackage installs the the %{python3} build of xpra in full,
+This metapackage installs the %{python3} build of xpra in full,
 including the python client, server and HTML5 client.
+%endif
 
 
 %package -n xpra-filesystem
@@ -529,7 +561,11 @@ rm -fr ${RPM_BUILD_ROOT}%{python3_sitearch}/UNKNOWN-*.egg-info
 %clean
 rm -rf $RPM_BUILD_ROOT
 
+%files
+
+%if "%{package_prefix}"!="xpra"
 %files -n %{package_prefix}
+%endif
 
 %files -n xpra-filesystem
 %defattr(-,root,root)
