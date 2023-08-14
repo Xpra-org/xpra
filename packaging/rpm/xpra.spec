@@ -102,6 +102,7 @@ Requires:			%{package_prefix}-common = %{version}-%{release}
 Requires:			%{package_prefix}-codecs = %{version}-%{release}
 Recommends:			%{package_prefix}-codecs-extra = %{version}-%{release}
 Recommends:			%{package_prefix}-codecs-nvidia = %{version}-%{release}
+Recommends:			%{package_prefix}-x11 = %{version}-%{release}
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{package_prefix}-client-gtk3 = %{version}-%{release}
 Requires:			%{package_prefix}-server = %{version}-%{release}
