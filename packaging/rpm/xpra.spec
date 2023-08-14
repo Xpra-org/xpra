@@ -3,8 +3,17 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#we manage the scripts for multiple python versions, so don't mangle the shebangs:
+#we manage the scripts for multiple python versions,
+#so don't mangle the shebangs:
 %undefine __brp_mangle_shebangs
+%undefine __pythondist_requires
+%undefine __python_requires
+#and don't add dependencies we don't need:
+AutoReqProv: no
+autoreq: no
+autoprov: no
+%global __requires_exclude ^(libnvjpeg|libnvidia-).*\\.so.*$
+%global __requires_exclude %__requires_exclude|^/usr/bin/python.*$
 
 #on RHEL, there is only one python>=3.10 build at present,
 #so this package can use the canonical name 'xpra',
@@ -20,21 +29,12 @@
 %if 0%{?fedora}
 %define main_package 0
 %endif
-
-%undefine __pythondist_requires
-%undefine __python_requires
-
 %define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
 
-%define version 6.0
-
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild
-%global __requires_exclude ^(libnvjpeg|libnvidia-).*\\.so.*$
-%{!?python3: %define python3 %{getenv:PYTHON3}}
-%{!?python3: %define python3 python3}
 
 %{!?nthreads: %global nthreads %(nproc)}
 %{!?update_firewall: %define update_firewall 1}
@@ -70,17 +70,15 @@
 %endif
 
 
-Version:			%{version}
+Version:			6.0
 Release:			%{revision_no}%{?dist}
-
 %if %{main_package}
 Name:				xpra
-Provides:           %{python3}-xpra = %{version}-%{release}
 %else
 Name:               %{python3}-xpra
-Provides:           xpra = %{version}-%{release}
 %endif
-
+Provides:           %{python3}-xpra = %{version}-%{release}
+Provides:           xpra = %{version}-%{release}
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -138,6 +136,14 @@ Conflicts:			python3-xpra-client < 6
 Obsoletes:			python3-xpra-client < 6
 Conflicts:			python3-xpra-server < 6
 Obsoletes:			python3-xpra-server < 6
+Conflicts:			python3-xpra-common < 6
+Obsoletes:			python3-xpra-common < 6
+Conflicts:			python3-xpra-codecs < 6
+Obsoletes:			python3-xpra-codecs < 6
+Conflicts:			python3-xpra-codecs-extras < 6
+Obsoletes:			python3-xpra-codecs-extras < 6
+Conflicts:			python3-xpra-codecs-nvidia < 6
+Obsoletes:			python3-xpra-codecs-nvidia < 6
 Conflicts:			python2-xpra
 Conflicts:			python2-xpra-client
 Conflicts:			python2-xpra-server
