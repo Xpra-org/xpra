@@ -1,6 +1,7 @@
 %define _disable_source_fetch 0
-%undefine __pythondist_requires
-%undefine __python_requires
+%define __python_requires %{nil}
+%define __pythondist_requires %{nil}
+Autoreq: 0
 
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
