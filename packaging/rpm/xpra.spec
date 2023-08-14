@@ -389,7 +389,7 @@ Suggests:			tcp_wrappers-libs
 Suggests:			%{python3}-ldap3
 Suggests:			%{python3}-ldap
 Suggests:			%{python3}-oauthlib
-%if "%{package_prefix}"==""
+%if "%{package_prefix}"=="xpra"
 #python prefixed builds would need this new package:
 BuildRequires:		%{python3}-cups
 %endif
