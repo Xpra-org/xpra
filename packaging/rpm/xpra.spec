@@ -59,9 +59,16 @@
 %define revision_no 10
 %endif
 
+%if 0%{?fedora}
 Name:				%{package_prefix}
 %if "%{package_prefix}"!="xpra"
 Provides:           xpra = %{version}
+%endif
+%else
+#on RHEL, there is only one python>=3.10 build at present,
+#so this package can use the canonical name 'xpra':
+Name:				xpra
+Provides:           %{package_prefix}
 %endif
 Version:			%{version}
 Release:			%{revision_no}%{?dist}
