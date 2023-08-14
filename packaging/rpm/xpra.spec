@@ -109,21 +109,24 @@ Summary:			Common filesystem files for all xpra packages
 Group:				Networking
 BuildArch:          noarch
 Conflicts:			xpra < 6
+Obsoletes:			xpra < 6
 Conflicts:			xpra-common < 6
+Obsoletes:			xpra-common < 6
 Conflicts:			xpra-server < 6
+Obsoletes:			xpra-server < 6
 Conflicts:			xpra-client < 6
+Obsoletes:			xpra-client < 6
 Conflicts:			xpra-client-gtk3 < 6
+Obsoletes:			xpra-client-gtk3 < 6
 Conflicts:			python3-xpra < 6
+Obsoletes:			python3-xpra < 6
 Conflicts:			python3-xpra-client < 6
+Obsoletes:			python3-xpra-client < 6
 Conflicts:			python3-xpra-server < 6
+Obsoletes:			python3-xpra-server < 6
 Conflicts:			python2-xpra
 Conflicts:			python2-xpra-client
 Conflicts:			python2-xpra-server
-Obsoletes:          xpra < 6
-Obsoletes:			xpra-common < 6
-Obsoletes:			xpra-common-client < 6
-Obsoletes:			xpra-common-server < 6
-Obsoletes:			python3-xpra < 6
 
 %description -n xpra-filesystem
 This package contains the files (mostly configuration files and top level scripts)
