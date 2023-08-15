@@ -164,7 +164,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
         try:
             self.printers_added.remove(printer)
         except KeyError:
-            log("not removing printer '%s' - since we didn't add it", name)
+            log("not removing printer '%s' - since we didn't add it", printer)
         else:
             try:
                 from xpra.platform.pycups_printing import remove_printer
@@ -172,5 +172,5 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
                 log.info("removed remote printer '%s'", printer)
             except Exception as e:
                 log("remove_printer(%s)", printer, exc_info=True)
-                log.error("Error: failed to remove printer '%s':", name)
+                log.error("Error: failed to remove printer '%s':", printer)
                 log.estr(e)
