@@ -308,7 +308,7 @@ def get_icc_info():
 
 
 def get_colorspace_info(cs) -> dict[str,Any]:
-    MODELS : Dict[Any, str] = {
+    MODELS : dict[Any, str] = {
               CG.kCGColorSpaceModelUnknown     : "unknown",
               CG.kCGColorSpaceModelMonochrome  : "monochrome",
               CG.kCGColorSpaceModelRGB         : "RGB",
@@ -334,7 +334,7 @@ def get_colorspace_info(cs) -> dict[str,Any]:
             )
     return _call_CG_conv(defs, cs)
 
-def get_display_mode_info(mode) -> Dict[str,Any]:
+def get_display_mode_info(mode) -> dict[str,Any]:
     defs = (
             ("width",               "CGDisplayModeGetWidth",                int),
             ("height",              "CGDisplayModeGetHeight",               int),

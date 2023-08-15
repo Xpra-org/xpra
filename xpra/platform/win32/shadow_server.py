@@ -78,7 +78,7 @@ def get_root_window_size() -> tuple[int,int]:
     h = GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
     return w, h
 
-def get_monitors() -> List[dict[str,Any]]:
+def get_monitors() -> list[dict[str,Any]]:
     monitors = []
     for m in EnumDisplayMonitors():
         mi = GetMonitorInfo(m)
