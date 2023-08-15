@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import bytestostr, strtobytes, umask_context, POSIX, WIN32
+from xpra.os_util import bytestostr, umask_context, POSIX, WIN32
 from xpra.util import typedict, csv, envint, envbool, engs, u
 from xpra.scripts.config import parse_bool, parse_with_unit
 from xpra.net.common import PacketType

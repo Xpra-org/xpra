@@ -18,7 +18,7 @@ from xpra.child_reaper import getChildReaper, ProcInfo, reaper_cleanup
 from xpra.os_util import (
     bytestostr,
     restore_script_env,
-    OSX, WIN32, POSIX,
+    OSX, WIN32,
     )
 from xpra.util import envint, csv, ellipsizer, u, typedict
 from xpra.net.common import PacketType

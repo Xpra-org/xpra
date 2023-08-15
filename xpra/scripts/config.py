@@ -11,7 +11,7 @@ import shlex
 from typing import Callable, Any
 
 from xpra.common import noop
-from xpra.util import csv, stderr_print, sorted_nicely, remove_dupes
+from xpra.util import csv, stderr_print, remove_dupes
 from xpra.os_util import (
     WIN32, OSX, POSIX,
     osexpand, getuid, getgid, get_username_for_uid,

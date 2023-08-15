@@ -8,12 +8,11 @@
 #pylint: disable=import-outside-toplevel
 
 from collections import namedtuple
-from threading import Lock
 from typing import Callable, Any
 
 from xpra.log import Logger
 from xpra.net.protocol.header import (
-    FLAGS_RENCODE, FLAGS_RENCODEPLUS, FLAGS_YAML, FLAGS_BENCODE, FLAGS_NOHEADER,
+    FLAGS_RENCODE, FLAGS_RENCODEPLUS, FLAGS_YAML, FLAGS_NOHEADER,
     pack_header,
     )
 from xpra.os_util import strtobytes
