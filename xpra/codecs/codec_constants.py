@@ -187,7 +187,7 @@ class _codec_spec:
         v = self.asdict()
         for k in self.skipped_fields:
             v.pop(k, None)
-        return d
+        return v
 
     def get_runtime_factor(self) -> float:
         #a cost multiplier that some encoder may want to override
