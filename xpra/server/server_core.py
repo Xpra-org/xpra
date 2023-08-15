@@ -713,7 +713,6 @@ class ServerCore:
                 httplog.info("html server unavailable, cannot find websocket module")
             elif self._html:
                 httplog.error("Error: cannot import websocket connection handler:")
-                httplog.estr(e)
                 httplog.error(" the html server will not be available")
             self._html = False
             self.websocket_upgrade = False
