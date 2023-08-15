@@ -154,4 +154,5 @@ def get_gtk_theme_icon(icon_string:str):
     mode = "RGB"
     if icon.get_has_alpha():
         mode = "RGBA"
+    Image = PIL_Image()
     return Image.frombytes(mode, (w, h), data, "raw", mode, rowstride)
