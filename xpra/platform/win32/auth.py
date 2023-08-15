@@ -29,7 +29,7 @@ def check(domain="", username:str="", password:bytes=b"") -> bool:
     if LOG_CREDENTIALS:
         log("LogonUser(%s, %s, %s, CLEARTEXT, DEFAULT, %#x)",
             username, domain, password, addressof(token))
-    status = LogonUser(self.username, domain, password,
+    status = LogonUser(username, domain, password,
                  LOGON32_LOGON_NETWORK_CLEARTEXT,
                  LOGON32_PROVIDER_DEFAULT,
                  byref(token))
