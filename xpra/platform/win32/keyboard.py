@@ -12,7 +12,7 @@ from typing import Callable
 
 from xpra.platform.win32.common import (
     ActivateKeyboardLayout,
-    GetKeyState, GetKeyboardLayoutlist, GetKeyboardLayout,
+    GetKeyState, GetKeyboardLayoutList, GetKeyboardLayout,
     GetIntSystemParametersInfo, GetKeyboardLayoutName,
     GetWindowThreadProcessId,
     )
@@ -31,8 +31,8 @@ def _GetKeyboardLayoutlist() -> list[int]:
     max_items = 32
     #PHANDLE = ctypes.POINTER(HANDLE)
     handle_list = (HANDLE*max_items)()
-    GetKeyboardLayoutlist.argtypes = [ctypes.c_int, ctypes.POINTER(HANDLE*max_items)]
-    count = GetKeyboardLayoutlist(max_items, ctypes.byref(handle_list))
+    GetKeyboardLayoutList.argtypes = [ctypes.c_int, ctypes.POINTER(HANDLE*max_items)]
+    count = GetKeyboardLayoutList(max_items, ctypes.byref(handle_list))
     layouts = []
     for i in range(count):
         layouts.append(int(handle_list[i]))
