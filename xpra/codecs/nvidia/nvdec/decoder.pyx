@@ -37,6 +37,8 @@ ctypedef void *CUvideoparser
 ctypedef long long CUvideotimestamp
 
 
+DEF CUDA_ERROR_INVALID_IMAGE = 200
+
 ctypedef struct rect:
     short left
     short top
@@ -685,6 +687,8 @@ cdef class Decoder:
         pic.pBitstreamData = <const unsigned char*> (<uintptr_t> int(self.buffer))
         with nogil:
             r = cuvidDecodePicture(self.context, pic)
+        if r==CUDA_ERROR_INVALID_IMAGE:
+            raise ValueError("invalid image data")
         log(f"cuvidDecodePicture()={r}")
         cudacheck(r, "GPU picture decoding returned error")
         cdef CUVIDGETDECODESTATUS status
