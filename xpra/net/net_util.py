@@ -11,7 +11,6 @@ import socket
 import sys
 from typing import Any, Callable
 
-from xpra.os_util import WIN32
 from xpra.version_util import parse_version
 from xpra.net.common import FLUSH_HEADER
 from xpra.common import FULL_INFO
