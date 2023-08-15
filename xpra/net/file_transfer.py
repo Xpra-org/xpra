@@ -887,7 +887,7 @@ class FileTransferHandler(FileTransferAttributes):
             else:
                 assert spd.openit and accept==OPEN
                 #try to open at this end:
-                self._open_file(url)
+                self._open_file(spd.url)
         elif spd.datatype=="url":
             if accept==ACCEPT:
                 self.do_send_open_url(spd.url, send_id)
