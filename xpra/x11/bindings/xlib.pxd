@@ -264,15 +264,15 @@ cdef extern from "X11/Xlib.h":
     int XSelectInput(Display * display, Window w, unsigned long event_mask)
 
     # properties:
-    int XChangeProperty(Display *, Window w, Atom property,
-         Atom type, int format, int mode, unsigned char * data, int nelements)
-    int XGetWindowProperty(Display * display, Window w, Atom property,
+    int XChangeProperty(Display *, Window w, Atom prop,
+         Atom ptype, int fmt, int mode, unsigned char * data, int nelements)
+    int XGetWindowProperty(Display * display, Window w, Atom prop,
          long offset, long length, Bool delete,
          Atom req_type, Atom * actual_type,
          int * actual_format,
          unsigned long * nitems, unsigned long * bytes_after,
          unsigned char ** prop)
-    int XDeleteProperty(Display * display, Window w, Atom property)
+    int XDeleteProperty(Display * display, Window w, Atom prop)
 
     int XAddToSaveSet(Display *, Window w)
     int XRemoveFromSaveSet(Display *, Window w)
@@ -341,7 +341,7 @@ cdef extern from "X11/Xlib.h":
     # selection:
     Window XGetSelectionOwner(Display * display, Atom selection)
     int XSetSelectionOwner(Display * display, Atom selection, Window owner, Time ctime)
-    int XConvertSelection(Display * display, Atom selection, Atom target, Atom property,
+    int XConvertSelection(Display * display, Atom selection, Atom target, Atom prop,
                           Window requestor, Time time)
 
     #ctypedef Bool (*XIf_predicate) (Display *display, XEvent *event, XPointer arg) nogil

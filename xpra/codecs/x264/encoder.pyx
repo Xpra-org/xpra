@@ -447,12 +447,12 @@ LOG_LEVEL : Dict[str,int] = {
 
 #the static logging function we want x264 to use:
 cdef void X264_log(void *p_unused, int level, const char *psz_fmt, va_list arg) with gil:
-    cdef char buffer[256]
-    cdef int r = vsnprintf(buffer, 256, psz_fmt, arg)
+    cdef char buf[256]
+    cdef int r = vsnprintf(buf, 256, psz_fmt, arg)
     if r<0:
         log.error("X264_log: vsnprintf returned %s on format string '%s'", r, psz_fmt)
         return
-    s = bytestostr(buffer[:r]).rstrip("\n\r")
+    s = bytestostr(buf[:r]).rstrip("\n\r")
     logger = LOGGERS.get(level, log.info)
     logger("X264: %r", s)
 

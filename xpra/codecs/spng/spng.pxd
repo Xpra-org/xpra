@@ -87,10 +87,10 @@ cdef extern from "spng.h":
 
     int spng_set_option(spng_ctx *ctx, spng_option option, int value)
     int spng_set_ihdr(spng_ctx *ctx, spng_ihdr *ihdr)
-    int spng_encode_image(spng_ctx *ctx, const void *img, size_t len, int fmt, int flags) nogil
-    void *spng_get_png_buffer(spng_ctx *ctx, size_t *len, int *error)
+    int spng_encode_image(spng_ctx *ctx, const void *img, size_t length, int fmt, int flags) nogil
+    void *spng_get_png_buffer(spng_ctx *ctx, size_t *length, int *error)
 
     int spng_get_ihdr(spng_ctx *ctx, spng_ihdr *ihdr)
     int spng_set_png_buffer(spng_ctx *ctx, const void *buf, size_t size) nogil
-    int spng_decoded_image_size(spng_ctx *ctx, int fmt, size_t *len) nogil
-    int spng_decode_image(spng_ctx *ctx, void *out, size_t len, int fmt, int flags) nogil
+    int spng_decoded_image_size(spng_ctx *ctx, int fmt, size_t *length) nogil
+    int spng_decode_image(spng_ctx *ctx, void *out, size_t length, int fmt, int flags) nogil
