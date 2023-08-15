@@ -982,36 +982,7 @@ class SessionInfo(Gtk.Window):
                 else:
                     iget = v.intget
                     return iget("cur"), iget("min"), iget("avg"), iget("90p"), iget("max")
-
-        # legacy servers: sum up the values for all the windows found
-        def avg(values):
-            if not values:
-                return ""
-            return sum(values) // len(values)
-        def getv(suffix, op):
-            if self.client.server_last_info is None:
-                return ""
-            values = []
-            for wid in self.client._window_to_id.values():
-                for window_prop in window_props:
-                    #Warning: this is ugly...
-                    proppath = "window[%s].%s.%s" % (wid, window_prop, suffix)
-                    v = self.client.server_last_info.get(proppath)
-                    if v is None:
-                        wprop = window_prop.split(".")              #ie: "encoding.speed" -> ["encoding", "speed"]
-                        newpath = ["window", wid]+wprop+[suffix]    #ie: ["window", 1, "encoding", "speed", "cur"]
-                        v = newdictlook(self.client.server_last_info, newpath)
-                    if v is not None:
-                        values.append(v)
-                        break
-            if not values:
-                return ""
-            try:
-                return op(values)
-            except (TypeError, ValueError):
-                log("%s(%s)", op, values, exc_info=True)
-                return ""
-        return getv("cur", avg), getv("min", min), getv("avg", avg), getv("90p", avg), getv("max", max)
+        return 0, 0, 0, 0, 0
 
     def populate_statistics(self):
         log("populate_statistics()")
