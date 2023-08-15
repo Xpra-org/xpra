@@ -11,7 +11,7 @@ from libc.stdint cimport uint64_t
 
 cdef extern from "xxhash.h":
     ctypedef uint64_t XXH64_hash_t
-    XXH64_hash_t XXH3_64bits(const void* data, size_t len) nogil
+    XXH64_hash_t XXH3_64bits(const void* data, size_t length) nogil
 
-cdef uint64_t xxh3(const void* input, size_t length) nogil:
-    return XXH3_64bits(input, length)
+cdef uint64_t xxh3(const void* data, size_t length) nogil:
+    return XXH3_64bits(data, length)
