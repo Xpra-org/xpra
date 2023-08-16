@@ -73,7 +73,6 @@ autoprov: no
 Name:				xpra
 Version:			6.0
 Release:			%{revision_no}%{?dist}
-Provides:           xpra = %{version}-%{release}
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -89,6 +88,31 @@ BuildRequires:		gcc-c++
 BuildRequires:		%{python3}-Cython
 BuildRequires:		pkgconfig
 BuildRequires:		%{python3}-setuptools
+Conflicts:			xpra-common < 6
+Obsoletes:			xpra-common < 6
+Conflicts:			xpra-server < 6
+Obsoletes:			xpra-server < 6
+Conflicts:			xpra-client < 6
+Obsoletes:			xpra-client < 6
+Conflicts:			xpra-client-gtk3 < 6
+Obsoletes:			xpra-client-gtk3 < 6
+Conflicts:			python3-xpra < 6
+Obsoletes:			python3-xpra < 6
+Conflicts:			python3-xpra-client < 6
+Obsoletes:			python3-xpra-client < 6
+Conflicts:			python3-xpra-server < 6
+Obsoletes:			python3-xpra-server < 6
+Conflicts:			python3-xpra-common < 6
+Obsoletes:			python3-xpra-common < 6
+Conflicts:			python3-xpra-codecs < 6
+Obsoletes:			python3-xpra-codecs < 6
+Conflicts:			python3-xpra-codecs-extras < 6
+Obsoletes:			python3-xpra-codecs-extras < 6
+Conflicts:			python3-xpra-codecs-nvidia < 6
+Obsoletes:			python3-xpra-codecs-nvidia < 6
+Conflicts:			python2-xpra
+Conflicts:			python2-xpra-client
+Conflicts:			python2-xpra-server
 %if "%{package_prefix}"!="xpra"
 #this is just a meta-package that redirects to the python variant:
 Requires:			%{package_prefix} = %{version}-%{release}
@@ -119,7 +143,6 @@ including the python client, server and HTML5 client.
 Version:			%{version}
 Release:			%{release}
 Summary:			Xpra gives you "persistent remote applications" for X.
-Group:				Networking
 Requires:			xpra-html5 >= 5
 Requires:			xpra-filesystem >= 5
 Requires:			%{package_prefix}-common = %{version}-%{release}
@@ -131,6 +154,31 @@ Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{package_prefix}-client-gtk3 = %{version}-%{release}
 Requires:			%{package_prefix}-server = %{version}-%{release}
 Recommends:			%{package_prefix}-audio = %{version}-%{release}
+Conflicts:			xpra-common < 6
+Obsoletes:			xpra-common < 6
+Conflicts:			xpra-server < 6
+Obsoletes:			xpra-server < 6
+Conflicts:			xpra-client < 6
+Obsoletes:			xpra-client < 6
+Conflicts:			xpra-client-gtk3 < 6
+Obsoletes:			xpra-client-gtk3 < 6
+Conflicts:			python3-xpra < 6
+Obsoletes:			python3-xpra < 6
+Conflicts:			python3-xpra-client < 6
+Obsoletes:			python3-xpra-client < 6
+Conflicts:			python3-xpra-server < 6
+Obsoletes:			python3-xpra-server < 6
+Conflicts:			python3-xpra-common < 6
+Obsoletes:			python3-xpra-common < 6
+Conflicts:			python3-xpra-codecs < 6
+Obsoletes:			python3-xpra-codecs < 6
+Conflicts:			python3-xpra-codecs-extras < 6
+Obsoletes:			python3-xpra-codecs-extras < 6
+Conflicts:			python3-xpra-codecs-nvidia < 6
+Obsoletes:			python3-xpra-codecs-nvidia < 6
+Conflicts:			python2-xpra
+Conflicts:			python2-xpra-client
+Conflicts:			python2-xpra-server
 %description -n %{package_prefix}
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
 
@@ -143,7 +191,6 @@ including the python client, server and HTML5 client.
 
 %package -n xpra-filesystem
 Summary:			Common filesystem files for all xpra packages
-Group:				Networking
 BuildArch:          noarch
 Conflicts:			xpra < 6
 Obsoletes:			xpra < 6
@@ -242,7 +289,6 @@ This package contains the files which are shared between the xpra client and ser
 
 %package -n %{package_prefix}-codecs
 Summary:			Picture and video codecs for xpra clients and servers.
-Group:				Networking
 Suggests:			%{package_prefix}-codecs-extra
 Suggests:			%{package_prefix}-codecs-nvidia
 Requires:			%{package_prefix}-common = %{version}-%{release}
@@ -304,7 +350,6 @@ These codecs may have patent or licensing issues.
 %if 0%{?nvidia_codecs}
 %package -n %{package_prefix}-codecs-nvidia
 Summary:			Picture and video codecs that rely on NVidia GPUs and CUDA.
-Group:				Networking
 BuildRequires:		cuda
 Requires:			%{package_prefix}-codecs = %{version}-%{release}
 Requires:			%{python3}-pycuda
@@ -317,7 +362,6 @@ this is used by both xpra clients and servers.
 
 %package -n %{package_prefix}-audio
 Summary:			%{python3} build of xpra audio support
-Group:				Networking
 Obsoletes:			python3-xpra-audio < 5.0-10.r32075
 Requires:			%{package_prefix}-common = %{version}-%{release}
 Requires:			gstreamer1
@@ -342,7 +386,6 @@ This package contains audio support for xpra.
 
 %package -n %{package_prefix}-client
 Summary:			xpra client
-Group:				Networking
 Obsoletes:			python3-xpra-client < 5.0-10.r32075
 Requires:			%{package_prefix}-common = %{version}-%{release}
 BuildRequires:		desktop-file-utils
@@ -358,7 +401,6 @@ This package contains the xpra client.
 
 %package -n %{package_prefix}-client-gtk3
 Summary:			GTK3 xpra client
-Group:				Networking
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			gtk3
 Recommends:			%{package_prefix}-codecs = %{version}-%{release}
@@ -421,7 +463,6 @@ This package contains the x11 bindings
 
 %package -n %{package_prefix}-server
 Summary:			xpra server
-Group:				Networking
 Obsoletes:			python3-server < 5.0-10.r32075
 Requires:			%{package_prefix}-common = %{version}-%{release}
 Requires:			gtk3
