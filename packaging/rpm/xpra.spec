@@ -192,6 +192,12 @@ including the python client, server and HTML5 client.
 %package -n xpra-filesystem
 Summary:			Common filesystem files for all xpra packages
 BuildArch:          noarch
+Requires(post):     coreutils
+%if 0%{?fedora}
+#installs selinux policy:
+Requires(post):		policycoreutils
+Requires(preun):    policycoreutils
+%endif
 Conflicts:			xpra < 6
 Obsoletes:			xpra < 6
 Conflicts:			xpra-common < 6
@@ -390,6 +396,7 @@ Obsoletes:			python3-xpra-client < 5.0-10.r32075
 Requires:			%{package_prefix}-common = %{version}-%{release}
 BuildRequires:		desktop-file-utils
 Requires(post):		desktop-file-utils
+Requires(postun):   shared-mime-info
 Requires(postun):	desktop-file-utils
 Recommends:			%{python3}-cups
 Recommends:		    %{python3}-pysocks
@@ -403,6 +410,9 @@ This package contains the xpra client.
 Summary:			GTK3 xpra client
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			gtk3
+Requires(post):     coreutils
+Requires(postun):   gtk-update-icon-cache
+Requires(posttrans): gtk-update-icon-cache
 Recommends:			%{package_prefix}-codecs = %{version}-%{release}
 Recommends:			%{package_prefix}-x11 = %{version}-%{release}
 Recommends:			pinentry
@@ -500,6 +510,10 @@ BuildRequires:		pkgconfig(libprocps)
 %endif
 Requires:			selinux-policy
 Requires(post):		openssl
+%if 0%{update_firewall}
+Requires(post):		firewall-cmd
+%endif
+Requires(post):		systemd
 Requires(post):		systemd-units
 Requires(preun):	systemd-units
 Requires(postun):	systemd-units
@@ -842,13 +856,6 @@ fi
 #reload dbus to get our new policy:
 systemctl reload dbus
 
-%post -n %{package_prefix}-client
-/usr/bin/update-mime-database &> /dev/null || :
-
-%post -n %{package_prefix}-client-gtk3
-/usr/bin/update-desktop-database &> /dev/null || :
-/bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
-
 %preun -n %{package_prefix}-server
 if [ $1 -eq 0 ] ; then
 	/bin/systemctl daemon-reload >/dev/null 2>&1 || :
@@ -890,20 +897,25 @@ if [ $1 -eq 0 ] ; then
 fi
 %endif
 
+%post -n %{package_prefix}-client
+/usr/bin/update-mime-database &> /dev/null || :
+
 %postun -n %{package_prefix}-client
 /usr/bin/update-mime-database &> /dev/null || :
 
+%post -n %{package_prefix}-client-gtk3
+/usr/bin/update-desktop-database &> /dev/null || :
+/bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
+
+%posttrans -n %{package_prefix}-client-gtk3
+/usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
+
 %postun -n %{package_prefix}-client-gtk3
 /usr/bin/update-desktop-database &> /dev/null || :
-
-%postun -n xpra-filesystem
 if [ $1 -eq 0 ] ; then
 	/bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null
 	/usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 fi
-
-%posttrans -n xpra-filesystem
-/usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 
 
 %changelog
