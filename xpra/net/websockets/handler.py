@@ -67,6 +67,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             b"Sec-WebSocket-Accept: %s" % accept,
             b"Sec-WebSocket-Protocol: %s" % b"binary",
             b"",
+            b"",
             )
         self.new_websocket_client(self)
         #don't use our finish method that closes the socket,
@@ -117,6 +118,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             b"HTTP/1.1 301 Moved Permanently",
             b"Connection: close",
             b"Location: https://%s%s" % (bytes(server_address, "utf-8"), bytes(self.path, "utf-8")),
+            b"",
             b"",
             )
 
