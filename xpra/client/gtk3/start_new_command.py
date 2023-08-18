@@ -29,6 +29,16 @@ def getStartNewCommand(run_callback, can_share=False, xdg_menu=None):
     return _instance
 
 
+def btn(label, tooltip, callback, icon_name=None):
+    b = Gtk.Button(label=label)
+    b.set_tooltip_text(tooltip)
+    b.connect("clicked", callback)
+    icon = get_icon_pixbuf(icon_name)
+    if icon:
+        b.set_image(scaled_image(icon, 24))
+    return b
+
+
 class StartNewCommand:
 
     def __init__(self, run_callback=None, can_share=False, xdg_menu=None):
@@ -92,17 +102,8 @@ class StartNewCommand:
         # Buttons:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
-        def btn(label, tooltip, callback, icon_name=None):
-            btn = Gtk.Button(label=label)
-            btn.set_tooltip_text(tooltip)
-            btn.connect("clicked", callback)
-            icon = get_icon_pixbuf(icon_name)
-            if icon:
-                btn.set_image(scaled_image(icon, 24))
-            hbox.pack_start(btn)
-            return btn
-        btn("Run", "Run this command", self.run_command, "forward.png")
-        btn("Cancel", "", self.close, "quit.png")
+        hbox.pack_start(btn("Run", "Run this command", self.run_command, "forward.png"))
+        hbox.pack_start(btn("Cancel", "", self.close, "quit.png"))
 
         def accel_close(*_args):
             self.close()
