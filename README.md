@@ -23,6 +23,11 @@ Xpra forwards and synchronizes many extra desktop features which allows remote a
 
 It can also [open documents and URLs remotely](./docs/Features/File-Transfers.md), display [high bit depth content](./docs/Features/Image-Depth.md) and it will try honour the [display's DPI](./docs/Features/DPI.md).
 
+Here's what a seamless session with two windows (an `xterm` and `glxspheres`)
+looks like when attached from a MS Windows 11 desktop client:  
+![Windows11-client](./docs/images/screenshots/win11-glxspheres.png)  
+(the windows may look like native windows, but they are running on a remote Linux server)
+
 ---
 
 # Installation
