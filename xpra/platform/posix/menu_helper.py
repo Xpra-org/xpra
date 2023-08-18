@@ -78,9 +78,9 @@ themes : Dict[str,Any] = {}
 IconLoadingContext : Type = DummyContextManager
 if LOAD_FROM_THEME:
     try:
-        import xdg
-        IconTheme = xdg.IconTheme
-        Config = xdg.Config
+        from xdg import IconTheme as IT, Config as C
+        IconTheme = IT
+        Config = C
     except (ImportError, AttributeError):
         log("python xdg is missing", exc_info=True)
     else:
