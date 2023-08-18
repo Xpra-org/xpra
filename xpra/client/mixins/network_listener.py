@@ -52,6 +52,7 @@ class Networklistener(StubClientMixin):
             raise InitException(msg)
         self.sockets = create_sockets(opts, err)
         if opts.bind and (not WIN32 or WIN32_LOCAL_SOCKETS or opts.bind!="auto"):
+            log(f"setup_local_sockets bind={opts.bind}, client_socket_dirs={opts.client_socket_dirs}")
             try:
                 local_sockets = setup_local_sockets(opts.bind,
                                                 "", opts.client_socket_dirs, "",
