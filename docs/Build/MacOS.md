@@ -4,22 +4,6 @@
 Install [XCode](https://developer.apple.com/xcode/) and its command line tools.
 
 <details>
-  <summary>Workaround curl certificate issue</summary>
-
-This step is optional and only needed if curl fails to validate SSL connections.
-```shell
-curl -k -sSL http://curl.haxx.se/ca/cacert.pem >> cacert.pem
-export CURL_CA_BUNDLE=`pwd`/cacert.pem
-export SSL_CERT_FILE=`pwd`/cacert.pem
-```
-On some older versions of MacOS, you may also need:
-```shell
-git config --global http.sslverify "false"
-```
-At least initially.
-</details>
-
-<details>
   <summary>Setup gtk-osx</summary>
 
 Download the latest version of the [gtk-osx](https://wiki.gnome.org/Projects/GTK/OSX/Building) setup script and run it:
@@ -38,13 +22,12 @@ export PATH=$PATH:~/.new_local/bin/
 
 ```shell
 curl -o ~/.config/jhbuildrc-custom \
-     https://raw.githubusercontent.com/Xpra-org/gtk-osx-build/master/jhbuildrc-custom-xpra
+     https://raw.githubusercontent.com/Xpra-org/gtk-osx-build/master/jhbuildrc-custom
 ```
 </details>
 
 Bootstrap:
 ```shell
-jhbuild bootstrap
 jhbuild update
 jhbuild bootstrap-gtk-osx
 ```
@@ -60,7 +43,6 @@ pip3 install --prefix $JHBUILD_PREFIX packaging
 pip3 install --prefix $JHBUILD_PREFIX parsing
 pip3 install --prefix $JHBUILD_PREFIX typing_extensions
 ```
-(building from the 3.1.x branch also requires `lz4` and `numpy`)
 
 ## Build and Package Xpra
 ```shell
@@ -68,5 +50,6 @@ git clone https://github.com/Xpra-org/xpra
 cd xpra/packaging/MacOS/
 sh ./make-app.sh
 sh ./make-DMG.sh
+sh ./make-PKG.sh
 ```
 Signing the resulting `.app`, `DMG` and `PKG` images requires setting up certificates.
