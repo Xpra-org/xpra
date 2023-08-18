@@ -511,7 +511,7 @@ BuildRequires:		pkgconfig(libprocps)
 Requires:			selinux-policy
 Requires(post):		openssl
 %if 0%{update_firewall}
-Requires(post):		firewall-cmd
+Requires(post):		firewalld
 %endif
 Requires(post):		systemd
 Requires(post):		systemd-units
