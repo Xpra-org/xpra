@@ -3,54 +3,22 @@
 
 ## Repositories
 You must enable the following repositories to be able to install all the build dependencies:
-| Distributions | Dependency | Installation | Notes |
-|---------------|------------|--------------|-------|
-|RHEL and clones|[EPEL](https://docs.fedoraproject.org/en-US/epel/)|`dnf install epel-release`|use `epel-next-release` on CentOS stream|
-|RHEL and clones|`Power Tools`|`dnf config-manager --set-enabled powertools`|also known as `PowerTools` on some variants / versions|
-|RHEL 9 and clones|`CRB`|`dnf config-manager --set-enabled crb`|
-|All|[rpmfusion](https://rpmfusion.org/)|[configuration](https://rpmfusion.org/Configuration)|
 
-## Build requirements
+| Distributions | Dependency                                        | Installation | Notes |
+|---------------|---------------------------------------------------|--------------|-------|
+|RHEL and clones| [EPEL](https://docs.fedoraproject.org/en-US/epel/) |`dnf install epel-release`|use `epel-next-release` on CentOS stream|
+|RHEL and clones| `Power Tools`                                     |`dnf config-manager --set-enabled powertools`|also known as `PowerTools` on some variants / versions|
+|RHEL 9 and clones| `CRB`                                             |`dnf config-manager --set-enabled crb`|
+|All| [rpmfusion](https://rpmfusion.org/)               |[configuration](https://rpmfusion.org/Configuration)|
+
+## Install Build Requirements
+The spec file can be found here:
+https://github.com/Xpra-org/xpra/tree/master/packaging/rpm/xpra.spec
+
 ```shell
-dnf install gcc gcc-c++ \
-            libXtst-devel libXdamage-devel libxkbfile-devel \
-            python3-devel python3-Cython \
-            python3-gobject pygobject3-devel python3-cairo-devel \
-            gtk3-devel gobject-introspection-devel \
-            redhat-rpm-config \
-            pandoc
+dnf builddep xpra.spec
 ```
 You may also refer to the more generic list of [dependencies](./Dependencies.md)
-
-## Extra dependencies
-<details>
-  <summary>Vfb command</summary>
-
-To use [Xdummy](../Usage/Xdummy.md):
-```shell
-dnf install xorg-x11-server-Xorg xorg-x11-drv-dummy xorg-x11-xauth xorg-x11-xkb-utils
-```
-Otherwise, use `Xvfb`:
-```shell
-dnf install xorg-x11-server-Xvfb
-```
-</details>
-<details>
-  <summary>Video codecs</summary>
-
-For extra video encoding support, install the development headers:
-```shell
-dnf install libvpx-devel libyuv-devel x264-devel
-```
-</details>
-<details>
-  <summary>OpenGL</summary>
-
-For [OpenGL accelerated client rendering](../Usage/Client-OpenGL.md) support, add this runtime dependency:
-```shell
-dnf install python3-pyopengl
-```
-</details>
 
 ## Build
 ```shell
@@ -59,10 +27,6 @@ python3 ./setup.py install
 </details>
 
 ## ![RPM](../images/icons/rpm.png)
-The spec file can be found here:
-https://github.com/Xpra-org/xpra/tree/master/packaging/rpm/xpra.spec
-
-
 The quick and easy way:
 ```shell
 mkdir -p ~/rpmbuild/SOURCES/ >& /dev/null
