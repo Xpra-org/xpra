@@ -70,10 +70,12 @@ def set_ssh_agent(filename:str="") -> None:
 def clean_agent_socket(uuid:str="") -> None:
     sockpath = get_ssh_agent_path(uuid)
     try:
-        log(f"removing ssh agent socket {sockpath!r}")
-        os.unlink(sockpath)
+        if os.path.exists(sockpath):
+            log(f"removing ssh agent socket {sockpath!r}")
+            os.unlink(sockpath)
     except OSError as e:
         log.error(f"Error: failed to remove ssh agent socket path {sockpath!r}")
+        log.error(f" for uuid {uuid!r}")
         log.estr(e)
 
 
