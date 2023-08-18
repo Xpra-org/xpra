@@ -12,7 +12,7 @@ from time import monotonic
 from threading import Lock
 from typing import Any, Callable
 
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, memoryview_to_bytes
 from xpra.util import repr_ellipsized
 from xpra.net.common import PacketType
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
@@ -190,11 +190,15 @@ class LoggingServer(StubServerMixin):
         if len(packet)>=4:
             dtime = packet[3]
             prefix += "@%02i.%03i " % ((dtime//1000)%60, dtime%1000)
+        def decode(v) -> str:
+            if isinstance(v, str):
+                return v
+            return memoryview_to_bytes(v).decode("utf8")
         try:
             if isinstance(msg, (tuple, list)):
-                dmsg = " ".join(str(x) for x in msg)
+                dmsg = " ".join(decode(x) for x in msg)
             else:
-                dmsg = str(msg)
+                dmsg = decode(msg)
             for l in dmsg.splitlines():
                 self.do_log(level, prefix+l)
         except Exception as e:
