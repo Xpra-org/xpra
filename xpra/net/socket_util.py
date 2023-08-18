@@ -661,10 +661,10 @@ def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
         log(f"{sockpaths=}")
         #create listeners:
         if WIN32:
-            from xpra.platform.win32.namedpipes.listener import NamedPipelistener
+            from xpra.platform.win32.namedpipes.listener import NamedPipeListener
             from xpra.platform.win32.dotxpra import PIPE_PATH
             for sockpath, options in sockpaths.items():
-                npl = NamedPipelistener(sockpath)
+                npl = NamedPipeListener(sockpath)
                 ppath = sockpath
                 if ppath.startswith(PIPE_PATH):
                     ppath = ppath[len(PIPE_PATH):]
