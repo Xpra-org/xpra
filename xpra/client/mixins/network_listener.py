@@ -57,7 +57,7 @@ class NetworkListener(StubClientMixin):
                                                 "", opts.client_socket_dirs, "",
                                                 str(os.getpid()), True,
                                                 opts.mmap_group, opts.socket_permissions)
-            except (OSError, InitExit) as e:
+            except (OSError, InitExit, ImportError) as e:
                 log("setup_local_sockets bind=%s, client_socket_dirs=%s",
                     opts.bind, opts.client_socket_dirs, exc_info=True)
                 log.warn("Warning: failed to create the client sockets:")
