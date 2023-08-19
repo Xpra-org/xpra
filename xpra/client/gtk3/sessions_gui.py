@@ -188,7 +188,7 @@ class SessionsGUI(Gtk.Window):
                 #log("info(%s)=%s", sockpath, repr_ellipsized(str(info)))
                 info_cache[key] = info
         if WIN32:
-            socktype = "namedpipe"
+            socktype = "named-pipe"
         else:
             socktype = "socket"
         def make_text(info):
@@ -224,7 +224,7 @@ class SessionsGUI(Gtk.Window):
     def get_session_info(self, sockpath):
         #the lazy way using a subprocess
         if WIN32:
-            socktype = "namedpipe"
+            socktype = "named-pipe"
         else:
             socktype = "socket"
         cmd = get_nodock_command()+["id", "%s:%s" % (socktype, sockpath)]
@@ -362,7 +362,7 @@ class SessionsGUI(Gtk.Window):
         if port>0:
             if DEFAULT_PORTS.get(mode, 0)!=port:        # NOSONAR @SuppressWarnings("python:S1066")
                 uri += ":%s" % port
-        if protocol not in ("socket", "namedpipe"):
+        if protocol not in ("socket", "named-pipe"):
             uri += "/"
             if dstr:
                 uri += "%s" % dstr
