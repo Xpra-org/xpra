@@ -2428,14 +2428,14 @@ def run_glcheck(opts) -> int:
                 log(f"no gtk3 x11 bindings: {e}")
             except Exception:
                 log("error initializing gdk display source", exc_info=True)
-        try:
-            check_gtk_client()
-            props = do_run_glcheck(opts)
-        except Exception as e:
-            props = {
-                "error"     : str(e).replace("\n", " "),
-                "success"   : False,
-                }
+    try:
+        check_gtk_client()
+        props = do_run_glcheck(opts)
+    except Exception as e:
+        props = {
+            "error"     : str(e).replace("\n", " "),
+            "success"   : False,
+            }
     log("run_glcheck(..) props=%s", props)
     for k in sorted(props.keys()):
         v = props[k]
