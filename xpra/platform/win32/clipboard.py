@@ -23,7 +23,7 @@ from xpra.platform.win32.common import (
     OpenClipboard, EmptyClipboard, CloseClipboard, GetClipboardData,
     GlobalLock, GlobalUnlock, GlobalAlloc, GlobalFree, GlobalSize,
     WideCharToMultiByte, MultiByteToWideChar,
-    AddClipboardFormatlistener, RemoveClipboardFormatlistener,
+    AddClipboardFormatListener, RemoveClipboardFormatListener,
     SetClipboardData, EnumClipboardFormats, GetClipboardFormatNameA, GetClipboardOwner,
     RegisterClipboardFormatA,
     GetWindowThreadProcessId, QueryFullProcessImageNameA, OpenProcess, CloseHandle,
@@ -289,7 +289,7 @@ class Win32Clipboard(ClipboardTimeoutHelper):
         log("clipboard window=%#x", self.window)
         if not self.window:
             raise WinError()
-        if not AddClipboardFormatlistener(self.window):
+        if not AddClipboardFormatListener(self.window):
             log.warn("Warning: failed to setup clipboard format listener")
             log.warn(" %s", get_last_error())
 
@@ -323,7 +323,7 @@ class Win32Clipboard(ClipboardTimeoutHelper):
         w = self.window
         if w:
             self.window = None
-            RemoveClipboardFormatlistener(w)
+            RemoveClipboardFormatListener(w)
             DestroyWindow(w)
         wch = self.wndclass_handle
         if wch:
