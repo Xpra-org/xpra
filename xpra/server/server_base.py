@@ -366,9 +366,19 @@ class ServerBase(ServerBaseClass):
                 self.antialias = {}
                 self.cursor_size = 24
             else:
-                self.dpi = c.intget("dpi", 0)
-                self.xdpi = c.intget("dpi.x", 0)
-                self.ydpi = c.intget("dpi.y", 0)
+                self.dpi = 0
+                dpi_caps = c.get("dpi")
+                # unprefixed legacy mode:
+                if isinstance(dpi_caps, int):
+                    self.dpi = int(dpi_caps)
+                self.xdpi = c.intget("dpi.x", self.dpi)
+                self.ydpi = c.intget("dpi.y", self.dpi)
+                # namespaced caps:
+                if isinstance(dpi_caps, dict):
+                    tdpi = typedict(dpi_caps)
+                    self.dpi = tdpi.intget("", self.dpi)
+                    self.xdpi = tdpi.intget("x", self.xdpi)
+                    self.ydpi = tdpi.intget("y", self.ydpi)
                 self.double_click_time = c.intget("double_click.time", -1)
                 self.double_click_distance = c.intpair("double_click.distance", (-1, -1))
                 self.antialias = c.dictget("antialias", {})
