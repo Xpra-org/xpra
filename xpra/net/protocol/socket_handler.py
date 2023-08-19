@@ -129,7 +129,7 @@ class SocketProtocol:
         #initial value which may get increased by client/server after handshake:
         self.max_packet_size = MAX_PACKET_SIZE
         self.abs_max_packet_size = 256*1024*1024
-        self.large_packets = ["hello", "window-metadata", "sound-data", "notify_show", "setting-change", "shell-reply"]
+        self.large_packets = ["hello", "window-metadata", "sound-data", "notify_show", "setting-change", "shell-reply", "configure-display"]
         self.send_aliases = {}
         self.send_flush_flag = False
         self.receive_aliases = {}
