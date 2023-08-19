@@ -58,6 +58,9 @@ echo "**************************************************************************
 echo "Building and installing locally"
 pushd ../../
 
+#the bundler uses this path, make sure the latest script is there:
+cp ./fs/bin/xpra ${JHBUILD_PREFIX}/bin/
+
 rm -f xpra/src_info.py xpra/build_info.py
 ${PYTHON} "./fs/bin/add_build_info.py" "src" "build"
 rm -fr build/* dist/*
