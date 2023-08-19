@@ -105,7 +105,7 @@ class ReceiveChunkState:
     openit : bool
     filesize: int
     options: typedict
-    digest: Optional[hashlib._Hash]
+    digest: object
     written: int
     cancelled: bool
     send_id: str
@@ -525,7 +525,7 @@ class FileTransferHandler(FileTransferAttributes):
                 self.send("ack-file-chunk", chunk_id, False, f"failed to create file: {e}", 0)
             return
         self.file_descriptors.add(fd)
-        digest : Optional[hashlib._Hash] = None
+        digest = None
         for hash_fn in ("sha512", "sha384", "sha256", "sha224", "sha1"):
             if options.get(hash_fn):
                 digest = getattr(hashlib, hash_fn)()
