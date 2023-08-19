@@ -409,8 +409,19 @@ class DisplayManager(StubServerMixin):
             log.info(f"client display size is {width}x{height}")
             log_screen_sizes(width, height, ss.screen_sizes)
             self.calculate_workarea(width, height)
-        dpix = attrs.intget("dpi.x") or attrs.intget("dpi")
-        dpiy = attrs.intget("dpi.y") or attrs.intget("dpi")
+        # DPI
+        dpi = 0
+        dpi_caps = attrs.get("dpi")
+        # unprefixed legacy mode:
+        if isinstance(dpi_caps, int):
+            dpi = int(dpi_caps)
+        dpix = attrs.intget("dpi.x", dpi)
+        dpiy = attrs.intget("dpi.y", dpi)
+        # namespaced caps:
+        if isinstance(dpi_caps, dict):
+            tdpi = typedict(dpi_caps)
+            dpix = tdpi.intget("x", dpix)
+            dpiy = tdpi.intget("y", dpiy)
         if dpix and dpiy and (dpix!=self.xdpi or dpiy!=self.ydpi):
             self.xdpi, self.ydpi = dpix, dpiy
             log("new dpi: %ix%i", dpix, dpiy)
