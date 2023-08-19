@@ -23,10 +23,11 @@ def std_unit(v, unit=1000) -> str:
 
 def std_unit_dec(v):
     unit, value = to_std_unit(v*10.0)
-    if value>=100:
-        return "%s%s" % (int(value//10), unit)
+    if value>=100 or value<=1:
+        unit, value = to_std_unit(v)
+        return "%s%s" % (int(value), unit)
     if int(value)%10==0:
-        return "%s%s" % (int(value/10), unit)
+        return "%s%s" % (int(value//10), unit)
     return "%s%s" % (int(value)/10.0, unit)
 
 
@@ -161,6 +162,7 @@ def get_list_stats(in_values, show_percentile=(5, 8, 9), show_dev=False):
         #percentile
         svalues = sorted(values)
         for i in show_percentile:
+            assert 0<i<10
             pct = i*10
             index = len(values)*i//10
             lstats["%ip" % pct] = int(svalues[index])
