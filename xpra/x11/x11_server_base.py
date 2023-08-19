@@ -101,7 +101,7 @@ class X11ServerBase(X11ServerCore):
         if not pid:
             log.info("xvfb pid not found")
         else:
-            log.info(f"xvfb {pid=}")
+            log.info(f"xvfb pid {pid}")
         self.display_pid = pid
 
     def kill_display(self) -> None:
