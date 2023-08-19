@@ -58,9 +58,6 @@ echo "**************************************************************************
 echo "Building and installing locally"
 pushd ../../
 
-#the bundler uses this path, make sure the latest script is there:
-cp ./fs/bin/xpra ${JHBUILD_PREFIX}/bin/
-
 rm -f xpra/src_info.py xpra/build_info.py
 ${PYTHON} "./fs/bin/add_build_info.py" "src" "build"
 rm -fr build/* dist/*
@@ -73,7 +70,7 @@ echo " (see ${BUILD_EXT_LOG} for details - this may take a minute or two)"
 ${PYTHON} ./setup.py build_ext ${BUILD_ARGS} -j $NPROC >& ${BUILD_EXT_LOG}
 if [ "$?" != "0" ]; then
 	popd
-	echo "ERROR: install failed"
+	echo "ERROR: build_ext failed"
 	echo
 	tail -n 20 ${BUILD_EXT_LOG}
 	exit 1
@@ -81,7 +78,7 @@ fi
 INSTALL_LOG=`pwd`/install.log
 echo "./setup.py install ${BUILD_ARGS}"
 echo " (see ${INSTALL_LOG} for details)"
-${PYTHON} ./setup.py install --single-version-externally-managed --root=$JHBUILD_PREFIX ${BUILD_ARGS} >& ${INSTALL_LOG}
+${PYTHON} ./setup.py install ${BUILD_ARGS} >& ${INSTALL_LOG}
 if [ "$?" != "0" ]; then
 	popd
 	echo "ERROR: install failed"
