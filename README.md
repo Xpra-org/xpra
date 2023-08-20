@@ -33,7 +33,7 @@ looks like when attached from a MS Windows 11 desktop client:
 # Installation
 ## Official stable downloads
 * Microsoft Windows: [EXE](https://xpra.org/dists/windows/Xpra-x86_64_Setup.exe), [ZIP](https://xpra.org/dists/windows/Xpra.zip), [MSI](https://xpra.org/dists/windows/Xpra-x86_64.msi)
-* MacOS: [DMG](https://xpra.org/dists/MacOS/x86_64/Xpra.dmg), [PKG](https://xpra.org/dists/osx/x86_64/Xpra.pkg)
+* MacOS `x86_64` [DMG](https://xpra.org/dists/MacOS/x86_64/Xpra.dmg) / [PKG](https://xpra.org/dists/MacOS>/x86_64/Xpra.pkg), `arm64` [DMG](https://xpra.org/dists/MacOS/x86_64/Xpra.dmg) / [PKG](https://xpra.org/dists/MacOS>/x86_64/Xpra.pkg)
 * Linux: [RPM](https://github.com/Xpra-org/xpra/wiki/Download#-for-rpm-distributions), [DEB](https://github.com/Xpra-org/xpra/wiki/Download#-for-debian-based-distributions)
 
 All the packages are signed. There are also [beta builds](https://xpra.org/beta) available.  
