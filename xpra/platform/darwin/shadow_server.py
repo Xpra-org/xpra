@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -253,9 +252,9 @@ def main():
         import time
         t = time.time()
         tstr = time.strftime("%H-%M-%S", time.localtime(t))
-        filename = "./Capture-%s-%s.png" % ((x, y, w, h),tstr,)
+        filename = "./Capture-{}-{}.png".format((x, y, w, h),tstr)
         i.save(filename, "png")
-        print("saved to %s" % (filename,))
+        print("saved to {}".format(filename))
 
 
 if __name__ == "__main__":

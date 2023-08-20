@@ -4,7 +4,8 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Callable, Any
+from typing import Any
+from collections.abc import Callable
 
 from aioquic.h3.events import HeadersReceived, H3Event
 from aioquic.h3.exceptions import NoAvailablePushIDError

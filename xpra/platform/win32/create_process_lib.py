@@ -332,7 +332,7 @@ def create_process(commandline=None, creationinfo=None, startupinfo=None):
             si.wShowWindow = SW_HIDE
             comspec = os.environ.get("ComSpec", os.path.join(
                         os.environ["SystemRoot"], "System32", "cmd.exe"))
-            commandline = '"{}" /c "{}"'.format(comspec, commandline)
+            commandline = f'"{comspec}" /c "{commandline}"'
         commandline = create_unicode_buffer(commandline)
 
     dwCreationFlags = ci.dwCreationFlags | CREATE_UNICODE_ENVIRONMENT

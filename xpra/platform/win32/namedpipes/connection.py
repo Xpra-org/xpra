@@ -90,7 +90,7 @@ class NamedPipeConnection(Connection):
             closed = CONNECTION_CLOSED_ERRORS.get(code)
             if closed:
                 return None
-            raise IOError("%s: %s" % (e, code)) from None
+            raise OSError("%s: %s" % (e, code)) from None
 
     def read(self, n):
         return self._read(self._pipe_read, n)
@@ -178,7 +178,7 @@ class NamedPipeConnection(Connection):
     def __repr__(self):
         return self.target
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         d = super().get_info()
         d["type"] = "named-pipe"
         d["closed"] = self.pipe_handle is None

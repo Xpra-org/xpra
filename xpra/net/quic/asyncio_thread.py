@@ -5,7 +5,8 @@
 
 import time
 import asyncio
-from typing import Any, Awaitable, Callable
+from typing import Any
+from collections.abc import Awaitable, Callable
 
 from queue import SimpleQueue
 from collections import namedtuple

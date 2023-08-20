@@ -211,4 +211,4 @@ def selftest(full=False):
     from xpra.codecs.codec_checks import testdecoder
     from xpra.codecs.gstreamer import decoder
     remaining = testdecoder(decoder, full)
-    decoder.CODECS = dict((k,v) for k,v in decoder.CODECS.items() if k in remaining)
+    decoder.CODECS = {k:v for k,v in decoder.CODECS.items() if k in remaining}

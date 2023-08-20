@@ -7,7 +7,7 @@ import time
 import threading
 from time import monotonic
 from threading import Event
-from typing import Callable
+from collections.abc import Callable
 
 from xpra.make_thread import start_thread
 from xpra.util import envint

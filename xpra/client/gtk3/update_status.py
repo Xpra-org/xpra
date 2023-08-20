@@ -76,7 +76,7 @@ class UpdateStatusWindow:
         vbox.show_all()
         self.window.vbox = vbox
         self.window.add(vbox)
-        self.newer_version : Union[None,bool,tuple[int,...]] = None
+        self.newer_version : None |bool |tuple[int,...] = None
 
 
     def check(self):

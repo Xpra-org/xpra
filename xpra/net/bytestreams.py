@@ -8,7 +8,8 @@ import sys
 import os
 import errno
 import socket
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from xpra.net.common import ConnectionClosedException, IP_SOCKTYPES, TCP_SOCKTYPES
 from xpra.util import envint, envbool, hasenv, csv
@@ -236,13 +237,13 @@ class TwoFileConnection(Connection):
             log("close_files_thread() calling %s", self._readable.close)
             try:
                 self._readable.close()
-            except IOError as e:
+            except OSError as e:
                 log("close_files_thread() %s", self._readable, e)
             log("close_files_thread() _writeable=%s", self._writeable)
             log("close_files_thread() calling %s", self._writeable.close)
             try:
                 self._writeable.close()
-            except IOError as e:
+            except OSError as e:
                 log("close_files_thread() %s", self._writeable, e)
         start_thread(close_files_thread, "close-files-thread", daemon=True)
         log("%s.close() done", self)
@@ -354,18 +355,18 @@ class SocketConnection(Connection):
         super().close()
         try:
             s.settimeout(0)
-        except IOError:
+        except OSError:
             pass
         if SOCKET_SHUTDOWN:
             try:
                 s.shutdown(socket.SHUT_RDWR)
-            except IOError:
+            except OSError:
                 log("%s.shutdown(SHUT_RDWR)", s, exc_info=True)
         try:
             s.close()
         except EOFError:
             log("%s.close()", s, exc_info=True)
-        except IOError as e:
+        except OSError as e:
             if self.error_is_closed(e):
                 log("%s.close() already closed!", s)
             else:
@@ -392,7 +393,7 @@ class SocketConnection(Connection):
                 si = self.get_socket_info()
                 if si:
                     d["socket"] = si
-        except socket.error:
+        except OSError:
             log.error("Error accessing socket information", exc_info=True)
         return d
 
@@ -416,7 +417,7 @@ class SocketConnection(Connection):
             info["nodelay"] = self.nodelay
         try:
             info["timeout"] = int(1000*(s.gettimeout() or 0))
-        except socket.error:
+        except OSError:
             pass
         try:
             if POSIX:
@@ -481,7 +482,7 @@ def get_socket_options(sock, level, options) -> dict:
             continue
         try:
             v = sock.getsockopt(level, opt)
-        except (OSError, socket.error):
+        except OSError:
             log("sock.getsockopt(%i, %s)", level, k, exc_info=True)
             errs.append(k)
         else:
@@ -641,7 +642,7 @@ def log_new_connection(conn, socket_info:str="") -> None:
     socktype = conn.socktype
     try:
         peername = sock.getpeername()
-    except socket.error:
+    except OSError:
         peername = address
     try:
         sockname = sock.getsockname()

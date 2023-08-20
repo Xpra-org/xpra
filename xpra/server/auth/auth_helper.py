@@ -44,7 +44,7 @@ def get_auth_module(auth_str, cwd=os.getcwd(), **auth_options) -> tuple[str,Any,
         auth_module = __import__(auth_mod_name, {}, {}, ["Authenticator"])
     except ImportError as e:
         log("cannot load %s auth for %r", auth, auth_str, exc_info=True)
-        raise InitException("cannot load authentication module '%s' for %r: %s" % (auth, auth_str, e)) from None
+        raise InitException(f"cannot load authentication module '{auth}' for {auth_str!r}: {e}") from None
     log("auth module for '%s': %s", auth, auth_module)
     try:
         auth_class = auth_module.Authenticator
@@ -52,5 +52,5 @@ def get_auth_module(auth_str, cwd=os.getcwd(), **auth_options) -> tuple[str,Any,
         return auth, auth_module, auth_class, auth_options
     except Exception as e:
         log("cannot access authenticator class", exc_info=True)
-        raise InitException("authentication setup error in %s: %s" % (auth_module, e)) from None
+        raise InitException(f"authentication setup error in {auth_module}: {e}") from None
 

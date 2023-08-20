@@ -9,7 +9,8 @@ import math
 import os.path
 from time import monotonic
 from urllib.parse import unquote
-from typing import Callable, Optional
+from typing import Optional
+from collections.abc import Callable
 from cairo import ( #pylint: disable=no-name-in-module
     RectangleInt, Region,  # @UnresolvedImport
     OPERATOR_OVER, LINE_CAP_ROUND,  # @UnresolvedImport
@@ -118,7 +119,7 @@ WINDOW_OVERFLOW_TOP = envbool("XPRA_WINDOW_OVERFLOW_TOP", False)
 AWT_RECENTER = envbool("XPRA_AWT_RECENTER", True)
 UNDECORATED_TRANSIENT_IS_OR = envint("XPRA_UNDECORATED_TRANSIENT_IS_OR", 1)
 XSHAPE = envbool("XPRA_XSHAPE", True)
-bit_to_rectangles : Optional[callable] = None
+bit_to_rectangles : callable | None = None
 try:
     from xpra.codecs.argb import argb
     bit_to_rectangles = argb.bit_to_rectangles
@@ -180,7 +181,7 @@ UNDECORATED_TYPE_HINTS : set[str] = {
                     "DND",
                     }
 
-GDK_MOVERESIZE_MAP = dict((int(d), we) for d, we in {
+GDK_MOVERESIZE_MAP = {int(d): we for d, we in {
     MoveResize.SIZE_TOPLEFT: Gdk.WindowEdge.NORTH_WEST,
     MoveResize.SIZE_TOP: Gdk.WindowEdge.NORTH,
     MoveResize.SIZE_TOPRIGHT: Gdk.WindowEdge.NORTH_EAST,
@@ -190,7 +191,7 @@ GDK_MOVERESIZE_MAP = dict((int(d), we) for d, we in {
     MoveResize.SIZE_BOTTOMLEFT: Gdk.WindowEdge.SOUTH_WEST,
     MoveResize.SIZE_LEFT: Gdk.WindowEdge.WEST,
     # MOVERESIZE_SIZE_KEYBOARD,
-}.items())
+}.items()}
 
 GDK_SCROLL_MAP = {
     Gdk.ScrollDirection.UP       : 4,
@@ -215,9 +216,9 @@ ALL_WINDOW_TYPES : tuple[Gdk.WindowTypeHint, ...] = (
     Gdk.WindowTypeHint.COMBO,
     Gdk.WindowTypeHint.DND,
     )
-WINDOW_NAME_TO_HINT : dict[str,Gdk.WindowTypeHint] = dict(
-    (wth.value_name.replace("GDK_WINDOW_TYPE_HINT_", ""), wth) for wth in ALL_WINDOW_TYPES
-    )
+WINDOW_NAME_TO_HINT : dict[str,Gdk.WindowTypeHint] = {
+    wth.value_name.replace("GDK_WINDOW_TYPE_HINT_", ""): wth for wth in ALL_WINDOW_TYPES
+    }
 def get_follow_window_types() -> tuple[Gdk.WindowTypeHint,...]:
     types_strs : list[str] = os.environ.get("XPRA_FOLLOW_WINDOW_TYPES",
                                             "DIALOG,MENU,TOOLBAR,DROPDOWN_MENU,POPUP_MENU,TOOLTIP,COMBO,DND").upper().split(",")
@@ -1013,7 +1014,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 setattr(self, var, value)           #ie: self._maximized = True
                 actual_updates[state] = value
                 statelog("%s=%s (was %s)", var, value, cur)
-        server_updates : dict[str,bool] = dict((k,v) for k,v in actual_updates.items() if k in self._client.server_window_states)
+        server_updates : dict[str,bool] = {k:v for k,v in actual_updates.items() if k in self._client.server_window_states}
         #iconification is handled a bit differently...
         iconified = server_updates.pop("iconified", None)
         if iconified is not None:
@@ -2400,7 +2401,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             key_event.string = event.string or ""
         except UnicodeDecodeError as e:
             keylog("parse_key_event(%s, %s)", event, pressed, exc_info=True)
-            if first_time("key-%s-%s" % (keycode, keyname)):
+            if first_time(f"key-{keycode}-{keyname}"):
                 keylog.warn("Warning: failed to parse string for key")
                 keylog.warn(" keyname=%s, keycode=%s", keyname, keycode)
                 keylog.warn(" %s", e)

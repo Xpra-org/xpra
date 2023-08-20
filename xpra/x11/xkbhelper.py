@@ -358,7 +358,7 @@ def group_by_keycode(entries):
         if keysym in DEBUG_KEYSYMS:
             log_keycodes.append(keycode)
     if log_keycodes:
-        log.info("group_by_keycode: %s", dict((keycode, keycodes.get(keycode)) for keycode in log_keycodes))
+        log.info("group_by_keycode: %s", {keycode: keycodes.get(keycode) for keycode in log_keycodes})
     return keycodes
 
 def indexed_mappings(raw_mappings):
@@ -485,7 +485,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_
         if not entries:
             return 0
         #all the keysyms for this keycode:
-        keysyms = set(keysym for keysym, _ in entries)
+        keysyms = {keysym for keysym, _ in entries}
         if not keysyms:
             return 0
         if len(keysyms)==1 and tuple(keysyms)[0]=='0xffffff':

@@ -9,7 +9,7 @@
 from ctypes.wintypes import HANDLE, DWORD
 from ctypes import byref, sizeof, create_string_buffer, cast, c_void_p, c_long, pointer, POINTER
 from threading import Thread
-from typing import Callable
+from collections.abc import Callable
 
 from xpra.common import  noop
 from xpra.log import Logger
@@ -94,7 +94,7 @@ class NamedPipeListener(Thread):
         log("GetCurrentProcess()=%#x", cur_proc)
         TOKEN_QUERY = 0x8
         if not OpenProcessToken(HANDLE(cur_proc), TOKEN_QUERY, byref(self.token_process)):
-            raise WindowsError()    #@UndefinedVariable
+            raise OSError()
         log("process=%s", self.token_process.value)
 
     def __repr__(self):
@@ -201,11 +201,11 @@ class NamedPipeListener(Thread):
         data_size = DWORD()
         if not GetTokenInformation(self.token_process, token_type, 0, 0, byref(data_size)):
             if GetLastError()!=ERROR_INSUFFICIENT_BUFFER:
-                raise WindowsError()  # @UndefinedVariable
+                raise OSError()
         log("GetTokenInformation data size %#x", data_size.value)
         token_data = create_string_buffer(data_size.value)
         if not GetTokenInformation(self.token_process, token_type, byref(token_data), data_size.value, byref(data_size)):
-            raise WindowsError()    #@UndefinedVariable
+            raise OSError()
         token = cast(token_data, POINTER(token_struct)).contents
         return token
 
@@ -222,13 +222,13 @@ class NamedPipeListener(Thread):
         self.security_descriptor = SD
         log("SECURITY_DESCRIPTOR=%s", SD)
         if not InitializeSecurityDescriptor(byref(SD), SECURITY_DESCRIPTOR_REVISION):
-            raise WindowsError()    #@UndefinedVariable
+            raise OSError()    #@UndefinedVariable
         log("InitializeSecurityDescriptor: %s", SD)
         if not SetSecurityDescriptorOwner(byref(SD), user.SID, False):
-            raise WindowsError()    #@UndefinedVariable
+            raise OSError()
         log("SetSecurityDescriptorOwner: %s", SD)
         if not SetSecurityDescriptorGroup(byref(SD), group.PrimaryGroup, False):
-            raise WindowsError()    #@UndefinedVariable
+            raise OSError()
         log("SetSecurityDescriptorGroup: %s", SD)
         SA = SECURITY_ATTRIBUTES()
         log("CreatePipeSecurityObject() SECURITY_ATTRIBUTES=%s", SA)
@@ -237,9 +237,9 @@ class NamedPipeListener(Thread):
             SA.bInheritHandle = False
             return SA
         if not SetSecurityDescriptorSacl(byref(SD), False, None, False):
-            raise WindowsError()    #@UndefinedVariable
+            raise OSError()
         if not SetSecurityDescriptorDacl(byref(SD), True, None, False):
-            raise WindowsError()    #@UndefinedVariable
+            raise OSError()
         #this doesn't work - and I don't know why:
         #SECURITY_NT_AUTHORITY = 5
         #sia_anonymous = SID_IDENTIFIER_AUTHORITY((0, 0, 0, 0, 0, SECURITY_NT_AUTHORITY))
@@ -259,7 +259,7 @@ class NamedPipeListener(Thread):
         assert sizeof(SID)>=SECURITY_MAX_SID_SIZE
         if not CreateWellKnownSid(sid_type, None, byref(sid_allow), byref(sid_size)):
             log.error("error=%s", GetLastError())
-            raise WindowsError()    #@UndefinedVariable
+            raise OSError()
         assert sid_size.value<=SECURITY_MAX_SID_SIZE
         log("CreateWellKnownSid(..) sid_allow=%s, sid_size=%s", sid_allow, sid_size)
 
@@ -272,7 +272,7 @@ class NamedPipeListener(Thread):
         acl = cast(acl_data, POINTER(ACL)).contents
         log("acl_size=%s, acl_data=%s, acl=%s", acl_size, acl_data, acl)
         if not InitializeAcl(byref(acl), acl_size, ACL_REVISION):
-            raise WindowsError()    #@UndefinedVariable
+            raise OSError()
         log("InitializeAcl(..) acl=%s", acl)
 
         rights = STANDARD_RIGHTS_ALL | SPECIFIC_RIGHTS_ALL
@@ -281,7 +281,7 @@ class NamedPipeListener(Thread):
         if r==0:
             err = GetLastError()
             log("AddAccessAllowedAce(..)=%s", ACL_ERRORS.get(err, err))
-            raise WindowsError()    #@UndefinedVariable
+            raise OSError()
 
         rights = STANDARD_RIGHTS_ALL | SPECIFIC_RIGHTS_ALL
         add_sid = byref(sid_allow)
@@ -289,9 +289,9 @@ class NamedPipeListener(Thread):
         if r==0:
             err = GetLastError()
             log("AddAccessAllowedAce(..)=%s", ACL_ERRORS.get(err, err))
-            raise WindowsError()    #@UndefinedVariable
+            raise OSError()
         if not SetSecurityDescriptorDacl(byref(SD), True, byref(acl), False):
-            raise WindowsError()    #@UndefinedVariable
+            raise OSError()
         SA.nLength = sizeof(SECURITY_ATTRIBUTES)
         SA.lpSecurityDescriptor = cast(pointer(SD), c_void_p)
         SA.bInheritHandle = True

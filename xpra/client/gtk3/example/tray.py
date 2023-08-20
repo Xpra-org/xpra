@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Callable
+from collections.abc import Callable
 
 from xpra.platform import program_context
 from xpra.platform.gui import get_native_tray_menu_helper_class, get_native_tray_classes

@@ -22,8 +22,8 @@ from xpra.platform.win32.win32_printing import GDIPrinterContext, DOCINFO, Start
 LIBPDFIUMDLL = os.environ.get("XPRA_LIBPDFIUMDLL", "pdfium.dll")
 try:
     pdfium = WinDLL(LIBPDFIUMDLL, use_last_error=True)
-except WindowsError as e:        #@UndefinedVariable
-    raise ImportError("cannot load %s: %s" % (LIBPDFIUMDLL, e)) from None
+except OSError as e:        #@UndefinedVariable
+    raise ImportError(f"cannot load {LIBPDFIUMDLL!r}: {e}") from None
 
 class FPDF_LIBRARY_CONFIG(Structure):
     _fields_ = [

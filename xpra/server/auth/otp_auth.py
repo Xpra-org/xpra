@@ -87,7 +87,7 @@ class Authenticator(SysAuthenticator):
 
 def main(argv) -> int:
     if len(argv)<2 or len(argv)>4:
-        print("usage: %s SECRET [username] [issuer-name]" % (argv[0], ))
+        print(f"usage: {argv[0]} SECRET [username] [issuer-name]")
         return 1
     enable_color()
     import os

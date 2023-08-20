@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
 # Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
@@ -17,7 +16,8 @@ from urllib.parse import urlparse, parse_qsl, unquote
 from weakref import WeakKeyDictionary
 from time import sleep, time, monotonic
 from threading import Thread, Lock
-from typing import Callable, Any
+from typing import Any
+from collections.abc import Callable
 
 from xpra.version_util import (
     XPRA_VERSION, vparts, version_str, full_version_str, version_compat_check, get_version_info,
@@ -573,8 +573,8 @@ class ServerCore:
         if not POSIX:
             return
         dbuslog("init_dbus_server() dbus_control=%s", self.dbus_control)
-        dbuslog("init_dbus_server() env: %s", dict((k,v) for k,v in os.environ.items()
-                                               if bytestostr(k).startswith("DBUS_")))
+        dbuslog("init_dbus_server() env: %s", {k:v for k,v in os.environ.items()
+                                               if bytestostr(k).startswith("DBUS_")})
         if not self.dbus_control:
             return
         try:
@@ -1316,7 +1316,7 @@ class ServerCore:
                 if not cont:
                     return
                 packet_type = guess_packet_type(peek_data)
-            except IOError as e:
+            except OSError as e:
                 netlog("socket wrapping failed", exc_info=True)
                 self.new_conn_err(conn, sock, socktype, socket_info, packet_type, str(e))
                 return
@@ -1352,7 +1352,7 @@ class ServerCore:
 
     def get_ssl_socket_options(self, socket_options) -> dict[str,Any]:
         ssllog("get_ssl_socket_options(%s)", socket_options)
-        kwargs = dict((k.replace("-", "_"), v) for k,v in self._ssl_attributes.items())
+        kwargs = {k.replace("-", "_"): v for k,v in self._ssl_attributes.items()}
         for k,v in socket_options.items():
             #options use '-' but attributes and parameters use '_':
             k = k.replace("-", "_")
@@ -1611,7 +1611,7 @@ class ServerCore:
             tname = f"{req_info}-proxy"
         #we start a new thread,
         #only so that the websocket handler thread is named correctly:
-        start_thread(self.start_http, "%s-for-%s" % (tname, frominfo),
+        start_thread(self.start_http, f"{tname}-for-{frominfo}",
                      daemon=True, args=(socktype, conn, socket_options, is_ssl, req_info, line1, conn.remote))
 
     def start_http(self, socktype:str, conn, socket_options:dict, is_ssl:bool, req_info:str, line1:bytes, frominfo:str) -> None:
@@ -1637,7 +1637,7 @@ class ServerCore:
                                     self._www_dir, self._http_headers_dirs, scripts,
                                     redirect_https)
             return
-        except (IOError, ValueError) as e:
+        except (OSError, ValueError) as e:
             httplog("start_http%s", (socktype, conn, is_ssl, req_info, frominfo), exc_info=True)
             err = e.args[0]
             if err==1 and line1 and line1[0]==0x16:
@@ -1744,7 +1744,7 @@ class ServerCore:
     def _filter_display_dict(self, display_dict, *whitelist):
         displays_info = {}
         for display, info in display_dict.items():
-            displays_info[display] = dict((k,v) for k,v in info.items() if k in whitelist)
+            displays_info[display] = {k:v for k,v in info.items() if k in whitelist}
         httplog("_filter_display_dict(%s)=%s", display_dict, displays_info)
         return displays_info
 
@@ -2205,7 +2205,7 @@ class ServerCore:
                 #server specifies the mode to use
                 server_cipher_mode = proto.encryption.split("-")[1]
                 if server_cipher_mode!=cipher_mode:
-                    return auth_failed("the server is configured for %s-%s not %s-%s as requested by the client" % (
+                    return auth_failed("the server is configured for {}-{} not {}-{} as requested by the client".format(
                         server_cipher, server_cipher_mode, cipher, cipher_mode))
             iterations = c.intget(f"{prefix}key_stretch_iterations")
             key_salt = c.strget(f"{prefix}key_salt")

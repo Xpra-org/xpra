@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
 # Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
@@ -7,7 +6,8 @@
 # later version. See the file COPYING for details.
 
 import sys
-from typing import Any, Callable, Union, TypeAlias
+from typing import Any, Union, TypeAlias
+from collections.abc import Callable
 from time import sleep, monotonic
 from threading import Event
 from collections import deque
@@ -80,7 +80,7 @@ class ClientConnection(StubSourceMixin):
         #this queue will hold functions to call to compress data (pixels, clipboard)
         #items placed in this queue are picked off by the "encode" thread,
         #the functions should add the packets they generate to the 'packet_queue'
-        self.encode_work_queue : SimpleQueue[Union[None,tuple[bool,Callable,tuple[Any,...]]]] = SimpleQueue()
+        self.encode_work_queue : SimpleQueue[None |tuple[bool,Callable,tuple[Any,...]]] = SimpleQueue()
         self.encode_thread = None
         self.ordinary_packets : list[tuple[PacketType,bool,Callable,Callable]] = []
         self.socket_dir = socket_dir

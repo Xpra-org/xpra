@@ -5,7 +5,8 @@
 
 import os
 import struct
-from typing import Iterable, Callable, Any
+from typing import Any
+from collections.abc import Iterable, Callable
 from gi.repository import GLib, GObject, Gdk  # @UnresolvedImport
 
 from xpra.gtk_common.error import xsync, xswallow

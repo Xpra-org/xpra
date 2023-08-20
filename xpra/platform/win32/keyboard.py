@@ -8,7 +8,7 @@ import ctypes
 from ctypes.wintypes import HANDLE
 from ctypes import create_string_buffer, byref
 from ctypes.wintypes import DWORD
-from typing import Callable
+from collections.abc import Callable
 
 from xpra.platform.win32.common import (
     ActivateKeyboardLayout,

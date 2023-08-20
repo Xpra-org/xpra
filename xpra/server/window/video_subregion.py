@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -6,7 +5,8 @@
 
 import math
 from time import monotonic
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util import envint, envbool
@@ -168,7 +168,7 @@ class VideoSubregion:
         ls = self.last_scores
         if ls:
             #convert rectangles into tuples:
-            info["scores"] = dict((r.get_geometry(), score) for r,score in ls.items() if r is not None)
+            info["scores"] = {r.get_geometry(): score for r,score in ls.items() if r is not None}
         rr = tuple(self.refresh_regions)
         if rr:
             for i, r in enumerate(rr):

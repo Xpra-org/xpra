@@ -8,7 +8,8 @@ import struct
 from io import BytesIO
 import PIL                      #@UnresolvedImport
 from PIL import Image           #@UnresolvedImport
-from typing import Callable, Any
+from typing import Any
+from collections.abc import Callable
 
 from xpra.util import csv, typedict
 from xpra.os_util import hexstr, strtobytes

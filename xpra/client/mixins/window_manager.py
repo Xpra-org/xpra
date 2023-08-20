@@ -16,7 +16,8 @@ from collections import deque
 from time import sleep, time, monotonic
 from queue import SimpleQueue
 from threading import Thread
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.platform.gui import (
@@ -120,7 +121,7 @@ def kill_signalwatcher(proc) -> None:
                 stdin.write(b"exit\n")
                 stdin.flush()
                 stdin.close()
-        except IOError:
+        except OSError:
             log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
         try:
             os.kill(proc.pid, signal.SIGKILL)
@@ -817,7 +818,7 @@ class WindowClient(StubClientMixin):
         assert 0<=w<32768 and 0<=h<32768
         metadata = self.cook_metadata(True, packet[6])
         metalog("process_new_common: %s, metadata=%s, OR=%s", packet[1:7], metadata, override_redirect)
-        assert wid not in self._id_to_window, "we already have a window %s: %s" % (wid, self._id_to_window.get(wid))
+        assert wid not in self._id_to_window, "we already have a window {}: {}".format(wid, self._id_to_window.get(wid))
         if w<1 or h<1:
             log.error("Error: window %i dimensions %ix%i are invalid", wid, w, h)
             w, h = 1, 1
@@ -1509,7 +1510,7 @@ class WindowClient(StubClientMixin):
             return
         x, y, width, height, coding, data, packet_sequence, rowstride = packet[2:10]
         for v in (x, y, width, height, packet_sequence, rowstride):
-            assert isinstance(v, int), "expected int, found %s (%s)" % (v, type(v))
+            assert isinstance(v, int), "expected int, found {} ({})".format(v, type(v))
         coding = bytestostr(coding)
         if not window:
             #window is gone

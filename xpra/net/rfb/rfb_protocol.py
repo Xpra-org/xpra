@@ -313,7 +313,7 @@ class RFBProtocol:
             try:
                 log(f"RFBProtocol.close() calling {c.close}")
                 c.close()
-            except IOError:
+            except OSError:
                 log.error(f"Error closing {c}", exc_info=True)
             self._conn = None
         self.terminate_queue_threads()

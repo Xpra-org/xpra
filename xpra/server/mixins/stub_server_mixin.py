@@ -5,7 +5,8 @@
 
 import os
 import shlex
-from typing import Callable, Any
+from typing import Any
+from collections.abc import Callable
 
 from xpra.util import typedict
 from xpra.os_util import WIN32

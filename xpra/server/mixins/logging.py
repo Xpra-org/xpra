@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -10,7 +9,8 @@ import logging
 import traceback
 from time import monotonic
 from threading import Lock
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from xpra.os_util import bytestostr, memoryview_to_bytes
 from xpra.util import repr_ellipsized

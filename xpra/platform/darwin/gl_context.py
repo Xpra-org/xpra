@@ -61,7 +61,7 @@ class AGLWindowContext:
         self.nsview = 0
 
     def __repr__(self):
-        return "AGLWindowContext(%s, %s)" % (self.gl_context, self.nsview)
+        return f"AGLWindowContext({self.gl_context}, {self.nsview})"
 
 
 class AGLContext:
@@ -81,10 +81,10 @@ class AGLContext:
             NSOpenGLPFADepthSize, 24,
             ]
         self.pixel_format = self.pixel_format.initWithAttributes_(attrs)
-        assert self.pixel_format is not None, "failed to initialize NSOpenGLPixelFormat with %s" % (attrs,)
+        assert self.pixel_format is not None, "failed to initialize NSOpenGLPixelFormat with {}".format(attrs)
         c = NSOpenGLContext.alloc()
         c = c.initWithFormat_shareContext_(self.pixel_format, None)
-        assert c is not None, "failed to initialize NSOpenGLContext with %s" % (self.pixel_format,)
+        assert c is not None, "failed to initialize NSOpenGLContext with {}".format(self.pixel_format)
         self.gl_context = c
 
     def check_support(self, force_enable:bool=False) -> dict[str,Any]:

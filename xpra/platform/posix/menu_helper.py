@@ -14,7 +14,8 @@ import sys
 import glob
 from time import monotonic
 from contextlib import nullcontext
-from typing import Any, Generator as generator       #@UnresolvedImport, @UnusedImport
+from typing import Any as generator       #@UnresolvedImport, @UnusedImport
+from collections.abc import Generator as generator
 
 from xpra.util import envbool, first_time
 from xpra.os_util import OSEnvContext, get_saved_env
@@ -250,7 +251,7 @@ def find_glob_icon(*names, category:str="categories"):
 
 
 def noicondata(d:dict) -> dict:
-    return dict((k,v) for k,v in d.items() if k and v and k!="IconData")
+    return {k:v for k,v in d.items() if k and v and k!="IconData"}
 
 
 def load_xdg_entry(de) -> dict[str,Any]:

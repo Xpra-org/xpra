@@ -42,7 +42,7 @@ WIN32_SHOWWINDOW = envbool("XPRA_WIN32_SHOWWINDOW", False)
 # and the python2 builds are from an older version)
 LOCAL_ALIASES = envbool("XPRA_LOCAL_ALIASES", False)
 
-LOCAL_SEND_ALIASES = dict((v, i) for i,v in enumerate(PACKET_TYPES))
+LOCAL_SEND_ALIASES = {v: i for i,v in enumerate(PACKET_TYPES)}
 LOCAL_RECEIVE_ALIASES = dict(enumerate(PACKET_TYPES))
 
 FLUSH = envbool("XPRA_SUBPROCESS_FLUSH", False)

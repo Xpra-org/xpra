@@ -6,7 +6,7 @@
 import os
 import sys
 import subprocess
-from typing import Callable
+from collections.abc import Callable
 
 from xpra.platform.win32 import constants as win32con
 from xpra.util import csv, envint, envbool, reverse_dict

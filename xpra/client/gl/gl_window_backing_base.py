@@ -7,7 +7,8 @@
 import os
 import time
 from time import monotonic
-from typing import Any, Callable, Iterable
+from typing import Any
+from collections.abc import Callable, Iterable
 from contextlib import AbstractContextManager, nullcontext
 from gi.repository import GLib  # @UnresolvedImport
 

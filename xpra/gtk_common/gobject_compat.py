@@ -6,7 +6,7 @@
 #legacy compatibility file
 
 import signal
-from typing import Callable
+from collections.abc import Callable
 
 from xpra.util import dump_all_frames, dump_gc_frames, stderr_print
 from xpra.os_util import SIGNAMES, POSIX, get_util_logger

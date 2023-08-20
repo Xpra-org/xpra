@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.util import typedict
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger

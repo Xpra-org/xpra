@@ -109,7 +109,7 @@ class DotXpra:
         try:
             sock.connect(sockpath)
             return DotXpra.LIVE
-        except socket.error as e:
+        except OSError as e:
             debug(f"get_server_state: connect({sockpath!r})={e} (timeout={timeout}")
             err = e.args[0]
             if err==errno.EACCES:
@@ -128,7 +128,7 @@ class DotXpra:
         finally:
             try:
                 sock.close()
-            except IOError:
+            except OSError:
                 debug("%s.close()", sock, exc_info=True)
 
 

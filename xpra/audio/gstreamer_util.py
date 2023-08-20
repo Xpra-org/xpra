@@ -6,7 +6,8 @@
 
 import sys
 import os
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from xpra.gst_common import (
     has_plugins, get_all_plugin_names,
@@ -589,9 +590,9 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
                 filters.append(match)
             match = match.lower()
             log("trying to match '%s' in devices=%s", match, devices)
-            matches = dict((k,v) for k,v in devices.items()
+            matches = {k:v for k,v in devices.items()
                            if (bytestostr(k).strip().lower().find(match)>=0 or
-                               bytestostr(v).strip().lower().find(match)>=0))
+                               bytestostr(v).strip().lower().find(match)>=0)}
             #log("matches(%s, %s)=%s", devices, match, matches)
             if len(matches)==1:
                 log("found name match for '%s': %s", match, tuple(matches.items())[0])
@@ -802,8 +803,8 @@ def main():
         else:
             if v[-1]==0:
                 v = v[:-1]
-            gst_vinfo = ".".join((str(x) for x in v))
-            print("Loaded Python GStreamer version %s for Python %s.%s" % (
+            gst_vinfo = ".".join(str(x) for x in v)
+            print("Loaded Python GStreamer version {} for Python {}.{}".format(
                 gst_vinfo, sys.version_info[0], sys.version_info[1])
             )
         apn = get_all_plugin_names()

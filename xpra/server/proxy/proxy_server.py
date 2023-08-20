@@ -644,7 +644,7 @@ class ProxyServer(ServerCore):
         return proc, socket_path, display
 
     def get_proxy_env(self) -> dict[str,str]:
-        env = dict((k,v) for k,v in os.environ.items() if k in ENV_WHITELIST or "*" in ENV_WHITELIST)
+        env = {k:v for k,v in os.environ.items() if k in ENV_WHITELIST or "*" in ENV_WHITELIST}
         #env var to add to environment of subprocess:
         extra_env_str = os.environ.get("XPRA_PROXY_START_ENV", "")
         if extra_env_str:

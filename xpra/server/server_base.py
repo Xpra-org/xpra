@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
 # Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
@@ -8,7 +7,8 @@
 
 import os
 from time import monotonic
-from typing import Callable, Any
+from typing import Any
+from collections.abc import Callable
 
 from xpra.server.server_core import ServerCore
 from xpra.server.background_worker import add_work_item
@@ -585,7 +585,7 @@ class ServerBase(ServerBaseClass):
                 "root_window_size"     : root_size,
             }
         if "aliases" in self._aliases and server_source.wants:
-            capabilities["aliases"] = dict((v, k) for k,v in self._aliases.items())
+            capabilities["aliases"] = {v: k for k,v in self._aliases.items()}
         if server_cipher:
             capabilities.update(server_cipher)
         server_source.send_hello(capabilities)
@@ -614,7 +614,7 @@ class ServerBase(ServerBaseClass):
         def info_callback(_proto, info):
             assert proto==_proto
             if categories:
-                info = dict((k,v) for k,v in info.items() if k in categories)
+                info = {k:v for k,v in info.items() if k in categories}
             ss.send_info_response(info)
         self.get_all_info(info_callback, proto, None)
 

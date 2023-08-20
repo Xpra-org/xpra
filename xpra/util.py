@@ -16,7 +16,8 @@ try:
     from enum import StrEnum
 except ImportError:
     StrEnum = Enum      # type: ignore
-from typing import Any, Callable, Iterable
+from typing import Any
+from collections.abc import Callable, Iterable
 
 # this is imported in a lot of places,
 # so don't import too much at the top:
@@ -294,7 +295,7 @@ class AtomicInteger:
             return -1
 
 
-class MutableInteger(object):
+class MutableInteger:
     __slots__ = ("counter", )
     def __init__(self, integer : int = 0):
         self.counter : int = integer
@@ -368,7 +369,7 @@ class typedict(dict):
     def _process_args(mapping=(), **kwargs) -> dict[str,Any]:
         if hasattr(mapping, "items"):
             mapping = getattr(mapping, "items")()
-        return dict((bytestostr(k), v) for k, v in chain(mapping, getattr(kwargs, "items")()))
+        return {bytestostr(k): v for k, v in chain(mapping, getattr(kwargs, "items")())}
     def __init__(self, mapping=(), **kwargs):
         super().__init__(self._process_args(mapping, **kwargs))
         self.warn = self._warn
@@ -407,7 +408,7 @@ class typedict(dict):
     def fromkeys(cls, keys, v=None):
         return super().fromkeys((bytestostr(k) for k in keys), v)
     def __repr__(self):
-        return '{0}({1})'.format(type(self).__name__, super().__repr__())
+        return f'{type(self).__name__}({super().__repr__()})'
 
     def _warn(self, msg, *args):
         get_util_logger().warn(msg, *args)
@@ -713,7 +714,7 @@ def detect_leaks() -> Callable[[], None]:
         for i, stat in enumerate(top_stats[:20]):
             print()
             print("top %i:" % i)
-            print("%s memory blocks: %.1f KiB" % (stat.count, stat.size / 1024))
+            print("{} memory blocks: {:.1f} KiB".format(stat.count, stat.size / 1024))
             for line in stat.traceback.format():
                 print(line)
         return True

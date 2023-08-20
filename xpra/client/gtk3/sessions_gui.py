@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -226,7 +225,7 @@ class SessionsGUI(Gtk.Window):
             socktype = "named-pipe"
         else:
             socktype = "socket"
-        cmd = get_nodock_command()+["id", "%s:%s" % (socktype, sockpath)]
+        cmd = get_nodock_command()+["id", f"{socktype}:{sockpath}"
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout = p.communicate()[0]
         log("get_sessions_info(%s) returncode(%s)=%s", sockpath, cmd, p.returncode)
@@ -373,7 +372,7 @@ class SessionsGUI(Gtk.Window):
     def attach(self, key, uri):
         self.warning.set_text("")
         #preserve ssl command line arguments
-        option_types = dict((k,v) for k,v in OPTION_TYPES.items() if k.startswith("ssl"))
+        option_types = {k:v for k,v in OPTION_TYPES.items() if k.startswith("ssl")}
         cmd = get_xpra_command() + ["attach", uri] + get_command_args(
             self.options,
             option_types=option_types,

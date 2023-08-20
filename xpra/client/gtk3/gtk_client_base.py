@@ -387,8 +387,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             password = dialog.password_input.get_text()
             dialog.hide()
             dialog.destroy()
-            response_str = dict((getattr(Gtk.ResponseType, k, ""), k) for k in (
-                "ACCEPT", "APPLY", "CANCEL", "CLOSE", "DELETE_EVENT", "HELP", "NO", "NONE", "OK", "REJECT", "YES"))
+            response_str = {getattr(Gtk.ResponseType, k, ""): k for k in (
+                "ACCEPT", "APPLY", "CANCEL", "CLOSE", "DELETE_EVENT", "HELP", "NO", "NONE", "OK", "REJECT", "YES")}
             log(f"handle_response({dialog}, {response}) response={response_str.get(response)}")
             if response!=Gtk.ResponseType.ACCEPT or not password:
                 values.append(None)

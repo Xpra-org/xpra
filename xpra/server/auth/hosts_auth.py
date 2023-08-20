@@ -91,7 +91,7 @@ def main(argv) -> int:
         while len(argv)>=2:
             peername, host = argv[:2]
             check = check_host(peername, host)
-            print("host check for '%s', '%s': %s" % (peername, host, check))
+            print(f"host check for {peername!r}, {host!r}: {check}")
             argv = argv[2:]
     return 0
 

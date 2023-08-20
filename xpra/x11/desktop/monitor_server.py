@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2022-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -171,7 +170,7 @@ class XpraMonitorServer(DesktopServerBase):
                     screenlog(f"no monitor found for output id {output_id}")
                     return
                 #get the geometry from the crtc:
-                mdef = dict((k,v) for k,v in crtc_info.items() if k in ("x", "y", "width", "height"))
+                mdef = {k:v for k,v in crtc_info.items() if k in ("x", "y", "width", "height")}
                 #add the millimeter dimensions from the output:
                 mdef.update((k, v) for k,v in output_info.items() if k in ("mm-width", "mm-height"))
                 #and some monitor attributes:
@@ -260,7 +259,7 @@ class XpraMonitorServer(DesktopServerBase):
                 model.init(mdef)
 
     def _adjust_monitors(self, after_wid : int, delta_x : int, delta_y : int) -> None:
-        models = dict((wid, model) for wid, model in self._id_to_window.items() if wid>after_wid)
+        models = {wid: model for wid, model in self._id_to_window.items() if wid>after_wid}
         screenlog("adjust_monitors(%i, %i, %i) models=%s", after_wid, delta_x, delta_y, models)
         if (delta_x==0 and delta_y==0) or not models:
             return

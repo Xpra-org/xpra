@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
 # Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
@@ -14,7 +13,8 @@ from collections import deque
 from dataclasses import dataclass
 from time import monotonic
 from contextlib import nullcontext
-from typing import Callable, Iterable, ContextManager, Any
+from typing import ContextManager, Any
+from collections.abc import Callable, Iterable
 
 from xpra.os_util import bytestostr, POSIX, OSX
 from xpra.util import envint, envbool, csv, typedict, first_time, decode_str, repr_ellipsized

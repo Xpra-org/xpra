@@ -8,7 +8,8 @@
 #pylint: disable=import-outside-toplevel
 
 from collections import namedtuple
-from typing import Callable, Any
+from typing import Any
+from collections.abc import Callable
 
 from xpra.log import Logger
 from xpra.net.protocol.header import (

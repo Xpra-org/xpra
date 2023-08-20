@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -687,7 +686,7 @@ class GTKTrayMenuBase(MenuHelper):
             log("scaling_changed%s updating selected tray menu item", args)
             #find the nearest scaling option to show as current:
             scaling = (self.client.xscale + self.client.yscale)/2.0
-            by_distance = dict((abs(scaling-x),x) for x in SCALING_OPTIONS)
+            by_distance = {abs(scaling-x):x for x in SCALING_OPTIONS}
             closest = by_distance.get(sorted(by_distance)[0], 1)
             scaling_submenu.updating = True
             for x in scaling_submenu.get_children():
@@ -1023,7 +1022,7 @@ class GTKTrayMenuBase(MenuHelper):
                 menu.append(on)
             else:
                 virt_devices = get_virtual_video_devices()
-                non_virtual = dict((k,v) for k,v in all_video_devices.items() if k not in virt_devices)
+                non_virtual = {k:v for k,v in all_video_devices.items() if k not in virt_devices}
                 for device_no,info in non_virtual.items():
                     label = bytestostr(info.get("card", info.get("device", str(device_no))))
                     item = deviceitem(label, start_webcam, device_no)

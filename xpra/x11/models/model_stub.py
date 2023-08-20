@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Callable
+from collections.abc import Callable
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.gtk_common.gobject_util import AutoPropGObjectMixin

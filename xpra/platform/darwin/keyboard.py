@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Callable
+from collections.abc import Callable
 
 import gi
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable

@@ -186,7 +186,7 @@ def get_build_info(full:int=1) -> dict[str, Any]:
                 info[k] = v
         #record library versions:
         if full>1:
-            info["lib"] = dict((k.lstrip("lib_"), parse_version(getattr(build_info, k))) for k in dir(build_info) if k.startswith("lib_"))
+            info["lib"] = {k.lstrip("lib_"): parse_version(getattr(build_info, k)) for k in dir(build_info) if k.startswith("lib_")}
     except Exception as e:
         warn("missing some build information: %s", e)
     log(f"get_build_info({full})={info}")
@@ -233,7 +233,7 @@ def do_get_platform_info() -> dict[str, Any]:
             from subprocess import check_output
             return check_output(command).strip()
         if pp.system() == "Linux":
-            with open("/proc/cpuinfo", "r", encoding="latin1") as f:
+            with open("/proc/cpuinfo", encoding="latin1") as f:
                 data = f.read()
             import re
             for line in data.split("\n"):

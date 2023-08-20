@@ -5,7 +5,7 @@
 
 import struct
 from threading import RLock
-from typing import Callable
+from collections.abc import Callable
 
 from xpra.net.rfb.rfb_protocol import RFBProtocol
 from xpra.net.rfb.rfb_const import (

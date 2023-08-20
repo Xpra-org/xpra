@@ -212,7 +212,7 @@ def connect_to(display_desc):
         sock = None
         host_config = None
         if os.path.exists(user_config_file):
-            with open(user_config_file, "r", encoding="utf8") as f:
+            with open(user_config_file, encoding="utf8") as f:
                 try:
                     ssh_config.parse(f)
                 except Exception as e:
@@ -460,7 +460,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
                     log("HostKeys.load(%s) successful", path)
                     host_keys_filename = path
                     break
-            except IOError:
+            except OSError:
                 log("HostKeys.load(%s)", known_hosts, exc_info=True)
 
         log("host keys=%s", host_keys)
@@ -778,7 +778,7 @@ def run_test_command(transport, cmd:str) -> tuple[bytes,bytes,int]:
     def chan_read(read_fn) -> bytes:
         try:
             return read_fn()
-        except socket.error:
+        except OSError:
             log(f"chan_read({read_fn})", exc_info=True)
             return b""
     #don't wait too long for the data:

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -309,7 +308,7 @@ def get_target_quality(window_dimensions, batch,
             #but only if there is no backlog:
             if packets_backlog==0:
                 smooth = 150
-                comp_boost = logp(((smooth+ascore)/(smooth+rscore)))-1.0
+                comp_boost = logp((smooth+ascore)/(smooth+rscore))-1.0
         else:
             #lower the quality
             #more so if the compression is not doing very well:

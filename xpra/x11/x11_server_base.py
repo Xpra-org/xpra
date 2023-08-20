@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
 # Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
@@ -333,7 +332,7 @@ class X11ServerBase(X11ServerCore):
         log(f" {double_click_time=}, {double_click_distance=}")
         log(f" {antialias=}")
         #older versions may send keys as "bytes":
-        settings = dict((bytestostr(k), v) for k,v in settings.items())
+        settings = {bytestostr(k): v for k,v in settings.items()}
         self._settings.update(settings)
         for k, v in settings.items():
             #cook the "resource-manager" value to add the DPI and/or antialias values:

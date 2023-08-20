@@ -1,4 +1,3 @@
-# encoding: utf-8
 ###############################################################################
 # libproxy - A library for proxy configuration
 # Copyright (C) 2006 Nathaniel McCallum <nathaniel@natemccallum.com>
@@ -44,7 +43,7 @@ _libproxy.px_proxy_factory_free.argtypes = [c_void_p]
 _libproxy.px_proxy_factory_get_proxies.restype = POINTER(c_void_p)
 _libproxy.px_proxy_factory_free_proxies.argtypes = [POINTER(c_void_p)]
 
-class ProxyFactory(object):
+class ProxyFactory:
     """A ProxyFactory object is used to provide potential proxies to use
     in order to reach a given URL (via 'getProxies(url)').
 

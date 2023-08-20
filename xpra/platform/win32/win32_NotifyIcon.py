@@ -14,7 +14,8 @@ from ctypes import (
     get_last_error, WinError, WinDLL, HRESULT,  # @UnresolvedImport
     )
 from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, CHAR, WCHAR, DWORD, HMODULE, RECT
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from xpra.util import typedict, csv, envbool, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
 from xpra.os_util import bytestostr
@@ -516,7 +517,7 @@ def main():
                 buf.close()
                 icon = (b"png", img.size[0], img.size[1], data)
             except Exception as e:
-                print("could not find icon: %s" % (e,))
+                print(f"could not find icon: {e}")
                 icon = None
             notify(hwnd, 0, "hello", "world", timeout=1000, icon=icon)
         elif cid == 1025:

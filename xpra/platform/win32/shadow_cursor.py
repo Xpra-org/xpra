@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -34,7 +33,7 @@ def get_cursor_data(hCursor):
         ii = ICONINFO()
         ii.cbSize = sizeof(ICONINFO)
         if not GetIconInfo(hCursor, byref(ii)):
-            raise WindowsError()    #@UndefinedVariable
+            raise OSError()    #@UndefinedVariable
         x = ii.xHotspot
         y = ii.yHotspot
         log("get_cursor_data(%#x) hotspot at %ix%i, hbmColor=%#x, hbmMask=%#x",
@@ -45,12 +44,12 @@ def get_cursor_data(hCursor):
         iie = ICONINFOEXW()
         iie.cbSize = sizeof(ICONINFOEXW)
         if not GetIconInfoExW(hCursor, byref(iie)):
-            raise WindowsError()    #@UndefinedVariable
+            raise OSError()    #@UndefinedVariable
         name = iie.szResName[:MAX_PATH]
         log("wResID=%#x, sxModName=%s, szResName=%s", iie.wResID, iie.sxModName[:MAX_PATH], name)
         bm = Bitmap()
         if not GetObjectA(ii.hbmColor, sizeof(Bitmap), byref(bm)):
-            raise WindowsError()    #@UndefinedVariable
+            raise OSError()    #@UndefinedVariable
         log("cursor bitmap: type=%i, width=%i, height=%i, width bytes=%i, planes=%i, bits pixel=%i, bits=%#x",
                   bm.bmType, bm.bmWidth, bm.bmHeight, bm.bmWidthBytes, bm.bmPlanes, bm.bmBitsPixel, bm.bmBits or 0)
         w = bm.bmWidth
@@ -70,7 +69,7 @@ def get_cursor_data(hCursor):
 
         #if not DrawIcon(memdc, 0, 0, hCursor):
         if not DrawIconEx(memdc, 0, 0, hCursor, w, h, 0, 0, win32con.DI_NORMAL):
-            raise WindowsError()    #@UndefinedVariable
+            raise OSError()    #@UndefinedVariable
 
         buf_size = bm.bmWidthBytes*h
         buf = create_string_buffer(b"", buf_size)

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
@@ -10,7 +9,8 @@ import os.path
 from time import monotonic
 from subprocess import Popen, PIPE
 from threading import Event
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from xpra.os_util import pollwait, osexpand, OSX, POSIX
 from xpra.util import typedict, envbool, csv, engs
@@ -138,7 +138,7 @@ class AudioServer(StubServerMixin):
                             "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE",
                             "XPRA_PULSE_SOURCE_DEVICE_NAME", "XPRA_PULSE_SINK_DEVICE_NAME",
                             )
-        env = dict((k,v) for k,v in self.get_child_env().items() if k in PA_ENV_WHITELIST)
+        env = {k:v for k,v in self.get_child_env().items() if k in PA_ENV_WHITELIST}
         # 3) use a private pulseaudio server, so each xpra
         #    session can have its own server,
         #    create a directory for each display:

@@ -26,13 +26,13 @@ def start_dbus(dbus_launch) -> tuple[int,dict]:
         log.warn(" DBUS_SESSION_BUS_ADDRESS=%s", bus_address)
     assert POSIX
     try:
-        env = dict((k,v) for k,v in os.environ.items() if k in (
+        env = {k:v for k,v in os.environ.items() if k in (
             "PATH",
             "SSH_CLIENT", "SSH_CONNECTION",
             "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE", "XDG_RUNTIME_DIR",
             "SHELL", "LANG", "USER", "LOGNAME", "HOME",
             "DISPLAY", "XAUTHORITY", "CKCON_X11_DISPLAY",
-            ))
+            )}
         cmd = shlex.split(dbus_launch)
         log("start_dbus(%s) env=%s", dbus_launch, env)
         proc = Popen(cmd, stdin=PIPE, stdout=PIPE, env=env, start_new_session=True, universal_newlines=True)

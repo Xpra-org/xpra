@@ -229,7 +229,7 @@ class ClipboardStateInfoWindow:
     def add_event(self, selection, message):
         msg = message
         if self.clipboards:
-            msg = "%s : %s" % (selection, message)
+            msg = f"{selection} : {message}"
         self.log.append(msg)
         self.events.set_text("\n".join(self.log))
 

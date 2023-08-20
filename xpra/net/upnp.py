@@ -21,7 +21,7 @@ def upnp_add(socktype:str, info, options):
     try:
         internal_host, internal_port = info
     except (ValueError, TypeError):
-        return err("cannot identify the host and port number from %s" % (info,))
+        return err(f"cannot identify the host and port number from {info}")
     try:
         import upnpy
     except ImportError as e:
@@ -103,7 +103,7 @@ def upnp_add(socktype:str, info, options):
                             return inet[1]
             interface = get_device_interface()
             if not interface:
-                return err("cannot identify the network interface for '%s'" % (device.address,))
+                return err(f"cannot identify the network interface for {device.address!r}")
             log("identified interface '%s' for device address %s", interface, device.address)
             addrs = netifaces.ifaddresses(interface)  # @UndefinedVariable
             log("ifaddresses(%s)=%s", interface, addrs)
@@ -147,9 +147,9 @@ def upnp_add(socktype:str, info, options):
                 #find the service by id
                 matches = [v for v in services if v.id.split(":")[-1]==s]
                 if len(matches)>1:
-                    return err("more than one service matches '%s'" % (s,))
+                    return err(f"more than one service matches {s!r}")
                 if len(matches)!=1:
-                    return err("service '%s' not found on %s" % (s, device))
+                    return err(f"service {s!r} not found on {device}")
                 service = matches[0]
                 log("using service %s", service)
         else:

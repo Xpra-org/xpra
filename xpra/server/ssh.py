@@ -12,7 +12,7 @@ import hashlib
 import binascii
 from subprocess import Popen, PIPE
 from threading import Event
-from typing import ByteString, Callable
+from collections.abc import ByteString, Callable
 import paramiko
 
 from xpra.net.ssh.paramiko_client import SSHSocketConnection
@@ -96,7 +96,7 @@ def find_fingerprint(filename:str, fingerprint):
     hex_fingerprint = binascii.hexlify(fingerprint)
     log(f"looking for key fingerprint {hex_fingerprint} in {filename!r}")
     count = 0
-    with open(filename, "r", encoding="latin1") as f:
+    with open(filename, encoding="latin1") as f:
         for line in f:
             if line.startswith("#"):
                 continue
@@ -439,7 +439,7 @@ def make_ssh_server_connection(conn, socket_options, none_auth:bool=False, passw
                     host_keys[host_key] = ff
                     t.add_server_key(host_key)
                     return True
-            except IOError:
+            except OSError:
                 log(f"cannot add host key {ff!r}", exc_info=True)
             except paramiko.SSHException as e:
                 log(f"error adding host key {ff!r}", exc_info=True)

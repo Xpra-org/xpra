@@ -9,7 +9,8 @@ from time import monotonic
 from hashlib import sha1
 from base64 import b64encode
 from urllib.parse import quote
-from typing import Callable, Any
+from typing import Any
+from collections.abc import Callable
 
 from xpra.os_util import strtobytes, bytestostr
 from xpra.log import Logger

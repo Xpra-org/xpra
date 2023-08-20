@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
@@ -11,7 +10,7 @@ import platform
 from time import monotonic
 from collections import deque
 from gi.repository import GLib, Gtk, Gdk  # @UnresolvedImport
-from typing import Callable
+from collections.abc import Callable
 
 from xpra.version_util import XPRA_VERSION
 from xpra.os_util import bytestostr, strtobytes, get_linux_distribution
@@ -775,7 +774,7 @@ class SessionInfo(Gtk.Window):
         if mixin_features.windows:
             if self.client.server_actual_desktop_size:
                 w,h = self.client.server_actual_desktop_size
-                size_info = "%sx%s" % (w,h)
+                size_info = f"{w}x{h}"
                 if self.client.server_randr and self.client.server_max_desktop_size:
                     size_info += " (max %s)" % ("x".join([str(x) for x in self.client.server_max_desktop_size]))
                 self.bool_icon(self.server_randr_icon, self.client.server_randr)
@@ -913,7 +912,7 @@ class SessionInfo(Gtk.Window):
                         descr = codec_descr
                     else:
                         descr = csv(x for x in (codec_descr, container_descr) if x)
-                    state = "%s: %s" % (state, descr)
+                    state = f"{state}: {descr}"
                 label.set_text(state)
                 if details:
                     s = ""
@@ -1134,7 +1133,7 @@ class SessionInfo(Gtk.Window):
             unit, value = to_std_unit(scale)
             if value == 1:
                 return str(unit)
-            return "x%s%s" % (int(value), unit)
+            return f"x{int(value)}{unit}"
 
         if self.net_in_bitcount and self.net_out_bitcount:
             net_in_scale, net_in_data = values_to_diff_scaled_values(tuple(self.net_in_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)

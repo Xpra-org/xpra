@@ -5,7 +5,8 @@
 
 import os
 from collections import deque
-from typing import Deque, Callable
+from typing import Deque
+from collections.abc import Callable
 
 from xpra.platform.info import get_username
 from xpra.platform.dotxpra import DotXpra

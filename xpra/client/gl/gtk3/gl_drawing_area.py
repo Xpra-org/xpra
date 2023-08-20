@@ -4,7 +4,8 @@
 # later version. See the file COPYING for details.
 
 import sys
-from typing import Callable, Any
+from typing import Any
+from collections.abc import Callable
 from gi.repository import GLib, Gtk, Gdk  # @UnresolvedImport
 
 from xpra.util import ellipsizer

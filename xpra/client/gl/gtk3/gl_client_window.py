@@ -22,7 +22,7 @@ MONITOR_REINIT = envbool("XPRA_OPENGL_MONITOR_REINIT", False)
 class GLClientWindowBase(GTK3ClientWindow):
 
     def __repr__(self):
-        return "GLClientWindow(%s : %s)" % (self.wid, self._backing)
+        return f"GLClientWindow({self.wid} : {self._backing})"
 
     def get_backing_class(self) -> type:
         raise NotImplementedError()

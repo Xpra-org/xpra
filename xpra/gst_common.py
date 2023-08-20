@@ -37,7 +37,7 @@ def import_gst() -> ModuleType | None:
     if Gst is not None:
         return Gst
     log("GStreamer 1.x environment: %s",
-        dict((k,v) for k,v in os.environ.items() if (k.startswith("GST") or k.startswith("GI") or k=="PATH")))
+        {k:v for k,v in os.environ.items() if (k.startswith("GST") or k.startswith("GI") or k=="PATH")})
     log("GStreamer 1.x sys.path=%s", csv(sys.path))
     try:
         log("import gi")
@@ -171,7 +171,7 @@ def main():
         else:
             if v[-1]==0:
                 v = v[:-1]
-            gst_vinfo = ".".join((str(x) for x in v))
+            gst_vinfo = ".".join(str(x) for x in v)
             print("Loaded Python GStreamer version %s for Python %s.%s" % (
                 gst_vinfo, sys.version_info[0], sys.version_info[1])
             )

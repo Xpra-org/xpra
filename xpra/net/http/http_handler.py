@@ -9,7 +9,8 @@ import posixpath
 import mimetypes
 from urllib.parse import unquote
 from http.server import BaseHTTPRequestHandler
-from typing import Any, Iterable
+from typing import Any
+from collections.abc import Iterable
 
 from xpra.common import DEFAULT_XDG_DATA_DIRS
 from xpra.net.http.directory_listing import list_directory
@@ -76,7 +77,7 @@ def may_reload_headers(http_headers_dirs):
                 continue
             log("may_reload_headers() loading from '%s'", header_file)
             h : dict[str,str] = {}
-            with open(header_file, "r", encoding="latin1") as hf:
+            with open(header_file, encoding="latin1") as hf:
                 for line in hf:
                     sline = line.strip().rstrip("\r\n").strip()
                     if sline.startswith("#") or not sline:
@@ -296,7 +297,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             try:
                 peername = self.request.getpeername()
                 authlog.warn(" from %s", pretty_socket(peername))
-            except (AttributeError, socket.error):
+            except (AttributeError, OSError):
                 pass
             return False
         auth = self.headers.get("Authorization")
@@ -410,7 +411,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_response(code)
             self.extra_headers.update(extra_headers)
             self.end_headers()
-        except IOError as e:
+        except OSError as e:
             self.close_connection = True
             log("send_head()", exc_info=True)
             log.error("Error sending '%s':", path)

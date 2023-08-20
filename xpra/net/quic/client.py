@@ -6,7 +6,8 @@
 import socket
 import ipaddress
 from queue import SimpleQueue
-from typing import Callable, Union, cast
+from typing import Union, cast
+from collections.abc import Callable
 
 from aioquic.quic.configuration import QuicConfiguration
 from aioquic.quic.events import QuicEvent
@@ -136,7 +137,7 @@ class WebSocketClient(QuicConnectionProtocol):
             sub = -1
             hdict = {}
             if isinstance(event, HeadersReceived):
-                hdict = dict((k.decode(),v.decode()) for k,v in event.headers)
+                hdict = {k.decode():v.decode() for k,v in event.headers}
                 sub = int(hdict.get("substream", -1))
             if sub<0:
                 log.warn(f"Warning: unexpected websocket stream id: {stream_id} in {event}")

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -208,7 +207,7 @@ class WindowInfo(Gtk.Window):
                 "render-size"       : csv(b.render_size),
                 "backing-offsets"   : csv(b.offsets),
             }
-        text = "\n".join("%s=%s" % (k,v) for k,v in info.items())
+        text = "\n".join(f"{k}={v}" for k,v in info.items())
         clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         clipboard.set_text(text, len(text))
 
@@ -261,7 +260,7 @@ class WindowInfo(Gtk.Window):
                     return dict_to_str(value, ", ", ":")
                 return str(value)
             def dict_to_str(d, sep="\n", eq="=", exclude=()):
-                strdict = dict((k,pv(v)) for k,v in d.items() if k not in exclude)
+                strdict = {k:pv(v) for k,v in d.items() if k not in exclude}
                 return sep.join("%s%s%s" % (k, eq, v) for k,v in strdict.items() if v)
             self.backing_properties.set_text(dict_to_str(binfo, exclude=(
                                                              "transparency",

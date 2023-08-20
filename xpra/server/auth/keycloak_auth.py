@@ -173,7 +173,7 @@ def main(args) -> int: # pragma: no cover
     if len(args)!=2:
         print("invalid number of arguments")
         print("usage:")
-        print("%s response_json" % (args[0],))
+        print(f"{args[0]} response_json")
         return 1
     response_json = args[1]
 

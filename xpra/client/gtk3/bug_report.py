@@ -7,7 +7,7 @@
 import os.path
 import sys
 import time
-from typing import Callable
+from collections.abc import Callable
 from gi.repository import Gtk, Gdk  # @UnresolvedImport
 
 from xpra.common import ScreenshotData, noop

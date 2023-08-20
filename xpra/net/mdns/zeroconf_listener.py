@@ -84,13 +84,13 @@ class Zeroconflistener:
 
 def main():
     def mdns_found(*args):
-        print("mdns_found: %s" % (args, ))
+        print(f"mdns_found: {args}")
     def mdns_add(*args):
-        print("mdns_add: %s" % (args, ))
+        print(f"mdns_add: {args}")
     def mdns_remove(*args):
-        print("mdns_remove: %s" % (args, ))
+        print(f"mdns_remove: {args}")
     def mdns_update(*args):
-        print("mdns_update: %s" % (args, ))
+        print(f"mdns_update: {args}")
 
     from gi.repository import GLib  # @UnresolvedImport
     loop = GLib.MainLoop()

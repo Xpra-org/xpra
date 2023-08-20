@@ -14,7 +14,7 @@ gi.require_version('Gdk', '3.0')  # @UndefinedVariable
 from gi.repository import Gtk, Gdk, GLib  #pylint: disable=wrong-import-position @UnresolvedImport
 
 
-class TestForm(object):
+class TestForm:
 
     def    __init__(self):
         self.window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
@@ -59,7 +59,7 @@ class TestForm(object):
             d = screen.get_setting("gtk-double-click-distance")
         except Exception:
             d = ""
-        self.info.set_text("Time (ms): %s, Distance: %s" % (t, d))
+        self.info.set_text(f"Time (ms): {t}, Distance: {d}")
         return True
 
     def button_press_event(self, _obj, event):

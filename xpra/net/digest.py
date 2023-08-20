@@ -6,7 +6,7 @@
 import os
 import hmac
 import hashlib
-from typing import Callable, ByteString
+from collections.abc import Callable, ByteString
 
 from xpra.util import csv, envint
 from xpra.log import Logger

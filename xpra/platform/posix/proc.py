@@ -6,7 +6,7 @@
 
 from typing import Optional
 
-get_parent_pid : Optional[callable] = None
+get_parent_pid : callable | None = None
 try:
     from xpra.platform.posix import proc_libproc
     get_parent_pid = proc_libproc.get_parent_pid

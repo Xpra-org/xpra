@@ -4,7 +4,8 @@
 # later version. See the file COPYING for details.
 
 import struct
-from typing import Callable, Any, cast
+from typing import Any, cast
+from collections.abc import Callable
 
 from xpra.util import u, ellipsizer
 from xpra.os_util import hexstr, bytestostr

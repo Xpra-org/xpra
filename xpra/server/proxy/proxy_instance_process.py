@@ -47,7 +47,7 @@ def set_blocking(conn):
         sock = conn._socket
         log("calling %s.setblocking(1)", sock)
         sock.setblocking(1)
-    except IOError:
+    except OSError:
         log("cannot set %s to blocking mode", conn)
 
 

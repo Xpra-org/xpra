@@ -3,7 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.platform.paths import get_icon_filename
@@ -203,12 +204,12 @@ class AudioClient(StubClientMixin):
             "receive"    : self.speaker_allowed,
             }
         #make mypy happy about the type: convert typedict to dict with string keys
-        sp : dict[str,Any] = dict((str(k), v) for k,v in self.audio_properties.items())
+        sp : dict[str,Any] = {str(k): v for k,v in self.audio_properties.items()}
         if FULL_INFO<2:
             #only expose these specific keys:
-            sp = dict((k,v) for k,v in sp.items() if k in (
+            sp = {k:v for k,v in sp.items() if k in (
                 "encoders", "decoders", "muxers", "demuxers",
-                ))
+                )}
         caps.update(sp)
         log("audio capabilities: %s", caps)
         return caps

@@ -7,7 +7,8 @@ import os.path
 import socket
 from time import sleep, monotonic
 from ctypes import Structure, c_uint8, sizeof
-from typing import Callable, Any, ByteString
+from typing import Any
+from collections.abc import Callable, ByteString
 
 from xpra.common import GROUP
 from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
@@ -110,7 +111,7 @@ def has_dual_stack() -> bool:
         with contextlib.closing(sock):
             sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, False)
             return True
-    except socket.error:
+    except OSError:
         return False
 
 def hosts(host_str:str) -> list[str]:
@@ -171,7 +172,7 @@ def accept_connection(socktype:str, listener, timeout=None, socket_options=None)
     log = get_network_logger()
     try:
         sock, address = listener.accept()
-    except socket.error as e:
+    except OSError as e:
         log("rejecting new connection on %s", listener, exc_info=True)
         log.error("Error: cannot accept new connection:")
         log.estr(e)
@@ -1266,7 +1267,7 @@ def load_ssl_options(server_hostname:str, port:int) -> dict[str,Any]:
     options = {}
     if f:
         try:
-            with open(f, "r", encoding="utf8") as fd:
+            with open(f, encoding="utf8") as fd:
                 for line in fd.readlines():
                     line = line.rstrip("\n\r")
                     if not line or line.startswith("#"):
@@ -1291,7 +1292,7 @@ def load_ssl_options(server_hostname:str, port:int) -> dict[str,Any]:
 def save_ssl_options(server_hostname:str, port=443, options=b"") -> str:
     from xpra.log import Logger
     ssllog = Logger("ssl")
-    boptions = b"\n".join(("%s=%s" % (k.replace("_", "-"), v)).encode("latin1") for k, v in options.items())
+    boptions = b"\n".join(("{}={}".format(k.replace("_", "-"), v)).encode("latin1") for k, v in options.items())
     boptions += b"\n"
     f = save_ssl_config_file(server_hostname, port,
                              "options", "configuration options", boptions)

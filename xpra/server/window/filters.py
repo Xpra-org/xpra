@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -48,7 +47,7 @@ class WindowPropertyIn(WindowPropertyFilter):
         return window_value in self.value
 
     def __repr__(self):
-        return "WindowPropertyIn(%s=%s, recurse=%s)" % (self.property_name, self.value, self.recurse)
+        return f"WindowPropertyIn({self.property_name}={self.value}, recurse={self.recurse})"
 
 
 class WindowPropertyNotIn(WindowPropertyIn):
@@ -57,7 +56,7 @@ class WindowPropertyNotIn(WindowPropertyIn):
         return not super().evaluate(window_value)
 
     def __repr__(self):
-        return "WindowPropertyNotIn(%s=%s, recurse=%s)" % (self.property_name, self.value, self.recurse)
+        return f"WindowPropertyNotIn({self.property_name}={self.value}, recurse={self.recurse})"
 
 
 def get_window_filter(object_name, property_name, operator, value):

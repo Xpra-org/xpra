@@ -193,7 +193,7 @@ class Keyboard(KeyboardBase):
                 log("cannot parse xml", exc_info=True)
             else:
                 try:
-                    with open(repository, "r", encoding="latin1") as f:
+                    with open(repository, encoding="latin1") as f:
                         tree = lxml.etree.parse(f)  #pylint: disable=c-extension-no-member @UndefinedVariable
                 except Exception:
                     log.error(f"Error parsing {repository}", exc_info=True)

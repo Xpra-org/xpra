@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -650,7 +649,7 @@ class StartSession(Gtk.Window):
                 value = parse_bool(k, value)
             if value!=default_value:
                 log.info("%s=%s (%s) - not %s (%s)", k, value, type(value), default_value, type(default_value))
-                cmd.append("--%s=%s" % (k, value))
+                cmd.append("--{}={}".format(k, value))
         localhost = self.localhost_btn.get_active()
         if self.display_entry.is_visible():
             display = self.display_entry.get_text().lstrip(":")
@@ -725,7 +724,7 @@ class SessionOptions(Gtk.Window):
         setattr(self, "%s_widget" % fn, widget)
         setattr(self, "%s_widget_type" % fn, widget_type)
         for k,v in kwargs.items():
-            setattr(self, "%s_%s" % (fn, k), v)
+            setattr(self, "{}_{}".format(fn, k), v)
 
     def get_widget(self, fn):
         return getattr(self, "%s_widget" % fn)
@@ -770,7 +769,7 @@ class SessionOptions(Gtk.Window):
         for label, match in options.items():
             btn = Gtk.RadioButton.new_with_label_from_widget(sibling, label)
             hbox.add(btn)
-            setattr(self, "%s_%s" % (widget_base_name, label), btn)
+            setattr(self, "{}_{}".format(widget_base_name, label), btn)
             saved_match = match
             matched = value in match or str(value).lower() in match
             btn.set_active(matched)
@@ -1013,7 +1012,7 @@ class DisplayWindow(SessionOptions):
             for size in SCREEN_SIZES:
                 try:
                     w, h = size.split("x")
-                    size_options["%sx%s" % (w, h)] = "%s x %s" % (w, h)
+                    size_options["{}x{}".format(w, h)] = "{} x {}".format(w, h)
                 except (TypeError, ValueError, IndexError):
                     size_options[size] = size
             self.combo(tb, "Screen Size", "resize-display", size_options)
@@ -1077,7 +1076,7 @@ class EncodingWindow(SessionOptions):
         if "grayscale" not in encodings:
             encodings.append("grayscale")
         from xpra.codecs.loader import get_encoding_name
-        encoding_options = dict((encoding, get_encoding_name(encoding)) for encoding in encodings)
+        encoding_options = {encoding: get_encoding_name(encoding) for encoding in encodings}
         #opts.encodings
         self.combo(tb, "Encoding", "encoding", encoding_options)
         #tb.attach(Gtk.Label(label="Colourspace Modules"), 0)

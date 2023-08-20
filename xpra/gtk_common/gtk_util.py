@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -7,7 +6,8 @@
 import os.path
 import cairo
 import gi
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from xpra.util import first_time, envint, envbool, print_nested_dict
 from xpra.os_util import strtobytes, WIN32, OSX, POSIX, is_X11

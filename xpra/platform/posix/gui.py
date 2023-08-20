@@ -6,7 +6,8 @@
 
 import os
 import sys
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from xpra.os_util import (
     bytestostr, get_saved_env,
@@ -585,7 +586,7 @@ class XI2_Window:
         def intscaled(f):
             return int(f*1000000), 1000000
         def dictscaled(d):
-            return dict((k,intscaled(v)) for k,v in d.items())
+            return {k:intscaled(v) for k,v in d.items()}
         #mouselog("raw(%s)=%s", raw_event_name, raw)
         #IMPORTANT: do not change the insertion order of the keys in the props dictionary!
         #(pre v5 servers rely on positional packets generated using a dictionary iterator)

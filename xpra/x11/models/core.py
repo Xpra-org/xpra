@@ -7,7 +7,8 @@
 import os
 import signal
 from socket import gethostname
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 from gi.repository import GObject   # @UnresolvedImport
 
 from xpra.util import envbool, first_time

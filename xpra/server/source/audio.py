@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -140,9 +139,9 @@ class AudioMixin(StubSourceMixin):
         audio_props = dict(self.audio_properties)
         if FULL_INFO<2:
             #only expose these specific keys:
-            audio_props = dict((k,v) for k,v in audio_props.items() if k in (
+            audio_props = {k:v for k,v in audio_props.items() if k in (
                 "muxers", "demuxers",
-                ))
+                )}
         audio_props.update({
             "codec-full-names"  : True,
             "encoders"          : self.speaker_codecs,

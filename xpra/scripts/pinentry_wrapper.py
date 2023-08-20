@@ -8,7 +8,7 @@ import os
 import sys
 import signal
 from subprocess import Popen, PIPE
-from typing import Callable
+from collections.abc import Callable
 
 from xpra.util import noerr, envbool
 from xpra.os_util import (

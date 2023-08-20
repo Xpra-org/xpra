@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
@@ -1317,7 +1316,7 @@ def _do_run_server(script_file:str, cmdline,
                 # we now have the correct log filename, so use it:
                 try:
                     os.rename(log_filename0, log_filename1)
-                except (OSError, IOError):
+                except OSError:
                     pass
             os.environ["XPRA_SERVER_LOG"] = log_filename1
             noerr(stderr.write, f"Actual log file name is now: {log_filename1!r}\n")
@@ -1373,7 +1372,7 @@ def _do_run_server(script_file:str, cmdline,
                 if dbus_env:
                     dbuslog(f"started new dbus instance: {dbus_env}")
                     write_session_file("dbus.pid", f"{dbus_pid}")
-                    dbus_env_data = "\n".join("%s=%s" % (k, v) for k,v in dbus_env.items())+"\n"
+                    dbus_env_data = "\n".join("{}={}".format(k, v) for k,v in dbus_env.items())+"\n"
                     write_session_file("dbus.env", dbus_env_data.encode("utf8"))
         if dbus_env:
             os.environ.update(dbus_env)

@@ -9,7 +9,8 @@ import sys
 import logging
 import weakref
 import itertools
-from typing import Callable, Any
+from typing import Any
+from collections.abc import Callable
 from contextlib import AbstractContextManager
 # This module is used by non-GUI programs and thus must not import gtk.
 

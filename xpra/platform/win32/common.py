@@ -176,7 +176,7 @@ def GetMonitorInfo(hmonitor):
     info.szDevice = ""
     info.cbSize = sizeof(MONITORINFOEX)
     if not GetMonitorInfoW(hmonitor, byref(info)):
-        raise WindowsError()    #@UndefinedVariable
+        raise OSError()    #@UndefinedVariable
     monitor = info.rcMonitor.left, info.rcMonitor.top, info.rcMonitor.right, info.rcMonitor.bottom
     work = info.rcWork.left, info.rcWork.top, info.rcWork.right, info.rcWork.bottom
     return  {

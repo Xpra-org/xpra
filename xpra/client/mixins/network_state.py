@@ -9,7 +9,8 @@ import re
 import sys
 from time import monotonic
 from collections import deque
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 from gi.repository import GLib
 
 from xpra.os_util import POSIX

@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from enum import IntEnum
-from typing import Callable
+from collections.abc import Callable
 
 from xpra.dbus.common import loop_init, init_session_bus
 from xpra.log import Logger

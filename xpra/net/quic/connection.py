@@ -5,7 +5,8 @@
 
 import os
 from queue import SimpleQueue
-from typing import Callable, Union, Any
+from typing import Union, Any
+from collections.abc import Callable
 
 from aioquic.h0.connection import H0Connection
 from aioquic.h3.connection import H3Connection

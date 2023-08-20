@@ -6,7 +6,8 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Callable, Any
+from typing import Any
+from collections.abc import Callable
 
 from xpra.common import KeyEvent
 from xpra.client.gui.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
@@ -356,4 +357,4 @@ class KeyboardHelper:
         if not kb_info:
             log.info(" using default keyboard settings")
         else:
-            log.info(" keyboard settings: %s", csv("%s=%s" % (std(k), std(v)) for k,v in kb_info.items()))
+            log.info(" keyboard settings: %s", csv("{}={}".format(std(k), std(v)) for k,v in kb_info.items()))

@@ -5,7 +5,7 @@
 
 import os
 import sys
-from typing import Callable
+from collections.abc import Callable
 
 def do_init():
     for x in list(sys.argv):

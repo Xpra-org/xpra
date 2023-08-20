@@ -10,7 +10,7 @@ import shlex
 import inspect
 import os.path
 import tempfile
-from typing import Callable
+from collections.abc import Callable
 
 from xpra.platform import platform_import
 

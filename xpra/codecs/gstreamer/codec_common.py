@@ -5,7 +5,8 @@
 
 import os
 from queue import SimpleQueue, Empty
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from xpra.util import typedict, envint, parse_simple_dict
 from xpra.os_util import OSX

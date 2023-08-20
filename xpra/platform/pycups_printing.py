@@ -13,7 +13,7 @@ import tempfile
 from subprocess import PIPE, Popen
 import shlex
 from threading import Lock
-from typing import Callable
+from collections.abc import Callable
 from cups import Connection  # @UnresolvedImport
 
 from xpra.common import DEFAULT_XDG_DATA_DIRS
@@ -396,7 +396,7 @@ def cleanup_printing():
 
 def get_printers():
     all_printers = get_all_printers()
-    return dict((k,v) for k,v in all_printers.items() if k not in SKIPPED_PRINTERS)
+    return {k:v for k,v in all_printers.items() if k not in SKIPPED_PRINTERS}
 
 def get_all_printers():
     conn = Connection()
@@ -419,8 +419,8 @@ def print_files(printer, filenames, title, options):
     log("pycups.print_files%s", (printer, filenames, title, options))
     actual_options = DEFAULT_CUPS_OPTIONS.copy()
     s = bytestostr
-    used_options = dict((s(k),s(v)) for k,v in options.items() if s(k) in CUPS_OPTIONS_WHITELIST)
-    unused_options = dict((s(k),s(v)) for k,v in options.items() if s(k) not in CUPS_OPTIONS_WHITELIST)
+    used_options = {s(k):s(v) for k,v in options.items() if s(k) in CUPS_OPTIONS_WHITELIST}
+    unused_options = {s(k):s(v) for k,v in options.items() if s(k) not in CUPS_OPTIONS_WHITELIST}
     log("used options=%s", used_options)
     log("unused options=%s", unused_options)
     actual_options.update(used_options)

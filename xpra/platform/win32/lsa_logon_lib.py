@@ -102,7 +102,7 @@ class NTSTATUS(wintypes.LONG):
     def __repr__(self):
         name = self.__class__.__name__
         status = wintypes.ULONG.from_buffer(self)           #@UndefinedVariable
-        return '%s(%#010x)' % (name, status.value)
+        return '{}({:#010x})'.format(name, status.value)
 
 PNTSTATUS = ctypes.POINTER(NTSTATUS)
 
@@ -272,10 +272,10 @@ class ContiguousUnicode(ctypes.Structure):
         values = []
         for n in self._string_names_:
             if n == name:
-                values.append(value or u'')
+                values.append(value or '')
             else:
-                values.append(getattr(self, n) or u'')
-        self._set_unicode_buffer(u'\x00'.join(values))
+                values.append(getattr(self, n) or '')
+        self._set_unicode_buffer('\x00'.join(values))
 
         cls = type(self)
         wchar_size = ctypes.sizeof(WCHAR)
@@ -610,7 +610,7 @@ def lsa_logon_user(auth_info, local_groups=None, origin_name=py_origin_name,
                 ctypes.byref(substatus))
             log("LsaLogonUser%s", args)
             secur32.LsaLogonUser(*args)
-        except WindowsError:            #@UndefinedVariable
+        except OSError:            #@UndefinedVariable
             if substatus.value:
                 raise WinError(substatus.to_error()) from None
             raise

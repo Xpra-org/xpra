@@ -42,7 +42,7 @@ def main():
                 if os.path.isabs(x):
                     from xpra.codecs.icon_util import load_icon_from_file
                     v = load_icon_from_file(x)
-                    print("load_icon_from_file(%s)=%s" % (x, v))
+                    print(f"load_icon_from_file({x})={v}")
         else:
             menu = load_menu()
             if menu:

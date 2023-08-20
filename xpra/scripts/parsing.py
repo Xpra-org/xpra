@@ -13,7 +13,8 @@ import shlex
 import os.path
 import optparse
 from urllib import parse
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from xpra.version_util import full_version_str
 from xpra.util import envbool, csv, parse_simple_dict, stderr_print
@@ -292,7 +293,7 @@ def load_password_file(password_file:str) -> str:
         warn(f"Error: password file {password_file!r} does not exist:\n")
         return ""
     try:
-        with open(password_file, "r", encoding="utf8") as f:
+        with open(password_file, encoding="utf8") as f:
             return f.read()
     except Exception as e:
         warn(f"Error: failed to read the password file {password_file!r}:\n")

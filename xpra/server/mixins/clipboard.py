@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
@@ -107,7 +106,7 @@ class ClipboardServer(StubServerMixin):
                           self.clipboard_filter_file)
                 return
             try:
-                with open(self.clipboard_filter_file, "r", encoding="utf8") as f:
+                with open(self.clipboard_filter_file, encoding="utf8") as f:
                     for line in f:
                         clipboard_filter_res.append(line.strip())
                     log("loaded %s regular expressions from clipboard filter file %s",

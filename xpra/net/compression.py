@@ -6,7 +6,8 @@
 # later version. See the file COPYING for details.
 
 from collections import namedtuple
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from xpra.util import envbool
 from xpra.common import MIN_COMPRESS_SIZE, MAX_DECOMPRESSED_SIZE

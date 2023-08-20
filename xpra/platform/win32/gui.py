@@ -9,7 +9,8 @@
 import os
 import sys
 import types
-from typing import Callable, Any
+from typing import Any
+from collections.abc import Callable
 from ctypes import (
     WinDLL, WinError, get_last_error,  # @UnresolvedImport
     CDLL, pythonapi, py_object,
@@ -264,7 +265,7 @@ def get_session_type() -> str:
         log("get_session_type() DwmIsCompositionEnabled()=%s (retcode=%s)", b.value, retcode)
         if retcode==0 and b.value:
             return "aero"
-    except (AttributeError, WindowsError):      #@UndefinedVariable
+    except (AttributeError, OSError):      #@UndefinedVariable
         # No windll, no dwmapi or no DwmIsCompositionEnabled function.
         log("get_session_type() failed to query DwmIsCompositionEnabled", exc_info=True)
     return ""
@@ -921,11 +922,11 @@ def get_monitors_info(xscale=1, yscale=1):
         with CIMV2_Query("SELECT * FROM Win32_DesktopMonitor") as res:
             index = 0
             for monitor in res:
-                dminfo = dict((k, monitor.Properties_[k].Value) for k in (
+                dminfo = {k: monitor.Properties_[k].Value for k in (
                     "DeviceID", "MonitorManufacturer", "MonitorType",
                     "ScreenWidth", "ScreenHeight",
                     "PixelsPerXLogicalInch", "PixelsPerYLogicalInch",
-                    ))
+                    )}
                 log(f"Win32_DesktopMonitor {index}: {dminfo}")
                 manufacturer = dminfo["MonitorManufacturer"]
                 model = dminfo["MonitorType"]

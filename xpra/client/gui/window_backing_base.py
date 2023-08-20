@@ -9,7 +9,8 @@ import hashlib
 from time import monotonic
 from threading import Lock
 from collections import deque
-from typing import Any, Callable, Iterable
+from typing import Any
+from collections.abc import Callable, Iterable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.net.mmap_pipe import mmap_read
@@ -79,7 +80,7 @@ def load_video_decoders():
                 #use the first one:
                 _, decoder_module = decoders[0]
                 VIDEO_DECODERS[encoding] = decoder_module
-        log("video decoders: %s", dict((e,d.get_type()) for e,d in VIDEO_DECODERS.items()))
+        log("video decoders: %s", {e:d.get_type() for e,d in VIDEO_DECODERS.items()})
     return VIDEO_DECODERS
 
 

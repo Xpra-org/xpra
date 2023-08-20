@@ -75,7 +75,7 @@ class AvahiPublishers:
             txt = []
             if text_dict:
                 for k,v in td.items():
-                    txt.append("%s=%s" % (k,v))
+                    txt.append(f"{k}={v}")
             fqdn = host
             if host in ("0.0.0.0", "::"):
                 fqdn = ""
@@ -233,7 +233,7 @@ class AvahiPublisher:
             log.warn(" publisher has already been stopped")
             return
         #prevent avahi from choking on ints:
-        txt_strs = dict((k,str(v)) for k,v in txt.items())
+        txt_strs = {k:str(v) for k,v in txt.items()}
         def reply_handler(*args):
             log("reply_handler%s", args)
             log("update_txt(%s) done", txt)

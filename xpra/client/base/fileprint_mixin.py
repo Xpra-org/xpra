@@ -135,7 +135,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
                 #filter attributes so that we only compare things that are actually used
                 if not d:
                     return d
-                return dict((k,v) for k,v in d.items() if k in self.printer_attributes)
+                return {k:v for k,v in d.items() if k in self.printer_attributes}
             for k,v in printers.items():
                 device_uri = v.get("device-uri", "")
                 if device_uri:

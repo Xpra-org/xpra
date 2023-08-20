@@ -9,7 +9,8 @@
 import os
 import socket
 import sys
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from xpra.version_util import parse_version
 from xpra.net.common import FLUSH_HEADER
@@ -257,7 +258,7 @@ def get_net_sys_config() -> dict[str,Any]:
     def addproc(procpath:str, subsystem:str, name:str, conv:Callable=stripnl):
         assert name
         try:
-            with open(procpath, mode="r", encoding="latin1") as f:
+            with open(procpath, encoding="latin1") as f:
                 data = f.read()
                 subdict = net_sys_config.setdefault(subsystem, {})
                 if name.find("/")>0:
@@ -349,9 +350,9 @@ def get_ssl_info(show_constants=False) -> dict[str,Any]:
         return {}
     info : dict[str,Any] = {}
     if show_constants:
-        protocols = dict((k,int(getattr(ssl, k))) for k in dir(ssl) if k.startswith("PROTOCOL_"))
-        ops = dict((k,int(getattr(ssl, k))) for k in dir(ssl) if k.startswith("OP_"))
-        vers = dict((k,int(getattr(ssl, k))) for k in dir(ssl) if k.startswith("VERIFY_"))
+        protocols = {k:int(getattr(ssl, k)) for k in dir(ssl) if k.startswith("PROTOCOL_")}
+        ops = {k:int(getattr(ssl, k)) for k in dir(ssl) if k.startswith("OP_")}
+        vers = {k:int(getattr(ssl, k)) for k in dir(ssl) if k.startswith("VERIFY_")}
         info |= {
             "protocols"    : protocols,
             "options"    : ops,
@@ -451,7 +452,7 @@ def main(): # pragma: no cover
                                 socket.AF_INET  : "IPv4",
                                 socket.AF_INET6 : "IPv6",
                                 }[addr]
-                            print(" * %s:     %s" % (stype, ip))
+                            print(f" * {stype}:     {ip}")
                             if POSIX:
                                 from xpra.net.socket_util import create_tcp_socket
                                 try:

@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Iterable
+from collections.abc import Iterable
 
 from xpra.os_util import is_socket
 from xpra.log import Logger

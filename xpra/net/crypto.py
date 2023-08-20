@@ -8,7 +8,8 @@ import os
 import sys
 import secrets
 from struct import pack
-from typing import Any, Iterable
+from typing import Any
+from collections.abc import Iterable
 
 from xpra.util import envint, envbool, csv
 from xpra.version_util import parse_version

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -6,7 +5,8 @@
 
 import re
 import os.path
-from typing import Callable, Any
+from typing import Any
+from collections.abc import Callable
 
 from xpra.util import ellipsizer, envbool
 from xpra.os_util import getuid, OSX, POSIX, get_proc_cmdline
@@ -34,7 +34,7 @@ def getprop(window, prop):
 def _load_dict_file(filename:str, parser:Callable) -> dict:
     #filter out comments and remove line endings
     lines = []
-    with open(filename, "r", encoding="utf8") as f:
+    with open(filename, encoding="utf8") as f:
         for line in f:
             line = line.rstrip("\n\r")
             if line.startswith("#") or not line.strip():

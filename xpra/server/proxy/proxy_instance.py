@@ -7,7 +7,8 @@
 import socket
 from time import sleep, time, monotonic
 from queue import SimpleQueue, Queue
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE

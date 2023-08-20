@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import sys
-from typing import Callable
+from collections.abc import Callable
 
 from xpra.platform import platform_import
 

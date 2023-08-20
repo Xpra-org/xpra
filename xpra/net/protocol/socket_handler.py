@@ -14,7 +14,8 @@ from time import monotonic
 from socket import error as socket_error
 from threading import Lock, RLock, Event, Thread, current_thread
 from queue import Queue, SimpleQueue
-from typing import Any, ByteString, Callable, Iterable
+from typing import Any
+from collections.abc import ByteString, Callable, Iterable
 
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr
 from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict

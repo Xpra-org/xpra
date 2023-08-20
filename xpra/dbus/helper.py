@@ -79,11 +79,11 @@ def native_to_dbus(value, signature=None):
                 elif keytype is float:
                     sig = "d"
             if sig:
-                value = dict((k, native_to_dbus(v)) for k,v in value.items())
+                value = {k: native_to_dbus(v) for k,v in value.items()}
             else:
                 sig = "s"
                 #use strings as keys
-                value = dict((str(k), native_to_dbus(v)) for k,v in value.items())
+                value = {str(k): native_to_dbus(v) for k,v in value.items()}
             signature = f"{sig}v"
         return types.Dictionary(value, signature=signature)
     return types.String(value)

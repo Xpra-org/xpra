@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -678,9 +677,9 @@ class ServerBaseControlCommands(StubServerMixin):
             #there can only be one ui client now,
             #disconnect all but the first ui_client:
             #(using the 'counter' value to figure out who was first connected)
-            ui_clients = dict((getattr(ss, "counter", 0), proto)
+            ui_clients = {getattr(ss, "counter", 0): proto
                               for proto, ss in tuple(self._server_sources.items())
-                              if getattr(ss, "ui_client", False))
+                              if getattr(ss, "ui_client", False)}
             n = len(ui_clients)
             if n>1:
                 for c in sorted(ui_clients)[1:]:

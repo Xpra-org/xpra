@@ -15,7 +15,7 @@ This is used by the `pycallgraph` test wrapper.
 """
 
 from threading import Thread
-from typing import Callable
+from collections.abc import Callable
 
 def make_thread(target : Callable, name : str, daemon : bool=False, args=()) -> Thread:
     t = Thread(target=target, name=name, args=args)

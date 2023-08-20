@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
@@ -8,7 +7,8 @@
 import os
 from io import BytesIO
 from time import monotonic
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 try:
     from PIL import Image

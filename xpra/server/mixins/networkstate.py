@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -7,7 +6,8 @@
 
 import os
 from time import sleep
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 from gi.repository import GLib
 
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -79,7 +79,7 @@ class NetworkStateServer(StubServerMixin):
         if self.mem_bytes:
             info["total-memory"] = self.mem_bytes
         if self.cpu_info:
-            info["cpuinfo"] = dict((k,v) for k,v in self.cpu_info.items() if k!="python_version")
+            info["cpuinfo"] = {k:v for k,v in self.cpu_info.items() if k!="python_version"}
         return info
 
     def get_server_features(self, _source) -> dict[str,Any]:

@@ -11,7 +11,8 @@ import signal
 import socket
 import string
 from time import monotonic
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from xpra.log import Logger
 from xpra.scripts.config import InitExit
@@ -512,7 +513,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         return {"aliases" : self.get_network_aliases()}
 
     def get_network_aliases(self):
-        return dict((v,k) for k,v in self._aliases.items())
+        return {v:k for k,v in self._aliases.items()}
 
 
     def compressed_wrapper(self, datatype, data, level=5, **kwargs) -> compression.Compressed:
@@ -768,7 +769,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         }
         overrides.update(conn.options.get("ssl-options", {}))
         ssl_options = get_ssl_attributes(None, False, overrides)
-        kwargs = dict((k.replace("-", "_"), v) for k, v in ssl_options.items())
+        kwargs = {k.replace("-", "_"): v for k, v in ssl_options.items()}
         # wait for the 'ssl-upgrade' packet to be sent...
         # this should be done by watching the IO and formatting threads instead
         import time

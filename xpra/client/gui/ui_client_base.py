@@ -7,7 +7,8 @@
 
 import os
 import sys
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from xpra.client.base.client_base import XpraClientBase
 from xpra.client.gui.keyboard_helper import KeyboardHelper
@@ -420,7 +421,7 @@ class UIXpraClient(ClientBaseClass):
         u("control_commands",   self.get_control_commands_caps())
         if FULL_INFO>0:
             def skipkeys(d, *keys):
-                return dict((k,v) for k,v in d.items() if k not in keys)
+                return {k:v for k,v in d.items() if k not in keys}
             pi = get_platform_info()
             op = self.opengl_props
             if FULL_INFO==1:
@@ -587,7 +588,7 @@ class UIXpraClient(ClientBaseClass):
     ######################################################################
     # server messages:
     def _process_server_event(self, packet : PacketType):
-        log(": ".join((str(x) for x in packet[1:])))
+        log(": ".join(str(x) for x in packet[1:]))
 
     def on_server_setting_changed(self, setting:str, cb:Callable):
         self._on_server_setting_changed.setdefault(setting, []).append(cb)

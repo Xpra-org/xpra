@@ -4,7 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from xpra.common import KeyEvent
 from xpra.keyboard.mask import mask_to_names, MODIFIER_MAP

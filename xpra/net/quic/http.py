@@ -4,7 +4,8 @@
 # later version. See the file COPYING for details.
 
 import os.path
-from typing import Callable, Union
+from typing import Union
+from collections.abc import Callable
 
 from aioquic.asyncio import QuicConnectionProtocol
 from aioquic.h0.connection import H0Connection

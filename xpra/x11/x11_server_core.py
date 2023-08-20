@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
 # Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
@@ -733,9 +732,9 @@ class X11ServerCore(GTKServerBase):
                 screenlog.warn("Warning: tried to set resolution to %ix%i", w, h)
                 screenlog.warn(" and ended up with %ix%i", root_w, root_h)
             else:
-                msg = "server virtual display now set to %sx%s" % (root_w, root_h)
+                msg = f"server virtual display now set to {root_w}x{root_h}"
                 if desired_w!=root_w or desired_h!=root_h:
-                    msg += " (best match for %sx%s)" % (desired_w, desired_h)
+                    msg += f" (best match for {desired_w}x{desired_h})"
                 screenlog.info(msg)
             def show_dpi():
                 wmm, hmm = RandR.get_screen_size_mm()      #ie: (1280, 1024)
@@ -752,7 +751,7 @@ class X11ServerCore(GTKServerBase):
                     if maxdelta>=10:
                         l = log.warn
                     messages = [
-                        "DPI set to %s x %s (wanted %s x %s)" % (actual_xdpi, actual_ydpi, xdpi, ydpi),
+                        f"DPI set to {actual_xdpi} x {actual_ydpi} (wanted {xdpi} x {ydpi})",
                         ]
                     if maxdelta>=10:
                         messages.append("you may experience scaling problems, such as huge or small fonts, etc")

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -11,7 +10,8 @@ import traceback
 from math import sqrt, ceil
 from functools import reduce
 from time import monotonic
-from typing import Callable, Any
+from typing import Any
+from collections.abc import Callable
 
 from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
@@ -2323,7 +2323,7 @@ class WindowVideoSource(WindowSource):
                         encoder_types.append(especs.codec_type)
             videolog.error("Error: failed to setup a video pipeline for %s encoding with source format %s",
                            encoding, src_format)
-            all_encs = set(es.codec_type for sublist in encoder_specs.values() for es in sublist)
+            all_encs = {es.codec_type for sublist in encoder_specs.values() for es in sublist}
             videolog.error(" all encoders: %s", csv(tuple(all_encs)))
             videolog.error(" supported CSC modes: %s", csv(supported_csc_modes))
             videolog.error(" supported encoders: %s", csv(encoder_types))

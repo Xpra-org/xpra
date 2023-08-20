@@ -81,7 +81,7 @@ class program_context:
     def __exit__(self, *_args):
         clean()
     def __repr__(self):
-        return "gui_context(%s, %s)" % (self.prgname, self.appname)
+        return f"gui_context({self.prgname}, {self.appname})"
 
 
 _prgname = None
@@ -185,7 +185,7 @@ def platform_import(where, pm, required, *imports):
         found = hasattr(platform_module, x)
         if not found:
             if required:
-                raise ImportError("could not find %s in %s" % (x, module))
+                raise ImportError(f"could not find {x} in {module}")
         else:
             where[x] = getattr(platform_module, x)
 

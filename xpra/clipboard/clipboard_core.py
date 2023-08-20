@@ -9,7 +9,8 @@ import struct
 import re
 from time import monotonic
 from io import BytesIO
-from typing import Callable, Any, Iterable
+from typing import Any
+from collections.abc import Callable, Iterable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.common import noop

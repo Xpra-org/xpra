@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -58,10 +57,10 @@ class NotificationForwarder(StubServerMixin):
     def parse_hello(self, ss, _caps, send_ui) -> None:
         log("parse_hello(%s, {...}, %s) notifications_forwarder=%s", ss, send_ui, self.notifications_forwarder)
         if send_ui and self.notifications_forwarder:
-            client_notification_actions = dict(
-                (s.uuid, getattr(s, "send_notifications_actions", False))
+            client_notification_actions = {
+                s.uuid: getattr(s, "send_notifications_actions", False)
                 for s in self._server_sources.values()
-                )
+                }
             log("client_notification_actions=%s", client_notification_actions)
             self.notifications_forwarder.support_actions = any(v for v in client_notification_actions.values())
 

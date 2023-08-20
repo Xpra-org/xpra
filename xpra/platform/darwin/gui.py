@@ -9,7 +9,8 @@ import math
 import ctypes
 import struct
 from weakref import WeakValueDictionary
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from gi.repository import GLib      #@UnresolvedImport
 import objc                         #@UnresolvedImport
@@ -347,7 +348,7 @@ def get_display_mode_info(mode) -> dict[str,Any]:
     return _call_CG_conv(defs, mode)
 
 def get_display_modes_info(modes) -> dict[int,Any]:
-    return dict((i,get_display_mode_info(mode)) for i,mode in enumerate(modes))
+    return {i:get_display_mode_info(mode) for i,mode in enumerate(modes)}
 
 
 def _call_CG_conv(defs:tuple[tuple[str,str,Callable],...], argument) -> dict[str,Any]:

@@ -431,7 +431,7 @@ class InfoTimerClient(MonitorXpraClient):
 
     def signal_handler(self, signum, *args) -> None:
         self.log("exit_code=%s" % self.exit_code)
-        self.log("signal_handler(%s, %s)" % (signum, args,))
+        self.log("signal_handler({}, {})".format(signum, args))
         self.quit(128+signum)
         self.log("exit_code=%s" % self.exit_code)
 
@@ -607,7 +607,7 @@ class VersionXpraClient(HelloRequestClient):
         if not v:
             self.warn_and_quit(ExitCode.FAILURE, "server did not provide the version information")
         else:
-            sys.stdout.write("%s\n" % (v,))
+            sys.stdout.write(f"{v}\n")
             sys.stdout.flush()
             self.quit(ExitCode.OK)
 

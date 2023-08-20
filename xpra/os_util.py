@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -17,7 +16,8 @@ import binascii
 import threading
 from time import monotonic, sleep
 from subprocess import PIPE, Popen
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 from threading import Thread
 
 # only minimal imports go at the top
@@ -911,7 +911,7 @@ def get_peercred(sock) -> tuple[int,int,int] | None:
             pid, uid, gid = struct.unpack(b'3i',creds)
             log("peer: %s", (pid, uid, gid))
             return pid, uid, gid
-        except IOError as  e:
+        except OSError as  e:
             log("getsockopt", exc_info=True)
             log.error(f"Error getting peer credentials: {e}")
             return None

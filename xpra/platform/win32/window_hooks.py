@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Callable
+from collections.abc import Callable
 from ctypes import (
     Structure, cast, POINTER,
     WinDLL,  # @UnresolvedImport

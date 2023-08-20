@@ -11,7 +11,8 @@
 
 import os
 import signal
-from typing import Any, Callable, Optional
+from typing import Any, Optional
+from collections.abc import Callable
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util import envint, envbool
@@ -231,7 +232,7 @@ class ChildReaper:
             cinfo[i] = d
         return info
 
-singleton : Optional[ChildReaper] = None
+singleton : ChildReaper | None = None
 def getChildReaper() -> ChildReaper:
     global singleton
     if singleton is None:

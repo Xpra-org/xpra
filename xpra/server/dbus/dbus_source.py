@@ -50,7 +50,7 @@ class DBUS_Source(dbus.service.Object):
                             }
 
     def __str__(self):
-        return "DBUS_Source(%s:%s)" % (BUS_NAME, self.path)
+        return f"DBUS_Source({BUS_NAME}:{self.path})"
 
 
     def cleanup(self):
@@ -79,7 +79,7 @@ class DBUS_Source(dbus.service.Object):
     @dbus.service.method(PROPERTIES_IFACE, in_signature='', out_signature='a{sv}')
     def GetAll(self, interface_name):
         if interface_name==INTERFACE:
-            v = dict((x, self.Get(x)) for x in self._properties.keys())
+            v = {x: self.Get(x) for x in self._properties.keys()}
         else:
             v = {}
         self.log(".GetAll(%s)=%s", interface_name, v)

@@ -5,7 +5,8 @@
 #pylint: disable-msg=E1101
 
 import os
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from xpra.util import envbool
 from xpra.os_util import is_Ubuntu, is_Debian
@@ -79,7 +80,7 @@ def get_virtual_video_devices(capture_only=True) -> dict[int, dict]:
                 continue
             dev_name = os.path.join(dev_dir, "name")
             try:
-                with open(dev_name, "r", encoding="latin1") as df:
+                with open(dev_name, encoding="latin1") as df:
                     name = df.read().replace("\n", "")
                 info["card"] = name
             except OSError:

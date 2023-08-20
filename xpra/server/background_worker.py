@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -8,7 +7,7 @@
 from weakref import WeakSet
 from threading import Thread, Lock
 from queue import Queue
-from typing import Callable
+from collections.abc import Callable
 
 from xpra.log import Logger
 log = Logger("util")

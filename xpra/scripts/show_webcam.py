@@ -39,7 +39,7 @@ def main():
         try:
             cap = cv2.VideoCapture(device)  # @UndefinedVariable
         except Exception as e:
-            command_error("Error: failed to capture video using device %s:\n%s" % (device, e))
+            command_error(f"Error: failed to capture video using device {device}:\n{e}")
             return 1
         log.info("capture device for %i: %s", device, cap)
         while True:

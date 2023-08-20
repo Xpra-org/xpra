@@ -8,7 +8,8 @@
 
 from time import monotonic
 from types import ModuleType
-from typing import Callable, Any
+from typing import Any
+from collections.abc import Callable
 
 from xpra.gst_common import GST_FLOW_OK, import_gst
 gst = import_gst()

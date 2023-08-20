@@ -5,7 +5,8 @@
 
 import os
 import threading
-from typing import Callable, Any, ByteString, Union, TypeAlias
+from typing import Any, Union, TypeAlias
+from collections.abc import Callable, ByteString
 
 from xpra.net.compression import Compressed, Compressible, LargeStructure
 from xpra.util import repr_ellipsized, envint, envbool

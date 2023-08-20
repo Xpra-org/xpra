@@ -6,7 +6,7 @@
 # Licensed under LGPL version 3 (see docs/LICENSE.LGPL-3)
 
 import struct
-from typing import ByteString
+from collections.abc import ByteString
 
 from xpra.net.websockets.common import OPCODE_CLOSE
 from xpra.net.websockets.mask import hybi_unmask   #@UnresolvedImport

@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Any, Union, Callable
+from typing import Any, Union
+from collections.abc import Callable
 from xpra.util import typedict
 
 class StubSourceMixin:
@@ -72,7 +72,7 @@ class StubSourceMixin:
         This dummy implementation makes it easier to test without a network connection.
         """
 
-    def queue_encode(self, item : Union[None,tuple[bool,Callable,tuple]]):
+    def queue_encode(self, item : None |tuple[bool,Callable,tuple]):
         """
         Used by the window source to send data to be processed in the encode thread
         """

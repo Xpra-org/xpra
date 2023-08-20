@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2014-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -282,7 +281,7 @@ KEYSYM_DEFS = {
                "question"           : "?",
                "bar"                : "|",
                "exclam"             : "!",
-               "quotedbl"           : u'"',
+               "quotedbl"           : '"',
                "sterling"           : "£",
                "dollar"             : "$",
                "percent"            : "%",

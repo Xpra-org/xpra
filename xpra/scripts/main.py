@@ -18,7 +18,8 @@ from subprocess import Popen, PIPE, TimeoutExpired
 import signal
 import shlex
 import traceback
-from typing import Callable, Iterable, Any
+from typing import Any
+from collections.abc import Callable, Iterable
 
 from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra
@@ -245,7 +246,7 @@ def configure_env(env_str) -> None:
             #running as root!
             #sanitize: only allow "safe" environment variables
             #as these may have been specified by a non-root user
-            env = dict((k,v) for k,v in env.items() if k.startswith("XPRA_"))
+            env = {k:v for k,v in env.items() if k.startswith("XPRA_")}
         os.environ.update(env)
 
 
@@ -282,7 +283,7 @@ def isdisplaytype(args, *dtypes) -> bool:
     if not args:
         return False
     d = args[0]
-    return any((d.startswith(f"{dtype}/") or d.startswith(f"{dtype}:") for dtype in dtypes))
+    return any(d.startswith(f"{dtype}/") or d.startswith(f"{dtype}:") for dtype in dtypes)
 
 def check_gtk_client() -> None:
     no_gtk()
@@ -1130,7 +1131,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         if dtype in ("ssl", "wss"):
             from xpra.net.socket_util import ssl_wrap_socket, ssl_handshake
             #convert option names to function arguments:
-            ssl_options = dict((k.replace("-", "_"), v) for k, v in display_desc.get("ssl-options", {}).items())
+            ssl_options = {k.replace("-", "_"): v for k, v in display_desc.get("ssl-options", {}).items()}
             sock = ssl_wrap_socket(sock, **ssl_options)
             sock = ssl_handshake(sock)
             assert sock, f"failed to wrap socket {sock}"
@@ -3379,7 +3380,7 @@ def run_recover(script_file, cmdline, error_cb, options, args, defaults) -> int:
         if mode.find(m)>=0:
             mode = m
             break
-    print("Recovering display '%s' as a %s server" % (display, mode))
+    print(f"Recovering display {display!r} as a {mode} server")
     #use the existing display:
     options.use_display = "yes"
     no_gtk()
@@ -3427,7 +3428,7 @@ def run_clean_displays(options, args) -> int:
         inodes = []
         sockpath = os.path.join(X11_SOCKET_DIR, "X%s" % display.lstrip(":"))
         PROC_NET_UNIX = "/proc/net/unix"
-        with open(PROC_NET_UNIX, "r", encoding="latin1") as proc_net_unix:
+        with open(PROC_NET_UNIX, encoding="latin1") as proc_net_unix:
             for line in proc_net_unix:
                 parts = line.rstrip("\n\r").split(" ")
                 if not parts or len(parts)<8:
@@ -3476,7 +3477,7 @@ def run_clean_displays(options, args) -> int:
                         cmd = ""
                         try:
                             cmdline = os.path.join(procpath, "cmdline")
-                            cmd = open(cmdline, "r", encoding="utf8").read()
+                            cmd = open(cmdline, encoding="utf8").read()
                             cmd = shlex.join(cmd.split("\0"))
                         except Exception:
                             pass
@@ -3517,7 +3518,7 @@ def get_displays_info(dotxpra=None, display_names=None, sessions_dir=None) -> di
         #add wminfo:
         descr.update(get_display_info(display, sessions_dir))
     sn = sorted_nicely(displays_info.keys())
-    return dict((k,displays_info[k]) for k in sn)
+    return {k:displays_info[k] for k in sn}
 
 def get_display_info(display, sessions_dir=None) -> dict[str,Any]:
     display_info = {"state" : "LIVE"}
@@ -3604,10 +3605,10 @@ def get_displays(dotxpra=None, display_names=None) -> dict[str,Any]:
     displays = find_displays()
     log(f"find_displays()={displays}")
     #filter out:
-    displays = dict(
-        (d,i) for d,i in tuple(displays.items()) if
+    displays = {
+        d:i for d,i in tuple(displays.items()) if
         (d not in xpra_sessions) and (display_names is None or d in display_names)
-        )
+        }
     log(f"get_displays({dotxpra}, {display_names})={displays} (xpra_sessions={xpra_sessions})")
     return displays
 
@@ -3780,7 +3781,7 @@ def clean_sockets(dotxpra, sockets, timeout=LIST_REPROBE_TIMEOUT) -> None:
             elif state is DotXpra.UNKNOWN:
                 unknown.append(v)
             else:
-                sys.stdout.write("\t%s session at %s (%s)\n" % (state, display, socket_dir))
+                sys.stdout.write(f"\t{state} session at {display} ({socket_dir})\n")
         reprobe = unknown
         if reprobe and timeout==LIST_REPROBE_TIMEOUT:
             #if all the remaining sockets are old,

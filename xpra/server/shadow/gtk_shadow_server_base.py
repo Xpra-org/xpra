@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -38,8 +37,8 @@ def parse_geometry(s) -> list[int]:
         if len(parts)==1:
             x = y = 0
         else:
-            x, y = [int(v.strip(" ")) for v in parts[1].split("x")]
-        w, h = [int(v.strip(" ")) for v in parts[0].split("x")]
+            x, y = (int(v.strip(" ")) for v in parts[1].split("x"))
+        w, h = (int(v.strip(" ")) for v in parts[0].split("x"))
         geometry = [x, y, w, h]
         screenlog("capture geometry: %s", geometry)
         return geometry
@@ -278,7 +277,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             log.estr(e)
             return
         #build a map of window identifier -> window model:
-        xid_to_window = dict((window.get_id(), window) for window in windows)
+        xid_to_window = {window.get_id(): window for window in windows}
         log("xid_to_window(%s)=%s", windows, xid_to_window)
         sources = self.window_sources()
         for wid, window in tuple(self._id_to_window.items()):

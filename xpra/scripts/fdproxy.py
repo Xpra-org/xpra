@@ -6,7 +6,7 @@
 
 import signal
 import threading
-from typing import Callable
+from collections.abc import Callable
 
 from xpra.net.bytestreams import untilConcludes
 from xpra.util import repr_ellipsized, envint, envbool

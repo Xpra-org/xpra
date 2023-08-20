@@ -8,7 +8,8 @@ import re
 import sys
 import os
 import shlex
-from typing import Callable, Any
+from typing import Any
+from collections.abc import Callable
 
 from xpra.common import noop
 from xpra.util import csv, stderr_print, remove_dupes
@@ -317,7 +318,7 @@ def read_config(conf_file:str) -> dict[str,Any]:
     if not os.path.exists(conf_file) or not os.path.isfile(conf_file):
         debug("read_config(%s) is not a file or does not exist", conf_file)
         return d
-    with open(conf_file, "r", encoding="utf8") as f:
+    with open(conf_file, encoding="utf8") as f:
         lines = []
         no = 0
         for line in f:

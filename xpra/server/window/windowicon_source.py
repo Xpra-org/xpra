@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
@@ -38,7 +37,7 @@ Mixin for handling the sending of window icon pixels.
 """
 class WindowIconSource:
 
-    fallback_window_icon : Union[bool,tuple[int,int,str,bytes]] = False
+    fallback_window_icon : bool |tuple[int,int,str,bytes] = False
 
     def __init__(self, window_icon_encodings, icons_encoding_options):
         self.window_icon_encodings = window_icon_encodings
@@ -296,7 +295,7 @@ class WindowIconSource:
         if not icons:
             return None
         log("choose_icon from: %s", csv("%ix%i %s" % icon[:3] for icon in icons))
-        size_image = dict((icon[0]*icon[1], icon) for icon in icons if icon[0]<max_w and icon[1]<max_h)
+        size_image = {icon[0]*icon[1]: icon for icon in icons if icon[0]<max_w and icon[1]<max_h}
         if not size_image:
             return None
         #we should choose one whose size is close to what the client wants,
