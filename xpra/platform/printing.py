@@ -11,7 +11,6 @@ from typing import Any
 #default implementation uses pycups
 from xpra.platform import platform_import
 from xpra.util import envbool, print_nested_dict
-from xpra.os_util import WIN32
 from xpra.log import Logger
 
 log = Logger("printing")
@@ -78,24 +77,6 @@ def default_get_info() -> dict[str,Any]:
                 }
             }
 
-
-#default implementation uses pycups:
-if not WIN32:
-    #pycups is not available on win32
-    try:
-        from xpra.platform.pycups_printing import (
-            get_printers,
-            print_files,
-            printing_finished,
-            init_printing,
-            cleanup_printing,
-            get_info,
-            )
-        assert get_printers and print_files and printing_finished and init_printing, cleanup_printing   # type: ignore[truthy-function]
-    except Exception as pycupse:
-        log("cannot load pycups", exc_info=True)
-        log.warn("Warning: printer forwarding disabled:")
-        log.warn(" %s", pycupse)
 
 platform_import(globals(), "printing", False,
                 "init_printing",

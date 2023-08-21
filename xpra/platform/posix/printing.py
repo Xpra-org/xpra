@@ -4,3 +4,13 @@
 # later version. See the file COPYING for details.
 
 # posix: assume cups support (no overrides needed here)
+from xpra.platform.pycups_printing import (
+    get_printers,
+    print_files,
+    printing_finished,
+    init_printing,
+    cleanup_printing,
+    get_info,
+)
+
+assert get_printers and print_files and printing_finished and init_printing and cleanup_printing and get_info # type: ignore[truthy-function]
