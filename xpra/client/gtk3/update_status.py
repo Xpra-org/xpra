@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import sys
-from typing import Union
 
 import gi
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable

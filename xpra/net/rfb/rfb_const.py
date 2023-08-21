@@ -5,7 +5,6 @@
 
 from struct import Struct
 from enum import IntEnum
-from typing import Dict
 
 #merge header and packet if packet is smaller than:
 PIXEL_FORMAT : bytes = b"BBBBHHHBBBBBB"

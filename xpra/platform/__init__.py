@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import sys
 
 
 _init_done = False

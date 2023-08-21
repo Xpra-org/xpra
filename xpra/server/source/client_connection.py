@@ -6,7 +6,7 @@
 # later version. See the file COPYING for details.
 
 import sys
-from typing import Any, Union, TypeAlias
+from typing import Any, TypeAlias
 from collections.abc import Callable
 from time import sleep, monotonic
 from threading import Event

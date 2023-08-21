@@ -6,7 +6,6 @@
 #pylint: disable=wrong-import-order
 #pylint: disable=wrong-import-position
 
-import os
 import logging
 
 from xpra.util import envbool

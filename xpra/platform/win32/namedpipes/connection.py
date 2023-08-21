@@ -10,7 +10,7 @@ import time
 import errno
 from ctypes import addressof, byref, c_ulong, c_char_p, c_char, c_void_p, cast, string_at
 from ctypes.wintypes import DWORD
-from typing import Dict, Any
+from typing import Any
 
 from xpra.os_util import strtobytes, memoryview_to_bytes
 from xpra.net.bytestreams import Connection

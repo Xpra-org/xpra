@@ -11,7 +11,7 @@
 
 import os
 import signal
-from typing import Any, Optional
+from typing import Any
 from collections.abc import Callable
 from gi.repository import GLib  # @UnresolvedImport
 

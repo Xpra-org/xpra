@@ -8,7 +8,7 @@
 import threading
 from io import BytesIO
 from time import monotonic
-from typing import Any, Union
+from typing import Any
 
 try:
     from PIL import Image
