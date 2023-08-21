@@ -161,8 +161,8 @@ class CaptureAndEncode(Capture):
         vcaps = get_video_encoder_caps(encoder)
         self.extra_client_info : dict[str,Any] = vcaps.copy()
         if self.profile:
-            vcaps["profile"] = profile
-            self.extra_client_info["profile"] = profile
+            vcaps["profile"] = self.profile
+            self.extra_client_info["profile"] = self.profile
         gst_encoding = get_gst_encoding(encoding)  #ie: "hevc" -> "video/x-h265"
         elements = [
             capture_element,   #ie: ximagesrc or pipewiresrc
