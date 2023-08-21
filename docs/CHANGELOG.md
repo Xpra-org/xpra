@@ -1,7 +1,10 @@
 # Changelog
 
-## [6.0] 2023-07-27
+## [6.0] 2023-08-21
 * TODO
+* Platforms, build and packaging:
+    * [require and take advantage of Python 3.10+](https://github.com/Xpra-org/xpra/issues/3930)
+    * [build packages for multiple python targets](https://github.com/Xpra-org/xpra/issues/3945)
 
 ## [5.0] 2023-07-18
 * Major improvements:
@@ -16,11 +19,10 @@
     * [stricter type checks](https://github.com/Xpra-org/xpra/issues/3927)
     * [more MacOS workarounds](https://github.com/Xpra-org/xpra/issues/3777)
 * Server:
-    * [try harder to find a valid menu prefix](https://github.com/Xpra-org/xpra/commit/a42e2343ee572ff2edb28ece0b38904969c75470) 
+    * [try harder to find a valid menu prefix](https://github.com/Xpra-org/xpra/commit/a42e2343ee572ff2edb28ece0b38904969c75470)
     * [exit with windows](https://github.com/Xpra-org/xpra/issues/3595)
     * [side buttons with MS Windows shadow servers](https://github.com/Xpra-org/xpra/pull/3865)
     * [mirror client monitor layout](https://github.com/Xpra-org/xpra/issues/3749)
-    * [side buttons with MS Windows shadow servers](https://github.com/Xpra-org/xpra/pull/3865)
 * Client:
     * [allow keyboard shortcuts in readonly mode](https://github.com/Xpra-org/xpra/issues/3899)
     * [show decoder statistics](https://github.com/Xpra-org/xpra/issues/3796)
@@ -28,7 +30,7 @@
     * [layout switching detection for MS Windows](https://github.com/Xpra-org/xpra/issues/3857)
     * [mirror mouse cursor when sharing](https://github.com/Xpra-org/xpra/issues/3767)
 * Minor:
-    * [generic exec authentication module](https://github.com/Xpra-org/xpra/issues/3790) 
+    * [generic exec authentication module](https://github.com/Xpra-org/xpra/issues/3790)
     * [audio `removesilence`](https://github.com/Xpra-org/xpra/issues/3709)
     * [make pulseaudio real-time and high-priority scheduling modes configurable](https://github.com/Xpra-org/xpra/pull/3893)
     * [use urrlib for parsing](https://github.com/Xpra-org/xpra/issues/3599)
@@ -359,7 +361,7 @@
     * clipboard: restrict clipboard data transfers size
     * audio: support wasapi on MS Windows
 * code cleanups, etc
-	
+
 
 ## [2.4] 2018-10-13
 * SSH client integration (paramiko)
