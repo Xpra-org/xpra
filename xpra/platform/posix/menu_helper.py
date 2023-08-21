@@ -14,7 +14,7 @@ import sys
 import glob
 from time import monotonic
 from contextlib import nullcontext
-from typing import Any as generator       #@UnresolvedImport, @UnusedImport
+from typing import Any
 from collections.abc import Generator as generator
 
 from xpra.util import envbool, first_time
