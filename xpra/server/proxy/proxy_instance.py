@@ -648,7 +648,7 @@ class ProxyInstance:
         rgb_format = client_options.strget("rgb_format", "")
         enclog("proxy draw: encoding=%s, client_options=%s", encoding, client_options)
 
-        def send_updated(encoding, compressed_data, updated_client_options) -> bool:
+        def send_updated(packet:PacketType, encoding, compressed_data, updated_client_options) -> bool:
             #update the packet with actual encoding data used:
             packet = self.replace_packet_item(packet, 6, encoding)
             packet = self.replace_packet_item(packet, 7, compressed_data)
@@ -659,6 +659,7 @@ class ProxyInstance:
         def passthrough(strip_alpha=True) -> bool:
             enclog("proxy draw: %s passthrough (rowstride: %s vs %s, strip alpha=%s)",
                    rgb_format, rowstride, client_options.intget("rowstride", 0), strip_alpha)
+            updated = packet
             if strip_alpha:
                 #passthrough as plain RGB:
                 Xindex = rgb_format.upper().find("X")
@@ -668,7 +669,7 @@ class ProxyInstance:
                     c = chr(255)
                     for i in range(len(pixels)//4):
                         newdata[i*4+Xindex] = c
-                    packet = self.replace_packet_item(packet, 9, client_options.intget("rowstride", 0))
+                    updated = self.replace_packet_item(packet, 9, client_options.intget("rowstride", 0))
                     cdata = bytes(newdata)
                 else:
                     cdata = pixels
@@ -679,7 +680,7 @@ class ProxyInstance:
                 new_client_options = client_options
             wrapped = Compressed(f"{encoding} pixels", cdata)
             #rgb32 is always supported by all clients:
-            return send_updated(encoding, wrapped, new_client_options)
+            return send_updated(updated, encoding, wrapped, new_client_options)
 
         proxy_video = client_options.boolget("proxy", False)
         if PASSTHROUGH_RGB:
@@ -737,7 +738,7 @@ class ProxyInstance:
                     return passthrough(True)
                 enclog("no video encoder available: sending as jpeg")
                 coding, compressed_data, client_options = enc_pillow.encode("jpeg", image, quality, speed, False)[:3]
-                return send_updated(coding, compressed_data, client_options)
+                return send_updated(packet, coding, compressed_data, client_options)
 
             enclog("creating new video encoder %s for window %s", spec, wid)
             ve = spec.make_instance()
@@ -763,7 +764,7 @@ class ProxyInstance:
             if k not in out_options and k in client_options:
                 out_options[k] = client_options[k]
         self.video_encoders_last_used_time[wid] = monotonic()
-        return send_updated(ve.get_encoding(), Compressed(encoding, data), out_options)
+        return send_updated(packet, ve.get_encoding(), Compressed(encoding, data), out_options)
 
     def timeout_video_encoders(self) -> bool:
         #have to be careful as another thread may come in...
