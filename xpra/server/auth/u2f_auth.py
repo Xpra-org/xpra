@@ -79,6 +79,7 @@ class Authenticator(SysAuthenticator):
             self.public_keys[origin] = k
         if not self.public_keys:
             raise RuntimeError("u2f authenticator requires at least one public key")
+        self.authenticate_check = self.u2f_check
 
     def get_challenge(self, digests) -> tuple[bytes,str] | None:
         if "u2f" not in digests:
@@ -92,7 +93,7 @@ class Authenticator(SysAuthenticator):
     def __repr__(self):
         return "u2f"
 
-    def authenticate_check(self, caps : typedict) -> bool:
+    def u2f_check(self, caps : typedict) -> bool:
         challenge_response = caps.strget("challenge_response")
         client_salt = caps.strget("challenge_client_salt")
         log(f"authenticate_check: response={challenge_response}, client-salt={client_salt}")
