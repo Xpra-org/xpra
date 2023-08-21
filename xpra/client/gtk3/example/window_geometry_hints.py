@@ -82,7 +82,7 @@ class OptionWindow(Gtk.Window):
         t = Gtk.Table(n_rows=9, n_columns=3, homogeneous=True)
         def attach(widget, col, row):
             t.attach(widget, col, col+1, row, row+1, Gtk.AttachOptions.EXPAND, Gtk.AttachOptions.FILL, 0, 0)
-        def l(s):
+        def l(s):    # noqa: E743
             return Gtk.Label(label=s)
         def line(row, *widgets):
             for i, widget in enumerate(widgets):

@@ -40,7 +40,7 @@ def sf(w, font="sans 14"):
     w.modify_font(Pango.FontDescription(font))
     return w
 
-def l(label):
+def l(label):    # noqa: E743
     widget = Gtk.Label(label=label)
     return sf(widget)
 

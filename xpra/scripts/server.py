@@ -1283,11 +1283,12 @@ def _do_run_server(script_file:str, cmdline,
         if uinput_uuid:
             devices = create_input_devices(uinput_uuid, uid)
 
+    xvfb_cmd = opts.xvfb
     def check_xvfb(timeout=0):
         if xvfb is None:
             return True
         from xpra.x11.vfb_util import check_xvfb_process
-        if not check_xvfb_process(xvfb, timeout=timeout, command=opts.xvfb):
+        if not check_xvfb_process(xvfb, timeout=timeout, command=xvfb_cmd):
             progress(100, "xvfb failed")
             return False
         return True
@@ -1404,18 +1405,18 @@ def _do_run_server(script_file:str, cmdline,
         progress(60, "initializing local sockets")
         #setup unix domain socket:
         netlog = get_network_logger()
-        local_sockets = setup_local_sockets(opts.bind,
-                                            opts.socket_dir, opts.socket_dirs, session_dir,
-                                            display_name, clobber,
-                                            opts.mmap_group, opts.socket_permissions,
+        local_sockets = setup_local_sockets(opts.bind,                                      # noqa: F821
+                                            opts.socket_dir, opts.socket_dirs, session_dir, # noqa: F821
+                                            display_name, clobber,                          # noqa: F821
+                                            opts.mmap_group, opts.socket_permissions,       # noqa: F821
                                             username, uid, gid)
         netlog(f"setting up local sockets: {local_sockets}")
         sockets.update(local_sockets)
         if POSIX and (starting or upgrading or starting_desktop):
             #all unix domain sockets:
             ud_paths = [sockpath for stype, _, sockpath, _ in local_sockets if stype=="socket"]
-            forward_xdg_open = bool(opts.forward_xdg_open) or (
-                opts.forward_xdg_open is None and mode.find("desktop")<0 and mode.find("monitor")<0)
+            forward_xdg_open = bool(opts.forward_xdg_open) or (                             # noqa: F821
+                opts.forward_xdg_open is None and mode.find("desktop")<0 and mode.find("monitor")<0)       # noqa: F821
             if ud_paths:
                 os.environ["XPRA_SERVER_SOCKET"] = ud_paths[0]
                 if forward_xdg_open and os.path.exists("/usr/libexec/xpra/xdg-open"):

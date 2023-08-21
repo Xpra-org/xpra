@@ -867,7 +867,8 @@ def sorted_nicely(l:Iterable):
         if text.isdigit():
             return int(text)
         return text
-    alphanum_key = lambda key: [convert(c) for c in re.split(r"(\d+)", bytestostr(key))]
+    def alphanum_key(key):
+        return [convert(c) for c in re.split(r"(\d+)", bytestostr(key))]
     return sorted(l, key = alphanum_key)
 
 def print_nested_dict(d:dict, prefix:str="", lchar:str="*", pad:int=32, vformat=None, print_fn:Callable|None=None,

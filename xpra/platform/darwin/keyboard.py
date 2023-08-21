@@ -173,12 +173,12 @@ class Keyboard(KeyboardBase):
                 continue
             #ie: [(55, 'Alt_L'), (58, 'Alt_L'), 'Alt_L']
             for keycode_def in keycodes_defs:
-                if type(keycode_def)==str:      #ie: 'Alt_L'
+                if isinstance(keycode_def, str):      #ie: 'Alt_L'
                     #no keycode found, but better than nothing:
                     new_def = 0, keycode_def    #ie: (0, 'Alt_L')
                     continue
                 #an int alone is the keycode:
-                if type(keycode_def)==int:
+                if isinstance(keycode_def, int):
                     if keycode_def>0:
                         #exact match, use it:
                         return keycode_def, keysym
@@ -191,7 +191,7 @@ class Keyboard(KeyboardBase):
                     continue
                 if len(keycode_def)!=2:
                     continue
-                if type(keycode_def[0])!=int or type(keycode_def[1])!=str:
+                if not (isinstance(keycode_def[0], int) and isinstance(keycode_def[1], str)):
                     continue
                 if keycode_def[0]==0:
                     new_def = keycode_def

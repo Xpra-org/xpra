@@ -135,7 +135,7 @@ class OpenRequestsWindow:
         tb = TableBuilder(rows=1, columns=4, row_spacings=15)
         #generate a new table:
         self.table = tb.get_table()
-        def l(s=""):
+        def l(s=""):    # noqa: E743
             return Gtk.Label(label=s)
         if not self.requests:
             tb.add_row(l("No requests pending"))

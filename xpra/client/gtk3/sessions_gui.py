@@ -256,7 +256,7 @@ class SessionsGUI(Gtk.Window):
         self.password_box.show()
         self.set_size_request(-1, -1)
         tb = TableBuilder(1, 6, False)
-        def l(s=""):
+        def l(s=""):    # noqa: E743
             return Gtk.Label(label=s)
         labels = [l(x) for x in (
             "Host", "Display", "Name", "Platform", "Type", "URI", "Connect", "Open in Browser",

@@ -87,7 +87,7 @@ class ServerCommandsWindow:
                 self.alignment.remove(self.table)
             tb = TableBuilder(rows=1, columns=2, row_spacings=15)
             self.table = tb.get_table()
-            def l(s=""):
+            def l(s=""):    # noqa: E743
                 return Gtk.Label(label=s)
             headers = [l(), l("PID"), l("Command"), l("Exit Code")]
             if self.client.server_commands_signals:

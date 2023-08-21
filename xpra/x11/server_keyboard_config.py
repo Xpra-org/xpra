@@ -173,7 +173,7 @@ class KeyboardConfig(KeyboardConfigBase):
         """ used by both process_hello and process_keymap """
         #clients version 4.4 and later use a 'keymap' substructure:
         keymap_dict = typedict(props.dictget("keymap") or {})
-        def l(k):
+        def l(k):    # noqa: E743
             return keymap_dict.strget(k, props.get(f"xkbmap_{k}"))
         self.layout = l("layout")
         self.variant = l("variant")

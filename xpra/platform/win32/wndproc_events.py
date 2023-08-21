@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+# ruff: noqa: F601
+
 #found those here:
 #http://wiki.winehq.org/list_Of_Windows_Messages
 #which was extracted from MSDN somehow

@@ -3817,9 +3817,11 @@ def run_list_windows(error_cb, opts, extra_args) -> int:
         sys.stdout.write("No xpra sessions found\n")
         return 0
     import re
+    def convert(text):
+        return float(text) if text.isdigit() else text
+    def alphanum(key):
+        return [convert(c) for c in re.split(r'([-+]?\d+\.?\d*)', key)]
     def sort_human(l):
-        convert = lambda text: float(text) if text.isdigit() else text
-        alphanum = lambda key: [convert(c) for c in re.split(r'([-+]?\d+\.?\d*)', key)]
         l.sort(key=alphanum)
         return l
     def exec_and_parse(subcommand="id", display=""):

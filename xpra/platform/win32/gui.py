@@ -195,6 +195,7 @@ def gl_check() -> str:
     # (must be done after we set up the `sys.path` in `platform.win32.paths`):
     try:
         from OpenGL.platform import win32   #@UnresolvedImport @UnusedImport
+        assert win32
     except ImportError as e:
         get_util_logger().warn("gl_check()", exc_info=True)
         get_util_logger().warn("Warning: OpenGL bindings are missing")

@@ -293,7 +293,6 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             self.do_AUTHHEAD()
             self.wfile.write(msg.encode("latin1"))
             authlog.warn(f"http authentication failed: {msg}")
-            import socket
             try:
                 peername = self.request.getpeername()
                 authlog.warn(" from %s", pretty_socket(peername))

@@ -554,13 +554,14 @@ def register_URL_handler(handler:Callable) -> None:
     class GURLHandler(NSObject):
         def handleEvent_withReplyEvent_(self, event, reply_event):
             log("GURLHandler.handleEvent(%s, %s)", event, reply_event)
-            url = event.descriptorForKeyword_(fourCharToInt(b'----')).stringValue()
+            url = event.descriptorForKeyword_(four_char_to_int(b'----')).stringValue()
             log("URL=%s", url)
             handler(url.encode())
 
     # A helper to make struct since cocoa headers seem to make
     # it impossible to use kAE*
-    fourCharToInt = lambda code: struct.unpack(b'>l', code)[0]
+    def four_char_to_int(code):
+        return struct.unpack(b'>l', code)[0]
 
     urlh = GURLHandler.alloc()
     urlh.init()
@@ -568,7 +569,7 @@ def register_URL_handler(handler:Callable) -> None:
     manager = NSAppleEventManager.sharedAppleEventManager()
     manager.setEventHandler_andSelector_forEventClass_andEventID_(
         urlh, 'handleEvent:withReplyEvent:',
-        fourCharToInt(b'GURL'), fourCharToInt(b'GURL')
+        four_char_to_int(b'GURL'), four_char_to_int(b'GURL')
         )
 
 

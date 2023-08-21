@@ -12,8 +12,8 @@ import sys
 import errno
 import os.path
 import ctypes
-from ctypes import WINFUNCTYPE, WinDLL, POINTER, byref, c_int, wintypes, create_unicode_buffer  # @UnresolvedImport
-from ctypes.wintypes import BOOL, HANDLE, DWORD, LPWSTR, LPCWSTR, LPVOID, POINT, WORD, SMALL_RECT
+from ctypes import WINFUNCTYPE, WinDLL, POINTER, byref, wintypes, create_unicode_buffer  # @UnresolvedImport
+from ctypes.wintypes import BOOL, HANDLE, DWORD, LPWSTR, LPVOID, WORD, SMALL_RECT
 
 from xpra.util import envbool
 from xpra.platform.win32 import constants as win32con
@@ -320,7 +320,7 @@ def setup_console_event_listener(handler, enable):
         log("SetConsoleCtrlHandler(%s, %s)=%s", handler, enable, result)
         if result==0:
             log.error("Error: could not %s console control handler:", "set" if enable else "unset")
-            log.error(" SetConsoleCtrlHandler: %r", ctypes.GetLastError())  # @UndefinedVariable
+            log.error(" SetConsoleCtrlHandler: %r", GetLastError())
             return False
         return True
     except Exception as e:
