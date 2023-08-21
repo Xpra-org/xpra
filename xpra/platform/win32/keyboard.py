@@ -27,7 +27,7 @@ from xpra.log import Logger
 log = Logger("keyboard")
 
 
-def _GetKeyboardLayoutlist() -> list[int]:
+def _GetKeyboardLayoutList() -> list[int]:
     max_items = 32
     #PHANDLE = ctypes.POINTER(HANDLE)
     handle_list = (HANDLE*max_items)()
@@ -48,7 +48,7 @@ def x11_layouts_to_win32_hkl() -> dict[str,int]:
     max_items = 32
     try:
         handle_list = (HANDLE*max_items)()
-        count = GetKeyboardLayoutlist(max_items, ctypes.byref(handle_list))
+        count = GetKeyboardLayoutList(max_items, ctypes.byref(handle_list))
         for i in range(count):
             hkl = handle_list[i]
             hkli = int(hkl)
@@ -189,8 +189,8 @@ class Keyboard(KeyboardBase):
         options = ""
         layout_code = 0
         try:
-            l = _GetKeyboardLayoutlist()
-            log("GetKeyboardLayoutlist()=%s", csv(hex(v) for v in l))
+            l = _GetKeyboardLayoutList()
+            log("GetKeyboardLayoutList()=%s", csv(hex(v) for v in l))
             for hkl in l:
                 for mask, bitshifts in KMASKS.items():
                     kbid = 0
@@ -207,7 +207,7 @@ class Keyboard(KeyboardBase):
                             break
         except Exception as e:
             log("get_layout_spec()", exc_info=True)
-            log.error("Error: failed to detect keyboard layouts using GetKeyboardLayoutlist:")
+            log.error("Error: failed to detect keyboard layouts using GetKeyboardLayoutList:")
             log.estr(e)
 
         descr = None
