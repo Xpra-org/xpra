@@ -474,7 +474,7 @@ def convert_doc(fsrc, fdst, fmt="html", force=False):
     bdst = os.path.basename(fdst)
     if not force and not should_rebuild(fsrc, fdst):
         return
-    print("  %-20s -> %s" % (bsrc, bdst))
+    print(f"  {bsrc:<30} -> {bdst}")
     pandoc = os.environ.get("PANDOC", "pandoc")
     cmd = [pandoc, "--from", "commonmark", "--to", fmt, "-o", fdst, fsrc]
     if fmt=="html":
@@ -487,7 +487,7 @@ def convert_doc(fsrc, fdst, fmt="html", force=False):
     assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
 
 def convert_doc_dir(src, dst, fmt="html", force=False):
-    print("%-20s -> %s" % (src, dst))
+    print("* {src:<20} -> {dst}")
     if not os.path.exists(dst):
         os.makedirs(dst, mode=0o755)
     for x in os.listdir(src):
@@ -500,7 +500,7 @@ def convert_doc_dir(src, dst, fmt="html", force=False):
             convert_doc(fsrc, fdst, fmt, force)
         elif fsrc.endswith(".png"):
             fdst = os.path.join(dst, x)
-            print(f"copying {fsrc} -> {fdst} (%s)" % oct(0o644))
+            print(f"  {fsrc:<30} -> {fdst} (%s)" % oct(0o644))
             os.makedirs(name=dst, mode=0o755, exist_ok=True)
             data = load_binary_file(fsrc)
             with open(fdst, "wb") as f:
@@ -1787,7 +1787,7 @@ else:
                 filename = os.path.basename(src)
                 dst_file = os.path.join(dst_dir, dst_name or filename)
                 #copy it
-                print(f"copying {src} -> {dst_dir} (%s)" % oct(chmod))
+                print(f"  {src:<30} -> {dst_dir} (%s)" % oct(chmod))
                 data = load_binary_file(src)
                 if subs:
                     for k,v in subs.items():
