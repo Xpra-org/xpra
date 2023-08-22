@@ -74,7 +74,7 @@ Source:				https://xpra.org/src/xpra-%{version}.tar.xz
 Release:			10%{revision_no}%{?dist}
 #rpm falls over itself if we try to make the top-level package noarch:
 #BuildArch: noarch
-BuildRoot:			%{_tmppath}/%{name}-%{version}-root
+BuildRoot:			%{_tmppath}/%{package_prefix}-%{version}-root
 BuildRequires:		tar
 BuildRequires:		grep
 BuildRequires:		gawk
