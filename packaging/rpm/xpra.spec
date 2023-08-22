@@ -387,9 +387,10 @@ Suggests:			tcp_wrappers-libs
 Suggests:			%{python3}-ldap3
 Suggests:			%{python3}-ldap
 Suggests:			%{python3}-oauthlib
-%if "%{package_prefix}"=="xpra"
+%if 0%{?fedora}
 #python prefixed builds would need this new package:
 BuildRequires:		%{python3}-cups
+BuildRequires:		pkgconfig(libprocps)
 %endif
 BuildRequires:		pkgconfig(libsystemd)
 BuildRequires:		checkpolicy
@@ -397,9 +398,6 @@ BuildRequires:		selinux-policy-devel
 BuildRequires:		pam-devel
 #for detecting the path to the Xorg binary (not the wrapper):
 BuildRequires:		xorg-x11-server-Xorg
-%if 0%{?fedora}
-BuildRequires:		pkgconfig(libprocps)
-%endif
 Requires:			selinux-policy
 Requires(post):		openssl
 %if 0%{update_firewall}
