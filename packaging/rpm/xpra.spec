@@ -17,17 +17,14 @@ autoprov: no
 
 #on RHEL, there is only one python>=3.10 build at present,
 #so this package can use the canonical name 'xpra',
-#but on Fedora, we only use the main package for the default python
-%define main_package 1
-
-%if "%{getenv:PYTHON3}" == ""
+#but on Fedora, we only use the main package for the default python3
 %global python3 python3
-%define package_prefix xpra
-%else
+%global package_prefix xpra
+
+%if "%{getenv:PYTHON3}" != ""
 %global python3 %{getenv:PYTHON3}
-%define package_prefix %{python3}-xpra
 %if 0%{?fedora}
-%define main_package 0
+%global package_prefix %{python3}-xpra
 %endif
 %define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
@@ -70,7 +67,7 @@ autoprov: no
 %endif
 
 
-Name:				xpra
+Name:				%{package_prefix}
 Version:			6.0
 Release:			%{revision_no}%{?dist}
 Summary:			Xpra gives you "persistent remote applications" for X.
@@ -88,35 +85,6 @@ BuildRequires:		gcc-c++
 BuildRequires:		%{python3}-Cython
 BuildRequires:		pkgconfig
 BuildRequires:		%{python3}-setuptools
-Conflicts:			xpra-common < 6
-Obsoletes:			xpra-common < 6
-Conflicts:			xpra-server < 6
-Obsoletes:			xpra-server < 6
-Conflicts:			xpra-client < 6
-Obsoletes:			xpra-client < 6
-Conflicts:			xpra-client-gtk3 < 6
-Obsoletes:			xpra-client-gtk3 < 6
-Conflicts:			python3-xpra < 6
-Obsoletes:			python3-xpra < 6
-Conflicts:			python3-xpra-client < 6
-Obsoletes:			python3-xpra-client < 6
-Conflicts:			python3-xpra-server < 6
-Obsoletes:			python3-xpra-server < 6
-Conflicts:			python3-xpra-common < 6
-Obsoletes:			python3-xpra-common < 6
-Conflicts:			python3-xpra-codecs < 6
-Obsoletes:			python3-xpra-codecs < 6
-Conflicts:			python3-xpra-codecs-extras < 6
-Obsoletes:			python3-xpra-codecs-extras < 6
-Conflicts:			python3-xpra-codecs-nvidia < 6
-Obsoletes:			python3-xpra-codecs-nvidia < 6
-Conflicts:			python2-xpra
-Conflicts:			python2-xpra-client
-Conflicts:			python2-xpra-server
-%if "%{package_prefix}"!="xpra"
-#this is just a meta-package that redirects to the python variant:
-Requires:			%{package_prefix} = %{version}-%{release}
-%else
 Requires:			xpra-html5 >= 5
 Requires:			xpra-filesystem >= 5
 Requires:			%{package_prefix}-common = %{version}-%{release}
@@ -128,6 +96,10 @@ Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{package_prefix}-client-gtk3 = %{version}-%{release}
 Requires:			%{package_prefix}-server = %{version}-%{release}
 Recommends:			%{package_prefix}-audio = %{version}-%{release}
+Conflicts:			python3-xpra < 6
+Obsoletes:			python3-xpra < 6
+%if "%{package_prefix}"!="xpra"
+Provides:           xpra = %{version}-%{release}
 %endif
 %description
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
@@ -136,57 +108,6 @@ So basically it's screen for remote X apps.
 
 This metapackage installs the %{python3} build of xpra in full,
 including the python client, server and HTML5 client.
-
-
-%if "%{package_prefix}"!="xpra"
-%package -n %{package_prefix}
-Version:			%{version}
-Release:			%{release}
-Summary:			Xpra gives you "persistent remote applications" for X.
-Requires:			xpra-html5 >= 5
-Requires:			xpra-filesystem >= 5
-Requires:			%{package_prefix}-common = %{version}-%{release}
-Requires:			%{package_prefix}-codecs = %{version}-%{release}
-Recommends:			%{package_prefix}-codecs-extra = %{version}-%{release}
-Recommends:			%{package_prefix}-codecs-nvidia = %{version}-%{release}
-Recommends:			%{package_prefix}-x11 = %{version}-%{release}
-Requires:			%{package_prefix}-client = %{version}-%{release}
-Requires:			%{package_prefix}-client-gtk3 = %{version}-%{release}
-Requires:			%{package_prefix}-server = %{version}-%{release}
-Recommends:			%{package_prefix}-audio = %{version}-%{release}
-Conflicts:			xpra-common < 6
-Obsoletes:			xpra-common < 6
-Conflicts:			xpra-server < 6
-Obsoletes:			xpra-server < 6
-Conflicts:			xpra-client < 6
-Obsoletes:			xpra-client < 6
-Conflicts:			xpra-client-gtk3 < 6
-Obsoletes:			xpra-client-gtk3 < 6
-Conflicts:			python3-xpra < 6
-Obsoletes:			python3-xpra < 6
-Conflicts:			python3-xpra-client < 6
-Obsoletes:			python3-xpra-client < 6
-Conflicts:			python3-xpra-server < 6
-Obsoletes:			python3-xpra-server < 6
-Conflicts:			python3-xpra-common < 6
-Obsoletes:			python3-xpra-common < 6
-Conflicts:			python3-xpra-codecs < 6
-Obsoletes:			python3-xpra-codecs < 6
-Conflicts:			python3-xpra-codecs-extras < 6
-Obsoletes:			python3-xpra-codecs-extras < 6
-Conflicts:			python3-xpra-codecs-nvidia < 6
-Obsoletes:			python3-xpra-codecs-nvidia < 6
-Conflicts:			python2-xpra
-Conflicts:			python2-xpra-client
-Conflicts:			python2-xpra-server
-%description -n %{package_prefix}
-Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
-
-So basically it's screen for remote X apps.
-
-This metapackage installs the %{python3} build of xpra in full,
-including the python client, server and HTML5 client.
-%endif
 
 
 %package -n xpra-filesystem
@@ -199,33 +120,7 @@ Requires(post):		policycoreutils
 Requires(preun):    policycoreutils
 %endif
 Conflicts:			xpra < 6
-Obsoletes:			xpra < 6
-Conflicts:			xpra-common < 6
-Obsoletes:			xpra-common < 6
-Conflicts:			xpra-server < 6
-Obsoletes:			xpra-server < 6
-Conflicts:			xpra-client < 6
-Obsoletes:			xpra-client < 6
-Conflicts:			xpra-client-gtk3 < 6
-Obsoletes:			xpra-client-gtk3 < 6
 Conflicts:			python3-xpra < 6
-Obsoletes:			python3-xpra < 6
-Conflicts:			python3-xpra-client < 6
-Obsoletes:			python3-xpra-client < 6
-Conflicts:			python3-xpra-server < 6
-Obsoletes:			python3-xpra-server < 6
-Conflicts:			python3-xpra-common < 6
-Obsoletes:			python3-xpra-common < 6
-Conflicts:			python3-xpra-codecs < 6
-Obsoletes:			python3-xpra-codecs < 6
-Conflicts:			python3-xpra-codecs-extras < 6
-Obsoletes:			python3-xpra-codecs-extras < 6
-Conflicts:			python3-xpra-codecs-nvidia < 6
-Obsoletes:			python3-xpra-codecs-nvidia < 6
-Conflicts:			python2-xpra
-Conflicts:			python2-xpra-client
-Conflicts:			python2-xpra-server
-
 %description -n xpra-filesystem
 This package contains the files (mostly configuration files and top level scripts)
 which are shared between all installations of xpra.
@@ -236,13 +131,9 @@ This package is independent of the python version used.
 Summary:			Common files for xpra packages
 Group:				Networking
 Requires(pre):		shadow-utils
-Conflicts:			xpra < 5
-Conflicts:			python2-xpra
-Conflicts:			python2-xpra-client
-Conflicts:			python2-xpra-server
-Obsoletes:			xpra-common-client < 5.0-10.r32075
-Obsoletes:			xpra-common-server < 5.0-10.r32075
-Obsoletes:			python3-xpra < 5.0-10.r32075
+Conflicts:			xpra < 6
+Obsoletes:			xpra-common-client < 6
+Obsoletes:			xpra-common-server < 6
 BuildRequires:		pandoc
 BuildRequires:		which
 Requires:			%{python3}
@@ -326,11 +217,10 @@ Conflicts:			xpra-codecs-freeworld
 %description -n %{package_prefix}-codecs
 This package contains extra picture and video codecs used by xpra clients and servers.
 
+
 %package -n %{package_prefix}-codecs-extras
 Summary:			Extra picture and video codecs for xpra clients and servers.
-#before switching to EPEL / rpmfusion, we were using private libraries:
-#Conflicts:			x264-xpra
-#Conflicts:			ffmpeg-xpra
+Requires:			%{package_prefix}-codecs = %{version}-%{release}
 %ifnarch riscv64
 Recommends:			x264
 BuildRequires:		pkgconfig(x264)
@@ -353,6 +243,7 @@ Recommends:			pipewire-gstreamer
 This package contains extra picture and video codecs used by xpra clients and servers.
 These codecs may have patent or licensing issues.
 
+
 %if 0%{?nvidia_codecs}
 %package -n %{package_prefix}-codecs-nvidia
 Summary:			Picture and video codecs that rely on NVidia GPUs and CUDA.
@@ -362,13 +253,14 @@ Requires:			%{python3}-pycuda
 Recommends:			%{python3}-pynvml
 %description -n %{package_prefix}-codecs-nvidia
 This package contains the picture and video codecs that rely on NVidia GPUs and CUDA,
-this is used by both xpra clients and servers. 
+this is used by both xpra clients and servers.
 %endif
 
 
 %package -n %{package_prefix}-audio
 Summary:			%{python3} build of xpra audio support
-Obsoletes:			python3-xpra-audio < 5.0-10.r32075
+Conflicts:			python3-xpra-audio < 6
+Obsoletes:			python3-xpra-audio < 6
 Requires:			%{package_prefix}-common = %{version}-%{release}
 Requires:			gstreamer1
 Requires:			gstreamer1-plugins-base
@@ -392,7 +284,8 @@ This package contains audio support for xpra.
 
 %package -n %{package_prefix}-client
 Summary:			xpra client
-Obsoletes:			python3-xpra-client < 5.0-10.r32075
+Conflicts:			python3-xpra-client < 6
+Obsoletes:			python3-xpra-client < 6
 Requires:			%{package_prefix}-common = %{version}-%{release}
 BuildRequires:		desktop-file-utils
 Requires(post):		desktop-file-utils
@@ -473,7 +366,8 @@ This package contains the x11 bindings
 
 %package -n %{package_prefix}-server
 Summary:			xpra server
-Obsoletes:			python3-server < 5.0-10.r32075
+Conflicts:			python3-xpra-server < 6
+Obsoletes:			python3-xpra-server < 6
 Requires:			%{package_prefix}-common = %{version}-%{release}
 Requires:			gtk3
 Recommends:			%{package_prefix}-x11 = %{version}-%{release}
@@ -617,10 +511,6 @@ rm -fr ${RPM_BUILD_ROOT}%{python3_sitearch}/UNKNOWN-*.egg-info
 rm -rf $RPM_BUILD_ROOT
 
 %files
-
-%if "%{package_prefix}"!="xpra"
-%files -n %{package_prefix}
-%endif
 
 %files -n xpra-filesystem
 %defattr(-,root,root)
@@ -931,7 +821,7 @@ fi
    openSUSE build tweaks, Fedora 37, Oracle Linux / Rocky Linux / Alma Linux / CentOS Stream : 8 and 9
    Debian finally moved to `libexec`
    MS Windows taskbar integration
-   SSH server support on MS Windows, including starting shadow sessions 
+   SSH server support on MS Windows, including starting shadow sessions
 - Server:
    Configurable vertical refresh rate
    Virtual Monitors
