@@ -319,8 +319,8 @@ Breaks: python2-xpra (<< 5), python3-xpra (<< 5), xpra (<< 5)
 Enhances: xpra-codecs (= ${binary:Version})
 Depends: xpra-codecs (= ${binary:Version})
         ,${python3:Depends}
-        ,python3-pycuda
-Recommends: libnvidia-encode1
+Recommends: python3-pycuda
+        ,libnvidia-encode1
         ,libnvjpeg
         ,libnvidia-fbc1 [amd64]
 Description: Proprietary nvidia picture and video codecs
