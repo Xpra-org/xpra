@@ -60,16 +60,8 @@ autoprov: no
 %{!?nthreads: %global nthreads 1}
 %endif
 
-%if 0%{?xpra_revision_no}
-%define revision_no 10.r%{xpra_revision_no}
-%else
-%define revision_no 10
-%endif
-
-
 Name:				%{package_prefix}
 Version:			6.0
-Release:			%{revision_no}%{?dist}
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -77,9 +69,15 @@ URL:				https://xpra.org/
 Packager:			Antoine Martin <antoine@xpra.org>
 Vendor:				https://xpra.org/
 Source:				https://xpra.org/src/xpra-%{version}.tar.xz
+#grab the full revision number from the source archive's src_info.py file:
+%define revision_no %(tar -OJxf dist/xpra-%{version}.tar.xz xpra-%{version}/xpra/src_info.py | grep -e "^REVISION=" | awk -F= '{print ".r"$2}' 2> /dev/null)
+Release:			10%{revision_no}%{?dist}
 #rpm falls over itself if we try to make the top-level package noarch:
 #BuildArch: noarch
 BuildRoot:			%{_tmppath}/%{name}-%{version}-root
+BuildRequires:		tar
+BuildRequires:		grep
+BuildRequires:		gawk
 BuildRequires:		gcc
 BuildRequires:		gcc-c++
 BuildRequires:		%{python3}-Cython
