@@ -60,7 +60,7 @@ Depends: xpra-client (= ${binary:Version})
          ,xpra-codecs (= ${binary:Version})
 Recommends: xpra-audio (= ${binary:Version})
             ,xpra-codecs-extras (= ${binary:Version})
-            ,xpra-codecs-nvidia (= ${binary:Version})
+Suggests:  xpra-codecs-nvidia (= ${binary:Version})
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .
