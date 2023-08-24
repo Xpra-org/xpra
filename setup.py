@@ -478,11 +478,7 @@ def convert_doc(fsrc, fdst, fmt="html", force=False):
     pandoc = os.environ.get("PANDOC", "pandoc")
     cmd = [pandoc, "--from", "commonmark", "--to", fmt, "-o", fdst, fsrc]
     if fmt=="html":
-        if is_Ubuntu() and get_distribution_version_id()<="18.04":
-            print("pandoc is missing the lua-filter option")
-            print(" cannot preserve HTML links in documentation")
-        else:
-            cmd += ["--lua-filter", "./fs/bin/links-to-html.lua"]
+        cmd += ["--lua-filter", "./fs/bin/links-to-html.lua"]
     r = subprocess.Popen(cmd).wait(30)
     assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
 
