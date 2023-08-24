@@ -393,13 +393,15 @@ Suggests:			%{python3}-ldap3
 Suggests:			%{python3}-ldap
 Suggests:			%{python3}-oauthlib
 %if 0%{?fedora}
-#python prefixed builds would need this new package:
-BuildRequires:		%{python3}-cups
 %if 0%{?fedora}>=39
 # looks like they forgot to expose the pkgconfig?
 BuildRequires:		procps-ng-devel
+# and no prefixed cups either.. only the regular one:
+BuildRequires:		python3-cups
 %else
 BuildRequires:		pkgconfig(libprocps)
+# python prefixed builds would need this new package:
+BuildRequires:		%{python3}-cups
 %endif
 %endif
 BuildRequires:		pkgconfig(libsystemd)
