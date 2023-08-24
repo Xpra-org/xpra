@@ -28,7 +28,11 @@
 %if 0%{?nvidia_codecs}
 %define build_args %{DEFAULT_BUILD_ARGS}
 %else
+%if 0%{?fedora}>=39
+%define build_args %{DEFAULT_BUILD_ARGS} --without-nvidia --without-pandoc_lua
+%else
 %define build_args %{DEFAULT_BUILD_ARGS} --without-nvidia
+%endif
 %endif
 %global selinux_variants mls targeted
 %define selinux_modules cups_xpra xpra_socketactivation
@@ -375,7 +379,12 @@ BuildRequires:		pam-devel
 #for detecting the path to the Xorg binary (not the wrapper):
 BuildRequires:		xorg-x11-server-Xorg
 %if 0%{?fedora}
+%if 0%{?fedora}>=39
+# looks like they forgot to expose the pkgconfig?
+BuildRequires:		procps-ng-devel
+%else
 BuildRequires:		pkgconfig(libprocps)
+%endif
 %endif
 Requires:			selinux-policy
 Requires(post):		openssl

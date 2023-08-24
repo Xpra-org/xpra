@@ -289,6 +289,7 @@ example_ENABLED         = DEFAULT
 
 #Cython / gcc / packaging build options:
 docs_ENABLED            = DEFAULT
+pandoc_lua_ENABLED      = DEFAULT
 annotate_ENABLED        = DEFAULT
 warn_ENABLED            = True
 strict_ENABLED          = False
@@ -330,7 +331,7 @@ SWITCHES = [
     "pam", "xdg_open",
     "audio", "opengl", "printing", "webcam", "notifications", "keyboard",
     "rebuild",
-    "docs",
+    "docs", "pandoc_lua",
     "annotate", "warn", "strict",
     "shadow", "proxy", "rfb", "quic", "http", "ssh",
     "debug", "PIC",
@@ -484,7 +485,7 @@ def convert_doc(fsrc, fdst, fmt="html", force=False):
     print("  %-20s -> %s" % (bsrc, bdst))
     pandoc = os.environ.get("PANDOC", "pandoc")
     cmd = [pandoc, "--from", "commonmark", "--to", fmt, "-o", fdst, fsrc]
-    if fmt=="html":
+    if fmt=="html" and pandoc_lua_ENABLED:
         if is_Ubuntu() and get_distribution_version_id()<="18.04":
             print("pandoc is missing the lua-filter option")
             print(" cannot preserve HTML links in documentation")
