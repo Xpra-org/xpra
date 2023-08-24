@@ -284,7 +284,8 @@ gstreamer_ENABLED       = DEFAULT
 example_ENABLED         = DEFAULT
 
 #Cython / gcc / packaging build options:
-docs_ENABLED            = DEFAULT
+docs_ENABLED            = DEFAULT and shutil.which("pandoc")
+pandoc_lua_ENABLED      = DEFAULT
 annotate_ENABLED        = DEFAULT
 warn_ENABLED            = True
 strict_ENABLED          = False
@@ -325,7 +326,7 @@ SWITCHES = [
     "pam", "xdg_open",
     "audio", "opengl", "printing", "webcam", "notifications", "keyboard",
     "rebuild",
-    "docs",
+    "docs", "pandoc_lua",
     "annotate", "warn", "strict",
     "shadow", "proxy", "rfb", "quic", "http", "ssh",
     "debug", "PIC",
@@ -478,7 +479,7 @@ def convert_doc(fsrc, fdst, fmt="html", force=False):
     print(f"  {bsrc:<30} -> {bdst}")
     pandoc = os.environ.get("PANDOC", "pandoc")
     cmd = [pandoc, "--from", "commonmark", "--to", fmt, "-o", fdst, fsrc]
-    if fmt=="html":
+    if fmt=="html" and pandoc_lua_ENABLED:
         cmd += ["--lua-filter", "./fs/bin/links-to-html.lua"]
     r = subprocess.Popen(cmd).wait(30)
     assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
