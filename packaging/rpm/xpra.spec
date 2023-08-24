@@ -399,7 +399,7 @@ BuildRequires:		%{python3}-cups
 BuildRequires:		procps-ng-devel
 %else
 BuildRequires:		pkgconfig(libprocps)
-%fi
+%endif
 %endif
 BuildRequires:		pkgconfig(libsystemd)
 BuildRequires:		checkpolicy
