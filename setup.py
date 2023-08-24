@@ -487,7 +487,7 @@ def convert_doc(fsrc, fdst, fmt="html", force=False):
     assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
 
 def convert_doc_dir(src, dst, fmt="html", force=False):
-    print("* {src:<20} -> {dst}")
+    print(f"* {src:<20} -> {dst}")
     if not os.path.exists(dst):
         os.makedirs(dst, mode=0o755)
     for x in os.listdir(src):
