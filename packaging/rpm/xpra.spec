@@ -390,7 +390,12 @@ Suggests:			%{python3}-oauthlib
 %if 0%{?fedora}
 #python prefixed builds would need this new package:
 BuildRequires:		%{python3}-cups
+%if 0%{?fedora}>=39
+# looks like they forgot to expose the pkgconfig?
+BuildRequires:		procps-ng-devel
+%else
 BuildRequires:		pkgconfig(libprocps)
+%fi
 %endif
 BuildRequires:		pkgconfig(libsystemd)
 BuildRequires:		checkpolicy
