@@ -41,6 +41,7 @@ class EncodingMixinTest(unittest.TestCase):
         x.parse_hello(None, caps, True)
         x.add_new_client(None, caps, True, 1)
         x.send_initial_data(None, caps, True, 1)
+        assert not x.get_http_scripts()
 
         x.reset_focus()
         x.last_client_exited()

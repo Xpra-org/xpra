@@ -53,7 +53,7 @@ def get_version_info():
     return {}
 
 def _get_pwd():
-    if os.name!="posix":
+    if os.name!="posix":# pragma: no cover
         return None
     try:
         import pwd

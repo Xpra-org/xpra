@@ -35,7 +35,7 @@ PacketElement : TypeAlias = Union[tuple,list,dict,int,bool,str,bytes,memoryview,
 try:
     from typing import Unpack
     PacketType : TypeAlias = tuple[str, Unpack[tuple[PacketElement, ...]]]
-except ImportError:
+except ImportError: # pragma: no cover
     PacketType: TypeAlias = tuple
 
 # client packet handler:

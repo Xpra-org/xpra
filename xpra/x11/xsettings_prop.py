@@ -70,27 +70,30 @@ def bytes_to_xsettings(d:bytes) -> tuple[int,list[tuple[int,str,Any,int]]]:
         return cache
     settings : list[tuple] = []
     pos = 12
+
+    def req(what="int", nbytes=4):
+        remain = len(d) - pos
+        if remain < nbytes:
+            raise ValueError(f"not enough data ({remain} bytes) to extract {what} ({nbytes} bytes needed)")
+
     while n_settings>len(settings):
         log("bytes_to_xsettings(..) pos=%i (len=%i), data=%s", pos, len(d), hexstr(d[pos:]))
         istart = pos
-        #parse header:
+        # parse header:
+        req("setting", 4)
         setting_type, _, name_len = struct.unpack(b"=BBH", d[pos:pos+4])
         pos += 4
-        #extract property name:
+        # extract property name:
         prop_name = d[pos:pos+name_len]
         pos += (name_len + 0x3) & ~0x3
-        #serial:
-        assert len(d)>=pos+4, "not enough data (%s bytes) to extract serial (4 bytes needed)" % (len(d)-pos)
+        # serial:
+        req("serial", 4)
         last_change_serial = struct.unpack(b"=I", d[pos:pos+4])[0]
         pos += 4
         if DEBUG_XSETTINGS:
             log("bytes_to_xsettings(..) found property %s of type %s, serial=%s",
                 prop_name, XSettingsNames.get(setting_type, "INVALID!"), last_change_serial)
-        #extract value:
-        def req(what="int", nbytes=4):
-            remain = len(d)-pos
-            if remain<nbytes:
-                raise ValueError(f"not enough data ({remain} bytes) to extract {what} ({nbytes} bytes needed)")
+        # extract value:
         def add(value):
             setting = setting_type, prop_name, value, last_change_serial
             if DEBUG_XSETTINGS:

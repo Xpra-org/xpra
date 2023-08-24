@@ -14,7 +14,7 @@ from enum import Enum, IntEnum
 try:
     #Python 3.11 and later:
     from enum import StrEnum
-except ImportError:
+except ImportError:     # pragma: no cover
     StrEnum = Enum      # type: ignore
 from typing import Any
 from collections.abc import Callable, Iterable

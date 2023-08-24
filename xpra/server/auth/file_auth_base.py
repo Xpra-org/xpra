@@ -63,7 +63,7 @@ class FileAuthenticatorBase(SysAuthenticator):
             return ""
         return file_data
 
-    def parse_filedata(self, data:str):
+    def parse_filedata(self, data:str): # pragma: no cover
         raise NotImplementedError()
 
     def load_password_file(self):

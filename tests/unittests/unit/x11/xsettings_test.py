@@ -21,6 +21,23 @@ class XSettingsTest(unittest.TestCase):
             get_local_byteorder,
             XSettingsType,
             )
+        for v in (None, 10, "", (), [], (1, 2, 3), [1, ]):
+            try:
+                xsettings_to_bytes(v)
+            except (ValueError, TypeError):
+                continue
+            else:
+                raise RuntimeError(f"should not be able to parse {v!r}")
+
+        for v in (None, 10, struct.pack(b"=BBBBII", 0, 0, 0, 0, 100, 2)):
+            #setting_type, _, name_len = struct.unpack(b"=BBH", d[pos:pos + 4])
+            try:
+                assert not bytes_to_xsettings(v)
+            except (ValueError, TypeError):
+                continue
+            else:
+                raise RuntimeError(f"should not be able to parse {v!r}")
+
         for DEBUG_XSETTINGS in (True, False):
             with OSEnvContext():
                 os.environ["XPRA_XSETTINGS_DEBUG"] = str(int(DEBUG_XSETTINGS))
@@ -30,12 +47,12 @@ class XSettingsTest(unittest.TestCase):
                 v = struct.pack(b"=BBBBII", get_local_byteorder(), 0, 0, 0, serial, l)+data+b"\0"
                 v1 = bytes_to_xsettings(v)
                 assert v
-                #get from cache:
+                # get from cache:
                 v2 = bytes_to_xsettings(v)
                 assert v1==v2
 
-                #test all types, set then get:
-                #setting_type, prop_name, value, last_change_serial = setting
+                # test all types, set then get:
+                # setting_type, prop_name, value, last_change_serial = setting
                 settings = (
                     (XSettingsType.Integer, "int1", 1, 0),
                     (XSettingsType.String, "str1", "1", 0),
@@ -44,24 +61,24 @@ class XSettingsTest(unittest.TestCase):
                 serial = 2
                 data = xsettings_to_bytes((serial, settings))
                 assert data
-                #parse it back:
+                # parse it back:
                 v = bytes_to_xsettings(data)
                 rserial, rsettings = v
                 assert rserial==serial
                 assert len(rsettings)==len(settings)
         from xpra.x11 import xsettings_prop
         with LoggerSilencer(xsettings_prop):
-            #test error handling:
+            # test error handling:
             for settings in (
                 (
-                    #invalid color causes exception
+                    # invalid color causes exception
                     (XSettingsType.Color, "bad-color", (128, ), 0),
                 ),
                 (
-                    #invalid setting type is skipped with an error message:
+                    # invalid setting type is skipped with an error message:
                     (255, "invalid-setting-type", 0, 0),
                 ),
-                ):
+            ):
                 serial = 3
                 data = xsettings_to_bytes((serial, settings))
                 assert data
@@ -69,7 +86,7 @@ class XSettingsTest(unittest.TestCase):
                 rserial, rsettings = v
                 assert rserial==serial
                 assert len(rsettings)==0
-            #parsing an invalid data type (9) should fail:
+            # parsing an invalid data type (9) should fail:
             hexdata = b"000000000200000001000000090004007374723100000000010000003100000000"
             data = binascii.unhexlify(hexdata)
             v = bytes_to_xsettings(data)
