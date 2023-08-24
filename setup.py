@@ -117,9 +117,10 @@ try:
     import cython
     print(f"found Cython version {cython.__version__}")
     cython_version = int(cython.__version__.split('.')[0])
+    if cython_version<3:
+        raise ValueError("Cython 3.x is now required")
 except (ValueError, ImportError):
     print("WARNING: unable to detect Cython version")
-    cython_version = 0
 
 
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
@@ -2320,7 +2321,7 @@ tace(v4l2_ENABLED, "xpra.codecs.v4l2.pusher")
 #workaround this warning on MS Windows with Cython 3.0.0b1:
 # "warning: comparison of integer expressions of different signedness: 'long unsigned int' and 'long int' [-Wsign-compare]"
 #simply adding -Wno-error=sign-compare is not enough:
-ECA_WIN32SIGN = ["-Wno-error"] if (WIN32 and cython_version==3) else []
+ECA_WIN32SIGN = ["-Wno-error"] if WIN32 else []
 toggle_packages(client_ENABLED or server_ENABLED, "xpra.net.protocol")
 toggle_packages(websockets_ENABLED, "xpra.net.websockets", "xpra.net.websockets.headers")
 tace(websockets_ENABLED, "xpra.net.websockets.mask", optimize=3, extra_compile_args=ECA_WIN32SIGN)
