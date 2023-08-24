@@ -29,6 +29,7 @@
 %define build_args %{DEFAULT_BUILD_ARGS}
 %else
 %if 0%{?fedora}>=39
+%global debug_package %{nil}
 %define build_args %{DEFAULT_BUILD_ARGS} --without-nvidia --without-pandoc_lua
 %else
 %define build_args %{DEFAULT_BUILD_ARGS} --without-nvidia
