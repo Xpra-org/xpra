@@ -25,21 +25,13 @@
 %endif
 
 Name:           %{python3}-pycuda
-%if !0%{?el8}
 Version:        2022.2.2
-%else
-Version:        2022.1
-%endif
 Release:        1
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
-%if !0%{?el8}
 Source0:        https://files.pythonhosted.org/packages/78/09/9df5358ffb74d225243b56a65ffe196de481fcd8f731f55e41f2d5d36015/pycuda-%{version}.tar.gz
-%else
-Source0:        https://files.pythonhosted.org/packages/2d/1f/48a3a5b2c715345e7af1e09361100bd98c3d72b4025371692ab233f523d3/pycuda-%{version}.tar.gz
-%endif
 Patch1:		    pycuda-py3.12.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       %{python3}-pycuda
@@ -66,11 +58,7 @@ Suggests:       nvidia-driver-cuda-libs
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-%if !0%{?el8}
 if [ "${sha256}" != "cd92e7246bb45ac3452955a110714112674cdf3b4a9e2f4ff25a4159c684e6bb" ]; then
-%else
-if [ "${sha256}" != "acd9030d93e76e60b122e33ad16bcf01bb1344f4c304dedff1cd2bffb0f313a3" ]; then
-%endif
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -106,7 +94,6 @@ rm -rf %{buildroot}
 %{python3_sitearch}/pycuda*
 
 %changelog
-%if !0%{?el8}
 * Wed Dec 21 2022 Antoine Martin <antoine@xpra.org> - 2022.2.2-1
 - new upstream release
 
@@ -116,7 +103,7 @@ rm -rf %{buildroot}
 * Tue Nov 22 2022 Antoine Martin <antoine@xpra.org> - 2022.2-1
 - new upstream release
 - remove context cleanup failures patch (merged)
-%endif
+
 * Tue Aug 16 2022 Antoine Martin <antoine@xpra.org> - 2022.1-2
 - add patch to show context cleanup failures
 
