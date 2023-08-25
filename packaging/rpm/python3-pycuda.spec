@@ -40,6 +40,7 @@ Source0:        https://files.pythonhosted.org/packages/78/09/9df5358ffb74d22524
 %else
 Source0:        https://files.pythonhosted.org/packages/2d/1f/48a3a5b2c715345e7af1e09361100bd98c3d72b4025371692ab233f523d3/pycuda-%{version}.tar.gz
 %endif
+Patch1:		    pycuda-py3.12.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       %{python3}-pycuda
 
@@ -74,6 +75,7 @@ if [ "${sha256}" != "acd9030d93e76e60b122e33ad16bcf01bb1344f4c304dedff1cd2bffb0f
 	exit 1
 fi
 %setup -q -n pycuda-%{version}
+%patch -p1 -P 1
 
 %build
 CUDA=/opt/cuda
