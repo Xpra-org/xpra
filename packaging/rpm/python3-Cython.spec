@@ -12,7 +12,7 @@
 %endif
 
 Name:		%{python3}-Cython
-Version:	3.0.0
+Version:	3.0.1
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
@@ -32,7 +32,7 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "1acaf0abe3edfad06cc98b4ab2499b20714a6fe11c4ef1afb4751f2a8e9208af" ]; then
+if [ "${sha256}" != "8a142815f6483a45065fa2698ee2119bfe097c7a6e292d0da3d223d15d4a73bb" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
