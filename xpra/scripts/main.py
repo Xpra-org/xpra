@@ -2102,7 +2102,7 @@ def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, 
             except ValueError:
                 pass
         if mode_pos<0:
-            raise InitException(f"mode {mode!r} not found in command line arguments") from None
+            raise InitException(f"mode {mode!r} not found in command line arguments {args}") from None
         args[mode_pos] = "attach"
         if params.get("display") is None:
             #try to find which display was used,
