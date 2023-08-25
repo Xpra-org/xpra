@@ -38,6 +38,7 @@ from xpra.os_util import (
     )
 from xpra.scripts.parsing import (
     info, warn, error,
+    get_usage,
     parse_display_name, parse_env,
     fixup_defaults,
     validated_encodings, validate_encryption, do_parse_cmdline, show_audio_codec_help,
@@ -714,7 +715,6 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
     if mode == "showsetting":
         return run_showsetting(args)
     #unknown subcommand:
-    from xpra.scripts.parsing import get_usage
     if mode!="help":
         print(f"Invalid subcommand {mode!r}")
     print("Usage:")
