@@ -1,0 +1,20 @@
+--- a/aksetup_helper.py	2023-08-25 15:28:31.955661823 +0700
++++ b/aksetup_helper.py	2023-08-25 15:29:03.838431471 +0700
+@@ -35,10 +35,14 @@
+
+
+ def get_numpy_incpath():
+-    from imp import find_module
++    from os.path import join, basename
+     # avoid actually importing numpy, it screws up distutils
+-    file, pathname, descr = find_module("numpy")
+-    from os.path import join
++    try:
++        from imp import find_module
++        file, pathname, descr = find_module("numpy")
++    except ImportError:
++        from importlib import util
++        pathname = basename(util.find_spec("numpy").origin)
+     return join(pathname, "core", "include")
+
+
