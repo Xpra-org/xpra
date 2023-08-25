@@ -41,7 +41,7 @@ from xpra.scripts.parsing import (
     parse_display_name, parse_env,
     fixup_defaults,
     validated_encodings, validate_encryption, do_parse_cmdline, show_audio_codec_help,
-    MODE_ALIAS,
+    MODE_ALIAS, REVERSE_MODE_ALIAS,
     )
 from xpra.scripts.config import (
     XpraConfig,
@@ -2091,10 +2091,17 @@ def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, 
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:
         warn("%s, reconnecting" % exit_str(r))
         args = list(cmdline)
-        #modify the 'mode' in the command line:
-        try:
-            mode_pos = args.index(mode)
-        except ValueError:
+        # modify the 'mode' in the command line to use `attach`:
+        mode_pos = -1
+        for mstr in (REVERSE_MODE_ALIAS.get(mode, ""), mode, MODE_ALIAS.get(mode, "")):
+            if not mstr:
+                continue
+            try:
+                mode_pos = args.index(mode)
+                break
+            except ValueError:
+                pass
+        if mode_pos<0:
             raise InitException(f"mode {mode!r} not found in command line arguments") from None
         args[mode_pos] = "attach"
         if params.get("display") is None:

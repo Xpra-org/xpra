@@ -39,6 +39,7 @@ MODE_ALIAS : dict[str,str] = {
     "start-shadow"      : "shadow",
     "start-shadow-screen" : "shadow-screen",
     }
+REVERSE_MODE_ALIAS : dict[str,str] = {v:k for k,v in MODE_ALIAS.items()}
 
 def enabled_str(v, true_str:str="yes", false_str:str="no") -> str:
     if v:
