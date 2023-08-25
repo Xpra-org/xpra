@@ -2097,7 +2097,7 @@ def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, 
             if not mstr:
                 continue
             try:
-                mode_pos = args.index(mode)
+                mode_pos = args.index(mstr)
                 break
             except ValueError:
                 pass
