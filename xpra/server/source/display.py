@@ -34,7 +34,6 @@ class ClientDisplayMixin(StubSourceMixin):
         self.desktop_fullscreen : bool = False
         self.screen_sizes : list = []
         self.monitors : dict[int,Any] = {}
-        self.screen_resize_bigger : bool = True
         self.desktops : int = 1
         self.desktop_names : tuple[str, ...] = ()
         self.show_desktop_allowed : bool = False
@@ -68,7 +67,6 @@ class ClientDisplayMixin(StubSourceMixin):
         self.desktop_mode_size = c.intpair("desktop_mode_size")
         self.desktop_size_unscaled = c.intpair("desktop_size.unscaled")
         self.desktop_fullscreen = c.boolget("desktop-fullscreen")
-        self.screen_resize_bigger = c.boolget("screen-resize-bigger", True)
         self.set_screen_sizes(c.tupleget("screen_sizes"))
         self.set_monitors(c.dictget("monitors"))
         desktop_names = tuple(str(x) for x in c.tupleget("desktop.names"))

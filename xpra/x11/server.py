@@ -313,7 +313,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
     ##########################################################################
     # Manage the virtual screen:
     #
-    def set_screen_size(self, desired_w:int, desired_h:int, bigger=True):
+    def set_screen_size(self, desired_w:int, desired_h:int):
         #clamp all window models to the new screen size:
         for window in tuple(self._window_to_id.keys()):
             if window.is_tray() or window.is_OR():
@@ -329,11 +329,11 @@ class XpraServer(GObject.GObject, X11ServerBase):
         with xlog:
             d16 = X11RandR.is_dummy16()
         screenlog("set_screen_size%s randr=%s, randr_exact_size=%s, is_dummy16()=%s",
-              (desired_w, desired_h, bigger), self.randr, self.randr_exact_size, d16)
+              (desired_w, desired_h), self.randr, self.randr_exact_size, d16)
         if DUMMY_MONITORS and self.randr and self.randr_exact_size and d16:
             if self.mirror_client_monitor_layout():
                 return desired_w, desired_h
-        return super().set_screen_size(desired_w, desired_h, bigger)
+        return super().set_screen_size(desired_w, desired_h)
 
 
     def set_screen_geometry_attributes(self, w:int, h:int) -> None:

@@ -368,13 +368,11 @@ class DisplayManager(StubServerMixin):
             self.calculate_desktops()
         if len(packet)>=4:
             ss.set_screen_sizes(packet[3])
-        bigger = ss.screen_resize_bigger
-        log("client requesting new size: %sx%s (bigger=%s)", width, height, bigger)
-        self.set_screen_size(width, height, bigger)
+        log("client requesting new size: %sx%s", width, height)
+        self.set_screen_size(width, height)
         if len(packet)>=4:
             log.info("received updated display dimensions")
-            log.info("client display size is %sx%s",
-                     width, height)
+            log.info("client display size is %sx%s", width, height)
             log_screen_sizes(width, height, ss.screen_sizes)
             self.calculate_workarea(width, height)
         self.apply_refresh_rate(ss)
@@ -400,10 +398,9 @@ class DisplayManager(StubServerMixin):
         if monitors:
             ss.set_monitors(monitors)
         if desktop_size:
-            bigger = ss.screen_resize_bigger
             width, height = desktop_size
-            log("client requesting new size: %sx%s (bigger=%s)", width, height, bigger)
-            self.set_screen_size(width, height, bigger)
+            log("client requesting new size: %sx%s", width, height)
+            self.set_screen_size(width, height)
             log.info("received updated display dimensions")
             log.info(f"client display size is {width}x{height}")
             log_screen_sizes(width, height, ss.screen_sizes)

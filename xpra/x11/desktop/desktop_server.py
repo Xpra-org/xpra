@@ -71,7 +71,7 @@ class XpraDesktopServer(DesktopServerBase):
         if w<=0 or h<=0 or w>=32768 or h>=32768:
             screenlog("configure_best_screen_size() client requested an invalid desktop mode size: %s", requested_size)
             return root_w, root_h
-        return self.set_screen_size(w, h, ss.screen_resize_bigger)
+        return self.set_screen_size(w, h)
 
     def resize(self, w:int, h:int) -> None:
         geomlog("resize(%i, %i)", w, h)
@@ -91,7 +91,7 @@ class XpraDesktopServer(DesktopServerBase):
         try:
             with xsync:
                 ow, oh = RandR.get_screen_size()
-            w, h = self.set_screen_size(rw, rh, False)
+            w, h = self.set_screen_size(rw, rh)
             if (ow, oh) == (w, h):
                 #this is already the resolution we have,
                 #but the client has other ideas,
