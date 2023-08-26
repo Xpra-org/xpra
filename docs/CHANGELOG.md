@@ -1,5 +1,8 @@
 # Changelog
 
+## [5.0.1] 2023-08-26
+* TODO
+
 ## [5.0] 2023-07-18
 * Major improvements:
     * [QUIC transport](https://github.com/Xpra-org/xpra/issues/3376)
