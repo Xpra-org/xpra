@@ -147,9 +147,13 @@ class DisplayClient(StubClientMixin):
         monitors = self.get_monitors_info()
         caps["monitors"] = adjust_monitor_refresh_rate(self.refresh_rate, monitors)
         caps.update(self.get_screen_caps())
+        dpi_caps = self.get_dpi_caps()
+        caps["dpi"] = dpi_caps
+        scaling_caps = self.get_scaling_caps()
+        caps["screen-scaling"] = scaling_caps
         caps.update(flatten_dict({
-            "dpi"               : self.get_dpi_caps(),
-            "screen-scaling"    : self.get_scaling_caps(),
+            "dpi"               : dpi_caps,
+            "screen-scaling"    : scaling_caps,
             }))
         return caps
 
@@ -200,32 +204,6 @@ class DisplayClient(StubClientMixin):
         if aa:
             caps["antialias"] = aa
         return caps
-
-    #this is the format we should be moving towards
-    #with proper namespace:
-    #def get_info(self) -> dict:
-    #    sinfo = self.get_screen_caps()
-    #    sinfo["scaling"] = self.get_scaling_caps()
-    #    sinfo["dpi"] = self.get_dpi_caps()
-    #    return {
-    #        "desktop"   : self.get_desktop_caps(),
-    #        "screen"    : sinfo,
-    #        }
-
-    #def get_desktop_info(self):
-    #    caps = {
-    #        "show"  : True,
-    #        }
-    #    wm_name = get_wm_name()
-    #    if wm_name:
-    #        caps["wm_name"] = wm_name
-    #    _, _, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi = self._last_screen_settings
-    #    caps["unscaled-size"] = u_root_w, u_root_h
-    #    caps["size"] = self.cp(u_root_w, u_root_h)
-    #    caps["dpi"] = (xdpi, ydpi)
-    #    caps["count"] = ndesktops
-    #    caps["names"] = desktop_names
-    #    caps["screens"] = len(sss)
 
 
     def parse_server_capabilities(self, c : typedict) -> bool:

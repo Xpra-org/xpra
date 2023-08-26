@@ -187,12 +187,10 @@ class AudioClient(StubClientMixin):
 
 
     def get_caps(self) -> dict[str,Any]:
-        d : dict[str,Any] = {}
-        avcaps = self.get_avsync_capabilities()
-        acaps = self.get_audio_capabilities()
-        d["av-sync"] = avcaps
-        d["audio"] = acaps
-        return d
+        return {
+            "av-sync"   : self.get_avsync_capabilities(),
+            "audio"     : self.get_audio_capabilities(),
+        }
 
     def get_audio_capabilities(self) -> dict[str,Any]:
         if not self.audio_properties:
@@ -229,18 +227,13 @@ class AudioClient(StubClientMixin):
     def parse_server_capabilities(self, c : typedict) -> bool:
         self.server_av_sync = c.boolget("av-sync.enabled")
         avsynclog("av-sync: server=%s, client=%s", self.server_av_sync, self.av_sync)
-        audio = c.get("audio")
-        if audio and isinstance(audio, dict):
-            c = typedict(audio)
-            prefix = ""
-        else:
-            prefix = "sound."
-        self.server_pulseaudio_id = c.strget(f"{prefix}pulseaudio.id")
-        self.server_pulseaudio_server = c.strget(f"{prefix}pulseaudio.server")
-        self.server_audio_decoders = c.strtupleget(f"{prefix}decoders")
-        self.server_audio_encoders = c.strtupleget(f"{prefix}encoders")
-        self.server_audio_receive = c.boolget(f"{prefix}receive")
-        self.server_audio_send = c.boolget(f"{prefix}send")
+        audio = typedict(c.dictget("audio") or {})
+        self.server_pulseaudio_id = audio.strget("pulseaudio.id")
+        self.server_pulseaudio_server = audio.strget("pulseaudio.server")
+        self.server_audio_decoders = audio.strtupleget("decoders")
+        self.server_audio_encoders = audio.strtupleget("encoders")
+        self.server_audio_receive = audio.boolget("receive")
+        self.server_audio_send = audio.boolget("send")
         log("pulseaudio id=%s, server=%s, audio decoders=%s, audio encoders=%s, receive=%s, send=%s",
                  self.server_pulseaudio_id, self.server_pulseaudio_server,
                  csv(self.server_audio_decoders), csv(self.server_audio_encoders),

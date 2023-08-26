@@ -12,7 +12,7 @@ from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.common import FULL_INFO
 from xpra.os_util import get_machine_id, get_user_uuid, bytestostr
-from xpra.util import csv, envbool, envint, flatten_dict, typedict, first_time, NotificationID
+from xpra.util import csv, envbool, envint, typedict, first_time, NotificationID
 from xpra.log import Logger
 
 log = Logger("audio")
@@ -110,9 +110,8 @@ class AudioMixin(StubSourceMixin):
 
     def parse_client_caps(self, c:typedict) -> None:
         self.wants_audio = "audio" in c.strtupleget("wants")
-        audio = c.dictget("audio")
+        audio = typedict(c.dictget("audio") or {})
         if audio:
-            audio = typedict(audio)
             self.pulseaudio_id = audio.strget("pulseaudio.id", "")
             self.pulseaudio_cookie_hash = audio.strget("pulseaudio.cookie-hash", "")
             self.pulseaudio_server = audio.strget("pulseaudio.server", "")
@@ -120,15 +119,6 @@ class AudioMixin(StubSourceMixin):
             self.audio_encoders = audio.strtupleget("encoders", ())
             self.audio_receive = audio.boolget("receive")
             self.audio_send = audio.boolget("send")
-        else:
-            #pre v4.4:
-            self.pulseaudio_id = c.strget("sound.pulseaudio.id", "")
-            self.pulseaudio_cookie_hash = c.strget("sound.pulseaudio.cookie-hash", "")
-            self.pulseaudio_server = c.strget("sound.pulseaudio.server", "")
-            self.audio_decoders = c.strtupleget("sound.decoders", ())
-            self.audio_encoders = c.strtupleget("sound.encoders", ())
-            self.audio_receive = c.boolget("sound.receive")
-            self.audio_send = c.boolget("sound.send")
         log("pulseaudio id=%s, cookie-hash=%s, server=%s, audio decoders=%s, audio encoders=%s, receive=%s, send=%s",
                  self.pulseaudio_id, self.pulseaudio_cookie_hash, self.pulseaudio_server,
                  self.audio_decoders, self.audio_encoders, self.audio_receive, self.audio_send)
@@ -149,9 +139,7 @@ class AudioMixin(StubSourceMixin):
             "send"              : self.supports_speaker and len(self.speaker_codecs)>0,
             "receive"           : self.supports_microphone and len(self.microphone_codecs)>0,
             })
-        caps = flatten_dict({"sound" : audio_props})
-        caps["audio"] = audio_props
-        return caps
+        return {"audio" : audio_props}
 
 
     def audio_loop_check(self, mode:str="speaker") -> bool:
