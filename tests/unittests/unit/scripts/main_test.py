@@ -16,6 +16,7 @@ from xpra.os_util import OSEnvContext, pollwait, getuid, POSIX, OSX
 from xpra.util import AdHocStruct
 from xpra.platform.paths import get_xpra_command
 from xpra.common import noop
+from xpra.scripts.config import InitException
 from xpra.scripts.main import (
     nox, noerr,
     use_systemd_run, systemd_run_command, systemd_run_wrap,
@@ -24,7 +25,8 @@ from xpra.scripts.main import (
     get_host_target_string,
     find_session_by_name,
     connect_to,
-    )
+    find_mode_pos,
+)
 
 def _get_test_socket_dir():
     return tempfile.gettempdir()
@@ -62,6 +64,20 @@ class TestMain(unittest.TestCase):
         #only implemented properly on MacOS
         check_display()
 
+
+    def test_find_mode_pos(self):
+        for args in ([], [100], ["hello", "world"]):
+            for v in (0, "a", ""):
+                try:
+                    find_mode_pos(args, v)
+                except InitException:
+                    pass
+                else:
+                    raise RuntimeError(f"find_mode_pos should have failed for {args} and {v}")
+        args = ['xpra_cmd', 'start', 'ssl://[user]@[host]:[port]', '--ssl-server-verify-mode=none',
+                 '--no-microphone', '--no-speaker', '--no-webcam', '--no-printing', '--pulseaudio=no',
+                 '--start-child=rstudio']
+        assert find_mode_pos(args, "seamless")==1
 
     def test_host_parsing(self):
         try:
