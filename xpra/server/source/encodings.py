@@ -45,7 +45,6 @@ class EncodingsMixin(StubSourceMixin):
         self.encoding = ""                          #the default encoding for all windows
         self.encodings : tuple[str,...] = ()        #all the encodings supported by the client
         self.core_encodings : tuple[str,...] = ()
-        self.encodings_packet = False               #supports delayed encodings initialization?
         self.window_icon_encodings : tuple[str,...] = ()
         self.rgb_formats : tuple[str,...] = ("RGB",)
         self.encoding_options = typedict()
@@ -262,7 +261,6 @@ class EncodingsMixin(StubSourceMixin):
         self.vrefresh = c.intget("vrefresh", -1)
 
         #encodings:
-        self.encodings_packet = c.boolget("encodings.packet", False)
         self.encodings = c.strtupleget("encodings")
         self.core_encodings = c.strtupleget("encodings.core", self.encodings)
         log("encodings=%s, core_encodings=%s", self.encodings, self.core_encodings)

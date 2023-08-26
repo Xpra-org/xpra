@@ -564,18 +564,14 @@ class ServerBase(ServerBaseClass):
                     for k,v in self.get_encoding_info().items():
                         k = "encodings" if not k else f"encodings.{k}"
                         d[k] = v
-                if server_source.encodings_packet:
-                    #we can send it later,
-                    #when the init thread has finished:
-                    def send_encoding_caps():
-                        d = {}
-                        add_encoding_caps(d)
-                        #make sure the 'hello' packet goes out first:
-                        self.idle_add(server_source.send_async, "encodings", d)
-                    self.after_threaded_init(send_encoding_caps)
-                else:
-                    self.wait_for_threaded_init()
-                    add_encoding_caps(capabilities)
+                #we can send it later,
+                #when the init thread has finished:
+                def send_encoding_caps():
+                    d = {}
+                    add_encoding_caps(d)
+                    #make sure the 'hello' packet goes out first:
+                    self.idle_add(server_source.send_async, "encodings", d)
+                self.after_threaded_init(send_encoding_caps)
                 #check for mmap:
                 if getattr(self, "mmap_size", 0)==0:
                     self.after_threaded_init(server_source.print_encoding_info)

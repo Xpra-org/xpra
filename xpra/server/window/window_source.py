@@ -219,7 +219,7 @@ class WindowSource(WindowIconSource):
         self.rgb_lz4 : bool = use("lz4") and encoding_options.boolget("rgb_lz4", False)       #server and client support lz4 pixel compression
         self.client_render_size = encoding_options.get("render-size")
         self.client_bit_depth : int = encoding_options.intget("bit-depth", 24)
-        self.supports_transparency : bool = HAS_ALPHA and encoding_options.boolget("transparency")
+        self.supports_transparency : bool = HAS_ALPHA and encoding_options.boolget("transparency", True)
         self.full_frames_only : bool = self.is_tray or encoding_options.boolget("full_frames_only")
         self.client_refresh_encodings : tuple[str, ...] = encoding_options.strtupleget("auto_refresh_encodings")
         self.max_soft_expired : int = max(0, min(100, encoding_options.intget("max-soft-expired", MAX_SOFT_EXPIRED)))
