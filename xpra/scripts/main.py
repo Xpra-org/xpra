@@ -40,7 +40,7 @@ from xpra.scripts.parsing import (
     parse_display_name, parse_env,
     fixup_defaults,
     validated_encodings, validate_encryption, do_parse_cmdline, show_audio_codec_help,
-    MODE_ALIAS,
+    MODE_ALIAS, REVERSE_MODE_ALIAS,
     )
 from xpra.scripts.config import (
     XpraConfig,
@@ -1976,6 +1976,20 @@ def start_server_via_proxy(script_file:str, cmdline, error_cb, options, args, mo
     warn(" more information may be available in your system log")
     return None
 
+def find_mode_pos(args, mode:str):
+    rmode = REVERSE_MODE_ALIAS.get(mode, str(mode))
+    mode_strs = [rmode]
+    if rmode.find("-") > 0:
+        mode_strs.append(rmode.split("-", 1)[1])        #ie: "start-desktop" -> "desktop"
+    if mode == "seamless":                              #ie: "seamless" -> "start"
+        mode_strs.append("start")
+    for mstr in mode_strs:
+        try:
+            return args.index(mstr)
+        except ValueError:
+            pass
+    raise InitException(f"mode {mode!r} not found in command line arguments {args}")
+
 
 def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, defaults) -> int:
     """ Uses the regular XpraClient with patched proxy arguments to tell run_proxy to start the server """
@@ -2090,11 +2104,9 @@ def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, 
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:
         warn("%s, reconnecting" % exit_str(r))
         args = list(cmdline)
-        #modify the 'mode' in the command line:
-        try:
-            mode_pos = args.index(mode)
-        except ValueError:
-            raise InitException(f"mode {mode!r} not found in command line arguments") from None
+        # modify the 'mode' in the command line to use `attach`:
+        # made more difficult by mode name aliases
+        mode_pos = find_mode_pos(args, mode)
         args[mode_pos] = "attach"
         if params.get("display") is None:
             #try to find which display was used,
