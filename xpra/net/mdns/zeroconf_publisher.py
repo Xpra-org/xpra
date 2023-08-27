@@ -126,7 +126,10 @@ class ZeroconfPublishers:
 
     def update_txt(self, txt) -> None:
         for s in self.services:
-            s.update_txt(txt)
+            try:
+                s.update_txt(txt)
+            except TimeoutError:
+                log(f"update_txt({txt})", exc_info=True)
 
 
 class ZeroconfPublisher:
