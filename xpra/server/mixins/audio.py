@@ -13,7 +13,7 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.os_util import pollwait, osexpand, OSX, POSIX
-from xpra.util import typedict, envbool, csv, engs
+from xpra.util import typedict, envbool, csv, engs, first_time
 from xpra.net.common import PacketType
 from xpra.make_thread import start_thread
 from xpra.platform.info import get_username
@@ -384,8 +384,13 @@ class AudioServer(StubServerMixin):
 
     def _process_sound_control(self, proto, packet : PacketType) -> None:
         ss = self.get_server_source(proto)
-        if ss:
-            ss.audio_control(*packet[1:])
+        audio_control = getattr(ss, "audio_control", None)
+        if not audio_control:
+            if first_time(f"no-audio-control-{ss}"):
+                log.warn(f"Warning: ignoring audio control requests from {ss}")
+                log.warn(" audio is not enabled for this connection")
+            return
+        audio_control(*packet[1:])
 
     def _process_sound_data(self, proto, packet : PacketType) -> None:
         ss = self.get_server_source(proto)
