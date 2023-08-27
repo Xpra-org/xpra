@@ -152,7 +152,7 @@ class GTKServerBase(ServerBase):
                     "cursor.default_size"   : display.get_default_cursor_size(),
                     "cursor.max_size"       : max_size,
                     })
-        if "versions" in source.wants and FULL_INFO>2:
+        if "versions" in source.wants and FULL_INFO>=2:
             capabilities.update(flatten_dict(get_gtk_version_info()))
         return capabilities
 
