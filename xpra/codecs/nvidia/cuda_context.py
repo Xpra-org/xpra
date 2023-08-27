@@ -336,7 +336,7 @@ def select_device(preferred_device_id=-1, min_compute=0):
     log("load-balancing=%s", load_balancing)
     if load_balancing=="round-robin":
         return select_round_robin(min_compute)
-    if load_balancing!="memory" and first_time("cuda-load-balancing"):
+    if load_balancing and load_balancing!="memory" and first_time("cuda-load-balancing"):
         log.warn("Warning: invalid load balancing value '%s'", load_balancing)
     return select_best_free_memory(min_compute)
 
