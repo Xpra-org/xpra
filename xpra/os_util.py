@@ -80,8 +80,8 @@ def get_frame_info(ignore_threads:tuple[Thread,...]=()) -> dict[Any,Any]:
                 continue
             #sanitize stack to prevent None values (which cause encoding errors with the bencoder)
             sanestack = []
-            for e in stack:
-                sanestack.append(tuple(nn(x) for x in e))
+            for entry in stack:
+                sanestack.append(tuple(nn(x) for x in entry))
             info[i] = {
                 ""          : tident,
                 "stack"     : sanestack,

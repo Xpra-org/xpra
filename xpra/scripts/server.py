@@ -1525,7 +1525,6 @@ def _do_run_server(script_file:str, cmdline,
     ######################################################################
     if opts.attach is True:
         attach_client(opts, defaults)
-    del opts
 
     try:
         progress(100, "running")
