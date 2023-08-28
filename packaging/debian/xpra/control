@@ -94,6 +94,7 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}, ${x11:Depends}
         ,python3-cairo
         ,python3-gi
 Recommends: python3-lxml
+        ,${x11:Depends}
 Description: tool to detach/reattach running X programs,
  this package contains the X11 bindings
  used by both the server and client under X11
@@ -107,10 +108,8 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,python3-gi
         ,gir1.2-glib-2.0
         ,python3-typing-extensions
-Recommends:
-        ,${x11:Depends}
 # generate QR codes for authentication and connection URLs:
-        ,${qrcode:Depends}
+Recommends: ${qrcode:Depends}
 # legacy packet encoder:
         ,python3-rencode
 # text packet compression:
