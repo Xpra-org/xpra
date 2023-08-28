@@ -319,8 +319,8 @@ def load_xdg_menu(submenu) -> dict[str,Any]:
                         entries_data[name] = ed
                 except Exception as e:
                     log("load_xdg_menu(%s)", submenu, exc_info=True)
-                    log.error(f"Error loading desktop entry {name!r}:")
-                    log.estr(e)
+                    log.error(f"Error loading desktop menu entry {name!r}:")
+                    log.error(f" {type(e)}: {e}")
             elif isinstance(entry, Menu):
                 #merge up:
                 add_entries(entry.Entries)
@@ -534,8 +534,8 @@ def load_desktop_sessions() -> dict[str,Any]:
                 xsessions[name] = entry
             except Exception as e:
                 log("load_desktop_sessions(%s)", remove_icons, exc_info=True)
-                log.error(f"Error loading desktop entry {filename!r}:")
-                log.estr(e)
+                log.error(f"Error loading desktop session entry {filename!r}:")
+                log.error(f" {type(e)}: {e}")
     return xsessions
 
 
