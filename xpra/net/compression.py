@@ -87,6 +87,11 @@ def init_compressors(*names) -> None:
         if not envbool("XPRA_"+x.upper(), True):
             continue
         attr = globals().get(f"init_{x}", None)
+        if attr is None:
+            from xpra.log import Logger
+            logger = Logger("network", "protocol")
+            logger.warn(f"Warning: invalid compressor {x} specified")
+            continue
         try:
             if not callable(attr):
                 raise ValueError(f"{attr!r} is not callable")
