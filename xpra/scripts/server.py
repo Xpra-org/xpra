@@ -1357,7 +1357,7 @@ def _do_run_server(script_file:str, cmdline,
     if not shadowing and POSIX and not OSX:
         dbuslog = Logger("dbus")
         dbus_pid, dbus_env = reload_dbus_attributes(display_name)
-        if not dbus_pid and dbus_env:
+        if not (dbus_pid and dbus_env):
             no_gtk()
             if not (starting or starting_desktop or starting_monitor or proxying):
                 dbuslog.warn("Warning: failed to reload the dbus session attributes")
