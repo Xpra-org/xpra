@@ -1,7 +1,24 @@
 # Changelog
 
-## [5.0.1] 2023-08-26
-* TODO
+## [5.0.1] 2023-08-29
+* Major fixes:
+    * [missing dbus instance](https://github.com/Xpra-org/xpra/commit/79fda14b3419a0ff9e86405dcffc89082927eca5)
+    * [ssh re-connection errors following ssh start command](https://github.com/Xpra-org/xpra/commit/4bfb8577b100e39d18ed72135d33c7cadca112c1)
+    * [U2F authentication failures](https://github.com/Xpra-org/xpra/commit/1ca86629b46b60be47917b130cabff41105dfb60)
+    * [gstreamer x264 capture errors](https://github.com/Xpra-org/xpra/commit/f7554b9650e32994a1b33d163d73f0dbcccaa4eb)
+    * [proxy forwarding of 'draw' packets with stripped alpha](https://github.com/Xpra-org/xpra/commit/6d9814c12843e431453e463555b3a60156a2ccc1)
+* Build and packaging:
+    * Fedora 39: [debug package errors](https://github.com/Xpra-org/xpra/commit/6e2a4130c581a12f6caee027ec5d748c1454e65d) and [build workarounds](https://github.com/Xpra-org/xpra/commit/293dc03765070c12f78202b664b732059e7c238b)
+    * [pycuda RPMs for Python 3.12](https://github.com/Xpra-org/xpra/commit/f4a1ff83173a951851996b32698e09919020b620)
+    * [Cython 3.0.2 RPMs](https://github.com/Xpra-org/xpra/commit/910b7e172348a0cf3aef7e4c528c1761df841c4e)
+    * [Ubuntu Focal workarounds](https://github.com/Xpra-org/xpra/commit/a392929946697f104c060ea4152edb5981bf32e5)
+    * [Debian soft dependency for nvidia codecs](https://github.com/Xpra-org/xpra/commit/451640396e31b4d6c807dc9dabd81df54be6b444) and [pycuda](https://github.com/Xpra-org/xpra/commit/dc382c384f251cd1cd458b96eb4cb45ba3baeead)
+    * [Debian x11 dependencies belong in the xpra-x11 package](https://github.com/Xpra-org/xpra/commit/2b67784f2dfe71660145cc7e443554933d9652e5)
+    * [automatic revision no when building from source](https://github.com/Xpra-org/xpra/commit/a330a2b994600259f55bfaad003cc637a1f4cecf)
+* Minor fixes:
+    * [handle invalid compressors more gracefully](https://github.com/Xpra-org/xpra/commit/51095fbb4241a8c579bc4dbda7ded9ee2748fc90)
+    * [typo in undocumented environment variable](https://github.com/Xpra-org/xpra/commit/d30268bf58a0e0336d675e84421732c299abbda5)
+    * [gtk version info missing for verbosity level](https://github.com/Xpra-org/xpra/commit/1f4f7fdb702d987d9bfa30a90be38c55be23c57b)
 
 ## [5.0] 2023-07-18
 * Major improvements:

@@ -1,5 +1,22 @@
 xpra (5.0.1-1) UNRELEASED; urgency=low
-  * TODO
+  * Major fixes:
+    - missing dbus instance
+    - ssh re-connection errors following ssh start command
+    - U2F authentication failures
+    - gstreamer x264 capture errors
+    - proxy forwarding of 'draw' packets with stripped alpha
+  * Build and packaging:
+    - Fedora 39: debug package errors and build workarounds
+    - pycuda RPMs for Python 3.12
+    - Cython 3.0.2 RPMs
+    - Ubuntu Focal workarounds
+    - Debian soft dependency for nvidia codecs and pycuda
+    - Debian x11 dependencies belong in the xpra-x11 package
+    - automatic revision no when building from source
+  * Minor fixes:
+    - handle invalid compressors more gracefully
+    - typo in undocumented environment variable
+    - gtk version info missing for verbosity level
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 26 Aug 2023 16:42:42 +0700
 

@@ -769,9 +769,28 @@ fi
 
 %changelog
 * Sat Aug 26 2023 Antoine Martin <antoine@xpra.org> 5.0.1-10
-- TODO
+- Major fixes:
+   missing dbus instance
+   ssh re-connection errors following ssh start command
+   U2F authentication failures
+   gstreamer x264 capture errors
+   proxy forwarding of 'draw' packets with stripped alpha
+- Build and packaging:
+   Fedora 39: debug package errors and build workarounds
+   pycuda RPMs for Python 3.12
+   Cython 3.0.2 RPMs
+   Ubuntu Focal workarounds
+   Debian soft dependency for nvidia codecs
+   Debian x11 dependencies belong in the xpra-x11 package
+   automatic revision no when building from source
+- Minor fixes:
+   handle invalid compressors more gracefully
+   typo in undocumented environment variable
+   gtk version info missing for verbosity level
+
 * Sun Oct 02 2022 Antoine Martin <antoine@xpra.org> 5.0-10
 - TODO
+
 * Sat Oct 01 2022 Antoine Martin <antoine@xpra.org> 4.4-10
 - Platforms, build and packaging:
    Native LZ4 bindings
