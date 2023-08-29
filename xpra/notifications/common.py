@@ -6,7 +6,6 @@
 import os.path
 from io import BytesIO
 from typing import Tuple, Optional
-from typing_extensions import TypeAlias
 
 from xpra.util import first_time
 from xpra.os_util import load_binary_file
@@ -14,7 +13,11 @@ from xpra.log import Logger
 
 log = Logger("dbus", "notify")
 
-IconData : TypeAlias = Tuple[str,int,int,bytes]
+try:
+    from typing_extensions import TypeAlias
+    IconData : TypeAlias = Tuple[str,int,int,bytes]
+except ImportError:
+    IconData = Tuple
 
 
 def PIL_Image():

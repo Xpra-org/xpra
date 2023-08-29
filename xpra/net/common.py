@@ -6,7 +6,6 @@
 import os
 import threading
 from typing import Tuple, Callable, List, Dict, Any, ByteString, Union
-from typing_extensions import TypeAlias
 
 from xpra.net.compression import Compressed, Compressible, LargeStructure
 from xpra.util import repr_ellipsized, envint, envbool
@@ -26,24 +25,27 @@ DEFAULT_PORTS : Dict[str,int] = {
     "quic"  : 20000,
     }
 
-PacketElement : TypeAlias = Union[Tuple,List,Dict,int,bool,str,bytes,memoryview,Compressible,Compressed,LargeStructure]
 
 # packet type followed by attributes:
 # in 3.11: tuple[str, *tuple[int, ...]]
 # tuple[str, Unpack[tuple[int, ...]] for older versions
 
 try:
+    from typing_extensions import TypeAlias
     from typing import Unpack
+    PacketElement : TypeAlias = Union[Tuple,List,Dict,int,bool,str,bytes,memoryview,Compressible,Compressed,LargeStructure]
     PacketType : TypeAlias = Tuple[str, Unpack[Tuple[PacketElement, ...]]]
+    NetPacketType : TypeAlias = Tuple[int, int, int, ByteString]
 except ImportError:
-    PacketType: TypeAlias = Tuple
+    PacketElement = Any
+    PacketType = Tuple
+    NetPacketType = Tuple
 
 # client packet handler:
 PacketHandlerType = Callable[[PacketType], None]
 # server packet handler:
 ServerPacketHandlerType = Callable[[Any, PacketType], None]
 
-NetPacketType : TypeAlias = Tuple[int, int, int, ByteString]
 
 class ConnectionClosedException(Exception):
     pass

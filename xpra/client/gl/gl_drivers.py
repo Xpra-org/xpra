@@ -6,11 +6,14 @@
 # later version. See the file COPYING for details.
 
 from typing import Dict, Tuple
-from typing_extensions import TypeAlias
 
 #These chipsets will use OpenGL,
 #there will not be any warnings, even if the vendor is greylisted:
-GL_MATCH_LIST : TypeAlias = Dict[str, Tuple[str,...]]
+try:
+    from typing_extensions import TypeAlias
+    GL_MATCH_LIST : TypeAlias = Dict[str, Tuple[str,...]]
+except ImportError:
+    GL_MATCH_LIST = Dict
 
 WHITELIST : GL_MATCH_LIST = {
     "renderer"  : (
