@@ -864,15 +864,31 @@ def get_default_systemd_run() -> str:
 def get_default_pulseaudio_command() -> List[str]:
     if WIN32 or OSX:
         return []
+
+    def description(desc):
+        return f"device.description=\"{desc}\""
+
+    def load_opt(name, **kwargs):
+        args = " ".join([f"--load={name}"] + [f"{n}={v}" for n, v in kwargs.items()])
+        return f"'{args}'"
+
     cmd = [
         "pulseaudio", "--start", "-n", "--daemonize=false", "--system=false",
         "--exit-idle-time=-1", "--load=module-suspend-on-idle",
-        "'--load=module-null-sink sink_name=\"Xpra-Speaker\" sink_properties=device.description=\"Xpra\\ Speaker\"'",
-        "'--load=module-null-sink sink_name=\"Xpra-Microphone\" sink_properties=device.description=\"Xpra\\ Microphone\"'",
-        "'--load=module-remap-source source_name=\"Xpra-Mic-Source\" source_properties=device.description=\"Xpra\\ Mic\\ Source\" master=\"Xpra-Microphone.monitor\" channels=1'",
-        "'--load=module-native-protocol-unix socket=$XPRA_PULSE_SERVER'",
-        "--load=module-dbus-protocol",
-        "--load=module-x11-publish",
+        load_opt("module-null-sink",
+                 sink_name="Xpra-Speaker",
+                 sink_properties=description("Xpra\\ Speaker")),
+        load_opt("module-null-sink",
+                 sink_name="Xpra-Microphone",
+                 sink_properties=description("Xpra\\ Microphone")),
+        load_opt("module-remap-source",
+                 source_name="Xpra-Mic-Source",
+                 source_properties=description("Xpra\\ Mic\\ Source"),
+                 master="Xpra-Microphone.monitor",
+                 channels=1),
+        load_opt("module-native-protocol-unix", socket="$XPRA_PULSE_SERVER"),
+        load_opt("module-dbus-protocol"),
+        load_opt("module-x11-publish"),
         "--log-level=2", "--log-target=stderr",
         ]
     from xpra.util import envbool
