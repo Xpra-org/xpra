@@ -38,7 +38,7 @@ DEFAULT_ENV : tuple[str, ...] = ()
 DEFAULT_SSH_COMMAND : str = "ssh -x"
 DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS : tuple[tuple[str, str, str], ...] = (
     ("pactl", "set-default-sink", "Xpra-Speaker"),
-    ("pactl", "set-default-source", "Xpra-Microphone.monitor"),
+    ("pactl", "set-default-source", "Xpra-Mic-Source"),
     )
 
 SOCKET_OPTIONS : tuple[str, ...] = (
