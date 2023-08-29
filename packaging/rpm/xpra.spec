@@ -234,7 +234,7 @@ Requires:			python3-pycuda
 Recommends:			python3-pynvml
 %description codecs-nvidia
 This package contains the picture and video codecs that rely on NVidia GPUs and CUDA,
-this is used by both xpra clients and servers. 
+this is used by both xpra clients and servers.
 %endif
 
 
@@ -789,7 +789,48 @@ fi
    gtk version info missing for verbosity level
 
 * Sun Oct 02 2022 Antoine Martin <antoine@xpra.org> 5.0-10
-- TODO
+- Major improvements:
+   QUIC transport
+   split packaging
+   freedesktop screencast / remotedesktop
+   ease of use: easier basic commands, open html5 client, disable all audio features
+- Platforms, build and packaging:
+   Python 3.12 installations
+   replace Python2 builds
+   LTS feature deprecation
+   stricter type checks
+   more MacOS workarounds
+- Server:
+   try harder to find a valid menu prefix
+   exit with windows
+   side buttons with MS Windows shadow servers
+   mirror client monitor layout
+   side buttons with MS Windows shadow servers
+- Client:
+   allow keyboard shortcuts in readonly mode
+   show decoder statistics
+   keyboard layout switching shortcut
+   layout switching detection for MS Windows
+   mirror mouse cursor when sharing
+- Minor:
+   generic exec authentication module
+   audio `removesilence`
+   make pulseaudio real-time and high-priority scheduling modes configurable
+   use urrlib for parsing
+   GTK removal progress
+   documentation updates and fixes: broken links, typos
+- Network:
+   smaller handshake packet
+   SSL auto-upgrade
+   better IPv6
+   new packet format
+   ssh agent forwarding automatic switching when sharing
+   use libnm to query network devices
+   exclude more user data by default
+- Encodings:
+   use intra refresh
+   `stream` encoding for desktop mode
+   GStreamer codecs
 
 * Sat Oct 01 2022 Antoine Martin <antoine@xpra.org> 4.4-10
 - Platforms, build and packaging:
@@ -799,7 +840,7 @@ fi
    openSUSE build tweaks, Fedora 37, Oracle Linux / Rocky Linux / Alma Linux / CentOS Stream : 8 and 9
    Debian finally moved to `libexec`
    MS Windows taskbar integration
-   SSH server support on MS Windows, including starting shadow sessions 
+   SSH server support on MS Windows, including starting shadow sessions
 - Server:
    Configurable vertical refresh rate
    Virtual Monitors

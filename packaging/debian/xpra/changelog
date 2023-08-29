@@ -21,7 +21,48 @@ xpra (5.0.1-1) UNRELEASED; urgency=low
  -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 26 Aug 2023 16:42:42 +0700
 
 xpra (5.0-1) UNRELEASED; urgency=low
-  * TODO
+  * Major improvements:
+    - QUIC transport
+    - split packaging
+    - freedesktop screencast / remotedesktop
+    - ease of use: easier basic commands, open html5 client, disable all audio features
+  * Platforms, build and packaging:
+    - Python 3.12 installations
+    - replace Python2 builds
+    - LTS feature deprecation
+    - stricter type checks
+    - more MacOS workarounds
+  * Server:
+    - try harder to find a valid menu prefix
+    - exit with windows
+    - side buttons with MS Windows shadow servers
+    - mirror client monitor layout
+    - side buttons with MS Windows shadow servers
+  * Client:
+    - allow keyboard shortcuts in readonly mode
+    - show decoder statistics
+    - keyboard layout switching shortcut
+    - layout switching detection for MS Windows
+    - mirror mouse cursor when sharing
+  * Minor:
+    - generic exec authentication module
+    - audio `removesilence`
+    - make pulseaudio real-time and high-priority scheduling modes configurable
+    - use urrlib for parsing
+    - GTK removal progress
+    - documentation updates and fixes: broken links, typos
+  * Network:
+    - smaller handshake packet
+    - SSL auto-upgrade
+    - better IPv6
+    - new packet format
+    - ssh agent forwarding automatic switching when sharing
+    - use libnm to query network devices
+    - exclude more user data by default
+  * Encodings:
+    - use intra refresh
+    - `stream` encoding for desktop mode
+    - GStreamer codecs
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 02 Oct 2022 00:12:01 +0700
 
