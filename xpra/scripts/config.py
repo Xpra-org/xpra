@@ -869,6 +869,7 @@ def get_default_pulseaudio_command() -> List[str]:
         "--exit-idle-time=-1", "--load=module-suspend-on-idle",
         "'--load=module-null-sink sink_name=\"Xpra-Speaker\" sink_properties=device.description=\"Xpra\\ Speaker\"'",
         "'--load=module-null-sink sink_name=\"Xpra-Microphone\" sink_properties=device.description=\"Xpra\\ Microphone\"'",
+        "'--load=module-remap-source source_name=\"Xpra-Mic-Source\" source_properties=device.description=\"Xpra\\ Mic\\ Source\" master=\"Xpra-Microphone.monitor\" channels=1'",
         "'--load=module-native-protocol-unix socket=$XPRA_PULSE_SERVER'",
         "--load=module-dbus-protocol",
         "--load=module-x11-publish",
