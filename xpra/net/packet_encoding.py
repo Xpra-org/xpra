@@ -20,7 +20,7 @@ from xpra.os_util import strtobytes
 from xpra.util import envbool
 
 #all the encoders we know about:
-ALL_ENCODERS : tuple[str, ...] = ("rencodeplus", "bencode", "yaml", "rencode", "none")
+ALL_ENCODERS : tuple[str, ...] = ("rencodeplus", "yaml", "none")
 #the encoders we may have, in the best compatibility order
 TRY_ENCODERS : tuple[str, ...] = ("rencodeplus", "yaml", "none")
 #order for performance:
