@@ -49,16 +49,15 @@ just add `-d clipboard` to your xpra command line.
 
 
 ## Useful Pointers
+For low level implementation details, see [clipboard subsystem](../Subsystems/Clipboard.md).
+
 * [How does X11 clipboard handle multiple data formats?](http://stackoverflow.com/questions/3571179/how-does-x11-clipboard-handle-multiple-data-formats)
 * [x11-clipboard.cpp](http://www.virtualbox.org/svn/vbox/trunk/src/VBox/GuestHost/SharedClipboard/x11-clipboard.cpp) from `VirtualBox`
 * [operating system specific clipboards](http://en.wikipedia.org/wiki/Clipboard_(computing)#Operating_system-specific_clipboards) on wikipedia
 * [The X11 clipboard](http://pvanhoof.be/files/Problems%20of%20the%20X11%20clipboard.pdf) _An overview of it's problems and a proposed solution_
 And here is a good quote from it:
-  _Clipboard sharing and network transparency: It's nearly impossible to make the clipboard shared across different desktop computers. In fact it is possible, but such an implementation would be needlessly difficult and complex. The same can be said 
+  _Clipboard sharing and network transparency: It's nearly impossible to make the clipboard shared across different desktop computers. In fact it is possible, but such an implementation would be needlessly difficult and complex. The same can be said
 of support for virtualization (Qemu, Xen, VMWare). Sharing the clipboard between a virtual machine and the desktop itself is painfully difficult to implement correctly (in case X11 is running on the host operating system)._
-
-### Source code
-[xpra/clipboard](https://github.com/Xpra-org/xpra/tree/master/xpra/clipboard/)
 
 
 <details>

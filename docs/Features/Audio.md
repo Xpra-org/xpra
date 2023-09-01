@@ -9,16 +9,19 @@ Unlike screen updates which are sent as discrete events, audio compression proce
 If you want to turn off speaker forwarding, use the option `speaker=off` in your system wide `xpra.conf` (to disable it globally) or in the per-user [configuration](../Usage/Configuration.md) file, or on the command line
 
 ## Screenshots
-* Audio information displayed on session info (with speaker enabled and running and microphone disabled):
+* Audio information displayed on session info (with speaker enabled and running and microphone disabled):  
 ![session-info-audio screenshot](../images/session-info-sound.png)
 
-* A Linux client's pavucontrol showing the Xpra application connected to the local pulseaudio server:
+* A Linux client's pavucontrol showing the Xpra application connected to the local pulseaudio server:  
 ![pavucontrol-client screenshot](../images/pavucontrol-client.png)
 
-* pavucontrol running within the xpra session ("on the server"), showing xpra recording the session's audio:
+* pavucontrol running within the xpra session ("on the server"), showing xpra recording the session's audio:  
 ![pavucontrol-server screenshot](../images/pavucontrol-server.png)
 
 ## Options
+
+For low level implementation details, see [audio subsystem](../Subsystems/Audio.md).
+
 <details>
   <summary>Main options</summary>
 

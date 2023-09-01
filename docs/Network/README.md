@@ -1,7 +1,6 @@
 # ![Network](../images/icons/connect.png) Network
 
-See also: [authentication](../Usage/Authentication.md), [encryption](./Encryption.md) and [multicast DNS](./Multicast-DNS.md)
-
+See also: [protocol](./Protocol.md), [authentication](../Usage/Authentication.md), [encryption](./Encryption.md) and [multicast DNS](./Multicast-DNS.md)
 
 ## Connection Types
 | Type                 | Bind option  | Availability                                                                              | Information                                                                                         |
@@ -19,7 +18,7 @@ See also: [authentication](../Usage/Authentication.md), [encryption](./Encryptio
 
 `TCP` sockets can also be upgraded transparently to (`Secure`) `WebSocket`, `SSL`, `SSH` and `RFB`, so a single `TCP` port can support 6 different protocols automatically.\
 Unencrypted modes like plain-`TCP` and plain-`WebSocket` can also be secured with [AES](./AES.md).\
-All the sockets that can be accessed via a network connection (all but `vsock` and `named-pipe`) will usually be published via [multicast DNS](./Multicast-DNS.md). On Posix, `unix-domain-sockets` are exposed as `SSH` as we assume that a local SSH server is always available.  
+All the sockets that can be accessed via a network connection (all but `vsock` and `named-pipe`) will usually be published via [multicast DNS](./Multicast-DNS.md). On Posix, `unix-domain-sockets` are exposed as `SSH` as we assume that a local SSH server is always available.
 
 See also: [Security Considerations](../Usage/Security.md)
 
