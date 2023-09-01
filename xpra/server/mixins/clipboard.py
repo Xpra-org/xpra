@@ -78,21 +78,13 @@ class ClipboardServer(StubServerMixin):
         ccaps = {
             "notifications"         : True,
             "selections"            : self._clipboards,
-            "enable-selections"     : True,             #client check removed in v4
-            "contents-slice-fix"    : True,             #fixed in v2.4, removed check in v4.3
             "want_targets"          : CLIPBOARD_WANT_TARGETS,
             "greedy"                : CLIPBOARD_GREEDY,
             "preferred-targets"     : CLIPBOARD_PREFERRED_TARGETS,
-            "set_enabled"           : True,     #v4 servers no longer use or show this flag
             "direction"             : self.clipboard_direction,
             }
         log("clipboard server caps=%s", ccaps)
-        return {
-            "clipboard"             : ccaps,
-            #for versions older than v4.4, duplicated here without the namespace:
-            "clipboards"            : self._clipboards,
-            "clipboard-direction"   : self.clipboard_direction,
-            }
+        return {"clipboard" : ccaps}
 
     def init_clipboard(self) -> None:
         log("init_clipboard() enabled=%s, filter file=%s", self.clipboard, self.clipboard_filter_file)

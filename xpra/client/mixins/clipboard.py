@@ -98,8 +98,6 @@ class ClipboardClient(StubClientMixin):
             #buggy osx and win32 clipboards:
             "greedy"                    : CLIPBOARD_GREEDY,
             "preferred-targets"         : CLIPBOARD_PREFERRED_TARGETS,
-            "set_enabled"               : True,     #v4 servers no longer use or show this flag
-            "contents-slice-fix"        : True,     #fixed in v2.4, removed check in v4.3
             }
         return {"clipboard" : caps}
 
