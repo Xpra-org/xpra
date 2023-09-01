@@ -162,7 +162,7 @@ class OSX_Notifier(NotifierBase):
 
 
 def get_clipboard_native_class() -> str:
-    return "xpra.platform.darwin.osx_clipboard.OSXClipboardProtocolHelper"
+    return "xpra.platform.darwin.clipboard.OSXClipboardProtocolHelper"
 
 
 def get_native_notifier_classes() -> list[type]:
