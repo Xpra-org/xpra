@@ -297,7 +297,6 @@ class EncodingsMixin(StubSourceMixin):
                 self.encoding_options[ek] = c.boolget(k)
         #2: standardized encoding options:
         for k in c.keys():
-            #yaml gives us str..
             k = bytestostr(k)
             if k.startswith("theme.") or k.startswith("encoding.icons."):
                 self.icons_encoding_options[k.replace("encoding.icons.", "").replace("theme.", "")] = c.get(k)

@@ -253,7 +253,6 @@ class ProxyInstance:
             "compression_level" : number,
             "lz4"               : parse_bool,
             "rencodeplus"       : parse_bool,
-            "yaml"              : parse_bool,
             }
         for k,v in options.items():
             parser = OPTION_WHITELIST.get(k)

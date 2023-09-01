@@ -20,11 +20,11 @@ from xpra.os_util import strtobytes
 from xpra.util import envbool
 
 #all the encoders we know about:
-ALL_ENCODERS : tuple[str, ...] = ("rencodeplus", "yaml", "none")
+ALL_ENCODERS : tuple[str, ...] = ("rencodeplus", "none")
 #the encoders we may have, in the best compatibility order
-TRY_ENCODERS : tuple[str, ...] = ("rencodeplus", "yaml", "none")
+TRY_ENCODERS : tuple[str, ...] = ("rencodeplus", "none")
 #order for performance:
-PERFORMANCE_ORDER : tuple[str, ...] = ("rencodeplus", "yaml")
+PERFORMANCE_ORDER : tuple[str, ...] = ("rencodeplus", )
 
 Encoding = namedtuple("Encoding", ["name", "flag", "version", "encode", "decode"])
 
@@ -38,12 +38,6 @@ def init_rencodeplus() -> Encoding:
         return rencodeplus_dumps(v), FLAGS_RENCODEPLUS
     return Encoding("rencodeplus", FLAGS_RENCODEPLUS, rencodeplus.__version__, do_rencodeplus, rencodeplus.loads)  # @UndefinedVariable
 
-def init_yaml() -> Encoding:
-    #json messes with strings and unicode (makes it unusable for us)
-    from yaml import dump, safe_load, __version__
-    def yaml_dump(v):
-        return dump(v).encode("latin1"), FLAGS_YAML
-    return Encoding("yaml", FLAGS_YAML, __version__, yaml_dump, safe_load)
 
 def init_none() -> Encoding:
     def encode(data):

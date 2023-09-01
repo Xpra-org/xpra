@@ -36,8 +36,7 @@ is made of 8 bytes:
 ### Protocol Flags
 
 The _protocol flags_ is an 8-bit bitmask value.  
-It must contain the value `16` for `rencodeplus` packet data
-or `4` for `yaml` data (unsupported).  
+It must contain the value `16` for `rencodeplus` packet data. Other values are no longer supported.  
 This value can then be ORed with:
 * `8` to set the `flush` flag which notifies the packet layer that there aren't any other packets immediately following this one
 * `2` to set the `cipher` flag for [AES encrypted packets](./AES.md)
