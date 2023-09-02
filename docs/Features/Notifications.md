@@ -21,10 +21,16 @@ Gnome-shell: \
 
 ***
 
-## Debugging
+## Technical
+
+Please refer to [the notifications subsystem](../Subsystems/Notifications.md).
+<details>
+  <summary>Debugging</summary>
+
 * start both the client and server with the debug command line flags: `-d notify,dbus`
 * you can also test notifications forwarding using the dbus interface or xpra control, ie:
   ```shell
   xpra control :100 send-notification "hello" "world" "*"
   ```
   will send the message to all clients.
+</details>

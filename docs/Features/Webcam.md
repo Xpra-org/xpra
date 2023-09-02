@@ -35,7 +35,9 @@ You can enable the webcam from the client's system tray menu, or using the comma
 * MS Windows client builds have very unreliable support
 
 
-## Debugging
+## Technical
+
+For further reference, see [the webcam subsystem](../Subsystems/Webcam.md).
 <details>
   <summary>Diagnostics</summary>
 
