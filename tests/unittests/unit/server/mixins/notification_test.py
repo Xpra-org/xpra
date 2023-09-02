@@ -38,7 +38,7 @@ class NotificationForwarderMixinTest(ServerMixinTest):
                     self._test_mixin_class(notification.NotificationForwarder, opts)
                 self.verify_packet_error(("notification-close", 1, "test", "hello"))
                 self.verify_packet_error(("notification-action", 1))
-                self.handle_packet(("set-notify", False))
+                self.handle_packet(("notification-status", False))
                 self.mixin.cleanup()
                 time.sleep(0.1)
             finally:

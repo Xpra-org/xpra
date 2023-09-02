@@ -189,6 +189,10 @@ class ClipboardServer(StubServerMixin):
         if not ss:
             #protocol has been dropped!
             return
+        packet_type = packet[0]
+        if packet_type=="clipboard-status":
+            self._process_clipboard_status(proto, packet)
+            return
         if self._clipboard_client!=ss:
             log("the clipboard packet '%s' does not come from the clipboard owner!", packet[0])
             return
@@ -202,7 +206,7 @@ class ClipboardServer(StubServerMixin):
         assert ch, "received a clipboard packet but clipboard sharing is disabled"
         self.idle_add(ch.process_clipboard_packet, packet)
 
-    def _process_clipboard_enabled_status(self, proto, packet : PacketType) -> None:
+    def _process_clipboard_status(self, proto, packet : PacketType) -> None:
         assert self.clipboard
         if self.readonly:
             return
@@ -244,9 +248,10 @@ class ClipboardServer(StubServerMixin):
 
     def init_packet_handlers(self) -> None:
         if self.clipboard:
-            self.add_packet_handler("set-clipboard-enabled", self._process_clipboard_enabled_status)
+            self.add_packet_handler("set-clipboard-enabled", self._process_clipboard_status)
             for x in (
                 "token", "request", "contents", "contents-none",
                 "pending-requests", "enable-selections", "loop-uuids",
+                "status",
                 ):
                 self.add_packet_handler("clipboard-%s" % x, self._process_clipboard_packet)

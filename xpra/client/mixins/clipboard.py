@@ -167,11 +167,12 @@ class ClipboardClient(StubClientMixin):
 
 
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_packet_handler("set-clipboard-enabled", self._process_clipboard_enabled_status)
+        self.add_packet_handler("set-clipboard-enabled", self._process_clipboard_status)
         for x in (
             "token", "request",
             "contents", "contents-none",
             "pending-requests", "enable-selections",
+            "status",
             ):
             self.add_packet_handler("clipboard-%s" % x, self._process_clipboard_packet)
 
@@ -235,10 +236,13 @@ class ClipboardClient(StubClientMixin):
     def _process_clipboard_packet(self, packet : PacketType) -> None:
         ch = self.clipboard_helper
         log("process_clipboard_packet: %s, helper=%s", bytestostr(packet[0]), ch)
-        if ch:
+        packet_type = packet[0]
+        if packet_type=="clipboard-status":
+            self._process_clipboard_status(packet)
+        elif ch:
             ch.process_clipboard_packet(packet)
 
-    def _process_clipboard_enabled_status(self, packet: PacketType) -> None:
+    def _process_clipboard_status(self, packet: PacketType) -> None:
         clipboard_enabled, reason = packet[1:3]
         if self.clipboard_enabled!=clipboard_enabled:
             log.info("clipboard toggled to %s by the server, reason given:", ["off", "on"][int(clipboard_enabled)])
