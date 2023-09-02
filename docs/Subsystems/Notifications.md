@@ -19,13 +19,12 @@ The server exposes a single `enabled` flag using the `notifications` capability 
 
 ## Network Packets
 
-| Packet Type            | Arguments                                                        | Direction        |
-|------------------------|------------------------------------------------------------------|------------------|
-| `notify_show`          | notification data (see below)                                    | server to client |
-| `notify_close`         | `notification id` : integer                                      | server to client |
-| `notification-close`   | `notification id` : integer, `reason` : integer, `text` : string | client to server |
-| `notification-action`  | `notification id` : integer, `action_key` : integer              | client to server |
-| `set-notify`           | `enabled` : boolean                                              | client to server |
+| Packet Type           | Arguments                                                                         | Direction        |
+|-----------------------|-----------------------------------------------------------------------------------|------------------|
+| `notification-show`   | notification data (see below)                                                     | server to client |
+| `notification-close`  | `notification id` : integer<br/>`reason` : integer optional<br/>`text` : string optional | client to server |
+| `notification-action` | `notification id` : integer<br/>`action_key` : integer                                 | client to server |
+| `notification-status` | `enabled` : boolean                                                               | client to server |
 
 
 ### Notification data
