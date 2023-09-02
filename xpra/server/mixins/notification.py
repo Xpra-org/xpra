@@ -152,7 +152,7 @@ class NotificationForwarder(StubServerMixin):
             ss.notify_close(int(nid))
 
 
-    def _process_set_notify(self, proto, packet : PacketType) -> None:
+    def _process_notification_status(self, proto, packet : PacketType) -> None:
         assert self.notifications, "cannot toggle notifications: the feature is disabled"
         ss = self.get_server_source(proto)
         if ss:
@@ -204,5 +204,6 @@ class NotificationForwarder(StubServerMixin):
             self.add_packet_handlers({
                 "notification-close"    : self._process_notification_close,
                 "notification-action"   : self._process_notification_action,
-                "set-notify"            : self._process_set_notify,
+                "notification-status"   : self._process_notification_status,
+                "set-notify"            : self._process_notification_status,
                 })
