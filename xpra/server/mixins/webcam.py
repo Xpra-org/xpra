@@ -45,20 +45,25 @@ class WebcamServer(StubServerMixin):
 
     def get_server_features(self, _source) -> dict[str,Any]:
         return {
-            "webcam"                       : self.webcam_enabled,
-            "webcam.encodings"             : self.webcam_encodings,
-            "virtual-video-devices"        : self.webcam_virtual_video_devices,
-            }
+            "webcam" : {
+                "enabled" : self.webcam_enabled,
+                "encodings" : self.webcam_encodings,
+                "devices" : self.webcam_virtual_video_devices,
+            },
+            #pre v6, v5.0.2
+            "webcam.encodings": self.webcam_encodings,
+            "virtual-video-devices": self.webcam_virtual_video_devices,
+        }
 
 
     def get_info(self, _proto) -> dict[str,Any]:
         info : dict[str,Any] = {
-                ""                      : self.webcam_enabled,
+                "enabled" : self.webcam_enabled,
                 }
         if self.webcam_enabled:
             info.update({
-                "encodings"             : self.webcam_encodings,
-                "virtual-video-devices" : self.webcam_virtual_video_devices,
+                "encodings" : self.webcam_encodings,
+                "devices" : self.webcam_virtual_video_devices,
                 })
         if self.webcam_device:
             info["device"] = self.webcam_device
