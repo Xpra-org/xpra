@@ -33,7 +33,7 @@ class NotificationMixin(StubSourceMixin):
         v = c.get("notifications")
         if isinstance(v, dict):
             self.send_notifications = typedict(v).boolget("enabled")
-        log("notifications=%s, actions=%s", self.send_notifications, self.send_notifications_actions)
+        log("send notifications=%s", self.send_notifications)
 
     def get_info(self) -> dict[str,Any]:
         return {
