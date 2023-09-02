@@ -43,7 +43,7 @@ def get_audio_wrapper_env():
         env["XPRA_REDIRECT_OUTPUT"] = "0"
     elif POSIX and not OSX:
         try:
-            from xpra.audio.pulseaudio.pulseaudio_util import add_audio_tagging_env
+            from xpra.audio.pulseaudio.util import add_audio_tagging_env
             add_audio_tagging_env(env)
         except ImportError as e:
             log.warn("Warning: failed to set pulseaudio tagging:")

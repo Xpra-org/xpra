@@ -13,7 +13,7 @@ from collections.abc import Callable
 
 from xpra.util import csv, typedict
 from xpra.os_util import hexstr, strtobytes
-from xpra.codecs.codec_debug import may_save_image
+from xpra.codecs.debug import may_save_image
 from xpra.log import Logger
 
 log = Logger("encoder", "pillow")
@@ -179,7 +179,7 @@ def decompress(coding:str, img_data:bytes, options:typedict) -> tuple[str,bytes,
 
 def selftest(_full=False) -> None:
     global ENCODINGS
-    from xpra.codecs.codec_checks import TEST_PICTURES  #pylint: disable=import-outside-toplevel
+    from xpra.codecs.checks import TEST_PICTURES  #pylint: disable=import-outside-toplevel
     #test data generated using the encoder:
     for encoding, test_data in TEST_PICTURES.items():
         if encoding not in ENCODINGS:

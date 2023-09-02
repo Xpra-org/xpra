@@ -40,7 +40,7 @@ MULTI_MONITORS : bool = envbool("XPRA_DESKTOP_MULTI_MONITORS", True)
 def get_desktop_server_base_classes() -> tuple[type,...]:
     classes : list[type] = [GObject.GObject]
     if server_features.rfb:
-        from xpra.server.rfb.rfb_server import RFBServer
+        from xpra.server.rfb.server import RFBServer
         classes.append(RFBServer)
     classes.append(X11ServerBase)
     return tuple(classes)

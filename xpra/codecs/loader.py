@@ -12,7 +12,7 @@ from typing import Any
 from xpra.util import envbool, csv
 from xpra.os_util import OSX, WIN32
 from xpra.version_util import parse_version
-from xpra.codecs.codec_constants import HELP_ORDER
+from xpra.codecs.constants import HELP_ORDER
 from xpra.log import Logger
 log = Logger("codec", "loader")
 
@@ -393,7 +393,7 @@ def main(args) -> int:
             FULL_SELFTEST = True
             format_string = LOG_FORMAT
             log.enable_debug()
-            from xpra.codecs.codec_checks import log as check_log
+            from xpra.codecs.checks import log as check_log
             check_log.enable_debug()
         enable_color(format_string=format_string)
 

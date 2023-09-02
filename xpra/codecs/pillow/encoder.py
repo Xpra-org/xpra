@@ -9,7 +9,7 @@ import PIL
 from PIL import Image, ImagePalette     #@UnresolvedImport
 from typing import Any
 
-from xpra.codecs.codec_debug import may_save_image
+from xpra.codecs.debug import may_save_image
 from xpra.util import csv, typedict
 from xpra.net.compression import Compressed
 from xpra.log import Logger
@@ -265,7 +265,7 @@ def selftest(full=False) -> None:
     global ENCODINGS
     # pylint: disable=import-outside-toplevel
     from xpra.os_util import hexstr
-    from xpra.codecs.codec_checks import make_test_image
+    from xpra.codecs.checks import make_test_image
     img = make_test_image("BGRA", 128, 128)
     vrange : tuple[int, ...] = (50, )
     if full:

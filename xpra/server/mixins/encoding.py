@@ -11,7 +11,7 @@ from xpra.util import envint
 from xpra.os_util import bytestostr, OSX
 from xpra.net.common import PacketType
 from xpra.version_util import vtrim
-from xpra.codecs.codec_constants import preforder, STREAM_ENCODINGS
+from xpra.codecs.constants import preforder, STREAM_ENCODINGS
 from xpra.codecs.loader import get_codec, has_codec, codec_versions, load_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.server.mixins.stub_server_mixin import StubServerMixin

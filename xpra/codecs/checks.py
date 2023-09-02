@@ -234,7 +234,7 @@ def makebuf(size, b=0x20) -> bytearray:
 def make_test_image(pixel_format:str, w:int, h:int, plane_values=(0x20, 0x80, 0x80, 0x0)):
     # pylint: disable=import-outside-toplevel
     from xpra.codecs.image_wrapper import ImageWrapper
-    from xpra.codecs.codec_constants import get_subsampling_divs
+    from xpra.codecs.constants import get_subsampling_divs
     if isinstance(plane_values, str):
         #assume this is a path
         from PIL import Image

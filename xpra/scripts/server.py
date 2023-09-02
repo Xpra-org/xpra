@@ -248,7 +248,7 @@ def show_encoding_help(opts) -> int:
     from xpra.server.server_base import ServerBase
     sb = ServerBase()
     sb.init(opts)
-    from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER, HELP_ORDER
+    from xpra.codecs.constants import PREFERRED_ENCODING_ORDER, HELP_ORDER
     if "help" in opts.encodings:
         sb.allowed_encodings = PREFERRED_ENCODING_ORDER
     from xpra.server.mixins.encoding import EncodingServer
@@ -1365,7 +1365,7 @@ def _do_run_server(script_file:str, cmdline,
                 dbuslog.warn(" a new dbus instance will be started")
                 dbuslog.warn(" which may conflict with the previous one if it exists")
             try:
-                from xpra.server.dbus.dbus_start import start_dbus
+                from xpra.server.dbus.start import start_dbus
             except ImportError as e:
                 dbuslog("dbus components are not installed: %s", e)
             else:

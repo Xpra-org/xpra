@@ -208,7 +208,7 @@ GObject.type_register(Decoder)
 
 def selftest(full=False):
     log("gstreamer decoder selftest: %s", get_info())
-    from xpra.codecs.codec_checks import testdecoder
+    from xpra.codecs.checks import testdecoder
     from xpra.codecs.gstreamer import decoder
     remaining = testdecoder(decoder, full)
     decoder.CODECS = {k:v for k,v in decoder.CODECS.items() if k in remaining}

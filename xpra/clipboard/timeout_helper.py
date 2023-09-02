@@ -7,7 +7,7 @@ from typing import Any
 
 from gi.repository import GLib  # @UnresolvedImport
 
-from xpra.clipboard.clipboard_core import ClipboardProtocolHelperCore, ClipboardProxyCore
+from xpra.clipboard.core import ClipboardProtocolHelperCore, ClipboardProxyCore
 from xpra.util import repr_ellipsized, ellipsizer, envint, engs
 from xpra.log import Logger
 from xpra.platform.features import CLIPBOARD_GREEDY

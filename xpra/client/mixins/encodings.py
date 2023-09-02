@@ -7,7 +7,7 @@
 import os
 from typing import Any
 
-from xpra.codecs.codec_constants import preforder, STREAM_ENCODINGS
+from xpra.codecs.constants import preforder, STREAM_ENCODINGS
 from xpra.codecs.loader import load_codec, codec_versions, has_codec, get_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.scripts.config import parse_bool_or_int

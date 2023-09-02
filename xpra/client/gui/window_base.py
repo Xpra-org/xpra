@@ -9,7 +9,7 @@ import os
 import re
 from typing import Any
 
-from xpra.client.gui.client_widget_base import ClientWidgetBase
+from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window_backing_base import fire_paint_callbacks
 from xpra.scaling_parser import scaleup_value, scaledown_value
 from xpra.os_util import bytestostr, OSX, WIN32, is_Wayland

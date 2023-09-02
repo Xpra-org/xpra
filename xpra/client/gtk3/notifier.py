@@ -12,7 +12,7 @@ from gi.repository import Notify            #@UnresolvedImport
 from xpra.notifications.notifier_base import NotifierBase
 
 
-class GTK3_Notifier(NotifierBase):
+class GINotifier(NotifierBase):
 
     def show_notify(self, dbus_id, tray, nid:int,
                     app_name:str, replaces_nid:int, app_icon,

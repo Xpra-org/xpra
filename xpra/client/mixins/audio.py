@@ -36,7 +36,7 @@ def init_audio_tagging(tray_icon) -> None:
         log("no audio module, skipping pulseaudio tagging setup")
         return
     try:
-        from xpra.audio.pulseaudio.pulseaudio_util import set_icon_path
+        from xpra.audio.pulseaudio.util import set_icon_path
         tray_icon_filename = get_icon_filename(tray_icon or "xpra")
         set_icon_path(tray_icon_filename)
     except ImportError as e:
@@ -147,7 +147,7 @@ class AudioClient(StubClientMixin):
         log("av-sync=%s", self.av_sync)
         if POSIX and not OSX:
             try:
-                from xpra.audio.pulseaudio.pulseaudio_util import get_info as get_pa_info
+                from xpra.audio.pulseaudio.util import get_info as get_pa_info
                 pa_info = get_pa_info()
                 log("pulseaudio info=%s", pa_info)
                 self.audio_properties.update(pa_info)

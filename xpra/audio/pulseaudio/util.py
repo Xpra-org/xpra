@@ -38,15 +38,15 @@ def add_audio_tagging_env(env_dict:dict=os.environ, icon_path:str="") -> None:
 try:
     #use "none" on win32 and osx:
     if WIN32 or OSX:
-        from xpra.audio.pulseaudio import pulseaudio_none_util as _pulseaudio_util
+        from xpra.audio.pulseaudio import none_impl as _pulseaudio_util
     else:
-        from xpra.audio.pulseaudio import pulseaudio_pactl_util as _pulseaudio_util
+        from xpra.audio.pulseaudio import pactl_impl as _pulseaudio_util
 except ImportError as e:
     #fallback forks a process and parses the output:
     log("cannot import default pulseaudio util: %s", e)
     log("using pulseaudio none fallback")
     del e
-    from xpra.audio.pulseaudio import pulseaudio_none_util as _pulseaudio_util
+    from xpra.audio.pulseaudio import none_impl as _pulseaudio_util
 
 get_info                = _pulseaudio_util.get_info
 has_pa                  = _pulseaudio_util.has_pa

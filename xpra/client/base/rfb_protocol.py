@@ -7,8 +7,8 @@ import struct
 from threading import RLock
 from collections.abc import Callable
 
-from xpra.net.rfb.rfb_protocol import RFBProtocol
-from xpra.net.rfb.rfb_const import (
+from xpra.net.rfb.protocol import RFBProtocol
+from xpra.net.rfb.const import (
     RFBEncoding, RFBClientMessage, RFBAuth,
     CLIENT_INIT, AUTH_STR, RFB_KEYS,
     )

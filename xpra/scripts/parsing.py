@@ -1888,7 +1888,7 @@ def parse_command_line(cmdline, defaults):
 
 def validated_encodings(encodings) -> tuple[str, ...]:
     try:
-        from xpra.codecs.codec_constants import preforder
+        from xpra.codecs.constants import preforder
     except ImportError:
         return ()
     encodings = [x.lower() for x in encodings]+list(encodings)

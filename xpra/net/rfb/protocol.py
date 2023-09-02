@@ -16,7 +16,7 @@ from xpra.net.protocol.socket_handler import force_flush_queue, exit_queue
 from xpra.net.protocol.constants import INVALID, CONNECTION_LOST
 from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
 from xpra.net.bytestreams import ABORT
-from xpra.net.rfb.rfb_const import RFBClientMessage, CLIENT_PACKET_TYPE_STR, PACKET_STRUCT
+from xpra.net.rfb.const import RFBClientMessage, CLIENT_PACKET_TYPE_STR, PACKET_STRUCT
 from xpra.log import Logger
 
 log = Logger("network", "protocol", "rfb")

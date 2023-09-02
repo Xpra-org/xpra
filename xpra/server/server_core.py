@@ -578,7 +578,7 @@ class ServerCore:
         if not self.dbus_control:
             return
         try:
-            from xpra.server.dbus.dbus_common import dbus_exception_wrap
+            from xpra.server.dbus.common import dbus_exception_wrap
             self.dbus_server = dbus_exception_wrap(self.make_dbus_server, "setting up server dbus instance")
         except Exception as e:
             log("init_dbus_server()", exc_info=True)

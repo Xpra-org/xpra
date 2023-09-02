@@ -13,7 +13,7 @@ from xpra.util import envbool, csv
 from xpra.common import noop
 from xpra.gtk_common.gtk_util import scaled_image
 from xpra.gtk_common.about import about
-from xpra.client.gtk3.gtk_tray_menu_base import (
+from xpra.client.gtk3.tray_menu_base import (
     GTKTrayMenuBase,
     CLIPBOARD_LABEL_TO_NAME, CLIPBOARD_NAME_TO_LABEL, CLIPBOARD_LABELS,
     CLIPBOARD_DIRECTION_LABELS, CLIPBOARD_DIRECTION_NAME_TO_LABEL,

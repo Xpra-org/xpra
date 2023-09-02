@@ -6,7 +6,7 @@
 import os
 from time import sleep
 
-from xpra.server.proxy.proxy_server import ProxyServer as _ProxyServer
+from xpra.server.proxy.server import ProxyServer as _ProxyServer
 from xpra.platform.paths import get_app_dir
 from xpra.util import envbool
 from xpra.os_util import pollwait, strtobytes

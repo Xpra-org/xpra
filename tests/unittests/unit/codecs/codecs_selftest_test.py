@@ -10,7 +10,7 @@ import unittest
 
 from xpra.util import csv
 from xpra.codecs import loader
-from xpra.codecs.codec_constants import TransientCodecException
+from xpra.codecs.constants import TransientCodecException
 
 SUSPEND_CODEC_ERROR_LOGGING = os.environ.get("XPRA_SUSPEND_CODEC_ERROR_LOGGING", "1")=="1"
 try:

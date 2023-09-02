@@ -24,7 +24,7 @@ from xpra.client.gtk3.menu_helper import (
     make_encodingsmenu, make_min_auto_menu,
     )
 from xpra.exit_codes import ExitCode
-from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
+from xpra.codecs.constants import PREFERRED_ENCODING_ORDER
 from xpra.simple_stats import std_unit_dec
 from xpra.client.gui import mixin_features
 from xpra.log import Logger

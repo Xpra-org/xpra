@@ -9,7 +9,7 @@ from ctypes import (
     )
 from ctypes.wintypes import LPCWSTR
 
-from xpra.client.gl.gl_check import check_PyOpenGL_support
+from xpra.client.gl.check import check_PyOpenGL_support
 from xpra.platform.win32.gui import get_window_handle
 from xpra.platform.win32.constants import (
     CS_OWNDC, CS_HREDRAW, CS_VREDRAW, COLOR_WINDOW,

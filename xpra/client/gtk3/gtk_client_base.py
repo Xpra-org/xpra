@@ -43,7 +43,7 @@ from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.gtk_common.css_overrides import inject_css_overrides
 from xpra.client.gui.ui_client_base import UIXpraClient
 from xpra.client.base.gobject_client_base import GObjectXpraClient
-from xpra.client.gtk3.gtk_keyboard_helper import GTKKeyboardHelper
+from xpra.client.gtk3.keyboard_helper import GTKKeyboardHelper
 from xpra.client.mixins.window_manager import WindowClient
 from xpra.platform.gui import force_focus
 from xpra.platform.gui import (
@@ -264,7 +264,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         assert isinstance(self, NotificationClient)
         ncs = NotificationClient.get_notifier_classes(self)
         try:
-            from xpra.gtk_common.gtk_notifier import GTK_Notifier
+            from xpra.gtk_common.notifier import GTK_Notifier
             ncs.append(GTK_Notifier)
         except Exception as e:
             notifylog("get_notifier_classes()", exc_info=True)

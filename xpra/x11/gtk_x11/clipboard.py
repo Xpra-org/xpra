@@ -20,11 +20,11 @@ from xpra.x11.gtk3.gdk_bindings import (
     cleanup_x11_filter,
     )
 from xpra.gtk_common.error import XError
-from xpra.clipboard.clipboard_core import (
+from xpra.clipboard.core import (
     ClipboardProxyCore, TEXT_TARGETS,
     must_discard, must_discard_extra,
     )
-from xpra.clipboard.clipboard_timeout_helper import ClipboardTimeoutHelper, CONVERT_TIMEOUT
+from xpra.clipboard.timeout_helper import ClipboardTimeoutHelper, CONVERT_TIMEOUT
 from xpra.x11.bindings.window import ( #@UnresolvedImport
     constants, PropertyError,                   #@UnresolvedImport
     X11WindowBindings,                          #@UnresolvedImport

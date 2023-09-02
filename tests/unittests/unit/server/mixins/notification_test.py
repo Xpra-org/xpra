@@ -25,7 +25,7 @@ class NotificationForwarderMixinTest(ServerMixinTest):
                 if k.startswith("DBUS"):
                     del os.environ[k]
             #start a dbus server:
-            from xpra.server.dbus.dbus_start import start_dbus
+            from xpra.server.dbus.start import start_dbus
             dbus_pid, dbus_env = start_dbus("dbus-launch --sh-syntax --close-stderr")
             try:
                 if dbus_env:

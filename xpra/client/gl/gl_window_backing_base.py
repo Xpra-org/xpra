@@ -63,18 +63,18 @@ from xpra.os_util import (
     )
 from xpra.util import envint, envbool, repr_ellipsized, first_time, roundup
 from xpra.common import noop
-from xpra.codecs.codec_constants import get_subsampling_divs, get_plane_name
+from xpra.codecs.constants import get_subsampling_divs, get_plane_name
 from xpra.client.gui.window_border import WindowBorder
 from xpra.client.gui.paint_colors import get_paint_box_color
 from xpra.client.gui.window_backing_base import (
     fire_paint_callbacks, WindowBackingBase,
     WEBP_PILLOW, SCROLL_ENCODING,
     )
-from xpra.client.gl.gl_check import GL_ALPHA_SUPPORTED, get_max_texture_size
-from xpra.client.gl.gl_colorspace_conversions import (
+from xpra.client.gl.check import GL_ALPHA_SUPPORTED, get_max_texture_size
+from xpra.client.gl.colorspace_conversions import (
     YUV_to_RGB_shader, YUV_to_RGB_FULL_shader, RGBP_to_RGB_shader, NV12_to_RGB_shader,
     )
-from xpra.client.gl.gl_spinner import draw_spinner
+from xpra.client.gl.spinner import draw_spinner
 from xpra.log import Logger
 
 log = Logger("opengl", "paint")

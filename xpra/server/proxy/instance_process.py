@@ -9,7 +9,7 @@ import signal
 from queue import SimpleQueue
 from multiprocessing import Process
 
-from xpra.server.proxy.proxy_instance import ProxyInstance
+from xpra.server.proxy.instance_base import ProxyInstance
 from xpra.scripts.server import deadly_signal
 from xpra.net.protocol.factory import get_client_protocol_class, get_server_protocol_class
 from xpra.net.protocol.constants import CONNECTION_LOST

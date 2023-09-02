@@ -351,7 +351,7 @@ class AudioServer(StubServerMixin):
 
     def query_pulseaudio_properties(self) -> None:
         try:
-            from xpra.audio.pulseaudio.pulseaudio_util import set_icon_path, get_info as get_pa_info
+            from xpra.audio.pulseaudio.util import set_icon_path, get_info as get_pa_info
             pa_info = get_pa_info()
             audiolog("pulseaudio info=%s", pa_info)
             self.audio_properties.update(pa_info)

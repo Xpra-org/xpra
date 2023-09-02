@@ -12,8 +12,8 @@ from contextlib import nullcontext
 from xpra.util import typedict
 from xpra.os_util import hexstr
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.codec_constants import get_subsampling_divs, get_plane_name
-from xpra.codecs.codec_checks import make_test_image
+from xpra.codecs.constants import get_subsampling_divs, get_plane_name
+from xpra.codecs.checks import make_test_image
 from xpra.codecs.video_helper import (
     getVideoHelper,
     ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS, ALL_VIDEO_DECODER_OPTIONS,

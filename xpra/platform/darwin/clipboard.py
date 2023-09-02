@@ -12,8 +12,8 @@ from AppKit import (
 from CoreFoundation import NSData, CFDataGetBytes, CFDataGetLength  #@UnresolvedImport
 from gi.repository import GLib  # @UnresolvedImport
 
-from xpra.clipboard.clipboard_timeout_helper import ClipboardTimeoutHelper
-from xpra.clipboard.clipboard_core import (
+from xpra.clipboard.timeout_helper import ClipboardTimeoutHelper
+from xpra.clipboard.core import (
     _filter_targets, ClipboardProxyCore, TEXT_TARGETS,
     )
 from xpra.platform.ui_thread_watcher import get_UI_watcher

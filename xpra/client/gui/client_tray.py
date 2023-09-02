@@ -7,7 +7,7 @@ from time import time
 from typing import Any
 from gi.repository import GLib  # @UnresolvedImport
 
-from xpra.client.gui.client_widget_base import ClientWidgetBase
+from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window_backing_base import WindowBackingBase
 from xpra.os_util import memoryview_to_bytes
 from xpra.util import envbool

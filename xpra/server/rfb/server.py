@@ -7,9 +7,9 @@
 from xpra.util import repr_ellipsized
 from xpra.os_util import is_X11, bytestostr
 from xpra.net.bytestreams import set_socket_timeout
-from xpra.net.rfb.rfb_const import RFB_KEYNAMES
-from xpra.server.rfb.rfb_protocol import RFBServerProtocol
-from xpra.server.rfb.rfb_source import RFBSource
+from xpra.net.rfb.const import RFB_KEYNAMES
+from xpra.server.rfb.protocol import RFBServerProtocol
+from xpra.server.rfb.source import RFBSource
 from xpra.server import server_features
 from xpra.scripts.config import parse_bool, parse_number
 from xpra.log import Logger

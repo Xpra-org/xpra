@@ -1545,7 +1545,7 @@ if WIN32:
             add_gui_exe("xpra/platform/win32/scripts/shadow_server.py",       "server-notconnected.ico", "Xpra-Shadow")
             add_gui_exe("fs/bin/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
             add_console_exe("fs/bin/xpra_launcher",            "xpra.ico",         "Xpra-Launcher-Debug")
-            add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
+            add_gui_exe("xpra/gtk_common/view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
             add_gui_exe("xpra/scripts/bug_report.py",           "bugs.ico",         "Bug_Report")
             add_gui_exe("xpra/platform/win32/gdi_screen_capture.py", "screenshot.ico", "Screenshot")
         if server_ENABLED:
@@ -1589,7 +1589,7 @@ if WIN32:
             #add_console_exe("xpra/audio/sink.py",               "speaker.ico",      "Audio_Play")
             add_data_files("", (shutil.which("gst-launch-1.0.exe"), ))
         if opengl_ENABLED:
-            add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
+            add_console_exe("xpra/client/gl/check.py",   "opengl.ico",       "OpenGL_check")
         if webcam_ENABLED:
             add_console_exe("xpra/platform/webcam.py",          "webcam.ico",    "Webcam_info")
             add_console_exe("xpra/scripts/show_webcam.py",          "webcam.ico",    "Webcam_Test")

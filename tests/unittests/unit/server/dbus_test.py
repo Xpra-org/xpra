@@ -24,9 +24,9 @@ class FakeLogger:
 class DBUSTest(unittest.TestCase):
 
     def test_exception_wrap(self):
-        from xpra.server.dbus import dbus_common
-        if not dbus_common.log.is_debug_enabled():
-            dbus_common.log = FakeLogger()
+        from xpra.server.dbus import common
+        if not common.log.is_debug_enabled():
+            common.log = FakeLogger()
         def rimporterror():
             raise ImportError()
         def rfail():
@@ -42,7 +42,7 @@ class DBUSTest(unittest.TestCase):
 
 
     def test_start_dbus(self):
-        from xpra.server.dbus.dbus_start import start_dbus
+        from xpra.server.dbus.start import start_dbus
         def f(v):
             r, d = start_dbus(v)
             assert r==0 and not d, f"dbus should not have started for {v!r}"
@@ -69,9 +69,9 @@ class DBUSTest(unittest.TestCase):
 
 
     def test_save_dbus_env(self):
-        from xpra.server.dbus import dbus_start
-        if not dbus_start.log.is_debug_enabled():
-            dbus_start.log = FakeLogger()
+        from xpra.server.dbus import start
+        if not start.log.is_debug_enabled():
+            start.log = FakeLogger()
         with OSEnvContext():
             #assert get_saved_dbus_env()
             pass

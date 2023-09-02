@@ -14,7 +14,7 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.net.compression import Compressed, LargeStructure
-from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
+from xpra.codecs.constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.server.window.window_source import (
     WindowSource, DelayedRegions,
@@ -26,7 +26,7 @@ from xpra.server.window.window_source import (
 from xpra.rectangle import rectangle, merge_all          #@UnresolvedImport
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
-from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER, preforder
+from xpra.codecs.constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER, preforder
 from xpra.codecs.loader import has_codec
 from xpra.util import parse_scaling_value, engs, envint, envbool, csv, roundup, print_nested_dict, first_time, typedict
 from xpra.log import Logger

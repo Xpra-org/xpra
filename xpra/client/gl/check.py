@@ -12,7 +12,7 @@ from typing import Any
 from xpra.util import envbool, envint, csv
 from xpra.os_util import bytestostr
 from xpra.log import Logger, CaptureHandler
-from xpra.client.gl.gl_drivers import (
+from xpra.client.gl.drivers import (
     GL_MATCH_LIST, WHITELIST, GREYLIST, VERSION_REQ, BLACKLIST,
     OpenGLFatalError,
 )

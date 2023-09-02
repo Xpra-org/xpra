@@ -10,10 +10,10 @@ gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 from gi.repository import GObject, Gtk, Gdk  # @UnresolvedImport
 
 from xpra.gtk_common.gobject_util import one_arg_signal, n_arg_signal
-from xpra.clipboard.clipboard_core import (
+from xpra.clipboard.core import (
     ClipboardProxyCore, TEXT_TARGETS,
     )
-from xpra.clipboard.clipboard_timeout_helper import ClipboardTimeoutHelper
+from xpra.clipboard.timeout_helper import ClipboardTimeoutHelper
 from xpra.util import ellipsizer, envint
 from xpra.log import Logger
 

@@ -5,7 +5,7 @@
 
 from xpra.platform import platform_import
 
-from xpra.server.proxy.proxy_server import ProxyServer
+from xpra.server.proxy.server import ProxyServer
 assert ProxyServer
 
 platform_import(globals(), "proxy_server", False, "ProxyServer")

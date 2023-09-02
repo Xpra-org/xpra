@@ -392,7 +392,7 @@ def get_source_plugins() -> list[str]:
     sources = []
     if POSIX and not OSX:
         try:
-            from xpra.audio.pulseaudio.pulseaudio_util import has_pa
+            from xpra.audio.pulseaudio.util import has_pa
             #we have to put pulsesrc first if pulseaudio is installed
             #because using autoaudiosource does not work properly for us:
             #it may still choose pulse, but without choosing the right device.
@@ -423,7 +423,7 @@ def get_default_source() -> str:
             return source
     if POSIX and not OSX:
         try:
-            from xpra.audio.pulseaudio.pulseaudio_util import has_pa, get_pactl_server
+            from xpra.audio.pulseaudio.util import has_pa, get_pactl_server
             if has_pa():
                 s = get_pactl_server()
                 if not s:
@@ -447,7 +447,7 @@ def get_sink_plugins() -> list[str]:
     SINKS.append("autoaudiosink")
     if POSIX and not OSX:
         try:
-            from xpra.audio.pulseaudio.pulseaudio_util import has_pa
+            from xpra.audio.pulseaudio.util import has_pa
             if has_pa():
                 SINKS.append("pulsesink")
         except ImportError as e:
@@ -466,7 +466,7 @@ def get_default_sink_plugin() -> str:
             return sink
     if POSIX and not OSX:
         try:
-            from xpra.audio.pulseaudio.pulseaudio_util import has_pa, get_pactl_server
+            from xpra.audio.pulseaudio.util import has_pa, get_pactl_server
             if has_pa():
                 s = get_pactl_server()
                 if not s:
@@ -500,7 +500,7 @@ def get_pulse_defaults(device_name_match=None, want_monitor_device=True,
     #make sure it is not muted:
     if POSIX and not OSX:
         try:
-            from xpra.audio.pulseaudio.pulseaudio_util import has_pa, set_source_mute, set_sink_mute
+            from xpra.audio.pulseaudio.util import has_pa, set_source_mute, set_sink_mute
             if has_pa():
                 if input_or_output is True or want_monitor_device:
                     set_source_mute(device, mute=False)
@@ -517,7 +517,7 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
     """
     log("get_pulse_device%s", (device_name_match, want_monitor_device, input_or_output, remote, env_device_name))
     try:
-        from xpra.audio.pulseaudio.pulseaudio_util import (
+        from xpra.audio.pulseaudio.util import (
             has_pa, get_pa_device_options,
             get_default_sink, get_pactl_server,
             get_pulse_id,

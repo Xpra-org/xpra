@@ -194,7 +194,7 @@ def get_video_encoder_options(encoder:str="x264", profile:str="", options:typedi
     eopts = get_default_encoder_options().get(encoder, {})
     eopts["name"] = "encoder"
     if encoder=="x264enc" and options:
-        from xpra.codecs.codec_constants import get_x264_quality, get_x264_preset
+        from xpra.codecs.constants import get_x264_quality, get_x264_preset
         q = get_x264_quality(options.intget("quality", 50), profile)
         s = options.intget("speed", 50)
         eopts |= {

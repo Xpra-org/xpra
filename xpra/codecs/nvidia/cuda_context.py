@@ -14,7 +14,7 @@ from threading import RLock
 from typing import Any
 
 from xpra.codecs.nvidia.nv_util import numpy_import_lock
-from xpra.codecs.codec_constants import TransientCodecException
+from xpra.codecs.constants import TransientCodecException
 from xpra.util import engs, print_nested_dict, envint, envbool, csv, first_time, typedict
 from xpra.platform.paths import (
     get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs,

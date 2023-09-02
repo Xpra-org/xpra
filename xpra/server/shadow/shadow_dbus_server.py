@@ -6,7 +6,7 @@
 
 import dbus.service
 
-from xpra.server.dbus.dbus_server import DBUS_Server, INTERFACE, ni
+from xpra.server.dbus.server import DBUS_Server, INTERFACE, ni
 from xpra.log import Logger
 log = Logger("dbus", "server")
 

@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.util import envint
-from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS
+from xpra.codecs.constants import LOSSY_PIXEL_FORMATS
 from xpra.log import Logger
 
 scorelog = Logger("score")

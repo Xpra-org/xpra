@@ -9,7 +9,7 @@ import hashlib
 import os.path
 from typing import Any
 
-from xpra.audio.pulseaudio.pulseaudio_common_util import get_pulse_server_x11_property, get_pulse_id_x11_property
+from xpra.audio.pulseaudio.common_util import get_pulse_server_x11_property, get_pulse_id_x11_property
 from xpra.util import print_nested_dict
 from xpra.os_util import which, WIN32, OSX, bytestostr, strtobytes
 

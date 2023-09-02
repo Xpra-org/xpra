@@ -18,7 +18,7 @@ from xpra.server import server_features
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
-from xpra.codecs.codec_constants import TransientCodecException, CodecStateException
+from xpra.codecs.constants import TransientCodecException, CodecStateException
 from xpra.gtk_common.gtk_util import get_screen_sizes, get_icon_pixbuf, get_default_root_window
 from xpra.net.compression import Compressed
 from xpra.log import Logger
@@ -333,7 +333,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def get_notifier_classes(self) -> tuple[type,...]:
         ncs = list(ShadowServerBase.get_notifier_classes(self))
         try:
-            from xpra.gtk_common.gtk_notifier import GTK_Notifier   # pylint: disable=import-outside-toplevel
+            from xpra.gtk_common.notifier import GTK_Notifier   # pylint: disable=import-outside-toplevel
             ncs.append(GTK_Notifier)
         except Exception as e:
             notifylog("get_notifier_classes()", exc_info=True)

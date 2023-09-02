@@ -6,7 +6,7 @@
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.net.protocol.factory import get_server_protocol_class
-from xpra.server.proxy.proxy_instance import ProxyInstance
+from xpra.server.proxy.instance_base import ProxyInstance
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.log import Logger
 

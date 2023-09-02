@@ -511,7 +511,7 @@ class ProxyServer(ServerCore):
         if use_thread:
             if env_options:
                 log.warn("environment options are ignored in threaded mode")
-            from xpra.server.proxy.proxy_instance_thread import ProxyInstanceThread
+            from xpra.server.proxy.instance_thread import ProxyInstanceThread
             pit = ProxyInstanceThread(session_options, self.video_encoders, self.pings,
                                       client_proto, server_conn,
                                       disp_desc, cipher, cipher_mode, encryption_key, c)
@@ -544,7 +544,7 @@ class ProxyServer(ServerCore):
                     client_proto.close()
                     return
                 client_conn.set_active(True)
-                from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
+                from xpra.server.proxy.instance_process import ProxyInstanceProcess
                 process = ProxyInstanceProcess(uid, gid, env_options, session_options, self._socket_dir,
                                                self.video_encoders, self.pings,
                                                client_conn, disp_desc, client_state,

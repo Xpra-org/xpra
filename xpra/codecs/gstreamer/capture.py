@@ -15,7 +15,7 @@ from xpra.gst_common import (
     )
 from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.gst_pipeline import Pipeline
-from xpra.codecs.codec_constants import get_profile
+from xpra.codecs.constants import get_profile
 from xpra.codecs.gstreamer.codec_common import (
     get_version, get_type, get_info,
     init_module, cleanup_module,

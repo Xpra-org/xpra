@@ -20,7 +20,7 @@ def get_server_protocol_class(socktype:str):
         from xpra.net.websockets.protocol import WebSocketProtocol
         return WebSocketProtocol
     if socktype == "vnc":
-        from xpra.server.rfb.rfb_protocol import RFBServerProtocol
+        from xpra.server.rfb.protocol import RFBServerProtocol
         return RFBServerProtocol
     from xpra.net.protocol.socket_handler import SocketProtocol
     return SocketProtocol

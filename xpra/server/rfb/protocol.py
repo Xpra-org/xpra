@@ -7,8 +7,8 @@ import struct
 
 from xpra.util import typedict
 from xpra.os_util import hexstr, strtobytes
-from xpra.net.rfb.rfb_protocol import RFBProtocol
-from xpra.net.rfb.rfb_const import RFBAuth, AUTH_STR, CLIENT_INIT
+from xpra.net.rfb.protocol import RFBProtocol
+from xpra.net.rfb.const import RFBAuth, AUTH_STR, CLIENT_INIT
 from xpra.log import Logger
 
 log = Logger("network", "protocol", "rfb")

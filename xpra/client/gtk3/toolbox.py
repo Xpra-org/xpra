@@ -128,8 +128,8 @@ class ToolboxGUI(Gtk.Window):
             ("Move-Resize", "Initiate move resize from application", epath+"initiate_moveresize.py", wox11),
             ))
         addhbox("Keyboard and Clipboard:", (
-            ("Keyboard", "Keyboard event viewer", gpath+"gtk_view_keyboard.py"),
-            ("Clipboard", "Clipboard event viewer", gpath+"gtk_view_clipboard.py"),
+            ("Keyboard", "Keyboard event viewer", gpath+"view_keyboard.py"),
+            ("Clipboard", "Clipboard event viewer", gpath+"view_clipboard.py"),
             ))
         addhbox("Misc:", (
                 ("Tray", "Show a system tray icon", epath+"tray.py"),

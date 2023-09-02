@@ -126,7 +126,7 @@ class ClipboardClient(StubClientMixin):
                          self.server_clipboard_direction, self.client_clipboard_direction)
         clipboards : tuple[str, ...] = ()
         try:
-            from xpra.clipboard.clipboard_core import ALL_CLIPBOARDS
+            from xpra.clipboard.core import ALL_CLIPBOARDS
             clipboards = ALL_CLIPBOARDS
         except ImportError:
             log("no clipboard core!")

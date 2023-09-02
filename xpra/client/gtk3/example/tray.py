@@ -129,7 +129,7 @@ class FakeApplication:
         """ this method is part of the GUI client "interface" """
 
     def get_encodings(self) -> tuple[str,...]:
-        from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
+        from xpra.codecs.constants import PREFERRED_ENCODING_ORDER
         return PREFERRED_ENCODING_ORDER
 
     def show_start_new_command(self, *_args):
