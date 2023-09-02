@@ -126,8 +126,8 @@ tests/unittests/test-file*
 /xpra/codecs/jpeg/encoder.c
 /xpra/codecs/nvidia/nvenc/encoder.c
 /xpra/codecs/nvidia/nvdec/decoder.c
-/xpra/codecs/nvidia/nvfbc/fbc_capture_linux.cpp
-/xpra/codecs/nvidia/nvfbc/fbc_capture_win.cpp
+/xpra/codecs/nvidia/nvfbc/capture_linux.cpp
+/xpra/codecs/nvidia/nvfbc/capture_win.cpp
 /xpra/codecs/nvidia/nvjpeg/encoder.c
 /xpra/codecs/nvidia/nvjpeg/decoder.c
 /xpra/codecs/nvidia/nvjpeg/common.c
