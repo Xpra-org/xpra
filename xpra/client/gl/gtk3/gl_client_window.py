@@ -6,7 +6,7 @@
 
 from collections import namedtuple
 
-from xpra.client.gtk3.gtk3_client_window import GTK3ClientWindow
+from xpra.client.gtk3.client_window import GTK3ClientWindow
 from xpra.gtk_common.gtk_util import set_visual
 from xpra.util import typedict, envbool
 from xpra.log import Logger
