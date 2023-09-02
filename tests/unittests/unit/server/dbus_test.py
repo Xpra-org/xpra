@@ -34,7 +34,7 @@ class DBUSTest(unittest.TestCase):
         def ok():
             return True
         def t(fn, r):
-            v = dbus_common.dbus_exception_wrap(fn)
+            v = common.dbus_exception_wrap(fn)
             assert v==r, f"expected dbus_exception_wrap({fn})={r} but got {v}"
         t(rimporterror, None)
         t(rfail, None)
