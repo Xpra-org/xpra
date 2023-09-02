@@ -7,7 +7,7 @@
 import unittest
 
 from xpra.util import AdHocStruct
-from xpra.client.mixins import remote_logging
+from xpra.client.mixins import logging
 from unit.test_util import silence_info
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 

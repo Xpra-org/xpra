@@ -9,11 +9,11 @@ but it can also be used in the opposite direction.
 
 ## Implementations
 
-| Component         | Link                                                                            |
-|-------------------|---------------------------------------------------------------------------------|
-| client            | [xpra.client.mixins.remote_logging](../../xpra/client/mixins/remote_logging.py) |
-| client connection | none                                                                            |
-| server            | [xpra.server.mixins.logging](../../xpra/server/mixins/logging.py)               |
+| Component         | Link                                                                |
+|-------------------|---------------------------------------------------------------------|
+| client            | [xpra.client.mixins.logging](../../xpra/client/mixins/logging.py)   |
+| client connection | none                                                                |
+| server            | [xpra.server.mixins.logging](../../xpra/server/mixins/logging.py)   |
 
 
 ## Capabilities

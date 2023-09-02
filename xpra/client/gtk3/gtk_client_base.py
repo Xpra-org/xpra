@@ -260,7 +260,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         #use the native ones first:
         from xpra.client.gui import mixin_features
         assert mixin_features.notifications
-        from xpra.client.mixins.notifications import NotificationClient
+        from xpra.client.mixins.notification import NotificationClient
         assert isinstance(self, NotificationClient)
         ncs = NotificationClient.get_notifier_classes(self)
         try:

@@ -54,13 +54,13 @@ if mixin_features.clipboard:
     from xpra.client.mixins.clipboard import ClipboardClient
     CLIENT_BASES.append(ClipboardClient)
 if mixin_features.notifications:
-    from xpra.client.mixins.notifications import NotificationClient
+    from xpra.client.mixins.notification import NotificationClient
     CLIENT_BASES.append(NotificationClient)
 if mixin_features.mmap:
     from xpra.client.mixins.mmap import MmapClient
     CLIENT_BASES.append(MmapClient)
 if mixin_features.logging:
-    from xpra.client.mixins.remote_logging import RemoteLogging
+    from xpra.client.mixins.logging import RemoteLogging
     CLIENT_BASES.append(RemoteLogging)
 if mixin_features.network_state:
     from xpra.client.mixins.network_state import NetworkState

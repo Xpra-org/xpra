@@ -7,7 +7,7 @@ For usage related information, see [notitications feature](../Features/Notificat
 
 | Component         | Link                                                                          |
 |-------------------|-------------------------------------------------------------------------------|
-| client            | [xpra.client.mixins.notifications](../../xpra/client/mixins/notifications.py) |
+| client            | [xpra.client.mixins.notification](../../xpra/client/mixins/notification.py)   |
 | client connection | [xpra.server.source.notification](../../xpra/server/source/notification.py)   |
 | server            | [xpra.server.mixins.notification](../../xpra/server/mixins/notification.py)   |
 
@@ -33,7 +33,7 @@ The server exposes a single `enabled` flag using the `notifications` capability 
 | Argument                    | Type                    | Notes                            |
 |-----------------------------|-------------------------|----------------------------------|
 | `dbus_id`                   | `integer`               | 0 if unused                      |
-| `notification id`           | `integer`               | should be unique                 |                
+| `notification id`           | `integer`               | should be unique                 |
 | `applciation name`          | `string`                |                                  |
 | `replaced notification id`  | `integer`               | 0 if unused                      |
 | `application icon`          | `string`                | the name of the icon to show     |
@@ -54,6 +54,6 @@ The icon data is a list or tuple with 4 elements:
 | `width`  | `integer` |
 | `height` | `integer` |
 | `data`   | `bytes`   |
- 
+
 The only format which is guaranteed to be supported is `png`.
 Other formats should not be used.

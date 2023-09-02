@@ -7,7 +7,7 @@
 import unittest
 
 from xpra.util import AdHocStruct
-from xpra.client.mixins.notifications import NotificationClient
+from xpra.client.mixins.notification import NotificationClient
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 
