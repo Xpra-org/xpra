@@ -71,3 +71,22 @@ Clipboard data format details:
 | `data-type`    | `string`  | The type of the contents, ie: `bytes` or `ATOM`               |
 | `data-format`  | `integer` | The number of bits used by each item                          |
 | `data`         | variable  | Typically, `bytes` that need to be decoded                    |
+
+
+### Flow
+
+Whenever a clipboard change is detected, a `clipboard-token` packet must be sent to the peer.
+If the peer advertises the `want_targets` flag then the list of `targets` must be included in the packet.
+If the peer advertises the `greedy` flag then the actual contents of the selection must be included in the packet.
+The contents may also be included if it is desirable to avoid a roundtrip later.
+
+If the `targets` or the contents of the clipboard selection are needed,
+a peer can send a `clipboard-request` with a unique `request_id`.
+(use the value `TARGETS` as the `target` to get list of `targets`)
+
+When requesting the clipboard contents, the `target` value chosen
+should be one of the values from the list of `targets`.
+If not, the peer may try to convert one of the valid `target`s.
+
+If a value is sucessfully retrieved, a `clipboard-contents` packet is sent back,
+otherwise a `clipboard-contents-none` is used.
