@@ -242,7 +242,7 @@ def wn(w) -> str:
 
 class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
-    __common_gsignals__ = {
+    __gsignals__ = {
         "state-updated"         : no_arg_signal,
         "xpra-focus-out-event"  : one_arg_signal,
         "xpra-focus-in-event"   : one_arg_signal,
