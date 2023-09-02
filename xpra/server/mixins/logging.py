@@ -53,9 +53,6 @@ class LoggingServer(StubServerMixin):
                 "receive"       : self.remote_logging_receive,
                 "send"          : self.remote_logging_send,
                 },
-            "remote-logging.receive"    : self.remote_logging_receive,
-            "remote-logging.multi-line" : True,
-            "remote-logging.send"       : self.remote_logging_send,
             }
 
 
@@ -73,9 +70,9 @@ class LoggingServer(StubServerMixin):
         n = len(self.logging_clients)
         if protocol in self.logging_clients:
             log.warn("Warning: logging already enabled for client %s", protocol)
-        else:
-            log.info("sending log output to %s", protocol)
-            self.logging_clients[protocol] = monotonic()
+            return
+        log.info("sending log output to %s", protocol)
+        self.logging_clients[protocol] = monotonic()
         if n==0:
             self.start_capturing_logging()
 

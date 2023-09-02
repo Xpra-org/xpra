@@ -27,18 +27,12 @@ class NotificationMixin(StubSourceMixin):
 
     def init_state(self) -> None:
         self.send_notifications : bool = False
-        self.send_notifications_actions : bool = False
         self.notification_callbacks : dict[int,Callable] = {}
 
     def parse_client_caps(self, c : typedict) -> None:
         v = c.get("notifications")
         if isinstance(v, dict):
-            c = typedict(v)
-            self.send_notifications = c.boolget("enabled")
-            self.send_notifications_actions = c.boolget("actions")
-        elif isinstance(v, bool):
-            self.send_notifications = c.boolget("notifications")
-            self.send_notifications_actions = c.boolget("notifications.actions")
+            self.send_notifications = typedict(v).boolget("enabled")
         log("notifications=%s, actions=%s", self.send_notifications, self.send_notifications_actions)
 
     def get_info(self) -> dict[str,Any]:

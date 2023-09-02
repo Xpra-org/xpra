@@ -28,7 +28,6 @@ class NotificationClient(StubClientMixin):
         super().__init__()
         self.client_supports_notifications = False
         self.server_notifications = False
-        self.server_notifications_close = False
         self.notifications_enabled = False
         self.notifier = None
         self.tray = None
@@ -60,20 +59,16 @@ class NotificationClient(StubClientMixin):
 
 
     def parse_server_capabilities(self, c : typedict) -> bool:
-        self.server_notifications = c.boolget("notifications")
-        self.server_notifications_close = c.boolget("notifications.close")
+        self.server_notifications = "notifications" in c
         self.notifications_enabled = self.client_supports_notifications
         return True
 
 
     def get_caps(self) -> dict[str,Any]:
         enabled = self.client_supports_notifications
-        actions = bool(self.client_supports_notifications and self.notifier and self.notifier.handles_actions)
         return {
             "notifications" : {
-                "enabled"   : enabled,
-                "close"     : enabled,
-                "actions"   : actions,
+                "enabled" : enabled,
                 },
             }
 
