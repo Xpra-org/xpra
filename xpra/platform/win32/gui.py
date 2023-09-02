@@ -25,7 +25,7 @@ from xpra.exit_codes import ExitCode
 from xpra.common import noop
 from xpra.platform.win32 import constants as win32con, setup_console_event_listener
 from xpra.platform.win32.window_hooks import Win32Hooks
-from xpra.platform.win32.win32_events import KNOWN_EVENTS, POWER_EVENTS
+from xpra.platform.win32.events import KNOWN_EVENTS, POWER_EVENTS
 from xpra.platform.win32.common import (
     GetSystemMetrics, SetWindowLongW, GetWindowLongW,
     ClipCursor, GetCursorPos,
@@ -165,7 +165,7 @@ def get_clipboard_native_class() -> str:
 
 def get_native_notifier_classes() -> list[type]:
     try:
-        from xpra.platform.win32.win32_notifier import Win32_Notifier
+        from xpra.platform.win32.notifier import Win32_Notifier
         return [Win32_Notifier]
     except ImportError as e:
         log("no native notifier", exc_info=True)
@@ -177,7 +177,7 @@ def get_native_tray_classes():
     c = []
     if USE_NATIVE_TRAY:
         try:
-            from xpra.platform.win32.win32_tray import Win32Tray
+            from xpra.platform.win32.tray import Win32Tray
             c.append(Win32Tray)
         except ImportError as e:
             log("no native tray", exc_info=True)
@@ -1042,7 +1042,7 @@ class ClientExtras:
             self._screensaver_timer = client.timeout_add(SCREENSAVER_LISTENER_POLL_DELAY*1000, log_screensaver)
         if CONSOLE_EVENT_LISTENER:
             self._console_handler_added = setup_console_event_listener(self.handle_console_event, True)
-        from xpra.platform.win32.win32_events import get_win32_event_listener
+        from xpra.platform.win32.events import get_win32_event_listener
         try:
             el = get_win32_event_listener(True)
             self._el = el
@@ -1335,7 +1335,7 @@ def main():
     from xpra.platform import program_context
     with program_context("Platform-Events", "Platform Events Test"):
         if "-v" in sys.argv or "--verbose" in sys.argv:
-            from xpra.platform.win32.win32_events import log as win32_event_logger
+            from xpra.platform.win32.events import log as win32_event_logger
             log.enable_debug()
             win32_event_logger.enable_debug()
 

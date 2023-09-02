@@ -19,7 +19,7 @@ from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_desktop_name, get_fixed_cursor_size
 from xpra.platform.win32.keyboard_config import KeyboardConfig, fake_key
-from xpra.platform.win32.win32_events import get_win32_event_listener, POWER_EVENTS
+from xpra.platform.win32.events import get_win32_event_listener, POWER_EVENTS
 from xpra.platform.win32.shadow_cursor import get_cursor_data
 from xpra.platform.win32.gdi_screen_capture import GDICapture
 from xpra.log import Logger
@@ -317,7 +317,7 @@ class ShadowServer(GTKShadowServerBase):
 
 
     def make_tray_widget(self):
-        from xpra.platform.win32.win32_tray import Win32Tray
+        from xpra.platform.win32.tray import Win32Tray
         return Win32Tray(self, XPRA_APP_ID, self.tray_menu, "Xpra Shadow Server", "server-notconnected",
                          None, self.tray_click_callback, None, self.tray_exit_callback)
 

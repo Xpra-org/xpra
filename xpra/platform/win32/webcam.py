@@ -7,12 +7,12 @@ from xpra.log import Logger
 log = Logger("webcam")
 
 from xpra.platform.win32.constants import WM_DEVICECHANGE
-from xpra.platform.win32.win32_events import get_win32_event_listener
+from xpra.platform.win32.events import get_win32_event_listener
 
 
 def get_all_video_devices(capture_only=True):
     try:
-        from xpra.platform.win32.win32_webcam import get_video_devices
+        from xpra.platform.win32.comtypes_webcam import get_video_devices
         return get_video_devices()
     except Exception as e:
         log("get_all_video_devices(%s)", capture_only, exc_info=True)

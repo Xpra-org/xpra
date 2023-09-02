@@ -10,7 +10,7 @@ from gi.repository import GdkPixbuf  # @UnresolvedImport
 
 from xpra.client.gui.tray_base import TrayBase
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data
-from xpra.platform.darwin.osx_menu import getOSXMenuHelper
+from xpra.platform.darwin.menu import getOSXMenuHelper
 from xpra.platform.darwin import set_exit_cb
 from xpra.platform.gui import ready as gui_ready
 from xpra.log import Logger

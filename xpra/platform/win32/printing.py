@@ -82,7 +82,7 @@ def init_printing(callback=None):
             log.error("Error: failed to register for print spooler changes", exc_info=True)
 
 def init_winspool_listener():
-    from xpra.platform.win32.win32_events import get_win32_event_listener
+    from xpra.platform.win32.events import get_win32_event_listener
     get_win32_event_listener().add_event_callback(win32con.WM_DEVMODECHANGE, on_devmodechange)
 
 def on_devmodechange(wParam, lParam):

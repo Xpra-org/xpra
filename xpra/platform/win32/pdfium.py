@@ -17,7 +17,7 @@ from xpra.util import ellipsizer
 from xpra.os_util import strtobytes
 from xpra.platform.win32.common import GetDeviceCaps
 from xpra.platform.win32 import win32con
-from xpra.platform.win32.win32_printing import GDIPrinterContext, DOCINFO, StartDocA, EndDoc, LPCSTR
+from xpra.platform.win32.ctypes_printing import GDIPrinterContext, DOCINFO, StartDocA, EndDoc, LPCSTR
 
 LIBPDFIUMDLL = os.environ.get("XPRA_LIBPDFIUMDLL", "pdfium.dll")
 try:

@@ -12,7 +12,7 @@ gi.require_version('Gdk', '3.0')  # @UndefinedVariable
 from gi.repository import Gdk  # @UnresolvedImport
 
 from xpra.platform.keyboard_base import KeyboardBase, log
-from xpra.platform.darwin.osx_menu import getOSXMenuHelper
+from xpra.platform.darwin.menu import getOSXMenuHelper
 
 
 NUM_LOCK_KEYCODE = 71           #HARDCODED!

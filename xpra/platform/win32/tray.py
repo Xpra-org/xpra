@@ -12,8 +12,8 @@ from ctypes import wintypes, byref
 
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import EnumDisplayMonitors, GetMonitorInfo
-from xpra.platform.win32.win32_NotifyIcon import win32NotifyIcon
-from xpra.platform.win32.win32_events import get_win32_event_listener
+from xpra.platform.win32.NotifyIcon import win32NotifyIcon
+from xpra.platform.win32.events import get_win32_event_listener
 from xpra.platform.win32.common import GetSystemMetrics, GetCursorPos
 from xpra.client.gui.tray_base import TrayBase
 from xpra.platform.paths import get_icon_filename

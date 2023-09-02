@@ -88,7 +88,7 @@ def do_init() -> None:
     log("do_init() icon=%s", icon)
     if icon:
         osxapp.set_dock_icon_pixbuf(icon)
-    from xpra.platform.darwin.osx_menu import getOSXMenuHelper
+    from xpra.platform.darwin.menu import getOSXMenuHelper
     mh = getOSXMenuHelper(None)
     log("do_init() menu helper=%s", mh)
     osxapp.set_dock_menu(mh.build_dock_menu())
@@ -174,13 +174,13 @@ def get_native_notifier_classes() -> list[type]:
 
 def get_native_tray_menu_helper_class() -> Callable | None:
     if get_OSXApplication():
-        from xpra.platform.darwin.osx_menu import getOSXMenuHelper
+        from xpra.platform.darwin.menu import getOSXMenuHelper
         return getOSXMenuHelper
     return None
 
 def get_native_tray_classes() -> list[type]:
     if get_OSXApplication():
-        from xpra.platform.darwin.osx_tray import OSXTray
+        from xpra.platform.darwin.tray import OSXTray
         return [OSXTray]
     return []
 

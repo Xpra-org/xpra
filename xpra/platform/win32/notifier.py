@@ -7,7 +7,7 @@ import sys
 
 from xpra.util import envbool
 from xpra.notifications.notifier_base import NotifierBase, log
-from xpra.platform.win32.win32_balloon import notify
+from xpra.platform.win32.balloon import notify
 
 GTK_NOTIFIER = envbool("XPRA_WIN32_GTK_NOTIFIER", False)
 if GTK_NOTIFIER:

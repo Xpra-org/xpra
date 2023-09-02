@@ -124,7 +124,7 @@ def notify(hwnd, app_id:int, title:str, message:str, timeout:int=5000, icon=None
             from xpra.codecs.pillow.decoder import open_only
             w, h, data = icon[1:4]
             img = open_only(data)
-            from xpra.platform.win32.win32_NotifyIcon import image_to_ICONINFO
+            from xpra.platform.win32.NotifyIcon import image_to_ICONINFO
             iw = GetSystemMetrics(SM_CXSMICON)
             ih = GetSystemMetrics(SM_CYSMICON)
             if w!=iw or h!=ih:
@@ -137,7 +137,7 @@ def notify(hwnd, app_id:int, title:str, message:str, timeout:int=5000, icon=None
             log.error("Error: failed to set notification icon:")
             log.estr(e)
 
-    from xpra.platform.win32.win32_NotifyIcon import Shell_NotifyIconA, XPRA_GUID, getNOTIFYICONDATAClass
+    from xpra.platform.win32.NotifyIcon import Shell_NotifyIconA, XPRA_GUID, getNOTIFYICONDATAClass
 
     nc = getNOTIFYICONDATAClass(tip_size=128)
     nid = nc()
@@ -163,7 +163,7 @@ def notify(hwnd, app_id:int, title:str, message:str, timeout:int=5000, icon=None
     log("notify using %s", Shell_NotifyIconA)
 
 def main():
-    from xpra.platform.win32.win32_NotifyIcon import main as notifyicon_main
+    from xpra.platform.win32.NotifyIcon import main as notifyicon_main
     notifyicon_main()
 
 if __name__=='__main__':

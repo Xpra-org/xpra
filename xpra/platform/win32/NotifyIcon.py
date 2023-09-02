@@ -506,7 +506,7 @@ def main():
 
     def command_callback(hwnd, cid):
         if cid == 1024:
-            from xpra.platform.win32.win32_balloon import notify
+            from xpra.platform.win32.balloon import notify
             try:
                 from PIL import Image   #@UnresolvedImport
                 from io import BytesIO
