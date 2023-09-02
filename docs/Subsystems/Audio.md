@@ -2,12 +2,21 @@
 
 For usage related information, see [audio feature](../Features/Audio.md).
 
+
+## Implementations
+
+| Component         | Link                                                             |
+|-------------------|------------------------------------------------------------------|
+| client            | [xpra.client.mixins.audio](../../xpra/client/mixins/audio.py) |
+| client connection | [xpra.server.source.audio](../../xpra/server/source/audio.py)      |
+| server            | [xpra.server.mixins.audio](../../xpra/server/mixins/audio.py)      |
+
 ## Common
 
 [xpra.audio](https://github.com/Xpra-org/xpra/tree/master/xpra/audio/) contains the components used for capturing and playing back audio streams
 using [GStreamer](https://gstreamer.freedesktop.org/).  
 In order to avoid interfering with the performance of the main thread,
-all audio processing is done in a separate process.
+all audio processing is done in a separate process.  
 For historical reasons, this is done using a [subprocess wrapper](https://github.com/Xpra-org/xpra/tree/master/xpra/audio/wrapper.py)
 rather than the builtin [multiprocessing](https://docs.python.org/3/library/multiprocessing.html) module.
 
@@ -34,20 +43,6 @@ with the `audio` prefix:
 The lists of `decoders` and `encoders` contain strings such as: `mp3`, `opus+ogg`, `vorbis`...  
 You can run [xpra.audio.gstreamer_util](../../xpra/audio/gstreamer_util.py) to see which
 encoders and decoders are available on the system.
-
-
-## Client
-
-[xpra.client.mixins.audio](../../xpra/client/mixins/audio.py)
-
-
-## Server
-
-[xpra.server.mixins.audio](../../xpra/server/mixins/audio.py)
-
-## Client connection
-
-[xpra.server.source.audio](../../xpra/server/source/audio.py)
 
 
 ## Network Packets

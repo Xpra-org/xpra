@@ -2,7 +2,17 @@
 
 For usage related information, see [clipboard feature](../Features/Clipboard.md).
 
+
 ## Implementations
+
+| Component         | Link                                                             |
+|-------------------|------------------------------------------------------------------|
+| client            | [xpra.client.mixins.clipboard](../../xpra/client/mixins/clipboard.py) |
+| client connection | [xpra.server.source.clipboard](../../xpra/server/source/clipboard.py)      |
+| server            | [xpra.server.mixins.clipboard](../../xpra/server/mixins/clipboard.py)      |
+
+
+## Platforms
 
 [xpra.clipboard](https://github.com/Xpra-org/xpra/tree/master/xpra/clipboard/) contains the platform independent base class
 used by all the backends.
@@ -16,10 +26,11 @@ It contains common features such as basic configuration, scheduling, filtering, 
 | others   | [xpra.gtk_common.gtk_clipboard](../../xpra/gtk_common/gtk_clipboard.py)           |
 
 
+
 ## Capabilities
 
 The client and server should expose the following capabilities in their `hello` packet
-with the `clipboard` prefix:
+using the `clipboard` prefix:
 
 | Capability          | Value                       | Information                                                                          |
 |---------------------|-----------------------------|--------------------------------------------------------------------------------------|
@@ -33,20 +44,6 @@ with the `clipboard` prefix:
 Notes:
 * `MacOS` clients set the `want_targets` flag
 * both `MacOS` and `MS Windows` clients set the `greedy` flag
-
-## Client
-
-[xpra.client.mixins.clipboard](../../xpra/client/mixins/clipboard.py)
-
-
-## Server
-
-[xpra.server.mixins.clipboard](../../xpra/server/mixins/clipboard.py)
-
-## Client connection
-
-[xpra.server.source.clipboard](../../xpra/server/source/clipboard.py)
-
 
 ## Network Packets
 

@@ -105,7 +105,7 @@ Floating point numbers and `None` values can be encoded but should be avoided.
 ## Hello
 
 The `hello` packet is the initial packet used as handshake.
-The connection is now fully established until both ends have received a `hello` packet.
+The connection is not fully established until both ends have received a `hello` packet.
 
 The `hello` packet contains a single argument which is a dictionary
 containing all the capabilities advertised by the peer.
