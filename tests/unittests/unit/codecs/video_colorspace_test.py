@@ -119,7 +119,7 @@ class Test_Roundtrip(unittest.TestCase):
         options = {"max-delayed" : 0}
         ctx = nullcontext()
         try:
-            from xpra.codecs.nvidia.cuda_context import get_default_device_context
+            from xpra.codecs.nvidia.cuda.context import get_default_device_context
             ctx = get_default_device_context()
             options["cuda-device-context"] = ctx
         except (ImportError, RuntimeError):

@@ -383,7 +383,7 @@ class WindowBackingBase:
 
     def assign_cuda_context(self, opengl=False):
         if self.cuda_context is None:
-            from xpra.codecs.nvidia.cuda_context import (
+            from xpra.codecs.nvidia.cuda.context import (
                 get_default_device_context, # @NoMove pylint: disable=no-name-in-module, import-outside-toplevel
                 cuda_device_context,
                 )

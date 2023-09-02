@@ -1602,7 +1602,7 @@ if WIN32:
         if nvfbc_ENABLED:
             add_console_exe("xpra/codecs/nvidia/nvfbc/capture.py",             "nvidia.ico",   "NvFBC_capture")
         if nvfbc_ENABLED or nvenc_ENABLED or nvdec_ENABLED or nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED:
-            add_console_exe("xpra/codecs/nvidia/cuda_context.py",  "cuda.ico",     "CUDA_info")
+            add_console_exe("xpra/codecs/nvidia/cuda/context.py",  "cuda.ico",     "CUDA_info")
 
     if ("install_exe" in sys.argv) or ("install" in sys.argv):
         #FIXME: how do we figure out what target directory to use?
