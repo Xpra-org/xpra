@@ -19,7 +19,6 @@ jobs:
                 xvfb python3-cairo python3-gi-cairo \
                 libturbojpeg-dev libwebp-dev python3-pil \
                 libx264-dev libvpx-dev \
-                libavformat-dev libavcodec-dev libswscale-dev \
                 python3-dbus python3-cryptography \
                 python3-netifaces \
                 openssh-client sshpass python3-paramiko \
