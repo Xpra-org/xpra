@@ -2273,7 +2273,7 @@ if cuda_kernels_ENABLED or is_Debian() or is_Ubuntu():
 toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvidia.nvfbc")
 #platform: ie: `linux2` -> `linux`, `win32` -> `win`
 fbcplatform = sys.platform.rstrip("0123456789")
-tace(nvfbc_ENABLED, f"xpra.codecs.nvidia.nvfbc.fbc_capture_{fbcplatform}", "nvfbc", language="c++")
+tace(nvfbc_ENABLED, f"xpra.codecs.nvidia.nvfbc.capture_{fbcplatform}", "nvfbc", language="c++")
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc")
 tace(nvdec_ENABLED, "xpra.codecs.nvidia.nvdec.decoder", "nvdec,cuda")
 

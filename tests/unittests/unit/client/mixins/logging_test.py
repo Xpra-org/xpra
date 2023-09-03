@@ -14,7 +14,7 @@ from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 class MixinsTest(ClientMixinTest):
 
-	def test_remotelogging(self):
+	def test_logging(self):
 		from xpra.log import Logger, is_debug_enabled
 		for x in ("network", "crypto"):
 			if is_debug_enabled(x):
@@ -23,8 +23,8 @@ class MixinsTest(ClientMixinTest):
 				return
 		opts = AdHocStruct()
 		opts.remote_logging = "yes"
-		with silence_info(remote_logging):
-			self._test_mixin_class(remote_logging.RemoteLogging, opts, {
+		with silence_info(logging):
+			self._test_mixin_class(logging.RemoteLogging, opts, {
 				"remote-logging" : {"receive"	: True},
 				})
 		assert len(self.packets)==0
@@ -41,7 +41,7 @@ class MixinsTest(ClientMixinTest):
 		#after cleanup, log messages should not be intercepted:
 		self.packets = []
 		self.mixin.cleanup()
-		with silence_info(remote_logging):
+		with silence_info(logging):
 			logger.info("foo")
 		assert len(self.packets)==0
 
