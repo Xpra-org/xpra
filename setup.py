@@ -2013,7 +2013,7 @@ if cython_ENABLED:
     #this may well be sub-optimal:
     extra_compile_args = "-mfpmath=387" if platform.machine()=="i386" else None
     tace(cython_ENABLED, "xpra.buffers.membuf,xpra/buffers/memalign.c", optimize=3, extra_compile_args=extra_compile_args)
-    tace(cython_ENABLED, "xpra.buffers.xxh", optimize=3, extra_compile_args=extra_compile_args)
+    tace(cython_ENABLED, "xpra.buffers.xxh", "libxxhash", optimize=3, extra_compile_args=extra_compile_args)
 
 toggle_packages(dbus_ENABLED, "xpra.dbus")
 toggle_packages(server_ENABLED or proxy_ENABLED, "xpra.server", "xpra.server.auth")
