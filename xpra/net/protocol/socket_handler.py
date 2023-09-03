@@ -28,7 +28,7 @@ from xpra.net.protocol.header import (
 from xpra.net.protocol.constants import CONNECTION_LOST, INVALID, GIBBERISH
 from xpra.net.common import (
     ConnectionClosedException, may_log_packet,
-    MAX_PACKET_SIZE, FLUSH_HEADER,
+    MAX_PACKET_SIZE,
     PacketType, NetPacketType,
     )
 from xpra.net.bytestreams import ABORT
@@ -132,7 +132,6 @@ class SocketProtocol:
         self.abs_max_packet_size = 256*1024*1024
         self.large_packets = ["hello", "window-metadata", "sound-data", "notify_show", "setting-change", "shell-reply", "configure-display"]
         self.send_aliases = {}
-        self.send_flush_flag = False
         self.receive_aliases = {}
         self._log_stats = None          #None here means auto-detect
         self._closed = False
@@ -247,7 +246,6 @@ class SocketProtocol:
     def parse_remote_caps(self, caps : typedict) -> None:
         for k,v in caps.dictget("aliases", {}).items():
             self.send_aliases[bytestostr(k)] = v
-        self.send_flush_flag = FLUSH_HEADER and caps.boolget("flush", False)
         set_socket_timeout(self._conn, SOCKET_TIMEOUT)
 
 
@@ -261,7 +259,6 @@ class SocketProtocol:
             "compression_level"     : self.compression_level,
             "max_packet_size"       : self.max_packet_size,
             "aliases"               : USE_ALIASES,
-            "flush"                 : self.send_flush_flag,
             "has_more"              : shm and shm.is_set(),
             "receive-pending"       : self.receive_pending,
             }
@@ -425,7 +422,7 @@ class SocketProtocol:
                 items.append(data)
             else:
                 #if the other end can use this flag, expose it:
-                if self.send_flush_flag and not more and index==0:
+                if index==0 and not more:
                     proto_flags |= FLAGS_FLUSH
                 #the xpra packet header:
                 #(WebSocketProtocol may also add a websocket header too)
