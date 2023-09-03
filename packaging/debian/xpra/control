@@ -25,6 +25,7 @@ Build-Depends: debhelper (>= 8)
               ,libyuv-dev
               ,libvpx-dev
               ,libx264-dev
+              ,libopenh264-dev
               ,libwebp-dev
               ,libturbojpeg-dev
 #lunar:              ,libspng-dev
@@ -255,6 +256,7 @@ Depends: xpra-common (= ${binary:Version})
         ,${codecs:Depends}
         ,${python3:Depends}
               ,libyuv0
+        ,libopenh264-7
 #lunar:              ,libspng0
 #mantic:              ,libspng0
 #bookworm:              ,libspng0
