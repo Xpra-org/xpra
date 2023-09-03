@@ -23,8 +23,8 @@ from xpra.codecs.nvidia.nvjpeg.common import (
     errcheck, NVJPEG_Exception,
     CSS_STR, ENCODING_STR, NVJPEG_INPUT_STR,
     )
-from xpra.codecs.codec_debug import may_save_image
-from xpra.codecs.nvidia.cuda_context import get_CUDA_function, select_device, cuda_device_context
+from xpra.codecs.debug import may_save_image
+from xpra.codecs.nvidia.cuda.context import get_CUDA_function, select_device, cuda_device_context
 from xpra.net.compression import Compressed
 from xpra.util import typedict
 
@@ -32,7 +32,7 @@ from xpra.log import Logger
 log = Logger("encoder", "nvjpeg")
 
 #we can import pycuda safely here,
-#because importing cuda_context will have imported it with the lock
+#because importing cuda/context will have imported it with the lock
 from pycuda import driver  # @UnresolvedImport
 from numpy import int32
 
@@ -149,7 +149,7 @@ def get_output_colorspaces(encoding, input_colorspace):
 def get_specs(encoding, colorspace):
     assert encoding in ("jpeg", "jpega")
     assert colorspace in get_input_colorspaces(encoding)
-    from xpra.codecs.codec_constants import video_spec
+    from xpra.codecs.constants import video_spec
     return (
         video_spec(
             encoding="jpeg", input_colorspace=colorspace, output_colorspaces=(colorspace, ),

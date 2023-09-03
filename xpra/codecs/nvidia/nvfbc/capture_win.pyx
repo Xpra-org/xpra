@@ -13,9 +13,9 @@ from typing import Any, Dict
 
 from xpra.os_util import WIN32
 from xpra.util import csv, roundup
-from xpra.codecs.codec_constants import TransientCodecException, CodecStateException
+from xpra.codecs.constants import TransientCodecException, CodecStateException
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.nvidia.cuda_image_wrapper import CUDAImageWrapper
+from xpra.codecs.nvidia.cuda.image_wrapper import CUDAImageWrapper
 from xpra.codecs.nvidia.nv_util import get_nvidia_module_version, get_cards, get_license_keys, parse_nvfbc_hex_key
 
 from xpra.log import Logger
@@ -25,8 +25,8 @@ log = Logger("encoder", "nvfbc")
 #because importing CUDAImageWrapper will have imported pycuda with the lock
 try:
     from pycuda import driver
-    from xpra.codecs.nvidia.cuda_context import select_device, device_info
-    from xpra.codecs.nvidia.cuda_errors import get_error_name
+    from xpra.codecs.nvidia.cuda.context import select_device, device_info
+    from xpra.codecs.nvidia.cuda.errors import get_error_name
 except ImportError:
     raise
 except Exception as e:

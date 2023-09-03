@@ -16,14 +16,14 @@ from threading import Lock
 from xpra.os_util import WIN32, LINUX, strtobytes
 from xpra.make_thread import start_thread
 from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool, first_time, typedict
-from xpra.codecs.nvidia.cuda_context import (
+from xpra.codecs.nvidia.cuda.context import (
     init_all_devices, get_devices, get_device_name,
     get_cuda_info, get_pycuda_info, reset_state,
     get_CUDA_function, record_device_failure, record_device_success,
     cuda_device_context, load_device,
     )
-from xpra.codecs.nvidia.cuda_errors import get_error_name
-from xpra.codecs.codec_constants import video_spec, TransientCodecException
+from xpra.codecs.nvidia.cuda.errors import get_error_name
+from xpra.codecs.constants import video_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.nvidia.nv_util import (
     get_nvidia_module_version, get_license_keys,
@@ -33,7 +33,7 @@ from xpra.log import Logger
 log = Logger("encoder", "nvenc")
 
 #we can import pycuda safely here,
-#because importing cuda_context will have imported it with the lock
+#because importing cuda/context will have imported it with the lock
 from pycuda import driver  # @UnresolvedImport
 import numpy
 

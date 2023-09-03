@@ -12,7 +12,7 @@ from typing import Any, Dict
 from xpra.log import Logger
 log = Logger("encoder", "vpx")
 
-from xpra.codecs.codec_constants import video_spec, get_subsampling_divs
+from xpra.codecs.constants import video_spec, get_subsampling_divs
 from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util import AtomicInteger, envint, envbool, typedict
 

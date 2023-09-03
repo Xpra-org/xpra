@@ -15,7 +15,7 @@ log = Logger("webcam")
 from xpra.os_util import path_permission_info
 from xpra.util import print_nested_dict
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.codec_constants import get_subsampling_divs
+from xpra.codecs.constants import get_subsampling_divs
 from xpra.buffers.membuf cimport memalign   #pylint: disable=syntax-error
 
 

@@ -35,7 +35,7 @@ from xpra.codecs.avif.avif cimport (
 
 from xpra.util import envint, typedict
 from xpra.net.compression import Compressed
-from xpra.codecs.codec_debug import may_save_image
+from xpra.codecs.debug import may_save_image
 from xpra.log import Logger
 log = Logger("encoder", "avif")
 

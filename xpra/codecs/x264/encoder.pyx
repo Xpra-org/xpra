@@ -14,7 +14,7 @@ log = Logger("encoder", "x264")
 
 from xpra.util import envint, envbool, csv, typedict, AtomicInteger
 from xpra.os_util import bytestostr, strtobytes
-from xpra.codecs.codec_constants import video_spec, get_profile, get_x264_quality, get_x264_preset
+from xpra.codecs.constants import video_spec, get_profile, get_x264_quality, get_x264_preset
 from collections import deque
 
 from libc.string cimport memset

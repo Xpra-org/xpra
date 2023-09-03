@@ -221,7 +221,7 @@ CODEC_OPTIONS : dict[str,tuple[str,str,str,str]] = {
     "v4l2"          : ("v4l2 source",       "v4l2",         "pusher", "Pusher"),
     "evdi"          : ("evdi source",       "evdi",         "capture", "EvdiDevice"),
     "drm"           : ("drm device query",  "drm",          "drm",      "query"),
-    "nvfbc"         : ("NVIDIA Capture SDK","nvidia.nvfbc", f"fbc_capture_{platformname}", "NvFBC_SysCapture"),
+    "nvfbc"         : ("NVIDIA Capture SDK","nvidia.nvfbc", f"capture_{platformname}", "NvFBC_SysCapture"),
     }
 
 NOLOAD : list[str] = []

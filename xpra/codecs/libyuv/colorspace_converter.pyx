@@ -13,7 +13,7 @@ from xpra.log import Logger
 log = Logger("csc", "libyuv")
 
 from xpra.util import typedict, csv
-from xpra.codecs.codec_constants import get_subsampling_divs, csc_spec
+from xpra.codecs.constants import get_subsampling_divs, csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf, memalign, buffer_context   #pylint: disable=syntax-error
 

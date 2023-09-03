@@ -14,7 +14,7 @@ from typing import Any, Tuple, List, Dict
 from xpra.log import Logger
 log = Logger("csc", "cython")
 
-from xpra.codecs.codec_constants import csc_spec, get_subsampling_divs
+from xpra.codecs.constants import csc_spec, get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 
 from libc.stdint cimport uint8_t, uintptr_t # pylint: disable=syntax-error

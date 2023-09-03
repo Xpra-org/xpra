@@ -9,7 +9,7 @@ from xpra.log import Logger
 log = Logger("decoder", "spng")
 
 from xpra.net.compression import Compressed
-from xpra.codecs.codec_debug import may_save_image
+from xpra.codecs.debug import may_save_image
 from xpra.codecs.argb.argb import unpremultiply_argb
 from xpra.codecs.spng.spng cimport (
     SPNG_VERSION_MAJOR, SPNG_VERSION_MINOR, SPNG_VERSION_PATCH,

@@ -12,7 +12,7 @@ from typing import Any, Tuple, List, Dict
 from xpra.log import Logger
 log = Logger("decoder", "vpx")
 
-from xpra.codecs.codec_constants import get_subsampling_divs
+from xpra.codecs.constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.util import envint, envbool
 

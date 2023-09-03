@@ -13,7 +13,7 @@ from libc.string cimport memset #pylint: disable=syntax-error
 from xpra.buffers.membuf cimport buffer_context
 
 from xpra.net.compression import Compressed
-from xpra.codecs.codec_debug import may_save_image
+from xpra.codecs.debug import may_save_image
 from xpra.util import envbool, envint, typedict
 from xpra.log import Logger
 log = Logger("encoder", "webp")
@@ -377,7 +377,7 @@ def get_output_colorspaces(encoding, input_colorspace):
 def get_specs(encoding, colorspace):
     assert encoding=="webp"
     assert colorspace in get_input_colorspaces(encoding)
-    from xpra.codecs.codec_constants import video_spec
+    from xpra.codecs.constants import video_spec
     return (
         video_spec(
             encoding=encoding, input_colorspace=colorspace, output_colorspaces=(colorspace, ), has_lossless_mode=False,

@@ -25,13 +25,13 @@ from xpra.codecs.nvidia.nvjpeg.common import (
     errcheck, NVJPEG_Exception,
     ERR_STR, CSS_STR,
     )
-from xpra.codecs.nvidia.cuda_context import get_default_device_context
+from xpra.codecs.nvidia.cuda.context import get_default_device_context
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
 log = Logger("encoder", "nvjpeg")
 
 #we can import pycuda safely here,
-#because importing cuda_context will have imported it with the lock
+#because importing cuda/context will have imported it with the lock
 from pycuda.driver import Memcpy2D, memcpy_dtoh, mem_alloc
 
 

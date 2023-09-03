@@ -7,7 +7,7 @@ from xpra.log import Logger
 log = Logger("encoder", "webp")
 
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.codec_debug import may_save_image
+from xpra.codecs.debug import may_save_image
 from xpra.buffers.membuf cimport memalign, buffer_context
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t

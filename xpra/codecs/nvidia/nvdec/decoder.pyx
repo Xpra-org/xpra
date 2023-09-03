@@ -15,13 +15,13 @@ from threading import Event
 
 from xpra.util import csv, AtomicInteger
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.nvidia.cuda_errors import cudacheck, get_error_name
-from xpra.codecs.nvidia.cuda_context import get_default_device_context
+from xpra.codecs.nvidia.cuda.errors import cudacheck, get_error_name
+from xpra.codecs.nvidia.cuda.context import get_default_device_context
 from xpra.log import Logger
 log = Logger("encoder", "nvdec")
 
 #we can import pycuda safely here,
-#because importing cuda_context will have imported it with the lock
+#because importing cuda/context will have imported it with the lock
 from pycuda.driver import Memcpy2D, mem_alloc_pitch, memcpy_dtoh, Stream
 
 cdef inline int roundup(int n, int m):

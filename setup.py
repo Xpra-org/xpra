@@ -2147,6 +2147,7 @@ tace(proc_ENABLED and proc_use_libproc, "xpra.platform.posix.proc_libproc", "lib
 toggle_packages(enc_proxy_ENABLED, "xpra.codecs.proxy")
 
 toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia")
+toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia.cuda")
 CUDA_BIN = f"{share_xpra}/cuda"
 if nvidia_ENABLED:
     #find nvcc:

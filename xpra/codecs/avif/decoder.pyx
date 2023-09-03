@@ -4,8 +4,8 @@
 # later version. See the file COPYING for details.
 
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.codec_constants import get_subsampling_divs
-from xpra.codecs.codec_debug import may_save_image
+from xpra.codecs.constants import get_subsampling_divs
+from xpra.codecs.debug import may_save_image
 
 from libc.string cimport memset #pylint: disable=syntax-error
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error

@@ -10,8 +10,8 @@ from time import monotonic
 
 from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context    #pylint: disable=syntax-error
-from xpra.codecs.codec_constants import get_subsampling_divs
-from xpra.codecs.codec_debug import may_save_image
+from xpra.codecs.constants import get_subsampling_divs
+from xpra.codecs.debug import may_save_image
 from xpra.net.compression import Compressed
 from xpra.util import envbool, typedict, csv
 from xpra.os_util import bytestostr
@@ -133,7 +133,7 @@ def get_output_colorspaces(encoding, input_colorspace):
 def get_specs(encoding, colorspace):
     assert encoding in ("jpeg", "jpega")
     assert colorspace in get_input_colorspaces(encoding)
-    from xpra.codecs.codec_constants import video_spec
+    from xpra.codecs.constants import video_spec
     width_mask=0xFFFF
     height_mask=0xFFFF
     if colorspace in ("YUV420P", "YUV422P"):
