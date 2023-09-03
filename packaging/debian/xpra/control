@@ -45,6 +45,7 @@ Build-Depends: debhelper (>= 8)
               ,libproc2-dev | libprocps-dev
               ,liblz4-dev
               ,libbrotli-dev
+              ,libxxhash-dev
               ,libqrencode-dev
               ,pandoc
 Standards-Version: 3.9.3
@@ -94,6 +95,7 @@ Architecture: any
 Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,python3-gi
         ,gir1.2-glib-2.0
+        ,libxxhash0
 # generate QR codes for authentication and connection URLs:
 Recommends: ${qrcode:Depends}
 # text packet compression:

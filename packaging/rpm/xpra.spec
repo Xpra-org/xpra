@@ -163,6 +163,8 @@ Recommends:			%{python3}-zeroconf
 %endif
 BuildRequires:		pkgconfig(liblz4)
 Requires:			lz4-libs
+BuildRequires:		xxhash-devel
+Requires:			xxhash-libs
 BuildRequires:		pkgconfig(libbrotlidec)
 BuildRequires:		pkgconfig(libbrotlienc)
 Recommends:			brotli
