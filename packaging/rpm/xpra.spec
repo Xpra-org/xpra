@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 5.0.1
+%define version 5.0.2
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-enc_x265 --without-cuda_rebuild
@@ -768,6 +768,8 @@ fi
 
 
 %changelog
+* Sun Sep 03 2023 Antoine Martin <antoine@xpra.org> 5.0.2-10
+- TODO
 * Sat Aug 26 2023 Antoine Martin <antoine@xpra.org> 5.0.1-10
 - Major fixes:
    missing dbus instance

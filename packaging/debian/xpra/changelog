@@ -1,3 +1,8 @@
+xpra (5.0.2-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 03 Sep 2023 18:05:12 +0700
+
 xpra (5.0.1-1) UNRELEASED; urgency=low
   * Major fixes:
     - missing dbus instance

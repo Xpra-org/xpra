@@ -1,5 +1,8 @@
 # Changelog
 
+## [5.0.2] 2023-09-03
+* TODO
+
 ## [5.0.1] 2023-08-29
 * Major fixes:
     * [missing dbus instance](https://github.com/Xpra-org/xpra/commit/79fda14b3419a0ff9e86405dcffc89082927eca5)
