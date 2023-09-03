@@ -769,7 +769,12 @@ fi
 
 %changelog
 * Sun Sep 03 2023 Antoine Martin <antoine@xpra.org> 5.0.2-10
-- TODO
+- Major fixes:
+   missing x264 encoder in DEB packages
+   unusable vsock module
+- Minor:
+   better packet namespace compatibility
+
 * Sat Aug 26 2023 Antoine Martin <antoine@xpra.org> 5.0.1-10
 - Major fixes:
    missing dbus instance

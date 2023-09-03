@@ -1,5 +1,9 @@
 xpra (5.0.2-1) UNRELEASED; urgency=low
-  * TODO
+  * Major fixes:
+    - missing x264 encoder in DEB packages
+    - unusable vsock module
+  * Minor:
+    - better packet namespace compatibility
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 03 Sep 2023 18:05:12 +0700
 
