@@ -31,6 +31,7 @@ jobs:
                 gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-vaapi \
                 liblz4-dev python3-lz4 \
                 libbrotli-dev \
+                libxxhash-dev \
                 python3-coverage \
                 x11-xserver-utils dbus-x11
 
