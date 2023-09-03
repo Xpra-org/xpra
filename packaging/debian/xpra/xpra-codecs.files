@@ -2,6 +2,7 @@ usr/lib/python3*/*/xpra/codecs/avif
 usr/lib/python3*/*/xpra/codecs/drm
 usr/lib/python3*/*/xpra/codecs/evdi
 usr/lib/python3*/*/xpra/codecs/jpeg
+usr/lib/python3*/*/xpra/codecs/x264
 usr/lib/python3*/*/xpra/codecs/libyuv
 usr/lib/python3*/*/xpra/codecs/spng
 usr/lib/python3*/*/xpra/codecs/v4l2
