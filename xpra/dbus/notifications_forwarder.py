@@ -36,7 +36,6 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         self.close_callback = close_callback
         self.active_notifications = set()
         self.counter = 0
-        self.support_actions = True
         self.dbus_id = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
         bus_name = dbus.service.BusName(BUS_NAME, bus=bus)
         super().__init__(bus_name, BUS_PATH)
@@ -45,7 +44,6 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         return {
             "active"        : tuple(self.active_notifications),
             "counter"       : self.counter,
-            "actions"       : self.support_actions,
             "dbus-id"       : self.dbus_id,
             "bus-name"      : BUS_NAME,
             "bus-path"      : BUS_PATH,
@@ -124,7 +122,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
 
     def do_get_capabilities(self):
         caps = ["body", "icon-static"]
-        if ACTIONS and self.support_actions:
+        if ACTIONS:
             caps += ["actions", "action-icons"]
         return caps
 
