@@ -255,13 +255,9 @@ Breaks: python2-xpra (<< 5), python3-xpra (<< 5), xpra (<< 5)
 Depends: xpra-common (= ${binary:Version})
         ,${codecs:Depends}
         ,${python3:Depends}
-              ,libyuv0
+        ,libyuv0
         ,libopenh264-7
-#lunar:              ,libspng0
-#mantic:              ,libspng0
-#bookworm:              ,libspng0
-#trixie:              ,libspng0
-#sid:              ,libspng0
+        ,libspng0
 #jammy:              ,libavif13
 #lunar:              ,libavif15
 #mantic:              ,libavif15
