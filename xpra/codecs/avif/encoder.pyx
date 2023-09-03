@@ -189,7 +189,7 @@ def encode(coding, image, options=None):
 
 def selftest(full=False):
     #fake empty buffer:
-    from xpra.codecs.codec_checks import make_test_image
+    from xpra.codecs.checks import make_test_image
     w, h = (24, 16)
     for has_alpha in (True, False):
         img = make_test_image("BGR%s" % ["X", "A"][has_alpha], w, h)

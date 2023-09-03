@@ -871,7 +871,7 @@ def selftest(full=False):
         log(f"codecs failed: {codec_failed}")
         log(f"codecs supported: {codec_ok}")
         log(f"minimum sizes: {MIN_SIZES}")
-        from xpra.codecs.codec_checks import testdecoder
+        from xpra.codecs.checks import testdecoder
         from xpra.codecs.nvidia import nvdec
         nvdec.decoder.CODECS = testdecoder(nvdec.decoder, full)
         log(f"validated encodings: {nvdec.decoder.CODECS}")

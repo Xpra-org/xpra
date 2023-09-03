@@ -3183,7 +3183,7 @@ def selftest(full=False):
                 raise ImportError("unsupported NVidia driver version %s\nuse XPRA_NVENC_UNSUPPORTED_DRIVER_VERSION=1 to force enable it" % pver(v))
     #this is expensive, so don't run it unless "full" is set:
     if full:
-        from xpra.codecs.codec_checks import get_encoder_max_sizes
+        from xpra.codecs.checks import get_encoder_max_sizes
         from xpra.codecs.nvidia.nvenc import encoder
         init_module()
         log.info("%s max dimensions: %s", encoder, get_encoder_max_sizes(encoder))

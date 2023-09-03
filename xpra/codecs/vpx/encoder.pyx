@@ -717,7 +717,7 @@ cdef class Encoder:
 
 def selftest(full=False):
     global CODECS, SAVE_TO_FILE
-    from xpra.codecs.codec_checks import testencoder, get_encoder_max_size
+    from xpra.codecs.checks import testencoder, get_encoder_max_size
     from xpra.codecs.vpx import encoder
     temp = SAVE_TO_FILE
     try:

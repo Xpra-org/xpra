@@ -250,7 +250,7 @@ def selftest(full=False):
             raise ImportError(f"nvidia module {vstr} is too old, version 522.6 or later is required")
         if not has_nvidia_hardware():
             raise ImportError("no nvidia GPU device found")
-    from xpra.codecs.codec_checks import TEST_PICTURES
+    from xpra.codecs.checks import TEST_PICTURES
     #options = {"cuda-device-context" : get_device_context()}
     for size, samples in TEST_PICTURES["jpeg"].items():
         for bdata in samples:

@@ -465,7 +465,7 @@ cdef do_encode_yuv(tjhandle compressor, pfstr, planes,
 
 def selftest(full=False):
     log("jpeg selftest")
-    from xpra.codecs.codec_checks import make_test_image
+    from xpra.codecs.checks import make_test_image
     img = make_test_image("BGRA", 32, 32)
     for q in (0, 50, 100):
         v = encode("jpeg", img, {"quality" : q})

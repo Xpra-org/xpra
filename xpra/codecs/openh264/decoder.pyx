@@ -203,6 +203,6 @@ cdef class Decoder:
 
 def selftest(full=False):
     log("openh264 selftest: %s", get_info())
-    from xpra.codecs.codec_checks import testdecoder
+    from xpra.codecs.checks import testdecoder
     from xpra.codecs.openh264 import decoder
     testdecoder(decoder, full)

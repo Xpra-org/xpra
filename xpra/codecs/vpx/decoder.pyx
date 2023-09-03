@@ -327,6 +327,6 @@ cdef class Decoder:
 
 def selftest(full=False):
     global CODECS
-    from xpra.codecs.codec_checks import testdecoder
+    from xpra.codecs.checks import testdecoder
     from xpra.codecs.vpx import decoder
     CODECS = testdecoder(decoder, full)

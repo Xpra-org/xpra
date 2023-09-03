@@ -539,7 +539,7 @@ def selftest(full=False):
     from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
     if not has_nvidia_hardware():
         raise ImportError("no nvidia GPU device found")
-    from xpra.codecs.codec_checks import make_test_image
+    from xpra.codecs.checks import make_test_image
     options = {
         "cuda-device-context"   : get_device_context(),
         }

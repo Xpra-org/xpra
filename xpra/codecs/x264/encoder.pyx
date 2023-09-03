@@ -1014,7 +1014,7 @@ cdef class Encoder:
 def selftest(full=False):
     log("enc_x264 selftest: %s", get_info())
     global SAVE_TO_FILE
-    from xpra.codecs.codec_checks import testencoder, get_encoder_max_sizes
+    from xpra.codecs.checks import testencoder, get_encoder_max_sizes
     from xpra.codecs.x264 import encoder
     temp = SAVE_TO_FILE
     try:

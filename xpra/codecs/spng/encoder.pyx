@@ -219,7 +219,7 @@ def encode(coding, image, options=None):
 
 def selftest(full=False):
     log("spng version %s selftest" % (get_version(),))
-    from xpra.codecs.codec_checks import make_test_image
+    from xpra.codecs.checks import make_test_image
     for rgb_format in ("RGBA", "RGB", "BGRA", "BGRX"):
         image = make_test_image(rgb_format, 1024, 768)
         assert encode("png", image), "failed to encode %s" % image
