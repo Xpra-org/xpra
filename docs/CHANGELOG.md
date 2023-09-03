@@ -2,7 +2,7 @@
 
 ## [5.0.2] 2023-09-03
 * Major fixes:
-    * [missing x264 encoder in DEB packages](https://github.com/Xpra-org/xpra/commit/b8735c8b53ac908424f4c9092362ccda270a1138) 
+    * [missing x264 encoder in DEB packages](https://github.com/Xpra-org/xpra/commit/b8735c8b53ac908424f4c9092362ccda270a1138)
     * [unusable vsock module](https://github.com/Xpra-org/xpra/commit/b1264a7a3418936c3bed6622c346bc2283c94aa9)
 * Minor:
     * [better packet namespace compatibility](https://github.com/Xpra-org/xpra/commit/3e21c8a93ad6bd6390fc87f25cc0f0445a60e45a)
