@@ -30,7 +30,9 @@ usr/lib/python3*/*/xpra/*.py*
 usr/lib/python3*/*/xpra/codecs/argb/
 usr/lib/python3*/*/xpra/codecs/pillow/
 usr/lib/python3*/*/xpra/codecs/__init__.py
-usr/lib/python3*/*/xpra/codecs/codec_*.py*
+usr/lib/python3*/*/xpra/codecs/checks.py*
+usr/lib/python3*/*/xpra/codecs/constants.py*
+usr/lib/python3*/*/xpra/codecs/debug.py*
 usr/lib/python3*/*/xpra/codecs/icon_util.py
 usr/lib/python3*/*/xpra/codecs/image_wrapper.py
 usr/lib/python3*/*/xpra/codecs/loader.py
