@@ -1,6 +1,10 @@
 fake-cuda
 xorg-x11-drv-dummy
 gstreamer1-plugin-timestamp
+openh264
+
+
+# default python:
 python3-pycuda
 python3-pynvml
 python3-pyu2f
