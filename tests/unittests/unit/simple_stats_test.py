@@ -86,12 +86,10 @@ class TestSimpleStats(unittest.TestCase):
 		N = 10
 		values = list((x, x%2+1) for x in range(N))
 		stats = get_weighted_list_stats(values, show_percentile=True)
-		print(stats)
 		assert stats.get("min") == 0
 		assert stats.get("max") == 9
 		assert stats.get("avg") == 4
 		percentile = range(1, 10)
-		print(stats)
 		for p in percentile:
 			assert stats.get(f"{p}0p")==p
 
