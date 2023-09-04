@@ -157,7 +157,9 @@ class ChildCommandServer(StubServerMixin):
 
 
     def send_initial_data(self, ss, caps:typedict, send_ui:bool, share_count:int) -> None:
-        if not getattr(ss, "xdg_menu", False):
+        xdg_menu = getattr(ss, "xdg_menu", False)
+        log(f"send_initial_data(..) {xdg_menu=}")
+        if not xdg_menu:
             return
         #this method may block if the menus are still being loaded,
         #so do it in a throw-away thread:
@@ -167,8 +169,8 @@ class ChildCommandServer(StubServerMixin):
         if ss.is_closed():
             return
         xdg_menu = self._get_xdg_menu_data() or {}
-        log(f"{len(xdg_menu)} menu data entries sent")
         ss.send_setting_change("xdg-menu", xdg_menu)
+        log(f"{len(xdg_menu)} menu data entries sent to {ss}")
 
     def send_updated_menu(self, xdg_menu) -> None:
         log("send_updated_menu(%s)", ellipsizer(xdg_menu))
