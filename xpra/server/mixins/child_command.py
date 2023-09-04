@@ -31,7 +31,6 @@ from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
 log = Logger("exec")
-httplog = Logger("http")
 
 TERMINATE_DELAY = envint("XPRA_TERMINATE_DELAY", 1000)/1000.0
 
