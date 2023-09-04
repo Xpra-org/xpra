@@ -24,7 +24,6 @@ gi.require_version("Gdk", "3.0")  # @UndefinedVariable
 from gi.repository import GLib, Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.os_util import OSX
-from xpra.util import u
 from xpra.gtk_common.gtk_util import (
     add_close_accel, color_parse,
     get_icon_pixbuf,
@@ -265,7 +264,7 @@ class Popup(Gtk.Window):
 
 
     def action_button(self, action_id, action_text):
-        button = Gtk.Button(label=u(action_text))
+        button = Gtk.Button(label=action_text)
         button.set_relief(Gtk.ReliefStyle.NORMAL)
         def popup_cb_clicked(*args):
             self.hide_notification()

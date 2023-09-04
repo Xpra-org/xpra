@@ -97,7 +97,7 @@ def do_get_wm_name(env) -> str:
 
 
 def get_clipboard_native_class() -> str:
-    gtk_clipboard_class = "xpra.gtk_common.gtk_clipboard.GTK_Clipboard"
+    gtk_clipboard_class = "xpra.gtk_common.clipboard.GTK_Clipboard"
     if not x11_bindings():
         return gtk_clipboard_class
     try:
