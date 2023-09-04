@@ -12,10 +12,10 @@ from subprocess import Popen, PIPE, DEVNULL
 from datetime import datetime, timedelta
 
 from xpra.version_util import caps_to_version, full_version_str
-from xpra.util import u, noerr, typedict, std, envint, csv
+from xpra.util import noerr, typedict, std, envint, csv
 from xpra.os_util import (
     platform_name, get_machine_id,
-    bytestostr, strtobytes,
+    bytestostr,
     POSIX, SIGNAMES,
     )
 from xpra.exit_codes import ExitCode
@@ -100,9 +100,9 @@ def get_display_id_info(path:str) -> dict[str,str]:
     d = {}
     try:
         cmd = get_nodock_command()+["id", f"socket://{path}"]
-        proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, text=True)
         out, err = proc.communicate()
-        for line in bytestostr(out or err).splitlines():
+        for line in (out or err).splitlines():
             try:
                 k,v = line.split("=", 1)
                 d[k] = v
@@ -120,7 +120,6 @@ def get_window_info(wi : typedict) -> tuple[tuple[str,int],...]:
     sc = wi.dictget("size-constraints")
     if sc:
         def sc_str(k, v):
-            k = bytestostr(k)
             if k=="gravity":
                 v = GravityStr(v)
             return f"{k}={v}"
@@ -129,9 +128,7 @@ def get_window_info(wi : typedict) -> tuple[tuple[str,int],...]:
     pid = wi.intget("pid", 0)
     if pid:
         line1 = f"pid {pid}: "
-    title = wi.get("title", "")
-    if not isinstance(title, str):
-        title = u(strtobytes(title))
+    title = wi.strget("title", "")
     if title:
         line1 += f' "{title}"'
     attrs = [
@@ -812,7 +809,7 @@ class TopSessionClient(InfoTimerClient):
             #or a byte string...
             v = gli.get(key)
             if isinstance(v, (tuple, list)):
-                return sep.join(bytestostr(x) for x in v)
+                return sep.join(str(x) for x in v)
             return bytestostr(v)
         if not gli.boolget("enabled", True):
             return "OpenGL disabled " + gli.strget("message", "")

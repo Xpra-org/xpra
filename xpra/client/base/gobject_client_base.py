@@ -12,7 +12,7 @@ from typing import Any
 from gi.repository import GLib, GObject  # @UnresolvedImport
 
 from xpra.util import (
-    u, nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, typedict,
+    nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, typedict,
     disconnect_is_an_error, ellipsizer, first_time, csv,
     repr_ellipsized, ConnectionMessage, stderr_print,
     )
@@ -293,16 +293,11 @@ class InfoXpraClient(CommandConnectClient):
                 c = flatten_dict(caps)
                 for k in sorted_nicely(c.keys()):
                     v = c.get(k)
-                    #FIXME: this is a nasty and horrible python3 workaround (yet again)
-                    #we want to print bytes as strings without the ugly 'b' prefix..
-                    #it assumes that all the strings are raw or in (possibly nested) lists or tuples only
-                    #we assume that all strings we get are utf-8,
-                    #and fallback to the bytestostr hack if that fails
                     def fixvalue(w):
                         if isinstance(w, bytes):
                             if k.endswith(".data"):
                                 return hexstr(w)
-                            return u(w)
+                            return bytestostr(w)
                         elif isinstance(w, (tuple,list)):
                             return type(w)([fixvalue(x) for x in w])
                         return w

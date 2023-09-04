@@ -191,15 +191,6 @@ def nicestr(obj):
     return str(obj)
 
 
-def u(v) -> str:
-    if isinstance(v, str):
-        return v
-    try:
-        return v.decode("utf8")
-    except (AttributeError, UnicodeDecodeError):
-        return bytestostr(v)
-
-
 # A simple little class whose instances we can stick random bags of attributes
 # on.
 class AdHocStruct:
@@ -428,9 +419,6 @@ class typedict(dict):
             self._warn(f"Warning: failed to convert {k}")
             self._warn(f" from {type(v)} using {conv}: {e}")
             return default
-
-    def uget(self, k, default=None):
-        return self.conv_get(k, default, u)
 
     def strget(self, k, default:str | None=None) -> str:
         return self.conv_get(k, default, bytestostr)

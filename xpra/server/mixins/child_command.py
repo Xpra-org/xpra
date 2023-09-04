@@ -20,7 +20,7 @@ from xpra.os_util import (
     restore_script_env,
     OSX, WIN32,
     )
-from xpra.util import envint, csv, ellipsizer, u, typedict
+from xpra.util import envint, csv, ellipsizer, typedict
 from xpra.net.common import PacketType
 from xpra.make_thread import start_thread
 from xpra.scripts.parsing import parse_env, get_subcommands
@@ -376,13 +376,15 @@ class ChildCommandServer(StubServerMixin):
             log.warn("Warning: received start-command request,")
             log.warn(" but the feature is currently disabled")
             return
-        name, command, ignore = packet[1:4]
+        name = str(packet[1])
+        command = packet[2]
+        ignore = bool(packet[3])
         cmd : str | tuple
         if isinstance(command, (list, tuple)):
             cmd = tuple(command)
         else:
-            cmd = u(command)
-        proc = self.start_command(u(name), cmd, ignore)
+            cmd = str(command)
+        proc = self.start_command(name, cmd, ignore)
         if len(packet)>=5:
             shared = packet[4]
             if proc and not shared:

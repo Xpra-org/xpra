@@ -16,7 +16,7 @@ from typing import Any
 
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import bytestostr, umask_context, POSIX, WIN32
-from xpra.util import typedict, csv, envint, envbool, u
+from xpra.util import typedict, csv, envint, envbool
 from xpra.scripts.config import parse_bool, parse_with_unit
 from xpra.net.common import PacketType
 from xpra.simple_stats import std_unit
@@ -334,7 +334,7 @@ class FileTransferHandler(FileTransferAttributes):
             if chunk_state.send_id==send_id:
                 self.cancel_file(chunk_id, message)
                 return
-        filelog.error("Error: cannot cancel download %s, entry not found!", u(send_id))
+        filelog.error(f"Error: cannot cancel download {send_id!r}, entry not found!")
 
     def cancel_file(self, chunk_id:str, message:str, chunk:int=0) -> None:
         filelog("cancel_file%s", (chunk_id, message, chunk))
@@ -796,8 +796,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.pending_send_data[send_id] = spd
         delay = self.remote_file_ask_timeout*1000
         self.pending_send_data_timers[send_id] = self.timeout_add(delay, self.send_data_ask_timeout, send_id)
-        filelog("sending data request for %s '%s' with send-id=%s",
-                u(dtype), u(url), send_id)
+        filelog(f"sending data request for {dtype} {url!r} with send-id {send_id!r}")
         self.send("send-data-request", dtype, send_id, url, mimetype, filesize, printit, openit, options or {})
         return send_id
 
@@ -812,8 +811,7 @@ class FileTransferHandler(FileTransferAttributes):
 
 
     def do_process_send_data_request(self, dtype, send_id, url, _, filesize, printit, openit, options) -> None:
-        filelog("do_process_send_data_request: send_id=%s, url=%s, printit=%s, openit=%s, options=%s",
-                u(send_id), url, printit, openit, options)
+        filelog(f"do_process_send_data_request: {send_id=}, {url=}, {printit=}, {openit=}, {options=}")
         def cb_answer(accept):
             filelog("accept%s=%s", (url, printit, openit), accept)
             self.send("send-data-response", send_id, accept)
@@ -915,13 +913,13 @@ class FileTransferHandler(FileTransferAttributes):
         else:
             action = "upload"
             l = filelog
-        l("do_send_file%s", (u(filename), mimetype, type(data), f"{filesize} bytes", printit, openit, options))
+        l("do_send_file%s", (filename, mimetype, type(data), f"{filesize} bytes", printit, openit, options))
         if not self.check_file_size(action, filename, filesize):
             return False
         h = hashlib.sha256()
         h.update(data)
         absfile = os.path.abspath(filename)
-        filelog("sha256 digest('%s')=%s", u(absfile), h.hexdigest())
+        filelog(f"sha256 digest({absfile})=%s", h.hexdigest())
         options = options or {}
         options["sha256"] = h.hexdigest()
         chunk_size = min(self.file_chunks, self.remote_file_chunks)

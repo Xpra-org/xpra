@@ -9,7 +9,7 @@ from gi.repository import GLib, Gtk  # @UnresolvedImport
 
 from xpra.util import (
     ConnectionMessage,
-    envbool, u,
+    envbool,
     ellipsizer, repr_ellipsized, reverse_dict, typedict,
     )
 from xpra.os_util import bytestostr, OSX, WIN32
@@ -1497,8 +1497,7 @@ class GTKTrayMenuBase(MenuHelper):
         menu = Gtk.Menu()
         execlog("build_start_menu() %i menu items", len(self.client.server_xdg_menu))
         execlog("self.client.server_xdg_menu=%s", ellipsizer(self.client.server_xdg_menu))
-        for cat, category_props in sorted(self.client.server_xdg_menu.items()):
-            category = u(cat)
+        for category, category_props in sorted(self.client.server_xdg_menu.items()):
             execlog(" * category: %s", category)
             #log("category_props(%s)=%s", category, category_props)
             if not isinstance(category_props, dict):
@@ -1515,8 +1514,7 @@ class GTKTrayMenuBase(MenuHelper):
             cat_menu = Gtk.Menu()
             category_menu_item.set_submenu(cat_menu)
             menu.append(category_menu_item)
-            for an, cp in sorted(entries.items()):
-                app_name = u(an)
+            for app_name, cp in sorted(entries.items()):
                 command_props = typedict(cp)
                 execlog("  - app_name=%s", app_name)
                 app_menu_item = self.make_applaunch_menu_item(app_name, command_props)

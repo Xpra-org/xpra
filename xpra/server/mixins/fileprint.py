@@ -12,7 +12,7 @@ from typing import Any
 
 from xpra.simple_stats import to_std_unit, std_unit
 from xpra.os_util import bytestostr, osexpand, load_binary_file, WIN32, POSIX
-from xpra.util import u, repr_ellipsized, NotificationID
+from xpra.util import repr_ellipsized, NotificationID
 from xpra.net.common import PacketType
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -142,7 +142,7 @@ class FilePrintServer(StubServerMixin):
             printlog.error("Error: invalid print packet, only %i arguments", len(packet))
             printlog.error(" %s", [repr_ellipsized(x) for x in packet])
             return
-        filename = u(packet[1])
+        filename = str(packet[1])
         file_data = packet[2]
         mimetype, source_uuid, title, printer, no_copies, print_options = "", "*", "unnamed document", "", 1, ""
         if len(packet)>=4:
@@ -150,7 +150,7 @@ class FilePrintServer(StubServerMixin):
         if len(packet)>=5:
             source_uuid = bytestostr(packet[4])
         if len(packet)>=6:
-            title = u(packet[5])
+            title = str(packet[5])
         if len(packet)>=7:
             printer = bytestostr(packet[6])
         if len(packet)>=8:
@@ -283,7 +283,7 @@ class FilePrintServer(StubServerMixin):
         if not ss:
             printlog.warn("Warning: invalid client source for send-data-response packet")
             return
-        argf = u(packet[1])
+        argf = str(packet[1])
         openit = packet[2]
         filename = os.path.abspath(osexpand(argf))
         if not os.path.exists(filename):

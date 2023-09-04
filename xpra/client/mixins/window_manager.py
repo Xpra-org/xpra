@@ -35,7 +35,7 @@ from xpra.os_util import (
     )
 from xpra.util import (
     envint, envbool, typedict,
-    make_instance, updict, repr_ellipsized, u, noerr, first_time,
+    make_instance, updict, repr_ellipsized, noerr, first_time,
     )
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
@@ -561,7 +561,7 @@ class WindowClient(StubClientMixin):
                 raise ValueError(f"invalid cursor packet: only {len(packet)} items")
             #trim packet-type:
             new_cursor = list(packet[1:])
-            encoding = u(new_cursor[0])
+            encoding = str(new_cursor[0])
             setdefault = encoding.startswith("default:")
             if setdefault:
                 encoding = encoding.split(":")[1]

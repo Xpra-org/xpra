@@ -458,7 +458,7 @@ class UIXpraClient(ClientBaseClass):
             if not cb.parse_server_capabilities(self, c):
                 log.info(f"failed to parse server capabilities in {cb}")
                 return False
-        self.server_session_name = c.uget("session_name")
+        self.server_session_name = c.strget("session_name")
         set_name("Xpra", self.session_name or self.server_session_name or "Xpra")
         self.server_platform = c.strget("platform")
         self.server_sharing = c.boolget("sharing")

@@ -7,7 +7,7 @@ import struct
 from typing import Any, cast
 from collections.abc import Callable
 
-from xpra.util import u, ellipsizer
+from xpra.util import ellipsizer
 from xpra.os_util import hexstr, bytestostr
 from xpra.log import Logger
 log = Logger("x11")
@@ -77,7 +77,7 @@ def get_wm_name() -> str:
             wm_name = get_X11_window_property(xid, "_NET_WM_NAME", "UTF8_STRING")
             log("_NET_WM_NAME=%s", wm_name)
             if wm_name:
-                return u(wm_name)
+                return wm_name.decode("utf8")
     except Exception as e:
         log("get_wm_name()", exc_info=True)
         log.error("Error accessing window manager information:")
