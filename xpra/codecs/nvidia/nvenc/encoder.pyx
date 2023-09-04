@@ -2799,7 +2799,7 @@ cdef class Encoder:
                     log("* %s : %s", guidstr(preset_GUID), preset_name or "unknown!")
                 if preset_name is None:
                     global UNKNOWN_PRESETS
-                    if preset_name not in UNKNOWN_PRESETS:
+                    if preset_str not in UNKNOWN_PRESETS:
                         UNKNOWN_PRESETS.append(preset_str)
                         unknowns.append(preset_str)
                 else:
