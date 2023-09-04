@@ -79,7 +79,7 @@ class ChildCommandMixinTest(ServerMixinTest):
         os.unlink(tmpfile)
         #test signals:
         with silence_info(child_command):
-            self.handle_packet(("start-command", b"sleep", b"sleep 10", True))
+            self.handle_packet(("start-command", "sleep", "sleep 10", True))
         time.sleep(1)
         info = self.mixin.get_info(self.protocol)
         commands = info.get("commands")
