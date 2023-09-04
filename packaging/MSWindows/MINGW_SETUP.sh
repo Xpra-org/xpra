@@ -16,7 +16,7 @@ PACMAN="pacman"
 #PACMAN="echo pacman"
 
 #most packages get installed here: (python, gtk, etc):
-$PACMAN --noconfirm --needed -S ${XPKG}python ${XPKG}libnotify
+$PACMAN --noconfirm --needed -S ${XPKG}python ${XPKG}libnotify ${XPKG}gtk3
 #media libraries (more than we actually need):
 $PACMAN --noconfirm --needed -S ${XPKG}libavif ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
 #network layer libraries:
@@ -24,7 +24,7 @@ $PACMAN --noconfirm --needed -S ${XPKG}lz4 ${XPKG}xxhash heimdal-libs openssh ss
 #python GStreamer bindings:
 $PACMAN --noconfirm --needed -S ${XPKG}gst-python
 #development tools and libs for building extra packages:
-$PACMAN --noconfirm --needed -S base-devel ${XPKG}yasm ${XPKG}nasm gcc subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkgconf ${XPKG}libffi ${XPKG}python-pandocfilters
+$PACMAN --noconfirm --needed -S base-devel ${XPKG}yasm ${XPKG}nasm gcc groff subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkgconf ${XPKG}libffi ${XPKG}python-pandocfilters
 for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode setproctitle pyu2f ldap ldap3 bcrypt pynacl pyopengl pyopengl-accelerate nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos gssapi coverage psutil oauthlib pysocks pyopenssl; do
 	$PACMAN --noconfirm --needed -S ${XPKG}python-${x}
 done
