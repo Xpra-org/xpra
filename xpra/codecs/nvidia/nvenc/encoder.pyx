@@ -2748,14 +2748,15 @@ cdef class Encoder:
             unknowns = []
             for x in range(presetCount):
                 preset_GUID = preset_GUIDs[x]
-                preset_name = CODEC_PRESETS_GUIDS.get(guidstr(preset_GUID))
+                preset_str = guidstr(preset_GUID)
+                preset_name = CODEC_PRESETS_GUIDS.get(preset_str, "")
                 if DEBUG_API:
-                    log("* %s : %s", guidstr(preset_GUID), preset_name or "unknown!")
+                    log("* %s : %s", preset_str, preset_name or "unknown!")
                 if preset_name is None:
                     global UNKNOWN_PRESETS
-                    if preset_name not in UNKNOWN_PRESETS:
-                        UNKNOWN_PRESETS.append(guidstr(preset_GUID))
-                        unknowns.append(guidstr(preset_GUID))
+                    if preset_str not in UNKNOWN_PRESETS:
+                        UNKNOWN_PRESETS.append(preset_str)
+                        unknowns.append(preset_str)
                 else:
                     presetConfig = self.get_preset_config(preset_name, encode_GUID, preset_GUID)
                     if presetConfig!=NULL:
@@ -2767,7 +2768,7 @@ cdef class Encoder:
                             log("* %-20s P frame interval=%i, gop length=%-10s", preset_name or "unknown!", encConfig.frameIntervalP, gop)
                         finally:
                             free(presetConfig)
-                    presets[preset_name] = guidstr(preset_GUID)
+                    presets[preset_name] = preset_str
             if len(unknowns)>0:
                 log.warn("Warning: found some unknown NVENC presets:")
                 for x in unknowns:
