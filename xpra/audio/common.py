@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.util import csv, engs
+from xpra.util import csv
 from xpra.log import Logger
 log = Logger("audio")
 
@@ -61,9 +61,9 @@ def audio_option_or_all(name:str, options, all_values:tuple[str,...]) -> tuple[s
                     v.append(o)
         if invalid_options:
             if all_values:
-                log.warn("Warning: invalid value%s for '%s': %s", engs(invalid_options), name, csv(invalid_options))
-                log.warn(" valid option%s: %s", engs(all_values), csv(all_values))
+                log.warn("Warning: invalid values for {name!r}: "+csv(invalid_options))
+                log.warn(" valid options: "+csv(all_values))
             else:
-                log.warn("Warning: no '%ss' available", name)
+                log.warn("Warning: no {name!r} available")
     log("%s=%s", name, csv(v))
     return tuple(v)

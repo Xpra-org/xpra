@@ -16,7 +16,7 @@ from typing import Any
 
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import bytestostr, umask_context, POSIX, WIN32
-from xpra.util import typedict, csv, envint, envbool, engs, u
+from xpra.util import typedict, csv, envint, envbool, u
 from xpra.scripts.config import parse_bool, parse_with_unit
 from xpra.net.common import PacketType
 from xpra.simple_stats import std_unit
@@ -790,8 +790,7 @@ class FileTransferHandler(FileTransferAttributes):
         send_id = uuid.uuid4().hex
         if len(self.pending_send_data)>=MAX_CONCURRENT_FILES:
             filelog.warn("Warning: %s dropped", action)
-            filelog.warn(" %i transfer%s already waiting for a response",
-                         len(self.pending_send_data), engs(self.pending_send_data))
+            filelog.warn(" %i transfers already waiting for a response", len(self.pending_send_data))
             return ""
         spd = SendPendingData(dtype, url, mimetype, data, filesize, printit, openit, options or {})
         self.pending_send_data[send_id] = spd

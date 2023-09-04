@@ -18,7 +18,7 @@ from cups import Connection  # @UnresolvedImport
 
 from xpra.common import DEFAULT_XDG_DATA_DIRS
 from xpra.os_util import OSX, bytestostr
-from xpra.util import engs, envint, envbool, parse_simple_dict
+from xpra.util import envint, envbool, parse_simple_dict
 from xpra.log import Logger
 
 log = Logger("printing")
@@ -433,7 +433,7 @@ def print_files(printer, filenames, title, options):
         log("calling printFiles on %s", conn)
         printpid = conn.printFiles(printer, filenames, title, actual_options)
     if printpid<=0:
-        log.error("Error: pycups printing on '%s' failed for file%s", printer, engs(filenames))
+        log.error(f"Error: pycups printing on {printer!r} failed for files")
         for f in filenames:
             log.error(" %s", f)
         log.error(" using cups server connection: %s", conn)

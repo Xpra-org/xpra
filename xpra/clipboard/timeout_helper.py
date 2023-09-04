@@ -8,7 +8,7 @@ from typing import Any
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.clipboard.core import ClipboardProtocolHelperCore, ClipboardProxyCore
-from xpra.util import repr_ellipsized, ellipsizer, envint, engs
+from xpra.util import repr_ellipsized, ellipsizer, envint
 from xpra.log import Logger
 from xpra.platform.features import CLIPBOARD_GREEDY
 
@@ -128,7 +128,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         #timeout all pending requests
         cor = self._clipboard_outstanding_requests
         if cor:
-            log.info("cancelling %i clipboard request%s", len(cor), engs(cor))
+            log.info("cancelling %i clipboard requests", len(cor))
             self._clipboard_outstanding_requests = {}
             for request_id in cor:
                 self._clipboard_got_contents(request_id)

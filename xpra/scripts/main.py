@@ -24,7 +24,7 @@ from collections.abc import Callable, Iterable
 from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import (
-    csv, envbool, envint, nonl, pver, engs,
+    csv, envbool, envint, nonl, pver,
     noerr, sorted_nicely, typedict, stderr_print,
     )
 from xpra.exit_codes import ExitCode, RETRY_EXIT_CODES, exit_str
@@ -3495,7 +3495,7 @@ def run_clean_displays(options, args) -> int:
                             pass
                         display_pids[display] = (pid, cmd)
     if not display_pids:
-        print("No pids found for dead display%s %s" % (engs(dead_displays), csv(sorted_nicely(dead_displays)),))
+        print("No pids found for dead displays "+csv(sorted_nicely(dead_displays)))
         if args:
             print(" matching %s" % csv(args))
         return ExitCode.FILE_NOT_FOUND

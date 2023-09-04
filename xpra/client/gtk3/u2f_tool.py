@@ -8,7 +8,6 @@ import sys
 import glob
 import os.path
 
-from xpra.util import engs
 from xpra.os_util import hexstr, osexpand, load_binary_file, use_gui_prompt, bytestostr
 from xpra.platform.paths import get_user_conf_dirs
 from xpra.log import Logger
@@ -59,7 +58,7 @@ def main():
         for d in get_user_conf_dirs():
             public_key_filenames += glob.glob(os.path.join(d, "u2f*.pub"))
         if public_key_filenames:
-            info(" found %i existing public key%s" % (len(public_key_filenames), engs(public_key_filenames)),
+            info(" found %i existing public keys" % (len(public_key_filenames)),
                  *((" - %s" % x) for x in public_key_filenames))
 
         #pick the first directory:

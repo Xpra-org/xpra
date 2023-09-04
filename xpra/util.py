@@ -951,16 +951,6 @@ def nonl(x) -> str:
         return ""
     return str(x).replace("\n", "\\n").replace("\r", "\\r")
 
-def engs(v) -> str:
-    if isinstance(v, int):
-        l = v
-    else:
-        try:
-            l = len(v)
-        except TypeError:
-            return ""
-    return "s" if l!=1 else ""
-
 
 def obsc(v) -> str:
     OBSCURE_PASSWORDS = envbool("XPRA_OBSCURE_PASSWORDS", True)

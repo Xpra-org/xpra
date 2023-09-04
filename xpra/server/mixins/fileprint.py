@@ -12,7 +12,7 @@ from typing import Any
 
 from xpra.simple_stats import to_std_unit, std_unit
 from xpra.os_util import bytestostr, osexpand, load_binary_file, WIN32, POSIX
-from xpra.util import u, engs, repr_ellipsized, NotificationID
+from xpra.util import u, repr_ellipsized, NotificationID
 from xpra.net.common import PacketType
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -216,7 +216,7 @@ class FilePrintServer(StubServerMixin):
         else:
             l = printlog.info
         unit_str, v = to_std_unit(len(file_data), unit=1024)
-        l("'%s' (%i%sB) sent to %i client%s for printing", title or filename, v, unit_str, sent, engs(sent))
+        l("'%s' (%i%sB) sent to %i clients for printing", title or filename, v, unit_str, sent)
 
     def _save_print_job(self, filename, file_data) -> None:
         save_filename = os.path.join(SAVE_PRINT_JOBS, filename)

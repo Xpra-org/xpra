@@ -51,14 +51,14 @@ def main(argv):
         enable_debug_for("webcam")
         add_debug_category("webcam")
     run = "-r" in argv or "--run" in argv
-    from xpra.util import engs, print_nested_dict
+    from xpra.util import print_nested_dict
     from xpra.platform import program_context
     with program_context("Webcam Info", "Webcam Info"):
         devices = get_virtual_video_devices() or {}
-        log.info("Found %i virtual video device%s:", len(devices), engs(devices))
+        log.info("Found %i virtual video devices:", len(devices))
         print_nested_dict(devices)
         all_devices = get_all_video_devices() or {}
-        log.info("Found %i video device%s in total:", len(all_devices), engs(all_devices))
+        log.info("Found %i video devices in total:", len(all_devices))
         print_nested_dict(all_devices)
 
         if run:

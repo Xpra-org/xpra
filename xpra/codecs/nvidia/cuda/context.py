@@ -15,7 +15,7 @@ from typing import Any
 
 from xpra.codecs.nvidia.nv_util import numpy_import_lock
 from xpra.codecs.constants import TransientCodecException
-from xpra.util import engs, print_nested_dict, envint, envbool, csv, first_time, typedict
+from xpra.util import print_nested_dict, envint, envbool, csv, first_time, typedict
 from xpra.platform.paths import (
     get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs,
     get_resources_dir, get_app_dir,
@@ -290,8 +290,8 @@ def check_device(i:int, device, min_compute:int=0) -> bool:
         if i==0:
             #we print the list info "header" from inside the loop
             #so that the log output is bunched up together
-            log.info("CUDA %s / PyCUDA %s, found %s device%s:",
-                     ".".join([str(x) for x in get_version()]), pycuda.VERSION_TEXT, ngpus, engs(ngpus))
+            log.info("CUDA %s / PyCUDA %s, found %s devices:",
+                     ".".join([str(x) for x in get_version()]), pycuda.VERSION_TEXT, ngpus)
         log.info("  + %s (memory: %s%% free, compute: %s.%s)",
                  device_info(device), 100*free//total, SMmajor, SMminor)
         if SMmajor<2:
@@ -380,7 +380,7 @@ def select_best_free_memory(min_compute:int=0) -> tuple[int,Any]:
     for list_name, device_list in {"OK" : ok_devices, "failing" : nok_devices}.items():
         selected_device_id = -1
         selected_device = None
-        log("will test %s device%s from %s list: %s", len(device_list), engs(device_list), list_name, device_list)
+        log("will test %s devices from %s list: %s", len(device_list), list_name, device_list)
         for device_id in device_list:
             context = None
             dct = make_device_context(device_id)

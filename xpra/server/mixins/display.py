@@ -5,7 +5,7 @@
 
 from typing import Any
 
-from xpra.util import engs, log_screen_sizes, typedict
+from xpra.util import log_screen_sizes, typedict
 from xpra.os_util import bytestostr, is_Wayland
 from xpra.net.common import PacketType
 from xpra.version_util import parse_version, dict_version_trim
@@ -281,8 +281,8 @@ class DisplayManager(StubServerMixin):
             if ss.updated_desktop_size(root_w, root_h, max_w, max_h):
                 count +=1
         if count>0:
-            log.info("sent updated screen size to %s client%s: %sx%s (max %sx%s)",
-                     count, engs(count), root_w, root_h, max_w, max_h)
+            log.info("sent updated screen size to %s clients: %sx%s (max %sx%s)",
+                     count, root_w, root_h, max_w, max_h)
 
     def get_max_screen_size(self) -> tuple[int,int]:
         return self.get_root_window_size()

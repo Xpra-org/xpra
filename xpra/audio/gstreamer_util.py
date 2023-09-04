@@ -20,7 +20,7 @@ from xpra.audio.common import (
     MPEG4, MKA, OGG,
     )
 from xpra.os_util import WIN32, OSX, POSIX, bytestostr
-from xpra.util import csv, engs, parse_simple_dict, reverse_dict, envint, envbool
+from xpra.util import csv, parse_simple_dict, reverse_dict, envint, envbool
 from xpra.log import Logger
 
 log = Logger("audio", "gstreamer")
@@ -554,7 +554,7 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
         device_type_str += " monitor"
     #def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=["bell-window-system"])
     devices = get_pa_device_options(want_monitor_device, input_or_output)
-    log("found %i pulseaudio %s device%s: %s", len(devices), device_type_str, engs(devices), devices)
+    log("found %i pulseaudio %s devices: %s", len(devices), device_type_str, devices)
     if input_or_output is True:
         ignore = IGNORED_INPUT_DEVICES
     elif input_or_output is False:
@@ -602,7 +602,7 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
                 log.warn(" matched %i devices", len(matches))
         if filters or matches:
             if not matches:
-                log.warn("Warning: Pulseaudio %s device name filter%s:", device_type_str, engs(filters))
+                log.warn("Warning: Pulseaudio %s device name filters:", device_type_str)
                 log.warn(" %s", csv("'%s'" % x for x in filters))
                 log.warn(" did not match any of the devices found:")
                 for k,v in devices.items():
@@ -663,10 +663,10 @@ def get_directsound_source_defaults(device_name_match=None, want_monitor_device=
         from xpra.platform.win32.directsound import get_devices, get_capture_devices
         if not want_monitor_device:
             devices = get_devices()
-            log("DirectSoundEnumerate found %i device%s", len(devices), engs(devices))
+            log("DirectSoundEnumerate found %i devices", len(devices))
         else:
             devices = get_capture_devices()
-            log("DirectSoundCaptureEnumerate found %i device%s", len(devices), engs(devices))
+            log("DirectSoundCaptureEnumerate found %i devices", len(devices))
         names = []
         if devices:
             for guid, name in devices:

@@ -28,7 +28,7 @@ from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER, preforder
 from xpra.codecs.loader import has_codec
-from xpra.util import parse_scaling_value, engs, envint, envbool, csv, roundup, print_nested_dict, first_time, typedict
+from xpra.util import parse_scaling_value, envint, envbool, csv, roundup, print_nested_dict, first_time, typedict
 from xpra.log import Logger
 
 log = Logger("encoding")
@@ -1822,7 +1822,7 @@ class WindowVideoSource(WindowSource):
         if not self.is_cancelled():
             videolog("setup_pipeline(..) failed! took %.2fms", (end-start)*1000.0)
             videolog.error("Error: failed to setup a video pipeline for %s at %ix%i", src_format, width, height)
-            videolog.error(" tried the following option%s", engs(scores))
+            videolog.error(" tried the following options")
             for option in scores:
                 videolog.error(" %s", option)
         return False

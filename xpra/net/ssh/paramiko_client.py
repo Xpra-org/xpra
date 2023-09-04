@@ -26,7 +26,7 @@ from xpra.os_util import (
     umask_context,
     WIN32,
     )
-from xpra.util import envint, envbool, envfloat, engs, noerr, csv, stderr_print
+from xpra.util import envint, envbool, envfloat, noerr, csv, stderr_print
 from xpra.log import Logger
 
 #pylint: disable=import-outside-toplevel
@@ -589,7 +589,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
                         #no point in trying more keys
                         break
             if not transport.is_authenticated():
-                log.info("agent authentication failed, tried %i key%s", len(agent_keys), engs(agent_keys))
+                log.info("agent authentication failed, tried %i keys", len(agent_keys))
 
     def auth_publickey() -> None:
         log(f"trying public key authentication using {keyfiles}")

@@ -13,7 +13,7 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.os_util import pollwait, osexpand, OSX, POSIX
-from xpra.util import typedict, envbool, csv, engs, first_time
+from xpra.util import typedict, envbool, csv, first_time
 from xpra.net.common import PacketType
 from xpra.make_thread import start_thread
 from xpra.platform.info import get_username
@@ -305,9 +305,9 @@ class AudioServer(StubServerMixin):
                     try:
                         files = os.listdir(path)
                         if files:
-                            audiolog.error(" found %i file%s in '%s':", len(files), engs(files), path)
+                            audiolog.error(f" found %i files in {path!r}:", len(files))
                             for f in files:
-                                audiolog.error(" - '%s'", f)
+                                audiolog.error(f" - {f!r}")
                     except OSError:
                         audiolog.error("cleanup_pulseaudio() error accessing '%s'", path, exc_info=True)
 

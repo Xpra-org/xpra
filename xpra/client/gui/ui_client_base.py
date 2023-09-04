@@ -27,7 +27,7 @@ from xpra.os_util import (
     get_frame_info, get_info_env, get_sysconfig_info,
     )
 from xpra.util import (
-    std, envbool, envint, typedict, updict, repr_ellipsized, ellipsizer, log_screen_sizes, engs, csv,
+    std, envbool, envint, typedict, updict, repr_ellipsized, ellipsizer, log_screen_sizes, csv,
     merge_dicts, NotificationID, ConnectionMessage,
     )
 from xpra.scripts.config import parse_bool
@@ -552,9 +552,9 @@ class UIXpraClient(ClientBaseClass):
             trays = sum(1 for w in windows if w.is_tray())
             wins = sum(1 for w in windows if not w.is_tray())
             if wins:
-                msg += ", %i window%s" % (wins, engs(wins))
+                msg += f", {wins} windows"
             if trays:
-                msg += ", %i tray%s" % (trays, engs(trays))
+                msg += f", {trays} tray"
         log.info(msg)
 
     def _process_new_window(self, packet : PacketType):

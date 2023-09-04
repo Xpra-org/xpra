@@ -11,7 +11,7 @@ from typing import Deque, Any
 
 from collections import deque
 from xpra.simple_stats import get_list_stats, get_weighted_list_stats
-from xpra.util import engs, csv, envint
+from xpra.util import csv, envint
 from xpra.server.cystats import (logp,      #@UnresolvedImport
     calculate_time_weighted_average,        #@UnresolvedImport
     calculate_size_weighted_average,        #@UnresolvedImport
@@ -255,7 +255,7 @@ class WindowPerformanceStatistics:
             log("get_client_backlog missing acks: %s", drop_missing_acks)
             #this should never happen...
             if drop_missing_acks:
-                log.error("Error: expiring %i missing damage ACK%s,", len(drop_missing_acks), engs(drop_missing_acks))
+                log.error("Error: expiring %i missing damage ACKs,", len(drop_missing_acks))
                 log.error(" connection may be closed or closing,")
                 log.error(" sequence numbers missing: %s", csv(drop_missing_acks))
                 for sequence in drop_missing_acks:

@@ -8,7 +8,6 @@ import os.path
 from typing import Any
 
 from xpra.os_util import OSX, POSIX, bytestostr
-from xpra.util import engs
 from xpra.net.common import PacketType
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -116,7 +115,7 @@ class WebcamServer(StubServerMixin):
             return 0
         check_virtual_dir()
         devices = get_virtual_video_devices()
-        log.info("found %i virtual video device%s for webcam forwarding", len(devices), engs(devices))
+        log.info("found %i virtual video devices for webcam forwarding", len(devices))
         return len(devices)
 
     def _process_webcam_start(self, proto, packet : PacketType) -> None:
