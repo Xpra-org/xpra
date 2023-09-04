@@ -398,18 +398,6 @@ cdef extern from "nvEncodeAPI.h":
     GUID NV_ENC_HEVC_PROFILE_FREXT_GUID
 
     #Presets:
-    GUID NV_ENC_PRESET_DEFAULT_GUID
-    GUID NV_ENC_PRESET_HP_GUID
-    GUID NV_ENC_PRESET_HQ_GUID
-    GUID NV_ENC_PRESET_BD_GUID
-    #V3 ONLY PRESETS:
-    GUID NV_ENC_PRESET_LOW_LATENCY_DEFAULT_GUID
-    GUID NV_ENC_PRESET_LOW_LATENCY_HQ_GUID
-    GUID NV_ENC_PRESET_LOW_LATENCY_HP_GUID
-    #V4 ONLY PRESETS:
-    GUID NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID
-    GUID NV_ENC_PRESET_LOSSLESS_HP_GUID
-    #V10:
     GUID NV_ENC_PRESET_P1_GUID  #FC0A8D3E-45F8-4CF8-80C7-298871590EBF
     GUID NV_ENC_PRESET_P2_GUID  #F581CFB8-88D6-4381-93F0-DF13F9C27DAB
     GUID NV_ENC_PRESET_P3_GUID  #36850110-3A07-441F-94D5-3670631F91F6
@@ -1255,23 +1243,33 @@ for codec_guid, profiles in CODEC_PROFILES_GUIDS.items():
         PROFILE_STR[profile_guid] = profile_name
 
 
-#this one is not defined anywhere but in the OBS source
-#(I think they have access to information we do not have):
-#GUID NV_ENC_PRESET_STREAMING = c_parseguid("7ADD423D-D035-4F6F-AEA5-50885658643C")
+# these presets have been deprecated for a while,
+# and are finally removed in SDK v12.2
+# but unfortunately they're the only ones that still work!
+# see https://github.com/Xpra-org/xpra/issues/3873
+PRESET_STREAMING        = "7ADD423D-D035-4F6F-AEA5-50885658643C"
+PRESET_DEFAULT          = "B2DFB705-4EBD-4C49-9B5F-24A777D3E587"
+PRESET_HP_GUID          = "60E4C59F-E846-4484-A56D-CD45BE9FDDF6"
+PRESET_HQ_GUID          = "34DBA71D-A77B-4B8F-9C3E-B6D5DA24C012"
+PRESET_BD_GUID          = "82E3E450-BDBB-4E40-989C-82A90DF9EF32"
+PRESET_LOW_LATENCY      = "49DF21C5-6DFA-4FEB-9787-6ACC9EFFB726"
+PRESET_LOW_LATENCY_HQ   = "C5F733B9-EA97-4CF9-BEC2-BF78A74FD105"
+PRESET_LOW_LATENCY_HP   = "67082A44-4BAD-48FA-98EA-93056D150A58"
+PRESET_LOSSLESS         = "D5BFB716-C604-44E7-9BB8-DEA5510FC3AC"
+PRESET_LOSSLESS_HP      = "149998E7-2364-411D-82EF-179888093409"
+
 
 CODEC_PRESETS_GUIDS = {
-    guidstr(NV_ENC_PRESET_DEFAULT_GUID)                     : "default",
-    guidstr(NV_ENC_PRESET_HP_GUID)                          : "hp",
-    guidstr(NV_ENC_PRESET_HQ_GUID)                          : "hq",
-    guidstr(NV_ENC_PRESET_BD_GUID)                          : "bd",
-    guidstr(NV_ENC_PRESET_LOW_LATENCY_DEFAULT_GUID)         : "low-latency",
-    guidstr(NV_ENC_PRESET_LOW_LATENCY_HQ_GUID)              : "low-latency-hq",
-    guidstr(NV_ENC_PRESET_LOW_LATENCY_HP_GUID)              : "low-latency-hp",
-    #new in SDK4:
-    guidstr(NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID)            : "lossless",
-    guidstr(NV_ENC_PRESET_LOSSLESS_HP_GUID)                 : "lossless-hp",
-    "7ADD423D-D035-4F6F-AEA5-50885658643C"                  : "streaming",
-    #SDK 10:
+    PRESET_STREAMING    : "streaming",
+    PRESET_DEFAULT      : "default",
+    PRESET_HP_GUID      : "hp",
+    PRESET_HQ_GUID      : "hq",
+    PRESET_BD_GUID      : "bd",
+    PRESET_LOW_LATENCY  : "low-latency",
+    PRESET_LOW_LATENCY_HQ : "low-latency-hq",
+    PRESET_LOW_LATENCY_HP : "low-latency-hp",
+    PRESET_LOSSLESS     : "lossless",
+    PRESET_LOSSLESS_HP  : "lossless-hp",
     guidstr(NV_ENC_PRESET_P1_GUID)  : "P1",
     guidstr(NV_ENC_PRESET_P2_GUID)  : "P2",
     guidstr(NV_ENC_PRESET_P3_GUID)  : "P3",
@@ -1279,7 +1277,7 @@ CODEC_PRESETS_GUIDS = {
     guidstr(NV_ENC_PRESET_P5_GUID)  : "P5",
     guidstr(NV_ENC_PRESET_P6_GUID)  : "P6",
     guidstr(NV_ENC_PRESET_P7_GUID)  : "P7",
-    }
+}
 
 YUV444_PRESETS = ("high-444", "lossless", "lossless-hp",)
 LOSSLESS_PRESETS = ("lossless", "lossless-hp",)
