@@ -118,7 +118,7 @@ class ServerBase(ServerBaseClass):
         self.sharing : Optional[bool] = None
         self.lock : Optional[bool] = None
 
-        self.start_after_connect_done = True
+        self.start_after_connect_done = False
         self.bandwidth_detection = False
         self.dpi = self.xdpi = self.ydpi = 0
         self.double_click_time = -1
