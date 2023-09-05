@@ -1047,18 +1047,18 @@ class GLWindowBackingBase(WindowBackingBase):
     def pixels_for_upload(self, img_data) -> tuple[str, Any]:
         #prepare the pixel buffer for upload:
         if isinstance(img_data, memoryview):
-            if not zerocopy_upload:
-                #not safe, make a copy :(
-                return "copy:memoryview.tobytes", img_data.tobytes()
-            return "zerocopy:memoryview", img_data
-        if isinstance(img_data, bytes) and zerocopy_upload:
-            #we can zerocopy if we wrap it:
-            return "zerocopy:bytes-as-memoryview", memoryview(img_data)
+            if zerocopy_upload:
+                return "zerocopy:memoryview", img_data
+            #not safe, make a copy :(
+            return "copy:memoryview.tobytes", img_data.tobytes()
         if isinstance(img_data, bytes):
+            if zerocopy_upload:
+                #we can zerocopy if we wrap it:
+                return "zerocopy:bytes-as-memoryview", memoryview(img_data)
             return "copy:bytes", img_data
         if hasattr(img_data, "raw"):
             return "zerocopy:mmap", img_data.raw
-        # everything else: copy to bytes (aka str):
+        # everything else: copy to bytes:
         return f"copy:bytes({type(img_data)})", strtobytes(img_data)
 
     def set_alignment(self, width : int, rowstride : int, pixel_format:str) -> None:
