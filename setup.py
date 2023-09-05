@@ -1516,7 +1516,15 @@ if WIN32:
                             }
         #cx_Freeze v5 workarounds:
         if nvenc_ENABLED or nvdec_ENABLED or nvfbc_ENABLED:
+            external_includes.append("numpy")
             add_packages("numpy.core._methods", "numpy.lib.format")
+        else:
+            remove_packages(
+                "numpy",
+                "unittest",
+                "difflib",  # avoid numpy warning (not an error)
+                "pydoc",
+            )
 
         setup_options["options"] = {"build_exe" : cx_freeze_options}
         executables = []
@@ -1643,12 +1651,6 @@ if WIN32:
         external_includes.append("cv2")
     else:
         remove_packages("cv2")
-
-    if nvenc_ENABLED or nvdec_ENABLED or nvfbc_ENABLED:
-        external_includes.append("numpy")
-    else:
-        remove_packages("unittest", "difflib",  #avoid numpy warning (not an error)
-                        "pydoc")
 
     #add subset of PyOpenGL modules (only when installing):
     if opengl_ENABLED and "install_exe" in sys.argv:
@@ -1896,8 +1898,7 @@ else:
         remove_packages("xpra.platform.win32", "xpra.platform.posix")
         #to support GStreamer 1.x we need this:
         modules += ["importlib", "mimetypes"]
-        #for PyOpenGL:
-        add_packages("numpy.core._methods", "numpy.lib.format")
+        remove_packages("numpy")
     else:
         add_packages("xpra.platform.posix")
         remove_packages("xpra.platform.win32", "xpra.platform.darwin")
