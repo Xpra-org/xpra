@@ -3,6 +3,7 @@
 # Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 
 import sys
+import warnings
 from collections import deque
 import gi
 
@@ -92,7 +93,9 @@ class KeyboardStateInfoWindow:
         }
 
     def populate_modifiers(self, *_args):
-        (x, y, current_mask) = self.window.get_root_window().get_pointer()[-3:]
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            x, y, current_mask = self.window.get_root_window().get_pointer()[-3:]
         self.mouse.set_text("%s %s" % (x, y))
         modifiers = self.mask_to_names(current_mask, self.modifier_names)
         self.modifiers.set_text(str(modifiers))
