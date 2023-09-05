@@ -392,6 +392,11 @@ for x in `ls *dll`; do
 	find ./ -mindepth 2 -name "${x}" -exec rm {} \;
 done
 
+#remove codecs we don't need:
+rm -f ./libSvt*
+rm -f ./libx265*
+
+
 #remove PIL loaders we don't use:
 echo "* removing unnecessary PIL plugins:"
 pushd "./PIL"
