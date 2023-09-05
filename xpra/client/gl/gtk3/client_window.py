@@ -6,7 +6,7 @@
 
 from collections import namedtuple
 
-from xpra.client.gtk3.client_window import GTK3ClientWindow
+from xpra.client.gtk3.client_window import ClientWindow
 from xpra.gtk_common.gtk_util import set_visual
 from xpra.util import typedict, envbool
 from xpra.log import Logger
@@ -19,7 +19,7 @@ DrawEvent = namedtuple("DrawEvent", "area")
 MONITOR_REINIT = envbool("XPRA_OPENGL_MONITOR_REINIT", False)
 
 
-class GLClientWindowBase(GTK3ClientWindow):
+class GLClientWindowBase(ClientWindow):
 
     def __repr__(self):
         return f"GLClientWindow({self.wid} : {self._backing})"
@@ -104,7 +104,7 @@ class GLClientWindowBase(GTK3ClientWindow):
 
     def do_configure_event(self, event) -> None:
         log("GL do_configure_event(%s)", event)
-        GTK3ClientWindow.do_configure_event(self, event)
+        ClientWindow.do_configure_event(self, event)
         self._backing.paint_screen = True
 
     def destroy(self) -> None:

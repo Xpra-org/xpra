@@ -22,7 +22,6 @@ def check_support(force_enable=False):
 
 
 class GLClientWindow(GLClientWindowBase):
-    __gsignals__ = GLClientWindowBase.__common_gsignals__
 
     def get_backing_class(self):
         return GLDrawingArea
