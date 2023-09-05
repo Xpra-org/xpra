@@ -24,6 +24,7 @@ if [ "${CLIENT_ONLY}" == "1" ]; then
 	BUNDLE_DESKTOPLOGON=${BUNDLE_DESKTOPLOGON:-0}
 	DO_TESTS=${DO_TESTS:-0}
 	DO_SERVICE=${DO_SERVICE:-0}
+	DO_NUMPY=${DO_NUMPY:-0}
 else
 	BUNDLE_OPENSSH=${BUNDLE_OPENSSH:-1}
 	BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
@@ -31,6 +32,7 @@ else
 	BUNDLE_DESKTOPLOGON=${BUNDLE_DESKTOPLOGON:-1}
 	DO_TESTS=${DO_TESTS:-1}
 	DO_SERVICE=${DO_SERVICE:-1}
+	DO_NUMPY=${DO_NUMPY:-$DO_CUDA}
 fi
 ZIP_MODULES=${ZIP_MODULES:-1}
 
@@ -347,9 +349,14 @@ done
 #liblz4 ends up in the wrong place and duplicated,
 #keep just one copy in ./lib
 find lib/lz4 -name "liblz4.dll" -exec mv {} ./lib/ \;
-if [ "${CLIENT_ONLY}" == "1" ]; then
+if [ "${DO_CUDA}" == "0" ]; then
+	rm -fr ./lib/pycuda
+	rm -f ./etc/xpra/cuda.conf
+fi
+if [ "${DO_NUMPY}" == "0" ]; then
 	rm -fr ./lib/numpy
 else
+	rm -fr ./lib/numpy/_pyinstaller
 	for x in openblas gfortran quadmath; do
 		mv -f ./lib/numpy/core/lib$x*.dll ./lib/
 		mv -f ./lib/numpy/linalg/lib$x*.dll ./lib/

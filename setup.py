@@ -1520,10 +1520,12 @@ if WIN32:
         #cx_Freeze v5 workarounds:
         if nvenc_ENABLED or nvdec_ENABLED or nvfbc_ENABLED:
             external_includes.append("numpy")
+            external_includes.append("pycuda")
             add_packages("numpy.core._methods", "numpy.lib.format")
         else:
             remove_packages(
                 "numpy",
+                "pycuda",
                 "unittest",
                 "difflib",  # avoid numpy warning (not an error)
                 "pydoc",
