@@ -8,7 +8,6 @@
 # Based on code from winswitch, itself based on "win32gui_taskbar demo"
 
 import os
-import ctypes
 from ctypes import (
     Structure, byref, c_void_p, sizeof, POINTER,
     get_last_error, WinError, WinDLL, HRESULT,  # @UnresolvedImport
@@ -43,7 +42,6 @@ log = Logger("tray", "win32")
 geomlog = Logger("tray", "geometry")
 
 log("loading ctypes NotifyIcon functions")
-sprintf = ctypes.cdll.msvcrt.sprintf
 
 
 TRAY_ALPHA = envbool("XPRA_TRAY_ALPHA", True)
@@ -149,19 +147,19 @@ WM_XBUTTONUP    = 0x020C
 WM_XBUTTONDBLCLK= 0x020D
 
 BUTTON_MAP : dict[int, list] = {
-            win32con.WM_LBUTTONDOWN     : [(1, 1)],
-            win32con.WM_LBUTTONUP       : [(1, 0)],
-            win32con.WM_MBUTTONDOWN     : [(2, 1)],
-            win32con.WM_MBUTTONUP       : [(2, 0)],
-            win32con.WM_RBUTTONDOWN     : [(3, 1)],
-            win32con.WM_RBUTTONUP       : [(3, 0)],
-            win32con.WM_LBUTTONDBLCLK   : [(1, 1), (1, 0)],
-            win32con.WM_MBUTTONDBLCLK   : [(2, 1), (2, 0)],
-            win32con.WM_RBUTTONDBLCLK   : [(3, 1), (3, 0)],
-            WM_XBUTTONDOWN              : [(4, 1)],
-            WM_XBUTTONUP                : [(4, 0)],
-            WM_XBUTTONDBLCLK            : [(4, 1), (4, 0)],
-            }
+    win32con.WM_LBUTTONDOWN     : [(1, 1)],
+    win32con.WM_LBUTTONUP       : [(1, 0)],
+    win32con.WM_MBUTTONDOWN     : [(2, 1)],
+    win32con.WM_MBUTTONUP       : [(2, 0)],
+    win32con.WM_RBUTTONDOWN     : [(3, 1)],
+    win32con.WM_RBUTTONUP       : [(3, 0)],
+    win32con.WM_LBUTTONDBLCLK   : [(1, 1), (1, 0)],
+    win32con.WM_MBUTTONDBLCLK   : [(2, 1), (2, 0)],
+    win32con.WM_RBUTTONDBLCLK   : [(3, 1), (3, 0)],
+    WM_XBUTTONDOWN              : [(4, 1)],
+    WM_XBUTTONUP                : [(4, 0)],
+    WM_XBUTTONDBLCLK            : [(4, 1), (4, 0)],
+}
 
 
 class win32NotifyIcon:
@@ -275,7 +273,6 @@ class win32NotifyIcon:
             log.error("Error: failed to delete tray window")
             log.estr(e)
 
-
     def get_geometry(self):
         #we can only use this if there is a single monitor
         #because multi-monitor coordinates may have offsets
@@ -388,17 +385,18 @@ class win32NotifyIcon:
 
 
     def OnTrayRestart(self, hwnd=0, msg=0, wparam=0, lparam=0) -> None:
+        rfn = self.reset_function
         try:
             #re-create the tray window:
             self.delete_tray_window()
             self.create_tray_window()
             #now try to repaint the tray:
-            rfn = self.reset_function
             log("OnTrayRestart%s reset function: %s", (hwnd, msg, wparam, lparam), rfn)
             if rfn:
                 rfn[0](*rfn[1:])
         except Exception as e:
             log.error("Error: cannot reset tray icon")
+            log.error(f" using {rfn}")
             log.estr(e)
 
     def OnCommand(self, hwnd, msg, wparam, lparam):
@@ -491,9 +489,16 @@ def get_notifyicon_wnd_class():
     return _notifyicon_wnd_class
 
 
-def main():
+def main(args):
     from xpra.platform.win32.common import user32
+    from ctypes import pointer
+    from ctypes.wintypes import MSG
 
+    if "-v" in args:
+        from xpra.log import enable_debug_for
+        enable_debug_for("all")
+
+    log.warn("main")
     def click_callback(_button, _pressed):
         menu = CreatePopupMenu()
         AppendMenu(menu, win32con.MF_STRING, 1024, "Generate balloon")
@@ -527,24 +532,28 @@ def main():
         else:
             print("OnCommand for ID=%s" % cid)
 
-    def win32_quit():
+    def win32_quit(*_args):
         PostQuitMessage(0) # Terminate the app.
 
-    from xpra.platform.paths import get_app_dir
-    idir = os.path.abspath(get_app_dir())
-    wdir = os.path.join(idir, "icons")
-    if os.path.exists(wdir):
-        idir = wdir
-    iconPathName = os.path.join(idir, "xpra.ico")
-    tray = win32NotifyIcon(0, "test", move_callbacks=noop, click_callback=click_callback, exit_callback=win32_quit,
-                           command_callback=command_callback, iconPathName=iconPathName)
+    from xpra.platform.paths import get_icon_dir, get_app_dir
+    for idir in (get_icon_dir(), get_app_dir(), "fs/share/xpra/icons"):
+        ipath = os.path.abspath(os.path.join(idir, "xpra.ico"))
+        if os.path.exists(ipath):
+            break
+    tray = win32NotifyIcon(999, "test", move_callbacks=noop, click_callback=click_callback, exit_callback=win32_quit,
+                           command_callback=command_callback, iconPathName=ipath)
+    import signal
+    signal.signal(signal.SIGINT, win32_quit)
+    signal.signal(signal.SIGTERM, win32_quit)
+
     #pump messages:
-    msg = ctypes.wintypes.MSG()
-    pMsg = ctypes.pointer(msg)
+    msg = MSG()
+    pMsg = pointer(msg)
     while user32.GetMessageA(pMsg, win32con.NULL, 0, 0) != 0:
         user32.TranslateMessage(pMsg)
         user32.DispatchMessageA(pMsg)
 
 
 if __name__=='__main__':
-    main()
+    import sys
+    main(sys.argv)
