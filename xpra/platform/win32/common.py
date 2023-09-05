@@ -287,6 +287,10 @@ DefWindowProcA.restype = INT
 DefWindowProcW = user32.DefWindowProcW
 DefWindowProcW.argtypes = [HWND, UINT, WPARAM, LPARAM]
 DefWindowProcW.restype = INT
+WNDPROC = WINFUNCTYPE(LRESULT, HWND, UINT, WPARAM, LPARAM)
+CallWindowProcW = user32.CallWindowProcW
+CallWindowProcW.argtypes = [WNDPROC, HWND, UINT, WPARAM, LPARAM]
+CallWindowProcW.restype = LRESULT
 MessageBoxA = user32.MessageBoxA
 MessageBoxA.restype = INT
 MessageBoxA.argtypes = [HWND, LPCTSTR, LPCTSTR, UINT]
@@ -294,7 +298,11 @@ GetSystemMetrics = user32.GetSystemMetrics
 GetSystemMetrics.restype = INT
 GetSystemMetrics.argtypes = [INT]
 SetWindowLongW = user32.SetWindowLongW
+SetWindowLongW.restype = LONG
+SetWindowLongW.argtypes = [HWND, INT, WNDPROC]
 GetWindowLongW = user32.GetWindowLongW
+GetWindowLongW.restype = LONG
+GetWindowLongW.argtypes = [HWND, INT]
 ClipCursor = user32.ClipCursor
 ClipCursor.restype = BOOL
 GetCursorPos = user32.GetCursorPos
@@ -386,6 +394,8 @@ LoadIconA.restype = HICON
 #can also pass int as second arg, so don't declare argtypes:
 #LoadIconA.argtypes = [HINSTANCE, LPCSTR]
 RegisterWindowMessageA = user32.RegisterWindowMessageA
+RegisterWindowMessageA.restype = UINT
+RegisterWindowMessageA.argtypes = [LPCSTR]
 UpdateWindow = user32.UpdateWindow
 UpdateWindow.restype = BOOL
 UpdateWindow.argtypes = [HWND]
@@ -683,8 +693,6 @@ def GetIntSystemParametersInfo(key):
         return None
     return rv.value
 
-
-WNDPROC = WINFUNCTYPE(LRESULT, HWND, UINT, WPARAM, LPARAM)
 
 class WNDCLASSEX(Structure):
     _fields_ = [

@@ -8,7 +8,6 @@
 from typing import Callable, Dict
 from ctypes import (
     Structure, cast, POINTER,
-    WinDLL,  # @UnresolvedImport
     )
 from ctypes.wintypes import POINT
 
@@ -16,15 +15,10 @@ from xpra.util import envbool
 from xpra.log import Logger
 from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 from xpra.platform.win32 import constants as win32con
-from xpra.platform.win32.common import WNDPROC
-
-
-user32 = WinDLL("user32", use_last_error=True)
-GetSystemMetrics = user32.GetSystemMetrics
-#use ctypes to ensure we call the "W" version:
-SetWindowLongW = user32.SetWindowLongW
-GetWindowLongW = user32.GetWindowLongW
-CallWindowProcW = user32.CallWindowProcW
+from xpra.platform.win32.common import (
+    WNDPROC,
+    GetWindowLongW, SetWindowLongW, GetSystemMetrics, CallWindowProcW,
+)
 
 
 log = Logger("win32", "window", "util")
@@ -82,7 +76,10 @@ class Win32Hooks:
     def setup(self) -> None:
         assert self._oldwndproc is None
         self._newwndproc = WNDPROC(self._wndproc)
-        self._oldwndproc = SetWindowLongW(self._hwnd, win32con.GWL_WNDPROC, self._newwndproc)
+        try:
+            self._oldwndproc = SetWindowLongW(self._hwnd, win32con.GWL_WNDPROC, self._newwndproc)
+        except Exception:
+            log.error(f"Error setting up window hook for {self._hwnd}", exc_info=True)
 
     def on_getminmaxinfo(self, hwnd:int, msg, wparam:int, lparam:int):
         if (self.min_size or self.max_size) and lparam:
