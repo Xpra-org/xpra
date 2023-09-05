@@ -95,28 +95,10 @@ def create_unix_domain_socket(sockpath:str, socket_permissions:int=0o600):
                 pass
     return listener, cleanup_socket
 
-def has_dual_stack() -> bool:
-    """
-        Return True if kernel allows creating a socket which is able to
-        listen for both IPv4 and IPv6 connections.
-        If *sock* is provided the check is made against it.
-    """
-    try:
-        assert socket.AF_INET6 and socket.IPPROTO_IPV6 and socket.IPV6_V6ONLY
-    except AttributeError:
-        return False
-    try:
-        import contextlib
-        sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-        with contextlib.closing(sock):
-            sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, False)
-            return True
-    except OSError:
-        return False
 
 def hosts(host_str:str) -> list[str]:
     if host_str=="*":
-        if has_dual_stack():
+        if socket.has_dualstack_ipv6():
             #IPv6 will also listen for IPv4:
             return ["::"]
         #no dual stack, so we have to listen on both IPv4 and IPv6 explicitly:
