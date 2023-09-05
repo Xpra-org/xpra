@@ -33,7 +33,7 @@ except ImportError as e:
 
 import xpra
 from xpra.os_util import (
-    get_status_output, load_binary_file, get_distribution_version_id,
+    get_status_output, load_binary_file,
     getuid,
     BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD,
     is_Ubuntu, is_Debian, is_Fedora,
@@ -652,7 +652,7 @@ if modules_ENABLED:
 #*******************************************************************************
 # Utility methods for building with Cython
 
-def add_cython_ext(*args, **kwargs):
+def do_add_cython_ext(*args, **kwargs):
     if "--no-compile" in sys.argv and not ("build" in sys.argv and "install" in sys.argv):
         return
     if not cython_ENABLED:
@@ -667,6 +667,9 @@ def add_cython_ext(*args, **kwargs):
     from Cython.Distutils import build_ext, Extension
     ext_modules.append(Extension(*args, **kwargs))
     cmdclass['build_ext'] = build_ext
+
+add_cython_ext = do_add_cython_ext
+
 
 def ace(modnames="xpra.x11.bindings.xxx", pkgconfig_names="", optimize=None, **kwargs):
     src = modnames.split(",")
@@ -1925,8 +1928,9 @@ else:
         #don't use py_modules or scripts with py2app, and no cython:
         del setup_options["py_modules"]
         scripts = []
-        def add_cython_ext(*_args, **_kwargs):  # pylint: disable=function-redefined
+        def noop(*_args, **_kwargs):  # pylint: disable=function-redefined
             pass
+        add_cython_ext = noop
 
         remove_packages("ctypes.wintypes", "colorsys")
         remove_packages(*external_excludes)
