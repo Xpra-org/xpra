@@ -22,6 +22,11 @@ from gi.repository import GLib, Pango, Gtk, Gdk  # @UnresolvedImport
 log = Logger("gtk", "keyboard")
 
 
+def modify_font(widget, font="sans 13"):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        widget.modify_font(Pango.FontDescription(font))
+
 class KeyboardStateInfoWindow:
 
     def    __init__(self):
@@ -37,7 +42,7 @@ class KeyboardStateInfoWindow:
         vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(15)
         label = Gtk.Label(label="Keyboard State")
-        label.modify_font(Pango.FontDescription("sans 13"))
+        modify_font(label, "sans 13")
         #patch pack_start:
         from xpra.gtk_common.gtk_util import pack_start
         assert callable(pack_start)
@@ -50,8 +55,7 @@ class KeyboardStateInfoWindow:
         vbox.add(self.mouse)
 
         self.keys = Gtk.Label()
-        fixed = Pango.FontDescription('monospace 9')
-        self.keys.modify_font(fixed)
+        modify_font(self.keys, "monospace 9")
         vbox.add(self.keys)
 
         self.window.add(vbox)
