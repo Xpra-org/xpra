@@ -287,6 +287,10 @@ DefWindowProcA.restype = INT
 DefWindowProcW = user32.DefWindowProcW
 DefWindowProcW.argtypes = [HWND, UINT, WPARAM, LPARAM]
 DefWindowProcW.restype = INT
+WNDPROC = WINFUNCTYPE(LRESULT, HWND, UINT, WPARAM, LPARAM)
+CallWindowProcW = user32.CallWindowProcW
+CallWindowProcW.argtypes = [WNDPROC, HWND, UINT, WPARAM, LPARAM]
+CallWindowProcW.restype = LRESULT
 MessageBoxA = user32.MessageBoxA
 MessageBoxA.restype = INT
 MessageBoxA.argtypes = [HWND, LPCTSTR, LPCTSTR, UINT]
@@ -294,7 +298,11 @@ GetSystemMetrics = user32.GetSystemMetrics
 GetSystemMetrics.restype = INT
 GetSystemMetrics.argtypes = [INT]
 SetWindowLongW = user32.SetWindowLongW
+SetWindowLongW.restype = LONG
+SetWindowLongW.argtypes = [HWND, int, LONG]
 GetWindowLongW = user32.GetWindowLongW
+GetWindowLongW.restype = LONG
+GetWindowLongW.argtypes = [HWND, int]
 ClipCursor = user32.ClipCursor
 ClipCursor.restype = BOOL
 GetCursorPos = user32.GetCursorPos
@@ -684,8 +692,6 @@ def GetIntSystemParametersInfo(key):
         return None
     return rv.value
 
-
-WNDPROC = WINFUNCTYPE(LRESULT, HWND, UINT, WPARAM, LPARAM)
 
 class WNDCLASSEX(Structure):
     _fields_ = [
