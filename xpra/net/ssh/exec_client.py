@@ -129,10 +129,10 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         kwargs["env"] = restore_script_env(env)
 
         if is_debug_enabled("ssh"):
-            log.info("executing ssh command: " + " ".join(f"\"{x}\"" for x in cmd))
+            log.info("executing ssh command: " + shlex.join(cmd))
         child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
     except OSError as e:
-        cmd_info = " ".join(repr(x) for x in cmd)
+        cmd_info = shlex.join(cmd)
         raise InitExit(ExitCode.SSH_FAILURE,
                        f"Error running ssh command {cmd_info!r}: {e}") from None
     def abort_test(action):
