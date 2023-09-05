@@ -395,6 +395,8 @@ LoadIconA.restype = HICON
 #can also pass int as second arg, so don't declare argtypes:
 #LoadIconA.argtypes = [HINSTANCE, LPCSTR]
 RegisterWindowMessageA = user32.RegisterWindowMessageA
+RegisterWindowMessageA.restype = UINT
+RegisterWindowMessageA.argtypes = [LPCSTR]
 UpdateWindow = user32.UpdateWindow
 UpdateWindow.restype = BOOL
 UpdateWindow.argtypes = [HWND]
