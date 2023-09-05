@@ -5,9 +5,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from collections import namedtuple
-from typing import Any
+from typing import Any, ByteString
 from collections.abc import Callable
+from dataclasses import dataclass
 
 from xpra.util import envbool
 from xpra.common import MIN_COMPRESS_SIZE, MAX_DECOMPRESSED_SIZE
@@ -22,7 +22,12 @@ PERFORMANCE_ORDER : tuple[str, ...] = ("none", "lz4", "brotli")
 # require compression (disallow 'none'):
 PERFORMANCE_COMPRESSION : tuple[str, ...] = ("lz4", "brotli")
 
-Compression = namedtuple("Compression", ["name", "version", "compress", "decompress"])
+@dataclass
+class Compression:
+    name : str
+    version : str
+    compress : Callable[[ByteString,int], ByteString]
+    decompress : Callable[[ByteString], ByteString]
 
 COMPRESSION : dict[str,Compression] = {}
 

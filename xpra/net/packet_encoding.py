@@ -7,9 +7,9 @@
 
 #pylint: disable=import-outside-toplevel
 
-from collections import namedtuple
-from typing import Any
+from typing import Any, Optional, ByteString
 from collections.abc import Callable
+from dataclasses import dataclass
 
 from xpra.log import Logger
 from xpra.net.protocol.header import (
@@ -26,7 +26,13 @@ TRY_ENCODERS : tuple[str, ...] = ("rencodeplus", "none")
 #order for performance:
 PERFORMANCE_ORDER : tuple[str, ...] = ("rencodeplus", )
 
-Encoding = namedtuple("Encoding", ["name", "flag", "version", "encode", "decode"])
+@dataclass
+class Encoding:
+    name : str
+    flag : int
+    version : str
+    encode : Callable[[Any], ByteString]
+    decode : Optional[Callable[[ByteString], Any]]
 
 ENCODERS : dict[str,Encoding] = {}
 
