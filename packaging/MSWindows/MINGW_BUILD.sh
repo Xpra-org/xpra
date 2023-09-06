@@ -350,8 +350,11 @@ done
 #keep just one copy in ./lib
 find lib/lz4 -name "liblz4.dll" -exec mv {} ./lib/ \;
 if [ "${DO_CUDA}" == "0" ]; then
-	rm -fr ./lib/pycuda
+	rm -fr ./lib/pycuda ./lib/cuda* ./lib/libnv*
 	rm -f ./etc/xpra/cuda.conf
+else
+  #keep cuda bits at top level:
+  mv lib/cuda* lib/nvjpeg* ./
 fi
 if [ "${DO_NUMPY}" == "0" ]; then
 	rm -fr ./lib/numpy
@@ -384,8 +387,6 @@ mv *dll lib/
 cp lib/msvcrt*dll lib/libpython*dll lib/libgcc*dll lib/libwinpthread*dll ./
 #and keep pdfium:
 mv lib/*pdfium*.dll ./
-#keep cuda bits:
-mv lib/cuda* lib/nvjpeg* ./
 pushd lib > /dev/null
 #remove all the pointless duplication:
 for x in `ls *dll`; do
