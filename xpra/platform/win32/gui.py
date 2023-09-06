@@ -26,7 +26,7 @@ from xpra.platform.win32 import constants as win32con, setup_console_event_liste
 from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.platform.win32.win32_events import KNOWN_EVENTS, POWER_EVENTS
 from xpra.platform.win32.common import (
-    GetSystemMetrics, SetWindowLongW, GetWindowLongW,
+    GetSystemMetrics, SetWindowLongA, GetWindowLongW,
     ClipCursor, GetCursorPos,
     GetDC, ReleaseDC,
     SendMessageA, GetMessageA, TranslateMessage, DispatchMessageA,
@@ -408,7 +408,7 @@ def fixup_window_style(self, *_args) -> None:
         if style!=cur_style:
             log("fixup_window_style() using %s (%#x) instead of %s (%#x) on window %#x with metadata=%s",
                 style_str(style), style, style_str(cur_style), cur_style, hwnd, metadata)
-            SetWindowLongW(hwnd, win32con.GWL_STYLE, style)
+            SetWindowLongA(hwnd, win32con.GWL_STYLE, style)
         else:
             log("fixup_window_style() unchanged style %s (%#x) on window %#x",
                 style_str(style), style, hwnd)
