@@ -994,10 +994,11 @@ class GLWindowBackingBase(WindowBackingBase):
         return True
 
     def set_cursor_data(self, cursor_data) -> None:
-        if (not cursor_data or len(cursor_data)==1) and self.default_cursor_data:
-            cursor_data = ["raw"] + list(self.default_cursor_data)
-        if not cursor_data:
-            return
+        if not cursor_data or cursor_data[0] is None:
+            #use the default cursor
+            if not self.default_cursor_data:
+                return
+            cursor_data = list(self.default_cursor_data)
         self.cursor_data = cursor_data
         if not cursor_data:
             return
