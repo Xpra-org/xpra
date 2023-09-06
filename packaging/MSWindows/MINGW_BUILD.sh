@@ -456,6 +456,12 @@ rm -fr share/xml
 popd > /dev/null
 
 
+echo "* Adding manifest"
+for exe in Bug_Report GTK_info NativeGUI_info Screenshot Xpra-Launcher Xpra-Shadow Xpra Xpra_cmd; do
+  cp packaging/MSWindows/exe.manifest ./dist/${exe}.exe.manifest
+done
+
+
 echo "* Generating gdk pixbuf loaders.cache"
 gdk-pixbuf-query-loaders.exe "dist/lib/gdk-pixbuf-2.0/2.10.0/loaders/*" | sed 's+".*dist/+"+g' > dist/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
 echo "* Generating icons and theme cache"
