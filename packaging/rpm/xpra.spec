@@ -768,12 +768,18 @@ fi
 
 
 %changelog
-* Sun Sep 03 2023 Antoine Martin <antoine@xpra.org> 5.0.2-10
+* Wed Sep 06 2023 Antoine Martin <antoine@xpra.org> 5.0.2-10
 - Major fixes:
    missing x264 encoder in DEB packages
    unusable vsock module
+   start-after-connect was broken
+   Overflow error in MS Windows hooks
 - Minor:
+   unresponsive system tray after explorer.exe restart
    better packet namespace compatibility
+   log warnings with custom cursors and OpenGL backend
+   better packet namespace compatibility
+   only warn once about unknown NVENC presets
 
 * Sat Aug 26 2023 Antoine Martin <antoine@xpra.org> 5.0.1-10
 - Major fixes:

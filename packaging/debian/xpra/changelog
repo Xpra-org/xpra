@@ -2,10 +2,15 @@ xpra (5.0.2-1) UNRELEASED; urgency=low
   * Major fixes:
     - missing x264 encoder in DEB packages
     - unusable vsock module
+    - start-after-connect was broken
+    - Overflow error in MS Windows hooks
   * Minor:
+    - unresponsive system tray after explorer.exe restart
     - better packet namespace compatibility
+    - log warnings with custom cursors and OpenGL backend
+    - only warn once about unknown NVENC presets
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 03 Sep 2023 18:05:12 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 06 Sep 2023 18:07:52 +0700
 
 xpra (5.0.1-1) UNRELEASED; urgency=low
   * Major fixes:

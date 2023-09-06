@@ -1,11 +1,16 @@
 # Changelog
 
-## [5.0.2] 2023-09-03
+## [5.0.2] 2023-09-06
 * Major fixes:
     * [missing x264 encoder in DEB packages](https://github.com/Xpra-org/xpra/commit/b8735c8b53ac908424f4c9092362ccda270a1138)
     * [unusable vsock module](https://github.com/Xpra-org/xpra/commit/b1264a7a3418936c3bed6622c346bc2283c94aa9)
+    * [start-after-connect was broken](https://github.com/Xpra-org/xpra/commit/3cf4a83336909d0408caa0d41eff141ae2447532)
+    * [Overflow error in MS Windows hooks](https://github.com/Xpra-org/xpra/commit/c46e59398b7833d3f0710d63abada57e9e6b6af5) + [fixup](https://github.com/Xpra-org/xpra/commit/7e2983c0ef73f49dd11684cb3f4af07b739706d6)
 * Minor:
+    * [unresponsive system tray after explorer.exe restart](https://github.com/Xpra-org/xpra/commit/cb290d9b73ed5641c9f8816e917290c335671444)
+    * [log warnings with custom cursors and OpenGL backend](https://github.com/Xpra-org/xpra/commit/563339b8ba42f49a2b5c2bbd62f340d9d3332188)
     * [better packet namespace compatibility](https://github.com/Xpra-org/xpra/commit/3e21c8a93ad6bd6390fc87f25cc0f0445a60e45a)
+    * [only warn once about unknown NVENC presets](https://github.com/Xpra-org/xpra/commit/5baf3e79e9dffadf19521c6e02df2b357ba1a508)
 
 ## [5.0.1] 2023-08-29
 * Major fixes:
