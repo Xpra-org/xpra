@@ -1000,13 +1000,11 @@ class GLWindowBackingBase(WindowBackingBase):
                 return
             cursor_data = list(self.default_cursor_data)
         self.cursor_data = cursor_data
-        if not cursor_data:
+        if not self.validate_cursor():
             return
         cw = cursor_data[3]
         ch = cursor_data[4]
         pixels = cursor_data[8]
-        if not self.validate_cursor():
-            return
         def gl_upload_cursor(context):
             if context:
                 self.gl_init()
