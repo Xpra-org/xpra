@@ -52,7 +52,11 @@ def qr_pixbuf(uri:str, width:int=640, height:int=640):
         return  None
     from PIL import Image
     img = img.convert("RGB")
-    img = img.resize((width, height), Image.Resampling.NEAREST)
+    try:
+        from PIL.Image.Resampling import NEAREST
+    except ImportError:
+        from PIL.Image import NEAREST
+    img = img.resize((width, height), Image.NEAREST)
     data = img.tobytes()
     w, h = img.size
     data = GLib.Bytes.new(data)

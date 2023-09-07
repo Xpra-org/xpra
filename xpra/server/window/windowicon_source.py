@@ -272,7 +272,11 @@ class WindowIconSource:
                     rw = min(max_w, w*icon_h//h)
                     rh = icon_h
                 log("scaling window icon down to %sx%s", rw, rh)
-                image = image.resize((rw, rh), Image.Resampling.LANCZOS)
+                try:
+                    from PIL.Image.Resampling import LANCZOS
+                except ImportError:
+                    from PIL.Image import LANCZOS
+                image = image.resize((rw, rh), LANCZOS)
             if SAVE_WINDOW_ICONS:
                 filename = f"server-window-{self.wid}-icon-{int(monotonic())}.png"
                 image.save(filename, 'PNG')

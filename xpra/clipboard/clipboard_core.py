@@ -287,13 +287,17 @@ class ClipboardProxyCore:
             w, h = img.size
             if IMAGE_OVERLAY:
                 from PIL import Image   #@UnresolvedImport
+                try:
+                    from PIL.Image.Resampling import LANCZOS
+                except ImportError:
+                    from PIL.Image import LANCZOS
                 overlay = Image.open(IMAGE_OVERLAY)
                 if overlay.mode!="RGBA":
                     log.warn("Warning: cannot use overlay image '%s'", IMAGE_OVERLAY)
                     log.warn(" invalid mode '%s'", overlay.mode)
                 else:
                     log("adding clipboard image overlay to %s", dtype)
-                    overlay_resized = overlay.resize((w, h), Image.Resampling.LANCZOS)
+                    overlay_resized = overlay.resize((w, h), LANCZOS)
                     composite = Image.alpha_composite(img, overlay_resized)
                     if not has_alpha and img.mode=="RGBA":
                         composite = composite.convert("RGB")
