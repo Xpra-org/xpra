@@ -317,8 +317,6 @@ class ServerBase(ServerBaseClass):
             return
         #added in 2.2:
         request = c.strget("request")
-        def is_req(mode) -> bool:
-            return request==mode or c.boolget("%s_request" % mode, False)
         if not request:
             #"normal" connection, so log welcome message:
             log.info("Handshake complete; enabling connection")
@@ -331,18 +329,19 @@ class ServerBase(ServerBaseClass):
         ui_client = c.boolget("ui_client", True)
         share = c.boolget("share")
         uuid = c.strget("uuid")
-        detach_request = is_req("detach")
+        detach_request = request=="detach"
         accepted, share_count, disconnected = self.handle_sharing(proto, ui_client, detach_request, share, uuid)
         if not accepted:
             return
 
-        if is_req("detach"):
-            self.disconnect_client(proto, ConnectionMessage.DONE, "%i other clients have been disconnected" % disconnected)
+        if request=="detach":
+            self.disconnect_client(proto, ConnectionMessage.DONE,
+                                   f"{disconnected} other clients have been disconnected")
             return
-        if is_req("exit"):
+        if request=="exit":
             self._process_exit_server(proto)
             return
-        if is_req("stop"):
+        if request=="stop":
             self._process_shutdown_server(proto)
             return
 
