@@ -721,16 +721,10 @@ START_COMMAND_OPTIONS : list[str] = [
     ]
 BIND_OPTIONS : list[str] = ["bind", "bind-tcp", "bind-ssl", "bind-ws", "bind-wss", "bind-vsock", "bind-rfb", "bind-quic"]
 
-#keep track of the options added since v3,
+#keep track of the options added since v5,
 #so we can generate command lines that work with older supported versions:
-OPTIONS_ADDED_SINCE_V3 : list[str] = [
-    "source", "source-start", "headerbar",
-    "splash", "sessions-dir", "http-scripts", "reconnect", "client-socket-dirs",
-    "start-late", "start-child-late",
-    "refresh-rate",
-    "exit-with-windows",
-    "bind-quic",
-    "audio", "video",
+OPTIONS_ADDED_SINCE_V5 : list[str] = [
+    "minimal",
     ]
 OPTIONS_COMPAT_NAMES : dict[str,str] = {
     "--compression_level=" : "-z"
