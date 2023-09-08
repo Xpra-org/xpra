@@ -901,7 +901,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             "relative" : True,
             })
         updict(capabilities, "window", {
-               "initiate-moveresize"    : True,     #v4 servers assume this is available
                "frame_sizes"            : self.get_window_frame_sizes()
                })
         updict(capabilities, "encoding", {

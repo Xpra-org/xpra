@@ -77,10 +77,7 @@ class WindowServer(StubServerMixin):
 
 
     def get_server_features(self, _source) -> dict[str,Any]:
-        return {
-            "window_refresh_config" : True,     #v4 clients assume this is available
-            "window-filters"        : True,     #v4 clients assume this is available
-            }
+        return {}
 
     def get_info(self, _proto) -> dict[str,Any]:
         return {

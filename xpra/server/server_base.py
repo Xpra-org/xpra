@@ -365,19 +365,10 @@ class ServerBase(ServerBaseClass):
                 self.antialias = {}
                 self.cursor_size = 24
             else:
-                self.dpi = 0
-                dpi_caps = c.get("dpi")
-                # unprefixed legacy mode:
-                if isinstance(dpi_caps, int):
-                    self.dpi = int(dpi_caps)
-                self.xdpi = c.intget("dpi.x", self.dpi)
-                self.ydpi = c.intget("dpi.y", self.dpi)
-                # namespaced caps:
-                if isinstance(dpi_caps, dict):
-                    tdpi = typedict(dpi_caps)
-                    self.dpi = tdpi.intget("", self.dpi)
-                    self.xdpi = tdpi.intget("x", self.xdpi)
-                    self.ydpi = tdpi.intget("y", self.ydpi)
+                tdpi = typedict(c.dictget("dpi") or {})
+                self.dpi = tdpi.intget("", 0)
+                self.xdpi = tdpi.intget("x", self.xdpi)
+                self.ydpi = tdpi.intget("y", self.ydpi)
                 self.double_click_time = c.intget("double_click.time", -1)
                 self.double_click_distance = c.intpair("double_click.distance", (-1, -1))
                 self.antialias = c.dictget("antialias", {})
@@ -543,7 +534,6 @@ class ServerBase(ServerBaseClass):
             #for older clients, without namespace:
             capabilities.update(flatten_dict(sf))
             capabilities.update(sf)
-        capabilities["configure.pointer"] = True    #v4 clients assume this is enabled
         return capabilities
 
     def send_hello(self, server_source, root_size, server_cipher:dict) -> None:

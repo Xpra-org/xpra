@@ -17,13 +17,8 @@ class MMAP_Connection(StubSourceMixin):
 
     @classmethod
     def is_needed(cls, caps : typedict) -> bool:
-        #pre 2.3 clients;
-        if caps.strget("mmap_file"):
-            return True
-        v = caps.get("mmap")
-        #we should be receiving a dict with mmap attributes
-        #(but pre v4 clients also send a boolean telling us if mmap is supported by the platform..)
-        return isinstance(v, dict)
+        v = typedict(caps.get("mmap") or {})
+        return v.intget("size", 0) > 0
 
     def __init__(self):
         self.supports_mmap = False
