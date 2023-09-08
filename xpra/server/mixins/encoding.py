@@ -106,7 +106,6 @@ class EncodingServer(StubServerMixin):
 
     def get_server_features(self, _source=None) -> dict[str,Any]:
         return {
-            "auto-video-encoding"   : True,     #from v4.0, clients assume this is available
             }
 
     def get_info(self, _proto)  -> dict[str,Any]:

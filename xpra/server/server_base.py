@@ -507,9 +507,7 @@ class ServerBase(ServerBaseClass):
     def get_server_features(self, server_source=None) -> dict[str,Any]:
         #these are flags that have been added over time with new versions
         #to expose new server features:
-        f = {
-            "toggle_keyboard_sync" : True,  #v4.0 clients assume this is always available
-            }
+        f = {}
         for c in SERVER_BASES:
             if c!=ServerCore:
                 bf = c.get_server_features(self, server_source)
