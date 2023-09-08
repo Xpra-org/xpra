@@ -52,14 +52,6 @@ class ClipboardConnection(StubSourceMixin):
             self.clipboard_want_targets = ccaps.boolget("want_targets")
             self.clipboard_selections = ccaps.strtupleget("selections", CLIPBOARDS)
             self.clipboard_preferred_targets = ccaps.strtupleget("preferred-targets", ())
-        else:
-            #no namespace in v4.3 and earlier:
-            self.clipboard_enabled = c.boolget("clipboard", False)
-            self.clipboard_notifications = c.boolget("clipboard.notifications")
-            self.clipboard_greedy = c.boolget("clipboard.greedy")
-            self.clipboard_want_targets = c.boolget("clipboard.want_targets")
-            self.clipboard_selections = c.strtupleget("clipboard.selections", CLIPBOARDS)
-            self.clipboard_preferred_targets = c.strtupleget("clipboard.preferred-targets", ())
         log("client clipboard: enabled=%s, notifications=%s",
             self.clipboard_enabled, self.clipboard_notifications)
         log("client clipboard: greedy=%s, want_targets=%s, selections=%s",
