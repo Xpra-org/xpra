@@ -46,7 +46,6 @@ class FakeApplication:
         self.server_audio_send = True
         self.server_audio_receive = True
         self.server_clipboard = False
-        self.server_bandwidth_limit_change = 0
         self.server_encodings = ["png", "rgb"]
         self.server_encodings_with_quality = []
         self.server_encodings_with_speed = []

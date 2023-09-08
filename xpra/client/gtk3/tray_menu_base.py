@@ -551,9 +551,6 @@ class GTKTrayMenuBase(MenuHelper):
                 bandwidth_limit_menu_item.set_tooltip_text("memory mapped transfers are in use, "+
                                                            "so bandwidth limits are disabled")
                 set_sensitive(bandwidth_limit_menu_item, False)
-            elif not self.client.server_bandwidth_limit_change:
-                bandwidth_limit_menu_item.set_tooltip_text("the server does not support bandwidth-limit")
-                set_sensitive(bandwidth_limit_menu_item, False)
             else:
                 initial_value = self.client.server_bandwidth_limit or self.client.bandwidth_limit or 0
                 bandwidthlog("set_bwlimitmenu() server_bandwidth_limit=%s, bandwidth_limit=%s, initial value=%s",

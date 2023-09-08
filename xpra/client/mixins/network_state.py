@@ -161,7 +161,6 @@ class NetworkState(StubClientMixin):
         #bandwidth
         self.bandwidth_limit : int = 0
         self.bandwidth_detection : bool = False
-        self.server_bandwidth_limit_change : bool = False
         self.server_bandwidth_limit : int = 0
         self.server_session_name : str = ""
 
@@ -266,10 +265,8 @@ class NetworkState(StubClientMixin):
         #make sure the server doesn't provide a start time in the future:
         import time
         self.server_start_time = min(time.time(), c.intget("start_time", -1))
-        self.server_bandwidth_limit_change = c.boolget("network.bandwidth-limit-change")
         self.server_bandwidth_limit = c.intget("network.bandwidth-limit")
-        bandwidthlog("server_bandwidth_limit_change=%s, server_bandwidth_limit=%s",
-                     self.server_bandwidth_limit_change, self.server_bandwidth_limit)
+        bandwidthlog(f"{self.server_bandwidth_limit=}")
         self.server_packet_encoders = tuple(x for x in ALL_ENCODERS if c.boolget(x, False))
         return True
 
@@ -420,7 +417,6 @@ class NetworkState(StubClientMixin):
 
     def send_bandwidth_limit(self) -> None:
         bandwidthlog("send_bandwidth_limit() bandwidth-limit=%i", self.bandwidth_limit)
-        assert self.server_bandwidth_limit_change, self.bandwidth_limit is not None
         self.send("bandwidth-limit", self.bandwidth_limit)
 
 
