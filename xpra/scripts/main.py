@@ -2725,13 +2725,7 @@ def get_command_args(opts, uid=getuid(), gid=getgid(), option_types=OPTION_TYPES
                 #those can be specified as CSV: (ie: "--encodings=png,jpeg,rgb")
                 args.append(f"{argname}"+",".join(str(v) for v in ov))
         elif ftype==bool:
-            if compat and x in ("exit-with-children", "mmap-group"):
-                #older servers don't take a bool value for those options,
-                #it is disabled unless specified:
-                if ov:
-                    args.append(f"--{x}")
-            else:
-                args.append(f"{argname}" + ["no", "yes"][int(ov)])
+            args.append(f"{argname}" + ["no", "yes"][int(ov)])
         elif ftype in (int, float, str):
             args.append(f"{argname}{ov}")
         else:

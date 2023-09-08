@@ -162,10 +162,7 @@ class KeyboardConfig(KeyboardConfigBase):
         for x in ("mod_managed", "mod_pointermissing"):
             parse_option(x, keymap_dict.strtupleget, props.strtupleget)
         parse_option("raw", keymap_dict.boolget, props.boolget)
-        #older clients don't specify if they support layout groups safely
-        #(MS Windows clients used base-1)
-        #so only enable it by default for X11 clients
-        parse_option("layout_groups", keymap_dict.boolget, props.boolget, bool(self.query_struct))
+        parse_option("layout_groups", keymap_dict.boolget, props.boolget, True)
         log("assign_keymap_options(..) modified %s", modded)
         return len(modded)>0
 

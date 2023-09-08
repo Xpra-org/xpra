@@ -531,8 +531,6 @@ class ServerBase(ServerBaseClass):
                  "pointer"                      : server_features.input_devices,
             }
             sf = self.get_server_features(source)
-            #for older clients, without namespace:
-            capabilities.update(flatten_dict(sf))
             capabilities.update(sf)
         return capabilities
 

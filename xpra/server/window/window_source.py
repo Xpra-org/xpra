@@ -801,9 +801,8 @@ class WindowSource(WindowIconSource):
         log("parse_csc_modes(%s) current value=%s", full_csc_modes, self.full_csc_modes)
         if full_csc_modes is not None and isinstance(full_csc_modes, dict):
             self.full_csc_modes = typedict()
-            #workaround for older packet encoders: (strings vs bytes nonsense)
             for enc, csc_formats in full_csc_modes.items():
-                self.full_csc_modes[bytestostr(enc)] = tuple(bytestostr(v) for v in csc_formats)
+                self.full_csc_modes[enc] = tuple(csc_formats)
 
 
     def set_auto_refresh_delay(self, d:int) -> None:

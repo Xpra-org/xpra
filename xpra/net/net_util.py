@@ -80,12 +80,8 @@ def get_gateways() -> dict:
     netifaces = import_netifaces()
     if not netifaces:
         return {}
-    #versions older than 0.10.5 can crash when calling gateways()
-    #https://bitbucket.org/al45tair/netifaces/issues/15/gateways-function-crash-segmentation-fault
-    if netifaces.version<'0.10.5':            #@UndefinedVariable pylint: disable=no-member
-        return {}
     try:
-        d = netifaces.gateways()            #@UndefinedVariable pylint: disable=no-member
+        d = netifaces.gateways()
         AF_NAMES = {}
         for k in dir(netifaces):
             if k.startswith("AF_"):

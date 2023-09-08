@@ -30,7 +30,7 @@ GENERIC = envbool("XPRA_PRINTERS_GENERIC", True)
 FORWARDER_TMPDIR = os.environ.get("XPRA_FORWARDER_TMPDIR", tempfile.gettempdir())
 #the mimetype to use for clients that do not specify one
 #(older clients just assumed postscript)
-DEFAULT_MIMETYPE = os.environ.get("XPRA_PRINTER_DEFAULT_MIMETYPE", "application/postscript")
+DEFAULT_MIMETYPE = os.environ.get("XPRA_PRINTER_DEFAULT_MIMETYPE", "application/pdf")
 
 LPADMIN = "lpadmin"
 LPINFO = "lpinfo"

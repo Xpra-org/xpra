@@ -285,9 +285,8 @@ class SessionsGUI(Gtk.Window):
                 key = (host.rstrip("."), display)
             log("populate_table: key[%i]=%s", i, key)
             d.setdefault(key, []).append((interface, protocol, name, stype, domain, host, address, port, text))
-            #older servers expose the "session-name" as "session":
             td = typedict(text)
-            session_name = td.strget("name", "") or td.strget("session", "")
+            session_name = td.strget("name", "")
             if session_name:
                 session_names[key] = session_name
         for key, recs in d.items():

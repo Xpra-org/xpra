@@ -239,9 +239,7 @@ class WindowVideoSource(WindowSource):
         log(f" non video encodings={self.non_video_encodings}")
         if "scroll" in self.server_core_encodings:
             add("scroll", self.scroll_encode)
-        self.supports_scrolling = "scroll" in self.common_encodings or (
-            #for older clients, we check an encoding option:
-            "scroll" in self.server_core_encodings and self.encoding_options.boolget("scrolling") and not STRICT_MODE)
+        self.supports_scrolling = "scroll" in self.common_encodings
 
     def do_set_auto_refresh_delay(self, min_delay, delay) -> None:
         super().do_set_auto_refresh_delay(min_delay, delay)
@@ -440,9 +438,7 @@ class WindowVideoSource(WindowSource):
 
     def do_set_client_properties(self, properties : typedict) -> None:
         #client may restrict csc modes for specific windows
-        self.supports_scrolling = "scroll" in self.common_encodings or (
-            #for older clients, we check an encoding option:
-            "scroll" in self.server_core_encodings and properties.boolget("scrolling", self.supports_scrolling) and not STRICT_MODE)
+        self.supports_scrolling = "scroll" in self.common_encodings
         self.scroll_min_percent = properties.intget("scrolling.min-percent", self.scroll_min_percent)
         self.scroll_preference = properties.intget("scrolling.preference", self.scroll_preference)
         self.video_subregion.supported = properties.boolget("encoding.video_subregion", VIDEO_SUBREGION) and VIDEO_SUBREGION

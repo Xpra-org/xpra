@@ -216,12 +216,7 @@ def new_cipher_caps(proto, cipher:str, cipher_mode:str, encryption_key, padding_
         "padding.options"       : PADDING_OPTIONS,
         }
     #v5 onwards with namespace:
-    caps : dict[str,Any] = {"encryption" : attrs}
-    #add unprefixed copy for older versions:
-    for k,v in attrs.items():
-        caps[f"cipher.{k}"] = v
-    caps["cipher"] = cipher
-    return caps
+    return {"encryption" : attrs}
 
 def get_crypto_caps(full=True) -> dict[str,Any]:
     crypto_backend_init()
@@ -271,27 +266,9 @@ def get_decryptor(ciphername : str, iv:str, password, key_salt, key_hash : str, 
 
 def get_cipher_decryptor(key, iv:str, mode:str):
     decryptor = _get_cipher(key, iv, mode).decryptor()
-    def i(s):
-        try:
-            return int(s)
-        except ValueError:
-            return 0
-    version = cryptography.__version__      # type: ignore[union-attr]
-    supports_memoryviews = tuple(i(s) for s in version.split("."))>=(2, 5)
-    log("get_decryptor(..) python-cryptography supports_memoryviews(%s)=%s",
-        version, supports_memoryviews)
-    if supports_memoryviews:
-        decryptor.decrypt = decryptor.update
-    else:
-        _patch_decryptor(decryptor)
+    #the function we expect to call is named 'decrypt':
+    decryptor.decrypt = decryptor.update
     return decryptor
-
-def _patch_decryptor(decryptor):
-    #with older versions of python-cryptography,
-    #we have to copy the memoryview to a bytearray:
-    def decrypt(v):
-        return decryptor.update(memoryview_to_bytes(v))
-    decryptor.decrypt = decrypt
 
 def get_block_size(mode:str) -> int:
     if mode=="CBC":
@@ -308,12 +285,7 @@ def get_key(password, key_salt, key_hash, block_size:int, iterations:int):
     algorithm = getattr(hashes, key_hash.upper(), None)
     if not algorithm:
         raise ValueError(f"{key_hash.upper()!r} not found in cryptography hashes")
-    try:
-        #newer versions (41 for sure) require us to instantiate the "constant"
-        hash_algo = algorithm()
-    except TypeError:
-        #older versions are OK using it directly:
-        hash_algo = algorithm
+    hash_algo = algorithm()
     from cryptography.hazmat.backends import default_backend
     kdf = PBKDF2HMAC(algorithm=hash_algo, length=block_size,
                      salt=strtobytes(key_salt), iterations=iterations,
