@@ -20,9 +20,7 @@ class IdleMixin(StubSourceMixin):
 
     @classmethod
     def is_needed(cls, caps : typedict) -> bool:
-        #the 'keyboard' and 'mouse' capability were only added in v4,
-        #so we have to enable the mixin by default:
-        return caps.boolget("keyboard", True) or caps.boolget("mouse", True) or caps.boolget("windows", False)
+        return caps.boolget("keyboard") or caps.boolget("mouse") or caps.boolget("windows")
 
 
     def __init__(self) -> None:
