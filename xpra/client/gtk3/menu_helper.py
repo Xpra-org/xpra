@@ -338,6 +338,10 @@ class MenuHelper:
         self.menu = None
         self.menu_shown = False
         self.menu_icon_size = get_icon_size()
+        self.handshake_menuitem : Callable = self.do_handshake_menuitem
+        def shortcut():
+            self.handshake_menuitem = self.menuitem
+        self.client.after_handshake(shortcut)
 
     def build(self):
         if self.menu is None:
@@ -399,7 +403,7 @@ class MenuHelper:
         self.client.after_handshake(cb, *args)
 
 
-    def handshake_menuitem(self, *args, **kwargs) -> Gtk.ImageMenuItem:
+    def do_handshake_menuitem(self, *args, **kwargs) -> Gtk.ImageMenuItem:
         """ Same as menuitem() but this one will be disabled until we complete the server handshake """
         mi = self.menuitem(*args, **kwargs)
         set_sensitive(mi, False)
