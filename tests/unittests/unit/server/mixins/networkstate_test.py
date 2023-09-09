@@ -20,7 +20,7 @@ class NetworkStateMixinTest(ServerMixinTest):
             os.environ["XPRA_PING_TIMEOUT"] = "1"
             from xpra.server.mixins import networkstate
             from xpra.server.source.networkstate import NetworkStateMixin
-            assert NetworkStateMixin.is_needed(typedict())
+            assert NetworkStateMixin.is_needed(typedict({"network-state" : True}))
             opts = AdHocStruct()
             opts.pings = 1
             opts.bandwidth_limit = "1Gbps"
