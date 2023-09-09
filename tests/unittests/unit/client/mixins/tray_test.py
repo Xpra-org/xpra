@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.os_util import OSX
+from xpra.common import noop
 from xpra.util import AdHocStruct
 from xpra.client.mixins.tray import TrayClient
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
@@ -17,10 +17,7 @@ class AudioClientTest(ClientMixinTest):
 	def test_tray(self):
 		def _TrayClient():
 			x = TrayClient()
-			if OSX:
-				def noop(*_args):
-					return
-				x.after_handshake = noop
+			x.after_handshake = noop
 			def get_tray_menu_helper_class():
 				return None
 			x.get_tray_menu_helper_class = get_tray_menu_helper_class
