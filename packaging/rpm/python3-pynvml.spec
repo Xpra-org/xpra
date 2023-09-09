@@ -27,6 +27,7 @@ Group:          Development/Libraries/Python
 Source0:        https://files.pythonhosted.org/packages/2d/2b/fd33888dccd2e4c8a7a4be552200fa75f8cecd851f6612dc4acbf64fcf8d/nvidia-ml-py-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  %{python3}-devel
+BuildRequires:  %{python3}-setuptools
 
 %description
 Python Bindings for the NVIDIA Management Library
