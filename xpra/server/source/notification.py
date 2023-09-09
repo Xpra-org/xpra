@@ -80,7 +80,7 @@ class NotificationMixin(StubSourceMixin):
         if self.hello_sent:
             #Warning: actions and hints are send last because they were added later (in version 2.3)
             self.send_async("notify_show", dbus_id, nid, app_name, replaces_nid, app_icon,
-                            summary, body, expire_timeout, icon, actions, hints)
+                            summary, body, expire_timeout, icon or b"", actions, hints)
         return True
 
     def notify_close(self, nid : int) -> None:
