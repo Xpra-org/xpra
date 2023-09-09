@@ -10,7 +10,7 @@ from typing import Any
 
 from xpra.util import roundup, envbool
 from xpra.os_util import memoryview_to_bytes, shellsub, get_group_id, WIN32, POSIX
-from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
+from xpra.scripts.config import FALSE_OPTIONS
 from xpra.simple_stats import std_unit
 from xpra.log import Logger
 

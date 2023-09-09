@@ -16,7 +16,7 @@ from xpra.common import SSH_AGENT_DISPATCH, FULL_INFO
 from xpra.net.common import may_log_packet, ServerPacketHandlerType, PacketType
 from xpra.os_util import bytestostr, is_socket, WIN32
 from xpra.util import (
-    typedict, flatten_dict, updict, merge_dicts, envbool, csv,
+    typedict, updict, merge_dicts, envbool, csv,
     ConnectionMessage,
     )
 from xpra.net.bytestreams import set_socket_timeout

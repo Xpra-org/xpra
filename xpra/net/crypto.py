@@ -13,7 +13,7 @@ from collections.abc import Iterable
 
 from xpra.util import envint, envbool, csv
 from xpra.version_util import parse_version
-from xpra.os_util import hexstr, strtobytes, memoryview_to_bytes, OSX
+from xpra.os_util import hexstr, strtobytes, OSX
 from xpra.net.digest import get_salt
 from xpra.log import Logger
 
