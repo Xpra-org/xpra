@@ -321,12 +321,6 @@ Recommends:			%{python3}-pyopengl
 Recommends:			%{python3}-pyu2f
 Recommends:         %{python3}-psutil
 Suggests:			sshpass
-#without this, the system tray is unusable with gnome!
-%if 0%{?el9}
-Recommends:			gnome-shell-extension-topicons-plus
-%else
-Suggests:			gnome-shell-extension-appindicator
-%endif
 %if 0%{?run_tests}
 %if 0%{?fedora}
 BuildRequires:		xclip
@@ -335,6 +329,22 @@ BuildRequires:		zlib-devel
 %endif
 %description -n%{package_prefix}-client-gtk3
 This package contains the GTK3 xpra client.
+
+
+%package -n %{package_prefix}-client-gnome
+Summary:			Gnome integration for the xpra client
+Requires:			%{package_prefix}-client-gtk3 = %{version}-%{release}
+%if 0%{?el8}
+# sadly removed from Fedora and RHEL9
+Requires:			gnome-shell-extension-topicons-plus
+Requires(post):     gnome-shell
+%else
+Requires:			gnome-shell-extension-appindicator
+Requires(post):		gnome-shell-extension-common
+%endif
+%description -n%{package_prefix}-client-gnome
+This meta package installs the gnome shell extensions
+that can help in restoring the system tray functionality.
 
 
 %package -n %{package_prefix}-x11
@@ -523,6 +533,10 @@ rm -fr ${RPM_BUILD_ROOT}%{python3_sitearch}/UNKNOWN-*.egg-info
 rm -rf $RPM_BUILD_ROOT
 
 %files
+#meta package
+
+%files -n %{package_prefix}-client-gnome
+#meta package without any files
 
 %files -n xpra-filesystem
 %defattr(-,root,root)
@@ -812,6 +826,22 @@ fi
 %post -n %{package_prefix}-client-gtk3
 /usr/bin/update-desktop-database &> /dev/null || :
 /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
+
+%post -n %{package_prefix}-client-gnome
+#try to enable it for active users:
+for uid in `ls /run/user/`; do
+    if [ "$uid" == "0" ]; then
+        continue
+    fi
+    BUS="/run/user/$uid/bus"
+    if [ -S "${BUS}" ]; then
+%if 0%{?el8}
+sudo -i -u "#$uid" DBUS_SESSION_BUS_ADDRESS="unix:path=$BUS" gnome-shell-extension-tool -e TopIcons@phocean.net  &>/dev/null || :
+%else
+sudo -i -u "#$uid" DBUS_SESSION_BUS_ADDRESS="unix:path=$BUS" gnome-extensions enable appindicatorsupport@rgcjonas.gmail.com  &>/dev/null || :
+%endif
+    fi
+done
 
 %posttrans -n %{package_prefix}-client-gtk3
 /usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
