@@ -8,7 +8,7 @@ from typing import List
 from gi.repository import GLib
 
 from xpra.platform.gui import get_native_tray_classes, get_native_tray_menu_helper_class
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, WIN32, OSX
 from xpra.util import envint, make_instance, ConnectionMessage, XPRA_APP_ID
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
@@ -40,8 +40,13 @@ class TrayClient(StubClientMixin):
         if opts.delay_tray:
             self.connect("first-ui-received", self.setup_xpra_tray)
         else:
-            #show shortly after the main loop starts running:
-            GLib.timeout_add(TRAY_DELAY, self.setup_xpra_tray)
+            if WIN32 or OSX:
+                # show shortly after the main loop starts running:
+                GLib.timeout_add(TRAY_DELAY, self.setup_xpra_tray)
+            else:
+                # wait for handshake:
+                # see appindicator bug #3956
+                self.after_handshake(self.setup_xpra_tray)
 
     def setup_xpra_tray(self, *args) -> None:
         log("setup_xpra_tray%s", args)
