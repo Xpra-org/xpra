@@ -414,7 +414,7 @@ BuildRequires:		procps-ng-devel
 BuildRequires:		pkgconfig(libprocps)
 %endif
 # unfortunately, there are no python prefixed cups packages:
-%if "%{package_prefix}"=="xpra"
+%if "%{python3}"=="python3"
 BuildRequires:		%{python3}-cups
 %endif
 BuildRequires:		pkgconfig(libsystemd)
