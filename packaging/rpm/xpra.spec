@@ -396,17 +396,17 @@ Suggests:			tcp_wrappers-libs
 Suggests:			%{python3}-ldap3
 Suggests:			%{python3}-ldap
 Suggests:			%{python3}-oauthlib
-%if 0%{?fedora}
 %if 0%{?fedora}>=39
 # looks like they forgot to expose the pkgconfig?
 BuildRequires:		procps-ng-devel
-# and no prefixed cups either.. only the regular one:
-BuildRequires:		python3-cups
 %else
 BuildRequires:		pkgconfig(libprocps)
-# python prefixed builds would need this new package:
-BuildRequires:		%{python3}-cups
 %endif
+%if 0%{?fedora}
+# no prefixed cups either.. only the regular one:
+BuildRequires:		python3-cups
+# python prefixed builds would need this new package:
+#                   %{python3}-cups
 %endif
 BuildRequires:		pkgconfig(libsystemd)
 BuildRequires:		checkpolicy
