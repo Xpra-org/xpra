@@ -288,7 +288,7 @@ class FilePrintServer(StubServerMixin):
         filename = os.path.abspath(osexpand(argf))
         if not os.path.exists(filename):
             filelog.warn("Warning: the file requested does not exist:")
-            filelog.warn(" %s", filename)
+            filelog.warn(f" {filename!r}")
             ss.may_notify(NotificationID.FILETRANSFER,
                           "File not found", "The file requested does not exist:\n%s" % filename,
                            icon_name="file")
