@@ -321,6 +321,7 @@ Recommends:			%{python3}-pyopengl
 Recommends:			%{python3}-pyu2f
 Recommends:         %{python3}-psutil
 Suggests:			sshpass
+Suggests:           %{package_prefix}-client-gnome
 %if 0%{?run_tests}
 %if 0%{?fedora}
 BuildRequires:		xclip
