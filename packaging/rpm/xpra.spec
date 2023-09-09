@@ -412,11 +412,9 @@ BuildRequires:		procps-ng-devel
 %else
 BuildRequires:		pkgconfig(libprocps)
 %endif
-%if 0%{?fedora}
-# no prefixed cups either.. only the regular one:
-BuildRequires:		python3-cups
-# python prefixed builds would need this new package:
-#                   %{python3}-cups
+# unfortunately, there are no python prefixed cups packages:
+%if "%{package_prefix}"=="xpra"
+BuildRequires:		%{python3}-cups
 %endif
 BuildRequires:		pkgconfig(libsystemd)
 BuildRequires:		checkpolicy
