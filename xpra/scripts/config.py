@@ -662,7 +662,6 @@ NON_COMMAND_LINE_OPTIONS = [
     "mode",
     "wm-name",
     "download-path",
-    "proxy-video-encoders",
     "display",
     "pdf-printer",
     "postscript-printer",
