@@ -8,6 +8,7 @@ import sys
 import traceback
 from threading import Lock
 from typing import Any
+from collections.abc import Callable
 
 from xpra.scripts.config import csvstrl
 from xpra.codecs.loader import load_codec, get_codec, get_codec_error
@@ -101,16 +102,16 @@ def get_hardware_encoders(names=HARDWARE_ENCODER_OPTIONS):
 
 
 
-def filt(prefix, name, inlist, all_fn, all_list):
+def filt(prefix:str, name:str, inlist, all_fn:Callable, all_list:tuple[str,...]) -> list[str]:
     #log("filt%s", (prefix, name, inlist, all_fn, all_list))
     instr = csvstrl(inlist or ()).strip(",")
     if instr=="none":
         return []
-    def ap(v):
+    def ap(v:str) -> str:
         if v.startswith("-"):
             return "-"+autoprefix(prefix, v[1:])
         return autoprefix(prefix, v)
-    def apl(l):
+    def apl(l : list[str]) -> list[str]:
         return [ap(v) for v in l]
     inlist = [x for x in instr.split(",") if x.strip()]
     while "all" in inlist:
