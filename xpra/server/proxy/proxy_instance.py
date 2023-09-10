@@ -484,7 +484,8 @@ class ProxyInstance:
             if self.cipher:
                 from xpra.net.crypto import crypto_backend_init, new_cipher_caps, DEFAULT_PADDING   # pylint: disable=import-outside-toplevel
                 crypto_backend_init()
-                padding_options = self.caps.strtupleget("cipher.padding.options", [DEFAULT_PADDING])
+                enc_caps = self.caps.dictget("encryption")
+                padding_options = typedict(enc_caps or {}).strtupleget("padding.options", [DEFAULT_PADDING])
                 auth_caps = new_cipher_caps(self.client_protocol,
                                             self.cipher, self.cipher_mode, self.encryption_key, padding_options)
                 caps.update(auth_caps)
