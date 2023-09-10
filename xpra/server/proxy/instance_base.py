@@ -122,8 +122,7 @@ class ProxyInstance:
         self.encode_thread = start_thread(self.encode_loop, "encode")
 
         self.start_network_threads()
-        if self.caps.boolget("ping-echo-sourceid"):
-            self.schedule_client_ping()
+        self.schedule_client_ping()
 
         self.send_hello()
 
@@ -468,8 +467,7 @@ class ProxyInstance:
                 self.stop(None, "disconnect from server", reason)
         elif packet_type=="hello":
             c = typedict(packet[1])
-            if c.boolget("ping-echo-sourceid"):
-                self.schedule_server_ping()
+            self.schedule_server_ping()
             maxw, maxh = c.intpair("max_desktop_size", (4096, 4096))
             caps = self.filter_server_caps(c)
             #add new encryption caps:
