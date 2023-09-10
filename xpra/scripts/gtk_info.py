@@ -8,7 +8,7 @@ import sys
 
 def main() -> int:
     # pylint: disable=import-outside-toplevel
-    from xpra.util import pver, flatten_dict, print_nested_dict
+    from xpra.util import pver, print_nested_dict
     def print_version_dict(d:dict, vformat=pver):
         for k in sorted(d.keys()):
             v = d[k]
@@ -22,7 +22,7 @@ def main() -> int:
         if "-v" in sys.argv or "--verbose" in sys.argv:
             gtk_util.SHOW_ALL_VISUALS = True
         print("GTK Version:")
-        print_version_dict(flatten_dict(gtk_util.get_gtk_version_info()))
+        print_version_dict(gtk_util.get_gtk_version_info())
         print("Display:")
         print_nested_dict(gtk_util.get_display_info(), vformat=str)
     return 0

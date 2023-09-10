@@ -15,7 +15,7 @@ from gi.repository import Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.client.gtk3.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
 from xpra.util import (
-    updict, pver, flatten_dict, noerr,
+    updict, pver, noerr,
     envbool, envint, repr_ellipsized, ellipsizer, csv, first_time, typedict,
     DEFAULT_METADATA_SUPPORTED, NotificationID,
     )
@@ -850,7 +850,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         capabilities["named_cursors"] = len(cursor_types)>0
         capabilities["encoding.transparency"] = self.has_transparency()
         if FULL_INFO>1:
-            capabilities.update(flatten_dict(get_gtk_version_info()))
+            capabilities.setdefault("versions", {}).update(get_gtk_version_info())
         EXPORT_ICON_DATA = envbool("XPRA_EXPORT_ICON_DATA", FULL_INFO>1)
         if EXPORT_ICON_DATA:
             #tell the server which icons GTK can use

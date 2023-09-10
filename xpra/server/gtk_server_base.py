@@ -17,7 +17,7 @@ gi.require_version('Gdk', '3.0')  # @UndefinedVariable
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 from gi.repository import GLib, Gdk, Gtk  #pylint: disable=no-name-in-module
 
-from xpra.util import flatten_dict, envbool
+from xpra.util import envbool
 from xpra.version_util import dict_version_trim
 from xpra.common import FULL_INFO
 from xpra.net.common import PacketType
@@ -153,7 +153,7 @@ class GTKServerBase(ServerBase):
                     "cursor.max_size"       : max_size,
                 }
         if "versions" in source.wants and FULL_INFO>=2:
-            capabilities.update(flatten_dict(get_gtk_version_info()))
+            capabilities.setdefault("versions", {}).update(get_gtk_version_info())
         return capabilities
 
     def get_ui_info(self, proto, *args) -> dict[str,Any]:

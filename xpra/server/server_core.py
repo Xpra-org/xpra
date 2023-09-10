@@ -2331,7 +2331,7 @@ class ServerCore:
         ncaps.update(proto_crypto_caps(None if source is None else source.protocol))
         capabilities = flatten_dict(ncaps)
         if source is None or "versions" in source.wants:
-            capabilities.update(flatten_dict(self.get_minimal_server_info()))
+            capabilities.update(self.get_minimal_server_info())
         capabilities |= {
             "version"               : vparts(XPRA_VERSION, FULL_INFO+1),
             "start_time"            : int(self.start_time),

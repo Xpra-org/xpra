@@ -33,7 +33,7 @@ def get_gtk_version_info() -> dict[str,Any]:
     #update props given:
     global GTK_VERSION_INFO
     def av(k, v):
-        GTK_VERSION_INFO[k] = {"version" : parse_version(v)}
+        GTK_VERSION_INFO[k] = parse_version(v)
     def V(k, module, attr_name):
         v = getattr(module, attr_name, None)
         if v is not None:
