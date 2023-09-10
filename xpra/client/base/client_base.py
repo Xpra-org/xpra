@@ -46,7 +46,7 @@ from xpra.os_util import (
     parse_encoded_bin_data,
     )
 from xpra.util import (
-    flatten_dict, typedict, updict, parse_simple_dict, noerr, std,
+    flatten_dict, typedict, parse_simple_dict, noerr, std,
     repr_ellipsized, ellipsizer, nonl, print_nested_dict,
     envbool, envint, disconnect_is_an_error, dump_all_frames, csv, obsc,
     stderr_print,
@@ -453,8 +453,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 "argv"                  : sys.argv,
             }
         capabilities.update(self.get_file_transfer_features())
-        def up(prefix, d):
-            updict(capabilities, prefix, d)
         vi = self.get_version_info()
         capabilities["build"] = vi
         mid = get_machine_id()
