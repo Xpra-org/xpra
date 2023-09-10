@@ -346,7 +346,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if protocol.TYPE!="rfb":
             for x in ("keymap-changed", "server-settings", "logging", "input-devices"):
                 protocol.large_packets.append(x)
-            protocol.set_compression_level(10)
+            protocol.set_compression_level(1)
             protocol.set_receive_aliases(self._aliases)
             protocol.enable_default_encoder()
             protocol.enable_default_compressor()

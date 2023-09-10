@@ -324,11 +324,6 @@ class ProxyInstance:
             self.stop(proto, "client connection lost")
             return
         self.client_has_more = proto.receive_pending
-        if packet_type=="set_deflate":
-            #echo it back to the client:
-            self.client_packets.put(packet)
-            self.client_protocol.source_has_more()
-            return
         if packet_type=="hello":
             if not self.client_challenge_packet:
                 log.warn("Warning: invalid hello packet from client")

@@ -88,7 +88,7 @@ PACKET_TYPES : list[str] = [
     "server-event", "startup-complete",
     "setting-change", "control",
     #network layer:
-    "disconnect", "set_deflate", "connection-lost", "gibberish", "invalid",
+    "disconnect", "connection-lost", "gibberish", "invalid",
     #pings:
     "ping", "ping_echo",
     #file transfers:

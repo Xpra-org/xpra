@@ -736,15 +736,6 @@ class ServerBase(ServerBaseClass):
         for ss in tuple(self._server_sources.values()):
             ss.send_setting_change(setting, value)
 
-    def _process_set_deflate(self, proto, packet:PacketType) -> None:
-        level = packet[1]
-        log("client has requested compression level=%s", level)
-        proto.set_compression_level(level)
-        #echo it back to the client:
-        ss = self.get_server_source(proto)
-        if ss:
-            ss.set_deflate(level)
-
     def _process_sharing_toggle(self, proto, packet:PacketType) -> None:
         assert self.sharing is None
         ss = self.get_server_source(proto)
@@ -932,7 +923,6 @@ class ServerBase(ServerBaseClass):
         #attributes / settings:
         self.add_packet_handlers({
             "server-settings"   : self._process_server_settings,
-            "set_deflate"       : self._process_set_deflate,
             "shutdown-server"   : self._process_shutdown_server,
             "exit-server"       : self._process_exit_server,
             "info-request"      : self._process_info_request,

@@ -394,10 +394,6 @@ class ClientConnection(StubSourceMixin):
             self.send_more("server-event", *args)
 
 
-    def set_deflate(self, level : int):
-        self.send("set_deflate", level)
-
-
     def send_client_command(self, *args):
         if self.hello_sent:
             self.send_more("control", *args)

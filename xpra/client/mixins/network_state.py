@@ -271,7 +271,6 @@ class NetworkState(StubClientMixin):
         return True
 
     def process_ui_capabilities(self, caps : typedict) -> None:
-        self.send_deflate_level()
         self.send_ping()
         if self.pings>0:
             self.ping_timer = GLib.timeout_add(1000*self.pings, self.send_ping)
@@ -404,17 +403,6 @@ class NetworkState(StubClientMixin):
 
 
     ######################################################################
-    # network level packet compression:
-    def set_deflate_level(self, level:int) -> None:
-        self.compression_level = level
-        self.send_deflate_level()
-
-    def send_deflate_level(self) -> None:
-        p = self._protocol
-        if p and p.TYPE=="xpra":
-            self._protocol.set_compression_level(self.compression_level)
-
-
     def send_bandwidth_limit(self) -> None:
         bandwidthlog("send_bandwidth_limit() bandwidth-limit=%i", self.bandwidth_limit)
         self.send("bandwidth-limit", self.bandwidth_limit)
