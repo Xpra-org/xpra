@@ -27,7 +27,7 @@ from xpra.os_util import (
     get_frame_info, get_info_env, get_sysconfig_info,
     )
 from xpra.util import (
-    std, envbool, envint, typedict, updict, repr_ellipsized, ellipsizer, log_screen_sizes, csv,
+    std, envbool, envint, typedict, repr_ellipsized, ellipsizer, log_screen_sizes, csv,
     merge_dicts, NotificationID, ConnectionMessage,
     )
 from xpra.scripts.config import parse_bool
@@ -416,9 +416,7 @@ class UIXpraClient(ClientBaseClass):
         caps.update(self.get_keyboard_caps())
         for c in CLIENT_BASES:
             caps.update(c.get_caps(self))
-        def u(prefix, c):
-            updict(caps, prefix, c, flatten_dicts=False)
-        u("control_commands",   self.get_control_commands_caps())
+        caps["control_commands"] = self.get_control_commands()
         if FULL_INFO>0:
             def skipkeys(d, *keys):
                 return {k:v for k,v in d.items() if k not in keys}
@@ -629,14 +627,14 @@ class UIXpraClient(ClientBaseClass):
                 cb(setting, value)
 
 
-    def get_control_commands_caps(self):
-        caps = ["show_session_info", "show_bug_report", "show_menu", "name", "debug"]
+    def get_control_commands(self) -> list[str]:
+        commands = ["show_session_info", "show_bug_report", "show_menu", "name", "debug"]
         for x in compression.get_enabled_compressors():
-            caps.append("enable_"+x)
+            commands.append("enable_"+x)
         for x in packet_encoding.get_enabled_encoders():
-            caps.append("enable_"+x)
-        log("get_control_commands_caps()=%s", caps)
-        return {"" : caps}
+            commands.append("enable_"+x)
+        log("get_control_commands()=%s", commands)
+        return commands
 
     def _process_control(self, packet : PacketType):
         command = bytestostr(packet[1])
