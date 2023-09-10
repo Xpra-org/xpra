@@ -492,6 +492,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         padding = choose_padding(self.server_padding_options)
         cipher_caps : Dict[str,Any] = {
             ""                      : enc,
+            "cipher"                : enc,
             "mode"                  : mode,
             "iv"                    : iv,
             "key_salt"              : key_salt,
