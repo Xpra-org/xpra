@@ -16,7 +16,7 @@ from xpra.common import SSH_AGENT_DISPATCH, FULL_INFO, noop
 from xpra.net.common import may_log_packet, ServerPacketHandlerType, PacketType
 from xpra.os_util import bytestostr, is_socket, WIN32
 from xpra.util import (
-    typedict, updict, merge_dicts, envbool, csv,
+    typedict, merge_dicts, envbool, csv,
     ConnectionMessage,
     )
 from xpra.net.bytestreams import set_socket_timeout
@@ -535,30 +535,6 @@ class ServerBase(ServerBaseClass):
 
     def send_hello(self, server_source, root_size, server_cipher:dict) -> None:
         capabilities = self.make_hello(server_source)
-        from xpra.server.source.encodings import EncodingsMixin
-        if "encodings" in server_source.wants and server_features.windows and isinstance(server_source, EncodingsMixin):
-            try:
-                # pylint: disable=import-outside-toplevel
-                from xpra.codecs.loader import codec_versions
-            except ImportError:
-                log("no codecs", exc_info=True)
-            else:
-                def add_encoding_caps(d):
-                    updict(d, "encoding", codec_versions, "version")
-                    for k,v in self.get_encoding_info().items():
-                        k = "encodings" if not k else f"encodings.{k}"
-                        d[k] = v
-                #we can send it later,
-                #when the init thread has finished:
-                def send_encoding_caps():
-                    d = {}
-                    add_encoding_caps(d)
-                    #make sure the 'hello' packet goes out first:
-                    self.idle_add(server_source.send_async, "encodings", d)
-                self.after_threaded_init(send_encoding_caps)
-                #check for mmap:
-                if getattr(self, "mmap_size", 0)==0:
-                    self.after_threaded_init(server_source.print_encoding_info)
         if "display" in server_source.wants and root_size:
             capabilities |= {
                 "actual_desktop_size"  : root_size,
@@ -569,6 +545,7 @@ class ServerBase(ServerBaseClass):
         if server_cipher:
             capabilities.update(server_cipher)
         server_source.send_hello(capabilities)
+        self.after_threaded_init(server_source.threaded_init_complete, self)
 
 
     ######################################################################

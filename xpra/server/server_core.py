@@ -434,23 +434,23 @@ class ServerCore:
         #run the init callbacks:
         with self.init_thread_lock:
             log("call_init_thread_callbacks() init_thread_callbacks=%s", self.init_thread_callbacks)
-            for cb in self.init_thread_callbacks:
+            for cb, args in self.init_thread_callbacks:
                 try:
-                    cb()
+                    cb(*args)
                 except Exception as e:
                     log("threaded_init()", exc_info=True)
                     log.error("Error in initialization thread callback %s", cb)
                     log.estr(e)
 
-    def add_init_thread_callback(self, callback:Callable) -> None:
-        self.init_thread_callbacks.append(callback)
+    def add_init_thread_callback(self, callback:Callable, *args) -> None:
+        self.init_thread_callbacks.append((callback, args))
 
-    def after_threaded_init(self, callback:Callable) -> None:
+    def after_threaded_init(self, callback:Callable, *args) -> None:
         with self.init_thread_lock:
             if self.init_thread is None or self.init_thread.is_alive():
-                self.add_init_thread_callback(callback)
+                self.add_init_thread_callback((callback, args))
             else:
-                callback()
+                callback(*args)
 
     def wait_for_threaded_init(self) -> None:
         if not self.init_thread:

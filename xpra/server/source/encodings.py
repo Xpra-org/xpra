@@ -9,6 +9,7 @@ from math import sqrt
 from typing import Any
 from time import sleep, monotonic
 
+from xpra.common import FULL_INFO
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window import batch_config
 from xpra.server.server_core import ClientException
@@ -109,10 +110,24 @@ class EncodingsMixin(StubSourceMixin):
         if "encodings" in self.wants and self.encoding:
             caps["encoding"] = self.encoding
         if "features" in self.wants:
-            caps.update({
-                "auto_refresh_delay"   : self.auto_refresh_delay,
-                })
+            caps["auto_refresh_delay"] = self.auto_refresh_delay
         return caps
+
+    def threaded_init_complete(self, server):
+        if "encodings" not in self.wants:
+            return
+        # by now, all the codecs have been initialized
+        d = server.get_encoding_info()
+        if FULL_INFO>0:
+            from xpra.codecs.loader import codec_versions
+            #codec_versions: dict[str, tuple[Any, ...]] = {}
+            for codec, version in codec_versions.items():
+                d[codec] = {"version" : version}
+        self.send_async("encodings", {"encodings" : d})
+        #only print encoding info when not using mmap:
+        if getattr(self, "mmap_size", 0)==0:
+            self.print_encoding_info()
+
 
 
     def recalculate_delays(self) -> None:

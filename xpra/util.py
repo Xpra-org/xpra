@@ -475,7 +475,7 @@ class typedict(dict):
             v = v.get("")
         if not isinstance(v, (list, tuple)):
             self._warn("listget%s", (k, default_value, item_type, max_items))
-            self._warn("expected a list or tuple value for %s but got %s", k, type(v))
+            self._warn("expected a list or tuple value for %s but got %s: %s", k, type(v), v)
             return default_value
         if min_items is not None and len(v)<min_items:
             self._warn("too few items in %s %s: minimum %s allowed, but got %s", type(v), k, max_items, len(v))

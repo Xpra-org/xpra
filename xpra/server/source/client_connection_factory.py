@@ -131,6 +131,11 @@ def get_client_connection_class(caps):
             self.send("hello", capabilities)
             self.hello_sent = True
 
+        def threaded_init_complete(self, server):
+            for bc in CC_BASES:
+                bc.threaded_init_complete(self, server)
+
+
         def get_info(self) -> dict[str,Any]:
             def module_name(m):
                 name = str(m.__name__.split(".")[-1])

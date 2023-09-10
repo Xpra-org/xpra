@@ -132,7 +132,6 @@ class EncodingServer(StubServerMixin):
     def get_encoding_info(self)  -> dict[str,Any]:
         return  {
              ""                     : self.encodings,       #redundant since v6
-             "all"                  : self.encodings,
              "core"                 : self.core_encodings,
              "allowed"              : self.allowed_encodings,
              "lossless"             : self.lossless_encodings,
