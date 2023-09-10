@@ -23,6 +23,17 @@ log = Logger("encoding")
 
 INIT_DELAY = envint("XPRA_ENCODER_INIT_DELAY", 0)
 
+ENCODINGS_WITH_SPEED = (
+    "h264", "vp8", "vp9",
+    "rgb24", "rgb32",
+    "png", "png/P", "png/L", "webp",
+    "scroll",
+)
+ENCODINGS_WITH_QUALITY = (
+    "jpeg", "webp",
+    "h264", "vp8", "vp9",
+    "scroll",
+)
 
 class EncodingServer(StubServerMixin):
     """
@@ -105,8 +116,7 @@ class EncodingServer(StubServerMixin):
 
 
     def get_server_features(self, _source=None) -> dict[str,Any]:
-        return {
-            }
+        return {}
 
     def get_info(self, _proto)  -> dict[str,Any]:
         info = {
@@ -121,19 +131,14 @@ class EncodingServer(StubServerMixin):
 
     def get_encoding_info(self)  -> dict[str,Any]:
         return  {
-             ""                     : self.encodings,
+             ""                     : self.encodings,       #redundant since v6
+             "all"                  : self.encodings,
              "core"                 : self.core_encodings,
              "allowed"              : self.allowed_encodings,
              "lossless"             : self.lossless_encodings,
              "with_speed"           : tuple(set({"rgb32" : "rgb", "rgb24" : "rgb"}.get(x, x)
-                                                for x in self.core_encodings if x in (
-                                                    "h264", "vp8", "vp9",
-                                                    "rgb24", "rgb32",
-                                                    "png", "png/P", "png/L", "webp",
-                                                    "scroll",
-                                                    ))),
-             "with_quality"         : tuple(x for x in self.core_encodings if x in (
-                 "jpeg", "webp", "h264", "vp8", "vp9", "scroll")),
+                                                for x in self.core_encodings if x in ENCODINGS_WITH_SPEED)),
+             "with_quality"         : tuple(x for x in self.core_encodings if x in ENCODINGS_WITH_QUALITY),
              "with_lossless_mode"   : self.lossless_mode_encodings,
              }
 
