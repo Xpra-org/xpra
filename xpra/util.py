@@ -405,9 +405,19 @@ class typedict(dict):
         get_util_logger().warn(msg, *args)
 
     def conv_get(self, k, default=None, conv=None):
-        if not super().__contains__(bytestostr(k)):
+        strkey = bytestostr(k)
+        if not super().__contains__(strkey):
+            #could be a nested dictionary?
+            #ie "pointer.grabs" -> "pointer" : {"grabs" : True}
+            parts = strkey.split(".", 1)
+            if len(parts)==2:
+                head = self.get(parts[0])
+                if head and isinstance(head, typedict):
+                    return head.conv_get(parts[1], default, conv)
+                if head and isinstance(head, dict):
+                    return typedict(head).conv_get(parts[1], default, conv)
             return default
-        v = self.get(k, default)
+        v = self.get(strkey, default)
         #auto recurse down the dictionary to find the type we want:
         if isinstance(v, dict) and conv and conv not in (dict, checkdict, typedict):
             d = typedict(v)
@@ -461,6 +471,8 @@ class typedict(dict):
         v = self.get(k)
         if v is None:
             return default_value
+        if isinstance(v, dict) and "" in v:
+            v = v.get("")
         if not isinstance(v, (list, tuple)):
             self._warn("listget%s", (k, default_value, item_type, max_items))
             self._warn("expected a list or tuple value for %s but got %s", k, type(v))
