@@ -69,6 +69,7 @@ class EncodingServer(StubServerMixin):
                 self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
             self.video_encoders = tuple(csvstrl(opts.video_encoders).split(","))
             self.csc_modules = tuple(csvstrl(opts.csc_modules).split(","))
+            getVideoHelper().set_modules(video_encoders=self.video_encoders, csc_modules=self.csc_modules)
 
     def setup(self) -> None:
         #essential codecs, load them early:
@@ -107,7 +108,6 @@ class EncodingServer(StubServerMixin):
             load_codec("enc_nvjpeg")
         if self.video:
             #load video codecs:
-            getVideoHelper().set_modules(video_encoders=self.video_encoders, csc_modules=self.csc_modules)
             getVideoHelper().init()
         self.init_encodings()
 
