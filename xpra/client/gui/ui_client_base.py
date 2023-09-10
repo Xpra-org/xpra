@@ -505,13 +505,20 @@ class UIXpraClient(ClientBaseClass):
                 log.info(f" remote desktop size is {w}x{h}")
                 if ss:
                     log_screen_sizes(w, h, ss)
-        if c.boolget("proxy"):
-            proxy_hostname = c.strget("proxy.hostname")
-            proxy_platform = c.strget("proxy.platform")
-            proxy_release = c.strget("proxy.platform.release")
-            proxy_version = c.strget("proxy.version")
-            proxy_version = c.strget("proxy.build.version", proxy_version)
-            proxy_distro = c.strget("proxy.linux_distribution")
+        proxy = c.get("proxy")
+        if proxy:
+            if isinstance(proxy, dict):
+                pcaps = typedict(proxy)
+                prefix = ""
+            else:
+                pcaps = c
+                prefix = "proxy."
+            proxy_hostname = pcaps.strget(f"{prefix}hostname")
+            proxy_platform = pcaps.strget(f"{prefix}platform")
+            proxy_release = pcaps.strget(f"{prefix}platform.release")
+            proxy_version = pcaps.strget(f"{prefix}version")
+            proxy_version = pcaps.strget(f"{prefix}build.version", proxy_version)
+            proxy_distro = pcaps.strget(f"{prefix}linux_distribution")
             msg = "via: %s proxy version %s" % (
                 platform_name(proxy_platform, proxy_distro or proxy_release),
                 std(proxy_version or "unknown")

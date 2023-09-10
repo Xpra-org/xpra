@@ -24,7 +24,7 @@ from xpra.os_util import (
     get_hex_uuid, bytestostr, strtobytes,
     )
 from xpra.util import (
-    flatten_dict, typedict, updict, ellipsizer, envint, envbool,
+    flatten_dict, typedict, ellipsizer, envint, envbool,
     csv, first_time, ConnectionMessage,
     )
 from xpra.version_util import XPRA_VERSION, vparts
@@ -297,9 +297,10 @@ class ProxyInstance:
         ncaps.update(proto_crypto_caps(proto))
         pcaps.update(flatten_dict(ncaps))
         #then add the proxy info:
-        updict(pcaps, "proxy", get_server_info(), flatten_dicts=True)
-        pcaps["proxy"] = True
-        pcaps["proxy.hostname"] = socket.gethostname()
+        si = get_server_info()
+        if FULL_INFO>0:
+            si["hostname"] = socket.gethostname()
+        pcaps["proxy"] = si
         return pcaps
 
 
