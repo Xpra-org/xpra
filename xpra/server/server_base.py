@@ -12,7 +12,7 @@ from collections.abc import Callable
 
 from xpra.server.server_core import ServerCore
 from xpra.server.background_worker import add_work_item
-from xpra.common import SSH_AGENT_DISPATCH, FULL_INFO
+from xpra.common import SSH_AGENT_DISPATCH, FULL_INFO, noop
 from xpra.net.common import may_log_packet, ServerPacketHandlerType, PacketType
 from xpra.os_util import bytestostr, is_socket, WIN32
 from xpra.util import (
@@ -918,6 +918,7 @@ class ServerBase(ServerBaseClass):
         self.add_packet_handlers({
             "sharing-toggle"    : self._process_sharing_toggle,
             "lock-toggle"       : self._process_lock_toggle,
+            "set_deflate"       : noop,     #removed in v6
             }, False)
         #attributes / settings:
         self.add_packet_handlers({
