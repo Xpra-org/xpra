@@ -565,7 +565,8 @@ class ServerBase(ServerBaseClass):
                 log("no codecs", exc_info=True)
             else:
                 def add_encoding_caps(d):
-                    updict(d, "encoding", codec_versions, "version")
+                    if FULL_INFO>1:
+                        updict(d, "encoding", codec_versions, "version")
                     for k,v in self.get_encoding_info().items():
                         k = "encodings" if not k else f"encodings.{k}"
                         d[k] = v
