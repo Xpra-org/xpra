@@ -103,15 +103,15 @@ def get_hardware_encoders(names=HARDWARE_ENCODER_OPTIONS):
 
 def filt(prefix, name, inlist, all_fn, all_list):
     #log("filt%s", (prefix, name, inlist, all_fn, all_list))
+    instr = csvstrl(inlist or ()).strip(",")
+    if instr=="none":
+        return []
     def ap(v):
         if v.startswith("-"):
             return "-"+autoprefix(prefix, v[1:])
         return autoprefix(prefix, v)
     def apl(l):
         return [ap(v) for v in l]
-    instr = csvstrl(inlist or ()).strip(",")
-    if instr=="none":
-        return []
     inlist = [x for x in instr.split(",") if x.strip()]
     while "all" in inlist:
         i = inlist.index("all")
