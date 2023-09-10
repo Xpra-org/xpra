@@ -24,7 +24,7 @@ from xpra.scaling_parser import (
     parse_scaling, scaleup_value, scaledown_value, fequ, r4cmp,
     MIN_SCALING, MAX_SCALING, SCALING_EMBARGO_TIME,
     )
-from xpra.util import envint, log_screen_sizes, flatten_dict, typedict, NotificationID
+from xpra.util import envint, log_screen_sizes, typedict, NotificationID
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
@@ -147,14 +147,8 @@ class DisplayClient(StubClientMixin):
         monitors = self.get_monitors_info()
         caps["monitors"] = adjust_monitor_refresh_rate(self.refresh_rate, monitors)
         caps.update(self.get_screen_caps())
-        dpi_caps = self.get_dpi_caps()
-        caps["dpi"] = dpi_caps
-        scaling_caps = self.get_scaling_caps()
-        caps["screen-scaling"] = scaling_caps
-        caps.update(flatten_dict({
-            "dpi"               : dpi_caps,
-            "screen-scaling"    : scaling_caps,
-            }))
+        caps["dpi"] = self.get_dpi_caps()
+        caps["screen-scaling"] = self.get_scaling_caps()
         return caps
 
     def get_dpi_caps(self) -> dict[str,Any]:
