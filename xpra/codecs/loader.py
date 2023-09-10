@@ -27,8 +27,7 @@ FULL_SELFTEST = envbool("XPRA_CODEC_FULL_SELFTEST", False)
 CODEC_FAIL_IMPORT = os.environ.get("XPRA_CODEC_FAIL_IMPORT", "").split(",")
 CODEC_FAIL_SELFTEST = os.environ.get("XPRA_CODEC_FAIL_SELFTEST", "").split(",")
 
-log("codec loader settings: SELFTEST=%s, FULL_SELFTEST=%s, CODEC_FAIL_IMPORT=%s, CODEC_FAIL_SELFTEST=%s",
-        SELFTEST, FULL_SELFTEST, CODEC_FAIL_IMPORT, CODEC_FAIL_SELFTEST)
+log(f"codec loader settings: {SELFTEST=}, {FULL_SELFTEST=}, {CODEC_FAIL_IMPORT=}, {CODEC_FAIL_SELFTEST=}")
 
 
 SKIP_LIST : tuple[str,...] = ()
