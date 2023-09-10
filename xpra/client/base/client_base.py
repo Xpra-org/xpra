@@ -462,8 +462,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             capabilities["machine_id"] = mid
         cipher_caps = self.get_cipher_caps()
         if cipher_caps:
-            up("cipher", cipher_caps)
-            cipher_caps["cipher"] = cipher_caps.pop("")
             capabilities["encryption"] = cipher_caps
         capabilities.update(self.hello_extra)
         return capabilities
