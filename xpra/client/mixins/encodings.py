@@ -14,7 +14,7 @@ from xpra.scripts.config import parse_bool_or_int
 from xpra.common import FULL_INFO, VIDEO_MAX_SIZE
 from xpra.net.common import PacketType
 from xpra.net import compression
-from xpra.util import envint, envbool, updict, csv, typedict
+from xpra.util import envint, envbool, csv, typedict
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
@@ -152,14 +152,17 @@ class Encodings(StubClientMixin):
 
     def get_caps(self) -> dict[str,Any]:
         caps = {
-            "encodings"                 : self.get_encodings(),
-            "encodings.core"            : self.get_core_encodings(),
-            "encodings.window-icon"     : self.get_window_icon_encodings(),
-            "encodings.cursor"          : self.get_cursor_encodings(),
-            "encodings.packet"          : True,
-            }
-        updict(caps, "batch",           self.get_batch_caps())
-        updict(caps, "encoding",        self.get_encodings_caps())
+            "encodings" : {
+                ""                : self.get_encodings(),
+                "all"             : self.get_encodings(),
+                "core"            : self.get_core_encodings(),
+                "window-icon"     : self.get_window_icon_encodings(),
+                "cursor"          : self.get_cursor_encodings(),
+                "packet"          : True,
+            },
+            "batch" : self.get_batch_caps(),
+            "encoding" : self.get_encodings_caps(),
+        }
         return caps
 
     def parse_server_capabilities(self, c : typedict) -> bool:
@@ -263,7 +266,7 @@ class Encodings(StubClientMixin):
                     h264_caps[f"{csc_name}.profile"] = profile
             h264_caps["fast-decode"] = envbool("XPRA_X264_FAST_DECODE", False)
             log("x264 encoding options: %s", h264_caps)
-            updict(caps, "h264", h264_caps)
+            caps["h264"] = h264_caps
         log("encoding capabilities: %s", caps)
         return caps
 

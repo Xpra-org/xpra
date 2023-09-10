@@ -7,7 +7,7 @@ import os
 from typing import Any
 from gi.repository import GObject, Gdk, Gio  # @UnresolvedImport
 
-from xpra.util import updict, log_screen_sizes, envbool, csv
+from xpra.util import log_screen_sizes, envbool, csv
 from xpra.net.common import PacketType
 from xpra.server import server_features
 from xpra.gtk_common.gtk_util import get_screen_sizes, get_root_size
@@ -171,14 +171,12 @@ class DesktopServerBase(DesktopServerBaseClass):
     def make_hello(self, source) -> dict[str,Any]:
         capabilities = super().make_hello(source)
         if "features" in source.wants:
-            capabilities |= {
-                "pointer.grabs"    : True,
-                "desktop"          : True,
-            }
-            updict(capabilities, "window", {
-                "decorations"            : True,
-                "states"                 : ["iconified", "focused"],
-                })
+            capabilities.setdefault("pointer", {})["grabs"] = True
+            capabilities["desktop"] = True
+            capabilities.setdefault("window", {}).update({
+                "decorations" : True,
+                "states" : ["iconified", "focused"],
+            })
             capabilities["screen_sizes"] = get_screen_sizes()
         return capabilities
 

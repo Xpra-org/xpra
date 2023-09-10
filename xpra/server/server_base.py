@@ -528,7 +528,6 @@ class ServerBase(ServerBaseClass):
                  "lock-toggle"                  : self.lock is None,
                  "windows"                      : server_features.windows,
                  "keyboard"                     : server_features.input_devices,
-                 "pointer"                      : server_features.input_devices,
             }
             sf = self.get_server_features(source)
             capabilities.update(sf)

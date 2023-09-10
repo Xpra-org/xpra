@@ -14,7 +14,7 @@ from typing import Any
 from gi.repository import GObject, Gdk, GdkX11  # @UnresolvedImport
 
 from xpra.version_util import XPRA_VERSION
-from xpra.util import updict, rindex, envbool, envint, typedict, WORKSPACE_NAMES
+from xpra.util import rindex, envbool, envint, typedict, WORKSPACE_NAMES
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE
 from xpra.net.common import PacketType
@@ -257,8 +257,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
     def make_hello(self, source) -> dict[str,Any]:
         capabilities = super().make_hello(source)
         if "features" in source.wants:
-            capabilities["pointer.grabs"] = True
-            updict(capabilities, "window", {
+            capabilities.setdefault("pointer", {})["grabs"] = True
+            capabilities.setdefault("window", {}).update({
                 "frame-extents"          : True,
                 "configure.delta"        : True,
                 "signals"                : WINDOW_SIGNALS,
@@ -268,7 +268,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                     "above", "below",
                     "sticky", "iconified", "maximized",
                     ],
-                })
+            })
         return capabilities
 
 

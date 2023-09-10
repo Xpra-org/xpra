@@ -35,7 +35,7 @@ from xpra.os_util import (
     )
 from xpra.util import (
     envint, envbool, typedict,
-    make_instance, updict, repr_ellipsized, noerr, first_time,
+    make_instance, repr_ellipsized, noerr, first_time,
     )
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
@@ -366,12 +366,12 @@ class WindowClient(StubClientMixin):
         caps = {
             #generic server flags:
             #mouse and cursors:
-            "mouse.show"                : MOUSE_SHOW,
-            "mouse.initial-position"    : self.get_mouse_position(),
+            "mouse" : {
+                "show"                : MOUSE_SHOW,
+                "initial-position"    : self.get_mouse_position(),
+            },
             "named_cursors"             : False,
             "cursors"                   : self.client_supports_cursors,
-            "double_click.time"         : get_double_click_time(),
-            "double_click.distance"     : get_double_click_distance(),
             "double_click" : {
                 "time"         : get_double_click_time(),
                 "distance"     : get_double_click_distance(),
@@ -382,11 +382,11 @@ class WindowClient(StubClientMixin):
             "auto_refresh_delay"        : int(self.auto_refresh_delay*1000),
             #system tray forwarding:
             "system_tray"               : self.client_supports_system_tray,
+            "window" : self.get_window_caps(),
+            "encoding" : {
+                "eos"                       : True,
             }
-        updict(caps, "window", self.get_window_caps())
-        updict(caps, "encoding", {
-            "eos"                       : True,
-            })
+        }
         return caps
 
     def get_window_caps(self) -> dict[str,Any]:

@@ -15,7 +15,7 @@ from gi.repository import Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.client.gtk3.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
 from xpra.util import (
-    updict, pver, noerr,
+    pver, noerr,
     envbool, envint, repr_ellipsized, ellipsizer, csv, first_time, typedict,
     DEFAULT_METADATA_SUPPORTED, NotificationID,
     )
@@ -896,18 +896,16 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 ms += ["shape"]
         log("metadata.supported: %s", ms)
         capabilities["metadata.supported"] = ms
-        updict(capabilities, "pointer", {
+        capabilities["pointer"] = {
             "grabs" : True,
             "relative" : True,
-            })
-        updict(capabilities, "window", {
-               "frame_sizes"            : self.get_window_frame_sizes()
-               })
-        updict(capabilities, "encoding", {
-                    "icons.greedy"      : True,         #we don't set a default window icon any more
-                    "icons.size"        : (64, 64),     #size we want
-                    "icons.max_size"    : (128, 128),   #limit
-                    })
+        }
+        capabilities.setdefault("window", {})["frame_sizes"] = self.get_window_frame_sizes()
+        capabilities.setdefault("encoding", {})["icons"] = {
+            "greedy"      : True,         #we don't set a default window icon any more
+            "size"        : (64, 64),     #size we want
+            "max_size"    : (128, 128),   #limit
+        }
         return capabilities
 
 
