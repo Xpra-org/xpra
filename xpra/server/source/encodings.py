@@ -118,7 +118,7 @@ class EncodingsMixin(StubSourceMixin):
             return
         # by now, all the codecs have been initialized
         d = server.get_encoding_info()
-        if FULL_INFO>0:
+        if FULL_INFO>1:
             from xpra.codecs.loader import codec_versions
             #codec_versions: dict[str, tuple[Any, ...]] = {}
             for codec, version in codec_versions.items():
