@@ -288,31 +288,27 @@ class InfoXpraClient(CommandConnectClient):
             return
         exit_code = ExitCode.OK
         try:
-            if FLATTEN_INFO<2:
-                #compatibility mode:
-                c = flatten_dict(caps)
-                for k in sorted_nicely(c.keys()):
-                    v = c.get(k)
-                    def fixvalue(w):
-                        if isinstance(w, bytes):
-                            if k.endswith(".data"):
-                                return hexstr(w)
-                            return bytestostr(w)
-                        elif isinstance(w, (tuple,list)):
-                            return type(w)([fixvalue(x) for x in w])
-                        return w
-                    v = fixvalue(v)
-                    k = fixvalue(k)
-                    if k.endswith("xid"):
-                        try:
-                            v = hex(int(v))
-                        except (TypeError, ValueError):
-                            pass
-                    if k.endswith("version") and isinstance(v, (tuple, list)):
-                        v = ".".join(str(x) for x in v)
-                    print_fn(f"{k}={nonl(v)}")
-            else:
-                print_nested_dict(caps, print_fn=print_fn)
+            c = flatten_dict(caps)
+            for k in sorted_nicely(c.keys()):
+                v = c.get(k)
+                def fixvalue(w):
+                    if isinstance(w, bytes):
+                        if k.endswith(".data"):
+                            return hexstr(w)
+                        return bytestostr(w)
+                    elif isinstance(w, (tuple,list)):
+                        return type(w)([fixvalue(x) for x in w])
+                    return w
+                v = fixvalue(v)
+                k = fixvalue(k)
+                if k.endswith("xid"):
+                    try:
+                        v = hex(int(v))
+                    except (TypeError, ValueError):
+                        pass
+                if k.endswith("version") and isinstance(v, (tuple, list)):
+                    v = ".".join(str(x) for x in v)
+                print_fn(f"{k}={nonl(v)}")
         except OSError:
             exit_code = ExitCode.IO_ERROR
         self.quit(exit_code)
