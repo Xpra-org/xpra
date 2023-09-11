@@ -383,10 +383,7 @@ class ClientConnection(StubSourceMixin):
 
 
     def send_setting_change(self, setting, value):
-        #we always subclass InfoMixin which defines "client_setting_change":
-        log(f"send_setting_change({setting}, ..) {self.client_setting_change=}")
-        if self.client_setting_change:
-            self.send_more("setting-change", setting, value)
+        self.send_more("setting-change", setting, value)
 
 
     def send_server_event(self, *args):

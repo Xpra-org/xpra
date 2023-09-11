@@ -34,7 +34,6 @@ class ClientInfoMixin(StubSourceMixin):
         self.argv : tuple[str,...] = ()
         self.sharing = False
         # client capabilities/options:
-        self.client_setting_change = False
         self.client_type = ""
         self.client_version = ""
         self.client_revision= ""
@@ -78,7 +77,6 @@ class ClientInfoMixin(StubSourceMixin):
         self.client_wm_name = c.strget("wm_name", "")
         self.client_session_type = c.strget("session-type")
         self.client_session_type_full = c.strget("session-type.full", "")
-        self.client_setting_change = c.boolget("setting-change")
         self.client_opengl = typedict(c.dictget("opengl") or {})
         self.proxy_hostname = c.strget("proxy.hostname")
         self.proxy_platform = c.strget("proxy.platform")
