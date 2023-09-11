@@ -365,10 +365,15 @@ class ServerBase(ServerBaseClass):
                 self.antialias = {}
                 self.cursor_size = 24
             else:
-                tdpi = typedict(c.dictget("dpi") or {})
-                self.dpi = tdpi.intget("", 0)
-                self.xdpi = tdpi.intget("x", self.xdpi)
-                self.ydpi = tdpi.intget("y", self.ydpi)
+                dpi_caps = c.get("dpi")
+                if isinstance(dpi_caps, int):
+                    #legacy mode, ie: html5 client
+                    self.dpi = self.xpdi = self.ydpi = int(dpi_caps)
+                else:
+                    tdpi = typedict(c.dictget("dpi") or {})
+                    self.dpi = tdpi.intget("", 0)
+                    self.xdpi = tdpi.intget("x", self.xdpi)
+                    self.ydpi = tdpi.intget("y", self.ydpi)
                 self.double_click_time = c.intget("double_click.time", -1)
                 self.double_click_distance = c.intpair("double_click.distance", (-1, -1))
                 self.antialias = c.dictget("antialias", {})
