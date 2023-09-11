@@ -4,13 +4,26 @@ xpra (5.0.2-1) UNRELEASED; urgency=low
     - unusable vsock module
     - start-after-connect was broken
     - Overflow error in MS Windows hooks
+    - notification packet errors due to missing icon
+    - empty system tray menu on some platforms
+    - proxy errors in threaded mode on second connection
   * Minor:
+    - workaround for ancient versions of Pillow
     - unresponsive system tray after explorer.exe restart
-    - better packet namespace compatibility
     - log warnings with custom cursors and OpenGL backend
+    - don't send cursors without a matching encoding
+    - better packet namespace compatibility
     - only warn once about unknown NVENC presets
+    - skip unused codec information
+    - preserve 'proxy-video-encoders' in remote command lines
+    - bandwidth flag compatibility, encryption namespace, encoding namespace
+  * Audio:
+    - pactl output parsing bug
+    - pactl improve detection of monitor devices
+    - microphone support for Chromium
+    - cleaner pulseaudio command options
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 06 Sep 2023 18:07:52 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 11 Sep 2023 23:10:16 +0700
 
 xpra (5.0.1-1) UNRELEASED; urgency=low
   * Major fixes:

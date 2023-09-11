@@ -768,18 +768,30 @@ fi
 
 
 %changelog
-* Wed Sep 06 2023 Antoine Martin <antoine@xpra.org> 5.0.2-10
+* Mon Sep 11 2023 Antoine Martin <antoine@xpra.org> 5.0.2-10
 - Major fixes:
    missing x264 encoder in DEB packages
    unusable vsock module
    start-after-connect was broken
    Overflow error in MS Windows hooks
+   notification packet errors due to missing icon
+   empty system tray menu on some platforms
+   proxy errors in threaded mode on second connection
 - Minor:
+   workaround for ancient versions of Pillow
    unresponsive system tray after explorer.exe restart
-   better packet namespace compatibility
    log warnings with custom cursors and OpenGL backend
+   don't send cursors without a matching encoding
    better packet namespace compatibility
    only warn once about unknown NVENC presets
+   skip unused codec information
+   preserve 'proxy-video-encoders' in remote command lines
+   bandwidth flag compatibility, encryption namespace, encoding namespace
+- Audio:
+   pactl output parsing bug
+   pactl improve detection of monitor devices
+   microphone support for Chromium
+   cleaner pulseaudio command options
 
 * Sat Aug 26 2023 Antoine Martin <antoine@xpra.org> 5.0.1-10
 - Major fixes:

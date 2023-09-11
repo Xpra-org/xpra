@@ -6,11 +6,24 @@
     * [unusable vsock module](https://github.com/Xpra-org/xpra/commit/b1264a7a3418936c3bed6622c346bc2283c94aa9)
     * [start-after-connect was broken](https://github.com/Xpra-org/xpra/commit/3cf4a83336909d0408caa0d41eff141ae2447532)
     * [Overflow error in MS Windows hooks](https://github.com/Xpra-org/xpra/commit/c46e59398b7833d3f0710d63abada57e9e6b6af5) + [fixup](https://github.com/Xpra-org/xpra/commit/7e2983c0ef73f49dd11684cb3f4af07b739706d6)
+    * [notification packet errors due to missing icon](https://github.com/Xpra-org/xpra/commit/57c5baadc5b9f5abc4aa74c669a6632451cd0f44)
+    * [empty system tray menu on some platforms](https://github.com/Xpra-org/xpra/commit/b76cca2278b98c3bbe9d764f081afc5e1a6aa884)
+    * [proxy errors in threaded mode on second connection](https://github.com/Xpra-org/xpra/commit/b502efe919499700eb74550a013a2372916424a0)
 * Minor:
+    * [workaround for ancient versions of Pillow](https://github.com/Xpra-org/xpra/commit/35f77d9d9dce78d569f453608aea8b5e712aeb25)
     * [unresponsive system tray after explorer.exe restart](https://github.com/Xpra-org/xpra/commit/cb290d9b73ed5641c9f8816e917290c335671444)
     * [log warnings with custom cursors and OpenGL backend](https://github.com/Xpra-org/xpra/commit/563339b8ba42f49a2b5c2bbd62f340d9d3332188)
-    * [better packet namespace compatibility](https://github.com/Xpra-org/xpra/commit/3e21c8a93ad6bd6390fc87f25cc0f0445a60e45a)
+    * [don't send cursors without a matching encoding](https://github.com/Xpra-org/xpra/commit/fdf79586e6d39e746e67fd291ec9e79524e2f115)
+    * [better packet namespace compatibility](https://github.com/Xpra-org/xpra/commit/3e21c8a93ad6bd6390fc87f25cc0f0445a60e45a) + [simplify](https://github.com/Xpra-org/xpra/commit/f60bebd9dbfdfeec6dac4e50d3176166d4c27e90) and [fixup](https://github.com/Xpra-org/xpra/commit/aed7a3791db1cd8e38a2d18a89ce2be3ba18eed6)
     * [only warn once about unknown NVENC presets](https://github.com/Xpra-org/xpra/commit/5baf3e79e9dffadf19521c6e02df2b357ba1a508)
+    * [skip unused codec information](https://github.com/Xpra-org/xpra/commit/d10838e9bb5ea9cc4f58490cdb5763bd4e635569)
+    * [preserve 'proxy-video-encoders' in remote command lines](https://github.com/Xpra-org/xpra/commit/845fed7586fb600d5d744cf1be146aa8d3c57f5f)
+    * [bandwidth flag compatibility](https://github.com/Xpra-org/xpra/commit/1a01b86baa78bb67acea2dc21aecb6969f9aee65), [encryption namespace](https://github.com/Xpra-org/xpra/commit/5f576be65d45ef9425df9bd6410a4d7e4bbc06fb), [encoding namespace](https://github.com/Xpra-org/xpra/commit/3ba907a061151684b4628c930d7feaed3d63c421)
+* Audio:
+    * [pactl output parsing bug](https://github.com/Xpra-org/xpra/commit/3a923c857a249e19ebc72ba2997ceafacd4fd77f)
+    * [pactl improve detection of monitor devices](https://github.com/Xpra-org/xpra/commit/d0d1fc249e1d3e893a15affe7ad056b633991022)
+    * [microphone support for Chromium](https://github.com/Xpra-org/xpra/commit/c53a983efe41f6e95b31160ef86099a711d62322)
+    * [cleaner pulseaudio command options](https://github.com/Xpra-org/xpra/commit/8f903bb9f053eb9d57fa84f0e425fac2b198d169)
 
 ## [5.0.1] 2023-08-29
 * Major fixes:
