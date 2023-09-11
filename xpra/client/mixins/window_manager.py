@@ -52,7 +52,6 @@ cursorlog = Logger("cursor")
 metalog = Logger("metadata")
 traylog = Logger("client", "tray")
 
-MOUSE_SHOW : bool = envbool("XPRA_MOUSE_SHOW", True)
 SMOOTH_SCROLL : bool = envbool("XPRA_SMOOTH_SCROLL", True)
 
 PAINT_FAULT_RATE : int = envint("XPRA_PAINT_FAULT_INJECTION_RATE")
@@ -96,7 +95,6 @@ FAKE_SUSPEND_RESUME : int = envint("XPRA_FAKE_SUSPEND_RESUME", 0)
 MOUSE_SCROLL_SQRT_SCALE : bool = envbool("XPRA_MOUSE_SCROLL_SQRT_SCALE", OSX)
 MOUSE_SCROLL_MULTIPLIER : int = envint("XPRA_MOUSE_SCROLL_MULTIPLIER", 100)
 
-PRE_MAP : bool = envbool("XPRA_PRE_MAP_WINDOWS", True)
 SHOW_DELAY : int = envint("XPRA_SHOW_DELAY", -1)
 
 DRAW_TYPES : dict[type,str] = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
@@ -367,7 +365,7 @@ class WindowClient(StubClientMixin):
             #generic server flags:
             #mouse and cursors:
             "mouse" : {
-                "show"                : MOUSE_SHOW,
+                "show"                : True,       #assumed available in v6
                 "initial-position"    : self.get_mouse_position(),
             },
             "named_cursors"             : False,
@@ -395,7 +393,7 @@ class WindowClient(StubClientMixin):
             "min-size"                  : self.min_window_size,
             "max-size"                  : self.max_window_size,
             "restack"                   : True,
-            "pre-map"                   : PRE_MAP,
+            "pre-map"                   : True,
             }
 
 

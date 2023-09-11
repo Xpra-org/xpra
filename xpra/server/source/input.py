@@ -29,7 +29,6 @@ class InputMixin(StubSourceMixin):
         self.double_click_time : int = -1
         self.double_click_distance : tuple[int, int] | None = None
         # mouse echo:
-        self.mouse_show : bool = False
         self.mouse_last_position : tuple[int,int] | None = None
         self.mouse_last_relative_position : tuple[int,int] | None = None
 
@@ -46,7 +45,6 @@ class InputMixin(StubSourceMixin):
         else:
             self.double_click_time = c.intget("double_click.time")
             self.double_click_distance = c.intpair("double_click.distance")
-        self.mouse_show = c.boolget("mouse.show")
         self.mouse_last_position = c.intpair("mouse.initial-position")
 
 
@@ -140,10 +138,8 @@ class InputMixin(StubSourceMixin):
 
 
     def update_mouse(self, wid:int, x:int, y:int, rx:int, ry:int) -> None:
-        log("update_mouse(%s, %i, %i, %i, %i) current=%s, client=%i, show=%s",
-            wid, x, y, rx, ry, self.mouse_last_position, self.counter, self.mouse_show)
-        if not self.mouse_show:
-            return
+        log("update_mouse(%s, %i, %i, %i, %i) current=%s, client=%i",
+            wid, x, y, rx, ry, self.mouse_last_position, self.counter)
         if self.mouse_last_position!=(x, y) or self.mouse_last_relative_position!=(rx, ry):
             self.mouse_last_position = (x, y)
             self.mouse_last_position = (rx, ry)

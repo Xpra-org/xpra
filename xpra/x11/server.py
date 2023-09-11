@@ -526,9 +526,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
         window.send_configure_notify()
         self._send_new_window_packet(window)
         if PRE_MAP:
-            #pre-map the window if any client supports this,
-            #so we can send the pixel data immediately after:
-            sources = tuple(filter(lambda source : getattr(source, "window_pre_map", False), self._server_sources.values()))
+            #pre-map the window if any client will be showing it
+            sources = tuple(self._server_sources.values())
             if sources:
                 log("pre-mapping window %i for %s at %s", wid, sources, geometry)
                 geometry = self.clamp_window(*geometry)[1]

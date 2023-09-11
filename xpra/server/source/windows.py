@@ -84,7 +84,6 @@ class WindowsMixin(StubSourceMixin):
         self.window_min_size : tuple[int,int] = (0, 0)
         self.window_max_size : tuple[int,int] = (0, 0)
         self.window_restack = False
-        self.window_pre_map = False
         self.system_tray = False
         self.metadata_supported : tuple[str,...] = ()
         self.cursor_timer = 0
@@ -151,7 +150,6 @@ class WindowsMixin(StubSourceMixin):
         self.window_min_size = c.inttupleget("window.min-size", (0, 0))
         self.window_max_size = c.inttupleget("window.max-size", (0, 0))
         self.window_restack = c.boolget("window.restack", False)
-        self.window_pre_map = c.boolget("window.pre-map", False)
         #window filters:
         try:
             for object_name, property_name, operator, value in c.tupleget("window-filters"):
@@ -174,7 +172,6 @@ class WindowsMixin(StubSourceMixin):
             "system-tray"   : self.system_tray,
             "suspended"     : self.suspended,
             "restack"       : self.window_restack,
-            "pre-map"       : self.window_pre_map,
             }
         wsize : dict[str,Any] = {
             "min"   : self.window_min_size,
