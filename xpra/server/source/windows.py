@@ -300,7 +300,7 @@ class WindowsMixin(StubSourceMixin):
                 encoding = "raw"
             else:
                 cursorlog("no supported cursor encodings")
-                cpixels = b""
+                return
             cursor_data[7] = cpixels
         cursorlog("do_send_cursor(..) %sx%s %s cursor name='%s', serial=%#x with delay=%s (cursor_encodings=%s)",
                   w, h, (encoding or "empty"), bytestostr(name), serial, delay, self.cursor_encodings)
