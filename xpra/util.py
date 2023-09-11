@@ -402,15 +402,12 @@ class typedict(dict):
         if kstr in self:
             return super().get(kstr, default)
         #try to locate this value in a nested dictionary:
-        d = self
-        while kstr.find(".")>0:
+        if kstr.find(".")>0:
             prefix, k = kstr.split(".", 1)
-            if prefix not in d:
-                return default
-            d = self.get(prefix)
-            if d is None or not isinstance(d, dict):
-                return default
-            d = typedict(d)
+            if prefix in self:
+                v = super().get(prefix)
+                if isinstance(v, dict):
+                    return typedict(v).get(k, default)
         return default
     def setdefault(self, k, default=None):
         return super().setdefault(bytestostr(k), default)
@@ -433,23 +430,27 @@ class typedict(dict):
 
     def conv_get(self, k, default=None, conv=None):
         strkey = bytestostr(k)
-        if not super().__contains__(strkey):
-            #could be a nested dictionary?
-            #ie "pointer.grabs" -> "pointer" : {"grabs" : True}
-            parts = strkey.split(".", 1)
-            if len(parts)==2:
-                head = self.get(parts[0])
-                if head and isinstance(head, typedict):
-                    return head.conv_get(parts[1], default, conv)
-                if head and isinstance(head, dict):
-                    return typedict(head).conv_get(parts[1], default, conv)
-            return default
-        v = self.get(strkey, default)
-        #auto recurse down the dictionary to find the type we want:
-        if isinstance(v, dict) and conv and conv not in (dict, checkdict, typedict):
+        if strkey in self:
+            v = super().get(strkey)
+        else:
+            #try harder by recursing:
+            d = self
+            while strkey.find(".")>0:
+                prefix, k = strkey.split(".", 1)
+                if prefix not in d:
+                    return default
+                v = d[prefix]
+                if not isinstance(v, dict):
+                    return default
+                d = v
+                strkey = k
+            if strkey not in d:
+                return default
+            v = dict.get(d, strkey)
+        if isinstance(v, dict) and conv and conv in (bytestostr, strtobytes, int, bool):
             d = typedict(v)
             if "" in d:
-                return conv(d.get(""))
+                v = d[""]
         try:
             return conv(v)
         except (TypeError, ValueError, AssertionError) as e:
