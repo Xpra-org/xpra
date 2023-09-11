@@ -295,6 +295,9 @@ class EncodingsMixin(StubSourceMixin):
             self.parse_encoding_caps(c)
 
     def parse_encoding_caps(self, c:typedict) -> None:
+        v = c.get("encoding")
+        if isinstance(v, dict):
+            self.encoding_options.update(v)
         self.set_encoding(c.strget("encoding", None), None)
         #encoding options (filter):
         #1: these properties are special cased here because we
