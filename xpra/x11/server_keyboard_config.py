@@ -168,13 +168,10 @@ class KeyboardConfig(KeyboardConfigBase):
 
     def parse_layout(self, props) -> None:
         """ used by both process_hello and process_keymap """
-        #clients version 4.4 and later use a 'keymap' substructure:
         keymap_dict = typedict(props.dictget("keymap") or {})
-        def l(k):    # noqa: E743
-            return keymap_dict.strget(k, props.get(f"xkbmap_{k}"))
-        self.layout = l("layout")
-        self.variant = l("variant")
-        self.options = l("options")
+        self.layout = keymap_dict.strget("layout", "us")
+        self.variant = keymap_dict.strget("variant", "")
+        self.options = keymap_dict.strget("options", "")
 
 
     def get_hash(self) -> str:
