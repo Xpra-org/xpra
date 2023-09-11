@@ -46,7 +46,7 @@ class ClipboardConnection(StubSourceMixin):
         ccaps = c.get("clipboard")
         if ccaps and isinstance(ccaps, dict):
             ccaps = typedict(ccaps)
-            self.clipboard_enabled = True
+            self.clipboard_enabled = ccaps.boolget("enabled", True)
             self.clipboard_notifications = ccaps.boolget("notifications")
             self.clipboard_greedy = ccaps.boolget("greedy")
             self.clipboard_want_targets = ccaps.boolget("want_targets")
