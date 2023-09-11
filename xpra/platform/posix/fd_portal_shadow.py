@@ -48,6 +48,7 @@ class PortalShadow(GTKShadowServerBase):
     def __init__(self, multi_window=True):
         GTKShadowServerBase.__init__(self, multi_window=multi_window)
         self.session = None
+        self.session_type = "portal desktop"
         self.session_path : str = ""
         self.session_handle : str = ""
         self.authenticating_client = None
@@ -56,6 +57,10 @@ class PortalShadow(GTKShadowServerBase):
         log(f"setup_capture() self.portal_interface={self.portal_interface}")
         #we're not using X11, so no need for this check:
         os.environ["XPRA_UI_THREAD_CHECK"] = "0"
+
+
+    def get_server_mode(self) -> str:
+        return "portal shadow"
 
 
     def notify_new_user(self, ss) -> None:

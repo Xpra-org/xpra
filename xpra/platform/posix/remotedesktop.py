@@ -23,6 +23,7 @@ mouselog = Logger("shadow", "mouse")
 class RemoteDesktop(PortalShadow):
     def __init__(self, multi_window=True):
         super().__init__(multi_window)
+        self.session_type = "pipewire desktop"
         self.input_devices = 0
         self.keymap = Gdk.Keymap.get_default()
         if not self.keymap:

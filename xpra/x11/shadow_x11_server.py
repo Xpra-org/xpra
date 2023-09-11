@@ -324,8 +324,11 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
     def __init__(self, multi_window:bool=True):
         GTKShadowServerBase.__init__(self, multi_window=multi_window)
         X11ServerCore.__init__(self)
-        self.session_type = "X11 shadow"
+        self.session_type = "X11"
         self.modify_keymap = False
+
+    def get_server_mode(self) -> str:
+        return "X11 shadow"
 
     def init(self, opts) -> None:
         GTKShadowServerBase.init(self, opts)
