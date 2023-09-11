@@ -7,7 +7,7 @@
 import sys
 import hashlib
 import os.path
-from typing import Any
+from typing import Any, Optional
 
 from xpra.audio.pulseaudio.common_util import get_pulse_server_x11_property, get_pulse_id_x11_property
 from xpra.util import print_nested_dict
@@ -137,38 +137,53 @@ def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=
 
 def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=None,
                              ignored_devices=("bell-window-system",)):
-    device_class = ""
-    device_description = ""
-    name = ""
+    def are_properties_acceptable(name: Optional[str], device_class: Optional[str],
+                                  monitor_of_sink: Optional[str]) -> bool:
+        if (name is None) or (device_class is None and monitor_of_sink is None):
+            return False
+        if name in ignored_devices:
+            return False
+        #Verify against monitor flag if set:
+        if monitors is not None:
+            if device_class is not None:
+                is_monitor = device_class == '"monitor"'
+            else:  # monitor_of_sink is not None
+                is_monitor = monitor_of_sink != "n/a"
+            if is_monitor != monitors:
+                return False
+        #Verify against input flag (if set):
+        if input_or_output is not None:
+            is_input = name.lower().find("input") >= 0
+            if is_input is True and input_or_output is False:
+                return False
+            is_output = name.lower().find("output") >= 0
+            if is_output is True and input_or_output is True:
+                return False
+        return True
+
+    name : Optional[str] = None
+    device_class : Optional[str] = None
+    monitor_of_sink : Optional[str] = None
+    device_description : Optional[str] = None
     devices : dict[str,str] = {}
     for line in bytestostr(pactl_list_output).splitlines():
         if not line.startswith(" ") and not line.startswith("\t"):        #clear vars when we encounter a new section
-            if name and device_class:
-                if name in ignored_devices:
-                    continue
-                #Verify against monitor flag if set:
-                if monitors is not None:
-                    is_monitor = device_class=='"monitor"'
-                    if is_monitor!=monitors:
-                        continue
-                #Verify against input flag (if set):
-                if input_or_output is not None:
-                    is_input = name.lower().find("input")>=0
-                    if is_input is True and input_or_output is False:
-                        continue
-                    is_output = name.lower().find("output")>=0
-                    if is_output is True and input_or_output is True:
-                        continue
+            if are_properties_acceptable(name, device_class, monitor_of_sink):
+                assert type(name) is str
                 if not device_description:
                     device_description = name
                 devices[name] = device_description
             name = None
             device_class = None
+            monitor_of_sink = None
+            device_description = None
         line = line.strip()
         if line.startswith("Name: "):
             name = line[len("Name: "):]
         if line.startswith("device.class = "):
             device_class = line[len("device-class = "):]
+        if line.startswith("Monitor of Sink: "):
+            monitor_of_sink = line[len("Monitor of Sink: "):]
         if line.startswith("device.description = "):
             device_description = line[len("device.description = "):].strip('"')
     return devices

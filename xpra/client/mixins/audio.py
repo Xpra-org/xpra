@@ -140,7 +140,7 @@ class AudioClient(StubClientMixin):
         if not self.microphone_codecs:
             self.microphone_allowed = False
         self.speaker_enabled = self.speaker_allowed and audio_option(opts.speaker)=="on"
-        self.microphone_enabled = self.microphone_allowed and opts.microphone.lower()=="on"
+        self.microphone_enabled = self.microphone_allowed and audio_option(mic[0])=="on"
         log("speaker: codecs=%s, allowed=%s, enabled=%s", encoders, self.speaker_allowed, csv(self.speaker_codecs))
         log("microphone: codecs=%s, allowed=%s, enabled=%s, default device=%s",
             decoders, self.microphone_allowed, csv(self.microphone_codecs), self.microphone_device)
