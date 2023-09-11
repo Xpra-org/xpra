@@ -33,7 +33,7 @@ class ProxyInstanceThread(ProxyInstance):
         #only use video encoders (no CSC supported in proxy)
         try:
             self.video_helper.set_modules(video_encoders=self.video_encoder_modules)
-        except AssertionError as e:
+        except RuntimeError as e:
             log("video_helper_init() ignored: %s", e)
         else:
             self.video_helper.init()
