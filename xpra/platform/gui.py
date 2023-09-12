@@ -65,19 +65,19 @@ def get_native_tray_menu_helper_class() -> type | None:
     #classes that generate menus for xpra's system tray
     #let the toolkit classes use their own
     return None
-def get_native_tray_classes(*_args) -> tuple[type | None,...]:
+def get_native_tray_classes(*_args) -> list[type]:
     #the classes we can use for our system tray:
     #let the toolkit classes use their own
-    return ()
-def get_native_system_tray_classes(*_args) -> tuple[type | None,...]:
+    return []
+def get_native_system_tray_classes(*_args) -> list[type]:
     #the classes we can use for application system tray forwarding:
     #let the toolkit classes use their own
-    return ()
+    return []
 def system_bell(*_args) -> bool:
     #let the toolkit classes use their own
     return False
-def get_native_notifier_classes() -> tuple[type,...]:
-    return ()
+def get_native_notifier_classes() -> list[type]:
+    return []
 
 
 def get_session_type() -> str:

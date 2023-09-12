@@ -107,15 +107,14 @@ class FakeApplication:
         except ImportError:
             log("no StatusIcon tray")
         for x in tray_classes:
-            if x:
-                try:
-                    xpra_app_id = 0
-                    tray_icon_filename = "xpra"
-                    self.tray = x(self, xpra_app_id, menu, "Test System Tray", tray_icon_filename,
-                                  self.xpra_tray_geometry, self.xpra_tray_click,
-                                  self.xpra_tray_mouseover, self.xpra_tray_exit)
-                except Exception as e:
-                    log.warn("failed to create tray %s: %s", x, e)
+            try:
+                xpra_app_id = 0
+                tray_icon_filename = "xpra"
+                self.tray = x(self, xpra_app_id, menu, "Test System Tray", tray_icon_filename,
+                              self.xpra_tray_geometry, self.xpra_tray_click,
+                              self.xpra_tray_mouseover, self.xpra_tray_exit)
+            except Exception as e:
+                log.warn("failed to create tray %s: %s", x, e)
         self.tray.set_tooltip("Test System Tray")
 
     def after_handshake(self, cb:Callable, *args) -> None:

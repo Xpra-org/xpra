@@ -107,23 +107,23 @@ def get_clipboard_native_class() -> str:
         return gtk_clipboard_class
     return "xpra.x11.gtk_x11.clipboard.X11Clipboard"
 
-def get_native_system_tray_classes() -> list[type | None]:
-    c = [_try_load_appindicator()]
+def get_native_system_tray_classes() -> list[type]:
+    c = _try_load_appindicator()
     traylog("get_native_system_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
     return c
 
-def get_native_tray_classes() -> list[type | None]:
+def get_native_tray_classes() -> list[type]:
     #could restrict to only DEs that have a broken system tray like "GNOME Shell"?
-    c = [_try_load_appindicator()]
+    c = _try_load_appindicator()
     traylog("get_native_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
     return c
 
-def _try_load_appindicator() -> type | None:
+def _try_load_appindicator() -> list[type]:
     if not USE_NATIVE_TRAY:
-        return None
+        return []
     try:
         from xpra.platform.posix.appindicator_tray import AppindicatorTray
-        return AppindicatorTray
+        return [AppindicatorTray]
     except (ImportError, ValueError):
         if first_time("no-appindicator"):
             traylog("cannot load appindicator tray", exc_info=True)
@@ -133,7 +133,7 @@ def _try_load_appindicator() -> type | None:
             if get_saved_env_var("XDG_CURRENT_DESKTOP", "").upper().find("GNOME")>=0:
                 traylog.warn(" With gnome-shell, you may also need some extensions:")
                 traylog.warn(" 'top icons plus' and / or 'appindicator'")
-    return None
+    return []
 
 
 def get_native_notifier_classes() -> list[Callable]:

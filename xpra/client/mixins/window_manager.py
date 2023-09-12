@@ -620,7 +620,7 @@ class WindowClient(StubClientMixin):
         return make_instance(tc, self, *args)
 
     # noinspection PyMethodMayBeStatic
-    def get_system_tray_classes(self) -> tuple[type | None,...]:
+    def get_system_tray_classes(self) -> list[type]:
         #subclasses may add their toolkit specific variants, if any
         #by overriding this method
         #use the native ones first:

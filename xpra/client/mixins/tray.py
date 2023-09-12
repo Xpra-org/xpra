@@ -73,7 +73,7 @@ class TrayClient(StubClientMixin):
                 t.cleanup()
 
 
-    def get_tray_classes(self):
+    def get_tray_classes(self) -> list[type]:
         #subclasses may add their toolkit specific variants, if any
         #by overriding this method
         #use the native ones first:

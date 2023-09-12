@@ -173,7 +173,7 @@ def get_native_notifier_classes() -> list[type]:
         log.warn(" %s", e)
     return []
 
-def get_native_tray_classes():
+def get_native_tray_classes() -> list[type]:
     c = []
     if USE_NATIVE_TRAY:
         try:
