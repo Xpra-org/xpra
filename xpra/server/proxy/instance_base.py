@@ -21,7 +21,7 @@ from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.scripts.config import parse_number, parse_bool
 from xpra.common import FULL_INFO
 from xpra.os_util import (
-    get_hex_uuid, bytestostr, strtobytes,
+    get_hex_uuid, strtobytes,
     )
 from xpra.util import (
     flatten_dict, typedict, ellipsizer, envint, envbool,
@@ -287,7 +287,7 @@ class ProxyInstance:
         pcaps = {}
         removed = []
         for k in caps.keys():
-            if any(e for e in prefixes if bytestostr(k).startswith(e)):
+            if any(e for e in prefixes if str(k).startswith(e)):
                 removed.append(k)
             else:
                 pcaps[k] = caps[k]
@@ -307,7 +307,7 @@ class ProxyInstance:
     ################################################################################
 
     def queue_client_packet(self, packet : PacketType) -> None:
-        log("queueing client packet: %s (queue size=%s)", bytestostr(packet[0]), self.client_packets.qsize())
+        log("queueing client packet: %s (queue size=%s)", packet[0], self.client_packets.qsize())
         self.client_packets.put(packet)
         self.client_protocol.source_has_more()
 
@@ -315,11 +315,11 @@ class ProxyInstance:
         #server wants a packet
         p = self.client_packets.get()
         s = self.client_packets.qsize()
-        log("sending to client: %s (queue size=%i)", bytestostr(p[0]), s)
+        log("sending to client: %s (queue size=%i)", p[0], s)
         return p, None, None, None, True, s>0 or self.server_has_more
 
     def process_client_packet(self, proto, packet : PacketType) -> None:
-        packet_type = bytestostr(packet[0])
+        packet_type = str(packet[0])
         log("process_client_packet: %s", packet_type)
         if packet_type==CONNECTION_LOST:
             self.stop(proto, "client connection lost")
@@ -346,7 +346,7 @@ class ProxyInstance:
             return
         #the packet types below are forwarded:
         if packet_type=="disconnect":
-            reasons = tuple(bytestostr(x) for x in packet[1:])
+            reasons = tuple(str(x) for x in packet[1:])
             log("got disconnect from client: %s", csv(reasons))
             if self.exit:
                 self.client_protocol.close()
@@ -370,7 +370,7 @@ class ProxyInstance:
         return tuple(lpacket)
 
     def queue_server_packet(self, packet : PacketType) -> None:
-        log("queueing server packet: %s (queue size=%s)", bytestostr(packet[0]), self.server_packets.qsize())
+        log("queueing server packet: %s (queue size=%s)", packet[0], self.server_packets.qsize())
         self.server_packets.put(packet)
         self.server_protocol.source_has_more()
 
@@ -378,7 +378,7 @@ class ProxyInstance:
         #server wants a packet
         p = self.server_packets.get()
         s = self.server_packets.qsize()
-        log("sending to server: %s (queue size=%i)", bytestostr(p[0]), s)
+        log("sending to server: %s (queue size=%i)", p[0], s)
         return p, None, None, None, True, s>0 or self.client_has_more
 
 
@@ -455,14 +455,14 @@ class ProxyInstance:
 
 
     def process_server_packet(self, proto, packet : PacketType) -> None:
-        packet_type = bytestostr(packet[0])
+        packet_type = str(packet[0])
         log("process_server_packet: %s", packet_type)
         if packet_type==CONNECTION_LOST:
             self.stop(proto, "server connection lost")
             return
         self.server_has_more = proto.receive_pending
         if packet_type=="disconnect":
-            reason = bytestostr(packet[1])
+            reason = str(packet[1])
             log("got disconnect from server: %s", reason)
             if self.exit:
                 self.server_protocol.close()
@@ -544,10 +544,10 @@ class ProxyInstance:
                 #so we have to handle authentication from this end
                 server_salt = strtobytes(packet[1])
                 l = len(server_salt)
-                digest = bytestostr(packet[3])
+                digest = str(packet[3])
                 salt_digest = "xor"
                 if len(packet)>=5:
-                    salt_digest = bytestostr(packet[4])
+                    salt_digest = str(packet[4])
                 if salt_digest in ("xor", "des"):
                     self.stop(None, f"server uses legacy salt digest {salt_digest!r}")
                     return
@@ -592,7 +592,7 @@ class ProxyInstance:
             if packet is None:
                 return
             try:
-                packet_type = bytestostr(packet[0])
+                packet_type = str(packet[0])
                 if packet_type=="lost-window":
                     wid = packet[1]
                     self.lost_windows.remove(wid)
@@ -625,7 +625,7 @@ class ProxyInstance:
 
     def process_draw(self, packet : PacketType) -> bool:
         wid, x, y, width, height, encoding, pixels, _, rowstride, client_options = packet[1:11]
-        encoding = bytestostr(encoding)
+        encoding = str(encoding)
         #never modify mmap or scroll packets:
         if encoding in ("mmap", "scroll"):
             return True
