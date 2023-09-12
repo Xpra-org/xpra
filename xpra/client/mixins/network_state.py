@@ -196,6 +196,7 @@ class NetworkState(StubClientMixin):
     def get_info(self) -> dict[str,Any]:
         return {
             "network" : {
+                "pings"                 : self.pings,
                 "bandwidth-limit"       : self.bandwidth_limit,
                 "bandwidth-detection"   : self.bandwidth_detection,
                 "server-ok"             : self._server_ok,

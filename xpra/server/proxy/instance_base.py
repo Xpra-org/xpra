@@ -241,6 +241,7 @@ class ProxyInstance:
                 "challenge_response"      : challenge_response,
                 "challenge_client_salt"   : client_salt,
                 })
+        hello.setdefault("network", {})["pings"] = self.pings
         self.queue_server_packet(("hello", hello))
 
 
