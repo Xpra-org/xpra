@@ -737,7 +737,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         #find a parent window we should follow when it moves:
         follow = self._client.find_window(self._metadata, "transient-for") or self._client.find_window(self._metadata, "parent")
         log("setup_following() follow=%s", follow)
-        if not follow:
+        if not follow or not isinstance(follow, Gtk.Window):
             return
         type_hint = self.get_type_hint()
         log("setup_following() type_hint=%s, FOLLOW_WINDOW_TYPES=%s", type_hint, FOLLOW_WINDOW_TYPES)
@@ -1884,7 +1884,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             #gtk window is easier:
             window = self._client._id_to_window.get(wid)
             log("%s.apply_transient_for(%s) window=%s", self, wid, window)
-            if window:
+            if window and isinstance(window, Gtk.Window):
                 self.set_transient_for(window)
 
     def cairo_paint_border(self, context, clip_area=None) -> None:
