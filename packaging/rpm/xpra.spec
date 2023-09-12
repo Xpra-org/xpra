@@ -768,7 +768,7 @@ fi
 
 
 %changelog
-* Mon Sep 11 2023 Antoine Martin <antoine@xpra.org> 5.0.2-10
+* Tue Sep 12 2023 Antoine Martin <antoine@xpra.org> 5.0.2-10
 - Major fixes:
    missing x264 encoder in DEB packages
    unusable vsock module
@@ -777,6 +777,8 @@ fi
    notification packet errors due to missing icon
    empty system tray menu on some platforms
    proxy errors in threaded mode on second connection
+   window setup failures due to system tray confusion
+   proxy compressed picture data forwarding problems
 - Minor:
    workaround for ancient versions of Pillow
    unresponsive system tray after explorer.exe restart
@@ -787,6 +789,7 @@ fi
    skip unused codec information
    preserve 'proxy-video-encoders' in remote command lines
    bandwidth flag compatibility, encryption namespace, encoding namespace
+   don't setup ssh agent forwarding directory when proxying
 - Audio:
    pactl output parsing bug
    pactl improve detection of monitor devices

@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.2] 2023-09-06
+## [5.0.2] 2023-09-12
 * Major fixes:
     * [missing x264 encoder in DEB packages](https://github.com/Xpra-org/xpra/commit/b8735c8b53ac908424f4c9092362ccda270a1138)
     * [unusable vsock module](https://github.com/Xpra-org/xpra/commit/b1264a7a3418936c3bed6622c346bc2283c94aa9)
@@ -9,6 +9,8 @@
     * [notification packet errors due to missing icon](https://github.com/Xpra-org/xpra/commit/57c5baadc5b9f5abc4aa74c669a6632451cd0f44)
     * [empty system tray menu on some platforms](https://github.com/Xpra-org/xpra/commit/b76cca2278b98c3bbe9d764f081afc5e1a6aa884)
     * [proxy errors in threaded mode on second connection](https://github.com/Xpra-org/xpra/commit/b502efe919499700eb74550a013a2372916424a0)
+    * [window setup failures due to system tray confusion](https://github.com/Xpra-org/xpra/commit/ba5af99d1ab2542e2a73cf74d28fdd46454c2c62)
+    * [proxy compressed picture data forwarding problems](https://github.com/Xpra-org/xpra/commit/7b92b21b31c08d64f26ef20eb284d0eb90606c70)
 * Minor:
     * [workaround for ancient versions of Pillow](https://github.com/Xpra-org/xpra/commit/35f77d9d9dce78d569f453608aea8b5e712aeb25)
     * [unresponsive system tray after explorer.exe restart](https://github.com/Xpra-org/xpra/commit/cb290d9b73ed5641c9f8816e917290c335671444)
@@ -19,6 +21,7 @@
     * [skip unused codec information](https://github.com/Xpra-org/xpra/commit/d10838e9bb5ea9cc4f58490cdb5763bd4e635569)
     * [preserve 'proxy-video-encoders' in remote command lines](https://github.com/Xpra-org/xpra/commit/845fed7586fb600d5d744cf1be146aa8d3c57f5f)
     * [bandwidth flag compatibility](https://github.com/Xpra-org/xpra/commit/1a01b86baa78bb67acea2dc21aecb6969f9aee65), [encryption namespace](https://github.com/Xpra-org/xpra/commit/5f576be65d45ef9425df9bd6410a4d7e4bbc06fb), [encoding namespace](https://github.com/Xpra-org/xpra/commit/3ba907a061151684b4628c930d7feaed3d63c421)
+    * [don't setup ssh agent forwarding directory when proxying](https://github.com/Xpra-org/xpra/commit/42ad1f53666a794d7aee7d0f687a59c4ab71d6f4)
 * Audio:
     * [pactl output parsing bug](https://github.com/Xpra-org/xpra/commit/3a923c857a249e19ebc72ba2997ceafacd4fd77f)
     * [pactl improve detection of monitor devices](https://github.com/Xpra-org/xpra/commit/d0d1fc249e1d3e893a15affe7ad056b633991022)

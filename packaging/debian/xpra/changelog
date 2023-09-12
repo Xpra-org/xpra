@@ -7,6 +7,8 @@ xpra (5.0.2-1) UNRELEASED; urgency=low
     - notification packet errors due to missing icon
     - empty system tray menu on some platforms
     - proxy errors in threaded mode on second connection
+    - window setup failures due to system tray confusion
+    - proxy compressed picture data forwarding problems
   * Minor:
     - workaround for ancient versions of Pillow
     - unresponsive system tray after explorer.exe restart
@@ -17,13 +19,14 @@ xpra (5.0.2-1) UNRELEASED; urgency=low
     - skip unused codec information
     - preserve 'proxy-video-encoders' in remote command lines
     - bandwidth flag compatibility, encryption namespace, encoding namespace
+    - don't setup ssh agent forwarding directory when proxying
   * Audio:
     - pactl output parsing bug
     - pactl improve detection of monitor devices
     - microphone support for Chromium
     - cleaner pulseaudio command options
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 11 Sep 2023 23:10:16 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 12 Sep 2023 17:39:44 +0700
 
 xpra (5.0.1-1) UNRELEASED; urgency=low
   * Major fixes:
