@@ -798,11 +798,14 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     def _add_statusicon_tray(self, tray_classes:list[type]) -> list[type]:
-        #add Gtk.StatusIcon tray, but not under wayland:
         if not is_Wayland():
             try:
                 from xpra.client.gtk3.statusicon_tray import GTKStatusIconTray
-                tray_classes.append(GTKStatusIconTray)
+                if os.environ.get("XDG_SESSION_DESKTOP", "").lower() in ("kde", "gnome"):
+                    # unlikely to work, so try last
+                    tray_classes.append(GTKStatusIconTray)
+                else:
+                    tray_classes.insert(0, GTKStatusIconTray)
             except Exception as e:
                 log.warn("failed to load StatusIcon tray: %s" % e)
         return tray_classes

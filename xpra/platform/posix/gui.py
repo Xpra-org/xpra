@@ -113,7 +113,6 @@ def get_native_system_tray_classes() -> list[type]:
     return c
 
 def get_native_tray_classes() -> list[type]:
-    #could restrict to only DEs that have a broken system tray like "GNOME Shell"?
     c = _try_load_appindicator()
     traylog("get_native_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
     return c
