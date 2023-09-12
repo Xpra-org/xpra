@@ -359,7 +359,7 @@ class ProxyInstance:
         self.queue_server_packet(packet)
 
     def compressed_marker(self, packet : PacketType, index:int, description:str):
-        return self.replace_packet_item(packet, index, Compressed(description, packet[index]))
+        return self.replace_packet_item(packet, index, Compressed(description, packet[index], can_inline=False))
 
     def replace_packet_item(self, packet : PacketType, index:int, new_value:Any) -> PacketType:
         # make the packet data mutable and replace the contents at `index`:
@@ -602,9 +602,7 @@ class ProxyInstance:
                         ve.clean()
                 elif packet_type=="draw":
                     #modify the packet with the video encoder:
-                    if self.process_draw(packet):
-                        #then send it as normal:
-                        self.queue_client_packet(packet)
+                    self.process_draw(packet)
                 elif packet_type=="check-video-timeout":
                     #not a real packet, this is added by the timeout check:
                     wid = packet[1]
@@ -628,12 +626,14 @@ class ProxyInstance:
         encoding = str(encoding)
         #never modify mmap or scroll packets:
         if encoding in ("mmap", "scroll"):
-            return True
+            self.queue_client_packet(packet)
+            return
         #we can only use video encoders on RGB data:
         if encoding not in ("rgb24", "rgb32", "r210", "BGR565"):
             #this prevents compression and inlining of pixel data:
             packet = self.compressed_marker(packet, 7, f"{encoding} pixels")
-            return True
+            self.queue_client_packet(packet)
+            return
         client_options = typedict(client_options)
         #we have a proxy video packet:
         rgb_format = client_options.strget("rgb_format", "")
@@ -645,7 +645,8 @@ class ProxyInstance:
             packet = self.replace_packet_item(packet, 7, compressed_data)
             packet = self.replace_packet_item(packet, 10, updated_client_options)
             enclog("returning %s bytes from %s, options=%s", len(compressed_data), len(pixels), updated_client_options)
-            return wid not in self.lost_windows
+            if wid not in self.lost_windows:
+                self.queue_client_packet(packet)
 
         def passthrough(strip_alpha=True) -> bool:
             enclog("proxy draw: %s passthrough (rowstride: %s vs %s, strip alpha=%s)",
@@ -671,17 +672,19 @@ class ProxyInstance:
                 new_client_options = client_options
             wrapped = Compressed(f"{encoding} pixels", cdata)
             #rgb32 is always supported by all clients:
-            return send_updated(updated, encoding, wrapped, new_client_options)
+            send_updated(updated, encoding, wrapped, new_client_options)
 
         proxy_video = client_options.boolget("proxy", False)
         if PASSTHROUGH_RGB:
             #we are dealing with rgb data, so we can pass it through:
-            return passthrough(proxy_video)
+            passthrough(proxy_video)
+            return
         if not self.video_encoder_types or not client_options or not proxy_video:
             #ensure we don't try to re-compress the pixel data in the network layer:
             #(re-add the "compressed" marker that gets lost when we re-assemble packets)
             packet = self.compressed_marker(packet, 7, f"{encoding} pixels")
-            return True
+            self.queue_client_packet(packet)
+            return
 
         #video encoding: find existing encoder
         ve = self.video_encoders.get(wid)
@@ -689,7 +692,7 @@ class ProxyInstance:
             if ve in self.lost_windows:
                 #we cannot clean the video encoder here, there may be more frames queue up
                 #"lost-window" in encode_loop will take care of it safely
-                return False
+                return
             #we must verify that the encoder is still valid
             #and scrap it if not (ie: when window is resized)
             if ve.get_width()!=width or ve.get_height()!=height:
@@ -726,10 +729,12 @@ class ProxyInstance:
                     if first_time(f"no-video-no-PIL-{rgb_format}"):
                         enclog.warn("Warning: no video encoder found for rgb format %s", rgb_format)
                         enclog.warn(" sending as plain RGB")
-                    return passthrough(True)
+                    passthrough(True)
+                    return
                 enclog("no video encoder available: sending as jpeg")
                 coding, compressed_data, client_options = enc_pillow.encode("jpeg", image, quality, speed, False)[:3]
-                return send_updated(packet, coding, compressed_data, client_options)
+                send_updated(packet, coding, compressed_data, client_options)
+                return
 
             enclog("creating new video encoder %s for window %s", spec, wid)
             ve = spec.make_instance()
@@ -755,7 +760,7 @@ class ProxyInstance:
             if k not in out_options and k in client_options:
                 out_options[k] = client_options[k]
         self.video_encoders_last_used_time[wid] = monotonic()
-        return send_updated(packet, ve.get_encoding(), Compressed(encoding, data), out_options)
+        send_updated(packet, ve.get_encoding(), Compressed(encoding, data), out_options)
 
     def timeout_video_encoders(self) -> bool:
         #have to be careful as another thread may come in...
