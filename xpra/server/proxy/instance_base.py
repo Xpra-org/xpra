@@ -363,7 +363,7 @@ class ProxyInstance:
         # make the packet data mutable and replace the contents at `index`:
         assert index>0
         lpacket = list(packet)
-        lpacket[index] = Compressed("file-data", packet[index])
+        lpacket[index] = new_value
         # noinspection PyTypeChecker
         return tuple(lpacket)
 
