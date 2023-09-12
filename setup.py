@@ -113,15 +113,17 @@ print("Xpra version %s" % XPRA_VERSION)
 # only the default values are specified here:
 #*******************************************************************************
 
-try:
-    import cython
-    print(f"found Cython version {cython.__version__}")
-    cython_version = int(cython.__version__.split('.')[0])
-except (ValueError, ImportError):
-    print("WARNING: unable to detect Cython version")
-else:
-    if cython_version<3:
-        raise ValueError("Cython 3.x is now required")
+def check_cython3():
+    try:
+        import cython
+        print(f"found Cython version {cython.__version__}")
+        cython_version = int(cython.__version__.split('.')[0])
+    except (ValueError, ImportError):
+        print("WARNING: unable to detect Cython version")
+    else:
+        if cython_version<3:
+            raise ValueError("Cython 3.x is now required")
+check_cython3()
 
 
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
