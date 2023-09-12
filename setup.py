@@ -117,10 +117,11 @@ try:
     import cython
     print(f"found Cython version {cython.__version__}")
     cython_version = int(cython.__version__.split('.')[0])
-    if cython_version<3:
-        raise ValueError("Cython 3.x is now required")
 except (ValueError, ImportError):
     print("WARNING: unable to detect Cython version")
+else:
+    if cython_version<3:
+        raise ValueError("Cython 3.x is now required")
 
 
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
