@@ -12,7 +12,7 @@ from typing import Any
 from gi.repository import GLib, GObject  # @UnresolvedImport
 
 from xpra.util import (
-    nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, typedict,
+    nonl, sorted_nicely, envint, flatten_dict, typedict,
     disconnect_is_an_error, ellipsizer, first_time, csv,
     repr_ellipsized, ConnectionMessage, stderr_print,
     )

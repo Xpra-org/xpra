@@ -10,7 +10,6 @@ import os.path
 from typing import Any, Optional
 
 from xpra.audio.pulseaudio.common_util import get_pulse_server_x11_property, get_pulse_id_x11_property
-from xpra.util import print_nested_dict
 from xpra.os_util import which, WIN32, OSX, bytestostr, strtobytes
 
 from xpra.log import Logger
@@ -169,7 +168,7 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
     for line in bytestostr(pactl_list_output).splitlines():
         if not line.startswith(" ") and not line.startswith("\t"):        #clear vars when we encounter a new section
             if are_properties_acceptable(name, device_class, monitor_of_sink):
-                assert type(name) is str
+                assert isinstance(name, str)
                 if not device_description:
                     device_description = name
                 devices[name] = device_description
@@ -215,6 +214,7 @@ def get_info() -> dict[str,Any]:
     return info
 
 def main():
+    from xpra.util import print_nested_dict
     from xpra.os_util import load_binary_file
     if "-v" in sys.argv:
         log.enable_debug()
