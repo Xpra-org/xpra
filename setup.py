@@ -122,7 +122,10 @@ def check_cython3():
         print("WARNING: unable to detect Cython version")
     else:
         if cython_version<3:
-            raise ValueError("Cython 3.x is now required")
+            print("*******************************************")
+            print("please switch to Cython 3.x")
+            print(f" version {cython_version} is not supported")
+            print("*******************************************")
 check_cython3()
 
 
@@ -2180,8 +2183,7 @@ if nvidia_ENABLED:
     if cuda_kernels_ENABLED:
         add_data_files(CUDA_BIN, [f"fs/share/xpra/cuda/{x}.fatbin" for x in kernels])
     if WIN32 and (nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED or nvenc_ENABLED or nvdec_ENABLED):
-        assert nvcc_versions
-        CUDA_BIN_DIR = os.path.dirname(nvcc)
+        CUDA_BIN_DIR = os.path.abspath("./cuda/")
         add_data_files("", glob.glob(f"{CUDA_BIN_DIR}/cudart64*dll"))
         #if pycuda is built with curand, add this:
         #add_data_files("", glob.glob(f"{CUDA_BIN_DIR}/curand64*dll"))
