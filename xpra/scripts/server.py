@@ -1378,7 +1378,7 @@ def _do_run_server(script_file:str, cmdline,
         if dbus_env:
             os.environ.update(dbus_env)
 
-    if SSH_AGENT_DISPATCH and (not shadowing or proxying):
+    if SSH_AGENT_DISPATCH and not (shadowing or proxying):
         progress(50, "setup ssh agent forwarding")
         try:
             from xpra.net.ssh.agent import setup_ssh_auth_sock
