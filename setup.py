@@ -281,7 +281,7 @@ nvenc_ENABLED           = nvidia_ENABLED and pkg_config_version("10", "nvenc")
 nvdec_ENABLED           = False
 nvfbc_ENABLED           = nvidia_ENABLED and not ARM and pkg_config_ok("--exists", "nvfbc")
 cuda_kernels_ENABLED    = nvidia_ENABLED and not OSX
-cuda_rebuild_ENABLED    = cuda_kernels_ENABLED and not WIN32
+cuda_rebuild_ENABLED    = None if nvidia_ENABLED else False
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
 gstreamer_ENABLED       = DEFAULT
 example_ENABLED         = DEFAULT
@@ -1218,23 +1218,11 @@ def clean():
                 print(f"removing Cython/build generated file: {x}")
             os.unlink(filename)
 
-if 'clean' in sys.argv or 'sdist' in sys.argv:
-    clean()
-
 def add_build_info(*args):
     cmd = [sys.executable, "./fs/bin/add_build_info.py"]+list(args)
     r = subprocess.Popen(cmd).wait(30)
     assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
 
-if "clean" not in sys.argv:
-    # Add build info to build_info.py file:
-    add_build_info("build")
-    if modules_ENABLED:
-        # ensure it is included in the module list if it didn't exist before
-        add_modules("xpra.build_info")
-
-if "sdist" in sys.argv:
-    add_build_info("src")
 
 if "install" in sys.argv or "build" in sys.argv:
     #if installing from source tree rather than
@@ -1246,11 +1234,20 @@ if "install" in sys.argv or "build" in sys.argv:
         add_modules("xpra.src_info")
 
 
-if 'clean' in sys.argv or 'sdist' in sys.argv:
+if "clean" in sys.argv or "sdist" in sys.argv:
+    clean()
+    if "sdist" in sys.argv:
+        add_build_info("src")
     #take shortcut to skip cython/pkgconfig steps:
     setup(**setup_options)
     sys.exit(0)
 
+
+# Add build info to build_info.py file:
+add_build_info("build")
+if modules_ENABLED:
+    # ensure it is included in the module list if it didn't exist before
+    add_modules("xpra.build_info")
 
 
 def glob_recurse(srcdir):
@@ -2160,115 +2157,27 @@ toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia")
 toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia.cuda")
 CUDA_BIN = f"{share_xpra}/cuda"
 if nvidia_ENABLED:
-    #find nvcc:
-    from xpra.util import sorted_nicely  # pylint: disable=import-outside-toplevel
-    path_options = os.environ.get("PATH", "").split(os.path.pathsep)
-    if WIN32:
-        external_includes.append("pycuda")
-        nvcc_exe = "nvcc.exe"
-        CUDA_DIR = os.environ.get("CUDA_DIR", "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA")
-        path_options += ["./cuda/bin/"]+list(reversed(sorted_nicely(glob.glob(f"{CUDA_DIR}\\*\\bin"))))
-    else:
-        nvcc_exe = "nvcc"
-        path_options += ["/usr/local/cuda/bin", "/opt/cuda/bin"]
-        path_options += list(reversed(sorted_nicely(glob.glob("/usr/local/cuda*/bin"))))
-        path_options += list(reversed(sorted_nicely(glob.glob("/opt/cuda*/bin"))))
-    options = [os.path.join(x, nvcc_exe) for x in path_options]
-    #prefer the one we find on the $PATH, if any:
-    v = shutil.which(nvcc_exe)
-    if v and (v not in options):
-        options.insert(0, v)
-    nvcc_versions = {}
-    def get_nvcc_version(command):
-        if not os.path.exists(command):
-            return None
-        code, out, _ = get_status_output([command, "--version"])
-        if code!=0:
-            return None
-        vpos = out.rfind(", V")
-        if vpos>0:
-            version = out[vpos+3:].split("\n")[0]
-            version_str = f" version {version}"
-        else:
-            version = "0"
-            version_str = " unknown version!"
-        print(f"found CUDA compiler: {filename}{version_str}")
-        return tuple(int(x) for x in version.split("."))
-    for filename in options:
-        vnum = get_nvcc_version(filename)
-        if vnum:
-            nvcc_versions[vnum] = filename
-    nvcc_version = nvcc = None
-    if nvcc_versions:
-        #choose the most recent one:
-        nvcc_version, nvcc = list(reversed(sorted(nvcc_versions.items())))[0]
-        if len(nvcc_versions)>1:
-            print(f" using version {nvcc_version} from {nvcc}")
-    if cuda_kernels_ENABLED and (nvenc_ENABLED or nvjpeg_encoder_ENABLED):
-        assert nvcc, "cannot find nvcc compiler!"
-        def get_nvcc_args():
-            if nvcc_version<(11, 6):
-                raise RuntimeError(f"nvcc version {nvcc_version} is too old, minimum is 11.6")
-            gcc_version = get_gcc_version()
-            if not CC_is_clang() and gcc_version<(9, ):
-                print("gcc versions older than 9 are not supported!")
-                for _ in range(5):
-                    sleep(1)
-                    print(".")
-            nvcc_cmd = [
-                nvcc,
-                "-fatbin",
-                "-std=c++11",
-                "-arch=all",
-                "-Wno-deprecated-gpu-targets",
-                "-Xnvlink",
-                "-ignore-host-info",
-            ]
-            if gcc_version>=(12, 0):
-                nvcc_cmd.append("--allow-unsupported-compiler")
-            return nvcc_cmd
-        nvcc_args = get_nvcc_args()
-        #first compile the cuda kernels
-        #(using the same cuda SDK for both nvenc modules for now..)
-        kernels = []
-        if nvenc_ENABLED:
-            kernels += ["XRGB_to_NV12", "XRGB_to_YUV444", "BGRX_to_NV12", "BGRX_to_YUV444"]
-        if nvjpeg_encoder_ENABLED:
-            kernels += ["BGRX_to_RGB", "RGBX_to_RGB", "RGBA_to_RGBAP", "BGRA_to_RGBAP"]
-        nvcc_commands = []
+    kernels = (
+        "XRGB_to_NV12", "XRGB_to_YUV444", "BGRX_to_NV12", "BGRX_to_YUV444",
+        "BGRX_to_RGB", "RGBX_to_RGB", "RGBA_to_RGBAP", "BGRA_to_RGBAP",
+    )
+    rebuild = []
+    if cuda_rebuild_ENABLED is True:
+        rebuild = kernels
+    elif cuda_rebuild_ENABLED is None:
         for kernel in kernels:
-            cuda_src = f"fs/share/xpra/cuda/{kernel}.cu"
-            cuda_bin = f"fs/share/xpra/cuda/{kernel}.fatbin"
-            if os.path.exists(cuda_bin) and (cuda_rebuild_ENABLED is False):
-                continue
-            reason = should_rebuild(cuda_src, cuda_bin)
-            if not reason:
-                continue
-            print(f"rebuilding {kernel}: {reason}")
-            kbuild_cmd = nvcc_args + ["-c", cuda_src, "-o", cuda_bin]
-            print(f"CUDA compiling %s ({reason})" % kernel.ljust(16))
-            print(" "+" ".join(f"{x!r}" for x in kbuild_cmd))
-            nvcc_commands.append(kbuild_cmd)
-        #parallel build:
-        nvcc_errors = []
-        def nvcc_compile(nvcc_cmd):
-            c, stdout, stderr = get_status_output(nvcc_cmd)
-            if c!=0:
-                nvcc_errors.append(c)
-                print(f"Error: failed to compile CUDA kernel {kernel}")
-                print(f" using command: {nvcc_cmd}")
-                print(stdout or "")
-                print(stderr or "")
-        nvcc_threads = []
-        for cmd in nvcc_commands:
-            from threading import Thread
-            t = Thread(target=nvcc_compile, args=(cmd,))
-            t.start()
-            nvcc_threads.append(t)
-        for t in nvcc_threads:
-            if nvcc_errors:
-                sys.exit(1)
-            t.join()
+            cu_src = f"fs/share/xpra/cuda/{kernel}.cu"
+            fatbin = f"fs/share/xpra/cuda/{kernel}.fatbin"
+            assert os.path.exists(cu_src)
+            if reason := should_rebuild(cu_src, fatbin):
+                print(f"* rebuilding {kernel}: {reason}")
+                rebuild.append(kernel)
+    if rebuild:
+        r = subprocess.Popen(["./fs/bin/build_cuda_kernels.py"]+rebuild).wait()
+        if r!=0:
+            print(f"failed to rebuild the cuda kernels {rebuild}")
+            sys.exit(1)
+    if cuda_kernels_ENABLED:
         add_data_files(CUDA_BIN, [f"fs/share/xpra/cuda/{x}.fatbin" for x in kernels])
     if WIN32 and (nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED or nvenc_ENABLED or nvdec_ENABLED):
         assert nvcc_versions

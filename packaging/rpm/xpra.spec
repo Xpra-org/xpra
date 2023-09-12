@@ -31,33 +31,17 @@ autoprov: no
 %endif
 
 %define CFLAGS -O2
+%if 0%{?fedora}>=39
+%global debug_package %{nil}
+%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild --without-pandoc_lua
+%else
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild
+%endif
 
 %{!?nthreads: %global nthreads %(nproc)}
 %{!?update_firewall: %define update_firewall 1}
 %{!?run_tests: %define run_tests 0}
 %{!?with_selinux: %define with_selinux 1}
-#we only enable CUDA / NVENC with 64-bit builds:
-%if 0%{?with_cuda}%{?nvidia_codecs}
-%define nvidia_codecs 1
-%else
-#detect:
-%if 0%{?fedora}>=38
-%define nvidia_codecs 0
-%else
-%{!?nvidia_codecs: %define nvidia_codecs %(pkg-config --exists cuda && echo 1)}
-%endif
-%endif
-%if 0%{?nvidia_codecs}
-%define build_args %{DEFAULT_BUILD_ARGS}
-%else
-%if 0%{?fedora}>=39
-%global debug_package %{nil}
-%define build_args %{DEFAULT_BUILD_ARGS} --without-nvidia --without-pandoc_lua
-%else
-%define build_args %{DEFAULT_BUILD_ARGS} --without-nvidia
-%endif
-%endif
 %global selinux_variants mls targeted
 %define selinux_modules cups_xpra xpra_socketactivation
 
@@ -76,6 +60,23 @@ Vendor:				https://xpra.org/
 Source:				https://xpra.org/src/xpra-%{version}.tar.xz
 #grab the full revision number from the source archive's src_info.py file:
 %define revision_no %(tar -OJxf %{SOURCE0} xpra-%{version}/xpra/src_info.py | grep -e "^REVISION=" | awk -F= '{print ".r"$2}' 2> /dev/null)
+%{!?nvidia_codecs: %define nvidia_codecs %(pkg-config --exists cuda && echo 1)}
+#Fedora 38+ cannot build the cuda kernels:
+%if 0%{?fedora}>=38
+%if %{nvidia_codecs}
+%define fatbin %(tar -Jtf %{SOURCE0} xpra-%{version}/fs/share/xpra/cuda | grep .fatbin | wc -l 2> /dev/null)
+#we can only include cuda if we have pre-built fatbin kernels:
+%if %{fatbin}==0
+%define nvidia_codecs 0
+%endif
+%endif
+%endif
+%if 0%{?nvidia_codecs}
+%define build_args %{DEFAULT_BUILD_ARGS}
+%else
+%define build_args %{DEFAULT_BUILD_ARGS} --without-nvidia
+%endif
+
 Release:			10%{revision_no}%{?dist}
 #rpm falls over itself if we try to make the top-level package noarch:
 #BuildArch: noarch
