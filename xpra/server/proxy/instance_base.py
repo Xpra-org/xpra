@@ -353,11 +353,13 @@ class ProxyInstance:
             else:
                 self.stop(None, "disconnect from client", *reasons)
         elif packet_type=="send-file" and packet[6]:
-            packet = self.replace_packet_item(packet, 6, Compressed("file-data", packet[6]))
+            packet = self.compressed_marker(packet, 6,"file-data")
         elif packet_type=="send-file-chunk" and packet[3]:
-            packet = self.replace_packet_item(packet, 3, Compressed("file-chunk-data", packet[3]))
+            packet = self.compressed_marker(packet, 3, "file-chunk-data")
         self.queue_server_packet(packet)
 
+    def compressed_marker(self, packet : PacketType, index:int, description:str):
+        return self.replace_packet_item(packet, index, Compressed(description, packet[index]))
 
     def replace_packet_item(self, packet : PacketType, index:int, new_value:Any) -> PacketType:
         # make the packet data mutable and replace the contents at `index`:
@@ -508,10 +510,9 @@ class ProxyInstance:
             #which will queue the packet itself when done:
             return
         elif packet_type=="sound-data":
-            sound_data = packet[2]
-            if sound_data:
+            if packet[2]:
                 #best if we use raw packets for the actual sound-data chunk:
-                packet = self.replace_packet_item(packet, 2, Compressed("sound-data", sound_data))
+                packet = self.compressed_marker(packet, 2, "sound-data")
         #we do want to reformat cursor packets...
         #as they will have been uncompressed by the network layer already:
         elif packet_type=="cursor":
@@ -525,10 +526,10 @@ class ProxyInstance:
                 packet = self._packet_recompress(packet, 5, "icon")
         elif packet_type=="send-file":
             if packet[6]:
-                packet = self.replace_packet_item(packet, 6, Compressed("file-data", packet[6]))
+                packet = self.compressed_marker(packet, 6, "file-data")
         elif packet_type=="send-file-chunk":
             if packet[3]:
-                packet = self.replace_packet_item(packet, 3, Compressed("file-chunk-data", packet[3]))
+                packet = self.compressed_marker(packet, 3, "file-chunk-data")
         elif packet_type=="challenge":
             password = self.disp_desc.get("password", self.session_options.get("password"))
             log("password from %s / %s = %s", self.disp_desc, self.session_options, password)
@@ -631,7 +632,7 @@ class ProxyInstance:
         #we can only use video encoders on RGB data:
         if encoding not in ("rgb24", "rgb32", "r210", "BGR565"):
             #this prevents compression and inlining of pixel data:
-            packet = self.replace_packet_item(packet, 7, Compressed(f"{encoding} pixels", pixels))
+            packet = self.compressed_marker(packet, 7, f"{encoding} pixels")
             return True
         client_options = typedict(client_options)
         #we have a proxy video packet:
@@ -679,7 +680,7 @@ class ProxyInstance:
         if not self.video_encoder_types or not client_options or not proxy_video:
             #ensure we don't try to re-compress the pixel data in the network layer:
             #(re-add the "compressed" marker that gets lost when we re-assemble packets)
-            packet = self.replace_packet_item(packet, 7, Compressed(f"{encoding} pixels", packet[7]))
+            packet = self.compressed_marker(packet, 7, f"{encoding} pixels")
             return True
 
         #video encoding: find existing encoder
