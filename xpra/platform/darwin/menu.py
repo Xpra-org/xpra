@@ -13,8 +13,8 @@ from xpra.util import envbool, csv
 from xpra.common import noop
 from xpra.gtk_common.gtk_util import scaled_image
 from xpra.gtk_common.about import about
-from xpra.client.gtk3.tray_menu_base import (
-    GTKTrayMenuBase,
+from xpra.client.gtk3.tray_menu import (
+    GTKTrayMenu,
     CLIPBOARD_LABEL_TO_NAME, CLIPBOARD_NAME_TO_LABEL, CLIPBOARD_LABELS,
     CLIPBOARD_DIRECTION_LABELS, CLIPBOARD_DIRECTION_NAME_TO_LABEL,
     SHOW_UPLOAD, SHOW_VERSION_CHECK, RUNCOMMAND_MENU, SHOW_SERVER_COMMANDS, SHOW_SHUTDOWN,
@@ -57,7 +57,7 @@ def getOSXMenuHelper(client=None):
     return _OSXMenuHelper
 
 
-class OSXMenuHelper(GTKTrayMenuBase):
+class OSXMenuHelper(GTKTrayMenu):
     """
     we have to do this stuff here,
     so we can re-use the same instance,

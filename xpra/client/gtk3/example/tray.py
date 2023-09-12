@@ -88,7 +88,7 @@ class FakeApplication:
         self._process_encodings = noop
         classes = [get_native_tray_menu_helper_class()]
         try:
-            from xpra.client.gtk3.tray_menu import GTK3TrayMenu as GTKTrayMenu
+            from xpra.client.gtk3.tray_menu import GTKTrayMenu
             classes.append(GTKTrayMenu)
         except ImportError as e:
             log.warn("failed to load GTK tray menu class: %s", e)

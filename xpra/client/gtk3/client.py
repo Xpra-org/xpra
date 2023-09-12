@@ -71,8 +71,8 @@ class XpraClient(GTKXpraClient):
 
     def get_tray_menu_helper_class(self):
         # pylint: disable=import-outside-toplevel
-        from xpra.client.gtk3.tray_menu import GTK3TrayMenu
-        return GTK3TrayMenu
+        from xpra.client.gtk3.tray_menu import GTKTrayMenu
+        return GTKTrayMenu
 
 
     def get_mouse_position(self):

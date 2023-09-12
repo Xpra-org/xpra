@@ -109,8 +109,8 @@ class ClientWindow(GTKClientWindowBase):
     def show_xpra_menu(self, *_args) -> None:
         mh = getattr(self._client, "menu_helper", None)
         if not mh:
-            from xpra.client.gtk3.tray_menu import GTK3TrayMenu
-            mh = GTK3TrayMenu(self._client)
+            from xpra.client.gtk3.tray_menu import GTKTrayMenu
+            mh = GTKTrayMenu(self._client)
         mh.popup(0, 0)
 
     def show_window_menu(self, *_args) -> None:
