@@ -20,13 +20,14 @@ xpra (5.0.2-1) UNRELEASED; urgency=low
     - preserve 'proxy-video-encoders' in remote command lines
     - bandwidth flag compatibility, encryption namespace, encoding namespace
     - don't setup ssh agent forwarding directory when proxying
+    - handle 'help' for video options
   * Audio:
     - pactl output parsing bug
     - pactl improve detection of monitor devices
     - microphone support for Chromium
     - cleaner pulseaudio command options
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 12 Sep 2023 17:39:44 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 12 Sep 2023 22:04:20 +0700
 
 xpra (5.0.1-1) UNRELEASED; urgency=low
   * Major fixes:

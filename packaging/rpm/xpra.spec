@@ -790,6 +790,7 @@ fi
    preserve 'proxy-video-encoders' in remote command lines
    bandwidth flag compatibility, encryption namespace, encoding namespace
    don't setup ssh agent forwarding directory when proxying
+   handle 'help' for video options
 - Audio:
    pactl output parsing bug
    pactl improve detection of monitor devices

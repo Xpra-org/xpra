@@ -22,6 +22,7 @@
     * [preserve 'proxy-video-encoders' in remote command lines](https://github.com/Xpra-org/xpra/commit/845fed7586fb600d5d744cf1be146aa8d3c57f5f)
     * [bandwidth flag compatibility](https://github.com/Xpra-org/xpra/commit/1a01b86baa78bb67acea2dc21aecb6969f9aee65), [encryption namespace](https://github.com/Xpra-org/xpra/commit/5f576be65d45ef9425df9bd6410a4d7e4bbc06fb), [encoding namespace](https://github.com/Xpra-org/xpra/commit/3ba907a061151684b4628c930d7feaed3d63c421)
     * [don't setup ssh agent forwarding directory when proxying](https://github.com/Xpra-org/xpra/commit/42ad1f53666a794d7aee7d0f687a59c4ab71d6f4)
+    * [handle 'help' for video options](https://github.com/Xpra-org/xpra/commit/a35b5eeb0811352402babf8a0a5c13c255ba3e67)
 * Audio:
     * [pactl output parsing bug](https://github.com/Xpra-org/xpra/commit/3a923c857a249e19ebc72ba2997ceafacd4fd77f)
     * [pactl improve detection of monitor devices](https://github.com/Xpra-org/xpra/commit/d0d1fc249e1d3e893a15affe7ad056b633991022)
