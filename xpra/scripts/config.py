@@ -1453,6 +1453,20 @@ def fixup_encodings(options) -> None:
             except ValueError:
                 break
     options.encodings = encodings
+    from xpra.codecs.video_helper import ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS, ALL_VIDEO_DECODER_OPTIONS
+    for name, all_list in (
+        ("csc-modules", ALL_CSC_MODULE_OPTIONS),
+        ("video-encoders", ALL_VIDEO_ENCODER_OPTIONS),
+        ("video-decoders", ALL_VIDEO_DECODER_OPTIONS),
+    ):
+        #ensure value is a list:
+        attr_name = name.replace("-", "_")
+        value = getattr(options, attr_name)
+        vlist = [x for x in csvstrl(value).split(",") if x.strip()]
+        setattr(options, attr_name, value)
+        if "help" in vlist:
+            raise InitInfo(f"the following {name} are defined: {csv(all_list)}")
+
 
 def fixup_compression(options) -> None:
     #packet compression:
