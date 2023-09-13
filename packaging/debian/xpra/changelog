@@ -16,6 +16,11 @@ xpra (5.0.2-1) UNRELEASED; urgency=low
     - bandwidth flag compatibility, encryption namespace, encoding namespace
     - don't setup ssh agent forwarding directory when proxying
     - handle 'help' for video options
+  * Compatibility fixes:
+    - bandwidth flag
+    - encryption namespace
+    - encoding namespace
+    - script syntax
   * Proxy
     - errors in threaded mode on second connection
     - compressed picture data forwarding problems

@@ -15,9 +15,13 @@
     * [only warn once about unknown NVENC presets](https://github.com/Xpra-org/xpra/commit/5baf3e79e9dffadf19521c6e02df2b357ba1a508)
     * [skip unused codec information](https://github.com/Xpra-org/xpra/commit/d10838e9bb5ea9cc4f58490cdb5763bd4e635569)
     * [preserve 'proxy-video-encoders' in remote command lines](https://github.com/Xpra-org/xpra/commit/845fed7586fb600d5d744cf1be146aa8d3c57f5f)
-    * [bandwidth flag compatibility](https://github.com/Xpra-org/xpra/commit/1a01b86baa78bb67acea2dc21aecb6969f9aee65), [encryption namespace](https://github.com/Xpra-org/xpra/commit/5f576be65d45ef9425df9bd6410a4d7e4bbc06fb), [encoding namespace](https://github.com/Xpra-org/xpra/commit/3ba907a061151684b4628c930d7feaed3d63c421)
     * [don't setup ssh agent forwarding directory when proxying](https://github.com/Xpra-org/xpra/commit/42ad1f53666a794d7aee7d0f687a59c4ab71d6f4)
     * [handle 'help' for video options](https://github.com/Xpra-org/xpra/commit/a35b5eeb0811352402babf8a0a5c13c255ba3e67)
+* Compatibility fixes:
+    * [bandwidth flag](https://github.com/Xpra-org/xpra/commit/1a01b86baa78bb67acea2dc21aecb6969f9aee65)
+    * [encryption namespace](https://github.com/Xpra-org/xpra/commit/5f576be65d45ef9425df9bd6410a4d7e4bbc06fb)
+    * [encoding namespace](https://github.com/Xpra-org/xpra/commit/3ba907a061151684b4628c930d7feaed3d63c421)
+    * [script syntax](https://github.com/Xpra-org/xpra/commit/0f036f0b7f356e04e838eaf1b1c68587f16a3c06)
 * Proxy:
     * [errors in threaded mode on second connection](https://github.com/Xpra-org/xpra/commit/b502efe919499700eb74550a013a2372916424a0)
     * [compressed picture data forwarding problems](https://github.com/Xpra-org/xpra/commit/7b92b21b31c08d64f26ef20eb284d0eb90606c70)
