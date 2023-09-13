@@ -265,7 +265,7 @@ def is_X11():
 
 saved_env = os.environ.copy()
 def get_saved_env_var(var, default=None):
-    return _saved_env.get(var, default)
+    return saved_env.get(var, default)
 
 def is_Wayland():
     return _is_Wayland(saved_env)
