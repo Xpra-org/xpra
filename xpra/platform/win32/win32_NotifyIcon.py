@@ -346,7 +346,7 @@ class win32NotifyIcon:
         icon_w = GetSystemMetrics(win32con.SM_CXSMICON)
         icon_h = GetSystemMetrics(win32con.SM_CYSMICON)
         if w!=icon_w or h!=icon_h:
-            log("resizing tray icon to %ix%i", icon_w, icon_h).
+            log("resizing tray icon to %ix%i", icon_w, icon_h)
             try:
                 from PIL.Image.Resampling import LANCZOS
             except ImportError:
