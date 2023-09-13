@@ -768,20 +768,15 @@ fi
 
 
 %changelog
-* Tue Sep 12 2023 Antoine Martin <antoine@xpra.org> 5.0.2-10
+* Wed Sep 13 2023 Antoine Martin <antoine@xpra.org> 5.0.2-10
 - Major fixes:
    missing x264 encoder in DEB packages
    unusable vsock module
    start-after-connect was broken
    Overflow error in MS Windows hooks
    notification packet errors due to missing icon
-   empty system tray menu on some platforms
-   proxy errors in threaded mode on second connection
-   window setup failures due to system tray confusion
-   proxy compressed picture data forwarding problems
 - Minor:
    workaround for ancient versions of Pillow
-   unresponsive system tray after explorer.exe restart
    log warnings with custom cursors and OpenGL backend
    don't send cursors without a matching encoding
    better packet namespace compatibility
@@ -791,6 +786,14 @@ fi
    bandwidth flag compatibility, encryption namespace, encoding namespace
    don't setup ssh agent forwarding directory when proxying
    handle 'help' for video options
+- Proxy
+   errors in threaded mode on second connection
+   compressed picture data forwarding problems
+- System Tray:
+   empty system tray menu on some platforms
+   missing system tray on some X11 platforms
+   window setup failures due to system tray confusion
+   unresponsive system tray after explorer.exe restart
 - Audio:
    pactl output parsing bug
    pactl improve detection of monitor devices
