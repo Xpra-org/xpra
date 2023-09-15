@@ -12,7 +12,7 @@ You probably forgot to import the GPG key before installing the package.\
 The key to use is `0x17978FAF`, its signature is `B499 3B57 3231 48E3 7977 E5D8 7325 4CAD 1797 8FAF`.
 ### I get a GPG error: `KEYEXPIRED 1273837137`
 This key had expired.
-Please use the [new key](https://lists.devloop.org.uk/pipermail/shifter-users/2023-June/002981.html).\
+Please use the [new key](https://github.com/Xpra-org/xpra/issues/3863).
 ### Debian's APT says *Origin changed*, *this must be accepted explicitly...* when updating
 Run `apt-get update --allow-releaseinfo-change`.
 ### Debian's Aptitude says *Some index files failed to download* when updating
@@ -36,7 +36,7 @@ Try disabling one of the clipboard synchronization mechanisms, and if possible, 
 `Xpra.exe` is a graphical application, the command output will go to a `Xpra.log` file found in `%APPDATA%\Xpra`.\
 Use `Xpra_cmd.exe` instead.
 ### How can I start `gpg-agent`, `dbus`, etc for each session?
-The solution is often distribution specific.  
+The solution is often distribution specific.
 You may want to add `--start=/path/to/Xsession` to your server options.\
 Or you may want to add each application individually using a `start` option for each application.
 ### VirtualBox won't release mouse
@@ -89,7 +89,7 @@ Use `machinectl shell --uid=username` instead of `su` / `sudo`.
 Xpra is a window manager, you cannot run two window managers on the same X11 display at the same time.\
 If you want to forward a whole desktop, including its window manager, see [desktop mode](./Usage/Start-Desktop.md), otherwise stop the other window manager.
 ### "`cannot register our notification forwarder ...`"
-The xpra server was started from a GUI session which already had a dbus instance and a notification daemon, notifications forwarding cannot be enabled. 
+The xpra server was started from a GUI session which already had a dbus instance and a notification daemon, notifications forwarding cannot be enabled.
 ### "DPI set to NN x NN (wanted MM x MM), you may experience scaling problems, such as huge or small fonts, etc - to fix this issue, try the dpi switch, or use a patched Xorg dummy driver"
 The vfb command in use does not preserve DPI settings. You may want to switch to using a patched [Xdummy](./Usage/Xdummy.md).
 ### "`xpra [errno 2] no such file or directory`" when connecting via ssh.

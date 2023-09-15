@@ -29,62 +29,6 @@ Other packages you will need:
 
 Follow https://github.com/Xpra-org/xpra/issues/3288#issuecomment-931851564
 
-
-***
-
-# OrangePI
-These instructions are based on this mailing list post:
- [XPRA - installation on Orange PI Plus 2E](http://lists.devloop.org.uk/pipermail/shifter-users/2017-August/001999.html) running an Ubuntu Xenial variant:\
-clean up potentially conflicting packages:
-```shell
-apt-get purge xpra
-```
-install the development packages (very similar to other [Debian](./Debian.md)):
-```shell
-apt-get install libx11-dev libxtst-dev libxcomposite-dev libxdamage-dev \
-                libxkbfile-dev python-all-dev python-gobject-dev python-gtk2-dev \
-                libx264-dev libvpx-dev \
-                xvfb xauth x11-xkb-utils \
-                zlib1g zlib1g-dev
-```
-some system-supplied Python tools may just be too old, so get new ones directly from the world of Python:
-```shell
-apt-get install python-pip
-pip install --upgrade pip
-pip install lz4
-```
-to be able to use most of xpra's features, you may also want to install:
-```shell
-apt-get install python-netifaces dbus-x11 python-dbus \
-    hicolor-icon-theme python-avahi python-numpy \
-    gstreamer1.0-x gstreamer1.0-tools \
-    python-pil python-setuptools
-```
-build xpra from source as per [wiki](./README.md)
-
-***
-
-# Raspbian
-
-These instructions are valid for Raspbian Stretch and are based on this gist: [Installing Xpra on a Raspberry Pi from Source](https://gist.github.com/xaviermerino/5bb83e0b471e67beaea6d5eeb80daf8c). (which uses an outdated version)
-
-## Install The Dependencies
-build dependencies:
-```shell
-apt-get install libx11-dev libxtst-dev libxcomposite-dev \
-    libxdamage-dev libxkbfile-dev xauth x11-xkb-utils xserver-xorg-video-dummy \
-    python-all-dev python-gobject-dev python-gtk2-dev cython \
-    libx264-dev libvpx-dev node-uglify yui-compressor
-```
-A decent set of runtime dependencies:
-```shell
-apt-get install python-cryptography
-pip install pyopengl pyopengl-accelerate rencode \
-    netifaces websocket-client websockify pillow
-```
-build xpra from source as per [wiki](../Build/README.md)
-
-
 ## displayfd workaround
 Because of the Raspberry Pi's limited power, getting an answer from `displayfd` might take more than the ten seconds specified as the standard timeout. In order to change this, you can start xpra like this:
 ```shell
