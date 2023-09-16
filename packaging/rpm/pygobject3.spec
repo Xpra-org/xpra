@@ -35,6 +35,7 @@ BuildRequires:  pkgconfig(py3cairo) >= %{pycairo_version}
 BuildRequires:  meson
 BuildRequires:  %{python3}-devel >= %{python3_version}
 BuildRequires:  %{python3}-setuptools
+Requires:       %{python3}
 
 %if 0%{?fedora}
 # https://docs.fedoraproject.org/en-US/packaging-guidelines/Python_Appendix/#_byte_compilation_reproducibility
@@ -54,7 +55,7 @@ Requires:       %{python3}-cairo%{?_isa} >= %{pycairo_version}
 
 %description -n %{python3}-gobject
 The %{python3}-gobject package provides a convenient wrapper for the GObject
-library and and other libraries that are compatible with GObject Introspection, 
+library and and other libraries that are compatible with GObject Introspection,
 for use in Python 3 programs.
 
 %package     -n %{python3}-gobject-base
@@ -673,7 +674,7 @@ fi
 
 * Fri Aug 19 2011 John (J5) Palmieri <johnp@redhat.com> - 2.90.2-2
 - fix up issues uncovered during package review
-- disable docs because they still reference the static bindings 
+- disable docs because they still reference the static bindings
   and upstream is working on new documentation
 
 * Thu Aug 18 2011 John (J5) Palmieri <johnp@redhat.com> - 2.90.2-1

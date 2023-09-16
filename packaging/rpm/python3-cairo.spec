@@ -30,15 +30,15 @@ Python bindings for the cairo library.
 
 %package -n %{python3}-cairo
 Summary: Python 3 bindings for the cairo library
-%{?python_provide:%python_provide python3-cairo}
+Requires: %{python3}
 
 %description -n %{python3}-cairo
 Python 3 bindings for the cairo library.
 
 %package -n %{python3}-cairo-devel
 Summary: Libraries and headers for py3cairo
-Requires: python3-cairo%{?_isa} = %{version}-%{release}
-Requires: python3-devel
+Requires: %{python3}-cairo%{?_isa} = %{version}-%{release}
+Requires: %{python3}-devel
 
 %description -n %{python3}-cairo-devel
 This package contains files required to build wrappers for cairo add-on
