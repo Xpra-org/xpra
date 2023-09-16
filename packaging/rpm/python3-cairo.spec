@@ -13,7 +13,7 @@
 
 Name: pycairo
 Version: 1.23.0
-Release: 2%{?dist}
+Release: 3%{?dist}
 Summary: Python bindings for the cairo library
 
 License: LGPL-2.1-only OR MPL-1.1
@@ -70,5 +70,8 @@ fi
 %{_libdir}/pkgconfig/py3cairo.pc
 
 %changelog
+* Sat Sep 16 2023 Antoine Martin <antoine@xpra.org> - 1.23.0-3
+- bump release no to test updated dependencies
+
 * Fri Jan 20 2023 Fedora Release Engineering <releng@fedoraproject.org> - 1.23.0-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_38_Mass_Rebuild

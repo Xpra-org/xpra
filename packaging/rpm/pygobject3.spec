@@ -20,7 +20,7 @@
 
 Name:           pygobject3
 Version:        3.44.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Python bindings for GObject Introspection
 
 License:        LGPL-2.1-or-later
@@ -130,6 +130,9 @@ fi
 %{_libdir}/pkgconfig/pygobject-3.0.pc
 
 %changelog
+* Sat Sep 16 2023 Antoine Martin <antoine@xpra.org> - 3.44.1-2
+- bump release no to test updated dependencies
+
 * Mon Mar 27 2023 David King <amigadave@amigadave.com> - 3.44.1-1
 - Update to 3.44.1
 
