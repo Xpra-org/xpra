@@ -81,7 +81,7 @@ class OSXMenuHelper(GTKTrayMenu):
         self._clipboard_change_pending = False
 
     def set_client(self, client) -> None:
-        self.client = client
+        super().set_client(client)
         #if we call add_about before the main loop is ready,
         #things don't work...
         if client and SHOW_ABOUT_XPRA:

@@ -334,14 +334,18 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
 class MenuHelper:
 
     def __init__(self, client):
-        self.client = client
         self.menu = None
         self.menu_shown = False
         self.menu_icon_size = get_icon_size()
         self.handshake_menuitem : Callable = self.do_handshake_menuitem
-        def shortcut():
-            self.handshake_menuitem = self.menuitem
-        self.client.after_handshake(shortcut)
+        self.set_client(client)
+
+    def set_client(self, client):
+        if client:
+            self.client = client
+            def shortcut():
+                self.handshake_menuitem = self.menuitem
+            client.after_handshake(shortcut)
 
     def build(self):
         if self.menu is None:
