@@ -12,17 +12,11 @@ from typing import TypeAlias
 GL_MATCH_LIST : TypeAlias = dict[str, tuple[str,...]]
 
 WHITELIST : GL_MATCH_LIST = {
-    "renderer"  : (
-        "Haswell", "Skylake", "Kabylake", "Cannonlake",
-        "Whiskeylake", "Amberlake", "Cascadelake", "Cometlake",
-        "Icelake", "Cooperlake",
-    ),
 }
 
 #Chipsets from these vendors will trigger warnings,
 #but OpenGL will still be enabled:
 GREYLIST : GL_MATCH_LIST = {
-    "vendor"    : ("Intel", )
 }
 
 #Versions older than this will trigger warnings:
