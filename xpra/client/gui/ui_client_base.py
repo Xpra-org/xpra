@@ -403,6 +403,7 @@ class UIXpraClient(ClientBaseClass):
             except (ImportError, RuntimeError):
                 log("skipped server uuid lookup", exc_info=True)
         for x in (#generic feature flags:
+            "xdg-menu-update",
             "setting-change", "mouse",
             ):
             caps[x] = True
