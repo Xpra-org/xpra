@@ -344,7 +344,8 @@ class MenuHelper:
         self.handshake_menuitem : Callable = self.do_handshake_menuitem
         def shortcut():
             self.handshake_menuitem = self.menuitem
-        self.client.after_handshake(shortcut)
+        if client:
+            client.after_handshake(shortcut)
 
     def build(self):
         if self.menu is None:
