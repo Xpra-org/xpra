@@ -62,7 +62,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._set_initial_position = metadata.boolget("set-initial-position", False)
         self._requested_position = metadata.intpair("requested-position", None)
         self.size_constraints = typedict()
-        self.geometry_hints = {}
+        self.geometry_hints = typedict()
         self.content_type = ""
         self._fullscreen = None
         self._maximized = False

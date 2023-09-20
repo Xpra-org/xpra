@@ -25,7 +25,7 @@ def slabel(text="", tooltip=None, font=None):
 
 def x(self):
     self.size_constraints = typedict()
-    self.geometry_hints = {}
+    self.geometry_hints = typedict()
     self.pending_refresh = []
 
 def dict_str(d):
