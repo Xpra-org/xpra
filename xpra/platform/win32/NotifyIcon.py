@@ -274,12 +274,10 @@ class win32NotifyIcon:
                 self.current_icon = None
                 self.destroy_icon = None
                 di(ci)
-            return bool(r)
         except Exception as e:
             log("delete_tray_window()", exc_info=True)
             log.error("Error: failed to delete tray window")
             log.estr(e)
-            return False
 
     def get_geometry(self):
         #we can only use this if there is a single monitor
