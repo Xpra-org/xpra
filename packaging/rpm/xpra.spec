@@ -207,8 +207,6 @@ BuildRequires:		pkgconfig(libturbojpeg)
 Requires:			turbojpeg
 BuildRequires:		pkgconfig(libyuv)
 Requires:			libyuv
-BuildRequires:		pkgconfig(libavif)
-Requires:			libavif
 %ifnarch %{riscv}
 BuildRequires:		pkgconfig(openh264)
 Requires:			openh264
@@ -232,6 +230,8 @@ Requires:			%{package_prefix}-codecs = %{version}-%{release}
 %ifnarch riscv64
 Recommends:			x264
 BuildRequires:		pkgconfig(x264)
+Requires:			libavif
+BuildRequires:		pkgconfig(libavif)
 %endif
 #for gstreamer video encoder and decoder:
 Recommends:			gstreamer1
@@ -629,7 +629,6 @@ rm -rf $RPM_BUILD_ROOT
 #/xpra/codecs/evdi
 %{python3_sitearch}/xpra/codecs/jpeg
 %{python3_sitearch}/xpra/codecs/libyuv
-%{python3_sitearch}/xpra/codecs/avif
 %{python3_sitearch}/xpra/codecs/v4l2
 %{python3_sitearch}/xpra/codecs/vpx
 %{python3_sitearch}/xpra/codecs/webp
@@ -642,6 +641,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -n %{package_prefix}-codecs-extras
 %{python3_sitearch}/xpra/codecs/x26?
+%{python3_sitearch}/xpra/codecs/avif
 %{python3_sitearch}/xpra/codecs/gstreamer
 
 %if 0%{?nvidia_codecs}

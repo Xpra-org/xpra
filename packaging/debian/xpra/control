@@ -260,12 +260,6 @@ Depends: xpra-common (= ${binary:Version})
         ,libyuv0
         ,libopenh264-7
         ,libspng0
-#jammy:              ,libavif13
-#lunar:              ,libavif15
-#mantic:              ,libavif15
-#bookworm:              ,libavif15
-#trixie:              ,libavif15
-#sid:              ,libavif15
 Suggests: v4l2loopback-dkms
           ,xpra-codecs-nvidia (= ${binary:Version})
           ,python3-opencv
@@ -281,6 +275,12 @@ Enhances: xpra-codecs (= ${binary:Version})
 Depends: xpra-codecs (= ${binary:Version})
         ,${codecsextras:Depends}
         ,${python3:Depends}
+#jammy:              ,libavif13
+#lunar:              ,libavif15
+#mantic:              ,libavif15
+#bookworm:              ,libavif15
+#trixie:              ,libavif15
+#sid:              ,libavif15
 Recommends:
         ,gstreamer-plugins-ugly
         ,gstreamer1.0-vaapi
