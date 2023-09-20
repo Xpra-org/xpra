@@ -2163,7 +2163,7 @@ if nvidia_ENABLED:
     )
     rebuild = []
     if cuda_rebuild_ENABLED is True:
-        rebuild = kernels
+        rebuild = list(kernels)
     elif cuda_rebuild_ENABLED is None:
         for kernel in kernels:
             cu_src = f"fs/share/xpra/cuda/{kernel}.cu"
@@ -2173,7 +2173,11 @@ if nvidia_ENABLED:
                 print(f"* rebuilding {kernel}: {reason}")
                 rebuild.append(kernel)
     if rebuild:
-        r = subprocess.Popen(["./fs/bin/build_cuda_kernels.py"]+rebuild).wait()
+        #add cwd to PYTHONPATH:
+        env = os.environ.copy()
+        paths = env.pop("PYTHONPATH", "").split(os.pathsep)+[os.getcwd()]
+        env["PYTHONPATH"] = os.pathsep.join(paths)
+        r = subprocess.Popen(["./fs/bin/build_cuda_kernels.py"]+rebuild, env=env).wait()
         if r!=0:
             print(f"failed to rebuild the cuda kernels {rebuild}")
             sys.exit(1)
