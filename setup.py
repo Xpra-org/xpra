@@ -21,9 +21,15 @@ from time import sleep
 if sys.version_info<(3, 10):
     raise RuntimeError("xpra no longer supports Python versions older than 3.10")
 
-from setuptools import setup
-from setuptools.command.build import build
-from setuptools.command.install import install as install_data
+try:
+    from distutils.core import setup
+    from distutils.command.build import build
+    from distutils.command.install_data import install_data
+except ImportError as e:
+    print(f"no distutils: {e}, trying setuptools")
+    from setuptools import setup
+    from setuptools.command.build import build
+    from setuptools.command.install import install as install_data
 
 import xpra
 from xpra.os_util import (
@@ -1752,12 +1758,12 @@ else:
             install_data.finalize_options(self)
 
         def run(self):
-            install_dir = getattr(self, "install_dir", "")
-            if install_dir:
-                if install_dir.endswith("egg"):
-                    install_dir = install_dir.split("egg")[1] or sys.prefix
-                else:
-                    super().run()
+            install_dir = self.install_dir
+            if install_dir.endswith("egg"):
+                install_dir = install_dir.split("egg")[1] or sys.prefix
+            else:
+                install_data.run(self)
+            print(f"install_data_override.run() install_dir={install_dir}")
             root_prefix = None
             for x in sys.argv:
                 if x.startswith("--prefix="):
