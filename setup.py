@@ -210,6 +210,7 @@ proxy_ENABLED  = DEFAULT
 client_ENABLED = DEFAULT
 scripts_ENABLED = not WIN32
 cython_ENABLED = DEFAULT
+cythonize_more_ENABLED = False
 cython_tracing_ENABLED = False
 modules_ENABLED = DEFAULT
 data_ENABLED = DEFAULT
@@ -318,7 +319,7 @@ CODEC_SWITCHES = [
     "csc_cython", "csc_libyuv", "gstreamer",
     ]
 SWITCHES = [
-    "cython", "cython_tracing",
+    "cython", "cython_tracing", "cythonize_more",
     "modules", "data",
     "codecs",
     ] + CODEC_SWITCHES + [
@@ -678,7 +679,10 @@ def ace(modnames="xpra.x11.bindings.xxx", pkgconfig_names="", optimize=None, **k
     src = modnames.split(",")
     modname = src[0]
     if not src[0].endswith(".pyx"):
-        src[0] = src[0].replace(".", "/")+".pyx"
+        for ext in ("pyx", "py"):
+            filename = src[0].replace(".", "/")+"."+ext
+            if os.path.exists(filename):
+                src[0] = filename
     if isinstance(pkgconfig_names, str):
         pkgconfig_names = [x for x in pkgconfig_names.split(",") if x]
     pkgc = pkgconfig(*pkgconfig_names, optimize=optimize)
@@ -2266,6 +2270,35 @@ toggle_packages(vsock_ENABLED, "xpra.net.vsock")
 tace(vsock_ENABLED, "xpra.net.vsock.vsock")
 toggle_packages(lz4_ENABLED, "xpra.net.lz4")
 tace(lz4_ENABLED, "xpra.net.lz4.lz4", "liblz4")
+
+if cythonize_more_ENABLED:
+    if client_ENABLED and gtk3_ENABLED:
+        ace("xpra.client.gtk3.cairo_backing")
+        ace("xpra.client.gtk3.client")
+        ace("xpra.client.gtk3.client_window")
+        ace("xpra.client.gui.window_backing_base")
+        ace("xpra.client.gui.window_base")
+    if codecs_ENABLED:
+        ace("xpra.codecs.image_wrapper")
+        ace("xpra.codecs.rgb_transform")
+    if http_ENABLED:
+        ace("xpra.net.http.http_handler")
+    ace("xpra.net.protocol.header")
+    ace("xpra.net.protocol.socket_handler")
+    if websockets_ENABLED:
+        ace("xpra.net.websockets.common")
+        ace("xpra.net.websockets.handler")
+        ace("xpra.net.websockets.header")
+        ace("xpra.net.websockets.protocol")
+    ace("xpra.net.bytestreams")
+    ace("xpra.net.crypto")
+    ace("xpra.net.digest")
+    ace("xpra.net.file_transfer")
+    ace("xpra.net.mmap_pipe")
+    ace("xpra.net.packet_encoding")
+    ace("xpra.net.subprocess_wrapper")
+    ace("xpra.server.window.window_source")
+    ace("xpra.server.window.window_video_source")
 
 
 if ext_modules:

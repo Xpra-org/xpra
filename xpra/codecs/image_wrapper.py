@@ -247,6 +247,9 @@ class ImageWrapper:
     def __del__(self) -> None:
         self.free()
 
+    def __dealloc__(self):
+        self.free()
+
     def free(self) -> None:
         if not self.freed:
             self.freed = True
