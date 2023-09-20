@@ -5,8 +5,9 @@
 
 import os
 import sys
-from ctypes import c_ubyte, c_char, c_uint32
+from ctypes import c_ubyte, c_uint32
 from typing import Any
+from collections.abc import ByteString
 
 from xpra.util import roundup, envbool
 from xpra.os_util import memoryview_to_bytes, shellsub, get_group_id, WIN32, POSIX
@@ -256,7 +257,7 @@ def int_from_buffer(mmap_area, pos:int) -> c_uint32:
 
 #descr_data is a list of (offset, length)
 #areas from the mmap region
-def mmap_read(mmap_area, *descr_data) -> bytes:
+def mmap_read(mmap_area, *descr_data) -> ByteString:
     """
         Reads data from the mmap_area as written by 'mmap_write'.
         The descr_data is the list of mmap chunks used.
@@ -265,9 +266,7 @@ def mmap_read(mmap_area, *descr_data) -> bytes:
     if len(descr_data)==1:
         #construct an array directly from the mmap zone:
         offset, length = descr_data[0]
-        arraytype = c_char * length
-        data_start.value = offset+length
-        return arraytype.from_buffer(mmap_area, offset)
+        return memoryview(mmap_area)[offset:offset+length]
     #re-construct the buffer from discontiguous chunks:
     data = []
     for offset, length in descr_data:
