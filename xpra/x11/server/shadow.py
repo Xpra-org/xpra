@@ -8,7 +8,7 @@ import re
 from time import monotonic_ns
 from typing import Any
 
-from xpra.x11.x11_server_core import X11ServerCore
+from xpra.x11.server.core import X11ServerCore
 from xpra.net.compression import Compressed
 from xpra.os_util import is_Wayland, get_loaded_kernel_modules
 from xpra.util import envbool, envint, merge_dicts, AdHocStruct, NotificationID

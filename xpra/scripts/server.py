@@ -308,9 +308,9 @@ def make_desktop_server():
     from xpra.x11.desktop.desktop_server import XpraDesktopServer
     return XpraDesktopServer()
 
-def make_server(clobber):
-    from xpra.x11.server import XpraServer
-    return XpraServer(clobber)
+def make_seamless_server(clobber):
+    from xpra.x11.server.seamless import SeamlessServer
+    return SeamlessServer(clobber)
 
 def make_shadow_server(display, multi_window=False):
     from xpra.platform.shadow_server import ShadowServer
@@ -321,7 +321,7 @@ def make_proxy_server():
     return ProxyServer()
 
 def make_expand_server():
-    from xpra.x11.expand_server import ExpandServer
+    from xpra.x11.server.expand import ExpandServer
     return ExpandServer()
 
 
@@ -1459,7 +1459,7 @@ def _do_run_server(script_file:str, cmdline,
         app = make_expand_server()
     else:
         if starting or upgrading_seamless:
-            app = make_server(clobber)
+            app = make_seamless_server(clobber)
         elif starting_desktop or upgrading_desktop:
             app = make_desktop_server()
         else:

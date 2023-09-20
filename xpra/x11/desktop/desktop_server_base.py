@@ -18,7 +18,7 @@ from xpra.x11.gtk3.gdk_bindings import (
    )
 from xpra.x11.xroot_props import XRootPropWatcher
 from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
-from xpra.x11.x11_server_base import X11ServerBase
+from xpra.x11.server.base import X11ServerBase
 from xpra.gtk_common.error import xsync, xlog
 from xpra.log import Logger
 

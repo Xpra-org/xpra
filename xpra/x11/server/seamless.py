@@ -30,7 +30,7 @@ from xpra.x11.gtk3.gdk_bindings import add_event_receiver, get_pywindow
 from xpra.x11.bindings.window import X11WindowBindings #@UnresolvedImport
 from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
 from xpra.x11.bindings.randr import RandRBindings  #@UnresolvedImport
-from xpra.x11.x11_server_base import X11ServerBase
+from xpra.x11.server.base import X11ServerBase
 from xpra.gtk_common.error import xsync, xswallow, xlog, XError
 from xpra.log import Logger
 
@@ -63,7 +63,7 @@ DUMMY_MONITORS = envbool("XPRA_DUMMY_MONITORS", True)
 WINDOW_SIGNALS = os.environ.get("XPRA_WINDOW_SIGNALS", "SIGINT,SIGTERM,SIGQUIT,SIGCONT,SIGUSR1,SIGUSR2").split(",")
 
 
-class XpraServer(GObject.GObject, X11ServerBase):
+class SeamlessServer(GObject.GObject, X11ServerBase):
     __gsignals__ = {
         "xpra-child-map-event"  : one_arg_signal,
         "xpra-cursor-event"     : one_arg_signal,
@@ -1390,4 +1390,4 @@ class XpraServer(GObject.GObject, X11ServerBase):
         return X11_DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
 
 
-GObject.type_register(XpraServer)
+GObject.type_register(SeamlessServer)

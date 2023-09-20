@@ -128,7 +128,7 @@ class X11ServerCore(GTKServerBase):
     def server_init(self) -> None:
         self.x11_init()
         if server_features.windows:
-            from xpra.x11.x11_window_filters import init_x11_window_filters
+            from xpra.x11.window_filters import init_x11_window_filters
             init_x11_window_filters()
         super().server_init()
 
@@ -453,7 +453,7 @@ class X11ServerCore(GTKServerBase):
     # noinspection PyMethodMayBeStatic
     def get_keyboard_config(self, props=None):
         p = props or typedict()
-        from xpra.x11.server_keyboard_config import KeyboardConfig
+        from xpra.x11.server.keyboard_config import KeyboardConfig
         keyboard_config = KeyboardConfig()
         keyboard_config.enabled = p.boolget("keyboard", True)
         keyboard_config.parse_options(p)

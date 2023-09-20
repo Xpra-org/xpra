@@ -2055,7 +2055,7 @@ if x11_ENABLED:
     tace(xinput_ENABLED, "xpra.x11.bindings.xi2", "x11,xi")
 
 toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk_x11")
-toggle_packages(server_ENABLED and gtk_x11_ENABLED, "xpra.x11.models", "xpra.x11.desktop")
+toggle_packages(server_ENABLED and gtk_x11_ENABLED, "xpra.x11.models", "xpra.x11.desktop", "xpra.x11.server")
 if gtk_x11_ENABLED:
     add_packages("xpra.x11.gtk3")
     ace("xpra.x11.gtk3.gdk_display_source", "gdk-3.0")

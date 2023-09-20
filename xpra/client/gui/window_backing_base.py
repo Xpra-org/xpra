@@ -859,7 +859,7 @@ class WindowBackingBase:
 
     def paint_mmap(self, img_data, x:int, y:int, width:int, height:int, rowstride:int, options, callbacks):
         """ must be called from UI thread
-            see _mmap_send() in server.py for details """
+            see _mmap_send() in seamless.py for details """
         assert self.mmap_enabled
         data = mmap_read(self.mmap, *img_data)
         rgb_format = options.strget("rgb_format", "RGB")

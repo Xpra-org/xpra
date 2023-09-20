@@ -7,7 +7,7 @@ from gi.repository import GObject, GLib  # @UnresolvedImport
 
 from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode
-from xpra.x11.shadow_x11_server import ShadowX11Server
+from xpra.x11.server.shadow import ShadowX11Server
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.gtk_common.gtk_util import get_default_root_window
 from xpra.codecs.image_wrapper import ImageWrapper
