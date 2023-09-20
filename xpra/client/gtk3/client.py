@@ -54,19 +54,19 @@ class XpraClient(GTKXpraClient):
         if not screen:
             #wayland?
             return -1
-        return screen.get_resolution()
+        return round(screen.get_resolution())
 
     def get_xdpi(self) -> int:
         xdpi = get_xdpi()
         if xdpi>0:
             return xdpi
-        return self.get_screen_resolution()
+        return round(self.get_screen_resolution())
 
     def get_ydpi(self) -> int:
         ydpi = get_ydpi()
         if ydpi>0:
             return ydpi
-        return self.get_screen_resolution()
+        return round(self.get_screen_resolution())
 
 
     def get_tray_menu_helper_class(self):
