@@ -460,6 +460,19 @@ def run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, defaul
         return 128+signal.SIGINT
 
 
+def is_connection_arg(mode, arg):
+    if POSIX:
+        if arg.startswith(":") or arg.startswith("wayland-"):
+            return True
+    from xpra.net.common import SOCKET_TYPES
+    if any(arg.startswith(f"{mode}://") for mode in SOCKET_TYPES):
+        return True
+    if any(arg.startswith(f"{mode}:") for mode in SOCKET_TYPES):
+        return True
+    if any(arg.startswith(f"{mode}/") for mode in SOCKET_TYPES):
+        return True
+    return False
+
 def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, defaults) -> int:
     mode = MODE_ALIAS.get(mode, mode)
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "quic")
@@ -467,11 +480,10 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
         #all args that aren't specifying a connection will be interpreted as a start-child command:
         #ie: "xpra" "start" "xterm"
         #ie: "xpra" "start-desktop" "ssh://host/" "fluxbox"
-        from xpra.net.common import SOCKET_TYPES
         commands = []
         connargs = []
         for arg in tuple(args):
-            if any(arg.startswith(f"{mode}://") for mode in SOCKET_TYPES) or arg.startswith(":") or arg.startswith("wayland-"):
+            if is_connection_arg(mode, arg):
                 #keep this one
                 connargs.append(arg)
             else:
@@ -1994,6 +2006,8 @@ def find_mode_pos(args, mode:str):
 
 def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, defaults) -> int:
     """ Uses the regular XpraClient with patched proxy arguments to tell run_proxy to start the server """
+    if not args:
+        raise RuntimeError("no remote server specified")
     display_name = args[0]
     params = parse_display_name(error_cb, opts, display_name, cmdline)
     hello_extra = {}
