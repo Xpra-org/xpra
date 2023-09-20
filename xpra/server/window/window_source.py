@@ -90,7 +90,7 @@ SCROLL_ALL : bool = envbool("XPRA_SCROLL_ALL", True)
 FORCE_PILLOW : bool = envbool("XPRA_FORCE_PILLOW", False)
 HARDCODED_ENCODING : str = os.environ.get("XPRA_HARDCODED_ENCODING", "")
 
-INFINITY = float("inf")
+MAX_SEQUENCE = 2**64
 def get_env_encodings(etype:str, valid_options:Iterable[str]=()) -> tuple[str,...]:
     v = os.environ.get(f"XPRA_{etype}_ENCODINGS")
     encodings = tuple(valid_options)
@@ -479,11 +479,11 @@ class WindowSource(WindowIconSource):
         #
         self._damage_delayed = None
         self._sequence : int = 1
-        self._damage_cancelled = INFINITY
+        self._damage_cancelled = MAX_SEQUENCE
         self._damage_packet_sequence : int = 1
 
     def cleanup(self) -> None:
-        self.cancel_damage(INFINITY)
+        self.cancel_damage(MAX_SEQUENCE)
         log("encoding_totals for wid=%s with primary encoding=%s : %s",
             self.wid, self.encoding, self.statistics.encoding_totals)
         self.init_vars()
@@ -1225,7 +1225,7 @@ class WindowSource(WindowIconSource):
             self.source_remove(avst)
 
 
-    def is_cancelled(self, sequence=INFINITY) -> bool:
+    def is_cancelled(self, sequence=MAX_SEQUENCE) -> bool:
         """ See cancel_damage(wid) """
         return self._damage_cancelled>=sequence
 
