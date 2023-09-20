@@ -2141,6 +2141,8 @@ def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, 
                         i += 1
                     continue
             attach_args.append(arg)
+        if WIN32 and not os.path.exists(script_file) and not script_file.lower().endswith(".exe"):
+            script_file += ".exe"
         os.execv(script_file, attach_args)
     return r
 
