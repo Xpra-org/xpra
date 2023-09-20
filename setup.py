@@ -469,11 +469,8 @@ if share_xpra is None:
 def should_rebuild(src_file, bin_file):
     if not os.path.exists(bin_file):
         return "no file"
-    if rebuild_ENABLED:
-        if os.path.getctime(bin_file)<os.path.getctime(src_file):
-            return "binary file out of date"
-        if os.path.getctime(bin_file)<os.path.getctime(__file__):
-            return "newer build file"
+    if rebuild_ENABLED and os.path.getctime(bin_file)<os.path.getctime(src_file):
+        return "binary file is out of date"
     return None
 
 
