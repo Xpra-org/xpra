@@ -621,7 +621,7 @@ class ProxyInstance:
                 enclog.warn("error encoding packet", exc_info=True)
 
 
-    def process_draw(self, packet : PacketType) -> bool:
+    def process_draw(self, packet : PacketType) -> None:
         wid, x, y, width, height, encoding, pixels, _, rowstride, client_options = packet[1:11]
         encoding = str(encoding)
         #never modify mmap or scroll packets:
