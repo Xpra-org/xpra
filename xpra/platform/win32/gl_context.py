@@ -3,11 +3,15 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+import sys
 from ctypes import (
     FormatError,  # @UnresolvedImport
     sizeof, byref, cast, c_void_p,
     )
 from ctypes.wintypes import LPCWSTR
+from tempfile import NamedTemporaryFile
+from contextlib import nullcontext
 
 from xpra.client.gl.check import check_PyOpenGL_support
 from xpra.platform.win32.gui import get_window_handle
@@ -75,6 +79,43 @@ class WGLWindowContext:
 
     def __repr__(self):
         return "WGLWindowContext(%#x)" % self.hwnd
+
+
+class CaptureStdErr:
+    __slots__ = ("savedstderr", "tmp", "stderr")
+    def __init__(self, *_args):
+        self.savedstderr = None
+        self.stderr = b""
+
+    def __enter__(self):
+        sys.stderr.flush() # <--- important when redirecting to files
+        self.savedstderr = os.dup(2)
+        self.tmp = NamedTemporaryFile(prefix="stderr")
+        fd = self.tmp.fileno()
+        os.dup2(fd, 2)
+        sys.stderr = os.fdopen(self.savedstderr, "w")
+
+    def __exit__(self, *_args):
+        try:
+            fd = self.tmp.fileno()
+            os.lseek(fd, 0, 0)
+            self.stderr = os.read(fd, 32768)
+            self.tmp.close()
+        except OSError as e:
+            sys.stderr.write(f"oops: {e}\n")
+        if self.savedstderr is not None:
+            os.dup2(self.savedstderr, 2)
+
+gl_init_done = False
+def get_gl_context_manager():
+    #capture stderr only the first time this is called
+    global gl_init_done
+    if not gl_init_done:
+        gl_init_done = True
+        return CaptureStdErr()
+    cm = nullcontext()
+    cm.stderr = b""
+    return cm
 
 
 class WGLContext:
@@ -181,7 +222,15 @@ class WGLContext:
         pfd.dwLayerMask = 0
         pfd.dwVisibleMask = 0
         pfd.dwDamageMask = 0
-        pf = ChoosePixelFormat(self.hdc, byref(pfd))
+        cm = get_gl_context_manager()
+        with cm:
+            pf = ChoosePixelFormat(self.hdc, byref(pfd))
+        if cm.stderr:
+            for line in cm.stderr.split(b"\n"):
+                try:
+                    log("gl stderr: "+line.decode("utf8"))
+                except UnicodeDecodeError:
+                    log("gl stderr: "+line.decode("latin1"))
         log(f"ChoosePixelFormat for window {hwnd:x} and {bpc=} with {self.alpha=} : {pf=}")
         if not SetPixelFormat(self.hdc, pf, byref(pfd)):
             raise RuntimeError("SetPixelFormat failed")
