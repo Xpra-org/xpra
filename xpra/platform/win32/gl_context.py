@@ -105,8 +105,8 @@ class WGLContext:
         style = WS_OVERLAPPED | WS_SYSMENU
         window_name = "Xpra OpenGL Test"
         self.hwnd = CreateWindowExA(0, reg_atom, window_name, style,
-            CW_USEDEFAULT, CW_USEDEFAULT, 0, 0,
-            0, 0, hInst, None)
+                                    CW_USEDEFAULT, CW_USEDEFAULT, 0, 0,
+                                    0, 0, hInst, None)
         log("check_support() CreateWindowExW()=%#x", self.hwnd or 0)
         if not self.hwnd:
             return {"info" : "disabled: failed to create temporary window, %s" % FormatError()}
@@ -114,7 +114,7 @@ class WGLContext:
             self.context = self.create_wgl_context(self.hwnd)
             with WGLWindowContext(self.hwnd, self.hdc, self.context):
                 props = check_PyOpenGL_support(force_enable)
-            props["display_mode"] = [["SINGLE","DOUBLE"][int(DOUBLE_BUFFERED)], ]     #, "ALPHA"]
+            props["display_mode"] = ["DOUBLE" if DOUBLE_BUFFERED else "SINGLE"]
             return props
         finally:
             hwnd = self.hwnd
@@ -182,7 +182,7 @@ class WGLContext:
         pfd.dwVisibleMask = 0
         pfd.dwDamageMask = 0
         pf = ChoosePixelFormat(self.hdc, byref(pfd))
-        log("ChoosePixelFormat for window %#x and %i bpc: %#x", hwnd, bpc, pf)
+        log(f"ChoosePixelFormat for window {hwnd:x} and {bpc=} with {self.alpha=} : {pf=}")
         if not SetPixelFormat(self.hdc, pf, byref(pfd)):
             raise RuntimeError("SetPixelFormat failed")
         if not DescribePixelFormat(self.hdc, pf, sizeof(PIXELFORMATDESCRIPTOR), byref(pfd)):
