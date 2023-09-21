@@ -105,7 +105,7 @@ def check_PyOpenGL_support(force_enable) -> dict[str,Any]:
             import time
             time.sleep(TIMEOUT)
         #log redirection:
-        for name in ("formathandler", "extensions", "acceleratesupport", "arrays", "converters"):
+        for name in ("formathandler", "extensions", "acceleratesupport", "arrays", "converters", "plugins"):
             logger = logging.getLogger(f"OpenGL.{name}")
             redirected_loggers[name] = (logger, list(logger.handlers), logger.propagate)
             logger.handlers = [CaptureHandler()]
@@ -403,6 +403,9 @@ def check_PyOpenGL_support(force_enable) -> dict[str,Any]:
                 log.info(msg)
         if missing_accelerators:
             log.info("OpenGL accelerate missing: %s", csv(missing_accelerators))
+
+        for msg in recs("plugins"):
+            log(f"plugins msg={msg}")
 
         for logger, handlers, propagate in redirected_loggers.values():
             logger.handlers = handlers
