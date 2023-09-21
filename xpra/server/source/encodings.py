@@ -61,9 +61,6 @@ class EncodingsMixin(StubSourceMixin):
         self.calculate_timer = 0
         self.calculate_last_time = 0
 
-        #if we "proxy video", we will modify the video helper to add
-        #new encoders, so we must make a deep copy to preserve the original
-        #which may be used by other clients (other ServerSource instances)
         self.video_helper = getVideoHelper()
         self.cuda_device_context = None
 
@@ -430,6 +427,9 @@ class EncodingsMixin(StubSourceMixin):
                         setattr(spec, k, v)
                     proxylog("parse_proxy_video() adding: %s / %s / %s", encoding, colorspace, spec)
                     if not cloned:
+                        # if we "proxy video", we will modify the video helper to add
+                        # new encoders, so we must make a deep copy to preserve the original
+                        # which may be used by other clients (other ServerSource instances)
                         self.video_helper = getVideoHelper().clone()
                         cloned = True
                     self.video_helper.add_encoder_spec(encoding, colorspace, spec)
