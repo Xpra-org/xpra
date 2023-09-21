@@ -801,9 +801,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if not is_Wayland():
             try:
                 from xpra.client.gtk3.statusicon_tray import GTKStatusIconTray
+                # unlikely to work with gnome:
                 from xpra.os_util import is_gnome
-                if is_gnome():
-                    # unlikely to work, so try last
+                if is_gnome() or WIN32 or OSX:
                     tray_classes.append(GTKStatusIconTray)
                 else:
                     tray_classes.insert(0, GTKStatusIconTray)
