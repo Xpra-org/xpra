@@ -45,7 +45,7 @@ class Win32_Notifier(NotifierBase):
 
     def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):
         getHWND = getattr(tray, "getHWND", None)
-        if GTK_NOTIFIER or tray is None or getHWND is None or actions:
+        if GTK_NOTIFIER and (actions or not getHWND):
             log("show_notify(..) using gtk fallback, GTK_NOTIFIER=%s, tray=%s, getHWND=%s, actions=%s",
                 GTK_NOTIFIER, tray, getHWND, actions)
             gtk_notifier = self.get_gtk_notifier()
@@ -53,6 +53,9 @@ class Win32_Notifier(NotifierBase):
                 gtk_notifier.show_notify(dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
                 self.gtk_notifications.add(nid)
                 return
+        if not getHWND:
+            log.warn(f"Warning: missing 'getHWND' on {tray} ({type(tray)}")
+            return
         if tray is None:
             log.warn("Warning: no system tray - cannot show notification!")
             return
@@ -66,6 +69,8 @@ class Win32_Notifier(NotifierBase):
     def close_notify(self, nid):
         try:
             self.gtk_notifications.remove(nid)
+            if self.gtk_notifier:
+                self.gtk_notifier.close_notify(nid)
         except KeyError:
             try:
                 hwnd, app_id = self.notification_handles.pop(nid)
@@ -73,5 +78,3 @@ class Win32_Notifier(NotifierBase):
                 return
             log("close_notify(%i) hwnd=%i, app_id=%i", nid, hwnd, app_id)
             do_notify(hwnd, app_id, "", "", 0, None)
-        else:
-            self.get_gtk_notifier().close_notify(nid)
