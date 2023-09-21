@@ -222,31 +222,6 @@ def wrap_cmd_str(cmd) -> str:
     return xvfb_str
 
 
-def OpenGL_safety_check() -> str:
-    return is_VirtualBox()
-
-def is_VirtualBox() -> str:
-    #try to detect VirtualBox:
-    #based on the code found here:
-    #http://spth.virii.lu/eof2/articles/WarGame/vboxdetect.html
-    #because it used to cause hard VM crashes when we probe the GL driver!
-    if WIN32:   # pragma: no cover
-        try:
-            from ctypes import cdll
-            if cdll.LoadLibrary("VBoxHook.dll"):
-                return "VirtualBox is present (VBoxHook.dll)"
-        except (ImportError, OSError):
-            pass
-        try:
-            with open("\\\\.\\VBoxMiniRdrDN", "rb"):
-                return "VirtualBox is present (VBoxMiniRdrDN)"
-        except Exception as e:
-            import errno
-            if e.args[0]==errno.EACCES:
-                return "VirtualBox is present (VBoxMiniRdrDN)"
-    return ""
-
-
 def get_build_info() -> list[str]:
     info = []
     try:
