@@ -15,7 +15,7 @@ from cairo import (  #pylint: disable=no-name-in-module
 from gi.repository import GLib, Gdk  # @UnresolvedImport
 
 from xpra.client.gui.paint_colors import get_paint_box_color
-from xpra.client.gui.window_backing_base import WindowBackingBase, fire_paint_callbacks, SCROLL_ENCODING
+from xpra.client.gui.window_backing_base import WindowBackingBase, fire_paint_callbacks
 from xpra.os_util import memoryview_to_bytes
 from xpra.util import envbool
 from xpra.log import Logger
@@ -209,13 +209,6 @@ class CairoBackingBase(WindowBackingBase):
 
     def _do_paint_rgb(self, *args) -> bool:
         raise NotImplementedError()
-
-
-    def get_encoding_properties(self) -> dict[str,Any]:
-        props = super().get_encoding_properties()
-        if SCROLL_ENCODING:
-            props["encoding.scrolling"] = True
-        return props
 
 
     def paint_scroll(self, img_data, options, callbacks) -> None:

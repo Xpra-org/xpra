@@ -68,7 +68,7 @@ from xpra.client.gui.window_border import WindowBorder
 from xpra.client.gui.paint_colors import get_paint_box_color
 from xpra.client.gui.window_backing_base import (
     fire_paint_callbacks, WindowBackingBase,
-    WEBP_PILLOW, SCROLL_ENCODING,
+    WEBP_PILLOW,
     )
 from xpra.client.gl.check import GL_ALPHA_SUPPORTED, get_max_texture_size
 from xpra.client.gl.colorspace_conversions import (
@@ -381,8 +381,6 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def get_encoding_properties(self) -> dict[str,Any]:
         props = super().get_encoding_properties()
-        if SCROLL_ENCODING:
-            props["encoding.scrolling"] = True
         props["encoding.bit-depth"] = self.bit_depth
         return props
 

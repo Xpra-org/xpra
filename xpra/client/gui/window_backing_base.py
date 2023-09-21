@@ -28,7 +28,6 @@ videolog = Logger("video", "paint")
 INTEGRITY_HASH = envbool("XPRA_INTEGRITY_HASH", False)
 PAINT_BOX = envint("XPRA_PAINT_BOX", 0) or envint("XPRA_OPENGL_PAINT_BOX", 0)
 WEBP_PILLOW = envbool("XPRA_WEBP_PILLOW", False)
-SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 REPAINT_ALL = envbool("XPRA_REPAINT_ALL", False)
 SHOW_FPS = envbool("XPRA_SHOW_FPS", False)
 
