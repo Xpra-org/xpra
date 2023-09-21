@@ -635,7 +635,7 @@ def set_socket_timeout(conn, timeout=None) -> None:
         log("set_socket_timeout(%s, %s) ignored for %s", conn, timeout, type(conn))
 
 
-def log_new_connection(conn, socket_info:str="") -> None:
+def log_new_connection(conn, socket_info="") -> None:
     """ logs the new connection message """
     sock = conn._socket
     address = conn.remote
