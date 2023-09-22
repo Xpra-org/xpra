@@ -1,3 +1,21 @@
+xpra (5.0.3-1) UNRELEASED; urgency=low
+  * Major:
+    - jpeg decoder invalid image attributes
+    - video encodings setup error
+    - prefer native system tray on MS Windows and MacOS
+    - avoid None value errors with non-native MS Windows system tray
+  * Compatibility fixes:
+    - MacOS regression
+    - all clients support menu updates
+    - make it possible to build x265 encoder again
+  * Minor:
+    - fps counter
+    - catch invalid display names earlier
+    - re-attach error on MS Windows
+    - typo
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 22 Sep 2023 15:26:40 +0700
+
 xpra (5.0.2-1) UNRELEASED; urgency=low
   * Major fixes:
     - missing x264 encoder in DEB packages

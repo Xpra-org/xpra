@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 5.0.2
+%define version 5.0.3
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-enc_x265 --without-cuda_rebuild
@@ -768,6 +768,22 @@ fi
 
 
 %changelog
+* Fri Sep 22 2023 Antoine Martin <antoine@xpra.org> 5.0.3-10
+- Major:
+   jpeg decoder invalid image attributes
+   video encodings setup error
+   prefer native system tray on MS Windows and MacOS
+   avoid None value errors with non-native MS Windows system tray
+- Compatibility fixes:
+   MacOS regression
+   all clients support menu updates
+   make it possible to build x265 encoder again
+- Minor:
+   fps counter
+   catch invalid display names earlier
+   re-attach error on MS Windows
+   typo
+
 * Wed Sep 13 2023 Antoine Martin <antoine@xpra.org> 5.0.2-10
 - Major fixes:
    missing x264 encoder in DEB packages
