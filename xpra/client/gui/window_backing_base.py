@@ -232,7 +232,7 @@ class WindowBackingBase:
         now = monotonic()
         elapsed = now-e0
         if elapsed<=1 and len(pe)>=5:
-            return round(len(pe)//elapsed)
+            return round(len(pe)/elapsed)
         cutoff = now-1
         count = 0
         while pe and pe.pop()>=cutoff:

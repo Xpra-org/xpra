@@ -609,7 +609,7 @@ class WindowSource(WindowIconSource):
         if len(lde)>=2:
             elapsed = now-min(lde)
             if elapsed>0:
-                fps = len(lde) // elapsed
+                fps = round(len(lde) / elapsed)
         return fps
 
     def get_quality_speed_info(self) -> dict[str,Any]:
