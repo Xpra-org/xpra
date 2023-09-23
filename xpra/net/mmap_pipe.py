@@ -10,7 +10,7 @@ from typing import Any
 from collections.abc import ByteString
 
 from xpra.util import roundup, envbool
-from xpra.os_util import memoryview_to_bytes, shellsub, get_group_id, WIN32, POSIX
+from xpra.os_util import shellsub, get_group_id, WIN32, POSIX
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.simple_stats import std_unit
 from xpra.log import Logger
@@ -332,7 +332,7 @@ def mmap_write(mmap_area, mmap_size:int, data):
         #[+++++++++E------------------------]
         #[+++++++++**********E--------------]
         mmap_area.seek(end)
-        mmap_area.write(memoryview_to_bytes(data))
+        mmap_area.write(data)
         chunks = [(end, l)]
         mmap_data_end.value = end+l
     else:
@@ -342,7 +342,7 @@ def mmap_write(mmap_area, mmap_size:int, data):
             #[------------------S+++++++++E------]
             #[*******E----------S+++++++++-------]
             mmap_area.seek(8)
-            mmap_area.write(memoryview_to_bytes(data))
+            mmap_area.write(data)
             chunks = [(8, l)]
             mmap_data_end.value = 8+l
         else:
@@ -350,9 +350,9 @@ def mmap_write(mmap_area, mmap_size:int, data):
             #[------------------S+++++++++E------]
             #[******E-----------S+++++++++*******]
             mmap_area.seek(end)
-            mmap_area.write(memoryview_to_bytes(data[:chunk]))
+            mmap_area.write(data[:chunk])
             mmap_area.seek(8)
-            mmap_area.write(memoryview_to_bytes(data[chunk:]))
+            mmap_area.write(data[chunk:])
             l2 = l-chunk
             chunks = [(end, chunk), (8, l2)]
             mmap_data_end.value = 8+l2
