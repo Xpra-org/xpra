@@ -1216,7 +1216,7 @@ def _do_run_server(script_file:str, cmdline,
     if POSIX and not OSX:
         from xpra.server.server_util import has_uinput, UINPUT_UUID_LEN
         uinput_uuid = None
-        use_uinput = has_uinput() and opts.input_devices.lower() in ("uinput", "auto") and not shadowing
+        use_uinput = not shadowing and not proxying and opts.input_devices.lower() in ("uinput", "auto") and has_uinput()
         if start_vfb:
             progress(40, "starting a virtual display")
             from xpra.x11.vfb_util import start_Xvfb, parse_resolutions
