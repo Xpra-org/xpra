@@ -2282,7 +2282,7 @@ if cythonize_more_ENABLED:
         ace("xpra.codecs.image_wrapper")
         ace("xpra.codecs.rgb_transform")
     if http_ENABLED:
-        ace("xpra.net.http.http_handler")
+        ace("xpra.net.http.handler")
     ace("xpra.net.protocol.header")
     ace("xpra.net.protocol.socket_handler")
     if websockets_ENABLED:

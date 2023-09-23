@@ -14,7 +14,7 @@ from aioquic.h3.events import H3Event
 
 from xpra.net.quic.common import SERVER_NAME, http_date
 from xpra.net.http.directory_listing import list_directory
-from xpra.net.http.http_handler import (
+from xpra.net.http.handler import (
     DIRECTORY_LISTING,
     translate_path, load_path, may_reload_headers,
     )
