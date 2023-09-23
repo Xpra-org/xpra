@@ -63,10 +63,10 @@ Source:				https://xpra.org/src/xpra-%{version}.tar.xz
 %{!?nvidia_codecs: %define nvidia_codecs %(pkg-config --exists cuda && echo 1)}
 #Fedora 38+ cannot build the cuda kernels:
 %if 0%{?fedora}>=38
-%if %{nvidia_codecs}
+%if 0%{nvidia_codecs}
 %define fatbin %(tar -Jtf %{SOURCE0} xpra-%{version}/fs/share/xpra/cuda | grep .fatbin | wc -l 2> /dev/null)
 #we can only include cuda if we have pre-built fatbin kernels:
-%if %{fatbin}==0
+%if 0%{fatbin}==0
 %define nvidia_codecs 0
 %endif
 %endif
