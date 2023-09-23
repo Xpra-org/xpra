@@ -17,6 +17,7 @@ from xpra.log import Logger
 
 log = Logger("mmap")
 
+ALWAYS_WRAP = envbool("XPRA_MMAP_ALWAYS_WRAP", False)
 MMAP_GROUP = os.environ.get("XPRA_MMAP_GROUP", "xpra")
 MADVISE = envbool("XPRA_MMAP_MADVISE", True)
 MADVISE_FLAGS = os.environ.get("XPRA_MMAP_MADVISE_FLAGS", "SEQUENTIAL,DONTFORK,UNMERGEABLE,DONTDUMP").split(",")
@@ -336,7 +337,7 @@ def mmap_write(mmap_area, mmap_size:int, data):
         mmap_data_end.value = end+l
     else:
         # data does not fit in first chunk alone:
-        if available>=(mmap_size/2) and available>=(l*3) and l<(start-8):
+        if not ALWAYS_WRAP and available>=(mmap_size/2) and available>=(l*3) and l<(start-8):
             # still plenty of free space, don't wrap around: just start again:
             #[------------------S+++++++++E------]
             #[*******E----------S+++++++++-------]
