@@ -157,7 +157,7 @@ class WebcamForwarder(StubClientMixin):
             assert ret, "no device or permission"
             assert frame is not None, "no data"
             assert frame.ndim==3, "unexpected  number of dimensions: %s" % frame.ndim
-            w, h, Bpp = frame.shape
+            h, w, Bpp = frame.shape
             assert Bpp==3, "unexpected number of bytes per pixel: %s" % Bpp
             assert frame.size==w*h*Bpp
             self.webcam_device_no = device
