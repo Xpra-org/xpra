@@ -37,16 +37,16 @@ class MmapClient(StubClientMixin):
         self.mmap_group : str = ""
         self.mmap_tempfile = None
         self.mmap_delete : bool = False
-        self.supports_mmap : bool = True
+        self.mmap_supported : bool = True
 
 
     def init(self, opts) -> None:
         self.mmap_group = opts.mmap_group
         if os.path.isabs(opts.mmap):
             self.mmap_filename = opts.mmap
-            self.supports_mmap = True
+            self.mmap_supported = True
         else:
-            self.supports_mmap = opts.mmap.lower() in TRUE_OPTIONS
+            self.mmap_supported = opts.mmap.lower() in TRUE_OPTIONS
 
 
     def cleanup(self) -> None:
@@ -54,7 +54,7 @@ class MmapClient(StubClientMixin):
 
 
     def setup_connection(self, conn) -> None:
-        if self.supports_mmap:
+        if self.mmap_supported:
             self.init_mmap(self.mmap_filename, self.mmap_group, conn.filename)
 
 
@@ -66,7 +66,7 @@ class MmapClient(StubClientMixin):
         mmap_caps = c.dictget("mmap")
         #new format with namespace
         c = typedict(mmap_caps or {})
-        self.mmap_enabled = bool(self.supports_mmap and self.mmap_enabled and c.intget("enabled"))
+        self.mmap_enabled = bool(self.mmap_supported and self.mmap_enabled and c.intget("enabled"))
         log("parse_server_capabilities(..) mmap_enabled=%s", self.mmap_enabled)
         if self.mmap_enabled:
             from xpra.net.mmap_pipe import read_mmap_token, DEFAULT_TOKEN_BYTES
