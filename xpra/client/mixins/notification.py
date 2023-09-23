@@ -85,12 +85,11 @@ class NotificationClient(StubClientMixin):
         return make_instance(nc, self.notification_closed, self.notification_action)
 
     def notification_closed(self, nid, reason=3, text=""):
-        log("notification_closed(%i, %i, %s) server notification.close=%s",
-            nid, reason, text, self.server_notifications_close)
+        log("notification_closed(%i, %i, %s)", nid, reason, text)
         callback = self.callbacks.pop(nid, None)
         if callback:
             callback("notification-close", nid, reason, text)
-        elif self.server_notifications_close:
+        else:
             self.send("notification-close", nid, reason, text)
 
     def notification_action(self, nid, action_id):
