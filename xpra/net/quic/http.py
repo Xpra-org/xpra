@@ -113,6 +113,7 @@ class HttpRequestHandler:
                 headers.update(extra_headers)
                 self.send_http3_response(code, headers, body)
                 return
-        code, path_headers, body = load_path(self.scope.get("headers", {}), path)
+        accept_encoding = self.scope.get("headers", {}).get("accept-encoding", "").split(",")
+        code, path_headers, body = load_path(accept_encoding, path)
         headers.update(path_headers)
         self.send_http3_response(code, headers, body)

@@ -137,7 +137,7 @@ def translate_path(path:str, web_root:str="/usr/share/xpra/www") -> str:
     log("translate_path(%s)=%s", s, path)
     return path
 
-def load_path(headers:dict[str,Any], path:str) -> tuple[int,dict[str,Any],bytes]:
+def load_path(accept_encoding:list[str], path:str) -> tuple[int,dict[str,Any],bytes]:
     ext = os.path.splitext(path)[1]
     extra_headers : dict[str,Any] = {}
     with open(path, "rb") as f:
@@ -156,7 +156,7 @@ def load_path(headers:dict[str,Any], path:str) -> tuple[int,dict[str,Any],bytes]
         log("guess_type(%s)=%s", path, content_type)
         if content_type:
             extra_headers["Content-type"] = content_type
-        accept = tuple(headers.get("accept-encoding", "").split(","))
+        accept = tuple(accept_encoding)
         accept = tuple(x.split(";")[0].strip() for x in accept)
         content = None
         log("accept-encoding=%s", csv(accept))
@@ -403,7 +403,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 return list_directory(path).read()
 
         try:
-            code, extra_headers, content = load_path(self.headers, path)
+            accept_encoding = self.headers.get("accept-encoding", "").split(",")
+            code, extra_headers, content = load_path(accept_encoding, path)
             lm = extra_headers.get("Last-Modified")
             if lm:
                 extra_headers["Last-Modified"] = self.date_time_string(lm)
