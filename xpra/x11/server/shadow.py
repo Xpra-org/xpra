@@ -384,7 +384,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         if is_Wayland():
             ss.may_notify(NotificationID.SHADOWWAYLAND,
                           "Wayland Shadow Server",
-                          "This shadow session is running under wayland,\n"+
+                          "This shadow session seems to be running under wayland,\n"+
                           "the screen scraping will probably come up empty",
                           icon_name="unticked")
 
@@ -419,6 +419,8 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
                 body = "The shadow display capture is blank"
                 if get_loaded_kernel_modules("vboxguest", "vboxvideo"):
                     body += "\nthis may be caused by the VirtualBox video driver."
+                if is_Wayland():
+                    body += "Wayland sessions cannot be shadowed in X11 mode."
                 title = "Shadow Capture Failure"
             log("verify_capture: title=%r, body=%r", title, body)
             if title and body:
