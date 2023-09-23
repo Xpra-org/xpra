@@ -263,16 +263,16 @@ def mmap_read(mmap_area, *descr_data) -> ByteString:
         The descr_data is the list of mmap chunks used.
     """
     data_start : c_uint32 = int_from_buffer(mmap_area, 0)
+    mv = memoryview(mmap_area)
     if len(descr_data)==1:
         #construct an array directly from the mmap zone:
         offset, length = descr_data[0]
         data_start.value = offset + length
-        return memoryview(mmap_area)[offset:offset+length]
+        return mv[offset:offset+length]
     #re-construct the buffer from discontiguous chunks:
     data = []
     for offset, length in descr_data:
-        mmap_area.seek(offset)
-        data.append(mmap_area.read(length))
+        data.append(mv[offset:offset+length])
         data_start.value = offset+length
     return b"".join(data)
 
