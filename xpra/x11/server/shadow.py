@@ -414,10 +414,6 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
             title = body = ""
             if any(b!=0 for b in bdata):
                 log("verify_capture(%s) succeeded", ss)
-                if is_Wayland():
-                    title = "Wayland Session Warning"
-                    body = "Wayland sessions are not supported,\n"+\
-                            "the screen capture is likely to be empty"
             else:
                 log.warn("Warning: shadow screen capture is blank")
                 body = "The shadow display capture is blank"
