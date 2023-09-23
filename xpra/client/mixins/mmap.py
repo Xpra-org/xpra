@@ -89,13 +89,7 @@ class MmapClient(StubClientMixin):
 
 
     def get_info(self) -> dict[str,Any]:
-        if not self.mmap_enabled:
-            return {}
-        mmap_info = self.get_raw_caps()
-        mmap_info["group"] = self.mmap_group or ""
-        return {
-            "mmap" : mmap_info,
-            }
+        return self.get_caps()
 
     def get_caps(self) -> dict[str,Any]:
         if not self.mmap_enabled:
@@ -111,6 +105,7 @@ class MmapClient(StubClientMixin):
             "token"         : self.mmap_token,
             "token_index"   : self.mmap_token_index,
             "token_bytes"   : self.mmap_token_bytes,
+            "group"         : self.mmap_group or "",
             }
 
     def init_mmap(self, mmap_filename, mmap_group, socket_filename) -> None:
