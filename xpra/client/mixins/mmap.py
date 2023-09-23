@@ -120,7 +120,7 @@ class MmapClient(StubClientMixin):
         mmap_size : int = max(512*1024*1024, root_w*root_h*4*8)
         mmap_size = min(2048*1024*1024, mmap_size)
         self.mmap_enabled, self.mmap_delete, self.mmap, self.mmap_size, self.mmap_tempfile, self.mmap_filename = \
-            init_client_mmap(mmap_group, socket_filename, mmap_size, self.mmap_filename)
+            init_client_mmap(mmap_group, socket_filename or "", mmap_size, self.mmap_filename)
         if self.mmap_enabled:
             self.mmap_token = get_int_uuid()
             self.mmap_token_bytes = DEFAULT_TOKEN_BYTES
