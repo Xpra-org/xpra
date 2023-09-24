@@ -2307,7 +2307,6 @@ if cythonize_more_ENABLED:
     ace("xpra.net.bytestreams")
     ace("xpra.net.crypto")
     ace("xpra.net.digest")
-    ace("xpra.net.file_transfer")
     ace("xpra.net.mmap_pipe")
     ace("xpra.net.packet_encoding")
     ace("xpra.net.subprocess_wrapper")
