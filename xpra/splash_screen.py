@@ -102,7 +102,7 @@ class SplashScreen(Gtk.Window):
         self.connect("notify::has-toplevel-focus", self._focus_change)
 
 
-    def run(self) -> int:
+    def run(self) -> int | ExitCode:
         from xpra.make_thread import start_thread
         start_thread(self.read_stdin, "read-stdin", True)
         self.show_all()
