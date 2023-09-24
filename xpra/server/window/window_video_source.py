@@ -415,6 +415,7 @@ class WindowVideoSource(WindowSource):
         log("wvs.update_encoding_selection(%s, %s, %s) full_csc_modes=%s", encoding, exclude, init, self.full_csc_modes)
         if exclude is None:
             exclude = []
+        log(f"video_encodings={self.video_encodings}, core_encodings={self.core_encodings}")
         for x in self.video_encodings:
             if x not in self.core_encodings:
                 log("video encoding %s not in core encodings", x)
@@ -432,7 +433,7 @@ class WindowVideoSource(WindowSource):
                     log(*msg_args)
                 log(" csc modes=%", self.full_csc_modes)
         self.common_video_encodings = preforder(set(self.video_encodings) & set(self.core_encodings))
-        log("update_encoding_options: common_video_encodings=%s, csc_encoder=%s, video_encoder=%s",
+        log("update_encoding_selection: common_video_encodings=%s, csc_encoder=%s, video_encoder=%s",
             self.common_video_encodings, self._csc_encoder, self._video_encoder)
         super().update_encoding_selection(encoding, exclude, init)
 
