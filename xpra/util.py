@@ -468,7 +468,7 @@ class typedict(dict):
         v = self._listget(k, default_value, item_type, min_items, max_items)
         return tuple(v or ())
 
-    def _listget(self, k : str, default_value, item_type=None, min_items:int | None=None, max_items:int | None=None) -> list[Any]:
+    def _listget(self, k : str, default_value, item_type=None, min_items:int | None=None, max_items:int | None=None) -> list[Any] | tuple[Any,...]:
         v = self.get(k)
         if v is None:
             return default_value

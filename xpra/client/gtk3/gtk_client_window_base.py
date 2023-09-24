@@ -145,7 +145,7 @@ def parse_padding_colors(colors_str:str) -> tuple[int,int,int]:
             padding_colors = 0, 0, 0
     log("parse_padding_colors(%s)=%s", colors_str, padding_colors)
     return padding_colors
-PADDING_COLORS = parse_padding_colors(os.environ.get("XPRA_PADDING_COLORS"))
+PADDING_COLORS = parse_padding_colors(os.environ.get("XPRA_PADDING_COLORS", ""))
 
 #window types we map to POPUP rather than TOPLEVEL
 POPUP_TYPE_HINTS : set[str] = {
@@ -313,7 +313,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             widget.queue_draw_area(x, y, w, h)
 
 
-    def get_window_event_mask(self) -> int:
+    def get_window_event_mask(self) -> Gdk.EventMask:
         mask = WINDOW_EVENT_MASK
         if self._client.wheel_smooth:
             mask |= Gdk.EventMask.SMOOTH_SCROLL_MASK
@@ -2345,10 +2345,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         return self.cp(x, y)
 
     def _get_pointer(self, event) -> tuple[int,int]:
-        return event.x_root, event.y_root
+        return round(event.x_root), round(event.y_root)
 
     def _get_relative_pointer(self, event) -> tuple[int,int]:
-        return event.x, event.y
+        return round(event.x), round(event.y)
 
     def get_pointer_data(self, event) -> tuple[int,int,int,int]:
         x, y = self._get_pointer(event)
