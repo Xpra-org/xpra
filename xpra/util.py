@@ -783,25 +783,6 @@ def notypedict(d:dict) -> dict:
             d[k] = notypedict(v)
     return dict(d)
 
-def flatten_dict(info:dict[str,Any], sep:str=".") -> dict[str,Any]:
-    to : dict[str, Any] = {}
-    _flatten_dict(to, sep, "", info)
-    return to
-
-def _flatten_dict(to:dict[str, Any], sep:str, path:str, d:dict[str,Any]):
-    for k,v in d.items():
-        if path:
-            if k:
-                npath = path+sep+bytestostr(k)
-            else:
-                npath = path
-        else:
-            npath = bytestostr(k)
-        if isinstance(v, dict):
-            _flatten_dict(to, sep, npath, v)
-        elif v is not None:
-            to[npath] = v
-
 def parse_simple_dict(s:str="", sep:str=",") -> dict[str, str | list[str]]:
     #parse the options string and add the pairs:
     d : dict[str, str | list[str]] = {}
@@ -825,24 +806,6 @@ def parse_simple_dict(s:str="", sep:str=",") -> dict[str, str | list[str]]:
             log.warn(" %s", e)
     return d
 
-#used for merging dicts with a prefix and suffix
-#non-None values get added to <todict> with a prefix and optional suffix
-def updict(todict:dict, prefix:str, d:dict, suffix:str="", flatten_dicts:bool=False) -> dict:
-    if not d:
-        return todict
-    for k,v in d.items():
-        if v is not None:
-            if k:
-                k = prefix+"."+str(k)
-            else:
-                k = prefix
-            if suffix:
-                k = k+"."+suffix
-            if flatten_dicts and isinstance(v, dict):
-                updict(todict, k, v)
-            else:
-                todict[k] = v
-    return todict
 
 def pver(v, numsep:str=".", strsep:str=", ") -> str:
     #print for lists with version numbers, or CSV strings

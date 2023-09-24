@@ -69,7 +69,7 @@ from xpra.make_thread import start_thread
 from xpra.common import LOG_HELLO, FULL_INFO
 from xpra.util import (
     first_time, noerr,
-    csv, merge_dicts, typedict, notypedict, flatten_dict,
+    csv, merge_dicts, typedict, notypedict,
     ellipsizer, repr_ellipsized,
     dump_all_frames, envint, envbool, envfloat,
     ConnectionMessage, nicestr,
@@ -2327,11 +2327,9 @@ class ServerCore:
 
     def make_hello(self, source) -> dict[str,Any]:
         now = time()
-        ncaps = get_network_caps(FULL_INFO)
-        ncaps.update(proto_crypto_caps(None if source is None else source.protocol))
-        capabilities = flatten_dict(ncaps)
+        capabilities = get_network_caps(FULL_INFO) | proto_crypto_caps(None if source is None else source.protocol)
         if source is None or "versions" in source.wants:
-            capabilities.update(self.get_minimal_server_info())
+            capabilities |= self.get_minimal_server_info()
         capabilities |= {
             "version"               : vparts(XPRA_VERSION, FULL_INFO+1),
             "start_time"            : int(self.start_time),

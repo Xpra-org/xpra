@@ -46,7 +46,7 @@ from xpra.os_util import (
     parse_encoded_bin_data,
     )
 from xpra.util import (
-    flatten_dict, typedict, parse_simple_dict, noerr, std,
+    typedict, parse_simple_dict, noerr, std,
     repr_ellipsized, ellipsizer, nonl, print_nested_dict,
     envbool, envint, disconnect_is_an_error, dump_all_frames, csv, obsc,
     stderr_print,
@@ -418,7 +418,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
 
     def make_hello_base(self) -> dict[str,Any]:
-        capabilities = flatten_dict(get_network_caps(FULL_INFO))
+        capabilities = get_network_caps(FULL_INFO)
         #add "kerberos", "gss" and "u2f" digests if enabled:
         for handler in self.challenge_handlers:
             digest = handler.get_digest()

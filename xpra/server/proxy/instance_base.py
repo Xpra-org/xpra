@@ -24,7 +24,7 @@ from xpra.os_util import (
     get_hex_uuid, strtobytes,
     )
 from xpra.util import (
-    flatten_dict, typedict, ellipsizer, envint, envbool,
+    typedict, ellipsizer, envint, envbool,
     csv, first_time, ConnectionMessage,
     )
 from xpra.version_util import XPRA_VERSION, vparts
@@ -293,9 +293,7 @@ class ProxyInstance:
                 pcaps[k] = caps[k]
         log("filtered out %s matching %s", removed, prefixes)
         #replace the network caps with the proxy's own:
-        ncaps = get_network_caps()
-        ncaps.update(proto_crypto_caps(proto))
-        pcaps.update(flatten_dict(ncaps))
+        pcaps |= get_network_caps() | proto_crypto_caps(proto)
         #then add the proxy info:
         si = get_server_info()
         if FULL_INFO>0:

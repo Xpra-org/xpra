@@ -12,7 +12,7 @@ from typing import Any
 from gi.repository import GLib, GObject  # @UnresolvedImport
 
 from xpra.util import (
-    nonl, sorted_nicely, envint, flatten_dict, typedict,
+    nonl, sorted_nicely, envint, typedict,
     disconnect_is_an_error, ellipsizer, first_time, csv,
     repr_ellipsized, ConnectionMessage, stderr_print,
     )
@@ -281,34 +281,40 @@ class InfoXpraClient(CommandConnectClient):
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: did not receive the info")
 
     def do_command(self, caps : typedict) -> None:
-        def print_fn(s):
-            sys.stdout.write(f"{s}\n")
         if not caps:
             self.quit(ExitCode.NO_DATA)
             return
+        def print_fn(s):
+            sys.stdout.write(f"{s}\n")
+        def prettify(k, v) -> str:
+            ks = str(k)
+            if ks.endswith("xid"):
+                try:
+                    return hex(int(v))
+                except (TypeError, ValueError):
+                    pass
+            if ks.endswith("version") and isinstance(v, (tuple, list)):
+                return ".".join(str(x) for x in v)
+            if isinstance(v, bytes):
+                if ks.endswith(".data"):
+                    return hexstr(v)
+                return bytestostr(v)
+            elif isinstance(v, (tuple, list)):
+                return str(type(v)(prettify(k, x) for x in v))
+            return str(v)
+        def print_dict(d:dict, path=""):
+            for k in sorted_nicely(d.keys()):
+                v = d.get(k)
+                fk = prettify(k, k)
+                kpath = f"{path}.{fk}".strip(".")
+                if isinstance(v, dict):
+                    print_dict(v, kpath)
+                    continue
+                fv = prettify(k, v)
+                print_fn(f"{kpath}={nonl(fv)}")
         exit_code = ExitCode.OK
         try:
-            c = flatten_dict(caps)
-            for k in sorted_nicely(c.keys()):
-                v = c.get(k)
-                def fixvalue(w):
-                    if isinstance(w, bytes):
-                        if k.endswith(".data"):
-                            return hexstr(w)
-                        return bytestostr(w)
-                    elif isinstance(w, (tuple,list)):
-                        return type(w)([fixvalue(x) for x in w])
-                    return w
-                v = fixvalue(v)
-                k = fixvalue(k)
-                if k.endswith("xid"):
-                    try:
-                        v = hex(int(v))
-                    except (TypeError, ValueError):
-                        pass
-                if k.endswith("version") and isinstance(v, (tuple, list)):
-                    v = ".".join(str(x) for x in v)
-                print_fn(f"{k}={nonl(v)}")
+            print_dict(caps)
         except OSError:
             exit_code = ExitCode.IO_ERROR
         self.quit(exit_code)
