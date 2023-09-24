@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.util import AtomicInteger, MutableInteger, typedict, log_screen_sizes, updict, pver, std, alnum, nonl
+from xpra.util import AtomicInteger, MutableInteger, typedict, log_screen_sizes, pver, std, alnum, nonl
 
 
 class TestIntegerClasses(unittest.TestCase):
@@ -126,23 +126,6 @@ class TestModuleFunctions(unittest.TestCase):
         #whatever you throw at it, it should continue:
         log_screen_sizes(0, 0, None)
         log_screen_sizes(None, object(), ["invalid"])
-
-    def test_updict(self):
-        d1 = {"foo"      : "bar"}
-        d2 = {"hello"   : "world",
-              1         : 2}
-        d = {}
-        updict(d, "d1", d1)
-        self.assertEqual(d.get("d1.foo"), "bar")
-        self.assertIsNone(d.get("d2"))
-        updict(d, "d2", d2)
-        self.assertEqual(d.get("d2.1"), 2)
-        d3 = {
-            "moo" : "cow",
-            }
-        updict(d, "d3", d3, "hat")
-        self.assertEqual(d.get("d3.moo.hat"), "cow")
-
 
     def test_pver(self):
         self.assertEqual(pver(""), "")
