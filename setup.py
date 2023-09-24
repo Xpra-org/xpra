@@ -117,16 +117,17 @@ def check_cython3():
     try:
         import cython
         print(f"found Cython version {cython.__version__}")
-        cython_version = int(cython.__version__.split('.')[0])
+        version = int(cython.__version__.split('.')[0])
     except (ValueError, ImportError):
         print("WARNING: unable to detect Cython version")
     else:
-        if cython_version<3:
+        if version<3:
             print("*******************************************")
             print("please switch to Cython 3.x")
-            print(f" version {cython_version} is not supported")
+            print(f" version {version} is not supported")
             print("*******************************************")
-check_cython3()
+    return version
+cython_version = check_cython3()
 
 
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
@@ -2298,7 +2299,7 @@ if cythonize_more_ENABLED:
         ace("xpra.net.websockets.handler")
         ace("xpra.net.websockets.header")
         ace("xpra.net.websockets.protocol")
-    if quic_ENABLED:
+    if quic_ENABLED and cython_version>=3:
         ace("xpra.net.quic.client")
         ace("xpra.net.quic.connection")
         ace("xpra.net.quic.http")
@@ -2340,12 +2341,13 @@ if cythonize_more_ENABLED:
         ace("xpra.x11.desktop.monitor_server")
     ace("xpra.child_reaper")
     ace("xpra.common")
-    ace("xpra.os_util")
     ace("xpra.util")
     ace("xpra.queue_scheduler")
     ace("xpra.scaling_parser")
     ace("xpra.simple_stats")
-    ace("xpra.splash_screen")
+    if cython_version>=3:
+        ace("xpra.splash_screen")
+        ace("xpra.os_util")
 
 
 if ext_modules:
