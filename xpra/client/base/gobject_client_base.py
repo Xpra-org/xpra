@@ -91,7 +91,7 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
             ):
             self.add_packet_handler(t, noop_handler, False)
 
-    def run(self) -> int:
+    def run(self) -> int | ExitCode:
         XpraClientBase.run(self)
         self.run_loop()
         return self.exit_code or 0
@@ -314,7 +314,7 @@ class InfoXpraClient(CommandConnectClient):
                 print_fn(f"{kpath}={nonl(fv)}")
         exit_code = ExitCode.OK
         try:
-            print_dict(caps)
+            print_dict(dict(caps))
         except OSError:
             exit_code = ExitCode.IO_ERROR
         self.quit(exit_code)
@@ -418,7 +418,7 @@ class InfoTimerClient(MonitorXpraClient):
         self.server_last_info_time = 0
         self.info_timer = 0
 
-    def run(self) -> int:
+    def run(self) -> int | ExitCode:
         from xpra.gtk_common.gobject_compat import register_os_signals
         register_os_signals(self.signal_handler, "")
         v = super().run()
