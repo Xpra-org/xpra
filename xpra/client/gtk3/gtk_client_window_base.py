@@ -2358,9 +2358,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def adjusted_pointer_data(self, x:int, y:int, rx:int=0, ry:int=0) -> tuple[int,int,int,int]:
         #regular pointer coordinates are translated and scaled,
         #relative coordinates are scaled only:
-        data = self._offset_pointer(x, y)
-        if self._client.server_pointer_relative:
-            data = list(data) + list(self.cp(rx, ry))
+        data = list(self._offset_pointer(x, y)) + list(self.cp(rx, ry))
         return tuple(data)
 
     def _pointer_modifiers(self, event) -> tuple[tuple[int,int,int,int],list[str],list[int]]:

@@ -24,7 +24,6 @@ class InputMixin(StubSourceMixin):
         return caps.boolget("keyboard") or caps.boolget("mouse")
 
     def init_state(self) -> None:
-        self.pointer_relative : bool = False
         self.keyboard_config = None
         self.double_click_time : int = -1
         self.double_click_distance : tuple[int, int] | None = None
@@ -36,7 +35,6 @@ class InputMixin(StubSourceMixin):
         self.keyboard_config = None
 
     def parse_client_caps(self, c : typedict):
-        self.pointer_relative = c.boolget("pointer.relative")
         dc = c.dictget("double_click")
         if dc:
             dc = typedict(dc)

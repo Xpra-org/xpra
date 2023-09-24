@@ -76,7 +76,7 @@ class InputServer(StubServerMixin):
     def get_server_features(self, _source=None) -> dict[str,Any]:
         return {
             "input-devices"         : self.input_devices,
-            "pointer.relative"      : True,
+            "pointer.relative"      : True,         #assumed available in 5.0.3
             }
 
     def get_caps(self, _source) -> dict[str,Any]:
@@ -437,7 +437,7 @@ class InputServer(StubServerMixin):
                 return
             self.pointer_sequence[device_id] = seq
         pointer = pdata[:2]
-        if ss.pointer_relative and len(pdata)>=4:
+        if len(pdata)>=4:
             ss.mouse_last_relative_position = pdata[2:4]
         ss.mouse_last_position = pointer
         if self.ui_driver and self.ui_driver!=ss.uuid:
@@ -460,7 +460,7 @@ class InputServer(StubServerMixin):
             return
         wid, pdata, modifiers = packet[1:4]
         pointer = pdata[:2]
-        if ss.pointer_relative and len(pdata)>=4:
+        if len(pdata)>=4:
             ss.mouse_last_relative_position = pdata[2:4]
         ss.mouse_last_position = pointer
         if self.ui_driver and self.ui_driver!=ss.uuid:
