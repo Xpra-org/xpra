@@ -19,9 +19,15 @@ import shutil
 import os.path
 import subprocess
 
-from distutils.core import setup
-from distutils.command.build import build
-from distutils.command.install_data import install_data
+try:
+    from distutils.core import setup
+    from distutils.command.build import build
+    from distutils.command.install_data import install_data
+except ImportError as e:
+    print(f"no distutils: {e}, trying setuptools")
+    from setuptools import setup
+    from setuptools.command.build import build
+    from setuptools.command.install import install as install_data
 
 import xpra
 from xpra.os_util import (
@@ -1689,8 +1695,17 @@ else:
             build_xpra_conf(build_base)
 
     class install_data_override(install_data):
+        def finalize_options(self):
+            self.install_base = self.install_platbase = None
+            install_data.finalize_options(self)
+
         def run(self):
-            print("install_data_override: install_dir=%s" % self.install_dir)
+            install_dir = self.install_dir
+            if install_dir.endswith("egg"):
+                install_dir = install_dir.split("egg")[1] or sys.prefix
+            else:
+                install_data.run(self)
+            print("install_data_override: install_dir=%s" % install_dir)
             install_data.run(self)
 
             root_prefix = self.install_dir.rstrip("/")
@@ -1704,7 +1719,7 @@ else:
                 if dst_dir.startswith("/"):
                     dst_dir = root_prefix+dst_dir
                 else:
-                    dst_dir = self.install_dir.rstrip("/")+"/"+dst_dir
+                    dst_dir = install_dir.rstrip("/")+"/"+dst_dir
                 #make sure the target directory exists:
                 self.mkpath(dst_dir)
                 #generate the target filename:
@@ -1806,9 +1821,9 @@ else:
             if docs_ENABLED:
                 if WIN32 or OSX:
                     #keep everything in our own directory:
-                    doc_dir = "%s/share/xpra/doc" % self.install_dir
+                    doc_dir = "%s/share/xpra/doc" % install_dir
                 else:
-                    doc_dir = "%s/share/doc/xpra/" % self.install_dir
+                    doc_dir = "%s/share/doc/xpra/" % install_dir
                 convert_doc_dir("./docs", doc_dir)
 
             if data_ENABLED:
