@@ -780,7 +780,7 @@ class WindowSource(WindowIconSource):
         self.supports_transparency = HAS_ALPHA and properties.boolget("encoding.transparency", self.supports_transparency)
         self.encodings = properties.strtupleget("encodings", self.encodings)
         self.core_encodings = properties.strtupleget("encodings.core", self.core_encodings)
-        self.decoder_speed = typedict(properties.dictget("decoder-speed", self.decoder_speed))
+        self.decoder_speed = typedict(properties.dictget("decoder-speed") or self.decoder_speed)
         rgb_formats = properties.strtupleget("encodings.rgb_formats", self.rgb_formats)
         if not self.supports_transparency:
             #remove rgb formats with alpha

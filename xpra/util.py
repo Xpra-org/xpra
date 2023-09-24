@@ -778,12 +778,14 @@ def rindex(alist:list | tuple, avalue:Any) -> int:
     return len(alist) - alist[::-1].index(avalue) - 1
 
 
-def notypedict(d:dict) -> dict:
+def notypedict(d:dict, path="") -> dict:
     for k in list(d.keys()):
         v = d[k]
+        if isinstance(v, typedict):
+            d[k] = notypedict(dict(v))
         if isinstance(v, dict):
-            d[k] = notypedict(v)
-    return dict(d)
+            d[k] = notypedict(v, f"{path}.{k}".strip("."))
+    return d
 
 def parse_simple_dict(s:str="", sep:str=",") -> dict[str, str | list[str]]:
     #parse the options string and add the pairs:

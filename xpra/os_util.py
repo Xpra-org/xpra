@@ -50,8 +50,8 @@ def is_main_thread() -> bool:
     return threading.current_thread()==main_thread
 
 
-def get_frame_info(ignore_threads:tuple[Thread,...]=()) -> dict[Any,Any]:
-    info : dict[Any,Any] = {
+def get_frame_info(ignore_threads:tuple[Thread,...]=()) -> dict[str|int,Any]:
+    info : dict[str|int,Any] = {
         "count"         : threading.active_count() - len(ignore_threads),
         "native-id"     : threading.get_native_id(),
         }
