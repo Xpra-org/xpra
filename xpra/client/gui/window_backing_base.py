@@ -179,7 +179,7 @@ class WindowBackingBase:
 
     def get_rgb_formats(self) -> tuple[str,...]:
         if self._alpha_enabled:
-            return self.RGB_MODES
+            return tuple(self.RGB_MODES)
         #remove modes with alpha:
         return tuple(x for x in self.RGB_MODES if x.find("A")<0)
 
