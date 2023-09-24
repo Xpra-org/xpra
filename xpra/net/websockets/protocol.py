@@ -40,7 +40,7 @@ class WebSocketProtocol(SocketProtocol):
     def __repr__(self):
         return f"WebSocket({self._conn})"
 
-    def close(self, message=None) -> None:
+    def close(self, message="closing") -> None:
         if self._closed:
             return
         self.send_ws_close(reason=message)
