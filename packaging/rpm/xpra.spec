@@ -768,21 +768,26 @@ fi
 
 
 %changelog
-* Fri Sep 22 2023 Antoine Martin <antoine@xpra.org> 5.0.3-10
+* Mon Sep 25 2023 Antoine Martin <antoine@xpra.org> 5.0.3-10
 - Major:
    jpeg decoder invalid image attributes
    video encodings setup error
    prefer native system tray on MS Windows and MacOS
    avoid None value errors with non-native MS Windows system tray
+   splash screen hangs
 - Compatibility fixes:
+   handle microphone option with both state and device
    MacOS regression
    all clients support menu updates
    make it possible to build x265 encoder again
+   relative pointers
 - Minor:
-   fps counter
+   fps counter rounded to an int and dpi values
    catch invalid display names earlier
    re-attach error on MS Windows
    typo
+   skip unnecessary processing if bind=none
+   avoid uinput warning
 
 * Wed Sep 13 2023 Antoine Martin <antoine@xpra.org> 5.0.2-10
 - Major fixes:
