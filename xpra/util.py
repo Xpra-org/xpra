@@ -351,6 +351,8 @@ def decode_str(x, try_encoding="utf8"):
 _RaiseKeyError = object()
 
 def checkdict(v):
+    if isinstance(v, typedict):
+        return dict(v)
     assert isinstance(v, dict)
     return v
 
