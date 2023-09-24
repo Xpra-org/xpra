@@ -156,7 +156,7 @@ def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*
             os.lseek(fd, 0, os.SEEK_SET)
             mmap_area = mmap.mmap(fd, length=mmap_size)
             if MADVISE:
-                log(f"setting {MADVISE_FLAGS=}")
+                log(f"setting MADVISE_FLAGS={MADVISE_FLAGS}")
                 try:
                     for flag in MADVISE_FLAGS:
                         flag_value = getattr(mmap, f"MADV_{flag}", 0)
