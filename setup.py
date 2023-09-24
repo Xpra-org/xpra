@@ -2275,7 +2275,7 @@ tace(lz4_ENABLED, "xpra.net.lz4.lz4", "liblz4")
 if cythonize_more_ENABLED:
     if client_ENABLED:
         ace("xpra.client.base.fileprint_mixin")
-        #ace("xpra.client.base.top_client")
+        ace("xpra.client.base.top_client")
         ace("xpra.client.base.gobject_client_base")
     if client_ENABLED and gtk3_ENABLED:
         ace("xpra.client.gtk3.cairo_backing")
@@ -2340,13 +2340,13 @@ if cythonize_more_ENABLED:
         ace("xpra.x11.desktop.desktop_server")
         ace("xpra.x11.desktop.monitor_server")
     ace("xpra.child_reaper")
-    ace("xpra.common")
-    ace("xpra.util")
     ace("xpra.queue_scheduler")
     ace("xpra.scaling_parser")
     ace("xpra.simple_stats")
     if cython_version>=3:
         ace("xpra.splash_screen")
+        ace("xpra.common")
+        ace("xpra.util")
         ace("xpra.os_util")
 
 

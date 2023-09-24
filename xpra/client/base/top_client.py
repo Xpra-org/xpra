@@ -704,7 +704,7 @@ class TopSessionClient(InfoTimerClient):
             d = self.td(d.dictget(part, {}))
         return d
 
-    def get_client_info(self, ci):
+    def get_client_info(self, ci : typedict) -> tuple:
         #version info:
         ctype = ci.strget("type", "unknown")
         title = f"{ctype} client version "
@@ -761,14 +761,15 @@ class TopSessionClient(InfoTimerClient):
                     qs_color = YELLOW
                 if avg<50:
                     qs_color = RED
-        return tuple((s, c) for s,c in (
+        str_color = [
             (title, WHITE),
             (conn_info, WHITE),
             (gl_info, WHITE),
             (csv(audio_info), WHITE),
             (batch_latency, bl_color),
             (qs_info, qs_color),
-            ) if s)
+        ]
+        return tuple((s, c) for s,c in str_color if s)
 
     def _audio_info(self, ci, mode="speaker"):
         minfo = self.dictget(ci, "audio", mode) or self.dictget(ci, "sound", mode)
