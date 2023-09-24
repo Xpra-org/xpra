@@ -28,6 +28,7 @@ VERSION_REQ = {
 BLACKLIST : GL_MATCH_LIST = {
     "renderer" :
         (
+            "SVGA3D",
             "Software Rasterizer",
         ),
     "vendor"    : (
