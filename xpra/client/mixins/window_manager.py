@@ -421,7 +421,7 @@ class WindowClient(StubClientMixin):
         #input devices:
         self.server_input_devices = c.strget("input-devices")
         self.server_precise_wheel = c.boolget("wheel.precise", False)
-        self.server_pointer_relative = c.boolget("pointer.relative", False)
+        self.server_pointer_relative = c.boolget("pointer.relative", True)
         return True
 
 
