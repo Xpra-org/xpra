@@ -477,7 +477,7 @@ class SocketProtocol:
 
     def enable_encoder_from_caps(self, caps:typedict) -> bool:
         options = packet_encoding.get_enabled_encoders(order=packet_encoding.PERFORMANCE_ORDER)
-        log(f"enable_encoder_from_caps(..) {options=}")
+        log(f"enable_encoder_from_caps(..) options={options}")
         for e in options:
             if caps.boolget(e):
                 self.enable_encoder(e)
@@ -1080,7 +1080,7 @@ class SocketProtocol:
                     log(f"failed to parse {etype} packet: %s", hexstr(data[:128]), exc_info=True)
                     data_str = memoryview_to_bytes(data)
                     log(" data: %s", repr_ellipsized(data_str))
-                    log(f" {packet_index=}, {payload_size=}, buffer size={bl}")
+                    log(f" packet_index={packet_index}, payload_size={payload_size}, buffer size={bl}")
                     log(" full data: %s", hexstr(data_str))
                     self.gibberish(f"failed to parse {etype} packet", data)
                     return
