@@ -32,8 +32,8 @@ try:
 except ImportError:
     has_client = False
 try:
-    from xpra.server import server_util
-    has_server = bool(server_util)
+    from xpra.server import util
+    has_server = bool(util)
 except ImportError:
     has_server = False
 try:

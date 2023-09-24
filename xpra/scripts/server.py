@@ -854,7 +854,7 @@ def _do_run_server(script_file:str, cmdline,
 
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
-    from xpra.server.server_util import (
+    from xpra.server.util import (
         xpra_env_shell_script,
         xpra_runner_shell_script,
         write_runner_shell_scripts,
@@ -1214,7 +1214,7 @@ def _do_run_server(script_file:str, cmdline,
     xvfb_pid = 0
     devices = {}
     if POSIX and not OSX:
-        from xpra.server.server_util import has_uinput, UINPUT_UUID_LEN
+        from xpra.server.util import has_uinput, UINPUT_UUID_LEN
         uinput_uuid = None
         use_uinput = not shadowing and not proxying and opts.input_devices.lower() in ("uinput", "auto") and has_uinput()
         if start_vfb:

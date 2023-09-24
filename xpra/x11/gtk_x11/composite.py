@@ -6,7 +6,7 @@
 
 from gi.repository import GObject, Gdk
 
-from xpra.x11.gtk_x11.window_damage import WindowDamageHandler
+from xpra.x11.gtk_x11.damage import WindowDamageHandler
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.x11.gtk3.gdk_bindings import add_event_receiver, remove_event_receiver
 from xpra.gtk_common.error import xlog

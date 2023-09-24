@@ -14,7 +14,7 @@ from xpra.gtk_common.error import xsync
 from xpra.x11.common import get_wm_name
 from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.bindings.window import X11WindowBindings #@UnresolvedImport
-from xpra.x11.gtk_x11.window_damage import WindowDamageHandler
+from xpra.x11.gtk_x11.damage import WindowDamageHandler
 from xpra.x11.gtk3.gdk_bindings import add_event_receiver, remove_event_receiver
 from xpra.x11.bindings.randr import RandRBindings #@UnresolvedImport
 from xpra.log import Logger

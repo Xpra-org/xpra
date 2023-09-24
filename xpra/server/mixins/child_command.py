@@ -24,7 +24,7 @@ from xpra.util import envint, csv, ellipsizer, typedict
 from xpra.net.common import PacketType
 from xpra.make_thread import start_thread
 from xpra.scripts.parsing import parse_env, get_subcommands
-from xpra.server.server_util import source_env
+from xpra.server.util import source_env
 from xpra.server.menu_provider import get_menu_provider
 from xpra.server import EXITING_CODE
 from xpra.server.mixins.stub_server_mixin import StubServerMixin

@@ -1039,7 +1039,7 @@ def get_ssl_wrap_socket_context(cert=None, key=None, key_password=None, ca_certs
         raise InitException(f"invalid ssl-protocol {protocol!r}, must be one of: "+csv(values))
     ssllog(" protocol=%#x", proto)
     #ca_data may be hex encoded:
-    ca_data = parse_encoded_bin_data(ca_data)
+    ca_data = parse_encoded_bin_data(ca_data or "")
     ssllog(" cadata=%s", ellipsizer(ca_data))
 
     kwargs = {

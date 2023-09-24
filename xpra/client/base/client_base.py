@@ -1028,7 +1028,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def get_encryption_key(self) -> bytes:
         conn = self._protocol._conn
-        keydata = parse_encoded_bin_data(conn.options.get("keydata", None))
+        keydata = parse_encoded_bin_data(conn.options.get("keydata", ""))
         cryptolog(f"get_encryption_key() connection options keydata={ellipsizer(keydata)}")
         if keydata:
             return keydata

@@ -24,7 +24,7 @@ from xpra.version_util import (
     get_platform_info, get_host_info, parse_version,
     )
 from xpra.scripts.server import deadly_signal, clean_session_files, rm_session_dir
-from xpra.server.server_util import write_pidfile, rm_pidfile
+from xpra.server.util import write_pidfile, rm_pidfile
 from xpra.scripts.config import parse_bool, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import may_log_packet, SOCKET_TYPES, MAX_PACKET_SIZE, DEFAULT_PORTS, SSL_UPGRADE, PacketType
 from xpra.net.socket_util import (
@@ -1472,7 +1472,7 @@ class ServerCore:
         protocol.authenticators = ()
         protocol.encryption = socket_options.get("encryption", None)
         protocol.keyfile = socket_options.get("encryption-keyfile") or socket_options.get("keyfile")
-        protocol.keydata = parse_encoded_bin_data(socket_options.get("encryption-keydata") or socket_options.get("keydata"))
+        protocol.keydata = parse_encoded_bin_data(socket_options.get("encryption-keydata") or socket_options.get("keydata") or "")
         if socktype in ENCRYPTED_SOCKET_TYPES:
             #special case for legacy encryption code:
             protocol.encryption = protocol.encryption or self.tcp_encryption

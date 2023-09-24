@@ -13,7 +13,7 @@ from threading import Event
 from typing import Any
 from gi.repository import Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
-from xpra.client.gtk3.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
+from xpra.client.gtk3.window_base import HAS_X11_BINDINGS, XSHAPE
 from xpra.util import (
     pver, noerr,
     envbool, envint, repr_ellipsized, ellipsizer, csv, first_time, typedict,
@@ -149,7 +149,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             framelog("setup_frame_request_windows() window=%#x", xid)
             send_wm_request_frame_extents(root.get_xid(), xid)
 
-    def run(self) -> int:
+    def run(self) -> int | ExitCode:
         log(f"run() HAS_X11_BINDINGS={HAS_X11_BINDINGS}")
         if HAS_X11_BINDINGS:
             self.setup_frame_request_windows()
