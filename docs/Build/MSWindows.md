@@ -2,7 +2,7 @@
 
 ## Setup
 * install [MSYS2](https://www.msys2.org/) and update the system: run `pacman -Syu` until all the updates are applied
-* from a MinGW shell, run this setup script: [MINGW_SETUP.sh](https://github.com/Xpra-org/xpra/tree/master/packaging/MSWindows/MINGW_SETUP.sh)
+* from a MinGW shell, run this setup script: [SETUP.sh](https://github.com/Xpra-org/xpra/tree/master/packaging/MSWindows/SETUP.sh)
 
 
 ## Optional dependencies
@@ -13,4 +13,4 @@ To be able to generate EXE packages, install [verpatch](https://github.com/pavel
 
 
 ## Build
-From the source directory, just run the build script [MINGW_BUILD.sh](https://github.com/Xpra-org/xpra/tree/master/packaging/MSWindows/MINGW_BUILD.sh)
+From the source directory, just run the build script [BUILD.sh](https://github.com/Xpra-org/xpra/tree/master/packaging/MSWindows/BUILD.sh)
