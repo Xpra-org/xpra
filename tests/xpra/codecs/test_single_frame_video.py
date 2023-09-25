@@ -21,7 +21,7 @@ def main(files):
     assert avcodec, "dec_avcodec is required"
     assert swscale, "swscale is required"
     encoders = []
-    ENCODERS = os.environ.get("XPRA_ENCODERS", "enc_vpx,enc_x264,enc_x265,nvenc,enc_ffmpeg").split(",")
+    ENCODERS = os.environ.get("XPRA_ENCODERS", "enc_vpx,enc_x264,nvenc,enc_ffmpeg").split(",")
     for encoder in ENCODERS:
         enc = load_codec(encoder)
         if not enc:

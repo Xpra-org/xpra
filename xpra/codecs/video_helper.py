@@ -23,7 +23,6 @@ CODEC_TO_MODULE : Dict[str,str] = {
     "enc_vpx"       : "vpx.encoder",
     "dec_vpx"       : "vpx.decoder",
     "enc_x264"      : "x264.encoder",
-    "enc_x265"      : "x265.encoder",
     "enc_openh264"  : "openh264.encoder",
     "nvenc"         : "nvidia.nvenc",
     "nvdec"         : "nvidia.nvdec",
@@ -65,12 +64,12 @@ def try_import_modules(prefix:str, *codec_names) -> List[str]:
 
 
 #all the codecs we know about:
-ALL_VIDEO_ENCODER_OPTIONS : Tuple[str,...] = ("x264", "openh264", "vpx", "x265", "nvenc", "ffmpeg", "nvjpeg", "jpeg", "webp", "gstreamer")
+ALL_VIDEO_ENCODER_OPTIONS : Tuple[str,...] = ("x264", "openh264", "vpx", "nvenc", "ffmpeg", "nvjpeg", "jpeg", "webp", "gstreamer")
 HARDWARE_ENCODER_OPTIONS : Tuple[str,...] = ("nvenc", "nvjpeg")
 ALL_CSC_MODULE_OPTIONS : Tuple[str,...] = ("swscale", "cython", "libyuv")
 ALL_VIDEO_DECODER_OPTIONS : Tuple[str,...] = ("avcodec2", "openh264", "vpx", "gstreamer", "nvdec")
 
-PREFERRED_ENCODER_ORDER : Tuple[str,...] = tuple(autoprefix("enc", x) for x in ("nvenc", "nvjpeg", "x264", "vpx", "jpeg", "webp", "x265", "gstreamer"))
+PREFERRED_ENCODER_ORDER : Tuple[str,...] = tuple(autoprefix("enc", x) for x in ("nvenc", "nvjpeg", "x264", "vpx", "jpeg", "webp", "gstreamer"))
 log("video_helper: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
 log("video_helper: ALL_CSC_MODULE_OPTIONS=%s", ALL_CSC_MODULE_OPTIONS)
 log("video_helper: ALL_VIDEO_DECODER_OPTIONS=%s", ALL_VIDEO_DECODER_OPTIONS)

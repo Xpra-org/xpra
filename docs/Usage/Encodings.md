@@ -60,7 +60,6 @@ Xpra ships the following encoder modules:
 |-----------------------|---------------------|-----------------------------|
 | `vpx`                 | `vp8`, `vp9`        |
 | `x264`                | `h264`              | fast                        |
-| `x265`                | `hevc`              | slower                      |
 | [`nvenc`](./NVENC.md) | `h264`, `hevc`      | fastest (requires hardware) |
 | `ffmpeg`              | all                 | capabilities vary           |
 
