@@ -22,7 +22,7 @@ from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del
 from xpra.x11.gtk3.gdk_display_source import close_gdk_display_source
 from xpra.x11.gtk3.gdk_bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
 from xpra.common import MAX_WINDOW_SIZE, FULL_INFO
-from xpra.os_util import strtobytes
+from xpra.os_util import bytestostr
 from xpra.util import typedict, envbool, first_time, NotificationID
 from xpra.net.compression import Compressed
 from xpra.net.common import PacketType
@@ -849,7 +849,7 @@ class X11ServerCore(GTKServerBase):
         #so we use wid=0 for that:
         wid = 0
         for ss in self.window_sources():
-            name = strtobytes(event.bell_name or "")
+            name = bytestostr(event.bell_name or b"")
             ss.bell(wid, event.device, event.percent,
                     event.pitch, event.duration, event.bell_class, event.bell_id, name)
 
@@ -864,7 +864,7 @@ class X11ServerCore(GTKServerBase):
             wid = self._window_to_id.get(event.window_model, 0)
         log("_bell_signaled(%s,%r) wid=%s", wm, event, wid)
         for ss in self.window_sources():
-            name = strtobytes(event.bell_name or "")
+            name = bytestostr(event.bell_name or b"")
             ss.bell(wid, event.device, event.percent,
                     event.pitch, event.duration, event.bell_class, event.bell_id, name)
 

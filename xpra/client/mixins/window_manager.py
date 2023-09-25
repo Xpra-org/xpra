@@ -1319,7 +1319,7 @@ class WindowClient(StubClientMixin):
             return
         (wid, device, percent, pitch, duration, bell_class, bell_id, bell_name) = packet[1:9]
         window = self._id_to_window.get(wid)
-        self.window_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name)
+        self.window_bell(window, device, percent, pitch, duration, bell_class, bell_id, bytestostr(bell_name))
 
 
     ######################################################################
