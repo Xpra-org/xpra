@@ -2273,6 +2273,7 @@ toggle_packages(lz4_ENABLED, "xpra.net.lz4")
 tace(lz4_ENABLED, "xpra.net.lz4.lz4", "liblz4")
 
 if cythonize_more_ENABLED:
+    assert cython_version >= 3, "cannot use 'cythonize_more' with older Cython versions"
     if client_ENABLED:
         ace("xpra.client.base.fileprint_mixin")
         ace("xpra.client.base.top_client")
@@ -2281,17 +2282,15 @@ if cythonize_more_ENABLED:
         ace("xpra.client.gtk3.cairo_backing")
         ace("xpra.client.gtk3.client_base")
         ace("xpra.client.gtk3.client")
-        ace("xpra.client.gtk3.window_base")
         ace("xpra.client.gtk3.window")
-        if cython_version>=3:
-            ace("xpra.client.gui.window_backing_base")
-            ace("xpra.client.gui.window_base")
+        ace("xpra.client.gtk3.window_base")
+        ace("xpra.client.gui.window_backing_base")
+        ace("xpra.client.gui.window_base")
         ace("xpra.client.gl.gl_window_backing_base")
     if codecs_ENABLED:
         ace("xpra.codecs.image_wrapper")
         ace("xpra.codecs.rgb_transform")
-        if cython_version>=3:
-            ace("xpra.codecs.video_helper")
+        ace("xpra.codecs.video_helper")
     if http_ENABLED:
         ace("xpra.net.http.handler")
     ace("xpra.net.protocol.header")
@@ -2301,7 +2300,7 @@ if cythonize_more_ENABLED:
         ace("xpra.net.websockets.handler")
         ace("xpra.net.websockets.header")
         ace("xpra.net.websockets.protocol")
-    if quic_ENABLED and cython_version>=3:
+    if quic_ENABLED:
         ace("xpra.net.quic.client")
         ace("xpra.net.quic.connection")
         ace("xpra.net.quic.http")
@@ -2310,9 +2309,8 @@ if cythonize_more_ENABLED:
     ace("xpra.net.bytestreams")
     ace("xpra.net.crypto")
     ace("xpra.net.digest")
-    if cython_version>=3:
-        ace("xpra.net.mmap_pipe")
-        ace("xpra.net.packet_encoding")
+    ace("xpra.net.mmap_pipe")
+    ace("xpra.net.packet_encoding")
     ace("xpra.net.subprocess_wrapper")
     if server_ENABLED:
         ace("xpra.server.server_core")
@@ -2344,13 +2342,12 @@ if cythonize_more_ENABLED:
         ace("xpra.x11.desktop.monitor_server")
     ace("xpra.queue_scheduler")
     ace("xpra.simple_stats")
-    if cython_version>=3:
-        ace("xpra.scaling_parser")
-        ace("xpra.child_reaper")
-        ace("xpra.splash_screen")
-        ace("xpra.common")
-        ace("xpra.util")
-        ace("xpra.os_util")
+    ace("xpra.scaling_parser")
+    ace("xpra.child_reaper")
+    ace("xpra.splash_screen")
+    ace("xpra.common")
+    ace("xpra.util")
+    ace("xpra.os_util")
 
 
 if ext_modules:
