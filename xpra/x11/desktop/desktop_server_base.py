@@ -193,7 +193,7 @@ class DesktopServerBase(DesktopServerBaseClass):
     def send_new_desktop_model(self, model, ss, _sharing:bool=False) -> None:
         x, y, w, h = model.get_geometry()
         wid = self._window_to_id[model]
-        wprops = self.client_properties.get(wid, {}).get(ss.uuid)
+        wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
         ss.new_window("new-window", wid, model, x, y, w, h, wprops)
         wid = self._window_to_id[model]
         ss.damage(wid, model, 0, 0, w, h)

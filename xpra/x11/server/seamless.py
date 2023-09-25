@@ -464,7 +464,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             elif window.is_OR():
                 #code more or less duplicated from _send_new_or_window_packet:
                 x, y, w, h = window.get_property("geometry")
-                wprops = self.client_properties.get(wid, {}).get(ss.uuid)
+                wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
                 ss.new_window("new-override-redirect", wid, window, x, y, w, h, wprops)
                 ss.damage(wid, window, 0, 0, w, h)
             else:
@@ -472,7 +472,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 if not sharing:
                     window.hide()
                 x, y, w, h = window.get_property("geometry")
-                wprops = self.client_properties.get(wid, {}).get(ss.uuid)
+                wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
                 ss.new_window("new-window", wid, window, x, y, w, h, wprops)
 
 
