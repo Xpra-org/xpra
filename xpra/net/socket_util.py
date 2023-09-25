@@ -395,7 +395,7 @@ def create_sockets(opts, error_cb:Callable, retry:int=0):
                 log("%s : %s", (stype, [addr]), sock)
     return sockets
 
-def create_tcp_socket(host:str, iport:int):
+def create_tcp_socket(host:str, iport:int) -> socket.socket:
     log = get_network_logger()
     if host.find(":")<0:
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -414,7 +414,7 @@ def create_tcp_socket(host:str, iport:int):
     listener.bind(sockaddr)
     return listener
 
-def setup_tcp_socket(host:str, iport:int, socktype:str="tcp"):
+def setup_tcp_socket(host:str, iport:int, socktype:str="tcp") -> tuple[str, socket.socket, tuple[str,int], Callable]:
     log = get_network_logger()
     try:
         tcp_socket = create_tcp_socket(host, iport)
@@ -435,7 +435,7 @@ def setup_tcp_socket(host:str, iport:int, socktype:str="tcp"):
     log.info(f"created {socktype} socket '{host}:{iport}'")
     return socktype, tcp_socket, (host, iport), cleanup_tcp_socket
 
-def create_udp_socket(host:str, iport:int, family=socket.AF_INET):
+def create_udp_socket(host:str, iport:int, family=socket.AF_INET) -> socket.socket:
     if family==socket.AF_INET6:
         if not socket.has_ipv6:
             raise RuntimeError("specified an IPv6 address but this is not supported on this system")
@@ -454,7 +454,7 @@ def create_udp_socket(host:str, iport:int, family=socket.AF_INET):
         raise
     return listener
 
-def setup_quic_socket(host:str, port:int):
+def setup_quic_socket(host:str, port:int) -> socket.socket:
     try:
         from xpra.net.quic import common
         import aioquic
@@ -464,7 +464,7 @@ def setup_quic_socket(host:str, port:int):
                        f"cannot use quic sockets: {e}") from None
     return setup_udp_socket(host, port, "quic")
 
-def setup_udp_socket(host:str, iport:int, socktype:str):
+def setup_udp_socket(host:str, iport:int, socktype:str) -> tuple[str, socket.socket, tuple[str,int], Callable]:
     log = get_network_logger()
     try:
         udp_socket = create_udp_socket(host, iport, family=socket.AF_INET6 if host.find(":")>=0 else socket.AF_INET)
@@ -485,8 +485,8 @@ def setup_udp_socket(host:str, iport:int, socktype:str):
     log.info(f"created {socktype} socket {host}:{iport}")
     return socktype, udp_socket, (host, iport), cleanup_udp_socket
 
-def parse_bind_ip(bind_ip:str, default_port:int=DEFAULT_PORT):
-    ip_sockets = {}
+def parse_bind_ip(bind_ip:list[str], default_port:int=DEFAULT_PORT) -> dict[tuple[str,int], dict]:
+    ip_sockets : dict[tuple[str,int], dict] = {}
     if bind_ip:
         for spec in bind_ip:
             parts = spec.split(",", 1)
@@ -498,8 +498,6 @@ def parse_bind_ip(bind_ip:str, default_port:int=DEFAULT_PORT):
                 host = "127.0.0.1"
             if not port:
                 iport = default_port
-            elif port=="0":
-                iport = 0
             else:
                 try:
                     iport = int(port)
@@ -512,7 +510,7 @@ def parse_bind_ip(bind_ip:str, default_port:int=DEFAULT_PORT):
             ip_sockets[(host, iport)] = options
     return ip_sockets
 
-def setup_vsock_socket(cid:int, iport:int):
+def setup_vsock_socket(cid:int, iport:int) -> tuple[str, Any, tuple[int,int], Callable]:
     log = get_network_logger()
     try:
         from xpra.net.vsock.vsock import bind_vsocket     #@UnresolvedImport
@@ -528,8 +526,8 @@ def setup_vsock_socket(cid:int, iport:int):
             pass
     return "vsock", vsock_socket, (cid, iport), cleanup_vsock_socket
 
-def parse_bind_vsock(bind_vsock:str):
-    vsock_sockets = {}
+def parse_bind_vsock(bind_vsock:list[str]) -> dict[tuple[int,int],dict]:
+    vsock_sockets : dict[tuple[int,int],dict] = {}
     if bind_vsock:
         from xpra.scripts.parsing import parse_vsock_cid  #@UnresolvedImport pylint: disable=import-outside-toplevel
         for spec in bind_vsock:
@@ -559,7 +557,7 @@ def setup_sd_listen_socket(stype:str, sock, addr):
     return stype, sock, addr, cleanup_sd_listen_socket
 
 
-def normalize_local_display_name(local_display_name:str):
+def normalize_local_display_name(local_display_name:str) -> str:
     if local_display_name.startswith("wayland-") or os.path.isabs(local_display_name):
         return local_display_name
     pos = local_display_name.find(":")
@@ -583,7 +581,7 @@ def normalize_local_display_name(local_display_name:str):
 def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
                         display_name:str, clobber,
                         mmap_group:str="auto", socket_permissions:str="600", username:str="",
-                        uid:int=0, gid:int=0):
+                        uid:int=0, gid:int=0) -> dict[Any, Callable]:
     log = get_network_logger()
     log("setup_local_sockets%s",
         (bind, socket_dir, socket_dirs, session_dir, display_name, clobber, mmap_group, socket_permissions, username, uid, gid))
@@ -766,7 +764,7 @@ def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
         raise
     return defs
 
-def handle_socket_error(sockpath:str, sperms:int, e):
+def handle_socket_error(sockpath:str, sperms:int, e) -> None:
     log = get_network_logger()
     log("socket creation error", exc_info=True)
     if sockpath.startswith("/var/run/xpra") or sockpath.startswith("/run/xpra"):
