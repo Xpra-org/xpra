@@ -324,6 +324,14 @@ class ClipboardProtocolHelperCore(object):
 
     def _munge_raw_selection_to_wire(self, target, dtype, dformat, data):
         log("_munge_raw_selection_to_wire%s", (target, dtype, dformat, repr_ellipsized(bytestostr(data))))
+        if self.max_clipboard_send_size > 0:
+            log("perform clipboard limit checking - datasize - %d, %d", len(data), self.max_clipboard_send_size)
+            max_send_datalen = self.max_clipboard_send_size * 8 // get_format_size(dformat)
+            if len(data) > max_send_datalen:
+                olen = len(data)
+                data = data[:max_send_datalen]
+                log.info("clipboard data copied out truncated because of clipboard policy %d to %d",
+                         olen, max_send_datalen)
         # Some types just cannot be marshalled:
         if dtype in ("WINDOW", "PIXMAP", "BITMAP", "DRAWABLE",
                     "PIXEL", "COLORMAP"):
@@ -374,11 +382,12 @@ class ClipboardProtocolHelperCore(object):
         log("wire selection to raw, encoding=%s, type=%s, format=%s, len(data)=%s",
             encoding, dtype, dformat, len(data or b""))
         if self.max_clipboard_receive_size > 0:
+            log("perform clipboard limit checking - datasize - %d, %d", len(data), self.max_clipboard_send_size)
             max_recv_datalen = self.max_clipboard_receive_size * 8 // get_format_size(dformat)
             if len(data) > max_recv_datalen:
                 olen = len(data)
                 data = data[:max_recv_datalen]
-                log.info("Data copied out truncated because of clipboard policy %d to %d", olen, max_recv_datalen)
+                log.info("Data copied in truncated because of clipboard policy %d to %d", olen, max_recv_datalen)
         if encoding == "bytes":
             return data
         if encoding == "integers":
