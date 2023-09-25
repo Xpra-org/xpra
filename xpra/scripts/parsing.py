@@ -943,7 +943,7 @@ def parse_command_line(cmdline, defaults):
     def replace_option(oldoption, newoption):
         do_replace_option(cmdline, oldoption, newoption)
 
-    def legacy_bool_parse(optionname, newoptionname=None):
+    def legacy_bool_parse(optionname, newoptionname:str=""):
         do_legacy_bool_parse(cmdline, optionname, newoptionname)
 
     def ignore(defaults):
