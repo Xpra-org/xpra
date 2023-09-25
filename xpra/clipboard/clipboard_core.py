@@ -532,7 +532,16 @@ class ClipboardProtocolHelperCore:
         return _filter_targets(local_targets)
 
     def _munge_raw_selection_to_wire(self, target:str, dtype:str, dformat:int, data) -> Tuple[Any,Any]:
-        log("_munge_raw_selection_to_wire%s", (target, dtype, dformat, repr_ellipsized(bytestostr(data))))
+        log.info("_munge_raw_selection_to_wire, target=%s, type=%s, format=%s, len(data)=%s",
+                 target, dtype, dformat, len(data or b""))
+        if self.max_clipboard_send_size > 0:
+            log("perform clipboard limit checking - datasize - %d, %d", len(data), self.max_clipboard_send_size)
+            max_send_datalen = self.max_clipboard_send_size * 8 // get_format_size(dformat)
+            if len(data) > max_send_datalen:
+                olen = len(data)
+                data = data[:max_send_datalen]
+                log.info("clipboard data copied out truncated because of clipboard policy %d to %d",
+                         olen, max_send_datalen)
         # Some types just cannot be marshalled:
         if dtype in ("WINDOW", "PIXMAP", "BITMAP", "DRAWABLE",
                     "PIXEL", "COLORMAP"):
@@ -580,14 +589,15 @@ class ClipboardProtocolHelperCore:
         return None, None
 
     def _munge_wire_selection_to_raw(self, encoding:str, dtype:str, dformat:int, data) -> bytes:
-        log("wire selection to raw, encoding=%s, type=%s, format=%s, len(data)=%s",
+        log.info("wire selection to raw, encoding=%s, type=%s, format=%s, len(data)=%s",
             encoding, dtype, dformat, len(data or b""))
         if self.max_clipboard_receive_size > 0:
+            log("perform clipboard limit checking - datasize - %d, %d", len(data), self.max_clipboard_send_size)
             max_recv_datalen = self.max_clipboard_receive_size * 8 // get_format_size(dformat)
             if len(data) > max_recv_datalen:
                 olen = len(data)
                 data = data[:max_recv_datalen]
-                log.info("clipboard data copied out truncated because of clipboard policy %d to %d",
+                log.info("clipboard data copied in truncated because of clipboard policy %d to %d",
                          olen, max_recv_datalen)
         if data and isinstance(data, memoryview):
             data = bytes(data)
