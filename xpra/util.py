@@ -783,7 +783,7 @@ def notypedict(d:dict, path="") -> dict:
         v = d[k]
         if isinstance(v, typedict):
             d[k] = notypedict(dict(v))
-        if isinstance(v, dict):
+        elif isinstance(v, dict):
             d[k] = notypedict(v, f"{path}.{k}".strip("."))
     return d
 
