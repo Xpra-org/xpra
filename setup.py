@@ -2283,13 +2283,15 @@ if cythonize_more_ENABLED:
         ace("xpra.client.gtk3.client")
         ace("xpra.client.gtk3.window_base")
         ace("xpra.client.gtk3.window")
-        ace("xpra.client.gui.window_backing_base")
-        ace("xpra.client.gui.window_base")
+        if cython_version>=3:
+            ace("xpra.client.gui.window_backing_base")
+            ace("xpra.client.gui.window_base")
         ace("xpra.client.gl.gl_window_backing_base")
     if codecs_ENABLED:
         ace("xpra.codecs.image_wrapper")
         ace("xpra.codecs.rgb_transform")
-        ace("xpra.codecs.video_helper")
+        if cython_version>=3:
+            ace("xpra.codecs.video_helper")
     if http_ENABLED:
         ace("xpra.net.http.handler")
     ace("xpra.net.protocol.header")
@@ -2308,8 +2310,9 @@ if cythonize_more_ENABLED:
     ace("xpra.net.bytestreams")
     ace("xpra.net.crypto")
     ace("xpra.net.digest")
-    ace("xpra.net.mmap_pipe")
-    ace("xpra.net.packet_encoding")
+    if cython_version>=3:
+        ace("xpra.net.mmap_pipe")
+        ace("xpra.net.packet_encoding")
     ace("xpra.net.subprocess_wrapper")
     if server_ENABLED:
         ace("xpra.server.server_core")
@@ -2339,11 +2342,11 @@ if cythonize_more_ENABLED:
         ace("xpra.x11.desktop.desktop_server_base")
         ace("xpra.x11.desktop.desktop_server")
         ace("xpra.x11.desktop.monitor_server")
-    ace("xpra.child_reaper")
     ace("xpra.queue_scheduler")
-    ace("xpra.scaling_parser")
     ace("xpra.simple_stats")
     if cython_version>=3:
+        ace("xpra.scaling_parser")
+        ace("xpra.child_reaper")
         ace("xpra.splash_screen")
         ace("xpra.common")
         ace("xpra.util")
