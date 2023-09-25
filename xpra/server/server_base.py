@@ -410,7 +410,7 @@ class ServerBase(ServerBaseClass):
         self._server_sources[proto] = ss
         add_work_item(self.mdns_update)
         if uuid and send_ui and SSH_AGENT_DISPATCH:
-            self.accept_client_ssh_agent(uuid, c.strget("ssh-auth-sock"))
+            self.accept_client_ssh_agent(uuid, c.strget("ssh-auth-sock", ""))
         #process ui half in ui thread:
         self.idle_add(self.process_hello_ui, ss, c, auth_caps, send_ui, share_count)
 
