@@ -120,6 +120,7 @@ def check_cython3():
         version = int(cython.__version__.split('.')[0])
     except (ValueError, ImportError):
         print("WARNING: unable to detect Cython version")
+        version = 0
     else:
         if version<3:
             print("*******************************************")
