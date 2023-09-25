@@ -1274,7 +1274,7 @@ def get_sockpath(display_desc:dict[str,Any], error_cb, timeout=CONNECT_TIMEOUT) 
                                         nomatch=f"cannot find live server for display {display}")[-1]
     return sockpath
 
-def run_client(script_file, cmdline, error_cb, opts, extra_args, mode:str) -> int:
+def run_client(script_file, cmdline, error_cb, opts, extra_args, mode:str) -> int | ExitCode:
     if mode=="attach":
         check_gtk_client()
     else:
@@ -1285,7 +1285,7 @@ def run_client(script_file, cmdline, error_cb, opts, extra_args, mode:str) -> in
         displays = dotxpra.displays(check_uid=getuid(), matching_state=DotXpra.LIVE)
         if not displays:
             sys.stdout.write("No xpra sessions found\n")
-            return 1
+            return ExitCode.FILE_NOT_FOUND
         #we have to locate the 'all' command line argument,
         #so we can replace it with each display we find,
         #but some other command line arguments can take a value of 'all',
@@ -1306,7 +1306,7 @@ def run_client(script_file, cmdline, error_cb, opts, extra_args, mode:str) -> in
         for display in displays:
             dcmd = cmd + [display] + ["--splash=no"]
             Popen(dcmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=not WIN32)
-        return 0
+        return ExitCode.OK
     app = get_client_app(cmdline, error_cb, opts, extra_args, mode)
     r = do_run_client(app)
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:
@@ -1815,7 +1815,7 @@ def make_client(error_cb:Callable, opts):
     return app
 
 
-def do_run_client(app) -> int:
+def do_run_client(app) -> int | ExitCode:
     try:
         return app.run()
     except KeyboardInterrupt:
