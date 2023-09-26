@@ -472,7 +472,7 @@ def is_connection_arg(mode, arg):
         return True
     return False
 
-def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, defaults) -> int:
+def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, defaults) -> ExitValue:
     mode = MODE_ALIAS.get(mode, mode)
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "quic")
     if args and mode in ("seamless", "desktop", "monitor"):
@@ -3349,7 +3349,7 @@ def run_clean_sockets(opts, args) -> ExitValue:
     return ExitCode.OK
 
 
-def run_recover(script_file, cmdline, error_cb, options, args, defaults) -> int:
+def run_recover(script_file, cmdline, error_cb, options, args, defaults) -> ExitValue:
     if not POSIX or OSX:
         raise InitExit(ExitCode.UNSUPPORTED, "the 'xpra recover' subcommand is not supported on this platform")
     assert POSIX and not OSX
