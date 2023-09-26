@@ -102,31 +102,46 @@ DRAW_TYPES : Dict[type,str] = {bytes : "bytes", str : "bytes", tuple : "arrays",
 
 
 def kill_signalwatcher(proc) -> None:
-    log("kill_signalwatcher(%s)", proc)
-    if proc.poll() is None:
-        stdout_io_watch = proc.stdout_io_watch
-        if stdout_io_watch:
-            proc.stdout_io_watch = 0
-            GLib.source_remove(stdout_io_watch)
-        stdout = proc.stdout
-        if stdout:
-            noerr(stdout.close)
-        stderr = proc.stderr
-        if stderr:
-            noerr(stderr.close)
-        try:
-            stdin = proc.stdin
-            if stdin:
-                stdin.write(b"exit\n")
-                stdin.flush()
-                stdin.close()
-        except IOError:
-            log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
+    clean_signalwatcher(proc)
+    exit_code = proc.poll()
+    log(f"kill_signalwatcher({proc}) {exit_code=}")
+    if exit_code:
+        return
+    try:
+        stdin = proc.stdin
+        if stdin:
+            stdin.write(b"exit\n")
+            stdin.flush()
+            stdin.close()
+    except OSError:
+        log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
+    if proc.poll() is not None:
+        return
+    try:
+        proc.terminate()
+    except OSError:
+        log.warn("Warning: failed to terminate the signal watcher", exc_info=True)
+    try:
+        proc.wait(0.01)
+    except TimeoutExpired:
         try:
             os.kill(proc.pid, signal.SIGKILL)
         except OSError as e:
             if e.errno!=errno.ESRCH:
                 log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
+
+def clean_signalwatcher(proc) -> None:
+    stdout_io_watch = proc.stdout_io_watch
+    if stdout_io_watch:
+        proc.stdout_io_watch = 0
+        GLib.source_remove(stdout_io_watch)
+    stdout = proc.stdout
+    if stdout:
+        log(f"stdout={stdout} : %s", dir(stdout))
+        noerr(stdout.close)
+    stderr = proc.stderr
+    if stderr:
+        noerr(stderr.close)
 
 
 class WindowClient(StubClientMixin):
@@ -952,10 +967,7 @@ class WindowClient(StubClientMixin):
                     #watcher process terminated, remove io watch:
                     #this may be redundant since we also return False from signal_watcher_event
                     log("watcher_terminated%s", args)
-                    source = proc.stdout_io_watch
-                    if source:
-                        proc.stdout_io_watch = 0
-                        GLib.source_remove(source)
+                    clean_signalwatcher(proc)
                 getChildReaper().add_process(proc, "signal listener for remote process %s" % pid,
                                              command="xpra_signal_listener", ignore=True, forget=True,
                                              callback=watcher_terminated)
