@@ -236,7 +236,7 @@ class StartSession(Gtk.Window):
         # session options:
         hbox = Gtk.HBox(homogeneous=False, spacing=12)
         hbox.pack_start(l("Options:"), True, False)
-        for label_text, icon_name, tooltip_text, cb in (
+        for text, icon_name, tooltip_text, cb in (
             ("Features",    "features.png", "Session features", self.configure_features),
             ("Network",     "connect.png",  "Network options", self.configure_network),
             ("Display",     "display.png",  "Display settings", self.configure_display),
@@ -247,7 +247,7 @@ class StartSession(Gtk.Window):
             ("Printing",    "printer.png",  "Printer forwarding options", self.configure_printing),
             ):
             icon = get_icon_pixbuf(icon_name)
-            ib = imagebutton("", icon=icon, tooltip=label_text or tooltip_text,
+            ib = imagebutton("", icon=icon, tooltip=text or tooltip_text,
                                   clicked_callback=cb, icon_size=32,
                                   label_font="sans 14")
             hbox.pack_start(ib, True, False)
@@ -256,8 +256,8 @@ class StartSession(Gtk.Window):
         # Action buttons:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox, False, True, 20)
-        def btn(label, tooltip, callback, default=False):
-            ib = imagebutton(label, tooltip=tooltip, clicked_callback=callback, icon_size=32,
+        def btn(text, tooltip, callback, default=False):
+            ib = imagebutton(text, tooltip=tooltip, clicked_callback=callback, icon_size=32,
                             default=default, label_font="sans 16")
             hbox.pack_start(ib)
             return ib
@@ -734,8 +734,8 @@ class SessionOptions(Gtk.Window):
         return getattr(self, "%s_options" % fn)
 
 
-    def bool_cb(self, table, label, option_name, tooltip_text=None, link=None):
-        attach_label(table, label, tooltip_text, link)
+    def bool_cb(self, table, text, option_name, tooltip_text=None, link=None):
+        attach_label(table, text, tooltip_text, link)
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
         cb = Gtk.Switch()
@@ -748,15 +748,15 @@ class SessionOptions(Gtk.Window):
         table.inc()
         return cb
 
-    def radio_cb_auto(self, table, label, option_name, tooltip_text=None, link=None):
-        return self.radio_cb(table, label, option_name, tooltip_text, link, {
+    def radio_cb_auto(self, table, text, option_name, tooltip_text=None, link=None):
+        return self.radio_cb(table, text, option_name, tooltip_text, link, {
             "yes"   : TRUE_OPTIONS,
             "no"    : FALSE_OPTIONS,
             "auto"  : ("auto", "", None),
             })
 
-    def radio_cb(self, table, label, option_name, tooltip_text=None, link=None, options=None):
-        attach_label(table, label, tooltip_text, link)
+    def radio_cb(self, table, text, option_name, tooltip_text=None, link=None, options=None):
+        attach_label(table, text, tooltip_text, link)
         fn = option_name.replace("-", "_")
         widget_base_name = "%s_widget" % fn
         self.widgets.append(option_name)
@@ -767,10 +767,10 @@ class SessionOptions(Gtk.Window):
         sibling = None
         btns = []
         saved_options = {}
-        for label, match in options.items():
-            btn = Gtk.RadioButton.new_with_label_from_widget(sibling, label)
+        for option, match in options.items():
+            btn = Gtk.RadioButton.new_with_label_from_widget(sibling, option)
             hbox.add(btn)
-            setattr(self, "{}_{}".format(widget_base_name, label), btn)
+            setattr(self, "{}_{}".format(widget_base_name, option), btn)
             saved_match = match
             matched = value in match or str(value).lower() in match
             btn.set_active(matched)
@@ -781,15 +781,15 @@ class SessionOptions(Gtk.Window):
             if i==0:
                 sibling = btn
             i += 1
-            saved_options[label] = saved_match
+            saved_options[option] = saved_match
             btns.append(btn)
         self._save_widget(fn, btns, "radio", options=saved_options)
         table.attach(hbox, 1)
         table.inc()
         return btns
 
-    def combo(self, table, label, option_name, options, link=None):
-        attach_label(table, label, None, link)
+    def combo(self, table, text, option_name, options, link=None):
+        attach_label(table, text, None, link)
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
         c = Gtk.ComboBoxText()
@@ -808,8 +808,8 @@ class SessionOptions(Gtk.Window):
         table.inc()
         return c
 
-    def scale(self, table, label, option_name, minv=0, maxv=100, marks=None):
-        attach_label(table, label)
+    def scale(self, table, text, option_name, minv=0, maxv=100, marks=None):
+        attach_label(table, text)
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
         #c = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, minv, maxv, 10)
@@ -821,8 +821,8 @@ class SessionOptions(Gtk.Window):
         c.set_value(value or 0)
         c.set_valign(Gtk.Align.START)
         if marks:
-            for v,label in marks.items():
-                c.add_mark(v, Gtk.PositionType.BOTTOM, label)
+            for v, mtext in marks.items():
+                c.add_mark(v, Gtk.PositionType.BOTTOM, mtext)
         table.attach(c, 1)
         self._save_widget(fn, c, "scale")
         self.widgets.append(option_name)
@@ -905,7 +905,7 @@ class FeaturesWindow(SessionOptions):
 
     def populate_form(self):
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/README.md",
-                       label="Open Features Documentation", icon_name="")
+                       "Open Features Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
@@ -959,7 +959,7 @@ class NetworkWindow(SessionOptions):
 
     def populate_form(self):
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Network/README.md",
-                       label="Open Network Documentation", icon_name="")
+                       "Open Network Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
@@ -997,7 +997,7 @@ class DisplayWindow(SessionOptions):
 
     def populate_form(self):
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Display.md",
-                       label="Open Display Documentation", icon_name="")
+                       "Open Display Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
@@ -1048,7 +1048,7 @@ class EncodingWindow(SessionOptions):
 
     def populate_form(self):
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Encodings.md",
-                       label="Open Encodings Documentation", icon_name="")
+                       "Open Encodings Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
@@ -1094,7 +1094,7 @@ class KeyboardWindow(SessionOptions):
 
     def populate_form(self):
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Keyboard.md",
-                       label="Open Keyboard Documentation", icon_name="")
+                       "Open Keyboard Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
@@ -1131,7 +1131,7 @@ class AudioWindow(SessionOptions):
 
     def populate_form(self):
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Audio.md",
-                       label="Open Audio Documentation", icon_name="")
+                       "Open Audio Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
@@ -1169,7 +1169,7 @@ class WebcamWindow(SessionOptions):
 
     def populate_form(self):
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Webcam.md",
-                       label="Open Webcam Documentation", icon_name="")
+                       "Open Webcam Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
@@ -1190,7 +1190,7 @@ class PrintingWindow(SessionOptions):
 
     def populate_form(self):
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Printing.md",
-                       label="Open Printing Documentation", icon_name="")
+                       "Open Printing Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
