@@ -128,10 +128,14 @@ def enable_color(to=sys.stdout, format_string=NOPREFIX_FORMAT) -> None:
         to = codecs.getwriter("utf-8")(sbuf, "replace")
     except Exception:   # pragma: no cover
         pass
-    from xpra.colorstreamhandler import ColorStreamHandler
-    csh = ColorStreamHandler(to)
-    csh.setFormatter(logging.Formatter(format_string))
-    setloghandler(csh)
+    try:
+        from xpra.colorstreamhandler import ColorStreamHandler
+    except ImportError:
+        pass
+    else:
+        csh = ColorStreamHandler(to)
+        csh.setFormatter(logging.Formatter(format_string))
+        setloghandler(csh)
 
 def enable_format(format_string:str) -> None:
     try:

@@ -2457,6 +2457,7 @@ if cythonize_more_ENABLED:
         ace("xpra.x11.xsettings")
         ace("xpra.x11.xsettings_prop")
     ace("xpra.child_reaper")
+    ace("xpra.colorstreamhandler")
     ace("xpra.common")
     ace("xpra.exit_codes")
     ace("xpra.gst_common")
