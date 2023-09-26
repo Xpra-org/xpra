@@ -532,7 +532,7 @@ class ClipboardProtocolHelperCore:
         return _filter_targets(local_targets)
 
     def _munge_raw_selection_to_wire(self, target:str, dtype:str, dformat:int, data) -> Tuple[Any,Any]:
-        log.info("_munge_raw_selection_to_wire, target=%s, type=%s, format=%s, len(data)=%s",
+        log("_munge_raw_selection_to_wire, target=%s, type=%s, format=%s, len(data)=%s",
                  target, dtype, dformat, len(data or b""))
         if self.max_clipboard_send_size > 0:
             log("perform clipboard limit checking - datasize - %d, %d", len(data), self.max_clipboard_send_size)
@@ -589,7 +589,7 @@ class ClipboardProtocolHelperCore:
         return None, None
 
     def _munge_wire_selection_to_raw(self, encoding:str, dtype:str, dformat:int, data) -> bytes:
-        log.info("wire selection to raw, encoding=%s, type=%s, format=%s, len(data)=%s",
+        log("wire selection to raw, encoding=%s, type=%s, format=%s, len(data)=%s",
             encoding, dtype, dformat, len(data or b""))
         if self.max_clipboard_receive_size > 0:
             log("perform clipboard limit checking - datasize - %d, %d", len(data), self.max_clipboard_send_size)
