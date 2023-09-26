@@ -25,7 +25,7 @@ from xpra.platform.gui import (
     )
 from xpra.net.common import PacketType
 from xpra.common import WINDOW_NOT_FOUND, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR
-from xpra.platform.paths import get_icon_filename, get_resources_dir, get_python_exec_command
+from xpra.platform.paths import get_icon_filename, get_resources_dir, get_python_execfile_command
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.make_thread import start_thread
 from xpra.os_util import (
@@ -934,8 +934,10 @@ class WindowClient(StubClientMixin):
         if proc is None or proc.poll():
             from xpra.child_reaper import getChildReaper
             from subprocess import Popen, PIPE, STDOUT
+            cmd = get_python_execfile_command()+[SIGNAL_WATCHER_COMMAND]
+            log(f"assign_signal_watcher_pid({wid}, {pid}) starting {cmd}")
             try:
-                proc = Popen(get_python_exec_command()+[SIGNAL_WATCHER_COMMAND],
+                proc = Popen(cmd,
                              stdin=PIPE, stdout=PIPE, stderr=STDOUT,
                              start_new_session=True)
             except OSError as e:
