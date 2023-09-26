@@ -86,8 +86,8 @@ def set_tray_visual(xid:int, gdk_visual):
     value = struct.pack(b"@L", xvisual)
     raw_prop_set(xid, SYSTRAY_VISUAL, "VISUALID", 32, value)
 
-def set_tray_orientation(xid:int, orientation:int):
-    prop_set(xid, SYSTRAY_ORIENTATION, "u32", orientation)
+def set_tray_orientation(xid:int, orientation:TRAY_ORIENTATION):
+    prop_set(xid, SYSTRAY_ORIENTATION, "u32", int(orientation))
 
 
 class SystemTray(GObject.GObject):
