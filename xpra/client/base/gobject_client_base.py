@@ -24,7 +24,7 @@ from xpra.os_util import (
 from xpra.net.common import PacketType
 from xpra.simple_stats import std_unit
 from xpra.client.base.client_base import XpraClientBase, EXTRA_TIMEOUT
-from xpra.exit_codes import ExitCode
+from xpra.exit_codes import ExitCode, ExitValue
 from xpra.log import Logger
 
 log = Logger("gobject", "client")
@@ -91,7 +91,7 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
             ):
             self.add_packet_handler(t, noop_handler, False)
 
-    def run(self) -> int | ExitCode:
+    def run(self) -> ExitValue:
         XpraClientBase.run(self)
         self.run_loop()
         return self.exit_code or 0
@@ -418,7 +418,7 @@ class InfoTimerClient(MonitorXpraClient):
         self.server_last_info_time = 0
         self.info_timer = 0
 
-    def run(self) -> int | ExitCode:
+    def run(self) -> ExitValue:
         from xpra.gtk_common.gobject_compat import register_os_signals
         register_os_signals(self.signal_handler, "")
         v = super().run()

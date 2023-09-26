@@ -6,14 +6,14 @@
 import sys
 import signal
 from time import sleep, monotonic
-from gi.repository import Gtk, Gdk, GLib, Pango  # @UnresolvedImport
+from gi.repository import Gtk, Gdk, GLib  # @UnresolvedImport
 
 from xpra import __version__
 from xpra.util import envint, envbool
 from xpra.os_util import SIGNAMES, OSX, WIN32
-from xpra.exit_codes import ExitCode
+from xpra.exit_codes import ExitCode, ExitValue
 from xpra.common import SPLASH_EXIT_DELAY
-from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf, label
 from xpra.gtk_common.gobject_compat import install_signal_handlers
 from xpra.gtk_common.css_overrides import inject_css_overrides
 from xpra.platform.gui import force_focus, set_window_progress
@@ -52,6 +52,8 @@ class SplashScreen(Gtk.Window):
         self.set_size_request(W, 40+40*LINES)
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_decorated(False)
+        import warnings
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
         self.set_opacity(0.9)
         self.set_accept_focus(False)
         self.set_focus_on_map(False)
@@ -65,13 +67,12 @@ class SplashScreen(Gtk.Window):
         if icon:
             self.set_icon(icon)
             hbox.pack_start(Gtk.Image.new_from_pixbuf(icon), False, False, 20)
-        self.title_label = Gtk.Label(label=title)
-        self.title_label.modify_font(Pango.FontDescription("sans 18"))
+        self.title_label = label(title, font="sans 18")
         hbox.pack_start(self.title_label, True, True, 20)
         vbox.add(hbox)
         self.labels = []
         for i in range(LINES):
-            l = Gtk.Label(label=" ")
+            l = label(" ")
             l.set_opacity((i+1)/LINES)
             #l.set_line_wrap(True)
             self.labels.append(l)
@@ -102,7 +103,7 @@ class SplashScreen(Gtk.Window):
         self.connect("notify::has-toplevel-focus", self._focus_change)
 
 
-    def run(self) -> int | ExitCode:
+    def run(self) -> ExitValue:
         from xpra.make_thread import start_thread
         start_thread(self.read_stdin, "read-stdin", True)
         self.show_all()
@@ -286,7 +287,7 @@ class SplashScreen(Gtk.Window):
         GLib.idle_add(self.exit)
 
 
-def main(_args) -> int:
+def main(_args) -> ExitValue:
     import os
     if os.environ.get("XPRA_HIDE_DOCK") is None:
         os.environ["XPRA_HIDE_DOCK"] = "1"

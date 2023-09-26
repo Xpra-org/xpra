@@ -10,9 +10,7 @@ import subprocess
 
 import gi
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("Pango", "1.0")  # @UndefinedVariable
-gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
-from gi.repository import Pango, GLib, Gtk, Gio  # @UnresolvedImport
+from gi.repository import GLib, Gtk, Gio  # @UnresolvedImport
 
 from xpra.platform.paths import get_xpra_command, get_nodock_command
 from xpra.platform.dotxpra import DotXpra
@@ -23,7 +21,7 @@ from xpra.scripts.config import OPTION_TYPES
 from xpra.scripts.main import get_command_args
 from xpra.gtk_common.gtk_util import (
     add_close_accel, TableBuilder, scaled_image, color_parse,
-    imagebutton, get_icon_pixbuf,
+    imagebutton, get_icon_pixbuf, label,
     )
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.net.common import DEFAULT_PORTS
@@ -74,19 +72,18 @@ class SessionsGUI(Gtk.Window):
         self.vbox = Gtk.VBox(homogeneous=False, spacing=20)
         self.add(self.vbox)
 
-        title_label = Gtk.Label(label=title)
-        title_label.modify_font(Pango.FontDescription("sans 14"))
+        title_label = label(title, font="sans 14")
         title_label.show()
         self.vbox.add(title_label)
 
-        self.warning = Gtk.Label(label=" ")
+        self.warning = label(" ")
         red = color_parse("red")
         self.warning.modify_fg(Gtk.StateType.NORMAL, red)
         self.warning.show()
         self.vbox.add(self.warning)
 
         self.password_box = Gtk.HBox(homogeneous=False, spacing=10)
-        self.password_label = Gtk.Label(label="Password:")
+        self.password_label = label("Password:")
         al = Gtk.Alignment(xalign=1, yalign=0.5)
         al.add(self.password_label)
         al.show()
@@ -247,7 +244,7 @@ class SessionsGUI(Gtk.Window):
             self.vbox.remove(self.table)
             self.table = None
         if not self.records:
-            self.table = Gtk.Label(label="No sessions found")
+            self.table = label("No sessions found")
             self.vbox.add(self.table)
             self.table.show()
             self.set_size_request(440, 200)
@@ -257,7 +254,7 @@ class SessionsGUI(Gtk.Window):
         self.set_size_request(-1, -1)
         tb = TableBuilder(1, 6, False)
         def l(s=""):    # noqa: E743
-            return Gtk.Label(label=s)
+            return label(s)
         labels = [l(x) for x in (
             "Host", "Display", "Name", "Platform", "Type", "URI", "Connect", "Open in Browser",
             )]
@@ -309,9 +306,9 @@ class SessionsGUI(Gtk.Window):
                     platform = td.strget("platform", "")
                 if not dtype:
                     dtype = td.strget("type", "")
-            label = l(title)
+            host_label = l(title)
             if uuid!=title:
-                label.set_tooltip_text(uuid)
+                host_label.set_tooltip_text(uuid)
             #try to use an icon for the platform:
             platform_icon_name = self.get_platform_icon_name(platform)
             pwidget = None
@@ -323,7 +320,7 @@ class SessionsGUI(Gtk.Window):
                 pwidget = l(platform)
             w, c, b = self.make_connect_widgets(key, recs, address, port, display)
             session_name = session_names.get(key, "")
-            tb.add_row(l(host), label, l(session_name), pwidget, l(dtype), w, c, b)
+            tb.add_row(l(host), host_label, l(session_name), pwidget, l(dtype), w, c, b)
         self.table.show_all()
 
     def get_uri(self, password, interface, protocol, name:str, stype:str, domain, host:str, address, port:int, text) -> str:
@@ -423,7 +420,7 @@ class SessionsGUI(Gtk.Window):
                 proc.terminate()
                 self.populate()
             btn = imagebutton("Disconnect", icon, clicked_callback=disconnect_client)
-            return Gtk.Label(label="Already connected with pid=%i" % proc.pid), btn, Gtk.Label(label="")
+            return label("Already connected with pid=%i" % proc.pid), btn, label("")
 
         icon = get_icon_pixbuf("browser.png")
         bopen = imagebutton("Open", icon)
@@ -443,7 +440,7 @@ class SessionsGUI(Gtk.Window):
                 uri = self.get_uri(password, *rec)
                 self.attach(key, uri)
             btn = imagebutton("Connect", icon, clicked_callback=clicked)
-            return Gtk.Label(label=uri), btn, bopen
+            return label(uri), btn, bopen
 
         #multiple modes / uris
         uri_menu = Gtk.ComboBoxText()

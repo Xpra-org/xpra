@@ -6,10 +6,10 @@
 import sys
 import gi
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-from gi.repository import Gtk, GLib, Pango  # @UnresolvedImport
+from gi.repository import Gtk, GLib  # @UnresolvedImport
 
 from xpra.os_util import SIGNAMES
-from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf, label
 from xpra.gtk_common.gobject_compat import install_signal_handlers
 from xpra.gtk_common.css_overrides import inject_css_overrides
 from xpra.log import Logger
@@ -18,11 +18,9 @@ log = Logger("client", "util")
 
 inject_css_overrides()
 
-def lal(s, font=None):
+def lal(s, font=""):
     al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0.0)
-    l = Gtk.Label(label=s)
-    if font:
-        l.modify_font(font)
+    l = label(s, font=font)
     al.add(l)
     return al
 
@@ -43,7 +41,7 @@ class ShortcutInfo(Gtk.Window):
         icon = get_icon_pixbuf("keyboard.png")
         if icon:
             self.set_icon(icon)
-        label = lal("Help: shortcuts", Pango.FontDescription("sans 18"))
+        label = lal("Help: shortcuts", "sans 18")
         vbox.pack_start(label, True, True, 10)
         label = lal("Prefix: %s" % ("+".join(shortcut_modifiers)))
         vbox.pack_start(label, True, True, 0)
@@ -51,21 +49,19 @@ class ShortcutInfo(Gtk.Window):
         total = 0
         for keyname in shortcuts:
             total += len(shortcuts[keyname])
-        label = lal("%i Shortcuts:" % (total, ), Pango.FontDescription("sans 16"))
+        label = lal("%i Shortcuts:" % (total, ), "sans 16")
         vbox.pack_start(label, True, True, 20)
         table = Gtk.Table(n_rows=total+1, n_columns=2, homogeneous=True)
         row = 0
-        def attach(s, x=0, font=None):
+        def attach(s, x=0, font=""):
             al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0.0)
-            l = Gtk.Label(label=s)
-            if font:
-                l.modify_font(font)
+            l = label(s, font=font)
             al.add(l)
             table.attach(al, x, x+1, row, row+1,
                          xoptions=Gtk.AttachOptions.FILL, yoptions=Gtk.AttachOptions.FILL,
                          xpadding=10, ypadding=0)
-        attach("Keys", 0, Pango.FontDescription("sans bold 12"))
-        attach("Action", 1, Pango.FontDescription("sans bold 12"))
+        attach("Keys", 0, "sans bold 12")
+        attach("Action", 1, "sans bold 12")
         row += 1
         for keyname in sorted(shortcuts.keys()):
             key_shortcuts = shortcuts[keyname]

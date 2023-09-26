@@ -14,7 +14,7 @@ from xpra.common import ScreenshotData, noop
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image, get_icon_pixbuf,
     get_display_info, get_default_root_window,
-    choose_file, get_gtk_version_info,
+    choose_file, get_gtk_version_info, label,
     )
 from xpra.os_util import hexstr
 from xpra.platform.gui import force_focus
@@ -86,7 +86,7 @@ class BugReport:
 
         # Description
         al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
-        al.add(Gtk.Label(label="Please describe the problem:"))
+        al.add(label("Please describe the problem:"))
         ibox.pack_start(al)
         #self.description = Gtk.Entry(max=128)
         #self.description.set_width_chars(40)
@@ -100,7 +100,7 @@ class BugReport:
 
         # Toggles:
         al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
-        al.add(Gtk.Label(label="Include:"))
+        al.add(label("Include:"))
         ibox.pack_start(al)
         #generic toggles:
         from xpra.gtk_common.keymap import get_gtk_keymap

@@ -7,7 +7,7 @@
 from xpra.os_util import POSIX, OSX
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf, label
 
 import os
 from datetime import datetime
@@ -15,8 +15,7 @@ from collections import deque
 
 import gi
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("Pango", "1.0")  # @UndefinedVariable
-from gi.repository import Gtk, Pango, GLib    #pylint: disable=wrong-import-position @UnresolvedImport
+from gi.repository import Gtk, GLib    #pylint: disable=wrong-import-position @UnresolvedImport
 
 
 def make_window():
@@ -51,11 +50,8 @@ def make_window():
     vbox.add(hbox)
     N = 8
     labels = []
-    font = Pango.FontDescription("sans 12")
     for _ in range(N):
-        l = Gtk.Label()
-        l.modify_font(font)
-        labels.append(l)
+        labels.append(label("", font="sans 12"))
     for l in labels:
         al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
         al.add(l)

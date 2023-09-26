@@ -6,12 +6,10 @@
 import sys
 import gi
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("Pango", "1.0")  # @UndefinedVariable
-gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
 # pylint: disable=wrong-import-position
-from gi.repository import GLib, Pango, Gtk  # @UnresolvedImport
+from gi.repository import GLib, Gtk  # @UnresolvedImport
 
-from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf, label
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.log import Logger
 
@@ -38,16 +36,14 @@ class AuthDialog(Gtk.Window):
         self.vbox = Gtk.VBox(homogeneous=False, spacing=20)
         self.add(self.vbox)
 
-        title_label = Gtk.Label(label=title)
-        title_label.modify_font(Pango.FontDescription("sans 14"))
+        title_label = label(title, font="sans 14")
         self.vbox.add(title_label)
 
-        info_label = Gtk.Label(label=info)
-        info_label.modify_font(Pango.FontDescription("sans 12"))
+        info_label = label(info, font="sans 12")
         self.vbox.add(info_label)
 
         if self.timeout>0:
-            self.timeout_label = Gtk.Label()
+            self.timeout_label = label()
             self.update_timeout()
             self.vbox.add(self.timeout_label)
             GLib.timeout_add(1000, self.update_timeout)

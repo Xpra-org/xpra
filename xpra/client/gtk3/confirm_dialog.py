@@ -8,12 +8,11 @@ import sys
 
 import gi
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("Pango", "1.0")  # @UndefinedVariable
 gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
-from gi.repository import Pango, Gtk  # @UnresolvedImport
+from gi.repository import Gtk  # @UnresolvedImport
 
 from xpra.gtk_common.gobject_compat import register_os_signals
-from xpra.gtk_common.gtk_util import add_close_accel, color_parse, get_icon_pixbuf
+from xpra.gtk_common.gtk_util import add_close_accel, color_parse, get_icon_pixbuf, label
 from xpra.platform.gui import force_focus
 from xpra.os_util import get_util_logger
 
@@ -39,9 +38,8 @@ class ConfirmDialogWindow(Gtk.Dialog):
         vbox = self.get_content_area()
         vbox.set_spacing(10)
 
-        def al(label, font="sans 14", xalign=0.0):
-            l = Gtk.Label(label=label)
-            l.modify_font(Pango.FontDescription(font))
+        def al(text, font="sans 14", xalign=0.0):
+            l = label(text, font=font)
             if label.startswith("WARNING"):
                 red = color_parse("red")
                 l.modify_fg(Gtk.StateType.NORMAL, red)
@@ -58,8 +56,8 @@ class ConfirmDialogWindow(Gtk.Dialog):
         vbox.add(al(prompt))
 
         # Buttons:
-        for label, code in buttons:
-            btn = self.add_button(label, code)
+        for text, code in buttons:
+            btn = self.add_button(text, code)
             btn.set_size_request(100, 48)
 
     def quit(self, *args):
@@ -86,13 +84,13 @@ def show_confirm_dialog(argv):
     buttons = []
     n = 4
     while len(argv)>(n+1):
-        label = arg(n)
+        text = arg(n)
         try:
             code = int(arg(n+1))
         except ValueError as e:
             log.error("Error: confirm dialog cannot parse code '%s': %s", arg(n+1), e)
             return 1
-        buttons.append((label, code))
+        buttons.append((text, code))
         n += 2
     app = ConfirmDialogWindow(title, prompt, info, icon, buttons)
     register_os_signals(app.quit, "Dialog")

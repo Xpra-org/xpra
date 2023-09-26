@@ -15,8 +15,7 @@ from xpra.platform.features import CLIPBOARDS
 
 gi.require_version("Gdk", "3.0")  # @UndefinedVariable
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("Pango", "1.0")  # @UndefinedVariable
-from gi.repository import Pango, Gtk, Gdk, GLib  # @UnresolvedImport
+from gi.repository import Gtk, Gdk, GLib  # @UnresolvedImport
 
 
 class ClipboardInstance:
@@ -191,9 +190,7 @@ class ClipboardStateInfoWindow:
         self.log : deque[str] = deque(maxlen=25)
         for x in range(25):
             self.log.append("")
-        self.events = Gtk.Label()
-        fixed = Pango.FontDescription('monospace 9')
-        self.events.modify_font(fixed)
+        self.events = label("", font="monospace 9")
 
         #how many clipboards to show:
         self.clipboards = CLIPBOARDS

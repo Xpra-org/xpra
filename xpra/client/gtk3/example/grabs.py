@@ -5,8 +5,12 @@
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk_common.gtk_util import GRAB_STATUS_STRING, add_close_accel, get_icon_pixbuf  #pylint: disable=wrong-import-position
+from xpra.gtk_common.gtk_util import (
+    GRAB_STATUS_STRING,
+    add_close_accel, get_icon_pixbuf, label,
+)
 
+#pylint: disable=wrong-import-position
 import gi
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
@@ -86,12 +90,12 @@ def make_grab_window():
     ungrab_keyboard_btn.connect('clicked', ungrab_keyboard)
     hbox.pack_start(ungrab_keyboard_btn, expand=False, fill=False, padding=10)
 
-    vbox.add(Gtk.Label(label="Last action:"))
-    action_label = Gtk.Label(label="")
+    vbox.add(label("Last action:"))
+    action_label = label("")
     vbox.add(action_label)
 
-    vbox.add(Gtk.Label(label="Last event:"))
-    event_label = Gtk.Label(label="")
+    vbox.add(label("Last event:"))
+    event_label = label("")
     vbox.add(event_label)
 
     window.add(vbox)

@@ -9,12 +9,12 @@ import subprocess
 
 import gi
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-gi.require_version('Pango', '1.0')  # @UndefinedVariable
-from gi.repository import Gtk, Pango, GLib  # @UnresolvedImport
+from gi.repository import Gtk, GLib  # @UnresolvedImport
 
 from xpra.os_util import POSIX, OSX, which
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.gtk_util import (
+    setfont, label,
     add_close_accel,
     get_icon_pixbuf,
     imagebutton,
@@ -37,11 +37,11 @@ def xal(widget, xalign=1):
     return al
 
 def sf(w, font="sans 14"):
-    w.modify_font(Pango.FontDescription(font))
+    setfont(w, font)
     return w
 
-def l(label):    # noqa: E743
-    widget = Gtk.Label(label=label)
+def l(text):    # noqa: E743
+    widget = label(text)
     return sf(widget)
 
 
@@ -71,9 +71,9 @@ class DesktopGreeter(Gtk.Window):
         # Action buttons:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox, False, True, 20)
-        def btn(label, tooltip, callback, default=False):
-            ib = imagebutton(label, tooltip=tooltip, clicked_callback=callback, icon_size=32,
-                            default=default, label_font=Pango.FontDescription("sans 16"))
+        def btn(text, tooltip, callback, default=False):
+            ib = imagebutton(text, tooltip=tooltip, clicked_callback=callback, icon_size=32,
+                            default=default, label_font="sans 16")
             hbox.pack_start(ib)
             return ib
         self.cancel_btn = btn("Exit", "", self.quit)

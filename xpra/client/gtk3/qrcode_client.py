@@ -9,7 +9,7 @@ from gi.repository import Gtk, GLib  # @UnresolvedImport
 from xpra.util import typedict, noerr, envbool
 from xpra.os_util import SIGNAMES, bytestostr
 from xpra.exit_codes import ExitCode
-from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf, label
 from xpra.gtk_common.gobject_compat import install_signal_handlers
 from xpra.gtk_common.css_overrides import inject_css_overrides
 from xpra.client.base.client_base import XpraClientBase
@@ -121,7 +121,7 @@ class QRCodeWindow(Gtk.Window):
         hbox = Gtk.HBox(homogeneous=True, spacing=20)
         for uri in uris:
             vbox = Gtk.VBox(homogeneous=False, spacing=10)
-            vbox.add(Gtk.Label(label=uri))
+            vbox.add(label(uri))
             pixbuf = qr_pixbuf(uri, width=360, height=360)
             image = Gtk.Image().new_from_pixbuf(pixbuf)
             vbox.add(image)

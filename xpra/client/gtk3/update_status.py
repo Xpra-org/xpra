@@ -8,13 +8,12 @@ import sys
 
 import gi
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("Pango", "1.0")  # @UndefinedVariable
 gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
-from gi.repository import GLib, Pango, Gtk  # @UnresolvedImport
+from gi.repository import GLib, Gtk  # @UnresolvedImport
 
 from xpra.platform.gui import init as gui_init, force_focus
 from xpra.gtk_common.gtk_util import (
-    add_close_accel, scaled_image, get_icon_pixbuf,
+    add_close_accel, scaled_image, get_icon_pixbuf, label
     )
 from xpra.log import Logger, enable_debug_for
 
@@ -48,8 +47,7 @@ class UpdateStatusWindow:
 
         # Label:
         self.progress = 0
-        self.label = Gtk.Label(label="Version Check")
-        self.label.modify_font(Pango.FontDescription("sans 14"))
+        self.label = label("Version Check", font="sans 14")
         al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
         al.add(self.label)
         vbox.add(al)

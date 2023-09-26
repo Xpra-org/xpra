@@ -12,7 +12,7 @@ from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.util import AdHocStruct, typedict
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image, get_icon_pixbuf,
-    get_pixbuf_from_data, TableBuilder,
+    get_pixbuf_from_data, TableBuilder, label,
     )
 from xpra.log import Logger, enable_debug_for
 
@@ -88,7 +88,7 @@ class ServerCommandsWindow:
             tb = TableBuilder(rows=1, columns=2, row_spacings=15)
             self.table = tb.get_table()
             def l(s=""):    # noqa: E743
-                return Gtk.Label(label=s)
+                return label(s)
             headers = [l(), l("PID"), l("Command"), l("Exit Code")]
             if self.client.server_commands_signals:
                 headers.append(l("Send Signal"))
@@ -112,7 +112,7 @@ class ServerCommandsWindow:
                     if mixin_features.windows:
                         windows = tuple(w for w in self.client._id_to_window.values() if getattr(w, "_metadata", {}).get("pid")==pid)
                         log(f"windows matching pid={pid}: {windows}")
-                    icon = Gtk.Label()
+                    icon = label()
                     if windows:
                         try:
                             icons = tuple(getattr(w, "_current_icon", None) for w in windows)

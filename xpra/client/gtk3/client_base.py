@@ -30,7 +30,7 @@ from xpra.simple_stats import std_unit
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS, InitExit
 from xpra.gtk_common.cursor_names import cursor_types
 from xpra.gtk_common.gtk_util import (
-    get_gtk_version_info, scaled_image, get_default_cursor, color_parse,
+    get_gtk_version_info, scaled_image, get_default_cursor, color_parse, label,
     get_icon_pixbuf,
     get_pixbuf_from_data,
     get_default_root_window, get_root_size,
@@ -38,7 +38,7 @@ from xpra.gtk_common.gtk_util import (
     GDKWindow,
     GRAB_STATUS_STRING,
     )
-from xpra.exit_codes import ExitCode
+from xpra.exit_codes import ExitCode, ExitValue
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.gtk_common.css_overrides import inject_css_overrides
 from xpra.client.gui.ui_client_base import UIXpraClient
@@ -149,7 +149,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             framelog("setup_frame_request_windows() window=%#x", xid)
             send_wm_request_frame_extents(root.get_xid(), xid)
 
-    def run(self) -> int | ExitCode:
+    def run(self) -> ExitValue:
         log(f"run() HAS_X11_BINDINGS={HAS_X11_BINDINGS}")
         if HAS_X11_BINDINGS:
             self.setup_frame_request_windows()
@@ -366,13 +366,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             a.add(widget)
             a.set_padding(padding, padding, padding, padding)
             dialog.vbox.pack_start(a)
-        import gi
-        gi.require_version("Pango", "1.0")  # @UndefinedVariable
-        from gi.repository import Pango  # @UnresolvedImport
-        title = Gtk.Label(label=title)
-        title.modify_font(Pango.FontDescription("sans 14"))
+        title = label(title, "sans 14")
         add(title, 16)
-        add(Gtk.Label(label=self.get_challenge_prompt(prompt)), 10)
+        add(label(self.get_challenge_prompt(prompt)), 10)
         password_input = Gtk.Entry()
         password_input.set_max_length(255)
         password_input.set_width_chars(32)

@@ -624,7 +624,7 @@ def get_icon_pixbuf(icon_name):
 
 
 def imagebutton(title, icon=None, tooltip="", clicked_callback:Callable|None=None, icon_size=32,
-                default=False, min_size=None, label_color=None, label_font=None) -> Gtk.Button:
+                default=False, min_size=None, label_color=None, label_font:str="") -> Gtk.Button:
     button = Gtk.Button(label=title)
     settings = button.get_settings()
     settings.set_property('gtk-button-images', True)
@@ -650,8 +650,8 @@ def imagebutton(title, icon=None, tooltip="", clicked_callback:Callable|None=Non
             pass
         if label_color and hasattr(l, "modify_fg"):
             l.modify_fg(Gtk.StateType.NORMAL, label_color)
-        if label_font and hasattr(l, "modify_font"):
-            l.modify_font(label_font)
+        if label_font:
+            setfont(l, label_font)
     return button
 
 def menuitem(title, image=None, tooltip=None, cb=None) -> Gtk.ImageMenuItem:
@@ -692,14 +692,21 @@ def add_window_accel(window, accel, callback) -> Gtk.AccelGroup:
     return accel_group
 
 
-def label(text:str="", tooltip=None, font=None) -> Gtk.Label:
+def label(text:str="", tooltip:str="", font:str="") -> Gtk.Label:
     l = Gtk.Label(label=text)
     if font:
-        fontdesc = Pango.FontDescription(font)
-        l.modify_font(fontdesc)
+        setfont(l, font)
     if tooltip:
         l.set_tooltip_text(tooltip)
     return l
+
+def setfont(widget, font=""):
+    if font:
+        import warnings
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        fontdesc = Pango.FontDescription(font)
+        widget.modify_font(fontdesc)
+        warnings.filterwarnings("default")
 
 
 class TableBuilder:

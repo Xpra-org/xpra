@@ -7,12 +7,10 @@
 import sys
 import gi
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("Pango", "1.0")  # @UndefinedVariable
-gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
-from gi.repository import Pango, Gtk  # @UnresolvedImport
+from gi.repository import Gtk  # @UnresolvedImport
 
 from xpra.gtk_common.gtk_util import (
-    add_close_accel, scaled_image, get_icon_pixbuf,
+    add_close_accel, scaled_image, get_icon_pixbuf, label,
     )
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.util import typedict
@@ -66,7 +64,7 @@ class StartNewCommand:
             # or use menus if we have xdg data:
             hbox = Gtk.HBox(homogeneous=False, spacing=20)
             vbox.add(hbox)
-            hbox.add(Gtk.Label(label="Category:"))
+            hbox.add(label("Category:"))
             self.category_combo = Gtk.ComboBoxText()
             hbox.add(self.category_combo)
             for name in sorted(self.xdg_menu.keys()):
@@ -77,14 +75,13 @@ class StartNewCommand:
             hbox = Gtk.HBox(homogeneous=False, spacing=20)
             vbox.add(hbox)
             self.command_combo = Gtk.ComboBoxText()
-            hbox.pack_start(Gtk.Label(label="Command:"))
+            hbox.pack_start(label("Command:"))
             hbox.pack_start(self.command_combo)
             self.command_combo.connect("changed", self.command_changed)
             #this will populate the command combo:
             self.category_changed()
         # always show the command as text so that it can be edited:
-        entry_label = Gtk.Label(label="Command to run:")
-        entry_label.modify_font(Pango.FontDescription("sans 14"))
+        entry_label = label("Command to run:", font="sans 14")
         entry_al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
         entry_al.add(entry_label)
         vbox.add(entry_al)

@@ -11,21 +11,15 @@ from xpra.util import csv
 from xpra.os_util import bytestostr
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk_common.gtk_util import get_icon_pixbuf
+from xpra.gtk_common.gtk_util import get_icon_pixbuf, label
 from xpra.log import enable_color, Logger
 
 gi.require_version("Gdk", "3.0")  # @UndefinedVariable
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("Pango", "1.0")  # @UndefinedVariable
-from gi.repository import GLib, Pango, Gtk, Gdk  # @UnresolvedImport
+from gi.repository import GLib, Gtk, Gdk  # @UnresolvedImport
 
 log = Logger("gtk", "keyboard")
 
-
-def modify_font(widget, font="sans 13"):
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        widget.modify_font(Pango.FontDescription(font))
 
 class KeyboardStateInfoWindow:
 
@@ -41,21 +35,18 @@ class KeyboardStateInfoWindow:
         # Title
         vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(15)
-        label = Gtk.Label(label="Keyboard State")
-        modify_font(label, "sans 13")
         #patch pack_start:
         from xpra.gtk_common.gtk_util import pack_start
         assert callable(pack_start)
-        vbox.pack_start(label)
+        vbox.pack_start(label("Keyboard State", font="sans 13"))
 
-        self.modifiers = Gtk.Label()
+        self.modifiers = label()
         vbox.add(self.modifiers)
 
-        self.mouse = Gtk.Label()
+        self.mouse = label()
         vbox.add(self.mouse)
 
-        self.keys = Gtk.Label()
-        modify_font(self.keys, "monospace 9")
+        self.keys = label("", font="monospace 9")
         vbox.add(self.keys)
 
         self.window.add(vbox)

@@ -123,7 +123,7 @@ def newdictlook(d, parts, fallback=None):
             return fallback
     return v
 
-def slabel(text="", tooltip=None, font=None):
+def slabel(text:str="", tooltip:str="", font:str=""):
     l = label(text, tooltip, font)
     l.set_selectable(True)
     return l

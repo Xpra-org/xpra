@@ -10,7 +10,7 @@ gi.require_version("Gtk", "3.0")  # @UndefinedVariable
 gi.require_version("Gdk", "3.0")  # @UndefinedVariable
 from gi.repository import Gtk, Gdk, GLib   #pylint: disable=wrong-import-position @UnresolvedImport
 
-from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf, label
 
 
 class HintedWindows(Gtk.Window):
@@ -83,7 +83,7 @@ class OptionWindow(Gtk.Window):
         def attach(widget, col, row):
             t.attach(widget, col, col+1, row, row+1, Gtk.AttachOptions.EXPAND, Gtk.AttachOptions.FILL, 0, 0)
         def l(s):    # noqa: E743
-            return Gtk.Label(label=s)
+            return label(s)
         def line(row, *widgets):
             for i, widget in enumerate(widgets):
                 attach(widget, i, row)

@@ -54,7 +54,7 @@ from xpra.util import (
     )
 from xpra.client.base.serverinfo_mixin import ServerInfoMixin
 from xpra.client.base.fileprint_mixin import FilePrintMixin
-from xpra.exit_codes import ExitCode, exit_str
+from xpra.exit_codes import ExitCode, ExitValue, exit_str
 
 log = Logger("client")
 netlog = Logger("network")
@@ -653,7 +653,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         from gi.repository import GLib  # @UnresolvedImport
         register_SIGUSR_signals(GLib.idle_add)
 
-    def run(self) -> int | ExitCode:
+    def run(self) -> ExitValue:
         self.start_protocol()
         return 0
 

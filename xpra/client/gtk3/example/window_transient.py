@@ -5,7 +5,7 @@
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk_common.gtk_util import get_default_root_window, add_close_accel, get_icon_pixbuf
+from xpra.gtk_common.gtk_util import get_default_root_window, add_close_accel, get_icon_pixbuf, label
 
 import gi
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
@@ -31,7 +31,7 @@ def make_window():
             tw.set_icon(icon)
         tw.connect("delete_event", lambda x,y : tw.destroy())
         tw.set_transient_for(window)
-        tw.add(Gtk.Label(label="Transient Window"))
+        tw.add(label("Transient Window"))
         tw.show_all()
     btn.connect('clicked', create_transient)
     vbox.pack_start(btn, expand=False, fill=False, padding=10)
@@ -51,7 +51,7 @@ def make_window():
         tw.connect("delete_event", lambda x,y : tw.destroy())
         tw.realize()
         tw.get_window().set_transient_for(get_default_root_window())
-        tw.add(Gtk.Label(label="Transient Root Window"))
+        tw.add(label("Transient Root Window"))
         tw.show_all()
     btn.connect('clicked', create_root_transient)
     vbox.pack_start(btn, expand=False, fill=False, padding=10)

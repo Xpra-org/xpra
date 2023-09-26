@@ -27,7 +27,7 @@ from xpra.util import (
     csv, envbool, envint, nonl, pver,
     noerr, sorted_nicely, typedict, stderr_print,
     )
-from xpra.exit_codes import ExitCode, RETRY_EXIT_CODES, exit_str
+from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import (
     get_util_logger, getuid, getgid, get_username_for_uid,
     bytestostr, use_tty, osexpand, is_socket,
@@ -365,7 +365,7 @@ def verify_gir():
         raise InitExit(ExitCode.FAILURE, f"the python gobject introspection bindings are missing: \n{e}")
 
 
-def run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, defaults) -> int:
+def run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, defaults) -> ExitValue:
     #configure default logging handler:
     if POSIX and getuid()==options.uid==0 and mode not in ("proxy", "autostart", "showconfig") and not NO_ROOT_WARNING:
         warn("\nWarning: running as root\n")
@@ -1167,15 +1167,15 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
 
 
 
-def run_dialog(extra_args) -> int:
+def run_dialog(extra_args) -> ExitValue:
     from xpra.client.gtk3.confirm_dialog import show_confirm_dialog
     return show_confirm_dialog(extra_args)
 
-def run_pass(extra_args) -> int:
+def run_pass(extra_args) -> ExitValue:
     from xpra.client.gtk3.pass_dialog import show_pass_dialog
     return show_pass_dialog(extra_args)
 
-def run_send_file(extra_args) -> int:
+def run_send_file(extra_args) -> ExitValue:
     sockpath = os.environ.get("XPRA_SERVER_SOCKET")
     if not sockpath:
         display = os.environ.get("DISPLAY")
@@ -1274,7 +1274,7 @@ def get_sockpath(display_desc:dict[str,Any], error_cb, timeout=CONNECT_TIMEOUT) 
                                         nomatch=f"cannot find live server for display {display}")[-1]
     return sockpath
 
-def run_client(script_file, cmdline, error_cb, opts, extra_args, mode:str) -> int | ExitCode:
+def run_client(script_file, cmdline, error_cb, opts, extra_args, mode:str) -> ExitValue:
     if mode=="attach":
         check_gtk_client()
     else:
@@ -1815,7 +1815,7 @@ def make_client(error_cb:Callable, opts):
     return app
 
 
-def do_run_client(app) -> int | ExitCode:
+def do_run_client(app) -> ExitValue:
     try:
         return app.run()
     except KeyboardInterrupt:
@@ -1860,7 +1860,7 @@ def strip_defaults_start_child(start_child, defaults_start_child):
     return start_child
 
 
-def run_server(script_file, cmdline, error_cb, options, args, mode:str, defaults) -> int:
+def run_server(script_file, cmdline, error_cb, options, args, mode:str, defaults) -> ExitValue:
     mode = MODE_ALIAS.get(mode, mode)
     if mode in (
         "seamless", "desktop", "monitor", "expand",
@@ -2000,7 +2000,7 @@ def find_mode_pos(args, mode:str):
     raise InitException(f"mode {mode!r} not found in command line arguments {args}")
 
 
-def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, defaults) -> int:
+def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, defaults) -> ExitValue:
     """ Uses the regular XpraClient with patched proxy arguments to tell run_proxy to start the server """
     if not args:
         raise RuntimeError("no remote server specified")
@@ -2330,7 +2330,7 @@ def no_gtk() -> None:
     raise InitException("the Gtk module is already loaded: %s" % Gtk)
 
 
-def run_example(args) -> int:
+def run_example(args) -> ExitValue:
     all_examples = (
         "bell", "clicks",
         "colors-gradient", "colors-plain", "colors",
@@ -2358,7 +2358,7 @@ def run_example(args) -> int:
         raise InitException(f"failed to import example {classname}: {e}") from None
     return ic.main()
 
-def run_autostart(script_file, args) -> int:
+def run_autostart(script_file, args) -> ExitValue:
     def err(msg):
         print(msg)
         print(f"Usage: {script_file!r} enable|disable|status")
@@ -2379,15 +2379,15 @@ def run_autostart(script_file, args) -> int:
         set_autostart(arg=="enable")
     return 0
 
-def run_qrcode(args) -> int:
+def run_qrcode(args) -> ExitValue:
     from xpra.client.gtk3 import qrcode_client
     return qrcode_client.main(args)
 
-def run_splash(args) -> int:
+def run_splash(args) -> ExitValue:
     from xpra import splash_screen
     return splash_screen.main(args)
 
-def run_glprobe(opts, show=False) -> int:
+def run_glprobe(opts, show=False) -> ExitValue:
     if show:
         from xpra.platform.gui import init, set_default_icon
         set_default_icon("opengl.png")
@@ -2442,7 +2442,7 @@ def do_run_glcheck(opts, show=False) -> dict[str,Any]:
         if saved_level is not None:
             logging.root.setLevel(saved_level)
 
-def run_glcheck(opts) -> int:
+def run_glcheck(opts) -> ExitValue:
     log = Logger("opengl")
     if POSIX and not OSX:
         with OSEnvContext(GDK_BACKEND="x11", PYOPENGL_BACKEND="x11"):
@@ -2799,7 +2799,7 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
     raise InitException("failed to identify the new server display!")
 
 
-def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults) -> int:
+def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults) -> ExitValue:
     no_gtk()
     display = None
     display_name = None
@@ -2884,7 +2884,7 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults) -> int
     app.run()
     return 0
 
-def run_stopexit(mode:str, error_cb, opts, extra_args, cmdline) -> int:
+def run_stopexit(mode:str, error_cb, opts, extra_args, cmdline) -> ExitValue:
     assert mode in ("stop", "exit")
     no_gtk()
 
@@ -2998,7 +2998,7 @@ def may_cleanup_socket(state, display, sockpath, clean_states=(DotXpra.DEAD,)) -
     sys.stdout.write("\n")
 
 
-def run_top(error_cb, options, args, cmdline) -> int:
+def run_top(error_cb, options, args, cmdline) -> ExitValue:
     from xpra.client.base.top_client import TopClient, TopSessionClient
     if args:
         #try to show a specific session
@@ -3016,7 +3016,7 @@ def run_top(error_cb, options, args, cmdline) -> int:
                 pass
     return TopClient(options).run()
 
-def run_session_info(error_cb, options, args, cmdline) -> int:
+def run_session_info(error_cb, options, args, cmdline) -> ExitValue:
     check_gtk_client()
     display_desc = pick_display(error_cb, options, args, cmdline)
     from xpra.client.gtk3.session_info import SessionInfoClient
@@ -3024,7 +3024,7 @@ def run_session_info(error_cb, options, args, cmdline) -> int:
     connect_to_server(app, display_desc, options)
     return app.run()
 
-def run_docs() -> int:
+def run_docs() -> ExitValue:
     from xpra.platform.paths import get_resources_dir, get_app_dir
     paths = []
     prefixes = {get_resources_dir(), get_app_dir()}
@@ -3041,7 +3041,7 @@ def run_docs() -> int:
             paths.append(os.path.join(prefix, *parts))
     return _browser_open("documentation", *paths)
 
-def run_html5(url_options=None) -> int:
+def run_html5(url_options=None) -> ExitValue:
     from xpra.platform.paths import get_resources_dir, get_app_dir
     page = "connect.html"
     if url_options:
@@ -3054,7 +3054,7 @@ def run_html5(url_options=None) -> int:
         os.path.join(get_app_dir(), "www", page),
         )
 
-def _browser_open(what, *path_options) -> int:
+def _browser_open(what, *path_options) -> ExitValue:
     for f in path_options:
         af = os.path.abspath(f)
         nohash = af.split("#", 1)[0]
@@ -3065,11 +3065,11 @@ def _browser_open(what, *path_options) -> int:
     raise InitExit(ExitCode.FAILURE, "%s not found!" % what)
 
 
-def run_desktop_greeter() -> int:
+def run_desktop_greeter() -> ExitValue:
     from xpra.gtk_common import desktop_greeter
     return desktop_greeter.main()
 
-def run_sessions_gui(options) -> int:
+def run_sessions_gui(options) -> ExitValue:
     mdns = options.mdns
     if mdns:
         try:
@@ -3089,7 +3089,7 @@ def run_sessions_gui(options) -> int:
     from xpra.client.gtk3 import sessions_gui
     return sessions_gui.do_main(options)
 
-def run_mdns_gui(options) -> int:
+def run_mdns_gui(options) -> ExitValue:
     from xpra.net.mdns import get_listener_class
     listener = get_listener_class()
     if not listener:
@@ -3097,7 +3097,7 @@ def run_mdns_gui(options) -> int:
     from xpra.client.gtk3 import mdns_gui
     return mdns_gui.do_main(options)
 
-def run_list_mdns(error_cb, extra_args) -> int:
+def run_list_mdns(error_cb, extra_args) -> ExitValue:
     no_gtk()
     mdns_wait = 5
     if len(extra_args)<=1:
@@ -3186,7 +3186,7 @@ def run_list_mdns(error_cb, extra_args) -> int:
     return 0
 
 
-def run_clean(opts, args:Iterable[str]) -> int:
+def run_clean(opts, args:Iterable[str]) -> ExitValue:
     no_gtk()
     try:
         uid = int(opts.uid)
@@ -3331,7 +3331,7 @@ def run_clean(opts, args:Iterable[str]) -> int:
     return 0
 
 
-def run_clean_sockets(opts, args) -> int:
+def run_clean_sockets(opts, args) -> ExitValue:
     no_gtk()
     matching_display = None
     if args:
@@ -3404,7 +3404,7 @@ def run_recover(script_file, cmdline, error_cb, options, args, defaults) -> int:
     no_gtk()
     return run_server(script_file, cmdline, error_cb, options, args, mode, defaults)
 
-def run_displays(options, args) -> int:
+def run_displays(options, args) -> ExitValue:
     #dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
     displays = get_displays_info(display_names=args if args else None, sessions_dir=options.sessions_dir)
     print(f"Found {len(displays)} displays:")
@@ -3430,7 +3430,7 @@ def run_displays(options, args) -> int:
         print("%10s    %-8s    %s" % (display, state, info_str))
     return 0
 
-def run_clean_displays(options, args) -> int:
+def run_clean_displays(options, args) -> ExitValue:
     if not POSIX or OSX:
         raise InitExit(ExitCode.UNSUPPORTED, "clean-displays is not supported on this platform")
     displays = get_displays_info(sessions_dir=options.sessions_dir)
@@ -3630,7 +3630,7 @@ def get_displays(dotxpra=None, display_names=None) -> dict[str,Any]:
     log(f"get_displays({dotxpra}, {display_names})={displays} (xpra_sessions={xpra_sessions})")
     return displays
 
-def run_list_sessions(args, options) -> int:
+def run_list_sessions(args, options) -> ExitValue:
     dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
     if args:
         raise InitInfo("too many arguments for 'list-sessions' mode")
@@ -3665,17 +3665,17 @@ def display_wm_info(args) -> dict[str,Any]:
         info["display"] = display.get_name(),
         return info
 
-def run_xwait(args) -> int:
+def run_xwait(args) -> ExitValue:
     from xpra.x11.bindings.xwait import main as xwait_main  # pylint: disable=no-name-in-module
     xwait_main(args)
     return 0
 
-def run_wminfo(args) -> int:
+def run_wminfo(args) -> ExitValue:
     for k,v in display_wm_info(args).items():
         print(f"{k}={v}")
     return 0
 
-def run_wmname(args) -> int:
+def run_wmname(args) -> ExitValue:
     name = display_wm_info(args).get("wmname", "")
     if name:
         print(name)
@@ -3748,7 +3748,7 @@ def get_xpra_sessions(dotxpra:DotXpra, ignore_state=(DotXpra.UNKNOWN,), matching
     return sessions
 
 
-def run_list(error_cb:Callable, opts, extra_args, clean:bool=True) -> int:
+def run_list(error_cb:Callable, opts, extra_args, clean:bool=True) -> ExitValue:
     no_gtk()
     if extra_args:
         error_cb("too many arguments for mode")
@@ -3825,7 +3825,7 @@ def clean_sockets(dotxpra, sockets, timeout=LIST_REPROBE_TIMEOUT) -> None:
         may_cleanup_socket(state, display, sockpath, clean_states=clean_states)
 
 
-def run_list_windows(error_cb, opts, extra_args) -> int:
+def run_list_windows(error_cb, opts, extra_args) -> ExitValue:
     no_gtk()
     if extra_args:
         error_cb("too many arguments for mode")
@@ -3900,7 +3900,7 @@ def run_list_windows(error_cb, opts, extra_args) -> int:
         sys.stdout.flush()
     return 0
 
-def run_auth(_options, args) -> int:
+def run_auth(_options, args) -> ExitValue:
     if not args:
         raise InitException("missing module argument")
     auth_str = args[0]
@@ -3914,7 +3914,7 @@ def run_auth(_options, args) -> int:
     return main_fn(argv)
 
 
-def run_showconfig(options, args) -> int:
+def run_showconfig(options, args) -> ExitValue:
     log = get_util_logger()
     d = dict_to_validated_config({})
     fixup_options(d)
@@ -3995,7 +3995,7 @@ def vstr(otype:type, v) -> str:
         return csv(vstr(otype, x) for x in v)
     return str(v)
 
-def run_showsetting(args) -> int:
+def run_showsetting(args) -> ExitValue:
     if not args:
         raise InitException("specify a setting to display")
 

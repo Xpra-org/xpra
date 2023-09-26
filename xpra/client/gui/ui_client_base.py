@@ -31,7 +31,7 @@ from xpra.util import (
     merge_dicts, NotificationID, ConnectionMessage,
     )
 from xpra.scripts.config import parse_bool
-from xpra.exit_codes import ExitCode
+from xpra.exit_codes import ExitCode, ExitValue
 from xpra.version_util import get_platform_info
 from xpra.client.gui import mixin_features
 from xpra.log import Logger, get_info as get_log_info
@@ -251,7 +251,7 @@ class UIXpraClient(ClientBaseClass):
         return get_vrefresh()
 
 
-    def run(self) -> int | ExitCode:
+    def run(self) -> ExitValue:
         if self.client_extras:
             self.idle_add(self.client_extras.ready)
         for c in CLIENT_BASES:

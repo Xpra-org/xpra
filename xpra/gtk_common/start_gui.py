@@ -8,10 +8,11 @@ import time
 import os.path
 import subprocess
 
-from gi.repository import Gtk, Gdk, Pango, GLib  # @UnresolvedImport
+from gi.repository import Gtk, Gdk, GLib  # @UnresolvedImport
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.gtk_util import (
+    setfont, label,
     add_close_accel,
     get_icon_pixbuf,
     imagebutton,
@@ -60,15 +61,15 @@ def xal(widget, xalign=1.0):
     return al
 
 def sf(w, font="sans 14"):
-    w.modify_font(Pango.FontDescription(font))
+    setfont(w, font)
     return w
 
-def l(label):    # noqa: E743
-    widget = Gtk.Label(label=label)
+def l(text):    # noqa: E743
+    widget = label(text)
     return sf(widget)
 
 
-def link_btn(link, label="", icon_name="question.png"):
+def link_btn(link, text="", icon_name="question.png"):
     def open_link():
         import webbrowser
         webbrowser.open(link)
@@ -76,17 +77,17 @@ def link_btn(link, label="", icon_name="question.png"):
         log("help_clicked%s opening '%s'", args, link)
         start_thread(open_link, "open-link", True)
     icon = get_icon_pixbuf(icon_name)
-    btn = imagebutton("" if icon else label, icon, label, help_clicked, 12, False)
+    btn = imagebutton("" if icon else text, icon, text, help_clicked, 12, False)
     return btn
 
-def attach_label(table, label, tooltip_text=None, link=None):
-    lbl = Gtk.Label(label=label)
+def attach_label(table, text, tooltip_text=None, link=None):
+    lbl = label(text)
     if tooltip_text:
         lbl.set_tooltip_text(tooltip_text)
     hbox = Gtk.HBox(homogeneous=False, spacing=0)
     hbox.pack_start(xal(lbl), True, True)
     if link:
-        help_btn = link_btn(link, "About %s" % label)
+        help_btn = link_btn(link, "About %s" % text)
         hbox.pack_start(help_btn, False)
     table.attach(hbox)
 
@@ -116,8 +117,8 @@ class StartSession(Gtk.Window):
 
         # choose the session type:
         hbox = Gtk.HBox(homogeneous=True, spacing=40)
-        def rb(sibling=None, label="", cb=None, tooltip_text=None):
-            btn = Gtk.RadioButton.new_with_label_from_widget(sibling, label)
+        def rb(sibling=None, text="", cb=None, tooltip_text=None):
+            btn = Gtk.RadioButton.new_with_label_from_widget(sibling, text)
             if cb:
                 btn.connect("toggled", cb)
             if tooltip_text:
@@ -166,7 +167,7 @@ class StartSession(Gtk.Window):
         self.host_entry.set_placeholder_text("Hostname or IP address")
         self.host_entry.set_max_length(255)
         self.address_box.pack_start(xal(self.host_entry), False)
-        self.address_box.pack_start(Gtk.Label(label=":"), False)
+        self.address_box.pack_start(label(":"), False)
         self.port_entry = sf(Gtk.Entry())
         self.port_entry.set_text("22")
         self.port_entry.set_width_chars(5)
@@ -248,7 +249,7 @@ class StartSession(Gtk.Window):
             icon = get_icon_pixbuf(icon_name)
             ib = imagebutton("", icon=icon, tooltip=label_text or tooltip_text,
                                   clicked_callback=cb, icon_size=32,
-                                  label_font=Pango.FontDescription("sans 14"))
+                                  label_font="sans 14")
             hbox.pack_start(ib, True, False)
         options_box.pack_start(hbox, True, False)
 
@@ -257,7 +258,7 @@ class StartSession(Gtk.Window):
         vbox.pack_start(hbox, False, True, 20)
         def btn(label, tooltip, callback, default=False):
             ib = imagebutton(label, tooltip=tooltip, clicked_callback=callback, icon_size=32,
-                            default=default, label_font=Pango.FontDescription("sans 16"))
+                            default=default, label_font="sans 16")
             hbox.pack_start(ib)
             return ib
         self.cancel_btn = btn("Cancel", "",
@@ -868,8 +869,8 @@ class SessionOptions(Gtk.Window):
         fn = option_name.replace("-", "_")
         options = self.get_widget_options(fn)
         widget_base_name = "%s_widget" % fn
-        for label, match in options.items():
-            btn = getattr(self, "%s_%s" % (widget_base_name, label))
+        for text, match in options.items():
+            btn = getattr(self, "%s_%s" % (widget_base_name, text))
             if btn.get_active():
                 return match
         return (UNSET, )
@@ -1079,11 +1080,11 @@ class EncodingWindow(SessionOptions):
         encoding_options = {encoding: get_encoding_name(encoding) for encoding in encodings}
         #opts.encodings
         self.combo(tb, "Encoding", "encoding", encoding_options)
-        #tb.attach(Gtk.Label(label="Colourspace Modules"), 0)
+        #tb.attach(label("Colourspace Modules"), 0)
         #tb.inc()
-        #tb.attach(Gtk.Label(label="Video Encoders"), 0)
+        #tb.attach(label("Video Encoders"), 0)
         #tb.inc()
-        #tb.attach(Gtk.Label(label="Video Decoders"), 0)
+        #tb.attach(label("Video Decoders"), 0)
         self.vbox.show_all()
 
 
@@ -1140,7 +1141,7 @@ class AudioWindow(SessionOptions):
             "disabled"  : ("disabled", ),
             })
         self.sep(tb)
-        #tb.attach(Gtk.Label(label="Speaker Codec"))
+        #tb.attach(label("Speaker Codec"))
         #self.speaker_codec_widget = Gtk.ComboBoxText()
         #for v in ("mp3", "wav"):
         #    self.speaker_codec_widget.append_text(v)
@@ -1152,7 +1153,7 @@ class AudioWindow(SessionOptions):
             "disabled"  : ("disabled", ),
             })
         self.sep(tb)
-        #tb.attach(Gtk.Label(label="Microphone Codec"))
+        #tb.attach(label("Microphone Codec"))
         #self.microphone_codec_widget = Gtk.ComboBoxText()
         #for v in ("mp3", "wav"):
         #    self.microphone_codec_widget.append_text(v)
@@ -1177,9 +1178,9 @@ class WebcamWindow(SessionOptions):
             cb.set_sensitive(False)
             cb.set_active(False)
             tb.inc()
-            tb.attach(Gtk.Label(label=""), 0, 2)
+            tb.attach(label(), 0, 2)
             tb.inc()
-            tb.attach(Gtk.Label(label="Webcam forwarding is not supported on %s" % platform_name()), 0, 2)
+            tb.attach(label("Webcam forwarding is not supported on %s" % platform_name()), 0, 2)
         self.vbox.show_all()
 
 

@@ -6,7 +6,7 @@ import sys
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf, label
 
 import gi
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
@@ -28,11 +28,11 @@ class TestForm:
             self.window.set_icon(icon)
 
         vbox = Gtk.VBox()
-        self.info = Gtk.Label(label="")
+        self.info = label("")
         self.show_click_settings()
         GLib.timeout_add(1000, self.show_click_settings)
         vbox.pack_start(self.info, False, False, 0)
-        self.label = Gtk.Label(label="Ready")
+        self.label = label("Ready")
         vbox.pack_start(self.label, False, False, 0)
 
         self.eventbox = Gtk.EventBox()

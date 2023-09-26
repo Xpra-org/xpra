@@ -24,7 +24,7 @@ from xpra.version_util import (
     get_platform_info, get_host_info, parse_version,
     )
 from xpra.scripts.server import deadly_signal, clean_session_files, rm_session_dir
-from xpra.exit_codes import ExitCode
+from xpra.exit_codes import ExitValue
 from xpra.server.util import write_pidfile, rm_pidfile
 from xpra.scripts.config import parse_bool, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import may_log_packet, SOCKET_TYPES, MAX_PACKET_SIZE, DEFAULT_PORTS, SSL_UPGRADE, PacketType
@@ -466,7 +466,7 @@ class ServerCore:
                 log.warn("Warning: initialization thread is still active")
 
 
-    def run(self) -> int | ExitCode:
+    def run(self) -> ExitValue:
         self.install_signal_handlers(self.signal_quit)
         self.idle_add(self.reset_server_timeout)
         self.idle_add(self.server_is_ready)

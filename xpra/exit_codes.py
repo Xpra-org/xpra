@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from enum import IntEnum
+from typing import TypeAlias
 
 class ExitCode(IntEnum):
     OK = 0
@@ -36,6 +37,10 @@ class ExitCode(IntEnum):
     NO_DATA = 27
     AUTHENTICATION_FAILED = 28
     DEVICE_NOT_FOUND = 29
+
+
+ExitValue : TypeAlias = ExitCode | int
+
 
 def exit_str(code) -> str:
     try:

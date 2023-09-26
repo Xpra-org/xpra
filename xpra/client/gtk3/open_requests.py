@@ -17,7 +17,7 @@ from xpra.child_reaper import getChildReaper
 from xpra.net.file_transfer import ACCEPT, OPEN, DENY
 from xpra.simple_stats import std_unit, std_unit_dec
 from xpra.gtk_common.gtk_util import (
-    add_close_accel, scaled_image,
+    add_close_accel, scaled_image, label,
     TableBuilder, get_icon_pixbuf,
     )
 from xpra.platform.gui import set_window_progress
@@ -73,8 +73,8 @@ class OpenRequestsWindow:
         # Buttons:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
-        def btn(label, callback, icon_name=None):
-            b = self.btn(label, callback, icon_name)
+        def btn(text, callback, icon_name=None):
+            b = self.btn(text, callback, icon_name)
             hbox.pack_start(b)
         if self.show_file_upload_cb:
             btn("Upload", self.show_file_upload_cb, "upload.png")
@@ -91,8 +91,8 @@ class OpenRequestsWindow:
         self.window.add(vbox)
         self.populate_table()
 
-    def btn(self, label, callback, icon_name=None):
-        btn = Gtk.Button(label=label)
+    def btn(self, text, callback, icon_name=None):
+        btn = Gtk.Button(label=text)
         settings = btn.get_settings()
         settings.set_property('gtk-button-images', True)
         btn.connect("clicked", callback)
@@ -112,9 +112,9 @@ class OpenRequestsWindow:
 
     def update_expires_label(self) -> bool:
         expired = 0
-        for label, expiry in self.expire_labels.values():
+        for widget, expiry in self.expire_labels.values():
             seconds = max(0, expiry-monotonic())
-            label.set_text("%i" % seconds)
+            widget.set_text("%i" % seconds)
             if seconds==0:
                 expired += 1
         if expired:
@@ -136,7 +136,7 @@ class OpenRequestsWindow:
         #generate a new table:
         self.table = tb.get_table()
         def l(s=""):    # noqa: E743
-            return Gtk.Label(label=s)
+            return label(s)
         if not self.requests:
             tb.add_row(l("No requests pending"))
         else:

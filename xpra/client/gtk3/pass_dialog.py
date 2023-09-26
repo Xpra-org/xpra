@@ -9,13 +9,12 @@ import sys
 #pylint: disable=import-outside-toplevel
 import gi
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("Pango", "1.0")  # @UndefinedVariable
 gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
-from gi.repository import GLib, Pango, Gtk  # @UnresolvedImport
+from gi.repository import GLib, Gtk  # @UnresolvedImport
 
 from xpra.os_util import get_util_logger
 from xpra.gtk_common.gobject_compat import register_os_signals
-from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf, label
 from xpra.platform.gui import force_focus
 
 log = get_util_logger()
@@ -40,9 +39,8 @@ class PasswordInputDialogWindow(Gtk.Dialog):
         vbox = self.get_content_area()
         vbox.set_spacing(10)
 
-        def al(label, font="sans 14", xalign=0):
-            l = Gtk.Label(label=label)
-            l.modify_font(Pango.FontDescription(font))
+        def al(text, font="sans 14", xalign=0):
+            l = label(text, font=font)
             al = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
             al.add(l)
             vbox.add(al)

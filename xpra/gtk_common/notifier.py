@@ -25,7 +25,7 @@ from gi.repository import GLib, Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.os_util import OSX
 from xpra.gtk_common.gtk_util import (
-    add_close_accel, color_parse,
+    add_close_accel, color_parse, label,
     get_icon_pixbuf,
     )
 from xpra.notifications.notifier_base import NotifierBase, log
@@ -179,7 +179,7 @@ class Popup(Gtk.Window):
 
         main_box = Gtk.VBox()
         header_box = Gtk.HBox()
-        self.header = Gtk.Label()
+        self.header = label()
         self.header.set_padding(3, 3)
         self.header.set_alignment(0, 0)
         header_box.pack_start(self.header, True, True, 5)
@@ -201,13 +201,13 @@ class Popup(Gtk.Window):
         self.image.set_size_request(70, 70)
         self.image.set_alignment(0, 0)
         body_box.pack_start(self.image, False, False, 5)
-        self.message = Gtk.Label()
+        self.message = label()
         self.message.set_max_width_chars(80)
         self.message.set_size_request(stack.size_x - 90, -1)
         self.message.set_line_wrap(True)
         self.message.set_alignment(0, 0)
         self.message.set_padding(5, 10)
-        self.counter = Gtk.Label()
+        self.counter = label()
         self.counter.set_alignment(1, 1)
         self.counter.set_padding(3, 3)
         self.timeout = timeout

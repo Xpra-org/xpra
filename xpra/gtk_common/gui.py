@@ -21,8 +21,7 @@ from xpra.gtk_common.about import about
 
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-gi.require_version('Pango', '1.0')  # @UndefinedVariable
-from gi.repository import GLib, Pango, Gtk, Gdk, Gio  # @UnresolvedImport
+from gi.repository import GLib, Gtk, Gdk, Gio  # @UnresolvedImport
 
 log = Logger("client", "util")
 
@@ -99,11 +98,10 @@ class GUI(Gtk.Window):
         self.add(self.vbox)
         #with most window managers,
         #the window's title bar already shows "Xpra"
-        #title_label = Gtk.Label(label=title)
-        #title_label.modify_font(pango.FontDescription("sans 14"))
+        #title_label = label(title, "sans 14")
         #self.vbox.add(title_label)
         self.widgets = []
-        label_font = Pango.FontDescription("sans 16")
+        label_font = "sans 16"
         if has_client:
             icon = get_icon_pixbuf("browse.png")
             self.browse_button = imagebutton("Browse", icon,
@@ -125,9 +123,9 @@ class GUI(Gtk.Window):
                 self.shadow_button.set_sensitive(False)
             self.widgets.append(self.shadow_button)
             icon = get_icon_pixbuf("windows.png")
-            label = "Start a new %sxpra session" % (" remote" if (WIN32 or OSX) else "")
+            text = "Start a new %sxpra session" % (" remote" if (WIN32 or OSX) else "")
             self.start_button = imagebutton("Start", icon,
-                                            label, clicked_callback=self.start,
+                                            text, clicked_callback=self.start,
                                             icon_size=48, label_font=label_font)
             self.widgets.append(self.start_button)
         table = Gtk.Table(n_rows=2, n_columns=2, homogeneous=True)
