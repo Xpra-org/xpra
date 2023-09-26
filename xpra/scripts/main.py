@@ -32,7 +32,7 @@ from xpra.os_util import (
     get_util_logger, getuid, getgid, get_username_for_uid,
     bytestostr, use_tty, osexpand, is_socket,
     OSEnvContext,
-    set_proc_title,
+    set_proc_title, gi_import,
     is_systemd_pid1,
     WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu,
     )
@@ -309,10 +309,7 @@ def check_gtk_client() -> None:
         raise InitExit(ExitCode.FILE_NOT_FOUND, "`xpra-client-gtk3` is not installed") from None
 
 def check_gtk() -> None:
-    import gi
-    gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-    from gi.repository import Gtk  # @UnresolvedImport
-    assert Gtk
+    Gtk = gi_import("Gtk")
     r = Gtk.init_check(argv=None)
     if not r[0]:
         raise InitExit(ExitCode.NO_DISPLAY, "failed to initialize Gtk, no display?")

@@ -161,6 +161,19 @@ def set_proc_title(title) -> None:
         get_util_logger().debug("setproctitle is not installed: %s", e)
 
 
+def gi_import(mod="Gtk", version="3.0"):
+    import warnings
+    try:
+        warnings.filterwarnings("ignore", category=ImportWarning)
+        import gi
+        gi.require_version(mod, version)
+        import gi.repository
+        import importlib
+        return importlib.import_module(f"gi.repository.{mod}")
+    finally:
+        warnings.filterwarnings("default")
+
+
 def getuid() -> int:
     if POSIX:
         return os.getuid()

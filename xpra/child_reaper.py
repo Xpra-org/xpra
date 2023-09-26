@@ -13,12 +13,12 @@ import os
 import signal
 from typing import Any
 from collections.abc import Callable
-from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util import envint, envbool
-from xpra.os_util import POSIX
+from xpra.os_util import POSIX, gi_import
 from xpra.log import Logger
 
+GLib = gi_import("GLib", "2.0")
 log = Logger("server", "util", "exec")
 
 
