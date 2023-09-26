@@ -2420,7 +2420,7 @@ if cythonize_more_ENABLED:
     if x11_ENABLED:
         ace("xpra.x11.desktop.desktop_model")
         ace("xpra.x11.desktop.desktop_server")
-        ace("xpra.x11.desktop.desktop_server_base")
+        ace("xpra.x11.desktop.base")
         ace("xpra.x11.desktop.model_base")
         ace("xpra.x11.desktop.monitor_model")
         ace("xpra.x11.desktop.monitor_server")

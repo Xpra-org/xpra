@@ -9,7 +9,7 @@ from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.scripts.config import InitException
 from xpra.net.common import PacketType
-from xpra.x11.desktop.desktop_server_base import DesktopServerBase
+from xpra.x11.desktop.base import DesktopServerBase
 from xpra.x11.desktop.monitor_model import MonitorDesktopModel
 from xpra.server.mixins.window import WindowsMixin
 from xpra.x11.vfb_util import parse_resolution

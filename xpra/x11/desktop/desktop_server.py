@@ -6,7 +6,7 @@
 from typing import Any
 from gi.repository import GObject  # @UnresolvedImport
 
-from xpra.x11.desktop.desktop_server_base import DesktopServerBase
+from xpra.x11.desktop.base import DesktopServerBase
 from xpra.x11.desktop.desktop_model import ScreenDesktopModel
 from xpra.x11.bindings.randr import RandRBindings #@UnresolvedImport
 from xpra.server import server_features
