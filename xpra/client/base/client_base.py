@@ -229,7 +229,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         kwargs = {}
         if len(parts)==2:
             kwargs = parse_simple_dict(parts[1])
-        auth_mod_name = f"xpra.client.auth.{mod_name}_handler"
+        auth_mod_name = f"xpra.client.auth.{mod_name}"
         authlog(f"auth module name for {auth!r}: {auth_mod_name!r}")
         try:
             auth_module = __import__(auth_mod_name, {}, {}, ["Handler"])

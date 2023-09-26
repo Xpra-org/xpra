@@ -88,7 +88,7 @@ For more information on the different socket types, see [network examples](../Ne
 
 ## Client Syntax
 
-By default, `challenge-handlers=all` which means that the python client will try all authentication handlers available until one succeeds.  
+By default, `challenge-handlers=all` which means that the python client will try all authentication handlers available until one succeeds.
 If the server is configured with multiple authentications modules for the same socket, the client will do the same.
 
 ### Basic examples
@@ -107,13 +107,13 @@ xpra attach tcp://host:port/ --challenge-handlers=file:filename=./password.txt -
 
 | Module                                                                                        | Behaviour and options                                                                                    |
 |-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
-| [env](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/env_handler.py)           | `name` specifies the environment variable containing the password<br/>defaults to `XPRA_PASSWORD`        |
-| [file](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/file_handler.py)         | `filename` specifies the file containing the passowrd                                                    |
-| [gss](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/gss_handler.py)           | use `gss-services` to specify the name of the security context                                           |
-| [kerberos](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/kerberos_handler.py) | `kerberos-services` specifies the valid kerberos services to connect to<br/>the wildcard `*` may be used |
-| [prompt](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/prompt_handler.py)     | GUI clients should see a dialog, console users a text prompt                                             |
-| [u2f](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/u2f_handler.py)           | `APP_ID` specifies the u2f authentication application ID                                                 |
-| [uri](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/uri_handler.py)           | Uses values parsed from the connection string, ie: `tcp://foo:bar@host`                                   |
+| [env](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/env.py)           | `name` specifies the environment variable containing the password<br/>defaults to `XPRA_PASSWORD`        |
+| [file](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/file.py)         | `filename` specifies the file containing the passowrd                                                    |
+| [gss](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/gss.py)           | use `gss-services` to specify the name of the security context                                           |
+| [kerberos](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/kerberos.py) | `kerberos-services` specifies the valid kerberos services to connect to<br/>the wildcard `*` may be used |
+| [prompt](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/prompt.py)     | GUI clients should see a dialog, console users a text prompt                                             |
+| [u2f](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/u2f.py)           | `APP_ID` specifies the u2f authentication application ID                                                 |
+| [uri](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/uri.py)           | Uses values parsed from the connection string, ie: `tcp://foo:bar@host`                                  |
 </details>
 
 ***
