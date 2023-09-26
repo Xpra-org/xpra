@@ -13,7 +13,7 @@ from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf, label
 from xpra.gtk_common.gobject_compat import install_signal_handlers
 from xpra.gtk_common.css_overrides import inject_css_overrides
 from xpra.client.base.client_base import XpraClientBase
-from xpra.client.base.gobject_client_base import InfoXpraClient
+from xpra.client.base.gobject_client import InfoXpraClient
 from xpra.platform.gui import force_focus
 from xpra.net.qrcode.gtk_qr import qr_pixbuf
 from xpra.log import Logger

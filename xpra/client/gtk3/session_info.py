@@ -19,7 +19,7 @@ from xpra.common import noop
 from xpra.gtk_common.graph import make_graph_imagesurface
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
 from xpra.client.gui import mixin_features
-from xpra.client.base.gobject_client_base import InfoTimerClient
+from xpra.client.base.gobject_client import InfoTimerClient
 from xpra.gtk_common.gtk_util import (
     add_close_accel, label,
     TableBuilder, imagebutton,

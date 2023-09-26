@@ -2276,9 +2276,9 @@ tace(lz4_ENABLED, "xpra.net.lz4.lz4", "liblz4")
 if cythonize_more_ENABLED:
     assert cython_version >= 3, "cannot use 'cythonize_more' with older Cython versions"
     if client_ENABLED:
-        ace("xpra.client.base.fileprint_mixin")
-        ace("xpra.client.base.top_client")
-        ace("xpra.client.base.gobject_client_base")
+        ace("xpra.client.base.fileprint")
+        ace("xpra.client.base.top")
+        ace("xpra.client.base.gobject_client")
     if client_ENABLED and gtk3_ENABLED:
         ace("xpra.client.gtk3.cairo_backing")
         ace("xpra.client.gtk3.client_base")

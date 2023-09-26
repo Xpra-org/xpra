@@ -53,7 +53,7 @@ from xpra.util import (
     ConnectionMessage,
     )
 from xpra.client.base.serverinfo_mixin import ServerInfoMixin
-from xpra.client.base.fileprint_mixin import FilePrintMixin
+from xpra.client.base.fileprint import FilePrintMixin
 from xpra.exit_codes import ExitCode, ExitValue, exit_str
 
 log = Logger("client")
