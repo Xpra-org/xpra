@@ -51,6 +51,7 @@ mouselog = Logger("mouse")
 cursorlog = Logger("cursor")
 metalog = Logger("metadata")
 traylog = Logger("client", "tray")
+execlog = Logger("client", "exec")
 
 SMOOTH_SCROLL : bool = envbool("XPRA_SMOOTH_SCROLL", True)
 
@@ -101,7 +102,8 @@ DRAW_TYPES : dict[type,str] = {bytes : "bytes", str : "bytes", tuple : "arrays",
 
 
 def kill_signalwatcher(proc) -> None:
-    log("kill_signalwatcher(%s)", proc)
+    exit_code = proc.poll()
+    execlog(f"kill_signalwatcher({proc}) {exit_code=}")
     if proc.poll() is None:
         stdout_io_watch = proc.stdout_io_watch
         if stdout_io_watch:
@@ -109,6 +111,7 @@ def kill_signalwatcher(proc) -> None:
             GLib.source_remove(stdout_io_watch)
         stdout = proc.stdout
         if stdout:
+            execlog(f"stdout={stdout} : %s", dir(stdout))
             noerr(stdout.close)
         stderr = proc.stderr
         if stderr:
@@ -120,12 +123,12 @@ def kill_signalwatcher(proc) -> None:
                 stdin.flush()
                 stdin.close()
         except OSError:
-            log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
+            execlog.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
         try:
             os.kill(proc.pid, signal.SIGKILL)
         except OSError as e:
             if e.errno!=errno.ESRCH:
-                log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
+                execlog.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
 
 
 class WindowClient(StubClientMixin):
@@ -924,15 +927,15 @@ class WindowClient(StubClientMixin):
             from xpra.child_reaper import getChildReaper
             from subprocess import Popen, PIPE, STDOUT
             cmd = get_python_execfile_command()+[SIGNAL_WATCHER_COMMAND]
-            log(f"assign_signal_watcher_pid({wid}, {pid}) starting {cmd}")
+            execlog(f"assign_signal_watcher_pid({wid}, {pid}) starting {cmd}")
             try:
                 proc = Popen(cmd,
                              stdin=PIPE, stdout=PIPE, stderr=STDOUT,
                              start_new_session=True)
             except OSError as e:
-                log("assign_signal_watcher_pid(%s, %s)", wid, pid, exc_info=True)
-                log.error("Error: cannot execute signal listener")
-                log.estr(e)
+                execlog("assign_signal_watcher_pid(%s, %s)", wid, pid, exc_info=True)
+                execlog.error("Error: cannot execute signal listener")
+                execlog.estr(e)
                 proc = None
             if proc and proc.poll() is None:
                 #def add_process(self, process, name, command, ignore=False, forget=False, callback=None):
@@ -940,7 +943,7 @@ class WindowClient(StubClientMixin):
                 def watcher_terminated(*args):
                     #watcher process terminated, remove io watch:
                     #this may be redundant since we also return False from signal_watcher_event
-                    log("watcher_terminated%s", args)
+                    execlog("watcher_terminated%s", args)
                     source = proc.stdout_io_watch
                     if source:
                         proc.stdout_io_watch = 0
@@ -948,7 +951,7 @@ class WindowClient(StubClientMixin):
                 getChildReaper().add_process(proc, "signal listener for remote process %s" % pid,
                                              command="xpra_signal_listener", ignore=True, forget=True,
                                              callback=watcher_terminated)
-                log("using watcher pid=%i for server pid=%i", proc.pid, pid)
+                execlog("using watcher pid=%i for server pid=%i", proc.pid, pid)
                 self._pid_to_signalwatcher[pid] = proc
                 proc.stdout_io_watch = GLib.io_add_watch(proc.stdout,
                                                          GLib.PRIORITY_DEFAULT, GLib.IO_IN,
@@ -959,7 +962,7 @@ class WindowClient(StubClientMixin):
         return 0
 
     def signal_watcher_event(self, fd, cb_condition, proc, pid:int, wid:int) -> bool:
-        log("signal_watcher_event%s", (fd, cb_condition, proc, pid, wid))
+        execlog("signal_watcher_event%s", (fd, cb_condition, proc, pid, wid))
         if cb_condition==GLib.IO_HUP:
             proc.stdout_io_watch = None
             return False
@@ -969,12 +972,12 @@ class WindowClient(StubClientMixin):
         if cb_condition==GLib.IO_IN:
             try:
                 signame = bytestostr(proc.stdout.readline()).strip("\n\r")
-                log("signal_watcher_event: %s", signame)
+                execlog("signal_watcher_event: %s", signame)
                 if signame:
                     if signame in self.server_window_signals:
                         self.send("window-signal", wid, signame)
                     else:
-                        log(f"Warning: signal {signame!r} cannot be forwarded to this server")
+                        execlog(f"Warning: signal {signame!r} cannot be forwarded to this server")
             except Exception as e:
                 log.error("signal_watcher_event%s", (fd, cb_condition, proc, pid, wid), exc_info=True)
                 log.error("Error: processing signal watcher output for pid %i of window %i", pid, wid)
@@ -1282,13 +1285,13 @@ class WindowClient(StubClientMixin):
         if self.pointer_grabbed==wid:
             self.pointer_grabbed = None
         #deal with signal watchers:
-        log("looking for window %i in %s", wid, self._signalwatcher_to_wids)
+        execlog("looking for window %i in %s", wid, self._signalwatcher_to_wids)
         for signalwatcher, wids in tuple(self._signalwatcher_to_wids.items()):
             if wid in wids:
-                log("removing %i from %s for signalwatcher %s", wid, wids, signalwatcher)
+                execlog("removing %i from %s for signalwatcher %s", wid, wids, signalwatcher)
                 wids.remove(wid)
                 if not wids:
-                    log("last window, removing watcher %s", signalwatcher)
+                    execlog("last window, removing watcher %s", signalwatcher)
                     self._signalwatcher_to_wids.pop(signalwatcher, None)
                     kill_signalwatcher(signalwatcher)
                     #now remove any pids that use this watcher:
