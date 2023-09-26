@@ -6,7 +6,7 @@
 
 #pylint: disable=no-member
 
-""" client_launcher.py
+""" launcher.py
 
 This was meant to be a simple GUI for starting the xpra client.
 Then it morphed into something quite messy. Sorry.

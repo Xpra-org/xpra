@@ -589,7 +589,7 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
         return run_desktop_greeter()
     if mode == "launcher":
         check_gtk_client()
-        from xpra.client.gtk3.client_launcher import main as launcher_main
+        from xpra.client.gtk3.launcher import main as launcher_main
         return launcher_main(["xpra"]+args)
     if mode == "gui":
         check_gtk_client()
