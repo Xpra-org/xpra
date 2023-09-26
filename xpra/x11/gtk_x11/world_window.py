@@ -10,7 +10,7 @@ from xpra.gtk_common.error import xlog
 from xpra.x11.bindings.window import constants     #@UnresolvedImport
 from xpra.x11.bindings.send_wm import send_wm_take_focus     #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set
-from xpra.gtk_common.gtk_util import get_default_root_window
+from xpra.gtk_common.gtk_util import get_default_root_window, ignorewarnings
 from xpra.log import Logger
 
 log = Logger("x11", "window")
@@ -111,7 +111,7 @@ class WorldWindow(Gtk.Window):
         self.set_skip_pager_hint(True)
         self.set_decorated(False)
         self.set_resizable(False)
-        self.set_opacity(0)
+        ignorewarnings(self.set_opacity, 0)
 
         # FIXME: This would better be a default handler, but there is a bug in
         # the superclass's default handler that means we can't call it
