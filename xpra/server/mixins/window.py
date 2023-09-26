@@ -225,7 +225,7 @@ class WindowServer(StubServerMixin):
         for ss in tuple(self._server_sources.values()):
             if not isinstance(ss, WindowsMixin):
                 continue
-            wprops = self.client_properties.get(wid, {}).get(ss.uuid)
+            wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
             x, y, w, h = geometry
             #adjust if the transient-for window is not mapped in the same place by the client we send to:
             if "transient-for" in window.get_property_names():
