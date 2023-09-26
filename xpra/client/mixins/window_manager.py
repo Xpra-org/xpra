@@ -17,6 +17,7 @@ from time import sleep, time, monotonic
 from queue import SimpleQueue
 from threading import Thread
 from typing import Any
+from subprocess import Popen, PIPE, STDOUT, TimeoutExpired
 from collections.abc import Callable
 from gi.repository import GLib  # @UnresolvedImport
 
@@ -102,33 +103,46 @@ DRAW_TYPES : dict[type,str] = {bytes : "bytes", str : "bytes", tuple : "arrays",
 
 
 def kill_signalwatcher(proc) -> None:
+    clean_signalwatcher(proc)
     exit_code = proc.poll()
     execlog(f"kill_signalwatcher({proc}) {exit_code=}")
-    if proc.poll() is None:
-        stdout_io_watch = proc.stdout_io_watch
-        if stdout_io_watch:
-            proc.stdout_io_watch = 0
-            GLib.source_remove(stdout_io_watch)
-        stdout = proc.stdout
-        if stdout:
-            execlog(f"stdout={stdout} : %s", dir(stdout))
-            noerr(stdout.close)
-        stderr = proc.stderr
-        if stderr:
-            noerr(stderr.close)
-        try:
-            stdin = proc.stdin
-            if stdin:
-                stdin.write(b"exit\n")
-                stdin.flush()
-                stdin.close()
-        except OSError:
-            execlog.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
+    if exit_code:
+        return
+    try:
+        stdin = proc.stdin
+        if stdin:
+            stdin.write(b"exit\n")
+            stdin.flush()
+            stdin.close()
+    except OSError:
+        execlog.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
+    if proc.poll() is not None:
+        return
+    try:
+        proc.terminate()
+    except OSError:
+        execlog.warn("Warning: failed to terminate the signal watcher", exc_info=True)
+    try:
+        proc.wait(0.01)
+    except TimeoutExpired:
         try:
             os.kill(proc.pid, signal.SIGKILL)
         except OSError as e:
             if e.errno!=errno.ESRCH:
                 execlog.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
+
+def clean_signalwatcher(proc) -> None:
+    stdout_io_watch = proc.stdout_io_watch
+    if stdout_io_watch:
+        proc.stdout_io_watch = 0
+        GLib.source_remove(stdout_io_watch)
+    stdout = proc.stdout
+    if stdout:
+        execlog(f"stdout={stdout} : %s", dir(stdout))
+        noerr(stdout.close)
+    stderr = proc.stderr
+    if stderr:
+        noerr(stderr.close)
 
 
 class WindowClient(StubClientMixin):
@@ -925,7 +939,6 @@ class WindowClient(StubClientMixin):
         proc = self._pid_to_signalwatcher.get(pid)
         if proc is None or proc.poll():
             from xpra.child_reaper import getChildReaper
-            from subprocess import Popen, PIPE, STDOUT
             cmd = get_python_execfile_command()+[SIGNAL_WATCHER_COMMAND]
             execlog(f"assign_signal_watcher_pid({wid}, {pid}) starting {cmd}")
             try:
@@ -944,10 +957,7 @@ class WindowClient(StubClientMixin):
                     #watcher process terminated, remove io watch:
                     #this may be redundant since we also return False from signal_watcher_event
                     execlog("watcher_terminated%s", args)
-                    source = proc.stdout_io_watch
-                    if source:
-                        proc.stdout_io_watch = 0
-                        GLib.source_remove(source)
+                    clean_signalwatcher(proc)
                 getChildReaper().add_process(proc, "signal listener for remote process %s" % pid,
                                              command="xpra_signal_listener", ignore=True, forget=True,
                                              callback=watcher_terminated)
