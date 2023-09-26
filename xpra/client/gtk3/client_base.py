@@ -261,8 +261,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         #subclasses may add their toolkit specific variants
         #by overriding this method
         #use the native ones first:
-        from xpra.client.gui import mixin_features
-        assert mixin_features.notifications
+        from xpra.client.gui import features
+        assert features.notifications
         from xpra.client.mixins.notification import NotificationClient
         assert isinstance(self, NotificationClient)
         ncs = NotificationClient.get_notifier_classes(self)

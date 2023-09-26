@@ -26,7 +26,7 @@ from xpra.client.gtk3.menu_helper import (
 from xpra.exit_codes import ExitCode
 from xpra.codecs.constants import PREFERRED_ENCODING_ORDER
 from xpra.simple_stats import std_unit_dec
-from xpra.client.gui import mixin_features
+from xpra.client.gui import features
 from xpra.log import Logger
 
 log = Logger("menu")
@@ -107,23 +107,23 @@ class GTKTrayMenu(MenuHelper):
             self.after_handshake(set_menu_title)
         add(self.make_infomenuitem())
         add(self.make_featuresmenuitem())
-        if mixin_features.windows and self.client.keyboard_helper:
+        if features.windows and self.client.keyboard_helper:
             add(self.make_keyboardmenuitem())
-        if mixin_features.clipboard and SHOW_CLIPBOARD_MENU:
+        if features.clipboard and SHOW_CLIPBOARD_MENU:
             add(self.make_clipboardmenuitem())
-        if mixin_features.windows:
+        if features.windows:
             add(self.make_picturemenuitem())
-        if mixin_features.audio and STARTSTOP_SOUND_MENU:
+        if features.audio and STARTSTOP_SOUND_MENU:
             add(self.make_audiomenuitem())
-        if mixin_features.webcam and WEBCAM_MENU:
+        if features.webcam and WEBCAM_MENU:
             add(self.make_webcammenuitem())
-        if mixin_features.display and MONITORS_MENU:
+        if features.display and MONITORS_MENU:
             add(self.make_monitorsmenuitem())
-        if mixin_features.windows and WINDOWS_MENU:
+        if features.windows and WINDOWS_MENU:
             add(self.make_windowsmenuitem())
         if RUNCOMMAND_MENU or SHOW_SERVER_COMMANDS or SHOW_UPLOAD or SHOW_SHUTDOWN:
             add(self.make_servermenuitem())
-        if mixin_features.windows and START_MENU:
+        if features.windows and START_MENU:
             add(self.make_startmenuitem())
         add(self.make_disconnectmenuitem())
         if show_close:
@@ -163,16 +163,16 @@ class GTKTrayMenu(MenuHelper):
     def append_featuresmenuitems(self, menu):
         menu.append(self.make_sharingmenuitem())
         menu.append(self.make_lockmenuitem())
-        if mixin_features.windows:
+        if features.windows:
             menu.append(self.make_readonlymenuitem())
             menu.append(self.make_bellmenuitem())
-        if mixin_features.notifications:
+        if features.notifications:
             menu.append(self.make_notificationsmenuitem())
-        if mixin_features.windows:
+        if features.windows:
             menu.append(self.make_cursorsmenuitem())
         if self.client.client_supports_opengl:
             menu.append(self.make_openglmenuitem())
-        if mixin_features.windows:
+        if features.windows:
             menu.append(self.make_modalwindowmenuitem())
 
     def make_sharingmenuitem(self):

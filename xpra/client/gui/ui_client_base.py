@@ -33,45 +33,45 @@ from xpra.util import (
 from xpra.scripts.config import parse_bool
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.version_util import get_platform_info
-from xpra.client.gui import mixin_features
+from xpra.client.gui import features
 from xpra.log import Logger, get_info as get_log_info
 
 
 CLIENT_BASES : list[type] = [XpraClientBase]
-if mixin_features.display:
+if features.display:
     from xpra.client.mixins.display import DisplayClient
     CLIENT_BASES.append(DisplayClient)
-if mixin_features.windows:
+if features.windows:
     from xpra.client.mixins.window_manager import WindowClient
     CLIENT_BASES.append(WindowClient)
-if mixin_features.webcam:
+if features.webcam:
     from xpra.client.mixins.webcam import WebcamForwarder
     CLIENT_BASES.append(WebcamForwarder)
-if mixin_features.audio:
+if features.audio:
     from xpra.client.mixins.audio import AudioClient
     CLIENT_BASES.append(AudioClient)
-if mixin_features.clipboard:
+if features.clipboard:
     from xpra.client.mixins.clipboard import ClipboardClient
     CLIENT_BASES.append(ClipboardClient)
-if mixin_features.notifications:
+if features.notifications:
     from xpra.client.mixins.notification import NotificationClient
     CLIENT_BASES.append(NotificationClient)
-if mixin_features.mmap:
+if features.mmap:
     from xpra.client.mixins.mmap import MmapClient
     CLIENT_BASES.append(MmapClient)
-if mixin_features.logging:
+if features.logging:
     from xpra.client.mixins.logging import RemoteLogging
     CLIENT_BASES.append(RemoteLogging)
-if mixin_features.network_state:
+if features.network_state:
     from xpra.client.mixins.network_state import NetworkState
     CLIENT_BASES.append(NetworkState)
-if mixin_features.network_listener:
+if features.network_listener:
     from xpra.client.mixins.network_listener import Networklistener
     CLIENT_BASES.append(Networklistener)
-if mixin_features.encoding:
+if features.encoding:
     from xpra.client.mixins.encodings import Encodings
     CLIENT_BASES.append(Encodings)
-if mixin_features.tray:
+if features.tray:
     from xpra.client.mixins.tray import TrayClient
     CLIENT_BASES.append(TrayClient)
 
@@ -220,7 +220,7 @@ class UIXpraClient(ClientBaseClass):
             keylog("error instantiating %s", self.keyboard_helper_class, exc_info=True)
             keylog.warn(f"Warning: no keyboard support, {e}")
 
-        if mixin_features.windows:
+        if features.windows:
             self.init_opengl(opts.opengl)
 
         if ClientExtras is not None:
@@ -372,14 +372,14 @@ class UIXpraClient(ClientBaseClass):
                     self.exit_code = ExitCode.CONNECTION_FAILED
             self.may_notify(NotificationID.DISCONNECT, title, body, icon_name="disconnected")
             #show text notification then quit:
-            delay = NOTIFICATION_EXIT_DELAY*mixin_features.notifications
+            delay = NOTIFICATION_EXIT_DELAY*features.notifications
             self.timeout_add(delay*1000, XpraClientBase.server_disconnect_warning, self, title, *info)
         self.cleanup()
 
     def server_disconnect(self, reason:str, *info) -> None:
         body = "\n".join(info)
         self.may_notify(NotificationID.DISCONNECT, f"Xpra Session Disconnected: {reason}", body, icon_name="disconnected")
-        delay = NOTIFICATION_EXIT_DELAY*mixin_features.notifications
+        delay = NOTIFICATION_EXIT_DELAY*features.notifications
         if self.exit_code is None:
             self.exit_code = self.server_disconnect_exit_code(reason, *info)
         self.timeout_add(delay*1000, XpraClientBase.server_disconnect, self, reason, *info)

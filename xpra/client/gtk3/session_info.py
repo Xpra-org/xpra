@@ -18,7 +18,7 @@ from xpra.util import prettify_plug_name, typedict, envint, csv
 from xpra.common import noop
 from xpra.gtk_common.graph import make_graph_imagesurface
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
-from xpra.client.gui import mixin_features
+from xpra.client.gui import features
 from xpra.client.base.gobject_client import InfoTimerClient
 from xpra.gtk_common.gtk_util import (
     add_close_accel, label,
@@ -273,16 +273,16 @@ class SessionInfo(Gtk.Window):
             tb.new_row("OpenGL Mode", self.opengl_buffering)
             self.window_rendering = slabel()
             tb.new_row("Window Rendering", self.window_rendering)
-        if mixin_features.mmap:
+        if features.mmap:
             self.server_mmap_icon = Gtk.Image()
             tb.new_row("Memory Mapped Transfers", self.server_mmap_icon)
-        if mixin_features.clipboard:
+        if features.clipboard:
             self.server_clipboard_icon = Gtk.Image()
             tb.new_row("Clipboard", self.server_clipboard_icon)
-        if mixin_features.notifications:
+        if features.notifications:
             self.server_notifications_icon = Gtk.Image()
             tb.new_row("Notifications", self.server_notifications_icon)
-        if mixin_features.windows:
+        if features.windows:
             self.server_bell_icon = Gtk.Image()
             tb.new_row("Bell", self.server_bell_icon)
             self.server_cursors_icon = Gtk.Image()
@@ -340,7 +340,7 @@ class SessionInfo(Gtk.Window):
         tb = self.table_tab("connect.png", "Connection", self.populate_connection)[0]
         if self.connection:
             tb.new_row("Server Endpoint", slabel(self.connection.target))
-        if mixin_features.display and self.client.server_display:
+        if features.display and self.client.server_display:
             tb.new_row("Server Display", slabel(prettify_plug_name(self.client.server_display)))
         tb.new_row("Server Hostname", slabel(cattr("_remote_hostname")))
         if cattr("server_platform"):
@@ -395,7 +395,7 @@ class SessionInfo(Gtk.Window):
             tb.add_row(slabel("Client Latency (ms)",
                               "The time it takes for the client to respond to pings, as measured by the server"),
                        *self.client_latency_labels)
-            if mixin_features.windows and self.client.windows_enabled:
+            if features.windows and self.client.windows_enabled:
                 self.batch_labels = maths_labels()
                 tb.add_row(slabel("Batch Delay (MPixels / ms)",
                                   "How long the server waits for new screen updates to accumulate before processing them"),
@@ -490,7 +490,7 @@ class SessionInfo(Gtk.Window):
         self.populate_all()
         GLib.timeout_add(1000, self.populate)
         GLib.timeout_add(100, self.populate_tab)
-        if mixin_features.audio and SHOW_SOUND_STATS and show_client:
+        if features.audio and SHOW_SOUND_STATS and show_client:
             GLib.timeout_add(100, self.populate_audio_stats)
         add_close_accel(self, self.destroy)
 
@@ -635,13 +635,13 @@ class SessionInfo(Gtk.Window):
             #record bytecount every second:
             self.net_in_bitcount.append(conn.input_bytecount*8)
             self.net_out_bitcount.append(conn.output_bytecount*8)
-            if mixin_features.audio and SHOW_SOUND_STATS:
+            if features.audio and SHOW_SOUND_STATS:
                 if self.client.audio_in_bytecount>0:
                     self.audio_in_bitcount.append(self.client.audio_in_bytecount * 8)
                 if self.client.audio_out_bytecount>0:
                     self.audio_out_bitcount.append(self.client.audio_out_bytecount * 8)
 
-        if self.show_client and mixin_features.windows:
+        if self.show_client and features.windows:
             #count pixels in the last second:
             since = monotonic()-1
             decoded = [0]+[pixels for _,t,pixels in self.client.pixel_counter if t>since]
@@ -688,7 +688,7 @@ class SessionInfo(Gtk.Window):
             cpl = tuple(1000.0*x[1] for x in tuple(self.client.client_ping_latency))
             if spl and cpl:
                 self.avg_ping_latency.append(round(sum(spl+cpl)/len(spl+cpl)))
-            if mixin_features.windows and self.show_client:
+            if features.windows and self.show_client:
                 pc = tuple(self.client.pixel_counter)
                 if pc:
                     tsize = 0
@@ -759,7 +759,7 @@ class SessionInfo(Gtk.Window):
         self.opengl_buffering.set_text(" ".join(info))
 
     def show_window_renderers(self):
-        if not mixin_features.windows:
+        if not features.windows:
             return
         wr = []
         renderers = {}
@@ -771,7 +771,7 @@ class SessionInfo(Gtk.Window):
 
     def populate_features(self):
         size_info = ""
-        if mixin_features.windows:
+        if features.windows:
             if self.client.server_actual_desktop_size:
                 w,h = self.client.server_actual_desktop_size
                 size_info = f"{w}x{h}"
@@ -786,7 +786,7 @@ class SessionInfo(Gtk.Window):
         self.server_randr_label.set_text("%s" % size_info)
         if self.show_client:
             root_w, root_h = self.client.get_root_size()
-            if mixin_features.windows and (self.client.xscale!=1 or self.client.yscale!=1):
+            if features.windows and (self.client.xscale!=1 or self.client.yscale!=1):
                 sw, sh = self.client.cp(root_w, root_h)
                 display_info = "%ix%i (scaled from %ix%i)" % (sw, sh, root_w, root_h)
             else:
@@ -795,13 +795,13 @@ class SessionInfo(Gtk.Window):
             self.bool_icon(self.client_opengl_icon, self.client.client_supports_opengl)
             self.show_window_renderers()
 
-        if mixin_features.mmap:
+        if features.mmap:
             self.bool_icon(self.server_mmap_icon, self.client.mmap_enabled)
-        if mixin_features.clipboard:
+        if features.clipboard:
             self.bool_icon(self.server_clipboard_icon, self.client.server_clipboard)
-        if mixin_features.notifications:
+        if features.notifications:
             self.bool_icon(self.server_notifications_icon, self.client.server_notifications)
-        if mixin_features.windows:
+        if features.windows:
             self.bool_icon(self.server_bell_icon, self.client.server_bell)
             self.bool_icon(self.server_cursors_icon, self.client.server_cursors)
 
@@ -822,7 +822,7 @@ class SessionInfo(Gtk.Window):
             if not enabled:
                 return "n/a"
             return ", ".join(codecs or ())
-        if mixin_features.audio:
+        if features.audio:
             c = self.client
             if self.show_server:
                 self.server_speaker_codecs_label.set_text(codec_info(c.server_audio_send, c.server_audio_encoders))
@@ -840,10 +840,10 @@ class SessionInfo(Gtk.Window):
                 pass
             return csv(sorted(v))
         se = ()
-        if mixin_features.encoding:
+        if features.encoding:
             se = self.client.server_core_encodings
         self.server_encodings_label.set_text(encliststr(se))
-        if self.show_client and mixin_features.encoding:
+        if self.show_client and features.encoding:
             self.client_encodings_label.set_text(encliststr(self.client.get_core_encodings()))
         else:
             self.client_encodings_label.set_text("n/a")
@@ -895,7 +895,7 @@ class SessionInfo(Gtk.Window):
                 ):
                 l.set_text("n/a")
 
-        if mixin_features.audio:
+        if features.audio:
             def get_audio_info(supported, prop):
                 if not supported:
                     return {"state" : "disabled"}
@@ -1009,7 +1009,7 @@ class SessionInfo(Gtk.Window):
         if self.client.client_ping_latency:
             cpl = tuple(int(1000*x[1]) for x in tuple(self.client.client_ping_latency))
             setlabels(self.client_latency_labels, cpl)
-        if mixin_features.windows and self.client.windows_enabled:
+        if features.windows and self.client.windows_enabled:
             setall(self.batch_labels, self.values_from_info("batch_delay", "batch.delay"))
             setall(self.damage_labels, self.values_from_info("damage_out_latency", "damage.out_latency"))
             setall(self.quality_labels, self.all_values_from_info("quality", "encoding.quality"))
@@ -1135,15 +1135,15 @@ class SessionInfo(Gtk.Window):
             else:
                 labels += ["recv %sb/s" % unit(net_in_scale)]
                 datasets += [net_in_data]
-        if mixin_features.windows and SHOW_PIXEL_STATS and self.client.windows_enabled:
+        if features.windows and SHOW_PIXEL_STATS and self.client.windows_enabled:
             pixel_scale, in_pixels = values_to_scaled_values(tuple(self.pixel_in_data)[3:N_SAMPLES+4], min_scaled_value=100)
             datasets.append(in_pixels)
             labels.append("%s pixels/s" % unit(pixel_scale))
-        if mixin_features.audio and SHOW_SOUND_STATS and self.audio_in_bitcount:
+        if features.audio and SHOW_SOUND_STATS and self.audio_in_bitcount:
             audio_in_scale, audio_in_data = values_to_diff_scaled_values(tuple(self.audio_in_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
             datasets.append(audio_in_data)
             labels.append("Speaker %sb/s" % unit(audio_in_scale))
-        if mixin_features.audio and SHOW_SOUND_STATS and self.audio_out_bitcount:
+        if features.audio and SHOW_SOUND_STATS and self.audio_out_bitcount:
             audio_out_scale, audio_out_data = values_to_diff_scaled_values(tuple(self.audio_out_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
             datasets.append(audio_out_data)
             labels.append("Mic %sb/s" % unit(audio_out_scale))
@@ -1190,7 +1190,7 @@ class SessionInfo(Gtk.Window):
                                           start_x_offset=start_x_offset)
         self.set_graph_surface(self.latency_graph, surface)
 
-        if mixin_features.audio and SHOW_SOUND_STATS and self.client.audio_sink:
+        if features.audio and SHOW_SOUND_STATS and self.client.audio_sink:
             #audio queue graph:
             queue_values, queue_labels = norm_lists(
                 (

@@ -87,7 +87,7 @@ def add_process(*args, **kwargs):
     return getChildReaper().add_process(*args, **kwargs)
 
 
-def main(script_file:str, cmdline) -> int:
+def main(script_file:str, cmdline) -> ExitValue:
     ml = envint("XPRA_MEM_USAGE_LOGGER")
     if ml>0:
         from xpra.util import start_mem_watcher
@@ -1756,20 +1756,20 @@ def make_client(error_cb:Callable, opts):
                         log.warn("Warning: missing %s module", mod)
                     return False
             return True
-        from xpra.client.gui import mixin_features
-        mixin_features.display          = opts.windows
-        mixin_features.windows          = opts.windows
-        mixin_features.audio            = b(opts.audio) and (bo(opts.speaker) or bo(opts.microphone)) and impcheck("audio")
-        mixin_features.webcam           = bo(opts.webcam) and impcheck("codecs")
-        mixin_features.clipboard        = b(opts.clipboard) and impcheck("clipboard")
-        mixin_features.notifications    = opts.notifications and impcheck("notifications")
-        mixin_features.dbus             = not (WIN32 or OSX) and impcheck("dbus")
-        mixin_features.mmap             = b(opts.mmap)
-        mixin_features.logging          = b(opts.remote_logging)
-        mixin_features.tray             = b(opts.tray)
-        mixin_features.network_state    = True
-        mixin_features.network_listener = envbool("XPRA_CLIENT_BIND_SOCKETS", True)
-        mixin_features.encoding         = opts.windows
+        from xpra.client.gui import features
+        features.display          = opts.windows
+        features.windows          = opts.windows
+        features.audio            = b(opts.audio) and (bo(opts.speaker) or bo(opts.microphone)) and impcheck("audio")
+        features.webcam           = bo(opts.webcam) and impcheck("codecs")
+        features.clipboard        = b(opts.clipboard) and impcheck("clipboard")
+        features.notifications    = opts.notifications and impcheck("notifications")
+        features.dbus             = not (WIN32 or OSX) and impcheck("dbus")
+        features.mmap             = b(opts.mmap)
+        features.logging          = b(opts.remote_logging)
+        features.tray             = b(opts.tray)
+        features.network_state    = True
+        features.network_listener = envbool("XPRA_CLIENT_BIND_SOCKETS", True)
+        features.encoding         = opts.windows
         from xpra.client.gtk3.client import XpraClient
         app = XpraClient()
         app.progress_process = progress_process
@@ -1924,7 +1924,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode:str, defaults
         sys.exit(1)
     return do_run_server(script_file, cmdline, error_cb, options, args, mode, str(display or ""), defaults)
 
-def start_server_via_proxy(script_file:str, cmdline, error_cb, options, args, mode:str) -> int | None:
+def start_server_via_proxy(script_file:str, cmdline, error_cb, options, args, mode:str) -> int | ExitCode | None:
     start_via_proxy = parse_bool("start-via-proxy", options.start_via_proxy)
     if start_via_proxy is False:
         return None

@@ -20,7 +20,7 @@ from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, MSG, POINT, RECT, HGDIO
 from ctypes.util import find_library
 from gi.repository import GLib
 
-from xpra.client.gui import mixin_features
+from xpra.client.gui import features
 from xpra.exit_codes import ExitCode
 from xpra.common import noop
 from xpra.platform.win32 import constants as win32con, setup_console_event_listener
@@ -1060,7 +1060,7 @@ class ClientExtras:
         self.keyboard_hook_id = None
         self.keyboard_poll_timer : int = 0
         self.keyboard_id : int = self.get_keyboard_layout_id()
-        if FORWARD_WINDOWS_KEY and mixin_features.windows:
+        if FORWARD_WINDOWS_KEY and features.windows:
             from xpra.make_thread import start_thread
             start_thread(self.init_keyboard_listener, "keyboard-listener", daemon=True)
 
@@ -1284,7 +1284,7 @@ class ClientExtras:
         log("WM_ACTIVATEAPP: %s/%s client=%s", wParam, lParam, c)
         if not c:
             return
-        if not mixin_features.windows:
+        if not features.windows:
             return
         if wParam==0:
             #our app has lost focus

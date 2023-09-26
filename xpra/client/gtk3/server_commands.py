@@ -108,8 +108,8 @@ class ServerCommandsWindow:
                         rstr = "%s" % returncode
                     #find the windows matching this pid
                     windows = ()
-                    from xpra.client.gui import mixin_features
-                    if mixin_features.windows:
+                    from xpra.client.gui import features
+                    if features.windows:
                         windows = tuple(w for w in self.client._id_to_window.values() if getattr(w, "_metadata", {}).get("pid")==pid)
                         log(f"windows matching pid={pid}: {windows}")
                     icon = label()
