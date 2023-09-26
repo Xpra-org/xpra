@@ -631,7 +631,7 @@ def imagebutton(title, icon=None, tooltip="", clicked_callback:Callable|None=Non
     if icon:
         if icon_size:
             icon = scaled_image(icon, icon_size)
-        button.set_image(icon)
+        ignorewarnings(button.set_image, icon)
     if tooltip:
         button.set_tooltip_text(tooltip)
     if min_size:
@@ -659,12 +659,12 @@ def menuitem(title, image=None, tooltip=None, cb=None) -> Gtk.ImageMenuItem:
     menu_item = Gtk.ImageMenuItem()
     menu_item.set_label(title)
     if image:
-        menu_item.set_image(image)
+        ignorewarnings(menu_item.set_image, image)
         #override gtk defaults: we *want* icons:
         settings = menu_item.get_settings()
         settings.set_property('gtk-menu-images', True)
         if hasattr(menu_item, "set_always_show_image"):
-            menu_item.set_always_show_image(True)
+            ignorewarnings(menu_item.set_always_show_image, True)
     if tooltip:
         menu_item.set_tooltip_text(tooltip)
     if cb:
@@ -702,10 +702,17 @@ def label(text:str="", tooltip:str="", font:str="") -> Gtk.Label:
 
 def setfont(widget, font=""):
     if font:
-        import warnings
+        def pangosetfont():
+            fontdesc = Pango.FontDescription(font)
+            widget.modify_font(fontdesc)
+        ignorewarnings(pangosetfont)
+
+def ignorewarnings(fn, *args) -> Any:
+    import warnings
+    try:
         warnings.filterwarnings("ignore", category=DeprecationWarning)
-        fontdesc = Pango.FontDescription(font)
-        widget.modify_font(fontdesc)
+        return fn(*args)
+    finally:
         warnings.filterwarnings("default")
 
 
