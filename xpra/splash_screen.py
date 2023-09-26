@@ -13,7 +13,7 @@ from xpra.util import envint, envbool
 from xpra.os_util import SIGNAMES, OSX, WIN32
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.common import SPLASH_EXIT_DELAY
-from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf, label
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf, label, ignorewarnings
 from xpra.gtk_common.gobject_compat import install_signal_handlers
 from xpra.gtk_common.css_overrides import inject_css_overrides
 from xpra.platform.gui import force_focus, set_window_progress
@@ -262,7 +262,7 @@ class SplashScreen(Gtk.Window):
 
     def fade_out(self) -> bool:
         self.opacity = max(0, self.opacity-1)
-        actual = int(self.get_opacity()*100)
+        actual = int(ignorewarnings(self.get_opacity)*100)
         if actual>self.opacity:
             self.set_opacity(self.opacity/100.0)
         if actual<=0:

@@ -24,6 +24,7 @@ from xpra.util import (
     )
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.gtk_util import (
+    ignorewarnings,
     ds_inited,
     get_pixbuf_from_data, get_default_root_window,
     set_visual,
@@ -1116,7 +1117,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             #Warning: window managers may ignore the icons we try to set
             #if the wm_class value is set and matches something somewhere undocumented
             #(if the default is used, you cannot override the window icon)
-            self.set_wmclass(wmclass_name, wmclass_class)
+            ignorewarnings(self.set_wmclass, wmclass_name, wmclass_class)
         elif HAS_X11_BINDINGS:
             xid = self.get_window().get_xid()
             with xlog:

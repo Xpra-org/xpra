@@ -1114,8 +1114,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def window_ungrab(self) -> None:
         grablog("window_ungrab()")
         etime = Gtk.get_current_event_time()
-        Gdk.pointer_ungrab(etime)
-        Gdk.keyboard_ungrab(etime)
+        def quiet_ungrab():
+            Gdk.pointer_ungrab(etime)
+            Gdk.keyboard_ungrab(etime)
+        ignorewarnings(quiet_ungrab)
         self._window_with_grab = 0
 
 
