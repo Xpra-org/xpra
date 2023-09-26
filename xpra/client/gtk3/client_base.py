@@ -31,6 +31,7 @@ from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS, InitExit
 from xpra.gtk_common.cursor_names import cursor_types
 from xpra.gtk_common.gtk_util import (
     get_gtk_version_info, scaled_image, get_default_cursor, color_parse, label,
+    ignorewarnings,
     get_icon_pixbuf,
     get_pixbuf_from_data,
     get_default_root_window, get_root_size,
@@ -151,6 +152,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def run(self) -> ExitValue:
         log(f"run() HAS_X11_BINDINGS={HAS_X11_BINDINGS}")
+        #call this once early:
+        ignorewarnings(self.get_mouse_position)
         if HAS_X11_BINDINGS:
             self.setup_frame_request_windows()
         UIXpraClient.run(self)

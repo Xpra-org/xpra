@@ -171,8 +171,8 @@ def get_root_size(default:tuple[int,int]=(1920, 1024)) -> tuple[int,int]:
         screen = Gdk.Screen.get_default()
         if screen is None:
             return default
-        w = screen.get_width()
-        h = screen.get_height()
+        w = ignorewarnings(screen.get_width)
+        h = ignorewarnings(screen.get_height)
     if w<=0 or h<=0 or w>32768 or h>32768:
         if first_time("Gtk root window dimensions"):
             log.warn(f"Warning: Gdk returned invalid root window dimensions: {w}x{h}")
@@ -313,8 +313,8 @@ def get_screen_sizes(xscale:float=1, yscale:float=1):
         if vwx(work_x) or vwx(work_x+work_width) or vwy(work_y) or vwy(work_y+work_height):
             screenlog(" discarding invalid workarea values: %s", workarea)
             work_x, work_y, work_width, work_height = swork(0, 0, sw, sh)
-    wmm = screen.get_width_mm()
-    hmm = screen.get_height_mm()
+    wmm = ignorewarnings(screen.get_width_mm)
+    hmm = ignorewarnings(screen.get_height_mm)
     xdpi = dpi(sw, wmm)
     ydpi = dpi(sh, hmm)
     if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:
@@ -338,7 +338,7 @@ def get_screen_sizes(xscale:float=1, yscale:float=1):
             wmm = round(sw*25.4/96)
             hmm = round(sh*25.4/96)
         log(" using %ix%i mm", wmm, hmm)
-    screen0 = (screen.make_display_name(), xs(sw), ys(sh),
+    screen0 = (ignorewarnings(screen.make_display_name), xs(sw), ys(sh),
                 wmm, hmm,
                 monitors,
                 work_x, work_y, work_width, work_height)
