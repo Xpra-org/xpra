@@ -29,7 +29,7 @@ from xpra.server.util import write_pidfile, rm_pidfile
 from xpra.scripts.config import parse_bool, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import may_log_packet, SOCKET_TYPES, MAX_PACKET_SIZE, DEFAULT_PORTS, SSL_UPGRADE, PacketType
 from xpra.net.socket_util import (
-    hosts, mdns_publish, peek_connection,
+    hosts, peek_connection,
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
     add_listen_socket, accept_connection, guess_packet_type,
     ssl_wrap_socket,
@@ -937,8 +937,11 @@ class ServerCore:
                     if rec not in recs:
                         recs.append(rec)
                 mdnslog("mdns_publish() recs[%s]=%s", st, recs)
+        if not mdns_recs:
+            return
         mdns_info = self.get_mdns_info()
         self.mdns_publishers = {}
+        from xpra.net.mdns.util import mdns_publish
         for mdns_mode, listen_on in mdns_recs.items():
             info = dict(mdns_info)
             info["mode"] = mdns_mode
