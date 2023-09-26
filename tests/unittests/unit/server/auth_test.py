@@ -303,7 +303,7 @@ class TestAuth(unittest.TestCase):
 
 
     def test_sqlite(self):
-        from xpra.server.auth.sqlite_auth import main as sqlite_main
+        from xpra.server.auth.sqlite import main as sqlite_main
         filename = temp_filename("sqlite")
         password = "hello"
         def t():

@@ -93,7 +93,7 @@ xpra proxy :100 --bind-tcp=0.0.0.0:14501,auth=sqlite:filename=./xpra-auth.sdb --
 ```
 and add user entries (ie: `foo` with password `bar`), pointing to the `TARGETHOST` sessions (ie: `192.168.1.200` is the `TARGETHOST`'s IP in this example):
 ```shell
-SQLITE_AUTH_PY=/usr/lib64/python3.9/site-packages/xpra/server/auth/sqlite_auth.py
+SQLITE_AUTH_PY=/usr/lib64/python3.9/site-packages/xpra/server/auth/sqlite.py
 python $SQLITE_AUTH_PY ./xpra-auth.sdb create
 python $SQLITE_AUTH_PY ./xpra-auth.sdb add foo bar nobody nobody tcp://192.168.1.200:10100/
 python $SQLITE_AUTH_PY ./xpra-auth.sdb add moo cow nobody nobody tcp://192.168.1.200:10101/ "" "compression=0"
