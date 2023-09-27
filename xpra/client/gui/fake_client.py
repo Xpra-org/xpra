@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.common import  noop
-from xpra.util import AdHocStruct
+from xpra.util.types import AdHocStruct
 from xpra.log import Logger
 
 log = Logger("client")

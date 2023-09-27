@@ -22,7 +22,7 @@ def add_audio_tagging_env(env_dict:dict=os.environ, icon_path:str="") -> None:
         http://pulseaudio.org/wiki/ApplicationProperties
         http://0pointer.de/blog/projects/tagging-audio.html
     """
-    from xpra.version_util import XPRA_VERSION
+    from xpra.util.version import XPRA_VERSION
     env_dict |= {
         "PULSE_PROP_application.name"      : "xpra",
         "PULSE_PROP_application.id"        : "xpra",
@@ -63,7 +63,7 @@ set_sink_mute           = _pulseaudio_util.set_sink_mute
 def main():
     from xpra.platform import program_context
     from xpra.log import enable_color
-    from xpra.util import print_nested_dict
+    from xpra.util.str_fn import print_nested_dict
     with program_context("Pulseaudio-Info"):
         enable_color()
         if "-v" in sys.argv or "--verbose" in sys.argv:

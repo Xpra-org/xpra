@@ -22,7 +22,7 @@ from xpra.codecs.spng.spng cimport (
     )
 from libc.stdint cimport uintptr_t, uint32_t, uint8_t
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
-from xpra.util import envint
+from xpra.util.env import envint
 
 MAX_SIZE = envint("XPRA_SPNG_MAX_SIZE", 8192*8192)
 

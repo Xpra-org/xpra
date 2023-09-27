@@ -9,7 +9,9 @@ from typing import Any
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import get_native_notifier_classes
 from xpra.net.common import PacketType
-from xpra.util import envbool, repr_ellipsized, make_instance, typedict
+from xpra.util.types import typedict, make_instance
+from xpra.util.str_fn import repr_ellipsized
+from xpra.util.env import envbool
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 

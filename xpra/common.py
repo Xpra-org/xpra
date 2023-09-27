@@ -3,10 +3,18 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import binascii
 import os
+from enum import Enum, IntEnum
 
-from xpra.util import envint, envbool, csv
+try:
+    #Python 3.11 and later:
+    from enum import StrEnum
+except ImportError:     # pragma: no cover
+    StrEnum = Enum      # type: ignore
 
+from xpra.util.str_fn import csv
+from xpra.util.env import envint, envbool
 
 RESOLUTION_ALIASES : dict[str,tuple[int,int]] = {
     "QVGA"  : (320, 240),
@@ -33,7 +41,70 @@ def get_default_video_max_size() -> tuple[int,int]:
 
 VIDEO_MAX_SIZE = get_default_video_max_size()
 
-from enum import IntEnum
+
+XPRA_APP_ID = 0
+XPRA_GUID1 = 0x67b3efa2
+XPRA_GUID2 = 0xe470
+XPRA_GUID3 = 0x4a5f
+XPRA_GUID4 = (0xb6, 0x53, 0x6f, 0x6f, 0x98, 0xfe, 0x60, 0x81)
+XPRA_GUID_STR = "67B3EFA2-E470-4A5F-B653-6F6F98FE6081"
+XPRA_GUID_BYTES = binascii.unhexlify(XPRA_GUID_STR.replace("-",""))
+XPRA_NOTIFICATIONS_OFFSET = 2**24
+
+
+#constants shared between client and server:
+#(do not modify the values, see also disconnect_is_an_error)
+#timeouts:
+class ConnectionMessage(StrEnum):
+    CLIENT_PING_TIMEOUT     = "client ping timeout"
+    LOGIN_TIMEOUT           = "login timeout"
+    CLIENT_EXIT_TIMEOUT     = "client exit timeout"
+    #errors:
+    PROTOCOL_ERROR          = "protocol error"
+    VERSION_ERROR           = "version error"
+    CONTROL_COMMAND_ERROR   = "control command error"
+    AUTHENTICATION_FAILED   = "authentication failed"
+    AUTHENTICATION_ERROR    = "authentication error"
+    PERMISSION_ERROR        = "permission error"
+    SERVER_ERROR            = "server error"
+    CONNECTION_ERROR        = "connection error"
+    SESSION_NOT_FOUND       = "session not found error"
+    #informational (not a problem):
+    DONE                    = "done"
+    SERVER_EXIT             = "server exit"
+    SERVER_UPGRADE          = "server upgrade"
+    SERVER_SHUTDOWN         = "server shutdown"
+    CLIENT_REQUEST          = "client request"
+    DETACH_REQUEST          = "detach request"
+    NEW_CLIENT              = "new client"
+    IDLE_TIMEOUT            = "idle timeout"
+    SESSION_BUSY            = "session busy"
+    #client telling the server:
+    CLIENT_EXIT             = "client exit"
+
+
+# convenience method based on the strings above:
+def disconnect_is_an_error(reason) -> bool:
+    return reason.find("error")>=0 or (reason.find("timeout") >= 0 and reason != ConnectionMessage.IDLE_TIMEOUT)
+
+
+class NotificationID(IntEnum):
+    BANDWIDTH   = XPRA_NOTIFICATIONS_OFFSET+1
+    IDLE        = XPRA_NOTIFICATIONS_OFFSET+2
+    WEBCAM      = XPRA_NOTIFICATIONS_OFFSET+3
+    AUDIO       = XPRA_NOTIFICATIONS_OFFSET+4
+    OPENGL      = XPRA_NOTIFICATIONS_OFFSET+5
+    SCALING     = XPRA_NOTIFICATIONS_OFFSET+6
+    NEW_USER    = XPRA_NOTIFICATIONS_OFFSET+7
+    CLIPBOARD   = XPRA_NOTIFICATIONS_OFFSET+8
+    FAILURE     = XPRA_NOTIFICATIONS_OFFSET+9
+    DPI         = XPRA_NOTIFICATIONS_OFFSET+10
+    DISCONNECT  = XPRA_NOTIFICATIONS_OFFSET+11
+    DISPLAY     = XPRA_NOTIFICATIONS_OFFSET+12
+    STARTUP     = XPRA_NOTIFICATIONS_OFFSET+13
+    FILETRANSFER    = XPRA_NOTIFICATIONS_OFFSET+14
+    SHADOWWAYLAND   = XPRA_NOTIFICATIONS_OFFSET+15
+
 
 class Gravity(IntEnum):
     #X11 constants we use for gravity:
@@ -53,6 +124,57 @@ def GravityStr(v):
         return Gravity(v)
     except ValueError:
         return str(v)
+
+
+#initiate-moveresize X11 constants
+class MoveResize(IntEnum):
+    SIZE_TOPLEFT      = 0
+    SIZE_TOP          = 1
+    SIZE_TOPRIGHT     = 2
+    SIZE_RIGHT        = 3
+    SIZE_BOTTOMRIGHT  = 4
+    SIZE_BOTTOM       = 5
+    SIZE_BOTTOMLEFT   = 6
+    SIZE_LEFT         = 7
+    MOVE              = 8
+    SIZE_KEYBOARD     = 9
+    MOVE_KEYBOARD     = 10
+    CANCEL            = 11
+
+
+MOVERESIZE_DIRECTION_STRING = {
+    MoveResize.SIZE_TOPLEFT      : "SIZE_TOPLEFT",
+    MoveResize.SIZE_TOP          : "SIZE_TOP",
+    MoveResize.SIZE_TOPRIGHT     : "SIZE_TOPRIGHT",
+    MoveResize.SIZE_RIGHT        : "SIZE_RIGHT",
+    MoveResize.SIZE_BOTTOMRIGHT  : "SIZE_BOTTOMRIGHT",
+    MoveResize.SIZE_BOTTOM       : "SIZE_BOTTOM",
+    MoveResize.SIZE_BOTTOMLEFT   : "SIZE_BOTTOMLEFT",
+    MoveResize.SIZE_LEFT         : "SIZE_LEFT",
+    MoveResize.MOVE              : "MOVE",
+    MoveResize.SIZE_KEYBOARD     : "SIZE_KEYBOARD",
+    MoveResize.MOVE_KEYBOARD     : "MOVE_KEYBOARD",
+    MoveResize.CANCEL            : "CANCEL",
+    }
+SOURCE_INDICATION_UNSET     = 0
+SOURCE_INDICATION_NORMAL    = 1
+SOURCE_INDICATION_PAGER     = 2
+SOURCE_INDICATION_STRING    = {
+                               SOURCE_INDICATION_UNSET      : "UNSET",
+                               SOURCE_INDICATION_NORMAL     : "NORMAL",
+                               SOURCE_INDICATION_PAGER      : "PAGER",
+                               }
+
+
+#magic value for "workspace" window property, means unset
+WORKSPACE_UNSET = 65535
+WORKSPACE_ALL = 0xffffffff
+WORKSPACE_NAMES = {
+                   WORKSPACE_UNSET  : "unset",
+                   WORKSPACE_ALL    : "all",
+                   }
+
+
 
 CLOBBER_UPGRADE : int = 0x1
 CLOBBER_USE_DISPLAY : int = 0x2
@@ -162,3 +284,32 @@ def adjust_monitor_refresh_rate(refresh_rate_str, mdef) -> dict[int,dict]:
                 mprops["refresh-rate"] = value
         adjusted[i] = mprops
     return adjusted
+
+
+# this default value is based on 0.15.x clients,
+# later clients should provide the `metadata.supported` capability instead
+DEFAULT_METADATA_SUPPORTED = (
+    "title", "icon-title", "pid", "iconic",
+    "size-hints", "class-instance", "client-machine",
+    "transient-for", "window-type",
+    "fullscreen", "maximized", "decorations", "skip-taskbar", "skip-pager",
+    "has-alpha", "override-redirect", "tray", "modal",
+    "role", "opacity", "xid", "group-leader",
+    "opaque-region",
+    "command", "workspace", "above", "below", "sticky",
+    "set-initial-position", "requested-position",
+    "content-type",
+    #4.4:
+    #"parent", "relative-position",
+    )
+
+
+def noerr(fn, *args):
+    try:
+        return fn(*args)
+    except Exception:
+        return None
+
+
+def roundup(n : int, m : int) -> int:
+    return (n + m - 1) & ~(m - 1)

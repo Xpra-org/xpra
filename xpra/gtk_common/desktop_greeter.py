@@ -19,7 +19,7 @@ from xpra.gtk_common.gtk_util import (
     get_icon_pixbuf,
     imagebutton,
     )
-from xpra.make_thread import start_thread
+from xpra.util.thread import start_thread
 from xpra.log import Logger
 
 log = Logger("client", "util")

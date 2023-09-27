@@ -8,13 +8,14 @@
 
 import struct
 
-from xpra.util import envbool, repr_ellipsized, csv
+from xpra.util.env import envbool
+from xpra.util.str_fn import repr_ellipsized, csv
 from xpra.log import Logger
 log = Logger("encoding", "scroll")
 
 from xpra.buffers.membuf cimport memalign, buffer_context #pylint: disable=syntax-error
 from xpra.buffers.xxh cimport xxh3
-from xpra.rectangle import rectangle
+from xpra.util.rectangle import rectangle
 
 
 cdef int DEBUG = envbool("XPRA_SCROLL_DEBUG", False)

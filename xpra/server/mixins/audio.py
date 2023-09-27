@@ -12,10 +12,12 @@ from threading import Event
 from typing import Any
 from collections.abc import Callable
 
-from xpra.os_util import pollwait, osexpand, OSX, POSIX
-from xpra.util import typedict, envbool, csv, first_time
+from xpra.os_util import pollwait, osexpand, OSX, POSIX, first_time
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv
+from xpra.util.env import envbool
 from xpra.net.common import PacketType
-from xpra.make_thread import start_thread
+from xpra.util.thread import start_thread
 from xpra.platform.info import get_username
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import audio_option

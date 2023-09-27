@@ -14,7 +14,8 @@ from xpra.buffers.membuf cimport buffer_context
 
 from xpra.net.compression import Compressed
 from xpra.codecs.debug import may_save_image
-from xpra.util import envbool, envint, typedict
+from xpra.util.env import envbool, envint
+from xpra.util.types import typedict
 from xpra.log import Logger
 log = Logger("encoder", "webp")
 

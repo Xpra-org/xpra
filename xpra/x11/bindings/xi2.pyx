@@ -715,7 +715,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
     def gdk_inject(self):
         self.get_xi_opcode()
         #log.info("XInput Devices:")
-        #from xpra.util import print_nested_dict
+        #from xpra.util.str_fn import print_nested_dict
         #print_nested_dict(self.get_devices(), print_fn=log.info)
         self.register_parser()
         self.register_gdk_events()

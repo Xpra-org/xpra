@@ -9,7 +9,7 @@ import unittest
 import binascii
 from contextlib import nullcontext
 
-from xpra.util import typedict
+from xpra.util.types import typedict
 from xpra.os_util import hexstr
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.constants import get_subsampling_divs, get_plane_name

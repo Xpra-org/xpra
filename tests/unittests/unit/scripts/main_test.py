@@ -13,13 +13,12 @@ import unittest
 from subprocess import Popen, DEVNULL, PIPE
 
 from xpra.os_util import OSEnvContext, pollwait, getuid, POSIX, OSX
-from xpra.util import AdHocStruct
+from xpra.util.types import AdHocStruct
 from xpra.platform.paths import get_xpra_command
-from xpra.common import noop
+from xpra.common import noop, noerr
 from xpra.scripts.config import InitException
 from xpra.scripts.main import (
-    nox, noerr,
-    use_systemd_run, systemd_run_command, systemd_run_wrap,
+    nox, use_systemd_run, systemd_run_command, systemd_run_wrap,
     isdisplaytype,
     check_display,
     get_host_target_string,

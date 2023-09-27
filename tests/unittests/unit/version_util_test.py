@@ -8,7 +8,7 @@ import unittest
 
 from xpra.os_util import POSIX
 from xpra.common import FULL_INFO
-from xpra.version_util import version_compat_check, get_host_info, get_version_info, get_platform_info
+from xpra.util.version import version_compat_check, get_host_info, get_version_info, get_platform_info
 
 
 class TestVersionUtilModule(unittest.TestCase):

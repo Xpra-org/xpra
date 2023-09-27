@@ -241,7 +241,7 @@ def decompress_with_device(rgb_format, img_data, options=None):
 
 
 def selftest(full=False):
-    from xpra.util import envbool
+    from xpra.util.env import envbool
     from xpra.codecs.nvidia.nv_util import has_nvidia_hardware, get_nvidia_module_version
     mod_ver = get_nvidia_module_version()
     if envbool("XPRA_NVJPEG_MODULE_CHECK", True):

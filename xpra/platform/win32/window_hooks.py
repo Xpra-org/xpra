@@ -11,7 +11,7 @@ from ctypes import (
     )
 from ctypes.wintypes import POINT
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.log import Logger
 from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 from xpra.platform.win32 import constants as win32con

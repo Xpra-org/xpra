@@ -8,7 +8,7 @@ import os
 from typing import Any
 from gi.repository import GObject, Gdk  # @UnresolvedImport
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.gtk_common.error import xsync, xswallow, xlog
 from xpra.x11.gtk_x11.prop import prop_set, prop_get, prop_del, raw_prop_set, prop_encode

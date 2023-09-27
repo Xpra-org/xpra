@@ -12,12 +12,15 @@ from collections import deque
 from gi.repository import GLib, Gtk, Gdk  # @UnresolvedImport
 from collections.abc import Callable
 
-from xpra.version_util import XPRA_VERSION
+from xpra.util.version import XPRA_VERSION
 from xpra.os_util import bytestostr, strtobytes, get_linux_distribution
-from xpra.util import prettify_plug_name, typedict, envint, csv
+from xpra.util.types import typedict
+from xpra.util.screen import prettify_plug_name
+from xpra.util.str_fn import csv
+from xpra.util.env import envint
 from xpra.common import noop
 from xpra.gtk_common.graph import make_graph_imagesurface
-from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
+from xpra.util.stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
 from xpra.client.gui import features
 from xpra.client.base.gobject_client import InfoTimerClient
 from xpra.gtk_common.gtk_util import (
@@ -210,7 +213,7 @@ class SessionInfo(Gtk.Window):
             from xpra.build_info import BUILD_DATE as cl_date, BUILD_TIME as cl_time
         except ImportError:
             cl_date = cl_time = ""
-        from xpra.version_util import revision_str, make_revision_str
+        from xpra.util.version import revision_str, make_revision_str
         csrow("Revision", revision_str(),
               make_revision_str(
                   cattr("_remote_revision"),
@@ -1233,7 +1236,7 @@ class SessionInfo(Gtk.Window):
                 def save_file():
                     with open(filename, "wb") as f:
                         f.write(b.getvalue())
-                from xpra.make_thread import start_thread
+                from xpra.util.thread import start_thread
                 start_thread(save_file, "save-graph")
         elif response in (Gtk.ResponseType.CANCEL, Gtk.ResponseType.CLOSE, Gtk.ResponseType.DELETE_EVENT):
             log("closed/cancelled")

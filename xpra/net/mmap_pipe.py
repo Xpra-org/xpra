@@ -9,10 +9,11 @@ from ctypes import c_ubyte, c_uint32
 from typing import Any
 from collections.abc import ByteString
 
-from xpra.util import roundup, envbool
+from xpra.common import roundup
+from xpra.util.env import envbool
 from xpra.os_util import shellsub, get_group_id, WIN32, POSIX
 from xpra.scripts.config import FALSE_OPTIONS
-from xpra.simple_stats import std_unit
+from xpra.util.stats import std_unit
 from xpra.log import Logger
 
 log = Logger("mmap")

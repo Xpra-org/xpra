@@ -7,7 +7,7 @@ import warnings
 from collections import deque
 import gi
 
-from xpra.util import csv
+from xpra.util.str_fn import csv
 from xpra.os_util import bytestostr
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus

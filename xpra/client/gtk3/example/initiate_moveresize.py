@@ -9,7 +9,7 @@ import gi
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 from gi.repository import Gtk, GLib  # @UnresolvedImport
 
-from xpra.util import MoveResize, MOVERESIZE_DIRECTION_STRING
+from xpra.common import MoveResize, MOVERESIZE_DIRECTION_STRING
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 from xpra.platform import program_context
 

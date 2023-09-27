@@ -8,7 +8,9 @@ import os
 #ensure that we use gtk as display source:
 from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
-from xpra.util import std, csv, envbool, typedict
+from xpra.util.types import typedict
+from xpra.util.str_fn import std, csv
+from xpra.util.env import envbool
 from xpra.os_util import bytestostr
 from xpra.gtk_common.error import xsync, xlog
 from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport

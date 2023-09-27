@@ -12,10 +12,10 @@ from multiprocessing import Queue as MQueue, freeze_support #@UnresolvedImport
 from gi.repository import GLib  # @UnresolvedImport
 from typing import Any
 
-from xpra.util import (
-    ConnectionMessage,
-    repr_ellipsized, print_nested_dict, csv, envfloat, envbool, envint, typedict,
-    )
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv, repr_ellipsized, print_nested_dict
+from xpra.util.env import envint, envbool, envfloat
+from xpra.common import ConnectionMessage
 from xpra.os_util import (
     get_username_for_uid, get_groups, get_home_for_uid, bytestostr,
     getuid, getgid, WIN32, POSIX, OSX,
@@ -25,11 +25,11 @@ from xpra.net.common import PacketType
 from xpra.net.socket_util import SOCKET_DIR_MODE, SOCKET_DIR_GROUP
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
-from xpra.child_reaper import getChildReaper
+from xpra.util.child_reaper import getChildReaper
 from xpra.scripts.parsing import parse_bool, MODE_ALIAS
 from xpra.scripts.config import make_defaults_struct, PROXY_START_OVERRIDABLE_OPTIONS, OPTION_TYPES
 from xpra.scripts.main import parse_display_name, connect_to, start_server_subprocess
-from xpra.make_thread import start_thread
+from xpra.util.thread import start_thread
 from xpra.log import Logger
 
 log = Logger("proxy")
@@ -111,7 +111,7 @@ class ProxyServer(ServerCore):
         super().init(opts)
         #ensure we cache the platform info before intercepting SIGCHLD
         #as this will cause a fork and SIGCHLD to be emitted:
-        from xpra.version_util import get_platform_info
+        from xpra.util.version import get_platform_info
         get_platform_info()
         self.child_reaper = getChildReaper()
         self.create_system_dir(opts.system_proxy_socket)
@@ -259,7 +259,7 @@ class ProxyServer(ServerCore):
         if live:
             self.stop_all_proxies(True)
         log("cleanup() frames remaining:")
-        from xpra.util import dump_all_frames  # pylint: disable=import-outside-toplevel
+        from xpra.util.pysystem import dump_all_frames
         dump_all_frames(log)
 
 

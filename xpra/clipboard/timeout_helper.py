@@ -8,7 +8,8 @@ from typing import Any
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.clipboard.core import ClipboardProtocolHelperCore, ClipboardProxyCore
-from xpra.util import repr_ellipsized, ellipsizer, envint
+from xpra.util.str_fn import ellipsizer, repr_ellipsized
+from xpra.util.env import envint
 from xpra.log import Logger
 from xpra.platform.features import CLIPBOARD_GREEDY
 

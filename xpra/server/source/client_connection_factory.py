@@ -5,8 +5,9 @@
 
 from typing import Any
 
-from xpra.server import server_features
-from xpra.util import merge_dicts, typedict, print_nested_dict
+from xpra.server import features
+from xpra.util.str_fn import print_nested_dict
+from xpra.util.types import typedict, merge_dicts
 from xpra.common import LOG_HELLO
 from xpra.log import Logger
 
@@ -17,47 +18,47 @@ def get_enabled_mixins() -> tuple[type,...]:
     # pylint: disable=import-outside-toplevel
     from xpra.server.source.clientinfo import ClientInfoMixin
     mixins : list[type] = [ClientInfoMixin]
-    if server_features.notifications:
+    if features.notifications:
         from xpra.server.source.notification import NotificationMixin
         mixins.append(NotificationMixin)
-    if server_features.clipboard:
+    if features.clipboard:
         from xpra.server.source.clipboard import ClipboardConnection
         mixins.append(ClipboardConnection)
-    if server_features.audio:
+    if features.audio:
         from xpra.server.source.audio import AudioMixin
         mixins.append(AudioMixin)
-    if server_features.webcam:
+    if features.webcam:
         from xpra.server.source.webcam import WebcamMixin
         mixins.append(WebcamMixin)
-    if server_features.fileprint:
+    if features.fileprint:
         from xpra.server.source.fileprint import FilePrintMixin
         mixins.append(FilePrintMixin)
-    if server_features.mmap:
+    if features.mmap:
         from xpra.server.source.mmap import MMAP_Connection
         mixins.append(MMAP_Connection)
-    if server_features.input_devices:
+    if features.input_devices:
         from xpra.server.source.input import InputMixin
         mixins.append(InputMixin)
-    if server_features.dbus:
+    if features.dbus:
         from xpra.server.source.dbus import DBUS_Mixin
         mixins.append(DBUS_Mixin)
-    if server_features.network_state:
+    if features.network_state:
         from xpra.server.source.networkstate import NetworkStateMixin
         mixins.append(NetworkStateMixin)
-    if server_features.shell:
+    if features.shell:
         from xpra.server.source.shell import ShellMixin
         mixins.append(ShellMixin)
-    if server_features.display:
+    if features.display:
         from xpra.server.source.display import ClientDisplayMixin
         mixins.append(ClientDisplayMixin)
-    if server_features.windows:
+    if features.windows:
         from xpra.server.source.windows import WindowsMixin
         mixins.append(WindowsMixin)
         #must be after windows mixin so it can assume "self.send_windows" is set
-        if server_features.encoding:
+        if features.encoding:
             from xpra.server.source.encodings import EncodingsMixin
             mixins.append(EncodingsMixin)
-        if server_features.audio and server_features.av_sync:
+        if features.audio and features.av_sync:
             from xpra.server.source.avsync import AVSyncMixin
             mixins.append(AVSyncMixin)
     from xpra.server.source.idle_mixin import IdleMixin
@@ -175,7 +176,7 @@ def get_client_connection_class(caps):
             for i,ci in enumerate(cinfo):
                 log.info("%s%s", ["", " "][int(i>0)], ci)
             if self.client_proxy:
-                from xpra.version_util import version_compat_check
+                from xpra.util.version import version_compat_check
                 msg = version_compat_check(self.proxy_version)
                 if msg:
                     proxylog = Logger("proxy")

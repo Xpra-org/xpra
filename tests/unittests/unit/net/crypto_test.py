@@ -8,7 +8,7 @@
 import unittest
 from time import monotonic
 from xpra.os_util import hexstr
-from xpra.util import envbool
+from xpra.util.env import envbool
 
 from xpra.net.crypto import (
     DEFAULT_SALT, DEFAULT_ITERATIONS, DEFAULT_KEYSIZE, DEFAULT_KEY_HASH, DEFAULT_IV,

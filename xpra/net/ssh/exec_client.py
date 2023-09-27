@@ -13,14 +13,14 @@ from xpra.scripts.main import (
     shellquote, host_target_string,
     )
 from xpra.net.bytestreams import ConnectionClosedException
-from xpra.make_thread import start_thread
+from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode
 from xpra.os_util import (
     bytestostr,
     restore_script_env, get_saved_env,
     WIN32, OSX, POSIX,
     )
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.log import Logger, is_debug_enabled
 
 #pylint: disable=import-outside-toplevel

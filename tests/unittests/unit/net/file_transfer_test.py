@@ -7,7 +7,7 @@
 import os
 import unittest
 
-from xpra.util import typedict
+from xpra.util.types import typedict
 from xpra.net.file_transfer import (
     basename, safe_open_download_file,
     FileTransferAttributes, FileTransferHandler,

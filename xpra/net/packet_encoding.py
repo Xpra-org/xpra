@@ -17,7 +17,7 @@ from xpra.net.protocol.header import (
     pack_header,
     )
 from xpra.os_util import strtobytes
-from xpra.util import envbool
+from xpra.util.env import envbool
 
 #all the encoders we know about:
 ALL_ENCODERS : tuple[str, ...] = ("rencodeplus", "none")
@@ -136,7 +136,7 @@ def decode(data, protocol_flags:int):
 
 
 def main(): # pragma: no cover
-    from xpra.util import print_nested_dict
+    from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context
     with program_context("Packet Encoding", "Packet Encoding Info"):
         init_all()

@@ -6,8 +6,8 @@
 
 import unittest
 
-from xpra.util import AdHocStruct, typedict
-from xpra.make_thread import start_thread
+from xpra.util.types import typedict, AdHocStruct
+from xpra.util.thread import start_thread
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
 

@@ -8,10 +8,12 @@ from queue import SimpleQueue, Empty
 from typing import Any
 from collections.abc import Callable
 
-from xpra.util import typedict, envint, parse_simple_dict
+from xpra.util.parsing import parse_simple_dict
+from xpra.util.types import typedict
+from xpra.util.env import envint
 from xpra.os_util import OSX
-from xpra.gst_common import import_gst, GST_FLOW_OK
-from xpra.gst_pipeline import Pipeline
+from xpra.gstreamer.gst_common import import_gst, GST_FLOW_OK
+from xpra.gstreamer.gst_pipeline import Pipeline
 from xpra.log import Logger
 
 Gst = import_gst()

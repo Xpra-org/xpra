@@ -12,7 +12,8 @@ from gi.repository import GLib
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.platform.features import CLIPBOARDS
 from xpra.net.common import PacketType
-from xpra.util import envint, typedict
+from xpra.util.types import typedict
+from xpra.util.env import envint
 from xpra.log import Logger
 
 log = Logger("clipboard")

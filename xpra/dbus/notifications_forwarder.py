@@ -9,7 +9,8 @@ from typing import Any
 
 from xpra.notifications.common import parse_image_data, parse_image_path
 from xpra.dbus.helper import dbus_to_native
-from xpra.util import envbool, csv
+from xpra.util.str_fn import csv
+from xpra.util.env import envbool
 from xpra.log import Logger
 
 log = Logger("dbus", "notify")

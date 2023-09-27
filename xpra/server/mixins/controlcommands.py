@@ -7,10 +7,13 @@
 import os.path
 from time import monotonic
 
-from xpra.util import parse_scaling_value, csv, from0to100, typedict, ConnectionMessage
+from xpra.util.parsing import parse_scaling_value, from0to100
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv
+from xpra.common import ConnectionMessage
 from xpra.os_util import load_binary_file
 from xpra.net.common import PacketType
-from xpra.simple_stats import std_unit
+from xpra.util.stats import std_unit
 from xpra.scripts.config import parse_bool, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.server.mixins.stub_server_mixin import StubServerMixin

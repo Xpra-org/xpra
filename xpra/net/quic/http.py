@@ -18,7 +18,7 @@ from xpra.net.http.handler import (
     DIRECTORY_LISTING,
     translate_path, load_path, may_reload_headers,
     )
-from xpra.util import ellipsizer
+from xpra.util.str_fn import ellipsizer
 from xpra.os_util import strtobytes
 from xpra.log import Logger
 log = Logger("quic")

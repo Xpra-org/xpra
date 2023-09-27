@@ -652,7 +652,7 @@ def toggle_modules(enabled, *module_names):
 
 #always included:
 if modules_ENABLED:
-    add_modules("xpra", "xpra.platform", "xpra.net", "xpra.scripts.main")
+    add_modules("xpra", "xpra.platform", "xpra.net", "xpra.scripts.main", "xpra.util")
 
 
 #*******************************************************************************
@@ -1195,7 +1195,7 @@ def clean():
                    "xpra/gtk_common/gdk_atoms.c",
                    "xpra/client/gtk3/cairo_workaround.c",
                    "xpra/server/cystats.c",
-                   "xpra/rectangle.c",
+                   "xpra/util/rectangle.c",
                    "xpra/server/window/motion.c",
                    "xpra/server/pam.c",
                    "fs/etc/xpra/xpra.conf",
@@ -2138,7 +2138,7 @@ toggle_packages(clipboard_ENABLED or gtk3_ENABLED, "xpra.gtk_common.gtk3")
 tace(gtk3_ENABLED, "xpra.gtk_common.gtk3.gdk_bindings", "gtk+-3.0,pygobject-3.0")
 
 tace(client_ENABLED or server_ENABLED, "xpra.buffers.cyxor", optimize=3)
-tace(client_ENABLED or server_ENABLED or shadow_ENABLED, "xpra.rectangle", optimize=3)
+tace(client_ENABLED or server_ENABLED or shadow_ENABLED, "xpra.util.rectangle", optimize=3)
 tace(server_ENABLED or shadow_ENABLED, "xpra.server.cystats", optimize=3)
 tace(server_ENABLED or shadow_ENABLED, "xpra.server.window.motion", optimize=3)
 if pam_ENABLED:
@@ -2242,7 +2242,7 @@ tace(csc_cython_ENABLED, "xpra.codecs.csc_cython.colorspace_converter", optimize
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 tace(vpx_ENABLED, "xpra.codecs.vpx.encoder", "vpx")
 tace(vpx_ENABLED, "xpra.codecs.vpx.decoder", "vpx")
-toggle_packages(gstreamer_ENABLED, "xpra.codecs.gstreamer")
+toggle_packages(gstreamer_ENABLED, "xpra.codecs.gstreamer", "xpra.gstreamer")
 
 toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
 tace(v4l2_ENABLED, "xpra.codecs.v4l2.pusher")
@@ -2332,6 +2332,7 @@ if cythonize_more_ENABLED:
         ace("xpra.scripts.parsing")
         ace("xpra.scripts.pinentry_wrapper")
         ace("xpra.scripts.server")
+        ace("xpra.scripts.splash")
         ace("xpra.scripts.show_webcam")
         ace("xpra.scripts.version")
         if WIN32:
@@ -2364,6 +2365,7 @@ if cythonize_more_ENABLED:
             ace("xpra.server.proxy.instance_process")
             ace("xpra.server.proxy.instance_thread")
             ace("xpra.server.proxy.proxy_dbus_server")
+            ace("xpra.server.proxy.queue_scheduler")
             ace("xpra.server.proxy.server")
         if rfb_ENABLED:
             ace("xpra.server.rfb.protocol")
@@ -2413,7 +2415,7 @@ if cythonize_more_ENABLED:
         ace("xpra.server.menu_provider")
         ace("xpra.server.server_base")
         ace("xpra.server.server_core")
-        ace("xpra.server.server_features")
+        ace("xpra.server.features")
         ace("xpra.server.server_uuid")
         ace("xpra.server.ssh")
         ace("xpra.server.util")
@@ -2456,21 +2458,24 @@ if cythonize_more_ENABLED:
         ace("xpra.x11.xroot_props")
         ace("xpra.x11.xsettings")
         ace("xpra.x11.xsettings_prop")
-    ace("xpra.child_reaper")
-    ace("xpra.colorstreamhandler")
+    ace("xpra.util.child_reaper")
+    ace("xpra.util.colorstreamhandler")
+    ace("xpra.util.env")
+    ace("xpra.util.parsing")
+    ace("xpra.util.pysystem")
+    ace("xpra.util.screen")
+    ace("xpra.util.stats")
+    ace("xpra.util.str_fn")
+    ace("xpra.util.thread")
+    ace("xpra.util.types")
+    ace("xpra.util.version")
     ace("xpra.common")
     ace("xpra.exit_codes")
-    ace("xpra.gst_common")
-    ace("xpra.gst_pipeline")
     ace("xpra.log")
-    ace("xpra.make_thread")
     ace("xpra.os_util")
-    ace("xpra.queue_scheduler")
-    ace("xpra.scaling_parser")
-    ace("xpra.simple_stats")
-    ace("xpra.splash_screen")
-    ace("xpra.util")
-    ace("xpra.version_util")
+    if gstreamer_ENABLED:
+        ace("xpra.gstreamer.gst_common")
+        ace("xpra.gstreamer.gst_pipeline")
 
 
 if ext_modules:

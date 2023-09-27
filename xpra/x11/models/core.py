@@ -11,8 +11,8 @@ from typing import Any
 from collections.abc import Callable
 from gi.repository import GObject   # @UnresolvedImport
 
-from xpra.util import envbool, first_time
-from xpra.os_util import bytestostr, get_proc_cmdline
+from xpra.util.env import envbool
+from xpra.os_util import bytestostr, get_proc_cmdline, first_time
 from xpra.x11.common import Unmanageable
 from xpra.gtk_common.gobject_util import one_arg_signal, two_arg_signal
 from xpra.gtk_common.error import XError, xsync, xswallow

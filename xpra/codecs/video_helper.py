@@ -12,7 +12,7 @@ from collections.abc import Callable, Iterable
 
 from xpra.scripts.config import csvstrl
 from xpra.codecs.loader import load_codec, get_codec, get_codec_error
-from xpra.util import csv
+from xpra.util.str_fn import csv, print_nested_dict
 from xpra.log import Logger
 
 log = Logger("codec", "video")
@@ -462,7 +462,6 @@ def getVideoHelper():
 def main():
     # pylint: disable=import-outside-toplevel
     from xpra.codecs.loader import log as loader_log, load_codecs, show_codecs
-    from xpra.util import print_nested_dict
     from xpra.log import enable_color
     from xpra.platform import program_context
     with program_context("Video Helper"):

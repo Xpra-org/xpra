@@ -11,7 +11,9 @@ from typing import Any
 from xpra.x11.server.core import X11ServerCore
 from xpra.net.compression import Compressed
 from xpra.os_util import is_Wayland, get_loaded_kernel_modules
-from xpra.util import envbool, envint, merge_dicts, AdHocStruct, NotificationID
+from xpra.util.types import AdHocStruct, merge_dicts
+from xpra.util.env import envint, envbool
+from xpra.common import NotificationID
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture

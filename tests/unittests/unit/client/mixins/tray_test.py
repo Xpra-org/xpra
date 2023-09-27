@@ -7,7 +7,7 @@
 import unittest
 
 from xpra.common import noop
-from xpra.util import AdHocStruct
+from xpra.util.types import AdHocStruct
 from xpra.client.mixins.tray import TrayClient
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 

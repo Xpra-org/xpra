@@ -18,13 +18,15 @@ from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net.common import MAX_PACKET_SIZE, PacketType
 from xpra.common import (
     adjust_monitor_refresh_rate, get_refresh_rate_for_value,
-    FULL_INFO, SYNC_ICC,
-    )
-from xpra.scaling_parser import (
+    FULL_INFO, SYNC_ICC, NotificationID,
+)
+from xpra.util.parsing import (
     parse_scaling, scaleup_value, scaledown_value, fequ, r4cmp,
     MIN_SCALING, MAX_SCALING, SCALING_EMBARGO_TIME,
     )
-from xpra.util import envint, log_screen_sizes, typedict, NotificationID
+from xpra.util.types import typedict
+from xpra.util.screen import log_screen_sizes
+from xpra.util.env import envint
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 

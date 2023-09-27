@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from xpra.simple_stats import (
+from xpra.util.stats import (
 	values_to_diff_scaled_values, get_list_stats, get_weighted_list_stats,
 	to_std_unit, std_unit, std_unit_dec,
 	find_invpow,

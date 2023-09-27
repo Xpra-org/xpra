@@ -9,7 +9,8 @@ import traceback
 from time import monotonic
 from threading import Lock
 
-from xpra.util import csv, typedict, repr_ellipsized
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv, repr_ellipsized
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger, set_global_logging_handler
 from xpra.net.common import PacketType

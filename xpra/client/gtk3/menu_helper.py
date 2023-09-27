@@ -12,7 +12,8 @@ gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
 from gi.repository import Gtk, GdkPixbuf  # @UnresolvedImport
 
-from xpra.util import envbool, repr_ellipsized
+from xpra.util.str_fn import repr_ellipsized
+from xpra.util.env import envbool
 from xpra.os_util import OSX, bytestostr
 from xpra.codecs.icon_util import INKSCAPE_RE
 from xpra.gtk_common.gtk_util import (
@@ -492,14 +493,14 @@ class MenuHelper:
     def make_docsmenuitem(self) -> Gtk.ImageMenuItem:
         def show_docs(*_args):
             from xpra.scripts.main import run_docs
-            from xpra.make_thread import start_thread
+            from xpra.util.thread import start_thread
             start_thread(run_docs, "open documentation", True)
         return self.menuitem("Documentation", "documentation.png", None, show_docs)
 
     def make_html5menuitem(self) -> Gtk.ImageMenuItem:
         def show_html5(*_args):
             from xpra.scripts.main import run_html5
-            from xpra.make_thread import start_thread
+            from xpra.util.thread import start_thread
             url_options = {}
             try:
                 for k in ("port", "host", "username", "mode", "display"):

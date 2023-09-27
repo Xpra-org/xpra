@@ -5,7 +5,7 @@
 
 import os
 
-from xpra.util import csv
+from xpra.util.str_fn import csv
 from xpra.os_util import bytestostr, OSX
 from xpra.log import Logger
 

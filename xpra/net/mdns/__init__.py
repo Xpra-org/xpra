@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import sys
-from xpra.util import envbool
+from xpra.util.env import envbool
 
 XPRA_TCP_MDNS_TYPE = "_xpra._tcp."
 XPRA_UDP_MDNS_TYPE = "_xpra._udp."

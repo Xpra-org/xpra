@@ -38,7 +38,7 @@ def get_interface_info(_fd, iface):
                     return props
     except Exception as e:
         log("get_interface_info(%s)", iface, exc_info=True)
-        from xpra.util import first_time
+        from xpra.os_util import first_time
         if first_time("win32-network-query"):
             log.info("cannot query network interface:")
             log.info(" %s", e)
@@ -77,7 +77,7 @@ def main():
     from xpra.platform import program_context
     with program_context("Network-Speed", "Network Speed Query Tool"):
         from xpra.net.net_util import get_interfaces
-        from xpra.simple_stats import std_unit
+        from xpra.util.stats import std_unit
         interfaces = get_interfaces()
         for iface in interfaces:
             speed = get_interface_info(0, iface).get("speed", 0)

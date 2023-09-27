@@ -14,25 +14,25 @@ from xpra.client.base.client_base import XpraClientBase
 from xpra.client.gui.keyboard_helper import KeyboardHelper
 from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type, ClientExtras
-from xpra.common import FULL_INFO, noop
-from xpra.version_util import full_version_str
+from xpra.common import FULL_INFO, noop, NotificationID, ConnectionMessage
+from xpra.util.version import full_version_str
 from xpra.net import compression, packet_encoding
 from xpra.net.common import PacketType
 from xpra.net.net_util import get_info as get_net_info
-from xpra.child_reaper import reaper_cleanup
+from xpra.util.child_reaper import reaper_cleanup
 from xpra.platform.info import get_sys_info
 from xpra.os_util import (
     platform_name, bytestostr,
     POSIX, WIN32, OSX, is_Wayland,
     get_frame_info, get_info_env, get_sysconfig_info,
     )
-from xpra.util import (
-    std, envbool, envint, typedict, repr_ellipsized, ellipsizer, log_screen_sizes, csv,
-    merge_dicts, NotificationID, ConnectionMessage,
-    )
+from xpra.util.types import typedict, merge_dicts
+from xpra.util.screen import log_screen_sizes
+from xpra.util.str_fn import std, csv, ellipsizer, repr_ellipsized
+from xpra.util.env import envint, envbool
 from xpra.scripts.config import parse_bool
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.version_util import get_platform_info
+from xpra.util.version import get_platform_info
 from xpra.client.gui import features
 from xpra.log import Logger, get_info as get_log_info
 

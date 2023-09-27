@@ -4,7 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.util import csv, parse_simple_dict
+from xpra.util.str_fn import csv
+from xpra.util.parsing import parse_simple_dict
 from xpra.os_util import getuid, getgid
 from xpra.server.auth.sys_auth_base import SysAuthenticator, SessionData, log
 

@@ -43,7 +43,7 @@ def init_env_common():
     init_hashlib()
 
 def init_hashlib():
-    from xpra.util import envbool
+    from xpra.util.env import envbool
     if envbool("XPRA_NOMD5", False):
         import hashlib
         try:

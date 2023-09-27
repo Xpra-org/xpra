@@ -6,7 +6,7 @@
 from random import randint
 from typing import Any
 
-from xpra.util import typedict
+from xpra.util.types import typedict
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 
 from xpra.log import Logger
@@ -109,7 +109,7 @@ class MMAP_Connection(StubSourceMixin):
                                      self.mmap_client_token_index,
                                      self.mmap_client_token_bytes)
         if self.mmap_size>0:
-            from xpra.simple_stats import std_unit
+            from xpra.util.stats import std_unit
             log.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
 
     def get_caps(self) -> dict[str,Any]:

@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.scaling_parser import r4cmp, fequ, scaleup_value, scaledown_value, parse_scaling, SCALING_OPTIONS
+from xpra.util.parsing import r4cmp, fequ, scaleup_value, scaledown_value, parse_scaling, SCALING_OPTIONS
 from xpra.scripts.config import TRUE_OPTIONS
 
 
@@ -25,6 +25,7 @@ class TestVersionUtilModule(unittest.TestCase):
 
     def test_scaleupdown(self):
         l = len(SCALING_OPTIONS)
+        assert l
         minv = min(SCALING_OPTIONS)
         maxv = max(SCALING_OPTIONS)
         for i, v in enumerate(SCALING_OPTIONS):

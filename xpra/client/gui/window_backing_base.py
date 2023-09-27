@@ -13,12 +13,15 @@ from typing import Any
 from collections.abc import Callable, Iterable
 from gi.repository import GLib  # @UnresolvedImport
 
+import xpra.util.types
 from xpra.net.mmap_pipe import mmap_read
 from xpra.net import compression
-from xpra.util import typedict, csv, envint, envbool, first_time
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv
+from xpra.util.env import envint, envbool
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, first_time
 from xpra.common import Gravity
 from xpra.log import Logger
 
@@ -685,7 +688,7 @@ class WindowBackingBase:
                     continue
                 options = {"speed" : speed}
                 try:
-                    csc = spec.make_instance()
+                    csc = xpra.util.types.make_instance()
                     csc.init_context(src_width, src_height, src_format,
                                dst_width, dst_height, dst_format, options)
                     return csc

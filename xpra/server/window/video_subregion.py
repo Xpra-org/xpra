@@ -9,8 +9,8 @@ from typing import Any
 from collections.abc import Callable
 from gi.repository import GLib  # @UnresolvedImport
 
-from xpra.util import envint, envbool
-from xpra.rectangle import rectangle, add_rectangle, remove_rectangle, merge_all    #@UnresolvedImport
+from xpra.util.env import envint, envbool
+from xpra.util.rectangle import rectangle, add_rectangle, remove_rectangle, merge_all    #@UnresolvedImport
 from xpra.log import Logger
 
 sslog = Logger("regiondetect")

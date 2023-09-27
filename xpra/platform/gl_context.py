@@ -21,7 +21,7 @@ platform_import(globals(), "gl_context", False, "GLContext", "check_support")
 def main():
     from xpra.platform import program_context
     from xpra.platform.gui import init as gui_init
-    from xpra.util import print_nested_dict
+    from xpra.util.str_fn import print_nested_dict
     from xpra.log import enable_color, Logger
     with program_context("OpenGL Native Context Check"):
         gui_init()

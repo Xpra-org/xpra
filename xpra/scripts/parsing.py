@@ -16,10 +16,12 @@ from urllib import parse
 from typing import Any
 from collections.abc import Callable
 
-from xpra.version_util import full_version_str
-from xpra.util import envbool, csv, parse_simple_dict, stderr_print
+from xpra.util.version import full_version_str
+from xpra.util.str_fn import csv
+from xpra.util.parsing import parse_simple_dict
+from xpra.util.env import envbool
 from xpra.net.common import DEFAULT_PORT, DEFAULT_PORTS
-from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid
+from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid, stderr_print
 from xpra.scripts.config import (
     XpraConfig,
     OPTION_TYPES, TRUE_OPTIONS,

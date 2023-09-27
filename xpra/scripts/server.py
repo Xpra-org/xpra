@@ -32,7 +32,7 @@ from xpra.scripts.config import (
     parse_bool,
     fixup_options, make_defaults_struct, read_config, dict_to_validated_config,
     )
-from xpra.common import CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE, SSH_AGENT_DISPATCH
+from xpra.common import CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE, SSH_AGENT_DISPATCH, ConnectionMessage, noerr
 from xpra.exit_codes import ExitCode
 from xpra.os_util import (
     SIGNAMES, POSIX, WIN32, OSX,
@@ -41,12 +41,12 @@ from xpra.os_util import (
     get_saved_env, get_saved_env_var,
     get_username_for_uid, get_home_for_uid, get_shell_for_uid, setuidgid,
     getuid, get_groups, get_group_id,
-    get_hex_uuid, get_util_logger, osexpand,
+    get_hex_uuid, osexpand,
     load_binary_file, is_writable,
     )
-from xpra.util import envbool, unsetenv, noerr, ConnectionMessage
+from xpra.util.env import unsetenv, envbool
 from xpra.common import GROUP
-from xpra.child_reaper import getChildReaper
+from xpra.util.child_reaper import getChildReaper
 from xpra.platform.dotxpra import DotXpra
 
 
@@ -55,6 +55,11 @@ CLEAN_SESSION_FILES = envbool("XPRA_CLEAN_SESSION_FILES", True)
 IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
                                      "ibus-daemon --xim --verbose --replace --panel=disable --desktop=xpra --daemonize")
 SHARED_XAUTHORITY = envbool("XPRA_SHARED_XAUTHORITY", True)
+
+
+def get_logger():
+    from xpra.log import Logger
+    return Logger("util")
 
 
 def deadly_signal(signum):
@@ -107,7 +112,7 @@ def print_DE_warnings() -> None:
     de = os.environ.get("XDG_SESSION_DESKTOP") or os.environ.get("SESSION_DESKTOP")
     if not de:
         return
-    log = get_util_logger()
+    log = get_logger()
     log.warn(f"Warning: xpra start from an existing {de!r} desktop session")
     log.warn(" without using dbus-launch,")
     log.warn(" notifications forwarding may not work")
@@ -242,7 +247,7 @@ def show_encoding_help(opts) -> int:
     for x in get_all_loggers():
         if x.getEffectiveLevel()==logging.INFO:
             x.setLevel(logging.WARN)
-    from xpra.server import server_features as sf
+    from xpra.server import features as sf
     sf.audio = sf.av_sync = sf.clipboard = sf.commands = sf.control = sf.dbus = sf.fileprint = sf.input_devices = False
     sf.mmap = sf.logging = sf.network_state = sf.notifications = sf.rfb = sf.shell = sf.webcam = False
     from xpra.server.server_base import ServerBase
@@ -265,7 +270,7 @@ def set_server_features(opts) -> None:
     def b(v):
         return str(v).lower() not in FALSE_OPTIONS
     #turn off some server mixins:
-    from xpra.server import server_features
+    from xpra.server import features
     impwarned = []
     def impcheck(*modules):
         for mod in modules:
@@ -274,30 +279,30 @@ def set_server_features(opts) -> None:
             except ImportError:
                 if mod not in impwarned:
                     impwarned.append(mod)
-                    log = get_util_logger()
+                    log = get_logger()
                     log(f"impcheck{modules}", exc_info=True)
                     log.warn(f"Warning: missing {mod} module")
                     log.warn(f" for Python {sys.version}")
                 return False
         return True
-    server_features.control         = impcheck("server.control_command") and envbool("XPRA_CONTROL_CHANNEL", True)
-    server_features.notifications   = opts.notifications and impcheck("notifications")
-    server_features.webcam          = b(opts.webcam) and impcheck("codecs")
-    server_features.clipboard       = b(opts.clipboard) and impcheck("clipboard")
-    server_features.audio           = b(opts.audio) and impcheck("audio")
-    server_features.av_sync         = server_features.audio and b(opts.av_sync)
-    server_features.fileprint       = b(opts.printing) or b(opts.file_transfer)
-    server_features.mmap            = b(opts.mmap)
-    server_features.input_devices   = not opts.readonly and impcheck("keyboard")
-    server_features.commands        = envbool("XPRA_RUN_COMMANDS", True)
-    server_features.dbus            = impcheck("dbus", "server.dbus")
-    server_features.encoding        = impcheck("codecs")
-    server_features.logging         = b(opts.remote_logging)
-    #server_features.network_state   = ??
-    server_features.shell           = envbool("XPRA_SHELL", True)
-    server_features.display         = opts.windows
-    server_features.windows         = opts.windows and impcheck("codecs")
-    server_features.rfb             = b(opts.rfb_upgrade) and impcheck("server.rfb")
+    features.control         = impcheck("server.control_command") and envbool("XPRA_CONTROL_CHANNEL", True)
+    features.notifications   = opts.notifications and impcheck("notifications")
+    features.webcam          = b(opts.webcam) and impcheck("codecs")
+    features.clipboard       = b(opts.clipboard) and impcheck("clipboard")
+    features.audio           = b(opts.audio) and impcheck("audio")
+    features.av_sync         = features.audio and b(opts.av_sync)
+    features.fileprint       = b(opts.printing) or b(opts.file_transfer)
+    features.mmap            = b(opts.mmap)
+    features.input_devices   = not opts.readonly and impcheck("keyboard")
+    features.commands        = envbool("XPRA_RUN_COMMANDS", True)
+    features.dbus            = impcheck("dbus", "server.dbus")
+    features.encoding        = impcheck("codecs")
+    features.logging         = b(opts.remote_logging)
+    #features.network_state   = ??
+    features.shell           = envbool("XPRA_SHELL", True)
+    features.display         = opts.windows
+    features.windows         = opts.windows and impcheck("codecs")
+    features.rfb             = b(opts.rfb_upgrade) and impcheck("server.rfb")
 
 
 def make_monitor_server():
@@ -1077,7 +1082,7 @@ def _do_run_server(script_file:str, cmdline,
     if not (shadowing or starting_desktop or upgrading_desktop or upgrading_monitor):
         opts.rfb_upgrade = 0
         if opts.bind_rfb:
-            get_util_logger().warn(f"Warning: bind-rfb sockets cannot be used with {mode!r} mode")
+            get_logger().warn(f"Warning: bind-rfb sockets cannot be used with {mode!r} mode")
             opts.bind_rfb = []
 
     progress(30, "creating sockets")

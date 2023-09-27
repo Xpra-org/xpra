@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
-from xpra.util import typedict
+from xpra.util.types import typedict
 
 from gi.repository import GLib
 

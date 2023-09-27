@@ -20,6 +20,8 @@ from typing import Any
 from collections.abc import Callable
 from threading import Thread
 
+from xpra.common import noerr
+
 # only minimal imports go at the top
 # so that this file can be included everywhere
 # without too many side effects
@@ -142,6 +144,7 @@ def get_util_logger():
         from xpra.log import Logger
         util_logger = Logger("util")
     return util_logger
+
 
 def memoryview_to_bytes(v) -> bytes:
     if isinstance(v, bytes):
@@ -582,7 +585,8 @@ def no_idle(fn, *args, **kwargs):
 def register_SIGUSR_signals(idle_add=no_idle) -> None:
     if os.name!="posix":
         return
-    from xpra.util import dump_all_frames, dump_gc_frames
+    from xpra.util.pysystem import dump_gc_frames
+    from xpra.util.pysystem import dump_all_frames
     def sigusr1(*_args):
         log = get_util_logger().info
         log("SIGUSR1")
@@ -613,7 +617,7 @@ def livefds() -> set[int]:
 
 
 def use_tty() -> bool:
-    from xpra.util import envbool
+    from xpra.util.env import envbool
     if envbool("XPRA_NOTTY", False):
         return False
     from xpra.platform.gui import use_stdin
@@ -964,5 +968,27 @@ def is_writable(path : str, uid:int=getuid(), gid:int=getgid()) -> bool:
         return True
     if s.st_gid==gid and mode & stat.S_IWGRP:
         #gid has write access:
+        return True
+    return False
+
+
+def stderr_print(msg:str= "") -> bool:
+    stderr = sys.stderr
+    if stderr:
+        try:
+            noerr(stderr.write, msg + "\n")
+            noerr(stderr.flush)
+            return True
+        except (OSError, AttributeError):
+            pass
+    return False
+
+
+
+#give warning message just once per key then ignore:
+_once_only = set()
+def first_time(key:str) -> bool:
+    if key not in _once_only:
+        _once_only.add(key)
         return True
     return False

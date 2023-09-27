@@ -11,7 +11,8 @@ import dbus.types  # @UnresolvedImport
 from xpra.dbus.helper import dbus_to_native, native_to_dbus
 from xpra.dbus.common import init_session_bus
 from xpra.server.dbus.server_base import DBUS_Server_Base, INTERFACE, BUS_NAME
-from xpra.util import parse_scaling_value, from0to100, ConnectionMessage
+from xpra.util.parsing import parse_scaling_value, from0to100
+from xpra.common import ConnectionMessage
 from xpra.log import (
     Logger,
     add_debug_category, remove_debug_category,

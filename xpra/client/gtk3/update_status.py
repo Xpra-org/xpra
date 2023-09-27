@@ -81,11 +81,11 @@ class UpdateStatusWindow:
             return
         self.newer_version = None
         GLib.timeout_add(1000, self.update_label)
-        from xpra.make_thread import start_thread
+        from xpra.util.thread import start_thread
         start_thread(self.do_check, "version check", daemon=True)
 
     def do_check(self):
-        from xpra.version_util import version_update_check
+        from xpra.util.version import version_update_check
         try:
             self.newer_version = version_update_check()
         finally:

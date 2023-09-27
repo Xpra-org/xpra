@@ -33,7 +33,7 @@ import gi
 gi.require_version("Gdk", "3.0")  # @UndefinedVariable
 from gi.repository import Gdk  # @UnresolvedImport
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.os_util import is_main_thread
 from xpra.log import Logger
 

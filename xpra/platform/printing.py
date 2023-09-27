@@ -10,7 +10,8 @@ from typing import Any
 
 #default implementation uses pycups
 from xpra.platform import platform_import
-from xpra.util import envbool, print_nested_dict
+from xpra.util.str_fn import print_nested_dict, pver
+from xpra.util.env import envbool
 from xpra.log import Logger
 
 log = Logger("printing")
@@ -104,7 +105,7 @@ def main(argv) -> int:
         except ValueError:
             pass
 
-    from xpra.util import nonl, pver
+    from xpra.util.str_fn import nonl
     def dump_dict(d):
         pk = None
         try:
@@ -136,7 +137,7 @@ def main(argv) -> int:
                     print(f"        {a}")
     from xpra.platform import program_context
     from xpra.log import enable_color
-    from xpra.util import csv
+    from xpra.util.str_fn import csv
     with program_context("Printing", "Printing"):
         enable_color()
         try:

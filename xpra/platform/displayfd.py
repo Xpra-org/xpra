@@ -8,7 +8,7 @@ from time import monotonic
 
 from xpra.log import Logger
 from xpra.os_util import POSIX
-from xpra.util import envint
+from xpra.util.env import envint
 
 DISPLAY_FD_TIMEOUT = envint("XPRA_DISPLAY_FD_TIMEOUT", 20)
 

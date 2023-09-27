@@ -23,19 +23,19 @@ from collections.abc import Callable, Iterable
 
 from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra
-from xpra.util import (
-    csv, envbool, envint, nonl, pver,
-    noerr, sorted_nicely, typedict, stderr_print,
-    )
+from xpra.common import noerr
+from xpra.util.types import typedict
+from xpra.util.str_fn import nonl, csv, print_nested_dict, pver, sorted_nicely
+from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import (
-    get_util_logger, getuid, getgid, get_username_for_uid,
+    getuid, getgid, get_username_for_uid,
     bytestostr, use_tty, osexpand, is_socket,
     OSEnvContext,
     set_proc_title, gi_import,
     is_systemd_pid1,
-    WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu,
-    )
+    WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu, stderr_print,
+)
 from xpra.scripts.parsing import (
     info, warn, error,
     get_usage,
@@ -83,14 +83,17 @@ def werr(*msg) -> None:
         stderr_print(str(x))
 
 def add_process(*args, **kwargs):
-    from xpra.child_reaper import getChildReaper
+    from xpra.util.child_reaper import getChildReaper
     return getChildReaper().add_process(*args, **kwargs)
+
+def get_logger():
+    return Logger("util")
 
 
 def main(script_file:str, cmdline) -> ExitValue:
     ml = envint("XPRA_MEM_USAGE_LOGGER")
     if ml>0:
-        from xpra.util import start_mem_watcher
+        from xpra.util.pysystem import start_mem_watcher
         start_mem_watcher(ml)
 
     if sys.flags.optimize>0:    # pragma: no cover
@@ -105,7 +108,7 @@ def main(script_file:str, cmdline) -> ExitValue:
         cmdline.append("gui")
 
     def debug_exc(msg:str="run_mode error"):
-        get_util_logger().debug(msg, exc_info=True)
+        get_logger().debug(msg, exc_info=True)
 
     try:
         defaults : XpraConfig = make_defaults_struct()
@@ -516,7 +519,7 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
                 if display_name:
                     state = dotxpra.get_display_state(display_name)
                     if state==DotXpra.LIVE:
-                        get_util_logger().info(f"existing live display found on {display_name}, attaching")
+                        get_logger().info(f"existing live display found on {display_name}, attaching")
                         #we're connecting locally, so no need for these:
                         options.csc_modules = ["none"]
                         options.video_decoders = ["none"]
@@ -663,7 +666,6 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
         if not data:
             print("no menu data available")
             return ExitCode.FAILURE
-        from xpra.util import print_nested_dict
         print_nested_dict(data)
         return ExitCode.OK
     if mode=="video":
@@ -1050,7 +1052,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         try:
             sock.connect(sockpath)
         except Exception as e:
-            get_util_logger().debug(f"failed to connect using {sock.connect}({sockpath})", exc_info=True)
+            get_logger().debug(f"failed to connect using {sock.connect}({sockpath})", exc_info=True)
             noerr(sock.close)
             raise InitExit(ExitCode.CONNECTION_FAILED, f"failed to connect to {sockpath!r}:\n {e}") from None
         sock.settimeout(None)
@@ -1379,7 +1381,7 @@ def connect_to_server(app, display_desc:dict[str,Any], opts) -> None:
             GLib.idle_add(app.quit, ExitCode.CONNECTION_FAILED)
     def setup_connection():
         log("setup_connection() starting setup-connection thread")
-        from xpra.make_thread import start_thread
+        from xpra.util.thread import start_thread
         start_thread(do_setup_connection, "setup-connection", True)
     GLib.idle_add(setup_connection)
 
@@ -1524,7 +1526,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode:str):
                                (app.client_toolkit(), "\n * ".join(encodings_help(encodings))))
         def handshake_complete(*_args):
             app.show_progress(100, "connection established")
-            log = get_util_logger()
+            log = get_logger()
             try:
                 p = app._protocol
                 conn = p._conn
@@ -1571,7 +1573,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode:str):
             listen_cleanup : list[Callable] = []
             socket_cleanup : list[Callable] = []
             def new_connection(socktype, sock, handle=0):
-                from xpra.make_thread import start_thread
+                from xpra.util.thread import start_thread
                 netlog = get_network_logger()
                 netlog("new_connection%s", (socktype, sock, handle))
                 conn = accept_connection(socktype, sock)
@@ -1622,7 +1624,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode:str):
         app.show_progress(100, f"failure: {e}")
         may_notify = getattr(app, "may_notify", None)
         if callable(may_notify):
-            from xpra.util import NotificationID
+            from xpra.common import NotificationID
             body = str(e)
             if body.startswith("failed to connect to"):
                 lines = body.split("\n")
@@ -1751,7 +1753,7 @@ def make_client(error_cb:Callable, opts):
                 except ImportError:
                     if mod not in impwarned:
                         impwarned.append(mod)
-                        log = get_util_logger()
+                        log = get_logger()
                         log("impcheck%s", modules, exc_info=True)
                         log.warn("Warning: missing %s module", mod)
                     return False
@@ -1892,7 +1894,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode:str, defaults
                 if display_name:
                     state = dotxpra.get_display_state(display_name)
                     if state==DotXpra.LIVE:
-                        get_util_logger().info(f"existing live display found on {display_name}, attaching")
+                        get_logger().info(f"existing live display found on {display_name}, attaching")
                         #we're connecting locally, so no need for these:
                         options.csc_modules = ["none"]
                         options.video_decoders = ["none"]
@@ -1905,7 +1907,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode:str, defaults
             #we can tell the server what size to resize to:
             from xpra.gtk_common.gtk_util import get_root_size
             root_w, root_h = get_root_size()
-            from xpra.scaling_parser import parse_scaling
+            from xpra.util.parsing import parse_scaling
             scaling = parse_scaling(options.desktop_scaling, root_w, root_h)
             #but don't bother if scaling is involved:
             if scaling==(1, 1):
@@ -2381,8 +2383,8 @@ def run_qrcode(args) -> ExitValue:
     return qrcode_client.main(args)
 
 def run_splash(args) -> ExitValue:
-    from xpra import splash_screen
-    return splash_screen.main(args)
+    from xpra.scripts import splash
+    return splash.main(args)
 
 def run_glprobe(opts, show=False) -> ExitValue:
     if show:
@@ -2513,7 +2515,7 @@ def start_macos_shadow(cmd, env, cwd) -> None:
                        ["launchctl", "load", "-S", "Aqua", LAUNCH_AGENT_FILE],
                        ["launchctl", "start", LAUNCH_AGENT],
                        ]
-    log = get_util_logger()
+    log = get_logger()
     log("start_macos_shadow: launch_commands=%s", launch_commands)
     for x in launch_commands:
         Popen(x, env=env, cwd=cwd).wait()
@@ -2849,7 +2851,7 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults) -> Exi
             if proc and proc.poll() is None:
                 #start a thread just to reap server startup process (yuk)
                 #(as the server process will exit as it daemonizes)
-                from xpra.make_thread import start_thread
+                from xpra.util.thread import start_thread
                 start_thread(proc.wait, "server-startup-reaper")
     if not display:
         #use display specified on command line:
@@ -3611,7 +3613,7 @@ def get_x11_display_info(display, sessions_dir=None) -> dict[str,Any]:
 def get_displays(dotxpra=None, display_names=None) -> dict[str,Any]:
     if OSX or WIN32:
         return {"Main" : {}}
-    log = get_util_logger()
+    log = get_logger()
     #add ":" prefix to display name,
     #and remove xpra sessions
     xpra_sessions = {}
@@ -3704,7 +3706,7 @@ def exec_wminfo(display) -> dict[str,str]:
 
 def get_xpra_sessions(dotxpra:DotXpra, ignore_state=(DotXpra.UNKNOWN,), matching_display=None, query:bool=True) -> dict[str,Any]:
     results = dotxpra.socket_details(matching_display=matching_display)
-    log = get_util_logger()
+    log = get_logger()
     log("get_xpra_sessions%s socket_details=%s", (dotxpra, ignore_state, matching_display), results)
     sessions = {}
     for socket_dir, values in results.items():
@@ -3912,7 +3914,7 @@ def run_auth(_options, args) -> ExitValue:
 
 
 def run_showconfig(options, args) -> ExitValue:
-    log = get_util_logger()
+    log = get_logger()
     d = dict_to_validated_config({})
     fixup_options(d)
     #this one is normally only probed at build time:
@@ -3996,7 +3998,7 @@ def run_showsetting(args) -> ExitValue:
     if not args:
         raise InitException("specify a setting to display")
 
-    log = get_util_logger()
+    log = get_logger()
 
     settings = []
     for arg in args:

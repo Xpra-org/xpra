@@ -101,7 +101,7 @@ def main():
     #use gtk as display source:
     # pylint: disable=import-outside-toplevel
     from xpra.gtk_common.gtk_util import init_display_source
-    from xpra.util import print_nested_dict
+    from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context
     with program_context("GTK-Keyboard", "GTK Keyboard"):
         init_display_source()

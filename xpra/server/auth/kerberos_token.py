@@ -8,8 +8,8 @@ import sys
 
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, xor, log, parse_uid, parse_gid
 from xpra.net.digest import get_salt, get_digests, gendigest
-from xpra.util import typedict, stderr_print
-from xpra.os_util import WIN32
+from xpra.util.types import typedict
+from xpra.os_util import WIN32, stderr_print
 
 
 class Authenticator(SysAuthenticatorBase):

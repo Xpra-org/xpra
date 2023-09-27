@@ -6,7 +6,8 @@
 import os
 from typing import Any
 
-from xpra.util import envbool, typedict
+from xpra.util.types import typedict
+from xpra.util.env import envbool
 from xpra.os_util import get_machine_id
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.server.source.stub_source_mixin import StubSourceMixin

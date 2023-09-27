@@ -7,7 +7,7 @@
 
 import os
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 
 #defaults which may be overridden by platform_import:
 CAN_DAEMONIZE : bool = True
@@ -84,7 +84,7 @@ platform_import(globals(), "features", False,
 
 
 def main():
-    from xpra.util import print_nested_dict
+    from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context
     with program_context("Features-Info", "Features Info"):
         d = {}

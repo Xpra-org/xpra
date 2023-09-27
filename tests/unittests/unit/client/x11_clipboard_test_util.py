@@ -7,7 +7,7 @@
 import time
 
 from unit.client.x11_client_test_util import X11ClientTestUtil
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.os_util import get_hex_uuid, pollwait, which
 from xpra.platform.features import CLIPBOARDS
 from xpra.log import Logger

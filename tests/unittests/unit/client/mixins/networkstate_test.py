@@ -7,7 +7,7 @@
 import time
 import unittest
 
-from xpra.util import AdHocStruct
+from xpra.util.types import AdHocStruct
 from xpra.os_util import get_hex_uuid
 from xpra.client.mixins.network_state import NetworkState
 from unit.client.mixins.clientmixintest_util import ClientMixinTest

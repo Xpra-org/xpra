@@ -602,6 +602,8 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/notifications/
 %{python3_sitearch}/xpra/codecs/argb/
 %{python3_sitearch}/xpra/codecs/pillow/
+%{python3_sitearch}/xpra/util/
+%pycached %{python3_sitearch}/xpra/*.py
 %pycached %{python3_sitearch}/xpra/codecs/__init__.py
 %pycached %{python3_sitearch}/xpra/codecs/checks.py
 %pycached %{python3_sitearch}/xpra/codecs/constants.py
@@ -617,8 +619,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/net/
 %{python3_sitearch}/xpra/platform/
 %{python3_sitearch}/xpra/scripts/
-%{python3_sitearch}/xpra/rectangle.*.so
-%pycached %{python3_sitearch}/xpra/*.py
+%{python3_sitearch}/xpra/util/rectangle.*.so
 %{python3_sitearch}/xpra-*.egg-info
 
 %files -n %{package_prefix}-x11

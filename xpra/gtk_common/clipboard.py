@@ -14,7 +14,8 @@ from xpra.clipboard.core import (
     ClipboardProxyCore, TEXT_TARGETS,
     )
 from xpra.clipboard.timeout_helper import ClipboardTimeoutHelper
-from xpra.util import ellipsizer, envint
+from xpra.util.str_fn import ellipsizer
+from xpra.util.env import envint
 from xpra.log import Logger
 
 

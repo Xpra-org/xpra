@@ -21,7 +21,7 @@ platform_import(globals(), "netdev_query", False,
 
 def print_address(iface, addr, defs):
     from xpra.os_util import POSIX
-    from xpra.util import print_nested_dict
+    from xpra.util.str_fn import print_nested_dict
     for d in defs:
         ip = d.get("addr")
         if ip:

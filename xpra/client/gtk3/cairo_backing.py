@@ -8,7 +8,7 @@ from cairo import ImageSurface, FORMAT_ARGB32  #pylint: disable=no-name-in-modul
 from gi.repository import GLib              #@UnresolvedImport
 from gi.repository import GdkPixbuf         #@UnresolvedImport
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.client.gtk3.cairo_backing_base import CairoBackingBase, FORMATS
 
 from xpra.log import Logger

@@ -11,7 +11,8 @@ import glob
 import shutil
 
 from xpra.os_util import get_status_output, WIN32
-from xpra.util import sorted_nicely  # pylint: disable=import-outside-toplevel
+from xpra.util.str_fn import sorted_nicely
+
 
 def get_nvcc_version(command):
     if not os.path.exists(command):

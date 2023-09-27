@@ -5,10 +5,12 @@
 
 from typing import Any
 
-from xpra.util import envbool, envint, csv, typedict
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv
+from xpra.util.env import envint, envbool
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.client.base.stub_client_mixin import StubClientMixin
-from xpra.make_thread import start_thread
+from xpra.util.thread import start_thread
 from xpra.log import Logger
 
 printlog = Logger("printing")

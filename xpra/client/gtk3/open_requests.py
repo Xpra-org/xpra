@@ -10,12 +10,12 @@ import subprocess
 from time import monotonic
 import gi
 
-from xpra.util import envint
+from xpra.util.env import envint
 from xpra.os_util import bytestostr, WIN32, OSX
 from xpra.gtk_common.gobject_compat import register_os_signals
-from xpra.child_reaper import getChildReaper
+from xpra.util.child_reaper import getChildReaper
 from xpra.net.file_transfer import ACCEPT, OPEN, DENY
-from xpra.simple_stats import std_unit, std_unit_dec
+from xpra.util.stats import std_unit, std_unit_dec
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image, label,
     TableBuilder, get_icon_pixbuf,

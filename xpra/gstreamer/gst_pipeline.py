@@ -11,14 +11,16 @@ from types import ModuleType
 from typing import Any
 from collections.abc import Callable
 
-from xpra.gst_common import GST_FLOW_OK, import_gst
+from xpra.gstreamer.gst_common import GST_FLOW_OK, import_gst
 gst = import_gst()
 if not gst:
     raise ImportError("GStreamer bindings not found")
 Gst : ModuleType = gst
 from gi.repository import GLib, GObject  # @UnresolvedImport
 
-from xpra.util import AtomicInteger, noerr, first_time
+from xpra.os_util import first_time
+from xpra.common import noerr
+from xpra.util.types import AtomicInteger
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.log import Logger
 

@@ -8,7 +8,7 @@ import sys
 from math import ceil
 from time import monotonic
 
-from xpra.util import csv
+from xpra.util.str_fn import csv
 from xpra.codecs.image_wrapper import ImageWrapper
 
 N = 10

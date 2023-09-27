@@ -10,7 +10,7 @@ from ctypes import (
     )
 from ctypes.wintypes import HANDLE
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.platform.win32.common import CloseHandle, LogonUser
 from xpra.log import Logger
 

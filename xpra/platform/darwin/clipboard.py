@@ -17,7 +17,7 @@ from xpra.clipboard.core import (
     _filter_targets, ClipboardProxyCore, TEXT_TARGETS,
     )
 from xpra.platform.ui_thread_watcher import get_UI_watcher
-from xpra.util import csv, ellipsizer
+from xpra.util.str_fn import csv, ellipsizer
 from xpra.os_util import bytestostr
 from xpra.log import Logger
 

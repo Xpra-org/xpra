@@ -5,7 +5,7 @@
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
 from cairo import (  #pylint: disable=no-name-in-module

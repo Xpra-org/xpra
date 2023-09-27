@@ -7,7 +7,7 @@
 from collections.abc import Callable
 from gi.repository import GObject
 
-from xpra.util import WORKSPACE_UNSET, WORKSPACE_ALL
+from xpra.common import WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.x11.models.core import CoreX11WindowModel, xswallow, Above, RESTACKING_STR
 from xpra.x11.bindings.window import X11WindowBindings, constants      #@UnresolvedImport
 from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties

@@ -9,7 +9,7 @@ from time import monotonic
 from gi.repository import GLib, Gtk  # @UnresolvedImport
 
 from xpra.gtk_common.gobject_compat import register_os_signals
-from xpra.util import AdHocStruct, typedict
+from xpra.util.types import typedict, AdHocStruct
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image, get_icon_pixbuf,
     get_pixbuf_from_data, TableBuilder, label,

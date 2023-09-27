@@ -7,7 +7,7 @@ from typing import Any
 
 import Quartz.CoreGraphics as CG    #@UnresolvedImport
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.os_util import memoryview_to_bytes
 from xpra.scripts.config import InitExit
 from xpra.scripts.main import check_display
@@ -127,7 +127,7 @@ class ShadowServer(GTKShadowServerBase):
 
     def do_screen_refresh(self, rlist:list) -> None:
         #TODO: improve damage method to handle lists directly:
-        from xpra.rectangle import rectangle     #@UnresolvedImport
+        from xpra.util.rectangle import rectangle     #@UnresolvedImport
         model_rects = {}
         for model in self._id_to_window.values():
             model_rects[model] = rectangle(*model.geometry)

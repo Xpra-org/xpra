@@ -11,8 +11,9 @@ from struct import pack
 from typing import Any
 from collections.abc import Iterable
 
-from xpra.util import envint, envbool, csv
-from xpra.version_util import parse_version
+from xpra.util.str_fn import csv, print_nested_dict
+from xpra.util.env import envint, envbool
+from xpra.util.version import parse_version
 from xpra.os_util import hexstr, strtobytes, OSX
 from xpra.net.digest import get_salt
 from xpra.log import Logger
@@ -304,7 +305,6 @@ def _get_cipher(key, iv:str, mode:str=DEFAULT_MODE):
 
 
 def main():
-    from xpra.util import print_nested_dict
     from xpra.platform import program_context
     if "-v" in sys.argv or "--verbose" in sys.argv:
         log.enable_debug()

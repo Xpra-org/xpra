@@ -8,7 +8,7 @@ import struct
 
 from xpra.platform.win32 import get_common_startmenu_dir, get_startmenu_dir
 from xpra.log import Logger
-from xpra.util import print_nested_dict
+from xpra.util.str_fn import print_nested_dict
 
 log = Logger("exec")
 

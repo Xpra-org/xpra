@@ -8,7 +8,7 @@
 
 import logging
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.log import Logger
 
 PIL_DEBUG = envbool("XPRA_PIL_DEBUG", False)

@@ -9,7 +9,9 @@ import subprocess
 from collections.abc import Callable
 
 from xpra.platform.win32 import constants as win32con
-from xpra.util import csv, envint, envbool, reverse_dict
+from xpra.util.types import reverse_dict
+from xpra.util.str_fn import csv
+from xpra.util.env import envint, envbool
 from xpra.os_util import bytestostr
 from xpra.platform.paths import get_app_dir
 from xpra.log import Logger

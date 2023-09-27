@@ -10,7 +10,8 @@ import signal
 from subprocess import Popen, PIPE
 from collections.abc import Callable
 
-from xpra.util import noerr, envbool
+from xpra.common import noerr
+from xpra.util.env import envbool
 from xpra.os_util import (
     WIN32, OSX, POSIX,
     is_gnome, is_kde, which, bytestostr,

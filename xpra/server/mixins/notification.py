@@ -9,9 +9,9 @@ from typing import Any
 from gi.repository import GLib
 
 from xpra.os_util import OSX, POSIX
-from xpra.util import ellipsizer
+from xpra.util.str_fn import ellipsizer
 from xpra.net.common import PacketType
-from xpra.make_thread import start_thread
+from xpra.util.thread import start_thread
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
@@ -84,7 +84,7 @@ class NotificationForwarder(StubServerMixin):
             return
         try:
             # pylint: disable=import-outside-toplevel
-            from xpra.util import NotificationID
+            from xpra.common import NotificationID
             from xpra.notifications.common import parse_image_path
             from xpra.platform.paths import get_icon_filename
             icon = parse_image_path(get_icon_filename("user"))

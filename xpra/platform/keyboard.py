@@ -16,7 +16,8 @@ platform_import(globals(), "keyboard", True,
 def main():
     import sys
     from xpra.os_util import WIN32, OSX, POSIX, bytestostr
-    from xpra.util import print_nested_dict, csv
+    from xpra.util.str_fn import print_nested_dict
+    from xpra.util.str_fn import csv
     from xpra.platform import program_context
     from xpra.log import enable_color, enable_debug_for
     with program_context("Keyboard-Tool", "Keyboard Tool"):

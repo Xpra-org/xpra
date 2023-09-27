@@ -8,7 +8,7 @@ import os
 from typing import Any
 from collections.abc import Callable
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.os_util import is_Ubuntu, is_Debian
 from xpra.log import Logger
 

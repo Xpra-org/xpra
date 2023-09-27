@@ -8,7 +8,7 @@ import unittest
 from zlib import crc32
 from time import monotonic
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.os_util import strtobytes
 try:
     from xpra.server.window import motion

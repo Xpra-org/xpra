@@ -5,7 +5,7 @@
 
 import os
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.log import Logger
 
 def warn(*messages) -> None:

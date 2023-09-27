@@ -13,7 +13,7 @@ from ctypes import (
     c_void_p, Structure, c_int, c_uint, c_ulong, c_char_p, cast, pointer, POINTER,
     )
 
-from xpra.util import ellipsizer
+from xpra.util.str_fn import ellipsizer
 from xpra.os_util import strtobytes
 from xpra.platform.win32.common import GetDeviceCaps
 from xpra.platform.win32 import win32con
@@ -193,7 +193,7 @@ def main():
         title = strtobytes(os.path.basename(filename))
 
     import time
-    from xpra.util import csv
+    from xpra.util.str_fn import csv
     from xpra.log import Logger
     log = Logger("printing", "win32")
 

@@ -10,7 +10,8 @@ from dbus.exceptions import DBusException  # @UnresolvedImport
 
 from xpra.dbus.helper import dbus_to_native
 from xpra.dbus.common import init_session_bus
-from xpra.util import AtomicInteger, ConnectionMessage
+from xpra.util.types import AtomicInteger
+from xpra.common import ConnectionMessage
 from xpra.log import Logger
 
 log = Logger("dbus", "server")

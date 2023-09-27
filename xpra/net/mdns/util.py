@@ -5,7 +5,7 @@
 import socket
 
 from xpra.os_util import OSX, WIN32
-from xpra.util import envbool
+from xpra.util.env import envbool
 
 
 def import_zeroconf():

@@ -10,7 +10,8 @@ from PIL import Image, ImagePalette     #@UnresolvedImport
 from typing import Any
 
 from xpra.codecs.debug import may_save_image
-from xpra.util import csv, typedict
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv
 from xpra.net.compression import Compressed
 from xpra.log import Logger
 

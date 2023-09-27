@@ -19,7 +19,7 @@ from enum import IntEnum
 from typing import Any
 
 from xpra.log import Logger
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.os_util import strtobytes, bytestostr, hexstr
 
 

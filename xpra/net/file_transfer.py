@@ -14,13 +14,15 @@ from time import monotonic
 from dataclasses import dataclass
 from typing import Any
 
-from xpra.child_reaper import getChildReaper
+from xpra.util.child_reaper import getChildReaper
 from xpra.os_util import bytestostr, umask_context, POSIX, WIN32
-from xpra.util import typedict, csv, envint, envbool
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv
+from xpra.util.env import envint, envbool
 from xpra.scripts.config import parse_bool, parse_with_unit
 from xpra.net.common import PacketType
-from xpra.simple_stats import std_unit
-from xpra.make_thread import start_thread
+from xpra.util.stats import std_unit
+from xpra.util.thread import start_thread
 from xpra.log import Logger
 
 printlog = Logger("printing")

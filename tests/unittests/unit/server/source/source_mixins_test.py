@@ -12,7 +12,7 @@ from gi.repository import GLib  # @UnresolvedImport
 
 from unit.test_util import LoggerSilencer, silence_error, silence_info
 
-from xpra.util import typedict, AdHocStruct
+from xpra.util.types import typedict, AdHocStruct
 from xpra.os_util import POSIX, OSX, get_util_logger
 
 

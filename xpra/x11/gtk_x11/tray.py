@@ -7,7 +7,7 @@ import struct
 from enum import IntEnum
 from gi.repository import GObject, Gdk, GdkX11  # @UnresolvedImport
 
-from xpra.util import envint
+from xpra.util.env import envint
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.error import xsync, xlog
 from xpra.x11.gtk_x11 import GDKX11Window

@@ -12,7 +12,7 @@ import sys
 from typing import Any
 from collections.abc import Callable
 
-from xpra.version_util import parse_version
+from xpra.util.version import parse_version
 from xpra.net.common import FLUSH_HEADER
 from xpra.common import FULL_INFO
 from xpra.log import Logger
@@ -419,7 +419,8 @@ def get_info() -> dict[str,Any]:
 def main(): # pragma: no cover
     # pylint: disable=import-outside-toplevel
     from xpra.os_util import POSIX
-    from xpra.util import print_nested_dict, csv
+    from xpra.util.str_fn import print_nested_dict
+    from xpra.util.str_fn import csv
     from xpra.platform import program_context
     from xpra.platform.netdev_query import get_interface_info
     from xpra.log import enable_color, add_debug_category, enable_debug_for

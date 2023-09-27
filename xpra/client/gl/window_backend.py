@@ -10,7 +10,8 @@ from math import cos, sin
 from typing import Any
 
 from xpra.common import noop
-from xpra.util import typedict, envint, AtomicInteger
+from xpra.util.types import AtomicInteger, typedict
+from xpra.util.env import envint
 from xpra.os_util import WIN32, load_binary_file
 from xpra.log import Logger
 from xpra.platform.paths import get_icon_filename

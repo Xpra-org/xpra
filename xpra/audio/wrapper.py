@@ -8,7 +8,7 @@ import sys
 from time import monotonic
 from collections import namedtuple
 
-from xpra.gst_common import import_gst, format_element_options
+from xpra.gstreamer.gst_common import import_gst, format_element_options
 from xpra.audio.gstreamer_util import (
     parse_audio_source, get_source_plugins, get_sink_plugins, get_default_sink_plugin, get_default_source,
     can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names,
@@ -17,7 +17,9 @@ from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, ex
 from xpra.platform.paths import get_audio_command
 from xpra.common import FULL_INFO
 from xpra.os_util import WIN32, OSX, POSIX, BITS
-from xpra.util import typedict, parse_simple_dict, envint, envbool
+from xpra.util.parsing import parse_simple_dict
+from xpra.util.types import typedict
+from xpra.util.env import envint, envbool
 from xpra.scripts.config import InitExit, InitException
 from xpra.log import Logger
 log = Logger("audio")

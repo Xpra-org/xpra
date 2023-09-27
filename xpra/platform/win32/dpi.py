@@ -7,7 +7,7 @@
 from xpra.platform.win32.common import (
     GetSystemMetrics, user32,
     )
-from xpra.util import envint, envbool
+from xpra.util.env import envint, envbool
 from xpra.log import Logger
 
 

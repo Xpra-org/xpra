@@ -7,13 +7,11 @@ import os
 import re
 from gi.repository import GLib, Gtk  # @UnresolvedImport
 
-from xpra.util import (
-    ConnectionMessage,
-    envbool,
-    ellipsizer, repr_ellipsized, reverse_dict, typedict,
-    )
+from xpra.util.types import typedict, reverse_dict
+from xpra.util.str_fn import ellipsizer, repr_ellipsized
+from xpra.util.env import envbool
 from xpra.os_util import bytestostr, OSX, WIN32
-from xpra.common import RESOLUTION_ALIASES
+from xpra.common import RESOLUTION_ALIASES, ConnectionMessage
 from xpra.client.gtk3.menu_helper import (
     MenuHelper,
     BANDWIDTH_MENU_OPTIONS,
@@ -25,7 +23,7 @@ from xpra.client.gtk3.menu_helper import (
     )
 from xpra.exit_codes import ExitCode
 from xpra.codecs.constants import PREFERRED_ENCODING_ORDER
-from xpra.simple_stats import std_unit_dec
+from xpra.util.stats import std_unit_dec
 from xpra.client.gui import features
 from xpra.log import Logger
 
@@ -676,7 +674,7 @@ class GTKTrayMenu(MenuHelper):
     def make_scalingmenu(self):
         scaling_submenu = Gtk.Menu()
         scaling_submenu.updating = False
-        from xpra.scaling_parser import SCALING_OPTIONS
+        from xpra.util.parsing import SCALING_OPTIONS
         for x in SCALING_OPTIONS:
             scaling_submenu.append(self.make_scalingvaluemenuitem(scaling_submenu, x))
         def scaling_changed(*args):

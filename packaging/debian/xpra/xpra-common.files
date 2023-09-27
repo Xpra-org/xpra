@@ -25,7 +25,8 @@ usr/lib/python3*/*/xpra/keyboard/
 usr/lib/python3*/*/xpra/net/
 usr/lib/python3*/*/xpra/platform/
 usr/lib/python3*/*/xpra/scripts/
-usr/lib/python3*/*/xpra/rectangle.*.so
+usr/lib/python3*/*/xpra/util/rectangle.*.so
+usr/lib/python3*/*/xpra/util/
 usr/lib/python3*/*/xpra/*.py*
 usr/lib/python3*/*/xpra/codecs/argb/
 usr/lib/python3*/*/xpra/codecs/pillow/

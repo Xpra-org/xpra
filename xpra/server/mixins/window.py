@@ -6,7 +6,7 @@
 
 from typing import Any
 
-from xpra.util import typedict
+from xpra.util.types import typedict
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.server.source.windows import WindowsMixin
 from xpra.net.common import PacketType

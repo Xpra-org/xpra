@@ -23,12 +23,17 @@ from xpra.server.window.compress import (
     COMPRESS_FMT_PREFIX, COMPRESS_FMT_SUFFIX, COMPRESS_FMT,
     LOG_ENCODERS,
     )
-from xpra.rectangle import rectangle, merge_all          #@UnresolvedImport
+from xpra.util.rectangle import rectangle, merge_all          #@UnresolvedImport
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER, preforder
 from xpra.codecs.loader import has_codec
-from xpra.util import parse_scaling_value, envint, envbool, csv, roundup, print_nested_dict, first_time, typedict
+from xpra.os_util import first_time
+from xpra.common import roundup
+from xpra.util.parsing import parse_scaling_value
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv, print_nested_dict
+from xpra.util.env import envint, envbool
 from xpra.log import Logger
 
 log = Logger("encoding")
@@ -610,7 +615,7 @@ class WindowVideoSource(WindowSource):
         super().do_damage(ww, wh, x, y, w, h, options)
 
     def start_gstreamer_pipeline(self):
-        from xpra.gst_common import plugin_str
+        from xpra.gstreamer.gst_common import plugin_str
         from xpra.codecs.gstreamer.capture import CaptureAndEncode
         attrs = {
             "show-pointer"  : False,

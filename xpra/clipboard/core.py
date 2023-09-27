@@ -17,7 +17,9 @@ from xpra.common import noop
 from xpra.net.compression import Compressible
 from xpra.net.common import PacketType
 from xpra.os_util import POSIX, bytestostr, hexstr
-from xpra.util import csv, envint, envbool, repr_ellipsized, ellipsizer, typedict
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized
+from xpra.util.env import envint, envbool
 from xpra.platform.features import CLIPBOARDS as PLATFORM_CLIPBOARDS
 from xpra.log import Logger, is_debug_enabled
 

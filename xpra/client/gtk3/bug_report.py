@@ -18,7 +18,8 @@ from xpra.gtk_common.gtk_util import (
     )
 from xpra.os_util import hexstr
 from xpra.platform.gui import force_focus
-from xpra.util import nonl, envint, repr_ellipsized
+from xpra.util.str_fn import nonl, repr_ellipsized
+from xpra.util.env import envint
 from xpra.common import FULL_INFO
 from xpra.log import Logger
 
@@ -119,7 +120,7 @@ class BugReport:
         from xpra.net.net_util import get_info as get_net_info
         from xpra.platform.paths import get_info as get_path_info
         from xpra.platform.gui import get_info as get_gui_info
-        from xpra.version_util import get_version_info, get_platform_info, get_host_info
+        from xpra.util.version import get_version_info, get_platform_info, get_host_info
         def get_sys_info():
             from xpra.platform.info import get_user_info
             from xpra.scripts.config import read_xpra_defaults

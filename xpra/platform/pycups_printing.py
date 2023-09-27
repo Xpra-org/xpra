@@ -18,7 +18,8 @@ from cups import Connection  # @UnresolvedImport
 
 from xpra.common import DEFAULT_XDG_DATA_DIRS
 from xpra.os_util import OSX, bytestostr
-from xpra.util import envint, envbool, parse_simple_dict
+from xpra.util.parsing import parse_simple_dict
+from xpra.util.env import envint, envbool
 from xpra.log import Logger
 
 log = Logger("printing")
@@ -123,10 +124,10 @@ def get_lpinfo_drv(make_and_model) -> str:
         log.error(" command used: '%s'", " ".join(command))
         return ""
     #use the global child reaper to make sure this doesn't end up as a zombie
-    from xpra.child_reaper import getChildReaper
+    from xpra.util.child_reaper import getChildReaper
     cr = getChildReaper()
     cr.add_process(proc, "lpinfo", command, ignore=True, forget=True)
-    from xpra.make_thread import start_thread
+    from xpra.util.thread import start_thread
     def watch_lpinfo():
         #give it 15 seconds to run:
         for _ in range(15):
@@ -246,7 +247,7 @@ def exec_lpadmin(args, success_cb:Callable=None):
     log("exec_lpadmin(%s) command=%s", args, command)
     proc = Popen(command, start_new_session=True)
     #use the global child reaper to make sure this doesn't end up as a zombie
-    from xpra.child_reaper import getChildReaper
+    from xpra.util.child_reaper import getChildReaper
     cr = getChildReaper()
     def check_returncode(_proc_cb):
         returncode = proc.poll()

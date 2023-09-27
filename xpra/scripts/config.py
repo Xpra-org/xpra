@@ -9,16 +9,16 @@ import sys
 import os
 import shlex
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 
 from xpra.common import noop
-from xpra.util import csv, stderr_print, remove_dupes
+from xpra.util.str_fn import csv
 from xpra.os_util import (
     WIN32, OSX, POSIX,
     osexpand, getuid, getgid, get_username_for_uid,
     is_Debian, is_Ubuntu, is_arm,
-    which,
-    )
+    which, stderr_print,
+)
 
 def warn(msg:str) -> None:
     stderr_print(msg)
@@ -50,8 +50,13 @@ DEFAULT_PULSEAUDIO = None   #auto
 if OSX or WIN32: # pragma: no cover
     DEFAULT_PULSEAUDIO = False
 
-
 # pylint: disable=import-outside-toplevel
+
+
+def remove_dupes(seq:Iterable[Any]) -> list[Any]:
+    seen : set[Any] = set()
+    seen_add : Callable = seen.add
+    return [x for x in seq if not (x in seen or seen_add(x))]
 
 
 _has_audio_support = None
@@ -863,7 +868,7 @@ def get_default_pulseaudio_command() -> list[str]:
         load_opt("module-x11-publish"),
         "--log-level=2", "--log-target=stderr",
         ]
-    from xpra.util import envbool
+    from xpra.util.env import envbool
     MEMFD = envbool("XPRA_PULSEAUDIO_MEMFD", False)
     if not MEMFD:
         cmd.append("--enable-memfd=no")
@@ -1543,7 +1548,7 @@ def fixup_options(options) -> None:
 
 
 def main():
-    from xpra.util import nonl
+    from xpra.util.str_fn import nonl
     def print_options(o):
         for k,ot in sorted(OPTION_TYPES.items()):
             v = getattr(o, name_to_field(k), "")

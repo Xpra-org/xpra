@@ -6,7 +6,7 @@
 from time import monotonic
 from collections.abc import ByteString
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.log import Logger
 
 log = Logger("codec")

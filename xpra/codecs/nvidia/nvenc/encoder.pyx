@@ -13,9 +13,11 @@ import ctypes
 from ctypes import cdll, POINTER
 from threading import Lock
 
-from xpra.os_util import WIN32, LINUX, strtobytes
-from xpra.make_thread import start_thread
-from xpra.util import AtomicInteger, csv, pver, envint, envbool, first_time, typedict
+from xpra.os_util import WIN32, LINUX, strtobytes, first_time
+from xpra.util.thread import start_thread
+from xpra.util.types import AtomicInteger, typedict
+from xpra.util.str_fn import csv, pver
+from xpra.util.env import envint, envbool
 from xpra.codecs.nvidia.cuda.context import (
     init_all_devices, get_devices, get_device_name,
     get_cuda_info, get_pycuda_info, reset_state,

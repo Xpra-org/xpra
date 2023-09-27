@@ -9,7 +9,7 @@ import os.path
 
 from gi.repository import Gtk, Gdk  # @UnresolvedImport
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.platform.paths import get_resources_dir
 from xpra.log import Logger
 

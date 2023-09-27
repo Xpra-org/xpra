@@ -18,9 +18,9 @@ from xpra.gtk_common.gtk_util import (
     imagebutton,
     TableBuilder,
     )
-from xpra.util import repr_ellipsized
+from xpra.util.str_fn import repr_ellipsized
 from xpra.os_util import POSIX, OSX, WIN32, is_Wayland, platform_name
-from xpra.simple_stats import std_unit_dec
+from xpra.util.stats import std_unit_dec
 from xpra.scripts.config import (
     get_defaults, parse_bool,
     OPTION_TYPES, FALSE_OPTIONS, TRUE_OPTIONS,
@@ -28,7 +28,7 @@ from xpra.scripts.config import (
 from xpra.client.gtk3.menu_helper import (
     BANDWIDTH_MENU_OPTIONS,
     )
-from xpra.make_thread import start_thread
+from xpra.util.thread import start_thread
 from xpra.platform.paths import get_xpra_command
 from xpra.log import Logger
 

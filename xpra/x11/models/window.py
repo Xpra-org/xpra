@@ -6,7 +6,8 @@
 
 from gi.repository import GObject   # @UnresolvedImport
 
-from xpra.util import envint, envbool, typedict
+from xpra.util.types import typedict
+from xpra.util.env import envint, envbool
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.error import XError, xsync, xswallow, xlog

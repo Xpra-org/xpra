@@ -11,9 +11,10 @@ from collections.abc import Callable
 
 from xpra.os_util import (
     bytestostr, get_saved_env,
-    is_X11, is_Wayland, get_saved_env_var,
-    )
-from xpra.util import envbool, envint, csv, first_time
+    is_X11, is_Wayland, get_saved_env_var, first_time,
+)
+from xpra.util.str_fn import csv
+from xpra.util.env import envint, envbool
 from xpra.log import Logger
 
 log = Logger("posix")

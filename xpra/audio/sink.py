@@ -12,7 +12,7 @@ from typing import Any, Literal
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.audio.audio_pipeline import AudioPipeline
-from xpra.gst_common import (
+from xpra.gstreamer.gst_common import (
     normv, make_buffer, plugin_str,
     get_default_appsrc_attributes, get_element_str,
     GST_FLOW_OK,
@@ -27,8 +27,9 @@ from xpra.audio.gstreamer_util import (
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.net.compression import decompress_by_name
 from xpra.scripts.config import InitExit
-from xpra.util import csv, envint, envbool
-from xpra.make_thread import start_thread
+from xpra.util.str_fn import csv
+from xpra.util.env import envint, envbool
+from xpra.util.thread import start_thread
 from xpra.log import Logger
 
 log = Logger("audio")

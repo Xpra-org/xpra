@@ -7,7 +7,7 @@ import io
 from typing import Any
 from contextlib import redirect_stdout, redirect_stderr
 
-from xpra.util import typedict
+from xpra.util.types import typedict
 from xpra.scripts.config import TRUE_OPTIONS
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger

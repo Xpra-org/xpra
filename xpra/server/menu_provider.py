@@ -15,8 +15,8 @@ from xpra.os_util import (
     OSX, POSIX, WIN32,
     osexpand,
     )
-from xpra.util import envint, envbool
-from xpra.make_thread import start_thread
+from xpra.util.env import envint, envbool
+from xpra.util.thread import start_thread
 from xpra.server.background_worker import add_work_item
 from xpra.log import Logger
 

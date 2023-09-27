@@ -12,8 +12,9 @@ from typing import Any
 
 #tricky: use xpra.scripts.config to get to the python "platform" module
 import xpra
-from xpra.util import envbool, typedict, get_util_logger
-from xpra.os_util import get_linux_distribution, BITS, POSIX, WIN32
+from xpra.util.types import typedict
+from xpra.util.env import envbool
+from xpra.os_util import get_linux_distribution, BITS, POSIX, WIN32, get_util_logger
 from xpra.common import FULL_INFO
 
 XPRA_VERSION = xpra.__version__     #@UndefinedVariable
@@ -223,7 +224,7 @@ def dict_version_trim(d, parts=FULL_INFO+1):
 def do_get_platform_info() -> dict[str, Any]:
     # pylint: disable=import-outside-toplevel
     from xpra.os_util import platform_name, platform_release
-    pp = sys.modules.get("platform", platform)
+    pp = sys.modules.get("../platform", platform)
     def get_processor_name():
         if pp.system() == "Windows":
             return pp.processor()

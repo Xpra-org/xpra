@@ -7,7 +7,9 @@
 import os
 import sys
 
-from xpra.util import obsc, typedict, stderr_print
+from xpra.os_util import stderr_print
+from xpra.util.types import typedict
+from xpra.util.str_fn import obsc
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
 from xpra.log import enable_debug_for, is_debug_enabled
 assert log #tests will disable logging from here

@@ -10,7 +10,7 @@ from ctypes import (
     WinDLL,  # @UnresolvedImport
     )
 from ctypes.wintypes import WORD, DWORD, HANDLE, BOOL, LPSTR
-from xpra.util import print_nested_dict
+from xpra.util.str_fn import print_nested_dict
 
 PDWORD = POINTER(DWORD)
 

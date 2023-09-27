@@ -7,10 +7,13 @@ import os
 from gi.repository import GObject  # @UnresolvedImport
 from typing import Any
 
-from xpra.os_util import WIN32, OSX
-from xpra.util import envbool, csv, roundup, first_time, typedict
+from xpra.os_util import WIN32, OSX, first_time
+from xpra.common import roundup
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv
+from xpra.util.env import envbool
 from xpra.codecs.constants import video_spec, get_profile
-from xpra.gst_common import (
+from xpra.gstreamer.gst_common import (
     import_gst, normv, get_all_plugin_names,
     get_caps_str, get_element_str, wrap_buffer,
     get_default_appsink_attributes, get_default_appsrc_attributes,

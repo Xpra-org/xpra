@@ -16,9 +16,11 @@ from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, CHAR, WCHAR, DWORD, 
 from typing import Any
 from collections.abc import Callable
 
-from xpra.util import typedict, csv, envbool, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv
+from xpra.util.env import envbool
 from xpra.os_util import bytestostr
-from xpra.common import noop
+from xpra.common import noop, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.icon_util import image_to_ICONINFO
 from xpra.platform.win32.common import (

@@ -9,9 +9,10 @@ from socket import error as socket_error
 from queue import Queue
 
 from xpra.os_util import hexstr
-from xpra.util import repr_ellipsized, envint
-from xpra.make_thread import make_thread, start_thread
-from xpra.simple_stats import std_unit
+from xpra.util.str_fn import repr_ellipsized
+from xpra.util.env import envint
+from xpra.util.thread import make_thread, start_thread
+from xpra.util.stats import std_unit
 from xpra.net.protocol.socket_handler import force_flush_queue, exit_queue
 from xpra.net.protocol.constants import INVALID, CONNECTION_LOST
 from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)

@@ -42,7 +42,7 @@ def pactl_output(log_errors=True, *pactl_args) -> tuple[int,Any,Any]:
         import subprocess
         log(f"running `{cmd}` with env={env}")
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
-        from xpra.child_reaper import getChildReaper
+        from xpra.util.child_reaper import getChildReaper
         procinfo = getChildReaper().add_process(process, "pactl", cmd, True, True)
         log(f"waiting for `{cmd}` output")
         out, err = process.communicate()
@@ -214,7 +214,7 @@ def get_info() -> dict[str,Any]:
     return info
 
 def main():
-    from xpra.util import print_nested_dict
+    from xpra.util.str_fn import print_nested_dict
     from xpra.os_util import load_binary_file
     if "-v" in sys.argv:
         log.enable_debug()

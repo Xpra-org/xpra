@@ -7,8 +7,8 @@
 import os
 import sys
 
-from xpra.util import envbool
-from xpra.os_util import bytestostr
+from xpra.util.env import envbool
+from xpra.os_util import bytestostr, first_time
 from xpra.log import Logger
 log = Logger("audio")
 
@@ -24,7 +24,7 @@ def get_x11_property(atom_name:str) -> bytes:
         from xpra.x11 import bindings
         assert bindings
     except ImportError:
-        from xpra.util import first_time, envint
+        from xpra.util.env import envint
         if first_time("pulse-x11-bindings") and not envint("XPRA_SKIP_UI", 0):
             log.info("unable to query display properties without the X11 bindings")
         return b""

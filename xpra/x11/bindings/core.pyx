@@ -19,7 +19,7 @@ from xpra.x11.bindings.xlib cimport (
 from libc.stdlib cimport malloc, free       #pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.os_util import strtobytes, is_X11
 from xpra.log import Logger
 log = Logger("x11", "bindings", "core")

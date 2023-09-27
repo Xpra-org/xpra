@@ -17,7 +17,8 @@ import os.path
 
 from xpra.common import RESOLUTION_ALIASES, DEFAULT_REFRESH_RATE, get_refresh_rate_for_value
 from xpra.scripts.config import InitException, get_Xdummy_confdir, FALSE_OPTIONS
-from xpra.util import envbool, envint, csv
+from xpra.util.str_fn import csv
+from xpra.util.env import envint, envbool
 from xpra.os_util import (
     shellsub,
     setuidgid, getuid, getgid,

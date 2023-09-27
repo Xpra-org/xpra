@@ -4,9 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.version_util import version_compat_check, parse_version
-from xpra.os_util import bytestostr
-from xpra.util import typedict, get_util_logger
+from xpra.util.version import version_compat_check, parse_version
+from xpra.os_util import bytestostr, get_util_logger
+from xpra.util.types import typedict
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.exit_codes import ExitCode
 

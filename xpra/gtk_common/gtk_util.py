@@ -9,9 +9,10 @@ import gi
 from typing import Any
 from collections.abc import Callable
 
-from xpra.util import first_time, envint, envbool, print_nested_dict
-from xpra.os_util import strtobytes, WIN32, OSX, POSIX, is_X11
-from xpra.version_util import parse_version
+from xpra.util.str_fn import print_nested_dict
+from xpra.util.env import envint, envbool
+from xpra.os_util import strtobytes, WIN32, OSX, POSIX, is_X11, first_time
+from xpra.util.version import parse_version
 from xpra.log import Logger
 
 gi.require_version("Gdk", "3.0")  # @UndefinedVariable

@@ -13,7 +13,8 @@ from aioquic.h3.exceptions import NoAvailablePushIDError
 from xpra.net.bytestreams import pretty_socket
 from xpra.net.quic.connection import XpraQuicConnection
 from xpra.net.quic.common import SERVER_NAME, http_date, binary_headers
-from xpra.util import ellipsizer, first_time
+from xpra.os_util import first_time
+from xpra.util.str_fn import ellipsizer
 from xpra.log import Logger
 log = Logger("quic")
 

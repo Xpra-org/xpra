@@ -23,11 +23,13 @@ from xpra.os_util import (
     getuid, getgid, get_username_for_uid, setuidgid,
     register_SIGUSR_signals,
     )
-from xpra.util import typedict, ellipsizer, ConnectionMessage
-from xpra.queue_scheduler import QueueScheduler
-from xpra.version_util import XPRA_VERSION
-from xpra.make_thread import start_thread
-from xpra.version_util import full_version_str
+from xpra.util.types import typedict
+from xpra.util.str_fn import ellipsizer
+from xpra.common import ConnectionMessage
+from xpra.server.proxy.queue_scheduler import QueueScheduler
+from xpra.util.version import XPRA_VERSION
+from xpra.util.thread import start_thread
+from xpra.util.version import full_version_str
 from xpra.net.socket_util import create_unix_domain_socket, handle_socket_error
 from xpra.platform.dotxpra import DotXpra
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT

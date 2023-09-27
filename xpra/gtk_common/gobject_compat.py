@@ -6,9 +6,8 @@
 import signal
 from collections.abc import Callable
 
-from xpra.util import dump_all_frames, dump_gc_frames, stderr_print
-from xpra.os_util import SIGNAMES, POSIX, get_util_logger
-
+from xpra.util.pysystem import dump_all_frames, dump_gc_frames
+from xpra.os_util import SIGNAMES, POSIX, get_util_logger, stderr_print
 
 _glib_unix_signals : dict[int, int] = {}
 def register_os_signals(callback:Callable, commandtype:str="", signals=(signal.SIGINT, signal.SIGTERM)):

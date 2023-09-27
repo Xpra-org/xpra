@@ -19,16 +19,15 @@ from xpra.codecs.loader import load_codec, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.scripts.config import parse_number, parse_bool
-from xpra.common import FULL_INFO
+from xpra.common import FULL_INFO, ConnectionMessage
 from xpra.os_util import (
-    get_hex_uuid, strtobytes,
-    )
-from xpra.util import (
-    typedict, ellipsizer, envint, envbool,
-    csv, first_time, ConnectionMessage,
-    )
-from xpra.version_util import XPRA_VERSION, vparts
-from xpra.make_thread import start_thread
+    get_hex_uuid, strtobytes, first_time,
+)
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv, ellipsizer
+from xpra.util.env import envint, envbool
+from xpra.util.version import XPRA_VERSION, vparts
+from xpra.util.thread import start_thread
 from xpra.server.server_core import get_server_info, get_thread_info, proto_crypto_caps
 from xpra.log import Logger
 

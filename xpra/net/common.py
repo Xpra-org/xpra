@@ -9,7 +9,8 @@ from typing import Any, Union, TypeAlias
 from collections.abc import Callable, ByteString
 
 from xpra.net.compression import Compressed, Compressible, LargeStructure
-from xpra.util import repr_ellipsized, envint, envbool
+from xpra.util.str_fn import repr_ellipsized
+from xpra.util.env import envint, envbool
 from xpra.log import Logger
 log = Logger("network")
 

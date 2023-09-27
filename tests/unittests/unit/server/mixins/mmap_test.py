@@ -7,7 +7,7 @@
 import tempfile
 import unittest
 
-from xpra.util import AdHocStruct
+from xpra.util.types import AdHocStruct
 from unit.server.mixins.servermixintest_util import ServerMixinTest
 
 

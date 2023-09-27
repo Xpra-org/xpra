@@ -14,15 +14,17 @@ from collections.abc import Callable
 from gi.repository import GLib
 
 from xpra.platform.features import COMMAND_SIGNALS
-from xpra.child_reaper import getChildReaper, ProcInfo, reaper_cleanup
+from xpra.util.child_reaper import getChildReaper, ProcInfo, reaper_cleanup
 from xpra.os_util import (
     bytestostr,
     restore_script_env,
     OSX, WIN32,
     )
-from xpra.util import envint, csv, ellipsizer, typedict
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv, ellipsizer
+from xpra.util.env import envint
 from xpra.net.common import PacketType
-from xpra.make_thread import start_thread
+from xpra.util.thread import start_thread
 from xpra.scripts.parsing import parse_env, get_subcommands
 from xpra.server.util import source_env
 from xpra.server.menu_provider import get_menu_provider

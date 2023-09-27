@@ -9,7 +9,7 @@
 import unittest
 
 from xpra.os_util import WIN32, POSIX, OSX
-from xpra.util import AdHocStruct
+from xpra.util.types import AdHocStruct
 from xpra.client.mixins.audio import AudioClient
 from xpra.audio.gstreamer_util import CODEC_ORDER
 from unit.client.mixins.clientmixintest_util import ClientMixinTest

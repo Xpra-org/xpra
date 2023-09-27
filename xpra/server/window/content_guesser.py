@@ -8,7 +8,8 @@ import os.path
 from typing import Any
 from collections.abc import Callable
 
-from xpra.util import ellipsizer, envbool
+from xpra.util.str_fn import ellipsizer
+from xpra.util.env import envbool
 from xpra.os_util import getuid, OSX, POSIX, get_proc_cmdline
 from xpra.platform.paths import get_user_conf_dirs, get_system_conf_dirs
 from xpra.log import Logger

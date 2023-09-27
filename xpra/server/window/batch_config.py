@@ -10,8 +10,8 @@ from time import monotonic
 from typing import Any, Deque
 
 from collections import deque
-from xpra.simple_stats import get_list_stats
-from xpra.util import envint
+from xpra.util.stats import get_list_stats
+from xpra.util.env import envint
 from xpra.log import Logger
 
 #how many historical records to keep

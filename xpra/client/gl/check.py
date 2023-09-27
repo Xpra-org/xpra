@@ -9,7 +9,8 @@ import sys
 import logging
 from typing import Any
 
-from xpra.util import envbool, envint, csv
+from xpra.util.str_fn import csv, print_nested_dict
+from xpra.util.env import envint, envbool
 from xpra.os_util import bytestostr
 from xpra.log import Logger, CaptureHandler
 from xpra.client.gl.drivers import (
@@ -417,7 +418,6 @@ def main() -> int:
     from xpra.platform import program_context
     from xpra.platform.gui import init as gui_init
     from xpra.gtk_common.gtk_util import init_display_source
-    from xpra.util import print_nested_dict
     from xpra.log import enable_color
     with program_context("OpenGL-Check"):
         gui_init()

@@ -14,8 +14,9 @@ from collections.abc import Coroutine, Generator
 
 from time import monotonic
 from xpra.scripts.config import InitExit
-from xpra.make_thread import start_thread
-from xpra.util import envbool, csv
+from xpra.util.thread import start_thread
+from xpra.util.str_fn import csv
+from xpra.util.env import envbool
 from xpra.os_util import WIN32
 from xpra.log import Logger
 log = Logger("quic")

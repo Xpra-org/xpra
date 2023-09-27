@@ -10,9 +10,11 @@ from typing import Any
 
 from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
-from xpra.common import FULL_INFO
-from xpra.os_util import get_machine_id, get_user_uuid, bytestostr
-from xpra.util import csv, envbool, envint, typedict, first_time, NotificationID
+from xpra.common import FULL_INFO, NotificationID
+from xpra.os_util import get_machine_id, get_user_uuid, bytestostr, first_time
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv
+from xpra.util.env import envint, envbool
 from xpra.log import Logger
 
 log = Logger("audio")
@@ -301,7 +303,7 @@ class AudioMixin(StubSourceMixin):
         try:
             proc = Popen(cmd)  # pylint: disable=consider-using-with
             log(f"Popen({cmd_str})={proc}")
-            from xpra.child_reaper import getChildReaper  # pylint: disable=import-outside-toplevel
+            from xpra.util.child_reaper import getChildReaper  # pylint: disable=import-outside-toplevel
             getChildReaper().add_process(proc, "new-stream-sound", cmd, ignore=True, forget=True)
             def stop_new_stream_notification():
                 if self.new_stream_timers.pop(proc, None):

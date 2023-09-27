@@ -8,7 +8,7 @@ import unittest
 from time import monotonic
 
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.util import envbool
+from xpra.util.env import envbool
 
 SHOW_PERF = envbool("XPRA_SHOW_PERF")
 

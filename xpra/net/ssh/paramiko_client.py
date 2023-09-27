@@ -19,14 +19,16 @@ from xpra.scripts.config import parse_bool, TRUE_OPTIONS
 from xpra.scripts.pinentry_wrapper import input_pass, confirm
 from xpra.net.ssh.util import nogssapi_context, get_default_keyfiles
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
-from xpra.make_thread import start_thread
+from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode
 from xpra.os_util import (
     bytestostr, load_binary_file,
     umask_context,
-    WIN32,
-    )
-from xpra.util import envint, envbool, envfloat, noerr, csv, stderr_print
+    WIN32, stderr_print,
+)
+from xpra.common import noerr
+from xpra.util.str_fn import csv
+from xpra.util.env import envint, envbool, envfloat
 from xpra.log import Logger
 
 #pylint: disable=import-outside-toplevel
@@ -239,7 +241,7 @@ def connect_to(display_desc):
                     log(f"found proxycommand={proxycommand!r} for host {host!r}")
                     sock = ProxyCommand(proxycommand)
                     log(f"ProxyCommand({proxycommand})={sock}")
-                    from xpra.child_reaper import getChildReaper
+                    from xpra.util.child_reaper import getChildReaper
                     cmd = getattr(sock, "cmd", [])
                     def proxycommand_ended(proc):
                         log(f"proxycommand_ended({proc}) exit code={proc.poll()}")

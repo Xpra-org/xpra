@@ -26,7 +26,7 @@ from xpra.codecs.nvidia.nvjpeg.common import (
 from xpra.codecs.debug import may_save_image
 from xpra.codecs.nvidia.cuda.context import get_CUDA_function, select_device, cuda_device_context
 from xpra.net.compression import Compressed
-from xpra.util import typedict
+from xpra.util.types import typedict
 
 from xpra.log import Logger
 log = Logger("encoder", "nvjpeg")

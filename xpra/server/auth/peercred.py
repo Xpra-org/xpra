@@ -9,7 +9,8 @@ from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 from xpra.os_util import get_peercred, get_group_id, osexpand, getuid, POSIX
 from xpra.net.bytestreams import SocketConnection
 from xpra.scripts.config import TRUE_OPTIONS
-from xpra.util import csv, typedict
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv
 
 
 class Authenticator(SysAuthenticator):

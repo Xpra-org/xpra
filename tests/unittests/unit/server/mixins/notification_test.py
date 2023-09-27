@@ -9,7 +9,7 @@ import sys
 import time
 import unittest
 
-from xpra.util import AdHocStruct
+from xpra.util.types import AdHocStruct
 from xpra.os_util import OSEnvContext, WIN32, OSX
 
 from unit.test_util import silence_info

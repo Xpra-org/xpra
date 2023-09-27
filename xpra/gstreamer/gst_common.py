@@ -9,7 +9,7 @@ import os
 from types import ModuleType
 from typing import Any
 
-from xpra.util import csv
+from xpra.util.str_fn import csv
 from xpra.log import Logger
 
 log = Logger("audio", "gstreamer")

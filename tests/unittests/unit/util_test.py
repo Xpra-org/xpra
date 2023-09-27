@@ -6,7 +6,9 @@
 
 import unittest
 
-from xpra.util import AtomicInteger, MutableInteger, typedict, log_screen_sizes, pver, std, alnum, nonl
+from xpra.util.types import AtomicInteger, MutableInteger, typedict
+from xpra.util.screen import log_screen_sizes
+from xpra.util.str_fn import std, alnum, nonl, pver
 
 
 class TestIntegerClasses(unittest.TestCase):

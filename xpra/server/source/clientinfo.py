@@ -5,9 +5,10 @@
 
 from typing import Any
 
-from xpra.util import std, typedict
+from xpra.util.types import typedict
+from xpra.util.str_fn import std
 from xpra.common import FULL_INFO
-from xpra.version_util import vparts
+from xpra.util.version import vparts
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.os_util import platform_name
 from xpra.log import Logger

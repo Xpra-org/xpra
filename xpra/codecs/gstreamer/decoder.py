@@ -7,7 +7,7 @@ import os
 from gi.repository import GObject  # @UnresolvedImport
 from typing import Any
 
-from xpra.gst_common import (
+from xpra.gstreamer.gst_common import (
     GST_FLOW_OK, STREAM_TYPE, GST_FORMAT_BYTES,
     make_buffer, has_plugins,
     get_caps_str,
@@ -19,7 +19,8 @@ from xpra.codecs.gstreamer.codec_common import (
     get_default_decoder_options,
     )
 from xpra.os_util import WIN32
-from xpra.util import roundup, typedict
+from xpra.common import roundup
+from xpra.util.types import typedict
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
 

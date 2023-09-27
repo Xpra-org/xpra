@@ -8,7 +8,8 @@ import os
 import sys
 from PIL import Image
 
-from xpra.util import envbool, typedict
+from xpra.util.types import typedict
+from xpra.util.env import envbool
 from xpra.os_util import memoryview_to_bytes
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.loader import load_codec
@@ -63,10 +64,11 @@ def main(files):
             print(f"  {enc.get_type():10} {encoding:10} {colorspace}")
             image = source_image
             if colorspace!="BGRX":
-                sws = swscale.ColorspaceConverter()
-                sws.init_context(w, h, pixel_format,
+                from xpra.codecs.libyuv.colorspace_converter import ColorspaceConverter
+                csc = ColorspaceConverter()
+                csc.init_context(w, h, pixel_format,
                                  w, h, colorspace, typedict({"speed" : 0}))
-                image = sws.convert_image(source_image)
+                image = csc.convert_image(source_image)
             encoder = enc.Encoder()
             try:
                 encoder.init_context(encoding, w, h, image.get_pixel_format(), typedict({"quality" : 100, "speed" : 0}))
@@ -95,10 +97,11 @@ def main(files):
             dformat = decoded.get_pixel_format()
             output = decoded
             if dformat!="BGRX":
-                sws = swscale.ColorspaceConverter()
-                sws.init_context(w, h, dformat,
+                from xpra.codecs.libyuv.colorspace_converter import ColorspaceConverter
+                csc = ColorspaceConverter()
+                csc.init_context(w, h, dformat,
                                  w, h, "BGRX", typedict())
-                output = sws.convert_image(decoded)
+                output = csc.convert_image(decoded)
                 print(f"    converted {dformat} to BGRX")
             obytes = memoryview_to_bytes(output.get_pixels())
             output_image = Image.frombuffer("RGBA", (w, h), obytes, "raw", "BGRA", output.get_rowstride())

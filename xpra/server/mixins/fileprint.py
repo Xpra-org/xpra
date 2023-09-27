@@ -10,9 +10,10 @@ import os.path
 import hashlib
 from typing import Any
 
-from xpra.simple_stats import to_std_unit, std_unit
+from xpra.util.stats import to_std_unit, std_unit
 from xpra.os_util import bytestostr, osexpand, load_binary_file, WIN32, POSIX
-from xpra.util import repr_ellipsized, NotificationID
+from xpra.util.str_fn import repr_ellipsized
+from xpra.common import NotificationID
 from xpra.net.common import PacketType
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.mixins.stub_server_mixin import StubServerMixin

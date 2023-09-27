@@ -9,10 +9,10 @@
 import os
 from typing import Any
 
-from xpra.util import AtomicInteger
+from xpra.util.types import AtomicInteger
 from xpra.os_util import register_SIGUSR_signals
-from xpra.gst_common import import_gst, GST_FLOW_OK
-from xpra.gst_pipeline import Pipeline
+from xpra.gstreamer.gst_common import import_gst, GST_FLOW_OK
+from xpra.gstreamer.gst_pipeline import Pipeline
 from xpra.log import Logger
 
 log = Logger("audio")

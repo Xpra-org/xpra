@@ -8,7 +8,7 @@ import os
 import unittest
 
 from contextlib import nullcontext
-from xpra.util import AdHocStruct
+from xpra.util.types import AdHocStruct
 from xpra.client.mixins import mmap
 
 from unit.test_util import silence_info, silence_error

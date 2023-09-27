@@ -14,7 +14,8 @@ log = Logger("encoder", "vpx")
 
 from xpra.codecs.constants import video_spec, get_subsampling_divs
 from xpra.os_util import WIN32, OSX, POSIX
-from xpra.util import AtomicInteger, envint, envbool, typedict
+from xpra.util.env import envint, envbool
+from xpra.util.types import AtomicInteger, typedict
 
 from xpra.codecs.vpx.vpx cimport (
     vpx_img_fmt_t, vpx_codec_iface_t,

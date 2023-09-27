@@ -11,18 +11,17 @@ from typing import Any
 
 from gi.repository import GLib, GObject  # @UnresolvedImport
 
-from xpra.util import (
-    nonl, sorted_nicely, envint, typedict,
-    disconnect_is_an_error, ellipsizer, first_time, csv,
-    repr_ellipsized, ConnectionMessage, stderr_print,
-    )
+from xpra.util.types import typedict
+from xpra.util.str_fn import nonl, csv, ellipsizer, repr_ellipsized, sorted_nicely
+from xpra.util.env import envint
+from xpra.common import ConnectionMessage, disconnect_is_an_error
 from xpra.os_util import (
     bytestostr,
     get_hex_uuid, hexstr,
-    POSIX, OSX,
-    )
+    POSIX, OSX, stderr_print, first_time,
+)
 from xpra.net.common import PacketType
-from xpra.simple_stats import std_unit
+from xpra.util.stats import std_unit
 from xpra.client.base.client_base import XpraClientBase, EXTRA_TIMEOUT
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.log import Logger

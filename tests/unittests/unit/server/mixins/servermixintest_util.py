@@ -7,7 +7,7 @@
 import unittest
 from gi.repository import GLib  # @UnresolvedImport
 
-from xpra.util import typedict, AdHocStruct
+from xpra.util.types import typedict, AdHocStruct
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 
 

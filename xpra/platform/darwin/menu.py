@@ -9,7 +9,8 @@ import gi
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 from gi.repository import GLib, Gtk  # @UnresolvedImport
 
-from xpra.util import envbool, csv
+from xpra.util.str_fn import csv
+from xpra.util.env import envbool
 from xpra.common import noop
 from xpra.gtk_common.gtk_util import scaled_image
 from xpra.gtk_common.about import about

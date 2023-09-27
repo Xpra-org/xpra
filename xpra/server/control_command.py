@@ -11,7 +11,7 @@ from xpra.log import (
     add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for,
     get_all_loggers,
     )
-from xpra.util import csv
+from xpra.util.str_fn import csv
 from xpra.common import noop
 
 log = Logger("util", "command")

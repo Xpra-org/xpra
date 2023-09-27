@@ -7,7 +7,7 @@ from queue import SimpleQueue
 from threading import Timer, RLock
 from typing import Any, TypeAlias
 
-from xpra.util import AtomicInteger
+from xpra.util.types import AtomicInteger
 from xpra.log import Logger
 
 log = Logger("util")

@@ -44,7 +44,9 @@ from xpra.platform.win32.common import (
     GetKeyboardLayoutName,
     )
 from xpra.common import KeyEvent
-from xpra.util import csv, envint, envbool, typedict
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv
+from xpra.util.env import envint, envbool
 from xpra.os_util import get_util_logger
 from xpra.log import Logger
 
@@ -1061,7 +1063,7 @@ class ClientExtras:
         self.keyboard_poll_timer : int = 0
         self.keyboard_id : int = self.get_keyboard_layout_id()
         if FORWARD_WINDOWS_KEY and features.windows:
-            from xpra.make_thread import start_thread
+            from xpra.util.thread import start_thread
             start_thread(self.init_keyboard_listener, "keyboard-listener", daemon=True)
 
     def ready(self) -> None:

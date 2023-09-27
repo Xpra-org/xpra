@@ -16,7 +16,8 @@ from xpra.net.quic.asyncio_thread import get_threaded_loop
 from xpra.net.bytestreams import Connection
 from xpra.net.websockets.header import close_packet
 from xpra.net.quic.common import binary_headers, override_aioquic_logger
-from xpra.util import ellipsizer, envbool
+from xpra.util.str_fn import ellipsizer
+from xpra.util.env import envbool
 from xpra.os_util import memoryview_to_bytes
 from xpra.log import Logger
 log = Logger("quic")

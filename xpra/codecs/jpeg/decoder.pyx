@@ -10,7 +10,8 @@ from typing import Tuple
 from xpra.log import Logger
 log = Logger("decoder", "jpeg")
 
-from xpra.util import envbool, reverse_dict
+from xpra.util.env import envbool
+from xpra.util.types import reverse_dict
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t, uint8_t

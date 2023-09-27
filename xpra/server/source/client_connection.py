@@ -13,9 +13,10 @@ from threading import Event
 from collections import deque
 from queue import SimpleQueue
 
-from xpra.make_thread import start_thread
+from xpra.util.thread import start_thread
 from xpra.common import FULL_INFO
-from xpra.util import notypedict, envbool, envint, typedict, AtomicInteger
+from xpra.util.types import AtomicInteger, typedict, notypedict
+from xpra.util.env import envint, envbool
 from xpra.net.common import PacketType
 from xpra.net.compression import compressed_wrapper
 from xpra.server.source.source_stats import GlobalPerformanceStatistics

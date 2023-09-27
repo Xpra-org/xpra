@@ -12,64 +12,63 @@ from collections.abc import Callable
 
 from xpra.server.server_core import ServerCore
 from xpra.server.background_worker import add_work_item
-from xpra.common import SSH_AGENT_DISPATCH, FULL_INFO, noop
+from xpra.common import SSH_AGENT_DISPATCH, FULL_INFO, noop, ConnectionMessage
 from xpra.net.common import may_log_packet, ServerPacketHandlerType, PacketType
 from xpra.os_util import bytestostr, is_socket, WIN32
-from xpra.util import (
-    typedict, merge_dicts, envbool, csv,
-    ConnectionMessage,
-    )
+from xpra.util.types import typedict, merge_dicts
+from xpra.util.str_fn import csv
+from xpra.util.env import envbool
 from xpra.net.bytestreams import set_socket_timeout
-from xpra.server import server_features
+from xpra.server import features
 from xpra.server import EXITING_CODE
 from xpra.log import Logger
 
 
 def get_server_base_classes() -> tuple[type,...]:
     classes : list[type] = [ServerCore]
-    if server_features.control:
+    if features.control:
         from xpra.server.mixins.controlcommands import ServerBaseControlCommands
         classes.append(ServerBaseControlCommands)
-    if server_features.notifications:
+    if features.notifications:
         from xpra.server.mixins.notification import NotificationForwarder
         classes.append(NotificationForwarder)
-    if server_features.webcam:
+    if features.webcam:
         from xpra.server.mixins.webcam import WebcamServer
         classes.append(WebcamServer)
-    if server_features.clipboard:
+    if features.clipboard:
         from xpra.server.mixins.clipboard import ClipboardServer
         classes.append(ClipboardServer)
-    if server_features.audio:
+    if features.audio:
         from xpra.server.mixins.audio import AudioServer
         classes.append(AudioServer)
-    if server_features.fileprint:
+    if features.fileprint:
         from xpra.server.mixins.fileprint import FilePrintServer
         classes.append(FilePrintServer)
-    if server_features.mmap:
+    if features.mmap:
         from xpra.server.mixins.mmap import MMAP_Server
         classes.append(MMAP_Server)
-    if server_features.input_devices:
+    if features.input_devices:
         from xpra.server.mixins.input import InputServer
         classes.append(InputServer)
-    if server_features.encoding:
+    if features.encoding:
         from xpra.server.mixins.encoding import EncodingServer
         classes.append(EncodingServer)
-    if server_features.logging:
+    if features.logging:
         from xpra.server.mixins.logging import LoggingServer
         classes.append(LoggingServer)
-    if server_features.network_state:
+    if features.network_state:
         from xpra.server.mixins.networkstate import NetworkStateServer
         classes.append(NetworkStateServer)
-    if server_features.shell:
+    if features.shell:
         from xpra.server.mixins.shell import ShellServer
         classes.append(ShellServer)
-    if server_features.display:
+    if features.display:
         from xpra.server.mixins.display import DisplayManager
         classes.append(DisplayManager)
-    if server_features.windows:
+    if features.windows:
         from xpra.server.mixins.window import WindowServer
         classes.append(WindowServer)
-    if server_features.commands:
+    if features.commands:
         from xpra.server.mixins.child_command import ChildCommandServer
         classes.append(ChildCommandServer)
     return tuple(classes)
@@ -531,8 +530,8 @@ class ServerBase(ServerBaseClass):
                  "sharing-toggle"               : self.sharing is None,
                  "lock"                         : self.lock is not False,
                  "lock-toggle"                  : self.lock is None,
-                 "windows"                      : server_features.windows,
-                 "keyboard"                     : server_features.input_devices,
+                 "windows"                      : features.windows,
+                 "keyboard"                     : features.input_devices,
             }
             sf = self.get_server_features(source)
             capabilities.update(sf)

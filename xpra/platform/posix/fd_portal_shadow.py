@@ -11,10 +11,12 @@ from dbus.types import Dictionary
 from typing import Any
 
 from xpra.exit_codes import ExitCode
-from xpra.util import typedict, envbool, ConnectionMessage, NotificationID
+from xpra.util.types import typedict
+from xpra.util.env import envbool
+from xpra.common import NotificationID, ConnectionMessage
 from xpra.dbus.helper import dbus_to_native
 from xpra.codecs.gstreamer.capture import Capture, CaptureAndEncode
-from xpra.gst_common import get_element_str
+from xpra.gstreamer.gst_common import get_element_str
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase

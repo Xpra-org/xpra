@@ -7,7 +7,7 @@
 import os
 import sys
 
-from xpra.util import parse_simple_dict
+from xpra.util.parsing import parse_simple_dict
 from xpra.server.auth.sys_auth_base import log, parse_uid, parse_gid, SessionData
 from xpra.server.auth.sqlauthbase import SQLAuthenticator, DatabaseUtilBase, run_dbutil
 

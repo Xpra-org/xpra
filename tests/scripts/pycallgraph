@@ -658,8 +658,8 @@ config.include_stdlib = bool(trace_thread)
 pcg = PyCallGraph(output=graphviz, config=config)
 
 if trace_thread:
-    from xpra import make_thread
-    saved_make_thread = make_thread.make_thread
+    from xpra.util import thread
+    saved_make_thread = thread.make_thread
     trace_count = 0
     def make_trace_daemon_thread(target, name, daemon=False, args=()):
         def trace_target(*args):
@@ -678,7 +678,7 @@ if trace_thread:
                 if trace_count<=0:
                     pcg.stop()
         return saved_make_thread(trace_target, name, daemon, args)
-    make_thread.make_thread = make_trace_daemon_thread
+    thread.make_thread = make_trace_daemon_thread
 else:
     def do_start_trace():
         print("starting trace")

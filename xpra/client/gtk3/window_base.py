@@ -17,11 +17,10 @@ from cairo import ( #pylint: disable=no-name-in-module
     )
 from gi.repository import Gtk, Gdk, Gio  # @UnresolvedImport
 
-from xpra.os_util import bytestostr, strtobytes, is_X11, WIN32, OSX, POSIX
-from xpra.util import (
-    typedict, envint, envbool, csv, first_time, MoveResize,
-    WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
-    )
+from xpra.os_util import bytestostr, strtobytes, is_X11, WIN32, OSX, POSIX, first_time
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv
+from xpra.util.env import envint, envbool
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.gtk_util import (
     ignorewarnings,
@@ -33,7 +32,8 @@ from xpra.gtk_common.gtk_util import (
     WINDOW_EVENT_MASK,
     )
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
-from xpra.common import KeyEvent
+from xpra.common import KeyEvent, MoveResize, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING, WORKSPACE_UNSET, \
+    WORKSPACE_ALL, WORKSPACE_NAMES
 from xpra.client.gui.window_base import ClientWindowBase
 from xpra.platform.gui import (
     set_fullscreen_monitors, set_shaded,
@@ -848,7 +848,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             geomlog("screen %s lacks monitors information: %s", screen0)
             return None
         try:
-            from xpra.rectangle import rectangle #@UnresolvedImport
+            from xpra.util.rectangle import rectangle #@UnresolvedImport
         except ImportError as e:
             geomlog("cannot calculate offset: %s", e)
             return None

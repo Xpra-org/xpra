@@ -10,12 +10,11 @@ import os.path
 from subprocess import Popen, PIPE
 from typing import Any
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.os_util import (
     OSX, POSIX,
     which,
     shellsub,
-    get_util_logger,
     osexpand, umask_context,
     )
 from xpra.log import Logger
@@ -27,8 +26,13 @@ UINPUT_UUID_LEN : int = 12
 
 # pylint: disable=import-outside-toplevel
 
+
+def get_logger():
+    from xpra.log import Logger
+    return Logger("server", "util")
+
 def source_env(source=()) -> dict[str, str]:
-    log = get_util_logger()
+    log = get_logger()
     log("source_env(%s)", source)
     env = {}
     for f in source:
@@ -218,7 +222,7 @@ def write_runner_shell_scripts(contents:str, overwrite:bool=True) -> None:
     # is running on the remote host.  Might need to revisit this later if
     # people run into problems or autodiscovery turns out to be less useful
     # than expected.
-    log = get_util_logger()
+    log = get_logger()
     MODE = 0o700
     from xpra.platform.paths import get_script_bin_dirs
     for d in get_script_bin_dirs():
@@ -327,7 +331,7 @@ def daemonize() -> None:
 
 
 def write_pidfile(pidfile:str) -> int:
-    log = get_util_logger()
+    log = get_logger()
     pidstr = str(os.getpid())
     inode = 0
     try:
@@ -348,7 +352,7 @@ def write_pidfile(pidfile:str) -> int:
 
 def rm_pidfile(pidfile : str, inode : int) -> None:
     #verify this is the right file!
-    log = get_util_logger()
+    log = get_logger()
     log("cleanuppidfile(%s, %s)", pidfile, inode)
     if inode>0:
         try:
@@ -365,7 +369,7 @@ def rm_pidfile(pidfile : str, inode : int) -> None:
 
 
 def get_uinput_device_path(device) -> str:
-    log = get_util_logger()
+    log = get_logger()
     try:
         log("get_uinput_device_path(%s)", device)
         fd = device._Device__uinput_fd
@@ -406,12 +410,12 @@ def has_uinput() -> bool:
         import uinput
         assert uinput
     except ImportError:
-        log = get_util_logger()
+        log = get_logger()
         log("has_uinput()", exc_info=True)
         log.info("no uinput module (not usually needed)")
         return False
     except Exception as e:
-        log = get_util_logger()
+        log = get_logger()
         log("has_uinput()", exc_info=True)
         log.warn("Warning: the system python uinput module looks broken:")
         log.warn(" %s", e)
@@ -419,7 +423,7 @@ def has_uinput() -> bool:
     try:
         uinput.fdopen()         #@UndefinedVariable
     except Exception as e:
-        log = get_util_logger()
+        log = get_logger()
         log("has_uinput()", exc_info=True)
         log.info("cannot use uinput for virtual devices,")
         log.info(" this is usually a permission issue:")
@@ -428,7 +432,7 @@ def has_uinput() -> bool:
     return True
 
 def create_uinput_device(uid:int, events, name:str) -> tuple[str, Any, str] | None:
-    log = get_util_logger()
+    log = get_logger()
     import uinput  # @UnresolvedImport
     BUS_USB = 0x03
     #BUS_VIRTUAL = 0x06
@@ -490,7 +494,7 @@ def create_uinput_touchpad_device(uuid, uid:int)-> tuple[str, Any, str] | None:
 
 
 def create_uinput_devices(uinput_uuid, uid:int) -> dict[str,Any]:
-    log = get_util_logger()
+    log = get_logger()
     try:
         import uinput  # @UnresolvedImport
         assert uinput

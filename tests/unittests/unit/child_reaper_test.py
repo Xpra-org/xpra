@@ -11,8 +11,8 @@ import unittest
 import subprocess
 
 from xpra.os_util import OSEnvContext
-from xpra import child_reaper
-from xpra.child_reaper import getChildReaper, reaper_cleanup, log
+from xpra.util import child_reaper
+from xpra.util.child_reaper import getChildReaper, reaper_cleanup, log
 
 
 class TestChildReaper(unittest.TestCase):

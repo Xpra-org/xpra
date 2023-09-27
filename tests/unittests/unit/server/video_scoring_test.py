@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.util import AdHocStruct
+from xpra.util.types import AdHocStruct
 from xpra.server.window.video_scoring import (
     get_quality_score, get_speed_score,
     get_pipeline_score, get_encoder_dimensions,

@@ -18,7 +18,8 @@ except ImportError:
 
 from xpra.os_util import load_binary_file, memoryview_to_bytes
 from xpra.net import compression
-from xpra.util import envbool, envint, csv
+from xpra.util.str_fn import csv
+from xpra.util.env import envint, envbool
 from xpra.log import Logger
 
 log = Logger("icon")

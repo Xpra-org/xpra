@@ -16,7 +16,7 @@ from xpra.platform import (
     get_application_name,
     command_error, command_info,
     )
-from xpra.make_thread import start_thread
+from xpra.util.thread import start_thread
 from xpra.scripts import main as xpra_main
 from xpra.os_util import WIN32
 

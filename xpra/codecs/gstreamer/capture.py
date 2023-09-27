@@ -7,14 +7,14 @@ from queue import Queue, Empty, Full
 from typing import Any
 from gi.repository import GObject  # @UnresolvedImport
 
-from xpra.util import typedict
-from xpra.gst_common import (
+from xpra.util.types import typedict
+from xpra.gstreamer.gst_common import (
     import_gst, GST_FLOW_OK, get_element_str,\
     get_default_appsink_attributes, get_all_plugin_names,
     get_caps_str,
     )
 from xpra.gtk_common.gobject_util import n_arg_signal
-from xpra.gst_pipeline import Pipeline
+from xpra.gstreamer.gst_pipeline import Pipeline
 from xpra.codecs.constants import get_profile
 from xpra.codecs.gstreamer.codec_common import (
     get_version, get_type, get_info,

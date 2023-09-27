@@ -7,7 +7,7 @@ import os
 import sys
 from ctypes import CDLL, c_int, c_char_p
 
-from xpra.util import typedict
+from xpra.util.types import typedict
 from xpra.os_util import POSIX, strtobytes
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 

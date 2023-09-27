@@ -8,7 +8,8 @@ from collections import namedtuple
 
 from xpra.client.gtk3.window import ClientWindow
 from xpra.gtk_common.gtk_util import set_visual
-from xpra.util import typedict, envbool
+from xpra.util.types import typedict
+from xpra.util.env import envbool
 from xpra.log import Logger
 
 log = Logger("opengl", "window")

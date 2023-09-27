@@ -11,10 +11,14 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gtk, Gdk   #pylint: disable=no-name-in-module
 
-from xpra.util import envbool, prettify_plug_name, csv, parse_simple_dict, XPRA_APP_ID
+from xpra.util.screen import prettify_plug_name
+from xpra.util.str_fn import csv
+from xpra.util.parsing import parse_simple_dict
+from xpra.util.env import envbool
+from xpra.common import XPRA_APP_ID
 from xpra.os_util import POSIX, OSX
 from xpra.scripts.config import parse_bool
-from xpra.server import server_features
+from xpra.server import features
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
@@ -157,7 +161,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def send_updated_screen_size(self) -> None:
         log("send_updated_screen_size")
         super().send_updated_screen_size()
-        if server_features.windows:
+        if features.windows:
             self.recreate_window_models()
 
     def recreate_window_models(self) -> None:
@@ -264,7 +268,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         raise NotImplementedError("dynamic window shadow is not implemented on this platform")
 
     def refresh_window_models(self) -> None:
-        if not self.window_matches or not server_features.windows:
+        if not self.window_matches or not features.windows:
             return
         #update the window models which may have changed,
         #some may have disappeared, new ones created,
@@ -376,7 +380,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             self.tray_menu.append(title_item)
             from xpra.gtk_common.about import about  # pylint: disable=import-outside-toplevel
             self.tray_menu.append(self.traymenuitem("About Xpra", "information.png", None, about))
-            if server_features.windows:
+            if features.windows:
                 def readonly_toggled(menuitem):
                     log("readonly_toggled(%s)", menuitem)
                     ro = menuitem.get_active()

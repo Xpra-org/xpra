@@ -12,7 +12,7 @@ gi.require_version("Gtk", "3.0")  # @UndefinedVariable
 from gi.repository import Gdk, Gtk  # @UnresolvedImport
 
 from xpra.log import Logger
-from xpra.util import envbool
+from xpra.util.env import envbool
 
 log = Logger("win32")
 

@@ -14,19 +14,17 @@ from typing import Any
 from gi.repository import Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.client.gtk3.window_base import HAS_X11_BINDINGS, XSHAPE
-from xpra.util import (
-    pver, noerr,
-    envbool, envint, repr_ellipsized, ellipsizer, csv, first_time, typedict,
-    DEFAULT_METADATA_SUPPORTED, NotificationID,
-    )
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized, pver
+from xpra.util.env import envint, envbool
 from xpra.os_util import (
     bytestostr, strtobytes, memoryview_to_bytes,
     hexstr, load_binary_file, osexpand,
-    WIN32, OSX, POSIX, is_Wayland,
-    )
+    WIN32, OSX, POSIX, is_Wayland, first_time,
+)
 from xpra.net.common import PacketType
-from xpra.common import FULL_INFO, VIDEO_MAX_SIZE
-from xpra.simple_stats import std_unit
+from xpra.common import FULL_INFO, VIDEO_MAX_SIZE, NotificationID, DEFAULT_METADATA_SUPPORTED, noerr
+from xpra.util.stats import std_unit
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS, InitExit
 from xpra.gtk_common.cursor_names import cursor_types
 from xpra.gtk_common.gtk_util import (

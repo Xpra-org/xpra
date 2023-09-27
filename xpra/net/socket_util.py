@@ -10,7 +10,7 @@ from ctypes import Structure, c_uint8, sizeof
 from typing import Any
 from collections.abc import Callable, ByteString
 
-from xpra.common import GROUP
+from xpra.common import GROUP, noerr
 from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
 from xpra.exit_codes import ExitCode
 from xpra.net.common import DEFAULT_PORT
@@ -20,11 +20,10 @@ from xpra.os_util import (
     path_permission_info, umask_context, WIN32, OSX, POSIX,
     parse_encoded_bin_data,
     )
-from xpra.util import (
-    envint, envbool, csv, parse_simple_dict, print_nested_dict, std,
-    ellipsizer, noerr,
-    )
-from xpra.make_thread import start_thread
+from xpra.util.str_fn import std, csv, ellipsizer, print_nested_dict
+from xpra.util.parsing import parse_simple_dict
+from xpra.util.env import envint, envbool
+from xpra.util.thread import start_thread
 
 #pylint: disable=import-outside-toplevel
 

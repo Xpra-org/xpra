@@ -11,7 +11,7 @@ from xpra.platform.features import (
     CLIPBOARDS, CLIPBOARD_PREFERRED_TARGETS,
     CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY,
     )
-from xpra.util import csv
+from xpra.util.str_fn import csv
 from xpra.net.common import PacketType
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin

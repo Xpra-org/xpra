@@ -17,12 +17,12 @@ gi.require_version('Gdk', '3.0')  # @UndefinedVariable
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 from gi.repository import GLib, Gdk, Gtk  #pylint: disable=no-name-in-module
 
-from xpra.util import envbool
-from xpra.version_util import dict_version_trim
+from xpra.util.env import envbool
+from xpra.util.version import dict_version_trim
 from xpra.common import FULL_INFO
 from xpra.net.common import PacketType
 from xpra.gtk_common.gobject_compat import register_os_signals
-from xpra.server import server_features
+from xpra.server import features
 from xpra.server.server_base import ServerBase
 from xpra.gtk_common.gtk_util import get_gtk_version_info, get_root_size
 from xpra.log import Logger
@@ -128,7 +128,7 @@ class GTKServerBase(ServerBase):
             from xpra.platform.ui_thread_watcher import get_UI_watcher  # pylint: disable=import-outside-toplevel
             self.ui_watcher = get_UI_watcher(GLib.timeout_add, GLib.source_remove)
             self.ui_watcher.start()
-        if server_features.windows:
+        if features.windows:
             display = Gdk.Display.get_default()
             if display:
                 #n = display.get_n_screens()

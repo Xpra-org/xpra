@@ -4,13 +4,13 @@
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
-from xpra.util import repr_ellipsized
+from xpra.util.str_fn import repr_ellipsized
 from xpra.os_util import is_X11, bytestostr
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.net.rfb.const import RFB_KEYNAMES
 from xpra.server.rfb.protocol import RFBServerProtocol
 from xpra.server.rfb.source import RFBSource
-from xpra.server import server_features
+from xpra.server import features
 from xpra.scripts.config import parse_bool, parse_number
 from xpra.log import Logger
 
@@ -127,7 +127,7 @@ class RFBServer:
         self.idle_add(self._accept_rfb_source, source)
 
     def _accept_rfb_source(self, source):
-        if server_features.input_devices:
+        if features.input_devices:
             source.keyboard_config = self.get_keyboard_config()
             self.set_keymap(source)
         model = self._get_rfb_desktop_model()
@@ -141,7 +141,7 @@ class RFBServer:
                 start_refresh(wid)      #pylint: disable=not-callable
 
     def _process_rfb_PointerEvent(self, _proto, packet):
-        if not server_features.input_devices or self.readonly:
+        if not features.input_devices or self.readonly:
             return
         buttons, x, y = packet[1:4]
         wid = self._get_rfb_desktop_wid()
@@ -161,7 +161,7 @@ class RFBServer:
         self.idle_add(process_pointer_event)
 
     def _process_rfb_KeyEvent(self, proto, packet):
-        if not server_features.input_devices or self.readonly:
+        if not features.input_devices or self.readonly:
             return
         source = self.get_server_source(proto)
         if not source:

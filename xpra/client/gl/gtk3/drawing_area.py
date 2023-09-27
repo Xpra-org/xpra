@@ -8,7 +8,7 @@ from typing import Any
 from collections.abc import Callable
 from gi.repository import GLib, Gtk, Gdk  # @UnresolvedImport
 
-from xpra.util import ellipsizer
+from xpra.util.str_fn import ellipsizer
 from xpra.client.gl.gl_window_backing_base import GLWindowBackingBase
 from xpra.platform.gl_context import GLContext
 from xpra.log import Logger

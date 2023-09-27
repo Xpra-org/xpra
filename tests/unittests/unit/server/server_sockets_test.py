@@ -11,7 +11,8 @@ import tempfile
 from time import monotonic
 from subprocess import Popen
 
-from xpra.util import repr_ellipsized, envint
+from xpra.util.str_fn import repr_ellipsized
+from xpra.util.env import envint
 from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
 from xpra.exit_codes import ExitCode
 from xpra.net.net_util import get_free_tcp_port

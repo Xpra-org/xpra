@@ -36,7 +36,8 @@ from Foundation import (
     NSUserNotificationDefaultSoundName,             #@UnresolvedImport
     )
 
-from xpra.util import envbool, envint, roundup
+from xpra.common import roundup
+from xpra.util.env import envint, envbool
 from xpra.notifications.notifier_base import NotifierBase
 from xpra.platform.darwin import get_OSXApplication
 from xpra.log import Logger

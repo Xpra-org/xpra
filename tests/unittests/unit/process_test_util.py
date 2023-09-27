@@ -12,7 +12,8 @@ import tempfile
 import unittest
 import subprocess
 
-from xpra.util import envbool, envint, repr_ellipsized
+from xpra.util.str_fn import repr_ellipsized
+from xpra.util.env import envint, envbool
 from xpra.os_util import (
     OSX, OSEnvContext, POSIX,
     pollwait, osexpand, bytestostr,

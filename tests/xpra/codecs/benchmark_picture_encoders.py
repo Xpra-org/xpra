@@ -10,7 +10,7 @@ from time import monotonic
 from PIL import Image
 
 from xpra.net import compression
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.loader import load_codec
 

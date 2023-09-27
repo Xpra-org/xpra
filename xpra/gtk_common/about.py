@@ -9,7 +9,7 @@ import gi
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 from gi.repository import Gtk  # @UnresolvedImport
 
-from xpra.version_util import XPRA_VERSION
+from xpra.util.version import XPRA_VERSION
 from xpra.scripts.config import get_build_info
 from xpra.gtk_common.gtk_util import add_close_accel
 from xpra.log import Logger

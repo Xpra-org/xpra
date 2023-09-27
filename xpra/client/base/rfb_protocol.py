@@ -13,7 +13,7 @@ from xpra.net.rfb.const import (
     CLIENT_INIT, AUTH_STR, RFB_KEYS,
     )
 from xpra.os_util import hexstr, bytestostr
-from xpra.util import repr_ellipsized, csv
+from xpra.util.str_fn import csv, repr_ellipsized
 from xpra.log import Logger
 
 log = Logger("network", "protocol", "rfb")

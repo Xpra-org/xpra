@@ -13,7 +13,8 @@ from weakref import WeakValueDictionary
 from typing import Any, Dict
 from threading import Event
 
-from xpra.util import csv, AtomicInteger
+from xpra.util.str_fn import csv
+from xpra.util.types import AtomicInteger
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.nvidia.cuda.errors import cudacheck, get_error_name
 from xpra.codecs.nvidia.cuda.context import get_default_device_context

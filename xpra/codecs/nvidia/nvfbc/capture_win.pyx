@@ -12,7 +12,8 @@ from time import monotonic
 from typing import Any, Dict
 
 from xpra.os_util import WIN32
-from xpra.util import csv, roundup
+from xpra.util.str_fn import csv
+from xpra.common import roundup
 from xpra.codecs.constants import TransientCodecException, CodecStateException
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.nvidia.cuda.image_wrapper import CUDAImageWrapper

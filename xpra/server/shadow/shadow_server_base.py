@@ -11,10 +11,11 @@ from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.notifications.common import parse_image_path
 from xpra.platform.gui import get_native_notifier_classes, get_wm_name
 from xpra.platform.paths import get_icon_dir
-from xpra.server import server_features
+from xpra.server import features
 from xpra.net.common import PacketType
 from xpra.os_util import is_Wayland
-from xpra.util import envint, envbool, ConnectionMessage, NotificationID
+from xpra.util.env import envint, envbool
+from xpra.common import NotificationID, ConnectionMessage
 from xpra.log import Logger
 
 log = Logger("shadow")
@@ -30,7 +31,7 @@ NOTIFY_STARTUP = envbool("XPRA_SHADOW_NOTIFY_STARTUP", True)
 
 
 SHADOWSERVER_BASE_CLASS : type = object
-if server_features.rfb:
+if features.rfb:
     from xpra.server.rfb.server import RFBServer
     SHADOWSERVER_BASE_CLASS = RFBServer
 
@@ -100,7 +101,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         return "shadow"
 
     def print_screen_info(self) -> None:
-        if not server_features.display or not self.root:
+        if not features.display or not self.root:
             return
         w, h = self.root.get_geometry()[2:4]
         dinfo = None
@@ -297,10 +298,10 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def start_poll_pointer(self) -> None:
         log("start_poll_pointer() pointer_poll_timer=%s, input_devices=%s, POLL_POINTER=%s",
-            self.pointer_poll_timer, server_features.input_devices, POLL_POINTER)
+            self.pointer_poll_timer, features.input_devices, POLL_POINTER)
         if self.pointer_poll_timer:
             self.cancel_poll_pointer()
-        if server_features.input_devices and POLL_POINTER>0:
+        if features.input_devices and POLL_POINTER>0:
             self.pointer_poll_timer = self.timeout_add(POLL_POINTER, self.poll_pointer)
 
     def cancel_poll_pointer(self) -> None:

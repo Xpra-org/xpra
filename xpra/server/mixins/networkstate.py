@@ -12,10 +12,12 @@ from gi.repository import GLib
 
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.scripts.config import parse_with_unit
-from xpra.simple_stats import std_unit
+from xpra.util.stats import std_unit
 from xpra.net.common import PacketType
 from xpra.os_util import livefds, POSIX
-from xpra.util import envbool, envint, detect_leaks, typedict
+from xpra.util.pysystem import detect_leaks
+from xpra.util.types import typedict
+from xpra.util.env import envint, envbool
 from xpra.log import Logger
 
 log = Logger("network")
@@ -99,7 +101,7 @@ class NetworkStateServer(StubServerMixin):
                     while not self._closing:
                         pm()
                         sleep(DETECT_MEMLEAKS)
-                from xpra.make_thread import start_thread  # pylint: disable=import-outside-toplevel
+                from xpra.util.thread import start_thread  # pylint: disable=import-outside-toplevel
                 start_thread(leak_thread, "leak thread", daemon=True)
         if DETECT_FDLEAKS:
             self.fds = livefds()

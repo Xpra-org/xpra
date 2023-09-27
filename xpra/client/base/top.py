@@ -11,20 +11,22 @@ from time import monotonic
 from subprocess import Popen, PIPE, DEVNULL
 from datetime import datetime, timedelta
 
-from xpra.version_util import caps_to_version, full_version_str
-from xpra.util import noerr, typedict, std, envint, csv
+from xpra.util.version import caps_to_version, full_version_str
+from xpra.util.types import typedict
+from xpra.util.str_fn import std, csv
+from xpra.util.env import envint
 from xpra.os_util import (
     platform_name, get_machine_id,
     bytestostr,
     POSIX, SIGNAMES,
     )
 from xpra.exit_codes import ExitCode
-from xpra.make_thread import start_thread
+from xpra.util.thread import start_thread
 from xpra.client.base.gobject_client import InfoTimerClient
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_nodock_command
-from xpra.simple_stats import std_unit
-from xpra.common import GravityStr
+from xpra.util.stats import std_unit
+from xpra.common import GravityStr, noerr
 from xpra.log import Logger
 
 log = Logger("gobject", "client")

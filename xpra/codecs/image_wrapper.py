@@ -5,7 +5,7 @@
 
 from enum import IntEnum
 from time import monotonic
-from xpra.util import roundup
+from xpra.common import roundup
 from xpra.os_util import memoryview_to_bytes
 
 def clone_plane(plane):

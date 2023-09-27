@@ -6,7 +6,7 @@
 
 from typing import Any
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.gtk_common.error import xsync, xlog
 from xpra.x11.gtk_x11.prop import prop_get
 from xpra.x11.bindings.window import X11WindowBindings #@UnresolvedImport

@@ -10,7 +10,7 @@ import sys
 import unittest
 import binascii
 
-from xpra.util import ellipsizer
+from xpra.util.str_fn import ellipsizer
 from xpra.log import add_debug_category, enable_debug_for, Logger
 
 log = Logger("brotli")

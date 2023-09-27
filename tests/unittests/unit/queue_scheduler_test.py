@@ -6,7 +6,8 @@
 
 import unittest
 
-from xpra import queue_scheduler
+from xpra.server.proxy import queue_scheduler
+
 QueueScheduler = queue_scheduler.QueueScheduler
 
 

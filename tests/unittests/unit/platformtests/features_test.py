@@ -11,10 +11,10 @@ from xpra.platform.features import main as features_main
 class FeaturesTest(unittest.TestCase):
 
     def test_main(self):
-        from xpra import util
+        from xpra.util import str_fn
         def noop(*_args):
             pass
-        util.print_nested_dict = noop
+        str_fn.print_nested_dict = noop
         features_main()
 
 def main():

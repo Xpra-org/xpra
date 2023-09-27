@@ -9,7 +9,7 @@ import os
 from typing import Any
 from collections.abc import Callable
 
-from xpra.gst_common import (
+from xpra.gstreamer.gst_common import (
     has_plugins, get_all_plugin_names,
     import_gst, get_gst_version,
     )
@@ -20,7 +20,10 @@ from xpra.audio.common import (
     MPEG4, MKA, OGG,
     )
 from xpra.os_util import WIN32, OSX, POSIX, bytestostr
-from xpra.util import csv, parse_simple_dict, reverse_dict, envint, envbool
+from xpra.util.types import reverse_dict
+from xpra.util.str_fn import csv
+from xpra.util.parsing import parse_simple_dict
+from xpra.util.env import envint, envbool
 from xpra.log import Logger
 
 log = Logger("audio", "gstreamer")

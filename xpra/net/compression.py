@@ -9,7 +9,7 @@ from typing import Any, ByteString
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.common import MIN_COMPRESS_SIZE, MAX_DECOMPRESSED_SIZE
 
 
@@ -228,7 +228,7 @@ def decompress_by_name(data:bytes, algo:str):
 
 def main(): # pragma: no cover
     #pylint: disable=import-outside-toplevel
-    from xpra.util import print_nested_dict
+    from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context
     with program_context("Compression", "Compression Info"):
         init_all()

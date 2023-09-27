@@ -24,7 +24,7 @@ for x in dir(Gdk.CursorType):
 
 def main():
     # pylint: disable=import-outside-toplevel
-    from xpra.util import csv
+    from xpra.util.str_fn import csv
     from xpra.platform import program_context
     with program_context("Cursors", "Cursors"):
         print(csv(cursor_types))

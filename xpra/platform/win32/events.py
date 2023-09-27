@@ -10,7 +10,7 @@ from ctypes import (
     WinError, get_last_error,  # @UnresolvedImport
     )
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.platform.win32.wtsapi import (
     NOTIFY_FOR_THIS_SESSION,
     WM_WTSSESSION_CHANGE, WM_DWMNCRENDERINGCHANGED, WM_DWMCOMPOSITIONCHANGED,

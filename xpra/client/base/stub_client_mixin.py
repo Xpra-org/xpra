@@ -7,7 +7,7 @@ import sys
 import time
 from typing import Any
 
-from xpra.util import typedict
+from xpra.util.types import typedict
 from xpra.net.compression import Compressed
 from xpra.net.common import PacketHandlerType
 

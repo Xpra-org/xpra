@@ -14,7 +14,9 @@ from collections.abc import Callable
 from gi.repository import GLib
 
 from xpra.os_util import POSIX
-from xpra.util import envint, envbool, csv, typedict
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv
+from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode
 from xpra.net.common import PacketType
 from xpra.net.packet_encoding import ALL_ENCODERS

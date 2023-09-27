@@ -51,7 +51,7 @@ def main(argv):
         enable_debug_for("webcam")
         add_debug_category("webcam")
     run = "-r" in argv or "--run" in argv
-    from xpra.util import print_nested_dict
+    from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context
     with program_context("Webcam Info", "Webcam Info"):
         devices = get_virtual_video_devices() or {}

@@ -21,13 +21,14 @@ from xpra.x11.vfb_util import parse_resolutions
 from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del
 from xpra.x11.gtk3.gdk_display_source import close_gdk_display_source
 from xpra.x11.gtk3.gdk_bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
-from xpra.common import MAX_WINDOW_SIZE, FULL_INFO
-from xpra.os_util import bytestostr
-from xpra.util import typedict, envbool, first_time, NotificationID
+from xpra.common import MAX_WINDOW_SIZE, FULL_INFO, NotificationID
+from xpra.os_util import bytestostr, first_time
+from xpra.util.types import typedict
+from xpra.util.env import envbool
 from xpra.net.compression import Compressed
 from xpra.net.common import PacketType
 from xpra.server.gtk_server_base import GTKServerBase
-from xpra.server import server_features
+from xpra.server import features
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.log import Logger
@@ -127,7 +128,7 @@ class X11ServerCore(GTKServerBase):
 
     def server_init(self) -> None:
         self.x11_init()
-        if server_features.windows:
+        if features.windows:
             from xpra.x11.window_filters import init_x11_window_filters
             init_x11_window_filters()
         super().server_init()
@@ -870,8 +871,8 @@ class X11ServerCore(GTKServerBase):
 
 
     def setup_input_devices(self) -> None:
-        xinputlog("setup_input_devices() input_devices feature=%s", server_features.input_devices)
-        if not server_features.input_devices:
+        xinputlog("setup_input_devices() input_devices feature=%s", features.input_devices)
+        if not features.input_devices:
             return
         xinputlog("setup_input_devices() format=%s, input_devices=%s", self.input_devices_format, self.input_devices)
         xinputlog("setup_input_devices() input_devices_data=%s", self.input_devices_data)

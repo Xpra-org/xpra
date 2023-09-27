@@ -16,7 +16,7 @@ from gi.repository import Gdk               #@UnresolvedImport
 from gi.repository import Gtk               #@UnresolvedImport
 
 from xpra.os_util import strtobytes, bytestostr
-from xpra.util import csv
+from xpra.util.str_fn import csv
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "gtk")

@@ -14,7 +14,7 @@ from xpra.server.cystats import (                                           #@Un
     logp, calculate_time_weighted_average, calculate_size_weighted_average, #@UnresolvedImport
     calculate_for_target, time_weighted_average, queue_inspect,             #@UnresolvedImport
     )
-from xpra.simple_stats import get_list_stats
+from xpra.util.stats import get_list_stats
 from xpra.log import Logger
 
 log = Logger("network", "stats")

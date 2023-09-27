@@ -9,7 +9,8 @@ import time
 import unittest
 from gi.repository import GLib  # @UnresolvedImport
 
-from xpra.util import csv, envint, envbool
+from xpra.util.str_fn import csv
+from xpra.util.env import envint, envbool
 from xpra.common import noop
 from xpra.net.protocol import socket_handler
 from xpra.net.protocol import check
@@ -56,9 +57,6 @@ class FastMemoryConnection(Connection):
     def __repr__(self):
         return "FastMemoryConnection"
 
-
-def noop(*_args):
-    pass
 
 def nodata(*_args):
     return None

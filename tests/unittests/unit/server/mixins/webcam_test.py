@@ -7,7 +7,7 @@
 import unittest
 import binascii
 
-from xpra.util import AdHocStruct
+from xpra.util.types import AdHocStruct
 
 from unit.test_util import silence_info
 from unit.server.mixins.servermixintest_util import ServerMixinTest

@@ -12,7 +12,9 @@ import gi
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
 from gi.repository import Gdk  # @UnresolvedImport
 
-from xpra.util import csv, envbool, typedict
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv
+from xpra.util.env import envbool
 from xpra.os_util import bytestostr
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.gtk_common.gtk_util import get_default_root_window

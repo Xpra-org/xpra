@@ -8,7 +8,7 @@ import os.path
 import logging
 from typing import Any
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 
 SILENCE_COMTYPES = envbool("XPRA_SILENCE_COMTYPES", True)
 if SILENCE_COMTYPES:

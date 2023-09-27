@@ -35,7 +35,9 @@ from xpra.clipboard.core import (
     ClipboardProxyCore, log, _filter_targets,
     TEXT_TARGETS, MAX_CLIPBOARD_PACKET_SIZE,
     )
-from xpra.util import csv, ellipsizer, envint, envbool, roundup
+from xpra.common import roundup
+from xpra.util.str_fn import csv, ellipsizer
+from xpra.util.env import envint, envbool
 from xpra.os_util import bytestostr
 from xpra.platform.win32.constants import PROCESS_QUERY_INFORMATION
 

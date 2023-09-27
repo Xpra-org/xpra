@@ -5,7 +5,8 @@
 
 from typing import Any
 from collections.abc import Callable
-from xpra.util import typedict
+from xpra.util.types import typedict
+
 
 class StubSourceMixin:
     """

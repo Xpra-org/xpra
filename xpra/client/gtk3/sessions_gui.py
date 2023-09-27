@@ -15,7 +15,7 @@ from gi.repository import GLib, Gtk, Gio  # @UnresolvedImport
 from xpra.platform.paths import get_xpra_command, get_nodock_command
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.gui import force_focus
-from xpra.child_reaper import getChildReaper
+from xpra.util.child_reaper import getChildReaper
 from xpra.exit_codes import exit_str
 from xpra.scripts.config import OPTION_TYPES
 from xpra.scripts.main import get_command_args
@@ -25,7 +25,7 @@ from xpra.gtk_common.gtk_util import (
     )
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.net.common import DEFAULT_PORTS
-from xpra.util import typedict
+from xpra.util.types import typedict
 from xpra.os_util import bytestostr, WIN32
 from xpra.log import Logger
 

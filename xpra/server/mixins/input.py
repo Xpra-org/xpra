@@ -9,7 +9,8 @@ from time import monotonic
 from typing import Any
 
 from xpra.os_util import bytestostr
-from xpra.util import typedict, envbool
+from xpra.util.types import typedict
+from xpra.util.env import envbool
 from xpra.net.common import PacketType
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -480,7 +481,7 @@ class InputServer(StubServerMixin):
     def _process_input_devices(self, _proto, packet : PacketType) -> None:
         self.input_devices_format = packet[1]
         self.input_devices_data = packet[2]
-        from xpra.util import print_nested_dict
+        from xpra.util.str_fn import print_nested_dict
         mouselog("client %s input devices:", self.input_devices_format)
         print_nested_dict(self.input_devices_data, print_fn=mouselog)
         self.setup_input_devices()

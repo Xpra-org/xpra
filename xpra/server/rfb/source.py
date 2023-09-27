@@ -14,7 +14,8 @@ from xpra.net.rfb.encode import (
 from xpra.net.protocol.socket_handler import PACKET_JOIN_SIZE
 from xpra.os_util import memoryview_to_bytes
 from xpra.os_util import strtobytes
-from xpra.util import AtomicInteger, csv
+from xpra.util.types import AtomicInteger
+from xpra.util.str_fn import csv
 from xpra.log import Logger
 
 log = Logger("rfb")

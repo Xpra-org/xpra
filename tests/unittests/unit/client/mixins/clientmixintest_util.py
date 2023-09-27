@@ -7,7 +7,7 @@
 import unittest
 from gi.repository import GLib  # @UnresolvedImport
 
-from xpra.util import typedict, AdHocStruct
+from xpra.util.types import typedict, AdHocStruct
 
 
 class ClientMixinTest(unittest.TestCase):

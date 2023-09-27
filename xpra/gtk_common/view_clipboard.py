@@ -9,7 +9,7 @@ import gi
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.util import csv
+from xpra.util.str_fn import csv
 from xpra.gtk_common.gtk_util import TableBuilder, label, get_icon_pixbuf
 from xpra.platform.features import CLIPBOARDS
 

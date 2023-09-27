@@ -8,8 +8,11 @@ import os
 import sys
 from typing import Any
 
-from xpra.version_util import version_str
-from xpra.util import envint, envfloat, envbool, csv, typedict, ConnectionMessage
+from xpra.util.version import version_str
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv
+from xpra.util.env import envint, envbool, envfloat
+from xpra.common import ConnectionMessage
 from xpra.os_util import bytestostr, get_machine_id, WIN32
 from xpra.net.bytestreams import log_new_connection
 from xpra.net.socket_util import create_sockets, add_listen_socket, accept_connection, setup_local_sockets

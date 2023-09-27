@@ -7,9 +7,11 @@ import os
 from typing import Any
 from gi.repository import GObject, Gdk, Gio  # @UnresolvedImport
 
-from xpra.util import log_screen_sizes, envbool, csv
+from xpra.util.screen import log_screen_sizes
+from xpra.util.str_fn import csv
+from xpra.util.env import envbool
 from xpra.net.common import PacketType
-from xpra.server import server_features
+from xpra.server import features
 from xpra.gtk_common.gtk_util import get_screen_sizes, get_root_size
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.x11.gtk3.gdk_bindings import (
@@ -39,7 +41,7 @@ MULTI_MONITORS : bool = envbool("XPRA_DESKTOP_MULTI_MONITORS", True)
 
 def get_desktop_server_base_classes() -> tuple[type,...]:
     classes : list[type] = [GObject.GObject]
-    if server_features.rfb:
+    if features.rfb:
         from xpra.server.rfb.server import RFBServer
         classes.append(RFBServer)
     classes.append(X11ServerBase)
@@ -260,7 +262,7 @@ class DesktopServerBase(DesktopServerBaseClass):
 
     def _process_configure_window(self, proto, packet : PacketType) -> None:
         wid, x, y, w, h = (int(x) for x in packet[1:6])
-        if len(packet)>=13 and server_features.input_devices and not self.readonly:
+        if len(packet)>=13 and features.input_devices and not self.readonly:
             pwid = int(packet[10])
             pointer = packet[11]
             modifiers = packet[12]

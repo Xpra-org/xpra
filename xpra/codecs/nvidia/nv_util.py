@@ -8,7 +8,8 @@ import sys
 import os
 from threading import RLock
 
-from xpra.util import pver, print_nested_dict, envbool, csv
+from xpra.util.str_fn import csv, print_nested_dict, pver
+from xpra.util.env import envbool
 from xpra.os_util import bytestostr, strtobytes, load_binary_file, POSIX
 from xpra.platform.paths import get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs
 from xpra.log import Logger

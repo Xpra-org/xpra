@@ -25,7 +25,7 @@ from xpra.x11.gtk3.gdk_bindings import (
     get_pywindow,               #@UnresolvedImport
     )
 from xpra.exit_codes import ExitCode
-from xpra.util import envint
+from xpra.util.env import envint
 from xpra.log import Logger
 
 log = Logger("x11", "util")

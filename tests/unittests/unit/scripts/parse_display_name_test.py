@@ -9,7 +9,7 @@ import tempfile
 import unittest
 
 from xpra.os_util import WIN32, POSIX
-from xpra.util import AdHocStruct
+from xpra.util.types import AdHocStruct
 from xpra.scripts.parsing import parse_display_name
 
 

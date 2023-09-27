@@ -9,7 +9,7 @@ import os
 import sys
 import unittest
 
-from xpra.util import ellipsizer
+from xpra.util.str_fn import ellipsizer
 from xpra.os_util import memoryview_to_bytes as mtb
 from xpra.log import add_debug_category, enable_debug_for, Logger
 
@@ -39,7 +39,7 @@ class TestLZ4(unittest.TestCase):
     def fd(self, v, match_value=None, maxsize=512*1024):
         try:
             self.td(v, match_value, maxsize)
-        except:
+        except Exception:
             pass
         else:
             raise ValueError("decompression should have failed for %r" % v)
@@ -55,7 +55,7 @@ class TestLZ4(unittest.TestCase):
     def fc(self, v, match_value=None, maxsize=512*1024):
         try:
             self.tc(v, match_value, maxsize)
-        except:
+        except Exception:
             pass
         else:
             raise ValueError("compression should have failed for %r" % v)

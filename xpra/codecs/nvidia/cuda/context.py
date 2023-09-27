@@ -15,12 +15,14 @@ from typing import Any
 
 from xpra.codecs.nvidia.nv_util import numpy_import_lock
 from xpra.codecs.constants import TransientCodecException
-from xpra.util import print_nested_dict, envint, envbool, csv, first_time, typedict
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv, print_nested_dict
+from xpra.util.env import envint, envbool
 from xpra.platform.paths import (
     get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs,
     get_resources_dir, get_app_dir,
     )
-from xpra.os_util import load_binary_file, is_WSL, WIN32
+from xpra.os_util import load_binary_file, is_WSL, WIN32, first_time
 from xpra.log import Logger
 
 if WIN32 and not os.environ.get("CUDA_PATH") and getattr(sys, "frozen", None) in ("windows_exe", "console_exe", True):

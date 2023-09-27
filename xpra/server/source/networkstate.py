@@ -8,7 +8,9 @@ import time
 from time import monotonic
 from typing import Any
 
-from xpra.util import envbool, envint, typedict, ConnectionMessage
+from xpra.util.types import typedict
+from xpra.util.env import envint, envbool
+from xpra.common import ConnectionMessage
 from xpra.os_util import POSIX
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger

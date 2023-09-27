@@ -14,7 +14,7 @@ import signal
 from typing import Any
 from collections.abc import Callable
 
-from xpra.util import envint, envbool
+from xpra.util.env import envint, envbool
 from xpra.os_util import POSIX, gi_import
 from xpra.log import Logger
 

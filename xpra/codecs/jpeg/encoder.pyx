@@ -13,7 +13,9 @@ from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context    #pylint: dis
 from xpra.codecs.constants import get_subsampling_divs
 from xpra.codecs.debug import may_save_image
 from xpra.net.compression import Compressed
-from xpra.util import envbool, typedict, csv
+from xpra.util.env import envbool
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv
 from xpra.os_util import bytestostr
 from xpra.log import Logger
 log = Logger("encoder", "jpeg")

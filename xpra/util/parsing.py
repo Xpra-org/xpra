@@ -4,7 +4,9 @@
 # later version. See the file COPYING for details.
 
 import os
-from xpra.util import envfloat
+
+from xpra.os_util import get_util_logger
+from xpra.util.env import envfloat
 from xpra.log import Logger
 from xpra.scripts.config import TRUE_OPTIONS
 
@@ -129,3 +131,57 @@ def parse_scaling(desktop_scaling, root_w, root_h, min_scaling=MIN_SCALING, max_
         return 1, 1
     log("parse_scaling(%s)=%s", desktop_scaling, (sx, sy))
     return sx, sy
+
+
+def parse_simple_dict(s:str="", sep:str=",") -> dict[str, str | list[str]]:
+    #parse the options string and add the pairs:
+    d : dict[str, str | list[str]] = {}
+    for el in s.split(sep):
+        if not el:
+            continue
+        try:
+            k, v = el.split("=", 1)
+            def may_add() -> str| list[str]:
+                cur = d.get(k)
+                if cur is None:
+                    return v
+                if not isinstance(cur, list):
+                    cur = [cur]
+                cur.append(v)
+                return cur
+            d[k] = may_add()
+        except Exception as e:
+            log = get_util_logger()
+            log.warn("Warning: failed to parse dictionary option '%s':", s)
+            log.warn(" %s", e)
+    return d
+
+
+def parse_scaling_value(v) -> tuple[int,int] | None:
+    if not v:
+        return None
+    if v.endswith("%"):
+        return float(v[:1]).as_integer_ratio()
+    values = v.replace("/", ":").replace(",", ":").split(":", 1)
+    values = [int(x) for x in values]
+    for x in values:
+        assert x>0, f"invalid scaling value {x}"
+    if len(values)==1:
+        ret = 1, values[0]
+    else:
+        assert values[0]<=values[1], "cannot upscale"
+        ret = values[0], values[1]
+    return ret
+
+
+def from0to100(v):
+    return intrangevalidator(v, 0, 100)
+
+
+def intrangevalidator(v, min_value=None, max_value=None):
+    v = int(v)
+    if min_value is not None and v<min_value:
+        raise ValueError(f"value must be greater than {min_value}")
+    if max_value is not None and v>max_value:
+        raise ValueError(f"value must be lower than {max_value}")
+    return v

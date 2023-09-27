@@ -8,7 +8,7 @@ from typing import Any
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
-from xpra.util import typedict
+from xpra.util.types import typedict
 from xpra.log import Logger
 
 log = Logger("keyboard")

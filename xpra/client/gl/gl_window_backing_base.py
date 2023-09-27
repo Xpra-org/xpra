@@ -59,10 +59,11 @@ from OpenGL.GL.ARB.framebuffer_object import (
 
 from xpra.os_util import (
     strtobytes, bytestostr, hexstr,
-    POSIX, OSX,
-    )
-from xpra.util import envint, envbool, repr_ellipsized, first_time, roundup
-from xpra.common import noop
+    POSIX, OSX, first_time,
+)
+from xpra.util.str_fn import repr_ellipsized
+from xpra.util.env import envint, envbool
+from xpra.common import noop, roundup
 from xpra.codecs.constants import get_subsampling_divs, get_plane_name
 from xpra.client.gui.window_border import WindowBorder
 from xpra.client.gui.paint_colors import get_paint_box_color

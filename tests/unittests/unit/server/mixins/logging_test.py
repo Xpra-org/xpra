@@ -8,7 +8,7 @@ import time
 import unittest
 
 from unit.test_util import silence_error
-from xpra.util import AdHocStruct
+from xpra.util.types import AdHocStruct
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.mixins import logging
 from unit.server.mixins.servermixintest_util import ServerMixinTest

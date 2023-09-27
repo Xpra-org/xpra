@@ -7,7 +7,8 @@
 
 from xpra.net.digest import verify_digest
 from xpra.server.auth.file_auth_base import FileAuthenticatorBase, log
-from xpra.util import obsc, typedict
+from xpra.util.types import typedict
+from xpra.util.str_fn import obsc
 
 
 class Authenticator(FileAuthenticatorBase):

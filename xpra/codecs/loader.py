@@ -9,9 +9,10 @@ import os.path
 from types import ModuleType
 from typing import Any
 
-from xpra.util import envbool, csv
+from xpra.util.str_fn import csv, print_nested_dict, pver
+from xpra.util.env import envbool
 from xpra.os_util import OSX, WIN32
-from xpra.version_util import parse_version
+from xpra.util.version import parse_version
 from xpra.codecs.constants import HELP_ORDER
 from xpra.log import Logger
 log = Logger("codec", "loader")
@@ -382,7 +383,6 @@ def main(args) -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.log import enable_color, LOG_FORMAT, NOPREFIX_FORMAT
-    from xpra.util import print_nested_dict, pver
     with program_context("Loader", "Encoding Info"):
         verbose = "-v" in args or "--verbose" in args
         args = [x for x in args if x not in ("-v", "--verbose")]

@@ -9,7 +9,7 @@ from uinput import (
     REL_X, REL_Y, BTN_TOUCH, ABS_X, ABS_Y, ABS_PRESSURE,    # @UnresolvedImport
     )
 
-from xpra.util import envint
+from xpra.util.env import envint
 from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
 from xpra.gtk_common.error import xsync, xlog
 from xpra.log import Logger

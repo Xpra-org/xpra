@@ -32,7 +32,8 @@ from xpra.net.socket_util import get_ssl_verify_mode, create_udp_socket
 from xpra.net.quic.connection import XpraQuicConnection
 from xpra.net.quic.asyncio_thread import get_threaded_loop
 from xpra.net.quic.common import USER_AGENT, MAX_DATAGRAM_FRAME_SIZE, binary_headers
-from xpra.util import ellipsizer, envbool, csv
+from xpra.util.str_fn import csv, ellipsizer
+from xpra.util.env import envbool
 from xpra.log import Logger
 log = Logger("quic")
 

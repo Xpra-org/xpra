@@ -15,7 +15,9 @@ from collections.abc import Iterable
 from xpra.common import DEFAULT_XDG_DATA_DIRS
 from xpra.net.http.directory_listing import list_directory
 from xpra.net.bytestreams import pretty_socket
-from xpra.util import envbool, std, csv, AdHocStruct, repr_ellipsized
+from xpra.util.types import AdHocStruct
+from xpra.util.str_fn import std, csv, repr_ellipsized
+from xpra.util.env import envbool
 from xpra.platform.paths import get_desktop_background_paths
 from xpra.log import Logger
 

@@ -8,7 +8,7 @@ import os
 import logging
 import unittest
 
-from xpra.util import csv
+from xpra.util.str_fn import csv
 from xpra.codecs import loader
 from xpra.codecs.constants import TransientCodecException
 

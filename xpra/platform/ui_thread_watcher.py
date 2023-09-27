@@ -9,8 +9,8 @@ from time import monotonic
 from threading import Event
 from collections.abc import Callable
 
-from xpra.make_thread import start_thread
-from xpra.util import envint
+from xpra.util.thread import start_thread
+from xpra.util.env import envint
 from xpra.log import Logger
 
 log = Logger("util")

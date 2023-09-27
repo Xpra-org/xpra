@@ -13,13 +13,14 @@ from collections import deque
 from typing import Any
 from gi.repository import GObject, Gdk, GdkX11  # @UnresolvedImport
 
-from xpra.version_util import XPRA_VERSION
-from xpra.util import rindex, envbool, envint, typedict, WORKSPACE_NAMES
+from xpra.util.version import XPRA_VERSION
+from xpra.util.types import typedict
+from xpra.util.env import envint, envbool
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr
-from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE
+from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES
 from xpra.net.common import PacketType
 from xpra.scripts.config import InitException  #pylint: disable=import-outside-toplevel
-from xpra.server import server_features, EXITING_CODE
+from xpra.server import features, EXITING_CODE
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_pixbuf_from_data
 from xpra.x11.common import Unmanageable, get_wm_name
@@ -63,6 +64,10 @@ DUMMY_MONITORS = envbool("XPRA_DUMMY_MONITORS", True)
 WINDOW_SIGNALS = os.environ.get("XPRA_WINDOW_SIGNALS", "SIGINT,SIGTERM,SIGQUIT,SIGCONT,SIGUSR1,SIGUSR2").split(",")
 
 
+def rindex(alist:list | tuple, avalue:Any) -> int:
+    return len(alist) - alist[::-1].index(avalue) - 1
+
+
 class SeamlessServer(GObject.GObject, X11ServerBase):
     __gsignals__ = {
         "xpra-child-map-event"  : one_arg_signal,
@@ -103,7 +108,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         X11ServerBase.server_init(self)
         screenlog("server_init() clobber=%s, randr=%s, initial_resolutions=%s",
                   self.clobber, self.randr, self.initial_resolutions)
-        if server_features.display and self.randr and (self.initial_resolutions or not self.clobber):
+        if features.display and self.randr and (self.initial_resolutions or not self.clobber):
             from xpra.x11.vfb_util import set_initial_resolution, parse_env_resolutions
             DEFAULT_VFB_RESOLUTIONS = parse_env_resolutions(default_refresh_rate=self.refresh_rate)
             with xlog:
@@ -193,7 +198,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                     raise
                 #retry:
                 sleep(0.010*count)
-        if server_features.windows:
+        if features.windows:
             self._wm.connect("new-window", self._new_window_signaled)
         self._wm.connect("quit", lambda _: self.clean_quit(True))
         self._wm.connect("show-desktop", self._show_desktop)
@@ -233,7 +238,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         wm = self._wm
         if wm:
             wm.set_size_constraints(minw, minh, maxw, maxh)
-        elif server_features.windows:
+        elif features.windows:
             #update the static default so the Wm instance will use it
             #when we do instantiate it:
             from xpra.x11.gtk_x11 import wm as wm_module
@@ -655,7 +660,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
 
 
     def add_control_commands(self) -> None:
-        if not server_features.control:
+        if not features.control:
             return
         super().add_control_commands()
         from xpra.server.control_command import ArgsControlCommand
@@ -1005,7 +1010,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 size_changed = oww!=w or owh!=h
         if is_ui_driver or size_changed or not shown:
             damage = False
-            if is_ui_driver and len(packet)>=13 and server_features.input_devices and not self.readonly:
+            if is_ui_driver and len(packet)>=13 and features.input_devices and not self.readonly:
                 pwid = packet[10]
                 pointer = packet[11]
                 modifiers = packet[12]

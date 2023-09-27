@@ -19,7 +19,7 @@ from threading import Thread, Lock
 from typing import Any
 from collections.abc import Callable
 
-from xpra.version_util import (
+from xpra.util.version import (
     XPRA_VERSION, vparts, version_str, full_version_str, version_compat_check, get_version_info,
     get_platform_info, get_host_info, parse_version,
     )
@@ -61,20 +61,17 @@ from xpra.os_util import (
     getuid, hexstr,
     POSIX, OSX,
     parse_encoded_bin_data, load_binary_file,
-    osexpand, which, get_saved_env,
-    )
+    osexpand, which, get_saved_env, first_time,
+)
 from xpra.server.background_worker import stop_worker, get_worker, add_work_item
 from xpra.server.menu_provider import get_menu_provider
 from xpra.server.auth.auth_helper import get_auth_module
-from xpra.make_thread import start_thread
-from xpra.common import LOG_HELLO, FULL_INFO
-from xpra.util import (
-    first_time, noerr,
-    csv, merge_dicts, typedict, notypedict,
-    ellipsizer, repr_ellipsized,
-    dump_all_frames, envint, envbool, envfloat,
-    ConnectionMessage, nicestr,
-    )
+from xpra.util.thread import start_thread
+from xpra.common import LOG_HELLO, FULL_INFO, ConnectionMessage, noerr
+from xpra.util.pysystem import dump_all_frames
+from xpra.util.types import typedict, notypedict, merge_dicts
+from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized, print_nested_dict, nicestr
+from xpra.util.env import envint, envbool, envfloat
 from xpra.log import Logger, get_info as get_log_info
 
 #pylint: disable=import-outside-toplevel
@@ -633,7 +630,7 @@ class ServerCore:
             httplog(f"exec_open{cmd}")
             from subprocess import Popen
             proc = Popen(args=cmd, env=get_saved_env())
-            from xpra.child_reaper import getChildReaper
+            from xpra.util.child_reaper import getChildReaper
             getChildReaper().add_process(proc, "open-html5-client", " ".join(cmd), True, True)
         def webbrowser_open():
             httplog.info(f"opening html5 client using URL {url!r}")
@@ -808,11 +805,11 @@ class ServerCore:
             from xpra.server.control_command import HelloCommand, HelpCommand, DebugControl, DisabledCommand
         except ImportError:
             return
-        from xpra.server import server_features
         self.control_commands = {
             "hello"     : HelloCommand(),
             }
-        if server_features.control:
+        from xpra.server import features
+        if features.control:
             self.control_commands["debug"] = DebugControl()
             self.control_commands["help"] = HelpCommand(self.control_commands)
         else:
@@ -1930,7 +1927,6 @@ class ServerCore:
         c = typedict(capabilities)
         if LOG_HELLO:
             netlog.info(f"hello from {proto}:")
-            from xpra.util import print_nested_dict
             print_nested_dict(c, print_fn=netlog.info)
         proto.set_compression_level(c.intget("compression_level", self.compression_level))
         proto.enable_compressor_from_caps(c)

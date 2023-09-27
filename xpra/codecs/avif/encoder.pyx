@@ -33,7 +33,8 @@ from xpra.codecs.avif.avif cimport (
     avifResultToString,
     )
 
-from xpra.util import envint, typedict
+from xpra.util.env import envint
+from xpra.util.types import typedict
 from xpra.net.compression import Compressed
 from xpra.codecs.debug import may_save_image
 from xpra.log import Logger

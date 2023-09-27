@@ -8,7 +8,7 @@
 import select
 import binascii
 from time import monotonic
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.os_util import bytestostr, strtobytes, memoryview_to_bytes
 
 from xpra.log import Logger

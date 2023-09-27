@@ -5,7 +5,7 @@
 
 from collections.abc import Callable
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.net.websockets.common import make_websocket_accept_hash
 from xpra.net.http.handler import HTTPRequestHandler, AUTH_USERNAME, AUTH_PASSWORD
 from xpra.log import Logger

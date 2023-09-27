@@ -7,7 +7,7 @@
 
 from typing import Any
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.log import Logger
 
 log = Logger("window")

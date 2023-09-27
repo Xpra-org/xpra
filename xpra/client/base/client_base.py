@@ -16,15 +16,15 @@ from collections.abc import Callable
 
 from xpra.log import Logger
 from xpra.scripts.config import InitExit
-from xpra.common import SPLASH_EXIT_DELAY, FULL_INFO, LOG_HELLO
-from xpra.child_reaper import getChildReaper, reaper_cleanup
+from xpra.common import SPLASH_EXIT_DELAY, FULL_INFO, LOG_HELLO, ConnectionMessage, disconnect_is_an_error, noerr
+from xpra.util.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
 from xpra.net.common import (
     may_log_packet,
     PACKET_TYPES, SSL_UPGRADE,
     PacketHandlerType, PacketType,
 )
-from xpra.make_thread import start_thread
+from xpra.util.thread import start_thread
 from xpra.net.protocol.factory import get_client_protocol_class
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.net.net_util import get_network_caps
@@ -36,22 +36,20 @@ from xpra.net.crypto import (
     DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS,
     DEFAULT_MODE, DEFAULT_KEYSIZE, DEFAULT_KEY_HASH, DEFAULT_KEY_STRETCH,
     )
-from xpra.version_util import get_version_info, vparts, XPRA_VERSION
+from xpra.util.version import get_version_info, vparts, XPRA_VERSION
 from xpra.platform.info import get_name, get_username
 from xpra.os_util import (
     get_machine_id, get_user_uuid, register_SIGUSR_signals,
     filedata_nocrlf, force_quit,
     SIGNAMES, BITS,
     strtobytes, bytestostr, hexstr, use_gui_prompt,
-    parse_encoded_bin_data,
-    )
-from xpra.util import (
-    typedict, parse_simple_dict, noerr, std,
-    repr_ellipsized, ellipsizer, nonl, print_nested_dict,
-    envbool, envint, disconnect_is_an_error, dump_all_frames, csv, obsc,
-    stderr_print,
-    ConnectionMessage,
-    )
+    parse_encoded_bin_data, stderr_print,
+)
+from xpra.util.pysystem import dump_all_frames, detect_leaks
+from xpra.util.types import typedict
+from xpra.util.str_fn import std, nonl, obsc, csv, ellipsizer, repr_ellipsized, print_nested_dict
+from xpra.util.parsing import parse_simple_dict
+from xpra.util.env import envint, envbool
 from xpra.client.base.serverinfo_mixin import ServerInfoMixin
 from xpra.client.base.fileprint import FilePrintMixin
 from xpra.exit_codes import ExitCode, ExitValue, exit_str
@@ -98,7 +96,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def defaults_init(self):
         #skip warning when running the client
-        from xpra import child_reaper
+        from xpra.util import child_reaper
         child_reaper.POLL_WARNING = False
         getChildReaper()
         log("XpraClientBase.defaults_init() os.environ:")
@@ -217,7 +215,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 if instance:
                     self.challenge_handlers.append(instance)
         if DETECT_LEAKS:
-            from xpra.util import detect_leaks  # pylint: disable=import-outside-toplevel
             print_leaks = detect_leaks()
             self.timeout_add(10*1000, print_leaks)
 

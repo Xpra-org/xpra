@@ -6,7 +6,7 @@
 import os
 import sys
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.os_util import strtobytes, getuid
 from xpra.scripts.config import parse_bool
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log

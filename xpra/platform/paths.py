@@ -371,7 +371,7 @@ def main():
         from xpra.log import add_debug_category
         add_debug_category("util")
 
-    from xpra.util import print_nested_dict
+    from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context
     with program_context("Path-Info", "Path Info"):
         print_nested_dict(get_info())

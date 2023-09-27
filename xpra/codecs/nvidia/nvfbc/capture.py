@@ -7,7 +7,7 @@ import sys
 import time
 import os.path
 
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.os_util import memoryview_to_bytes, WIN32, LINUX
 from xpra.log import Logger, add_debug_category
 
@@ -43,7 +43,7 @@ def main(argv):
     from xpra.platform import program_context
     with program_context("NvFBC-Capture", "NvFBC Capture"):
         from xpra.platform.paths import get_download_dir
-        from xpra.util import print_nested_dict
+        from xpra.util.str_fn import print_nested_dict
         fbc_capture = get_capture_module()
         if not fbc_capture:
             raise RuntimeError("nvfbc is not supported on this platform")

@@ -20,7 +20,7 @@ from xpra.os_util import (
     WIN32, OSX, POSIX,
     get_hex_uuid,
     )
-from xpra.util import typedict
+from xpra.util.types import typedict
 from xpra.net.digest import get_digests, get_digest_module, gendigest, get_salt
 
 
@@ -335,7 +335,7 @@ class TestAuth(unittest.TestCase):
         assert not self.capsauth(pc)
         assert pc.get_uid()==-1 and pc.get_gid()==-1
         #now with a connection object:
-        from xpra.make_thread import start_thread
+        from xpra.util.thread import start_thread
         sockpath = "./socket-test"
         try:
             os.unlink(sockpath)

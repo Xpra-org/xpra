@@ -18,8 +18,10 @@ from typing import Any
 from collections.abc import ByteString, Callable, Iterable
 
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr
-from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict
-from xpra.make_thread import make_thread, start_thread
+from xpra.util.types import typedict
+from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized
+from xpra.util.env import envint, envbool
+from xpra.util.thread import make_thread, start_thread
 from xpra.net.bytestreams import SOCKET_TIMEOUT, set_socket_timeout
 from xpra.net.protocol.header import (
     unpack_header, pack_header, find_xpra_header,
@@ -1232,7 +1234,7 @@ class SocketProtocol:
                     self._log_stats = False
                 if self._log_stats:
                     # pylint: disable=import-outside-toplevel
-                    from xpra.simple_stats import std_unit, std_unit_dec
+                    from xpra.util.stats import std_unit, std_unit_dec
                     log.info("connection closed after %s packets received (%s bytes) and %s packets sent (%s bytes)",
                          std_unit(self.input_packetcount), std_unit_dec(c.input_bytecount),
                          std_unit(self.output_packetcount), std_unit_dec(c.output_bytecount)

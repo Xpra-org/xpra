@@ -26,18 +26,17 @@ from xpra.platform.gui import (
     get_double_click_time, get_double_click_distance, get_native_system_tray_classes,
     )
 from xpra.net.common import PacketType
-from xpra.common import WINDOW_NOT_FOUND, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR
+from xpra.common import WINDOW_NOT_FOUND, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, noerr
 from xpra.platform.paths import get_icon_filename, get_resources_dir, get_python_execfile_command
 from xpra.scripts.config import FALSE_OPTIONS
-from xpra.make_thread import start_thread
+from xpra.util.thread import start_thread
 from xpra.os_util import (
     bytestostr, memoryview_to_bytes,
-    OSX, POSIX, is_Ubuntu,
-    )
-from xpra.util import (
-    envint, envbool, typedict,
-    make_instance, repr_ellipsized, noerr, first_time,
-    )
+    OSX, POSIX, is_Ubuntu, first_time,
+)
+from xpra.util.types import typedict, make_instance
+from xpra.util.str_fn import repr_ellipsized
+from xpra.util.env import envint, envbool
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
@@ -938,7 +937,7 @@ class WindowClient(StubClientMixin):
             return 0
         proc = self._pid_to_signalwatcher.get(pid)
         if proc is None or proc.poll():
-            from xpra.child_reaper import getChildReaper
+            from xpra.util.child_reaper import getChildReaper
             cmd = get_python_execfile_command()+[SIGNAL_WATCHER_COMMAND]
             execlog(f"assign_signal_watcher_pid({wid}, {pid}) starting {cmd}")
             try:

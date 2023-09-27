@@ -7,10 +7,10 @@
 from typing import Any
 
 from xpra.scripts.config import parse_bool_or_int, csvstrl
-from xpra.util import envint
+from xpra.util.env import envint
 from xpra.os_util import bytestostr, OSX
 from xpra.net.common import PacketType
-from xpra.version_util import vtrim
+from xpra.util.version import vtrim
 from xpra.codecs.constants import preforder, STREAM_ENCODINGS
 from xpra.codecs.loader import get_codec, has_codec, codec_versions, load_codec
 from xpra.codecs.video_helper import getVideoHelper

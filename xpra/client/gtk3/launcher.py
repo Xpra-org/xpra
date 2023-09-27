@@ -29,10 +29,10 @@ from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image, color_parse, label,
     choose_file, imagebutton, get_icon_pixbuf,
     )
-from xpra.util import csv, repr_ellipsized
+from xpra.util.str_fn import csv, repr_ellipsized
 from xpra.os_util import WIN32, OSX
 from xpra.net.common import DEFAULT_PORT
-from xpra.make_thread import start_thread
+from xpra.util.thread import start_thread
 from xpra.gtk_common.about import about
 from xpra.scripts.main import (
     connect_to, make_client,

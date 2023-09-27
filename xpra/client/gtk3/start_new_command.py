@@ -13,7 +13,7 @@ from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image, get_icon_pixbuf, label,
     )
 from xpra.gtk_common.gobject_compat import register_os_signals
-from xpra.util import typedict
+from xpra.util.types import typedict
 from xpra.log import Logger, enable_debug_for
 
 log = Logger("exec")

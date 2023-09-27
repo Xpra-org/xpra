@@ -17,9 +17,10 @@ import paramiko
 
 from xpra.net.ssh.paramiko_client import SSHSocketConnection
 from xpra.net.bytestreams import pretty_socket
-from xpra.util import csv, envint, first_time, decode_str
-from xpra.os_util import osexpand, getuid, WIN32, POSIX
-from xpra.make_thread import start_thread
+from xpra.util.str_fn import csv, decode_str
+from xpra.util.env import envint
+from xpra.os_util import osexpand, getuid, WIN32, POSIX, first_time
+from xpra.util.thread import start_thread
 from xpra.scripts.config import parse_bool
 from xpra.common import SSH_AGENT_DISPATCH
 from xpra.platform.paths import get_ssh_conf_dirs, get_xpra_command
@@ -351,7 +352,7 @@ class SSHServer(paramiko.ServerInterface):
             log.error(f" with args={args}")
             return
         # pylint: disable=import-outside-toplevel
-        from xpra.child_reaper import getChildReaper
+        from xpra.util.child_reaper import getChildReaper
         def proxy_ended(*args) -> None:
             log("proxy_ended(%s)", args)
         def close() -> None:

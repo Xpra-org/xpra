@@ -6,7 +6,9 @@
 import sys
 from gi.repository import Gtk, GLib  # @UnresolvedImport
 
-from xpra.util import typedict, noerr, envbool
+from xpra.common import noerr
+from xpra.util.types import typedict
+from xpra.util.env import envbool
 from xpra.os_util import SIGNAMES, bytestostr
 from xpra.exit_codes import ExitCode
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf, label

@@ -8,10 +8,12 @@ import shlex
 from subprocess import Popen
 from gi.repository import GLib  # @UnresolvedImport
 
-from xpra.util import envint, typedict, alnum, std, first_time
-from xpra.os_util import OSX, shellsub, bytestostr
+from xpra.util.types import typedict
+from xpra.util.str_fn import std, alnum
+from xpra.util.env import envint
+from xpra.os_util import OSX, shellsub, bytestostr, first_time
 from xpra.scripts.config import TRUE_OPTIONS
-from xpra.child_reaper import getChildReaper
+from xpra.util.child_reaper import getChildReaper
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 from xpra.platform.features import EXECUTABLE_EXTENSION
 

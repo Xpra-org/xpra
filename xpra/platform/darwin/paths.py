@@ -6,7 +6,8 @@
 import sys
 import os.path
 
-from xpra.util import envbool, get_util_logger
+from xpra.os_util import get_util_logger
+from xpra.util.env import envbool
 
 
 def debug(*msg):

@@ -10,7 +10,7 @@ import unittest
 from contextlib import nullcontext
 
 from xpra.os_util import POSIX
-from xpra.util import AdHocStruct
+from xpra.util.types import AdHocStruct
 from unit.test_util import silence_info
 from unit.server.mixins.servermixintest_util import ServerMixinTest
 

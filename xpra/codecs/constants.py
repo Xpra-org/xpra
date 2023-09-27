@@ -8,8 +8,8 @@ from weakref import WeakSet
 from dataclasses import dataclass, field
 from typing import Any
 
-from xpra.util import envint, typedict
-
+from xpra.util.types import typedict
+from xpra.util.env import envint
 
 FAST_DECODE_MIN_SPEED : int = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)
 

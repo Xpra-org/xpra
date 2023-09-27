@@ -8,8 +8,10 @@ import os
 import sys
 import socket
 
-from xpra.util import envint, obsc, typedict, stderr_print
-from xpra.os_util import strtobytes
+from xpra.util.types import typedict
+from xpra.util.str_fn import obsc
+from xpra.util.env import envint
+from xpra.os_util import strtobytes, stderr_print
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
 from xpra.log import is_debug_enabled, enable_debug_for
 

@@ -6,7 +6,8 @@
 import base64
 import binascii
 
-from xpra.util import envbool, obsc
+from xpra.util.str_fn import obsc
+from xpra.util.env import envbool
 from xpra.net.digest import get_salt
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 from xpra.log import enable_color

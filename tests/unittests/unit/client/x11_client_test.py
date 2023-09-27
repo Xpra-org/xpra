@@ -9,7 +9,7 @@ import time
 import uuid
 import unittest
 
-from xpra.util import envint
+from xpra.util.env import envint
 from xpra.exit_codes import exit_str
 from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
 from xpra.platform.paths import get_download_dir

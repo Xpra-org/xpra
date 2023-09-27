@@ -13,7 +13,7 @@ from collections.abc import Callable
 
 from xpra.common import  noop
 from xpra.log import Logger
-from xpra.util import envbool
+from xpra.util.env import envbool
 from xpra.os_util import strtobytes
 from xpra.platform.win32.common import (
     CloseHandle, ERROR_IO_PENDING, FormatMessageSystem,

@@ -7,7 +7,7 @@ import os
 import sys
 from typing import Any
 
-from xpra.util import parse_simple_dict
+from xpra.util.parsing import parse_simple_dict
 from xpra.os_util import WIN32
 from xpra.scripts.config import InitException
 from xpra.log import Logger

@@ -10,7 +10,10 @@ from typing import Any
 from ctypes import create_unicode_buffer, sizeof, byref, c_ulong
 from ctypes.wintypes import RECT, POINT, BYTE
 
-from xpra.util import envbool, prettify_plug_name, csv, XPRA_APP_ID, NotificationID
+from xpra.util.screen import prettify_plug_name
+from xpra.util.str_fn import csv
+from xpra.util.env import envbool
+from xpra.common import XPRA_APP_ID, NotificationID
 from xpra.scripts.config import InitException
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture

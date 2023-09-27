@@ -9,7 +9,7 @@ from time import sleep, monotonic
 from gi.repository import Gtk, Gdk, GLib  # @UnresolvedImport
 
 from xpra import __version__
-from xpra.util import envint, envbool
+from xpra.util.env import envint, envbool
 from xpra.os_util import SIGNAMES, OSX, WIN32
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.common import SPLASH_EXIT_DELAY
@@ -104,7 +104,7 @@ class SplashScreen(Gtk.Window):
 
 
     def run(self) -> ExitValue:
-        from xpra.make_thread import start_thread
+        from xpra.util.thread import start_thread
         start_thread(self.read_stdin, "read-stdin", True)
         self.show_all()
         force_focus()

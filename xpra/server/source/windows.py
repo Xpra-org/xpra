@@ -20,7 +20,9 @@ from xpra.server.window.metadata import make_window_metadata
 from xpra.server.window.filters import get_window_filter
 from xpra.net.compression import Compressed
 from xpra.os_util import memoryview_to_bytes, bytestostr
-from xpra.util import typedict, envint, envbool, DEFAULT_METADATA_SUPPORTED, NotificationID
+from xpra.util.types import typedict
+from xpra.util.env import envint, envbool
+from xpra.common import NotificationID, DEFAULT_METADATA_SUPPORTED
 from xpra.log import Logger
 
 log = Logger("server")
@@ -188,7 +190,7 @@ class WindowsMixin(StubSourceMixin):
             Adds encoding and window specific information
         """
         # pylint: disable=import-outside-toplevel
-        from xpra.simple_stats import get_list_stats
+        from xpra.util.stats import get_list_stats
         pqpixels = [x[2] for x in tuple(self.packet_queue)]
         pqpi = get_list_stats(pqpixels)
         if pqpixels:

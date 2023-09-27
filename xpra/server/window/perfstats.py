@@ -10,8 +10,9 @@ from time import monotonic
 from typing import Deque, Any
 
 from collections import deque
-from xpra.simple_stats import get_list_stats, get_weighted_list_stats
-from xpra.util import csv, envint
+from xpra.util.stats import get_list_stats, get_weighted_list_stats
+from xpra.util.str_fn import csv
+from xpra.util.env import envint
 from xpra.server.cystats import (logp,      #@UnresolvedImport
     calculate_time_weighted_average,        #@UnresolvedImport
     calculate_size_weighted_average,        #@UnresolvedImport

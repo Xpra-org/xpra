@@ -129,7 +129,7 @@ def enable_color(to=sys.stdout, format_string=NOPREFIX_FORMAT) -> None:
     except Exception:   # pragma: no cover
         pass
     try:
-        from xpra.colorstreamhandler import ColorStreamHandler
+        from xpra.util.colorstreamhandler import ColorStreamHandler
     except ImportError:
         pass
     else:

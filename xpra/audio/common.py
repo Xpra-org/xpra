@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.util import csv
+from xpra.util.str_fn import csv
 from xpra.log import Logger
 log = Logger("audio")
 

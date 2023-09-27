@@ -30,7 +30,7 @@ from xpra.net.quic.asyncio_thread import get_threaded_loop
 from xpra.net.websockets.protocol import WebSocketProtocol
 from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode
-from xpra.util import ellipsizer
+from xpra.util.str_fn import ellipsizer
 from xpra.log import Logger
 log = Logger("quic")
 

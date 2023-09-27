@@ -7,11 +7,12 @@ import os
 from random import randint
 from typing import Any
 
-from xpra.util import envbool, typedict
+from xpra.util.types import typedict
+from xpra.util.env import envbool
 from xpra.os_util import get_int_uuid
 from xpra.exit_codes import ExitCode
 from xpra.scripts.config import TRUE_OPTIONS
-from xpra.simple_stats import std_unit
+from xpra.util.stats import std_unit
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
