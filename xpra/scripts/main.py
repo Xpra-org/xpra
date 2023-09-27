@@ -2407,7 +2407,7 @@ def do_run_glcheck(opts, show=False) -> dict[str,Any]:
         saved_level = logging.root.getEffectiveLevel()
         logging.root.setLevel(logging.WARN)
     try:
-        from xpra.client.gl.window_backend import (
+        from xpra.client.gl.window import (
             get_gl_client_window_module,
             test_gl_client_window,
             )

@@ -104,7 +104,7 @@ class ToolboxGUI(Gtk.Window):
         addhbox("Transparency and Rendering", (
             ("Circle", "Shows a semi-opaque circle in a transparent window", epath+"transparent_window.py"),
             ("RGB Squares", "RGB+Black shaded squares in a transparent window", epath+"transparent_colors.py"),
-            ("OpenGL", "OpenGL window - transparent on some platforms", cpath+"gl/window_backend.py", wox11),
+            ("OpenGL", "OpenGL window - transparent on some platforms", cpath+"gl/window.py", wox11),
             ))
         addhbox("Widgets:", (
             ("Text Entry", "Simple text entry widget", epath+"text_entry.py"),

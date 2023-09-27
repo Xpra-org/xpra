@@ -10,7 +10,7 @@ import sys
 from typing import Any
 from collections.abc import Callable
 
-from xpra.client.base.client_base import XpraClientBase
+from xpra.client.base.client import XpraClientBase
 from xpra.client.gui.keyboard_helper import KeyboardHelper
 from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type, ClientExtras
@@ -42,7 +42,7 @@ if features.display:
     from xpra.client.mixins.display import DisplayClient
     CLIENT_BASES.append(DisplayClient)
 if features.windows:
-    from xpra.client.mixins.window_manager import WindowClient
+    from xpra.client.mixins.windows import WindowClient
     CLIENT_BASES.append(WindowClient)
 if features.webcam:
     from xpra.client.mixins.webcam import WebcamForwarder
@@ -259,7 +259,7 @@ class UIXpraClient(ClientBaseClass):
         return self.exit_code or 0
 
 
-    def quit(self, exit_code:int=0) -> None:
+    def quit(self, exit_code:int|ExitCode=0) -> None:
         raise NotImplementedError()
 
     def cleanup(self) -> None:
@@ -811,9 +811,9 @@ class UIXpraClient(ClientBaseClass):
 
     ######################################################################
     # windows overrides
-    def cook_metadata(self, _new_window, metadata:dict):
+    def cook_metadata(self, _new_window, metadata:dict) -> typedict:
         #convert to a typedict and apply client-side overrides:
-        metadata = typedict(metadata)
+        tdmeta = typedict(metadata)
         if self.server_is_desktop and self.desktop_fullscreen:
             #force it fullscreen:
             metadata.pop("size-constraints", None)
@@ -821,7 +821,7 @@ class UIXpraClient(ClientBaseClass):
             #FIXME: try to figure out the monitors we go fullscreen on for X11:
             #if POSIX:
             #    metadata["fullscreen-monitors"] = [0, 1, 0, 1]
-        return metadata
+        return tdmeta
 
     ######################################################################
     # network and status:

@@ -22,7 +22,7 @@ from xpra.os_util import (
 )
 from xpra.net.common import PacketType
 from xpra.util.stats import std_unit
-from xpra.client.base.client_base import XpraClientBase, EXTRA_TIMEOUT
+from xpra.client.base.client import XpraClientBase, EXTRA_TIMEOUT
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.log import Logger
 
@@ -104,7 +104,7 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
         capabilities["keyboard"] = False
         return capabilities
 
-    def quit(self, exit_code=0) -> None:
+    def quit(self, exit_code:int|ExitCode=0) -> None:
         log("quit(%s) current exit_code=%s", exit_code, self.exit_code)
         if self.exit_code is None:
             self.exit_code = exit_code
@@ -425,11 +425,11 @@ class InfoTimerClient(MonitorXpraClient):
         self.cleanup()
         return v
 
-    def signal_handler(self, signum, *args) -> None:
-        self.log("exit_code=%s" % self.exit_code)
-        self.log("signal_handler({}, {})".format(signum, args))
+    def signal_handler(self, signum : int, *args) -> None:
+        self.log(f"exit_code={self.exit_code}")
+        self.log(f"signal_handler({signum}, {args})")
         self.quit(128+signum)
-        self.log("exit_code=%s" % self.exit_code)
+        self.log(f"exit_code={self.exit_code}")
 
     def log(self, message) -> None:
         #this method is overridden in top client to use a log file

@@ -577,7 +577,7 @@ def parse_encoded_bin_data(data:str) -> bytes:
 
 #here so we can override it when needed
 def force_quit(status=1) -> None:
-    os._exit(status)  #pylint: disable=protected-access
+    os._exit(int(status))  #pylint: disable=protected-access
 
 
 def no_idle(fn, *args, **kwargs):

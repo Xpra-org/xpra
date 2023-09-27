@@ -166,7 +166,7 @@ class KeyboardConfig(KeyboardConfigBase):
         parse_option("raw", keymap_dict.boolget, props.boolget)
         parse_option("layout_groups", keymap_dict.boolget, props.boolget, True)
         log("assign_keymap_options(..) modified %s", modded)
-        return len(modded)>0
+        return len(modded)
 
     def parse_layout(self, props) -> None:
         """ used by both process_hello and process_keymap """

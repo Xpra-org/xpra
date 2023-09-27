@@ -1290,7 +1290,7 @@ class SessionInfoClient(InfoTimerClient):
                 #log.info("%s.get(%s)=%s", repr_ellipsized(d), prop, repr_ellipsized(v))
                 d = typedict(v or {})
             return d
-        from xpra.client.base.serverinfo_mixin import get_remote_lib_versions
+        from xpra.client.base.serverinfo import get_remote_lib_versions
         features = rtdict("features")
         self.server_clipboard = features.boolget("clipboard")
         self.server_notifications = features.boolget("notifications")

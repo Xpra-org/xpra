@@ -83,11 +83,11 @@ def do_set_keymap(layout:str, variant:str, options, query_struct) -> None:
         #    b"options"     : b"grp:shift_caps_toggle",
         #    }
         #parse the data into a dict:
-        rules = query_struct.strget("rules")
-        model = query_struct.strget("model")
-        layout = query_struct.strget("layout")
-        variant = query_struct.strget("variant")
-        options = query_struct.strget("options")
+        rules = query_struct.strget("rules", "")
+        model = query_struct.strget("model", "")
+        layout = query_struct.strget("layout", "")
+        variant = query_struct.strget("variant", "")
+        options = query_struct.strget("options", "")
         if layout:
             log.info("setting keymap: %s",
                      csv(f"{std(k)}={std(v)}" for k,v in query_struct.items()

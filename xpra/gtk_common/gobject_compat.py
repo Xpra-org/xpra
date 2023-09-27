@@ -14,7 +14,7 @@ def register_os_signals(callback:Callable, commandtype:str="", signals=(signal.S
     for signum in signals:
         register_os_signal(callback, commandtype, signum)
 
-def register_os_signal(callback:Callable, commandtype:str="", signum=signal.SIGINT):
+def register_os_signal(callback:Callable, commandtype:str="", signum:signal.Signals=signal.SIGINT):
     from gi.repository import GLib  #pylint: disable=import-outside-toplevel @UnresolvedImport
     signame = SIGNAMES.get(signum, str(signum))
     def write_signal() -> None:
@@ -29,7 +29,7 @@ def register_os_signal(callback:Callable, commandtype:str="", signum=signal.SIGI
         except OSError:
             pass
     def do_handle_signal() -> None:
-        callback(signum)
+        callback(int(signum))
     if POSIX:
         #replace the previous definition if we had one:
         current = _glib_unix_signals.get(signum, None)

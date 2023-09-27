@@ -157,7 +157,7 @@ def get_default_root_window() -> Gdk.Window | None:
         return None
     return screen.get_root_window()
 
-def get_root_size(default:tuple[int,int]=(1920, 1024)) -> tuple[int,int]:
+def get_root_size(default:None|tuple[int,int]=(1920, 1024)) -> tuple[int,int] | None:
     if OSX:
         #the easy way:
         root = get_default_root_window()

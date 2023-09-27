@@ -95,7 +95,7 @@ class GLClientWindowBase(ClientWindow):
     def set_alpha(self) -> None:
         super().set_alpha()
         rgb_formats = self._client_properties.setdefault("encodings.rgb_formats", [])
-        #gl_window_backing supports BGR(A) too:
+        #gl.backing supports BGR(A) too:
         if "RGBA" in rgb_formats:
             rgb_formats.append("BGRA")
         if "RGB" in rgb_formats:

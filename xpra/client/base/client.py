@@ -50,7 +50,7 @@ from xpra.util.types import typedict
 from xpra.util.str_fn import std, nonl, obsc, csv, ellipsizer, repr_ellipsized, print_nested_dict
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.env import envint, envbool
-from xpra.client.base.serverinfo_mixin import ServerInfoMixin
+from xpra.client.base.serverinfo import ServerInfoMixin
 from xpra.client.base.fileprint import FilePrintMixin
 from xpra.exit_codes import ExitCode, ExitValue, exit_str
 
@@ -252,10 +252,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 notifylog.info(" %s", x)
 
 
-    def handle_deadly_signal(self, signum:int, _frame=None):
+    def handle_deadly_signal(self, signum, _frame=None):
         stderr_print("\ngot deadly signal %s, exiting" % SIGNAMES.get(signum, signum))
         self.cleanup()
-        force_quit(128 + signum)
+        force_quit(128 + int(signum))
 
     def handle_app_signal(self, signum:int, _frame=None):
         try:
@@ -281,7 +281,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         signal.signal(signal.SIGTERM, os_signal)
         register_SIGUSR_signals(self.idle_add)
 
-    def signal_disconnect_and_quit(self, exit_code:int, reason:str) -> None:
+    def signal_disconnect_and_quit(self, exit_code:int|ExitCode, reason:str) -> None:
         log("signal_disconnect_and_quit(%s, %s) exit_on_signal=%s", exit_code, reason, self.exit_on_signal)
         if not self.exit_on_signal:
             #if we get another signal, we'll try to exit without idle_add...
@@ -294,14 +294,14 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.disconnect_and_quit(exit_code, reason)
         self.quit(exit_code)
         self.exit()
-        force_quit(exit_code)
+        force_quit(int(exit_code))
 
     def signal_cleanup(self) -> None:
         #placeholder for stuff that can be cleaned up from the signal handler
         #(non UI thread stuff)
         pass
 
-    def disconnect_and_quit(self, exit_code:int, reason:str) -> None:
+    def disconnect_and_quit(self, exit_code:int|ExitCode, reason:str|ConnectionMessage) -> None:
         #make sure that we set the exit code early,
         #so the protocol shutdown won't set a different one:
         if self.exit_code is None:
@@ -316,7 +316,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             log("disconnect_and_quit: protocol_closed()")
             self.idle_add(self.quit, exit_code)
         if p:
-            p.send_disconnect([reason], done_callback=protocol_closed)
+            p.send_disconnect([str(reason)], done_callback=protocol_closed)
         self.timeout_add(1000, self.quit, exit_code)
 
     def exit(self) -> None:
@@ -659,10 +659,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if self._protocol:
             self._protocol.start()
 
-    def quit(self, exit_code:int=0) -> None:
+    def quit(self, exit_code:int|ExitCode=0) -> None:
         raise NotImplementedError()
 
-    def warn_and_quit(self, exit_code:int, message:str):
+    def warn_and_quit(self, exit_code:int|ExitCode, message:str):
         log.warn(message)
         self.quit(exit_code)
 

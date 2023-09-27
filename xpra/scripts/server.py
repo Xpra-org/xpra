@@ -71,7 +71,7 @@ def deadly_signal(signum):
     # and exits the program (causing the cleanup handlers to be run again):
     #signal.signal(signum, signal.SIG_DFL)
     #kill(os.getpid(), signum)
-    force_quit(128 + signum)
+    force_quit(128 + int(signum))
 
 
 def validate_pixel_depth(pixel_depth, starting_desktop=False):

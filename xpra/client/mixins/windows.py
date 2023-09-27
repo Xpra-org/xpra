@@ -602,7 +602,7 @@ class WindowClient(StubClientMixin):
         self.set_windows_cursor(self._id_to_window.values(), [])
 
 
-    def cook_metadata(self, _new_window, metadata) -> typedict:
+    def cook_metadata(self, _new_window, metadata:dict) -> typedict:
         #subclasses can apply tweaks here:
         return typedict(metadata)
 
@@ -834,8 +834,8 @@ class WindowClient(StubClientMixin):
         if w<1 or h<1:
             log.error("Error: window %i dimensions %ix%i are invalid", wid, w, h)
             w, h = 1, 1
-        rel_pos = metadata.get("relative-position")
-        parent = metadata.get("parent")
+        rel_pos = metadata.inttupleget("relative-position")
+        parent = metadata.intget("parent")
         geomlog("relative-position=%s (parent=%s)", rel_pos, parent)
         if parent and rel_pos:
             pwin = self._id_to_window.get(parent)

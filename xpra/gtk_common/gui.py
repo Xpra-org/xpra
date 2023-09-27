@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import signal
 import sys
 import subprocess
 import gi
@@ -154,9 +155,9 @@ class GUI(Gtk.Window):
         return button
 
 
-    def app_signal(self, signum):
+    def app_signal(self, signum : int | signal.Signals):
         if self.exit_code is None:
-            self.exit_code = 128 + signum
+            self.exit_code = 128 + int(signum)
         log("app_signal(%s) exit_code=%i", signum, self.exit_code)
         self.quit()
 

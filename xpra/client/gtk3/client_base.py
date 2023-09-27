@@ -43,7 +43,7 @@ from xpra.gtk_common.css_overrides import inject_css_overrides
 from xpra.client.gui.ui_client_base import UIXpraClient
 from xpra.client.base.gobject_client import GObjectXpraClient
 from xpra.client.gtk3.keyboard_helper import GTKKeyboardHelper
-from xpra.client.mixins.window_manager import WindowClient
+from xpra.client.mixins.windows import WindowClient
 from xpra.platform.gui import force_focus
 from xpra.platform.gui import (
     get_window_frame_sizes, get_window_frame_size,
@@ -165,7 +165,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         log("GTKXpraClient.gtk_main() ended")
 
 
-    def quit(self, exit_code=0) -> None:
+    def quit(self, exit_code:int|ExitCode=0) -> None:
         log(f"GTKXpraClient.quit({exit_code}) current exit_code={self.exit_code}")
         if self.exit_code is None:
             self.exit_code = exit_code
@@ -1255,7 +1255,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         try:
             opengllog("init_opengl: going to import xpra.client.gl")
             __import__("xpra.client.gl", {}, {}, [])
-            from xpra.client.gl.window_backend import (
+            from xpra.client.gl.window import (
                 get_gl_client_window_module,
                 test_gl_client_window,
                 )
