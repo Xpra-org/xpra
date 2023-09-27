@@ -12,7 +12,7 @@ from typing import Any, Literal
 from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.audio.audio_pipeline import AudioPipeline
-from xpra.gstreamer.gst_common import (
+from xpra.gstreamer.common import (
     normv, make_buffer, plugin_str,
     get_default_appsrc_attributes, get_element_str,
     GST_FLOW_OK,

@@ -16,7 +16,7 @@ from xpra.util.env import envbool
 from xpra.common import NotificationID, ConnectionMessage
 from xpra.dbus.helper import dbus_to_native
 from xpra.codecs.gstreamer.capture import Capture, CaptureAndEncode
-from xpra.gstreamer.gst_common import get_element_str
+from xpra.gstreamer.common import get_element_str
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase

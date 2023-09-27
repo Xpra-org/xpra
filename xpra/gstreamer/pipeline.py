@@ -11,7 +11,7 @@ from types import ModuleType
 from typing import Any
 from collections.abc import Callable
 
-from xpra.gstreamer.gst_common import GST_FLOW_OK, import_gst
+from xpra.gstreamer.common import GST_FLOW_OK, import_gst
 gst = import_gst()
 if not gst:
     raise ImportError("GStreamer bindings not found")

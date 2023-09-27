@@ -599,6 +599,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %{python3_sitearch}/xpra/buffers/
 %{python3_sitearch}/xpra/clipboard/
+%{python3_sitearch}/xpra/gstreamer/
 %{python3_sitearch}/xpra/notifications/
 %{python3_sitearch}/xpra/codecs/argb/
 %{python3_sitearch}/xpra/codecs/pillow/
@@ -619,7 +620,6 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/net/
 %{python3_sitearch}/xpra/platform/
 %{python3_sitearch}/xpra/scripts/
-%{python3_sitearch}/xpra/util/rectangle.*.so
 %{python3_sitearch}/xpra-*.egg-info
 
 %files -n %{package_prefix}-x11

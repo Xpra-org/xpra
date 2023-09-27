@@ -15,7 +15,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, envfloat
 from xpra.audio.audio_pipeline import AudioPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal
-from xpra.gstreamer.gst_common import normv, has_plugins, plugin_str, GST_FLOW_OK,\
+from xpra.gstreamer.common import normv, has_plugins, plugin_str, GST_FLOW_OK,\
     get_default_appsink_attributes, get_element_str
 from xpra.audio.gstreamer_util import (
     get_source_plugins, get_encoder_elements,

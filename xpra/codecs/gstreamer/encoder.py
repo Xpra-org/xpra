@@ -13,7 +13,7 @@ from xpra.util.types import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.codecs.constants import video_spec, get_profile
-from xpra.gstreamer.gst_common import (
+from xpra.gstreamer.common import (
     import_gst, normv, get_all_plugin_names,
     get_caps_str, get_element_str, wrap_buffer,
     get_default_appsink_attributes, get_default_appsrc_attributes,

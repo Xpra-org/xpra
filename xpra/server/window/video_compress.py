@@ -615,7 +615,7 @@ class WindowVideoSource(WindowSource):
         super().do_damage(ww, wh, x, y, w, h, options)
 
     def start_gstreamer_pipeline(self):
-        from xpra.gstreamer.gst_common import plugin_str
+        from xpra.gstreamer.common import plugin_str
         from xpra.codecs.gstreamer.capture import CaptureAndEncode
         attrs = {
             "show-pointer"  : False,

@@ -9,7 +9,7 @@ import os
 from typing import Any
 from collections.abc import Callable
 
-from xpra.gstreamer.gst_common import (
+from xpra.gstreamer.common import (
     has_plugins, get_all_plugin_names,
     import_gst, get_gst_version,
     )

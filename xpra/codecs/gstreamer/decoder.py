@@ -7,7 +7,7 @@ import os
 from gi.repository import GObject  # @UnresolvedImport
 from typing import Any
 
-from xpra.gstreamer.gst_common import (
+from xpra.gstreamer.common import (
     GST_FLOW_OK, STREAM_TYPE, GST_FORMAT_BYTES,
     make_buffer, has_plugins,
     get_caps_str,
