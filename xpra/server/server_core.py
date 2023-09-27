@@ -790,7 +790,7 @@ class ServerCore:
                 #use local-auth for these:
                 opts_value = opts.auth
             else:
-                opts_value = getattr(opts, f"{x}")
+                opts_value = getattr(opts, f"{x}_auth")
             self.auth_classes[x] = self.get_auth_modules(x, opts_value)
         authlog(f"init_auth(..) auth={self.auth_classes}")
 
