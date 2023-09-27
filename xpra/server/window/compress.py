@@ -19,7 +19,7 @@ from collections.abc import Callable, Iterable
 from xpra.os_util import POSIX, OSX
 from xpra.util import envint, envbool, csv, typedict, first_time, decode_str, repr_ellipsized
 from xpra.common import MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
-from xpra.server.window.windowicon_source import WindowIconSource
+from xpra.server.window.windowicon import WindowIconSource
 from xpra.server.window.perfstats import WindowPerformanceStatistics
 from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
 from xpra.server.cystats import time_weighted_average, logp #@UnresolvedImport

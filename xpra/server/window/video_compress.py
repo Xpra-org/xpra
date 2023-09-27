@@ -16,7 +16,7 @@ from collections.abc import Callable
 from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.server.window.window_source import (
+from xpra.server.window.compress import (
     WindowSource, DelayedRegions,
     STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, LOSSLESS_WINDOW_TYPES,
     DOWNSCALE_THRESHOLD, DOWNSCALE,

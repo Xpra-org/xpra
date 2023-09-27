@@ -566,7 +566,7 @@ class WindowsMixin(StubSourceMixin):
             if mmap_size>0:
                 bandwidth_limit = 0
             # pylint: disable=import-outside-toplevel
-            from xpra.server.window.window_video_source import WindowVideoSource
+            from xpra.server.window.video_compress import WindowVideoSource
             ws = WindowVideoSource(
                               self.idle_add, self.timeout_add, self.source_remove,
                               ww, wh,
