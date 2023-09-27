@@ -2098,7 +2098,7 @@ if client_ENABLED:
     add_packages("xpra.client.mixins", "xpra.client.auth")
     add_modules("xpra.scripts.gtk_info", "xpra.scripts.show_webcam", "xpra.scripts.pinentry_wrapper")
 if gtk3_ENABLED:
-    add_modules("xpra.scripts.bug_report")
+    add_modules("xpra.scripts.bug_report", "xpra.scripts.splash")
 toggle_packages((client_ENABLED and gtk3_ENABLED) or audio_ENABLED or server_ENABLED, "xpra.gtk_common")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "xpra.client.gtk3", "xpra.client.gui")
 toggle_packages((client_ENABLED and gtk3_ENABLED) or (audio_ENABLED and WIN32 and MINGW_PREFIX), "gi")
