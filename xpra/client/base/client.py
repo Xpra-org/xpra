@@ -103,7 +103,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         for k,v in os.environ.items():
             log(f" {k}={v!r}")
         #client state:
-        self.exit_code = None
+        self.exit_code : int | ExitCode | None = None
         self.exit_on_signal = False
         self.display_desc = {}
         self.progress_process = None
@@ -702,7 +702,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def server_disconnect(self, reason:str, *extra_info) -> None:
         self.quit(self.server_disconnect_exit_code(reason, *extra_info))
 
-    def server_disconnect_exit_code(self, reason:str, *extra_info) -> int:
+    def server_disconnect_exit_code(self, reason:str, *extra_info) -> ExitCode:
         if self.exit_code is None and (LOG_DISCONNECT or disconnect_is_an_error(reason)):
             l = log.info
         else:
