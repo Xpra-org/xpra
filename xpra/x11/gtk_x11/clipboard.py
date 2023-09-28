@@ -24,7 +24,7 @@ from xpra.clipboard.core import (
     ClipboardProxyCore, TEXT_TARGETS,
     must_discard, must_discard_extra,
     )
-from xpra.clipboard.timeout_helper import ClipboardTimeoutHelper, CONVERT_TIMEOUT
+from xpra.clipboard.timeout import ClipboardTimeoutHelper, CONVERT_TIMEOUT
 from xpra.x11.bindings.window import ( #@UnresolvedImport
     constants, PropertyError,                   #@UnresolvedImport
     X11WindowBindings,                          #@UnresolvedImport

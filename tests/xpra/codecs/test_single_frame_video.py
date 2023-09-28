@@ -11,7 +11,7 @@ from PIL import Image
 from xpra.util.types import typedict
 from xpra.util.env import envbool
 from xpra.os_util import memoryview_to_bytes
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 from xpra.codecs.loader import load_codec
 
 

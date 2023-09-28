@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 from xpra.codecs.constants import get_subsampling_divs
 from xpra.codecs.debug import may_save_image
 

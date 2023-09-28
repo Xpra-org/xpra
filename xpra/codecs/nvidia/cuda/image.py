@@ -6,7 +6,7 @@
 from time import monotonic
 
 from xpra.codecs.nvidia.nv_util import numpy_import_lock
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 
 log = Logger("cuda")

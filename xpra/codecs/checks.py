@@ -235,7 +235,7 @@ def makebuf(size, b=0x20) -> bytearray:
 
 def make_test_image(pixel_format:str, w:int, h:int, plane_values=(0x20, 0x80, 0x80, 0x0)):
     # pylint: disable=import-outside-toplevel
-    from xpra.codecs.image_wrapper import ImageWrapper
+    from xpra.codecs.image import ImageWrapper
     from xpra.codecs.constants import get_subsampling_divs
     if isinstance(plane_values, str):
         #assume this is a path
@@ -571,7 +571,7 @@ def do_testcsc(csc_module, iw:int, ih:int, ow:int, oh:int,
                 if not spec.can_scale:
                     continue
             log(f"{cstype}: testing {cs_in} -> {cs_out}")
-            e = csc_module.ColorspaceConverter()
+            e = csc_module.Converter()
             try:
                 e.init_context(iw, ih, cs_in, ow, oh, cs_out)
                 image = make_test_image(cs_in, iw, ih)

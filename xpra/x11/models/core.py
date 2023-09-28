@@ -16,7 +16,7 @@ from xpra.os_util import bytestostr, get_proc_cmdline, first_time
 from xpra.x11.common import Unmanageable
 from xpra.gtk_common.gobject_util import one_arg_signal, two_arg_signal
 from xpra.gtk_common.error import XError, xsync, xswallow
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 from xpra.x11.bindings.window import X11WindowBindings, constants, SHAPE_KIND #@UnresolvedImport
 from xpra.x11.bindings.res import ResBindings #@UnresolvedImport
 from xpra.x11.bindings.send_wm import send_wm_delete_window

@@ -15,7 +15,7 @@ from threading import Event
 
 from xpra.util.str_fn import csv
 from xpra.util.types import AtomicInteger
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 from xpra.codecs.nvidia.cuda.errors import cudacheck, get_error_name
 from xpra.codecs.nvidia.cuda.context import get_default_device_context
 from xpra.log import Logger

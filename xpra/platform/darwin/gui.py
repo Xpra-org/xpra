@@ -459,7 +459,7 @@ def remove_window_hooks(window) -> None:
 
 
 def get_CG_imagewrapper(rect=None):
-    from xpra.codecs.image_wrapper import ImageWrapper
+    from xpra.codecs.image import ImageWrapper
     assert CG, "cannot capture without Quartz.CoreGraphics"
     if rect is None:
         x = 0

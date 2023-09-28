@@ -9,7 +9,7 @@ from math import ceil
 from time import monotonic
 
 from xpra.util.str_fn import csv
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 
 N = 10
 #Q = (20, 99)

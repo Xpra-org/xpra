@@ -13,7 +13,7 @@ from xpra.net.common import PacketType
 from xpra.util.version import vtrim
 from xpra.codecs.constants import preforder, STREAM_ENCODINGS
 from xpra.codecs.loader import get_codec, has_codec, codec_versions, load_codec
-from xpra.codecs.video_helper import getVideoHelper
+from xpra.codecs.video import getVideoHelper
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.server.source.windows import WindowsMixin
 from xpra.log import Logger

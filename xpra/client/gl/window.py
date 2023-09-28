@@ -23,16 +23,16 @@ log = Logger("opengl", "paint")
 def get_gl_client_window_module(force_enable=False) -> tuple[dict,Any]:
     log("get_gl_client_window_module()")
     try:
-        from xpra.client.gl.gtk3 import nativegl_client_window
+        from xpra.client.gl.gtk3 import native_window
     except ImportError as e:
         log("cannot import opengl window module", exc_info=True)
         log.warn("Warning: cannot import native OpenGL module")
         log.warn(" %s", e)
         return {}, None
-    opengl_props = nativegl_client_window.check_support(force_enable)
+    opengl_props = native_window.check_support(force_enable)
     log("check_support(%s)=%s", force_enable, opengl_props)
     if opengl_props:
-        return opengl_props, nativegl_client_window
+        return opengl_props, native_window
     return {}, None
 
 

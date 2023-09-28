@@ -26,7 +26,7 @@ from xpra.codecs.nvidia.nvjpeg.common import (
     ERR_STR, CSS_STR,
     )
 from xpra.codecs.nvidia.cuda.context import get_default_device_context
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 log = Logger("encoder", "nvjpeg")
 

@@ -1182,7 +1182,7 @@ def clean():
                    "xpra/codecs/jpeg/decoder.c",
                    "xpra/codecs/openh264/encoder.c",
                    "xpra/codecs/openh264/decoder.c",
-                   "xpra/codecs/v4l2/pusher.c",
+                   "xpra/codecs/v4l2/virtual.c",
                    "xpra/codecs/v4l2/constants.pxi",
                    "xpra/codecs/evdi/capture.cpp",
                    "xpra/codecs/drm/drm.c",
@@ -1564,8 +1564,8 @@ if WIN32:
             add_gui_exe("xpra/platform/win32/scripts/shadow_server.py",       "server-notconnected.ico", "Xpra-Shadow")
             add_gui_exe("fs/bin/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
             add_console_exe("fs/bin/xpra_launcher",            "xpra.ico",         "Xpra-Launcher-Debug")
-            add_gui_exe("xpra/gtk_common/view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
-            add_gui_exe("xpra/scripts/bug_report.py",           "bugs.ico",         "Bug_Report")
+            add_gui_exe("xpra/gtk_common/dialogs/view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
+            add_gui_exe("xpra/gtk_common/dialogs/bug_report.py",           "bugs.ico",         "Bug_Report")
             add_gui_exe("xpra/platform/win32/gdi_screen_capture.py", "screenshot.ico", "Screenshot")
         if server_ENABLED:
             add_gui_exe("fs/libexec/xpra/auth_dialog",          "authentication.ico", "Auth_Dialog")
@@ -1577,7 +1577,7 @@ if WIN32:
             add_console_exe("xpra/scripts/gtk_info.py",         "gtk.ico",          "GTK_info")
             add_console_exe("xpra/gtk_common/keymap.py",        "keymap.ico",       "Keymap_info")
             add_console_exe("xpra/platform/keyboard.py",        "keymap.ico",       "Keyboard_info")
-            add_gui_exe("xpra/client/gtk3/example/tray.py", "xpra.ico",         "SystemTray_Test")
+            add_gui_exe("xpra/gtk_common/examples/tray.py", "xpra.ico",         "SystemTray_Test")
             add_gui_exe("xpra/client/gtk3/u2f_tool.py",     "authentication.ico", "U2F_Tool")
         if client_ENABLED or server_ENABLED:
             add_console_exe("xpra/platform/win32/scripts/exec.py",     "python.ico", "Python_exec_cmd")
@@ -2103,7 +2103,7 @@ toggle_packages((client_ENABLED and gtk3_ENABLED) or audio_ENABLED or server_ENA
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "xpra.client.gtk3", "xpra.client.gui")
 toggle_packages((client_ENABLED and gtk3_ENABLED) or (audio_ENABLED and WIN32 and MINGW_PREFIX), "gi")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3")
-toggle_packages(client_ENABLED and gtk3_ENABLED and example_ENABLED, "xpra.client.gtk3.example")
+toggle_packages(client_ENABLED and gtk3_ENABLED and example_ENABLED, "xpra.gtk_common.examples")
 if client_ENABLED and WIN32 and MINGW_PREFIX:
     ace("xpra.platform.win32.propsys,xpra/platform/win32/setappid.cpp",
         language="c++",
@@ -2245,7 +2245,7 @@ tace(vpx_ENABLED, "xpra.codecs.vpx.decoder", "vpx")
 toggle_packages(gstreamer_ENABLED, "xpra.codecs.gstreamer", "xpra.gstreamer")
 
 toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
-tace(v4l2_ENABLED, "xpra.codecs.v4l2.pusher")
+tace(v4l2_ENABLED, "xpra.codecs.v4l2.virtual")
 
 #network:
 #workaround this warning on MS Windows with Cython 3.0.0b1:
@@ -2298,6 +2298,9 @@ if cythonize_more_ENABLED:
         ax("xpra.gstreamer")
     if gtk3_ENABLED:
         ax("xpra.gtk_common")
+        ax("xpra.gtk_common.dialogs")
+        if example_ENABLED:
+            ax("xpra.gtk_common.examples")
     if keyboard_ENABLED:
         ax("xpra.keyboard")
     if http_ENABLED:

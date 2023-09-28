@@ -18,7 +18,7 @@ from xpra.gtk_common.gtk_util import (
 from xpra.platform.paths import get_xpra_command
 from xpra.os_util import OSX, WIN32
 from xpra.log import Logger
-from xpra.gtk_common.about import about
+from xpra.gtk_common.dialogs.about import about
 
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
@@ -68,7 +68,7 @@ class GUI(Gtk.Window):
         self.set_titlebar(hb)
         hb.add(self.button("About", "help-about", about))
         try:
-            from xpra.client.gtk3.toolbox import ToolboxGUI
+            from xpra.gtk_common.dialogs.toolbox import ToolboxGUI
         except ImportError:
             pass
         else:

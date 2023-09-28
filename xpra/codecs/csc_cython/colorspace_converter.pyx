@@ -15,7 +15,7 @@ from xpra.log import Logger
 log = Logger("csc", "cython")
 
 from xpra.codecs.constants import csc_spec, get_subsampling_divs
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 
 from libc.stdint cimport uint8_t, uintptr_t # pylint: disable=syntax-error
 from xpra.buffers.membuf cimport memalign, buffer_context
@@ -121,7 +121,7 @@ def get_spec(in_colorspace:str, out_colorspace:str):
         width_mask = height_mask = 0xFFFE
     #low score as this should be used as fallback only:
     return csc_spec(input_colorspace=in_colorspace, output_colorspace=out_colorspace,
-                    codec_class=ColorspaceConverter, codec_type=get_type(),
+                    codec_class=Converter, codec_type=get_type(),
                     quality=50, speed=0, setup_cost=0, min_w=2, min_h=2,
                     max_w=16*1024, max_h=16*1024,
                     can_scale=can_scale,
@@ -293,7 +293,7 @@ cdef inline void YUV444P10_to_r210_copy(uintptr_t r210data, const unsigned short
                     )
 
 
-cdef class ColorspaceConverter:
+cdef class Converter:
     cdef unsigned int src_width
     cdef unsigned int src_height
     cdef object src_format
@@ -317,7 +317,7 @@ cdef class ColorspaceConverter:
         cdef int i
         assert src_format in get_input_colorspaces(), "invalid input colorspace: %s (must be one of %s)" % (src_format, get_input_colorspaces())
         assert dst_format in get_output_colorspaces(src_format), "invalid output colorspace: %s (must be one of %s)" % (dst_format, get_output_colorspaces(src_format))
-        log("csc_cython.ColorspaceConverter.init_context%s", (
+        log("csc_cython.Converter.init_context%s", (
             src_width, src_height, src_format, dst_width, dst_height, dst_format, options))
         self.src_width = src_width
         self.src_height = src_height

@@ -20,7 +20,7 @@ from xpra.util.types import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.codecs.loader import get_codec
-from xpra.codecs.video_helper import getVideoHelper
+from xpra.codecs.video import getVideoHelper
 from xpra.os_util import bytestostr, first_time
 from xpra.common import Gravity
 from xpra.log import Logger
@@ -579,7 +579,7 @@ class WindowBackingBase:
         if rgb_format not in self.get_rgb_formats():
             # pylint: disable=import-outside-toplevel
             from xpra.codecs.rgb_transform import rgb_reformat
-            from xpra.codecs.image_wrapper import ImageWrapper
+            from xpra.codecs.image import ImageWrapper
             img = ImageWrapper(x, y, iwidth, iheight, data, rgb_format,
                                len(rgb_format)*8, stride, len(rgb_format), ImageWrapper.PACKED, True, None)
             rgb_reformat(img, self.get_rgb_formats(), has_alpha and self._alpha_enabled)

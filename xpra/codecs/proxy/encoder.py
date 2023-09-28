@@ -7,7 +7,7 @@ from time import monotonic
 from collections import deque
 from typing import Any
 
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 from xpra.util.types import typedict
 from xpra.os_util import memoryview_to_bytes
 from xpra.log import Logger

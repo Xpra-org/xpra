@@ -30,7 +30,7 @@ from xpra.platform.win32.common import (
     CreateDIBitmap,
     )
 from xpra.platform.win32 import win32con
-from xpra.clipboard.timeout_helper import ClipboardTimeoutHelper
+from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.clipboard.core import (
     ClipboardProxyCore, log, _filter_targets,
     TEXT_TARGETS, MAX_CLIPBOARD_PACKET_SIZE,

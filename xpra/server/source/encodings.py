@@ -13,7 +13,7 @@ from xpra.common import FULL_INFO
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window import batch_config
 from xpra.server.server_core import ClientException
-from xpra.codecs.video_helper import getVideoHelper
+from xpra.codecs.video import getVideoHelper
 from xpra.codecs.constants import video_spec
 from xpra.net.compression import use
 from xpra.os_util import bytestostr

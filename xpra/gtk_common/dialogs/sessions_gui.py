@@ -140,7 +140,7 @@ class SessionsGUI(Gtk.Window):
 
 
     def show_about(self, *_args):
-        from xpra.gtk_common.about import about
+        from xpra.gtk_common.dialogs.about import about
         about()
 
 

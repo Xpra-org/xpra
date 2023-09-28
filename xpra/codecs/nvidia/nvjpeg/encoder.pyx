@@ -464,7 +464,7 @@ def compress_file(filename, save_to="./out.jpeg"):
     data = img.tobytes("raw", img.mode)
     log("data=%i bytes (%s) for %s", len(data), type(data), img.mode)
     log("w=%i, h=%i, stride=%i, size=%i", w, h, stride, stride*h)
-    from xpra.codecs.image_wrapper import ImageWrapper
+    from xpra.codecs.image import ImageWrapper
     image = ImageWrapper(0, 0, w, h, data, rgb_format,
                        len(rgb_format)*8, stride, len(rgb_format), ImageWrapper.PACKED, True, None)
     jpeg_data = encode("jpeg", image)[0]

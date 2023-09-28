@@ -600,12 +600,12 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
         return gui.main(cmdline)
     if mode == "start-gui":
         check_gtk_client()
-        from xpra.gtk_common import start_gui
+        from xpra.gtk_common.dialogs import start_gui
         return start_gui.main(options)
     if mode == "bug-report":
         check_gtk_client()
-        from xpra.scripts import bug_report
-        return bug_report.main(["xpra"]+args)
+        from xpra.gtk_common.dialogs import bug_report
+        return bug_report.main(["xpra"] + args)
     if mode == "session-info":
         return run_session_info(error_cb, options, args, cmdline)
     if mode in ("docs", "documentation"):
@@ -669,21 +669,21 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
         print_nested_dict(data)
         return ExitCode.OK
     if mode=="video":
-        from xpra.codecs import video_helper
-        return video_helper.main()
+        from xpra.codecs import video
+        return video.main()
     if mode=="nvinfo":
         from xpra.codecs.nvidia import nv_util
         return nv_util.main()
     if mode=="webcam":
         check_gtk()
-        from xpra.scripts import show_webcam
+        from xpra.gtk_common.dialogs import show_webcam
         return show_webcam.main()
     if mode=="keyboard":
         from xpra.platform import keyboard
         return keyboard.main()
     if mode=="gtk-info":
         check_gtk()
-        from xpra.scripts import gtk_info
+        from gtk_common import gtk_info
         return gtk_info.main()
     if mode=="gui-info":
         check_gtk()
@@ -709,7 +709,7 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
         return version.main()
     if mode=="toolbox":
         check_gtk_client()
-        from xpra.client.gtk3 import toolbox
+        from xpra.gtk_common.dialogs import toolbox
         return toolbox.main()
     if mode == "initenv":
         if not POSIX:
@@ -1167,11 +1167,11 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
 
 
 def run_dialog(extra_args) -> ExitValue:
-    from xpra.client.gtk3.confirm_dialog import show_confirm_dialog
+    from xpra.gtk_common.dialogs.confirm_dialog import show_confirm_dialog
     return show_confirm_dialog(extra_args)
 
 def run_pass(extra_args) -> ExitValue:
-    from xpra.client.gtk3.pass_dialog import show_pass_dialog
+    from xpra.gtk_common.dialogs.pass_dialog import show_pass_dialog
     return show_pass_dialog(extra_args)
 
 def run_send_file(extra_args) -> ExitValue:
@@ -1454,7 +1454,7 @@ def get_client_app(cmdline, error_cb, opts, extra_args, mode:str):
         app.set_command_args(args)
     elif mode=="qrcode":
         check_gtk()
-        from xpra.client.gtk3.qrcode_client import QRCodeClient
+        from xpra.gtk_common.dialogs.qrcode_client import QRCodeClient
         app = QRCodeClient(opts)
     elif mode=="version":
         from xpra.client.base.gobject_client import VersionXpraClient
@@ -2352,7 +2352,7 @@ def run_example(args) -> ExitValue:
         raise InitInfo(f"usage: xpra example testname\nvalid names: {csv(all_examples)}")
     classname = args[0].replace("-", "_")
     try:
-        ic =  __import__(f"xpra.client.gtk3.example.{classname}", {}, {}, "main")
+        ic =  __import__(f"xpra.gtk_common.examples.{classname}", {}, {}, "main")
     except ImportError as e:
         raise InitException(f"failed to import example {classname}: {e}") from None
     return ic.main()
@@ -2379,11 +2379,11 @@ def run_autostart(script_file, args) -> ExitValue:
     return 0
 
 def run_qrcode(args) -> ExitValue:
-    from xpra.client.gtk3 import qrcode_client
+    from xpra.gtk_common.dialogs import qrcode_client
     return qrcode_client.main(args)
 
 def run_splash(args) -> ExitValue:
-    from xpra.scripts import splash
+    from xpra.gtk_common.dialogs import splash
     return splash.main(args)
 
 def run_glprobe(opts, show=False) -> ExitValue:
@@ -3018,7 +3018,7 @@ def run_top(error_cb, options, args, cmdline) -> ExitValue:
 def run_session_info(error_cb, options, args, cmdline) -> ExitValue:
     check_gtk_client()
     display_desc = pick_display(error_cb, options, args, cmdline)
-    from xpra.client.gtk3.session_info import SessionInfoClient
+    from xpra.gtk_common.dialogs.session_info import SessionInfoClient
     app = SessionInfoClient(options)
     connect_to_server(app, display_desc, options)
     return app.run()
@@ -3065,7 +3065,7 @@ def _browser_open(what, *path_options) -> ExitValue:
 
 
 def run_desktop_greeter() -> ExitValue:
-    from xpra.gtk_common import desktop_greeter
+    from xpra.gtk_common.dialogs import desktop_greeter
     return desktop_greeter.main()
 
 def run_sessions_gui(options) -> ExitValue:
@@ -3080,12 +3080,12 @@ def run_sessions_gui(options) -> ExitValue:
         from xpra.net.mdns import get_listener_class
         listener = get_listener_class()
         if listener:
-            from xpra.client.gtk3 import mdns_gui
+            from xpra.gtk_common.dialogs import mdns_gui
             return mdns_gui.do_main(options)
         else:
             warn("Warning: no mDNS support")
             warn(" only local sessions will be shown")
-    from xpra.client.gtk3 import sessions_gui
+    from xpra.gtk_common.dialogs import sessions_gui
     return sessions_gui.do_main(options)
 
 def run_mdns_gui(options) -> ExitValue:
@@ -3093,7 +3093,7 @@ def run_mdns_gui(options) -> ExitValue:
     listener = get_listener_class()
     if not listener:
         raise InitException("sorry, 'mdns-gui' is not supported on this platform yet")
-    from xpra.client.gtk3 import mdns_gui
+    from xpra.gtk_common.dialogs import mdns_gui
     return mdns_gui.do_main(options)
 
 def run_list_mdns(error_cb, extra_args) -> ExitValue:

@@ -19,14 +19,14 @@ from xpra.gstreamer.common import (
     get_default_appsink_attributes, get_default_appsrc_attributes,
     BUFFER_FORMAT, GST_FLOW_OK,
     )
-from xpra.codecs.gstreamer.codec_common import (
+from xpra.codecs.gstreamer.common import (
     VideoPipeline,
     get_version, get_type, get_info,
     init_module, cleanup_module,
     get_gst_encoding, get_gst_rgb_format, get_video_encoder_caps,
     get_video_encoder_options,
     )
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 
 Gst = import_gst()

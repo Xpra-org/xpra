@@ -30,7 +30,7 @@ from xpra.util.rectangle import rectangle, add_rectangle, remove_rectangle, merg
 from xpra.util.stats import get_list_stats
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs.loader import get_codec
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 from xpra.codecs.constants import preforder, LOSSY_PIXEL_FORMATS
 from xpra.net.compression import use, Compressed
 from xpra.log import Logger

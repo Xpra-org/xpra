@@ -7,7 +7,7 @@ from time import monotonic
 from gi.repository import Gdk  # @UnresolvedImport
 
 from xpra.common import ScreenshotData
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 from xpra.gtk_common.gtk_util import pixbuf_save_to_memory, get_default_root_window
 from xpra.log import Logger
 

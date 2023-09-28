@@ -110,7 +110,7 @@ class DBUS_Notifier(NotifierBase):
     def noparse_hints(self, h) -> dict:
         return h
 
-    def parse_hints(self, h) -> dict:
+    def parse_hints(self, h) -> dbus.types.Dictionary:
         hints = {}
         for x in ("action-icons", "category", "desktop-entry", "resident", "transient", "x", "y", "urgency"):
             v = h.get(x)

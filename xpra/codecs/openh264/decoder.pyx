@@ -8,7 +8,7 @@
 from time import monotonic
 from typing import Any, Dict
 
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 log = Logger("encoder", "openh264")
 

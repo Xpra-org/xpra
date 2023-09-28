@@ -13,7 +13,7 @@ from xpra.log import Logger
 log = Logger("decoder", "vpx")
 
 from xpra.codecs.constants import get_subsampling_divs
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 from xpra.util.env import envint, envbool
 
 from libc.stdint cimport uintptr_t, uint8_t

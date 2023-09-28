@@ -203,8 +203,8 @@ CODEC_OPTIONS : dict[str,tuple[str,str,str,str]] = {
     "nvenc"         : ("nvenc encoder",     "nvidia.nvenc", "encoder", "Encoder"),
     "enc_gstreamer" : ("gstreamer encoder", "gstreamer",    "encoder", "Encoder"),
     #csc:
-    "csc_libyuv"    : ("libyuv colorspace conversion", "libyuv", "colorspace_converter", "ColorspaceConverter"),
-    "csc_cython"    : ("cython colorspace conversion", "csc_cython", "colorspace_converter", "ColorspaceConverter"),
+    "csc_libyuv"    : ("libyuv colorspace conversion", "libyuv", "colorspace_converter", "Converter"),
+    "csc_cython"    : ("cython colorspace conversion", "csc_cython", "colorspace_converter", "Converter"),
     #decoders:
     "dec_pillow"    : ("Pillow decoder",    "pillow",       "decoder", "decompress"),
     "dec_spng"      : ("png decoder",       "spng",         "decoder", "decompress"),
@@ -218,7 +218,7 @@ CODEC_OPTIONS : dict[str,tuple[str,str,str,str]] = {
     "nvdec"         : ("nvdec decoder",     "nvidia.nvdec", "decoder", "Decoder"),
     "dec_gstreamer" : ("gstreamer decoder", "gstreamer",    "decoder", "Decoder"),
     #sources:
-    "v4l2"          : ("v4l2 source",       "v4l2",         "pusher", "Pusher"),
+    "v4l2"          : ("v4l2 source",       "v4l2",         "virtual", "VirtualWebcam"),
     "evdi"          : ("evdi source",       "evdi",         "capture", "EvdiDevice"),
     "drm"           : ("drm device query",  "drm",          "drm",      "query"),
     "nvfbc"         : ("NVIDIA Capture SDK","nvidia.nvfbc", f"capture_{platformname}", "NvFBC_SysCapture"),

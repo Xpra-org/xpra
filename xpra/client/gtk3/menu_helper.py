@@ -20,7 +20,7 @@ from xpra.gtk_common.gtk_util import (
     menuitem,
     get_pixbuf_from_data, scaled_image,
     )
-from xpra.gtk_common.about import about, close_about
+from xpra.gtk_common.dialogs.about import about, close_about
 from xpra.platform.gui import get_icon_size
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger
@@ -446,7 +446,7 @@ class MenuHelper:
 
     def make_updatecheckmenuitem(self) -> Gtk.ImageMenuItem:
         def show_update_window(*_args):
-            from xpra.client.gtk3.update_status import getUpdateStatusWindow
+            from xpra.gtk_common.dialogs.update_status import getUpdateStatusWindow
             w = getUpdateStatusWindow()
             w.show()
             w.check()

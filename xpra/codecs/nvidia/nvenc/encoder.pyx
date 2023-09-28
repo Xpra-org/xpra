@@ -26,7 +26,7 @@ from xpra.codecs.nvidia.cuda.context import (
     )
 from xpra.codecs.nvidia.cuda.errors import get_error_name
 from xpra.codecs.constants import video_spec, TransientCodecException
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 from xpra.codecs.nvidia.nv_util import (
     get_nvidia_module_version, get_license_keys,
     validate_driver_yuv444lossless, get_cards,

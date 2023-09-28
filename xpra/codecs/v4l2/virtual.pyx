@@ -14,7 +14,7 @@ log = Logger("webcam")
 
 from xpra.os_util import path_permission_info
 from xpra.util.str_fn import print_nested_dict
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 from xpra.codecs.constants import get_subsampling_divs
 from xpra.buffers.membuf cimport memalign   #pylint: disable=syntax-error
 
@@ -228,7 +228,7 @@ for k,v in FORMAT_STR.items():
     PIX_FMT[v] = k
 
 
-log("v4l2.pusher init")
+log("v4l2.virtual init")
 print_nested_dict({
     "FIELD_STR"      : FIELD_STR,
     "COLORSPACE_STR" : COLORSPACE_STR,
@@ -279,7 +279,7 @@ def get_input_colorspaces() -> tuple:
     return ("YUV420P", )     #,"YUV422P"
 
 
-cdef class Pusher:
+cdef class VirtualWebcam:
     cdef unsigned long frames
     cdef unsigned int width
     cdef unsigned int height
@@ -396,8 +396,8 @@ cdef class Pusher:
 
     def __repr__(self):
         if self.src_format is None:
-            return "v4l2.Pusher(uninitialized)"
-        return "v4l2.Pusher(%s:%s - %sx%s)" % (self.device_name, self.src_format, self.width, self.height)
+            return "VirtualWebcam(uninitialized)"
+        return "VirtualWebcam(%s:%s - %sx%s)" % (self.device_name, self.src_format, self.width, self.height)
 
     def is_closed(self) -> bool:
         return not bool(self.src_format)

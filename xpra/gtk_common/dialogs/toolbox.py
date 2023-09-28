@@ -81,7 +81,7 @@ class ToolboxGUI(Gtk.Window):
         self.vbox = Gtk.VBox(homogeneous=False, spacing=10)
         self.add(self.vbox)
 
-        epath = "example/"
+        epath = "examples/"
         cpath = "../"
         gpath = "../../gtk_common/"
 
@@ -175,7 +175,7 @@ class ToolboxGUI(Gtk.Window):
 
     @staticmethod
     def show_about(*_args):
-        from xpra.gtk_common.about import about
+        from xpra.gtk_common.dialogs.about import about
         about()
 
 

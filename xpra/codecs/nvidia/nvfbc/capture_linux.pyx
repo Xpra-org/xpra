@@ -14,8 +14,8 @@ from typing import Any, Dict
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.common import roundup
-from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.nvidia.cuda.image_wrapper import CUDAImageWrapper
+from xpra.codecs.image import ImageWrapper
+from xpra.codecs.nvidia.cuda.image import CUDAImageWrapper
 from xpra.codecs.nvidia.nv_util import get_nvidia_module_version, get_cards, get_license_keys, parse_nvfbc_hex_key
 
 from xpra.log import Logger

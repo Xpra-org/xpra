@@ -127,9 +127,9 @@ class WebcamMixin(StubSourceMixin):
             log("trying device %s: %s", vid, device_info)
             device_str = device_info.get("device")
             try:
-                from xpra.codecs.v4l2.pusher import Pusher, get_input_colorspaces    #@UnresolvedImport pylint: disable=import-outside-toplevel
+                from xpra.codecs.v4l2.virtual import VirtualWebcam, get_input_colorspaces    #@UnresolvedImport pylint: disable=import-outside-toplevel
                 in_cs = get_input_colorspaces()
-                p = Pusher()
+                p = VirtualWebcam()
                 src_format = in_cs[0]
                 p.init_context(w, h, w, src_format, device_str)
                 self.webcam_forwarding_devices[device_id] = p
@@ -183,7 +183,7 @@ class WebcamMixin(StubSourceMixin):
             rgb_pixel_format = "BGRX"       #BGRX
             img = open_only(data, (encoding,))
             pixels = img.tobytes("raw", rgb_pixel_format)
-            from xpra.codecs.image_wrapper import ImageWrapper
+            from xpra.codecs.image import ImageWrapper
             bgrx_image = ImageWrapper(0, 0, w, h, pixels, rgb_pixel_format, 32, w*4, planes=ImageWrapper.PACKED)
             src_format = webcam.get_src_format()
             if not src_format:
@@ -195,7 +195,7 @@ class WebcamMixin(StubSourceMixin):
                 from xpra.codecs.libyuv.colorspace_converter import (   #@UnresolvedImport
                     get_input_colorspaces,
                     get_output_colorspaces,
-                    ColorspaceConverter,
+                    Converter,
                     )
             except ImportError:
                 self.send_webcam_stop(device_id, "no csc module")
@@ -214,7 +214,7 @@ class WebcamMixin(StubSourceMixin):
                 return False
             tw = webcam.get_width()
             th = webcam.get_height()
-            csc = ColorspaceConverter()
+            csc = Converter()
             csc.init_context(w, h, rgb_pixel_format, tw, th, src_format)
             image = csc.convert_image(bgrx_image)
             webcam.push_image(image)

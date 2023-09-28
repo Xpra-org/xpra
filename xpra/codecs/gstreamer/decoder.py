@@ -12,7 +12,7 @@ from xpra.gstreamer.common import (
     make_buffer, has_plugins,
     get_caps_str,
     )
-from xpra.codecs.gstreamer.codec_common import (
+from xpra.codecs.gstreamer.common import (
     VideoPipeline,
     get_version, get_type, get_info,
     init_module, cleanup_module,
@@ -21,7 +21,7 @@ from xpra.codecs.gstreamer.codec_common import (
 from xpra.os_util import WIN32
 from xpra.common import roundup
 from xpra.util.types import typedict
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 
 log = Logger("decoder", "gstreamer")

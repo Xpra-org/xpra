@@ -130,7 +130,7 @@ class NotificationClient(StubClientMixin):
                 from xpra.notifications.common import parse_image_path
                 icon_filename = get_icon_filename(icon_name)
                 icon = parse_image_path(icon_filename)
-                n.show_notify("", self.tray, nid, "Xpra", nid, "",
+                n.show_notify("", self.tray, int(nid), "Xpra", int(nid), "",
                               summary, body, actions, hints or {}, expire_timeout, icon)
             except Exception as e:
                 log("failed to show notification", exc_info=True)

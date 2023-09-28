@@ -13,7 +13,7 @@ from xpra.gtk_common.gobject_util import one_arg_signal, n_arg_signal
 from xpra.clipboard.core import (
     ClipboardProxyCore, TEXT_TARGETS,
     )
-from xpra.clipboard.timeout_helper import ClipboardTimeoutHelper
+from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.util.str_fn import ellipsizer
 from xpra.util.env import envint
 from xpra.log import Logger

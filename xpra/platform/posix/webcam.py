@@ -45,7 +45,7 @@ def check_virtual_dir(warn=True) -> bool:
 def query_video_device(device) -> dict[str,Any]:
     try:
         # pylint: disable=import-outside-toplevel
-        from xpra.codecs.v4l2.pusher import query_video_device as v4l_query_video_device
+        from xpra.codecs.v4l2.virtual import query_video_device as v4l_query_video_device
         return v4l_query_video_device(device)
     except ImportError as e:
         log(f"query_video_device({device}) no v4l2 module: {e}")

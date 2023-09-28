@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 from xpra.codecs.pillow.encoder import (
     get_encodings, encode,
     get_version, get_type, get_info,

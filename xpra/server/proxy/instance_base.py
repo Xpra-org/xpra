@@ -16,8 +16,8 @@ from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.net.common import MAX_PACKET_SIZE, PacketType
 from xpra.net.digest import get_salt, gendigest
 from xpra.codecs.loader import load_codec, get_codec
-from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
+from xpra.codecs.image import ImageWrapper
+from xpra.codecs.video import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.scripts.config import parse_number, parse_bool
 from xpra.common import FULL_INFO, ConnectionMessage
 from xpra.os_util import (

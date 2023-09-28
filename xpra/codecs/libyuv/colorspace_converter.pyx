@@ -15,7 +15,7 @@ log = Logger("csc", "libyuv")
 from xpra.util.str_fn import csv
 from xpra.util.types import typedict
 from xpra.codecs.constants import get_subsampling_divs, csc_spec
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf, memalign, buffer_context   #pylint: disable=syntax-error
 
 from libc.stdint cimport uint8_t, uintptr_t
@@ -159,7 +159,7 @@ def get_spec(in_colorspace, out_colorspace):
     assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, COLORSPACES)
     assert out_colorspace in COLORSPACES[in_colorspace], "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, COLORSPACES[in_colorspace])
     return csc_spec(input_colorspace=in_colorspace, output_colorspace=out_colorspace,
-                    codec_class=ColorspaceConverter, codec_type=get_type(),
+                    codec_class=Converter, codec_type=get_type(),
                     quality=100, speed=100,
                     setup_cost=0, min_w=8, min_h=2, can_scale=in_colorspace!="NV12",
                     max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
@@ -240,7 +240,7 @@ def argb_scale(image, int dst_width, int dst_height, FilterMode filtermode=kFilt
     return scaled_image
 
 
-cdef class ColorspaceConverter:
+cdef class Converter:
     cdef int src_width
     cdef int src_height
     cdef int dst_width
@@ -274,7 +274,7 @@ cdef class ColorspaceConverter:
 
     def init_context(self, int src_width, int src_height, src_format,
                            int dst_width, int dst_height, dst_format, options:typedict=None):
-        log("libyuv.ColorspaceConverter.init_context%s", (
+        log("libyuv.Converter.init_context%s", (
             src_width, src_height, src_format, dst_width, dst_height, dst_format, options))
         if src_format not in COLORSPACES:
             raise ValueError(f"invalid input colorspace: {src_format}, must be one of " + csv(COLORSPACES.keys()))

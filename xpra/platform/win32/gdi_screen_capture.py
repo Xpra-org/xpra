@@ -17,7 +17,7 @@ from xpra.common import roundup
 from xpra.util.env import envbool
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_virtualscreenmetrics
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 
 #user32:
 from xpra.platform.win32.common import (

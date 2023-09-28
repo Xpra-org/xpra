@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 from xpra.codecs import rgb_transform
 
 X = 0

@@ -1430,7 +1430,7 @@ def fixup_encodings(options) -> None:
         options.video_encoders = ["none"]
         options.video_decoders = ["none"]
     else:
-        from xpra.codecs.video_helper import ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS, ALL_VIDEO_DECODER_OPTIONS
+        from xpra.codecs.video import ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS, ALL_VIDEO_DECODER_OPTIONS
         for name, all_list in (
             ("csc-modules", ALL_CSC_MODULE_OPTIONS),
             ("video-encoders", ALL_VIDEO_ENCODER_OPTIONS),

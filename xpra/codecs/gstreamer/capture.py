@@ -16,13 +16,13 @@ from xpra.gstreamer.common import (
 from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.gstreamer.pipeline import Pipeline
 from xpra.codecs.constants import get_profile
-from xpra.codecs.gstreamer.codec_common import (
+from xpra.codecs.gstreamer.common import (
     get_version, get_type, get_info,
     init_module, cleanup_module,
     get_video_encoder_caps, get_video_encoder_options,
     get_gst_encoding,
     )
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 
 Gst = import_gst()

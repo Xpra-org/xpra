@@ -100,8 +100,8 @@ class WebcamServer(StubServerMixin):
             return 0
         # pylint: disable=import-outside-toplevel
         try:
-            from xpra.codecs.v4l2.pusher import Pusher
-            assert Pusher
+            from xpra.codecs.v4l2.virtual import VirtualWebcam
+            assert VirtualWebcam
         except ImportError:
             log("failed to import the virtual video module", exc_info=True)
             log.info("webcam forwarding requires the v4l2 virtual video module")

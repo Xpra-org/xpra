@@ -16,7 +16,10 @@ from collections.abc import Callable
 
 from xpra.log import Logger
 from xpra.scripts.config import InitExit
-from xpra.common import SPLASH_EXIT_DELAY, FULL_INFO, LOG_HELLO, ConnectionMessage, disconnect_is_an_error, noerr
+from xpra.common import (
+    SPLASH_EXIT_DELAY, FULL_INFO, LOG_HELLO,
+    ConnectionMessage, disconnect_is_an_error, noerr, NotificationID,
+)
 from xpra.util.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
 from xpra.net.common import (
@@ -243,7 +246,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         return None
 
 
-    def may_notify(self, nid:int, summary:str, body:str, *args, **kwargs):
+    def may_notify(self, nid:int|NotificationID, summary:str, body:str, *args, **kwargs):
         notifylog = Logger("notify")
         notifylog("may_notify(%s, %s, %s, %s, %s)", nid, summary, body, args, kwargs)
         notifylog.info("%s", summary)

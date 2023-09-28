@@ -9,7 +9,7 @@ from typing import Any
 
 from xpra.codecs.constants import preforder, STREAM_ENCODINGS
 from xpra.codecs.loader import load_codec, codec_versions, has_codec, get_codec
-from xpra.codecs.video_helper import getVideoHelper
+from xpra.codecs.video import getVideoHelper
 from xpra.scripts.config import parse_bool_or_int
 from xpra.common import FULL_INFO, VIDEO_MAX_SIZE
 from xpra.net.common import PacketType

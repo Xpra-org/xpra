@@ -6,7 +6,6 @@
 import signal
 from collections.abc import Callable
 
-from xpra.util.pysystem import dump_all_frames, dump_gc_frames
 from xpra.os_util import SIGNAMES, POSIX, get_util_logger, stderr_print
 
 _glib_unix_signals : dict[int, int] = {}
@@ -50,6 +49,7 @@ def register_os_signal(callback:Callable, commandtype:str="", signum:signal.Sign
 def register_SIGUSR_signals(commandtype:str="Server"):
     if not POSIX:
         return
+    from xpra.util.pysystem import dump_all_frames, dump_gc_frames
     log = get_util_logger()
     def sigusr1(_sig):
         log.info("SIGUSR1")
