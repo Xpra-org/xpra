@@ -21,7 +21,7 @@ usr/lib/python3*/*/xpra/clipboard/
 usr/lib/python3*/*/xpra/notifications/
 usr/lib/python3*/*/xpra/dbus/
 usr/lib/python3*/*/xpra/gstreamer/
-usr/lib/python3*/*/xpra/gtk_common/
+usr/lib/python3*/*/xpra/gtk/
 usr/lib/python3*/*/xpra/keyboard/
 usr/lib/python3*/*/xpra/net/
 usr/lib/python3*/*/xpra/platform/
@@ -36,8 +36,8 @@ usr/lib/python3*/*/xpra/codecs/checks.py*
 usr/lib/python3*/*/xpra/codecs/constants.py*
 usr/lib/python3*/*/xpra/codecs/debug.py*
 usr/lib/python3*/*/xpra/codecs/icon_util.py
-usr/lib/python3*/*/xpra/codecs/image_wrapper.py
+usr/lib/python3*/*/xpra/codecs/image.py
 usr/lib/python3*/*/xpra/codecs/loader.py
 usr/lib/python3*/*/xpra/codecs/rgb_transform.py
-usr/lib/python3*/*/xpra/codecs/video_helper.py
+usr/lib/python3*/*/xpra/codecs/video.py
 

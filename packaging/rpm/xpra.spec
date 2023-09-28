@@ -610,12 +610,12 @@ rm -rf $RPM_BUILD_ROOT
 %pycached %{python3_sitearch}/xpra/codecs/constants.py
 %pycached %{python3_sitearch}/xpra/codecs/debug.py
 %pycached %{python3_sitearch}/xpra/codecs/icon_util.py
-%pycached %{python3_sitearch}/xpra/codecs/image_wrapper.py
+%pycached %{python3_sitearch}/xpra/codecs/image.py
 %pycached %{python3_sitearch}/xpra/codecs/loader.py
 %pycached %{python3_sitearch}/xpra/codecs/rgb_transform.py
-%pycached %{python3_sitearch}/xpra/codecs/video_helper.py
+%pycached %{python3_sitearch}/xpra/codecs/video.py
 %{python3_sitearch}/xpra/dbus/
-%{python3_sitearch}/xpra/gtk_common/
+%{python3_sitearch}/xpra/gtk/
 %{python3_sitearch}/xpra/keyboard/
 %{python3_sitearch}/xpra/net/
 %{python3_sitearch}/xpra/platform/
