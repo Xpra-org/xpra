@@ -7,7 +7,7 @@ from gi.repository import Gtk, GLib    #pylint: disable=wrong-import-position @U
 from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
 init_gdk_display_source()
 from xpra.x11.bindings.window import X11WindowBindings  #@UnresolvedImport
-from xpra.gtk_common.error import xsync
+from xpra.gtk.error import xsync
 X11Window = X11WindowBindings()
 
 def main():

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 import gi
+
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
 from gi.repository import Gtk, Gdk  #pylint: disable=wrong-import-position @UnresolvedImport
-
 
 def main():
 	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
@@ -38,7 +38,7 @@ def main():
 		SubstructureRedirectMask = constants["SubstructureRedirectMask"]
 		event_mask = SubstructureNotifyMask | SubstructureRedirectMask
 		X11Window.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_WM_STATE", mode,
-			  "_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ", 0, 0)
+									"_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ", 0, 0)
 
 	def maximize_X11(*args):
 		send_maximized_wm_state(1)	#ADD

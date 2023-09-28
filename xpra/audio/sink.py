@@ -24,7 +24,7 @@ from xpra.audio.gstreamer_util import (
     MP3, CODEC_ORDER, QUEUE_LEAK,
     GST_QUEUE_NO_LEAK, MS_TO_NS, DEFAULT_SINK_PLUGIN_OPTIONS,
     )
-from xpra.gtk_common.gobject_util import one_arg_signal
+from xpra.gtk.gobject import one_arg_signal
 from xpra.net.compression import decompress_by_name
 from xpra.scripts.config import InitExit
 from xpra.util.str_fn import csv

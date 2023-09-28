@@ -58,7 +58,7 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
 
 
     def install_signal_handlers(self) -> None:
-        from xpra.gtk_common.gobject_compat import install_signal_handlers
+        from xpra.gtk.signals import install_signal_handlers
         install_signal_handlers("%s Client" % self.client_type(), self.handle_app_signal)
 
 
@@ -418,7 +418,7 @@ class InfoTimerClient(MonitorXpraClient):
         self.info_timer = 0
 
     def run(self) -> ExitValue:
-        from xpra.gtk_common.gobject_compat import register_os_signals
+        from xpra.gtk.signals import register_os_signals
         register_os_signals(self.signal_handler, "")
         v = super().run()
         self.log("run()=%s" % v)

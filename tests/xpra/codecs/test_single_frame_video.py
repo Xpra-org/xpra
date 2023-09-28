@@ -64,8 +64,8 @@ def main(files):
             print(f"  {enc.get_type():10} {encoding:10} {colorspace}")
             image = source_image
             if colorspace!="BGRX":
-                from xpra.codecs.libyuv.colorspace_converter import ColorspaceConverter
-                csc = ColorspaceConverter()
+                from xpra.codecs.libyuv.converter import Converter
+                csc = Converter()
                 csc.init_context(w, h, pixel_format,
                                  w, h, colorspace, typedict({"speed" : 0}))
                 image = csc.convert_image(source_image)
@@ -97,8 +97,8 @@ def main(files):
             dformat = decoded.get_pixel_format()
             output = decoded
             if dformat!="BGRX":
-                from xpra.codecs.libyuv.colorspace_converter import ColorspaceConverter
-                csc = ColorspaceConverter()
+                from xpra.codecs.libyuv.converter import Converter
+                csc = Converter()
                 csc.init_context(w, h, dformat,
                                  w, h, "BGRX", typedict())
                 output = csc.convert_image(decoded)

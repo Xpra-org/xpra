@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import gi
+
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
 gi.require_version('GdkX11', '3.0')  # @UndefinedVariable
 from gi.repository import Gtk, GdkX11, GLib   #pylint: disable=wrong-import-position @UnresolvedImport
@@ -48,12 +49,12 @@ class MoveWindow(Gtk.Window):
 		SubstructureRedirectMask = constants["SubstructureRedirectMask"]
 		event_mask = SubstructureNotifyMask | SubstructureRedirectMask
 		X11Window.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_MOVERESIZE_WINDOW",
-			  1+2**8+2**9+2**10+2**11, new_x, new_y, new_width, new_height)
+									1+2**8+2**9+2**10+2**11, new_x, new_y, new_width, new_height)
 
 	def get_new_geometry(self):
 		x, y = self.get_position()
 		width, height = self.get_size()
-		from xpra.gtk_common.gtk_util import get_default_root_window
+		from xpra.gtk.gtk_util import get_default_root_window
 		maxx, maxy = get_default_root_window().get_geometry()[2:4]
 		new_x = (x+100) % (maxx-width)
 		new_y = (y+100) % (maxy-height)

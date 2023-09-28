@@ -309,7 +309,7 @@ def check_gtk_client() -> None:
         from xpra.client import gui, gtk3
         assert gui, gtk3
     except ImportError:
-        raise InitExit(ExitCode.FILE_NOT_FOUND, "`xpra-client-gtk3` is not installed") from None
+        raise InitExit(ExitCode.FILE_NOT_FOUND, "`xpra-client-bindings` is not installed") from None
 
 def check_gtk() -> None:
     Gtk = gi_import("Gtk")
@@ -596,15 +596,15 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
         return launcher_main(["xpra"]+args)
     if mode == "gui":
         check_gtk_client()
-        from xpra.gtk_common import gui
+        from xpra.gtk.dialogs import gui
         return gui.main(cmdline)
     if mode == "start-gui":
         check_gtk_client()
-        from xpra.gtk_common.dialogs import start_gui
+        from xpra.gtk.dialogs import start_gui
         return start_gui.main(options)
     if mode == "bug-report":
         check_gtk_client()
-        from xpra.gtk_common.dialogs import bug_report
+        from xpra.gtk.dialogs import bug_report
         return bug_report.main(["xpra"] + args)
     if mode == "session-info":
         return run_session_info(error_cb, options, args, cmdline)
@@ -622,11 +622,11 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
         return run_audio(mode, error_cb, options, args)
     if mode=="pinentry":
         check_gtk_client()
-        from xpra.scripts.pinentry_wrapper import run_pinentry
+        from xpra.scripts.pinentry import run_pinentry
         return run_pinentry(args)
     if mode=="input_pass":
         check_gtk_client()
-        from xpra.scripts.pinentry_wrapper import input_pass
+        from xpra.scripts.pinentry import input_pass
         password = input_pass((args+["password"])[0])
         return len(password)>0
     if mode=="_dialog":
@@ -676,14 +676,14 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
         return nv_util.main()
     if mode=="webcam":
         check_gtk()
-        from xpra.gtk_common.dialogs import show_webcam
+        from xpra.gtk.dialogs import show_webcam
         return show_webcam.main()
     if mode=="keyboard":
         from xpra.platform import keyboard
         return keyboard.main()
     if mode=="gtk-info":
         check_gtk()
-        from gtk_common import gtk_info
+        from xpra.gtk import gtk_info
         return gtk_info.main()
     if mode=="gui-info":
         check_gtk()
@@ -709,7 +709,7 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
         return version.main()
     if mode=="toolbox":
         check_gtk_client()
-        from xpra.gtk_common.dialogs import toolbox
+        from xpra.gtk.dialogs import toolbox
         return toolbox.main()
     if mode == "initenv":
         if not POSIX:
@@ -1167,11 +1167,11 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
 
 
 def run_dialog(extra_args) -> ExitValue:
-    from xpra.gtk_common.dialogs.confirm_dialog import show_confirm_dialog
+    from xpra.gtk.dialogs.confirm_dialog import show_confirm_dialog
     return show_confirm_dialog(extra_args)
 
 def run_pass(extra_args) -> ExitValue:
-    from xpra.gtk_common.dialogs.pass_dialog import show_pass_dialog
+    from xpra.gtk.dialogs.pass_dialog import show_pass_dialog
     return show_pass_dialog(extra_args)
 
 def run_send_file(extra_args) -> ExitValue:
@@ -1187,7 +1187,7 @@ def run_send_file(extra_args) -> ExitValue:
     if extra_args:
         files = extra_args
     else:
-        from xpra.gtk_common.gtk_util import choose_files
+        from xpra.gtk.widget import choose_files
         files = choose_files(None, "Select Files to Transfer", multiple=True)
         if not files:
             return ExitCode.FAILURE
@@ -1454,7 +1454,7 @@ def get_client_app(cmdline, error_cb, opts, extra_args, mode:str):
         app.set_command_args(args)
     elif mode=="qrcode":
         check_gtk()
-        from xpra.gtk_common.dialogs.qrcode_client import QRCodeClient
+        from xpra.gtk.dialogs.qrcode_client import QRCodeClient
         app = QRCodeClient(opts)
     elif mode=="version":
         from xpra.client.base.gobject_client import VersionXpraClient
@@ -1905,7 +1905,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode:str, defaults
             check_gtk_client()
             bypass_no_gtk()
             #we can tell the server what size to resize to:
-            from xpra.gtk_common.gtk_util import get_root_size
+            from xpra.gtk.gtk_util import get_root_size
             root_w, root_h = get_root_size()
             from xpra.util.parsing import parse_scaling
             scaling = parse_scaling(options.desktop_scaling, root_w, root_h)
@@ -2352,7 +2352,7 @@ def run_example(args) -> ExitValue:
         raise InitInfo(f"usage: xpra example testname\nvalid names: {csv(all_examples)}")
     classname = args[0].replace("-", "_")
     try:
-        ic =  __import__(f"xpra.gtk_common.examples.{classname}", {}, {}, "main")
+        ic =  __import__(f"xpra.gtk.examples.{classname}", {}, {}, "main")
     except ImportError as e:
         raise InitException(f"failed to import example {classname}: {e}") from None
     return ic.main()
@@ -2379,11 +2379,11 @@ def run_autostart(script_file, args) -> ExitValue:
     return 0
 
 def run_qrcode(args) -> ExitValue:
-    from xpra.gtk_common.dialogs import qrcode_client
+    from xpra.gtk.dialogs import qrcode_client
     return qrcode_client.main(args)
 
 def run_splash(args) -> ExitValue:
-    from xpra.gtk_common.dialogs import splash
+    from xpra.gtk.dialogs import splash
     return splash.main(args)
 
 def run_glprobe(opts, show=False) -> ExitValue:
@@ -2449,7 +2449,7 @@ def run_glcheck(opts) -> ExitValue:
                 from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
                 init_gdk_display_source()
             except ImportError as e:
-                log(f"no gtk3 x11 bindings: {e}")
+                log(f"no bindings x11 bindings: {e}")
             except Exception:
                 log("error initializing gdk display source", exc_info=True)
     try:
@@ -3018,7 +3018,7 @@ def run_top(error_cb, options, args, cmdline) -> ExitValue:
 def run_session_info(error_cb, options, args, cmdline) -> ExitValue:
     check_gtk_client()
     display_desc = pick_display(error_cb, options, args, cmdline)
-    from xpra.gtk_common.dialogs.session_info import SessionInfoClient
+    from xpra.gtk.dialogs.session_info import SessionInfoClient
     app = SessionInfoClient(options)
     connect_to_server(app, display_desc, options)
     return app.run()
@@ -3065,7 +3065,7 @@ def _browser_open(what, *path_options) -> ExitValue:
 
 
 def run_desktop_greeter() -> ExitValue:
-    from xpra.gtk_common.dialogs import desktop_greeter
+    from xpra.gtk.dialogs import desktop_greeter
     return desktop_greeter.main()
 
 def run_sessions_gui(options) -> ExitValue:
@@ -3080,12 +3080,12 @@ def run_sessions_gui(options) -> ExitValue:
         from xpra.net.mdns import get_listener_class
         listener = get_listener_class()
         if listener:
-            from xpra.gtk_common.dialogs import mdns_gui
+            from xpra.gtk.dialogs import mdns_gui
             return mdns_gui.do_main(options)
         else:
             warn("Warning: no mDNS support")
             warn(" only local sessions will be shown")
-    from xpra.gtk_common.dialogs import sessions_gui
+    from xpra.gtk.dialogs import sessions_gui
     return sessions_gui.do_main(options)
 
 def run_mdns_gui(options) -> ExitValue:
@@ -3093,7 +3093,7 @@ def run_mdns_gui(options) -> ExitValue:
     listener = get_listener_class()
     if not listener:
         raise InitException("sorry, 'mdns-gui' is not supported on this platform yet")
-    from xpra.gtk_common.dialogs import mdns_gui
+    from xpra.gtk.dialogs import mdns_gui
     return mdns_gui.do_main(options)
 
 def run_list_mdns(error_cb, extra_args) -> ExitValue:

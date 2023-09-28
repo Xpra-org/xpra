@@ -178,19 +178,19 @@ class typedict(dict):
     def strget(self, k, default:str | None=None) -> str:
         return self.conv_get(k, default, bytestostr)
 
-    def bytesget(self, k : str, default:bytes | None=None) -> bytes:
+    def bytesget(self, k , default:bytes | None=None) -> bytes:
         return self.conv_get(k, default, strtobytes)
 
-    def intget(self, k : str, default:int | None=0) -> int:
+    def intget(self, k , default:int | None=0) -> int:
         return self.conv_get(k, default, int)
 
-    def boolget(self, k : str, default:bool | None=False) -> bool:
+    def boolget(self, k , default:bool | None=False) -> bool:
         return self.conv_get(k, default, bool)
 
-    def dictget(self, k : str, default:dict | None=None) -> dict:
+    def dictget(self, k , default:dict | None=None) -> dict:
         return self.conv_get(k, default, checkdict)
 
-    def intpair(self, k : str, default_value:tuple[int,int] | None=None) -> tuple[int, int] | None:
+    def intpair(self, k , default_value:tuple[int,int] | None=None) -> tuple[int, int] | None:
         v = self.inttupleget(k, default_value)
         if v is None:
             return default_value
@@ -202,17 +202,17 @@ class typedict(dict):
         except ValueError:
             return default_value
 
-    def strtupleget(self, k : str, default_value=(), min_items:int | None=None, max_items:int | None=None) -> tuple[str, ...]:
+    def strtupleget(self, k , default_value=(), min_items:int | None=None, max_items:int | None=None) -> tuple[str, ...]:
         return self.tupleget(k, default_value, str, min_items, max_items)
 
-    def inttupleget(self, k : str, default_value=(), min_items:int | None=None, max_items:int | None=None) -> tuple[int, ...]:
+    def inttupleget(self, k , default_value=(), min_items:int | None=None, max_items:int | None=None) -> tuple[int, ...]:
         return self.tupleget(k, default_value, int, min_items, max_items)
 
-    def tupleget(self, k : str, default_value=(), item_type=None, min_items:int | None=None, max_items:int | None=None) -> tuple[Any, ...]:
+    def tupleget(self, k , default_value=(), item_type=None, min_items:int | None=None, max_items:int | None=None) -> tuple[Any, ...]:
         v = self._listget(k, default_value, item_type, min_items, max_items)
         return tuple(v or ())
 
-    def _listget(self, k : str, default_value, item_type=None, min_items:int | None=None, max_items:int | None=None) -> list[Any] | tuple[Any,...]:
+    def _listget(self, k , default_value, item_type=None, min_items:int | None=None, max_items:int | None=None) -> list[Any] | tuple[Any,...]:
         v = self.get(k)
         if v is None:
             return default_value

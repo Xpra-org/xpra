@@ -40,7 +40,7 @@ class Test_CSC_Colorspace(unittest.TestCase):
             raise Exception("%s does not support %s as input" % (mod, in_csc))
         if out_csc not in csc_mod.get_output_colorspaces(in_csc):
             raise Exception("%s does not support %s as output for %s" % (mod, out_csc, in_csc))
-        csc = csc_mod.ColorspaceConverter()
+        csc = csc_mod.Converter()
         csc.init_context(width, height, in_csc,
                          width, height, out_csc)
         image = make_test_image(in_csc, width, height)

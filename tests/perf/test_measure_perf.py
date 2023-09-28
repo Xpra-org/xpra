@@ -43,7 +43,7 @@ import os.path
 from subprocess import Popen, PIPE, STDOUT
 
 from xpra.exit_codes import exit_str
-from xpra.gtk_common.gtk_util import get_root_size
+from xpra.gtk.gtk_util import get_root_size
 from xpra.log import Logger
 
 log = Logger("util")
@@ -238,25 +238,18 @@ if err:
         VNCVIEWER_VERSION = "TigerVNC Viewer %s" % (v_lines[0].split()[5])
 print ("VNCVIEWER_VERSION=%s" % VNCVIEWER_VERSION)
 
-#get svnversion, prefer directly from svn:
 try:
-    SVN_VERSION = getoutput(["svnversion", "-n"]).split(":")[-1].strip()
-except:
-    SVN_VERSION = ""
-if not SVN_VERSION:
-    #fallback to getting it from xpra's src_info:
-    try:
-        from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
-        SVN_VERSION = 'r%s' % REVISION
-        if LOCAL_MODIFICATIONS:
-            SVN_VERSION += "M"
-    except:
-        pass
-if not SVN_VERSION:
+    from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
+    VERSION = 'r%s' % REVISION
+    if LOCAL_MODIFICATIONS:
+        VERSION += "M"
+except Exception:
+    VERSION = ""
+if not VERSION:
     #fallback to running python:
-    SVN_VERSION = getoutput(["python", "-c",
+    VERSION = getoutput(["python", "-c",
                              "from xpra.src_info import REVISION,LOCAL_MODIFICATIONS;print(('r%s%s' % (REVISION, ' M'[int(bool(LOCAL_MODIFICATIONS))])).strip())"])
-print("Found xpra revision: '%s'" % str(SVN_VERSION))
+print("Found xpra revision: '%s'" % str(VERSION))
 
 WINDOW_MANAGER = os.environ.get("DESKTOP_SESSION", "unknown")
 
@@ -486,11 +479,10 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                             "Server Version" : server_version,
                             "Client Version" : client_version,
                             "Custom Params"  : config.CUSTOM_PARAMS,
-                            "SVN Version"    : SVN_VERSION,
+                            "Version"    : VERSION,
                             "Encoding"       : encoding,
                             "Quality"        : quality,
                             "Speed"          : speed,
-                            "OpenGL"         : opengl,
                             "Test Command"   : get_command_name(test_command),
                             "Sample Duration (s)"    : config.MEASURE_TIME,
                             "Sample Time (epoch)"    : time.time(),
@@ -563,7 +555,7 @@ def get_command_name(command_arg):
         name = config.TEST_NAMES.get(command_arg)
         if name:
             return  name
-    except:
+    except Exception:
         pass
     if isinstance(command_arg, list):
         c = command_arg[0]              #["/usr/bin/xterm", "blah"] -> "/usr/bin/xterm"

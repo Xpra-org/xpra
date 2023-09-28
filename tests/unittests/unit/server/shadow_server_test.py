@@ -55,12 +55,19 @@ class ShadowServerTest(ServerTestUtil):
         else:
             dstr = display.lstrip(":")
             new_delay = 2
-            cmd = [dbus_send, "--session", "--type=method_call",
-                    f"--dest=org.xpra.Server{dstr}", "/org/xpra/Server",
-                    "org.xpra.Server.SetRefreshDelay", f"int32:{new_delay}"]
+            cmd = [
+                dbus_send,
+                "--session",
+                "--type=method_call",
+                f"--dest=org.xpra.Server{dstr}",
+                "/org/xpra/Server",
+                "org.xpra.Server.SetRefreshDelay",
+                f"int32:{new_delay}",
+            ]
             env = self.get_run_env()
             env["DISPLAY"] = display
             self.run_command(cmd, env=env).wait(20)
+            time.sleep(1)
             #check that the value has changed:
             info = self.get_server_info(display)
             assert info

@@ -18,22 +18,24 @@ import sys
 import traceback
 
 import gi
+
+
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
 gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
 # @UnresolvedImport pylint: disable=wrong-import-position
 from gi.repository import GLib, Gtk, GdkPixbuf  # @UnresolvedImport
 
-from xpra.gtk_common.gobject_compat import register_os_signals
+from xpra.gtk.signals import register_os_signals
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
-from xpra.gtk_common.gtk_util import (
-    add_close_accel, scaled_image, color_parse, label,
-    choose_file, imagebutton, get_icon_pixbuf,
-    )
+from xpra.gtk.gtk_util import (
+    add_close_accel, color_parse, )
+from xpra.gtk.widget import scaled_image, imagebutton, label, choose_file
+from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.str_fn import csv, repr_ellipsized
 from xpra.os_util import WIN32, OSX
 from xpra.net.common import DEFAULT_PORT
 from xpra.util.thread import start_thread
-from xpra.gtk_common.dialogs.about import about
+from xpra.gtk.dialogs.about import about
 from xpra.scripts.main import (
     connect_to, make_client,
     configure_network, configure_env, configure_logging,
@@ -250,7 +252,7 @@ class ApplicationWindow:
         self.bug_tool = None
         def bug(*_args):
             if self.bug_tool is None:
-                from xpra.gtk_common.dialogs.bug_report import BugReport
+                from xpra.client.gtk3.bug_report import BugReport
                 self.bug_tool = BugReport()
                 self.bug_tool.init(show_about=False)
             self.bug_tool.show()
@@ -259,7 +261,7 @@ class ApplicationWindow:
             self.mdns_gui = None
             def mdns(*_args):
                 if self.mdns_gui is None:
-                    from xpra.gtk_common.dialogs.mdns_gui import mdns_sessions
+                    from xpra.client.gtk3.mdns_gui import mdns_sessions
                     self.mdns_gui = mdns_sessions(self.config)
                     def close_mdns():
                         self.mdns_gui.destroy()
@@ -1110,7 +1112,7 @@ def do_main(argv):
     from xpra.os_util import SIGNAMES
     from xpra.scripts.main import InitExit, InitInfo
     from xpra.platform.gui import init as gui_init, ready as gui_ready
-    from xpra.gtk_common.gtk_util import init_display_source
+    from xpra.gtk.gtk_util import init_display_source
 
     init_display_source()
 

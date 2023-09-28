@@ -28,7 +28,7 @@ from xpra.util.str_fn import csv, ellipsizer
 from xpra.util.env import envint, envbool
 from xpra.util.version import XPRA_VERSION, vparts
 from xpra.util.thread import start_thread
-from xpra.server.server_core import get_server_info, get_thread_info, proto_crypto_caps
+from xpra.server.core import get_server_info, get_thread_info, proto_crypto_caps
 from xpra.log import Logger
 
 log = Logger("proxy")

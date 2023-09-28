@@ -5,7 +5,7 @@
 
 from xpra.log import Logger
 from xpra.os_util import strtobytes
-from xpra.gtk_common.error import xsync
+from xpra.gtk.error import xsync
 from xpra.x11.gtk_x11.prop import prop_get, get_python_type
 from xpra.x11.bindings.window import X11WindowBindings     #@UnresolvedImport
 

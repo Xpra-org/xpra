@@ -250,7 +250,7 @@ def show_encoding_help(opts) -> int:
     from xpra.server import features as sf
     sf.audio = sf.av_sync = sf.clipboard = sf.commands = sf.control = sf.dbus = sf.fileprint = sf.input_devices = False
     sf.mmap = sf.logging = sf.network_state = sf.notifications = sf.rfb = sf.shell = sf.webcam = False
-    from xpra.server.server_base import ServerBase
+    from xpra.server.base import ServerBase
     sb = ServerBase()
     sb.init(opts)
     from xpra.codecs.constants import PREFERRED_ENCODING_ORDER, HELP_ORDER
@@ -1446,14 +1446,14 @@ def _do_run_server(script_file:str, cmdline,
             #perhaps this is an upgrade from an older version?
             #try harder to find the pid:
             def _get_int(prop):
-                from xpra.gtk_common.gtk_util import get_default_root_window
+                from xpra.gtk.gtk_util import get_default_root_window
                 from xpra.x11.gtk_x11.prop import prop_get
                 try:
                     xid = get_default_root_window().get_xid()
                     return prop_get(xid, prop, "u32")
                 except Exception:
                     return None
-            xvfb_pid = _get_int(b"XPRA_XVFB_PID") or _get_int(b"_XPRA_SERVER_PID")
+            xvfb_pid = _get_int(b"XPRA_XVFB_PID") or _get_int(b"_XPRA_SERVER_PID") or 0
 
     progress(80, "initializing server")
     if shadowing:

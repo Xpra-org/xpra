@@ -10,7 +10,7 @@ gi.require_version('Gdk', '3.0')  # @UndefinedVariable
 from gi.repository import GLib, Gdk  # @UnresolvedImport
 
 from xpra.client.gui.keyboard_helper import KeyboardHelper, log
-from xpra.gtk_common.keymap import get_gtk_keymap
+from xpra.gtk.keymap import get_gtk_keymap
 from xpra.os_util import is_X11
 
 
@@ -100,7 +100,7 @@ class GTKKeyboardHelper(KeyboardHelper):
 def main():
     #use gtk as display source:
     # pylint: disable=import-outside-toplevel
-    from xpra.gtk_common.gtk_util import init_display_source
+    from xpra.gtk.gtk_util import init_display_source
     from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context
     with program_context("GTK-Keyboard", "GTK Keyboard"):

@@ -11,7 +11,7 @@ from uinput import (
 
 from xpra.util.env import envint
 from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
-from xpra.gtk_common.error import xsync, xlog
+from xpra.gtk.error import xsync, xlog
 from xpra.log import Logger
 
 log = Logger("x11", "server", "mouse")

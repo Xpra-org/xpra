@@ -5,7 +5,7 @@
 
 from gi.repository import GObject, Gdk  # @UnresolvedImport
 
-from xpra.gtk_common.error import XError, xsync
+from xpra.gtk.error import XError, xsync
 from xpra.x11.desktop.model_base import DesktopModelBase
 from xpra.x11.bindings.randr import RandRBindings #@UnresolvedImport
 from xpra.log import Logger

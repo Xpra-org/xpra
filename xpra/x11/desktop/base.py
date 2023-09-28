@@ -12,8 +12,8 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.net.common import PacketType
 from xpra.server import features
-from xpra.gtk_common.gtk_util import get_screen_sizes, get_root_size
-from xpra.gtk_common.gobject_util import one_arg_signal
+from xpra.gtk.gtk_util import get_screen_sizes, get_root_size
+from xpra.gtk.gobject import one_arg_signal
 from xpra.x11.gtk3.gdk_bindings import (
     add_catchall_receiver, remove_catchall_receiver,
     add_event_receiver,          #@UnresolvedImport
@@ -21,7 +21,7 @@ from xpra.x11.gtk3.gdk_bindings import (
 from xpra.x11.xroot_props import XRootPropWatcher
 from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
 from xpra.x11.server.base import X11ServerBase
-from xpra.gtk_common.error import xsync, xlog
+from xpra.gtk.error import xsync, xlog
 from xpra.log import Logger
 
 X11Keyboard = X11KeyboardBindings()

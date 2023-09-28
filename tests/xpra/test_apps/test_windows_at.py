@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 import gi
+
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 from gi.repository import Gtk	#pylint: disable=wrong-import-position @UnresolvedImport
-
 
 class TestWindow(Gtk.Window):
 	def __init__(self, window_type, x=100, y=100, w=100, h=100):

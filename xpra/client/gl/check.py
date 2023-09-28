@@ -417,7 +417,7 @@ def main() -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.platform.gui import init as gui_init
-    from xpra.gtk_common.gtk_util import init_display_source
+    from xpra.gtk.gtk_util import init_display_source
     from xpra.log import enable_color
     with program_context("OpenGL-Check"):
         gui_init()

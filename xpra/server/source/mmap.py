@@ -73,7 +73,7 @@ class MMAP_Connection(StubSourceMixin):
         elif not os.path.exists(mmap_filename):
             log(f"mmap_file {mmap_filename!r} cannot be found!")
         else:
-            from xpra.net.mmap_pipe import (
+            from xpra.net.mmap import (
                 init_server_mmap,
                 read_mmap_token,
                 write_mmap_token,

@@ -30,7 +30,7 @@ net = ['xpra.net.protocol.*',
        'xpra.net.avahi*',
        ]
 x11 = ['xpra.x11.*',
-       'xpra.gtk_common.error.*']
+       'xpra.gtk.error.*']
 damage = [
           #'xpra.server.source.*',
           #'xpra.server.*._damage',
@@ -38,7 +38,7 @@ damage = [
           'xpra.server.window*_source.*',
           'xpra.server.video_subregion.*',
           'xpra.server.batch_delay_calculator.*',
-          'xpra.gtk_common.pixbuf_to_rgb.*',
+          'xpra.gtk.pixbuf_to_rgb.*',
           'xpra.deque.*',
           'xpra.server.source_stats.*',
           'xpra.server.window_stats.*']
@@ -51,7 +51,7 @@ mouse = ['xpra.*server*._process_pointer_position',
          'xpra.*server*._process_button_action',
          'xpra.*server*._process_mouse_common']
 keyboard = [
-       'xpra.gtk_common.keys.*',
+       'xpra.gtk.keys.*',
        'xpra.keyboard.*',
        'xpra.x11.xkbhelper.*', 'xpra.x11.gtk_x11.keys.*',
        'xpra.x11.server_keyboard_config.*',
@@ -90,18 +90,18 @@ bell = ['xpra.x11.gtk_x11.window.WindowModel.do_xpra_xkb_event',
 misc = ['xpra.dotxpra.*', 'xpra.x11.bindings.wait_for_server.*',
         'xpra.scripts.*', 'subprocess.*',
         'multiprocessing.*',
-        'xpra.gtk_common.gobject_compat.*',
+        'xpra.gtk.gobject_compat.*',
         'xpra.x11.gtk_x11.tray.*',
         'xpra.codecs.version_info.*',
         'xpra.version_util.*',
-        'xpra.gtk_common.gtk_util.add_gtk_version_info',
+        'xpra.gtk.gtk_util.add_gtk_version_info',
         'xpra.build_info.*']
 
 xsettings = ['xpra.platform.posix.xroot_props.*', 'xpra.platform.posix.xsettings.*', 'xpra.x11.xsettings_prop.*']
 clipboard = ['xpra.clipboard.*',
              'xpra.client.*.*clipboard_helper',
-             'xpra.gtk_common.gdk_atoms.*',
-             'xpra.gtk_common.nested_main.*',
+             'xpra.gtk.gdk_atoms.*',
+             'xpra.gtk.nested_main.*',
              'xpra.x11.gtk_x11.selection.*',
              'xpra.*.ClientExtras.setup_clipboard_helper']
 sound = ['xpra.sound.*',
@@ -272,11 +272,11 @@ one_offs = ['__main__',
             'threading.Thread.setDaemon', 'threading.Thread.set_daemon', 'threading.Thread._set_daemon',
             'threading.Thread.__init__',
             'threading.Condition.*', 'threading.Event.*',
-            'xpra.gtk_common.quit.*',           #gtk_main_quit_forever, gtk_main_quit_really, gtk_main_quit_on_fatal_exceptions_enable
+            'xpra.gtk.quit.*',           #gtk_main_quit_forever, gtk_main_quit_really, gtk_main_quit_on_fatal_exceptions_enable
             'xpra.x11.gtk_x11.wm.Wm.__init__',
             'xpra.x11.gtk_x11.wm.Wm.__setup_ewmh_window',
             'xpra.x11.gtk_x11.wm.Wm.enableCursors',
-            'xpra.gtk_common.*.n_arg_signal',
+            'xpra.gtk.*.n_arg_signal',
             'xpra.x11.gtk_x11.error._ErrorManager.__init__',
             #dotxpra finding sockets:
             'glob.*',
@@ -317,7 +317,7 @@ one_offs = ['__main__',
             'xpra.client.*.run',
             'xpra.client.*.gtk*_main',
             'xpra.client.*.verify_connected',
-            'xpra.gtk_common.*.gtk*main',
+            'xpra.gtk.*.gtk*main',
             'xpra.platform.platform_import',
             'xpra.platform.*.get*_classes',
             'xpra.*.ui_thread_watcher.*get_UI_watcher',  #UI_thread_watcher, get_UI_watcher

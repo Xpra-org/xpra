@@ -7,6 +7,7 @@ from xpra.util.types import typedict
 from typing import Any
 from collections.abc import Callable
 
+from xpra.common import NotificationID
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
 
@@ -43,7 +44,7 @@ class NotificationMixin(StubSourceMixin):
     ######################################################################
     # notifications:
     # Utility functions for mixins (makes notifications optional)
-    def may_notify(self, nid:int=0, summary:str="", body:str="",    #pylint: disable=arguments-differ
+    def may_notify(self, nid:int|NotificationID=0, summary:str="", body:str="",    #pylint: disable=arguments-differ
                    actions=(), hints=None, expire_timeout=10*1000,
                    icon_name:str="", user_callback:Callable|None=None) -> None:
         try:

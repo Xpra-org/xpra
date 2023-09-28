@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any, Optional, Tuple, List, Dict
-from xpra.gtk_common.error import XError
+from xpra.gtk.error import XError
 
 from xpra.x11.bindings.xlib cimport (
     Display, Drawable, Visual, Window, Bool, Pixmap, XID, Status, Atom, Time, CurrentTime, Cursor, XPointer,

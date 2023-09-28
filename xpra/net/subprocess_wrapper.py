@@ -9,7 +9,7 @@ import subprocess
 from queue import SimpleQueue
 from typing import Any
 
-from xpra.gtk_common.gobject_compat import register_os_signals
+from xpra.gtk.signals import register_os_signals
 from xpra.util.str_fn import csv, repr_ellipsized
 from xpra.util.env import envint, envbool
 from xpra.net.bytestreams import TwoFileConnection

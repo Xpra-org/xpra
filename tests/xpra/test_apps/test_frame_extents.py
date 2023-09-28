@@ -10,7 +10,7 @@ from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
 init_gdk_display_source()
 from xpra.x11.gtk_x11.prop import prop_get
 from xpra.x11.bindings.window import constants, X11WindowBindings  #@UnresolvedImport
-from xpra.gtk_common.error import xsync
+from xpra.gtk.error import xsync
 X11Window = X11WindowBindings()
 
 SubstructureNotifyMask = constants["SubstructureNotifyMask"]

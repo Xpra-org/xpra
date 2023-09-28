@@ -9,8 +9,8 @@ from gi.repository import GObject, Gdk, GLib  # @UnresolvedImport
 
 from xpra.os_util import get_generic_os_name, load_binary_file
 from xpra.platform.paths import get_icon, get_icon_filename
-from xpra.gtk_common.gobject_util import one_arg_signal, no_arg_signal
-from xpra.gtk_common.error import xsync
+from xpra.gtk.gobject import no_arg_signal, one_arg_signal
+from xpra.gtk.error import xsync
 from xpra.x11.common import get_wm_name
 from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.bindings.window import X11WindowBindings #@UnresolvedImport

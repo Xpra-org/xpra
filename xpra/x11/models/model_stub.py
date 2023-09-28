@@ -8,13 +8,38 @@ import os
 from collections.abc import Callable
 from gi.repository import GObject  # @UnresolvedImport
 
-from xpra.gtk_common.gobject_util import AutoPropGObjectMixin
 from xpra.log import Logger
 
 log = Logger("x11", "window")
 metalog = Logger("x11", "window", "metadata")
 
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
+
+
+class AutoPropGObjectMixin:
+    """Mixin for automagic property support in GObjects.
+
+    Make sure this is the first entry on your parent list, so super().__init__
+    will work right."""
+    def __init__(self):
+        self._gproperties = {}
+
+    def do_get_property(self, pspec):
+        return self._gproperties.get(pspec.name)
+
+    def do_set_property(self, pspec, value):
+        self._internal_set_property(pspec.name, value)
+
+    # Exposed for subclasses that wish to set readonly properties --
+    # .set_property (the public api) will fail, but the property can still be
+    # modified via this method.
+    def _internal_set_property(self, name, value):
+        setter = "do_set_property_" + name.replace("-", "_")
+        if hasattr(self, setter):
+            getattr(self, setter)(name, value)
+        else:
+            self._gproperties[name] = value
+        self.notify(name)
 
 
 class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):

@@ -11,7 +11,7 @@ from typing import Any
 from xpra.os_util import bytestostr, strtobytes, hexstr
 from xpra.util.types import typedict
 from xpra.util.env import envbool
-from xpra.gtk_common.error import xswallow, xsync, xlog
+from xpra.gtk.error import xswallow, xsync, xlog
 from xpra.scripts.config import parse_bool
 from xpra.server import EXITING_CODE
 from xpra.common import SYNC_ICC
@@ -143,7 +143,7 @@ class X11ServerBase(X11ServerCore):
             self.dbus_pid = dbus_pid
             self.dbus_env = dbus_env
             #now we can save values on the display
-            #(we cannot access gtk3 until dbus has started up)
+            #(we cannot access bindings until dbus has started up)
             def _save_int(prop_name, pid):
                 root_prop_set(prop_name, "u32", pid)
             def _save_str(prop_name, s):

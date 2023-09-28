@@ -13,7 +13,7 @@ def main():
     from xpra.util.str_fn import print_nested_dict
     print_nested_dict(info)
     from xpra.codecs.evdi.capture import find_evdi_devices, test_device  # @UnresolvedImport
-    #from xpra.gtk_common.gobject_compat import register_os_signals
+    #from xpra.gtk.gobject_compat import register_os_signals
     #import sys
     #def handler(*args):
     #    sys.exit(0)

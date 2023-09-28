@@ -18,7 +18,6 @@ class TestX11Keyboard(unittest.TestCase):
         sanitize_size_hints = size_hints_util.sanitize_size_hints
         with silence_warn(size_hints_util):
             INTPAIRS = (0, "foo", (1,))
-            sanitize_size_hints(None)
             for attr, values in {
                 "min-aspect"    : (0, -1, MAX_ASPECT, "foo"),
                 "max-aspect"    : (0, -1, MAX_ASPECT, "foo"),

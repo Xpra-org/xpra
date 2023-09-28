@@ -13,7 +13,7 @@ from xpra.gstreamer.common import (
     get_default_appsink_attributes, get_all_plugin_names,
     get_caps_str,
     )
-from xpra.gtk_common.gobject_util import n_arg_signal
+from xpra.gtk.gobject import n_arg_signal
 from xpra.gstreamer.pipeline import Pipeline
 from xpra.codecs.constants import get_profile
 from xpra.codecs.gstreamer.common import (
@@ -218,7 +218,7 @@ GObject.type_register(CaptureAndEncode)
 def selftest(_full=False) -> None:
     log("gstreamer encoder selftest: %s", get_info())
     from gi.repository import GLib  # @UnresolvedImport
-    from xpra.gtk_common.gtk_util import get_root_size
+    from xpra.gtk.gtk_util import get_root_size
     w, h = get_root_size()
     c = Capture(width=w, height=h)
     loop = GLib.MainLoop()

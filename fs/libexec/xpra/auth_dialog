@@ -2,5 +2,5 @@
 
 import sys
 
-from xpra.gtk_common.dialogs.auth_dialog import main
+from xpra.gtk.dialogs.auth_dialog import main
 sys.exit(main())

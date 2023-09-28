@@ -8,7 +8,7 @@ import unittest
 from queue import SimpleQueue
 from gi.repository import GObject, GLib               #@UnresolvedImport
 
-from xpra.gtk_common.gobject_util import one_arg_signal
+from xpra.gtk.gobject import one_arg_signal
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee
 from xpra.net.bytestreams import Connection

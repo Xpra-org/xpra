@@ -339,10 +339,10 @@ class UIXpraClient(ClientBaseClass):
         import shlex
         for cmd in self.request_start:
             cmd_parts = shlex.split(cmd)
-            self.send_start_command(cmd_parts[0], cmd, True)
+            self.send_start_command(cmd_parts[0], cmd_parts, True)
         for cmd in self.request_start_child:
             cmd_parts = shlex.split(cmd)
-            self.send_start_command(cmd_parts[0], cmd, False)
+            self.send_start_command(cmd_parts[0], cmd_parts, False)
 
     def send_start_command(self, name:str, command:list[str], ignore:bool, sharing:bool=True) -> None:
         log("send_start_command%s", (name, command, ignore, sharing))
@@ -395,7 +395,7 @@ class UIXpraClient(ClientBaseClass):
         if POSIX and not is_Wayland():
             #we may be running inside another server!
             try:
-                from xpra.server.server_uuid import get_uuid, get_mode  #pylint: disable=import-outside-toplevel
+                from xpra.x11.server.server_uuid import get_uuid, get_mode  #pylint: disable=import-outside-toplevel
                 if get_mode()!="shadow":
                     uuid = get_uuid()
                     if uuid:

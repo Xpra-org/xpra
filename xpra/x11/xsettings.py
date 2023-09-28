@@ -6,8 +6,8 @@
 
 from gi.repository import GObject, Gdk, Gtk  # @UnresolvedImport
 
-from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
-from xpra.gtk_common.error import xlog, XError
+from xpra.gtk.gobject import no_arg_signal, one_arg_signal
+from xpra.gtk.error import xlog, XError
 from xpra.x11.gtk_x11.prop import raw_prop_set, raw_prop_get
 from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.gtk3.gdk_bindings import add_event_receiver, remove_event_receiver, get_pywindow, get_xatom

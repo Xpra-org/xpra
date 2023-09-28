@@ -34,7 +34,7 @@ def x11_bindings():
         return bindings
     except ImportError as e:
         log("x11_bindings()", exc_info=True)
-        from xpra.gtk_common.gtk_util import ds_inited
+        from xpra.gtk.gtk_util import ds_inited
         if not ds_inited():
             log.warn("Warning: no X11 bindings")
             log.warn(f" {e}")
@@ -91,14 +91,14 @@ def do_get_wm_name(env) -> str:
             wm_name = "wayland"
     elif is_X11() and x11_bindings():
         from xpra.x11.common import get_wm_name as get_x11_wm_name
-        from xpra.gtk_common.error import xsync
+        from xpra.gtk.error import xsync
         with xsync:
             wm_name = get_x11_wm_name()
     return wm_name
 
 
 def get_clipboard_native_class() -> str:
-    gtk_clipboard_class = "xpra.gtk_common.clipboard.GTK_Clipboard"
+    gtk_clipboard_class = "xpra.gtk.clipboard.GTK_Clipboard"
     if not x11_bindings():
         return gtk_clipboard_class
     try:
@@ -158,7 +158,7 @@ def get_session_type() -> str:
 
 def _get_xsettings():
     if x11_bindings():
-        from xpra.gtk_common.error import xlog
+        from xpra.gtk.error import xlog
         from xpra.x11.common import get_xsettings
         with xlog:
             return get_xsettings()
@@ -193,7 +193,7 @@ def _get_xsettings_dpi() -> int:
 def _get_randr_dpi() -> tuple[int,int]:
     if RANDR_DPI and x11_bindings():
         from xpra.x11.common import get_randr_dpi
-        from xpra.gtk_common.error import xlog
+        from xpra.gtk.error import xlog
         with xlog:
             return get_randr_dpi()
     return -1, -1
@@ -214,7 +214,7 @@ def get_ydpi() -> int:
 def get_icc_info() -> dict[str,Any]:
     if x11_bindings():
         from xpra.x11.common import get_icc_data as get_x11_icc_data
-        from xpra.gtk_common.error import xsync
+        from xpra.gtk.error import xsync
         with xsync:
             return get_x11_icc_data()
     from xpra.platform.gui import default_get_icc_info
@@ -261,7 +261,7 @@ def get_antialias_info() -> dict[str,Any]:
 def get_current_desktop() -> int:
     if x11_bindings():
         from xpra.x11.common import get_current_desktop as get_x11_current_desktop
-        from xpra.gtk_common.error import xsync
+        from xpra.gtk.error import xsync
         with xsync:
             return get_x11_current_desktop()
     return -1
@@ -269,7 +269,7 @@ def get_current_desktop() -> int:
 def get_workarea():
     if x11_bindings():
         from xpra.x11.common import get_workarea as get_x11_workarea
-        from xpra.gtk_common.error import xsync
+        from xpra.gtk.error import xsync
         with xsync:
             return get_x11_workarea()
     return None
@@ -277,7 +277,7 @@ def get_workarea():
 def get_number_of_desktops() -> int:
     if x11_bindings():
         from xpra.x11.common import get_number_of_desktops as get_x11_number_of_desktops
-        from xpra.gtk_common.error import xsync
+        from xpra.gtk.error import xsync
         with xsync:
             return get_x11_number_of_desktops()
     return 0
@@ -285,7 +285,7 @@ def get_number_of_desktops() -> int:
 def get_desktop_names() -> tuple[str,...]:
     if x11_bindings():
         from xpra.x11.common import get_desktop_names as get_x11_desktop_names
-        from xpra.gtk_common.error import xsync
+        from xpra.gtk.error import xsync
         with xsync:
             return get_x11_desktop_names()
     return ("Main", )
@@ -294,7 +294,7 @@ def get_desktop_names() -> tuple[str,...]:
 def get_vrefresh() -> int:
     if x11_bindings():
         from xpra.x11.common import get_vrefresh as get_x11_vrefresh
-        from xpra.gtk_common.error import xsync
+        from xpra.gtk.error import xsync
         with xsync:
             return get_x11_vrefresh()
     return -1
@@ -303,7 +303,7 @@ def get_vrefresh() -> int:
 def get_cursor_size() -> int:
     if x11_bindings():
         from xpra.x11.common import get_cursor_size as get_x11_cursor_size
-        from xpra.gtk_common.error import xsync
+        from xpra.gtk.error import xsync
         with xsync:
             return get_x11_cursor_size()
     return -1
@@ -340,14 +340,14 @@ def system_bell(*args) -> bool:
     if device_bell is False:
         #failed already
         return False
-    from xpra.gtk_common.error import XError
+    from xpra.gtk.error import XError
     def x11_bell():
         from xpra.x11.common import system_bell as x11_system_bell
         if not x11_system_bell(*args):
             global device_bell
             device_bell = False
     try:
-        from xpra.gtk_common.error import xlog
+        from xpra.gtk.error import xlog
         with xlog:
             x11_bell()
         return  True
@@ -361,14 +361,14 @@ def system_bell(*args) -> bool:
 
 def pointer_grab(gdk_window) -> bool:
     if x11_bindings():
-        from xpra.gtk_common.error import xlog
+        from xpra.gtk.error import xlog
         with xlog:
             return X11WindowBindings().pointer_grab(gdk_window.get_xid())
     return False
 
 def pointer_ungrab(_window) -> bool:
     if x11_bindings():
-        from xpra.gtk_common.error import xlog
+        from xpra.gtk.error import xlog
         with xlog:
             return X11WindowBindings().UngrabPointer()==0
     return False
@@ -466,7 +466,7 @@ class XI2_Window:
         self.window = None
 
     def configured(self, *_args) -> None:
-        from xpra.gtk_common.error import xlog
+        from xpra.gtk.error import xlog
         with xlog:
             self.windows = self.get_parent_windows(self.xid)
         for window in (self.windows or ()):
@@ -777,7 +777,7 @@ class ClientExtras:
         try:
             self.init_x11_filter()
             # pylint: disable=import-outside-toplevel
-            from xpra.gtk_common.gtk_util import get_default_root_window
+            from xpra.gtk.gtk_util import get_default_root_window
             from xpra.x11.xsettings import XSettingsWatcher
             from xpra.x11.xroot_props import XRootPropWatcher
             root = get_default_root_window()
@@ -815,7 +815,7 @@ class ClientExtras:
                 log(" server uses: %s", self.client.server_input_devices)
             return False
         try:
-            from xpra.gtk_common.error import xsync, XError # pylint: disable=import-outside-toplevel
+            from xpra.gtk.error import xsync, XError # pylint: disable=import-outside-toplevel
             assert X11WindowBindings(), "no X11 window bindings"
             XI2 = X11XI2Bindings()
             assert XI2, "no XI2 window bindings"
@@ -866,7 +866,7 @@ class ClientExtras:
 
     def get_resource_manager(self):
         try:
-            from xpra.gtk_common.gtk_util import get_default_root_window
+            from xpra.gtk.gtk_util import get_default_root_window
             from xpra.x11.gtk_x11.prop import prop_get
             root = get_default_root_window()
             xid = root.get_xid()

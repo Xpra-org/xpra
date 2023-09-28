@@ -232,7 +232,7 @@ if envbool("XPRA_ZEROCOPY_OPENGL_UPLOAD", True):
 paint_context_manager: AbstractContextManager = nullcontext()
 if POSIX and not OSX:
     # pylint: disable=ungrouped-imports
-    from xpra.gtk_common.error import xsync
+    from xpra.gtk.error import xsync
     paint_context_manager = xsync
 
 

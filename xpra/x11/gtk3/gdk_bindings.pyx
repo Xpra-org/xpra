@@ -30,8 +30,8 @@ from xpra.x11.bindings.events cimport parse_xevent, init_x11_events
 from xpra.x11.bindings.events import get_x_event_signals, get_x_event_type_name
 
 from libc.stdint cimport uintptr_t
-from xpra.gtk_common.gtk3.gdk_bindings cimport wrap, unwrap, get_raw_display_for
-from xpra.gtk_common.gtk3.gdk_bindings import get_display_for
+from xpra.gtk.bindings.gdk_bindings cimport wrap, unwrap, get_raw_display_for
+from xpra.gtk.bindings.gdk_bindings import get_display_for
 
 
 from xpra.x11.common import REPR_FUNCTIONS

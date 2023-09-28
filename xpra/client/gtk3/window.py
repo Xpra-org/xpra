@@ -9,7 +9,8 @@ from gi.repository import GObject, Gdk, Gtk, Gio, GdkPixbuf  # @UnresolvedImport
 
 from xpra.client.gtk3.window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.client.gtk3.window_menu import WindowMenuHelper
-from xpra.gtk_common.gtk_util import scaled_image, get_icon_pixbuf
+from xpra.gtk.widget import scaled_image
+from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.util.types import typedict
 from xpra.util.env import envbool

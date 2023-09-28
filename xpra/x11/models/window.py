@@ -9,8 +9,8 @@ from gi.repository import GObject   # @UnresolvedImport
 from xpra.util.types import typedict
 from xpra.util.env import envint, envbool
 from xpra.common import MAX_WINDOW_SIZE
-from xpra.gtk_common.gobject_util import one_arg_signal
-from xpra.gtk_common.error import XError, xsync, xswallow, xlog
+from xpra.gtk.gobject import one_arg_signal
+from xpra.gtk.error import XError, xsync, xswallow, xlog
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.prop_conv import MotifWMHints
 from xpra.x11.bindings.window import X11WindowBindings #@UnresolvedImport
@@ -20,7 +20,7 @@ from xpra.x11.models.size_hints_util import sanitize_size_hints
 from xpra.x11.models.base import BaseWindowModel, constants
 from xpra.x11.models.core import sanestr
 from xpra.x11.gtk3.gdk_bindings import add_event_receiver, remove_event_receiver
-from xpra.gtk_common.gtk3.gdk_bindings import calc_constrained_size
+from xpra.gtk.bindings.gdk_bindings import calc_constrained_size
 from xpra.log import Logger
 
 log = Logger("x11", "window")

@@ -16,9 +16,9 @@ from xpra.util.types import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.os_util import bytestostr
-from xpra.gtk_common.keymap import get_gtk_keymap
-from xpra.gtk_common.gtk_util import get_default_root_window
-from xpra.gtk_common.error import xsync, xlog
+from xpra.gtk.keymap import get_gtk_keymap
+from xpra.gtk.gtk_util import get_default_root_window
+from xpra.gtk.error import xsync, xlog
 from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names
 from xpra.server.keyboard_config_base import KeyboardConfigBase
 from xpra.x11.gtk_x11.keys import grok_modifier_map

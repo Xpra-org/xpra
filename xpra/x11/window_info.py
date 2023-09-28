@@ -13,7 +13,7 @@ def window_info(xid:int) -> str:
     net_wm_name = prop_get(xid, "_NET_WM_NAME", "utf8", True)
     from xpra.x11.bindings.window import X11WindowBindings
     X11Window = X11WindowBindings()
-    from xpra.gtk_common.error import xlog
+    from xpra.gtk.error import xlog
     geom = None     # @UnusedVariable
     mapped = False  # @UnusedVariable
     with xlog:
@@ -36,7 +36,7 @@ def window_info(xid:int) -> str:
 def dump_windows() -> None:
     from xpra.log import Logger
     log = Logger("x11", "window")
-    from xpra.gtk_common.gtk_util import get_default_root_window
+    from xpra.gtk.gtk_util import get_default_root_window
     root = get_default_root_window()
     if not root:
         return
@@ -44,7 +44,7 @@ def dump_windows() -> None:
     log(f"root window: {xid:x}")
     try:
         from xpra.x11.gtk3.gdk_bindings import get_children #@UnresolvedImport
-        from xpra.gtk_common.error import xlog
+        from xpra.gtk.error import xlog
     except ImportError:
         pass
     else:

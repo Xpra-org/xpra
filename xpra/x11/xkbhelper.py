@@ -12,7 +12,7 @@ from xpra.util.types import typedict
 from xpra.util.str_fn import std, csv
 from xpra.util.env import envbool
 from xpra.os_util import bytestostr
-from xpra.gtk_common.error import xsync, xlog
+from xpra.gtk.error import xsync, xlog
 from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
 from xpra.log import Logger
 

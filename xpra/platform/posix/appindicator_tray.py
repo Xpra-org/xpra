@@ -94,7 +94,8 @@ class AppindicatorTray(TrayBase):
         #use a temporary file (yuk)
         self.clean_last_tmp_icon()
         # pylint: disable=import-outside-toplevel
-        from xpra.gtk_common.gtk_util import pixbuf_save_to_memory, get_pixbuf_from_data
+        from xpra.gtk.pixbuf import pixbuf_save_to_memory
+        from xpra.gtk.pixbuf import get_pixbuf_from_data
         tray_icon = get_pixbuf_from_data(pixels, has_alpha, w, h, rowstride)
         png_data = pixbuf_save_to_memory(tray_icon)
         tmp_dir = osexpand(get_xpra_tmp_dir())
@@ -157,7 +158,7 @@ def main(): # pragma: no cover
             from xpra.log import enable_debug_for
             enable_debug_for("tray")
 
-        from xpra.gtk_common.gobject_compat import register_os_signals
+        from xpra.gtk.signals import register_os_signals
 
         gi.require_version('Gtk', '3.0')  # @UndefinedVariable
         from gi.repository import Gtk  # @UnresolvedImport

@@ -23,7 +23,7 @@ from xpra.os_util import (
     )
 from xpra.net.common import PacketType
 from xpra.net.socket_util import SOCKET_DIR_MODE, SOCKET_DIR_GROUP
-from xpra.server.server_core import ServerCore
+from xpra.server.core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.util.child_reaper import getChildReaper
 from xpra.scripts.parsing import parse_bool, MODE_ALIAS
@@ -163,7 +163,8 @@ class ProxyServer(ServerCore):
 
 
     def install_signal_handlers(self, callback) -> None:
-        from xpra.gtk_common.gobject_compat import register_os_signals, register_SIGUSR_signals  # pylint: disable=import-outside-toplevel
+        from xpra.gtk.signals import register_SIGUSR_signals
+        from xpra.gtk.signals import register_os_signals
         register_os_signals(callback, "Proxy Server")
         register_SIGUSR_signals("Proxy Server")
 

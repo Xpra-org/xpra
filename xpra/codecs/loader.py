@@ -203,8 +203,8 @@ CODEC_OPTIONS : dict[str,tuple[str,str,str,str]] = {
     "nvenc"         : ("nvenc encoder",     "nvidia.nvenc", "encoder", "Encoder"),
     "enc_gstreamer" : ("gstreamer encoder", "gstreamer",    "encoder", "Encoder"),
     #csc:
-    "csc_libyuv"    : ("libyuv colorspace conversion", "libyuv", "colorspace_converter", "Converter"),
-    "csc_cython"    : ("cython colorspace conversion", "csc_cython", "colorspace_converter", "Converter"),
+    "csc_libyuv"    : ("libyuv colorspace conversion", "libyuv", "converter", "Converter"),
+    "csc_cython"    : ("cython colorspace conversion", "csc_cython", "converter", "Converter"),
     #decoders:
     "dec_pillow"    : ("Pillow decoder",    "pillow",       "decoder", "decompress"),
     "dec_spng"      : ("png decoder",       "spng",         "decoder", "decompress"),

@@ -23,7 +23,7 @@ It contains common features such as basic configuration, scheduling, filtering, 
 | `x11`    | [xpra.x11.gtk_x11.clipboard](../../xpra/x11/gtk_x11/clipboard.py)                 |
 | `win32`  | [xpra.platform.win32.clipboard](../../xpra/platform/win32/clipboard.py)           |
 | `MacOS`  | [xpra.platform.darwin.clipboard](../../xpra/platform/darwin/clipboard.py) |
-| others   | [xpra.gtk_common.gtk_clipboard](../../xpra/gtk_common/clipboard.py)           |
+| others   | [xpra.gtk_common.gtk_clipboard](../../xpra/gtk/clipboard.py)           |
 
 
 

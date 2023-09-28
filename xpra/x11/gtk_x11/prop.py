@@ -18,7 +18,7 @@ import struct
 
 from xpra.x11.prop_conv import prop_encode, prop_decode, PROP_TYPES, PROP_SIZES
 from xpra.x11.bindings.window import X11WindowBindings, PropertyError
-from xpra.gtk_common.error import xsync, XError, XSyncContext
+from xpra.gtk.error import xsync, XError, XSyncContext
 from xpra.util.str_fn import repr_ellipsized
 from xpra.log import Logger
 

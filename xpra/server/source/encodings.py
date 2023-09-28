@@ -12,7 +12,7 @@ from time import sleep, monotonic
 from xpra.common import FULL_INFO
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window import batch_config
-from xpra.server.server_core import ClientException
+from xpra.server.core import ClientException
 from xpra.codecs.video import getVideoHelper
 from xpra.codecs.constants import video_spec
 from xpra.net.compression import use
@@ -297,7 +297,7 @@ class EncodingsMixin(StubSourceMixin):
         v = c.get("encoding")
         if isinstance(v, dict):
             self.encoding_options.update(v)
-        self.set_encoding(c.strget("encoding", None), None)
+        self.set_encoding(c.strget("encoding", ""), None)
         #encoding options (filter):
         #1: these properties are special cased here because we
         #defined their name before the "encoding." prefix convention,

@@ -9,7 +9,7 @@ from xpra.log import Logger
 log = Logger("bindings", "gtk")
 
 
-from xpra.gtk_common.gtk3.gdk_bindings cimport get_gdkwindow
+from xpra.gtk.bindings.gdk_bindings cimport get_gdkwindow
 
 ctypedef float CGFloat
 ctypedef int BOOL

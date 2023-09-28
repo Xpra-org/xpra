@@ -12,8 +12,8 @@ from gi.repository import GLib, Gtk  # @UnresolvedImport
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.common import noop
-from xpra.gtk_common.gtk_util import scaled_image
-from xpra.gtk_common.dialogs.about import about
+from xpra.gtk.widget import scaled_image
+from xpra.gtk.dialogs.about import about
 from xpra.client.gtk3.tray_menu import (
     GTKTrayMenu,
     CLIPBOARD_LABEL_TO_NAME, CLIPBOARD_NAME_TO_LABEL, CLIPBOARD_LABELS,

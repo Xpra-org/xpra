@@ -305,7 +305,7 @@ class WindowClient(StubClientMixin):
 
 
     def parse_border(self):
-        #not implemented here (see gtk3 client)
+        #not implemented here (see bindings client)
         pass
 
 
@@ -1527,7 +1527,7 @@ class WindowClient(StubClientMixin):
             def draw_cleanup():
                 if coding=="mmap":
                     assert self.mmap_enabled
-                    from xpra.net.mmap_pipe import int_from_buffer
+                    from xpra.net.mmap import int_from_buffer
                     #we need to ack the data to free the space!
                     data_start = int_from_buffer(self.mmap, 0)
                     offset, length = data[-1]

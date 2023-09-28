@@ -7,9 +7,9 @@
 from gi.repository import GObject, Gdk
 
 from xpra.x11.gtk_x11.damage import WindowDamageHandler
-from xpra.gtk_common.gobject_util import one_arg_signal
+from xpra.gtk.gobject import one_arg_signal
 from xpra.x11.gtk3.gdk_bindings import add_event_receiver, remove_event_receiver
-from xpra.gtk_common.error import xlog
+from xpra.gtk.error import xlog
 from xpra.x11.gtk_x11.world_window import get_world_window
 from xpra.x11.bindings.ximage import XImageBindings #@UnresolvedImport
 from xpra.x11.bindings.window import constants, X11WindowBindings #@UnresolvedImport

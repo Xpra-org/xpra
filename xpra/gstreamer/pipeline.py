@@ -21,7 +21,7 @@ from gi.repository import GLib, GObject  # @UnresolvedImport
 from xpra.os_util import first_time
 from xpra.common import noerr
 from xpra.util.types import AtomicInteger
-from xpra.gtk_common.gobject_util import one_arg_signal
+from xpra.gtk.gobject import one_arg_signal
 from xpra.log import Logger
 
 log = Logger("gstreamer")

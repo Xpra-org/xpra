@@ -69,7 +69,7 @@ class ClientDisplayMixin(StubSourceMixin):
         self.desktop_size_unscaled = c.intpair("desktop_size.unscaled")
         self.desktop_fullscreen = c.boolget("desktop-fullscreen")
         self.set_screen_sizes(c.tupleget("screen_sizes"))
-        self.set_monitors(c.dictget("monitors"))
+        self.set_monitors(c.dictget("monitors") or {})
         desktop_names = tuple(str(x) for x in c.tupleget("desktop.names"))
         self.set_desktops(c.intget("desktops", 1), desktop_names)
         self.show_desktop_allowed = c.boolget("show-desktop")

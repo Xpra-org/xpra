@@ -9,9 +9,9 @@ from typing import Any
 from collections.abc import Iterable, Callable
 from gi.repository import GLib, GObject, Gdk  # @UnresolvedImport
 
-from xpra.gtk_common.error import xsync, xswallow
-from xpra.gtk_common.gobject_util import one_arg_signal, n_arg_signal
-from xpra.gtk_common.gtk_util import get_default_root_window
+from xpra.gtk.error import xsync, xswallow
+from xpra.gtk.gobject import n_arg_signal, one_arg_signal
+from xpra.gtk.gtk_util import get_default_root_window
 from xpra.x11.gtk_x11 import GDKX11Window
 from xpra.x11.gtk3.gdk_bindings import (
     add_event_receiver,                          #@UnresolvedImport
@@ -19,7 +19,7 @@ from xpra.x11.gtk3.gdk_bindings import (
     init_x11_filter,
     cleanup_x11_filter,
     )
-from xpra.gtk_common.error import XError
+from xpra.gtk.error import XError
 from xpra.clipboard.core import (
     ClipboardProxyCore, TEXT_TARGETS,
     must_discard, must_discard_extra,

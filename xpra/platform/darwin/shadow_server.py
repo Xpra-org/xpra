@@ -13,7 +13,7 @@ from xpra.scripts.config import InitExit
 from xpra.scripts.main import check_display
 from xpra.exit_codes import ExitCode
 from xpra.codecs.image import ImageWrapper
-from xpra.server.gtk_server_base import GTKServerBase
+from xpra.server.gtk_server import GTKServerBase
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.platform.darwin.keyboard_config import KeyboardConfig
 from xpra.platform.darwin.gui import get_CG_imagewrapper, take_screenshot

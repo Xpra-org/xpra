@@ -13,7 +13,7 @@ from xpra.keyboard.mask import MODIFIER_MAP
 from xpra.log import Logger
 from xpra.os_util import is_X11, is_Wayland, bytestostr
 if is_X11():
-    from xpra.gtk_common.error import xsync
+    from xpra.gtk.error import xsync
 
 log = Logger("keyboard", "posix")
 
@@ -29,7 +29,7 @@ class Keyboard(KeyboardBase):
                 self.keyboard_bindings = X11KeyboardBindings()
             except Exception as e:
                 log("keyboard bindings", exc_info=True)
-                from xpra.gtk_common.gtk_util import ds_inited
+                from xpra.gtk.gtk_util import ds_inited
                 if not ds_inited():
                     log.error("Error: failed to load the X11 keyboard bindings")
                     log.error(" %s", str(e) or type(e))
@@ -104,7 +104,7 @@ class Keyboard(KeyboardBase):
                 log.warn("Warning: incomplete keymap support under Wayland")
                 return {}, [], ["mod2", ]
             return {}, [], []
-        from xpra.gtk_common.error import xlog
+        from xpra.gtk.error import xlog
         with xlog:
             mod_mappings = self.keyboard_bindings.get_modifier_mappings()
             if mod_mappings:
@@ -125,7 +125,7 @@ class Keyboard(KeyboardBase):
     def get_x11_keymap(self) -> dict[int,list[str]]:
         if not self.keyboard_bindings:
             return {}
-        from xpra.gtk_common.error import xlog
+        from xpra.gtk.error import xlog
         with xlog:
             return self.keyboard_bindings.get_keycode_mappings()
         return {}
@@ -171,7 +171,7 @@ class Keyboard(KeyboardBase):
             return ()
         xkb_rules_names : list[str] = []
         # pylint: disable=import-outside-toplevel
-        from xpra.gtk_common.error import xlog
+        from xpra.gtk.error import xlog
         from xpra.x11.common import get_X11_root_property
         with xlog:
             prop = get_X11_root_property("_XKB_RULES_NAMES", "STRING")

@@ -11,8 +11,8 @@ from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
 from xpra.util.env import envbool
 from xpra.client.gl.check import check_PyOpenGL_support
 from xpra.x11.bindings.display_source import get_display_ptr        #@UnresolvedImport
-from xpra.gtk_common.error import xsync
-from xpra.gtk_common.gtk_util import set_visual
+from xpra.gtk.error import xsync
+from xpra.gtk.gtk_util import set_visual
 from xpra.log import Logger
 
 log = Logger("opengl")

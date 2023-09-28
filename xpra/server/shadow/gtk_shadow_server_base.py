@@ -20,10 +20,11 @@ from xpra.os_util import POSIX, OSX
 from xpra.scripts.config import parse_bool
 from xpra.server import features
 from xpra.server.shadow.root_window_model import RootWindowModel
-from xpra.server.gtk_server_base import GTKServerBase
+from xpra.server.gtk_server import GTKServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.codecs.constants import TransientCodecException, CodecStateException
-from xpra.gtk_common.gtk_util import get_screen_sizes, get_icon_pixbuf, get_default_root_window
+from xpra.gtk.gtk_util import get_screen_sizes, get_default_root_window
+from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.net.compression import Compressed
 from xpra.log import Logger
 
@@ -337,7 +338,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def get_notifier_classes(self) -> tuple[type,...]:
         ncs = list(ShadowServerBase.get_notifier_classes(self))
         try:
-            from xpra.gtk_common.notifier import GTK_Notifier   # pylint: disable=import-outside-toplevel
+            from xpra.gtk.notifier import GTK_Notifier   # pylint: disable=import-outside-toplevel
             ncs.append(GTK_Notifier)
         except Exception as e:
             notifylog("get_notifier_classes()", exc_info=True)
@@ -378,7 +379,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             title_item.set_sensitive(False)
             title_item.show()
             self.tray_menu.append(title_item)
-            from xpra.gtk_common.dialogs.about import about  # pylint: disable=import-outside-toplevel
+            from xpra.gtk.dialogs.about import about  # pylint: disable=import-outside-toplevel
             self.tray_menu.append(self.traymenuitem("About Xpra", "information.png", None, about))
             if features.windows:
                 def readonly_toggled(menuitem):
@@ -446,7 +447,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def traymenuitem(self, title:str, icon_name=None, tooltip=None, cb=None) -> Gtk.ImageMenuItem:
         """ Utility method for easily creating an ImageMenuItem """
         # pylint: disable=import-outside-toplevel
-        from xpra.gtk_common.gtk_util import menuitem
+        from xpra.gtk.widget import menuitem
         image = None
         if icon_name:
             from xpra.platform.gui import get_icon_size
@@ -463,7 +464,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         return check_item
 
     def get_image(self, icon_name:str, size:int=0):
-        from xpra.gtk_common.gtk_util import scaled_image
+        from xpra.gtk.widget import scaled_image
         with log.trap_error(f"Error loading image from icon {icon_name!r} with size {size}"):
             pixbuf = get_icon_pixbuf(icon_name)
             traylog("get_image(%s, %s) pixbuf=%s", icon_name, size, pixbuf)

@@ -6,11 +6,12 @@
 
 from gi.repository import GObject, Gtk # @UnresolvedImport
 
-from xpra.gtk_common.error import xlog
+from xpra.gtk.error import xlog
 from xpra.x11.bindings.window import constants     #@UnresolvedImport
 from xpra.x11.bindings.send_wm import send_wm_take_focus     #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set
-from xpra.gtk_common.gtk_util import get_default_root_window, ignorewarnings
+from xpra.gtk.gtk_util import get_default_root_window
+from xpra.gtk.widget import ignorewarnings
 from xpra.log import Logger
 
 log = Logger("x11", "window")

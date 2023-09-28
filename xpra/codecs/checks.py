@@ -531,11 +531,11 @@ def testcsc(csc_module, full=False, test_cs_in=None, test_cs_out=None):
         do_testcsc(csc_module, W, H, W*2, H*2, full, test_cs_in, test_cs_out)
         do_testcsc(csc_module, W, H, W//2, H//2, full, test_cs_in, test_cs_out)
 
-def get_csc_max_size(colorspace_converter, test_cs_in=None, test_cs_out=None, limit_w:int=TEST_LIMIT_W, limit_h:int=TEST_LIMIT_H):
+def get_csc_max_size(converter, test_cs_in=None, test_cs_out=None, limit_w:int=TEST_LIMIT_W, limit_h:int=TEST_LIMIT_H):
     #probe to find the max dimensions:
     #(it may go higher but we don't care as windows can't)
     MAX_WIDTH, MAX_HEIGHT = 512, 512
-    cs = colorspace_converter
+    cs = converter
     #as there might be a lower limit based on the total number of pixels:
     v = 512
     while v<=min(limit_w, limit_h):

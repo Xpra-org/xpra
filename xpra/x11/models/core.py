@@ -14,8 +14,8 @@ from gi.repository import GObject   # @UnresolvedImport
 from xpra.util.env import envbool
 from xpra.os_util import bytestostr, get_proc_cmdline, first_time
 from xpra.x11.common import Unmanageable
-from xpra.gtk_common.gobject_util import one_arg_signal, two_arg_signal
-from xpra.gtk_common.error import XError, xsync, xswallow
+from xpra.gtk.gobject import one_arg_signal, n_arg_signal
+from xpra.gtk.error import XError, xsync, xswallow
 from xpra.codecs.image import ImageWrapper
 from xpra.x11.bindings.window import X11WindowBindings, constants, SHAPE_KIND #@UnresolvedImport
 from xpra.x11.bindings.res import ResBindings #@UnresolvedImport
@@ -194,7 +194,7 @@ class CoreX11WindowModel(WindowModelStub):
     __common_signals__ = {
         #signals we emit:
         "unmanaged"                     : one_arg_signal,
-        "restack"                       : two_arg_signal,
+        "restack"                       : n_arg_signal(2),
         "initiate-moveresize"           : one_arg_signal,
         "grab"                          : one_arg_signal,
         "ungrab"                        : one_arg_signal,

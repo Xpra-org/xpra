@@ -14,7 +14,7 @@ from collections.abc import Callable, Iterable
 from gi.repository import GLib  # @UnresolvedImport
 
 import xpra.util.types
-from xpra.net.mmap_pipe import mmap_read
+from xpra.net.mmap import mmap_read
 from xpra.net import compression
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv

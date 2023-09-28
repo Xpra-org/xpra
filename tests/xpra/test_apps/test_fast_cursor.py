@@ -5,7 +5,7 @@ gi.require_version("Gtk", "3.0")  # @UndefinedVariable
 gi.require_version("Gdk", "3.0")  # @UndefinedVariable
 from gi.repository import Gtk, Gdk, GLib  # @UnresolvedImport
 
-from xpra.gtk_common.cursor_names import cursor_types
+from xpra.gtk.cursors import cursor_types
 
 width = 400
 height = 200

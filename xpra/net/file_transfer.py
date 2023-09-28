@@ -199,7 +199,7 @@ class FileTransferAttributes:
 
     def get_file_transfer_info(self) -> dict[str,Any]:
         #slightly different from above... for legacy reasons
-        #this one is used for get_info() in a proper "file." namespace from server_base.py
+        #this one is used for get_info() in a proper "file." namespace from base.py
         return {
                 "enabled"           : self.file_transfer,
                 "ask"               : self.file_transfer_ask,

@@ -350,7 +350,7 @@ SWITCH_ALIAS = {
                    "server", "client", "shadow",
                    "rencodeplus", "brotli", "qrencode", "websockets", "netdev", "vsock",
                    "lz4",
-                   "gtk3", "x11", "gtk_x11",
+                   "bindings", "x11", "gtk_x11",
                    "pam", "sd_listen", "proc",
                    ),
     }
@@ -1131,14 +1131,13 @@ def clean():
     #ensure we remove the files we generate:
     CLEAN_FILES = [
                    "xpra/build_info.py",
-                   "xpra/gtk_common/gtk3/gdk_atoms.c",
-                   "xpra/gtk_common/gtk3/gdk_bindings.c",
-                   "xpra/x11/gtk3/gdk_bindings.c",
-                   "xpra/x11/gtk3/gdk_display_source.c",
+                   "xpra/gtk/bindings/atoms.c",
+                   "xpra/gtk/bindings/gdk_bindings.c",
+                   "xpra/x11/bindings/gdk_bindings.c",
+                   "xpra/x11/bindings/display_source.c",
                    "xpra/x11/bindings/xwait.c",
                    "xpra/x11/bindings/wait_for_x_server.c",
                    "xpra/x11/bindings/keyboard.c",
-                   "xpra/x11/bindings/display_source.c",
                    "xpra/x11/bindings/events.c",
                    "xpra/x11/bindings/window.c",
                    "xpra/x11/bindings/randr.c",
@@ -1188,11 +1187,11 @@ def clean():
                    "xpra/codecs/drm/drm.c",
                    "xpra/codecs/webp/encoder.c",
                    "xpra/codecs/webp/decoder.c",
-                   "xpra/codecs/libyuv/colorspace_converter.cpp",
-                   "xpra/codecs/csc_cython/colorspace_converter.c",
+                   "xpra/codecs/libyuv/converter.cpp",
+                   "xpra/codecs/csc_cython/converter.c",
                    "xpra/codecs/argb/argb.c",
                    "xpra/codecs/nvapi_version.c",
-                   "xpra/gtk_common/gdk_atoms.c",
+                   "xpra/gtk/bindings/atoms.c",
                    "xpra/client/gtk3/cairo_workaround.c",
                    "xpra/server/cystats.c",
                    "xpra/util/rectangle.c",
@@ -1212,7 +1211,7 @@ def clean():
                 #on win32, the build creates ".pyd" files, clean those too:
                 CLEAN_FILES.append(p+".pyd")
                 #when building with python3, we need to clean files named like:
-                #"xpra/codecs/csc_libyuv/colorspace_converter-cpython-36m.dll"
+                #"xpra/codecs/csc_libyuv/converter-cpython-36m.dll"
                 filename = os.path.join(os.getcwd(), p.replace("/", os.path.sep)+"*.dll")
                 CLEAN_FILES += glob.glob(filename)
     if 'clean' in sys.argv:
@@ -1564,8 +1563,8 @@ if WIN32:
             add_gui_exe("xpra/platform/win32/scripts/shadow_server.py",       "server-notconnected.ico", "Xpra-Shadow")
             add_gui_exe("fs/bin/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
             add_console_exe("fs/bin/xpra_launcher",            "xpra.ico",         "Xpra-Launcher-Debug")
-            add_gui_exe("xpra/gtk_common/dialogs/view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
-            add_gui_exe("xpra/gtk_common/dialogs/bug_report.py",           "bugs.ico",         "Bug_Report")
+            add_gui_exe("xpra/gtk/dialogs/view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
+            add_gui_exe("xpra/gtk/dialogs/bug_report.py",           "bugs.ico",         "Bug_Report")
             add_gui_exe("xpra/platform/win32/gdi_screen_capture.py", "screenshot.ico", "Screenshot")
         if server_ENABLED:
             add_gui_exe("fs/libexec/xpra/auth_dialog",          "authentication.ico", "Auth_Dialog")
@@ -1575,10 +1574,10 @@ if WIN32:
         add_console_exe("xpra/net/net_util.py",             "network.ico",      "Network_info")
         if gtk3_ENABLED:
             add_console_exe("xpra/scripts/gtk_info.py",         "gtk.ico",          "GTK_info")
-            add_console_exe("xpra/gtk_common/keymap.py",        "keymap.ico",       "Keymap_info")
+            add_console_exe("xpra/gtk/keymap.py",        "keymap.ico",       "Keymap_info")
             add_console_exe("xpra/platform/keyboard.py",        "keymap.ico",       "Keyboard_info")
-            add_gui_exe("xpra/gtk_common/examples/tray.py", "xpra.ico",         "SystemTray_Test")
-            add_gui_exe("xpra/client/gtk3/u2f_tool.py",     "authentication.ico", "U2F_Tool")
+            add_gui_exe("xpra/gtk/examples/tray.py", "xpra.ico",         "SystemTray_Test")
+            add_gui_exe("xpra/client/bindings/u2f_tool.py",     "authentication.ico", "U2F_Tool")
         if client_ENABLED or server_ENABLED:
             add_console_exe("xpra/platform/win32/scripts/exec.py",     "python.ico", "Python_exec_cmd")
             add_console_exe("xpra/platform/win32/scripts/execfile.py", "python.ico", "Python_execfile_cmd")
@@ -2069,8 +2068,8 @@ if x11_ENABLED:
 toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk_x11")
 toggle_packages(server_ENABLED and gtk_x11_ENABLED, "xpra.x11.models", "xpra.x11.desktop", "xpra.x11.server")
 if gtk_x11_ENABLED:
-    add_packages("xpra.x11.gtk3")
-    ace("xpra.x11.gtk3.gdk_display_source", "gdk-3.0")
+    add_packages("xpra.x11.bindings")
+    ace("xpra.x11.bindings.display_source", "gdk-3.0")
     ace("xpra.x11.gtk3.gdk_bindings,xpra/x11/gtk3/gdk_x11_macros.c", "gdk-3.0,xdamage")
 
 tace(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3.cairo_workaround", "py3cairo",
@@ -2091,7 +2090,7 @@ if bundle_tests_ENABLED:
     bundle_tests()
 
 
-#special case for client: cannot use toggle_packages which would include gtk3, etc:
+#special case for client: cannot use toggle_packages which would include bindings, etc:
 if client_ENABLED:
     add_modules("xpra.client")
     add_packages("xpra.client.base")
@@ -2099,11 +2098,11 @@ if client_ENABLED:
     add_modules("xpra.scripts.gtk_info", "xpra.scripts.show_webcam", "xpra.scripts.pinentry_wrapper")
 if gtk3_ENABLED:
     add_modules("xpra.scripts.bug_report", "xpra.scripts.splash")
-toggle_packages((client_ENABLED and gtk3_ENABLED) or audio_ENABLED or server_ENABLED, "xpra.gtk_common")
-toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "xpra.client.gtk3", "xpra.client.gui")
+toggle_packages((client_ENABLED and gtk3_ENABLED) or audio_ENABLED or server_ENABLED, "xpra.gtk")
+toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.bindings", "xpra.client.bindings", "xpra.client.gui")
 toggle_packages((client_ENABLED and gtk3_ENABLED) or (audio_ENABLED and WIN32 and MINGW_PREFIX), "gi")
-toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3")
-toggle_packages(client_ENABLED and gtk3_ENABLED and example_ENABLED, "xpra.gtk_common.examples")
+toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.bindings")
+toggle_packages(client_ENABLED and gtk3_ENABLED and example_ENABLED, "xpra.gtk.examples")
 if client_ENABLED and WIN32 and MINGW_PREFIX:
     ace("xpra.platform.win32.propsys,xpra/platform/win32/setappid.cpp",
         language="c++",
@@ -2133,9 +2132,9 @@ toggle_modules(audio_ENABLED, "xpra.audio")
 toggle_modules(audio_ENABLED and not (OSX or WIN32), "xpra.audio.pulseaudio")
 
 toggle_packages(clipboard_ENABLED, "xpra.clipboard")
-tace(clipboard_ENABLED, "xpra.gtk_common.gtk3.gdk_atoms", "gtk+-3.0")
-toggle_packages(clipboard_ENABLED or gtk3_ENABLED, "xpra.gtk_common.gtk3")
-tace(gtk3_ENABLED, "xpra.gtk_common.gtk3.gdk_bindings", "gtk+-3.0,pygobject-3.0")
+tace(clipboard_ENABLED, "xpra.gtk.bindings.atoms", "gtk+-3.0")
+toggle_packages(clipboard_ENABLED or gtk3_ENABLED, "xpra.gtk.bindings")
+tace(gtk3_ENABLED, "xpra.gtk.bindings.gdk_bindings", "gtk+-3.0,pygobject-3.0")
 
 tace(client_ENABLED or server_ENABLED, "xpra.buffers.cyxor", optimize=3)
 tace(client_ENABLED or server_ENABLED or shadow_ENABLED, "xpra.util.rectangle", optimize=3)
@@ -2236,9 +2235,9 @@ toggle_packages(avif_ENABLED, "xpra.codecs.avif")
 tace(avif_ENABLED, "xpra.codecs.avif.encoder", "libavif")
 tace(avif_ENABLED, "xpra.codecs.avif.decoder", "libavif")
 toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.libyuv")
-tace(csc_libyuv_ENABLED, "xpra.codecs.libyuv.colorspace_converter", "libyuv", language="c++")
+tace(csc_libyuv_ENABLED, "xpra.codecs.libyuv.converter", "libyuv", language="c++")
 toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
-tace(csc_cython_ENABLED, "xpra.codecs.csc_cython.colorspace_converter", optimize=3)
+tace(csc_cython_ENABLED, "xpra.codecs.csc_cython.converter", optimize=3)
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 tace(vpx_ENABLED, "xpra.codecs.vpx.encoder", "vpx")
 tace(vpx_ENABLED, "xpra.codecs.vpx.decoder", "vpx")
@@ -2297,10 +2296,10 @@ if cythonize_more_ENABLED:
     if gstreamer_ENABLED:
         ax("xpra.gstreamer")
     if gtk3_ENABLED:
-        ax("xpra.gtk_common")
-        ax("xpra.gtk_common.dialogs")
+        ax("xpra.gtk")
+        ax("xpra.gtk.dialogs")
         if example_ENABLED:
-            ax("xpra.gtk_common.examples")
+            ax("xpra.gtk.examples")
     if keyboard_ENABLED:
         ax("xpra.keyboard")
     if http_ENABLED:

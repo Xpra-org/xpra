@@ -1112,8 +1112,8 @@ def ssl_retry(e, ssl_ca_certs) -> dict[str,Any]|None:
     ssllog("ssl_retry: server_hostname=%s, ssl verify_code=%s (%i)",
            server_hostname, SSL_VERIFY_CODES.get(verify_code, verify_code), verify_code)
     def confirm(*args):
-        from xpra.scripts import pinentry_wrapper
-        r = pinentry_wrapper.confirm(*args)
+        from xpra.scripts import pinentry
+        r = pinentry.confirm(*args)
         ssllog("run_pinentry_confirm(..) returned %r", r)
         return r
     options = load_ssl_options(server_hostname, port)

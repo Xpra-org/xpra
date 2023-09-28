@@ -16,7 +16,7 @@ from xpra.scripts.main import (
 from xpra.platform.paths import get_ssh_known_hosts_files
 from xpra.platform.info import get_username
 from xpra.scripts.config import parse_bool, TRUE_OPTIONS
-from xpra.scripts.pinentry_wrapper import input_pass, confirm
+from xpra.scripts.pinentry import input_pass, confirm
 from xpra.net.ssh.util import nogssapi_context, get_default_keyfiles
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
 from xpra.util.thread import start_thread

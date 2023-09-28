@@ -21,8 +21,9 @@ from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES
 from xpra.net.common import PacketType
 from xpra.scripts.config import InitException  #pylint: disable=import-outside-toplevel
 from xpra.server import features, EXITING_CODE
-from xpra.gtk_common.gobject_util import one_arg_signal
-from xpra.gtk_common.gtk_util import get_default_root_window, get_pixbuf_from_data
+from xpra.gtk.gobject import one_arg_signal
+from xpra.gtk.gtk_util import get_default_root_window
+from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.x11.common import Unmanageable, get_wm_name
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
@@ -32,7 +33,7 @@ from xpra.x11.bindings.window import X11WindowBindings #@UnresolvedImport
 from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
 from xpra.x11.bindings.randr import RandRBindings  #@UnresolvedImport
 from xpra.x11.server.base import X11ServerBase
-from xpra.gtk_common.error import xsync, xswallow, xlog, XError
+from xpra.gtk.error import xsync, xswallow, xlog, XError
 from xpra.log import Logger
 
 log = Logger("server")

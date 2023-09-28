@@ -192,7 +192,7 @@ class WebcamMixin(StubSourceMixin):
             #one of those two should be present
             try:
                 csc_mod = "csc_libyuv"
-                from xpra.codecs.libyuv.colorspace_converter import (   #@UnresolvedImport
+                from xpra.codecs.libyuv.converter import (   #@UnresolvedImport
                     get_input_colorspaces,
                     get_output_colorspaces,
                     Converter,

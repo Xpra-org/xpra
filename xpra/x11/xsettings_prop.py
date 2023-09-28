@@ -174,7 +174,7 @@ def main() -> int: # pragma: no cover
     from xpra.platform.gui import init as gui_init
     from xpra.os_util import POSIX
     from xpra.platform import program_context
-    from xpra.gtk_common.error import xsync
+    from xpra.gtk.error import xsync
     with program_context("XSettings"):
         gui_init()
         verbose = "-v" in sys.argv or "--verbose" in sys.argv

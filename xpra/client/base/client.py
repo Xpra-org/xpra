@@ -85,7 +85,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     * handling packets received via _process_packet
     For an actual implementation, look at:
     * GObjectXpraClient
-    * xpra.client.gtk3.client
+    * xpra.client.bindings.client
     """
 
     def __init__(self):

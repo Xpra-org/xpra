@@ -8,7 +8,7 @@ import os
 import unittest
 
 from xpra.os_util import POSIX
-from xpra.gtk_common.keymap import get_gtk_keymap, do_get_gtk_keymap
+from xpra.gtk.keymap import get_gtk_keymap, do_get_gtk_keymap
 
 
 class TestKeymap(unittest.TestCase):

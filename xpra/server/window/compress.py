@@ -119,7 +119,7 @@ COMPRESS_FMT        : str = COMPRESS_FMT_PREFIX+" with ratio %5.1f%%  (%5iKB to 
 
 ui_context : ContextManager = nullcontext()
 if POSIX and not OSX:
-    from xpra.gtk_common.error import xlog
+    from xpra.gtk.error import xlog
     ui_context = xlog
 
 
@@ -392,7 +392,7 @@ class WindowSource(WindowIconSource):
         pillow = add("enc_pillow")
         if self._mmap_size>0:
             try:
-                from xpra.net.mmap_pipe import mmap_write
+                from xpra.net.mmap import mmap_write
             except ImportError:
                 if first_time("mmap_write missing"):
                     log.warn("Warning: cannot use mmap, no write method support")

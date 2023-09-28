@@ -70,7 +70,7 @@ class MmapClient(StubClientMixin):
         self.mmap_enabled = bool(self.mmap_supported and self.mmap_enabled and c.intget("enabled"))
         log("parse_server_capabilities(..) mmap_enabled=%s", self.mmap_enabled)
         if self.mmap_enabled:
-            from xpra.net.mmap_pipe import read_mmap_token, DEFAULT_TOKEN_BYTES
+            from xpra.net.mmap import read_mmap_token, DEFAULT_TOKEN_BYTES
             mmap_token = c.intget("token")
             mmap_token_index = c.intget("token_index", 0)
             mmap_token_bytes = c.intget("token_bytes", DEFAULT_TOKEN_BYTES)
@@ -111,7 +111,7 @@ class MmapClient(StubClientMixin):
 
     def init_mmap(self, mmap_filename, mmap_group, socket_filename) -> None:
         log("init_mmap(%s, %s, %s)", mmap_filename, mmap_group, socket_filename)
-        from xpra.net.mmap_pipe import (  #pylint: disable=import-outside-toplevel
+        from xpra.net.mmap import (  #pylint: disable=import-outside-toplevel
             init_client_mmap, write_mmap_token,
             DEFAULT_TOKEN_BYTES,
             )
@@ -139,6 +139,6 @@ class MmapClient(StubClientMixin):
         if self.mmap_delete:
             #this should be redundant: closing the tempfile should get it deleted
             if self.mmap_filename and os.path.exists(self.mmap_filename):
-                from xpra.net.mmap_pipe import clean_mmap
+                from xpra.net.mmap import clean_mmap
                 clean_mmap(self.mmap_filename)
                 self.mmap_filename = ""

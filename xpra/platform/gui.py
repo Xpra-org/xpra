@@ -92,7 +92,7 @@ def get_ydpi() -> int:
 
 
 def get_monitors_info(xscale=1, yscale=1) -> dict[int,Any]:
-    from xpra.gtk_common import gtk_util
+    from xpra.gtk import gtk_util
     return gtk_util.get_monitors_info(xscale, yscale)
 
 

@@ -21,17 +21,16 @@ from xpra.os_util import bytestostr, strtobytes, is_X11, WIN32, OSX, POSIX, firs
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
-from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
-from xpra.gtk_common.gtk_util import (
-    ignorewarnings,
+from xpra.gtk.gobject import no_arg_signal, one_arg_signal
+from xpra.gtk.gtk_util import (
     ds_inited,
-    get_pixbuf_from_data, get_default_root_window,
+    get_default_root_window,
     set_visual,
-    BUTTON_MASK,
     GRAB_STATUS_STRING,
-    WINDOW_EVENT_MASK,
     )
-from xpra.gtk_common.keymap import KEY_TRANSLATIONS
+from xpra.gtk.widget import ignorewarnings
+from xpra.gtk.pixbuf import get_pixbuf_from_data
+from xpra.gtk.keymap import KEY_TRANSLATIONS
 from xpra.common import KeyEvent, MoveResize, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING, WORKSPACE_UNSET, \
     WORKSPACE_ALL, WORKSPACE_NAMES
 from xpra.client.gui.window_base import ClientWindowBase
@@ -66,7 +65,7 @@ NotifyInferior = None
 X11Window = X11Core = None
 if USE_X11_BINDINGS:
     try:
-        from xpra.gtk_common.error import xlog, verify_sync
+        from xpra.gtk.error import xlog, verify_sync
         from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del
         from xpra.x11.bindings.window import constants, X11WindowBindings, SHAPE_KIND  #@UnresolvedImport
         from xpra.x11.bindings.core import X11CoreBindings, set_context_check
@@ -201,22 +200,39 @@ GDK_SCROLL_MAP = {
     Gdk.ScrollDirection.RIGHT    : 7,
     }
 
+BUTTON_MASK : dict[int, int] = {
+    Gdk.ModifierType.BUTTON1_MASK : 1,
+    Gdk.ModifierType.BUTTON2_MASK : 2,
+    Gdk.ModifierType.BUTTON3_MASK : 3,
+    Gdk.ModifierType.BUTTON4_MASK : 4,
+    Gdk.ModifierType.BUTTON5_MASK : 5,
+    }
+
+em = Gdk.EventMask
+WINDOW_EVENT_MASK : Gdk.EventMask = em.STRUCTURE_MASK | em.KEY_PRESS_MASK | em.KEY_RELEASE_MASK \
+        | em.POINTER_MOTION_MASK | em.BUTTON_PRESS_MASK | em.BUTTON_RELEASE_MASK \
+        | em.PROPERTY_CHANGE_MASK | em.SCROLL_MASK
+
+del em
+
+wth = Gdk.WindowTypeHint
 ALL_WINDOW_TYPES : tuple[Gdk.WindowTypeHint, ...] = (
-    Gdk.WindowTypeHint.NORMAL,
-    Gdk.WindowTypeHint.DIALOG,
-    Gdk.WindowTypeHint.MENU,
-    Gdk.WindowTypeHint.TOOLBAR,
-    Gdk.WindowTypeHint.SPLASHSCREEN,
-    Gdk.WindowTypeHint.UTILITY,
-    Gdk.WindowTypeHint.DOCK,
-    Gdk.WindowTypeHint.DESKTOP,
-    Gdk.WindowTypeHint.DROPDOWN_MENU,
-    Gdk.WindowTypeHint.POPUP_MENU,
-    Gdk.WindowTypeHint.TOOLTIP,
-    Gdk.WindowTypeHint.NOTIFICATION,
-    Gdk.WindowTypeHint.COMBO,
-    Gdk.WindowTypeHint.DND,
+    wth.NORMAL,
+    wth.DIALOG,
+    wth.MENU,
+    wth.TOOLBAR,
+    wth.SPLASHSCREEN,
+    wth.UTILITY,
+    wth.DOCK,
+    wth.DESKTOP,
+    wth.DROPDOWN_MENU,
+    wth.POPUP_MENU,
+    wth.TOOLTIP,
+    wth.NOTIFICATION,
+    wth.COMBO,
+    wth.DND,
     )
+del wth
 WINDOW_NAME_TO_HINT : dict[str,Gdk.WindowTypeHint] = {
     wth.value_name.replace("GDK_WINDOW_TYPE_HINT_", ""): wth for wth in ALL_WINDOW_TYPES
     }

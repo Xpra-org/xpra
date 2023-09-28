@@ -26,20 +26,19 @@ from xpra.net.common import PacketType
 from xpra.common import FULL_INFO, VIDEO_MAX_SIZE, NotificationID, DEFAULT_METADATA_SUPPORTED, noerr
 from xpra.util.stats import std_unit
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS, InitExit
-from xpra.gtk_common.cursor_names import cursor_types
-from xpra.gtk_common.gtk_util import (
-    get_gtk_version_info, scaled_image, get_default_cursor, color_parse, label,
-    ignorewarnings,
-    get_icon_pixbuf,
-    get_pixbuf_from_data,
-    get_default_root_window, get_root_size,
+from xpra.gtk.cursors import cursor_types
+from xpra.gtk.gtk_util import (
+    get_default_cursor, color_parse, get_default_root_window, get_root_size,
     get_screen_sizes, get_monitors_info,
     GDKWindow,
     GRAB_STATUS_STRING,
     )
+from xpra.gtk.widget import scaled_image, label, ignorewarnings
+from xpra.gtk.pixbuf import get_icon_pixbuf, get_pixbuf_from_data
+from xpra.gtk.versions import get_gtk_version_info
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.gtk_common.gobject_util import no_arg_signal
-from xpra.gtk_common.css_overrides import inject_css_overrides
+from xpra.gtk.gobject import no_arg_signal
+from xpra.gtk.css_overrides import inject_css_overrides
 from xpra.client.gui.ui_client_base import UIXpraClient
 from xpra.client.base.gobject_client import GObjectXpraClient
 from xpra.client.gtk3.keyboard_helper import GTKKeyboardHelper
@@ -136,7 +135,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def setup_frame_request_windows(self) -> None:
         #query the window manager to get the frame size:
-        from xpra.gtk_common.error import xsync
+        from xpra.gtk.error import xsync
         from xpra.x11.bindings.send_wm import send_wm_request_frame_extents
         self.frame_request_window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         self.frame_request_window.set_title("Xpra-FRAME_EXTENTS")
@@ -265,7 +264,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         assert isinstance(self, NotificationClient)
         ncs = NotificationClient.get_notifier_classes(self)
         try:
-            from xpra.gtk_common.notifier import GTK_Notifier
+            from xpra.gtk.notifier import GTK_Notifier
             ncs.append(GTK_Notifier)
         except Exception as e:
             notifylog("get_notifier_classes()", exc_info=True)
@@ -283,7 +282,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         authlog = Logger("auth")
         self.show_progress(100, "authentication")
         PINENTRY = os.environ.get("XPRA_PINENTRY", "")
-        from xpra.scripts.pinentry_wrapper import get_pinentry_command
+        from xpra.scripts.pinentry import get_pinentry_command
         pinentry_cmd = get_pinentry_command(PINENTRY)
         authlog(f"do_process_challenge_prompt({prompt}) get_pinentry_command({PINENTRY})={pinentry_cmd}")
         if pinentry_cmd:
@@ -332,7 +331,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             values.append(value)
         def err(value=None):
             errs.append(value)
-        from xpra.scripts.pinentry_wrapper import pinentry_getpin
+        from xpra.scripts.pinentry import pinentry_getpin
         pinentry_getpin(proc, title, q, rec, err)
         if not values:
             if errs and errs[0].startswith("ERR 83886179"):
@@ -477,7 +476,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             log.warn(" the feature is not available on the server")
             return
         if self.server_commands is None:
-            from xpra.gtk_common.dialogs.server_commands import getServerCommandsWindow
+            from xpra.gtk.dialogs.server_commands import getServerCommandsWindow
             self.server_commands = getServerCommandsWindow(self)
         self.server_commands.show()
 
@@ -488,7 +487,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return
         log(f"show_start_new_command{args} current start_new_command={self.start_new_command}, flag={self.server_start_new_commands}")
         if self.start_new_command is None:
-            from xpra.gtk_common.dialogs.start_new_command import getStartNewCommand
+            from xpra.gtk.dialogs.start_new_command import getStartNewCommand
             def run_command_cb(command, sharing=True):
                 self.send_start_command(command, command, False, sharing)
             self.start_new_command = getStartNewCommand(run_command_cb,
@@ -514,7 +513,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.idle_add(self.do_ask_data_request, cb_answer, send_id, dtype, url, filesize, printit, openit)
 
     def do_ask_data_request(self, cb_answer, send_id, dtype, url, filesize, printit, openit):
-        from xpra.gtk_common.dialogs.open_requests import getOpenRequestsWindow
+        from xpra.gtk.dialogs.open_requests import getOpenRequestsWindow
         timeout = self.remote_file_ask_timeout
         def rec_answer(accept, newopenit=openit):
             from xpra.net.file_transfer import ACCEPT
@@ -533,7 +532,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             fad.destroy()
 
     def show_ask_data_dialog(self, *_args):
-        from xpra.gtk_common.dialogs.open_requests import getOpenRequestsWindow
+        from xpra.gtk.dialogs.open_requests import getOpenRequestsWindow
         self.file_ask_dialog = getOpenRequestsWindow(self.show_file_upload, self.cancel_download)
         self.file_ask_dialog.show()
 
@@ -662,7 +661,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     def show_about(self, *_args) -> None:
-        from xpra.gtk_common.dialogs.about import about
+        from xpra.gtk.dialogs.about import about
         force_focus()
         about()
 
@@ -675,7 +674,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             force_focus()
             self.shortcuts_info.present()
             return
-        from xpra.gtk_common.dialogs.show_shortcuts import ShortcutInfo
+        from xpra.gtk.dialogs.show_shortcuts import ShortcutInfo
         kh = self.keyboard_helper
         assert kh, "no keyboard helper"
         self.shortcuts_info = ShortcutInfo(kh.shortcut_modifiers, kh.key_shortcuts)
@@ -690,7 +689,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return
         p = self._protocol
         conn = p._conn if p else None
-        from xpra.gtk_common.dialogs.session_info import SessionInfo
+        from xpra.gtk.dialogs.session_info import SessionInfo
         self.session_info = SessionInfo(self, self.session_name, conn)
         self.session_info.set_args(*args)
         force_focus()
@@ -702,7 +701,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             force_focus()
             self.bug_report.show()
             return
-        from xpra.gtk_common.dialogs.bug_report import BugReport
+        from xpra.gtk.dialogs.bug_report import BugReport
         self.bug_report = BugReport()
         def init_bug_report():
             #skip things we aren't using:
@@ -738,7 +737,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def request_frame_extents(self, window) -> None:
         from xpra.x11.bindings.send_wm import send_wm_request_frame_extents
-        from xpra.gtk_common.error import xsync
+        from xpra.gtk.error import xsync
         root = self.get_root_window()
         with xsync:
             win = window.get_window()

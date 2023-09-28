@@ -17,7 +17,7 @@ log = Logger("paint", "cairo")
 try:
     from xpra.client.gtk3.cairo_workaround import set_image_surface_data, CAIRO_FORMATS #@UnresolvedImport
 except ImportError as e:
-    log.warn("Warning: failed to load the gtk3 cairo workaround:")
+    log.warn("Warning: failed to load the bindings cairo workaround:")
     log.warn(" %s", e)
     log.warn(" rendering will be slow!")
     del e
@@ -30,7 +30,7 @@ CAIRO_USE_PIXBUF = envbool("XPRA_CAIRO_USE_PIXBUF", False)
 
 """
 An area we draw onto with cairo
-This must be used with gtk3 since gtk3 no longer supports gdk pixmaps
+This must be used with bindings since bindings no longer supports gdk pixmaps
 
 /RANT: ideally we would want to use pycairo's create_for_data method:
 #surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_RGB24, width, height)
@@ -47,7 +47,7 @@ class CairoBacking(CairoBackingBase):
             binfo = "ImageSurface(%i, %i)" % (b.get_width(), b.get_height())
         else:
             binfo = "None"
-        return "gtk3.CairoBacking(%s : size=%s, render_size=%s)" % (binfo, self.size, self.render_size)
+        return "bindings.CairoBacking(%s : size=%s, render_size=%s)" % (binfo, self.size, self.render_size)
 
     def _do_paint_rgb(self, cairo_format, has_alpha, img_data,
                       x : int, y : int, width : int, height : int, render_width : int, render_height : int,

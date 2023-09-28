@@ -434,7 +434,7 @@ class ClientWindowBase(ClientWidgetBase):
                 opacity = 1
             else:
                 opacity = min(1, opacity//0xffffffff)
-            from xpra.gtk_common.gtk_util import  ignorewarnings
+            from xpra.gtk.widget import ignorewarnings
             ignorewarnings(self.set_opacity, opacity)
 
         if "has-alpha" in metadata:

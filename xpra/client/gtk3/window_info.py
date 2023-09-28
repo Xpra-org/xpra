@@ -9,10 +9,9 @@ from xpra.util.types import typedict
 from xpra.util.str_fn import csv
 from xpra.os_util import bytestostr
 from xpra.common import GravityStr, WORKSPACE_UNSET
-from xpra.gtk_common.gtk_util import (
-    add_close_accel, label, TableBuilder,
-    get_icon_pixbuf,
-    )
+from xpra.gtk.gtk_util import add_close_accel
+from xpra.gtk.widget import label, TableBuilder
+from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.log import Logger
 
 log = Logger("info")
