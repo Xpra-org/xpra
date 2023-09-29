@@ -541,7 +541,7 @@ def init_display_source() -> None:
     global dsinit
     dsinit = True
     x11 = is_X11()
-    log.warn(f"init_display_source() {x11=}")
+    log(f"init_display_source() {x11=}")
     if x11:
         try:
             from xpra.x11.gtk3.display_source import init_gdk_display_source
