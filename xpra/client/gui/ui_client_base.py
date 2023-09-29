@@ -343,10 +343,10 @@ class UIXpraClient(ClientBaseClass):
         import shlex
         for cmd in self.request_start:
             cmd_parts = shlex.split(cmd)
-            self.send_start_command(cmd_parts[0], cmd, True)
+            self.send_start_command(cmd_parts[0], cmd_parts, True)
         for cmd in self.request_start_child:
             cmd_parts = shlex.split(cmd)
-            self.send_start_command(cmd_parts[0], cmd, False)
+            self.send_start_command(cmd_parts[0], cmd_parts, False)
 
     def send_start_command(self, name:str, command:List[str], ignore:bool, sharing:bool=True) -> None:
         log("send_start_command%s", (name, command, ignore, sharing))
