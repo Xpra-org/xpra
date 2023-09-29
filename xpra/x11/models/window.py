@@ -4,7 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject   # @UnresolvedImport
+from math import ceil, floor
+from gi.repository import GObject, GLib
 
 from xpra.util.types import typedict
 from xpra.util.env import envint, envbool
@@ -13,14 +14,13 @@ from xpra.gtk.gobject import one_arg_signal
 from xpra.gtk.error import XError, xsync, xswallow, xlog
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.prop_conv import MotifWMHints
-from xpra.x11.bindings.window import X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.bindings.send_wm import send_wm_take_focus
 from xpra.x11.common import Unmanageable
 from xpra.x11.models.size_hints_util import sanitize_size_hints
 from xpra.x11.models.base import BaseWindowModel, constants
 from xpra.x11.models.core import sanestr
-from xpra.x11.gtk3.gdk_bindings import add_event_receiver, remove_event_receiver
-from xpra.gtk.bindings.gdk_bindings import calc_constrained_size
+from xpra.x11.gtk3.bindings import add_event_receiver, remove_event_receiver
 from xpra.log import Logger
 
 log = Logger("x11", "window")
@@ -55,6 +55,8 @@ CW_MASK_TO_NAME = {
                    CWStackMode      : "StackMode",
                    CWBorderWidth    : "BorderWidth",
                    }
+
+
 def configure_bits(value_mask):
     return "|".join(v for k,v in CW_MASK_TO_NAME.items() if k&value_mask)
 
@@ -63,6 +65,72 @@ FORCE_XSETINPUTFOCUS = envbool("XPRA_FORCE_XSETINPUTFOCUS", False)
 VALIDATE_CONFIGURE_REQUEST = envbool("XPRA_VALIDATE_CONFIGURE_REQUEST", False)
 CLAMP_OVERLAP = envint("XPRA_WINDOW_CLAMP_OVERLAP", 20)
 assert CLAMP_OVERLAP>=0
+
+
+def calc_constrained_size(width : int, height : int, hints):
+    if not hints:
+        return width, height
+
+    def getintpair(key, dv1 : int, dv2 : int):
+        v = hints.get(key)
+        if v:
+            try:
+                return int(v[0]), int(v[1])
+            except (ValueError, IndexError):
+                pass
+        return dv1, dv2
+
+    min_width : int
+    min_height : int
+    max_width : int
+    max_height : int
+    base_width : int
+    base_height : int
+    e_width : int
+    e_height : int
+    increment_x : int
+    increment_y : int
+
+    min_width, min_height = getintpair("minimum-size", 0, 0)
+    if min_width>0:
+        width = max(min_width, width)
+    if min_height>0:
+        height = max(min_height, height)
+
+    max_width, max_height = getintpair("maximum-size", 2**16-1, 2**16-1)
+    if max_width>0:
+        width = min(max_width, width)
+    if max_height>0:
+        height = max(min_height, height)
+
+    base_width, base_height = getintpair("base-size", 0, 0)
+    increment_x, increment_y = getintpair("increment", 0, 0)
+    if increment_x:
+        e_width = max(width-base_width, 0)
+        width -= e_width%increment_x
+    if increment_y:
+        e_height = max(height-base_height, 0)
+        height -= e_height%increment_y
+
+    min_aspect : float
+    max_aspect : float
+    if "min_aspect" in hints:
+        min_aspect = hints.get("min_aspect")
+        assert min_aspect>0
+        if width/height<min_aspect:
+            height = ceil(width*min_aspect)
+            if increment_y>1 or base_height>0:
+                e_height = max(height-base_height, 0)
+                height += increment_y-(e_height%increment_y)
+    if "max_aspect" in hints:
+        max_aspect = hints.get("max_aspect")
+        assert max_aspect>0
+        if width/height>max_aspect:
+            height = floor(width*max_aspect)
+            if increment_y>1 or base_height>0:
+                e_height = max(height-base_height, 0)
+                height = max(1, height-e_height%increment_y)
+    return width, height
 
 
 class WindowModel(BaseWindowModel):
@@ -88,7 +156,7 @@ class WindowModel(BaseWindowModel):
         # (and if the counter has been incremented since, we ignore the request)
         "resize-counter": (GObject.TYPE_INT64,
                            "", "",
-                           0, GObject.G_MAXINT64, 1,
+                           0, GLib.MAXINT64, 1,
                            GObject.ParamFlags.READWRITE),
         "client-geometry": (GObject.TYPE_PYOBJECT,
                             "The current window geometry used by client(s)", "",

@@ -14,7 +14,7 @@ from xpra.net.common import PacketType
 from xpra.server import features
 from xpra.gtk.gtk_util import get_screen_sizes, get_root_size
 from xpra.gtk.gobject import one_arg_signal
-from xpra.x11.gtk3.gdk_bindings import (
+from xpra.x11.gtk3.bindings import (
     add_catchall_receiver, remove_catchall_receiver,
     add_event_receiver,          #@UnresolvedImport
    )

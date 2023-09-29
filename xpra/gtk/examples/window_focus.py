@@ -77,8 +77,8 @@ def make_window():
     window.connect("notify::has-toplevel-focus", has_toplevel_focus)
     if POSIX and not OSX:
         from xpra.gtk.error import xlog
-        from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
-        from xpra.x11.gtk3.gdk_bindings import init_x11_filter
+        from xpra.x11.gtk3.display_source import init_gdk_display_source
+        from xpra.x11.gtk3.bindings import init_x11_filter
         from xpra.x11.bindings.window import X11WindowBindings  #pylint: disable=no-name-in-module
         from xpra.os_util import is_Wayland
         if not is_Wayland():

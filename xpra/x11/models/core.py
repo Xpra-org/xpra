@@ -23,7 +23,7 @@ from xpra.x11.bindings.send_wm import send_wm_delete_window
 from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.gtk_x11.composite import CompositeHelper
 from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del, prop_type_get, PYTHON_TYPES
-from xpra.x11.gtk3.gdk_bindings import add_event_receiver, remove_event_receiver
+from xpra.x11.gtk3.bindings import add_event_receiver, remove_event_receiver
 from xpra.log import Logger
 
 log = Logger("x11", "window")

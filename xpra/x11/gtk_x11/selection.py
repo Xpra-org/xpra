@@ -18,7 +18,7 @@ from gi.repository import GObject, Gtk, Gdk, GLib  # @UnresolvedImport
 
 from xpra.gtk.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.bindings.window import constants, X11WindowBindings #@UnresolvedImport
-from xpra.x11.gtk3.gdk_bindings import (
+from xpra.x11.gtk3.bindings import (
     add_event_receiver,         #@UnresolvedImport
     remove_event_receiver,      #@UnresolvedImport
     get_xatom,                  #@UnresolvedImport

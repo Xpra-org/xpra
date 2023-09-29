@@ -7,7 +7,7 @@
 from gi.repository import GObject, Gdk  # @UnresolvedImport
 
 from xpra.gtk.gobject import SIGNAL_RUN_LAST, one_arg_signal
-from xpra.x11.gtk3.gdk_bindings import add_event_receiver, remove_event_receiver
+from xpra.x11.gtk3.bindings import add_event_receiver, remove_event_receiver
 from xpra.log import Logger
 
 log = Logger("x11", "util")

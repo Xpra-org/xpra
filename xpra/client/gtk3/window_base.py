@@ -67,7 +67,7 @@ if USE_X11_BINDINGS:
     try:
         from xpra.gtk.error import xlog, verify_sync
         from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del
-        from xpra.x11.bindings.window import constants, X11WindowBindings, SHAPE_KIND  #@UnresolvedImport
+        from xpra.x11.bindings.window import constants, X11WindowBindings, SHAPE_KIND
         from xpra.x11.bindings.core import X11CoreBindings, set_context_check
         from xpra.x11.bindings.send_wm import send_wm_workspace
     except ImportError as x11e:
@@ -499,7 +499,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # so we can get focus-out when grabs are active:
         if is_X11():
             try:
-                from xpra.x11.gtk3.gdk_bindings import add_event_receiver
+                from xpra.x11.gtk3.bindings import add_event_receiver
             except ImportError as e:
                 log("do_init_focus()", exc_info=True)
                 if not ds_inited():

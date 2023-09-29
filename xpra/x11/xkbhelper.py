@@ -6,7 +6,7 @@
 import os
 
 #ensure that we use gtk as display source:
-from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
+from xpra.x11.gtk3.display_source import init_gdk_display_source
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.util.types import typedict
 from xpra.util.str_fn import std, csv

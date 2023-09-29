@@ -344,7 +344,6 @@ def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=Tru
     no_gtk()
     #we're going to load gtk:
     bypass_no_gtk()
-    from xpra.x11.gtk3.gdk_display_util import verify_gdk_display
     display = verify_gdk_display(display_name)
     if not display:
         return 1
@@ -1437,7 +1436,7 @@ def _do_run_server(script_file:str, cmdline,
     if not (proxying or shadowing) and POSIX and not OSX:
         if not check_xvfb():
             return  1
-        from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
+        from xpra.x11.gtk3.display_source import init_gdk_display_source
         if os.environ.get("NO_AT_BRIDGE") is None:
             os.environ["NO_AT_BRIDGE"] = "1"
         init_gdk_display_source()
@@ -1574,3 +1573,21 @@ def attach_client(options, defaults):
     env = get_saved_env()
     proc = Popen(cmd, env=env, start_new_session=POSIX and not OSX)
     getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
+
+
+def verify_gdk_display(display_name):
+    # pylint: disable=import-outside-toplevel
+    # Now we can safely load gtk and connect:
+    import gi
+    gi.require_version("Gdk", "3.0")  # @UndefinedVariable
+    from gi.repository import Gdk  # @UnresolvedImport
+    display = Gdk.Display.open(display_name)
+    if not display:
+        from xpra.scripts.config import InitException
+        raise InitException(f"failed to open display {display_name!r}")
+    manager = Gdk.DisplayManager.get()
+    default_display = manager.get_default_display()
+    if default_display is not None and default_display!=display:
+        default_display.close()
+    manager.set_default_display(display)
+    return display

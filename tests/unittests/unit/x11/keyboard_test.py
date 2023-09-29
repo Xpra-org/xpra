@@ -22,7 +22,7 @@ class TestX11Keyboard(ServerTestUtil):
         os.environ["GDK_BACKEND"] = "x11"
         from xpra.x11.bindings.posix_display_source import init_posix_display_source    #@UnresolvedImport
         cls.display_ptr = init_posix_display_source()
-        from xpra.x11.gtk3.gdk_display_util import verify_gdk_display
+        from xpra.scripts.server import verify_gdk_display
         verify_gdk_display(display)
 
     @classmethod

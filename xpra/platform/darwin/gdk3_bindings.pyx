@@ -9,8 +9,6 @@ from xpra.log import Logger
 log = Logger("bindings", "gtk")
 
 
-from xpra.gtk.bindings.gdk_bindings cimport get_gdkwindow
-
 ctypedef float CGFloat
 ctypedef int BOOL
 
@@ -41,6 +39,9 @@ cdef extern from "gtk-3.0/gdk/quartz/gdkquartz-cocoa-access.h":
 cdef extern from "gtk-3.0/gdk/gdk.h":
     ctypedef struct GdkWindow:
         pass
+
+cdef GdkWindow *get_gdkwindow(pywindow):
+    return <GdkWindow*>unwrap(pywindow, Gdk.Window)
 
 cdef NSWindow *get_nswindow(pywindow):
     cdef GdkWindow *gdkwindow = get_gdkwindow(pywindow)

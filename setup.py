@@ -1132,8 +1132,7 @@ def clean():
     CLEAN_FILES = [
                    "xpra/build_info.py",
                    "xpra/gtk/bindings/atoms.c",
-                   "xpra/gtk/bindings/gdk_bindings.c",
-                   "xpra/x11/bindings/gdk_bindings.c",
+                   "xpra/gtk/bindings/gobject.c",
                    "xpra/x11/bindings/display_source.c",
                    "xpra/x11/bindings/xwait.c",
                    "xpra/x11/bindings/wait_for_x_server.c",
@@ -1147,6 +1146,8 @@ def clean():
                    "xpra/x11/bindings/xwayland.c",
                    "xpra/x11/bindings/ximage.c",
                    "xpra/x11/bindings/xi2.c",
+                   "xpra/x11/gtk3/bindings.c",
+                   "xpra/x11/gtk3/display_source.c",
                    "xpra/platform/win32/propsys.cpp",
                    "xpra/platform/darwin/gdk3_bindings.c",
                    "xpra/platform/posix/sd_listen.c",
@@ -2051,7 +2052,7 @@ tace(OSX, "xpra.platform.darwin.gdk3_bindings,xpra/platform/darwin/transparency_
 
 toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.bindings")
 if x11_ENABLED:
-    ace("xpra.x11.bindings.events", "x11")
+    ace("xpra.x11.bindings.events", "x11,xfixes,xext,xdamage,xkbfile")
     ace("xpra.x11.bindings.xwait", "x11")
     ace("xpra.x11.bindings.wait_for_x_server", "x11")
     ace("xpra.x11.bindings.display_source", "x11")
@@ -2069,8 +2070,8 @@ toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk_x11")
 toggle_packages(server_ENABLED and gtk_x11_ENABLED, "xpra.x11.models", "xpra.x11.desktop", "xpra.x11.server")
 if gtk_x11_ENABLED:
     add_packages("xpra.x11.bindings")
-    ace("xpra.x11.bindings.display_source", "gdk-3.0")
-    ace("xpra.x11.gtk3.gdk_bindings,xpra/x11/gtk3/gdk_x11_macros.c", "gdk-3.0,xdamage")
+    ace("xpra.x11.gtk3.display_source", "gdk-3.0")
+    ace("xpra.x11.gtk3.bindings,xpra/x11/gtk3/gdk_x11_macros.c", "gdk-3.0,xdamage,xfixes")
 
 tace(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3.cairo_workaround", "py3cairo",
      extra_compile_args=["-Wno-error=parentheses-equality"] if CC_is_clang() else [])
@@ -2095,7 +2096,7 @@ if client_ENABLED:
     add_modules("xpra.client")
     add_packages("xpra.client.base")
     add_packages("xpra.client.mixins", "xpra.client.auth")
-    add_modules("xpra.scripts.gtk_info", "xpra.scripts.show_webcam", "xpra.scripts.pinentry_wrapper")
+    add_modules("xpra.scripts.gtk_info", "xpra.scripts.show_webcam", "xpra.scripts.pinentry")
 if gtk3_ENABLED:
     add_modules("xpra.scripts.bug_report", "xpra.scripts.splash")
 toggle_packages((client_ENABLED and gtk3_ENABLED) or audio_ENABLED or server_ENABLED, "xpra.gtk")
@@ -2132,9 +2133,9 @@ toggle_modules(audio_ENABLED, "xpra.audio")
 toggle_modules(audio_ENABLED and not (OSX or WIN32), "xpra.audio.pulseaudio")
 
 toggle_packages(clipboard_ENABLED, "xpra.clipboard")
-tace(clipboard_ENABLED, "xpra.gtk.bindings.atoms", "gtk+-3.0")
 toggle_packages(clipboard_ENABLED or gtk3_ENABLED, "xpra.gtk.bindings")
-tace(gtk3_ENABLED, "xpra.gtk.bindings.gdk_bindings", "gtk+-3.0,pygobject-3.0")
+tace(clipboard_ENABLED, "xpra.gtk.bindings.atoms", "gtk+-3.0")
+tace(gtk3_ENABLED, "xpra.gtk.bindings.gobject", "gtk+-3.0,pygobject-3.0")
 
 tace(client_ENABLED or server_ENABLED, "xpra.buffers.cyxor", optimize=3)
 tace(client_ENABLED or server_ENABLED or shadow_ENABLED, "xpra.util.rectangle", optimize=3)

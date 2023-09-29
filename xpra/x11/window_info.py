@@ -43,7 +43,7 @@ def dump_windows() -> None:
     xid = root.get_xid()
     log(f"root window: {xid:x}")
     try:
-        from xpra.x11.gtk3.gdk_bindings import get_children #@UnresolvedImport
+        from xpra.x11.gtk3.bindings import get_children
         from xpra.gtk.error import xlog
     except ImportError:
         pass

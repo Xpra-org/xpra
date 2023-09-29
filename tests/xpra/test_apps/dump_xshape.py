@@ -26,7 +26,7 @@ def dump_xshape(xid):
     return v
 
 def main(args):
-    from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
+    from xpra.x11.gtk3.display_source import init_gdk_display_source
     init_gdk_display_source()
     for wid in args[1:]:
         print("looking for window %s" % wid)

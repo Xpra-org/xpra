@@ -7,7 +7,7 @@
 
 from xpra.util.env import envbool
 from xpra.gtk.gobject import one_arg_signal
-from xpra.x11.gtk3.gdk_bindings import add_event_receiver, remove_event_receiver
+from xpra.x11.gtk3.bindings import add_event_receiver, remove_event_receiver
 from xpra.gtk.error import xsync, xswallow, xlog, XError
 from xpra.x11.common import Unmanageable
 

@@ -540,13 +540,13 @@ def init_display_source() -> None:
     """
     global dsinit
     dsinit = True
-    if is_X11():
+    x11 = is_X11()
+    log.warn(f"init_display_source() {x11=}")
+    if x11:
         try:
-            from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
+            from xpra.x11.gtk3.display_source import init_gdk_display_source
             init_gdk_display_source()
         except ImportError:     # pragma: no cover
-            from xpra.log import Logger
-            log = Logger("gtk", "client")
             log("init_gdk_display_source()", exc_info=True)
             log.warn("Warning: the Gtk-3.0 X11 bindings are missing")
             log.warn(" some features may be degraded or unavailable")

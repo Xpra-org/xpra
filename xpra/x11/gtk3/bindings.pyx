@@ -30,8 +30,7 @@ from xpra.x11.bindings.events cimport parse_xevent, init_x11_events
 from xpra.x11.bindings.events import get_x_event_signals, get_x_event_type_name
 
 from libc.stdint cimport uintptr_t
-from xpra.gtk.bindings.gdk_bindings cimport wrap, unwrap, get_raw_display_for
-from xpra.gtk.bindings.gdk_bindings import get_display_for
+from xpra.gtk.bindings.gobject cimport wrap, unwrap
 
 
 from xpra.x11.common import REPR_FUNCTIONS
@@ -45,6 +44,26 @@ REPR_FUNCTIONS[Gdk.Display] = get_display_name
 
 cdef extern from "gdk_x11_macros.h":
     int is_x11_display(void *)
+
+
+def get_display_for(obj) -> Gdk.Display:
+    if obj is None:
+        raise TypeError("Cannot get a display: instance is None!")
+    if isinstance(obj, Gdk.Display):
+        return obj
+    elif isinstance(obj, (Gdk.Window,
+                          Gtk.Widget,
+                          Gtk.Clipboard,
+                          Gtk.SelectionData,
+                          )):
+        return obj.get_display()
+    else:
+        raise TypeError("Don't know how to get a display from %r" % (obj,))
+
+
+cdef GdkDisplay * get_raw_display_for(obj) except? NULL:
+    return <GdkDisplay*> unwrap(get_display_for(obj), Gdk.Display)
+
 
 def is_X11_Display(display=None) -> bool:
     cdef GdkDisplay *gdk_display

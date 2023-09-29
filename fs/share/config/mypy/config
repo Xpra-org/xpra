@@ -76,7 +76,7 @@ ignore_missing_imports = True
 [mypy-lxml.*]
 ignore_missing_imports = True
 
-[mypy-xpra.gtk_common.gtk3.gdk_bindings.*]
+[mypy-xpra.gtk.bindings.gobject.*]
 ignore_missing_imports = True
 
 [mypy-xpra.x11.gtk3.gdk_bindings.*]

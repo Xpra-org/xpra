@@ -13,7 +13,6 @@ from threading import Event
 from typing import Any
 from gi.repository import Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
-from xpra.client.gtk3.window_base import HAS_X11_BINDINGS, XSHAPE
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized, pver
 from xpra.util.env import envint, envbool
@@ -32,7 +31,8 @@ from xpra.gtk.gtk_util import (
     get_screen_sizes, get_monitors_info,
     GDKWindow,
     GRAB_STATUS_STRING,
-    )
+    init_display_source,
+)
 from xpra.gtk.widget import scaled_image, label, ignorewarnings
 from xpra.gtk.pixbuf import get_icon_pixbuf, get_pixbuf_from_data
 from xpra.gtk.versions import get_gtk_version_info
@@ -74,6 +74,9 @@ NO_OPENGL_WINDOW_TYPES = os.environ.get("XPRA_NO_OPENGL_WINDOW_TYPES",
                                         "DOCK,TOOLBAR,MENU,UTILITY,SPLASH,DROPDOWN_MENU,POPUP_MENU,TOOLTIP,NOTIFICATION,COMBO,DND").split(",")
 
 inject_css_overrides()
+init_display_source()
+#must come after init_display_source()
+from xpra.client.gtk3.window_base import HAS_X11_BINDINGS, XSHAPE
 
 
 # pylint: disable=import-outside-toplevel

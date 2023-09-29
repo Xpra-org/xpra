@@ -151,7 +151,7 @@ def window_matches(wspec, model_class):
             model.transient_for = None
             if transient_for_xid:
                 try:
-                    from xpra.x11.gtk3.gdk_bindings import get_pywindow
+                    from xpra.x11.gtk3.bindings import get_pywindow
                     model.transient_for = get_pywindow(transient_for_xid)
                 except ImportError:
                     pass

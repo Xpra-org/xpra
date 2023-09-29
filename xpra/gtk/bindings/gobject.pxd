@@ -18,8 +18,3 @@ cdef extern from "glib-2.0/glib-object.h":
 
 cdef object wrap(cGObject * contents)
 cdef cGObject *unwrap(box, pyclass) except? NULL
-cdef void *pyg_boxed_get(v)
-
-cdef GdkDisplay *get_raw_display_for(obj) except? NULL
-
-cdef GdkWindow *get_gdkwindow(pywindow)

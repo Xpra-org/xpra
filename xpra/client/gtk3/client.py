@@ -12,7 +12,6 @@ from xpra.client.gtk3.client_base import GTKXpraClient
 from xpra.client.gtk3.window import ClientWindow
 from xpra.platform.gui import get_xdpi, get_ydpi
 
-
 class XpraClient(GTKXpraClient):
 
     ClientWindowClass = ClientWindow

@@ -20,7 +20,7 @@ from xpra.x11.gtk_x11 import GDKX11Window
 from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.models.window import WindowModel, configure_bits
 from xpra.x11.gtk_x11.world_window import WorldWindow, destroy_world_window
-from xpra.x11.gtk3.gdk_bindings import (
+from xpra.x11.gtk3.bindings import (
     add_event_receiver,
     add_fallback_receiver, remove_fallback_receiver,
     )

@@ -17,7 +17,7 @@ class ClipboardMixinTest(ServerMixinTest):
     def test_clipboard(self):
         with DisplayContext():
             if POSIX and not OSX:
-                from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
+                from xpra.x11.gtk3.display_source import init_gdk_display_source
                 init_gdk_display_source()
             from xpra.server.mixins.clipboard import ClipboardServer
             from xpra.server.source.clipboard import ClipboardConnection

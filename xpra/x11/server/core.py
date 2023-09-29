@@ -19,8 +19,8 @@ from xpra.gtk.gtk_util import get_default_root_window
 from xpra.x11.server.server_uuid import save_uuid, get_uuid, save_mode
 from xpra.x11.vfb_util import parse_resolutions
 from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del
-from xpra.x11.gtk3.gdk_display_source import close_gdk_display_source
-from xpra.x11.gtk3.gdk_bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
+from xpra.x11.gtk3.display_source import close_gdk_display_source
+from xpra.x11.gtk3.bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
 from xpra.common import MAX_WINDOW_SIZE, FULL_INFO, NotificationID
 from xpra.os_util import bytestostr, first_time
 from xpra.util.types import typedict

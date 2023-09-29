@@ -321,7 +321,13 @@ def is_X11() -> bool:
     if os.environ.get("XPRA_NOX11", "")=="1":
         return False
     try:
-        from xpra.x11.gtk3.gdk_bindings import is_X11_Display   #@UnresolvedImport
+        from xpra import x11
+        assert x11
+    except ImportError:
+        #x11 is not installed, so assume it isn't used
+        return False
+    try:
+        from xpra.x11.gtk3.bindings import is_X11_Display
         return is_X11_Display()
     except ImportError:
         get_util_logger().debug("failed to load x11 bindings", exc_info=True)

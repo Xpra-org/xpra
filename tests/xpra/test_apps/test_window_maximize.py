@@ -27,7 +27,7 @@ def main():
 		vbox.pack_start(hbox, expand=False, fill=False, padding=2)
 
 	def send_maximized_wm_state(mode):
-		from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
+		from xpra.x11.gtk3.display_source import init_gdk_display_source
 		init_gdk_display_source()
 		from xpra.x11.bindings.window import constants, X11WindowBindings  #@UnresolvedImport
 		X11Window = X11WindowBindings()
