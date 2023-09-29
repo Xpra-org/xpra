@@ -2096,14 +2096,11 @@ if client_ENABLED:
     add_modules("xpra.client")
     add_packages("xpra.client.base")
     add_packages("xpra.client.mixins", "xpra.client.auth")
-    add_modules("xpra.scripts.gtk_info", "xpra.scripts.show_webcam", "xpra.scripts.pinentry")
-if gtk3_ENABLED:
-    add_modules("xpra.scripts.bug_report", "xpra.scripts.splash")
-toggle_packages((client_ENABLED and gtk3_ENABLED) or audio_ENABLED or server_ENABLED, "xpra.gtk")
-toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.bindings", "xpra.client.bindings", "xpra.client.gui")
+    add_modules("xpra.scripts.pinentry")
+toggle_packages(gtk3_ENABLED, "xpra.gtk", "xpra.gtk.examples", "xpra.gtk.dialogs")
+toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "xpra.client.gui")
 toggle_packages((client_ENABLED and gtk3_ENABLED) or (audio_ENABLED and WIN32 and MINGW_PREFIX), "gi")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.bindings")
-toggle_packages(client_ENABLED and gtk3_ENABLED and example_ENABLED, "xpra.gtk.examples")
 if client_ENABLED and WIN32 and MINGW_PREFIX:
     ace("xpra.platform.win32.propsys,xpra/platform/win32/setappid.cpp",
         language="c++",
@@ -2123,8 +2120,6 @@ if client_ENABLED or server_ENABLED:
         )
 if server_ENABLED or proxy_ENABLED:
     add_modules("xpra.scripts.server")
-if WIN32 and client_ENABLED and gtk3_ENABLED:
-    add_modules("xpra.scripts.gtk_info")
 
 toggle_packages(not WIN32, "xpra.platform.pycups_printing")
 toggle_packages(client_ENABLED and opengl_ENABLED, "xpra.client.gl")
