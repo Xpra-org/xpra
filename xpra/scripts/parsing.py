@@ -614,11 +614,11 @@ def parse_ssh_option(ssh_setting:str) -> list[str]:
             from xpra.net.ssh.util import nogssapi_context
             with nogssapi_context():
                 import paramiko
-            assert paramiko
+            assert paramiko, "paramiko not found"
             ssh_cmd = ["paramiko"]
             if is_debug_enabled("ssh"):
                 Logger("ssh").info("using paramiko ssh backend")
-        except ImportError:
+        except (ImportError, AssertionError):
             log = Logger("ssh")
             log(f"parse_ssh_option({ssh_setting})", exc_info=True)
             from xpra.platform.features import DEFAULT_SSH_COMMAND

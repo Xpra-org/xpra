@@ -9,6 +9,7 @@ from collections.abc import Callable
 from time import monotonic
 from collections import deque
 
+from xpra.common import noop
 from xpra.platform.paths import get_icon_filename
 from xpra.log import Logger
 
@@ -20,8 +21,8 @@ class TrayBase:
         Utility superclass for all tray implementations
     """
 
-    def __init__(self, _client, app_id, menu, tooltip:str, icon_filename:str,
-                 size_changed_cb:Callable, click_cb:Callable, mouseover_cb:Callable, exit_cb:Callable):
+    def __init__(self, _client, app_id, menu, tooltip:str="", icon_filename:str="",
+                 size_changed_cb:Callable=noop, click_cb:Callable=noop, mouseover_cb:Callable=noop, exit_cb:Callable=noop):
         #we don't keep a reference to client,
         #because calling functions on the client directly should be discouraged
         self.app_id = app_id

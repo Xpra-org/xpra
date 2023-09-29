@@ -424,9 +424,11 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         for c in classes:
             try:
                 w = c(self, XPRA_APP_ID, self.tray, "Xpra Shadow Server",
-                      None, None, self.tray_click_callback, mouseover_cb=None, exit_cb=self.tray_exit_callback)
-                return w
+                      click_cb=self.tray_click_callback, exit_cb=self.tray_exit_callback)
+                if w:
+                    return w
             except Exception as e:
+                traylog(f"{c}(..)", exc_info=True)
                 errs.append((c, e))
         traylog.error("Error: all system tray implementations have failed")
         for c, err in errs:

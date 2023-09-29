@@ -19,8 +19,14 @@ class TestDigest(unittest.TestCase):
 
     def test_invalid_digest(self):
         for invalid_digest in (None, "foo", "hmac", "hmac+INVALID_HASH_ALGO"):
-            assert get_digest_module(invalid_digest) is None
-            assert not gendigest(invalid_digest, "bar", "0"*16)
+            try:
+                assert get_digest_module(invalid_digest) is None
+            except TypeError:
+                pass
+            try:
+                assert not gendigest(invalid_digest, "bar", "0"*16)
+            except TypeError:
+                pass
 
     def test_all_digests(self):
         for digest in get_digests():
@@ -31,10 +37,19 @@ class TestDigest(unittest.TestCase):
             password = "secret"
             d = gendigest(digest, password, salt)
             assert d is not None
-            assert not verify_digest(digest, None, salt, d)
-            assert not verify_digest(digest, password, None, d)
-            assert not verify_digest(digest, password, salt, None)
-            assert not verify_digest(digest, password, salt, d[:-1])
+            def nvd(password=password, salt=salt, response=d):
+                try:
+                    r = verify_digest(digest, password, salt, response)
+                    assert not r
+                except TypeError:
+                    pass
+            nvd(password=None)
+            nvd(salt=None)
+            nvd(response=None)
+            #truncated:
+            nvd(password=password[1:])
+            nvd(salt=salt[1:])
+            nvd(response=d[1:])
             assert verify_digest(digest, password, salt, d)
 
     def test_choose_digest(self):

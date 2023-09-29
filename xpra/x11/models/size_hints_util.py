@@ -34,10 +34,13 @@ def sanitize_size_hints(size_hints : dict[str,Any]) -> None:
     for attr in ("minimum-aspect-ratio", "maximum-aspect-ratio"):
         v = size_hints.get(attr)
         if v is not None:
-            try:
-                f = float(v[0])/float(v[1])
-            except (ValueError, ZeroDivisionError):
+            if v[1]==0:
                 f = None
+            else:
+                try:
+                    f = float(v[0])/float(v[1])
+                except (ValueError, ZeroDivisionError):
+                    f = None
             if f is None or f<=0 or f>=MAX_ASPECT:
                 log.warn("Warning: clearing invalid aspect hint value for %s: %s", attr, v)
                 del size_hints[attr]
@@ -54,43 +57,48 @@ def sanitize_size_hints(size_hints : dict[str,Any]) -> None:
                 log("clearing invalid size hint value for %s: %s", attr, v)
                 del size_hints[attr]
     #if max-size is smaller than min-size (bogus), clamp it..
+    clamped = False
     mins = size_hints.get("minimum-size")
-    maxs = size_hints.get("maximum-size")
-    if mins is not None and maxs is not None:
-        clamped = False
-        minw,minh = mins
-        maxw,maxh = maxs
-        if minw<0 and minh<0:
+    if mins:
+        minw, minh = mins
+        if minw<=0 and minh<=0:
             #doesn't do anything
-            size_hints["minimum-size"] = None
+            size_hints.pop("minimum-size")
+            mins = None
             clamped = True
-        if maxw<=0 or maxh<=0:
+    maxs = size_hints.get("maximum-size")
+    if maxs:
+        maxw,maxh = maxs
+        if maxw<=0 and maxh<=0:
             #doesn't make sense!
             size_hints["maximum-size"] = None
+            maxs = None
             clamped = True
-        if not clamped:
-            if minw>0 and minw>maxw:
-                #min higher than max!
-                if minw<=256:
-                    maxw = minw
-                elif maxw>=256:
-                    minw = maxw
-                else:
-                    minw = maxw = 256
-                clamped = True
-            if minh>0 and minh>maxh:
-                #min higher than max!
-                if minh<=256:
-                    maxh = minh
-                elif maxh>=256:
-                    minh = maxh
-                else:
-                    minh = maxh = 256
-                clamped = True
-            if clamped:
-                size_hints["minimum-size"] = minw, minh
-                size_hints["maximum-size"] = maxw, maxh
+    if mins and maxs:
+        minw, minh = mins
+        maxw, maxh = maxs
+        if minw>0 and minw>maxw:
+            #min higher than max!
+            if minw<=256:
+                maxw = minw
+            elif maxw>=256:
+                minw = maxw
+            else:
+                minw = maxw = 256
+            clamped = True
+        if minh>0 and minh>maxh:
+            #min higher than max!
+            if minh<=256:
+                maxh = minh
+            elif maxh>=256:
+                minh = maxh
+            else:
+                minh = maxh = 256
+            clamped = True
         if clamped:
-            log.warn("Warning: invalid size hints")
-            log.warn(" min_size=%s / max_size=%s", mins, maxs)
-            log.warn(" changed to: %s / %s", size_hints.get("minimum-size"), size_hints.get("maximum-size"))
+            size_hints["minimum-size"] = minw, minh
+            size_hints["maximum-size"] = maxw, maxh
+    if clamped:
+        log.warn("Warning: invalid size hints")
+        log.warn(" min_size=%s / max_size=%s", mins, maxs)
+        log.warn(" changed to: %s / %s", size_hints.get("minimum-size"), size_hints.get("maximum-size"))

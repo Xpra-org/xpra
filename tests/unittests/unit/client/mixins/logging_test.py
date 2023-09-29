@@ -29,7 +29,7 @@ class MixinsTest(ClientMixinTest):
 				})
 		assert len(self.packets)==0
 		logger = Logger("util")
-		message = b"hello"
+		message = "hello"
 		logger.info(message)
 		assert len(self.packets)==1
 		packet = self.packets[0]

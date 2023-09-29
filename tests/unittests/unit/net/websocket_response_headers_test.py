@@ -35,7 +35,7 @@ class WebsocketHeaderTest(unittest.TestCase):
            "sec-websocket-protocol" : "binary",
            "sec-websocket-accept" : "key",
            })
-        key = b"somekey"
+        key = "somekey"
         verify_response_headers({
             "upgrade" : "websocket",
             "sec-websocket-protocol" : "binary",

@@ -322,7 +322,7 @@ class ShadowServer(GTKShadowServerBase):
     def make_tray_widget(self):
         from xpra.platform.win32.tray import Win32Tray
         return Win32Tray(self, XPRA_APP_ID, self.tray_menu, "Xpra Shadow Server", "server-notconnected",
-                         None, self.tray_click_callback, None, self.tray_exit_callback)
+                         click_cb=self.tray_click_callback, exit_cb=self.tray_exit_callback)
 
 
     def setup_capture(self):

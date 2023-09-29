@@ -33,7 +33,8 @@ class TestPacketEncoding(unittest.TestCase):
                     print("error calling decode(%s, %s) for encoder %s" % (v, flag, x))
                     raise
         #one-shot function:
-        assert packet_encoding.pack_one_packet(["hello", {}])
+        packet = ("hello", {})
+        assert packet_encoding.pack_one_packet(packet)
 
 def main():
     unittest.main()

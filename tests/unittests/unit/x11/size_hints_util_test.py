@@ -15,7 +15,6 @@ class TestX11Keyboard(unittest.TestCase):
     def test_sanitize(self):
         from xpra.x11.models import size_hints_util
         MAX_ASPECT = size_hints_util.MAX_ASPECT
-        sanitize_size_hints = size_hints_util.sanitize_size_hints
         with silence_warn(size_hints_util):
             INTPAIRS = (0, "foo", (1,))
             for attr, values in {
@@ -29,15 +28,14 @@ class TestX11Keyboard(unittest.TestCase):
                 "increment"     : INTPAIRS,
                 }.items():
                 for value in values:
-                    hints = {}
-                    hints[attr] = value
-                    sanitize_size_hints(hints)
+                    hints = { attr : value }
+                    size_hints_util.sanitize_size_hints(hints)
                     assert attr not in hints, "%s=%s should have been removed" % (attr, value)
             hints = {
                 "minimum-size"  : (-1, -1),
                 "maximum-size"  : (-1, -1),
                 }
-            sanitize_size_hints(hints)
+            size_hints_util.sanitize_size_hints(hints)
             assert hints.get("minimum-size") is None
             assert hints.get("maximum-size") is None
             for mins, maxs in ((100, 50), (512, 128), (512, 256),):
@@ -45,7 +43,7 @@ class TestX11Keyboard(unittest.TestCase):
                     "minimum-size"  : (mins, mins),
                     "maximum-size"  : (maxs, maxs),
                     }
-                sanitize_size_hints(hints)
+                size_hints_util.sanitize_size_hints(hints)
                 assert hints.get("minimum-size")==hints.get("maximum-size")
 
 def main():

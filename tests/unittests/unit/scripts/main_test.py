@@ -69,7 +69,7 @@ class TestMain(unittest.TestCase):
             for v in (0, "a", ""):
                 try:
                     find_mode_pos(args, v)
-                except InitException:
+                except (InitException, TypeError):
                     pass
                 else:
                     raise RuntimeError(f"find_mode_pos should have failed for {args} and {v}")

@@ -229,7 +229,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     def notify_startup_complete(self) -> None:
         self.do_notify_startup("Xpra shadow server is ready", replaces_nid=NotificationID.STARTUP)
 
-    def do_notify_startup(self, title:str, body:str="", replaces_nid:int=0) -> None:
+    def do_notify_startup(self, title:str, body:str="", replaces_nid:int|NotificationID=0) -> None:
         # this is overridden here so that we can show the notification
         # directly on the screen we shadow
         notifylog("do_notify_startup%s", (title, body, replaces_nid))
@@ -444,7 +444,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         for wid in sorted(self._id_to_window.keys()):
             window = self._id_to_window[wid]
             w, h = window.get_dimensions()
-            ss.new_window("new-window", wid, window, 0, 0, w, h, self.client_properties.get(wid, {}).get(ss.uuid))
+            client_props = self.client_properties.get(wid, {}).get(ss.uuid, {})
+            ss.new_window("new-window", wid, window, 0, 0, w, h, client_props)
 
 
     def _add_new_window(self, window) -> None:
