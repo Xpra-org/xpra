@@ -237,41 +237,6 @@ class CairoBackingBase(WindowBackingBase):
         fire_paint_callbacks(callbacks)
 
 
-    def nasty_rgb_via_png_paint(self, cairo_format, has_alpha : bool, img_data,
-                                x : int, y : int, width : int, height : int, rowstride : int, rgb_format):
-        log.warn("nasty_rgb_via_png_paint%s",
-                 (cairo_format, has_alpha, len(img_data), x, y, width, height, rowstride, rgb_format))
-        #PIL fallback
-        #pylint: disable=import-outside-toplevel
-        from PIL import Image  # @UnresolvedImport
-        if has_alpha:
-            oformat = "RGBA"
-        else:
-            oformat = "RGB"
-        #use frombytes rather than frombuffer to be compatible with python3 new-style buffers
-        #this is slower, but since this codepath is already dreadfully slow, we don't care
-        bdata = memoryview_to_bytes(img_data)
-        src_format = rgb_format.replace("X", "A")
-        try:
-            img = Image.frombytes(oformat, (width,height), bdata, "raw", src_format, rowstride, 1)
-        except ValueError as e:
-            log("PIL Image frombytes:", exc_info=True)
-            raise ValueError(f"failed to parse raw {rgb_format} data as {src_format} to {oformat}: {e}") from None
-        #This is insane, the code below should work, but it doesn't:
-        # img_data = bytearray(img.tostring('raw', oformat, 0, 1))
-        # pixbuf = new_from_data(img_data, COLORSPACE_RGB, True, 8, width, height, rowstride)
-        # success = self.cairo_paint_pixbuf(pixbuf, x, y)
-        #So we still rountrip via PNG:
-        from io import BytesIO
-        png = BytesIO()
-        img.save(png, format="PNG")
-        reader = BytesIO(png.getvalue())
-        png.close()
-        img = ImageSurface.create_from_png(reader)
-        self.cairo_paint_surface(img, x, y, width, height, {})
-        return True
-
-
     def cairo_draw(self, context) -> None:
         backing = self._backing
         log("cairo_draw: backing=%s, size=%s, render-size=%s, offsets=%s, pointer_overlay=%s",

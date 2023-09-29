@@ -85,9 +85,7 @@ class CairoBacking(CairoBackingBase):
             self.cairo_paint_pixbuf(pixbuf, x, y, options)
             return True
 
-        img_data = memoryview(img_data)
-        self.nasty_rgb_via_png_paint(cairo_format, has_alpha, img_data, x, y, width, height, rowstride, rgb_format)
-        return True
+        raise ValueError(f"failed to paint {cairo_format}")
 
     def update_fps_buffer(self, width, height, pixels) -> None:
         self.fps_image = ImageSurface(FORMAT_ARGB32, width, height)
