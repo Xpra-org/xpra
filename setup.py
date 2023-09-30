@@ -1574,7 +1574,7 @@ if WIN32:
         add_console_exe("xpra/scripts/version.py",          "information.ico",  "Version_info")
         add_console_exe("xpra/net/net_util.py",             "network.ico",      "Network_info")
         if gtk3_ENABLED:
-            add_console_exe("xpra/scripts/gtk_info.py",         "gtk.ico",          "GTK_info")
+            add_console_exe("xpra/gtk/info.py",         "gtk.ico",          "GTK_info")
             add_console_exe("xpra/gtk/keymap.py",        "keymap.ico",       "Keymap_info")
             add_console_exe("xpra/platform/keyboard.py",        "keymap.ico",       "Keyboard_info")
             add_gui_exe("xpra/gtk/examples/tray.py", "xpra.ico",         "SystemTray_Test")

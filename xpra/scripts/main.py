@@ -683,8 +683,8 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
         return keyboard.main()
     if mode=="gtk-info":
         check_gtk()
-        from xpra.gtk import gtk_info
-        return gtk_info.main()
+        from xpra.gtk import info
+        return info.main()
     if mode=="gui-info":
         check_gtk()
         from xpra.platform import gui as platform_gui
