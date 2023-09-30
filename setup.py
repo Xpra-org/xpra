@@ -2281,6 +2281,8 @@ if cythonize_more_ENABLED:
     if client_ENABLED:
         if opengl_ENABLED:
             ax("xpra.client.gl")
+            if gtk3_ENABLED:
+                ax("xpra.client.gl.gtk3")
         if gtk3_ENABLED:
             ax("xpra.client.gtk3")
         ax("xpra.client.gui")
