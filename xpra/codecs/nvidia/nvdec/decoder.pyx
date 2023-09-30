@@ -407,7 +407,7 @@ MIN_SIZES = {}
 
 def init_module():
     log("nvdec.init_module()")
-    from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
+    from xpra.codecs.nvidia.util import has_nvidia_hardware
     if has_nvidia_hardware() is False:
         raise ImportError("no nvidia GPU device found")
 
@@ -814,7 +814,7 @@ def decompress_with_device(encoding, img_data, width, height, options=None):
 
 
 def selftest(full=False):
-    from xpra.codecs.nvidia.nv_util import has_nvidia_hardware, get_nvidia_module_version
+    from xpra.codecs.nvidia.util import has_nvidia_hardware, get_nvidia_module_version
     if not has_nvidia_hardware():
         raise ImportError("no nvidia GPU device found")
     get_nvidia_module_version(True)

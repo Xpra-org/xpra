@@ -5,7 +5,7 @@
 
 from time import monotonic
 
-from xpra.codecs.nvidia.nv_util import numpy_import_lock
+from xpra.codecs.nvidia.util import numpy_import_lock
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 

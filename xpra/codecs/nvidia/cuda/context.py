@@ -13,7 +13,7 @@ from time import monotonic
 from threading import RLock
 from typing import Any
 
-from xpra.codecs.nvidia.nv_util import numpy_import_lock
+from xpra.codecs.nvidia.util import numpy_import_lock
 from xpra.codecs.constants import TransientCodecException
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv, print_nested_dict

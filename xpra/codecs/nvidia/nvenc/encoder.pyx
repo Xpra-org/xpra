@@ -27,7 +27,7 @@ from xpra.codecs.nvidia.cuda.context import (
 from xpra.codecs.nvidia.cuda.errors import get_error_name
 from xpra.codecs.constants import video_spec, TransientCodecException
 from xpra.codecs.image import ImageWrapper
-from xpra.codecs.nvidia.nv_util import (
+from xpra.codecs.nvidia.util import (
     get_nvidia_module_version, get_license_keys,
     validate_driver_yuv444lossless, get_cards,
     )
@@ -3024,7 +3024,7 @@ cdef class Encoder:
 
 _init_message = False
 def init_module():
-    from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
+    from xpra.codecs.nvidia.util import has_nvidia_hardware
     if has_nvidia_hardware() is False:
         raise ImportError("no nvidia GPU device found")
     log("nvenc.init_module()")
@@ -3221,7 +3221,7 @@ def cleanup_module():
 
 
 def selftest(full=False):
-    from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
+    from xpra.codecs.nvidia.util import has_nvidia_hardware
     if not has_nvidia_hardware():
         raise ImportError("no nvidia GPU device found")
     v = get_nvidia_module_version(True)

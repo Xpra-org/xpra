@@ -125,7 +125,7 @@ def get_info():
 
 def init_module():
     log("nvjpeg.encoder.init_module() version=%s", get_version())
-    from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
+    from xpra.codecs.nvidia.util import has_nvidia_hardware
     if has_nvidia_hardware() is False:
         raise ImportError("no nvidia GPU device found")
 
@@ -536,7 +536,7 @@ def encode(coding, image, options=None):
 
 
 def selftest(full=False):
-    from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
+    from xpra.codecs.nvidia.util import has_nvidia_hardware
     if not has_nvidia_hardware():
         raise ImportError("no nvidia GPU device found")
     from xpra.codecs.checks import make_test_image

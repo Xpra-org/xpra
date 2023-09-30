@@ -1578,7 +1578,7 @@ if WIN32:
             add_console_exe("xpra/gtk/keymap.py",        "keymap.ico",       "Keymap_info")
             add_console_exe("xpra/platform/keyboard.py",        "keymap.ico",       "Keyboard_info")
             add_gui_exe("xpra/gtk/examples/tray.py", "xpra.ico",         "SystemTray_Test")
-            add_gui_exe("xpra/client/bindings/u2f_tool.py",     "authentication.ico", "U2F_Tool")
+            add_gui_exe("xpra/gtk/dialogs/u2f_tool.py",     "authentication.ico", "U2F_Tool")
         if client_ENABLED or server_ENABLED:
             add_console_exe("xpra/platform/win32/scripts/exec.py",     "python.ico", "Python_exec_cmd")
             add_console_exe("xpra/platform/win32/scripts/execfile.py", "python.ico", "Python_execfile_cmd")
@@ -1617,7 +1617,7 @@ if WIN32:
             add_console_exe("xpra/platform/win32/pdfium.py",    "printer.ico",     "PDFIUM_Print")
             do_add_DLLs("", "pdfium")
         if nvenc_ENABLED or nvdec_ENABLED:
-            add_console_exe("xpra/codecs/nvidia/nv_util.py",                   "nvidia.ico",   "NVidia_info")
+            add_console_exe("xpra/codecs/nvidia/util.py",                   "nvidia.ico",   "NVidia_info")
         if nvfbc_ENABLED:
             add_console_exe("xpra/codecs/nvidia/nvfbc/capture.py",             "nvidia.ico",   "NvFBC_capture")
         if nvfbc_ENABLED or nvenc_ENABLED or nvdec_ENABLED or nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED:

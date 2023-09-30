@@ -44,7 +44,7 @@ def get_default_mappings() -> dict[str,tuple[str,...]]:
         #enable nv decoder unless we don't find nvidia hardware:
         h264 = ["nvh264dec"]
         try:
-            from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
+            from xpra.codecs.nvidia.util import has_nvidia_hardware
             if not has_nvidia_hardware():
                 h264 = []
         except ImportError:

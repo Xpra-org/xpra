@@ -11,7 +11,7 @@ import unittest
 class TestNVUtil(unittest.TestCase):
 
     def test_nvutil(self):
-        from xpra.codecs.nvidia.nv_util import get_nvml_driver_version, get_proc_driver_version
+        from xpra.codecs.nvidia.util import get_nvml_driver_version, get_proc_driver_version
         v1 = get_nvml_driver_version()
         v2 = get_proc_driver_version()
         if v1 and v2:
@@ -19,10 +19,10 @@ class TestNVUtil(unittest.TestCase):
 
 def main():
     try:
-        from xpra.codecs.nvidia import nv_util
-        assert nv_util
+        from xpra.codecs.nvidia import util
+        assert util
     except ImportError:
-        print("nv_util codec not installed - test skipped")
+        print("nvidia.util codec not installed - test skipped")
     else:
         unittest.main()
 

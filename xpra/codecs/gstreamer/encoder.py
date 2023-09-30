@@ -124,7 +124,7 @@ def init_all_specs(*exclude) -> None:
     vaapi = VAAPI
     if VAAPI and not NVIDIA_VAAPI:
         try:
-            from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
+            from xpra.codecs.nvidia.util import has_nvidia_hardware
             vaapi = not has_nvidia_hardware()
         except ImportError:
             pass

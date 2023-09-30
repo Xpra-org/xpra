@@ -16,7 +16,7 @@ from xpra.util.env import envbool
 from xpra.common import roundup
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.nvidia.cuda.image import CUDAImageWrapper
-from xpra.codecs.nvidia.nv_util import get_nvidia_module_version, get_cards, get_license_keys, parse_nvfbc_hex_key
+from xpra.codecs.nvidia.util import get_nvidia_module_version, get_cards, get_license_keys, parse_nvfbc_hex_key
 
 from xpra.log import Logger
 log = Logger("encoder", "nvfbc")
@@ -771,6 +771,6 @@ def cleanup_module():
     unload_library()
 
 def selftest(full=False):
-    from xpra.codecs.nvidia.nv_util import has_nvidia_hardware
+    from xpra.codecs.nvidia.util import has_nvidia_hardware
     if not has_nvidia_hardware():
         raise ImportError("no nvidia GPU device found")
