@@ -2100,7 +2100,6 @@ if client_ENABLED:
 toggle_packages(gtk3_ENABLED, "xpra.gtk", "xpra.gtk.examples", "xpra.gtk.dialogs")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "xpra.client.gui")
 toggle_packages((client_ENABLED and gtk3_ENABLED) or (audio_ENABLED and WIN32 and MINGW_PREFIX), "gi")
-toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.bindings")
 if client_ENABLED and WIN32 and MINGW_PREFIX:
     ace("xpra.platform.win32.propsys,xpra/platform/win32/setappid.cpp",
         language="c++",
@@ -2123,6 +2122,7 @@ if server_ENABLED or proxy_ENABLED:
 
 toggle_packages(not WIN32, "xpra.platform.pycups_printing")
 toggle_packages(client_ENABLED and opengl_ENABLED, "xpra.client.gl")
+toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3")
 
 toggle_modules(audio_ENABLED, "xpra.audio")
 toggle_modules(audio_ENABLED and not (OSX or WIN32), "xpra.audio.pulseaudio")
