@@ -1,25 +1,36 @@
 # Changelog
 
-## [5.0.3] 2023-09-22
+## [5.0.3] 2023-10-01
 * Major:
+    * [client signal watcher not starting](https://github.com/Xpra-org/xpra/commit/0b1841d6eecbd3af6e11ec5aa79749ec3f3f9910)
+    * [pipe and process leak with signal watcher](https://github.com/Xpra-org/xpra/commit/2de2a52e03f40b071fbe84f700d65fd504e0945d)
     * [jpeg decoder invalid image attributes](https://github.com/Xpra-org/xpra/commit/b9cfef343242551d6c338f8a0647a55de3862f89)
     * [video encodings setup error](https://github.com/Xpra-org/xpra/commit/9b365b6fe8aac954de4b85f43ffb43feb920e428)
     * [prefer native system tray on MS Windows and MacOS](https://github.com/Xpra-org/xpra/commit/e5500b0e0bb3688ad9223db2ecad3e7aff04037d)
     * [avoid None value errors with non-native MS Windows system tray](https://github.com/Xpra-org/xpra/commit/16285978c2c4a5f39202d5121c21ac8531d589b7)
+    * [clipboard size limits](https://github.com/Xpra-org/xpra/commit/b9d8fc7de69e8675a9ac50fe534fd9f1a2d34d60)
     * [splash screen hangs](https://github.com/Xpra-org/xpra/commit/36298db710a42e6744cb9015eb16bad364f85a24)
+    * [remove x265 encoder](https://github.com/Xpra-org/xpra/commit/ec12676d68585a926109f1e8d4783f83f4d7768b)
+    * [start gui error in encoding dialog](https://github.com/Xpra-org/xpra/commit/e404fb6120afe29cbcd90776fa3031e72f083bca)
 * Compatibility fixes:
+    * [webcam geometry](https://github.com/Xpra-org/xpra/commit/d0dd98591b82f6602d47ac80e17f342e867da77b)
     * [handle microphone option with both state and device](https://github.com/Xpra-org/xpra/commit/cc5e00184423ccb0fab446f4a57bcbd9d99084d6)
     * [MacOS regression](https://github.com/Xpra-org/xpra/commit/597ec5cc7d95bdbfec76b564482452fec78082c1)
     * [all clients support menu updates](https://github.com/Xpra-org/xpra/commit/c1618738fd6fe4ec24c86c08e63e6e75743a1571)
     * [make it possible to build x265 encoder again](https://github.com/Xpra-org/xpra/commit/9b365b6fe8aac954de4b85f43ffb43feb920e428) - but please don't!
     * [relative pointers](https://github.com/Xpra-org/xpra/commit/4977c28e1ca15a5ef99c1e02f7db4d7471015579)
+    * [don't expose numpy datatypes](https://github.com/Xpra-org/xpra/commit/20e5b390438327c56a1db4320c4af556bd7d1169)
 * Minor:
     * [fps counter](https://github.com/Xpra-org/xpra/commit/72c31b74e7027ca2522ee4441dab786e312fcc82) [rounded to an int](https://github.com/Xpra-org/xpra/commit/0db7d41005081b5b85b153302a076fb8471e185e) and [dpi values](https://github.com/Xpra-org/xpra/commit/b9cfef343242551d6c338f8a0647a55de3862f89) should use integers
+    * [missing OpenGL toolbox on X11](https://github.com/Xpra-org/xpra/commit/0f1435648f968fdda3b0625b82e2e42834773035)
+    * invalid type for [max-display-no](https://github.com/Xpra-org/xpra/commit/09d455068a5c9aabe51012ba7dc119af7acf77ba), [watcher pid](https://github.com/Xpra-org/xpra/commit/3bb7d93e1adcd580f9c68047466f420d36dc90b4)
     * [catch invalid display names earlier](https://github.com/Xpra-org/xpra/commit/f9553d961824c87619566964d6358ca640f1bcbc)
     * [re-attach error on MS Windows](https://github.com/Xpra-org/xpra/commit/597ec5cc7d95bdbfec76b564482452fec78082c1)
+    * [ensure all required modules are included on MS Windows](https://github.com/Xpra-org/xpra/commit/971d0745b9192c1c124f8fbe8a2e859162ed0823)
     * [typo](https://github.com/Xpra-org/xpra/commit/650e63dc78b98bf71e46f9e647e7d7b9aadb9919)
     * [skip unnecessary processing if bind=none](https://github.com/Xpra-org/xpra/commit/9907947948bc091798e0bdd76c3ab03cf3f1c10c)
     * [avoid uinput warning](https://github.com/Xpra-org/xpra/commit/6307c3f785a1415b0d2948056766bea1dd4c40dc)
+    * [incorrect start command request parameters](https://github.com/Xpra-org/xpra/commit/7992dc4abd35195eb799e330bc77d7445b6b8067)
 
 ## [5.0.2] 2023-09-13
 * Major fixes:

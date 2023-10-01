@@ -1,26 +1,36 @@
 xpra (5.0.3-1) UNRELEASED; urgency=low
   * Major:
+    - client signal watcher not starting
+    - pipe and process leak with signal watcher
     - jpeg decoder invalid image attributes
     - video encodings setup error
     - prefer native system tray on MS Windows and MacOS
     - avoid None value errors with non-native MS Windows system tray
+    - clipboard size limits
     - splash screen hangs
+    - remove x265 encoder
+    - start gui error in encoding dialog
   * Compatibility fixes:
     - handle microphone option with both state and device
     - MacOS regression
     - all clients support menu updates
     - make it possible to build x265 encoder again
     - relative pointers
+    - don't expose numpy datatypes
   * Minor:
     - fps counter rounded to an int and dpi values
+    - missing OpenGL toolbox on X11
+    - invalid type for max-display-no, watcher pid
     - catch invalid display names earlier
     - re-attach error on MS Windows
+    - ensure all required modules are included on MS Windows
     - typo
     - skip unnecessary processing if bind=none
     - avoid uinput warning
+    - incorrect start command request parameters
 
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 25 Sep 2023 00:41:16 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 01 Oct 2023 19:37:22 +0700
 
 xpra (5.0.2-1) UNRELEASED; urgency=low
   * Major fixes:

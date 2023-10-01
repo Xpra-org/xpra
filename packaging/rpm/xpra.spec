@@ -768,26 +768,36 @@ fi
 
 
 %changelog
-* Mon Sep 25 2023 Antoine Martin <antoine@xpra.org> 5.0.3-10
+* Sun Oct 01 2023 Antoine Martin <antoine@xpra.org> 5.0.3-10
 - Major:
+   client signal watcher not starting
+   pipe and process leak with signal watcher
    jpeg decoder invalid image attributes
    video encodings setup error
    prefer native system tray on MS Windows and MacOS
    avoid None value errors with non-native MS Windows system tray
+   clipboard size limits
    splash screen hangs
+   remove x265 encoder
+   start gui error in encoding dialog
 - Compatibility fixes:
    handle microphone option with both state and device
    MacOS regression
    all clients support menu updates
    make it possible to build x265 encoder again
    relative pointers
+   don't expose numpy datatypes
 - Minor:
    fps counter rounded to an int and dpi values
+   missing OpenGL toolbox on X11
+   invalid type for max-display-no, watcher pid
    catch invalid display names earlier
    re-attach error on MS Windows
+   ensure all required modules are included on MS Windows
    typo
    skip unnecessary processing if bind=none
    avoid uinput warning
+   incorrect start command request parameters
 
 * Wed Sep 13 2023 Antoine Martin <antoine@xpra.org> 5.0.2-10
 - Major fixes:
