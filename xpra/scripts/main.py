@@ -2280,7 +2280,7 @@ def guess_display(dotxpra, current_display, uid:int=getuid(), gid:int=getgid(), 
         args = args[:-1]
 
 
-def find_displays(max_display_no=None, uid:int=getuid(), gid:int=getgid()) -> Dict[str,Any]:
+def find_displays(max_display_no=0, uid:int=getuid(), gid:int=getgid()) -> Dict[str,Any]:
     if OSX or WIN32:
         return {"Main" : {}}
     displays = {}
