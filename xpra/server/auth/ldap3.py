@@ -30,7 +30,7 @@ class Authenticator(SysAuthenticatorBase):
         self.tls_validate = None
         if self.tls:
             import ssl
-            tls_version = kwargs.pop("ssl-version", "TLSv1")
+            tls_version = kwargs.pop("ssl-version", "TLS")
             tls_validate = kwargs.pop("ssl-validate", "REQUIRED")
             self.tls_version = getattr(ssl, "PROTOCOL_%s" % tls_version)
             self.tls_validate = getattr(ssl, "CERT_%s" % tls_validate)

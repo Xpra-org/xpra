@@ -924,7 +924,7 @@ def get_defaults():
     xvfb = detect_xvfb_command(conf_dir, bin_dir, warn_fn=noop)
     xdummy = detect_xdummy_command(conf_dir, bin_dir, warn_fn=noop)
 
-    ssl_protocol = "TLSv1_2"
+    ssl_protocol = "TLS"
 
     GLOBAL_DEFAULTS = {
                     "encoding"          : "auto",

@@ -930,7 +930,7 @@ def get_ssl_verify_mode(verify_mode_str:str):
     return ssl_cert_reqs
 
 def get_ssl_wrap_socket_context(cert=None, key=None, key_password=None, ca_certs=None, ca_data=None,
-                        protocol:str="TLSv1_2",
+                        protocol:str="TLS",
                         client_verify_mode:str="optional", server_verify_mode:str="required", verify_flags:str="X509_STRICT",
                         check_hostname:bool=False, server_hostname=None,
                         options:str="ALL,NO_COMPRESSION", ciphers:str="DEFAULT",
