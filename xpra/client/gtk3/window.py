@@ -5,6 +5,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
+gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GObject, Gdk, Gtk, Gio, GdkPixbuf  # @UnresolvedImport
 
 from xpra.client.gtk3.window_base import GTKClientWindowBase, HAS_X11_BINDINGS
