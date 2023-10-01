@@ -67,9 +67,9 @@ ALL_CSC_MODULE_OPTIONS : tuple[str,...] = ("cython", "libyuv")
 ALL_VIDEO_DECODER_OPTIONS : tuple[str,...] = ("openh264", "vpx", "gstreamer", "nvdec")
 
 PREFERRED_ENCODER_ORDER : tuple[str,...] = tuple(autoprefix("enc", x) for x in ("nvenc", "nvjpeg", "x264", "vpx", "jpeg", "webp", "gstreamer"))
-log("video_helper: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
-log("video_helper: ALL_CSC_MODULE_OPTIONS=%s", ALL_CSC_MODULE_OPTIONS)
-log("video_helper: ALL_VIDEO_DECODER_OPTIONS=%s", ALL_VIDEO_DECODER_OPTIONS)
+log("video: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
+log("video: ALL_CSC_MODULE_OPTIONS=%s", ALL_CSC_MODULE_OPTIONS)
+log("video: ALL_VIDEO_DECODER_OPTIONS=%s", ALL_VIDEO_DECODER_OPTIONS)
 #for client side, using the gfx card for csc is a bit silly:
 #use it for OpenGL or don't use it at all
 #on top of that, there are compatibility problems with gtk at times: OpenCL AMD and TLS don't mix well
