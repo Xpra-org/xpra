@@ -42,7 +42,7 @@ FORCE_FLUSH = envbool("XPRA_FORCE_FLUSH", False)
 
 class ClientWindowBase(ClientWidgetBase):
 
-    def __init__(self, client, group_leader, watcher_pid, wid:int,
+    def __init__(self, client, group_leader, watcher_pid:int, wid:int,
                  wx:int, wy:int, ww:int, wh:int, bw:int, bh:int,
                  metadata, override_redirect:bool, client_properties,
                  border, max_window_size, default_cursor_data, pixel_depth:int,

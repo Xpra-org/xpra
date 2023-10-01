@@ -12,7 +12,7 @@ from typing import Any
 from xpra.common import noop
 from xpra.util.types import AtomicInteger, typedict
 from xpra.util.env import envint
-from xpra.os_util import WIN32, load_binary_file
+from xpra.os_util import WIN32, load_binary_file, is_X11
 from xpra.log import Logger
 from xpra.platform.paths import get_icon_filename
 from xpra.client.gui.fake_client import FakeClient
@@ -96,7 +96,7 @@ def test_gl_client_window(gl_client_window_class : type, max_window_size=(1024, 
                 """ pretend to add the header bar """
             def schedule_recheck_focus(self):
                 """ pretend to handle focus checks """
-        window = NoHeaderGLClientWindow(noclient, None, None, 2**32-1, x, y, ww, wh, ww, wh,
+        window = NoHeaderGLClientWindow(noclient, None, 0, 2**32-1, x, y, ww, wh, ww, wh,
                                         metadata, False, typedict({}),
                                         border, max_window_size, default_cursor_data, pixel_depth)
         window_backing = window._backing
@@ -137,6 +137,8 @@ def test_gl_client_window(gl_client_window_class : type, max_window_size=(1024, 
         if show:
             widget.show()
             window.show()
+            import gi
+            gi.require_version("Gtk", "3.0")  # @UndefinedVariable
             from gi.repository import Gtk, GLib  # @UnresolvedImport
             def window_close_event(*_args):
                 Gtk.main_quit()
@@ -164,6 +166,9 @@ def test_gl_client_window(gl_client_window_class : type, max_window_size=(1024, 
 
 def main(argv):
     try:
+        if is_X11():
+            from xpra.x11.gtk3.display_source import init_gdk_display_source
+            init_gdk_display_source()
         if "-v" in argv or "--verbose" in argv:
             log.enable_debug()
         opengl_props, gl_client_window_module = get_gl_client_window_module(True)
