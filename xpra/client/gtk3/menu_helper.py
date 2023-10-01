@@ -453,16 +453,16 @@ class MenuHelper:
 
 
     def make_qrmenuitem(self) -> Gtk.ImageMenuItem:
-        from xpra.net.qrcode.gtk_qr import show_qr
-        def show(*_args):
-            uri = self.client.display_desc.get("display_name")
-            show_qr(uri)
-        qr_menuitem = self.menuitem("Show QR connection string", "qr.png", None, show)
         try:
             from xpra.net.qrcode.qrencode import encode_image
         except ImportError as e:
             log(f"no qrcode support {e}")
             return None
+        from xpra.net.qrcode.gtk_qr import show_qr
+        def show(*_args):
+            uri = self.client.display_desc.get("display_name")
+            show_qr(uri)
+        qr_menuitem = self.menuitem("Show QR connection string", "qr.png", None, show)
         log("make_qrmenuitem() qrencode.encode_image=%s", encode_image)
         if encode_image:
             def with_connection(*_args):
