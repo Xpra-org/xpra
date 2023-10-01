@@ -2362,7 +2362,7 @@ def run_example(args) -> ExitValue:
 def run_autostart(script_file, args) -> ExitValue:
     def err(msg):
         print(msg)
-        print(f"Usage: {script_file!r} enable|disable|status")
+        print(f"Usage: {script_file!r} autostart enable|disable|status")
         return 1
     if len(args)!=1:
         return err("invalid number of arguments")
