@@ -11,7 +11,7 @@ from typing import Type, Tuple, Dict, Any
 
 from xpra.common import noop
 from xpra.util import typedict, envint, AtomicInteger
-from xpra.os_util import WIN32, load_binary_file
+from xpra.os_util import WIN32, load_binary_file, is_X11
 from xpra.log import Logger
 from xpra.platform.paths import get_icon_filename
 from xpra.client.gui.fake_client import FakeClient
@@ -136,6 +136,8 @@ def test_gl_client_window(gl_client_window_class : Type, max_window_size=(1024, 
         if show:
             widget.show()
             window.show()
+            import gi
+            gi.require_version("Gtk", "3.0")
             from gi.repository import Gtk, GLib  # @UnresolvedImport
             def window_close_event(*_args):
                 Gtk.main_quit()
@@ -165,6 +167,9 @@ def main(argv):
     try:
         if "-v" in argv or "--verbose" in argv:
             log.enable_debug()
+        if is_X11():
+            from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
+            init_gdk_display_source()
         opengl_props, gl_client_window_module = get_gl_client_window_module(True)
         log("do_run_glcheck() opengl_props=%s, gl_client_window_module=%s", opengl_props, gl_client_window_module)
         gl_client_window_class = gl_client_window_module.GLClientWindow
