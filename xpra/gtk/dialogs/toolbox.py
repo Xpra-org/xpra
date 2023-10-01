@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2020-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,9 +13,9 @@ gi.require_version("Gtk", "3.0")  # @UndefinedVariable
 gi.require_version("Gdk", "3.0")  # @UndefinedVariable
 from gi.repository import Gtk, Gio  # @UnresolvedImport
 
+from xpra.util.child_reaper import getChildReaper
 from xpra.gtk.signals import register_os_signals
-from xpra.gtk.gtk_util import (
-    add_close_accel, )
+from xpra.gtk.gtk_util import add_close_accel
 from xpra.gtk.widget import imagebutton, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.platform.paths import get_python_execfile_command
@@ -80,9 +80,8 @@ class ToolboxGUI(Gtk.Window):
         self.vbox = Gtk.VBox(homogeneous=False, spacing=10)
         self.add(self.vbox)
 
-        epath = "examples/"
-        cpath = "../"
-        gpath = "../../gtk/"
+        epath = "../examples/"
+        cpath = "../../client/"
 
         def addhbox(blabel, buttons):
             self.vbox.add(self.label(blabel))
@@ -127,8 +126,8 @@ class ToolboxGUI(Gtk.Window):
             ("Move-Resize", "Initiate move resize from application", epath+"initiate_moveresize.py", wox11),
             ))
         addhbox("Keyboard and Clipboard:", (
-            ("Keyboard", "Keyboard event viewer", gpath+"view_keyboard.py"),
-            ("Clipboard", "Clipboard event viewer", gpath+"view_clipboard.py"),
+            ("Keyboard", "Keyboard event viewer", "view_keyboard.py"),
+            ("Clipboard", "Clipboard event viewer", "view_clipboard.py"),
             ))
         addhbox("Misc:", (
                 ("Tray", "Show a system tray icon", epath+"tray.py"),
@@ -144,22 +143,24 @@ class ToolboxGUI(Gtk.Window):
 
     @staticmethod
     def button(label_str, tooltip, relpath, enabled=True):
+        cp = os.path.dirname(__file__)
+        script = os.path.join(cp, relpath)
+        if WIN32 and os.path.sep == "/":
+            script = script.replace("/", "\\")
+        script = os.path.abspath(script)
+        if not os.path.exists(script):
+            if os.path.exists(script + "c"):
+                script += "c"
+            else:
+                enabled = False
+                log.warn("Warning: cannot find '%s'", script)
         def cb(_btn):
-            cp = os.path.dirname(__file__)
-            script = os.path.join(cp, relpath)
-            if WIN32 and os.path.sep=="/":
-                script = script.replace("/", "\\")
-            if not os.path.exists(script):
-                if os.path.exists(script+"c"):
-                    script += "c"
-                else:
-                    log.warn("Warning: cannot find '%s'", os.path.basename(relpath))
-                    return
             cmd = get_python_execfile_command()+[script]
-            exec_command(cmd)
+            proc = exec_command(cmd)
+            getChildReaper().add_process(proc, label_str, cmd, ignore=True, forget=True)
         ib = imagebutton(label_str, None,
-                           tooltip, clicked_callback=cb,
-                           icon_size=48)
+                         tooltip, clicked_callback=cb,
+                         icon_size=48)
         ib.set_sensitive(enabled)
         return ib
 
