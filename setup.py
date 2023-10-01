@@ -1402,7 +1402,7 @@ if WIN32:
             add_DLLs('atk',
                      #'dbus', 'dbus-glib',
                      'gdk', 'gdk_pixbuf', 'gtk',
-                     'cairo-gobject', 'pango', 'pangocairo', 'pangoft2', 'pangowin32',
+                     'cairo-gobject', 'cairo', 'pango', 'pangocairo', 'pangoft2', 'pangowin32',
                      'harfbuzz', 'harfbuzz-gobject',
                      'jasper', 'epoxy',
                      'intl',
@@ -1662,6 +1662,9 @@ if WIN32:
         external_includes.append("cv2")
     else:
         remove_packages("cv2")
+
+    external_includes.append("cairo")
+    external_includes.append("certifi")
 
     #add subset of PyOpenGL modules (only when installing):
     if opengl_ENABLED and "install_exe" in sys.argv:
@@ -2320,6 +2323,7 @@ if cythonize_more_ENABLED:
     if notifications_ENABLED:
         ax("xpra.notifications")
     ace("xpra.platform.paths")
+    ace("xpra.platform.ui_thread_watcher")
     if LINUX:
         ace("xpra.platform.posix.shadow_server")
     if scripts_ENABLED:
