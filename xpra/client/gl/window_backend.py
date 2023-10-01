@@ -95,7 +95,7 @@ def test_gl_client_window(gl_client_window_class : Type, max_window_size=(1024, 
                 """ pretend to add the header bar """
             def schedule_recheck_focus(self):
                 """ pretend to handle focus checks """
-        window = NoHeaderGLClientWindow(noclient, None, None, 2**32-1, x, y, ww, wh, ww, wh,
+        window = NoHeaderGLClientWindow(noclient, None, 0, 2**32-1, x, y, ww, wh, ww, wh,
                                         metadata, False, typedict({}),
                                         border, max_window_size, default_cursor_data, pixel_depth)
         window_backing = window._backing
