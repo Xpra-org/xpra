@@ -7,20 +7,20 @@
 
 Name:           python3-pyopengl
 Version:        3.1.7
-Release:        1xpra2%{?dist}
+Release:        1%{?dist}
 Summary:        Python 3 bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
-Source0:        https://files.pythonhosted.org/packages/72/b6/970868d44b619292f1f54501923c69c9bd0ab1d2d44cf02590eac2706f4f/PyOpenGL-%{version}.tar.gz
-Source1:        https://files.pythonhosted.org/packages/93/09/d08b3d07dbd88258276496a47273778f330f5ccf8390cb21b16b29d660de/PyOpenGL-accelerate-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/72/b6/970868d44b619292f1f54501923c69c9bd0ab1d2d44cf02590eac2706f4f/%{srcname}-%{version}.tar.gz
+Source1:        https://files.pythonhosted.org/packages/93/09/d08b3d07dbd88258276496a47273778f330f5ccf8390cb21b16b29d660de/%{srcname}-accelerate-%{version}.tar.gz
 
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 BuildRequires:  python3-numpy
 Requires:       freeglut
 Requires:       python3-numpy
-Obsoletes:      python3-PyOpenGL < 3.1.2
-Obsoletes:      python3-PyOpenGL-accelerate < 3.1.2
+Obsoletes:      python3-PyOpenGL < 3.1.5
+Obsoletes:      python3-PyOpenGL-accelerate < 3.1.5
 Provides:       python3-PyOpenGL = %{version}-%{release}
 Provides:       python3-PyOpenGL-accelerate = %{version}-%{release}
 
@@ -83,6 +83,7 @@ find %{buildroot}%{python3_sitearch}/OpenGL_accelerate/ -name *.so -exec chmod 7
 pushd %{buildroot}%{python3_sitelib}/OpenGL/arrays
 sed -i -e '/^#! \//, 1d' buffers.py _buffers.py
 popd
+rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %files
@@ -99,8 +100,9 @@ popd
 
 
 %changelog
-* Thu Jun 08 2023 Antoine Martin <antoine@xpra.org> - 3.1.7-1xpra1
+* Mon Oct 02 2023 Antoine Martin <antoine@xpra.org> - 3.1.7-1
 - new upstream release
+- remove 'xpra' package suffix
 
 * Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 3.1.5-1xpra2
 - verify source checksum
