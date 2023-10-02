@@ -2,10 +2,22 @@
 %global __provides_exclude_from ^%{python3_sitearch}/.*\\.so$
 
 %define _disable_source_fetch 0
+%if "%{getenv:PYTHON3}" == ""
+%global python3 python3
+%else
+%global python3 %{getenv:PYTHON3}
+%undefine __pythondist_requires
+%undefine __python_requires
+%define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
+%define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
+%endif
+
+%global debug_package %{nil}
+
 #this spec file is for both Fedora and CentOS
 %global srcname PyOpenGL
 
-Name:           python3-pyopengl
+Name:           %{python3}-pyopengl
 Version:        3.1.7
 Release:        1%{?dist}
 Summary:        Python 3 bindings for OpenGL
@@ -14,15 +26,15 @@ URL:            http://pyopengl.sourceforge.net/
 Source0:        https://files.pythonhosted.org/packages/72/b6/970868d44b619292f1f54501923c69c9bd0ab1d2d44cf02590eac2706f4f/%{srcname}-%{version}.tar.gz
 Source1:        https://files.pythonhosted.org/packages/93/09/d08b3d07dbd88258276496a47273778f330f5ccf8390cb21b16b29d660de/%{srcname}-accelerate-%{version}.tar.gz
 
-BuildRequires:  python3-devel
-BuildRequires:  python3-setuptools
-BuildRequires:  python3-numpy
+BuildRequires:  %{python3}-devel
+BuildRequires:  %{python3}-setuptools
+BuildRequires:  %{python3}-numpy
 Requires:       freeglut
-Requires:       python3-numpy
-Obsoletes:      python3-PyOpenGL < 3.1.5
-Obsoletes:      python3-PyOpenGL-accelerate < 3.1.5
-Provides:       python3-PyOpenGL = %{version}-%{release}
-Provides:       python3-PyOpenGL-accelerate = %{version}-%{release}
+Requires:       %{python3}-numpy
+Obsoletes:      %{python3}-PyOpenGL < 3.1.5
+Obsoletes:      %{python3}-PyOpenGL-accelerate < 3.1.5
+Provides:       %{python3}-PyOpenGL = %{version}-%{release}
+Provides:       %{python3}-PyOpenGL-accelerate = %{version}-%{release}
 
 %description
 PyOpenGL is the cross platform Python binding to OpenGL and related APIs. It
@@ -34,16 +46,16 @@ PyOpenGL is inter-operable with a large number of external GUI libraries
 for Python including (Tkinter, wxPython, FxPy, PyGame, and Qt).
 
 
-%package -n     python3-pyopengl-tk
+%package -n     %{python3}-pyopengl-tk
 Summary:        %{srcname} Python 3.x Tk widget
 BuildArch:      noarch
-Requires:       python3-pyopengl = %{version}-%{release}
-Requires:       python3-tkinter
+Requires:       %{python3}-pyopengl = %{version}-%{release}
+Requires:       %{python3}-tkinter
 # These can be removed in Fedora 27
-Obsoletes:      python3-PyOpenGL-Tk < 3.1.2
-Provides:       python3-PyOpenGL-Tk = %{version}-%{release}
+Obsoletes:      %{python3}-PyOpenGL-Tk < 3.1.2
+Provides:       %{python3}-PyOpenGL-Tk = %{version}-%{release}
 
-%description -n python3-pyopengl-tk
+%description -n %{python3}-pyopengl-tk
 %{srcname} Togl (Tk OpenGL widget) 1.6 support for Python 3.x.
 
 %prep
@@ -63,7 +75,7 @@ fi
 %build
 for dir in %{srcname}-%{version} %{srcname}-accelerate-%{version} ; do
     pushd $dir
-	%{__python3} setup.py build
+	%{python3} setup.py build
     popd
 done
 
@@ -71,7 +83,7 @@ done
 %install
 for dir in %{srcname}-%{version} %{srcname}-accelerate-%{version} ; do
     pushd $dir
-	%{__python3} setup.py install -O1 --skip-build --root %{buildroot}
+	%{python3} setup.py install -O1 --skip-build --root %{buildroot}
     popd
 done
 
@@ -88,14 +100,14 @@ rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 %files
 %license %{srcname}-%{version}/license.txt
-%{python3_sitelib}/%{srcname}-%{version}-py%{python3_version}.egg-info
+%{python3_sitelib}/%{srcname}-%{version}-py*.egg-info
 %{python3_sitelib}/OpenGL/
 %exclude %{python3_sitelib}/OpenGL/Tk
 %{python3_sitearch}/OpenGL_accelerate/
-%{python3_sitearch}/%{srcname}_accelerate-%{version}-py%{python3_version}.egg-info/
+%{python3_sitearch}/%{srcname}_accelerate-%{version}-py*.egg-info/
 
 
-%files -n python3-pyopengl-tk
+%files -n %{python3}-pyopengl-tk
 %{python3_sitelib}/OpenGL/Tk
 
 
