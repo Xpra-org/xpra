@@ -8,6 +8,7 @@ import sys
 from io import BytesIO
 from math import cos, sin
 from typing import Any
+from collections.abc import Callable
 
 from xpra.common import noop
 from xpra.util.types import AtomicInteger, typedict
@@ -73,7 +74,7 @@ def get_test_gl_icon():
 def no_idle_add(fn, *args, **kwargs):
     fn(*args, **kwargs)
 
-def test_gl_client_window(gl_client_window_class : type, max_window_size=(1024, 1024), pixel_depth=24, show=False):
+def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(1024, 1024), pixel_depth=24, show=False):
     #try to render using a temporary window:
     draw_result = {}
     window = None
