@@ -586,7 +586,7 @@ class ClipboardProtocolHelperCore:
         log.error(f"Error: unhandled format {dformat} for clipboard data type {dtype}")
         return None, None
 
-    def _munge_wire_selection_to_raw(self, encoding:str, dtype:str, dformat:int, data) -> bytes:
+    def _munge_wire_selection_to_raw(self, encoding:str, dtype:str, dformat:int, data) -> bytes | str:
         log("wire selection to raw, encoding=%s, type=%s, format=%s, len(data)=%s",
             encoding, dtype, dformat, len(data or b""))
         if self.max_clipboard_receive_size > 0:

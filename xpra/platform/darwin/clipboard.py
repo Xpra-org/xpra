@@ -260,7 +260,7 @@ class OSXClipboardProtocolHelper(ClipboardTimeoutHelper):
     # just pass ATOM targets through
     # (we use them internally as strings)
     ############################################################################
-    def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data) -> bytes:
+    def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data) -> bytes | str:
         if encoding=="atoms":
             data = _filter_targets(data)
         return super()._munge_wire_selection_to_raw(encoding, dtype, dformat, data)

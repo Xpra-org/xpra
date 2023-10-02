@@ -724,7 +724,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
             return "atoms", self.remote_targets(xatoms_to_strings(data))
         return super()._munge_raw_selection_to_wire(target, dtype, dformat, data)
 
-    def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data) -> bytes:
+    def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data) -> bytes | str:
         if encoding=="atoms":
             return strings_to_xatoms(self.local_targets(data))
         return super()._munge_wire_selection_to_raw(encoding, dtype, dformat, data)
