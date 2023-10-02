@@ -768,7 +768,7 @@ fi
 
 
 %changelog
-* Sun Oct 01 2023 Antoine Martin <antoine@xpra.org> 5.0.3-10
+* Mon Oct 02 2023 Antoine Martin <antoine@xpra.org> 5.0.3-10
 - Major:
    client signal watcher not starting
    pipe and process leak with signal watcher
@@ -787,14 +787,16 @@ fi
    make it possible to build x265 encoder again
    relative pointers
    don't expose numpy datatypes
+   still show tray menu without qrcode module
 - Minor:
    fps counter rounded to an int and dpi values
+   debug logging of Cython modules
    missing OpenGL toolbox on X11
    invalid type for max-display-no, watcher pid
    catch invalid display names earlier
    re-attach error on MS Windows
    ensure all required modules are included on MS Windows
-   typo
+   typo, missing subcommand
    skip unnecessary processing if bind=none
    avoid uinput warning
    incorrect start command request parameters

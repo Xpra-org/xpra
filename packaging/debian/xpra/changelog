@@ -17,20 +17,21 @@ xpra (5.0.3-1) UNRELEASED; urgency=low
     - make it possible to build x265 encoder again
     - relative pointers
     - don't expose numpy datatypes
+    - still show tray menu without qrcode module
   * Minor:
     - fps counter rounded to an int and dpi values
+    - debug logging of Cython modules
     - missing OpenGL toolbox on X11
     - invalid type for max-display-no, watcher pid
     - catch invalid display names earlier
     - re-attach error on MS Windows
     - ensure all required modules are included on MS Windows
-    - typo
+    - typo, missing subcommand
     - skip unnecessary processing if bind=none
     - avoid uinput warning
     - incorrect start command request parameters
 
-
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 01 Oct 2023 19:37:22 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 02 Oct 2023 23:56:08 +0700
 
 xpra (5.0.2-1) UNRELEASED; urgency=low
   * Major fixes:
