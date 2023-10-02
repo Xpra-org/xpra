@@ -343,11 +343,18 @@ class Logger:
     __slots__ = ("categories", "level", "level_override", "_logger", "debug_enabled", "__weakref__")
     def __init__(self, *categories):
         self.categories = list(categories)
-        try:
-            caller = sys._getframe(1).f_globals["__name__"] #pylint: disable=protected-access
-        except (AttributeError, ValueError):
-            caller = None
-        if caller not in ("__main__", None, "importlib._bootstrap"):
+        n = 1
+        caller = None
+        while n<10:
+            try:
+                caller = sys._getframe(n).f_globals["__name__"]  # pylint: disable=protected-access
+                if caller=="__main__" or caller.startswith("importlib"):
+                    n += 1
+                else:
+                    break
+            except (AttributeError, ValueError):
+                break
+        if caller and caller != "__main__" and not caller.startswith("importlib"):
             self.categories.insert(0, caller)
         self.level = logging.INFO
         self.level_override = 0
