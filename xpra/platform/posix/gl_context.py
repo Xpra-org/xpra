@@ -190,7 +190,7 @@ class GLXContext:
         import gi
         gi.require_version("Gtk", "3.0")  # @UndefinedVariable
         from gi.repository import Gtk  # @UnresolvedImport
-        tmp = Gtk.Window(Gtk.WindowType.TOPLEVEL)
+        tmp = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         tmp.resize(1, 1)
         tmp.set_decorated(False)
         tmp.realize()
