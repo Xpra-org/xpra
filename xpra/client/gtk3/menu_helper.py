@@ -457,7 +457,7 @@ class MenuHelper:
         except ImportError as e:
             log(f"no qrcode support {e}")
             return None
-        from xpra.net.qrcode.gtk_qr import show_qr
+        from xpra.gtk.dialogs.qrcode import show_qr
         def show(*_args):
             uri = self.client.display_desc.get("display_name")
             show_qr(uri)

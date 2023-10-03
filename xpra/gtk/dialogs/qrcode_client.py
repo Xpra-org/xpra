@@ -19,7 +19,7 @@ from xpra.gtk.css_overrides import inject_css_overrides
 from xpra.client.base.client import XpraClientBase
 from xpra.client.base.gobject_client import InfoXpraClient
 from xpra.platform.gui import force_focus
-from xpra.net.qrcode.gtk_qr import qr_pixbuf
+from xpra.gtk.dialogs.qrcode import qr_pixbuf
 from xpra.log import Logger
 
 log = Logger("client", "util")

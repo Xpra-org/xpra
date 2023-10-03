@@ -104,7 +104,7 @@ def main(argv) -> int:
     log.info("provisioning_uri=%s", totp_uri)
     #qrcode module has problems - don't use it for now
     try:
-        from xpra.net.qrcode.gtk_qr import show_qr
+        from xpra.gtk.dialogs.qrcode import show_qr
     except ImportError as e:
         log.info(" unable to show qr code: %s", e)
     else:

@@ -2310,7 +2310,7 @@ if cythonize_more_ENABLED:
         ax("xpra.net.mdns")
     ax("xpra.net.protocol")
     if qrencode_ENABLED and gtk3_ENABLED:
-        ace("xpra.net.qrcode.gtk_qr")
+        ace("xpra.gtk.dialogs.qrcode")
     if quic_ENABLED:
         ax("xpra.net.quic")
     if rfb_ENABLED:
