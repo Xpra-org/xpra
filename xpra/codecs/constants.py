@@ -212,7 +212,7 @@ class video_spec(_codec_spec):
     has_lossless_mode   : bool = False
 
     def __repr__(self):
-        return f"{self.codec_type}({self.input_colorspace} to {self.encoding}"
+        return f"{self.codec_type}({self.input_colorspace} to {self.encoding})"
 
 
 @dataclass(kw_only=True)
