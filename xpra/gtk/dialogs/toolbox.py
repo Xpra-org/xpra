@@ -82,7 +82,6 @@ class ToolboxGUI(Gtk.Window):
         self.add(self.vbox)
 
         epath = "xpra.gtk.examples."
-        cpath = "xpra.client."
 
         def addhbox(blabel, buttons):
             self.vbox.add(self.label(blabel))
@@ -103,7 +102,7 @@ class ToolboxGUI(Gtk.Window):
         addhbox("Transparency and Rendering", (
             ("Circle", "Shows a semi-opaque circle in a transparent window", epath+"transparent_window"),
             ("RGB Squares", "RGB+Black shaded squares in a transparent window", epath+"transparent_colors"),
-            ("OpenGL", "OpenGL window - transparent on some platforms", cpath+"gl.window", wox11),
+            ("OpenGL", "OpenGL window - transparent on some platforms", epath+"opengl", wox11),
             ))
         addhbox("Widgets:", (
             ("Text Entry", "Simple text entry widget", epath+"text_entry"),

@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
 from io import BytesIO
 from math import cos, sin
 from typing import Any
@@ -13,7 +12,7 @@ from collections.abc import Callable
 from xpra.common import noop
 from xpra.util.types import AtomicInteger, typedict
 from xpra.util.env import envint
-from xpra.os_util import WIN32, load_binary_file, is_X11
+from xpra.os_util import WIN32, load_binary_file
 from xpra.log import Logger
 from xpra.platform.paths import get_icon_filename
 from xpra.client.gui.fake_client import FakeClient
@@ -162,33 +161,3 @@ def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(10
             window.destroy()
     log("test_gl_client_window(..) draw_result=%s", draw_result)
     return draw_result or {"success" : False, "message" : "not painted on screen"}
-
-
-
-def main(argv):
-    try:
-        if is_X11():
-            from xpra.x11.gtk3.display_source import init_gdk_display_source
-            init_gdk_display_source()
-        if "-v" in argv or "--verbose" in argv:
-            log.enable_debug()
-        opengl_props, gl_client_window_module = get_gl_client_window_module(True)
-        log("do_run_glcheck() opengl_props=%s, gl_client_window_module=%s", opengl_props, gl_client_window_module)
-        gl_client_window_class = gl_client_window_module.GLClientWindow
-        pixel_depth = 0
-        log("do_run_glcheck() gl_client_window_class=%s, pixel_depth=%s", gl_client_window_class, pixel_depth)
-        #if pixel_depth not in (0, 16, 24, 30) and pixel_depth<32:
-        #    pixel_depth = 0
-        draw_result = test_gl_client_window(gl_client_window_class, pixel_depth=pixel_depth, show=True)
-        success = draw_result.pop("success", False)
-        opengl_props.update(draw_result)
-        if not success:
-            opengl_props["safe"] = False
-        return 0
-    except Exception:
-        log("do_run_glcheck(..)", exc_info=True)
-        return 1
-
-if __name__ == "__main__":
-    r = main(sys.argv)
-    sys.exit(r)
