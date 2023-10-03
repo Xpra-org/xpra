@@ -132,10 +132,6 @@ rm -f %{buildroot}%{_bindir}/f2py.numpy
 rm -f %{buildroot}%{_bindir}/f2py%{python3_version}
 rm -fr %{buildroot}%{python3_sitearch}/%{name}/f2py
 
-#symlink for includes, BZ 185079
-mkdir -p %{buildroot}%{_includedir}
-ln -s %{python3_sitearch}/%{name}/core/include/numpy/ %{buildroot}%{_includedir}/numpy-%{python3_version}
-
 # distutils from setuptools don't have the patch that was created to avoid standard runpath here
 # we strip it manually instead
 # ERROR   0001: file '...' contains a standard runpath '/usr/lib64' in [/usr/lib64]
@@ -166,7 +162,6 @@ chrpath --delete %{buildroot}%{python3_sitearch}/numpy/core/_multiarray_umath.*.
 %{python3_sitearch}/%{name}/polynomial
 %{python3_sitearch}/%{name}-*.egg-info
 %exclude %{python3_sitearch}/%{name}/LICENSE.txt
-%{_includedir}/numpy*
 %{python3_sitearch}/%{name}/__init__.pxd
 %{python3_sitearch}/%{name}/__init__.cython-30.pxd
 %{python3_sitearch}/%{name}/py.typed
