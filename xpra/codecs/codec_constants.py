@@ -232,7 +232,7 @@ class video_spec(_codec_spec):
         self._exported_fields += ["encoding", "input_colorspace", "output_colorspaces", "has_lossless_mode"]
 
     def __repr__(self):
-        return f"{self.codec_type}({self.input_colorspace} to {self.encoding}"
+        return f"{self.codec_type}({self.input_colorspace} to {self.encoding})"
 
 
 class csc_spec(_codec_spec):
