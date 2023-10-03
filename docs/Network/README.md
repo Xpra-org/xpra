@@ -60,7 +60,7 @@ However, it may not always get it right and you may need to turn off bandwidth d
 
 You can see how much bandwidth is used and how good the picture latency is using the "Graphs" tab of the "Session Info" dialog found in Xpra's system tray menu:
 
-![Session Info : Graphs](../images/session-info-graphs.png)]]
+![Session Info : Graphs](../images/session-info-graphs.png)
 
 More network information is available elsewhere in the "Session Info" dialog or via the "xpra info" command:
 </details>
