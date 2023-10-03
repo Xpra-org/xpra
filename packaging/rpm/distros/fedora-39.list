@@ -22,8 +22,8 @@ python3-pillow
 python3-pynvml
 python3-pyu2f
 python3-uinput
-#python3-wheel
-#python3-dbus
+python3-wheel
+python3-dbus
 python3-xdg
 python3-pylsqpack
 python3-cairo
