@@ -34,7 +34,12 @@ def load_license():
 
 
 about_dialog = None
-def about(on_close=None):
+
+def close_about(*_args):
+    if about_dialog:
+        about_dialog.hide()
+
+def about(on_close=close_about):
     global about_dialog
     if about_dialog:
         about_dialog.show()
@@ -59,22 +64,10 @@ def about(on_close=None):
         dialog.set_logo(xpra_icon)
     if hasattr(dialog, "set_program_name"):
         dialog.set_program_name(APPLICATION_NAME)
-    def close(*_args):
-        close_about()
-        #the `about` function may be called as a widget callback
-        #so avoid calling the widget as if it was a function!
-        if on_close and callable(on_close):
-            on_close()
-    dialog.connect("response", close)
-    add_close_accel(dialog, close)
+    dialog.connect("response", on_close)
+    add_close_accel(dialog, on_close)
     about_dialog = dialog
     dialog.show()
-
-def close_about(*_args):
-    global about_dialog
-    if about_dialog:
-        about_dialog.destroy()
-        about_dialog = None
 
 
 def main():
