@@ -4,8 +4,10 @@ xpra (5.0.3-1) UNRELEASED; urgency=low
     - pipe and process leak with signal watcher
     - jpeg decoder invalid image attributes
     - video encodings setup error
+    - nvjpeg encoder downscaling
     - prefer native system tray on MS Windows and MacOS
     - avoid None value errors with non-native MS Windows system tray
+    - about dialog crashes on MS Windows
     - clipboard size limits
     - splash screen hangs
     - remove x265 encoder
@@ -14,10 +16,10 @@ xpra (5.0.3-1) UNRELEASED; urgency=low
     - handle microphone option with both state and device
     - MacOS regression
     - all clients support menu updates
-    - make it possible to build x265 encoder again
     - relative pointers
     - don't expose numpy datatypes
     - still show tray menu without qrcode module
+    - missing utility wrappers on MS Windows
   * Minor:
     - fps counter rounded to an int and dpi values
     - debug logging of Cython modules
@@ -26,12 +28,12 @@ xpra (5.0.3-1) UNRELEASED; urgency=low
     - catch invalid display names earlier
     - re-attach error on MS Windows
     - ensure all required modules are included on MS Windows
-    - typo, missing subcommand
+    - cosmetic: typo and bad formatting, missing subcommand, deprecation warning, debug logging
     - skip unnecessary processing if bind=none
     - avoid uinput warning
     - incorrect start command request parameters
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 02 Oct 2023 23:56:08 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 03 Oct 2023 23:56:06 +0700
 
 xpra (5.0.2-1) UNRELEASED; urgency=low
   * Major fixes:

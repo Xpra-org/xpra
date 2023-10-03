@@ -768,14 +768,16 @@ fi
 
 
 %changelog
-* Mon Oct 02 2023 Antoine Martin <antoine@xpra.org> 5.0.3-10
+* Tue Oct 03 2023 Antoine Martin <antoine@xpra.org> 5.0.3-10
 - Major:
    client signal watcher not starting
    pipe and process leak with signal watcher
    jpeg decoder invalid image attributes
    video encodings setup error
+   nvjpeg encoder downscaling
    prefer native system tray on MS Windows and MacOS
    avoid None value errors with non-native MS Windows system tray
+   about dialog crashes on MS Windows
    clipboard size limits
    splash screen hangs
    remove x265 encoder
@@ -784,10 +786,10 @@ fi
    handle microphone option with both state and device
    MacOS regression
    all clients support menu updates
-   make it possible to build x265 encoder again
    relative pointers
    don't expose numpy datatypes
    still show tray menu without qrcode module
+   missing utility wrappers on MS Windows
 - Minor:
    fps counter rounded to an int and dpi values
    debug logging of Cython modules
@@ -796,7 +798,7 @@ fi
    catch invalid display names earlier
    re-attach error on MS Windows
    ensure all required modules are included on MS Windows
-   typo, missing subcommand
+   cosmetic: typo and bad formatting, missing subcommand, deprecation warning, debug logging
    skip unnecessary processing if bind=none
    avoid uinput warning
    incorrect start command request parameters

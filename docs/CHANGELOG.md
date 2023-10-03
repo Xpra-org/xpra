@@ -1,13 +1,15 @@
 # Changelog
 
-## [5.0.3] 2023-10-02
+## [5.0.3] 2023-10-03
 * Major:
     * [client signal watcher not starting](https://github.com/Xpra-org/xpra/commit/0b1841d6eecbd3af6e11ec5aa79749ec3f3f9910)
     * [pipe and process leak with signal watcher](https://github.com/Xpra-org/xpra/commit/2de2a52e03f40b071fbe84f700d65fd504e0945d)
     * [jpeg decoder invalid image attributes](https://github.com/Xpra-org/xpra/commit/b9cfef343242551d6c338f8a0647a55de3862f89)
     * [video encodings setup error](https://github.com/Xpra-org/xpra/commit/9b365b6fe8aac954de4b85f43ffb43feb920e428)
+    * [nvjpeg encoder downscaling](https://github.com/Xpra-org/xpra/commit/a8fcdbc8f292ae8b9fef7f71964cc43a290fd8a3)
     * [prefer native system tray on MS Windows and MacOS](https://github.com/Xpra-org/xpra/commit/e5500b0e0bb3688ad9223db2ecad3e7aff04037d)
     * [avoid None value errors with non-native MS Windows system tray](https://github.com/Xpra-org/xpra/commit/16285978c2c4a5f39202d5121c21ac8531d589b7)
+    * [about dialog crashes on MS Windows](https://github.com/Xpra-org/xpra/commit/71011e197f689b69d1a305c71f52b3535357659d)
     * [clipboard size limits](https://github.com/Xpra-org/xpra/commit/b9d8fc7de69e8675a9ac50fe534fd9f1a2d34d60)
     * [splash screen hangs](https://github.com/Xpra-org/xpra/commit/36298db710a42e6744cb9015eb16bad364f85a24)
     * [remove x265 encoder](https://github.com/Xpra-org/xpra/commit/ec12676d68585a926109f1e8d4783f83f4d7768b)
@@ -17,10 +19,10 @@
     * [handle microphone option with both state and device](https://github.com/Xpra-org/xpra/commit/cc5e00184423ccb0fab446f4a57bcbd9d99084d6)
     * [MacOS regression](https://github.com/Xpra-org/xpra/commit/597ec5cc7d95bdbfec76b564482452fec78082c1)
     * [all clients support menu updates](https://github.com/Xpra-org/xpra/commit/c1618738fd6fe4ec24c86c08e63e6e75743a1571)
-    * [make it possible to build x265 encoder again](https://github.com/Xpra-org/xpra/commit/9b365b6fe8aac954de4b85f43ffb43feb920e428) - but please don't!
     * [relative pointers](https://github.com/Xpra-org/xpra/commit/4977c28e1ca15a5ef99c1e02f7db4d7471015579)
     * [don't expose numpy datatypes](https://github.com/Xpra-org/xpra/commit/20e5b390438327c56a1db4320c4af556bd7d1169)
     * [still show tray menu without qrcode module](https://github.com/Xpra-org/xpra/commit/276e2282f46f8924e4bc781199ecac4a5f077831)
+    * [missing utility wrappers on MS Windows](https://github.com/Xpra-org/xpra/commit/db63e1c8ab4cfe34b148cafc1106dc54047603cd)
 * Minor:
     * [fps counter](https://github.com/Xpra-org/xpra/commit/72c31b74e7027ca2522ee4441dab786e312fcc82) [rounded to an int](https://github.com/Xpra-org/xpra/commit/0db7d41005081b5b85b153302a076fb8471e185e) and [dpi values](https://github.com/Xpra-org/xpra/commit/b9cfef343242551d6c338f8a0647a55de3862f89) should use integers
     * [debug logging of Cython modules](https://github.com/Xpra-org/xpra/commit/25805dfe03330e0409ec2b145a8544bb60a04717)
@@ -29,7 +31,7 @@
     * [catch invalid display names earlier](https://github.com/Xpra-org/xpra/commit/f9553d961824c87619566964d6358ca640f1bcbc)
     * [re-attach error on MS Windows](https://github.com/Xpra-org/xpra/commit/597ec5cc7d95bdbfec76b564482452fec78082c1)
     * [ensure all required modules are included on MS Windows](https://github.com/Xpra-org/xpra/commit/971d0745b9192c1c124f8fbe8a2e859162ed0823)
-    * [typo](https://github.com/Xpra-org/xpra/commit/650e63dc78b98bf71e46f9e647e7d7b9aadb9919), [missing subcommand](https://github.com/Xpra-org/xpra/commit/c55b9989ef104a78de907610b03911702ce8d0b0)
+    * cosmetic: [typo](https://github.com/Xpra-org/xpra/commit/650e63dc78b98bf71e46f9e647e7d7b9aadb9919) and [bad formatting](https://github.com/Xpra-org/xpra/commit/a8fcdbc8f292ae8b9fef7f71964cc43a290fd8a3), [missing subcommand](https://github.com/Xpra-org/xpra/commit/c55b9989ef104a78de907610b03911702ce8d0b0), [deprecation warning](https://github.com/Xpra-org/xpra/commit/b6f423accefee16f0743578fb67a4f22ee3cbfde), [debug logging](https://github.com/Xpra-org/xpra/commit/5fe516077a9097ee785dd8edb190b6470221cdda)
     * [skip unnecessary processing if bind=none](https://github.com/Xpra-org/xpra/commit/9907947948bc091798e0bdd76c3ab03cf3f1c10c)
     * [avoid uinput warning](https://github.com/Xpra-org/xpra/commit/6307c3f785a1415b0d2948056766bea1dd4c40dc)
     * [incorrect start command request parameters](https://github.com/Xpra-org/xpra/commit/7992dc4abd35195eb799e330bc77d7445b6b8067)
