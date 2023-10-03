@@ -12,10 +12,10 @@
 
 %if 0%{?fedora} || 0%{?rhel} >= 9
 %global blaslib flexiblas
-%global blasvar %{nil}
+%global siteblaslib flexiblas
 %else
 %global blaslib openblas
-%global blasvar p
+%global siteblaslib flexiblasp
 %endif
 
 %global modname numpy
@@ -107,7 +107,7 @@ rm PKG-INFO
 # Use openblas pthreads as recommended by upstream (see comment in site.cfg.example)
 cat >> site.cfg <<EOF
 [openblas]
-libraries = %{blaslib}%{blasvar}
+libraries = %{siteblaslib}
 library_dirs = %{_libdir}
 EOF
 
