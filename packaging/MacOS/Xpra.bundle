@@ -126,7 +126,7 @@
 		${prefix}/lib/gstreamer-1.0/*.dylib
 	</binary>
 
-	<binary dest="${bundle}/Contents/Resources/bin/gst-plugin-scanner-1.0">
+	<binary dest="${bundle}/Contents/Resources/libexec/gstreamer-1.0/gst-plugin-scanner">
 		${prefix}/libexec/gstreamer-1.0/gst-plugin-scanner
 	</binary>
 	<binary dest="${bundle}/Contents/Resources/bin/gst-launch-1.0">
