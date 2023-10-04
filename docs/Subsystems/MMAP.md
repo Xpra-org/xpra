@@ -54,17 +54,17 @@ Example steps for host to guest setup:
   DEV_NAME="shmem-xpra"
   virt-install --shmem name="${DEV_NAME}",model.type=ivshmem-plain,size.unit=M,size=512"`)
   ```
-* enable the shared memory device on the host:
+* enable the shared memory device on the guest:
   ```shell
   echo 1 > $(find /sys/devices/ -type f -name "resource2_wc" -exec dirname "{}" \;)/enable
   ```
-* start an xpra server using this device:
+  and start an xpra server with `mmap` pointing to it:
   ```shell
   VSOCK_PORT=10000
   MMAP_PATH=$(find /sys/devices/ -type f -name "resource2_wc")
   xpra start --bind-vsock=auto:${VSOCK_PORT} --mmap=$MMAP_PATH
   ```
-* from the guest, connect to the same device:
+* from the host, use `mmap` with the same device:
   ```shell
   DEV_NAME="shmem-xpra"
   VSOCK_PORT=10000
