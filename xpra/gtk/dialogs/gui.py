@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,7 +13,7 @@ from xpra.log import Logger
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
-log = Logger("client", "util")
+log = Logger("util")
 
 
 def has_client() -> bool:

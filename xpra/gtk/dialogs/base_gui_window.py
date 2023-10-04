@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -21,7 +21,7 @@ gi.require_version('Gdk', '3.0')  # @UndefinedVariable
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 from gi.repository import GLib, Gtk, Gdk, Gio  # @UnresolvedImport
 
-log = Logger("client", "util")
+log = Logger("util")
 
 
 def exec_command(cmd):
@@ -53,6 +53,7 @@ class BaseGUIWindow(Gtk.Window):
                  wm_class=("xpra-gui", "Xpra-GUI"),
                  default_size=(640, 300),
                  header_bar=(True, True),
+                 parent:Gtk.Window|None=None,
                  ):
         self.exit_code = 0
         super().__init__()
@@ -67,11 +68,16 @@ class BaseGUIWindow(Gtk.Window):
         icon = get_icon_pixbuf(icon_name)
         if icon:
             self.set_icon(icon)
-        add_close_accel(self, self.quit)
+        if parent:
+            self.set_transient_for(parent)
+            self.set_modal(True)
+            close = self.hide
+        else:
+            close = self.quit
+        self.connect("delete_event", close)
+        add_close_accel(self, close)
         add_window_accel(self, 'F1', self.show_about)
-        self.connect("delete_event", self.quit)
         self.set_wmclass(*wm_class)
-
         self.vbox = Gtk.VBox(homogeneous=False, spacing=10)
         self.add(self.vbox)
         self.populate()
@@ -129,6 +135,10 @@ class BaseGUIWindow(Gtk.Window):
         log("app_signal(%s) exit_code=%i", signum, self.exit_code)
         self.quit()
 
+    def hide(self, *args):
+        log("hide%s", args)
+        super().hide()
+
     def quit(self, *args):
         log("quit%s", args)
         self.do_quit()
@@ -156,11 +166,11 @@ class BaseGUIWindow(Gtk.Window):
         self.reset_cursors()
         log(f"command_ended({proc})")
         if proc.returncode:
+
             self.may_notify(NotificationID.FAILURE,
                             "Subcommand Failed",
-                            "The subprocess terminated abnormally\nand returned %s" % exit_str(proc.returncode)
+                            "The subprocess terminated abnormally\n\rand returned %s" % exit_str(proc.returncode)
                             )
-            pass
 
     def busy_cursor(self, widget):
         from xpra.gtk.cursors import cursor_types
@@ -194,6 +204,8 @@ class BaseGUIWindow(Gtk.Window):
             GLib.timeout_add(2000, may_exit)
 
     def may_notify(self, nid:NotificationID, summary:str, body:str):
+        log.info(summary)
+        log.info(body)
         from xpra.platform.gui import get_native_notifier_classes
         nc = get_native_notifier_classes()
         if not nc:

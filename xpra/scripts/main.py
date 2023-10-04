@@ -173,7 +173,7 @@ def configure_logging(options, mode) -> None:
         "show-menu", "show-about", "show-session-info",
         "webcam",
         "showconfig",
-        ):
+    ):
         to = sys.stdout
     else:
         to = sys.stderr
@@ -192,11 +192,11 @@ def configure_logging(options, mode) -> None:
         "attach", "listen", "proxy",
         "version", "info", "id",
         "_audio_record", "_audio_play",
-        "stop", "print", "showconfig",
+        "stop", "print", "showconfig", "configure",
         "_dialog", "_pass",
         "pinentry",
         "example",
-        ) or mode.startswith("upgrade") or mode.startswith("request-"):
+    ) or mode.startswith("upgrade") or mode.startswith("request-"):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
             server_mode = mode not in ("attach", "listen")
             codec_help = show_audio_codec_help(server_mode, options.speaker_codec, options.microphone_codec)
@@ -3918,16 +3918,15 @@ def run_auth(_options, args) -> ExitValue:
 
 
 def run_configure(args) -> ExitValue:
+    mod = "main"
     if args:
-        valid = ("gstreamer", )
         mod = args[0]
+        valid = ("gstreamer", "encodings", "features")
         if mod not in valid:
             raise ValueError(f"unsupported 'configure' argument {mod}, must be one of {csv(valid)}")
-        from importlib import import_module
-        mod = import_module(f"xpra.gtk.dialogs.configure_{mod}")
-        return mod.main()
-    from xpra.gtk.dialogs.configure import main
-    return main()
+    from importlib import import_module
+    mod = import_module(f"xpra.gtk.configure.{mod}")
+    return mod.main()
 
 
 def run_showconfig(options, args) -> ExitValue:

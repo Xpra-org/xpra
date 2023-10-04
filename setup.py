@@ -1566,6 +1566,7 @@ if WIN32:
             add_console_exe("fs/bin/xpra_launcher",            "xpra.ico",         "Xpra-Launcher-Debug")
             add_gui_exe("xpra/gtk/dialogs/view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
             add_gui_exe("xpra/gtk/dialogs/bug_report.py",           "bugs.ico",         "Bug_Report")
+            add_gui_exe("xpra/gtk/configure/main.py",        "directory.ico",         "Configure")
             add_gui_exe("xpra/platform/win32/gdi_screen_capture.py", "screenshot.ico", "Screenshot")
         if server_ENABLED:
             add_gui_exe("fs/libexec/xpra/auth_dialog",          "authentication.ico", "Auth_Dialog")
@@ -2101,7 +2102,7 @@ if client_ENABLED:
     add_packages("xpra.client.base")
     add_packages("xpra.client.mixins", "xpra.client.auth")
     add_modules("xpra.scripts.pinentry")
-toggle_packages(gtk3_ENABLED, "xpra.gtk", "xpra.gtk.examples", "xpra.gtk.dialogs")
+toggle_packages(gtk3_ENABLED, "xpra.gtk", "xpra.gtk.examples", "xpra.gtk.dialogs", "xpra.gtk.configure")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "xpra.client.gui")
 toggle_packages((client_ENABLED and gtk3_ENABLED) or (audio_ENABLED and WIN32 and MINGW_PREFIX), "gi")
 if client_ENABLED and WIN32 and MINGW_PREFIX:
@@ -2300,6 +2301,7 @@ if cythonize_more_ENABLED:
     if gtk3_ENABLED:
         ax("xpra.gtk")
         ax("xpra.gtk.dialogs")
+        ax("xpra.gtk.configure")
         if example_ENABLED:
             ax("xpra.gtk.examples")
     if keyboard_ENABLED:
