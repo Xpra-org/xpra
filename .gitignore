@@ -114,6 +114,7 @@ tests/unittests/test-file*
 /xpra/buffers/cyxor.c
 /xpra/client/*/*.c
 /xpra/client/*.c
+/xpra/client/gl/gtk3/*.c
 /xpra/clipboard/*.c
 /xpra/codecs/nvidia/*/*.c
 /xpra/codecs/nvidia/*/*.cpp
@@ -136,8 +137,8 @@ tests/unittests/test-file*
 /xpra/server/*/*.c
 /xpra/server/*.c
 /xpra/util/*.c
-/xpra/x11/gtk3/gdk_bindings.c
-/xpra/x11/gtk3/gdk_display_source.c
+/xpra/x11/gtk3/bindings.c
+/xpra/x11/gtk3/display_source.c
 /xpra/x11/gtk3/gdk_display_util.c
 /xpra/x11/bindings/*.c
 /xpra/x11/gtk_x11/*.c
