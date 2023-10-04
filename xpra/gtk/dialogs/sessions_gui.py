@@ -137,7 +137,7 @@ class SessionsGUI(Gtk.Window):
         self.do_quit()
 
     def cleanup(self):
-        self.destroy()
+        self.close()
 
 
     def show_about(self, *_args):

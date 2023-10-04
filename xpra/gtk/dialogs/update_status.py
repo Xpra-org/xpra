@@ -136,7 +136,7 @@ class UpdateStatusWindow:
 
     def quit(self, *args):
         log("quit%s", args)
-        self.destroy()
+        self.close()
         Gtk.main_quit()
 
 

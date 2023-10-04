@@ -35,12 +35,12 @@ def show_qr(uri:str, width:int=640, height:int=640):
     window.set_size_request(width, height)
     window.set_resizable(False)
     def close(*_args):
-        window.destroy()
+        window.close()
     add_close_accel(window, close)
     window.show_all()
     if Gtk.main_level()<=0:
         def gtk_quit(*_args):
-            window.destroy()
+            close()
             Gtk.main_quit()
         window.connect("delete-event", gtk_quit)
         Gtk.main()

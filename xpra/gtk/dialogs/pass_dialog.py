@@ -82,7 +82,7 @@ class PasswordInputDialogWindow(Gtk.Dialog):
 
     def quit(self, *args):
         log("quit%s", args)
-        self.destroy()
+        self.close()
         return True
 
     def cancel(self, *args):

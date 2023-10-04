@@ -158,6 +158,6 @@ def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(10
                 }
     finally:
         if window:
-            window.destroy()
+            window.close()
     log("test_gl_client_window(..) draw_result=%s", draw_result)
     return draw_result or {"success" : False, "message" : "not painted on screen"}

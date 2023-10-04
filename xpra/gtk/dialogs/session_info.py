@@ -494,7 +494,7 @@ class SessionInfo(Gtk.Window):
         GLib.timeout_add(100, self.populate_tab)
         if features.audio and SHOW_SOUND_STATS and show_client:
             GLib.timeout_add(100, self.populate_audio_stats)
-        add_close_accel(self, self.destroy)
+        add_close_accel(self, self.close)
 
 
     def get_window_title(self):
@@ -1221,7 +1221,7 @@ class SessionInfo(Gtk.Window):
         response = chooser.run()
         filenames = chooser.get_filenames()
         chooser.hide()
-        chooser.destroy()
+        chooser.close()
         if response == Gtk.ResponseType.OK:
             if len(filenames)==1:
                 filename = filenames[0]
@@ -1242,11 +1242,11 @@ class SessionInfo(Gtk.Window):
         else:
             log.warn("unknown chooser response: %d" % response)
 
-    def destroy(self, *args):
-        log("SessionInfo.destroy(%s) is_closed=%s", args, self.is_closed)
+    def close(self, *args):
+        log("SessionInfo.close(%s) is_closed=%s", args, self.is_closed)
         self.is_closed = True
-        super().destroy()
-        log("SessionInfo.destroy(%s) done", args)
+        super().close()
+        log("SessionInfo.close(%s) done", args)
 
 
 class SessionInfoClient(InfoTimerClient):

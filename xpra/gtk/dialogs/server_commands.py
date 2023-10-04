@@ -175,15 +175,16 @@ class ServerCommandsWindow:
 
     def close(self, *args):
         log("close%s", args)
-        self.window.hide()
+        if self.window:
+            self.window.hide()
         self.cancel_timer()
         return True
 
     def destroy(self, *args):
-        log("destroy%s", args)
+        log("close%s", args)
         self.cancel_timer()
         if self.window:
-            self.window.destroy()
+            self.window.close()
             self.window = None
 
 
@@ -194,7 +195,7 @@ class ServerCommandsWindow:
 
     def quit(self, *args):
         log("quit%s", args)
-        self.destroy()
+        self.close()
         Gtk.main_quit()
 
 

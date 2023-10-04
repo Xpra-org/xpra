@@ -142,7 +142,8 @@ class StartNewCommand:
 
     def hide(self):
         log("hide()")
-        self.window.hide()
+        if self.window:
+            self.window.hide()
 
     def close(self, *args):
         log("close%s", args)
@@ -150,7 +151,7 @@ class StartNewCommand:
         return True
 
     def destroy(self, *args):
-        log("destroy%s", args)
+        log("close%s", args)
         if self.window:
             self.window.destroy()
             self.window = None
@@ -162,7 +163,7 @@ class StartNewCommand:
 
     def quit(self, *args):
         log("quit%s", args)
-        self.destroy()
+        self.close()
         Gtk.main_quit()
 
 

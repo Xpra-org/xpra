@@ -137,7 +137,7 @@ class DesktopGreeter(Gtk.Window):
             log.warn("no command found for '%s'", name)
             return
         argv = [cmd]
-        self.destroy()
+        self.close()
         os.execv(cmd, argv)
 
     def wait_for_subprocess(self, proc):

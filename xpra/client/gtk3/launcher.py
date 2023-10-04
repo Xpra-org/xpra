@@ -264,7 +264,7 @@ class ApplicationWindow:
                     from xpra.client.gtk3.mdns_gui import mdns_sessions
                     self.mdns_gui = mdns_sessions(self.config)
                     def close_mdns():
-                        self.mdns_gui.destroy()
+                        self.mdns_gui.close()
                         self.mdns_gui = None
                     self.mdns_gui.do_quit = close_mdns
                 else:
