@@ -720,6 +720,8 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
         return ExitCode.OK
     if mode=="auth":
         return run_auth(options, args)
+    if mode == "configure":
+        return run_configure(args)
     if mode == "showconfig":
         return run_showconfig(options, args)
     if mode == "showsetting":
@@ -3913,6 +3915,19 @@ def run_auth(_options, args) -> ExitValue:
         raise InitExit(ExitCode.UNSUPPORTED, f"no command line utility for {auth!r} authentication module")
     argv = [auth_module.__file__]+args[1:]
     return main_fn(argv)
+
+
+def run_configure(args) -> ExitValue:
+    if args:
+        valid = ("gstreamer", )
+        mod = args[0]
+        if mod not in valid:
+            raise ValueError(f"unsupported 'configure' argument {mod}, must be one of {csv(valid)}")
+        from importlib import import_module
+        mod = import_module(f"xpra.gtk.dialogs.configure_{mod}")
+        return mod.main()
+    from xpra.gtk.dialogs.configure import main
+    return main()
 
 
 def run_showconfig(options, args) -> ExitValue:

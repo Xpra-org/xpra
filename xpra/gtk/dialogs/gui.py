@@ -3,221 +3,92 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
-import signal
 import sys
-import subprocess
 import gi
 
-from xpra.gtk.signals import register_os_signals
-from xpra.gtk.gtk_util import (
-    add_close_accel,
-    add_window_accel, )
-from xpra.gtk.widget import imagebutton
-from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.platform.paths import get_xpra_command
 from xpra.os_util import OSX, WIN32
+from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.log import Logger
-from xpra.gtk.dialogs.about import about
 
-gi.require_version('Gdk', '3.0')  # @UndefinedVariable
-gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-from gi.repository import GLib, Gtk, Gdk, Gio  # @UnresolvedImport
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
 
 log = Logger("client", "util")
 
-try:
-    from xpra import client
-    has_client = bool(client)
-except ImportError:
-    has_client = False
-try:
-    from xpra.server import util
-    has_server = bool(util)
-except ImportError:
-    has_server = False
-try:
-    from xpra.server import shadow
-    has_shadow = bool(shadow)
-except ImportError:
-    has_shadow = False
-try:
-    import xdg  #pylint: disable=unused-import
-except ImportError:
-    xdg = None
+
+def has_client() -> bool:
+    try:
+        from xpra import client
+        return bool(client)
+    except ImportError:
+        return False
 
 
-def exec_command(cmd):
-    env = os.environ.copy()
-    env["XPRA_WAIT_FOR_INPUT"] = "0"
-    proc = subprocess.Popen(cmd, env=env)
-    log("exec_command(%s)=%s", cmd, proc)
-    return proc
+def has_server() -> bool:
+    try:
+        from xpra.server import util
+        return bool(util)
+    except ImportError:
+        return False
 
 
-class GUI(Gtk.Window):
+def has_shadow() -> bool:
+    try:
+        from xpra.server import shadow
+        return bool(shadow)
+    except ImportError:
+        return False
 
-    def __init__(self, title="Xpra", argv=()):
-        self.exit_code = 0
+
+class GUI(BaseGUIWindow):
+
+    def __init__(self, argv=()):
         self.argv = argv
+        self.widgets = []
         super().__init__()
 
-        hb = Gtk.HeaderBar()
-        hb.set_show_close_button(True)
-        hb.props.title = "Xpra"
-        self.set_titlebar(hb)
-        hb.add(self.button("About", "help-about", about))
-        try:
-            from xpra.gtk.dialogs.toolbox import ToolboxGUI
-        except ImportError:
-            pass
-        else:
-            def show():
-                w = None
-                def hide(*_args):
-                    w.hide()
-                ToolboxGUI.quit = hide
-                w = ToolboxGUI()
-                w.show()
-            hb.add(self.button("Toolbox", "applications-utilities", show))
-            hb.show_all()
-
-        self.set_title(title)
-        self.set_border_width(10)
-        self.set_resizable(True)
-        self.set_decorated(True)
-        self.set_position(Gtk.WindowPosition.CENTER)
-        icon = get_icon_pixbuf("xpra.png")
-        if icon:
-            self.set_icon(icon)
-        add_close_accel(self, self.quit)
-        add_window_accel(self, 'F1', self.show_about)
-        self.connect("delete_event", self.quit)
-        self.set_wmclass("xpra-gui", "Xpra-GUI")
-
-        self.vbox = Gtk.VBox(homogeneous=False, spacing=10)
-        self.add(self.vbox)
-        #with most window managers,
-        #the window's title bar already shows "Xpra"
-        #title_label = label(title, "sans 14")
-        #self.vbox.add(title_label)
-        self.widgets = []
-        label_font = "sans 16"
-        if has_client:
-            icon = get_icon_pixbuf("browse.png")
-            self.browse_button = imagebutton("Browse", icon,
-                                             "Browse and connect to local and mDNS sessions", clicked_callback=self.browse,
-                                             icon_size=48, label_font=label_font)
-            self.widgets.append(self.browse_button)
-            icon = get_icon_pixbuf("connect.png")
-            self.connect_button = imagebutton("Connect", icon,
-                                              "Connect to an existing session\nover the network", clicked_callback=self.show_launcher,
-                                              icon_size=48, label_font=label_font)
-            self.widgets.append(self.connect_button)
-        if has_server:
-            icon = get_icon_pixbuf("server-connected.png")
-            self.shadow_button = imagebutton("Shadow", icon,
-                                             "Start a shadow server,\nmaking this desktop accessible to others\n(authentication required)", clicked_callback=self.start_shadow,
-                                             icon_size=48, label_font=label_font)
-            if not has_shadow:
-                self.shadow_button.set_tooltip_text("This build of Xpra does not support starting shadow sessions")
-                self.shadow_button.set_sensitive(False)
-            self.widgets.append(self.shadow_button)
-            icon = get_icon_pixbuf("windows.png")
-            text = "Start a new %sxpra session" % (" remote" if (WIN32 or OSX) else "")
-            self.start_button = imagebutton("Start", icon,
-                                            text, clicked_callback=self.start,
-                                            icon_size=48, label_font=label_font)
-            self.widgets.append(self.start_button)
+    def populate(self):
+        if has_client():
+            self.ib("Browse", "browse.png","Browse and connect to local and mDNS sessions", self.browse)
+            self.ib("Connect", "connect.png","Connect to an existing session\nover the network", self.show_launcher)
+        if has_server():
+            if has_shadow():
+                tooltip = "\n".join((
+                    "Start a shadow server,",
+                    "making this desktop accessible to others",
+                    "(authentication required)",
+                ))
+            else:
+                tooltip = "This build of Xpra does not support starting shadow sessions"
+            self.ib("Shadow", "server-connected.png", tooltip, self.shadow, sensitive=has_shadow)
+            tooltip = "Start a new %sxpra session" % (" remote" if (WIN32 or OSX) else "")
+            self.ib("Start", "windows.png", tooltip, self.start)
         table = Gtk.Table(n_rows=2, n_columns=2, homogeneous=True)
         for i, widget in enumerate(self.widgets):
             table.attach(widget, i%2, i%2+1, i//2, i//2+1, xpadding=10, ypadding=10)
         self.vbox.add(table)
-        self.vbox.show_all()
-        self.set_default_size(640, 300)
-        def focus_in(window, event):
-            log("focus_in(%s, %s)", window, event)
-        def focus_out(window, event):
-            log("focus_out(%s, %s)", window, event)
-            self.reset_cursors()
-        self.connect("focus-in-event", focus_in)
-        self.connect("focus-out-event", focus_out)
 
-    def button(self, tooltip, icon_name, callback):
-        button = Gtk.Button()
-        icon = Gio.ThemedIcon(name=icon_name)
-        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
-        button.add(image)
-        button.set_tooltip_text(tooltip)
-        def clicked(*_args):
-            callback()
-        button.connect("clicked", clicked)
-        return button
+    def add_widget(self, widget):
+        self.widgets.append(widget)
 
+    def get_xpra_command(self, *args):
+        argv = list(self.argv[1:])
+        if argv.index("gui")>=0:
+            argv.pop(argv.index("gui"))
+        return super().get_xpra_command(*args)+argv
 
-    def app_signal(self, signum : int | signal.Signals):
-        if self.exit_code is None:
-            self.exit_code = 128 + int(signum)
-        log("app_signal(%s) exit_code=%i", signum, self.exit_code)
-        self.quit()
+    def shadow(self, button):
+        cmd_args = ["shadow", "--bind-tcp=0.0.0.0:14500,auth=sys,ssl-cert=auto"] if (WIN32 or OSX) else ["shadow"]
+        self.button_command(button, *cmd_args)
 
-    def quit(self, *args):
-        log("quit%s", args)
-        self.do_quit()
+    def browse(self, btn):
+        self.button_command(btn, "sessions")
 
-    def do_quit(self):
-        log("do_quit()")
-        Gtk.main_quit()
+    def show_launcher(self, btn):
+        self.button_command(btn, "launcher")
 
-
-    def reset_cursors(self):
-        for widget in self.widgets:
-            widget.get_window().set_cursor(None)
-
-    def busy_cursor(self, widget):
-        from xpra.gtk.cursors import cursor_types
-        watch = cursor_types.get("WATCH")
-        if watch:
-            display = Gdk.Display.get_default()
-            cursor = Gdk.Cursor.new_for_display(display, watch)
-            widget.get_window().set_cursor(cursor)
-            GLib.timeout_add(5*1000, self.reset_cursors)
-
-
-    def show_about(self, *_args):
-        about()
-
-    def get_xpra_command(self, arg="shadow"):
-        args = list(self.argv[1:])
-        if args.index("gui")>=0:
-            args.pop(args.index("gui"))
-        return get_xpra_command()+[arg]+args
-
-    def start_shadow(self, *_args):
-        cmd = self.get_xpra_command()
-        if WIN32 or OSX:
-            cmd.append("--bind-tcp=0.0.0.0:14500,auth=sys,ssl-cert=auto")
-        proc = exec_command(cmd)
-        if proc.poll() is None:
-            self.busy_cursor(self.shadow_button)
-
-    def browse(self, *_args):
-        cmd = self.get_xpra_command("sessions")
-        proc = exec_command(cmd)
-        if proc.poll() is None:
-            self.busy_cursor(self.browse_button)
-
-    def show_launcher(self, *_args):
-        cmd = self.get_xpra_command("launcher")
-        proc = exec_command(cmd)
-        if proc.poll() is None:
-            self.busy_cursor(self.connect_button)
-
-    def start(self, *_args):
-        cmd = self.get_xpra_command("start-gui")
-        proc = exec_command(cmd)
-        if proc.poll() is None:
-            self.busy_cursor(self.start_button)
+    def start(self, btn):
+        self.button_command(btn, "start-gui")
 
     def open_file(self, filename):
         log("open_file(%s)", filename)
@@ -227,30 +98,13 @@ class GUI(Gtk.Window):
         log("open_url(%s)", url)
         self.exec_subcommand("attach", url)
 
-    def exec_subcommand(self, subcommand, arg):
-        log("exec_subcommand(%s, %s)", subcommand, arg)
-        cmd = get_xpra_command()
-        cmd.append(subcommand)
-        cmd.append(arg)
-        proc = exec_command(cmd)
-        if proc.poll() is None:
-            self.hide()
-            def may_exit():
-                if proc.poll() is None:
-                    self.quit()
-                else:
-                    self.show()
-            #don't ask me why,
-            #but on macos we can get file descriptor errors
-            #if we exit immediately after we spawn the attach command
-            GLib.timeout_add(2000, may_exit)
-
 
 def main(argv): # pragma: no cover
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.log import enable_color
     from xpra.platform.gui import init, ready
+    from xpra.gtk.signals import register_os_signals
     with program_context("xpra-gui", "Xpra GUI"):
         enable_color()
         init()
