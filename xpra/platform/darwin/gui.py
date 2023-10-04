@@ -36,7 +36,7 @@ from Foundation import (
     NSUserNotificationDefaultSoundName,             #@UnresolvedImport
     )
 
-from xpra.common import roundup
+from xpra.common import roundup, NotificationID
 from xpra.util.env import envint, envbool
 from xpra.notifications.notifier_base import NotifierBase
 from xpra.platform.darwin import get_OSXApplication
@@ -116,8 +116,9 @@ class OSX_Notifier(NotifierBase):
         self.notification_center = NSUserNotificationCenter.defaultUserNotificationCenter()
         assert self.notification_center
 
-    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon,
-                    summary, body, actions, hints, expire_timeout, icon):
+    def show_notify(self, dbus_id, tray, nid:int|NotificationID,
+                    app_name:str, replaces_nid:int|NotificationID, app_icon,
+                    summary:str, body:str, actions, hints, expire_timeout:int, icon):
         GTK_NOTIFIER = envbool("XPRA_OSX_GTK_NOTIFIER", True)
         if actions and GTK_NOTIFIER:
             #try to use GTK notifier if we have actions buttons to handle:
@@ -133,7 +134,7 @@ class OSX_Notifier(NotifierBase):
                 return
         GLib.idle_add(self.do_show_notify, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
 
-    def do_show_notify(self, dbus_id, tray, nid:int, app_name, replaces_nid:int, app_icon,
+    def do_show_notify(self, dbus_id, tray, nid:int|NotificationID, app_name:str, replaces_nid:int|NotificationID, app_icon,
                        summary:str, body:str, actions, hints, expire_timeout:int, icon):
         notification = NSUserNotification.alloc()
         notification.init()

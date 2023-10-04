@@ -25,6 +25,7 @@ gi.require_version("Gdk", "3.0")  # @UndefinedVariable
 from gi.repository import GLib, Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.os_util import OSX
+from xpra.common import NotificationID
 from xpra.gtk.gtk_util import add_close_accel, color_parse
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
@@ -109,9 +110,9 @@ class GTK_Notifier(NotifierBase):
             if x.nid==nid:
                 x.hide_notification()
 
-    def show_notify(self, dbus_id, tray, nid,
-                    app_name, replaces_nid, app_icon,
-                    summary, body, actions, hints, timeout, icon):
+    def show_notify(self, dbus_id, tray, nid:int|NotificationID,
+                    app_name:str, replaces_nid:int|NotificationID, app_icon,
+                    summary:str, body:str, actions, hints, timeout, icon):
         GLib.idle_add(self.new_popup, nid, summary, body, actions, icon, timeout, 0<timeout<=600)
 
     def new_popup(self, nid:int, summary:str, body:str, actions:tuple, icon, timeout=10*1000, show_timeout=False):

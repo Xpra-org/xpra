@@ -9,13 +9,14 @@ import gi
 gi.require_version('Notify', '0.7')  # @UndefinedVariable
 from gi.repository import Notify            #@UnresolvedImport
 
+from xpra.common import NotificationID
 from xpra.notifications.notifier_base import NotifierBase
 
 
 class GINotifier(NotifierBase):
 
-    def show_notify(self, dbus_id, tray, nid:int,
-                    app_name:str, replaces_nid:int, app_icon,
+    def show_notify(self, dbus_id, tray, nid:int|NotificationID,
+                    app_name:str, replaces_nid:int|NotificationID, app_icon,
                     summary:str, body:str, actions, hints, timeout:int, icon):
         if not self.dbus_check(dbus_id):
             return

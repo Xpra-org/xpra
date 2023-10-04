@@ -6,6 +6,7 @@
 import sys
 
 from xpra.util.env import envbool
+from xpra.common import NotificationID
 from xpra.notifications.notifier_base import NotifierBase, log
 from xpra.platform.win32.balloon import notify
 
@@ -43,7 +44,9 @@ class Win32_Notifier(NotifierBase):
                 log("failed to load GTK Notifier fallback", exc_info=True)
         return self.gtk_notifier
 
-    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):
+    def show_notify(self, dbus_id, tray, nid:int|NotificationID,
+                    app_name:str, replaces_nid:int|NotificationID,
+                    app_icon, summary:str, body:str, actions, hints, expire_timeout:int, icon):
         getHWND = getattr(tray, "getHWND", None)
         if GTK_NOTIFIER and (actions or not getHWND):
             log("show_notify(..) using gtk fallback, GTK_NOTIFIER=%s, tray=%s, getHWND=%s, actions=%s",

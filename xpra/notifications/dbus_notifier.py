@@ -9,6 +9,7 @@ from typing import Any
 from xpra.util.str_fn import csv, ellipsizer
 from xpra.os_util import bytestostr
 from xpra.dbus.helper import native_to_dbus
+from xpra.common import NotificationID
 from xpra.notifications.notifier_base import NotifierBase, log
 try:
     #new recommended way of using the glib main loop:
@@ -69,8 +70,8 @@ class DBUS_Notifier(NotifierBase):
         super().cleanup()
 
 
-    def show_notify(self, dbus_id, tray, nid:int,
-                    app_name:str, replaces_nid:int, app_icon,
+    def show_notify(self, dbus_id, tray, nid:int|NotificationID,
+                    app_name:str, replaces_nid:int|NotificationID, app_icon,
                     summary:str, body:str, actions, hints, timeout:int, icon) -> None:
         if not self.dbus_check(dbus_id):
             return

@@ -9,14 +9,15 @@ from typing import Any
 import notify2                 #@UnresolvedImport
 
 from xpra.notifications.notifier_base import NotifierBase
+from xpra.common import NotificationID
 
 
 class PyNotify_Notifier(NotifierBase):
 
     CACHE : dict[int,Any] = {}
 
-    def show_notify(self, dbus_id, tray, nid:int,
-                    app_name:str, replaces_nid:int, app_icon,
+    def show_notify(self, dbus_id, tray, nid:int|NotificationID,
+                    app_name:str, replaces_nid:int|NotificationID, app_icon,
                     summary:str, body:str, actions, hints, timeout:int, icon) -> None:
         if not self.dbus_check(dbus_id):
             return
