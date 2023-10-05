@@ -170,7 +170,6 @@ class SplashScreen(Gtk.Window):
                 self.exit_code = ExitCode.CONNECTION_LOST
                 self.exit()
                 break
-            log(f"{line=}")
             if not line:
                 self.exit_code = ExitCode.CONNECTION_LOST
                 self.exit()
