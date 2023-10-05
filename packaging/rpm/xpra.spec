@@ -768,7 +768,7 @@ fi
 
 
 %changelog
-* Tue Oct 03 2023 Antoine Martin <antoine@xpra.org> 5.0.3-10
+* Thu Oct 05 2023 Antoine Martin <antoine@xpra.org> 5.0.3-10
 - Major:
    client signal watcher not starting
    pipe and process leak with signal watcher
@@ -782,6 +782,7 @@ fi
    splash screen hangs
    remove x265 encoder
    start gui error in encoding dialog
+   dialogs causing crashes on some platforms
 - Compatibility fixes:
    handle microphone option with both state and device
    MacOS regression

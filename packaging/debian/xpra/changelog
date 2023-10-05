@@ -12,6 +12,7 @@ xpra (5.0.3-1) UNRELEASED; urgency=low
     - splash screen hangs
     - remove x265 encoder
     - start gui error in encoding dialog
+    - dialogs causing crashes on some platforms
   * Compatibility fixes:
     - handle microphone option with both state and device
     - MacOS regression
@@ -33,7 +34,7 @@ xpra (5.0.3-1) UNRELEASED; urgency=low
     - avoid uinput warning
     - incorrect start command request parameters
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 03 Oct 2023 23:56:06 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 05 Oct 2023 21:09:11 +0700
 
 xpra (5.0.2-1) UNRELEASED; urgency=low
   * Major fixes:

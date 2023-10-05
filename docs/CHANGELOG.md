@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.3] 2023-10-03
+## [5.0.3] 2023-10-05
 * Major:
     * [client signal watcher not starting](https://github.com/Xpra-org/xpra/commit/0b1841d6eecbd3af6e11ec5aa79749ec3f3f9910)
     * [pipe and process leak with signal watcher](https://github.com/Xpra-org/xpra/commit/2de2a52e03f40b071fbe84f700d65fd504e0945d)
@@ -14,6 +14,7 @@
     * [splash screen hangs](https://github.com/Xpra-org/xpra/commit/36298db710a42e6744cb9015eb16bad364f85a24)
     * [remove x265 encoder](https://github.com/Xpra-org/xpra/commit/ec12676d68585a926109f1e8d4783f83f4d7768b)
     * [start gui error in encoding dialog](https://github.com/Xpra-org/xpra/commit/e404fb6120afe29cbcd90776fa3031e72f083bca)
+    * [dialogs causing crashes on some platforms](https://github.com/Xpra-org/xpra/commit/4666c19a8887299642cd191871064953768d1c1e)
 * Compatibility fixes:
     * [webcam geometry](https://github.com/Xpra-org/xpra/commit/d0dd98591b82f6602d47ac80e17f342e867da77b)
     * [handle microphone option with both state and device](https://github.com/Xpra-org/xpra/commit/cc5e00184423ccb0fab446f4a57bcbd9d99084d6)
