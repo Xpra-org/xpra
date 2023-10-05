@@ -211,12 +211,9 @@ def do_run_dialog(dialog):
     try:
         force_focus()
         dialog.show()
-        try:
-            return dialog.run()
-        finally:
-            dialog.destroy()
+        return dialog.run()
     finally:
-        dialog.destroy()
+        dialog.close()
 
 def dialog_pass(title:str="Password Input", prompt:str="enter password", icon:str="") -> str:
     log("dialog_pass%s PINENTRY=%s", (title, prompt, icon), PINENTRY)

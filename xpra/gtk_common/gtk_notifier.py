@@ -351,9 +351,10 @@ class Popup(Gtk.Window):
             if v:
                 setattr(self, timer, None)
                 GLib.source_remove(v)
-        #destroy window from the UI thread:
-        GLib.idle_add(self.destroy)
-        self.destroy()
+        #close window from the UI thread:
+        def close(*args):
+            self.close()
+        GLib.idle_add(close)
         self.destroy_cb(self)
 
 

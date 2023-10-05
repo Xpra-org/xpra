@@ -709,7 +709,7 @@ class SessionOptions(Gtk.Window):
 
     def close(self, *_args):  #pylint: disable=arguments-differ
         self.set_value_from_widgets()
-        self.destroy()
+        super().close()
 
     def sep(self, tb):
         tb.inc()

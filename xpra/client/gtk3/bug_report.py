@@ -264,7 +264,7 @@ class BugReport:
     def destroy(self, *args):
         log("destroy%s", args)
         if self.window:
-            self.window.destroy()
+            self.window.close()
             self.window = None
 
 
@@ -276,7 +276,7 @@ class BugReport:
 
     def quit(self, *args):
         log("quit%s", args)
-        self.destroy()
+        self.close()
         Gtk.main_quit()
 
 
@@ -382,7 +382,7 @@ class BugReport:
                                        Gtk.ButtonsType.CLOSE, "Failed to save ZIP file")
             dialog.format_secondary_text("%s" % e)
             def close(*_args):
-                dialog.destroy()
+                dialog.close()
             dialog.connect("response", close)
             dialog.show_all()
         finally:

@@ -758,7 +758,7 @@ def choose_files(parent_window, title, action=Gtk.FileChooserAction.OPEN, action
     response = chooser.run()
     filenames = chooser.get_filenames()
     chooser.hide()
-    chooser.destroy()
+    chooser.close()
     if response!=Gtk.ResponseType.OK:
         return None
     return filenames

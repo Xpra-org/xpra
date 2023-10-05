@@ -193,23 +193,23 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         log("GTKXpraClient.cleanup()")
         self.stop_pinentry()
         if self.shortcuts_info:
-            self.shortcuts_info.destroy()
+            self.shortcuts_info.close()
             self.shortcuts_info = None
         if self.session_info:
-            self.session_info.destroy()
+            self.session_info.close()
             self.session_info = None
         if self.bug_report:
-            self.bug_report.destroy()
+            self.bug_report.close()
             self.bug_report = None
         self.close_file_size_warning()
         self.close_file_upload_dialog()
         self.close_ask_data_dialog()
         self.cancel_clipboard_notification_timer()
         if self.start_new_command:
-            self.start_new_command.destroy()
+            self.start_new_command.close()
             self.start_new_command = None
         if self.server_commands:
-            self.server_commands.destroy()
+            self.server_commands.close()
             self.server_commands = None
         uw = self.UI_watcher
         if uw:
@@ -386,7 +386,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 disable_focus_workaround()
             password = dialog.password_input.get_text()
             dialog.hide()
-            dialog.destroy()
+            dialog.close()
             response_str = dict((getattr(Gtk.ResponseType, k, ""), k) for k in (
                 "ACCEPT", "APPLY", "CANCEL", "CLOSE", "DELETE_EVENT", "HELP", "NO", "NONE", "OK", "REJECT", "YES"))
             log(f"handle_response({dialog}, {response}) response={response_str.get(response)}")
@@ -533,7 +533,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         fad = self.file_ask_dialog
         if fad:
             self.file_ask_dialog = None
-            fad.destroy()
+            fad.close()
 
     def show_ask_data_dialog(self, *_args):
         from xpra.client.gtk3.open_requests import getOpenRequestsWindow
@@ -571,7 +571,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def file_size_warning(self, action, location, basefilename, filesize, limit):
         if self.file_size_dialog:
             #close previous warning
-            self.file_size_dialog.destroy()
+            self.file_size_dialog.close()
             self.file_size_dialog = None
         parent = None
         msgs = (
@@ -593,7 +593,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         fsd = self.file_size_dialog
         if fsd:
             self.file_size_dialog = None
-            fsd.destroy()
+            fsd.close()
 
     def download_server_log(self, callback=None):
         filename = "${XPRA_SERVER_LOG}"
@@ -626,7 +626,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def close_file_upload_dialog(self):
         fd = self.file_dialog
         if fd:
-            fd.destroy()
+            fd.close()
             self.file_dialog = None
 
     def file_upload_dialog_response(self, dialog, v):

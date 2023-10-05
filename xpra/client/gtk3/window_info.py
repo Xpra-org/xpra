@@ -77,7 +77,7 @@ class WindowInfo(Gtk.Window):
 
     def __init__(self, client, window):
         super().__init__()
-        add_close_accel(self, self.destroy)
+        add_close_accel(self, self.close)
         self._client = client
         self._window = window
         self.is_closed = False
@@ -158,6 +158,10 @@ class WindowInfo(Gtk.Window):
         vbox = Gtk.VBox()
         vbox.pack_start(tb.get_table(), True, True, 20)
         self.add(vbox)
+
+    def close(self, *_args) -> None:
+        self.is_closed = True
+        super().close()
 
     def destroy(self, *_args) -> None:
         self.is_closed = True
