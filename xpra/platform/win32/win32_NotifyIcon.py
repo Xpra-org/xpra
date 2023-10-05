@@ -211,7 +211,7 @@ class win32NotifyIcon:
         if not self.hwnd:
             raise WinError(get_last_error())
         TASKBAR_CREATED = RegisterWindowMessageA(b"TaskbarCreated")
-        log(f"{TASKBAR_CREATED=}")
+        log(f"TASKBAR_CREATED={TASKBAR_CREATED}")
         message_map[TASKBAR_CREATED] = win32NotifyIcon.OnTrayRestart
         UpdateWindow(self.hwnd)
         #register callbacks:

@@ -104,7 +104,7 @@ DRAW_TYPES : Dict[type,str] = {bytes : "bytes", str : "bytes", tuple : "arrays",
 def kill_signalwatcher(proc) -> None:
     clean_signalwatcher(proc)
     exit_code = proc.poll()
-    log(f"kill_signalwatcher({proc}) {exit_code=}")
+    log(f"kill_signalwatcher({proc}) {exit_code}")
     if exit_code:
         return
     try:
