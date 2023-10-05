@@ -124,6 +124,7 @@ tests/unittests/test-file*
 /xpra/gtk/*.c
 /xpra/gtk/dialogs/*.c
 /xpra/gtk/examples/*.c
+/xpra/gtk/configure/*.c
 /xpra/gtk/bindings/*.c
 /xpra/gstreamer/*.c
 /xpra/keyboard/*.c
