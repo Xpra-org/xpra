@@ -16,6 +16,7 @@
     * [start gui error in encoding dialog](https://github.com/Xpra-org/xpra/commit/e404fb6120afe29cbcd90776fa3031e72f083bca)
     * [dialogs causing crashes on some platforms](https://github.com/Xpra-org/xpra/commit/4666c19a8887299642cd191871064953768d1c1e)
 * Compatibility fixes:
+    * [build against deprecated NVENC presets](https://github.com/Xpra-org/xpra/commit/2914c8a972f12398d3654f8a9c4b93693e3325b4)
     * [webcam geometry](https://github.com/Xpra-org/xpra/commit/d0dd98591b82f6602d47ac80e17f342e867da77b)
     * [handle microphone option with both state and device](https://github.com/Xpra-org/xpra/commit/cc5e00184423ccb0fab446f4a57bcbd9d99084d6)
     * [MacOS regression](https://github.com/Xpra-org/xpra/commit/597ec5cc7d95bdbfec76b564482452fec78082c1)

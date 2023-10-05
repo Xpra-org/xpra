@@ -784,6 +784,7 @@ fi
    start gui error in encoding dialog
    dialogs causing crashes on some platforms
 - Compatibility fixes:
+   build against deprecated NVENC presets
    handle microphone option with both state and device
    MacOS regression
    all clients support menu updates

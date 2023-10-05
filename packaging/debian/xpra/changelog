@@ -14,6 +14,7 @@ xpra (5.0.3-1) UNRELEASED; urgency=low
     - start gui error in encoding dialog
     - dialogs causing crashes on some platforms
   * Compatibility fixes:
+    - build against deprecated NVENC presets
     - handle microphone option with both state and device
     - MacOS regression
     - all clients support menu updates
@@ -34,7 +35,7 @@ xpra (5.0.3-1) UNRELEASED; urgency=low
     - avoid uinput warning
     - incorrect start command request parameters
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 05 Oct 2023 21:09:11 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 05 Oct 2023 22:23:30 +0700
 
 xpra (5.0.2-1) UNRELEASED; urgency=low
   * Major fixes:
