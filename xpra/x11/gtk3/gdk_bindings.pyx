@@ -623,7 +623,7 @@ cdef extern from "gtk-3.0/gdk/gdkevents.h":
     ctypedef struct GdkEvent:
         pass
 
-    ctypedef GdkFilterReturn (*GdkFilterFunc)(GdkXEvent *, GdkEvent *, void *)
+    ctypedef GdkFilterReturn (*GdkFilterFunc)(GdkXEvent *, GdkEvent *, void *) except GDK_FILTER_CONTINUE
     void gdk_window_add_filter(GdkWindow * w,
                                GdkFilterFunc filter,
                                void * userdata)
@@ -1041,7 +1041,7 @@ cdef object _gw(display, Window xwin):
 
 cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                                     GdkEvent * gdk_event,
-                                    void * userdata) with gil:
+                                    void * userdata) except GDK_FILTER_CONTINUE with gil:
     cdef object event_args
     cdef object pyev
     cdef double start = monotonic()
