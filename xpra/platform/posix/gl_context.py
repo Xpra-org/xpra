@@ -126,7 +126,7 @@ class GLXContext:
             pyattrs[GLX.GLX_DOUBLEBUFFER] = None
         attrs = c_attrs(pyattrs)
         self.xdisplay = get_xdisplay()
-        xvinfo = GLX.glXChooseVisual(self.xdisplay, screen.get_number(), attrs)
+        xvinfo = GLX.glXChooseVisual(self.xdisplay, 0, attrs)
         def getconfig(attrib):
             value = c_int()
             r = GLX.glXGetConfig(self.xdisplay, xvinfo, attrib, byref(value))
