@@ -119,7 +119,7 @@ def ignorewarnings(fn, *args) -> Any:
 class TableBuilder:
 
     def __init__(self, rows=1, columns=2, homogeneous=False, col_spacings=0, row_spacings=0):
-        self.table = Gtk.Table(rows, columns, homogeneous)
+        self.table = Gtk.Table(n_rows=rows, n_columns=columns, homogeneous=homogeneous)
         self.table.set_col_spacings(col_spacings)
         self.table.set_row_spacings(row_spacings)
         self.row = 0
