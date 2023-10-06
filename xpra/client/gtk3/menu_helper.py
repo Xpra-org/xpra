@@ -16,7 +16,7 @@ from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envbool
 from xpra.os_util import OSX, bytestostr
 from xpra.codecs.icon_util import INKSCAPE_RE
-from xpra.gtk.widget import scaled_image, menuitem
+from xpra.gtk.widget import scaled_image, menuitem, IgnoreWarningsContext
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.gtk.dialogs.about import about, close_about
 from xpra.platform.gui import get_icon_size
@@ -398,7 +398,8 @@ class MenuHelper:
         if not self.menu:
             log.warn("menu is not available yet")
             return
-        self.menu.popup(None, None, None, None, button, time)
+        with IgnoreWarningsContext():
+            self.menu.popup(None, None, None, None, button, time)
         self.menu_shown = True
 
 

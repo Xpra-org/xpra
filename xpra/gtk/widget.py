@@ -3,7 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import warnings
 from typing import Callable, Any
+from contextlib import AbstractContextManager
 
 import gi
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
@@ -86,11 +88,21 @@ def label(text:str="", tooltip:str="", font:str="") -> Gtk.Label:
 
 def setfont(widget, font=""):
     if font:
-        def pangosetfont():
+        with IgnoreWarningsContext():
             fontdesc = Pango.FontDescription(font)
             widget.modify_font(fontdesc)
-        ignorewarnings(pangosetfont)
 
+
+class IgnoreWarningsContext(AbstractContextManager):
+
+    def __enter__(self):
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        warnings.filterwarnings("default")
+
+    def __repr__(self):
+        return "IgnoreWarningsContext"
 
 def ignorewarnings(fn, *args) -> Any:
     import warnings
@@ -99,6 +111,9 @@ def ignorewarnings(fn, *args) -> Any:
         return fn(*args)
     finally:
         warnings.filterwarnings("default")
+
+
+
 
 
 class TableBuilder:

@@ -24,6 +24,7 @@ from xpra.server.gtk_server import GTKServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.codecs.constants import TransientCodecException, CodecStateException
 from xpra.gtk.gtk_util import get_screen_sizes, get_default_root_window
+from xpra.gtk.widget import IgnoreWarningsContext
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.net.compression import Compressed
 from xpra.log import Logger
@@ -491,7 +492,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             if POSIX and not OSX:
                 self.tray_menu.popup_at_pointer()
             else:
-                self.tray_menu.popup(None, None, None, None, button, time)
+                with IgnoreWarningsContext():
+                    self.tray_menu.popup(None, None, None, None, button, time)
             self.tray_menu_shown = True
 
     def tray_exit_callback(self, *_args) -> None:

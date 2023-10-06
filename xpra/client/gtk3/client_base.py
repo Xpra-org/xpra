@@ -33,7 +33,7 @@ from xpra.gtk.gtk_util import (
     GRAB_STATUS_STRING,
     init_display_source,
 )
-from xpra.gtk.widget import scaled_image, label, ignorewarnings
+from xpra.gtk.widget import scaled_image, label, ignorewarnings, IgnoreWarningsContext
 from xpra.gtk.pixbuf import get_icon_pixbuf, get_pixbuf_from_data
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.exit_codes import ExitCode, ExitValue
@@ -1114,10 +1114,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def window_ungrab(self) -> None:
         grablog("window_ungrab()")
         etime = Gtk.get_current_event_time()
-        def quiet_ungrab():
+        with IgnoreWarningsContext():
             Gdk.pointer_ungrab(etime)
             Gdk.keyboard_ungrab(etime)
-        ignorewarnings(quiet_ungrab)
         self._window_with_grab = 0
 
 
