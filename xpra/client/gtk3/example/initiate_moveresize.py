@@ -65,7 +65,7 @@ def make_window():
 
     def btn_callback(_btn, _event, direction):
         cancel()
-        x, y = get_root_window().get_pointer()[:2]
+        x, y = get_root_window().get_pointer()[1:3]
         source_indication = 1    #normal
         button = 1
         initiate(x, y, direction, button, source_indication)
