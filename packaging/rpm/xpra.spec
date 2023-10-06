@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 5.0.3
+%define version 5.0.4
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild
@@ -768,6 +768,8 @@ fi
 
 
 %changelog
+* Fri Oct 06 2023 Antoine Martin <antoine@xpra.org> 5.0.4-10
+- TODO
 * Thu Oct 05 2023 Antoine Martin <antoine@xpra.org> 5.0.3-10
 - Major:
    client signal watcher not starting

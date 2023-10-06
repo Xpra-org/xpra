@@ -1,5 +1,8 @@
 # Changelog
 
+## [5.0.4] 2023-10-06
+* TODO
+
 ## [5.0.3] 2023-10-05
 * Major:
     * [client signal watcher not starting](https://github.com/Xpra-org/xpra/commit/0b1841d6eecbd3af6e11ec5aa79749ec3f3f9910)
