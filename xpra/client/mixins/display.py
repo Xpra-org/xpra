@@ -594,7 +594,7 @@ class DisplayClient(StubClientMixin):
             #would overflow..
             summary = "Invalid Scale Factor"
             messages = [
-                "cannot scale by %i%% x %i%% or lower" % ((100*xscale), (100*yscale)),
+                "cannot scale by %i%% x %i%% or lower" % (round(100*xscale), round(100*yscale)),
                 "the scaled client screen %i x %i -> %i x %i" % (root_w, root_h, sw, sh),
                 " would overflow the server's screen: %i x %i" % (maxw, maxh),
                 ]
