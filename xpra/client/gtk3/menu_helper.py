@@ -219,7 +219,7 @@ def make_min_auto_menu(title, min_options, options,
             found_match |= candidate_match
             qi.connect('activate', set_fn, submenu)
             if s>0:
-                qi.set_tooltip_text(f"{s}%%")
+                qi.set_tooltip_text(f"{s}%")
             submenu.append(qi)
             items[s] = qi
         return items
