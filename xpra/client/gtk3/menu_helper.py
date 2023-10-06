@@ -209,7 +209,7 @@ def make_min_auto_menu(title, min_options, options,
         found_match = False
         items = {}
         if value and value>0 and value not in options:
-            options[value] = f"{value}%%"
+            options[value] = f"{value}%"
         for s in sorted(options.keys()):
             t = options.get(s)
             qi = Gtk.CheckMenuItem(label=t)
