@@ -11,6 +11,7 @@ from gi.repository import Gtk, GLib  # @UnresolvedImport
 
 from xpra.common import MoveResize, MOVERESIZE_DIRECTION_STRING
 from xpra.gtk.gtk_util import add_close_accel
+from xpra.gtk.widget import IgnoreWarningsContext
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.platform import program_context
 
@@ -29,8 +30,7 @@ def make_window():
     def get_root_window():
         return window.get_window().get_screen().get_root_window()
 
-    def initiate(x_root, y_root, direction, button, source_indication):
-        #print("initiate%s" % str((x_root, y_root, direction, button, source_indication)))
+    def initiate(x_root : float, y_root : float, direction : MoveResize, button : int, source_indication : int):
         from xpra.x11.gtk3.display_source import init_gdk_display_source
         init_gdk_display_source()
         from xpra.x11.bindings.core import X11CoreBindings                    #@UnresolvedImport
@@ -46,35 +46,40 @@ def make_window():
 
     def cancel():
         initiate(0, 0, MoveResize.CANCEL, 0, 1)
+    def expand(widget):
+        widget.set_hexpand(True)
+        widget.set_vexpand(True)
+        return widget
 
+    grid = Gtk.Grid()
+    grid.set_row_homogeneous(True)
+    grid.set_column_homogeneous(True)
 
-    table = Gtk.Table(n_rows=3, n_columns=3, homogeneous=True)
-
-    FILL = Gtk.AttachOptions.FILL
-    EXPAND = Gtk.AttachOptions.EXPAND
     btn = Gtk.Button(label="initiate move")
-    table.attach(btn, 1, 2, 1, 2, xoptions=FILL, yoptions=FILL)
+    grid.attach(expand(btn), 2, 2, 1, 1)
     def initiate_move(*_args):
         cancel()
-        pos = get_root_window().get_pointer()
+        with IgnoreWarningsContext():
+            pos = get_root_window().get_pointer()
         source_indication = 1    #normal
         button = 1
-        direction = MoveResize.MOVE
-        initiate(pos.x, pos.y, direction, button, source_indication)
+        initiate(pos.x, pos.y, MoveResize.MOVE, button, source_indication)
         GLib.timeout_add(5*1000, cancel)
     btn.connect('button-press-event', initiate_move)
 
-    def btn_callback(_btn, _event, direction):
+    def btn_callback(_btn, _event, direction:MoveResize):
         cancel()
-        x, y = get_root_window().get_pointer()[1:3]
+        with IgnoreWarningsContext():
+            pos = get_root_window().get_pointer()
         source_indication = 1    #normal
         button = 1
-        initiate(x, y, direction, button, source_indication)
+        initiate(pos.x, pos.y, direction, button, source_indication)
         GLib.timeout_add(5*1000, cancel)
-    def add_button(x, y, direction):
+
+    def add_button(x:int, y:int, direction:MoveResize):
         btn = Gtk.Button(label=MOVERESIZE_DIRECTION_STRING[direction])
-        table.attach(btn, x, x+1, y, y+1, xoptions=EXPAND|FILL, yoptions=EXPAND|FILL)
         btn.connect('button-press-event', btn_callback, direction)
+        grid.attach(expand(btn), x, y, 1, 1)
 
     for x,y,direction in (
                         (0, 0, MoveResize.SIZE_TOPLEFT),
@@ -88,8 +93,8 @@ def make_window():
                         (2, 2, MoveResize.SIZE_BOTTOMRIGHT),
                             ):
         add_button(x, y, direction)
-    table.show_all()
-    window.add(table)
+    grid.show_all()
+    window.add(grid)
     window.set_size_request(width, height)
     return window
 

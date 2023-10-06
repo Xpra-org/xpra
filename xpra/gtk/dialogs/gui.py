@@ -63,10 +63,12 @@ class GUI(BaseGUIWindow):
             self.ib("Shadow", "server-connected.png", tooltip, self.shadow, sensitive=has_shadow)
             tooltip = "Start a new %sxpra session" % (" remote" if (WIN32 or OSX) else "")
             self.ib("Start", "windows.png", tooltip, self.start)
-        table = Gtk.Table(n_rows=2, n_columns=2, homogeneous=True)
+        grid = Gtk.Grid()
+        grid.set_row_homogeneous(True)
+        grid.set_column_homogeneous(True)
         for i, widget in enumerate(self.widgets):
-            table.attach(widget, i%2, i%2+1, i//2, i//2+1, xpadding=10, ypadding=10)
-        self.vbox.add(table)
+            grid.attach(widget, i%2, i//2, 1, 1)
+        self.vbox.add(grid)
 
     def add_widget(self, widget):
         self.widgets.append(widget)

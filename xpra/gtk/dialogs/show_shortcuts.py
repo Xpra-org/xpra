@@ -44,25 +44,31 @@ class ShortcutInfo(Gtk.Window):
         icon = get_icon_pixbuf("keyboard.png")
         if icon:
             self.set_icon(icon)
-        label = lal("Help: shortcuts", "sans 18")
-        vbox.pack_start(label, True, True, 10)
-        label = lal("Prefix: %s" % ("+".join(shortcut_modifiers)))
-        vbox.pack_start(label, True, True, 0)
+        def vlabel(text, font="", padding=0):
+            vbox.pack_start(lal(text, font), True, True, padding)
+
+        vlabel("Help: shortcuts", "sans 18", 10)
+        vlabel("Prefix: %s" % ("+".join(shortcut_modifiers)), padding=0)
         #each key may have multiple shortcuts, count them all:
         total = 0
         for keyname in shortcuts:
             total += len(shortcuts[keyname])
-        label = lal("%i Shortcuts:" % (total, ), "sans 16")
-        vbox.pack_start(label, True, True, 20)
-        table = Gtk.Table(n_rows=total+1, n_columns=2, homogeneous=True)
+        vlabel("%i Shortcuts:" % (total, ), "sans 16", 20)
+
+        grid = Gtk.Grid()
+        grid.set_row_homogeneous(True)
+        grid.set_column_homogeneous(True)
+
         row = 0
         def attach(s, x=0, font=""):
             al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0.0)
             l = label(s, font=font)
+            l.set_margin_start(5)
+            l.set_margin_top(2)
+            l.set_margin_end(5)
+            l.set_margin_bottom(2)
             al.add(l)
-            table.attach(al, x, x+1, row, row+1,
-                         xoptions=Gtk.AttachOptions.FILL, yoptions=Gtk.AttachOptions.FILL,
-                         xpadding=10, ypadding=0)
+            grid.attach(al, x, row, 1, 1)
         attach("Keys", 0, "sans bold 12")
         attach("Action", 1, "sans bold 12")
         row += 1
@@ -76,11 +82,11 @@ class ShortcutInfo(Gtk.Window):
                 attach(keys, 0)
                 attach(action, 1)
                 row += 1
-        vbox.pack_start(table, False, True, 0)
+        vbox.pack_start(grid, False, True, 0)
         vbox.set_margin_top(20)
         vbox.set_margin_bottom(20)
-        vbox.set_margin_left(20)
-        vbox.set_margin_right(20)
+        vbox.set_margin_start(20)
+        vbox.set_margin_end(20)
         self.add(vbox)
 
 

@@ -81,9 +81,17 @@ class OptionWindow(Gtk.Window):
         if icon:
             self.set_icon(icon)
 
-        t = Gtk.Table(n_rows=9, n_columns=3, homogeneous=True)
+        grid = Gtk.Grid()
+        grid.set_row_homogeneous(True)
+        grid.set_column_homogeneous(True)
+
+        def expand(widget):
+            widget.set_hexpand(True)
+            widget.set_vexpand(True)
+            return widget
+
         def attach(widget, col, row):
-            t.attach(widget, col, col+1, row, row+1, Gtk.AttachOptions.EXPAND, Gtk.AttachOptions.FILL, 0, 0)
+            grid.attach(expand(widget), col, row, 1, 1)
         def l(s):    # noqa: E743
             return label(s)
         def line(row, *widgets):
@@ -111,7 +119,7 @@ class OptionWindow(Gtk.Window):
         btn.set_label("Create")
         btn.connect("clicked", self.create)
         line(8, l(""), btn)
-        self.add(t)
+        self.add(grid)
         for i, entry in enumerate((
             self.requested_width, self.requested_height,
             self.min_width, self.min_height,
