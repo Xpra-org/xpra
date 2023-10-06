@@ -347,7 +347,7 @@ class SessionsGUI(Gtk.Window):
         if interface and address.lower().startswith("fe80:"):
             #ie: "fe80::c1:ac45:7351:ea69%eth1"
             try:
-                address += "%%%s" % socket.if_indextoname(interface)
+                address += "%" + socket.if_indextoname(interface)
             except OSError:
                 pass
         if username:

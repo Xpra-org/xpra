@@ -27,7 +27,7 @@ def make_window():
     def change_opacity(*_args):
         global opacity
         opacity = (opacity + 5) % 100
-        btn.set_label("Change Opacity: %i%%" % opacity)
+        btn.set_label(f"Change Opacity: {opacity}%")
         win.set_opacity(opacity/100.0)
     btn.connect('clicked', change_opacity)
     win.add(btn)

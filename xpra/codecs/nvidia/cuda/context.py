@@ -294,8 +294,8 @@ def check_device(i:int, device, min_compute:int=0) -> bool:
             #so that the log output is bunched up together
             log.info("CUDA %s / PyCUDA %s, found %s devices:",
                      ".".join([str(x) for x in get_version()]), pycuda.VERSION_TEXT, ngpus)
-        log.info("  + %s (memory: %s%% free, compute: %s.%s)",
-                 device_info(device), 100*free//total, SMmajor, SMminor)
+        mfree = round(100*free/total)
+        log.info(f"  + {device_info(device)} (memory: {mfree}% free, compute: {SMmajor}.{SMminor})")
         if SMmajor<2:
             log.info("  this device is too old!")
             return False
@@ -332,7 +332,7 @@ def select_device(preferred_device_id=-1, min_compute=0):
                     if compute<min_compute:
                         log.warn("Warning: GPU device %i only supports compute %#x", device_id, compute)
                 if tpct<MIN_FREE_MEMORY:
-                    log.warn("Warning: GPU device %i is low on memory: %i%%", device_id, tpct)
+                    log.warn(f"Warning: GPU device {device_id} is low on memory: {tpct}%")
                 return device_id, device
     load_balancing = get_pref("load-balancing")
     log("load-balancing=%s", load_balancing)

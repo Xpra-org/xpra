@@ -1477,8 +1477,7 @@ class WindowSource(WindowIconSource):
                 rq -= sqrt(1000*1000//bwl)
             rs = min(50, max(0, rs))
             rq = min(99, max(80, int(rq), self._current_quality+30))
-        refreshlog("update_refresh_attributes() wid=%i, refresh quality=%i%%, refresh speed=%i%%, for cv=%.2f, bwl=%i",
-                   self.wid, rq, rs, cv, bwl)
+        refreshlog(f"update_refresh_attributes() wid={self.wid}, refresh quality={rq}%, refresh speed={rs}%, for cv={cv:.2f}, {bwl=}")
         self.refresh_quality = rq
         self.refresh_speed = rs
 

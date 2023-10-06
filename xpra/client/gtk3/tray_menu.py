@@ -695,7 +695,7 @@ class GTKTrayMenu(MenuHelper):
         def scalecmp(v):
             return abs(self.client.xscale-v)<0.1
         pct = round(100.0*scalingvalue)
-        label = {100 : "None"}.get(pct, "%i%%" % pct)
+        label = {100 : "None"}.get(pct, f"{pct}%")
         c = Gtk.CheckMenuItem(label=label)
         c.scalingvalue = scalingvalue
         c.set_draw_as_radio(True)

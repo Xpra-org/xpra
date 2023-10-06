@@ -419,8 +419,8 @@ class FileTransferHandler(FileTransferAttributes):
                 self.source_remove(chunk_state.timer)
             #remote end will send more after receiving the ack
             chunk_state.timer = self.timeout_add(CHUNK_TIMEOUT, self._check_chunk_receiving, chunk_id, chunk)
-            filelog("waiting for the next chunk, got %8i of %8i: %3i%%",
-                    chunk_state.written, chunk_state.filesize, 100*chunk_state.written/chunk_state.filesize)
+            pct = round(100*chunk_state.written/chunk_state.filesize)
+            filelog(f"waiting for the next chunk, got {chunk_state.written:8} of {chunk_state.filesize:8}: {pct:3}%")
             return
         #we have received all the packets
         self.receive_chunks_in_progress.pop(chunk_id, None)
