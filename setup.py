@@ -1996,11 +1996,21 @@ if WIN32 or OSX:
         external_includes += [
             "cryptography", "idna", "idna.idnadata", "appdirs",
             ]
-        add_modules("cryptography.hazmat.bindings._openssl",
-                    "cryptography.hazmat.bindings._constant_time",
-                    "cryptography.hazmat.bindings._padding",
-                    "cryptography.hazmat.backends.openssl",
-                    "cryptography.fernet")
+        add_modules(
+            "cryptography",
+            "cryptography.hazmat",
+            "cryptography.hazmat.backends.openssl.backend",
+            "cryptography.hazmat.bindings._rust.openssl",
+            "cryptography.hazmat.bindings.openssl",
+            "cryptography.hazmat.primitives.hashes",
+            "cryptography.hazmat.primitives.asymetric",
+            "cryptography.hazmat.primitives.ciphers",
+            "cryptography.hazmat.primitives.kdf",
+            "cryptography.hazmat.primitives.serialization",
+            "cryptography.hazmat.primitives.twofactor",
+            "cryptography.fernet",
+            "cryptography.exceptions",
+        )
 
 
 if scripts_ENABLED:
