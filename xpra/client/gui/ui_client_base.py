@@ -14,7 +14,7 @@ from xpra.client.base.client import XpraClientBase
 from xpra.client.gui.keyboard_helper import KeyboardHelper
 from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type, ClientExtras
-from xpra.common import FULL_INFO, noop, NotificationID, ConnectionMessage
+from xpra.common import FULL_INFO, noop, NotificationID, ConnectionMessage, noerr
 from xpra.util.version import full_version_str
 from xpra.net import compression, packet_encoding
 from xpra.net.common import PacketType
@@ -104,6 +104,8 @@ class UIXpraClient(ClientBaseClass):
 
     # noinspection PyMissingConstructor
     def __init__(self):  # pylint: disable=super-init-not-called
+        # try to ensure we start on a new line (see #4023):
+        noerr(sys.stdout.write, "\n")
         log.info(f"Xpra {self.client_toolkit()} client version {full_version_str()}")
         #mmap_enabled belongs in the MmapClient mixin,
         #but it is used outside it, so make sure we define it:
