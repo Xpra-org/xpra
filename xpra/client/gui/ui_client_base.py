@@ -13,7 +13,7 @@ from xpra.client.base.client_base import XpraClientBase
 from xpra.client.gui.keyboard_helper import KeyboardHelper, add_xkbmap_legacy_prefix
 from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type, ClientExtras
-from xpra.common import FULL_INFO, noop, noerr
+from xpra.common import FULL_INFO, noop
 from xpra.version_util import full_version_str
 from xpra.net import compression, packet_encoding
 from xpra.net.common import PacketType
@@ -28,6 +28,7 @@ from xpra.os_util import (
 from xpra.util import (
     std, envbool, envint, typedict, updict, repr_ellipsized, ellipsizer, log_screen_sizes, engs, csv,
     merge_dicts, NotificationID, ConnectionMessage,
+    noerr,
     )
 from xpra.scripts.config import parse_bool
 from xpra.exit_codes import ExitCode
