@@ -121,7 +121,7 @@ class Gravity(IntEnum):
 
 def GravityStr(v):
     try:
-        return Gravity(v)
+        return str(Gravity(v))
     except ValueError:
         return str(v)
 
