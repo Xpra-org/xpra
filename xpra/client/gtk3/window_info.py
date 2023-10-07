@@ -5,12 +5,12 @@
 
 from gi.repository import Gtk, Gdk, GLib  # @UnresolvedImport
 
-from xpra.util.types import typedict
+from xpra.util.types import typedict, AtomicInteger
 from xpra.util.str_fn import csv
 from xpra.os_util import bytestostr
 from xpra.common import GravityStr, WORKSPACE_UNSET
 from xpra.gtk.gtk_util import add_close_accel
-from xpra.gtk.widget import label, TableBuilder
+from xpra.gtk.widget import label, IgnoreWarningsContext
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.log import Logger
 
@@ -62,7 +62,8 @@ def get_window_attributes(w) -> str:
     workspace = w.get_desktop_workspace()
     if workspace not in (None, WORKSPACE_UNSET):
         attr["workspace"] = workspace
-    opacity = w.get_opacity()
+    with IgnoreWarningsContext():
+        opacity = w.get_opacity()
     if opacity<1:
         attr["opacity"] = opacity
     role = w.get_role()
@@ -91,71 +92,73 @@ class WindowInfo(Gtk.Window):
             self.is_closed = True
         self.connect('delete_event', window_deleted)
 
-        tb = TableBuilder(1, 2)
-        self.wid_label = slabel()
-        tb.new_row("Window ID", self.wid_label)
-        self.title_label = slabel()
-        self.title_label.set_line_wrap(True)
+        grid = Gtk.Grid()
+        grid.set_row_homogeneous(False)
+        grid.set_column_homogeneous(True)
+        row = AtomicInteger()
+        def new_row(text="", widget=None) -> None:
+            l = label(text)
+            l.set_xalign(1)
+            l.set_margin_end(10)
+            grid.attach(l, 1, int(row), 1, 1)
+            if widget:
+                grid.attach(widget, 2, int(row), 1, 1)
+            row.increase()
+        def lrow(text:str) -> Gtk.Label:
+            l = label()
+            l.set_margin_start(10)
+            l.set_xalign(0)
+            l.set_line_wrap(True)
+            new_row(text, l)
+            return l
+        def irow(text) -> Gtk.Image:
+            i = Gtk.Image()
+            i.set_margin_start(10)
+            i.set_halign(0)
+            new_row(text, i)
+            return i
+        def sep() -> None:
+            s = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+            s.set_margin_top(3)
+            s.set_margin_bottom(3)
+            grid.attach(s, 1, int(row), 2, 1)
+            row.increase()
+        self.wid_label = lrow("Window ID")
+        self.title_label = lrow("Title")
         self.title_label.set_size_request(320, -1)
-        #self.title_label.set_justify(Gtk.Justification.LEFT)
-        self.title_label.set_alignment(0, 0.5)
-        tb.new_row("Title", self.title_label)
-        self.rendering_label = slabel()
-        tb.new_row("Rendering", self.rendering_label)
-        self.or_image = Gtk.Image()
-        tb.new_row("Override-Redirect", self.or_image)
-        self.state_label = slabel()
-        tb.new_row("State", self.state_label)
-        self.attributes_label = slabel()
-        tb.new_row("Attributes", self.attributes_label)
-        self.focus_image = Gtk.Image()
-        tb.new_row("Focus", self.focus_image)
-        self.button_state_label = slabel()
-        tb.new_row("Button State", self.button_state_label)
-        self.fps_label = slabel()
-        tb.new_row("Frames Per Second", self.fps_label)
-        #self.group_leader_label = slabel()
-        #tb.new_row("Group Leader", self.group_leader_label)
-        tb.new_row("")
-        self.gravity_label = slabel()
-        tb.new_row("Gravity", self.gravity_label)
-        self.content_type_label = slabel()
-        tb.new_row("Content Type", self.content_type_label)
-        tb.new_row("", slabel())
-        self.pixel_depth_label = slabel()
-        tb.new_row("Pixel Depth", self.pixel_depth_label)
-        self.alpha_image = Gtk.Image()
-        tb.new_row("Alpha Channel", self.alpha_image)
-        self.opengl_image = Gtk.Image()
-        tb.new_row("OpenGL", self.opengl_image)
-        tb.new_row("")
-        self.geometry_label = slabel()
-        tb.new_row("Geometry", self.geometry_label)
-        self.outer_geometry_label = slabel()
-        tb.new_row("Outer Geometry", self.outer_geometry_label)
-        self.inner_geometry_label = slabel()
-        tb.new_row("Inner Geometry", self.inner_geometry_label)
-        self.offsets_label = slabel()
-        tb.new_row("Offsets", self.offsets_label)
-        self.frame_extents_label = slabel()
-        tb.new_row("Frame Extents", self.frame_extents_label)
-        self.max_size_label = slabel()
-        tb.new_row("Maximum Size", self.max_size_label)
-        self.size_constraints_label = slabel()
-        tb.new_row("Size Constraints", self.size_constraints_label)
-        tb.new_row("")
+        self.rendering_label = lrow("Rendering")
+        self.or_image = irow("Override-Redirect")
+        self.state_label = lrow("State")
+        self.attributes_label = lrow("Attributes")
+        self.focus_image = irow("Focus")
+        self.button_state_label = lrow("Button State")
+        self.fps_label = lrow("Frames Per Second")
+        sep()
+        self.gravity_label = lrow("Gravity")
+        self.content_type_label = lrow("Content Type")
+        sep()
+        self.pixel_depth_label = lrow("Pixel Depth")
+        self.alpha_image = irow("Alpha Channel")
+        self.opengl_image = irow("OpenGL")
+        sep()
+        self.geometry_label = lrow("Geometry")
+        self.outer_geometry_label = lrow("Outer Geometry")
+        self.inner_geometry_label = lrow("Inner Geometry")
+        self.offsets_label = lrow("Offsets")
+        self.frame_extents_label = lrow("Frame Extents")
+        self.max_size_label = lrow("Maximum Size")
+        self.size_constraints_label = lrow("Size Constraints")
+        sep()
         #backing:
-        self.video_properties = slabel()
-        tb.new_row("Video Decoder", self.video_properties)
-        tb.new_row("")
-        self.backing_properties = slabel()
-        tb.new_row("Backing Properties", self.backing_properties)
-        tb.new_row("")
+        self.video_properties = lrow("Video Decoder")
+        sep()
+        self.backing_properties = lrow("Backing Properties")
+        sep()
         btn = Gtk.Button(label="Copy to clipboard")
         btn.connect("clicked", self.copy_to_clipboard)
-        tb.new_row("", btn)
+        grid.attach(btn, 1, int(row), 2, 1)
         vbox = Gtk.VBox()
-        vbox.pack_start(tb.get_table(), True, True, 20)
+        vbox.pack_start(grid, True, True, 20)
         self.add(vbox)
 
     def destroy(self, *_args) -> None:
