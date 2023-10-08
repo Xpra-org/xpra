@@ -903,7 +903,7 @@ class FileTransferHandler(FileTransferAttributes):
         if not spd:
             filelog.warn(f"Warning: send timeout, id {send_id!r} not found!")
             return False
-        filelog.warn("Warning: failed to %s file '%s',", ["send", "print"][spd.printit], spd.filename)
+        filelog.warn("Warning: failed to %s file '%s',", ["send", "print"][spd.printit], spd.url)
         filelog.warn(" the send approval request timed out")
         return False
 
