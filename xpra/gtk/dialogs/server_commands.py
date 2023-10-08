@@ -11,7 +11,7 @@ from gi.repository import GLib, Gtk  # @UnresolvedImport
 from xpra.gtk.signals import register_os_signals
 from xpra.util.types import typedict, AdHocStruct
 from xpra.gtk.gtk_util import add_close_accel
-from xpra.gtk.widget import scaled_image, label, TableBuilder
+from xpra.gtk.widget import scaled_image, label
 from xpra.gtk.pixbuf import get_icon_pixbuf, get_pixbuf_from_data
 from xpra.log import Logger, enable_debug_for
 
@@ -33,7 +33,7 @@ class ServerCommandsWindow:
         self.client = client
         self.populate_timer = 0
         self.commands_info = {}
-        self.table = None
+        self.contents = None
         self.window = Gtk.Window()
         self.window.set_border_width(20)
         self.window.connect("delete-event", self.close)
@@ -82,17 +82,20 @@ class ServerCommandsWindow:
         if self.commands_info!=commands_info and commands_info:
             log("populate_table() new commands_info=%s", commands_info)
             self.commands_info = commands_info
-            if self.table:
-                self.alignment.remove(self.table)
-            tb = TableBuilder(rows=1, columns=2, row_spacings=15)
-            self.table = tb.get_table()
+            if self.contents:
+                self.alignment.remove(self.contents)
+            grid = Gtk.Grid()
             def l(s=""):    # noqa: E743
-                return label(s)
-            headers = [l(), l("PID"), l("Command"), l("Exit Code")]
+                widget = label(s)
+                widget.set_margin_start(5)
+                widget.set_margin_end(5)
+                return widget
+            headers = ["", "PID", "Command", "Exit Code"]
             if self.client.server_commands_signals:
-                headers.append(l("Send Signal"))
-            tb.add_row(*headers)
-            for procinfo in self.commands_info.values():
+                headers.append("Send Signal")
+            for i, text in enumerate(headers):
+                grid.attach(l(text), i, 0, 1, 1)
+            for row, procinfo in enumerate(self.commands_info.values()):
                 if not isinstance(procinfo, dict):
                     continue
                 #some records aren't procinfos:
@@ -128,15 +131,15 @@ class ServerCommandsWindow:
                                 icon.set_from_pixbuf(pixbuf)
                         except Exception:
                             log("failed to get window icon", exc_info=True)
-                    items = [icon, l(f"{pid}"), l(cmd_str), l(rstr)]
+                    widgets = [icon, l(f"{pid}"), l(cmd_str), l(rstr)]
                     if self.client.server_commands_signals:
                         if returncode is None:
-                            items.append(self.signal_button(pid))
-                        else:
-                            items.append(l())
-                    tb.add_row(*items)
-            self.alignment.add(self.table)
-            self.table.show_all()
+                            widgets.append(self.signal_button(pid))
+                    for i, widget in enumerate(widgets):
+                        grid.attach(widget, i, 1+row, 1, 1)
+            self.alignment.add(grid)
+            grid.show_all()
+            self.contents = grid
         self.client.send_info_request()
         return True
 

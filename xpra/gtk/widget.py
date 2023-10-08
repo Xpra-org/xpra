@@ -51,11 +51,16 @@ def imagebutton(title, icon=None, tooltip="", clicked_callback:Callable|None=Non
             l = b_hbox.get_children()[1]
         except (IndexError, AttributeError):
             pass
-        if label_color and hasattr(l, "modify_fg"):
-            l.modify_fg(Gtk.StateType.NORMAL, label_color)
+        if label_color:
+            modify_fg(l, label_color)
         if label_font:
             setfont(l, label_font)
     return button
+
+def modify_fg(widget, color, state=Gtk.StateType.NORMAL):
+    if hasattr(widget, "modify_fg"):
+        with IgnoreWarningsContext():
+            widget.modify_fg(state, color)
 
 
 def menuitem(title, image=None, tooltip=None, cb=None) -> Gtk.ImageMenuItem:

@@ -19,10 +19,8 @@ from xpra.util.child_reaper import getChildReaper
 from xpra.exit_codes import exit_str
 from xpra.scripts.config import OPTION_TYPES
 from xpra.scripts.main import get_command_args
-from xpra.gtk.gtk_util import (
-    add_close_accel, color_parse,
-)
-from xpra.gtk.widget import scaled_image, imagebutton, label, TableBuilder
+from xpra.gtk.gtk_util import add_close_accel, color_parse
+from xpra.gtk.widget import scaled_image, imagebutton, label, modify_fg, IgnoreWarningsContext
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.signals import register_os_signals
 from xpra.net.common import DEFAULT_PORTS
@@ -31,6 +29,11 @@ from xpra.os_util import bytestostr, WIN32
 from xpra.log import Logger
 
 log = Logger("client", "util")
+
+try:
+    local_host_name = socket.gethostname()
+except OSError:
+    local_host_name = "localhost"
 
 
 class SessionsGUI(Gtk.Window):
@@ -46,7 +49,8 @@ class SessionsGUI(Gtk.Window):
         self.set_decorated(True)
         self.set_size_request(800, 220)
         self.set_position(Gtk.WindowPosition.CENTER)
-        self.set_wmclass("xpra-sessions-gui", "Xpra-Sessions-GUI")
+        with IgnoreWarningsContext():
+            self.set_wmclass("xpra-sessions-gui", "Xpra-Sessions-GUI")
         add_close_accel(self, self.quit)
         self.connect("delete_event", self.quit)
         icon = get_icon_pixbuf("browse.png")
@@ -78,8 +82,7 @@ class SessionsGUI(Gtk.Window):
         self.vbox.add(title_label)
 
         self.warning = label(" ")
-        red = color_parse("red")
-        self.warning.modify_fg(Gtk.StateType.NORMAL, red)
+        modify_fg(self.warning, color_parse("red"))
         self.warning.show()
         self.vbox.add(self.warning)
 
@@ -99,7 +102,7 @@ class SessionsGUI(Gtk.Window):
         self.password_box.add(al)
         self.vbox.add(self.password_box)
 
-        self.table = None
+        self.contents = None
         self.records = []
         try:
             from xpra.platform.info import get_username
@@ -241,34 +244,33 @@ class SessionsGUI(Gtk.Window):
 
     def populate_table(self):
         log("populate_table: %i records", len(self.records))
-        if self.table:
-            self.vbox.remove(self.table)
-            self.table = None
+        if self.contents:
+            self.vbox.remove(self.contents)
+            self.contents = None
         if not self.records:
-            self.table = label("No sessions found")
-            self.vbox.add(self.table)
-            self.table.show()
+            self.contents = label("No sessions found")
+            self.vbox.add(self.contents)
+            self.contents.show()
             self.set_size_request(440, 200)
             self.password_box.hide()
             return
         self.password_box.show()
         self.set_size_request(-1, -1)
-        tb = TableBuilder(1, 6, False)
+        grid = Gtk.Grid()
         def l(s=""):    # noqa: E743
-            return label(s)
-        labels = [l(x) for x in (
-            "Host", "Display", "Name", "Platform", "Type", "URI", "Connect", "Open in Browser",
-            )]
-        tb.add_row(*labels)
-        self.table = tb.get_table()
-        self.vbox.add(self.table)
-        self.table.resize(1+len(self.records), 5)
+            widget = label(s)
+            widget.set_margin_start(5)
+            widget.set_margin_end(5)
+            return widget
+        for i, text in enumerate(("Host", "Display", "Name", "Platform", "Type", "URI", "Connect", "Open in Browser")):
+            grid.attach(l(text), i, 1, 1, 1)
         #group them by uuid
         d = {}
         session_names = {}
         address = ""
         port = 0
         display = ""
+        row = 2
         for i, record in enumerate(self.records):
             interface, protocol, name, stype, domain, host, address, port, text = record
             td = typedict(text)
@@ -293,6 +295,7 @@ class SessionsGUI(Gtk.Window):
                 uuid = str(display)
                 title = f"{host} : {display}"
             else:
+                display = ""
                 uuid = str(key)
                 #try to find a valid host name:
                 hosts = [rec[5] for rec in recs if not rec[5].startswith("local")]
@@ -307,6 +310,10 @@ class SessionsGUI(Gtk.Window):
                     platform = td.strget("platform", "")
                 if not dtype:
                     dtype = td.strget("type", "")
+                if not display:
+                    display = td.strget("display", "")
+            if title in ("localhost", "localhost.localdomain", "127.0.0.1", "::1", local_host_name):
+                title = "local"
             host_label = l(title)
             if uuid!=title:
                 host_label.set_tooltip_text(uuid)
@@ -321,8 +328,13 @@ class SessionsGUI(Gtk.Window):
                 pwidget = l(platform)
             w, c, b = self.make_connect_widgets(key, recs, address, port, display)
             session_name = session_names.get(key, "")
-            tb.add_row(l(host), host_label, l(session_name), pwidget, l(dtype), w, c, b)
-        self.table.show_all()
+            widgets = host_label, l(display), l(session_name), pwidget, l(dtype), w, c, b
+            for x, widget in enumerate(widgets):
+                grid.attach(widget, x, row, 1, 1)
+            row += 1
+        grid.show_all()
+        self.contents = grid
+        self.vbox.add(grid)
 
     def get_uri(self, password, interface, protocol, name:str, stype:str, domain, host:str, address, port:int, text) -> str:
         dstr = ""
@@ -350,16 +362,17 @@ class SessionsGUI(Gtk.Window):
                 address += "%" + socket.if_indextoname(interface)
             except OSError:
                 pass
+        uri = f"{mode}://"
         if username:
             if password:
-                uri = "%s://%s:%s@%s" % (mode, username, password, address)
+                uri += f"{username}:{password}@{address}"
             else:
-                uri = "%s://%s@%s" % (mode, username, address)
+                uri += f"{username}@{address}"
         else:
-            uri = "%s://%s" % (mode, address)
+            uri += address
         if port>0:
             if DEFAULT_PORTS.get(mode, 0)!=port:        # NOSONAR @SuppressWarnings("python:S1066")
-                uri += ":%s" % port
+                uri += f":{port}"
         if protocol not in ("socket", "named-pipe"):
             uri += "/"
             if dstr:

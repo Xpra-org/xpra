@@ -5,12 +5,13 @@
 import re
 import sys
 from collections import deque
+from collections.abc import Callable
 import gi
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 from xpra.util.str_fn import csv
-from xpra.gtk.widget import label, TableBuilder
+from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.platform.features import CLIPBOARDS
 
@@ -38,23 +39,19 @@ class ClipboardInstance:
         self.value_entry = Gtk.Entry()
         self.value_entry.set_max_length(100)
         self.value_entry.set_width_chars(32)
-        def b(l):
-            return Gtk.Button(label=l)
-        self.clear_label_btn = b("X")
-        self.clear_label_btn.connect("clicked", self.clear_label)
-        self.clear_entry_btn = b("X")
-        self.clear_entry_btn.connect("clicked", self.clear_entry)
-        self.get_get_targets_btn = b("Get Targets")
-        self.get_get_targets_btn.connect("clicked", self.do_get_targets)
-        self.get_target_btn = b("Get Target")
-        self.get_target_btn.connect("clicked", self.do_get_target)
+
+        def b(text:str, callback:Callable):
+            btn = Gtk.Button(label=text)
+            btn.connect("clicked", callback)
+            return btn
+        self.clear_label_btn = b("X", self.clear_label)
+        self.clear_entry_btn = b("X", self.clear_entry)
+        self.get_get_targets_btn = b("Get Targets", self.do_get_targets)
+        self.get_target_btn = b("Get Target", self.do_get_target)
         self.get_target_btn.set_sensitive(False)
-        self.set_target_btn = b("Set Target")
-        self.set_target_btn.connect("clicked", self.do_set_target)
-        self.get_string_btn = b("Get String")
-        self.get_string_btn.connect("clicked", self.do_get_string)
-        self.set_string_btn = b("Set String")
-        self.set_string_btn.connect("clicked", self.do_set_string)
+        self.set_target_btn = b("Set Target", self.do_set_target)
+        self.get_string_btn = b("Get String", self.do_get_string)
+        self.set_string_btn = b("Set String", self.do_set_string)
         self.clipboard.connect("owner-change", self.owner_changed)
         self.log("ready")
 
@@ -87,7 +84,7 @@ class ClipboardInstance:
         self.get_targets.set_sensitive(True)
         i = 0
         for t in filtered:
-            self.get_targets.append_text(t)
+            self.get_targets.append_text(str(t))
             if t==ct:
                 self.get_targets.set_active(i)
             i += 1
@@ -109,20 +106,20 @@ class ClipboardInstance:
         return val
 
     def selection_value_callback(self, _cb, selection_data, *_args):
-        #print("selection_value_callback(%s, %s, %s)" % (cb, selection_data, args))
         try:
-            if selection_data.data is None:
+            data = selection_data.get_data()
+            if data is None:
                 s = ""
             else:
                 s = "type=%s, format=%s, data=%s" % (
-                        selection_data.type,
-                        selection_data.format,
-                        self.ellipsis(re.escape(selection_data.data)))
+                        selection_data.get_data_type(),
+                        selection_data.get_format(),
+                        self.ellipsis(re.escape(data)))
         except TypeError:
             try:
-                s = self.ellipsis("\\".join([str(x) for x in bytearray(selection_data.data)]))
-            except Exception:
-                s = "!ERROR! binary data?"
+                s = self.ellipsis("\\".join([str(x) for x in bytearray(data)]))
+            except Exception as e:
+                s = f"!ERROR: {e}! binary data?"
         self.log("Got selection data: '%s'" % s)
         self.value_label.set_text(s)
 
@@ -130,7 +127,8 @@ class ClipboardInstance:
         self.clear_label()
         target = self.get_targets.get_active_text()
         self.log("Requesting %s" % target)
-        self.clipboard.request_contents(target, self.selection_value_callback, None)
+        atom = Gdk.Atom.intern(target, False)
+        self.clipboard.request_contents(atom, self.selection_value_callback, None)
 
     def selection_clear_cb(self, _clipboard, _data):
         #print("selection_clear_cb(%s, %s)", clipboard, data)
@@ -196,22 +194,25 @@ class ClipboardStateInfoWindow:
         #how many clipboards to show:
         self.clipboards = CLIPBOARDS
 
-        tb = TableBuilder()
-        table = tb.get_table()
-        labels = [label("Selection")]
-        labels += [label("Value"), label("Clear"), label("Targets"), label("Actions")]
-        tb.add_row(*labels)
-        for selection in self.clipboards:
+        grid = Gtk.Grid()
+        for i, text in enumerate(("Selection", "Value", "Clear", "Targets", "Actions")):
+            grid.attach(label(text), i, 1, 1, 1)
+
+        for row, selection in enumerate(self.clipboards):
+            grid.attach(label(selection), 0, 2+row*2, 1, 2)
             cs = ClipboardInstance(selection, self.add_event)
             get_actions = Gtk.HBox()
             for x in (cs.get_get_targets_btn, cs.get_target_btn, cs.get_string_btn):
                 get_actions.pack_start(x)
-            tb.add_row(label(selection), cs.value_label, cs.clear_label_btn, cs.get_targets, get_actions)
+            for i, widget in enumerate((cs.value_label, cs.clear_label_btn, cs.get_targets, get_actions)):
+                grid.attach(widget, 1+i, 2+row*2, 1, 1)
             set_actions = Gtk.HBox()
             for x in (cs.set_target_btn, cs.set_string_btn):
                 set_actions.pack_start(x)
-            tb.add_row(None, cs.value_entry, cs.clear_entry_btn, cs.set_targets, set_actions)
-        vbox.pack_start(table)
+            widgets = (cs.value_entry, cs.clear_entry_btn, cs.set_targets, set_actions)
+            for i, widget in enumerate(widgets):
+                grid.attach(widget, 1+i, 3+row*2, 1, 1)
+        vbox.pack_start(grid)
         vbox.add(self.events)
 
         self.window.add(vbox)

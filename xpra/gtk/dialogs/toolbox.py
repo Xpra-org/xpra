@@ -17,7 +17,7 @@ from gi.repository import Gtk, Gio  # @UnresolvedImport
 from xpra.util.child_reaper import getChildReaper
 from xpra.gtk.signals import register_os_signals
 from xpra.gtk.gtk_util import add_close_accel
-from xpra.gtk.widget import imagebutton, label
+from xpra.gtk.widget import imagebutton, label, IgnoreWarningsContext
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.platform.paths import get_python_execfile_command, get_python_exec_command
 from xpra.os_util import WIN32, OSX, is_X11
@@ -51,7 +51,8 @@ class ToolboxGUI(Gtk.Window):
         self.set_resizable(True)
         self.set_decorated(True)
         self.set_position(Gtk.WindowPosition.CENTER)
-        self.set_wmclass("xpra-toolbox", "Xpra-Toolbox")
+        with IgnoreWarningsContext():
+            self.set_wmclass("xpra-toolbox", "Xpra-Toolbox")
 
         hb = Gtk.HeaderBar()
         hb.set_show_close_button(True)

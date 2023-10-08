@@ -19,12 +19,12 @@ from xpra.util.screen import prettify_plug_name
 from xpra.util.str_fn import csv
 from xpra.util.env import envint
 from xpra.common import noop
-from xpra.gtk.graph import make_graph_imagesurface
 from xpra.util.stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
 from xpra.client.gui import features
 from xpra.client.base.gobject_client import InfoTimerClient
 from xpra.gtk.gtk_util import add_close_accel
-from xpra.gtk.widget import imagebutton, label, TableBuilder
+from xpra.gtk.graph import make_graph_imagesurface
+from xpra.gtk.widget import imagebutton, label, TableBuilder, modify_fg
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.log import Logger
 
@@ -49,7 +49,7 @@ def make_datetime(date, time):
 def title_box(label_str):
     eb = Gtk.EventBox()
     l = label(label_str)
-    l.modify_fg(Gtk.StateType.NORMAL, Gdk.Color(red=48*256, green=0, blue=0))
+    modify_fg(l, Gdk.Color(red=48*256, green=0, blue=0))
     al = Gtk.Alignment(xalign=0.0, yalign=0.5, xscale=0.0, yscale=0.0)
     al.set_padding(0, 0, 10, 10)
     al.add(l)

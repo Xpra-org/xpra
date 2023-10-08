@@ -17,7 +17,7 @@ from xpra.util.child_reaper import getChildReaper
 from xpra.net.file_transfer import ACCEPT, OPEN, DENY
 from xpra.util.stats import std_unit, std_unit_dec
 from xpra.gtk.gtk_util import add_close_accel
-from xpra.gtk.widget import scaled_image, label, TableBuilder
+from xpra.gtk.widget import scaled_image, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.platform.gui import set_window_progress
 from xpra.platform.paths import get_download_dir
@@ -49,7 +49,7 @@ class OpenRequestsWindow:
         self.show_file_upload_cb = show_file_upload_cb
         self.cancel_download = cancel_download
         self.populate_timer = 0
-        self.table = None
+        self.contents = None
         self.requests = []
         self.expire_labels = {}
         self.progress_bars = {}
@@ -126,44 +126,48 @@ class OpenRequestsWindow:
         return False
 
     def populate_table(self):
-        if self.table:
-            self.alignment.remove(self.table)
+        if self.contents:
+            self.alignment.remove(self.contents)
         #remove expired requests:
         now = monotonic()
         self.requests = [x for x in self.requests if x[-1]>now]
+        if not self.requests:
+            self.contents = label("No requests pending", font="sans 18")
+            self.alignment.add(self.contents)
+            self.contents.show()
+            return
         self.expire_labels = {}
-        tb = TableBuilder(rows=1, columns=4, row_spacings=15)
-        #generate a new table:
-        self.table = tb.get_table()
+        grid = Gtk.Grid()
         def l(s=""):    # noqa: E743
             return label(s)
-        if not self.requests:
-            tb.add_row(l("No requests pending"))
-        else:
-            headers = [l("URL / Filename"), l(), l("Expires in"), l("Action")]
-            tb.add_row(*headers)
-            for cb_answer, send_id, dtype, url, filesize, printit, openit, expires in self.requests:
-                details = ""
-                if dtype=="file" and filesize>0:
-                    details = "%sB" % std_unit_dec(filesize)
-                expires_label = l()
-                self.expire_labels[send_id] = (expires_label, expires)
-                buttons = self.action_buttons(cb_answer, send_id, dtype, printit, openit)
-                s = bytestostr(url)
-                main_label = l(s)
-                if dtype=="url" and s.find("?")>0 and len(s)>48:
-                    parts = s.split("?", 1)
-                    main_label.set_label(parts[0]+"?..")
-                    main_label.set_tooltip_text(s)
-                main_label.set_line_wrap(True)
-                main_label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)  # @UndefinedVariable
-                main_label.set_size_request(URI_MAX_WIDTH, -1)
-                main_label.set_selectable(True)
-                items = (main_label, l(details), expires_label, buttons)
-                tb.add_row(*items)
-            self.update_expires_label()
-        self.alignment.add(self.table)
-        self.table.show_all()
+        for i, text in enumerate(("URL / Filename", "", "Expires in", "Action")):
+            grid.attach(l(text), i, 0, 1, 1)
+        row = 1
+        for cb_answer, send_id, dtype, url, filesize, printit, openit, expires in self.requests:
+            details = ""
+            if dtype=="file" and filesize>0:
+                details = "%sB" % std_unit_dec(filesize)
+            expires_label = l()
+            self.expire_labels[send_id] = (expires_label, expires)
+            buttons = self.action_buttons(cb_answer, send_id, dtype, printit, openit)
+            s = bytestostr(url)
+            main_label = l(s)
+            if dtype=="url" and s.find("?")>0 and len(s)>48:
+                parts = s.split("?", 1)
+                main_label.set_label(parts[0]+"?..")
+                main_label.set_tooltip_text(s)
+            main_label.set_line_wrap(True)
+            main_label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)  # @UndefinedVariable
+            main_label.set_size_request(URI_MAX_WIDTH, -1)
+            main_label.set_selectable(True)
+            items = (main_label, l(details), expires_label, buttons)
+            for i, widget in enumerate(items):
+                grid.attach(widget, i, row, 1, 1)
+            row += 1
+        self.update_expires_label()
+        self.alignment.add(grid)
+        grid.show_all()
+        self.contents = grid
 
     def remove_entry(self, send_id, can_close=True):
         self.expire_labels.pop(send_id, None)

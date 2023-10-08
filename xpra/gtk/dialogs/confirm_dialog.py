@@ -13,7 +13,7 @@ from gi.repository import Gtk  # @UnresolvedImport
 
 from xpra.gtk.signals import register_os_signals
 from xpra.gtk.gtk_util import add_close_accel, color_parse
-from xpra.gtk.widget import label
+from xpra.gtk.widget import label, modify_fg
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.platform.gui import force_focus
 from xpra.os_util import get_util_logger
@@ -43,8 +43,7 @@ class ConfirmDialogWindow(Gtk.Dialog):
         def al(text, font="sans 14", xalign=0.0):
             l = label(text, font=font)
             if label.startswith("WARNING"):
-                red = color_parse("red")
-                l.modify_fg(Gtk.StateType.NORMAL, red)
+                modify_fg(l, color_parse("red"))
             al = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
             al.add(l)
             al.show_all()

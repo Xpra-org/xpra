@@ -27,7 +27,7 @@ from gi.repository import GLib, Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 from xpra.os_util import OSX
 from xpra.common import NotificationID
 from xpra.gtk.gtk_util import add_close_accel, color_parse
-from xpra.gtk.widget import label
+from xpra.gtk.widget import label, modify_fg
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.notifications.notifier_base import NotifierBase, log
 
@@ -225,9 +225,8 @@ class Popup(Gtk.Window):
         if stack.bg_color is not None:
             self.modify_bg(Gtk.StateType.NORMAL, stack.bg_color)
         if stack.fg_color is not None:
-            self.message.modify_fg(Gtk.StateType.NORMAL, stack.fg_color)
-            self.header.modify_fg(Gtk.StateType.NORMAL, stack.fg_color)
-            self.counter.modify_fg(Gtk.StateType.NORMAL, stack.fg_color)
+            for widget in (self.message, self.header, self.counter):
+                modify_fg(widget, stack.fg_color)
         self.show_timeout = show_timeout
         self.hover = False
         self.show_all()

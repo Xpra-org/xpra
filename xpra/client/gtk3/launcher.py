@@ -27,9 +27,8 @@ from gi.repository import GLib, Gtk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.gtk.signals import register_os_signals
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
-from xpra.gtk.gtk_util import (
-    add_close_accel, color_parse, )
-from xpra.gtk.widget import scaled_image, imagebutton, label, choose_file
+from xpra.gtk.gtk_util import add_close_accel, color_parse
+from xpra.gtk.widget import scaled_image, imagebutton, label, choose_file, modify_fg
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.str_fn import csv, repr_ellipsized
 from xpra.os_util import WIN32, OSX
@@ -441,7 +440,7 @@ class ApplicationWindow:
         self.info = label()
         self.info.set_line_wrap(True)
         self.info.set_size_request(360, -1)
-        self.info.modify_fg(Gtk.StateType.NORMAL, red)
+        modify_fg(self.info, red)
         vbox.pack_start(self.info)
 
         # Buttons:
@@ -938,7 +937,7 @@ class ApplicationWindow:
         widget.modify_base(Gtk.StateType.NORMAL, red if is_error else white)
 
     def set_widget_fg_color(self, widget, is_error=False):
-        widget.modify_fg(Gtk.StateType.NORMAL, red if is_error else black)
+        modify_fg(widget, red if is_error else black)
 
 
     def update_options_from_gui(self):
