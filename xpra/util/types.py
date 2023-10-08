@@ -30,6 +30,10 @@ class AtomicInteger:
     def get(self) -> int:
         return self.counter
 
+    def set(self, value:int):
+        with self.lock:
+            self.counter = value
+
     def __str__(self) -> str:
         return str(self.counter)
 
