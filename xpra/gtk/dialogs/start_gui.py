@@ -106,7 +106,7 @@ class StartSession(Gtk.Window):
 
         # choose the session type:
         hbox = Gtk.HBox(homogeneous=True, spacing=40)
-        def rb(sibling=None, text="", cb=None, tooltip_text=None):
+        def rb(sibling=None, text="", cb=None, tooltip_text=""):
             btn = Gtk.RadioButton.new_with_label_from_widget(sibling, text)
             if cb:
                 btn.connect("toggled", cb)
@@ -730,7 +730,7 @@ class SessionOptions(Gtk.Window):
         return getattr(self, "%s_options" % fn)
 
 
-    def bool_cb(self, text, option_name, tooltip_text=None, link=None):
+    def bool_cb(self, text, option_name, tooltip_text="", link=None):
         self.attach_label(text, tooltip_text, link)
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
@@ -744,14 +744,14 @@ class SessionOptions(Gtk.Window):
         self.row.increase()
         return cb
 
-    def radio_cb_auto(self, text, option_name, tooltip_text=None, link=None):
+    def radio_cb_auto(self, text, option_name, tooltip_text="", link=None):
         return self.radio_cb(text, option_name, tooltip_text, link, {
             "yes"   : TRUE_OPTIONS,
             "no"    : FALSE_OPTIONS,
             "auto"  : ("auto", "", None),
             })
 
-    def radio_cb(self, text, option_name, tooltip_text=None, link=None, options=None):
+    def radio_cb(self, text, option_name, tooltip_text="", link=None, options=None):
         self.attach_label(text, tooltip_text, link)
         fn = option_name.replace("-", "_")
         widget_base_name = "%s_widget" % fn
@@ -885,7 +885,7 @@ class SessionOptions(Gtk.Window):
         widget = self.get_widget(fn)
         return (int(widget.get_value()), )
 
-    def attach_label(self, text, tooltip_text=None, link=None):
+    def attach_label(self, text, tooltip_text="", link=None):
         lbl = label(text, tooltip=tooltip_text)
         lbl.set_margin_start(5)
         lbl.set_margin_top(5)
