@@ -520,7 +520,8 @@ class StartSession(Gtk.Window):
             return
         text = self.entry.get_text()
         log("entry_changed(%s) entry=%s", args, text)
-        self.exit_with_children_cb.set_sensitive(bool(text))
+        localhost = self.localhost_btn.get_active()
+        self.exit_with_children_cb.set_sensitive(bool(text) or (xdg and localhost))
         self.run_btn.set_sensitive(not REQUIRE_COMMAND or bool(text))
         self.runattach_btn.set_sensitive(not REQUIRE_COMMAND or bool(text))
 
