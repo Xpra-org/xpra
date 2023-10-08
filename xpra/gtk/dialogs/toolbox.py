@@ -159,7 +159,6 @@ class ToolboxGUI(Gtk.Window):
                 matches = glob.glob(script)
                 log(f"glob.glob({script})={matches}")
                 if matches and os.path.exists(matches[0]):
-                    script = matches[0]
                     cmd = get_python_exec_command()+[f"from {modpath} import main;main()"]
                     break
         if not cmd:
