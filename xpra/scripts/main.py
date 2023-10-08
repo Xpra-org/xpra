@@ -2157,7 +2157,10 @@ def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, 
             attach_args.append(arg)
         if WIN32 and not os.path.exists(script_file) and not script_file.lower().endswith(".exe"):
             script_file += ".exe"
-        os.execv(script_file, attach_args)
+        try:
+            os.execv(script_file, attach_args)
+        except FileNotFoundError:
+            warn(f"failed to re-connect using {script_file!r}")
     return r
 
 
