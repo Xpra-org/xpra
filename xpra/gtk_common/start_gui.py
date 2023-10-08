@@ -591,8 +591,9 @@ class StartSession(Gtk.Window):
         self.do_run(True)
 
     def do_run(self, attach=False):
-        self.hide()
         cmd = self.get_run_command(attach)
+        # only hide after reading the form:
+        self.hide()
         log("do_run(%s) cmd=%s", attach, cmd)
         proc = exec_command(cmd)
         if proc:
