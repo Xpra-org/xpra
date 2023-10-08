@@ -121,6 +121,7 @@ def kill_signalwatcher(proc) -> None:
         proc.terminate()
     except OSError:
         log.warn("Warning: failed to terminate the signal watcher", exc_info=True)
+    from subprocess import TimeoutExpired
     try:
         proc.wait(0.01)
     except TimeoutExpired:
