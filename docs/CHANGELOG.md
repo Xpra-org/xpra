@@ -1,7 +1,18 @@
 # Changelog
 
-## [5.0.4] 2023-10-06
-* TODO
+## [5.0.4] 2023-10-08
+* `start-gui` fixes:
+    * [display number ignored](https://github.com/Xpra-org/xpra/commit/db7f6f4ea1530e7b6c901b2b0e44f00271c9d8b6)
+    * [exit-with-children can't be unchecked in start-gui](https://github.com/Xpra-org/xpra/commit/98ee5a6f26cdac6bf62166b1ceca522b02f6fca4)
+    * [port number always specified but not validated](https://github.com/Xpra-org/xpra/commit/bb1c06d77370bd6b4a94e28572311368c2c23817)
+* Minor:
+    * [signal watcher backport regression](https://github.com/Xpra-org/xpra/commit/96f0351ba1dbc5c1dee6bfcf760a4350b2d2b9c0)
+    * [move-resize test tool broken](https://github.com/Xpra-org/xpra/commit/5e79b41a830203412566b4f3c9fa4119a9a441a6)
+* Cosmetic:
+    * [don't warn if `avif` decoder is missing](https://github.com/Xpra-org/xpra/commit/3d919bd6e7f7fe1018800ced86641e48151be900)
+    * [add newline to clear stdout](https://github.com/Xpra-org/xpra/commit/00427351e049cab6d1c585be7df366248858321d)
+    * [extra `%` in tray menu](https://github.com/Xpra-org/xpra/commit/7bc5d5b6059c9c785d72794b945c340ece28486b), [twice](https://github.com/Xpra-org/xpra/commit/1cf818034cf64b12747b0ced126e1f955dfb9c9c)
+    * [opengl test window misnamed](https://github.com/Xpra-org/xpra/commit/62784a7510de5c37b8a15e035040a08106d29151)
 
 ## [5.0.3] 2023-10-05
 * Major:
