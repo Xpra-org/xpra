@@ -12,7 +12,7 @@ from gi.repository import Gtk, Gdk, GLib  # @UnresolvedImport
 
 from xpra.gtk.signals import register_os_signals
 from xpra.gtk.gtk_util import add_close_accel
-from xpra.gtk.widget import imagebutton, label, setfont, TableBuilder
+from xpra.gtk.widget import imagebutton, label, setfont
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.str_fn import repr_ellipsized
 from xpra.os_util import POSIX, OSX, WIN32, is_Wayland, platform_name
@@ -21,9 +21,8 @@ from xpra.scripts.config import (
     get_defaults, parse_bool,
     OPTION_TYPES, FALSE_OPTIONS, TRUE_OPTIONS,
     )
-from xpra.client.gtk3.menu_helper import (
-    BANDWIDTH_MENU_OPTIONS,
-    )
+from xpra.client.gtk3.menu_helper import BANDWIDTH_MENU_OPTIONS
+from xpra.util.types import AtomicInteger
 from xpra.util.thread import start_thread
 from xpra.platform.paths import get_xpra_command
 from xpra.log import Logger
@@ -76,16 +75,10 @@ def link_btn(link, text="", icon_name="question.png"):
     btn = imagebutton("" if icon else text, icon, text, help_clicked, 12, False)
     return btn
 
-def attach_label(table, text, tooltip_text=None, link=None):
-    lbl = label(text)
-    if tooltip_text:
-        lbl.set_tooltip_text(tooltip_text)
-    hbox = Gtk.HBox(homogeneous=False, spacing=0)
-    hbox.pack_start(xal(lbl), True, True)
-    if link:
-        help_btn = link_btn(link, "About %s" % text)
-        hbox.pack_start(help_btn, False)
-    table.attach(hbox)
+def get_default_port(mode):
+    return {
+        "SSH" : 22,
+        }.get(mode, 14500)
 
 
 class StartSession(Gtk.Window):
@@ -257,12 +250,9 @@ class StartSession(Gtk.Window):
                             default=default, label_font="sans 16")
             hbox.pack_start(ib)
             return ib
-        self.cancel_btn = btn("Cancel", "",
-                              self.quit)
-        self.run_btn = btn("Start", "Start the xpra session",
-                           self.run_command)
-        self.runattach_btn = btn("Start & Attach", "Start the xpra session and attach to it",
-                                 self.runattach_command, True)
+        self.cancel_btn = btn("Cancel", "", self.quit)
+        self.run_btn = btn("Start", "Start the xpra session", self.run_command)
+        self.runattach_btn = btn("Start & Attach", "Start the xpra session and attach to it", self.runattach_command, True)
         self.runattach_btn.set_sensitive(False)
 
         vbox.show_all()
@@ -516,20 +506,15 @@ class StartSession(Gtk.Window):
             return
         text = self.entry.get_text()
         log("entry_changed(%s) entry=%s", args, text)
-        self.exit_with_children_cb.set_sensitive(bool(text))
+        localhost = self.localhost_btn.get_active()
+        self.exit_with_children_cb.set_sensitive(bool(text) or (xdg and localhost))
         self.run_btn.set_sensitive(not REQUIRE_COMMAND or bool(text))
         self.runattach_btn.set_sensitive(not REQUIRE_COMMAND or bool(text))
-
-    def get_default_port(self, mode):
-        return {
-            "SSH" : 22,
-            }.get(mode, 14500)
-
 
     def mode_changed(self, *args):
         log("mode_changed(%s)", args)
         mode = self.mode_combo.get_active_text()
-        self.port_entry.set_text(str(self.get_default_port(mode)))
+        self.port_entry.set_text(str(get_default_port(mode)))
         if not (self.shadow_btn.get_active() and self.localhost_btn.get_active()):
             self.no_display_combo()
 
@@ -586,8 +571,9 @@ class StartSession(Gtk.Window):
         self.do_run(True)
 
     def do_run(self, attach=False):
-        self.hide()
         cmd = self.get_run_command(attach)
+        # only hide after reading the form:
+        self.hide()
         log("do_run(%s) cmd=%s", attach, cmd)
         proc = exec_command(cmd)
         if proc:
@@ -655,17 +641,20 @@ class StartSession(Gtk.Window):
         if localhost:
             uri = ":"+display if display else ""
         else:
-            mode = self.mode_combo.get_active_text()
-            uri = "%s://" % mode.lower()
+            mode = self.mode_combo.get_active_text().lower()
+            uri = f"{mode}://"
             username = self.username_entry.get_text()
             if username:
-                uri += "%s@" % username
+                uri += f"{username}@"
             host = self.host_entry.get_text()
             if host:
                 uri += host
-            port = self.port_entry.get_text()
-            if port!=self.get_default_port(mode):
-                uri += ":%s" % port
+            try:
+                port = int(self.port_entry.get_text())
+            except ValueError:
+                port = 0
+            if port and port!=get_default_port(mode):
+                uri += f":{port}"
             uri += "/"
             if display:
                 uri += display
@@ -696,9 +685,19 @@ class SessionOptions(Gtk.Window):
         self.vbox = Gtk.VBox(homogeneous=False, spacing=0)
         self.vbox.show()
         self.add(self.vbox)
+        self.add_grid()
+        self.row = AtomicInteger()
         self.widgets = []
         self.populate_form()
         self.show()
+
+    def add_grid(self):
+        self.grid = Gtk.Grid()
+        self.grid.show()
+        al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=1.0)
+        al.add(self.grid)
+        al.show()
+        self.vbox.pack_start(al, expand=True, fill=True, padding=20)
 
     def populate_form(self):
         raise NotImplementedError()
@@ -707,15 +706,16 @@ class SessionOptions(Gtk.Window):
         self.set_value_from_widgets()
         super().close()
 
-    def sep(self, tb):
-        tb.inc()
+    def sep(self):
         hsep = Gtk.HSeparator()
         hsep.set_size_request(-1, 2)
+        hsep.set_margin_top(5)
+        hsep.set_margin_bottom(5)
         al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1, yscale=0)
         al.set_size_request(-1, 10)
         al.add(hsep)
-        tb.attach(al, 0, 2)
-        tb.inc()
+        self.grid.attach(al, 0, self.row.get(), 2, 1)
+        self.row.increase()
 
     def _save_widget(self, fn, widget, widget_type, **kwargs):
         setattr(self, "%s_widget" % fn, widget)
@@ -730,29 +730,29 @@ class SessionOptions(Gtk.Window):
         return getattr(self, "%s_options" % fn)
 
 
-    def bool_cb(self, table, text, option_name, tooltip_text=None, link=None):
-        attach_label(table, text, tooltip_text, link)
+    def bool_cb(self, text, option_name, tooltip_text=None, link=None):
+        self.attach_label(text, tooltip_text, link)
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
         cb = Gtk.Switch()
         active = str(value).lower() not in FALSE_OPTIONS
         cb.set_active(active)
         al = xal(cb, xalign=0)
-        table.attach(al, 1)
+        self.grid.attach(al, 1, self.row.get(), 1, 1)
         self._save_widget(fn, cb, "bool", values=[value if not active else False, value if active else True])
         self.widgets.append(option_name)
-        table.inc()
+        self.row.increase()
         return cb
 
-    def radio_cb_auto(self, table, text, option_name, tooltip_text=None, link=None):
-        return self.radio_cb(table, text, option_name, tooltip_text, link, {
+    def radio_cb_auto(self, text, option_name, tooltip_text=None, link=None):
+        return self.radio_cb(text, option_name, tooltip_text, link, {
             "yes"   : TRUE_OPTIONS,
             "no"    : FALSE_OPTIONS,
             "auto"  : ("auto", "", None),
             })
 
-    def radio_cb(self, table, text, option_name, tooltip_text=None, link=None, options=None):
-        attach_label(table, text, tooltip_text, link)
+    def radio_cb(self, text, option_name, tooltip_text=None, link=None, options=None):
+        self.attach_label(text, tooltip_text, link)
         fn = option_name.replace("-", "_")
         widget_base_name = "%s_widget" % fn
         self.widgets.append(option_name)
@@ -780,12 +780,12 @@ class SessionOptions(Gtk.Window):
             saved_options[option] = saved_match
             btns.append(btn)
         self._save_widget(fn, btns, "radio", options=saved_options)
-        table.attach(hbox, 1)
-        table.inc()
+        self.grid.attach(hbox, 1, self.row.get(), 1, 1)
+        self.row.increase()
         return btns
 
-    def combo(self, table, text, option_name, options, link=None):
-        attach_label(table, text, None, link)
+    def combo(self, text, option_name, options, link=None):
+        self.attach_label(text, None, link)
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
         c = Gtk.ComboBoxText()
@@ -798,17 +798,16 @@ class SessionOptions(Gtk.Window):
             c.set_active(index)
         al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=1.0)
         al.add(c)
-        table.attach(al, 1)
+        self.grid.attach(al, 1, self.row.get(), 1, 1)
         self._save_widget(fn, c, "combo", options=options)
         self.widgets.append(option_name)
-        table.inc()
+        self.row.increase()
         return c
 
-    def scale(self, table, text, option_name, minv=0, maxv=100, marks=None):
-        attach_label(table, text)
+    def scale(self, text, option_name, minv=0, maxv=100, marks=None):
+        self.attach_label(text)
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
-        #c = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, minv, maxv, 10)
         c = Gtk.Scale.new(orientation=Gtk.Orientation.HORIZONTAL)
         c.set_range(minv, maxv)
         c.set_draw_value(True)
@@ -819,10 +818,10 @@ class SessionOptions(Gtk.Window):
         if marks:
             for v, mtext in marks.items():
                 c.add_mark(v, Gtk.PositionType.BOTTOM, mtext)
-        table.attach(c, 1)
+        self.grid.attach(c, 1, self.row.get(), 1, 1)
         self._save_widget(fn, c, "scale")
         self.widgets.append(option_name)
-        table.inc()
+        self.row.increase()
         return c
 
     def set_value_from_widgets(self):
@@ -886,13 +885,18 @@ class SessionOptions(Gtk.Window):
         widget = self.get_widget(fn)
         return (int(widget.get_value()), )
 
-    def table(self):
-        tb = TableBuilder()
-        table = tb.get_table()
-        al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=1.0)
-        al.add(table)
-        self.vbox.pack_start(al, expand=True, fill=True, padding=20)
-        return tb
+    def attach_label(self, text, tooltip_text=None, link=None):
+        lbl = label(text, tooltip=tooltip_text)
+        lbl.set_margin_start(5)
+        lbl.set_margin_top(5)
+        lbl.set_margin_end(5)
+        lbl.set_margin_bottom(5)
+        hbox = Gtk.HBox(homogeneous=False, spacing=0)
+        hbox.pack_start(xal(lbl), True, True)
+        if link:
+            help_btn = link_btn(link, "About %s" % text)
+            hbox.pack_start(help_btn, False)
+        self.grid.attach(hbox, 0, int(self.row), 1, 1)
 
 
 class FeaturesWindow(SessionOptions):
@@ -903,34 +907,32 @@ class FeaturesWindow(SessionOptions):
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/README.md",
                        "Open Features Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
-
-        tb = self.table()
-        self.bool_cb(tb, "Splash Screen", "splash", "Show a splash screen during startup")
-        self.bool_cb(tb, "Read only", "readonly", "Mouse and keyboard events will be ignored")
-        self.radio_cb(tb, "Border", "border", "Show a colored border around xpra windows to differentiate them", None, {
+        self.bool_cb("Splash Screen", "splash", "Show a splash screen during startup")
+        self.bool_cb("Read only", "readonly", "Mouse and keyboard events will be ignored")
+        self.radio_cb("Border", "border", "Show a colored border around xpra windows to differentiate them", None, {
             "auto"  : ("auto,5:off", "auto"),
             "none"  : FALSE_OPTIONS,
             "blue"  : ("blue",),
             "red"   : ("red",),
             "green" : ("green", )
             })
-        self.radio_cb(tb, "Header Bar", "headerbar", None, None, {
+        self.radio_cb("Header Bar", "headerbar", None, None, {
             "auto"  : ["auto"]+list(TRUE_OPTIONS),
             "no"    : FALSE_OPTIONS,
             "force" : ("force",),
             })
-        self.sep(tb)
+        self.sep()
         #"https://github.com/Xpra-org/xpra/blob/master/docs/Features/Notifications.md")
-        self.bool_cb(tb, "Xpra's System Tray", "tray")
-        self.bool_cb(tb, "Forward System Trays", "system-tray")
-        self.bool_cb(tb, "Notifications", "notifications")
+        self.bool_cb("Xpra's System Tray", "tray")
+        self.bool_cb("Forward System Trays", "system-tray")
+        self.bool_cb("Notifications", "notifications")
         #"https://github.com/Xpra-org/xpra/blob/master/docs/Features/System-Tray.md")
-        #self.bool_cb(tb, "Cursors", "cursors")
-        #self.bool_cb(tb, "Bell", "bell")
-        self.bool_cb(tb, "Modal Windows", "modal-windows")
-        self.sep(tb)
+        #self.bool_cb("Cursors", "cursors")
+        #self.bool_cb("Bell", "bell")
+        self.bool_cb("Modal Windows", "modal-windows")
+        self.sep()
         #"https://github.com/Xpra-org/xpra/blob/master/docs/Features/Image-Depth.md")
-        self.combo(tb, "Mouse Wheel", "mousewheel", {
+        self.combo("Mouse Wheel", "mousewheel", {
             "on" : "on",
             "no" : "disabled",
             "invert-x" : "invert X axis",
@@ -938,14 +940,14 @@ class FeaturesWindow(SessionOptions):
             "invert-z" : "invert Z axis",
             "invert-all" : "invert all axes",
             })
-        self.combo(tb, "Clipboard", "clipboard-direction", {
+        self.combo("Clipboard", "clipboard-direction", {
             "both"      : "enabled",
             "to-server" : "to server only",
             "to-client" : "to client only",
             "disabled"  : "disabled",
             })
         if POSIX and not OSX and not is_Wayland():
-            self.bool_cb(tb, "XSettings", "xsettings")
+            self.bool_cb("XSettings", "xsettings")
         self.vbox.show_all()
 
 
@@ -958,13 +960,12 @@ class NetworkWindow(SessionOptions):
                        "Open Network Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
-        tb = self.table()
         #"https://github.com/Xpra-org/xpra/blob/master/docs/Network/Multicast-DNS.md")
-        self.radio_cb_auto(tb, "Session Sharing", "sharing")
-        self.radio_cb_auto(tb, "Session Lock", "lock", "Prevent sessions from being taken over by new clients")
-        self.sep(tb)
-        self.bool_cb(tb, "Multicast DNS", "mdns", "Publish the session via mDNS")
-        self.bool_cb(tb, "Bandwidth Detection", "bandwidth-detection", "Automatically detect runtime bandwidth limits")
+        self.radio_cb_auto("Session Sharing", "sharing")
+        self.radio_cb_auto("Session Lock", "lock", "Prevent sessions from being taken over by new clients")
+        self.sep()
+        self.bool_cb("Multicast DNS", "mdns", "Publish the session via mDNS")
+        self.bool_cb("Bandwidth Detection", "bandwidth-detection", "Automatically detect runtime bandwidth limits")
         bwoptions = {
             "auto" : "Auto",
             }
@@ -976,7 +977,7 @@ class NetworkWindow(SessionOptions):
             else:
                 s = "%sbps" % std_unit_dec(bwlimit)
             bwoptions[bwlimit] = s
-        self.combo(tb, "Bandwidth Limit", "bandwidth-limit", bwoptions)
+        self.combo("Bandwidth Limit", "bandwidth-limit", bwoptions)
         #ssl options
         #ssh=paramiko | plink
         #exit-ssh
@@ -996,7 +997,6 @@ class DisplayWindow(SessionOptions):
                        "Open Display Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
-        tb = self.table()
         pixel_depths = {0   : "auto"}
         if self.run_mode=="shadow":
             pixel_depths[8] = 8
@@ -1012,16 +1012,16 @@ class DisplayWindow(SessionOptions):
                     size_options["{}x{}".format(w, h)] = "{} x {}".format(w, h)
                 except (TypeError, ValueError, IndexError):
                     size_options[size] = size
-            self.combo(tb, "Screen Size", "resize-display", size_options)
-        self.combo(tb, "Pixel Depth", "pixel-depth", pixel_depths)
-        self.combo(tb, "DPI", "dpi", {
+            self.combo("Screen Size", "resize-display", size_options)
+        self.combo("Pixel Depth", "pixel-depth", pixel_depths)
+        self.combo("DPI", "dpi", {
             0       : "auto",
             72      : "72",
             96      : "96",
             144     : "144",
             192     : "192",
             })
-        self.combo(tb, "Desktop Scaling", "desktop-scaling", {
+        self.combo("Desktop Scaling", "desktop-scaling", {
             "on"    : "auto",
             "no"    : "disabled",
             "50%"   : "50%",
@@ -1029,7 +1029,7 @@ class DisplayWindow(SessionOptions):
             "150%"  : "150%",
             "200%"  : "200%",
             })
-        self.radio_cb(tb, "OpenGL Acceleration", "opengl", None, None, {
+        self.radio_cb("OpenGL Acceleration", "opengl", None, None, {
             "probe" : "probe",
             "auto"  : ["auto"]+list(TRUE_OPTIONS),
             "no"    : FALSE_OPTIONS,
@@ -1047,20 +1047,19 @@ class EncodingWindow(SessionOptions):
                        "Open Encodings Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
-        tb = self.table()
-        self.scale(tb, "Minimum Quality", "min-quality", marks={
+        self.scale("Minimum Quality", "min-quality", marks={
             0   : "Very Low",
             30  : "Low",
             50  : "Medium",
             75  : "High",
             100 : "Lossless",
             })
-        self.scale(tb, "Minimum Speed", "min-speed", marks={
+        self.scale("Minimum Speed", "min-speed", marks={
             0   : "Low Bandwidth",
             100 : "Low Latency",
             })
-        self.sep(tb)
-        self.combo(tb, "Auto-refresh", "auto-refresh-delay", {
+        self.sep()
+        self.combo("Auto-refresh", "auto-refresh-delay", {
             0       : "disabled",
             0.1     : "fast",
             0.15    : "normal",
@@ -1075,12 +1074,12 @@ class EncodingWindow(SessionOptions):
         from xpra.codecs.loader import get_encoding_name
         encoding_options = {encoding: get_encoding_name(encoding) for encoding in encodings}
         #opts.encodings
-        self.combo(tb, "Encoding", "encoding", encoding_options)
-        #tb.attach(label("Colourspace Modules"), 0)
-        #tb.inc()
-        #tb.attach(label("Video Encoders"), 0)
-        #tb.inc()
-        #tb.attach(label("Video Decoders"), 0)
+        self.combo("Encoding", "encoding", encoding_options)
+        #attach(label("Colourspace Modules"), 0)
+        #inc()
+        #attach(label("Video Encoders"), 0)
+        #inc()
+        #attach(label("Video Decoders"), 0)
         self.vbox.show_all()
 
 
@@ -1093,17 +1092,16 @@ class KeyboardWindow(SessionOptions):
                        "Open Keyboard Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
-        tb = self.table()
         from xpra.platform.keyboard import Keyboard
         kbd = Keyboard()  #pylint: disable=not-callable
         layouts = {
             ""  : "auto",
             }
         layouts.update(kbd.get_all_x11_layouts())
-        self.combo(tb, "Keyboard Layout", "keyboard-layout", layouts)
-        self.bool_cb(tb, "State Synchronization", "keyboard-sync")
-        self.bool_cb(tb, "Raw Mode", "keyboard-raw")
-        self.combo(tb, "Input Method", "input-method", {
+        self.combo("Keyboard Layout", "keyboard-layout", layouts)
+        self.bool_cb("State Synchronization", "keyboard-sync")
+        self.bool_cb("Raw Mode", "keyboard-raw")
+        self.combo("Input Method", "input-method", {
             "auto"  : "auto",
             "none"  : "default",
             "keep"  : "unchanged",
@@ -1112,7 +1110,7 @@ class KeyboardWindow(SessionOptions):
             "SCIM"  : "SCIM",
             "uim"   : "uim",
             })
-        self.combo(tb, "Shortcut Modifiers", "shortcut-modifiers", {
+        self.combo("Shortcut Modifiers", "shortcut-modifiers", {
             "auto"  : "auto",
             "shift + control"   : "Shift+Control",
             "control + alt"     : "Control+Alt",
@@ -1130,32 +1128,31 @@ class AudioWindow(SessionOptions):
                        "Open Audio Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
-        tb = self.table()
-        self.radio_cb(tb, "Speaker", "speaker", None, None, {
+        self.radio_cb("Speaker", "speaker", None, None, {
             "on"        : TRUE_OPTIONS,
             "off"       : FALSE_OPTIONS,
             "disabled"  : ("disabled", ),
             })
-        self.sep(tb)
-        #tb.attach(label("Speaker Codec"))
+        self.sep()
+        #attach(label("Speaker Codec"))
         #self.speaker_codec_widget = Gtk.ComboBoxText()
         #for v in ("mp3", "wav"):
         #    self.speaker_codec_widget.append_text(v)
-        #tb.attach(self.speaker_codec_widget, 1)
-        #tb.inc()
-        self.radio_cb(tb, "Microphone", "microphone", None, None, {
+        #attach(self.speaker_codec_widget, 1)
+        #inc()
+        self.radio_cb("Microphone", "microphone", None, None, {
             "on"        : TRUE_OPTIONS,
             "off"       : FALSE_OPTIONS,
             "disabled"  : ("disabled", ),
             })
-        self.sep(tb)
-        #tb.attach(label("Microphone Codec"))
+        self.sep()
+        #attach(label("Microphone Codec"))
         #self.microphone_codec_widget = Gtk.ComboBoxText()
         #for v in ("mp3", "wav"):
         #    self.microphone_codec_widget.append_text(v)
-        #tb.attach(self.microphone_codec_widget, 1)
-        #tb.inc()
-        self.bool_cb(tb, "AV Sync", "av-sync")
+        #attach(self.microphone_codec_widget, 1)
+        #inc()
+        self.bool_cb("AV Sync", "av-sync")
         self.vbox.show_all()
 
 
@@ -1168,15 +1165,12 @@ class WebcamWindow(SessionOptions):
                        "Open Webcam Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
-        tb = self.table()
-        cb = self.bool_cb(tb, "Webcam", "webcam")
+        cb = self.bool_cb("Webcam", "webcam")
         if OSX or WIN32:
             cb.set_sensitive(False)
             cb.set_active(False)
-            tb.inc()
-            tb.attach(label(), 0, 2)
-            tb.inc()
-            tb.attach(label("Webcam forwarding is not supported on %s" % platform_name()), 0, 2)
+            #self.grid.attach(label(), 0, self.row.get(), 2, 1)
+            self.grid.attach(label("Webcam forwarding is not supported on %s" % platform_name()), 0, self.row.increase(), 2, 1)
         self.vbox.show_all()
 
 
@@ -1189,9 +1183,7 @@ class PrintingWindow(SessionOptions):
                        "Open Printing Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
-        tb = self.table()
-        #self.bool_cb(tb, "Printing", "printing")
-        self.radio_cb_auto(tb, "Printing", "printing")
+        self.radio_cb_auto("Printing", "printing")
         self.vbox.show_all()
 
 
