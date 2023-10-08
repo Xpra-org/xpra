@@ -146,7 +146,7 @@ def get_pillow_icc_info() -> dict[str,Any]:
             if v:
                 INTENT_STR[v] = x.lower().replace("_", "-")
         screenlog("get_icc_info() intents=%s", INTENT_STR)
-        p = get_display_profile()
+        p = get_display_profile() #NOSONAR @SuppressWarnings("python:S5727")
         screenlog("get_icc_info() display_profile=%s", p)
         if p:
             def getDefaultIntentStr(v) -> str:
