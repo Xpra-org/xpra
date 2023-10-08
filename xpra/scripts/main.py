@@ -2007,6 +2007,7 @@ def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, 
     """ Uses the regular XpraClient with patched proxy arguments to tell run_proxy to start the server """
     if not args:
         raise RuntimeError("no remote server specified")
+    abs_script_file = os.path.abspath(script_file)
     display_name = args[0]
     params = parse_display_name(error_cb, opts, display_name, cmdline)
     hello_extra = {}
@@ -2155,12 +2156,12 @@ def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, 
                         i += 1
                     continue
             attach_args.append(arg)
-        if WIN32 and not os.path.exists(script_file) and not script_file.lower().endswith(".exe"):
-            script_file += ".exe"
+        if WIN32 and not os.path.exists(abs_script_file) and not abs_script_file.lower().endswith(".exe"):
+            abs_script_file += ".exe"
         try:
-            os.execv(script_file, attach_args)
+            os.execv(abs_script_file, attach_args)
         except FileNotFoundError:
-            warn(f"failed to re-connect using {script_file!r}")
+            warn(f"failed to re-connect using {abs_script_file!r}")
     return r
 
 
