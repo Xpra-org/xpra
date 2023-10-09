@@ -10,7 +10,7 @@ import gi
 from collections.abc import Callable
 
 from xpra.gtk.gtk_util import add_close_accel, add_window_accel
-from xpra.gtk.widget import imagebutton
+from xpra.gtk.widget import imagebutton, IgnoreWarningsContext
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.exit_codes import exit_str
 from xpra.common import NotificationID, noop
@@ -77,7 +77,8 @@ class BaseGUIWindow(Gtk.Window):
         self.connect("delete_event", close)
         add_close_accel(self, close)
         add_window_accel(self, 'F1', self.show_about)
-        self.set_wmclass(*wm_class)
+        with IgnoreWarningsContext():
+            self.set_wmclass(*wm_class)
         self.vbox = Gtk.VBox(homogeneous=False, spacing=10)
         self.add(self.vbox)
         self.populate()
