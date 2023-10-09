@@ -984,7 +984,8 @@ class X11ServerCore(GTKServerBase):
         if ss:
             if self.ui_driver and self.ui_driver!=ss.uuid:
                 return
-            ss.make_keymask_match(modifiers)
+            if hasattr(ss, "keyboard_config"):
+                ss.make_keymask_match(modifiers)
             if wid==self.get_focus():
                 ss.user_event()
 

@@ -97,7 +97,9 @@ class InputServer(StubServerMixin):
 
     def parse_hello_ui_keyboard(self, ss, c:typedict) -> None:
         other_ui_clients : list[str] = [s.uuid for s in self._server_sources.values() if s!=ss and s.ui_client]
-        #parse client config:
+        kb_client = hasattr(ss, "keyboard_config")
+        if not kb_client:
+            return
         ss.keyboard_config = self.get_keyboard_config(c)    #pylint: disable=assignment-from-none
 
         if not other_ui_clients:
@@ -153,12 +155,12 @@ class InputServer(StubServerMixin):
         if other_ui_clients:
             keylog.warn("Warning: ignoring keymap change as there are %i other clients", len(other_ui_clients))
             return
-        kc = ss.keyboard_config
+        kc = getattr(ss, "keyboard_config", None)
         if kc and kc.enabled:
             kc.parse_options(props)
             self.set_keymap(ss, True)
-        modifiers = props.get("modifiers", [])
-        ss.make_keymask_match(modifiers)
+            modifiers = props.get("modifiers", [])
+            ss.make_keymask_match(modifiers)
 
     def set_keyboard_layout_group(self, grp:int) -> None:
         #only actually implemented in X11ServerBase
@@ -169,7 +171,7 @@ class InputServer(StubServerMixin):
             return
         wid, keyname, pressed, modifiers, keyval, keystr, client_keycode, group = packet[1:9]
         ss = self.get_server_source(proto)
-        if ss is None:
+        if not hasattr(ss, "keyboard_config"):
             return
         keyname = str(keyname)
         keystr = str(keystr)
@@ -273,7 +275,7 @@ class InputServer(StubServerMixin):
         if self.readonly:
             return
         ss = self.get_server_source(proto)
-        if ss is None:
+        if not hasattr(ss, "keyboard_config"):
             return
         wid, keyname, keyval, client_keycode, modifiers = packet[1:6]
         keyname = bytestostr(keyname)
@@ -310,7 +312,7 @@ class InputServer(StubServerMixin):
         if self.readonly:
             return
         ss = self.get_server_source(proto)
-        if ss is None:
+        if not hasattr(ss, "keyboard_config"):
             return
         kc = ss.keyboard_config
         if kc:
@@ -346,6 +348,8 @@ class InputServer(StubServerMixin):
     def _adjust_pointer(self, proto, device_id, wid, pointer):
         #the window may not be mapped at the same location by the client:
         ss = self.get_server_source(proto)
+        if not hasattr(ss, "update_mouse"):
+            return pointer
         window = self._id_to_window.get(wid)
         if ss and window:
             ws = ss.get_window_source(wid)
@@ -381,7 +385,7 @@ class InputServer(StubServerMixin):
         if self.readonly:
             return
         ss = self.get_server_source(proto)
-        if ss is None:
+        if not hasattr(ss, "update_mouse"):
             return
         ss.user_event()
         self.last_mouse_user = ss.uuid
@@ -400,7 +404,7 @@ class InputServer(StubServerMixin):
         if self.readonly:
             return
         ss = self.get_server_source(proto)
-        if ss is None:
+        if not hasattr(ss, "update_mouse"):
             return
         ss.user_event()
         self.last_mouse_user = ss.uuid
@@ -428,7 +432,7 @@ class InputServer(StubServerMixin):
         if self.readonly:
             return
         ss = self.get_server_source(proto)
-        if ss is None:
+        if not hasattr(ss, "update_mouse"):
             return
         device_id, seq, wid, pdata, props = packet[1:6]
         if device_id>=0:
@@ -457,7 +461,7 @@ class InputServer(StubServerMixin):
         if self.readonly:
             return
         ss = self.get_server_source(proto)
-        if ss is None:
+        if not hasattr(ss, "update_mouse"):
             return
         wid, pdata, modifiers = packet[1:4]
         pointer = pdata[:2]
