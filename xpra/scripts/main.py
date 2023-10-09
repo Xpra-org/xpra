@@ -1913,7 +1913,7 @@ def make_client(error_cb, opts):
     mixin_features.webcam           = bo(opts.webcam) and impcheck("codecs")
     mixin_features.clipboard        = b(opts.clipboard) and impcheck("clipboard")
     mixin_features.notifications    = opts.notifications and impcheck("notifications")
-    mixin_features.dbus             = opts.dbus_proxy and impcheck("dbus")
+    mixin_features.dbus             = not (WIN32 or OSX) and opts.dbus_proxy and impcheck("dbus")
     mixin_features.mmap             = b(opts.mmap)
     mixin_features.logging          = b(opts.remote_logging)
     mixin_features.tray             = b(opts.tray)
