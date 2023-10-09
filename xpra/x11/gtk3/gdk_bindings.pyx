@@ -1116,7 +1116,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
         return None
 
     event_args = x_event_signals.get(etype)
-    log("x_event_filter event=%s/%s window=%#x", event_args, event_type, e.xany.window)
+    log("x_event_filter event=%s/%s window=%s", event_args, event_type, e.xany.window)
     if event_args is None:
         return None
 
@@ -1305,12 +1305,12 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             # since we can fire it from a specific window
             # but we need one for the dispatch logic, so use root if unset
             if bell_e.window!=0:
-                verbose("using bell_e.window=%#x", bell_e.window)
+                verbose("using bell_e.window=%s", bell_e.window)
                 pyev.window = _gw(d, bell_e.window)
             else:
                 rw = d.get_default_screen().get_root_window()
                 pyev.window = rw
-                verbose("bell using root window=%#x", pyev.window)
+                verbose("bell using root window=%s", pyev.window)
             pyev.event_only = bool(bell_e.event_only)
             pyev.delivered_to = pyev.window
             pyev.window_model = None
