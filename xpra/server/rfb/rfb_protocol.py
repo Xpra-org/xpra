@@ -75,7 +75,7 @@ class RFBProtocol(object):
         log.info("RFB version %s connection from %s",
                  ".".join(str(x) for x in self._protocol_version), self._conn.target)
         if self._protocol_version!=(3, 8):
-            msg = "unsupported protocol version"
+            msg = b"unsupported protocol version"
             log.error("Error: %s", msg)
             self.send(struct.pack(b"!BI", 0, len(msg))+msg)
             self.invalid(msg, packet)
