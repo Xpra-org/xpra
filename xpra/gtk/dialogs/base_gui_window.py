@@ -155,7 +155,7 @@ class BaseGUIWindow(Gtk.Window):
 
     def show_about(self, *_args):
         from xpra.gtk.dialogs.about import about
-        about()
+        about(parent=self)
 
     def get_xpra_command(self, *args):
         return get_xpra_command()+list(args)

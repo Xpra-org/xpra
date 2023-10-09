@@ -165,7 +165,7 @@ def configure_logging(options, mode) -> None:
     if mode in (
         "attach", "listen", "launcher",
         "sessions", "mdns-gui",
-        "bug-report", "session-info", "docs", "documentation",
+        "bug-report", "session-info", "docs", "documentation", "about",
         "recover",
         "splash", "qrcode",
         "opengl-test",
@@ -406,7 +406,7 @@ def run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, defaul
         "clean-displays", "clean-sockets", "clean",
         "xwait", "wminfo", "wmname",
         "desktop-greeter", "gui", "start-gui",
-        "docs", "documentation", "html5",
+        "docs", "documentation", "about", "html5",
         "pinentry", "input_pass", "_dialog", "_pass",
         "opengl", "opengl-probe", "opengl-test",
         "autostart",
@@ -610,6 +610,9 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
         return run_session_info(error_cb, options, args, cmdline)
     if mode in ("docs", "documentation"):
         return run_docs()
+    if mode == "about":
+        from xpra.gtk.dialogs import about
+        return about.main()
     if mode == "html5":
         return run_html5()
     if mode=="_proxy" or mode.startswith("_proxy_"):

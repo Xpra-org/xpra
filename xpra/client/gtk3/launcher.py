@@ -247,7 +247,9 @@ class ApplicationWindow:
         hb.set_show_close_button(True)
         hb.props.title = "Session Launcher"
         self.window.set_titlebar(hb)
-        hb.add(button("About", "help-about", about))
+        def show_about(*args):
+            about(parent=self.window)
+        hb.add(button("About", "help-about", show_about))
         self.bug_tool = None
         def bug(*_args):
             if self.bug_tool is None:

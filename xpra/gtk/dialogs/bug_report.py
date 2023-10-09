@@ -72,7 +72,9 @@ class BugReport:
             logo_button = Gtk.Button(label="")
             settings = logo_button.get_settings()
             settings.set_property('gtk-button-images', True)
-            logo_button.connect("clicked", about)
+            def show_about(*args):
+                about(parent=self.window)
+            logo_button.connect("clicked", show_about)
             logo_button.set_tooltip_text("About")
             image = Gtk.Image()
             image.set_from_pixbuf(icon_pixbuf)

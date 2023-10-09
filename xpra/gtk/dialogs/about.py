@@ -39,7 +39,7 @@ def close_about(*_args):
     if about_dialog:
         about_dialog.hide()
 
-def about(on_close=close_about):
+def about(on_close=close_about, parent:Gtk.Window|None=None):
     global about_dialog
     if about_dialog:
         about_dialog.show()
@@ -50,6 +50,9 @@ def about(on_close=close_about):
     dialog = Gtk.AboutDialog()
     dialog.set_name("Xpra")
     dialog.set_version(XPRA_VERSION)
+    if parent:
+        dialog.set_parent(parent)
+        dialog.set_destroy_with_parent(True)
     dialog.set_authors(('Antoine Martin <antoine@xpra.org>',
                         'Nathaniel Smith <njs@pobox.com>',
                         'Serviware - Arthur Huillet <ahuillet@serviware.com>'))
@@ -70,7 +73,7 @@ def about(on_close=close_about):
     dialog.show()
 
 
-def main():
+def main() -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.platform.gui import init as gui_init
@@ -78,6 +81,7 @@ def main():
         gui_init()
     about(on_close=Gtk.main_quit)
     Gtk.main()
+    return 0
 
 
 if __name__ == "__main__":

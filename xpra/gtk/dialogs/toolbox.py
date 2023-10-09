@@ -184,10 +184,9 @@ class ToolboxGUI(Gtk.Window):
         log("app_signal(%s) exit_code=%i", signum, self.exit_code)
         self.quit()
 
-    @staticmethod
-    def show_about(*_args):
+    def show_about(self, *_args):
         from xpra.gtk.dialogs.about import about
-        about()
+        about(parent=self)
 
 
 def main():
