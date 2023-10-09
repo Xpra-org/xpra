@@ -769,6 +769,7 @@ def get_usage() -> list[str]:
                         "bug-report",
                         "toolbox",
                         "displays",
+                        "about",
                         "docs",
                         "html5",
                         "autostart",
