@@ -117,6 +117,8 @@ class WebSocketProtocol(Protocol):
             self.ws_data = b""
         else:
             ws_data = buf
+        while self.input_packetcount==0 and ws_data.startswith(b"\r\n"):
+            ws_data = ws_data[2:]
         log("parse_ws_frame(%i bytes) total buffer is %i bytes", len(buf), len(ws_data))
         while ws_data and not self._closed:
             parsed = decode_hybi(ws_data)
