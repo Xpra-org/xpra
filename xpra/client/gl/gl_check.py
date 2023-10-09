@@ -104,7 +104,7 @@ def get_max_texture_size():
         log("using GL_MAX_TEXTURE_SIZE=%s as default", texture_size)
     else:
         log("Texture size GL_MAX_RECTANGLE_TEXTURE_SIZE=%s", rect_texture_size)
-    return min(rect_texture_size, texture_size)
+    return int(min(rect_texture_size, texture_size))
 
 
 def check_PyOpenGL_support(force_enable):
