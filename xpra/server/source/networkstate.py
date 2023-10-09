@@ -25,7 +25,11 @@ class NetworkStateMixin(StubSourceMixin):
 
     @classmethod
     def is_needed(cls, caps : typedict) -> bool:
-        return caps.boolget("network-state") or typedict(caps.dictget("network") or {}).intget("pings")>0
+        return (
+                caps.boolget("network-state") or
+                typedict(caps.dictget("network") or {}).intget("pings")>0 or
+                caps.boolget("ping-echo-sourceid")      #legacy clients
+        )
 
     def init_state(self) -> None:
         self.last_ping_echoed_time = 0

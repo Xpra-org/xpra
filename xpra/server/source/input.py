@@ -21,7 +21,11 @@ class InputMixin(StubSourceMixin):
 
     @classmethod
     def is_needed(cls, caps : typedict) -> bool:
-        return caps.boolget("keyboard") or caps.boolget("mouse")
+        return (
+                caps.boolget("keyboard") or
+                caps.boolget("mouse") or
+                bool(caps.get("xkbmap_keycodes"))      #legacy clients
+        )
 
     def init_state(self) -> None:
         self.keyboard_config = None
