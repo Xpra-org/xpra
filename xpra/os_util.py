@@ -287,10 +287,11 @@ def is_distribution_variant(variant=b"Debian"):
         return any(l.find(variant)>=0 for l in v.splitlines() if l.startswith(b"NAME="))
     except Exception:
         pass
+    vstr = bytestostr(variant)
     try:
-        if variant==b"RedHat" and get_linux_distribution()[0].startswith(variant):
+        if variant==b"RedHat" and get_linux_distribution()[0].startswith(vstr):
             return True
-        if get_linux_distribution()[0]==variant:
+        if get_linux_distribution()[0]==vstr:
             return True
     except Exception:
         pass
