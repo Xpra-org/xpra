@@ -6,7 +6,8 @@
 import sys
 import time
 import os.path
-import subprocess
+from subprocess import Popen, PIPE
+from collections.abc import Callable
 
 from gi.repository import Gtk, Gdk, GLib  # @UnresolvedImport
 
@@ -15,6 +16,7 @@ from xpra.gtk.gtk_util import add_close_accel
 from xpra.gtk.widget import imagebutton, label, setfont
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.str_fn import repr_ellipsized
+from xpra.common import noop
 from xpra.os_util import POSIX, OSX, WIN32, is_Wayland, platform_name
 from xpra.util.stats import std_unit_dec
 from xpra.scripts.config import (
@@ -45,7 +47,7 @@ def exec_command(cmd):
     env = os.environ.copy()
     env["XPRA_WAIT_FOR_INPUT"] = "0"
     env["XPRA_NOTTY"] = "1"
-    proc = subprocess.Popen(cmd, env=env)
+    proc = Popen(cmd, env=env)
     log("exec_command(%s)=%s", cmd, proc)
     return proc
 
@@ -64,7 +66,7 @@ def l(text):    # noqa: E743
     return sf(widget)
 
 
-def link_btn(link, text="", icon_name="question.png"):
+def link_btn(link:str, text="", icon_name="question.png"):
     def open_link():
         import webbrowser
         webbrowser.open(link)
@@ -106,9 +108,9 @@ class StartSession(Gtk.Window):
 
         # choose the session type:
         hbox = Gtk.HBox(homogeneous=True, spacing=40)
-        def rb(sibling=None, text="", cb=None, tooltip_text=""):
+        def rb(sibling=None, text="", cb:Callable=noop, tooltip_text="") -> Gtk.RadioButton:
             btn = Gtk.RadioButton.new_with_label_from_widget(sibling, text)
-            if cb:
+            if cb!=noop:
                 btn.connect("toggled", cb)
             if tooltip_text:
                 btn.set_tooltip_text(tooltip_text)
@@ -265,7 +267,7 @@ class StartSession(Gtk.Window):
         if not OSX:
             self.load_displays_thread = start_thread(self.load_displays, "load-displays", daemon=True)
 
-    def load_codecs(self):
+    def load_codecs(self) -> None:
         log("load_codecs()")
         from xpra.codecs.video import getVideoHelper  #pylint: disable=import-outside-toplevel
         vh = getVideoHelper()
@@ -278,11 +280,11 @@ class StartSession(Gtk.Window):
         log("load_codecs() done")
 
 
-    def no_display_combo(self):
+    def no_display_combo(self) -> None:
         self.display_entry.show()
         self.display_combo.hide()
 
-    def load_displays(self):
+    def load_displays(self) -> None:
         log("load_displays()")
         while self.exit_code is None:
             time.sleep(1)
@@ -290,7 +292,6 @@ class StartSession(Gtk.Window):
                 GLib.idle_add(self.no_display_combo)
                 continue
             try:
-                from subprocess import Popen, PIPE
                 cmd = get_xpra_command() + ["displays"]
                 proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
                 out = proc.communicate(None, 5)[0]
@@ -309,7 +310,7 @@ class StartSession(Gtk.Window):
                         new_display_list.append(line.lstrip(" ").split(" ")[0])
                 GLib.idle_add(self.populate_display_combo, new_display_list)
 
-    def populate_display_combo(self, new_display_list):
+    def populate_display_combo(self, new_display_list) -> None:
         changed = self.display_list!=new_display_list
         self.display_list = new_display_list
         if not new_display_list:
@@ -339,48 +340,48 @@ class StartSession(Gtk.Window):
         self.session_options = options
 
 
-    def app_signal(self, signum):
+    def app_signal(self, signum) -> None:
         if self.exit_code is None:
             self.exit_code = 128 + signum
         log("app_signal(%s) exit_code=%i", signum, self.exit_code)
         self.quit()
 
-    def quit(self, *args):
+    def quit(self, *args) -> None:
         log("quit%s", args)
         if self.exit_code is None:
             self.exit_code = 0
         self.do_quit()
 
-    def do_quit(self):
+    def do_quit(self) -> None:
         log("do_quit()")
         Gtk.main_quit()
 
-    def run_dialog(self, WClass):
+    def run_dialog(self, WClass : Callable):
         log("run_dialog(%s) session_options=%s", WClass, repr_ellipsized(self.session_options))
         WClass(self.session_options, self.get_run_mode(), self).show()
 
-    def configure_features(self, *_args):
+    def configure_features(self, *_args) -> None:
         self.run_dialog(FeaturesWindow)
-    def configure_network(self, *_args):
+    def configure_network(self, *_args) -> None:
         self.run_dialog(NetworkWindow)
-    def configure_display(self, *_args):
+    def configure_display(self, *_args) -> None:
         self.run_dialog(DisplayWindow)
-    def configure_encoding(self, *_args):
+    def configure_encoding(self, *_args) -> None:
         if self.load_codecs_thread.is_alive():
             log("waiting for loader thread to complete")
             self.load_codecs_thread.join()
         self.run_dialog(EncodingWindow)
-    def configure_keyboard(self, *_args):
+    def configure_keyboard(self, *_args) -> None:
         self.run_dialog(KeyboardWindow)
-    def configure_audio(self, *_args):
+    def configure_audio(self, *_args) -> None:
         self.run_dialog(AudioWindow)
-    def configure_webcam(self, *_args):
+    def configure_webcam(self, *_args) -> None:
         self.run_dialog(WebcamWindow)
-    def configure_printing(self, *_args):
+    def configure_printing(self, *_args) -> None:
         self.run_dialog(PrintingWindow)
 
 
-    def populate_menus(self):
+    def populate_menus(self) -> None:
         localhost = self.localhost_btn.get_active()
         if (OSX or WIN32) and localhost:
             self.display_box.hide()
@@ -423,7 +424,7 @@ class StartSession(Gtk.Window):
                 self.exit_with_children_cb.set_sensitive(bool(self.entry.get_text()))
 
 
-    def populate_category(self):
+    def populate_category(self) -> None:
         self.categories = {}
         try:
             from xdg.Menu import parse, Menu
@@ -443,7 +444,7 @@ class StartSession(Gtk.Window):
         if self.categories:
             self.category_combo.set_active(0)
 
-    def category_changed(self, *args):
+    def category_changed(self, *args) -> None:
         category = self.category_combo.get_active_text()
         log("category_changed(%s) category=%s", args, category)
         self.commands = {}
@@ -466,7 +467,7 @@ class StartSession(Gtk.Window):
         self.command_box.show()
 
 
-    def populate_command(self):
+    def populate_command(self) -> None:
         log("populate_command()")
         self.command_combo.get_model().clear()
         if self.xsessions is None:
@@ -484,7 +485,7 @@ class StartSession(Gtk.Window):
             self.command_combo.append_text(name)
         self.command_combo.set_active(0)
 
-    def command_changed(self, *args):
+    def command_changed(self, *args) -> None:
         if self.shadow_btn.get_active():
             return
         name = self.command_combo.get_active_text()
@@ -501,7 +502,7 @@ class StartSession(Gtk.Window):
         self.run_btn.set_sensitive(not REQUIRE_COMMAND or bool(name))
         self.runattach_btn.set_sensitive(not REQUIRE_COMMAND or bool(name))
 
-    def entry_changed(self, *args):
+    def entry_changed(self, *args) -> None:
         if self.shadow_btn.get_active():
             return
         text = self.entry.get_text()
@@ -511,14 +512,14 @@ class StartSession(Gtk.Window):
         self.run_btn.set_sensitive(not REQUIRE_COMMAND or bool(text))
         self.runattach_btn.set_sensitive(not REQUIRE_COMMAND or bool(text))
 
-    def mode_changed(self, *args):
+    def mode_changed(self, *args) -> None:
         log("mode_changed(%s)", args)
         mode = self.mode_combo.get_active_text()
         self.port_entry.set_text(str(get_default_port(mode)))
         if not (self.shadow_btn.get_active() and self.localhost_btn.get_active()):
             self.no_display_combo()
 
-    def session_toggled(self, *args):
+    def session_toggled(self, *args) -> None:
         localhost = self.localhost_btn.get_active()
         log("session_toggled(%s) localhost=%s", args, localhost)
         shadow = self.shadow_btn.get_active()
@@ -536,7 +537,7 @@ class StartSession(Gtk.Window):
         self.populate_menus()
         self.entry_changed()
 
-    def display_changed(self, *args):
+    def display_changed(self, *args) -> None:
         display = self.display_entry.get_text().lstrip(":")
         localhost = self.localhost_btn.get_active()
         shadow = self.shadow_btn.get_active()
@@ -549,7 +550,7 @@ class StartSession(Gtk.Window):
                 self.runattach_btn.set_sensitive(False)
         self.runattach_btn.set_tooltip_text(ra_label)
 
-    def host_toggled(self, *args):
+    def host_toggled(self, *args) -> None:
         log("host_toggled(%s)", args)
         self.display_changed()
         self.populate_menus()
@@ -558,19 +559,19 @@ class StartSession(Gtk.Window):
             self.no_display_combo()
 
 
-    def hide_window(self, *args):
+    def hide_window(self, *args) -> bool:
         log("hide_window%s", args)
         self.hide()
         return True
 
 
-    def run_command(self, *_args):
+    def run_command(self, *_args) -> None:
         self.do_run()
 
-    def runattach_command(self, *_args):
+    def runattach_command(self, *_args) -> None:
         self.do_run(True)
 
-    def do_run(self, attach=False):
+    def do_run(self, attach=False) -> None:
         cmd = self.get_run_command(attach)
         # only hide after reading the form:
         self.hide()
@@ -579,12 +580,12 @@ class StartSession(Gtk.Window):
         if proc:
             start_thread(self.wait_for_subprocess, "wait-%i" % proc.pid, daemon=True, args=(proc,))
 
-    def wait_for_subprocess(self, proc):
+    def wait_for_subprocess(self, proc:Popen) -> None:
         proc.wait()
         log("return code: %s", proc.returncode)
         GLib.idle_add(self.show)
 
-    def get_run_mode(self):
+    def get_run_mode(self) -> str:
         shadow = self.shadow_btn.get_active()
         seamless = self.seamless_btn.get_active()
         if seamless:
@@ -593,7 +594,7 @@ class StartSession(Gtk.Window):
             return "shadow"
         return "start-desktop"
 
-    def get_run_command(self, attach=False):
+    def get_run_command(self, attach=False) -> list[str]:
         localhost = self.localhost_btn.get_active()
         if xdg and localhost:
             if self.desktop_entry.getTryExec():
@@ -691,7 +692,7 @@ class SessionOptions(Gtk.Window):
         self.populate_form()
         self.show()
 
-    def add_grid(self):
+    def add_grid(self) -> None:
         self.grid = Gtk.Grid()
         self.grid.show()
         al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=1.0)
@@ -699,14 +700,14 @@ class SessionOptions(Gtk.Window):
         al.show()
         self.vbox.pack_start(al, expand=True, fill=True, padding=20)
 
-    def populate_form(self):
+    def populate_form(self) -> None:
         raise NotImplementedError()
 
-    def close(self, *_args):  #pylint: disable=arguments-differ
+    def close(self, *_args) -> None:  #pylint: disable=arguments-differ
         self.set_value_from_widgets()
         super().close()
 
-    def sep(self):
+    def sep(self) -> None:
         hsep = Gtk.HSeparator()
         hsep.set_size_request(-1, 2)
         hsep.set_margin_top(5)
@@ -717,7 +718,7 @@ class SessionOptions(Gtk.Window):
         self.grid.attach(al, 0, self.row.get(), 2, 1)
         self.row.increase()
 
-    def _save_widget(self, fn, widget, widget_type, **kwargs):
+    def _save_widget(self, fn:str, widget, widget_type:str, **kwargs) -> None:
         setattr(self, "%s_widget" % fn, widget)
         setattr(self, "%s_widget_type" % fn, widget_type)
         for k,v in kwargs.items():
@@ -730,7 +731,7 @@ class SessionOptions(Gtk.Window):
         return getattr(self, "%s_options" % fn)
 
 
-    def bool_cb(self, text, option_name, tooltip_text="", link=None):
+    def bool_cb(self, text, option_name, tooltip_text="", link="") -> Gtk.Switch:
         self.attach_label(text, tooltip_text, link)
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
@@ -744,14 +745,14 @@ class SessionOptions(Gtk.Window):
         self.row.increase()
         return cb
 
-    def radio_cb_auto(self, text, option_name, tooltip_text="", link=None):
+    def radio_cb_auto(self, text:str, option_name:str, tooltip_text="", link="") -> Gtk.RadioButton:
         return self.radio_cb(text, option_name, tooltip_text, link, {
             "yes"   : TRUE_OPTIONS,
             "no"    : FALSE_OPTIONS,
             "auto"  : ("auto", "", None),
             })
 
-    def radio_cb(self, text, option_name, tooltip_text="", link=None, options=None):
+    def radio_cb(self, text:str, option_name:str, tooltip_text="", link="", options=None) -> Gtk.RadioButton:
         self.attach_label(text, tooltip_text, link)
         fn = option_name.replace("-", "_")
         widget_base_name = "%s_widget" % fn
@@ -784,8 +785,8 @@ class SessionOptions(Gtk.Window):
         self.row.increase()
         return btns
 
-    def combo(self, text, option_name, options, link=None):
-        self.attach_label(text, None, link)
+    def combo(self, text:str, option_name:str, options, link="") -> Gtk.ComboBoxText:
+        self.attach_label(text, "", link)
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
         c = Gtk.ComboBoxText()
@@ -804,7 +805,7 @@ class SessionOptions(Gtk.Window):
         self.row.increase()
         return c
 
-    def scale(self, text, option_name, minv=0, maxv=100, marks=None):
+    def scale(self, text:str, option_name:str, minv=0, maxv=100, marks=None) -> Gtk.Scale:
         self.attach_label(text)
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
@@ -824,11 +825,11 @@ class SessionOptions(Gtk.Window):
         self.row.increase()
         return c
 
-    def set_value_from_widgets(self):
+    def set_value_from_widgets(self) -> None:
         for option_name in self.widgets:
             self.set_value_from_widget(option_name)
 
-    def set_value_from_widget(self, option_name):
+    def set_value_from_widget(self, option_name:str) -> None:
         fn = option_name.replace("-", "_")
         widget_type = getattr(self, "%s_widget_type" % fn)
         if widget_type=="bool":
@@ -853,24 +854,24 @@ class SessionOptions(Gtk.Window):
             log.info("changed: %s=%r (%s) - was %r (%s)", fn, value, type(value), current_value, type(current_value))
             setattr(self.options, fn, value)
 
-    def valuesfromswitch(self, option_name):
+    def valuesfromswitch(self, option_name:str) -> tuple:
         fn = option_name.replace("-", "_")
         widget = self.get_widget(fn)
         values = getattr(self, "%s_values" % fn)
         value = values[int(widget.get_active())]
         return (value, )
 
-    def valuesfromradio(self, option_name):
+    def valuesfromradio(self, option_name:str) -> tuple:
         fn = option_name.replace("-", "_")
         options = self.get_widget_options(fn)
         widget_base_name = "%s_widget" % fn
         for text, match in options.items():
             btn = getattr(self, "%s_%s" % (widget_base_name, text))
             if btn.get_active():
-                return match
+                return tuple(match)
         return (UNSET, )
 
-    def valuesfromcombo(self, option_name):
+    def valuesfromcombo(self, option_name:str) -> tuple:
         fn = option_name.replace("-", "_")
         widget = self.get_widget(fn)
         options = self.get_widget_options(fn)
@@ -880,12 +881,12 @@ class SessionOptions(Gtk.Window):
                 return (k, )
         return (UNSET, )
 
-    def valuesfromscale(self, option_name):
+    def valuesfromscale(self, option_name:str) -> tuple[int]:
         fn = option_name.replace("-", "_")
         widget = self.get_widget(fn)
         return (int(widget.get_value()), )
 
-    def attach_label(self, text, tooltip_text="", link=None):
+    def attach_label(self, text:str, tooltip_text="", link="") -> None:
         lbl = label(text, tooltip=tooltip_text)
         lbl.set_margin_start(5)
         lbl.set_margin_top(5)
@@ -903,20 +904,20 @@ class FeaturesWindow(SessionOptions):
     def __init__(self, *args):
         super().__init__("Session Features", "features.png", *args)
 
-    def populate_form(self):
+    def populate_form(self) -> None:
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/README.md",
                        "Open Features Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
         self.bool_cb("Splash Screen", "splash", "Show a splash screen during startup")
         self.bool_cb("Read only", "readonly", "Mouse and keyboard events will be ignored")
-        self.radio_cb("Border", "border", "Show a colored border around xpra windows to differentiate them", None, {
+        self.radio_cb("Border", "border", "Show a colored border around xpra windows to differentiate them", "", {
             "auto"  : ("auto,5:off", "auto"),
             "none"  : FALSE_OPTIONS,
             "blue"  : ("blue",),
             "red"   : ("red",),
             "green" : ("green", )
             })
-        self.radio_cb("Header Bar", "headerbar", None, None, {
+        self.radio_cb("Header Bar", "headerbar", "", "", {
             "auto"  : ["auto"]+list(TRUE_OPTIONS),
             "no"    : FALSE_OPTIONS,
             "force" : ("force",),
@@ -955,7 +956,7 @@ class NetworkWindow(SessionOptions):
     def __init__(self, *args):
         super().__init__("Network Options", "connect.png", *args)
 
-    def populate_form(self):
+    def populate_form(self) -> None:
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Network/README.md",
                        "Open Network Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
@@ -992,7 +993,7 @@ class DisplayWindow(SessionOptions):
     def __init__(self, *args):
         super().__init__("Display Settings", "display.png", *args)
 
-    def populate_form(self):
+    def populate_form(self) -> None:
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Display.md",
                        "Open Display Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
@@ -1029,7 +1030,7 @@ class DisplayWindow(SessionOptions):
             "150%"  : "150%",
             "200%"  : "200%",
             })
-        self.radio_cb("OpenGL Acceleration", "opengl", None, None, {
+        self.radio_cb("OpenGL Acceleration", "opengl", "", "", {
             "probe" : "probe",
             "auto"  : ["auto"]+list(TRUE_OPTIONS),
             "no"    : FALSE_OPTIONS,
@@ -1042,7 +1043,7 @@ class EncodingWindow(SessionOptions):
     def __init__(self, *args):
         super().__init__("Picture Encoding", "encoding.png", *args)
 
-    def populate_form(self):
+    def populate_form(self) -> None:
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Encodings.md",
                        "Open Encodings Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
@@ -1087,7 +1088,7 @@ class KeyboardWindow(SessionOptions):
     def __init__(self, *args):
         super().__init__("Keyboard Options", "keyboard.png", *args)
 
-    def populate_form(self):
+    def populate_form(self) -> None:
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Keyboard.md",
                        "Open Keyboard Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
@@ -1123,12 +1124,12 @@ class AudioWindow(SessionOptions):
     def __init__(self, *args):
         super().__init__("Audio Options", "speaker.png", *args)
 
-    def populate_form(self):
+    def populate_form(self) -> None:
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Audio.md",
                        "Open Audio Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
-        self.radio_cb("Speaker", "speaker", None, None, {
+        self.radio_cb("Speaker", "speaker", "", "", {
             "on"        : TRUE_OPTIONS,
             "off"       : FALSE_OPTIONS,
             "disabled"  : ("disabled", ),
@@ -1140,7 +1141,7 @@ class AudioWindow(SessionOptions):
         #    self.speaker_codec_widget.append_text(v)
         #attach(self.speaker_codec_widget, 1)
         #inc()
-        self.radio_cb("Microphone", "microphone", None, None, {
+        self.radio_cb("Microphone", "microphone", "", "", {
             "on"        : TRUE_OPTIONS,
             "off"       : FALSE_OPTIONS,
             "disabled"  : ("disabled", ),
@@ -1160,7 +1161,7 @@ class WebcamWindow(SessionOptions):
     def __init__(self, *args):
         super().__init__("Webcam", "webcam.png", *args)
 
-    def populate_form(self):
+    def populate_form(self) -> None:
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Webcam.md",
                        "Open Webcam Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
@@ -1178,7 +1179,7 @@ class PrintingWindow(SessionOptions):
     def __init__(self, *args):
         super().__init__("Printer", "printer.png", *args)
 
-    def populate_form(self):
+    def populate_form(self) -> None:
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Printing.md",
                        "Open Printing Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
@@ -1187,7 +1188,7 @@ class PrintingWindow(SessionOptions):
         self.vbox.show_all()
 
 
-def main(options=None): # pragma: no cover
+def main(options=None) -> int: # pragma: no cover
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.log import enable_color
