@@ -200,7 +200,7 @@ class SessionsGUI(gtk.Window):
     def get_session_info(self, sockpath):
         #the lazy way using a subprocess
         if WIN32:
-            socktype = "namedpipe"
+            socktype = "named-pipe"
         else:
             socktype = "socket"
         cmd = get_nodock_command()+["id", "%s:%s" % (socktype, sockpath)]
@@ -318,7 +318,7 @@ class SessionsGUI(gtk.Window):
             uri = "%s://%s" % (mode, address)
         if port>0 and DEFAULT_PORTS.get(mode, 0)!=port:
             uri += ":%s" % port
-        if protocol not in ("socket", "namedpipe"):
+        if protocol not in ("socket", "named-pipe"):
             uri += "/"
             if dstr:
                 uri += "%s" % dstr
