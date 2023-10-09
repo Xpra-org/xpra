@@ -147,6 +147,7 @@ Group:				Networking
 BuildArch:			noarch
 Requires(pre):		shadow-utils
 Conflicts:			xpra < 2.1
+Conflicts:			xpra-filesystem >= 6.0
 BuildRequires:		libfakeXinerama
 BuildRequires:		which
 %description common
