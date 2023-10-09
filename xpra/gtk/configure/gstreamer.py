@@ -26,6 +26,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """.replace("\n", "")
 
+
 class ConfigureGUI(BaseGUIWindow):
 
     def __init__(self, parent:Gtk.Window|None=None):
@@ -51,6 +52,7 @@ class ConfigureGUI(BaseGUIWindow):
             self.populate_with_warning()
         else:
             self.add_widget(label("Configure Xpra GStreamer Codecs", font="sans 20"))
+
         self.vbox.show_all()
 
     def populate_with_warning(self):
@@ -80,9 +82,6 @@ class ConfigureGUI(BaseGUIWindow):
     def understood(self, *args):
         self.warning_shown = True
         self.populate()
-
-    def show(self):
-        super().show()
 
 
 def main() -> int:
