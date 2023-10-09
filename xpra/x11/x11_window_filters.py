@@ -35,7 +35,7 @@ def get_x11_window_value(prop, window):
         v = prop_get(window, prop, ptype)
         log("prop_get(%s, %s, %s)=%s", window, prop, ptype, v)
         if v and isinstance(v, (str, unicode)):
-            v = strtobytes(v).replace("\0", "")
+            v = strtobytes(v).replace(b"\0", b"")
     else:
         v = None
     log("%s=%s (type=%s)", prop, v, x11type)
