@@ -1879,6 +1879,7 @@ def run_opengl_probe():
 def make_client(error_cb, opts):
     if POSIX and os.environ.get("GDK_BACKEND") is None and not OSX:
         os.environ["GDK_BACKEND"] = "x11"
+        os.environ["PYOPENGL_PLATFORM"] = "x11"
     if opts.opengl=="probe":
         if os.environ.get("XDG_SESSION_TYPE")=="wayland":
             opts.opengl = "no"
