@@ -384,6 +384,9 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
         from xpra.util import roundup
         name = self.get_mode_name(w, h)
+        mode = self._added_modes.get(name, 0)
+        if mode:
+            return w, h
         bname = strtobytes(name)
         new_mode = XRRAllocModeInfo(bname, len(bname))
         try:
