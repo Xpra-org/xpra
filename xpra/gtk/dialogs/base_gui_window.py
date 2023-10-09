@@ -71,11 +71,11 @@ class BaseGUIWindow(Gtk.Window):
         if parent:
             self.set_transient_for(parent)
             self.set_modal(True)
-            close = self.hide
+            self.do_dismiss = self.hide
         else:
-            close = self.quit
-        self.connect("delete_event", close)
-        add_close_accel(self, close)
+            self.do_dismiss = self.quit
+        self.connect("delete_event", self.dismiss)
+        add_close_accel(self, self.dismiss)
         add_window_accel(self, 'F1', self.show_about)
         with IgnoreWarningsContext():
             self.set_wmclass(*wm_class)
@@ -86,6 +86,11 @@ class BaseGUIWindow(Gtk.Window):
         self.set_default_size(*default_size)
         self.connect("focus-in-event", self.focus_in)
         self.connect("focus-out-event", self.focus_out)
+
+    def dismiss(self, *args):
+        log(f"dismiss{args} calling {self.do_dismiss}")
+        self.do_dismiss()
+
 
     def add_headerbar(self, about=True, toolbox=True):
         hb = Gtk.HeaderBar()
