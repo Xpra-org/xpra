@@ -105,7 +105,7 @@ def kill_signalwatcher(proc) -> None:
     clean_signalwatcher(proc)
     exit_code = proc.poll()
     log(f"kill_signalwatcher({proc}) {exit_code}")
-    if exit_code:
+    if exit_code is not None:
         return
     try:
         stdin = proc.stdin
@@ -138,7 +138,7 @@ def clean_signalwatcher(proc) -> None:
         GLib.source_remove(stdout_io_watch)
     stdout = proc.stdout
     if stdout:
-        log(f"stdout={stdout} : %s", dir(stdout))
+        log(f"stdout={stdout}")
         noerr(stdout.close)
     stderr = proc.stderr
     if stderr:
