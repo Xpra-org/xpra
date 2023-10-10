@@ -1190,7 +1190,7 @@ if WIN32:
             add_DLLs('atk',
                      'dbus', 'dbus-glib',
                      'gdk', 'gdk_pixbuf', 'gtk',
-                     'cairo-gobject', 'pango', 'pangocairo', 'pangoft2', 'pangowin32',
+                     'cairo-gobject', 'cairo', 'pango', 'pangocairo', 'pangoft2', 'pangowin32',
                      'harfbuzz', 'harfbuzz-gobject',
                      'jasper', 'epoxy',
                      'intl',
@@ -1471,6 +1471,9 @@ if WIN32:
         external_includes.append("cv2")
     else:
         remove_packages("cv2")
+
+    external_includes.append("cairo")
+    external_includes.append("certifi")
 
     if nvenc_ENABLED or nvfbc_ENABLED:
         external_includes.append("numpy")
