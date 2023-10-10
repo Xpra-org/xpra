@@ -827,13 +827,7 @@ class WindowClient(StubClientMixin):
                 #def add_process(self, process, name, command, ignore=False, forget=False, callback=None):
                 proc.stdout_io_watch = None
                 def watcher_terminated(*args):
-                    #watcher process terminated, remove io watch:
-                    #this may be redundant since we also return False from signal_watcher_event
-                    log("watcher_terminated%s", args)
-                    source = proc.stdout_io_watch
-                    if source:
-                        proc.stdout_io_watch = None
-                        self.source_remove(source)
+                    self.clean_signalwatcher(proc)
                 getChildReaper().add_process(proc, "signal listener for remote process %s" % pid, command="xpra_signal_listener", ignore=True, forget=True, callback=watcher_terminated)
                 log("using watcher pid=%i for server pid=%i", proc.pid, pid)
                 self._pid_to_signalwatcher[pid] = proc
@@ -1196,23 +1190,43 @@ class WindowClient(StubClientMixin):
                             del self._pid_to_signalwatcher[pid]
 
     def kill_signalwatcher(self, proc):
+        self.clean_signalwatcher(proc)
+        exit_code = proc.poll()
         log("kill_signalwatcher(%s)", proc)
-        if proc.poll() is None:
-            stdout_io_watch = proc.stdout_io_watch
-            if stdout_io_watch:
-                proc.stdout_io_watch = None
-                self.source_remove(stdout_io_watch)
-            try:
-                proc.stdin.write(b"exit\n")
-                proc.stdin.flush()
-                proc.stdin.close()
-            except IOError:
+        if exit_code is not None:
+            return
+        try:
+            stdin = proc.stdin
+            if stdin:
+                stdin.write(b"exit\n")
+                stdin.flush()
+                stdin.close()
+        except OSError:
+            log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
+        if proc.poll() is not None:
+            return
+        try:
+            proc.terminate()
+        except OSError:
+            log.warn("Warning: failed to terminate the signal watcher", exc_info=True)
+        try:
+            os.kill(proc.pid, signal.SIGKILL)
+        except OSError as e:
+            if e.errno!=errno.ESRCH:
                 log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
-            try:
-                os.kill(proc.pid, signal.SIGKILL)
-            except OSError as e:
-                if e.errno!=errno.ESRCH:
-                    log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
+
+    def clean_signalwatcher(self, proc) -> None:
+        stdout_io_watch = proc.stdout_io_watch
+        if stdout_io_watch:
+            proc.stdout_io_watch = 0
+            GLib.source_remove(stdout_io_watch)
+        stdout = proc.stdout
+        if stdout:
+            log("stdout=%s", stdout)
+            noerr(stdout.close)
+        stderr = proc.stderr
+        if stderr:
+            noerr(stderr.close)
 
     def destroy_all_windows(self):
         for wid, window in self._id_to_window.items():
