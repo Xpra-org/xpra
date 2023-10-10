@@ -12,7 +12,10 @@ from xpra.util import envbool
 from xpra.log import Logger
 from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 from xpra.platform.win32 import constants as win32con
-from xpra.platform.win32.common import WNDPROC
+from xpra.platform.win32.common import (
+    WNDPROC,
+    GetWindowLongW, SetWindowLongW, GetSystemMetrics, CallWindowProcW,
+)
 
 
 user32 = ctypes.WinDLL("user32", use_last_error=True)
@@ -77,7 +80,10 @@ class Win32Hooks(object):
     def setup(self):
         assert self._oldwndproc is None
         self._newwndproc = WNDPROC(self._wndproc)
-        self._oldwndproc = SetWindowLongW(self._hwnd, win32con.GWL_WNDPROC, self._newwndproc)
+        try:
+            self._oldwndproc = SetWindowLongW(self._hwnd, win32con.GWL_WNDPROC, self._newwndproc)
+        except Exception:
+            log.error("Error setting up window hook for %s", self._hwnd, exc_info=True)
 
     def on_getminmaxinfo(self, hwnd, msg, wparam, lparam):
         if (self.min_size or self.max_size) and lparam:

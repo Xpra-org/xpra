@@ -265,6 +265,9 @@ class win32NotifyIcon:
         log("create_window() hwnd=%#x", self.hwnd or 0)
         if not self.hwnd:
             raise ctypes.WinError(ctypes.get_last_error())
+        TASKBAR_CREATED = RegisterWindowMessageA(b"TaskbarCreated")
+        log(f"{TASKBAR_CREATED=}")
+        message_map[TASKBAR_CREATED] = win32NotifyIcon.OnTrayRestart
         UpdateWindow(self.hwnd)
         #register callbacks:
         win32NotifyIcon.instances[self.hwnd] = self
@@ -311,22 +314,27 @@ class win32NotifyIcon:
         if not self.hwnd:
             return
         try:
-            nid = self.make_nid(0)
+            nid = NOTIFYICONDATA()
+            nid.cbSize = sizeof(NOTIFYICONDATA)
+            nid.hWnd = self.hwnd
+            nid.uID = self.app_id
+            nid.guidItem = XPRA_GUID
+            nid.uFlags = NIF_GUID
             log("delete_tray_window(..) calling Shell_NotifyIcon(NIM_DELETE, %s)", nid)
-            if not Shell_NotifyIcon(NIM_DELETE, byref(nid)):
-                log.warn("Warning: failed to remove system tray")
-            else:
-                self.hwnd = 0
+            r = Shell_NotifyIcon(NIM_DELETE, byref(nid))
+            log("Shell_NotifyIcon(NIM_DELETE, nid)=%s", bool(r))
             ci = self.current_icon
             di = self.destroy_icon
             if ci and di:
                 self.current_icon = None
                 self.destroy_icon = None
                 di(ci)
+            return bool(r)
         except Exception as e:
             log("delete_tray_window()", exc_info=True)
             log.error("Error: failed to delete tray window")
             log.error(" %s", e)
+            return False
 
 
     def set_blinking(self, on):
@@ -346,7 +354,7 @@ class win32NotifyIcon:
         self.do_set_icon(hicon)
         nid = self.make_nid(NIF_ICON)
         Shell_NotifyIcon(NIM_MODIFY, byref(nid))
-        self.reset_function = (self.set_icon, iconPathName)
+        self.reset_function = self.set_icon, (iconPathName, )
 
     def do_set_icon(self, hicon, destroy_icon=None):
         log("do_set_icon(%#x)", hicon)
@@ -381,7 +389,7 @@ class win32NotifyIcon:
         hicon = image_to_ICONINFO(img)
         self.do_set_icon(hicon, DestroyIcon)
         UpdateWindow(self.hwnd)
-        self.reset_function = (self.set_icon_from_data, pixels, has_alpha, w, h, rowstride)
+        self.reset_function = self.set_icon_from_data, (pixels, has_alpha, w, h, rowstride)
 
     def LoadImage(self, iconPathName):
         if not iconPathName:
@@ -426,12 +434,12 @@ class win32NotifyIcon:
         try:
             #re-create the tray window:
             self.delete_tray_window()
-            self.create_tray_window()
+            self.register_tray()
             #now try to repaint the tray:
             rfn = self.reset_function
             log("OnTrayRestart%s reset function: %s", (hwnd, msg, wparam, lparam), rfn)
             if rfn:
-                rfn[0](*rfn[1:])
+                rfn[0](*rfn[1])
         except Exception as e:
             log.error("Error: cannot reset tray icon")
             log.error(" %s", e)
@@ -480,7 +488,7 @@ class win32NotifyIcon:
 
 
 WM_TRAY_EVENT = win32con.WM_MENUCOMMAND     #a message id we choose
-TASKBAR_CREATED = RegisterWindowMessageA("TaskbarCreated")
+TASKBAR_CREATED = RegisterWindowMessageA(b"TaskbarCreated")
 message_map = {
     TASKBAR_CREATED                     : win32NotifyIcon.OnTrayRestart,
     win32con.WM_DESTROY                 : win32NotifyIcon.OnDestroy,
