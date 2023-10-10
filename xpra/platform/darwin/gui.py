@@ -723,7 +723,7 @@ def enable_focus_workaround():
     NSApp.activateIgnoringOtherApps_(True)
 
 
-def can_access_display() -> bool:
+def can_access_display():
     #see: https://stackoverflow.com/a/11511419/428751
     d = Quartz.CGSessionCopyCurrentDictionary()
     if not d:

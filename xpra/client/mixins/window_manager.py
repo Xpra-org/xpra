@@ -1215,7 +1215,7 @@ class WindowClient(StubClientMixin):
             if e.errno!=errno.ESRCH:
                 log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
 
-    def clean_signalwatcher(self, proc) -> None:
+    def clean_signalwatcher(self, proc):
         stdout_io_watch = proc.stdout_io_watch
         if stdout_io_watch:
             proc.stdout_io_watch = 0
