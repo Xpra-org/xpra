@@ -106,7 +106,7 @@ class OSXTray(TrayBase):
         gi.require_version('Gtk', '3.0')  # @UndefinedVariable
         from gi.repository import Gtk  # @UnresolvedImport
         self.dock_menu = Gtk.Menu()
-        self.disconnect_dock_item = Gtk.MenuItem("Disconnect")
+        self.disconnect_dock_item = Gtk.MenuItem(label="Disconnect")
         self.disconnect_dock_item.connect("activate", self.quit)
         self.dock_menu.add(self.disconnect_dock_item)
         self.dock_menu.show_all()
