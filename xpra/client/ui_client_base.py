@@ -16,6 +16,7 @@ from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.os_util import platform_name, bytestostr, strtobytes, BITS, POSIX, is_Wayland
 from xpra.util import (
+    noerr,
     std, envbool, envint, typedict, updict, repr_ellipsized, ellipsizer, log_screen_sizes, engs,
     XPRA_AUDIO_NOTIFICATION_ID, XPRA_DISCONNECT_NOTIFICATION_ID,
     )
@@ -89,6 +90,8 @@ class UIXpraClient(ClientBaseClass):
             __signals__ += c.__signals__
 
     def __init__(self):
+        # try to ensure we start on a new line (see #4023):
+        noerr(sys.stdout.write, "\n")
         log.info("Xpra %s client version %s %i-bit", self.client_toolkit(), full_version_str(), BITS)
         #mmap_enabled belongs in the MmapClient mixin,
         #but it is used outside it, so make sure we define it:
