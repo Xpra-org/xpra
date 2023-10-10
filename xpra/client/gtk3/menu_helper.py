@@ -404,7 +404,8 @@ class MenuHelper:
 
 
     def after_handshake(self, cb:Callable, *args) -> None:
-        self.client.after_handshake(cb, *args)
+        if self.client:
+            self.client.after_handshake(cb, *args)
 
 
     def do_handshake_menuitem(self, *args, **kwargs) -> Gtk.ImageMenuItem:
