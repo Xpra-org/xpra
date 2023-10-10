@@ -440,7 +440,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             new_mode.vTotal = int(yTotal)
             new_mode.modeFlags = 0
             mode = XRRCreateMode(self.display, window, new_mode)
-            log("XRRCreateMode returned %#x for mode %s", mode, mode_info)
+            log("XRRCreateMode returned %#x for mode %s", mode, name)
             if mode<=0:
                 return 0
             self._added_modes[name] = int(mode)
