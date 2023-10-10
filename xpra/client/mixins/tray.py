@@ -41,8 +41,13 @@ class TrayClient(StubClientMixin):
         if self.delay_tray:
             self.connect("first-ui-received", self.setup_xpra_tray)
         else:
-            #show shortly after the main loop starts running:
-            self.timeout_add(TRAY_DELAY, self.setup_xpra_tray)
+            if WIN32 or OSX:
+                # show shortly after the main loop starts running:
+                GLib.timeout_add(TRAY_DELAY, self.setup_xpra_tray)
+            else:
+                # wait for handshake:
+                # see appindicator bug #3956
+                self.after_handshake(self.setup_xpra_tray)
 
     def setup_xpra_tray(self, *args):
         log("setup_xpra_tray%s", args)

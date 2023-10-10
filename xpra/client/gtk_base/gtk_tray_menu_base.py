@@ -295,6 +295,10 @@ class GTKTrayMenuBase(object):
         log("setup_menu(%s)", show_close)
         self.menu_shown = False
         self.menu_icon_size = get_icon_size()
+        self.handshake_menuitem = self.do_handshake_menuitem
+        def shortcut():
+            self.handshake_menuitem = self.menuitem
+        self.client.after_handshake(shortcut)
         menu = gtk.Menu()
         title_item = None
         if SHOW_TITLE_ITEM:
@@ -362,7 +366,7 @@ class GTKTrayMenuBase(object):
         raise NotImplementedError("override me!")
 
 
-    def handshake_menuitem(self, *args, **kwargs):
+    def do_handshake_menuitem(self, *args, **kwargs):
         """ Same as menuitem() but this one will be disabled until we complete the server handshake """
         mi = self.menuitem(*args, **kwargs)
         set_sensitive(mi, False)

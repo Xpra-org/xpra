@@ -84,6 +84,7 @@ class FakeClient(AdHocStruct):
         self.idle_add = no_idle_add
         self.timeout_add = no_timeout_add
         self.source_remove = no_source_remove
+        self.after_handshake = noop
 
     def send(self, *args):
         log("send%s", args)
