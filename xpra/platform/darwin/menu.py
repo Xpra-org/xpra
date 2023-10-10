@@ -86,7 +86,7 @@ class OSXMenuHelper(GTKTrayMenu):
         #if we call add_about before the main loop is ready,
         #things don't work...
         if client and SHOW_ABOUT_XPRA:
-            client.after_handshake(self.add_about)
+            self.after_handshake(self.add_about)
 
     def show_menu(self, button:int, time) -> None:
         #does not mean anything on OSX since the menu is controlled by the OS
@@ -223,7 +223,7 @@ class OSXMenuHelper(GTKTrayMenu):
             for label in CLIPBOARD_DIRECTION_LABELS:
                 add(clipboard_menu, self.make_clipboard_submenuitem(label, self._clipboard_direction_changed))
             clipboard_menu.show_all()
-            self.client.after_handshake(self.set_clipboard_menu, clipboard_menu)
+            self.after_handshake(self.set_clipboard_menu, clipboard_menu)
         if features.audio and SHOW_SOUND_MENU:
             audio_menu = self.make_menu()
             if self.client.speaker_allowed and self.client.speaker_codecs:
@@ -238,7 +238,7 @@ class OSXMenuHelper(GTKTrayMenu):
                 from xpra.client.gtk3.menu_helper import populate_encodingsmenu
                 populate_encodingsmenu(encodings_menu, self.get_current_encoding, self.set_current_encoding,
                                        client_encodings, server_encodings)
-            self.client.after_handshake(set_encodings_menu)
+            self.after_handshake(set_encodings_menu)
             menus.append(("Encoding", encodings_menu))
         if features.windows and SHOW_ACTIONS_MENU:
             actions_menu = self.make_menu()
@@ -261,7 +261,7 @@ class OSXMenuHelper(GTKTrayMenu):
                     add(server_menu, self.make_servercommandsmenuitem())
                 if SHOW_UPLOAD and self.client.remote_file_transfer:
                     add(server_menu, self.make_uploadmenuitem())
-            self.client.after_handshake(add_ah)
+            self.after_handshake(add_ah)
             menus.append(("Server", server_menu))
         menus.append((SEPARATOR+"-EXTRAS", None))
         return menus
@@ -380,7 +380,7 @@ class OSXMenuHelper(GTKTrayMenu):
             else:
                 log("set_swapkeys_menuitem(%s) no keyboard!", args)
                 swapkeys_menuitem.set_sensitive(False)
-        self.client.after_handshake(set_swapkeys_menuitem)
+        self.after_handshake(set_swapkeys_menuitem)
         return swapkeys_menuitem
 
     def make_invertmousewheelmenuitem(self):
@@ -414,7 +414,7 @@ class OSXMenuHelper(GTKTrayMenu):
             else:
                 log("set_numlock_menuitem(%s) no keyboard!", args)
                 self.numlock_menuitem.set_sensitive(False)
-        self.client.after_handshake(set_numlock_menuitem)
+        self.after_handshake(set_numlock_menuitem)
         return self.numlock_menuitem
 
     def update_numlock(self, on):
