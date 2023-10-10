@@ -23,8 +23,6 @@
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %endif
 
-%{!?xpra_revision_no: %define xpra_revision_no 1}
-
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265 --pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
 
@@ -79,9 +77,9 @@ exit 1
 
 Name:				xpra
 Version:			%{version}
-#Fedora-is-screwing-our-repo "solution",
-#use a revision number which will be higher:
-Release:			10.%{?xpra_revision_no}xpra1%{?dist}
+#grab the full revision number from the source archive's src_info.py file:
+%define revision_no %(tar -OJxf %{SOURCE0} xpra-%{version}/xpra/src_info.py | grep -e "^REVISION=" | awk -F= '{print ".r"$2}' 2> /dev/null)
+Release:			10%{revision_no}%{?dist}
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -92,6 +90,9 @@ Source:				https://xpra.org/src/xpra-%{version}.tar.xz
 #rpm falls over itself if we try to make the top-level package noarch:
 #BuildArch: noarch
 BuildRoot:			%{_tmppath}/%{name}-%{version}-root
+BuildRequires:		tar
+BuildRequires:		grep
+BuildRequires:		gawk
 %if 0%{?el7}
 Patch0:				centos7-oldsystemd.patch
 Patch1:				selinux-nomap.patch
