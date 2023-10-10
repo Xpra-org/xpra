@@ -298,7 +298,8 @@ class GTKTrayMenuBase(object):
         self.handshake_menuitem = self.do_handshake_menuitem
         def shortcut():
             self.handshake_menuitem = self.menuitem
-        self.client.after_handshake(shortcut)
+        if self.client:
+            self.client.after_handshake(shortcut)
         menu = gtk.Menu()
         title_item = None
         if SHOW_TITLE_ITEM:
@@ -313,7 +314,8 @@ class GTKTrayMenuBase(object):
                 except Exception:
                     title = self.client.session_name or u"Xpra"
                 title_item.set_label(title)
-            self.client.after_handshake(set_menu_title)
+            if self.client:
+                self.client.after_handshake(set_menu_title)
 
         menu.append(self.make_infomenuitem())
         menu.append(self.make_featuresmenuitem())
