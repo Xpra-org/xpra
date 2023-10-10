@@ -24,11 +24,7 @@ class InputMixin(StubSourceMixin):
     def is_needed(cls, caps : typedict) -> bool:
         #the 'keyboard' and 'mouse' capability were only added in v4,
         #so we have to enable the mixin by default:
-        return (
-                caps.boolget("keyboard") or
-                caps.boolget("mouse") or
-                bool(caps.get("xkbmap_keycodes"))      #legacy clients
-        )
+        return caps.boolget("keyboard", True) or caps.boolget("mouse", True)
 
     def init_state(self) -> None:
         self.pointer_relative : bool = False

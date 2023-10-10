@@ -26,11 +26,7 @@ class NetworkStateMixin(StubSourceMixin):
     def is_needed(cls, caps : typedict) -> bool:
         #the 'network-state' capability were only added in v4,
         #so we have to enable the mixin by default:
-        return (
-                caps.boolget("network-state") or
-                typedict(caps.dictget("network") or {}).intget("pings")>0 or
-                caps.boolget("ping-echo-sourceid")      #legacy clients
-        )
+        return caps.boolget("network-state", True)
 
     def init_state(self) -> None:
         self.last_ping_echoed_time = 0
