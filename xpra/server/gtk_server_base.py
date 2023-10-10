@@ -320,7 +320,11 @@ class GTKServerBase(ServerBase):
                     img = Image.frombytes(mode, (w, h), data, "raw", mode, rowstride)
         if img:
             if w>256 or h>256:
-                img = img.resize((256, 256), Image.Resampling.LANCZOS)
+                try:
+                    from PIL.Image.Resampling import LANCZOS
+                except ImportError:
+                    from PIL.Image import LANCZOS
+                img = img.resize((256, 256), LANCZOS)
                 w = h = 256
             from io import BytesIO
             buf = BytesIO()

@@ -130,7 +130,11 @@ class ServerCommandsWindow(object):
                             log("icons: %s", icons)
                             if icons:
                                 from PIL import Image
-                                img = icons[0].resize((24, 24), Image.Resampling.LANCZOS)
+                                try:
+                                    from PIL.Image.Resampling import LANCZOS
+                                except ImportError:
+                                    from PIL.Image import LANCZOS
+                                img = icons[0].resize((24, 24), LANCZOS)
                                 has_alpha = img.mode=="RGBA"
                                 width, height = img.size
                                 rowstride = width * (3+int(has_alpha))
