@@ -400,6 +400,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             padding = choose_padding(self.server_padding_options)
             up("cipher", {
                     ""                      : self.encryption,
+                    "cipher"                : self.encryption,
                     "iv"                    : iv,
                     "key_salt"              : key_salt,
                     "key_stretch_iterations": iterations,
