@@ -489,7 +489,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 log.error("Error: this display has no outputs")
                 return 0
             if rsc.noutput>1:
-                log(f"{rsc.noutput} outputs")
+                log("%s outputs", rsc.noutput)
             return rsc.outputs[0]
         finally:
             XRRFreeScreenResources(rsc)
@@ -510,16 +510,16 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             log("is_dummy16() no randr!")
             return False
         if not self.check_randr((1, 6)):
-            log(f"is_dummy16() randr version too old")
+            log("is_dummy16() randr version too old")
             return False
         cdef Window window = XDefaultRootWindow(self.display)
         cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
         try:
             if rsc.ncrtc<16:
-                log(f"is_dummy16() only %s crtcs", rsc.ncrtc)
+                log("is_dummy16() only %s crtcs", rsc.ncrtc)
                 return False
             if rsc.noutput<16:
-                log(f"is_dummy16() only %s outputs", rsc.noutput)
+                log("is_dummy16() only %s outputs", rsc.noutput)
                 return False
             if rsc.nmode==0:
                 log("is_dummy16() no modes!")
@@ -535,7 +535,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             for i in range(nmonitors):
                 if monitors[i].noutput!=1:
                     n = monitors[i].noutput
-                    log(f"is_dummy16() monitor %i has %i outputs", i, n)
+                    log("is_dummy16() monitor %i has %i outputs", i, n)
                     return False
         finally:
             XRRFreeMonitors(monitors)

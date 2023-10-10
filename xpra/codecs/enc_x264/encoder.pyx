@@ -495,9 +495,9 @@ cdef class Encoder:
         assert encoding=="h264", "invalid encoding: %s" % encoding
         assert scaling==(1,1), "x264 does not handle scaling"
         if width%2!=0 and src_format not in ("BGRX", "YUV444P"):
-            raise ValueError(f"invalid odd width {width} for {src_format}")
+            raise ValueError("invalid odd width %s for %s", width, src_format)
         if height%2!=0 and src_format in ("YUV420P", "YUV422P"):
-            raise ValueError(f"invalid odd height {height} for {src_format}")
+            raise ValueError("invalid odd height %s for %s", height, src_format)
         self.width = width
         self.height = height
         self.quality = quality

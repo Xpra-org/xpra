@@ -188,7 +188,7 @@ class ClipboardClient(StubClientMixin):
                 loadable.append(helperclass)
             except ImportError:
                 log("cannot load %s", co, exc_info=True)
-                log.warn(f"Warning: cannot load clipboard backend {co!r}")
+                log.warn("Warning: cannot load clipboard backend %r", co)
                 continue
         log("get_clipboard_helper_classes()=%s", loadable)
         return loadable
