@@ -449,10 +449,8 @@ class win32NotifyIcon:
 
 
 WM_TRAY_EVENT = win32con.WM_MENUCOMMAND     #a message id we choose
-TASKBAR_CREATED = RegisterWindowMessageA(b"TaskbarCreated")
-log(f"{WM_TRAY_EVENT=}, {TASKBAR_CREATED=}")
+log(f"{WM_TRAY_EVENT=}")
 message_map : dict[int,Callable] = {
-    TASKBAR_CREATED                     : win32NotifyIcon.OnTrayRestart,
     win32con.WM_DESTROY                 : win32NotifyIcon.OnDestroy,
     win32con.WM_COMMAND                 : win32NotifyIcon.OnCommand,
     WM_TRAY_EVENT                       : win32NotifyIcon.OnTaskbarNotify,
