@@ -423,7 +423,7 @@ def normalize_local_display_name(local_display_name):
 
 def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                         mmap_group="auto", socket_permissions="600", username="", uid=0, gid=0):
-    if not bind:
+    if not bind or csv(bind)=="none":
         return []
     if not socket_dir and (not socket_dirs or (len(socket_dirs)==1 and not socket_dirs[0])):
         if WIN32:
