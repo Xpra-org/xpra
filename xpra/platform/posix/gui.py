@@ -618,7 +618,7 @@ class ClientExtras:
         if input_devices in ("xi", "auto"):
             #this would trigger warnings with our temporary opengl windows:
             #only enable it after we have connected:
-            self.client.after_handshake(self.setup_xi)
+            client.after_handshake(self.setup_xi)
         self.setup_dbus_signals()
 
     def ready(self) -> None:
@@ -768,7 +768,7 @@ class ClientExtras:
 
     def setup_xprops(self) -> None:
         #wait for handshake to complete:
-        if x11_bindings():
+        if x11_bindings() and self.client:
             self.client.after_handshake(self.do_setup_xprops)
 
     def do_setup_xprops(self, *args) -> None:
