@@ -206,6 +206,7 @@ class WindowIconSource(object):
         image = None
         if must_scale or must_convert or SAVE_WINDOW_ICONS:
             #we're going to need a PIL Image:
+            from PIL import Image
             if pixel_format=="png":
                 image = Image.open(BytesIO(pixel_data))
             else:
