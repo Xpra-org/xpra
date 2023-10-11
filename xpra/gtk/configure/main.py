@@ -2,10 +2,12 @@
 # Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
+import os.path
 from importlib import import_module
 import gi
 
+from xpra.scripts.config import InitExit
+from xpra.exit_codes import ExitCode
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.widget import label
 from xpra.log import Logger
@@ -63,10 +65,43 @@ def run_gui(gui_class=ConfigureGUI) -> int:
         log("do_main() gui.exit_code=%i", gui.exit_code)
         return 0
 
-def main() -> int:
+
+def get_user_config_file():
+    from xpra.platform.paths import get_user_conf_dirs
+    return os.path.join(get_user_conf_dirs()[0], "99_configure_tool.conf")
+
+
+def main(args) -> ExitCode:
+    if args:
+        conf = get_user_config_file()
+        subcommand = args[0]
+        if subcommand=="reset":
+            import datetime
+            now = datetime.datetime.now()
+            with open(conf, "w", encoding="utf8") as f:
+                f.write("# this file was reset on "+now.strftime("%Y-%m-%d %H:%M:%S"))
+            return ExitCode.OK
+        elif subcommand == "backup":
+            if not os.path.exists(conf):
+                print(f"# {conf!r} does not exist yet")
+                return ExitCode.FILE_NOT_FOUND
+            bak = conf[-5:]+".bak"
+            with open(conf, "r", encoding="utf8") as read:
+                with open(bak, "w", encoding="utf8") as write:
+                    write.write(read.read())
+            return ExitCode.OK
+        elif subcommand=="show":
+            if not os.path.exists(conf):
+                print(f"# {conf!r} does not exist yet")
+            else:
+                with open(conf, "r", encoding="utf8") as f:
+                    print(f.read())
+            return ExitCode.OK
+        else:
+            raise InitExit(ExitCode.FILE_NOT_FOUND, f"unknown configure subcommand {subcommand!r}")
     return run_gui(ConfigureGUI)
 
 
 if __name__ == "__main__":
     import sys
-    sys.exit(main())
+    sys.exit(int(main(sys.argv[1:])))

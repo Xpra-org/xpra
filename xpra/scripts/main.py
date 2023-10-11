@@ -3928,12 +3928,13 @@ def run_configure(args) -> ExitValue:
     mod = "main"
     if args:
         mod = args[0]
-        valid = ("gstreamer", "encodings", "features")
+        valid = ("main", "gstreamer", "encodings", "features")
         if mod not in valid:
             raise ValueError(f"unsupported 'configure' argument {mod}, must be one of {csv(valid)}")
+        args = args[1:]
     from importlib import import_module
     mod = import_module(f"xpra.gtk.configure.{mod}")
-    return mod.main()
+    return mod.main(args)
 
 
 def run_showconfig(options, args) -> ExitValue:

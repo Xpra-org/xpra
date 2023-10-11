@@ -33,10 +33,10 @@ class ConfigureGUI(BaseGUIWindow):
 
 
 
-def main() -> int:
+def main(_args) -> int:
     from xpra.gtk.configure.main import run_gui
     return run_gui(ConfigureGUI)
 
 if __name__ == "__main__":
     import sys
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))
