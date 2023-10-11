@@ -8,7 +8,7 @@ from ctypes import c_int, byref, cast, POINTER
 from OpenGL import GLX
 from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
 
-from xpra.util.env import envbool
+from xpra.util.env import envbool, envfloat
 from xpra.client.gl.check import check_PyOpenGL_support
 from xpra.x11.bindings.display_source import get_display_ptr        #@UnresolvedImport
 from xpra.gtk.error import xsync
@@ -19,6 +19,9 @@ log = Logger("opengl")
 
 
 DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", True)
+SCALE_FACTOR = envfloat("XPRA_OPENGL_SCALE_FACTOR", 1)
+if SCALE_FACTOR<=0 or SCALE_FACTOR>10:
+    raise ValueError(f"invalid scale factor {SCALE_FACTOR}")
 
 
 GLX_ATTRIBUTES : dict[Any,str] = {
@@ -91,6 +94,9 @@ class GLXWindowContext:
     def swap_buffers(self) -> None:
         assert self.valid, "GLX window context is no longer valid"
         GLX.glXSwapBuffers(self.xdisplay, self.xid)
+
+    def get_scale_factor(self) -> float:
+        return SCALE_FACTOR
 
     def __repr__(self):
         return "GLXWindowContext(%#x)" % self.xid

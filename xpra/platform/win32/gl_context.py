@@ -41,6 +41,7 @@ DOUBLE_BUFFERED = True
 def DefWndProc(hwnd, msg, wParam, lParam):
     return DefWindowProcA(hwnd, msg, wParam, lParam)
 
+
 class WGLWindowContext:
 
     def __init__(self, hwnd:int, hdc:int, context):
@@ -76,6 +77,9 @@ class WGLWindowContext:
         assert self.paint_hdc
         log("swap_buffers: calling SwapBuffers(%#x)", self.paint_hdc)
         SwapBuffers(self.paint_hdc)
+
+    def get_scale_factor(self) -> float:
+        return 1
 
     def __repr__(self):
         return "WGLWindowContext(%#x)" % self.hwnd

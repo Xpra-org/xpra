@@ -420,7 +420,7 @@ class GLWindowBackingBase(WindowBackingBase):
         dy = (bh-h)-dy
         #re-init our OpenGL context with the new size,
         #but leave offscreen fbo with the old size
-        self.gl_init(True)
+        self.gl_init(context, True)
         #copy offscreen to new tmp:
         self.copy_fbo(w, h, sx, sy, dx, dy)
         #make tmp the new offscreen:
@@ -518,7 +518,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 raise RuntimeError(f"OpenGL shader {name} setup failure: {err}")
             log("%s shader initialized", name)
 
-    def gl_init(self, skip_fbo:bool=False) -> None:
+    def gl_init(self, context, skip_fbo:bool=False) -> None:
         #must be called within a context!
         #performs init if needed
         if not self.debug_setup:
@@ -534,8 +534,9 @@ class GLWindowBackingBase(WindowBackingBase):
         self.gl_marker("Initializing GL context for window size %s, backing size %s, max texture size=%i",
                        self.render_size, self.size, mt)
         # Initialize viewport and matrices for 2D rendering
-        x, _, _, y = self.offsets
-        glViewport(x, y, w, h)
+        # default is to paint to pbo, so without any scale factor or offsets
+        # (as those are only applied when painting the window)
+        glViewport(0, 0, w, h)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         glOrtho(0.0, w, h, 0.0, -1.0, 1.0)
@@ -583,7 +584,7 @@ class GLWindowBackingBase(WindowBackingBase):
         # Bind program 0 for YUV painting by default
         glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV_to_RGB_SHADER])
         self.gl_setup = True
-        log("gl_init(%s) done", skip_fbo)
+        log("gl_init(%s, %s) done", context, skip_fbo)
 
     def get_init_magfilter(self) -> IntConstant:
         rw, rh = self.render_size
@@ -710,7 +711,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glDisable(target)
         fire_paint_callbacks(callbacks, True)
         if not self.draw_needs_refresh:
-            self.present_fbo(0, 0, bw, bh, flush)
+            self.present_fbo(context, 0, 0, bw, bh, flush)
 
     def copy_fbo(self, w : int, h : int, sx : int=0, sy : int=0, dx : int=0, dy : int=0) -> None:
         log("copy_fbo%s", (w, h, sx, sy, dx, dy))
@@ -742,28 +743,32 @@ class GLWindowBackingBase(WindowBackingBase):
         self.textures[TEX_TMP_FBO] = tmp
 
 
-    def present_fbo(self, x : int, y : int, w : int, h : int, flush=0) -> None:
+    def present_fbo(self, context, x : int, y : int, w : int, h : int, flush=0) -> None:
         log("present_fbo: adding %s to pending paint list (size=%i), flush=%s, paint_screen=%s",
             (x, y, w, h), len(self.pending_fbo_paint), flush, self.paint_screen)
+        if not context:
+            raise RuntimeError("missing OpenGL paint context")
         self.pending_fbo_paint.append((x, y, w, h))
         if not self.paint_screen:
             return
         #flush>0 means we should wait for the final flush=0 paint
         if flush==0 or not PAINT_FLUSH:
             self.record_fps_event()
-            self.managed_present_fbo()
+            self.managed_present_fbo(context)
 
-    def managed_present_fbo(self) -> None:
+    def managed_present_fbo(self, context) -> None:
+        if not context:
+            raise RuntimeError("missing opengl paint context")
         try:
             with paint_context_manager:
-                self.do_present_fbo()
+                self.do_present_fbo(context)
         except Exception as e:
             log.error("Error presenting FBO:")
             log.estr(e)
             log("Error presenting FBO", exc_info=True)
             self.last_present_fbo_error = str(e)
 
-    def do_present_fbo(self) -> None:
+    def do_present_fbo(self, context) -> None:
         bw, bh = self.size
         ww, wh = self.render_size
         rect_count = len(self.pending_fbo_paint)
@@ -783,10 +788,10 @@ class GLWindowBackingBase(WindowBackingBase):
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
 
-        left, top, right, bottom = self.offsets
-
         #viewport for clearing the whole window:
-        glViewport(0, 0, left+ww+right, top+wh+bottom)
+        scale = context.get_scale_factor()
+        left, top, right, bottom = self.offsets
+        glViewport(0, 0, int((left+ww+right)*scale), int((top+wh+bottom)*scale))
         if self._alpha_enabled:
             # transparent background:
             glClearColor(0.0, 0.0, 0.0, 0.0)
@@ -796,10 +801,12 @@ class GLWindowBackingBase(WindowBackingBase):
         if left or top or right or bottom:
             self.gl_clear_color_buffer()
 
-        #from now on, take the offsets into account:
-        glViewport(left, top, ww, wh)
+        #from now on, take the offsets and scaling into account:
+        viewport = int(left*scale), int(top*scale), int(ww*scale), int(wh*scale)
+        log(f"window viewport for {self.render_size=} and {self.offsets} with scale factor {scale}: {viewport}")
+        glViewport(*viewport)
         target = GL_TEXTURE_RECTANGLE_ARB
-        if ww!=bw or wh!=bh:
+        if ww!=bw or wh!=bh or scale!=1:
             glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
             glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 
@@ -1006,7 +1013,7 @@ class GLWindowBackingBase(WindowBackingBase):
         pixels = cursor_data[8]
         def gl_upload_cursor(context):
             if context:
-                self.gl_init()
+                self.gl_init(context)
                 self.upload_rgba_texture(self.textures[TEX_CURSOR], cw, ch, pixels)
         self.with_gl_context(gl_upload_cursor)
 
@@ -1119,9 +1126,9 @@ class GLWindowBackingBase(WindowBackingBase):
         self.idle_add(self.do_paint_rgb, rgb_format, img.get_pixels(), x, y, w, h, width, height,
                       img.get_rowstride(), options, callbacks)
 
-    def cuda_buffer_to_pbo(self, cuda_buffer, rowstride:int, src_y:int, height:int, stream):
+    def cuda_buffer_to_pbo(self, gl_context, cuda_buffer, rowstride:int, src_y:int, height:int, stream):
         #must be called with an active cuda context, and from the UI thread
-        self.gl_init()
+        self.gl_init(gl_context)
         pbo = glGenBuffers(1)
         size = rowstride*height
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo)
@@ -1169,8 +1176,8 @@ class GLWindowBackingBase(WindowBackingBase):
             strides = img.get_rowstride()
             height = img.get_height()
             try:
-                y_pbo = self.cuda_buffer_to_pbo(cuda_buffer, strides[0], 0, height, stream)
-                uv_pbo = self.cuda_buffer_to_pbo(cuda_buffer, strides[1], roundup(height, 2), height//2, stream)
+                y_pbo = self.cuda_buffer_to_pbo(gl_context, cuda_buffer, strides[0], 0, height, stream)
+                uv_pbo = self.cuda_buffer_to_pbo(gl_context, cuda_buffer, strides[1], roundup(height, 2), height//2, stream)
             except LogicError as e:
                 #disable nvdec from now on:
                 self.nvdec_decoder = None
@@ -1203,7 +1210,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 raise ValueError(f"unexpected rgb format {rgb_format}")
             #'pixels' is a cuda buffer:
             cuda_buffer = img.get_pixels()
-            pbo = self.cuda_buffer_to_pbo(cuda_buffer, img.get_rowstride(), 0, img.get_height(), stream)
+            pbo = self.cuda_buffer_to_pbo(gl_context, cuda_buffer, img.get_rowstride(), 0, img.get_height(), stream)
             cuda_buffer.free()
 
         pformat = PIXEL_FORMAT_TO_CONSTANT[rgb_format]
@@ -1235,7 +1242,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.paint_box(encoding, x, y, width, height)
         # Present update to screen
         if not self.draw_needs_refresh:
-            self.present_fbo(x, y, width, height, options.intget("flush", 0))
+            self.present_fbo(gl_context, x, y, width, height, options.intget("flush", 0))
         # present_fbo has reset state already
         fire_paint_callbacks(callbacks)
         glDeleteBuffers(1, [pbo])
@@ -1293,7 +1300,7 @@ class GLWindowBackingBase(WindowBackingBase):
         try:
             upload, img_data = self.pixels_for_upload(img_data)
 
-            self.gl_init()
+            self.gl_init(context)
             scaling = width!=render_width or height!=render_height
 
             #convert it to a GL constant:
@@ -1339,7 +1346,7 @@ class GLWindowBackingBase(WindowBackingBase):
             self.paint_box(options.strget("encoding"), x, y, render_width, render_height)
             # Present update to screen
             if not self.draw_needs_refresh:
-                self.present_fbo(x, y, render_width, render_height, options.intget("flush", 0))
+                self.present_fbo(context, x, y, render_width, render_height, options.intget("flush", 0))
             # present_fbo has reset state already
             fire_paint_callbacks(callbacks)
             return
@@ -1404,7 +1411,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 log("%s._do_paint_rgb(..) no OpenGL context!", self)
                 fire_paint_callbacks(callbacks, False, "failed to get a gl context")
                 return
-            self.gl_init()
+            self.gl_init(context)
             scaling = enc_width!=width or enc_height!=height
             self.update_planar_textures(enc_width, enc_height, img, pixel_format, scaling=scaling, pbo=options.get("pbo"))
 
@@ -1419,7 +1426,7 @@ class GLWindowBackingBase(WindowBackingBase):
             fire_paint_callbacks(callbacks, True)
             # Present it on screen
             if not self.draw_needs_refresh:
-                self.present_fbo(x, y, width, height, flush)
+                self.present_fbo(context, x, y, width, height, flush)
             img.free()
             return
         except GLError as e:
@@ -1578,6 +1585,6 @@ class GLWindowBackingBase(WindowBackingBase):
             rect = (0, 0, w, h)
         def expose(context):
             if context:
-                self.gl_init()
-                self.present_fbo(*rect)
+                self.gl_init(context)
+                self.present_fbo(context, *rect)
         self.with_gl_context(expose)

@@ -85,6 +85,8 @@ class GLDrawingArea(GLWindowBackingBase):
         if not gdk_window:
             raise RuntimeError(f"backing {b} does not have a gdk window!")
         self.window_context = self.context.get_paint_context(gdk_window)
+        if not self.window_context:
+            raise RuntimeError(f"failed to get an OpenGL window context for {gdk_window} from {self.context}")
         return self.window_context
 
     def do_gl_show(self, rect_count) -> None:
@@ -104,6 +106,6 @@ class GLDrawingArea(GLWindowBackingBase):
 
     def draw_fbo(self, _context) -> None:
         w, h = self.size
-        with self.gl_context():
-            self.gl_init()
-            self.present_fbo(0, 0, w, h)
+        with self.gl_context() as ctx:
+            self.gl_init(ctx)
+            self.present_fbo(ctx, 0, 0, w, h)

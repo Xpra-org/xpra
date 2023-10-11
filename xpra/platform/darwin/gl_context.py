@@ -68,6 +68,7 @@ class AGLContext:
 
     def __init__(self, alpha=True):
         self.alpha = alpha
+        self.scale_factor = 1.0
         self.gl_context : NSOpenGLContext | None = None
         self.nsview_ptr : int = 0
         self.window_context : AGLWindowContext | None = None
@@ -165,10 +166,14 @@ class AGLContext:
                 self.gl_context.setValues_forParameter_([0], NSOpenGLCPSurfaceOpacity)
                 enable_transparency(gdk_window)
             self.window_context = AGLWindowContext(self.gl_context, nsview)
+            self.scale_factor = nsview.screen().backingScaleFactor()
         return self.window_context
 
     def __del__(self):
         self.destroy()
+
+    def get_scale_factor(self) -> float:
+        return self.scale_factor
 
     def destroy(self) -> None:
         c = self.window_context

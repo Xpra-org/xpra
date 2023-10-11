@@ -85,9 +85,9 @@ class GLClientWindowBase(ClientWindow):
         if self.border:
             self.border.toggle()
             if b:
-                with b.gl_context():
-                    b.gl_init()
-                    b.present_fbo(0, 0, *b.size)
+                with b.gl_context() as ctx:
+                    b.gl_init(ctx)
+                    b.present_fbo(ctx, 0, 0, *b.size)
                 self.repaint(0, 0, *self._size)
         log("gl magic_key%s border=%s, backing=%s", args, self.border, b)
 
