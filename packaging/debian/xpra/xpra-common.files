@@ -2,6 +2,7 @@ usr/bin/xpra
 usr/share/xpra/README.md
 usr/share/xpra/COPYING
 usr/share/xpra/icons/
+usr/share/xpra/images/
 usr/share/xpra/*.wav
 usr/share/man/man1/xpra.1*
 usr/share/metainfo/xpra.appdata.xml

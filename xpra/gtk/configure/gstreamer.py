@@ -8,7 +8,7 @@ from textwrap import wrap
 
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.widget import label
-from xpra.platform.paths import get_icon
+from xpra.platform.paths import get_image
 from xpra.log import Logger
 
 gi.require_version('Gtk', '3.0')
@@ -31,7 +31,7 @@ class ConfigureGUI(BaseGUIWindow):
 
     def __init__(self, parent:Gtk.Window|None=None):
         self.warning_shown = False
-        self.warning_pixbuf = get_icon("warning.png")
+        self.warning_pixbuf = get_image("warning.png")
         size = (800, 554)
         if self.warning_pixbuf:
             size = self.warning_pixbuf.get_width(), self.warning_pixbuf.get_height()
@@ -58,9 +58,9 @@ class ConfigureGUI(BaseGUIWindow):
     def populate_with_warning(self):
         layout = Gtk.Layout()
         self.vbox.add(layout)
-        pixbuf = get_icon("warning.png")
-        image = Gtk.Image.new_from_pixbuf(pixbuf)
-        layout.put(image, 0, 0)
+        if self.warning_pixbuf:
+            image = Gtk.Image.new_from_pixbuf(self.warning_pixbuf)
+            layout.put(image, 0, 0)
         for i, text in enumerate((
             "This tool can cause your system to crash,",
             "it may even damage hardware in rare cases.",

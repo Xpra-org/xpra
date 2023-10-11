@@ -62,6 +62,12 @@ def do_get_app_dir() -> str:
     debug("get_app_dir()=%s", rsc)
     return rsc  #hope for the best..
 
+def do_get_image_dir() -> str:
+    from xpra.platform.paths import get_resources_dir
+    i = os.path.join(get_resources_dir(), "share", "xpra", "images")
+    debug("get_image_dir()=%s", i)
+    return i
+
 def do_get_icon_dir() -> str:
     from xpra.platform.paths import get_resources_dir
     i = os.path.join(get_resources_dir(), "share", "xpra", "icons")

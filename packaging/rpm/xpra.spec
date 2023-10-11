@@ -548,6 +548,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/xpra/README.md
 %{_datadir}/xpra/COPYING
 %{_datadir}/xpra/icons
+%{_datadir}/xpra/images
 %{_datadir}/xpra/*.wav
 %{_datadir}/man/man1/xpra*.1*
 %{_datadir}/man/man1/run_scaled.1*

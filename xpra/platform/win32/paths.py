@@ -67,6 +67,10 @@ def do_get_resources_dir() -> str:
             return share_xpra
     return app_dir
 
+def do_get_image_dir() -> str:
+    from xpra.platform.paths import get_resources_dir
+    return os.path.join(get_resources_dir(), "images")
+
 def do_get_icon_dir() -> str:
     from xpra.platform.paths import get_resources_dir
     return os.path.join(get_resources_dir(), "icons")

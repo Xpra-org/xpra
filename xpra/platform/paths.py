@@ -202,18 +202,22 @@ def do_get_resources_dir() -> str:
     return get_app_dir()
 
 #may be overridden in platform code:
+
+def get_image(name:str):
+    filename = os.path.join(get_image_dir(), name)
+    from xpra.gtk.pixbuf import get_icon_from_file
+    return get_icon_from_file(filename)
+
+def get_image_dir() -> str:
+    return env_or_delegate("XPRA_IMAGE_DIR", do_get_image_dir)
+def do_get_image_dir() -> str:
+    raise NotImplementedError()
+
+
 def get_icon_dir() -> str:
     return env_or_delegate("XPRA_ICON_DIR", do_get_icon_dir)
 def do_get_icon_dir() -> str:
-    adir = get_app_dir()
-    idir = os.path.join(adir, "icons")
-    if valid_dir(idir):
-        return idir
-    for prefix in (sys.exec_prefix, "/usr", "/usr/local"):
-        idir = os.path.join(prefix, "icons")
-        if os.path.exists(idir):
-            return idir
-    return adir     #better than nothing :(
+    raise NotImplementedError()
 
 def get_icon(name:str):
     filename = get_icon_filename(name)
@@ -297,7 +301,9 @@ def do_get_python_execfile_command() -> list[str]:
 platform_import(globals(), "paths", True,
                 "do_get_resources_dir",
                 "do_get_app_dir",
-                "do_get_icon_dir")
+                "do_get_icon_dir",
+                "do_get_image_dir",
+                )
 platform_import(globals(), "paths", False,
                 "do_get_sshpass_command",
                 "do_get_xpra_command",
@@ -355,6 +361,7 @@ def get_info():
         "ssh-known-hosts"   : get_ssh_known_hosts_files(),
         "resources"         : get_resources_dir(),
         "icons"             : get_icon_dir(),
+        "images"            : get_image_dir(),
         "home"              : os.path.expanduser("~"),
         "xpra_command"      : get_xpra_command(),
         "nodock_command"    : get_nodock_command(),
