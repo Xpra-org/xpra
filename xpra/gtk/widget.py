@@ -8,9 +8,11 @@ from typing import Callable, Any
 from contextlib import AbstractContextManager
 
 import gi
+
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+gi.require_version("Gdk", "3.0")  # @UndefinedVariable
 gi.require_version("Pango", "1.0")  # @UndefinedVariable
-from gi.repository import Gtk, Pango     #@UnresolvedImport
+from gi.repository import Gtk, Gdk, Pango     #@UnresolvedImport
 
 from xpra.log import Logger
 log = Logger("gtk", "util")
@@ -153,3 +155,28 @@ orig_pack_start = Gtk.Box.pack_start
 def pack_start(self, child, expand=True, fill=True, padding=0):
     orig_pack_start(self, child, expand, fill, padding)
 Gtk.Box.pack_start = pack_start
+
+
+def slabel(text:str="", tooltip:str="", font:str="") -> Gtk.Label:
+    l = label(text, tooltip, font)
+    l.set_margin_start(5)
+    l.set_margin_end(5)
+    l.set_margin_top(2)
+    l.set_margin_bottom(2)
+    l.set_selectable(True)
+    l.set_line_wrap(True)
+    return l
+
+
+def title_box(label_str:str, tooltip="") -> Gtk.EventBox:
+    eb = Gtk.EventBox()
+    lbl = slabel(label_str, tooltip=tooltip)
+    modify_fg(lbl, Gdk.Color(red=48*256, green=0, blue=0))
+    al = Gtk.Alignment(xalign=0.0, yalign=0.5, xscale=0.0, yscale=0.0)
+    al.set_margin_start(10)
+    al.set_margin_end(10)
+    al.add(lbl)
+    eb.add(al)
+    with IgnoreWarningsContext():
+        eb.modify_bg(Gtk.StateType.NORMAL, Gdk.Color(red=219*256, green=226*256, blue=242*256))
+    return eb

@@ -8,6 +8,7 @@ import gi
 
 from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode
+from xpra.util.parsing import parse_simple_dict
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.widget import label
 from xpra.log import Logger
@@ -66,9 +67,22 @@ def run_gui(gui_class=ConfigureGUI) -> int:
         return 0
 
 
-def get_user_config_file():
+def get_user_config_file() -> str:
     from xpra.platform.paths import get_user_conf_dirs
     return os.path.join(get_user_conf_dirs()[0], "99_configure_tool.conf")
+
+def parse_user_config_file() -> dict:
+    filename = get_user_config_file()
+    if not os.path.exists(filename):
+        return {}
+    with open(filename, "r", encoding="utf8") as f:
+        return parse_simple_dict(f.read())
+
+def save_user_config_file(options:dict) -> None:
+    filename = get_user_config_file()
+    with open(filename, "w", encoding="utf8") as f:
+        for k,v in options.items():
+            f.write(f"{k} = {v}")
 
 
 def main(args) -> ExitCode:

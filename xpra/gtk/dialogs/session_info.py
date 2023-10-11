@@ -25,7 +25,7 @@ from xpra.client.gui import features
 from xpra.client.base.gobject_client import InfoTimerClient
 from xpra.gtk.gtk_util import add_close_accel
 from xpra.gtk.graph import make_graph_imagesurface
-from xpra.gtk.widget import imagebutton, label, modify_fg, IgnoreWarningsContext
+from xpra.gtk.widget import imagebutton, title_box, slabel
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.log import Logger
 
@@ -47,18 +47,6 @@ def make_datetime(date, time) -> str:
         return bytestostr(date or "")
     return "%s %s" % (bytestostr(date), bytestostr(time))
 
-def title_box(label_str:str, tooltip="") -> Gtk.EventBox:
-    eb = Gtk.EventBox()
-    lbl = slabel(label_str, tooltip=tooltip)
-    modify_fg(lbl, Gdk.Color(red=48*256, green=0, blue=0))
-    al = Gtk.Alignment(xalign=0.0, yalign=0.5, xscale=0.0, yscale=0.0)
-    al.set_margin_start(10)
-    al.set_margin_end(10)
-    al.add(lbl)
-    eb.add(al)
-    with IgnoreWarningsContext():
-        eb.modify_bg(Gtk.StateType.NORMAL, Gdk.Color(red=219*256, green=226*256, blue=242*256))
-    return eb
 
 def bool_icon(image, on_off:bool):
     if on_off:
@@ -134,15 +122,6 @@ def newdictlook(d, parts, fallback=None):
             return fallback
     return v
 
-def slabel(text:str="", tooltip:str="", font:str="") -> Gtk.Label:
-    l = label(text, tooltip, font)
-    l.set_margin_start(5)
-    l.set_margin_end(5)
-    l.set_margin_top(2)
-    l.set_margin_bottom(2)
-    l.set_selectable(True)
-    l.set_line_wrap(True)
-    return l
 
 def image_label_hbox():
     hbox = Gtk.HBox(homogeneous=False, spacing=10)
