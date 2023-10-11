@@ -140,6 +140,9 @@ def do_get_default_log_dirs() -> list[str]:
     dirs.append(tempfile.gettempdir())
     return dirs
 
+def do_get_state_dir() -> str:
+    return "~/.xpra/state"
+
 def do_get_sessions_dir() -> str:
     return "~/.xpra/sessions"
 

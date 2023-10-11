@@ -93,12 +93,24 @@ def do_get_system_conf_dirs():
     prefix = get_install_prefix()
     if prefix not in ("/usr", "/usr/local"):
         if prefix.endswith(".local"):
-            idir= os.path.join(prefix, "xpra")          #ie: ~/.local/xpra
+            idir = os.path.join(prefix, "xpra")          #ie: ~/.local/xpra
         else:
-            idir= os.path.join(prefix, "/etc/xpra/")    #ie: /someinstallpath/etc/xpra
+            idir = os.path.join(prefix, "/etc/xpra/")    #ie: /someinstallpath/etc/xpra
         if idir not in dirs:
             dirs.append(idir)
     return dirs
+
+
+def do_get_state_dir():
+    if os.getuid()>0:
+        xdg_state = os.path.expanduser(os.environ.get("XDG_STATE_HOME", "~/.local/state"))
+        state_dir = os.path.expanduser(xdg_state)
+        if state_dir and os.path.exists(state_dir):
+            xpra_state = os.path.join(state_dir, "xpra")
+            if not os.path.exists(xpra_state):
+                os.mkdir(xpra_state)
+            return os.path.join(xdg_state, "xpra")
+    return "~/.xpra/state"
 
 
 def do_get_user_conf_dirs(uid):

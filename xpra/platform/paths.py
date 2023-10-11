@@ -86,6 +86,14 @@ def do_get_default_conf_dirs() -> list[str]:
     #some platforms may also ship a default config with the application
     return []
 
+def get_state_dir() -> str:
+    return env_or_delegate("XPRA_STATE_DIR", do_get_state_dir)
+def do_get_state_dir() -> str:
+    d = "~/.local/state"
+    if not os.path.exists(os.path.expanduser(d)):
+        return "~"
+    return d
+
 
 def get_sessions_dir() -> str:
     return envaslist_or_delegate("XPRA_SESSIONS_DIRS", do_get_sessions_dir)
@@ -317,6 +325,7 @@ platform_import(globals(), "paths", False,
                 "do_get_ssh_conf_dirs",
                 "do_get_ssh_known_hosts_files",
                 "do_get_user_conf_dirs",
+                "do_get_state_dir",
                 "do_get_sessions_dir",
                 "do_get_socket_dirs",
                 "do_get_client_socket_dirs",
@@ -347,7 +356,8 @@ def get_info():
         "ssl-hosts-config"  : {"dirs"   : get_ssl_hosts_config_dirs()},
         "ssh_conf"          : {"dirs"   : get_ssh_conf_dirs()},
         "user_conf"         : {"dirs"   : get_user_conf_dirs()},
-        "sessions"          : {"dir"    : do_get_sessions_dir()},
+        "state"             : {"dir"    : get_state_dir()},
+        "sessions"          : {"dir"    : get_sessions_dir()},
         "socket"            : {"dirs"   : get_socket_dirs()},
         "client-socket"     : {"dirs"   : get_client_socket_dirs()},
         "log"               : {"dirs"   : get_default_log_dirs()},
