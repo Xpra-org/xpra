@@ -5,10 +5,10 @@
 
 import shlex
 from textwrap import wrap
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, check_call
 
 from xpra.util.types import AtomicInteger
-from xpra.os_util import is_X11, is_gnome, OSX, WIN32
+from xpra.os_util import is_X11, is_gnome, OSX, WIN32, POSIX
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.widget import label, slabel, title_box
 from xpra.platform.paths import get_image
@@ -29,6 +29,10 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT(INCLUDING NEGLIGENCE
 OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """.replace("\n", "")
+
+def sync() -> None:
+    if POSIX:
+        check_call("sync")
 
 
 class ConfigureGUI(BaseGUIWindow):
@@ -139,7 +143,7 @@ class ConfigureGUI(BaseGUIWindow):
                 log.error(f"Error running {cmd!r}: {e}")
                 set_label(f"Error: {e}")
             return False
-
+        sync()
         #first make sure that the element exists:
         if not run_test_cmd(["gst-inspect-1.0", element]):
             return
@@ -147,7 +151,6 @@ class ConfigureGUI(BaseGUIWindow):
         if not run_test_cmd(["gst-launch-1.0"]+shlex.split(test)):
             return
         set_label("Test pipeline worked")
-
 
     def populate_with_warning(self):
         layout = Gtk.Layout()
@@ -185,6 +188,7 @@ class ConfigureGUI(BaseGUIWindow):
 def main(_args) -> int:
     from xpra.gtk.configure.main import run_gui
     return run_gui(ConfigureGUI)
+
 
 if __name__ == "__main__":
     import sys
