@@ -273,7 +273,9 @@ def notypedict(d:dict, path="") -> dict:
     for k in list(d.keys()):
         v = d[k]
         if isinstance(v, typedict):
-            d[k] = notypedict(dict(v))
+            log = get_util_logger()
+            log.warn(f"Warning: found `typedict` at {path}.{k}")
+            d[k] = notypedict(dict(v), f"{path}.{k}".strip("."))
         elif isinstance(v, dict):
             d[k] = notypedict(v, f"{path}.{k}".strip("."))
     return d
