@@ -44,8 +44,8 @@ cdef class rectangle:
         return "R(%i, %i, %i, %i)" % (self.x, self.y, self.width, self.height)
 
     def __richcmp__(self, object other, const int op):
-        if type(other)!=rectangle:
-            raise ValueError("cannot compare rectangle and %s" % type(other))
+        if not isinstance(other, rectangle):
+            raise ValueError("cannot compare %s and %s" % (type(self), type(other)))
         cdef rectangle o = other
         if op==2:   #==
             return self.hash==o.hash and self.x==o.x and self.y==o.y and self.width==o.width and self.height==o.height
