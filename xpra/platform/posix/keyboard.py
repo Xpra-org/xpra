@@ -29,7 +29,7 @@ class Keyboard(KeyboardBase):
                 self.keyboard_bindings = X11KeyboardBindings()
             except Exception as e:
                 log("keyboard bindings", exc_info=True)
-                from xpra.gtk.gtk_util import ds_inited
+                from xpra.gtk.util import ds_inited
                 if not ds_inited():
                     log.error("Error: failed to load the X11 keyboard bindings")
                     log.error(" %s", str(e) or type(e))

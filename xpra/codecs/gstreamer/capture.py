@@ -218,7 +218,7 @@ GObject.type_register(CaptureAndEncode)
 def selftest(_full=False) -> None:
     log("gstreamer encoder selftest: %s", get_info())
     from gi.repository import GLib  # @UnresolvedImport
-    from xpra.gtk.gtk_util import get_root_size
+    from xpra.gtk.util import get_root_size
     w, h = get_root_size()
     c = Capture(width=w, height=h)
     loop = GLib.MainLoop()

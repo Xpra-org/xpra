@@ -5,7 +5,8 @@
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk.gtk_util import get_default_root_window, add_close_accel
+from xpra.gtk.util import get_default_root_window
+from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 

@@ -11,7 +11,7 @@ from gi.repository import Gtk  # @UnresolvedImport
 
 from xpra.util.version import XPRA_VERSION
 from xpra.scripts.config import get_build_info
-from xpra.gtk.gtk_util import add_close_accel
+from xpra.gtk.window import add_close_accel
 from xpra.log import Logger
 
 log = Logger("info")

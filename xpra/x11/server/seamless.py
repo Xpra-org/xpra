@@ -22,7 +22,7 @@ from xpra.net.common import PacketType
 from xpra.scripts.config import InitException  #pylint: disable=import-outside-toplevel
 from xpra.server import features, EXITING_CODE
 from xpra.gtk.gobject import one_arg_signal
-from xpra.gtk.gtk_util import get_default_root_window
+from xpra.gtk.util import get_default_root_window
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.x11.common import Unmanageable, get_wm_name
 from xpra.x11.gtk_x11.prop import prop_set

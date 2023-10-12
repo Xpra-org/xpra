@@ -10,16 +10,25 @@ from gi.repository import Gdk  #pylint: disable=wrong-import-position @Unresolve
 cursor_names = {}
 cursor_types = {}
 
-for x in dir(Gdk.CursorType):
-    if not x.isupper():
-        #probably a method
-        continue
-    try:
-        v = int(getattr(Gdk.CursorType, x))
-        cursor_names[v] = x
-        cursor_types[x] = v
-    except (TypeError, ValueError):
-        pass
+def _init_map():
+    for x in dir(Gdk.CursorType):
+        if not x.isupper():
+            #probably a method
+            continue
+        try:
+            v = int(getattr(Gdk.CursorType, x))
+            cursor_names[v] = x
+            cursor_types[x] = v
+        except (TypeError, ValueError):
+            pass
+
+
+_init_map()
+
+
+def get_default_cursor() -> Gdk.Cursor:
+    display = Gdk.Display.get_default()
+    return Gdk.Cursor.new_from_name(display, "default")
 
 
 def main():

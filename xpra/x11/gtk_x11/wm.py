@@ -14,7 +14,7 @@ from xpra.gtk.error import xsync, xswallow, xlog
 from xpra.x11.gtk_x11.prop import prop_set, prop_get, prop_del, raw_prop_set, prop_encode
 from xpra.x11.window_info import window_name, window_info
 from xpra.gtk.gobject import no_arg_signal, one_arg_signal
-from xpra.gtk.gtk_util import get_default_root_window
+from xpra.gtk.util import get_default_root_window
 from xpra.x11.common import Unmanageable
 from xpra.x11.gtk_x11 import GDKX11Window
 from xpra.x11.gtk_x11.selection import ManagerSelection

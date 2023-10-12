@@ -21,7 +21,7 @@ from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.x11.server.server_uuid import del_mode, del_uuid
 from xpra.x11.gtk_x11.prop import prop_get
 from xpra.x11.bindings.window import X11WindowBindings     #@UnresolvedImport
-from xpra.gtk.gtk_util import get_default_root_window, get_root_size
+from xpra.gtk.util import get_default_root_window, get_root_size
 from xpra.gtk.error import xsync, xlog
 from xpra.log import Logger
 

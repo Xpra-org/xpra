@@ -36,7 +36,7 @@ def window_info(xid:int) -> str:
 def dump_windows() -> None:
     from xpra.log import Logger
     log = Logger("x11", "window")
-    from xpra.gtk.gtk_util import get_default_root_window
+    from xpra.gtk.util import get_default_root_window
     root = get_default_root_window()
     if not root:
         return

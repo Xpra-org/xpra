@@ -8,7 +8,7 @@ from gi.repository import Gdk  # @UnresolvedImport
 
 from xpra.common import ScreenshotData
 from xpra.codecs.image import ImageWrapper
-from xpra.gtk.gtk_util import get_default_root_window
+from xpra.gtk.util import get_default_root_window
 from xpra.gtk.pixbuf import pixbuf_save_to_memory
 from xpra.log import Logger
 

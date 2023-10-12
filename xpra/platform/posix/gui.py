@@ -34,7 +34,7 @@ def x11_bindings():
         return bindings
     except ImportError as e:
         log("x11_bindings()", exc_info=True)
-        from xpra.gtk.gtk_util import ds_inited
+        from xpra.gtk.util import ds_inited
         if not ds_inited():
             log.warn("Warning: no X11 bindings")
             log.warn(f" {e}")
@@ -777,7 +777,7 @@ class ClientExtras:
         try:
             self.init_x11_filter()
             # pylint: disable=import-outside-toplevel
-            from xpra.gtk.gtk_util import get_default_root_window
+            from xpra.gtk.util import get_default_root_window
             from xpra.x11.xsettings import XSettingsWatcher
             from xpra.x11.xroot_props import XRootPropWatcher
             root = get_default_root_window()
@@ -866,7 +866,7 @@ class ClientExtras:
 
     def get_resource_manager(self):
         try:
-            from xpra.gtk.gtk_util import get_default_root_window
+            from xpra.gtk.util import get_default_root_window
             from xpra.x11.gtk_x11.prop import prop_get
             root = get_default_root_window()
             xid = root.get_xid()

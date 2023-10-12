@@ -12,7 +12,8 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.net.common import PacketType
 from xpra.server import features
-from xpra.gtk.gtk_util import get_screen_sizes, get_root_size
+from xpra.gtk.util import get_root_size
+from xpra.gtk.info import get_screen_sizes
 from xpra.gtk.gobject import one_arg_signal
 from xpra.x11.gtk3.bindings import (
     add_catchall_receiver, remove_catchall_receiver,

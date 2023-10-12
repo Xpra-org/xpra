@@ -9,7 +9,7 @@ gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
 from gi.repository import Gtk, GLib, GdkPixbuf  # @UnresolvedImport
 
 from xpra.net.qrcode import qrencode
-from xpra.gtk.gtk_util import add_close_accel
+from xpra.gtk.window import add_close_accel
 from xpra.log import Logger
 
 log = Logger("menu")

@@ -5,7 +5,7 @@
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk.gtk_util import add_close_accel
+from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
 
 import gi
@@ -38,7 +38,7 @@ class BellWindow(Gtk.Window):
 
 def main():
     from xpra.gtk.signals import register_os_signals
-    from xpra.gtk.gtk_util import init_display_source
+    from xpra.gtk.util import init_display_source
     with program_context("bell", "Bell"):
         init_display_source()
         w = BellWindow()

@@ -23,7 +23,7 @@ from xpra.common import noop
 from xpra.util.stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
 from xpra.client.gui import features
 from xpra.client.base.gobject_client import InfoTimerClient
-from xpra.gtk.gtk_util import add_close_accel
+from xpra.gtk.window import add_close_accel
 from xpra.gtk.graph import make_graph_imagesurface
 from xpra.gtk.widget import imagebutton, title_box, slabel
 from xpra.gtk.pixbuf import get_icon_pixbuf

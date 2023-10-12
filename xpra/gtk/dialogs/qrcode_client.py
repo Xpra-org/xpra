@@ -11,7 +11,7 @@ from xpra.util.types import typedict
 from xpra.util.env import envbool
 from xpra.os_util import SIGNAMES, bytestostr
 from xpra.exit_codes import ExitCode
-from xpra.gtk.gtk_util import add_close_accel
+from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.signals import install_signal_handlers

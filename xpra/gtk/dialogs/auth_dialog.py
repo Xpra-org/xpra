@@ -9,7 +9,7 @@ gi.require_version("Gtk", "3.0")  # @UndefinedVariable
 # pylint: disable=wrong-import-position
 from gi.repository import GLib, Gtk  # @UnresolvedImport
 
-from xpra.gtk.gtk_util import add_close_accel
+from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.signals import register_os_signals

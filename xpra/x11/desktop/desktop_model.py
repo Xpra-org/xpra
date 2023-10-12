@@ -5,6 +5,7 @@
 
 from gi.repository import GObject, Gdk  # @UnresolvedImport
 
+import xpra.gtk.info
 from xpra.gtk.error import XError, xsync
 from xpra.x11.desktop.model_base import DesktopModelBase
 from xpra.x11.bindings.randr import RandRBindings #@UnresolvedImport
@@ -59,7 +60,7 @@ class ScreenDesktopModel(DesktopModelBase):
             with xsync:
                 ow, oh = RandR.get_screen_size()
             with xsync:
-                if RandR.is_dummy16() and (rw, rh) not in RandR.get_screen_sizes():
+                if RandR.is_dummy16() and (rw, rh) not in xpra.gtk.info.get_screen_sizes():
                     RandR.add_screen_size(rw, rh)
             with xsync:
                 if not RandR.set_screen_size(rw, rh):

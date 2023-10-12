@@ -165,7 +165,7 @@ class KeyboardStateInfoWindow:
 def main():
     # pylint: disable=import-outside-toplevel
     from xpra.platform.gui import init, set_default_icon
-    from xpra.gtk.gtk_util import init_display_source
+    from xpra.gtk.util import init_display_source
     with program_context("Keyboard-Test", "Keyboard Test Tool"):
         enable_color()
 

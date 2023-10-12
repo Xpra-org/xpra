@@ -12,8 +12,8 @@ gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
 from gi.repository import Gtk  # @UnresolvedImport
 
 from xpra.gtk.signals import register_os_signals
-from xpra.gtk.gtk_util import add_close_accel, color_parse
-from xpra.gtk.widget import label, modify_fg
+from xpra.gtk.window import add_close_accel
+from xpra.gtk.widget import label, modify_fg, color_parse
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.platform.gui import force_focus
 from xpra.os_util import get_util_logger

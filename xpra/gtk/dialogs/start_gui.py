@@ -12,7 +12,7 @@ from collections.abc import Callable
 from gi.repository import Gtk, Gdk, GLib  # @UnresolvedImport
 
 from xpra.gtk.signals import register_os_signals
-from xpra.gtk.gtk_util import add_close_accel
+from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import imagebutton, label, setfont
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.str_fn import repr_ellipsized
@@ -1193,7 +1193,7 @@ def main(options=None) -> int: # pragma: no cover
     from xpra.platform import program_context
     from xpra.log import enable_color
     from xpra.platform.gui import init, ready
-    from xpra.gtk.gtk_util import init_display_source
+    from xpra.gtk.util import init_display_source
     with program_context("xpra-start-gui", "Xpra Start GUI"):
         enable_color()
         init_display_source()

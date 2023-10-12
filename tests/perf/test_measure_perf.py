@@ -43,7 +43,7 @@ import os.path
 from subprocess import Popen, PIPE, STDOUT
 
 from xpra.exit_codes import exit_str
-from xpra.gtk.gtk_util import get_root_size
+from xpra.gtk.util import get_root_size
 from xpra.log import Logger
 
 log = Logger("util")

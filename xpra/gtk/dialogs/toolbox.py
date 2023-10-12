@@ -16,7 +16,7 @@ from gi.repository import Gtk, Gio  # @UnresolvedImport
 
 from xpra.util.child_reaper import getChildReaper
 from xpra.gtk.signals import register_os_signals
-from xpra.gtk.gtk_util import add_close_accel
+from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import imagebutton, label, IgnoreWarningsContext
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.platform.paths import get_python_execfile_command, get_python_exec_command

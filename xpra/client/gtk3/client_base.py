@@ -25,15 +25,15 @@ from xpra.net.common import PacketType
 from xpra.common import FULL_INFO, VIDEO_MAX_SIZE, NotificationID, DEFAULT_METADATA_SUPPORTED, noerr
 from xpra.util.stats import std_unit
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS, InitExit
-from xpra.gtk.cursors import cursor_types
-from xpra.gtk.gtk_util import (
-    get_default_cursor, color_parse, get_default_root_window, get_root_size,
-    get_screen_sizes, get_monitors_info,
-    GDKWindow,
+from xpra.gtk.cursors import cursor_types, get_default_cursor
+from xpra.gtk.util import (
+    get_default_root_window, get_root_size,
     GRAB_STATUS_STRING,
     init_display_source,
 )
-from xpra.gtk.widget import scaled_image, label, ignorewarnings, IgnoreWarningsContext
+from xpra.gtk.window import GDKWindow
+from xpra.gtk.info import get_monitors_info, get_screen_sizes
+from xpra.gtk.widget import scaled_image, label, ignorewarnings, IgnoreWarningsContext, color_parse
 from xpra.gtk.pixbuf import get_icon_pixbuf, get_pixbuf_from_data
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.exit_codes import ExitCode, ExitValue

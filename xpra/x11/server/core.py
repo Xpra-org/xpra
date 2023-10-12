@@ -15,7 +15,7 @@ from xpra.x11.bindings.randr import RandRBindings  #@UnresolvedImport
 from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
 from xpra.x11.bindings.window import X11WindowBindings #@UnresolvedImport
 from xpra.gtk.error import XError, xswallow, xsync, xlog, verify_sync
-from xpra.gtk.gtk_util import get_default_root_window
+from xpra.gtk.util import get_default_root_window
 from xpra.x11.server.server_uuid import save_uuid, get_uuid, save_mode
 from xpra.x11.vfb_util import parse_resolutions
 from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del

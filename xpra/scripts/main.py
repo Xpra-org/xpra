@@ -1912,7 +1912,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode:str, defaults
             check_gtk_client()
             bypass_no_gtk()
             #we can tell the server what size to resize to:
-            from xpra.gtk.gtk_util import get_root_size
+            from xpra.gtk.util import get_root_size
             root_w, root_h = get_root_size()
             from xpra.util.parsing import parse_scaling
             scaling = parse_scaling(options.desktop_scaling, root_w, root_h)

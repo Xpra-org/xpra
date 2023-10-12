@@ -17,9 +17,7 @@ from gi.repository import Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util.env import envbool
 from xpra.client.gui.tray_base import TrayBase, log
-from xpra.gtk.gtk_util import (
-    get_default_root_window,
-    )
+from xpra.gtk.util import get_default_root_window
 from xpra.gtk.pixbuf import get_icon_from_file, get_pixbuf_from_data
 
 ORIENTATION = {

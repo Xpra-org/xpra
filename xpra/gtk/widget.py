@@ -180,3 +180,14 @@ def title_box(label_str:str, tooltip="") -> Gtk.EventBox:
     with IgnoreWarningsContext():
         eb.modify_bg(Gtk.StateType.NORMAL, Gdk.Color(red=219*256, green=226*256, blue=242*256))
     return eb
+
+
+def color_parse(*args) -> Gdk.Color | None:
+    v = Gdk.RGBA()
+    ok = v.parse(*args)
+    if ok:
+        return v.to_color()  # pylint: disable=no-member
+    ok, v = Gdk.Color.parse(*args)
+    if ok:
+        return v
+    return None

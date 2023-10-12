@@ -14,7 +14,7 @@ from gi.repository import Gtk, GLib  # @UnresolvedImport
 
 from xpra.os_util import POSIX, OSX, which
 from xpra.gtk.signals import register_os_signals
-from xpra.gtk.gtk_util import add_close_accel
+from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import imagebutton, label, setfont
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.thread import start_thread

@@ -11,7 +11,9 @@ from collections.abc import Callable
 from gi.repository import Gtk, Gdk  # @UnresolvedImport
 
 from xpra.common import ScreenshotData, noop
-from xpra.gtk.gtk_util import add_close_accel, get_display_info, get_default_root_window
+from xpra.gtk.util import get_default_root_window
+from xpra.gtk.window import add_close_accel
+from xpra.gtk.info import get_display_info
 from xpra.gtk.widget import scaled_image, label, choose_file
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.versions import get_gtk_version_info
@@ -395,7 +397,7 @@ def main(argv=()):
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.platform.gui import init, set_default_icon
-    from xpra.gtk.gtk_util import init_display_source
+    from xpra.gtk.util import init_display_source
     with program_context("Xpra-Bug-Report", "Xpra Bug Report"):
         from xpra.log import enable_color
         enable_color()

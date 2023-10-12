@@ -100,7 +100,7 @@ class GTKKeyboardHelper(KeyboardHelper):
 def main():
     #use gtk as display source:
     # pylint: disable=import-outside-toplevel
-    from xpra.gtk.gtk_util import init_display_source
+    from xpra.gtk.util import init_display_source
     from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context
     with program_context("GTK-Keyboard", "GTK Keyboard"):

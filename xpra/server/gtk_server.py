@@ -24,7 +24,7 @@ from xpra.net.common import PacketType
 from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
 from xpra.server import features
 from xpra.server.base import ServerBase
-from xpra.gtk.gtk_util import get_root_size
+from xpra.gtk.util import get_root_size
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.log import Logger
 

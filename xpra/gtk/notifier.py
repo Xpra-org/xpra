@@ -26,8 +26,8 @@ from gi.repository import GLib, Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.os_util import OSX
 from xpra.common import NotificationID
-from xpra.gtk.gtk_util import add_close_accel, color_parse
-from xpra.gtk.widget import label, modify_fg
+from xpra.gtk.window import add_close_accel
+from xpra.gtk.widget import label, modify_fg, color_parse
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.notifications.notifier_base import NotifierBase, log
 

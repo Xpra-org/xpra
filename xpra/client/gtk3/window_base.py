@@ -22,12 +22,8 @@ from xpra.util.types import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.gtk.gobject import no_arg_signal, one_arg_signal
-from xpra.gtk.gtk_util import (
-    ds_inited,
-    get_default_root_window,
-    set_visual,
-    GRAB_STATUS_STRING,
-    )
+from xpra.gtk.util import ds_inited, get_default_root_window, GRAB_STATUS_STRING
+from xpra.gtk.window import set_visual
 from xpra.gtk.widget import ignorewarnings
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.gtk.keymap import KEY_TRANSLATIONS
@@ -72,7 +68,7 @@ if USE_X11_BINDINGS:
         from xpra.x11.bindings.send_wm import send_wm_workspace
     except ImportError as x11e:
         log("x11 bindings", exc_info=True)
-        #gtk_util should have already logged a detailed warning
+        #gtk util should have already logged a detailed warning
         log("cannot import the X11 bindings:")
         log(" %s", x11e)
     else:

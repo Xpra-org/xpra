@@ -27,8 +27,8 @@ from gi.repository import GLib, Gtk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.gtk.signals import register_os_signals
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
-from xpra.gtk.gtk_util import add_close_accel, color_parse
-from xpra.gtk.widget import scaled_image, imagebutton, label, choose_file, modify_fg
+from xpra.gtk.window import add_close_accel
+from xpra.gtk.widget import scaled_image, imagebutton, label, choose_file, modify_fg, color_parse
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.str_fn import csv, repr_ellipsized
 from xpra.os_util import WIN32, OSX
@@ -1113,7 +1113,7 @@ def do_main(argv):
     from xpra.os_util import SIGNAMES
     from xpra.scripts.main import InitExit, InitInfo
     from xpra.platform.gui import init as gui_init, ready as gui_ready
-    from xpra.gtk.gtk_util import init_display_source
+    from xpra.gtk.util import init_display_source
 
     init_display_source()
 

@@ -1445,7 +1445,7 @@ def _do_run_server(script_file:str, cmdline,
             #perhaps this is an upgrade from an older version?
             #try harder to find the pid:
             def _get_int(prop):
-                from xpra.gtk.gtk_util import get_default_root_window
+                from xpra.gtk.util import get_default_root_window
                 from xpra.x11.gtk_x11.prop import prop_get
                 try:
                     xid = get_default_root_window().get_xid()

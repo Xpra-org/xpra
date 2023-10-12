@@ -54,7 +54,7 @@ class MoveWindow(Gtk.Window):
 	def get_new_geometry(self):
 		x, y = self.get_position()
 		width, height = self.get_size()
-		from xpra.gtk.gtk_util import get_default_root_window
+		from xpra.gtk.util import get_default_root_window
 		maxx, maxy = get_default_root_window().get_geometry()[2:4]
 		new_x = (x+100) % (maxx-width)
 		new_y = (y+100) % (maxy-height)

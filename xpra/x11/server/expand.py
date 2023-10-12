@@ -9,7 +9,7 @@ from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode
 from xpra.x11.server.shadow import ShadowX11Server
 from xpra.server.shadow.root_window_model import RootWindowModel
-from xpra.gtk.gtk_util import get_default_root_window
+from xpra.gtk.util import get_default_root_window
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.evdi.capture import EvdiDevice, find_evdi_devices  # pylint: disable=no-name-in-module
 from xpra.log import Logger

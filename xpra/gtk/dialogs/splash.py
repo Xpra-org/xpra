@@ -13,7 +13,7 @@ from xpra.util.env import envint, envbool
 from xpra.os_util import SIGNAMES, OSX, WIN32
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.common import SPLASH_EXIT_DELAY
-from xpra.gtk.gtk_util import add_close_accel
+from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label, ignorewarnings
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.signals import install_signal_handlers

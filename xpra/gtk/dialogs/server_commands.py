@@ -10,7 +10,7 @@ from gi.repository import GLib, Gtk  # @UnresolvedImport
 
 from xpra.gtk.signals import register_os_signals
 from xpra.util.types import typedict, AdHocStruct
-from xpra.gtk.gtk_util import add_close_accel
+from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, label
 from xpra.gtk.pixbuf import get_icon_pixbuf, get_pixbuf_from_data
 from xpra.log import Logger, enable_debug_for

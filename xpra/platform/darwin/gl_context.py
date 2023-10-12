@@ -12,7 +12,7 @@ from Cocoa import (
     NSOpenGLPFADepthSize, NSOpenGLPFADoubleBuffer, NSOpenGLPFAAccumSize,    #@UnresolvedImport
     NSOpenGLPFAStencilSize, NSOpenGLPFAAuxBuffers, NSOpenGLCPSurfaceOpacity, #@UnresolvedImport
     )
-from xpra.gtk.gtk_util import GDKWindow
+from xpra.gtk.window import GDKWindow
 from xpra.client.gl.check import check_PyOpenGL_support
 from xpra.platform.darwin.gdk3_bindings import (    #@UnresolvedImport
     get_nsview_ptr, enable_transparency,            #@UnresolvedImport

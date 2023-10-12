@@ -92,8 +92,8 @@ def get_ydpi() -> int:
 
 
 def get_monitors_info(xscale=1, yscale=1) -> dict[int,Any]:
-    from xpra.gtk import gtk_util
-    return gtk_util.get_monitors_info(xscale, yscale)
+    from xpra.gtk.info import get_monitors_info
+    return get_monitors_info(xscale, yscale)
 
 
 def get_icon_size() -> int:
