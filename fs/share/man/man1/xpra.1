@@ -34,20 +34,20 @@ xpra \- viewer for remote, persistent X applications
 [\fBOPTIONS..\fP]
 .HP
 \fBxpra\fP \fBcontrol\fP [CONNECTIONSTRING] \fIcommand\fP [\fIarguments..\fP]
-[\fB--ssh\fP=\fICMD\fP]
-[\fB--remote-xpra\fP=\fICMD\fP]
-[\fB--socket-dir\fP=\fIDIR\fP]
-[\fB--socket-dirs\fP=\fIDIRS\fP]
+[\fB\-\-ssh\fP=\fICMD\fP]
+[\fB\-\-remote\-xpra\fP=\fICMD\fP]
+[\fB\-\-socket\-dir\fP=\fIDIR\fP]
+[\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
 .HP
 \fBxpra\fP \fBdisplays\fP \fI[:DISPLAY]\fP
 .HP
 \fBxpra\fP \fBclean-displays\fP \fI[:DISPLAY]\fP
 .HP
-\fBxpra\fP \fBlist\fP [\fB--socket-dir\fP=\fIDIR\fP]
+\fBxpra\fP \fBlist\fP [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
-\fBxpra\fP \fBlist-sessions\fP [\fB--socket-dir\fP=\fIDIR\fP]
+\fBxpra\fP \fBlist-sessions\fP [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
-\fBxpra\fP \fBlist-windows\fP [\fB--socket-dir\fP=\fIDIR\fP]
+\fBxpra\fP \fBlist-windows\fP [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
 \fBxpra\fP \fBshell\fP [CONNECTIONSTRING]
 .HP
@@ -112,7 +112,7 @@ Connect using secure websocket protocol. (websocket with SSL)
 .SS ssh://[[USERNAME][:PASSWORD]@]HOST[:SSH_PORT]/[DISPLAY][?OPTIONS]
 Connect using secure shell. (SSH)
 
-Further SSH options can be specified using the \fB--ssh\fP command line option.
+Further SSH options can be specified using the \fB\-\-ssh\fP command line option.
 The \fBOPTIONS\fP can be used to specify an ssh proxy:
 ?proxy=ssh://[USERNAME[:PASSWORD]@]HOST[:SSH_PORT]
 xpra will then establish an SSH connection to the specified "proxy" host,
@@ -140,21 +140,21 @@ shadow mode.
 Start an xpra server using display number \fI:7\fP.
 Note: using \fBDISPLAY=\fP\fI:7 xterm\fP to start applications against
 a specific display is not recommended. Always prefer using xpra's
-\fB--start=\fP command line option instead.
+\fB\-\-start=\fP command line option instead.
 See this next example:
 .TP
-\fBxpra start\fP --start=firefox\fP
+\fBxpra start\fP \-\-start=firefox\fP
 Start an xpra server, choosing a display automatically and start
 firefox on that virtual display.
 No window will appear until you attach with \fBxpra attach\fP.
 The start child commands will inherit an environment tailored
 for running under xpra.
 .TP
-\fBxpra start\fP \fIssh://bigbox/7 --start=xterm\fP
+\fBxpra start\fP \fIssh://bigbox/7 \-\-start=xterm\fP
 Start an xpra server on \fIbigbox\fP with an xterm in it,
 and connect to it.
 .TP
-\fBxpra start-desktop --start=xfce4-session\fP
+\fBxpra start-desktop \-\-start=xfce4-session\fP
 Start an xfce session in a nested X11 server on an automatically
 assigned display number.
 .TP
@@ -214,7 +214,7 @@ Use ssh to attach to the xpra server that is running on machine
 \fIfrodo\fP as user \fIfoo\fP and using display \fI:7\fP.
 Any apps running on that server will appear on your local screen.
 .TP
-\fBxpra start :7 --start=screen\fP
+\fBxpra start :7 \-\-start=screen\fP
 Start an xpra server and a \fBscreen\fP(1) session.  If any of the
 applications inside screen attempt to use X, they will be directed to
 the xpra server.
@@ -283,8 +283,8 @@ the client can find at least one of the directories used by
 the unix domain sockets (see \fIbind\fP, \fIsocket-dir\fP and
 \fIsocket-dirs\fP).
 
-If the xpra server was given the \fB--bind-tcp\fP=\fI[HOST]:PORT\fP
-(or \fB--bind-ssl\fP, \fB--bind-ws\fP, \fB--bind-wss\fP, \fB--bind-vsock\fP)
+If the xpra server was given the \fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP
+(or \fB\-\-bind\-ssl\fP, \fB\-\-bind\-ws\fP, \fB\-\-bind\-wss\fP, \fB\-\-bind\-vsock\fP)
 option when started then you can also connect to it using a display of
 the form \fBtcp://HOST:PORT[/DISPLAY]\fP,
 \fBssl://HOST:PORT[/DISPLAY]\fP, \fBws://HOST:PORT[/DISPLAY]\fP,
@@ -421,25 +421,25 @@ be available.
 .SH OPTIONS
 .SS General options
 .TP
-\fB--version\fP
+\fB\-\-version\fP
 Displays xpra's version number.
 .TP
-\fB-h, --help\fP
+\fB-h, \-\-help\fP
 Displays a summary of command line usage.
 .TP
-\fB-d\fP \fIFILTER1,FILTER2,...\fP, \fB--debug\fP=\fIFILTER1,FILTER2,...\fP
+\fB-d\fP \fIFILTER1,FILTER2,...\fP, \fB\-\-debug\fP=\fIFILTER1,FILTER2,...\fP
 Enable debug logging.  The special value \fBall\fP enables all
 debugging.
 To get the full list of logging categories, run \fIxpra -d help\fP.
 To target loggers that use more than one logging category (as some
 categories can be quite broad), join them with a '\fB+\fP'.
 For example, to enable logging for \fIserver\fP and \fIkeyboard\fP,
-use \fI--debug server+keyboard\fP.
+use \fI\-\-debug server+keyboard\fP.
 You can also exclude a category with the '\fB-\fP' prefix.
 For example, to enable \fIshadow\fP debugging but not \fIclipboard\fP,
-use: \fI--debug shadow,-clipboard\fP.
+use: \fI\-\-debug shadow,-clipboard\fP.
 .TP
-\fB--mmap\fP=\fIyes\fP|\fIno\fP|\fIABSOLUTEFILENAME\fP|\fIDIRECTORY\fP
+\fB\-\-mmap\fP=\fIyes\fP|\fIno\fP|\fIABSOLUTEFILENAME\fP|\fIDIRECTORY\fP
 Enable or disable memory mapped pixel data transfer.
 By default it is normally enabled automatically if the server and the
 client reside on the same filesystem namespace.
@@ -451,7 +451,7 @@ one can specify the exact filename that the client will create,
 or just the directory where the file will be created so that
 multiple clients may connect and use mmap concurrently.
 .TP
-\fB--mmap-group\fP=\fIGROUP\fP
+\fB\-\-mmap\-group\fP=\fIGROUP\fP
 Sets the mmap file's gid to the group specified, and sets
 the permissions to 660.
 This is necessary to share the mmap file across user accounts.
@@ -471,21 +471,21 @@ otherwise it will fallback to the same behaviour as \fISOCKET\fP.
 .RE
 .TP
 
-\fB--windows\fP=\fIyes\fP|\fIno\fP
+\fB\-\-windows\fP=\fIyes\fP|\fIno\fP
 Enable or disable the forwarding of windows. This is usually
 the primary use for xpra and should be enabled.
 .TP
-\fB--min-size\fP=\fIWIDTH\fPx\fIHEIGHT\fP
+\fB\-\-min\-size\fP=\fIWIDTH\fPx\fIHEIGHT\fP
 Sets the minimum size for all decorated windows.
 .TP
-\fB--max-size\fP=\fIWIDTH\fPx\fIHEIGHT\fP
+\fB\-\-max\-size\fP=\fIWIDTH\fPx\fIHEIGHT\fP
 Sets the maximum size for all windows.
 .TP
-\fB--readonly\fP=\fIyes\fP|\fIno\fP
+\fB\-\-readonly\fP=\fIyes\fP|\fIno\fP
 Read only mode ignores all keyboard and mouse activity.
 .TP
 
-\fB--clipboard\fP=\fIyes\fP|\fIno|clipboard-type\fP
+\fB\-\-clipboard\fP=\fIyes\fP|\fIno|clipboard-type\fP
 Enable or disable clipboard synchronization.
 If disabled on the server, no clients will be able to use clipboard
 synchronization at all. If turned off on the client, only this
@@ -507,25 +507,25 @@ OSX specific clipboard
 .RE
 
 .TP
-\fB--clipboard-direction\fP=\fIto-server\fP|\fIto-client\fP|\fIboth\fP|\fIdisabled\fP
+\fB\-\-clipboard\-direction\fP=\fIto-server\fP|\fIto-client\fP|\fIboth\fP|\fIdisabled\fP
 Choose the direction of the clipboard synchronization.
 .TP
-\fB--pulseaudio\fP=\fIyes\fP|\fIno\fP
+\fB\-\-pulseaudio\fP=\fIyes\fP|\fIno\fP
 Enable or disable the starting of a pulseaudio server with the session.
 .TP
-\fB--pulseaudio-command\fP=\fISERVER-START-COMMAND\fP
+\fB\-\-pulseaudio\-command\fP=\fISERVER-START-COMMAND\fP
 Specifies the pulseaudio command to use to start the pulseaudio
 server, unless disabled with \fBpulseaudio=no\fP.
 .TP
-\fB--session-name\fP=\fIVALUE\fP
+\fB\-\-session\-name\fP=\fIVALUE\fP
 Sets the name of this session. This value may be used in
 notifications, utilities, tray menu, etc.
 Setting this value on the server provides a default value which
 may be overridden on the client.
 .TP
-\fB--encoding\fP=\fIENCODING\fP
+\fB\-\-encoding\fP=\fIENCODING\fP
 Sets the preferred encoding to use.
-To see the list of encodings available, use \fI--encoding=help\fP.
+To see the list of encodings available, use \fI\-\-encoding=help\fP.
 This can be used to select \fBgrayscale\fP or 8-bit modes like
 \fBpng/P\fP. On local connections or with extremelly fast network links,
 plain \fBrgb\fP is also a viable option.
@@ -533,14 +533,14 @@ For everything else, the default value \fBauto\fP will select
 the best encoding automatically and you should use the
 \fBmin-speed\fP and \fBmin-quality\fP options instead for tuning.
 .TP
-\fB--encodings\fP=\fIENCODING\fP
+\fB\-\-encodings\fP=\fIENCODING\fP
 This specifies the image encodings enabled.
 This is the most misused command line option and should be left alone.
 The server engine needs to have multiple encodings available to
 work effectively.
 .TP
 
-\fB--video-scaling\fP=\fIon\fP|\fIoff\fP|\fISCALING\fP
+\fB\-\-video\-scaling\fP=\fIon\fP|\fIoff\fP|\fISCALING\fP
 How much automatic video downscaling should be used,
 from 1 (rarely) to 100 (aggressively), 0 to disable.
 Video scaling is normally used with video regions or very large windows
@@ -550,7 +550,7 @@ and will cause automatic refreshes (if enabled), it is most
 useful on video content where it saves a considerable amount of bandwidth.
 .TP
 
-\fB--socket-dir\fP=\fIDIR\fP
+\fB\-\-socket\-dir\fP=\fIDIR\fP
 Location where to write and look for the Xpra socket files.
 The default location varies from platform to platform
 ("\fI~/.xpra\fP" and "\fI$XDG_RUNTIME_DIR/xpra\fP" on most Posix systems).
@@ -566,34 +566,34 @@ By specifying a shared directory this can be coupled with the
 Xpra sessions across user accounts with shared memory acceleration.
 .TP
 
-\fB--socket-dirs\fP=\fIDIR\fP
+\fB\-\-socket\-dirs\fP=\fIDIR\fP
 Specifies the directories where to look for existing sockets if
 a specific one was not set using \fBsocket-dir\fP.
-You may specify each directory using a new \fB--socket-dirs\fP
+You may specify each directory using a new \fB\-\-socket\-dirs\fP
 command line argument, or joined together by the path separator (\fB:\fP on Posix).
 The paths will be expanded.
-(ie: \fI--socket-dirs=~/.xpra:/tmp\fP)
+(ie: \fI\-\-socket\-dirs=~/.xpra:/tmp\fP)
 .TP
 
-\fB--file-transfer\fP=\fIon\fP|\fIoff\fP
+\fB\-\-file\-transfer\fP=\fIon\fP|\fIoff\fP
 Enable file transfers.
 .TP
-\fB--open-files\fP=\fIon\fP|\fIoff\fP
+\fB\-\-open\-files\fP=\fIon\fP|\fIoff\fP
 This option may be used to allow the remote end to automatically
 open files after they have been uploaded.
 This may be a security risk if you are using xpra to constrain
 what the clients can execute on the server.
 .TP
 
-\fB--forward-xdg-open\fP=\fIon\fP|\fIoff\fP|\fIauto\fP
+\fB\-\-forward\-xdg\-open\fP=\fIon\fP|\fIoff\fP|\fIauto\fP
 Intercept execution of \fIxdg-open\fP and forward the request to the client.
 .TP
 
-\fB--open-command\fP=\fICOMMAND\fP
+\fB\-\-open\-command\fP=\fICOMMAND\fP
 The command to use for opening files and URLs.
 .TP
 
-\fB--bandwidth-limit\fP=\fIBITSPERSECOND\fP
+\fB\-\-bandwidth\-limit\fP=\fIBITSPERSECOND\fP
 Restrict bandwidth usage to below the limit given.
 The client's value cannot raise the limit of the server.
 The value may be specified using standard units, ie:
@@ -602,7 +602,7 @@ In \fIauto\fP mode, the client will set the bandwidth limit
 value to 80% of the maximum speed of the network interface
 it is using to connect to the server.
 
-\fB--splash\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
+\fB\-\-splash\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Show a splash screen during client or server startup.
 With the default value of \fIauto\fP, the splash screen is only
 shown if there is a GUI available - ie: no attempt will be made
@@ -611,13 +611,13 @@ to show the splash screen when xpra is launched from an SSH session.
 
 .SS Options for start, start-desktop, upgrade, proxy and shadow
 .TP
-\fB--daemon\fP=\fIyes\fP|\fIno\fP
+\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP
 By default, the xpra server puts itself into the background,
 i.e. 'daemonizes', and redirects its output to a log file.
 This can be used to prevent that behavior (useful mostly for debugging).
 .TP
 
-\fB--resize-display\fP=\fIyes\fP|\fIno|WIDTHxHEIGHT\fP
+\fB\-\-resize\-display\fP=\fIyes\fP|\fIno|WIDTHxHEIGHT\fP
 Resize the virtual display to match the resolution of
 the client currently connected.
 This only applies to the \fIstart\fP and \fIstart-desktop\fP
@@ -629,7 +629,7 @@ A small set of pre-defined aliases can also be used:
 \fIFHD\fP, \fI4K\fP.
 .TP
 
-\fB--fake-xinerama\fP=\fIPATH\fP|\fIauto\fP|\fIno\fP
+\fB\-\-fake\-xinerama\fP=\fIPATH\fP|\fIauto\fP|\fIno\fP
 Specify the path to the \fBlibfakeXinerama.so\fP library which
 will be injected into all the child processes the server starts
 using \fILD_PRELOAD\fP.
@@ -638,22 +638,22 @@ will then try to locate the library itself.
 This only applies to the \fIstart\fP subcommand.
 .TP
 
-\fB--chdir\fP=\fIDIR\fP
+\fB\-\-chdir\fP=\fIDIR\fP
 Change to this directory after daemonizing.
 .TP
 
-\fB--uid\fP=\fIUID\fP and \fB--gid\fP=\fIGID\fP
+\fB\-\-uid\fP=\fIUID\fP and \fB\-\-gid\fP=\fIGID\fP
 When launching the server as root, these options can be used
 to drop privileges to the given UID / GID.
 .TP
 
-\fB--pidfile\fP=\fIFILENAME\fP
+\fB\-\-pidfile\fP=\fIFILENAME\fP
 Writes the server process ID to this file on startup.
 If the file has not been replaced,
 it will be deleted when the server exits.
 .TP
 
-\fB--challenge-handlers\fP=\fIMODULE:options\fP
+\fB\-\-challenge\-handlers\fP=\fIMODULE:options\fP
 Configures which challenge handlers are used by the client and in
 which order. This option may be repeated to specify multiple handlers,
 which can be useful if the server sends more than one authentication
@@ -686,24 +686,24 @@ use a dialog.
 .PP
 .TP
 
-\fB--min-port\fP=\fIPORT\fP
+\fB\-\-min\-port\fP=\fIPORT\fP
 The minimum port number allowed when creating TCP sockets.
 You can use a lower value to allow unprivileged users to bind to
 privileged ports when starting sessions via the system wide proxy server.
 The default value is 1024 which is the standard value for privileged ports.
 .TP
-\fB--mdns\fP=\fIyes\fP|\fIno\fP
+\fB\-\-mdns\fP=\fIyes\fP|\fIno\fP
 Enable or disable the publication of new sessions via mDNS.
 .TP
-\fB--dbus-launch\fP=\fICOMMAND\fP|\fIno\fP
+\fB\-\-dbus\-launch\fP=\fICOMMAND\fP|\fIno\fP
 Start the session within a dbus-launch context, you can specify
 the dbus launch command to use, or turn it off completely.
 Some features may not be available without a dbus context.
 .TP
-\fB--dbus-proxy\fP=\fIyes\fP|\fIno\fP
+\fB\-\-dbus\-proxy\fP=\fIyes\fP|\fIno\fP
 Allows the client to forward dbus calls to the server.
 .TP
-\fB--dbus-control\fP=\fIyes\fP|\fIno\fP
+\fB\-\-dbus\-control\fP=\fIyes\fP|\fIno\fP
 Start a dbus server which can be used to interact with the server
 process.
 
@@ -718,7 +718,7 @@ way is to specify authentication options using bind properties.
 ie: \fIbind-tcp=0.0.0.0:14500,auth=file:filename=password.txt\fP.
 The properties can also define extra socket configuration options.
 
-\fB--bind\fP=\fIBIND_LOCATION[,PROPERTIES]\fP
+\fB\-\-bind\fP=\fIBIND_LOCATION[,PROPERTIES]\fP
 Create a local Unix domain socket (on Unix)
 or named-pipe (on MS Windows) for each \fBbind\fP option specified.
 
@@ -746,8 +746,8 @@ create the socket using the path specified
 .RE
 .PP
 .TP
-\fB--bind-tcp\fP=\fI[HOST]:PORT[,PROPERTIES]\fP
-Create a TCP socket for each \fB--bind-tcp\fP option specified.
+\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT[,PROPERTIES]\fP
+Create a TCP socket for each \fB\-\-bind\-tcp\fP option specified.
 If the host portion is omitted, then 127.0.0.1 (localhost) will be
 used.  If you wish to accept connections on all interfaces, pass
 0.0.0.0 for the host portion.
@@ -762,29 +762,29 @@ TCP sockets may also be upgraded to SSL sockets if the
 \fBssl\fP switch is enabled.
 .TP
 
-\fB--bind-ws\fP=\fI[HOST]:PORT[,PROPERTIES]\fP
+\fB\-\-bind\-ws\fP=\fI[HOST]:PORT[,PROPERTIES]\fP
 Create an HTTP / Websocket listener.
 See \fBbind-tcp\fP for host restrictions,
 you should use the \fBauth-ws\fP to secure access.
 .TP
-\fB--bind-wss\fP=\fI[HOST]:PORT[,PROPERTIES]\fP
+\fB\-\-bind\-wss\fP=\fI[HOST]:PORT[,PROPERTIES]\fP
 Create an HTTPS / Secure Websocket listener.
 See \fBbind-tcp\fP for host restrictions,
 you should use the \fBauth-wss\fP to secure access.
 .TP
-\fB--bind-ssl\fP=\fI[HOST]:PORT[,PROPERTIES]\fP
-Just like --bind-tcp\fP but for SSL sockets.
+\fB\-\-bind\-ssl\fP=\fI[HOST]:PORT[,PROPERTIES]\fP
+Just like \-\-bind\-tcp\fP but for SSL sockets.
 See \fIssl-auth\fP and the other SSL options.
 .TP
-\fB--bind-rfb\fP=\fI[HOST]:PORT[,PROPERTIES]\fP
+\fB\-\-bind\-rfb\fP=\fI[HOST]:PORT[,PROPERTIES]\fP
 Listens for RFB connections on the given port.
 These sockets are only supported with the \fBstart-desktop\fP and
 \fBshadow\fP modes.
 .TP
-\fB--bind-vsock\fP=\fICID:PORT[,PROPERTIES]\fP
-Create a VSOCK socket for each \fB--bind-vsock\fP option specified.
+\fB\-\-bind\-vsock\fP=\fICID:PORT[,PROPERTIES]\fP
+Create a VSOCK socket for each \fB\-\-bind\-vsock\fP option specified.
 .TP
-\fB--auth\fP=\fIMODULE[:OPTION=VALUE]\fP
+\fB\-\-auth\fP=\fIMODULE[:OPTION=VALUE]\fP
 Specifies the authentication module to use for all unix domain sockets
 created using the \fBbind\fP switch. Authentication modules can
 validate a username and password against a variety of backend modules:
@@ -797,16 +797,16 @@ always fails authentication, useful for testing
 .IP \fBenv\fP
 matches against the environment variable specified by the \fIname\fP option
 (which defaults to \fBXPRA_PASSWORD\fP).
-ie: \fB--auth=env:name=SOME_OTHER_ENV_VAR_NAME\fP.
+ie: \fB\-\-auth=env:name=SOME_OTHER_ENV_VAR_NAME\fP.
 .IP \fBpassword\fP
 matches against the password specified using the \fIvalue\fP option.
-ie: \fB--auth=password:value=YOURPASSWORD\fP.
+ie: \fB\-\-auth=password:value=YOURPASSWORD\fP.
 Note: this command line option may be exposed to other processes
 on the same system.
 .IP \fBfile\fP
 checks the password against the password data found in the file
 specified using the \fBfilename\fP option.
-ie: \fB--auth=file:filename=./password.txt\fP.
+ie: \fB\-\-auth=file:filename=./password.txt\fP.
 
 The contents of this file will be treated as binary data,
 there are no restrictions on character encodings or file size.
@@ -867,7 +867,7 @@ the usernames / group names.
 This module is different from the others in that it will not require
 the client to supply a username or password, as those are ignored.
 Environment variables and pseudo-environment variables may also be used
-as values, eg: \fB--auth=peercred:uid=\\$UID:fred,gid=xpra\fP.
+as values, eg: \fB\-\-auth=peercred:uid=\\$UID:fred,gid=xpra\fP.
 
 .IP \fBpam\fP
 validates the username and password using the PAM system
@@ -898,18 +898,18 @@ using the python \fIldap3\fP library.
 .RE
 .PP
 .TP
-\fB--tcp-auth\fP=\fIMODULE\fP
+\fB\-\-tcp\-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
 to TCP sockets (sockets defined using the \fBbind-tcp\fP switch).
 Deprecated, use per-socket authentication options.
 .TP
-\fB--ws-auth\fP=\fIMODULE\fP
+\fB\-\-ws\-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
 to ws sockets: sockets defined using the \fBbind-ws\fP switch,
 or TCP sockets upgraded to websockets. (if the \fBhtml\fP option is enabled).
 Deprecated, use per-socket authentication options.
 .TP
-\fB--wss-auth\fP=\fIMODULE\fP
+\fB\-\-wss\-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
 to wss sockets: sockets defined using the \fBbind-wss\fP switch,
 ws sockets upgraded to SSL (if the \fBssl\fP option is enabled) or
@@ -917,17 +917,17 @@ TCP sockets upgraded to SSL and then to wss.
 (if both the \fBssl\fP and \fBhtml\fP options are enabled).
 Deprecated, use per-socket authentication options.
 .TP
-\fB--ssl-auth\fP=\fIMODULE\fP
+\fB\-\-ssl\-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
 to SSL sockets: sockets defined using the \fBbind-ssl\fP switch,
 or TCP sockets upgraded by \fBssl=auto\fP or \fBssl=on\fP.
 Deprecated, use per-socket authentication options.
 .TP
-\fB--rfb-auth\fP=\fIMODULE\fP
+\fB\-\-rfb\-auth\fP=\fIMODULE\fP
 Authentication module to use for the \fBbind-rfb\fP sockets.
 Deprecated, use per-socket authentication options.
 .TP
-\fB--vsock-auth\fP=\fIMODULE\fP
+\fB\-\-vsock\-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
 to VSOCK sockets (sockets defined using the \fBbind-vsock\fP switch).
 Deprecated, use per-socket authentication options.
@@ -935,85 +935,85 @@ Deprecated, use per-socket authentication options.
 
 .SS Options for start, start-desktop, upgrade
 .TP
-\fB--exec-wrapper\fP=\fICMD\fP
+\fB\-\-exec\-wrapper\fP=\fICMD\fP
 A wrapper command which is prepended to all start commands.
 Typically, this is used for starting all sub-commands via VirtualGL.
 .TP
-\fB--start\fP=\fICMD\fP
+\fB\-\-start\fP=\fICMD\fP
 After starting the server, runs the command \fICMD\fP using the
 default shell.  The command is run with its \fB$DISPLAY\fP set to point to
 the newly-started server.  This option may be given multiple times to
 start multiple commands.
 .TP
-\fB--start-child\fP=\fICMD\fP
-Identical to \fB--start\fP, except that the commands are taken into
-account by \fB--exit-with-children\fP.
+\fB\-\-start\-child\fP=\fICMD\fP
+Identical to \fB\-\-start\fP, except that the commands are taken into
+account by \fB\-\-exit\-with\-children\fP.
 .TP
-\fB--start-after-connect\fP=\fICMD\fP
+\fB\-\-start\-after\-connect\fP=\fICMD\fP
 Wait for the first client to connect before starting the command.
 .TP
-\fB--start-child-after-connect\fP=\fICMD\fP
+\fB\-\-start\-child\-after\-connect\fP=\fICMD\fP
 Wait for the first client to connect before starting the child command.
 See \fIstart-child\fP.
 .TP
-\fB--start-on-connect\fP=\fICMD\fP
+\fB\-\-start\-on\-connect\fP=\fICMD\fP
 Execute this command every time a client connects.
 .TP
-\fB--start-child-on-connect\fP=\fICMD\fP
+\fB\-\-start\-child\-on\-connect\fP=\fICMD\fP
 Execute this child command every time a client connects.
 See \fIstart-child\fP.
 .TP
-\fB--start-on-last-client-exit\fP=\fICMD\fP
+\fB\-\-start\-on\-last\-client\-exit\fP=\fICMD\fP
 Execute this command every time a client disconnects and there are
 no other clients left.
 .TP
-\fB--start-child-on-last-client-exit\fP=\fICMD\fP
+\fB\-\-start\-child\-on\-last\-client\-exit\fP=\fICMD\fP
 Execute this child command every time a client disconnects and there are
 no other clients left.
 See \fIstart-child\fP.
 .TP
-\fB--terminate-children\fP=\fIyes\fP|\fIno\fP
+\fB\-\-terminate\-children\fP=\fIyes\fP|\fIno\fP
 On server \fBstop\fP, terminate all the child commands that have been started
 by the server. This does not affect server \fBexit\fP.
 Most child commands are tied to the display so they are normally
 forced to shutdown anyway, but this gives them more time to cleanup properly
 and can be used to stop background commands that aren't tied to a display.
 .TP
-\fB--exit-with-children\fP=\fIyes\fP|\fIno\fP
-This option may only be used if \fB--start-child\fP is also
+\fB\-\-exit\-with\-children\fP=\fIyes\fP|\fIno\fP
+This option may only be used if \fB\-\-start\-child\fP is also
 given.  If it is given, then the xpra server will monitor the status
-of the children started by \fB--start-child\fP, and will
+of the children started by \fB\-\-start\-child\fP, and will
 automatically terminate itself when the last of them has exited.
 .TP
-\fB--exit-with-windows\fP=\fIyes\fP|\fIno\fP
+\fB\-\-exit\-with\-windows\fP=\fIyes\fP|\fIno\fP
 The server will terminate automatically when there are no more windows
 or system trays being forwarded.
 This option is only relevant for seamless servers.
 .TP
-\fB--exit-with-client\fP=\fIyes\fP|\fIno\fP
+\fB\-\-exit\-with\-client\fP=\fIyes\fP|\fIno\fP
 The server will terminate when the last client disconnects.
 .TP
-\fB--env\fP=\fIKEY=VALUE\fP
+\fB\-\-env\fP=\fIKEY=VALUE\fP
 Extra environment variables which will only affect commands started using
-\fB--start\fP or \fB--start-child\fP.
+\fB\-\-start\fP or \fB\-\-start\-child\fP.
 .TP
-\fB--start-new-commands\fP=\fIyes\fP|\fIno\fP
+\fB\-\-start\-new\-commands\fP=\fIyes\fP|\fIno\fP
 Allow clients to ask the server to execute new commands.
 (this can also be used via the control channel)
 .TP
-\fB--start-via-proxy\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
+\fB\-\-start\-via\-proxy\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 If enabled, the \fBstart\fP and \fBstart-desktop\fP subcommands
 will be delegated to the system wide proxy server instance.
 With \fIauto\fP mode, this delegation will only occur if the
 system wide proxy server is found.
 .TP
-\fB--systemd-run\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
+\fB\-\-systemd\-run\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Wrap server start commands with systemd-run.
 .TP
-\fB--systemd-run-args\fP=\fIARGS\fP
+\fB\-\-systemd\-run\-args\fP=\fIARGS\fP
 Command line arguments passed to systemd-run.
 .TP
-\fB--use-display\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
+\fB\-\-use\-display\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Use an existing display rather than starting one with xvfb.
 You are responsible for starting the display yourself.
 This can also be used to rescue an existing display whose
@@ -1022,13 +1022,13 @@ an accelerated X11 server.
 With \fIauto\fP, xpra will use the existing display
 if it is found.
 .TP
-\fB--displayfd\fP=\fIFD\fP
+\fB\-\-displayfd\fP=\fIFD\fP
 The xpra server will write the display number back on this
 file descriptor as a newline-terminated string.
 This is most useful when the display number is not specified
 with the xpra \fIstart\fP or \fIstart-desktop\fP subcommands.
 .TP
-\fB--xvfb\fP=\fICMD\fP
+\fB\-\-xvfb\fP=\fICMD\fP
 When starting a seamless server, xpra starts a virtual X server to
 run the clients on.  If your Xvfb is installed in a
 funny location, or you want to use some other virtual X server, then
@@ -1036,11 +1036,11 @@ this switch allows you to specify how to run your preferred X server
 executable.  The default value used depends on your platform.
 The recommended command to use here is \fBXorg\fP with the \fBdummy\fP
 driver, also known as \fBXdummy\fP. See:
-https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Xdummy.md
+\fBhttps://github.com/Xpra\-org/xpra/blob/master/docs/Usage/Xdummy.md\fP
 Some distributions are unable to configure it properly and will
 use \fBXvfb\fP instead.
 .TP
-\fB--sync-xvfb\fP=\fIDELAY\fP
+\fB\-\-sync\-xvfb\fP=\fIDELAY\fP
 The windows are normally only displayed on the client(s), they are
 not painted on the virtual display.
 Some applications like screen recorders may want to capture the
@@ -1049,7 +1049,7 @@ a configurable delay (in milliseconds).
 Warning: this extra painting is expensive and quite slow, which is why
 it is not enabled by default.
 .TP
-\fB--attach\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
+\fB\-\-attach\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Once the server has started, immediately connect a client to it.
 With the value \fBauto\fP, a client is started for remote servers
 only. (servers specified via a network URI)
@@ -1059,7 +1059,7 @@ xpra will not try to start a new one and it will just attach to it.
 .SS Options for start, start-desktop, upgrade, shadow
 .TP
 
-\fB--html\fP=\fIon\fP|\fIoff\fP|\fIauto\fP|\fIwebrootpath\fP
+\fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fIauto\fP|\fIwebrootpath\fP
 Respond to HTTP requests on the TCP port(s) and local sockets.
 This requires at least one TCP or local socket to be configured
 using the matching \fBbind\fP option.
@@ -1067,14 +1067,14 @@ The \fBauto\fP mode will enable support if possible.
 By default the server will provide access to the HTML5 client.
 You can also specify your own web root path as argument.
 .TP
-\fB--http\-scripts\fP=\fIoff\fP|\fIall\fP|\fISCRIPTS\fP
+\fB\-\-http\-scripts\fP=\fIoff\fP|\fIall\fP|\fISCRIPTS\fP
 Enable the builtin web server scripts that expose the
 server status, current active sessions and displays, the list
 of applications and desktop sessions installed.
 This can be used by the client's user interface.
 .TP
 
-\fB--rfb-upgrade\fP=\fIDELAY\fP
+\fB\-\-rfb\-upgrade\fP=\fIDELAY\fP
 Allows RFB clients (ie: VNC) to connect to a plain TCP socket.
 If no data is received after \fIDELAY\fP seconds, the server
 will send a RFB handshake.
@@ -1082,7 +1082,7 @@ This option is only applicable to servers started in
 \fIstart-desktop\fP or \fIshadow\fP modes.
 .TP
 
-\fB--video-encoders\fP=\fIENCODERS\fP
+\fB\-\-video\-encoders\fP=\fIENCODERS\fP
 Specifies the video encoders to try to load.
 By default, all of them are loaded, but one may want to specify
 a more restrictive list of encoders.
@@ -1090,7 +1090,7 @@ Use the special value 'help' to get a list of options.
 Use the value 'none' to not load any video encoders.
 
 .TP
-\fB--csc-modules\fP=\fIMODULES\fP
+\fB\-\-csc\-modules\fP=\fIMODULES\fP
 Specifies the colourspace conversion modules to try to load.
 By default, all of them are loaded, but one may want to specify
 a more restrictive list of modules.
@@ -1098,17 +1098,17 @@ Use the special value 'help' to get a list of options.
 Use the value 'none' to not load any colourspace conversion modules.
 
 .TP
-\fB--socket-permissions\fP=\fIACCESS-MODE\fP
+\fB\-\-socket\-permissions\fP=\fIACCESS-MODE\fP
 Specifies the file permissions on the server's unix domain sockets.
 Defaults to 600. This is ignored when \fImmap-group\fP is enabled.
 
 
 .SS Options for start, start-desktop, upgrade and attach
 .TP
-\fB--encryption\fP=\fICIPHER\fP
+\fB\-\-encryption\fP=\fICIPHER\fP
 Specifies the cipher to use for securing the connection from
 prying eyes.
-This option requires the use of the \fB--encryption-keyfile\fP option.
+This option requires the use of the \fB\-\-encryption\-keyfile\fP option.
 The only ciphers supported at present are:
 .RS
 .IP \fBAES\fP
@@ -1132,43 +1132,43 @@ but only if the server supports this feature too.
 Note: this feature has not been extensively reviewed and as it is
 it should not be considered safe from determined attackers.
 .TP
-\fB--tcp-encryption\fP=\fICIPHER\fP
+\fB\-\-tcp\-encryption\fP=\fICIPHER\fP
 Just like the \fBencryption\fP switch, except this one only applies
 to TCP sockets (sockets defined using the \fBbind-tcp\fP switch).
 .TP
-\fB--encryption-keyfile\fP=\fIFILENAME\fP
+\fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP
 Specifies the key to use with the encryption cipher specified
-with \fB--encryption\fP.  The client and server must use the
+with \fB\-\-encryption\fP.  The client and server must use the
 same keyfile contents.
 .TP
-\fB--tcp-encryption-keyfile\fP=\fIFILENAME\fP
+\fB\-\-tcp\-encryption\-keyfile\fP=\fIFILENAME\fP
 Just like the \fBencryption-keyfile\fP switch, except this one only applies
 to TCP sockets (sockets defined using the \fBbind-tcp\fP switch).
 .TP
-\fB--idle-timeout\fP=\fIIDLETIMEOUT\fP
+\fB\-\-idle\-timeout\fP=\fIIDLETIMEOUT\fP
 The connection will be terminated if there is no user activity
 (mouse clicks or key presses) for the given amount of time
 (in seconds). Use the value 0 to disable this timeout.
 .TP
-\fB--server-idle-timeout\fP=\fIIDLETIMEOUT\fP
+\fB\-\-server\-idle\-timeout\fP=\fIIDLETIMEOUT\fP
 The server will exit if there are no active connections
 for the given amount of time (in seconds).
 Use the value 0 to disable this timeout.
 .TP
-\fB--clipboard-filter-file\fP=\fIFILENAME\fP
+\fB\-\-clipboard\-filter\-file\fP=\fIFILENAME\fP
 Name of a file containing regular expressions, any clipboard data
 that matches one of these regular expressions will be dropped.
 Note: at present this only applies to copying from the machine where
 this option is used, not to it.
 .TP
-\fB--dpi\fP=\fIVALUE\fP
+\fB\-\-dpi\fP=\fIVALUE\fP
 The 'dots per inch' value that client applications should try to honour.
 This numeric value should be in the range 10 to 500 to be useful.
 Many applications will only read this value when starting up,
 so connecting to an existing session started with a different DPI
 value may not have the desired effect.
 .TP
-\fB--pixel-depth\fP=\fIVALUE\fP
+\fB\-\-pixel\-depth\fP=\fIVALUE\fP
 When starting a server, this switch controls the bits per pixel
 of the virtual framebuffer. Possible values: 0 (auto), 16, 24, 30.
 When starting a client, this switch controls the picture rendering
@@ -1178,20 +1178,20 @@ to let the client decide if the rendering will benefit from using
 deep color. (this is only supported on some Posix clients)
 Other values should not be used.
 .TP
-\fB--cursors\fP=\fIyes\fP|\fIno\fP
+\fB\-\-cursors\fP=\fIyes\fP|\fIno\fP
 Enable or disable forwarding of custom application mouse cursors.
 Client applications may change the mouse cursor at any time, which
 will cause the new cursor's pixels to be sent to the client each time.
 This disables the feature.
 .TP
-\fB--notifications\fP=\fIyes\fP|\fIno\fP
+\fB\-\-notifications\fP=\fIyes\fP|\fIno\fP
 Enable or disable forwarding of system notifications.
 System notifications require the xpra server to have its own instance
 of a dbus daemon, if it is missing a warning will be printed on
 startup.  This switch disables the feature entirely, and avoids
 the warning.
 .TP
-\fB--input-method\fP=\fIMETHOD\fP
+\fB\-\-input\-method\fP=\fIMETHOD\fP
 Specify which input method to configure.
 This sets a number of environment variables which should be
 honoured by applications started with the \fBstart-child\fP option.
@@ -1218,29 +1218,29 @@ Enables the Universal Input Method.
 Any other value will also be set up, but will trigger a warning.
 
 .TP
-\fB--xsettings\fP=\fIauto\fP|\fIyes\fP|\fIno\fP
+\fB\-\-xsettings\fP=\fIauto\fP|\fIyes\fP|\fIno\fP
 Enable or disable xsettings synchronization.  Xsettings are only forwarded
 from posix clients connecting to real posix servers (not shadows).
 In 'auto' mode, only seamless servers enable xsettings synchronization.
 .TP
-\fB--system-tray\fP=\fIyes\fP|\fIno\fP
+\fB\-\-system\-tray\fP=\fIyes\fP|\fIno\fP
 Enable or disable forwarding of system tray icons.
 This feature requires client support and may not be available on all
 platforms.
 .TP
-\fB--bell\fP=\fIyes\fP|\fIno\fP
+\fB\-\-bell\fP=\fIyes\fP|\fIno\fP
 Enable or disable forwarding of the system bell.
 .TP
-\fB--webcam\fP=\fIyes\fP|\fIno\fP
+\fB\-\-webcam\fP=\fIyes\fP|\fIno\fP
 Enable or disable webcam forwarding.
 .TP
-\fB--mousewheel\fP=\fIon\fP|\fIoff\fP|\fIinvert\fP|\fIinvert-x\fP|\fIinvert-y\fP|\fIinvert-z\fP
+\fB\-\-mousewheel\fP=\fIon\fP|\fIoff\fP|\fIinvert\fP|\fIinvert-x\fP|\fIinvert-y\fP|\fIinvert-z\fP
 Mouse wheel handling: can be used to disable mouse wheel forwarding
 using the value \fIno\fP, or to invert some or all axes:
 \fIinvert-all\fP, \fIinvert-x\fP, \fIinvert-y\fP, \fIinvert-z\fP.
 
 .TP
-\fB--remote-logging\fP=\fIboth\fP|\fIall\fP|\fIsend\fP|\fIreceive\fP|\fIno\fP
+\fB\-\-remote\-logging\fP=\fIboth\fP|\fIall\fP|\fIsend\fP|\fIreceive\fP|\fIno\fP
 .RS
 Remote logging is always initiated by the client,
 but the server can restrict which direction log messages are allowed to flow.
@@ -1263,7 +1263,7 @@ Remote logging is disabled.
 .PP
 
 .TP
-\fB--av-sync\fP=\fIyes\fP|\fIno\fP
+\fB\-\-av\-sync\fP=\fIyes\fP|\fIno\fP
 Enable or disable audio-video synchronization.
 The video data will be delayed so that it is displayed in sync with the audio.
 Note: this only applies to video regions, either auto-detected via the builtin
@@ -1272,25 +1272,25 @@ heuristics or specified using the dbus interface.
 
 .SS Options for attach
 .TP
-\fB--modal-windows\fP=\fIyes\fP|\fIno\fP
+\fB\-\-modal\-windows\fP=\fIyes\fP|\fIno\fP
 Honour modal windows.
 This may have undesirable side effects when multiple applications are
 forwarded through the same xpra server: modal windows will be made modal
 for all the applications forwarded by xpra rather than just the one
 application which owns that window.
 .TP
-\fB--headerbar\fP=\fIauto\fP|\fIno\fP|\fIforce\fP
+\fB\-\-headerbar\fP=\fIauto\fP|\fIno\fP|\fIforce\fP
 Replaces the window's standard title bar with a custom one which
 is used to give access to xpra specific window controls.
 This feature can have side effects and it is incompatible with OpenGL
 acceleration on MS Windows.
 .TP
-\fB--password-file\fP=\fIFILENAME\fP
+\fB\-\-password\-file\fP=\fIFILENAME\fP
 Supply the password to be used for connecting to a server that
 uses authentication.
 Deprecated, use per-socket authentication options.
 .TP
-\fB--opengl\fP=(\fIyes\fP|\fIno\fP|\fIauto\fP)[:\fIbackend\fP]
+\fB\-\-opengl\fP=(\fIyes\fP|\fIno\fP|\fIauto\fP)[:\fIbackend\fP]
 Use OpenGL accelerated rendering on the client.
 The default is to detect if the graphics card and drivers are
 supported (\fIauto\fP mode), but one can also disable OpenGL (\fIno\fP)
@@ -1300,12 +1300,12 @@ should be used, only \fIgtk\fP and \fInative\fP are currently
 supported and only on X11 platforms.
 ie: \fIopengl=yes:native\fP, or \fIopengl=auto:gtk,native\fP.
 .TP
-\fB--webcam\fP=\fIyes\fP|\fIno\fP|\fI/dev/deviceXXX\fP|\fIDEVICEID\fP
+\fB\-\-webcam\fP=\fIyes\fP|\fIno\fP|\fI/dev/deviceXXX\fP|\fIDEVICEID\fP
 Enable or disable webcam forwarding.
 The webcam device to use can also be specified.
 .TP
 
-\fB-z\fP\fILEVEL\fP, \fB--compress\fP=\fILEVEL\fP
+\fB-z\fP\fILEVEL\fP, \fB\-\-compress\fP=\fILEVEL\fP
 Select the level of compression xpra will use when transmitting data
 over the network.
 With the \fBlz4\fP and \fBlzo\fP compressors,
@@ -1318,10 +1318,10 @@ when \fBlz4\fP and \fBlzo\fP are not available.
 This compression is not used on pixel data (except
 when using the \fBrgb\fP encoding).
 .TP
-\fB--quality\fP=\fIVALUE\fP
+\fB\-\-quality\fP=\fIVALUE\fP
 This option sets a fixed image compression quality for lossy encodings
 (\fBjpeg\fP, \fBwebp\fP, \fBh264\fP/\fBh265\fP and \fBvp8\fP/\fBvp9\fP).
-First, one of those lossy encodings must be enabled with \fB--encoding\fP
+First, one of those lossy encodings must be enabled with \fB\-\-encoding\fP
 or when using the default \fIauto\fP mode.
 Values range from 1 (lowest quality, high compression - generally unusable)
 to 100 (highest quality, low compression).
@@ -1329,11 +1329,11 @@ Specify a value of zero to let the system tune the quality dynamically
 to achieve the best bandwidth usage possible.
 It is usually best not to use this option and use \fBmin-quality\fP instead.
 .TP
-\fB--min-quality\fP=\fIMIN-QUALITY\fP
+\fB\-\-min\-quality\fP=\fIMIN-QUALITY\fP
 This option sets the minimum encoding quality allowed when the quality option is
 set to automatic mode. See \fIquality\fP above.
 .TP
-\fB--speed\fP=\fISPEED\fP
+\fB\-\-speed\fP=\fISPEED\fP
 This option sets the encoding speed, from 1 (slowest) to 100 (fastest).
 Slower compresses better and will use less bandwidth, faster will give
 better latency as long as there is sufficient bandwidth.
@@ -1341,11 +1341,11 @@ The system normally uses a variable speed, this option forces
 a fixed speed setting to be used instead.
 It is usually best not to use this option and use \fBmin-speed\fP instead.
 .TP
-\fB--min-speed\fP=\fIMIN-SPEED\fP
+\fB\-\-min\-speed\fP=\fIMIN-SPEED\fP
 This option sets the minimum encoding speed allowed when the speed option is
 set to automatic mode. See \fIspeed\fP above.
 .TP
-\fB--auto-refresh-delay\fP=\fIDELAY\fP
+\fB\-\-auto\-refresh\-delay\fP=\fIDELAY\fP
 This option sets a delay after which the windows are automatically
 refreshed using a lossless frame if their contents had been updated using
 a lossy encoding previously.
@@ -1353,13 +1353,13 @@ The delay is a floating-point number and is in seconds.
 This option is enabled by default with a delay of 0.25 seconds.
 This option is only relevant when using a lossy encoding.
 .TP
-\fB--shortcut-modifiers\fP=\fIMODIFIERS\fP
+\fB\-\-shortcut\-modifiers\fP=\fIMODIFIERS\fP
 Defines the default shortcut modifiers required by the \fIkey-shortcuts\fP,
 these modifiers can then be referred to as \fI#\fP.
 The default value is 'auto' which evaluates to \fIMeta+Shift\fP on most
 platforms.
 .TP
-\fB--key-shortcut\fP=\fIKEY:ACTION\fP
+\fB\-\-key\-shortcut\fP=\fIKEY:ACTION\fP
 Can be specified multiple times to add multiple key shortcuts.
 These keys will be caught by the client and trigger the action specified
 and the key presses will not be passed on to the server.
@@ -1380,9 +1380,9 @@ syntax: \fIACTION(ARG1, ARG2, etc)\fP
 .br
 String arguments must be quoted (both single and double quotes are supported)
 and numeric arguments must not be quoted.
-Beware the the parenthesis and quotes must usually be escaped when
+Beware the parenthesis and quotes must usually be escaped when
 used from a shell command line.
-Example: \fI--key-shortcut=Meta+Shift+F7:log\\(\\'hello\\'\\)\fP
+Example: \fI\-\-key\-shortcut=Meta+Shift+F7:log\e(\e\(aqhello\e\(aq\e)\fP
 
 .br
 The following \fIACTION\fPs are currently defined:
@@ -1449,7 +1449,7 @@ Decrease the \fBmin-speed\fP or \fBspeed\fP setting
 .PP
 
 .TP
-\fB--sharing\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
+\fB\-\-sharing\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Sharing allows more than one client to connect to the same session.
 This must be enabled on both the server and all co-operating clients
 to function.
@@ -1463,7 +1463,7 @@ member of the \fIxpra\fP group should be enough to create a socket
 in \fI/run/xpra\fP. You must also ensure that the permissions of this
 socket file allow group access, see \fIsocket-permissions\fP.
 .TP
-\fB--lock\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
+\fB\-\-lock\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Locking allows a client to refuse to hand over the session to a new client.
 The session may still be shared with multiple clients (see the \fIsharing\fP option),
 but otherwise the server will reject new clients.
@@ -1471,48 +1471,48 @@ When used server-side, the default value \fIauto\fP allows the clients
 to decide if they want to lock the session.
 When used client-side, the default value \fIauto\fP evaluates to \fIno\fP.
 .TP
-\fB--keyboard-sync\fP=\fIyes\fP|\fIno\fP
+\fB\-\-keyboard\-sync\fP=\fIyes\fP|\fIno\fP
 Normally the key presses and key release events are sent to the server
 as they occur so that the server can maintain a consistent keyboard state.
 Disabling synchronization can prevent keys from repeating unexpectedly on
 high latency links but it may also disrupt applications which access
 the keyboard directly (games, etc.).
 .TP
-\fB--keyboard-raw\fP=\fIyes\fP|\fIno\fP
+\fB\-\-keyboard\-raw\fP=\fIyes\fP|\fIno\fP
 Tells the server to process all keyboard input untranslated.
 Both the client and the server must be using the same type of keyboard
 interface. (ie: both using X11)
 .TP
-\fB--keyboard-layout\fP=\fILAYOUTSTRING\fP
+\fB\-\-keyboard\-layout\fP=\fILAYOUTSTRING\fP
 The keyboard layout is normally detected automatically.
 This option overrides it.
 .TP
-\fB--keyboard-layouts\fP=\fILAYOUTS\fP
+\fB\-\-keyboard\-layouts\fP=\fILAYOUTS\fP
 The list of keyboard layouts to enable.
 .TP
-\fB--keyboard-variant\fP=\fIVARIANT\fP
+\fB\-\-keyboard\-variant\fP=\fIVARIANT\fP
 Override for the keyboard layout variant.
 .TP
-\fB--keyboard-variants\fP=\fIVARIANTS\fP
+\fB\-\-keyboard\-variants\fP=\fIVARIANTS\fP
 Override for the keyboard layout variants.
 .TP
-\fB--keyboard-options\fP=\fIOPTIONS\fP
+\fB\-\-keyboard\-options\fP=\fIOPTIONS\fP
 Override for the keyboard options sent to the server.
 .TP
-\fB--swap-keys\fP=\fIYES|NO\fP
+\fB\-\-swap\-keys\fP=\fIYES|NO\fP
 This option only applies to MacOS clients, it swaps
 the \fIcommand\fP and \fIcontrol\fP keys and is enabled by default.
 .TP
-\fB--audio-source\fP=\fIPLUGIN\fP
+\fB\-\-audio\-source\fP=\fIPLUGIN\fP
 Specifies the GStreamer audio plugin used for capturing the audio stream.
 This affects "speaker forwarding" on the server, and "microphone" forwarding
 on the client.
 To get a list of options use the special value 'help'.
 It is also possible to specify plugin options using the form:
-\fI--audio-source=
+\fI\-\-audio\-source=
 pulse\:device=device.alsa_input.pci-0000_00_14.2.analog-stereo\fP
 .TP
-\fB--speaker\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP and \fB--microphone\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP|\fIon:DEVICE\fP|\fIoff:DEVICE\fP
+\fB\-\-speaker\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP and \fB\-\-microphone\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP|\fIon:DEVICE\fP|\fIoff:DEVICE\fP
 Sound input and output forwarding support: \fIon\fP will start the forwarding
 as soon as the connection is established, \fIoff\fP will require
 the user to enable it via the menu, \fIdisabled\fP will
@@ -1520,14 +1520,14 @@ prevent it from being used and the menu entry will be disabled.
 With microphone forwarding, you may also be able to specify which
 device to use.
 .TP
-\fB--speaker-codec\fP=\fICODEC\fP and \fB--microphone-codec\fP=\fICODEC\fP
+\fB\-\-speaker\-codec\fP=\fICODEC\fP and \fB\-\-microphone\-codec\fP=\fICODEC\fP
 Specify the codec(s) to use for audio output (speaker) or input (microphone).
 This parameter can be specified multiple times and the order in which the codecs
 are specified defines the preferred codec order.
 Use the special value 'help' to get a list of options.
 When unspecified, all the available codecs are allowed and the first one is used.
 .TP
-\fB--title\fP\=\fIVALUE\fP
+\fB\-\-title\fP\=\fIVALUE\fP
 Sets the text shown as window title.
 The string supplied can make use of remote metadata placeholders
 which will be populated at runtime with the values from the
@@ -1549,7 +1549,7 @@ Will be replaced by the name of the display on which the application is running.
 .PP
 
 .TP
-\fB--border\fP=\fIBORDER\fP
+\fB\-\-border\fP=\fIBORDER\fP
 Specifies the color and size of the border to draw inside every xpra window.
 This can be used to easily distinguish xpra windows running on remote hosts
 from local windows.
@@ -1559,15 +1559,15 @@ or \fIorange\fP) or using the web hexadecimal syntax (ie: \fI#F00\fP or
 from the server target address (the connection string) so that connecting
 to the same target should always give the same color.
 You may also specify the size of the border in pixels, ie:
-\fI--border\fP=\fIyellow,10\fP.
+\fI\-\-border\fP=\fIyellow,10\fP.
 .TP
-\fB--window-icon\fP=\fIFILENAME\fP
+\fB\-\-window\-icon\fP=\fIFILENAME\fP
 Path to the default image which will be used for all windows.
 This icon may be shown in the window's bar, its iconified
 state or task switchers.  This depends on the operating system,
 the window manage and the application may override this too.
 .TP
-\fB--window-close\fP=\fIACTION\fP
+\fB\-\-window\-close\fP=\fIACTION\fP
 Choose what action to take when the window is closed by the client.
 The following actions can be used:
 .RS
@@ -1587,7 +1587,7 @@ Shutdown the server.
 .RE
 .PP
 .TP
-\fB--desktop-scaling\fP=\fIoff\fP|\fIon\fP|\fIauto\fP|\fIVALUE\fP
+\fB\-\-desktop\-scaling\fP=\fIoff\fP|\fIon\fP|\fIauto\fP|\fIVALUE\fP
 Desktop scaling allows the windows to be scaled
 by the client.
 Downscaling will mostly waste bandwidth, upscaling allows the window's
@@ -1619,20 +1619,20 @@ the scaling will be enabled and the server will render to the given size. ie: \f
 .RE
 .PP
 
-\fB--tray\fP=\fIyes\fP|\fIno\fP
+\fB\-\-tray\fP=\fIyes\fP|\fIno\fP
 Enable or disable the xpra's own tray menu.
 On MacOS, the dock icon cannot be disabled.
 .TP
-\fB--delay-tray\fP
+\fB\-\-delay\-tray\fP
 Waits for the first window or notification to appear before
 showing the system tray. (posix only)
 .TP
-\fB--tray-icon\fP=\fIFILENAME\fP
+\fB\-\-tray\-icon\fP=\fIFILENAME\fP
 Specifies the icon shown in the dock/tray.
 By default it uses a simple default 'xpra' icon.
 (On Microsoft Windows, the icon must be in \fBico\fP format.)
 .TP
-\fB--enable-pings\fP
+\fB\-\-enable\-pings\fP
 The client and server will exchange ping and echo packets
 which are used to gather latency statistics.
 Those statistics can be seen using the \fBxpra info\fP command.
@@ -1640,7 +1640,7 @@ Those statistics can be seen using the \fBxpra info\fP command.
 
 .SS Options for attach, stop, info, screenshot, version
 .TP
-\fB--ssh\fP\=\fICMD\fP
+\fB\-\-ssh\fP\=\fICMD\fP
 When you use an \fBssh:\fP address to connect to a remote display,
 xpra runs \fBssh\fP(1) to make the underlying connection.
 Most installations should now be using \fBparamiko\fP as default backend command.
@@ -1648,14 +1648,14 @@ Another common value for \fBCMD\fP is \fBssh\fP or \fBplink\fP on Microsoft
 Windows. 
 If your ssh program is in
 an unusual location, has an unusual name, or you want to pass special
-options to change ssh's behavior, then you can use the \fB--ssh\fP
+options to change ssh's behavior, then you can use the \fB\-\-ssh\fP
 switch to tell xpra how to run ssh.
 
 For example, if you want to use arcfour encryption, then you should run
 
 .RS
 .RS
-\fBxpra attach --ssh\fP=\fI"ssh -c arcfour" ssh://frodo/7\fP
+\fBxpra attach \-\-ssh\fP=\fI"ssh -c arcfour" ssh://frodo/7\fP
 
 .RE
 \fINote:\fP Don't bother to enable ssh compression; this
@@ -1668,7 +1668,7 @@ quotes around paths. (ie: \fBssh="C:\\Program Files\\Xpra\\Plink.exe" -ssh -agen
 
 .RE
 .TP
-\fB--exit-ssh\fP=\fIyes\fP|\fIno\fP
+\fB\-\-exit\-ssh\fP=\fIyes\fP|\fIno\fP
 Choose whether the SSH client process should be forcibly terminated
 when xpra disconnects from the server.
 If you are using SSH connection sharing, you may want to avoid
@@ -1679,7 +1679,7 @@ terminal which prevents the SSH process from interacting with
 the terminal input, this disables the keyboard interaction required
 for password input, host key verification, etc..
 .TP
-\fB--remote-xpra\fP=\fICMD\fP
+\fB\-\-remote\-xpra\fP=\fICMD\fP
 When connecting to a remote server over ssh, xpra needs to be able to
 find and run the xpra executable on the remote host.  If this
 executable is in a non-standard location, or requires special
@@ -1695,7 +1695,7 @@ appreciate hearing about.
 
 .SS SSL Options
 .TP
-\fB--ssl\fP=\fIon\fP|\fIauto\fP|\fIoff\fP|\fItcp\fP|\fIwww\fP
+\fB\-\-ssl\fP=\fIon\fP|\fIauto\fP|\fIoff\fP|\fItcp\fP|\fIwww\fP
 Whether to enable SSL on TCP sockets and for what purpose.
 The TCP sockets will automatically be upgraded to SSL when SSL
 packets are received.
@@ -1718,39 +1718,39 @@ https://docs.python.org/2/library/ssl.html
 Some options may not be available with older versions of Python.
 
 Summary:
-\fB--ssl-key\fP=\fIKEYFILE\fP
+\fB\-\-ssl\-key\fP=\fIKEYFILE\fP
 The key file to use.
 .TP
-\fB--ssl-cert\fP=\fCERTFILEORDIR\fP
+\fB\-\-ssl\-cert\fP=\fICERTFILEORDIR\fP
 Certificate file, required for server SSL support.
 .TP
-\fB--ssl-protocol\fP=PROTOCOLVERSION\fP
+\fB\-\-ssl\-protocol\fP=\fIPROTOCOLVERSION\fP
 Specifies which version of the SSL protocol to use.
 .TP
-\fB--ssl-ca-certs\fP=CACERTSFILE\fP
+\fB\-\-ssl\-ca\-certs\fP=\fICACERTSFILE\fP
 The ca_certs file contains a set of concatenated 'certification
 authority' certificates. If a directory is specified, it should contain
 the certificates.
 .TP
-\fB--ssl-ca-data\fP=\fCERTDATA\fP
+\fB\-\-ssl\-ca\-data\fP=\fICERTDATA\fP
 Certificate data.
 .TP
-\fB--ssl-ciphers\fP=CIPHERS\fP
+\fB\-\-ssl\-ciphers\fP=\fICIPHERS\fP
 Sets the available ciphers, it should be a string in the OpenSSL cipher list format.
 .TP
-\fB--ssl-client-verify-mode\fP=\fInone\fP|\fIoptional\fP|\fIrequired\fP
+\fB\-\-ssl\-client\-verify\-mode\fP=\fInone\fP|\fIoptional\fP|\fIrequired\fP
 Whether to try to verify the client's certificates and how to behave if verification fails.
 .TP
-\fB--ssl-server-verify-mode\fP=\fInone\fP|\fIoptional\fP|\fIrequired\fP
+\fB\-\-ssl\-server\-verify\-mode\fP=\fInone\fP|\fIoptional\fP|\fIrequired\fP
 Whether to try to verify the server's certificates and how to behave if verification fails.
 .TP
-\fB--ssl-verify-flags\fP=\fIFLAGS\fP
+\fB\-\-ssl\-verify\-flags\fP=\fIFLAGS\fP
 The flags for certificate verification operations.
 .TP
-\fB--ssl-check-hostname\fP=\fIyes\fP|\fIno\fP
+\fB\-\-ssl\-check\-hostname\fP=\fIyes\fP|\fIno\fP
 Whether to match the peer cert's hostname.
 .TP
-\fB--ssl-options\fP=\fIoptions\fP
+\fB\-\-ssl\-options\fP=\fIoptions\fP
 Set of SSL options enabled on this context.
 .TP
 
@@ -1758,7 +1758,7 @@ Set of SSL options enabled on this context.
 .SH ENVIRONMENT
 .TP
 \fBDISPLAY\fP
-\fBxpra start --start-child\fP=\fI...\fP sets this variable in the
+\fBxpra start \-\-start\-child\fP=\fI...\fP sets this variable in the
 environment of the child to point to the xpra display.
 
 \fBxpra attach\fP, on the other hand, uses this variable to determine
@@ -1793,7 +1793,7 @@ A shell script that, when run, starts up xpra with the correct python
 interpreter, PYTHONPATH, PATH, location of the main xpra script, etc.
 Automatically generated by \fBxpra initenv\fP, \fBxpra start\fP
 and used by \fBxpra attach\fP (see also the discussion of
-\fB--remote-xpra\fP).
+\fB\-\-remote\-xpra\fP).
 .\" --------------------------------------------------------------------
 .SH BUGS
 Xpra has no test suite.
@@ -1808,7 +1808,7 @@ The xpra server allocates an over-large framebuffer when using Xvfb;
 this wastes memory.
 If the Xvfb does not support RandR this can also cause applications
 to misbehave (e.g. by letting menus go off-screen). This is not a
-problem when using Xdummy, see the \fB--xvfb\fP= switch for details.
+problem when using Xdummy, see the \fB\-\-xvfb\fP= switch for details.
 Conversely, if the framebuffer is ever insufficiently large,
 clients will misbehave in other ways (e.g., input events will be
 misdirected).
