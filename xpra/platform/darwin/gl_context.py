@@ -14,9 +14,7 @@ from Cocoa import (
     )
 from xpra.gtk.window import GDKWindow
 from xpra.client.gl.check import check_PyOpenGL_support
-from xpra.platform.darwin.gdk3_bindings import (    #@UnresolvedImport
-    get_nsview_ptr, enable_transparency,            #@UnresolvedImport
-    )
+from xpra.platform.darwin.gdk3_bindings import get_nsview_ptr, enable_transparency, get_backing_scale_factor
 from xpra.log import Logger
 
 log = Logger("opengl")
@@ -166,7 +164,7 @@ class AGLContext:
                 self.gl_context.setValues_forParameter_([0], NSOpenGLCPSurfaceOpacity)
                 enable_transparency(gdk_window)
             self.window_context = AGLWindowContext(self.gl_context, nsview)
-            self.scale_factor = nsview.screen().backingScaleFactor()
+            self.scale_factor = get_backing_scale_factor(gdk_window)
         return self.window_context
 
     def __del__(self):

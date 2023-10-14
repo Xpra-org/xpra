@@ -15,3 +15,11 @@ void setClearBackgroundColor(NSWindow *window) {
 void setBackgroundColor(NSWindow *window, NSColor *color) {
 	[window setBackgroundColor:color];
 }
+
+float getBackingScaleFactor(NSWindow *window) {
+    NSScreen *screen = [window screen];
+    if (!screen) {
+        return 1;
+    }
+    return screen.backingScaleFactor;
+}

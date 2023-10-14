@@ -33,6 +33,7 @@ cdef extern from "transparency_glue.h":
     void setClearBackgroundColor(NSWindow *window)
     void invalidateShadow(NSWindow *window)
     void setHasShadow(NSWindow *window, BOOL hasShadow)
+    float getBackingScaleFactor(NSWindow *window)
 
 
 cdef extern from "gtk-3.0/gdk/quartz/gdkquartz-cocoa-access.h":
@@ -67,3 +68,7 @@ def enable_transparency(pywindow) -> None:
     cdef NSWindow *window = get_nswindow(pywindow)
     setClearBackgroundColor(window)
     setOpaque(window, 0)
+
+def get_backing_scale_factor(pywindow) -> float:
+    cdef NSWindow *window = get_nswindow(pywindow)
+    return getBackingScaleFactor(window)
