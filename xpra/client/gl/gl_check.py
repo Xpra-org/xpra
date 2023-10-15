@@ -256,7 +256,7 @@ def check_PyOpenGL_support(force_enable):
             else:
                 log.warn("%s '%s' is blacklisted!" % (blacklisted))
                 raise_fatal_error("%s '%s' is blacklisted!" % (blacklisted))
-        safe = bool(whitelisted) or not bool(blacklisted)
+        safe = bool(whitelisted) or not bool(blacklisted) or force_enable
         if greylisted and not whitelisted:
             log.warn("Warning: %s '%s' is greylisted,", *greylisted)
             log.warn(" you may want to turn off OpenGL if you encounter bugs")

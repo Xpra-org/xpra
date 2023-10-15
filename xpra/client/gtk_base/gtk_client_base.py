@@ -1048,7 +1048,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 )
             backends = get_opengl_backends(enable_opengl)
             opengllog("init_opengl: backend options: %s", backends)
-            force_enable = enable_option in TRUE_OPTIONS
+            force_enable = enable_option in TRUE_OPTIONS or enable_option=="force"
             self.opengl_props, gl_client_window_module = get_gl_client_window_module(backends, force_enable)
             if not gl_client_window_module:
                 opengllog.warn("Warning: no OpenGL backends found")
