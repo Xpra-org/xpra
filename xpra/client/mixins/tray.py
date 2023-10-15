@@ -43,7 +43,9 @@ class TrayClient(StubClientMixin):
         else:
             if WIN32 or OSX:
                 # show shortly after the main loop starts running:
-                GLib.timeout_add(TRAY_DELAY, self.setup_xpra_tray)
+                from xpra.gtk_common.gobject_compat import import_glib
+                glib = import_glib()
+                glib.timeout_add(TRAY_DELAY, self.setup_xpra_tray)
             else:
                 # wait for handshake:
                 # see appindicator bug #3956
