@@ -185,7 +185,7 @@ class AudioClient(StubClientMixin):
         self.server_sound_receive = c.boolget("sound.receive")
         self.server_sound_send = c.boolget("sound.send")
         self.server_sound_bundle_metadata = c.boolget("sound.bundle-metadata")
-        self.server_ogg_latency_fix = c.boolget("sound.ogg-latency-fix", False)
+        self.server_ogg_latency_fix = c.boolget("sound.ogg-latency-fix", True)
         log("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
                  self.server_pulseaudio_id, self.server_pulseaudio_server,
                  csv(self.server_sound_decoders), csv(self.server_sound_encoders),
