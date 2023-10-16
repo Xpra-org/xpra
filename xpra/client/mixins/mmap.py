@@ -60,7 +60,7 @@ class MmapClient(StubClientMixin):
 
     def parse_server_capabilities(self):
         c = self.server_capabilities
-        self.mmap_enabled = self.supports_mmap and self.mmap_enabled and c.boolget("mmap_enabled")
+        self.mmap_enabled = self.supports_mmap and self.mmap_enabled and c.boolget("mmap_enabled") or bool(c.get("mmap"))
         if self.mmap_enabled:
             from xpra.net.mmap_pipe import read_mmap_token, DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES
             def iget(attrname, default_value=0):
