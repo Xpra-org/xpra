@@ -768,8 +768,31 @@ fi
 
 
 %changelog
-* Fri Oct 06 2023 Antoine Martin <antoine@xpra.org> 5.0.4-10
-- TODO
+* Mon Oct 16 2023 Antoine Martin <antoine@xpra.org> 5.0.4-10
+- `start-gui` fixes:
+   display number ignored
+   exit-with-children can't be unchecked in start-gui
+   port number always specified but not validated
+   avoid menu and input device errors when client is not set
+   fixup tray backport regression
+- Minor:
+   signal watcher backport regression
+   shortcut out when signal watcher has already terminated
+   move-resize test tool broken
+   safer handshake calls
+   use absolute script paths when re-connecting
+   avoid errors with clients sending packets to disabled subsystems
+- Cosmetic:
+   don't warn if `avif` decoder is missing, same for encoder
+   add newline to clear stdout
+   extra `%` in tray menu
+   opengl test window misnamed
+   show failing script
+   silence deprecation warning
+   X11 OpenGL context manager is not consistent
+   man pages fixes
+
+
 * Thu Oct 05 2023 Antoine Martin <antoine@xpra.org> 5.0.3-10
 - Major:
    client signal watcher not starting

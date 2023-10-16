@@ -1,18 +1,28 @@
 # Changelog
 
-## [5.0.4] 2023-10-08
+## [5.0.4] 2023-10-16
 * `start-gui` fixes:
     * [display number ignored](https://github.com/Xpra-org/xpra/commit/db7f6f4ea1530e7b6c901b2b0e44f00271c9d8b6)
     * [exit-with-children can't be unchecked in start-gui](https://github.com/Xpra-org/xpra/commit/98ee5a6f26cdac6bf62166b1ceca522b02f6fca4)
     * [port number always specified but not validated](https://github.com/Xpra-org/xpra/commit/bb1c06d77370bd6b4a94e28572311368c2c23817)
+    * [avoid menu and input device errors when client is not set](https://github.com/Xpra-org/xpra/commit/ce25a2468194d1b25472562acde6070419fcad28)
+    * [fixup tray backport regression](https://github.com/Xpra-org/xpra/commit/6631cfe8b8c228894cd93b679d7ed78ef5715f81)
 * Minor:
     * [signal watcher backport regression](https://github.com/Xpra-org/xpra/commit/96f0351ba1dbc5c1dee6bfcf760a4350b2d2b9c0)
+    * [shortcut out when signal watcher has already terminated](https://github.com/Xpra-org/xpra/commit/f3e922181e5fbabc63f778e9a7d6fe4a7809b6f7)
     * [move-resize test tool broken](https://github.com/Xpra-org/xpra/commit/5e79b41a830203412566b4f3c9fa4119a9a441a6)
+    * [safer handshake calls](https://github.com/Xpra-org/xpra/commit/7927461b0532ebc29ba167d7d87addcd66a802f7)
+    * [use absolute script paths when re-connecting](https://github.com/Xpra-org/xpra/commit/2d1dc323fadcc97df73472123abf7a680b22ef59)
+    * [avoid errors with clients sending packets to disabled subsystems](https://github.com/Xpra-org/xpra/commit/9771a6853f512c7e8a188b06ef522c9ee6c38f75)
 * Cosmetic:
-    * [don't warn if `avif` decoder is missing](https://github.com/Xpra-org/xpra/commit/3d919bd6e7f7fe1018800ced86641e48151be900)
+    * [don't warn if `avif` decoder is missing](https://github.com/Xpra-org/xpra/commit/3d919bd6e7f7fe1018800ced86641e48151be900), [same for encoder](https://github.com/Xpra-org/xpra/commit/f829661b87631ceac56522d6260bcfe6ceb7c4df)
     * [add newline to clear stdout](https://github.com/Xpra-org/xpra/commit/00427351e049cab6d1c585be7df366248858321d)
     * [extra `%` in tray menu](https://github.com/Xpra-org/xpra/commit/7bc5d5b6059c9c785d72794b945c340ece28486b), [twice](https://github.com/Xpra-org/xpra/commit/1cf818034cf64b12747b0ced126e1f955dfb9c9c)
     * [opengl test window misnamed](https://github.com/Xpra-org/xpra/commit/62784a7510de5c37b8a15e035040a08106d29151)
+    * [show failing script](https://github.com/Xpra-org/xpra/commit/a9f0cc35d94e274d4830d320ccc89f959cc2c6d7)
+    * [silence deprecation warning](https://github.com/Xpra-org/xpra/commit/6c98ef1c9d8fac81b5ea43e33971b398c9d51e07)
+    * [X11 OpenGL context manager is not consistent](https://github.com/Xpra-org/xpra/commit/e73187fc427aae60041ebd1dc65582790875d59b)
+    * [man pages fixes](https://github.com/Xpra-org/xpra/commit/1d22676e6d19d47978dd4ca01056b1a037be18bd)
 
 ## [5.0.3] 2023-10-05
 * Major:
