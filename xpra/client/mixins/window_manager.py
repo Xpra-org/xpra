@@ -27,7 +27,7 @@ from xpra.os_util import (
     Queue, bytestostr, monotonic_time, memoryview_to_bytes,
     OSX, POSIX, PYTHON3, is_Ubuntu,
     )
-from xpra.util import iround, envint, envbool, typedict, make_instance, updict
+from xpra.util import iround, envint, envbool, typedict, make_instance, updict, noerr
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
@@ -1219,7 +1219,7 @@ class WindowClient(StubClientMixin):
         stdout_io_watch = proc.stdout_io_watch
         if stdout_io_watch:
             proc.stdout_io_watch = 0
-            GLib.source_remove(stdout_io_watch)
+            glib.source_remove(stdout_io_watch)
         stdout = proc.stdout
         if stdout:
             log("stdout=%s", stdout)
