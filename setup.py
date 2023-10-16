@@ -127,8 +127,8 @@ def check_cython3():
             print("please switch to Cython 3.x")
             print(f" version {version} is not supported")
             print("*******************************************")
-    return version
-cython_version = check_cython3()
+            sys.exit(1)
+check_cython3()
 
 
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
@@ -2285,7 +2285,6 @@ toggle_packages(lz4_ENABLED, "xpra.net.lz4")
 tace(lz4_ENABLED, "xpra.net.lz4.lz4", "liblz4")
 
 if cythonize_more_ENABLED:
-    assert cython_version >= 3, "cannot use 'cythonize_more' with older Cython versions"
     def ax(base):
         dirname = base.replace(".", os.path.sep)
         for x in glob.glob(f"{dirname}/*.py"):
