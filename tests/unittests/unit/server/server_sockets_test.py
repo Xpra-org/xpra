@@ -15,8 +15,8 @@ from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint
 from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
 from xpra.exit_codes import ExitCode
-from xpra.net.net_util import get_free_tcp_port
 from xpra.platform.dotxpra import DISPLAY_PREFIX
+from unit.test_util import get_free_tcp_port
 from unit.server_test_util import ServerTestUtil, log, estr, log_gap
 
 

@@ -13,15 +13,11 @@ from xpra.net.net_util import (
     get_gateways, get_bind_IPs, do_get_bind_ifacemask,
     get_ssl_info, get_interface,
     get_iface,
-    get_free_tcp_port,
     )
 from unit.test_util import silence_error
 
 
 class TestVersionUtilModule(unittest.TestCase):
-
-    def test_tcp_port(self):
-        assert get_free_tcp_port()>0
 
     def test_netifaces(self):
         ifaces = get_interfaces()

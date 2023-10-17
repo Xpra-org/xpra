@@ -3,6 +3,7 @@
 # Copyright (C) 2020-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+import socket
 
 
 def silence_info(module, logger="log"):
@@ -39,3 +40,11 @@ class LoggerSilencer:
         setattr(self.module, self.logger, self.saved)
     def __repr__(self):
         return "LoggerSilencer"
+
+
+def get_free_tcp_port() -> int:
+    s = socket.socket()
+    s.bind(('', 0))
+    port = s.getsockname()[1]
+    s.close()
+    return port

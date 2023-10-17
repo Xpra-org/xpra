@@ -10,7 +10,7 @@ import tempfile
 from xpra.util.env import envbool
 from xpra.os_util import pollwait, which, WIN32, OSX, POSIX
 from xpra.exit_codes import exit_str
-from xpra.net.net_util import get_free_tcp_port
+from unit.test_util import get_free_tcp_port
 from unit.server_test_util import ServerTestUtil, log
 
 

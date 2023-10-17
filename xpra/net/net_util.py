@@ -40,14 +40,6 @@ iface_ipmasks = {}
 bind_IPs = None
 
 
-def get_free_tcp_port() -> int:
-    s = socket.socket()
-    s.bind(('', 0))
-    port = s.getsockname()[1]
-    s.close()
-    return port
-
-
 def get_interfaces():
     netifaces = import_netifaces()
     if not netifaces:
