@@ -435,7 +435,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 if not context:
                     return
                 self.pending_fbo_paint = ((0, 0, bw, bh), )
-                self.do_present_fbo()
+                self.do_present_fbo(context)
             GLib.timeout_add(FBO_RESIZE_DELAY, self.with_gl_context, redraw)
 
 
@@ -982,7 +982,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 return
             if context:
                 self.update_fps()
-                self.managed_present_fbo()
+                self.managed_present_fbo(context)
         self.fps_refresh_timer = GLib.timeout_add(1000, self.with_gl_context, refresh_screen)
 
 
