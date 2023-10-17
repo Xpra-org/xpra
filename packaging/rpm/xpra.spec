@@ -884,7 +884,7 @@ fi
    subsystems
    authentication handlers
 
-* Sat Aug 19 2022 Antoine Martin <antoine@xpra.org> 5.0-10
+* Sat Aug 19 2023 Antoine Martin <antoine@xpra.org> 5.0-10
 - Major improvements:
    QUIC transport
    split packaging
