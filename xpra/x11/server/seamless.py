@@ -438,7 +438,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             window_frame_sizes = ss.window_frame_sizes
             framelog("parse_hello_ui_window_settings: client window_frame_sizes=%s", window_frame_sizes)
             if window_frame_sizes:
-                frame = window_frame_sizes.inttupleget("frame", (0, 0, 0, 0), 4, 4)
+                frame = typedict(window_frame_sizes).inttupleget("frame", (0, 0, 0, 0), 4, 4)
         if self._wm:
             self._wm.set_default_frame_extents(frame)
 

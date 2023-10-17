@@ -506,7 +506,7 @@ class EncodingsMixin(StubSourceMixin):
         einfo = {
             "default"      : self.default_encoding or "",
             "defaults"     : dict(self.default_encoding_options),
-            "client-defaults" : self.encoding_options,
+            "client-defaults" : dict(self.encoding_options),
             }
         info.setdefault("encoding", {}).update(einfo)
         return info
