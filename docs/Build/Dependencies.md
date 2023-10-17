@@ -79,7 +79,6 @@ See [picture encodings](../Usage/Encodings.md)
 |[libspng](https://libspng.org)|https://libspng.org/download/|faster png encoding|both|
 |[libjpeg-turbo](https://github.com/libjpeg-turbo/libjpeg-turbo)|https://sourceforge.net/projects/libjpeg-turbo/files/|jpeg encoding|both|
 |[python-pillow](https://python-pillow.github.io/)|https://pypi.python.org/pypi/Pillow|png,jpeg,webp encoding and decoding, format conversion - **Required**|both|
-|[opencv](http://opencv.org/)|https://opencv.org/releases/|[Webcam capture](./Webcam)]|client|
 |[libyuv](https://chromium.googlesource.com/libyuv/libyuv/)|https://chromium.googlesource.com/libyuv/libyuv/|[Colourspace Conversion](./CSC)|both|
 |[pycuda](https://mathema.tician.de/software/pycuda/)|https://pypi.python.org/pypi/pycuda|[NVENC](./NVENC)|server|
 |[cuda](http://www.nvidia.com/object/cuda_home_new.html)|https://developer.nvidia.com/cuda-toolkit|[NVENC](./NVENC)|server|
