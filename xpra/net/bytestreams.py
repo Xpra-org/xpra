@@ -404,7 +404,7 @@ class SocketConnection(Connection):
     def do_get_socket_info(self, s) -> dict[str,Any]:
         if not s:
             return {}
-        info = {}
+        info : dict[str,Any] = {}
         try:
             info |= {
                 "proto"         : s.proto,

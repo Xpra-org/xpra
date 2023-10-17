@@ -121,7 +121,7 @@ class ChildReaper:
                 self.add_dead_process(procinfo)
         return True
 
-    def set_quit_callback(self, cb:callable) -> None:
+    def set_quit_callback(self, cb:Callable) -> None:
         self._quit = cb
 
     def check(self) -> bool:

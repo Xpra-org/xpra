@@ -86,7 +86,7 @@ def get_wm_name() -> str:
 
 
 def get_icc_data() -> dict[str,Any]:
-    icc = {}
+    icc : dict[str,Any] = {}
     try:
         data = get_X11_root_property("_ICC_PROFILE", "CARDINAL")
         if data:

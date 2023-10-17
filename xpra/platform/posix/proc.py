@@ -5,8 +5,9 @@
 # later version. See the file COPYING for details.
 
 from typing import Optional
+from collections.abc import Callable
 
-get_parent_pid : Optional[callable] = None
+get_parent_pid : Optional[Callable] = None
 try:
     from xpra.platform.posix import proc_libproc
     get_parent_pid = proc_libproc.get_parent_pid

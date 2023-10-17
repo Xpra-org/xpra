@@ -10,9 +10,10 @@ import os
 import subprocess
 import hashlib
 import uuid
+from typing import Any
 from time import monotonic
 from dataclasses import dataclass
-from typing import Any
+from collections.abc import Callable
 
 from xpra.util.child_reaper import getChildReaper
 from xpra.os_util import bytestostr, umask_context, POSIX, WIN32
@@ -172,7 +173,7 @@ class FileTransferAttributes:
         self.open_command = open_command
         self.files_requested : dict[str,bool] = {}
         self.files_accepted : dict[str,bool] = {}
-        self.file_request_callback : dict[str,callable] = {}
+        self.file_request_callback : dict[str,Callable] = {}
         filelog("file transfer attributes=%s", self.get_file_transfer_features())
 
     def get_file_transfer_features(self) -> dict[str,Any]:
@@ -365,7 +366,10 @@ class FileTransferHandler(FileTransferAttributes):
         self.send("ack-file-chunk", chunk_id, False, message, chunk)
 
     def _process_send_file_chunk(self, packet : PacketType) -> None:
-        chunk_id, chunk, file_data, has_more = packet[1:5]
+        chunk_id = str(packet[1])
+        chunk = int(packet[2])
+        file_data : bytes = packet[3]
+        has_more = bool(packet[4])
         #if len(file_data)<1024:
         #    from xpra.os_util import hexstr
         #    filelog.warn("file_data=%s", hexstr(file_data))
@@ -474,7 +478,13 @@ class FileTransferHandler(FileTransferAttributes):
     def _process_send_file(self, packet : PacketType) -> None:
         #the remote end is sending us a file
         start = monotonic()
-        basefilename, mimetype, printit, openit, filesize, file_data, options = packet[1:8]
+        basefilename = str(packet[1])
+        mimetype = str(packet[2])
+        printit = bool(packet[3])
+        openit = bool(packet[4])
+        filesize = int(packet[5])
+        file_data : bytes = packet[6]
+        options : dict = packet[7]
         send_id = ""
         if len(packet)>=9:
             send_id = str(packet[8])
@@ -856,7 +866,7 @@ class FileTransferHandler(FileTransferAttributes):
         else:
             self.ask_data_request(cb_answer, send_id, dtype, url, filesize, printit, openit)
 
-    def ask_data_request(self, cb_answer:callable, send_id:str, dtype:str, url:str, filesize:int,
+    def ask_data_request(self, cb_answer:Callable, send_id:str, dtype:str, url:str, filesize:int,
                          printit:bool, openit:bool) -> None:
         #subclasses may prompt the user here instead
         filelog("ask_data_request%s", (send_id, dtype, url, filesize, printit, openit))
@@ -974,8 +984,10 @@ class FileTransferHandler(FileTransferAttributes):
         #the other end received our send-file or send-file-chunk,
         #send some more file data
         filelog("ack-file-chunk: %s", packet[1:])
-        chunk_id, state, error_message, chunk = packet[1:5]
-        chunk_id = str(chunk_id)
+        chunk_id = str(packet[1])
+        state = bool(packet[2])
+        error_message = str(packet[3])
+        chunk = int(packet[4])
         if not state:
             filelog.info("the remote end is cancelling the file transfer:")
             filelog.info(" %s", error_message)

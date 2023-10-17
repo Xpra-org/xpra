@@ -6,7 +6,8 @@
 
 import traceback
 from time import monotonic
-from typing import Callable, Dict, Set
+from collections.abc import Callable
+from typing import Dict, Set
 
 import gi
 gi.require_version('GdkX11', '3.0')

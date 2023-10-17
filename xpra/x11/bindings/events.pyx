@@ -7,7 +7,8 @@
 import os
 import traceback
 from time import monotonic
-from typing import Callable, Dict
+from typing import Dict
+from collections.abc import Callable
 
 from xpra.os_util import strtobytes, bytestostr
 from xpra.gtk.error import XError, xsync

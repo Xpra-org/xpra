@@ -5,7 +5,7 @@
 import os
 import sys
 import traceback
-from typing import Callable
+from collections.abc import Callable
 
 from xpra.os_util import get_util_logger
 

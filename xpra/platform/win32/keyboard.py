@@ -34,7 +34,7 @@ def _GetKeyboardLayoutList() -> list[int]:
     handle_list = (HANDLE*max_items)()
     GetKeyboardLayoutList.argtypes = [ctypes.c_int, ctypes.POINTER(HANDLE*max_items)]
     count = GetKeyboardLayoutList(max_items, ctypes.byref(handle_list))
-    layouts = []
+    layouts : list[int] = []
     for i in range(count):
         layouts.append(int(handle_list[i]))
     return layouts
@@ -45,7 +45,7 @@ def x11_layouts_to_win32_hkl() -> dict[str,int]:
         0xffff  : (0, ),
         0x3ff   : (0, ),
         }
-    layout_to_hkl = {}
+    layout_to_hkl : dict[str,int] = {}
     max_items = 32
     try:
         handle_list = (HANDLE*max_items)()
@@ -110,10 +110,10 @@ class Keyboard(KeyboardBase):
 
     def set_modifier_mappings(self, mappings) -> None:
         super().set_modifier_mappings(mappings)
-        self.num_lock_modifier = self.modifier_keys.get("Num_Lock")
+        self.num_lock_modifier = self.modifier_keys.get("Num_Lock") or ""
         log("set_modifier_mappings found 'Num_Lock' with modifier value: %s", self.num_lock_modifier)
         for x in ("ISO_Level3_Shift", "Mode_switch"):
-            mod = self.modifier_keys.get(x)
+            mod : str = self.modifier_keys.get(x) or ""
             if mod:
                 self.altgr_modifier = mod
                 log("set_modifier_mappings found 'AltGr'='%s' with modifier value: %s", x, self.altgr_modifier)
@@ -183,10 +183,10 @@ class Keyboard(KeyboardBase):
             0xffff  : (0, ),
             0x3ff   : (0, ),
             }
-        layout = None
+        layout = ""
         layouts_defs = {}
-        variant = None
-        variants = None
+        variant = ""
+        variants : list[str] = []
         options = ""
         layout_code = 0
         try:
@@ -199,8 +199,9 @@ class Keyboard(KeyboardBase):
                         kbid = (hkl & mask)>>bitshift
                         if kbid in WIN32_LAYOUTS:
                             break
-                    if kbid in WIN32_LAYOUTS:
-                        code, _, _, _, _layout, _variants = WIN32_LAYOUTS.get(kbid)
+                    win32_layout = WIN32_LAYOUTS.get(kbid)
+                    if win32_layout:
+                        code, _, _, _, _layout, _variants = win32_layout
                         log("found keyboard layout '%s' / %#x with variants=%s, code '%s' for kbid=%#x",
                             _layout, kbid, _variants, code, hkl)
                         if _layout not in layouts_defs:

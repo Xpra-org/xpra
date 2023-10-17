@@ -375,15 +375,15 @@ class XpraMonitorServer(DesktopServerBase):
             self.send_new_desktop_model(model, ss)
 
     def _process_configure_monitor(self, proto, packet : PacketType) -> None:
-        action = packet[1]
+        action = str(packet[1])
         if action=="remove":
-            identifier = packet[2]
+            identifier = str(packet[2])
             value = packet[3]
             if identifier=="wid":
-                wid = value
+                wid = int(value)
             elif identifier=="index":
                 #index is zero-based
-                wid = value+1
+                wid = int(value)+1
             else:
                 raise ValueError(f"unsupported monitor identifier {identifier!r}")
             self.remove_monitor(wid)

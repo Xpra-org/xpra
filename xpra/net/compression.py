@@ -190,7 +190,7 @@ def compressed_wrapper(datatype, data, level=5, can_inline=True, **kwargs) -> Co
     #ie: 'text' -> brotli
     c = COMPRESSION[algo]
     cl, cdata = c.compress(data, level)
-    min_saving = kwargs.get("min_saving", 0)
+    min_saving = int(kwargs.get("min_saving", 0))
     if len(cdata)>=size+min_saving:
         return no()
     return LevelCompressed(datatype, cdata, cl, algo, can_inline=can_inline)

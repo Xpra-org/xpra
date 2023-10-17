@@ -45,8 +45,8 @@ def get_root_size(default:None|tuple[int,int]=(1920, 1024)) -> tuple[int,int] | 
             log = Logger("gtk", "screen")
             log.warn(f"Warning: Gdk returned invalid root window dimensions: {w}x{h}")
             log.warn(" no access to the display?")
-            w, h = default
-            log.warn(f" using {w}x{h} instead")
+            log.warn(f" using {default} instead")
+        return default
     return w, h
 
 

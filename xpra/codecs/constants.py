@@ -4,9 +4,10 @@
 # later version. See the file COPYING for details.
 
 import os
-from weakref import WeakSet
-from dataclasses import dataclass, field
 from typing import Any
+from weakref import WeakSet
+from dataclasses import dataclass, field, asdict
+from collections.abc import Callable
 
 from xpra.util.types import typedict
 from xpra.util.env import envint
@@ -133,7 +134,7 @@ class CodecStateException(Exception):
 @dataclass(kw_only=True)
 class _codec_spec:
 
-    codec_class     : callable
+    codec_class     : Callable
     codec_type      : str
     quality         : int = 50
     speed           : int = 50
@@ -150,7 +151,7 @@ class _codec_spec:
     width_mask      : int = 0xFFFF
     height_mask     : int = 0xFFFF
     max_instances   : int = 0
-    skipped_fields  : tuple[str] = ("instances", "skipped_fields", )
+    skipped_fields  : tuple[str,...] = ("instances", "skipped_fields", )
     # not exported:
     instances       : WeakSet[Any] = field(default_factory=WeakSet)
 
@@ -183,7 +184,7 @@ class _codec_spec:
         return len(self.instances)
 
     def to_dict(self) -> dict[str,Any]:
-        v = self.asdict()
+        v = asdict(self)
         for k in self.skipped_fields:
             v.pop(k, None)
         return v

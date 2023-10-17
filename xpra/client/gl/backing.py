@@ -287,7 +287,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.paint_spinner : bool = False
         self.offscreen_fbo = None
         self.tmp_fbo = None
-        self.pending_fbo_paint = []
+        self.pending_fbo_paint : list[tuple[int,int,int,int]] = []
         self.last_flush : float = monotonic()
         self.last_present_fbo_error : str = ""
 
@@ -302,6 +302,7 @@ class GLWindowBackingBase(WindowBackingBase):
         # but we're meant to be using double-buffered everywhere,
         # so don't bother and just repaint everything:
         self.repaint_all : bool = True
+        assert self._backing is not None
         self._backing.show()
 
     def get_info(self) -> dict[str,Any]:

@@ -6,7 +6,8 @@
 import binascii
 import re
 from enum import Enum
-from typing import Callable, Iterable
+from typing import Iterable
+from collections.abc import Callable
 
 from xpra.util.env import envbool
 

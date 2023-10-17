@@ -7,7 +7,7 @@
 
 #pylint: disable=import-outside-toplevel
 
-from typing import Any, Optional, ByteString
+from typing import Any, ByteString
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -32,7 +32,7 @@ class Encoding:
     flag : int
     version : str
     encode : Callable[[Any], ByteString]
-    decode : Optional[Callable[[ByteString], Any]]
+    decode : Callable[[ByteString], Any]
 
 ENCODERS : dict[str,Encoding] = {}
 
@@ -54,7 +54,9 @@ def init_none() -> Encoding:
                 return x
             return codecs.latin_1_encode(x)[0]
         return b(": ".join(str(x) for x in data)+"\n"), FLAGS_NOHEADER
-    return Encoding("none", FLAGS_NOHEADER, 0, encode, None)
+    def decode(data):
+        return data
+    return Encoding("none", FLAGS_NOHEADER, "0", encode, decode)
 
 
 def init_encoders(*names) -> None:

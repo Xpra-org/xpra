@@ -819,7 +819,7 @@ def pollwait(process, timeout=5) -> int | None:
     return v
 
 
-def find_in_PATH(command) -> str | None:
+def find_in_PATH(command:str) -> str | None:
     path = os.environ.get("PATH", None)
     if not path:
         return None
@@ -831,7 +831,7 @@ def find_in_PATH(command) -> str | None:
     return None
 
 
-def get_which_impl() -> Callable[[Any],str] | None:
+def get_which_impl() -> Callable[[str],str]:
     try:
         from shutil import which
         return which
@@ -844,7 +844,7 @@ def get_which_impl() -> Callable[[Any],str] | None:
         return find_in_PATH
 
 
-def which(command) -> str | None:
+def which(command:str) -> str | None:
     find_executable = get_which_impl()
     try:
         return find_executable(command)
