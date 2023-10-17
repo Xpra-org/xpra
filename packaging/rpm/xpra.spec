@@ -857,10 +857,77 @@ fi
 
 
 %changelog
-* Thu Jul 27 2023 Antoine Martin <antoine@xpra.org> 6.0-10
-- TODO
-* Sun Oct 02 2022 Antoine Martin <antoine@xpra.org> 5.0-10
-- TODO
+* Tue Oct 17 2023 Antoine Martin <antoine@xpra.org> 6.0-10
+- Platforms, build and packaging:
+   require and take advantage of Python 3.10+
+   cythonize everything
+   workaround for distributions incompatible with CUDA
+   add `xpra-client-gnome` package
+   use the system provided xxHash library
+   riscv64 builds
+- Features:
+   `xpra configure` tool
+   faster `mmap`
+   make it easier to disable almost everything
+   remove legacy compatibility
+   try harder to locate the correct xauth file
+   honour MacOS backing scale factor with OpenGL
+- Network:
+   enable websocket upgrades without the html5 client
+   update ssh agent to active user
+   use libnm to access network information
+   ssl auto upgrade
+- Cosmetic:
+   silence warnings: #4023, #2177, #3988
+- Documentation:
+   ivshmem
+   subsystems
+   authentication handlers
+
+* Sat Aug 19 2022 Antoine Martin <antoine@xpra.org> 5.0-10
+- Major improvements:
+   QUIC transport
+   split packaging
+   freedesktop screencast / remotedesktop
+   ease of use: easier basic commands, open html5 client, disable all audio features
+- Platforms, build and packaging:
+   Python 3.12 installations
+   replace Python2 builds
+   LTS feature deprecation
+   stricter type checks
+   more MacOS workarounds
+- Server:
+   try harder to find a valid menu prefix
+   exit with windows
+   side buttons with MS Windows shadow servers
+   mirror client monitor layout
+   side buttons with MS Windows shadow servers
+- Client:
+   allow keyboard shortcuts in readonly mode
+   show decoder statistics
+   keyboard layout switching shortcut
+   layout switching detection for MS Windows
+   mirror mouse cursor when sharing
+- Minor:
+   generic exec authentication module
+   audio `removesilence`
+   make pulseaudio real-time and high-priority scheduling modes configurable
+   use urrlib for parsing
+   GTK removal progress
+   documentation updates and fixes: broken links, typos
+- Network:
+   smaller handshake packet
+   SSL auto-upgrade
+   better IPv6
+   new packet format
+   ssh agent forwarding automatic switching when sharing
+   use libnm to query network devices
+   exclude more user data by default
+- Encodings:
+   use intra refresh
+   `stream` encoding for desktop mode
+   GStreamer codecs
+
 * Sat Oct 01 2022 Antoine Martin <antoine@xpra.org> 4.4-10
 - Platforms, build and packaging:
    Native LZ4 bindings

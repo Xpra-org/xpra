@@ -1,10 +1,32 @@
 # Changelog
 
-## [6.0] 2023-08-21
-* TODO
+## [6.0] 2023-10-17
 * Platforms, build and packaging:
-    * [require and take advantage of Python 3.10+](https://github.com/Xpra-org/xpra/issues/3930)
     * [build packages for multiple python targets](https://github.com/Xpra-org/xpra/issues/3945)
+    * [require and take advantage of Python 3.10+](https://github.com/Xpra-org/xpra/issues/3930)
+    * [cythonize everything](https://github.com/Xpra-org/xpra/issues/3978)
+    * [workaround for distributions incompatible with CUDA](https://github.com/Xpra-org/xpra/issues/3808)
+    * [add `xpra-client-gnome` package](https://github.com/Xpra-org/xpra/commit/8a5c240e579da02db710c4cc17517aee570ed875)
+    * [use the system provided xxHash library](https://github.com/Xpra-org/xpra/issues/3929)
+    * [riscv64 builds](https://github.com/Xpra-org/xpra/issues/3936)
+* Features:
+    * [`xpra configure` tool](https://github.com/Xpra-org/xpra/issues/3964)
+    * [faster `mmap`](https://github.com/Xpra-org/xpra/issues/4013)
+    * [make it easier to disable almost everything](https://github.com/Xpra-org/xpra/issues/3953), [audio](https://github.com/Xpra-org/xpra/issues/3835) or [video](https://github.com/Xpra-org/xpra/issues/3952)
+    * [remove legacy compatibility](https://github.com/Xpra-org/xpra/issues/3592)
+    * [try harder to locate the correct xauth file](https://github.com/Xpra-org/xpra/issues/3917)
+    * [honour MacOS backing scale factor with OpenGL](https://github.com/Xpra-org/xpra/commit/efe31046f9dc25587e572975cbdc150c5be721f1)
+* Network:
+    * [enable websocket upgrades without the html5 client](https://github.com/Xpra-org/xpra/issues/3932)
+    * [update ssh agent to active user](https://github.com/Xpra-org/xpra/issues/3593)
+    * [use libnm to access network information](https://github.com/Xpra-org/xpra/issues/3623)
+    * [ssl auto upgrade](https://github.com/Xpra-org/xpra/issues/3313)
+* Cosmetic:
+    * silence warnings: [#4023](https://github.com/Xpra-org/xpra/issues/4023), [#2177](https://github.com/Xpra-org/xpra/issues/2177), [#3988](https://github.com/Xpra-org/xpra/issues/3988)
+* Documentation:
+    * [ivshmem](https://github.com/Xpra-org/xpra/blob/master/docs/Subsystems/MMAP.md#virtio-shmem)
+    * [subsystems](https://github.com/Xpra-org/xpra/issues/3981)
+    * [authentication handlers](https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Authentication.md#client-syntax)
 
 ## [5.0] 2023-07-18
 * Major improvements:
