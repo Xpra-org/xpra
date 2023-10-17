@@ -1417,32 +1417,32 @@ def get_client_app(cmdline, error_cb, opts, extra_args, mode:str):
         socket_dirs += opts.client_socket_dirs or []
     dotxpra = DotXpra(opts.socket_dir, socket_dirs)
     if mode=="screenshot":
-        from xpra.client.base.gobject_client import ScreenshotXpraClient
+        from xpra.client.base.command import ScreenshotXpraClient
         if not extra_args:
             error_cb("invalid number of arguments for screenshot mode")
         screenshot_filename = extra_args[0]
         extra_args = extra_args[1:]
         app = ScreenshotXpraClient(opts, screenshot_filename)
     elif mode=="info":
-        from xpra.client.base.gobject_client import InfoXpraClient
+        from xpra.client.base.command import InfoXpraClient
         app = InfoXpraClient(opts)
     elif mode=="id":
-        from xpra.client.base.gobject_client import IDXpraClient
+        from xpra.client.base.command import IDXpraClient
         app = IDXpraClient(opts)
     elif mode in ("show-menu", "show-about", "show-session-info"):
-        from xpra.client.base.gobject_client import RequestXpraClient
+        from xpra.client.base.command import RequestXpraClient
         app = RequestXpraClient(request=mode, opts=opts)
     elif mode=="connect-test":
-        from xpra.client.base.gobject_client import ConnectTestXpraClient
+        from xpra.client.base.command import ConnectTestXpraClient
         app = ConnectTestXpraClient(opts)
     elif mode=="_monitor":
-        from xpra.client.base.gobject_client import MonitorXpraClient
+        from xpra.client.base.command import MonitorXpraClient
         app = MonitorXpraClient(opts)
     elif mode=="shell":
-        from xpra.client.base.gobject_client import ShellXpraClient
+        from xpra.client.base.command import ShellXpraClient
         app = ShellXpraClient(opts)
     elif mode=="control":
-        from xpra.client.base.gobject_client import ControlXpraClient
+        from xpra.client.base.command import ControlXpraClient
         if len(extra_args)<=1:
             error_cb("not enough arguments for 'control' mode, try 'help'")
         args = extra_args[1:]
@@ -1450,7 +1450,7 @@ def get_client_app(cmdline, error_cb, opts, extra_args, mode:str):
         app = ControlXpraClient(opts)
         app.set_command_args(args)
     elif mode=="print":
-        from xpra.client.base.gobject_client import PrintClient
+        from xpra.client.base.command import PrintClient
         if len(extra_args)<=1:
             error_cb("not enough arguments for 'print' mode")
         args = extra_args[1:]
@@ -1462,13 +1462,13 @@ def get_client_app(cmdline, error_cb, opts, extra_args, mode:str):
         from xpra.gtk.dialogs.qrcode_client import QRCodeClient
         app = QRCodeClient(opts)
     elif mode=="version":
-        from xpra.client.base.gobject_client import VersionXpraClient
+        from xpra.client.base.command import VersionXpraClient
         app = VersionXpraClient(opts)
     elif mode=="detach":
-        from xpra.client.base.gobject_client import DetachXpraClient
+        from xpra.client.base.command import DetachXpraClient
         app = DetachXpraClient(opts)
     elif request_mode and opts.attach is not True:
-        from xpra.client.base.gobject_client import RequestStartClient
+        from xpra.client.base.command import RequestStartClient
         sns = get_start_new_session_dict(opts, request_mode, extra_args)
         extra_args = [f"socket:{opts.system_proxy_socket}"]
         app = RequestStartClient(opts)
@@ -2078,7 +2078,7 @@ def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, 
     app = None
     try:
         if opts.attach is False:
-            from xpra.client.base.gobject_client import WaitForDisconnectXpraClient, RequestStartClient
+            from xpra.client.base.command import WaitForDisconnectXpraClient, RequestStartClient
             if isdisplaytype(args, "ssh"):
                 #ssh will start the instance we requested,
                 #then we just detach and we're done
@@ -2975,11 +2975,11 @@ def run_stopexit(mode:str, error_cb, opts, extra_args, cmdline) -> ExitValue:
     app = None
     try:
         if mode=="stop":
-            from xpra.client.base.gobject_client import StopXpraClient
+            from xpra.client.base.command import StopXpraClient
             app = StopXpraClient(opts)
         else:
             assert mode=="exit"
-            from xpra.client.base.gobject_client import ExitXpraClient
+            from xpra.client.base.command import ExitXpraClient
             app = ExitXpraClient(opts)
         app.display_desc = display_desc
         connect_to_server(app, display_desc, opts)

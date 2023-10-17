@@ -9,110 +9,28 @@ import sys
 from time import monotonic
 from typing import Any
 
-from gi.repository import GLib, GObject  # @UnresolvedImport
+from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util.types import typedict
 from xpra.util.str_fn import nonl, csv, ellipsizer, repr_ellipsized, sorted_nicely
 from xpra.util.env import envint
 from xpra.common import ConnectionMessage, disconnect_is_an_error
 from xpra.os_util import (
-    bytestostr,
-    get_hex_uuid, hexstr,
+    bytestostr, get_hex_uuid, hexstr,
     POSIX, OSX, stderr_print, first_time,
 )
 from xpra.net.common import PacketType
 from xpra.util.stats import std_unit
-from xpra.client.base.client import XpraClientBase, EXTRA_TIMEOUT
+from xpra.client.base.client import EXTRA_TIMEOUT
+from xpra.client.base.gobject import GObjectXpraClient
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.log import Logger
 
 log = Logger("gobject", "client")
 
-FLATTEN_INFO = envint("XPRA_FLATTEN_INFO", 1)
-
 
 def errwrite(msg):
     stderr_print(msg)
-
-
-class GObjectXpraClient(GObject.GObject, XpraClientBase):
-    """
-        Utility superclass for GObject clients
-    """
-    COMMAND_TIMEOUT = EXTRA_TIMEOUT
-
-    def __init__(self):
-        self.glib_mainloop = None
-        self.idle_add = GLib.idle_add
-        self.timeout_add = GLib.timeout_add
-        self.source_remove = GLib.source_remove
-        GObject.GObject.__init__(self)
-        XpraClientBase.__init__(self)
-
-    def init(self, opts):
-        XpraClientBase.init(self, opts)
-        self.glib_init()
-
-    def get_scheduler(self):
-        return GLib
-
-
-    def install_signal_handlers(self) -> None:
-        from xpra.gtk.signals import install_signal_handlers
-        install_signal_handlers("%s Client" % self.client_type(), self.handle_app_signal)
-
-
-    def setup_connection(self, conn):
-        protocol = super().setup_connection(conn)
-        protocol._log_stats  = False
-        GLib.idle_add(self.send_hello)
-        return protocol
-
-
-    def client_type(self) -> str:
-        #overridden in subclasses!
-        return "Python3/GObject"
-
-
-    def init_packet_handlers(self) -> None:
-        XpraClientBase.init_packet_handlers(self)
-        def noop_handler(packet : PacketType) -> None:    # pragma: no cover
-            log("ignoring packet: %s", packet)
-        #ignore the following packet types without error:
-        #(newer servers should avoid sending us any of those)
-        for t in (
-            "new-window", "new-override-redirect",
-            "draw", "cursor", "bell",
-            "notify_show", "notify_close",
-            "ping", "ping_echo",
-            "window-metadata", "configure-override-redirect",
-            "lost-window",
-            ):
-            self.add_packet_handler(t, noop_handler, False)
-
-    def run(self) -> ExitValue:
-        XpraClientBase.run(self)
-        self.run_loop()
-        return self.exit_code or 0
-
-    def run_loop(self) -> None:
-        self.glib_mainloop = GLib.MainLoop()
-        self.glib_mainloop.run()
-
-    def make_hello(self) -> dict[str,Any]:
-        capabilities = XpraClientBase.make_hello(self)
-        capabilities["keyboard"] = False
-        return capabilities
-
-    def quit(self, exit_code:int|ExitCode=0) -> None:
-        log("quit(%s) current exit_code=%s", exit_code, self.exit_code)
-        if self.exit_code is None:
-            self.exit_code = exit_code
-        self.cleanup()
-        GLib.timeout_add(50, self.exit_loop)
-
-    def exit_loop(self) -> None:
-        self.glib_mainloop.quit()
 
 
 class CommandConnectClient(GObjectXpraClient):
@@ -221,7 +139,7 @@ class HelloRequestClient(SendCommandConnectClient):
         #overridden method so we can avoid printing a warning,
         #we haven't received the hello back from the server
         #but that's fine for a request client
-        info = tuple(nonl(bytestostr(x)) for x in packet[1:])
+        info = tuple(nonl(x) for x in packet[1:])
         reason = info[0]
         if disconnect_is_an_error(reason):
             self.server_disconnect_warning(*info)
@@ -247,7 +165,7 @@ class ScreenshotXpraClient(CommandConnectClient):
 
     def _process_screenshot(self, packet : PacketType) -> None:
         (w, h, encoding, _, img_data) = packet[1:6]
-        assert bytestostr(encoding)=="png", "expected png screenshot data but got %s" % bytestostr(encoding)
+        assert encoding=="png", "expected png screenshot data but got %s" % encoding
         if not img_data:
             self.warn_and_quit(ExitCode.OK,
                                "screenshot is empty and has not been saved"+
@@ -317,6 +235,7 @@ class InfoXpraClient(CommandConnectClient):
         except OSError:
             exit_code = ExitCode.IO_ERROR
         self.quit(exit_code)
+
 
 class IDXpraClient(InfoXpraClient):
 
@@ -391,7 +310,7 @@ class MonitorXpraClient(SendCommandConnectClient):
         log.info("waiting for server events")
 
     def _process_server_event(self, packet : PacketType) -> None:
-        log.info(": ".join(bytestostr(x) for x in packet[1:]))
+        log.info(": ".join(str(x) for x in packet[1:]))
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
@@ -622,8 +541,8 @@ class ControlXpraClient(CommandConnectClient):
         if cr is None:
             self.warn_and_quit(ExitCode.UNSUPPORTED, "server does not support control command")
             return
-        code, text = cr
-        text = bytestostr(text)
+        code = int(cr[0])
+        text = str(cr[1])
         if code!=0:
             log.warn("server returned error code %s", code)
             self.warn_and_quit(ExitCode.REMOTE_ERROR, " %s" % text)
@@ -749,6 +668,7 @@ class DetachXpraClient(HelloRequestClient):
         self.idle_add(self.send, "disconnect", ConnectionMessage.DONE, "detaching")
         #not exiting the client here,
         #the server should disconnect us with the response
+
 
 class WaitForDisconnectXpraClient(DetachXpraClient):
     """ we just want the connection to close """

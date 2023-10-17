@@ -106,7 +106,6 @@ class ProcessTestUtil(unittest.TestCase):
             "XPRA_LOG_DIR"  : tempfile.gettempdir(),
             "XPRA_NOTTY"    : "1",
             "XPRA_WAIT_FOR_INPUT"   : "0",
-            "XPRA_FLATTEN_INFO"     : "0",
             })
         cls.default_config = get_defaults()
         log("setUpClass(%s) default_env=%s", cls, cls.default_env)

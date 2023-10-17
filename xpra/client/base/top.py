@@ -22,7 +22,7 @@ from xpra.os_util import (
     )
 from xpra.exit_codes import ExitCode
 from xpra.util.thread import start_thread
-from xpra.client.base.gobject_client import InfoTimerClient
+from xpra.client.base.command import InfoTimerClient
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_nodock_command
 from xpra.util.stats import std_unit

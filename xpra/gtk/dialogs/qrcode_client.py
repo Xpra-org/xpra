@@ -17,7 +17,7 @@ from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.signals import install_signal_handlers
 from xpra.gtk.css_overrides import inject_css_overrides
 from xpra.client.base.client import XpraClientBase
-from xpra.client.base.gobject_client import InfoXpraClient
+from xpra.client.base.command import InfoXpraClient
 from xpra.platform.gui import force_focus
 from xpra.gtk.dialogs.qrcode import qr_pixbuf
 from xpra.log import Logger

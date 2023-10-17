@@ -40,7 +40,7 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.gtk.gobject import no_arg_signal
 from xpra.gtk.css_overrides import inject_css_overrides
 from xpra.client.gui.ui_client_base import UIXpraClient
-from xpra.client.base.gobject_client import GObjectXpraClient
+from xpra.client.base.gobject import GObjectXpraClient
 from xpra.client.gtk3.keyboard_helper import GTKKeyboardHelper
 from xpra.client.mixins.windows import WindowClient
 from xpra.platform.gui import force_focus
