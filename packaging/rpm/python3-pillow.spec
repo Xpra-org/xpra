@@ -15,7 +15,7 @@
 
 
 Name:           %{package_prefix}%{srcname}
-Version:        10.0.0
+Version:        10.1.0
 Release:        1%{?dist}
 Summary:        Python image processing library
 
@@ -47,7 +47,7 @@ internal representation, and powerful image processing capabilities.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "535d17e830427bec163027114ded1def9ab0350c99bf1d8cb10535032967f3a5" ]; then
+if [ "${sha256}" != "39ca46877a38414abd0c7ab15ee885b72efd884c4a43f5a82697685917b7704c" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -74,5 +74,8 @@ CFLAGS="$RPM_OPT_FLAGS" %{python3} setup.py build
 %exclude %{python3_sitearch}/PIL/__pycache__/ImageQt*
 
 %changelog
+* Tue Oct 17 2023 Antoine Martin <antoine@xpra.org> - 10.1.0-1
+- new upstream release
+
 * Sun Jul 30 2023 Antoine Martin <antoine@xpra.org> - 10.0.0-1
 - initial packaging for python prefixed builds
