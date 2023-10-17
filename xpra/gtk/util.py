@@ -2,6 +2,9 @@
 # Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+import warnings
+from contextlib import AbstractContextManager
+from typing import Any
 
 import gi
 
@@ -34,7 +37,6 @@ def get_root_size(default:None|tuple[int,int]=(1920, 1024)) -> tuple[int,int] | 
         screen = Gdk.Screen.get_default()
         if screen is None:
             return default
-        from xpra.gtk.widget import IgnoreWarningsContext
         with IgnoreWarningsContext():
             w = screen.get_width()
             h = screen.get_height()
@@ -79,6 +81,27 @@ def init_display_source() -> None:
 
 def ds_inited() -> bool:
     return dsinit
+
+
+class IgnoreWarningsContext(AbstractContextManager):
+
+    def __enter__(self):
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        warnings.filterwarnings("default")
+
+    def __repr__(self):
+        return "IgnoreWarningsContext"
+
+
+def ignorewarnings(fn, *args) -> Any:
+    import warnings
+    try:
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        return fn(*args)
+    finally:
+        warnings.filterwarnings("default")
 
 
 def main():

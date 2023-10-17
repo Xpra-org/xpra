@@ -11,7 +11,7 @@ from gi.repository import Gtk, GLib  # @UnresolvedImport
 
 from xpra.common import MoveResize, MOVERESIZE_DIRECTION_STRING
 from xpra.gtk.window import add_close_accel
-from xpra.gtk.widget import IgnoreWarningsContext
+from xpra.gtk.util import IgnoreWarningsContext
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.platform import program_context
 

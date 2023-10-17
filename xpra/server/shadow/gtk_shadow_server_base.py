@@ -23,9 +23,8 @@ from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.gtk_server import GTKServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.codecs.constants import TransientCodecException, CodecStateException
-from xpra.gtk.util import get_default_root_window
+from xpra.gtk.util import get_default_root_window, IgnoreWarningsContext
 from xpra.gtk.info import get_screen_sizes
-from xpra.gtk.widget import IgnoreWarningsContext
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.net.compression import Compressed
 from xpra.log import Logger

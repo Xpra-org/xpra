@@ -25,8 +25,9 @@ gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
 # @UnresolvedImport pylint: disable=wrong-import-position
 from gi.repository import GLib, Gtk, GdkPixbuf  # @UnresolvedImport
 
-from xpra.gtk.signals import register_os_signals
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
+from xpra.gtk.signals import register_os_signals
+from xpra.gtk.util import IgnoreWarningsContext
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, imagebutton, label, choose_file, modify_fg, color_parse
 from xpra.gtk.pixbuf import get_icon_pixbuf
@@ -172,9 +173,10 @@ def button(tooltip, icon_name, callback):
     if not pixbuf:
         pixbuf = get_icon_pixbuf(f"{icon_name}.png")
         if pixbuf:
-            for size in (16, 32, 48):
-                scaled = pixbuf.scale_simple(size, size, GdkPixbuf.InterpType.BILINEAR)
-                Gtk.IconTheme.add_builtin_icon(icon_name, size, scaled)
+            with IgnoreWarningsContext():
+                for size in (16, 32, 48):
+                    scaled = pixbuf.scale_simple(size, size, GdkPixbuf.InterpType.BILINEAR)
+                    Gtk.IconTheme.add_builtin_icon(icon_name, size, scaled)
             try:
                 builtin_reload = theme.load_icon(icon_name, Gtk.IconSize.BUTTON, Gtk.IconLookupFlags.USE_BUILTIN)
             except Exception:
@@ -237,7 +239,8 @@ class ApplicationWindow:
         self.window.set_default_size(400, 260)
         self.window.set_title("Xpra Launcher")
         self.window.set_position(Gtk.WindowPosition.CENTER)
-        self.window.set_wmclass("xpra-launcher-gui", "Xpra-Launcher-GUI")
+        with IgnoreWarningsContext():
+            self.window.set_wmclass("xpra-launcher-gui", "Xpra-Launcher-GUI")
         add_close_accel(self.window, self.accel_close)
         icon = get_icon_pixbuf("connect.png")
         if icon:
@@ -936,7 +939,8 @@ class ApplicationWindow:
         self.password_entry.grab_focus()
 
     def set_widget_bg_color(self, widget, is_error=False):
-        widget.modify_base(Gtk.StateType.NORMAL, red if is_error else white)
+        with IgnoreWarningsContext():
+            widget.modify_base(Gtk.StateType.NORMAL, red if is_error else white)
 
     def set_widget_fg_color(self, widget, is_error=False):
         modify_fg(widget, red if is_error else black)

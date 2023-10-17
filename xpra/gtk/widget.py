@@ -3,9 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import warnings
-from typing import Callable, Any
-from contextlib import AbstractContextManager
+from typing import Callable
 
 import gi
 
@@ -14,6 +12,7 @@ gi.require_version("Gdk", "3.0")  # @UndefinedVariable
 gi.require_version("Pango", "1.0")  # @UndefinedVariable
 from gi.repository import Gtk, Gdk, Pango     #@UnresolvedImport
 
+from xpra.gtk.util import IgnoreWarningsContext, ignorewarnings
 from xpra.log import Logger
 log = Logger("gtk", "util")
 
@@ -98,26 +97,6 @@ def setfont(widget, font=""):
         with IgnoreWarningsContext():
             fontdesc = Pango.FontDescription(font)
             widget.modify_font(fontdesc)
-
-
-class IgnoreWarningsContext(AbstractContextManager):
-
-    def __enter__(self):
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        warnings.filterwarnings("default")
-
-    def __repr__(self):
-        return "IgnoreWarningsContext"
-
-def ignorewarnings(fn, *args) -> Any:
-    import warnings
-    try:
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
-        return fn(*args)
-    finally:
-        warnings.filterwarnings("default")
 
 
 def choose_files(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_button=Gtk.STOCK_OPEN,

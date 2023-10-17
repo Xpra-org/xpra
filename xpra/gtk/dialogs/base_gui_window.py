@@ -10,7 +10,8 @@ import gi
 from collections.abc import Callable
 
 from xpra.gtk.window import add_close_accel, add_window_accel
-from xpra.gtk.widget import imagebutton, IgnoreWarningsContext
+from xpra.gtk.widget import imagebutton
+from xpra.gtk.util import IgnoreWarningsContext
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.exit_codes import exit_str
 from xpra.common import NotificationID, noop

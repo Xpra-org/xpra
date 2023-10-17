@@ -29,11 +29,11 @@ from xpra.gtk.cursors import cursor_types, get_default_cursor
 from xpra.gtk.util import (
     get_default_root_window, get_root_size,
     GRAB_STATUS_STRING,
-    init_display_source,
+    init_display_source, IgnoreWarningsContext, ignorewarnings,
 )
 from xpra.gtk.window import GDKWindow
 from xpra.gtk.info import get_monitors_info, get_screen_sizes
-from xpra.gtk.widget import scaled_image, label, ignorewarnings, IgnoreWarningsContext, color_parse
+from xpra.gtk.widget import scaled_image, label, color_parse
 from xpra.gtk.pixbuf import get_icon_pixbuf, get_pixbuf_from_data
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.exit_codes import ExitCode, ExitValue

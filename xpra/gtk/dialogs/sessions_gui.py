@@ -20,7 +20,8 @@ from xpra.exit_codes import exit_str
 from xpra.scripts.config import OPTION_TYPES
 from xpra.scripts.main import get_command_args
 from xpra.gtk.window import add_close_accel
-from xpra.gtk.widget import scaled_image, imagebutton, label, modify_fg, IgnoreWarningsContext, color_parse
+from xpra.gtk.widget import scaled_image, imagebutton, label, modify_fg, color_parse
+from xpra.gtk.util import IgnoreWarningsContext
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.signals import register_os_signals
 from xpra.net.common import DEFAULT_PORTS

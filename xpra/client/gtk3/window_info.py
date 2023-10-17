@@ -10,7 +10,8 @@ from xpra.util.str_fn import csv
 from xpra.os_util import bytestostr
 from xpra.common import GravityStr, WORKSPACE_UNSET
 from xpra.gtk.window import add_close_accel
-from xpra.gtk.widget import label, IgnoreWarningsContext
+from xpra.gtk.widget import label
+from xpra.gtk.util import IgnoreWarningsContext
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.log import Logger
 
