@@ -137,6 +137,7 @@ class ConfigureGUI(BaseGUIWindow):
                 out, err = proc.communicate(None)
                 if proc.returncode==0:
                     return True
+                log(f"{proc}.communicate(None)={out!r},{err!r}")
                 log.error(f"Error: {cmd!r} returned {proc.returncode}")
                 set_label(f"Error: test pipeline returned {proc.returncode}")
             except OSError as e:
