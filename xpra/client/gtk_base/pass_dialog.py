@@ -106,6 +106,11 @@ class PasswordInputDialogWindow(object):
             self.password_input.grab_focus()
         glib.idle_add(show)
 
+    def close(self, *args):
+        log("close%s", args)
+        if self.window:
+            self.window.close()
+
     def destroy(self, *args):
         log("destroy%s", args)
         if self.window:
@@ -120,7 +125,7 @@ class PasswordInputDialogWindow(object):
 
     def quit(self, *args):
         log("quit%s", args)
-        self.destroy()
+        self.close()
         gtk.main_quit()
         return True
 

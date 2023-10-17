@@ -478,7 +478,7 @@ class SessionInfo(gtk.Window):
         glib.timeout_add(100, self.populate_tab)
         if mixin_features.audio and SHOW_SOUND_STATS:
             glib.timeout_add(100, self.populate_sound_stats)
-        add_close_accel(self, self.destroy)
+        add_close_accel(self, self.close)
 
 
     def get_window_title(self):
@@ -1235,7 +1235,7 @@ class SessionInfo(gtk.Window):
         response = chooser.run()
         filenames = chooser.get_filenames()
         chooser.hide()
-        chooser.destroy()
+        chooser.close()
         if response == RESPONSE_OK:
             if len(filenames)==1:
                 filename = filenames[0]
@@ -1253,3 +1253,10 @@ class SessionInfo(gtk.Window):
         self.is_closed = True
         gtk.Window.destroy(self)
         log("SessionInfo.destroy(%s) done", args)
+
+    def close(self, *args):
+        log("SessionInfo.close(%s) is_closed=%s", args, self.is_closed)
+        self.is_closed = True
+        gtk.Window.close(self)
+        log("SessionInfo.close(%s) done", args)
+

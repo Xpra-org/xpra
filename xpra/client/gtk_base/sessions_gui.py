@@ -126,7 +126,7 @@ class SessionsGUI(gtk.Window):
         self.do_quit()
 
     def cleanup(self):
-        self.destroy()
+        self.close()
 
 
     def update(self):

@@ -1531,7 +1531,7 @@ def choose_file(parent_window, title, action, action_button, callback=None, file
     response = chooser.run()
     filenames = chooser.get_filenames()
     chooser.hide()
-    chooser.destroy()
+    chooser.close()
     if response!=RESPONSE_OK or len(filenames)!=1:
         return None
     filename = filenames[0]

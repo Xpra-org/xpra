@@ -31,7 +31,7 @@ def main():
                               BUTTONS_CLOSE, "\n".join(msgs))
                 dialog.set_title("Xpra U2F Registration Tool")
                 v = dialog.run()
-                dialog.destroy()
+                dialog.close()
                 #run the main loop long enough to destroy the dialog:
                 glib.idle_add(gtk.main_quit)
                 gtk.main()

@@ -109,10 +109,10 @@ class ConfirmDialogWindow(object):
         self.window.show_all()
         glib.idle_add(self.window.present)
 
-    def destroy(self, *args):
-        log("destroy%s", args)
+    def close(self, *args):
+        log("close%s", args)
         if self.window:
-            self.window.destroy()
+            self.window.close()
             self.window = None
 
     def run(self):
@@ -123,7 +123,7 @@ class ConfirmDialogWindow(object):
 
     def quit(self, *args):
         log("quit%s", args)
-        self.destroy()
+        self.close()
         gtk.main_quit()
         return True
 

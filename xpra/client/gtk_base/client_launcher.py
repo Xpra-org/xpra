@@ -233,7 +233,7 @@ class ApplicationWindow:
                     from xpra.client.gtk_base.mdns_gui import mdns_sessions
                     self.mdns_gui = mdns_sessions(self.config)
                     def close_mdns():
-                        self.mdns_gui.destroy()
+                        self.mdns_gui.close()
                         self.mdns_gui = None
                     self.mdns_gui.do_quit = close_mdns
                 else:
@@ -1089,7 +1089,7 @@ class ApplicationWindow:
         w = self.window
         if w:
             self.window = None
-            w.destroy()
+            w.close()
 
     def destroy(self, *args):
         log("destroy%s", args)
@@ -1163,7 +1163,7 @@ def exception_dialog(title):
     md.format_secondary_text(traceback.format_exc())
     md.show_all()
     def close_dialog(*_args):
-        md.destroy()
+        md.close()
         gtk_main_quit_really()
     md.connect("response", close_dialog)
     md.connect("close", close_dialog)

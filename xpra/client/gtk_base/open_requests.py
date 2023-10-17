@@ -251,7 +251,7 @@ class OpenRequestsWindow(object):
 
     def quit(self, *args):
         log("quit%s", args)
-        self.destroy()
+        self.close()
         gtk.main_quit()
 
 
