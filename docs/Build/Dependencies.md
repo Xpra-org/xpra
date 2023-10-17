@@ -24,7 +24,7 @@ See [Network](../Network/README.md)
 |[lz4](https://github.com/lz4/lz4)|https://github.com/lz4/lz4/releases|[packet compression](./PacketEncoding)|both|Strongly recommended|
 |[aioquic](https://github.com/aiortc/aioquic)|https://pypi.org/project/aioquic/|low level network protocol|both|[quic](https://github.com/Xpra-org/xpra/issues/3376)|
 |[python-cryptography](https://cryptography.io/en/latest/)|https://pypi.python.org/pypi/cryptography|[Encryption](./Encryption)|both||
-|[python-zeroconf](https://github.com/jstasiak/python-zeroconf)|https://pypi.org/project/zeroconf/|[Multicast DNS](./Multicast-DNS) session publishing|server||
+|[python-zeroconf](https://github.com/jstasiak/python-zeroconf)|https://pypi.org/project/zeroconf/|[Multicast DNS](./Multicast-DNS) session publishing and browsing|both||
 |[python-netifaces](http://alastairs-place.net/projects/netifaces/)|https://pypi.python.org/pypi/netifaces|[Multicast DNS](./Multicast-DNS) session publishing|server||
 |[dbus-python](https://pypi.python.org/pypi/dbus-python/)|https://dbus.freedesktop.org/releases/dbus-python/|desktop integration, server control interface|both|not applicable to MS Windows or Mac OSX|
 |[openssl](https://www.openssl.org/)|https://www.openssl.org/source/|[SSL](./SSL)|both||
