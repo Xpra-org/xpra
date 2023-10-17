@@ -10,12 +10,12 @@
 %endif
 
 Name:           %{python3}-%{srcname}
-Version:        68.0.0
+Version:        68.2.2
 Release:        1%{?dist}
 Summary:        The blessed package to manage your versions by scm tags
 License:        MIT
 URL:            http://pypi.python.org/pypi/%{srcname}
-Source0:        https://files.pythonhosted.org/packages/dc/98/5f896af066c128669229ff1aa81553ac14cfb3e5e74b6b44594132b8540e/%{srcname}-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/ef/cc/93f7213b2ab5ed383f98ce8020e632ef256b406b8569606c3f160ed8e1c9/%{srcname}-%{version}.tar.gz
 BuildArch:      noarch
 BuildRequires:  %{python3}-devel
 Requires:       %{python3}
@@ -26,7 +26,7 @@ It also handles file finders for the suppertes scms.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "baf1fdb41c6da4cd2eae722e135500da913332ab3f2f5c7d33af9b492acb5235" ]; then
+if [ "${sha256}" != "4ac1475276d2f1c48684874089fefcd83bd7162ddaafb81fac866ba0db282a87" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -44,5 +44,8 @@ fi
 %{python3_sitelib}/*
 
 %changelog
+* Tue Oct 17 2023 Antoine Martin <antoine@xpra.org> - 68.2.2-1
+- new upstream release
+
 * Fri Jul 28 2023 Antoine Martin <antoine@xpra.org> - 68.0.0-1
 - package for xpra 6 builds
