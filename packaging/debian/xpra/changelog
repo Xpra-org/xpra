@@ -168,7 +168,7 @@ xpra (5.0-1) UNRELEASED; urgency=low
     - `stream` encoding for desktop mode
     - GStreamer codecs
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 02 Oct 2022 00:12:01 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk> Sat, 19 Aug 2023 00:12:01 +0700
 
 xpra (4.4-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

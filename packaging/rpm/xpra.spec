@@ -887,7 +887,7 @@ fi
    typo in undocumented environment variable
    gtk version info missing for verbosity level
 
-* Sun Oct 02 2022 Antoine Martin <antoine@xpra.org> 5.0-10
+* Sat Aug 19 2023 Antoine Martin <antoine@xpra.org> 5.0-10
 - Major improvements:
    QUIC transport
    split packaging
