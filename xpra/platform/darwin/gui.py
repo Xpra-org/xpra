@@ -96,6 +96,7 @@ def do_init() -> None:
     osxapp.set_dock_menu(mh.build_dock_menu())
     import warnings
     with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=".*invalid cast from 'GtkMenuBar'")
         with CaptureStdErr():
             osxapp.set_menu_bar(mh.rebuild())
 
