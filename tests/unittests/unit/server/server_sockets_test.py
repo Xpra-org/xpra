@@ -14,7 +14,7 @@ from subprocess import Popen
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint
 from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
-from xpra.exit_codes import ExitCode
+from xpra.exit_codes import ExitCode, ExitValue
 from xpra.platform.dotxpra import DISPLAY_PREFIX
 from unit.test_util import get_free_tcp_port
 from unit.server_test_util import ServerTestUtil, log, estr, log_gap
@@ -130,9 +130,7 @@ class ServerSocketsTest(ServerTestUtil):
             log.error(" got %s (%s)", estr(r), r)
             log.error(" server args=%s", server_args)
             log.error(" client args=%s", client_args)
-            if r is None:
-                raise Exception("expected info client to return %s but it is still running" % (estr(exit_code),))
-            raise Exception("expected info client to return %s but got %s" % (estr(exit_code), estr(r)))
+            self.verify_exitcode(expected=exit_code, actual=r)
         pollwait(server, 10)
 
     def test_default_socket(self):
@@ -182,8 +180,15 @@ class ServerSocketsTest(ServerTestUtil):
         r = pollwait(client, CONNECT_WAIT)
         if client.poll() is None:
             client.terminate()
-        if r!=exit_code:
-            raise RuntimeError("expected info client to return %s but got %s" % (estr(exit_code), estr(client.poll())))
+        r = client.poll()
+        self.verify_exitcode(expected=exit_code, actual=r)
+
+    def verify_exitcode(self, client="info client", expected:ExitValue=ExitCode.OK, actual:ExitValue|None=ExitCode.OK):
+        if actual is None:
+            raise Exception(f"expected {client} to return %s but it is still running" % (estr(expected),))
+        if actual!=expected:
+            raise RuntimeError(f"expected {client} to return %s but got %s" % (estr(expected), estr(actual)))
+
 
     def test_quic_socket(self):
         port = get_free_tcp_port()
