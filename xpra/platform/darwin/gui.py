@@ -632,13 +632,13 @@ class AppDelegate(NSObject):
         add_observer(self.receiveWorkspaceChangeNotification_, NSWorkspaceActiveSpaceDidChangeNotification)
 
 
-    @objc.signature(b'B@:#B')
+    @objc.typedSelector(b'B@:#B')
     def applicationShouldHandleReopen_hasVisibleWindows_(self, ns_app, flag):
         log("applicationShouldHandleReopen_hasVisibleWindows%s", (ns_app, flag))
         self.delegate_cb("deiconify")
         return True
 
-    @objc.signature(b'v@:I')
+    @objc.typedSelector(b'v@:I')
     def receiveWorkspaceChangeNotification_(self, aNotification):
         workspacelog("receiveWorkspaceChangeNotification_(%s)", aNotification)
         if not CGWindowListCopyWindowInfo:
@@ -661,12 +661,12 @@ class AppDelegate(NSObject):
 
     #def application_openFile_(self, application, fileName):
     #    log.warn("application_openFile_(%s, %s)", application, fileName)
-    @objc.signature(b'v@:I')
+    @objc.typedSelector(b'v@:I')
     def receiveSleepNotification_(self, aNotification):
         log("receiveSleepNotification_(%s) sleep_callback=%s", aNotification, self.sleep_callback)
         self.delegate_cb("sleep")
 
-    @objc.signature(b'v@:I')
+    @objc.typedSelector(b'v@:I')
     def receiveWakeNotification_(self, aNotification):
         log("receiveWakeNotification_(%s)", aNotification)
         self.delegate_cb("wake")
