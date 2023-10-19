@@ -38,6 +38,7 @@ from Foundation import (
 
 from xpra.common import roundup, NotificationID
 from xpra.util.env import envint, envbool
+from xpra.os_util import CaptureStdErr
 from xpra.notifications.notifier_base import NotifierBase
 from xpra.platform.darwin import get_OSXApplication
 from xpra.log import Logger
@@ -95,8 +96,8 @@ def do_init() -> None:
     osxapp.set_dock_menu(mh.build_dock_menu())
     import warnings
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", message=".*invalid cast from 'GtkMenuBar'")
-        osxapp.set_menu_bar(mh.rebuild())
+        with CaptureStdErr():
+            osxapp.set_menu_bar(mh.rebuild())
 
 
 def do_ready() -> None:

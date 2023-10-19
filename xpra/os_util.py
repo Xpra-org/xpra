@@ -14,6 +14,7 @@ import socket
 import struct
 import binascii
 import threading
+from tempfile import NamedTemporaryFile
 from time import monotonic, sleep
 from subprocess import PIPE, Popen
 from typing import Any
@@ -998,3 +999,29 @@ def first_time(key:str) -> bool:
         _once_only.add(key)
         return True
     return False
+
+
+class CaptureStdErr:
+    __slots__ = ("savedstderr", "tmp", "stderr")
+    def __init__(self, *_args):
+        self.savedstderr = None
+        self.stderr = b""
+
+    def __enter__(self):
+        noerr(sys.stderr.flush) # <--- important when redirecting to files
+        self.savedstderr = os.dup(2)
+        self.tmp = NamedTemporaryFile(prefix="stderr")
+        fd = self.tmp.fileno()
+        os.dup2(fd, 2)
+        sys.stderr = os.fdopen(self.savedstderr, "w")
+
+    def __exit__(self, *_args):
+        try:
+            fd = self.tmp.fileno()
+            os.lseek(fd, 0, 0)
+            self.stderr = os.read(fd, 32768)
+            self.tmp.close()
+        except OSError as e:
+            noerr(sys.stderr.write, f"oops: {e}\n")
+        if self.savedstderr is not None:
+            os.dup2(self.savedstderr, 2)

@@ -3,17 +3,15 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
-import sys
 from ctypes import (
     FormatError,  # @UnresolvedImport
     sizeof, byref, cast, c_void_p,
     )
 from ctypes.wintypes import LPCWSTR
-from tempfile import NamedTemporaryFile
 from contextlib import nullcontext
 
 from xpra.client.gl.check import check_PyOpenGL_support
+from xpra.os_util import CaptureStdErr
 from xpra.platform.win32.gui import get_window_handle
 from xpra.platform.win32.constants import (
     CS_OWNDC, CS_HREDRAW, CS_VREDRAW, COLOR_WINDOW,
@@ -84,31 +82,6 @@ class WGLWindowContext:
     def __repr__(self):
         return "WGLWindowContext(%#x)" % self.hwnd
 
-
-class CaptureStdErr:
-    __slots__ = ("savedstderr", "tmp", "stderr")
-    def __init__(self, *_args):
-        self.savedstderr = None
-        self.stderr = b""
-
-    def __enter__(self):
-        sys.stderr.flush() # <--- important when redirecting to files
-        self.savedstderr = os.dup(2)
-        self.tmp = NamedTemporaryFile(prefix="stderr")
-        fd = self.tmp.fileno()
-        os.dup2(fd, 2)
-        sys.stderr = os.fdopen(self.savedstderr, "w")
-
-    def __exit__(self, *_args):
-        try:
-            fd = self.tmp.fileno()
-            os.lseek(fd, 0, 0)
-            self.stderr = os.read(fd, 32768)
-            self.tmp.close()
-        except OSError as e:
-            sys.stderr.write(f"oops: {e}\n")
-        if self.savedstderr is not None:
-            os.dup2(self.savedstderr, 2)
 
 gl_init_done = False
 def get_gl_context_manager():
