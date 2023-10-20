@@ -37,7 +37,6 @@ Build-Depends: debhelper (>= 8)
               ,python3-dev
               ,python3-cairo-dev
               ,python-gi-dev
-              ,cython3
               ,gcc
               ,dh-python
               ,libsystemd-dev
