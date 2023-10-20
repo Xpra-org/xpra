@@ -63,6 +63,54 @@ def get_xdisplay() -> int:
     return cast(ptr, POINTER(struct__XDisplay))
 
 
+def get_extensions(xdisplay:int) -> tuple[str,...]:
+    bext = GLX.glXQueryExtensionsString(xdisplay, 0)
+    if not bext:
+        return ()
+    str_ext = bext.decode("latin1")
+    return tuple(x for x in str_ext.strip().split(" ") if x)
+
+
+def get_fbconfig_attributes(xdisplay:int, fbconfig) -> dict[str,int]:
+    fb_attrs : dict[str,int] = {}
+    for name, attr in {
+        "fbconfig-id": GLX.GLX_FBCONFIG_ID,
+        "level": GLX.GLX_LEVEL,
+        "double-buffer" : GLX.GLX_DOUBLEBUFFER,
+        "stereo" : GLX.GLX_STEREO,
+        "aux-buffers": GLX.GLX_AUX_BUFFERS,
+        "red-size": GLX.GLX_RED_SIZE,
+        "green-size": GLX.GLX_GREEN_SIZE,
+        "blue-size": GLX.GLX_BLUE_SIZE,
+        "alpha-size": GLX.GLX_ALPHA_SIZE,
+        "depth-size": GLX.GLX_DEPTH_SIZE,
+        "stencil-size": GLX.GLX_STENCIL_SIZE,
+        "accum-red-size": GLX.GLX_ACCUM_RED_SIZE,
+        "accum-green-size": GLX.GLX_ACCUM_GREEN_SIZE,
+        "accum-blue-size": GLX.GLX_ACCUM_BLUE_SIZE,
+        "accum-alpha-size": GLX.GLX_ACCUM_ALPHA_SIZE,
+        "render-type": GLX.GLX_RENDER_TYPE,
+        "drawable-type": GLX.GLX_DRAWABLE_TYPE,
+        "renderable": GLX.GLX_X_RENDERABLE,
+        "visual-id": GLX.GLX_VISUAL_ID,
+        "visual-type": GLX.GLX_X_VISUAL_TYPE,
+        "config-caveat": GLX.GLX_CONFIG_CAVEAT,
+        "transparent-type": GLX.GLX_TRANSPARENT_TYPE,
+        "transparent-index-value": GLX.GLX_TRANSPARENT_INDEX_VALUE,
+        "transparent-red-value": GLX.GLX_TRANSPARENT_RED_VALUE,
+        "transparent-green-value": GLX.GLX_TRANSPARENT_GREEN_VALUE,
+        "transparent-blue-value": GLX.GLX_TRANSPARENT_BLUE_VALUE,
+        "transparent-alpha-value": GLX.GLX_TRANSPARENT_ALPHA_VALUE,
+        "max-pbuffer-width": GLX.GLX_MAX_PBUFFER_WIDTH,
+        "max-pbuffer-height": GLX.GLX_MAX_PBUFFER_HEIGHT,
+        "max-pbuffer-pixels": GLX.GLX_MAX_PBUFFER_PIXELS,
+    }.items():
+        value = c_int()
+        if not GLX.glXGetFBConfigAttrib(xdisplay, fbconfig, attr, byref(value)):
+            fb_attrs[name] = value.value
+    return fb_attrs
+
+
 class GLXWindowContext:
 
     def __init__(self, glx_context, xid : int):
@@ -120,20 +168,50 @@ class GLXContext:
         if not screen:
             log.warn("Warning: GLXContext: no default screen")
             return
-        bpc : int = 8
+        self.xdisplay = get_xdisplay()
+
+        # query version
+        major = c_int()
+        minor = c_int()
+        if not GLX.glXQueryVersion(self.xdisplay, byref(major), byref(minor)):
+            raise RuntimeError("failed to query GLX version")
+        log("found GLX version %i.%i", major.value, minor.value)
+        self.props["GLX"] = (major.value, minor.value)
+
+        # find a framebuffer config we can use:
+        bpc = 8
         pyattrs = {
-            GLX.GLX_RGBA            : None,
+            GLX.GLX_X_RENDERABLE    : True,
+            GLX.GLX_DRAWABLE_TYPE   : GLX.GLX_WINDOW_BIT,
+            GLX.GLX_RENDER_TYPE     : GLX.GLX_RGBA_BIT,
+            GLX.GLX_X_VISUAL_TYPE   : GLX.GLX_TRUE_COLOR,
             GLX.GLX_RED_SIZE        : bpc,
             GLX.GLX_GREEN_SIZE      : bpc,
             GLX.GLX_BLUE_SIZE       : bpc,
+            GLX.GLX_DEPTH_SIZE      : 24,
+            GLX.GLX_STENCIL_SIZE    : 8,
             }
         if alpha:
             pyattrs[GLX.GLX_ALPHA_SIZE] = int(alpha)*bpc
         if DOUBLE_BUFFERED:
-            pyattrs[GLX.GLX_DOUBLEBUFFER] = None
+            pyattrs[GLX.GLX_DOUBLEBUFFER] = True
         attrs = c_attrs(pyattrs)
-        self.xdisplay = get_xdisplay()
-        xvinfo = GLX.glXChooseVisual(self.xdisplay, 0, attrs)
+        fbcount = c_int()
+        fbc = GLX.glXChooseFBConfig(self.xdisplay, 0, attrs, byref(fbcount))
+        log(f"glXChooseFBConfig(..)={fbc} {fbcount=}")
+        if fbcount.value <= 0:
+            raise RuntimeError(f"no frame buffer configurations found matching {pyattrs}")
+        for i in range(fbcount.value):
+            fb_attrs = get_fbconfig_attributes(self.xdisplay, fbc[i])
+            log(f"[{i:2}] {fb_attrs}")
+        fbconfig = fbc[0]
+        log(f"using {fbconfig=}")
+        # the X11 visual for this framebuffer config:
+        xvinfo = GLX.glXGetVisualFromFBConfig(self.xdisplay, fbconfig)
+
+        # query extensions:
+        extensions = get_extensions(self.xdisplay)
+        log(f"{extensions=}")
 
         def getconfig(attr:int) -> int:
             value = c_int()
@@ -141,16 +219,11 @@ class GLXContext:
             if r:
                 raise RuntimeError(f"glXGetConfig returned {r}")
             return value.value
+
         if not getconfig(GLX.GLX_USE_GL):
             raise RuntimeError("OpenGL is not supported by this visual!")
-        major = c_int()
-        minor = c_int()
-        if not GLX.glXQueryVersion(self.xdisplay, byref(major), byref(minor)):
-            raise RuntimeError("failed to query GLX version")
-        log("found GLX version %i.%i", major.value, minor.value)
-        self.props["GLX"] = (major.value, minor.value)
-        self.bit_depth = sum(getconfig(x) for x in (
-            GLX.GLX_RED_SIZE, GLX.GLX_GREEN_SIZE, GLX.GLX_BLUE_SIZE, GLX.GLX_ALPHA_SIZE))
+
+        self.bit_depth = sum(getconfig(x) for x in (GLX.GLX_RED_SIZE, GLX.GLX_GREEN_SIZE, GLX.GLX_BLUE_SIZE, GLX.GLX_ALPHA_SIZE))
         self.props["depth"] = self.bit_depth
         # hide those because we don't use them
         # and because they're misleading: 'has-alpha' may be False
@@ -174,7 +247,20 @@ class GLXContext:
         else:   # pragma: no cover
             display_mode.append("SINGLE")
         self.props["display_mode"] = display_mode
-        self.context = GLX.glXCreateContext(self.xdisplay, xvinfo, None, True)
+        if "GLX_ARB_create_context" in extensions:
+            from OpenGL.raw.GLX.ARB.create_context import (
+                glXCreateContextAttribsARB,
+                GLX_CONTEXT_MAJOR_VERSION_ARB, GLX_CONTEXT_MINOR_VERSION_ARB,
+            )
+            context_attrs = c_attrs({
+                GLX_CONTEXT_MAJOR_VERSION_ARB : 3,
+                GLX_CONTEXT_MINOR_VERSION_ARB : 0,
+            })
+            # no idea why, this causes a error.NullFunctionError:
+            # self.context = glXCreateContextAttribsARB(display, fbconfig, 0, True, context_attrs)
+            log(f"{glXCreateContextAttribsARB=} {context_attrs=}")
+        self.context = GLX.glXCreateNewContext(self.xdisplay, fbconfig, GLX.GLX_RGBA_TYPE, None, True)
+        log(f"gl context={self.context}")
         self.props["direct"] = bool(GLX.glXIsDirect(self.xdisplay, self.context))
 
         def getstr(k) -> str:
