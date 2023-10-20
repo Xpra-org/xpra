@@ -44,7 +44,7 @@ GLX_ATTRIBUTES : dict[Any,str] = {
     }
 
 
-def c_attrs(props):
+def c_attrs(props:dict):
     attrs = []
     for k,v in props.items():
         if v is None:
@@ -134,36 +134,40 @@ class GLXContext:
         attrs = c_attrs(pyattrs)
         self.xdisplay = get_xdisplay()
         xvinfo = GLX.glXChooseVisual(self.xdisplay, 0, attrs)
-        def getconfig(attrib):
+
+        def getconfig(attr:int) -> int:
             value = c_int()
-            r = GLX.glXGetConfig(self.xdisplay, xvinfo, attrib, byref(value))
-            assert r==0, "glXGetConfig returned %i" % r
+            r = GLX.glXGetConfig(self.xdisplay, xvinfo, attr, byref(value))
+            if r:
+                raise RuntimeError(f"glXGetConfig returned {r}")
             return value.value
-        assert getconfig(GLX.GLX_USE_GL), "OpenGL is not supported by this visual!"
+        if not getconfig(GLX.GLX_USE_GL):
+            raise RuntimeError("OpenGL is not supported by this visual!")
         major = c_int()
         minor = c_int()
-        assert GLX.glXQueryVersion(self.xdisplay, byref(major), byref(minor))
+        if not GLX.glXQueryVersion(self.xdisplay, byref(major), byref(minor)):
+            raise RuntimeError("failed to query GLX version")
         log("found GLX version %i.%i", major.value, minor.value)
         self.props["GLX"] = (major.value, minor.value)
         self.bit_depth = sum(getconfig(x) for x in (
             GLX.GLX_RED_SIZE, GLX.GLX_GREEN_SIZE, GLX.GLX_BLUE_SIZE, GLX.GLX_ALPHA_SIZE))
         self.props["depth"] = self.bit_depth
-        #hide those because we don't use them
-        #and because they're misleading: 'has-alpha' may be False
-        #even when we have RGBA support (and therefore very likely to have alpha..)
-        #self.props["has-depth-buffer"] = getconfig(GLX.GLX_DEPTH_SIZE)>0
-        #self.props["has-stencil-buffer"] = getconfig(GLX.GLX_STENCIL_SIZE)>0
-        #self.props["has-alpha"] = getconfig(GLX.GLX_ALPHA_SIZE)>0
+        # hide those because we don't use them
+        # and because they're misleading: 'has-alpha' may be False
+        # even when we have RGBA support (and therefore very likely to have alpha..)
+        # self.props["has-depth-buffer"] = getconfig(GLX.GLX_DEPTH_SIZE)>0
+        # self.props["has-stencil-buffer"] = getconfig(GLX.GLX_STENCIL_SIZE)>0
+        # self.props["has-alpha"] = getconfig(GLX.GLX_ALPHA_SIZE)>0
         for attrib,name in GLX_ATTRIBUTES.items():
             v = getconfig(attrib)
             if name in ("stereo", "double-buffered", "rgba"):
                 v = bool(v)
             self.props[name] = v
-        #attribute names matching gtkgl:
+        # attribute names matching gtkgl:
         display_mode = []
         if getconfig(GLX.GLX_RGBA):
-            #this particular context may not have alpha channel support...
-            #but if we have RGBA then it's almost guaranteed that we can do ALPHA
+            # this particular context may not have alpha channel support...
+            # but if we have RGBA then it's almost guaranteed that we can do ALPHA
             display_mode.append("ALPHA")
         if getconfig(GLX.GLX_DOUBLEBUFFER):
             display_mode.append("DOUBLE")
@@ -172,6 +176,7 @@ class GLXContext:
         self.props["display_mode"] = display_mode
         self.context = GLX.glXCreateContext(self.xdisplay, xvinfo, None, True)
         self.props["direct"] = bool(GLX.glXIsDirect(self.xdisplay, self.context))
+
         def getstr(k) -> str:
             try:
                 return glGetString(k)
@@ -218,7 +223,10 @@ class GLXContext:
         return DOUBLE_BUFFERED
 
     def get_paint_context(self, gdk_window) -> GLXWindowContext:
-        assert self.context and gdk_window
+        if not self.context:
+            raise RuntimeError("no glx context")
+        if not gdk_window:
+            raise RuntimeError("cannot get a paint context without a window")
         return GLXWindowContext(self.context, gdk_window.get_xid())
 
     def destroy(self) -> None:
