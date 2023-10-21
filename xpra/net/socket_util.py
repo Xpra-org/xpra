@@ -745,11 +745,14 @@ def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
                 #now try to create all the sockets:
                 for sockpath, options in sockpaths.items():
                     #create it:
+                    sock = None
                     try:
                         sock, cleanup_socket = create_unix_domain_socket(sockpath, sperms)
                         log.info(f"created unix domain socket {sockpath!r}")
                         defs[("socket", sock, sockpath, cleanup_socket)] = options
                     except Exception as e:
+                        if sock:
+                            noerr(sock.close)
                         handle_socket_error(sockpath, sperms, e)
                         del e
     except Exception:

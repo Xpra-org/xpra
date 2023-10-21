@@ -25,7 +25,7 @@ from xpra.os_util import (
     )
 from xpra.util.types import typedict
 from xpra.util.str_fn import ellipsizer
-from xpra.common import ConnectionMessage
+from xpra.common import ConnectionMessage, noerr
 from xpra.server.proxy.queue_scheduler import QueueScheduler
 from xpra.util.version import XPRA_VERSION
 from xpra.util.thread import start_thread
@@ -208,12 +208,15 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         except Exception as e:
             log.warn("Warning: failed to create socket directory '%s'", d)
             log.warn(" %s", e)
+        sock = None
         try:
             sock, self.control_socket_cleanup = create_unix_domain_socket(sockpath, 0o600)
             sock.listen(5)
         except Exception as e:
             log("create_unix_domain_socket failed for '%s'", sockpath, exc_info=True)
             log.error("Error: failed to setup control socket '%s':", sockpath)
+            if sock:
+                noerr(sock.close)
             handle_socket_error(sockpath, 0o600, e)
             stop(e)
             return False
