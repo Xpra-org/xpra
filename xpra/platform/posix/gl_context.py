@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from contextlib import AbstractContextManager
 from ctypes import c_int, c_void_p, byref, cast, POINTER
 from OpenGL import GLX
 from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
@@ -18,7 +19,8 @@ from xpra.log import Logger
 log = Logger("opengl")
 
 
-ARB_CONTEXT = envbool("XPRA_OPENGL_ARB_CONTEXT", False)
+ARB_CONTEXT = envbool("XPRA_OPENGL_ARB_CONTEXT", True)
+CORE_PROFILE = envbool("XPRA_OPENGL_CORE_PROFILE", False)
 DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", True)
 SCALE_FACTOR = envfloat("XPRA_OPENGL_SCALE_FACTOR", 1)
 if SCALE_FACTOR<=0 or SCALE_FACTOR>10:
@@ -112,7 +114,7 @@ def get_fbconfig_attributes(xdisplay:int, fbconfig) -> dict[str,int]:
     return fb_attrs
 
 
-class GLXWindowContext:
+class GLXWindowContext(AbstractContextManager):
 
     def __init__(self, glx_context, xid : int):
         self.context = glx_context
@@ -251,11 +253,19 @@ class GLXContext:
         if ARB_CONTEXT and "GLX_ARB_create_context" in extensions:
             from OpenGL.raw.GLX.ARB.create_context import (
                 #glXCreateContextAttribsARB,
+                GLX_CONTEXT_FLAGS_ARB,
                 GLX_CONTEXT_MAJOR_VERSION_ARB, GLX_CONTEXT_MINOR_VERSION_ARB,
             )
+            from OpenGL.raw.GLX.ARB.create_context_profile import (
+                GLX_CONTEXT_PROFILE_MASK_ARB,
+                GLX_CONTEXT_CORE_PROFILE_BIT_ARB, GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
+            )
+            profile_mask = GLX_CONTEXT_CORE_PROFILE_BIT_ARB if CORE_PROFILE else GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB
             context_attrs = c_attrs({
                 GLX_CONTEXT_MAJOR_VERSION_ARB : 3,
-                GLX_CONTEXT_MINOR_VERSION_ARB : 1,
+                GLX_CONTEXT_MINOR_VERSION_ARB : 2,
+                GLX_CONTEXT_PROFILE_MASK_ARB : profile_mask,
+                GLX_CONTEXT_FLAGS_ARB : 0,
             })
             glXCreateContextAttribsARB = GLX.glXGetProcAddress("glXCreateContextAttribsARB")
             log(f"{glXCreateContextAttribsARB=} {context_attrs=}")
