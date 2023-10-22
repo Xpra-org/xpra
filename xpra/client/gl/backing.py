@@ -17,24 +17,21 @@ from OpenGL.error import GLError
 from OpenGL.constant import IntConstant
 from OpenGL.GL import (
     GL_PIXEL_UNPACK_BUFFER, GL_STREAM_DRAW,
-    GL_PROJECTION, GL_MODELVIEW,
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT,
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST,
     GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT,
     GL_LINEAR, GL_RED, GL_R8, GL_R16, GL_LUMINANCE, GL_LUMINANCE_ALPHA,
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_LINE_LOOP, GL_LINES, GL_COLOR_BUFFER_BIT,
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER,
-    GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_LIGHTING, GL_DITHER,
+    GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_DITHER,
     GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, GL_RGBA8, GL_RGB8, GL_RGB10_A2, GL_RGB565, GL_RGB5_A1, GL_RGBA4, GL_RGBA16,
     GL_UNSIGNED_INT_2_10_10_10_REV, GL_UNSIGNED_INT_10_10_10_2, GL_UNSIGNED_SHORT_5_6_5,
     GL_BLEND, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA,
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_BASE_LEVEL,
-    GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST,
     glTexEnvi, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE,
-    glHint,
     glBlendFunc,
     glActiveTexture, glTexSubImage2D,
-    glGetString, glViewport, glMatrixMode, glLoadIdentity, glOrtho,
+    glGetString, glViewport,
     glGenTextures, glDisable,
     glBindTexture, glPixelStorei, glEnable, glBegin, glFlush,
     glBindBuffer, glGenBuffers, glBufferData, glDeleteBuffers,
@@ -81,6 +78,7 @@ from xpra.log import Logger
 log = Logger("opengl", "paint")
 fpslog = Logger("opengl", "fps")
 
+BLIT = envbool("XPRA_OPENGL_BLIT", True)
 OPENGL_DEBUG : bool = envbool("XPRA_OPENGL_DEBUG", False)
 PAINT_FLUSH : bool = envbool("XPRA_PAINT_FLUSH", True)
 JPEG_YUV : bool = envbool("XPRA_JPEG_YUV", True)
@@ -519,7 +517,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 raise RuntimeError(f"OpenGL shader {name} setup failure: {err}")
             log("%s shader initialized", name)
 
-    def gl_init(self, context, skip_fbo:bool=False) -> None:
+    def gl_init(self, context, skip_fbo=False) -> None:
         #must be called within a context!
         #performs init if needed
         if not self.debug_setup:
@@ -538,17 +536,6 @@ class GLWindowBackingBase(WindowBackingBase):
         # default is to paint to pbo, so without any scale factor or offsets
         # (as those are only applied when painting the window)
         glViewport(0, 0, w, h)
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        glOrtho(0.0, w, h, 0.0, -1.0, 1.0)
-        glMatrixMode(GL_MODELVIEW)
-        # Mesa docs claim: this hint can improve the speed of texturing
-        #when perspective-correct texture coordinate interpolation isn't needed,
-        #such as when using a glOrtho() projection:
-        glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST)
-        # Could be more optimal to use vertex arrays:
-        # glEnableClientState(GL_VERTEX_ARRAY)
-        # glEnableClientState(GL_TEXTURE_COORD_ARRAY)
 
         # Clear background to transparent black
         glClearColor(0.0, 0.0, 0.0, 0.0)
@@ -556,9 +543,7 @@ class GLWindowBackingBase(WindowBackingBase):
         # we don't use the depth (2D only):
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_SCISSOR_TEST)
-        glDisable(GL_LIGHTING)
         glDisable(GL_DITHER)
-        # only do alpha blending in present_fbo:
         glDisable(GL_BLEND)
 
         # Default state is good for YUV painting:
@@ -685,12 +670,12 @@ class GLWindowBackingBase(WindowBackingBase):
             if x+xdelta<0:
                 rect = (x, y, w, h)
                 fail(f"horizontal scroll by {xdelta}"
-                     +f" rectangle {rect} overflows the backing buffer size {self.size}")
+                     + f" rectangle {rect} overflows the backing buffer size {self.size}")
                 continue
             if y+ydelta<0:
                 rect = (x, y, w, h)
                 fail(f"vertical scroll by {ydelta}"
-                     +f" rectangle {rect} overflows the backing buffer size {self.size}")
+                     + f" rectangle {rect} overflows the backing buffer size {self.size}")
                 continue
             #opengl buffer is upside down, so we must invert Y coordinates: bh-(..)
             glBlitFramebuffer(x, bh-y, x+w, bh-(y+h),
@@ -814,24 +799,37 @@ class GLWindowBackingBase(WindowBackingBase):
         # Draw FBO texture on screen
         glEnable(target)      #redundant - done in rgb paint state
         glBindTexture(target, self.textures[TEX_FBO])
-        if self._alpha_enabled:
-            # support alpha channel if present:
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-        glBegin(GL_QUADS)
-        for x,y,w,h in rectangles:
-            #note how we invert coordinates..
-            tx1, ty1, tx2, ty2 = x, bh-y,  x+w, bh-y-h
-            vx1, vy1, vx2, vy2 = x, y,     x+w, y+h
-            glTexCoord2i(tx1, ty1)
-            glVertex2i(vx1, vy1)        #top-left of window viewport
-            glTexCoord2i(tx1, ty2)
-            glVertex2i(vx1, vy2)        #bottom-left of window viewport
-            glTexCoord2i(tx2, ty2)
-            glVertex2i(vx2, vy2)        #bottom-right of window viewport
-            glTexCoord2i(tx2, ty1)
-            glVertex2i(vx2, vy1)        #top-right of window viewport
-        glEnd()
+
+        if BLIT:
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
+            glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
+            glReadBuffer(GL_COLOR_ATTACHMENT0)
+
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
+
+            for x,y,w,h in rectangles:
+                glBlitFramebuffer(x, y, w, h,
+                                  x, y, w, h,
+                                  GL_COLOR_BUFFER_BIT, GL_NEAREST)
+        else:
+            if self._alpha_enabled:
+                # support alpha channel if present:
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+            glBegin(GL_QUADS)
+            for x,y,w,h in rectangles:
+                #note how we invert coordinates..
+                tx1, ty1, tx2, ty2 = x, bh-y,  x+w, bh-y-h
+                vx1, vy1, vx2, vy2 = x, y,     x+w, y+h
+                glTexCoord2i(tx1, ty1)
+                glVertex2i(vx1, vy1)        #top-left of window viewport
+                glTexCoord2i(tx1, ty2)
+                glVertex2i(vx1, vy2)        #bottom-left of window viewport
+                glTexCoord2i(tx2, ty2)
+                glVertex2i(vx2, vy2)        #bottom-right of window viewport
+                glTexCoord2i(tx2, ty1)
+                glVertex2i(vx2, vy1)        #top-right of window viewport
+            glEnd()
         glBindTexture(target, 0)
         glDisable(target)
 
@@ -1330,21 +1328,35 @@ class GLWindowBackingBase(WindowBackingBase):
             glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
             glTexImage2D(target, 0, self.internal_format, width, height, 0, pformat, ptype, img_data)
 
-            # Draw textured RGB quad at the right coordinates
-            glBegin(GL_QUADS)
-            glTexCoord2i(0, 0)
-            glVertex2i(x, y)
-            glTexCoord2i(0, height)
-            glVertex2i(x, y+render_height)
-            glTexCoord2i(width, height)
-            glVertex2i(x+render_width, y+render_height)
-            glTexCoord2i(width, 0)
-            glVertex2i(x+render_width, y)
-            glEnd()
+            if BLIT:
+                glBindFramebuffer(GL_READ_FRAMEBUFFER, self.tmp_fbo)
+                glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_RGB], 0)
+                glReadBuffer(GL_COLOR_ATTACHMENT0)
+
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
+                glBindTexture(target, self.textures[TEX_FBO])
+                glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, target, self.textures[TEX_FBO], 0)
+                glDrawBuffer(GL_COLOR_ATTACHMENT1)
+
+                rh = self.render_size[1]
+                glBlitFramebuffer(0, 0, width, height,
+                                  x, rh-y, x + render_width, rh - y - render_height,
+                                  GL_COLOR_BUFFER_BIT, GL_NEAREST)
+            else:
+                glBegin(GL_QUADS)
+                glTexCoord2i(0, 0)
+                glVertex2i(x, y)
+                glTexCoord2i(0, height)
+                glVertex2i(x, y+render_height)
+                glTexCoord2i(width, height)
+                glVertex2i(x+render_width, y+render_height)
+                glTexCoord2i(width, 0)
+                glVertex2i(x+render_width, y)
+                glEnd()
 
             glBindTexture(target, 0)
             glDisable(target)
-            self.paint_box(options.strget("encoding"), x, y, render_width, render_height)
+            self.paint_box(options.strget("encoding", ""), x, y, render_width, render_height)
             # Present update to screen
             if not self.draw_needs_refresh:
                 self.present_fbo(context, x, y, render_width, render_height, options.intget("flush", 0))
