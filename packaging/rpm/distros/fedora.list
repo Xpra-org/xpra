@@ -12,6 +12,7 @@ python3-pyu2f
 python3-uinput
 python3-pylsqpack
 python3-aioquic
+python3-pyopengl
 xpra
 
 
