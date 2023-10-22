@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
-from ctypes import c_int, byref, cast, POINTER
+from ctypes import c_int, c_void_p, byref, cast, POINTER
 from OpenGL import GLX
 from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
 
@@ -18,6 +18,7 @@ from xpra.log import Logger
 log = Logger("opengl")
 
 
+ARB_CONTEXT = envbool("XPRA_OPENGL_ARB_CONTEXT", False)
 DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", True)
 SCALE_FACTOR = envfloat("XPRA_OPENGL_SCALE_FACTOR", 1)
 if SCALE_FACTOR<=0 or SCALE_FACTOR>10:
@@ -217,7 +218,7 @@ class GLXContext:
             value = c_int()
             r = GLX.glXGetConfig(self.xdisplay, xvinfo, attr, byref(value))
             if r:
-                raise RuntimeError(f"glXGetConfig returned {r}")
+                raise RuntimeError(f"glXGetConfig({attr}) returned {r}")
             return value.value
 
         if not getconfig(GLX.GLX_USE_GL):
@@ -247,19 +248,23 @@ class GLXContext:
         else:   # pragma: no cover
             display_mode.append("SINGLE")
         self.props["display_mode"] = display_mode
-        if "GLX_ARB_create_context" in extensions:
+        if ARB_CONTEXT and "GLX_ARB_create_context" in extensions:
             from OpenGL.raw.GLX.ARB.create_context import (
-                glXCreateContextAttribsARB,
+                #glXCreateContextAttribsARB,
                 GLX_CONTEXT_MAJOR_VERSION_ARB, GLX_CONTEXT_MINOR_VERSION_ARB,
             )
             context_attrs = c_attrs({
                 GLX_CONTEXT_MAJOR_VERSION_ARB : 3,
-                GLX_CONTEXT_MINOR_VERSION_ARB : 0,
+                GLX_CONTEXT_MINOR_VERSION_ARB : 1,
             })
-            # no idea why, this causes a error.NullFunctionError:
-            # self.context = glXCreateContextAttribsARB(display, fbconfig, 0, True, context_attrs)
+            glXCreateContextAttribsARB = GLX.glXGetProcAddress("glXCreateContextAttribsARB")
             log(f"{glXCreateContextAttribsARB=} {context_attrs=}")
-        self.context = GLX.glXCreateNewContext(self.xdisplay, fbconfig, GLX.GLX_RGBA_TYPE, None, True)
+            from OpenGL.raw.GLX._types import struct__XDisplay, struct___GLXcontextRec
+            glXCreateContextAttribsARB.argtypes = [POINTER(struct__XDisplay), c_void_p, c_int, c_int, POINTER(c_int)]
+            glXCreateContextAttribsARB.restype = POINTER(struct___GLXcontextRec)
+            self.context = glXCreateContextAttribsARB(self.xdisplay, fbconfig, 0, True, context_attrs)
+        else:
+            self.context = GLX.glXCreateNewContext(self.xdisplay, fbconfig, GLX.GLX_RGBA_TYPE, None, True)
         log(f"gl context={self.context}")
         self.props["direct"] = bool(GLX.glXIsDirect(self.xdisplay, self.context))
 
@@ -274,6 +279,8 @@ class GLXContext:
                 raise
         self.props["vendor"] = getstr(GL_VENDOR)
         self.props["renderer"] = getstr(GL_RENDERER)
+        from xpra.client.gl.check import get_context_info
+        self.props.update(get_context_info())
         log("GLXContext(%s) context=%s, props=%s", alpha, self.context, self.props)
 
     def check_support(self, force_enable:bool=False) -> dict[str,Any]:

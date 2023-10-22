@@ -19,11 +19,6 @@ WHITELIST : GL_MATCH_LIST = {
 GREYLIST : GL_MATCH_LIST = {
 }
 
-#Versions older than this will trigger warnings:
-VERSION_REQ = {
-   "nouveau" : (3, 0),      #older versions have issues
-}
-
 #These chipsets will be disabled by default:
 BLACKLIST : GL_MATCH_LIST = {
     "renderer" :

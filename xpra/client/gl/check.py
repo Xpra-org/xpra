@@ -14,7 +14,7 @@ from xpra.util.env import envint, envbool
 from xpra.os_util import bytestostr
 from xpra.log import Logger, CaptureHandler
 from xpra.client.gl.drivers import (
-    GL_MATCH_LIST, WHITELIST, GREYLIST, VERSION_REQ, BLACKLIST,
+    GL_MATCH_LIST, WHITELIST, GREYLIST, BLACKLIST,
     OpenGLFatalError,
 )
 
@@ -50,25 +50,6 @@ def parse_pyopengl_version(vstr : str) -> tuple[int,...]:
 _version_warning_shown = False
 
 
-def check_functions(force_enable, *functions) -> None:
-    missing = []
-    available = []
-    for x in functions:
-        try:
-            name = x.__name__
-        except AttributeError:
-            name = str(x)
-        if not bool(x):
-            missing.append(name)
-        else:
-            available.append(name)
-    if missing:
-        if not force_enable:
-            raise_fatal_error("some required OpenGL functions are missing:\n%s" % csv(missing))
-        log("some functions are missing: %s", csv(missing))
-    else:
-        log("All the required OpenGL functions are available: %s " % csv(available))
-
 def get_max_texture_size() -> int:
     # pylint: disable=import-outside-toplevel
     from OpenGL.GL import glGetInteger, GL_MAX_TEXTURE_SIZE
@@ -89,13 +70,221 @@ def get_max_texture_size() -> int:
     return int(min(rect_texture_size, texture_size))
 
 
+def get_array_handlers() -> tuple[str,...]:
+    from OpenGL.arrays.arraydatatype import ArrayDatatype
+    try:
+        return tuple(set(ArrayDatatype.getRegistry().values()))
+    except Exception:
+        pass
+    return ()
+
+
+def get_max_viewport_dims() -> tuple[int,int]:
+    from OpenGL.GL import glGetIntegerv, GL_MAX_VIEWPORT_DIMS
+    v = glGetIntegerv(GL_MAX_VIEWPORT_DIMS)
+    max_viewport_dims = int(v[0]), int(v[1])
+    log("GL_MAX_VIEWPORT_DIMS=%s", max_viewport_dims)
+    return max_viewport_dims
+
+
+def get_extensions() -> list[str]:
+    extensions : list[str] = []
+    try:
+        from OpenGL.GL import glGetStringi, glGetIntegerv
+        from OpenGL.GL import GL_NUM_EXTENSIONS, GL_EXTENSIONS
+        num = glGetIntegerv(GL_NUM_EXTENSIONS)
+        for i in range(num):
+            extensions.append(glGetStringi(GL_EXTENSIONS, i).decode("latin1"))
+        log("OpenGL extensions found: %s", csv(extensions))
+        return extensions
+    except ImportError:
+        pass
+    #legacy mode:
+    from OpenGL.GL import glGetString
+    extensions = glGetString(GL_EXTENSIONS).decode().split(" ")
+    log("OpenGL extensions found: %s", csv(extensions))
+    return extensions
+
+
+def fixstring(v) -> str:
+    try:
+        return str(v).strip()
+    except Exception:
+        return str(v)
+
+
+def get_vendor_info() -> dict[str,str]:
+    from OpenGL.GL import GL_RENDERER, GL_VENDOR, GL_SHADING_LANGUAGE_VERSION
+    from OpenGL.GL import glGetString
+    info : dict[str,str] = {}
+    for d, s, fatal in (
+        ("vendor", GL_VENDOR, True),
+        ("renderer", GL_RENDERER, True),
+        ("shading-language-version", GL_SHADING_LANGUAGE_VERSION, False)
+    ):
+        try:
+            v = glGetString(s)
+            v = fixstring(v.decode())
+            log("%s: %s", d, v)
+            info[d] = v
+        except Exception:
+            if fatal:
+                raise RuntimeError(f"OpenGL property {d!r} is missing")
+            log(f"OpenGL property {d!r} is missing")
+    return info
+
+
+def get_GLU_info() -> dict[str,str]:
+    props : dict[str,str] = {}
+    from OpenGL.GLU import gluGetString, GLU_VERSION, GLU_EXTENSIONS
+    # maybe we can continue without?
+    if not bool(gluGetString):
+        return props
+    for d, s in {
+        "GLU.version": GLU_VERSION,
+        "GLU.extensions": GLU_EXTENSIONS,
+    }.items():
+        v = gluGetString(s)
+        v = fixstring(v.decode())
+        log("%s: %s", d, v)
+        props[d] = v
+    return props
+
+
+def get_context_info() -> dict[str,Any]:
+    from OpenGL.GL import (
+        GL_CONTEXT_PROFILE_MASK, GL_CONTEXT_CORE_PROFILE_BIT,
+        GL_CONTEXT_FLAGS,
+        GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT,
+        GL_CONTEXT_FLAG_ROBUST_ACCESS_BIT,
+        GL_CONTEXT_FLAG_DEBUG_BIT,
+        GL_CONTEXT_FLAG_NO_ERROR_BIT,
+    )
+    from OpenGL.GL import glGetIntegerv
+    flags = glGetIntegerv(GL_CONTEXT_FLAGS)
+    return {
+        "core-profile": bool(glGetIntegerv(GL_CONTEXT_PROFILE_MASK) & GL_CONTEXT_CORE_PROFILE_BIT),
+        "flags" : tuple(k for k, v in {
+            "forward-compatible": GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT,
+            "debug": GL_CONTEXT_FLAG_DEBUG_BIT,
+            "robust-access": GL_CONTEXT_FLAG_ROBUST_ACCESS_BIT,
+            "no-error": GL_CONTEXT_FLAG_NO_ERROR_BIT,
+        }.items() if flags & v),
+    }
+
+
+def check_functions(force_enable, *functions) -> bool:
+    missing = []
+    available = []
+    for x in functions:
+        try:
+            name = x.__name__
+        except AttributeError:
+            name = str(x)
+        if not bool(x):
+            missing.append(name)
+        else:
+            available.append(name)
+    if missing:
+        if not force_enable:
+            raise_fatal_error("some required OpenGL functions are missing:\n%s" % csv(missing))
+        log("some functions are missing: %s", csv(missing))
+    else:
+        log("All the required OpenGL functions are available: %s " % csv(available))
+    return len(missing)==0
+
+
+def check_GL_functions(force_enable=False) -> bool:
+    # check for specific functions we need:
+    from OpenGL.GL import (
+        glActiveTexture, glTexSubImage2D, glTexCoord2i,
+        glViewport, glMatrixMode, glLoadIdentity, glOrtho,
+        glEnableClientState, glGenTextures, glDisable,
+        glBindTexture, glPixelStorei, glEnable, glBegin, glFlush,
+        glTexParameteri, glTexEnvi, glHint, glBlendFunc, glLineStipple,
+        glTexImage2D,
+        glMultiTexCoord2i,
+        glVertex2i, glEnd,
+    )
+    return check_functions(
+        force_enable,
+        glActiveTexture, glTexSubImage2D, glTexCoord2i,
+        glViewport, glMatrixMode, glLoadIdentity, glOrtho,
+        glEnableClientState, glGenTextures, glDisable,
+        glBindTexture, glPixelStorei, glEnable, glBegin, glFlush,
+        glTexParameteri, glTexEnvi, glHint, glBlendFunc, glLineStipple,
+        glTexImage2D,
+        glMultiTexCoord2i,
+        glVertex2i, glEnd,
+    )
+
+
+def check_GL_ARB_functions(force_enable=False) -> bool:
+    # check for framebuffer functions we need:
+    from OpenGL.GL.ARB.framebuffer_object import (
+        GL_FRAMEBUFFER,
+        GL_COLOR_ATTACHMENT0,
+        glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D,
+    )
+    if not check_functions(force_enable,
+                           GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                           glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D,
+                           ):
+        return False
+    from OpenGL.GL.ARB.vertex_program import (
+        glGenProgramsARB, glDeleteProgramsARB,
+        glBindProgramARB, glProgramStringARB,
+    )
+    if not check_functions(force_enable,
+                           glGenProgramsARB, glDeleteProgramsARB, glBindProgramARB, glProgramStringARB,
+                           ):
+        return False
+    # this allows us to do CSC via OpenGL:
+    # see http://www.opengl.org/registry/specs/ARB/fragment_program.txt
+    from OpenGL.GL.ARB.fragment_program import glInitFragmentProgramARB
+    from OpenGL.GL.ARB.texture_rectangle import glInitTextureRectangleARB
+    for name, fn in {
+        "glInitFragmentProgramARB": glInitFragmentProgramARB,
+        "glInitTextureRectangleARB": glInitTextureRectangleARB,
+    }.items():
+        if not fn():
+            if not force_enable:
+                raise RuntimeError(f"OpenGL output requires {name}")
+            log("%s missing", name)
+            return False
+        else:
+            log("%s found", name)
+    return True
+
+
+def check_lists(props:dict[str,Any], force_enable=False) -> bool:
+    def match_list(thelist: GL_MATCH_LIST, listname: str):
+        for k, values in thelist.items():
+            prop = str(props.get(k))
+            if prop and any(True for x in values if prop.find(x)>=0):
+                log("%s '%s' found in %s: %s", k, prop, listname, values)
+                return k, prop
+            log("%s '%s' not found in %s: %s", k, prop, listname, values)
+        return None
+    blacklisted = match_list(BLACKLIST, "blacklist")
+    greylisted = match_list(GREYLIST, "greylist")
+    whitelisted = match_list(WHITELIST, "whitelist")
+    if blacklisted:
+        if whitelisted:
+            log.info("%s '%s' enabled (found in both blacklist and whitelist)", *whitelisted)
+        elif force_enable:
+            log.warn("Warning: %s '%s' is blacklisted!", *blacklisted)
+            log.warn(" force enabled by option")
+        else:
+            log.warn("%s '%s' is blacklisted!", *blacklisted)
+            raise_fatal_error("%s '%s' is blacklisted!" % blacklisted)
+    if greylisted and not whitelisted:
+        log.warn("Warning: %s '%s' is greylisted,", *greylisted)
+        log.warn(" you may want to turn off OpenGL if you encounter bugs")
+    return bool(whitelisted) or not bool(blacklisted)
+
+
 def check_PyOpenGL_support(force_enable) -> dict[str,Any]:
-    props : dict[str,Any] = {
-        "platform"  : sys.platform,
-        }
-    def unsafe():
-        props["safe"] = False
-    # pylint: disable=import-outside-toplevel
     redirected_loggers: dict[str, tuple[Logger,list,bool]] = {}
     try:
         if CRASH:
@@ -111,243 +300,9 @@ def check_PyOpenGL_support(force_enable) -> dict[str,Any]:
             redirected_loggers[name] = (logger, list(logger.handlers), logger.propagate)
             logger.handlers = [CaptureHandler()]
             logger.propagate = False
-        import OpenGL
-        props["pyopengl"] = OpenGL.__version__  # @UndefinedVariable
-        from OpenGL.GL import GL_VERSION, GL_EXTENSIONS
-        from OpenGL.GL import glGetString, glGetIntegerv
-        gl_version_str = glGetString(GL_VERSION)
-        if gl_version_str is None and not force_enable:
-            raise_fatal_error("OpenGL version is missing - cannot continue")
-            return props
-        #b'4.6.0 NVIDIA 440.59' -> ['4', '6', '0 NVIDIA...']
-        log("GL_VERSION=%s", bytestostr(gl_version_str))
-        vparts = bytestostr(gl_version_str).split(" ", 1)[0].split(".")
-        try:
-            gl_major = int(vparts[0])
-            gl_minor = int(vparts[1])
-        except (IndexError, ValueError) as e:
-            log("failed to parse gl version '%s': %s", bytestostr(gl_version_str), e)
-            log(" assuming this is at least 1.1 to continue")
-            unsafe()
-            gl_major = gl_minor = 0
-        else:
-            props["opengl"] = gl_major, gl_minor
-            MIN_VERSION = (1,1)
-            if (gl_major, gl_minor) < MIN_VERSION:
-                if not force_enable:
-                    raise_fatal_error("OpenGL output requires version %s or greater, not %s.%s" %
-                                  (".".join([str(x) for x in MIN_VERSION]), gl_major, gl_minor))
-                    return props
-                unsafe()
-            else:
-                log("found valid OpenGL version: %s.%s", gl_major, gl_minor)
 
-        from OpenGL import version as OpenGL_version
-        pyopengl_version = OpenGL_version.__version__
-        try:
-            import OpenGL_accelerate            #@UnresolvedImport
-            accel_version = OpenGL_accelerate.__version__
-            props["accelerate"] = accel_version
-            log("OpenGL_accelerate version %s", accel_version)
-        except ImportError:
-            log("OpenGL_accelerate not found")
-            OpenGL_accelerate = None
-            accel_version = None
+        return do_check_PyOpenGL_support(force_enable)
 
-        if accel_version is not None and pyopengl_version!=accel_version:
-            global _version_warning_shown
-            if not _version_warning_shown:
-                log.warn("Warning: version mismatch between PyOpenGL and PyOpenGL-accelerate")
-                log.warn(" %s vs %s", pyopengl_version, accel_version)
-                log.warn(" this may cause crashes")
-                _version_warning_shown = True
-                gl_check_error(f"PyOpenGL vs accelerate version mismatch: {pyopengl_version} vs {accel_version}")
-        vernum = parse_pyopengl_version(pyopengl_version)
-        #we now require PyOpenGL 3.1.4 or later
-        #3.1.4 was released in 2019
-        if vernum<(3, 1, 4):
-            if not force_enable:
-                raise_fatal_error(f"PyOpenGL version {pyopengl_version} is too old and buggy")
-                return {}
-            unsafe()
-        props["zerocopy"] = bool(OpenGL_accelerate) and pyopengl_version==accel_version
-
-        try:
-            extensions = glGetString(GL_EXTENSIONS).decode().split(" ")
-            log("OpenGL extensions found: %s", csv(extensions))
-            props["extensions"] = extensions
-        except Exception:
-            log("error querying extensions", exc_info=True)
-            extensions = []
-            if not force_enable:
-                raise_fatal_error("OpenGL could not find the list of GL extensions -"+
-                                  " does the graphics driver support OpenGL?")
-            unsafe()
-
-        from OpenGL.arrays.arraydatatype import ArrayDatatype
-        try:
-            log("found the following array handlers: %s", set(ArrayDatatype.getRegistry().values()))
-        except Exception:
-            pass
-
-        from OpenGL.GL import GL_RENDERER, GL_VENDOR, GL_SHADING_LANGUAGE_VERSION
-        def fixstring(v):
-            try:
-                return str(v).strip()
-            except Exception:
-                return str(v)
-        for d,s,fatal in (("vendor",     GL_VENDOR,      True),
-                          ("renderer",   GL_RENDERER,    True),
-                          ("shading-language-version", GL_SHADING_LANGUAGE_VERSION, False)):
-            try:
-                v = glGetString(s)
-                v = fixstring(v.decode())
-                log("%s: %s", d, v)
-            except Exception:
-                if fatal and not force_enable:
-                    gl_check_error(f"OpenGL property {d!r} is missing")
-                else:
-                    log(f"OpenGL property {d!r} is missing")
-                v = ""
-            props[d] = v
-        vendor = props["vendor"]
-        version_req = VERSION_REQ.get(vendor)
-        if version_req:
-            req_maj, req_min = version_req
-            if gl_major<req_maj or (gl_major==req_maj and gl_minor<req_min):
-                if force_enable:
-                    log.warn("Warning: '%s' OpenGL driver requires version %i.%i", vendor, req_maj, req_min)
-                    log.warn(" version %i.%i was found", gl_major, gl_minor)
-                    unsafe()
-                else:
-                    gl_check_error("OpenGL version %i.%i is too old, %i.%i is required for %s" % (
-                        gl_major, gl_minor, req_maj, req_min, vendor))
-
-        from OpenGL.GLU import gluGetString, GLU_VERSION, GLU_EXTENSIONS
-        #maybe we can continue without?
-        if not bool(gluGetString):
-            raise_fatal_error("no OpenGL GLU support")
-        for d,s in {"GLU.version": GLU_VERSION, "GLU.extensions":GLU_EXTENSIONS}.items():
-            v = gluGetString(s)
-            v = v.decode()
-            log("%s: %s", d, v)
-            props[d] = v
-
-        def match_list(thelist : GL_MATCH_LIST, listname:str):
-            for k, values in thelist.items():
-                prop = str(props.get(k))
-                if prop and any(True for x in values if prop.find(x)>=0):
-                    log("%s '%s' found in %s: %s", k, prop, listname, values)
-                    return (k, prop)
-                log("%s '%s' not found in %s: %s", k, prop, listname, values)
-            return None
-        blacklisted = match_list(BLACKLIST, "blacklist")
-        greylisted = match_list(GREYLIST, "greylist")
-        whitelisted = match_list(WHITELIST, "whitelist")
-        if blacklisted:
-            if whitelisted:
-                log.info("%s '%s' enabled (found in both blacklist and whitelist)", *whitelisted)
-            elif force_enable:
-                log.warn("Warning: %s '%s' is blacklisted!", *blacklisted)
-                log.warn(" force enabled by option")
-            else:
-                log.warn("%s '%s' is blacklisted!", *blacklisted)
-                raise_fatal_error("%s '%s' is blacklisted!" % blacklisted)
-        safe = bool(whitelisted) or not bool(blacklisted)
-        if greylisted and not whitelisted:
-            log.warn("Warning: %s '%s' is greylisted,", *greylisted)
-            log.warn(" you may want to turn off OpenGL if you encounter bugs")
-        if props.get("safe") is None:
-            props["safe"] = safe
-
-        #check for specific functions we need:
-        from OpenGL.GL import (
-            glActiveTexture, glTexSubImage2D, glTexCoord2i,
-            glViewport, glMatrixMode, glLoadIdentity, glOrtho,
-            glEnableClientState, glGenTextures, glDisable,
-            glBindTexture, glPixelStorei, glEnable, glBegin, glFlush,
-            glTexParameteri, glTexEnvi, glHint, glBlendFunc, glLineStipple,
-            glTexImage2D,
-            glMultiTexCoord2i,
-            glVertex2i, glEnd,
-            )
-        check_functions(force_enable,
-            glActiveTexture, glTexSubImage2D, glTexCoord2i,
-            glViewport, glMatrixMode, glLoadIdentity, glOrtho,
-            glEnableClientState, glGenTextures, glDisable,
-            glBindTexture, glPixelStorei, glEnable, glBegin, glFlush,
-            glTexParameteri, glTexEnvi, glHint, glBlendFunc, glLineStipple,
-            glTexImage2D,
-            glMultiTexCoord2i,
-            glVertex2i, glEnd)
-        #check for framebuffer functions we need:
-        from OpenGL.GL.ARB.framebuffer_object import (
-            GL_FRAMEBUFFER,
-            GL_COLOR_ATTACHMENT0,
-            glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D,
-            )
-        check_functions(force_enable,
-            GL_FRAMEBUFFER,
-            GL_COLOR_ATTACHMENT0,
-            glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D,
-            )
-
-        try:
-            from OpenGL.GL import glEnablei
-        except ImportError:
-            glEnablei = None
-        global GL_ALPHA_SUPPORTED
-        if not bool(glEnablei):
-            log.warn("OpenGL glEnablei is not available, disabling transparency")
-            GL_ALPHA_SUPPORTED = False
-        props["transparency"] = GL_ALPHA_SUPPORTED
-
-        missing_extensions = [ext for ext in required_extensions if ext not in extensions]
-        if missing_extensions:
-            if not force_enable:
-                raise_fatal_error("OpenGL driver lacks support for extension: %s" % csv(missing_extensions))
-            log("some extensions are missing: %s", csv(missing_extensions))
-            unsafe()
-        else:
-            log("All required extensions are present: %s", required_extensions)
-
-        #this allows us to do CSC via OpenGL:
-        #see http://www.opengl.org/registry/specs/ARB/fragment_program.txt
-        from OpenGL.GL.ARB.fragment_program import glInitFragmentProgramARB
-        from OpenGL.GL.ARB.texture_rectangle import glInitTextureRectangleARB
-        for name, fn in {
-            "glInitFragmentProgramARB"  : glInitFragmentProgramARB,
-            "glInitTextureRectangleARB" : glInitTextureRectangleARB,
-            }.items():
-            if not fn():
-                if not force_enable:
-                    raise_fatal_error("OpenGL output requires %s" % name)
-                log("%s missing", name)
-                unsafe()
-            else:
-                log("%s found", name)
-
-        from OpenGL.GL.ARB.vertex_program import (
-            glGenProgramsARB, glDeleteProgramsARB,
-            glBindProgramARB, glProgramStringARB,
-            )
-        check_functions(force_enable,
-                        glGenProgramsARB, glDeleteProgramsARB, glBindProgramARB, glProgramStringARB)
-
-        texture_size_limit = get_max_texture_size()
-        props["texture-size-limit"] = int(texture_size_limit)
-
-        try:
-            from OpenGL.GL import GL_MAX_VIEWPORT_DIMS
-            v = glGetIntegerv(GL_MAX_VIEWPORT_DIMS)
-            max_viewport_dims = int(v[0]), int(v[1])
-            assert max_viewport_dims[0]>=texture_size_limit and max_viewport_dims[1]>=texture_size_limit
-            log("GL_MAX_VIEWPORT_DIMS=%s", max_viewport_dims)
-        except ImportError as e:
-            log.error("Error querying max viewport dims: %s", e)
-            max_viewport_dims = texture_size_limit, texture_size_limit
-        props["max-viewport-dims"] = max_viewport_dims
-        return props
     finally:
         def recs(name) -> list[str]:
             rlog = redirected_loggers.get(name)
@@ -413,6 +368,92 @@ def check_PyOpenGL_support(force_enable) -> dict[str,Any]:
             logger.propagate = propagate
 
 
+def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
+    props : dict[str,Any] = {
+        "platform"  : sys.platform,
+        }
+
+    def unsafe():
+        props["safe"] = False
+
+    import OpenGL
+    props["pyopengl"] = OpenGL.__version__  # @UndefinedVariable
+    from OpenGL.GL import GL_VERSION, glGetString
+    gl_version_str = glGetString(GL_VERSION)
+    if gl_version_str is None and not force_enable:
+        raise_fatal_error("OpenGL version is missing - cannot continue")
+        return props
+    #b'4.6.0 NVIDIA 440.59' -> ['4', '6', '0 NVIDIA...']
+    log("GL_VERSION=%s", bytestostr(gl_version_str))
+    vparts = bytestostr(gl_version_str).split(" ", 1)[0].split(".")
+    try:
+        gl_major = int(vparts[0])
+        gl_minor = int(vparts[1])
+    except (IndexError, ValueError) as e:
+        log("failed to parse gl version '%s': %s", bytestostr(gl_version_str), e)
+        log(" assuming this is at least 1.1 to continue")
+        unsafe()
+        gl_major = gl_minor = 0
+    else:
+        props["opengl"] = gl_major, gl_minor
+        MIN_VERSION = (1,1)
+        if (gl_major, gl_minor) < MIN_VERSION:
+            if not force_enable:
+                req_vstr = ".".join([str(x) for x in MIN_VERSION])
+                raise_fatal_error(f"OpenGL output requires version {req_vstr} or greater, not {gl_major}.{gl_minor}")
+                return props
+            unsafe()
+        else:
+            log(f"found valid OpenGL version: {gl_major}.{gl_minor}")
+
+    from OpenGL import version as OpenGL_version
+    pyopengl_version = OpenGL_version.__version__
+    try:
+        import OpenGL_accelerate            #@UnresolvedImport
+        accel_version = OpenGL_accelerate.__version__
+        props["accelerate"] = accel_version
+        log(f"OpenGL_accelerate version {accel_version}")
+    except ImportError:
+        log("OpenGL_accelerate not found")
+        OpenGL_accelerate = None
+        accel_version = None
+
+    if accel_version is not None and pyopengl_version!=accel_version:
+        global _version_warning_shown
+        if not _version_warning_shown:
+            log.warn("Warning: version mismatch between PyOpenGL and PyOpenGL-accelerate")
+            log.warn(" %s vs %s", pyopengl_version, accel_version)
+            log.warn(" this may cause crashes")
+            _version_warning_shown = True
+            gl_check_error(f"PyOpenGL vs accelerate version mismatch: {pyopengl_version} vs {accel_version}")
+    vernum = parse_pyopengl_version(pyopengl_version)
+    #we now require PyOpenGL 3.1.4 or later
+    #3.1.4 was released in 2019
+    if vernum<(3, 1, 4):
+        if not force_enable:
+            raise_fatal_error(f"PyOpenGL version {pyopengl_version} is too old and buggy")
+            return {}
+        unsafe()
+    props["zerocopy"] = bool(OpenGL_accelerate) and pyopengl_version==accel_version
+
+    props.update(get_vendor_info())
+    props.update(get_GLU_info())
+    props["extensions"] = get_extensions()
+    props["array-handlers"] = get_array_handlers()
+    props["texture-size-limit"] = get_max_texture_size()
+    props["max-viewport-dims"] = get_max_viewport_dims()
+
+    if not check_GL_functions(force_enable):
+        unsafe()
+    if not check_GL_ARB_functions(force_enable):
+        unsafe()
+
+    safe = check_lists(props, force_enable)
+    if "safe" not in props:
+        props["safe"] = safe
+    return props
+
+
 def main() -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
@@ -444,6 +485,7 @@ def main() -> int:
         gl_fatal_error = log_error
         try:
             props = gl_context.check_support(force_enable)
+            props.update(get_context_info())
         except Exception as e:
             props = {}
             log("check_support", exc_info=True)
