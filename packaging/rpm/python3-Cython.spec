@@ -1,7 +1,7 @@
 %define _disable_source_fetch 0
 
 Name:		python3-Cython
-Version:	3.0.3
+Version:	3.0.4
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
@@ -21,7 +21,7 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "0c2eae8a4ceab7955be1e11a4ddc5dcc3aa06ce22ad594262f1555b9d10667f0" ]; then
+if [ "${sha256}" != "d22c3fd0141860ef892f51ea834556ee42c3c9f83739ad92187dcf0b9f938786" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -53,6 +53,9 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
+* Wed Oct 18 2023 Antoine Martin <antoine@xpra.org> 3.0.4-1
+- new upstream release
+
 * Thu Oct 05 2023 Antoine Martin <antoine@xpra.org> 3.0.3-1
 - new upstream release
 
