@@ -2418,15 +2418,11 @@ def do_run_glcheck(opts, show=False) -> dict[str,Any]:
         saved_level = logging.root.getEffectiveLevel()
         logging.root.setLevel(logging.WARN)
     try:
-        from xpra.client.gl.window import (
-            get_gl_client_window_module,
-            test_gl_client_window,
-            )
+        from xpra.client.gl.window import get_gl_client_window_module, test_gl_client_window
         opengl_str = (opts.opengl or "").lower()
-        force_enable = opengl_str.split(":")[0] in TRUE_OPTIONS
-        opengl_props, gl_client_window_module = get_gl_client_window_module(force_enable)
+        opengl_props, gl_client_window_module = get_gl_client_window_module(opengl_str)
         log("do_run_glcheck() opengl_props=%s, gl_client_window_module=%s", opengl_props, gl_client_window_module)
-        if gl_client_window_module and (opengl_props.get("safe", False) or force_enable):
+        if gl_client_window_module and (opengl_props.get("safe", False) or opengl_str.startswith("force")):
             gl_client_window_class = gl_client_window_module.GLClientWindow
             pixel_depth = int(opts.pixel_depth)
             log("do_run_glcheck() gl_client_window_class=%s, pixel_depth=%s", gl_client_window_class, pixel_depth)

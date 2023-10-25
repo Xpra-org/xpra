@@ -6,6 +6,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from collections.abc import Callable
 
 from xpra.util.env import envbool
 from xpra.log import Logger
@@ -45,7 +46,7 @@ class ClientWidgetBase:
             info["backing"] = b.get_info()
         return info
 
-    def make_new_backing(self, backing_class:type, ww:int, wh:int, bw:int, bh:int):
+    def make_new_backing(self, backing_class:Callable, ww:int, wh:int, bw:int, bh:int):
         # size of the backing, which should be the same as the server's window source:
         bw = max(1, bw)
         bh = max(1, bh)

@@ -16,7 +16,7 @@ def main(argv=()):
                 init_gdk_display_source()
             if "-v" in argv or "--verbose" in argv:
                 log.enable_debug()
-            opengl_props, gl_client_window_module = get_gl_client_window_module(True)
+            opengl_props, gl_client_window_module = get_gl_client_window_module("force")
             log("do_run_glcheck() opengl_props=%s, gl_client_window_module=%s", opengl_props, gl_client_window_module)
             gl_client_window_class = gl_client_window_module.GLClientWindow
             pixel_depth = 0

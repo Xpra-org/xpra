@@ -10,6 +10,7 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.common import noop
+from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.types import AtomicInteger, typedict
 from xpra.util.env import envint
 from xpra.os_util import WIN32, load_binary_file
@@ -20,20 +21,43 @@ from xpra.client.gui.fake_client import FakeClient
 log = Logger("opengl", "paint")
 
 
-def get_gl_client_window_module(force_enable=False) -> tuple[dict,Any]:
-    log("get_gl_client_window_module()")
+def get_gl_client_window_module(opengl="on") -> tuple[dict,Any]:
+    log(f"get_gl_client_window_module({opengl})")
+    # ie: "auto", "no", "probe-success", "yes:gtk", "gtk", "yes:native", "native"
+    parts = opengl.lower().split(":")
+    if parts[0].lower() in FALSE_OPTIONS:
+        return {}, None
+    arg = parts[-1]
+    if arg in ("gtk", "glarea"):
+        module_names = ("glarea", )
+    elif arg == "native":
+        module_names = ("native", )
+    else:
+        module_names = ("native", "glarea", )
+    force_enable = parts[0]=="force"
+    for module_name in module_names:
+        props, window_module = test_window_module(module_name, force_enable)
+        if window_module:
+            return props, window_module
+    return {}, None
+
+
+def test_window_module(module_name="glarea", force_enable=False) -> tuple[dict,Any]:
+    from importlib import import_module
     try:
-        from xpra.client.gl.gtk3 import native_window
+        mod = import_module(f"xpra.client.gl.gtk3.{module_name}_window")
+        log(f"gl client window module {module_name!r}={mod}")
     except ImportError as e:
-        log("cannot import opengl window module", exc_info=True)
-        log.warn("Warning: cannot import native OpenGL module")
+        log(f"cannot import opengl window module {module_name}", exc_info=True)
+        log.warn(f"Warning: cannot import OpenGL window module {module_name}")
         log.warn(" %s", e)
         return {}, None
-    opengl_props = native_window.check_support(force_enable)
-    log("check_support(%s)=%s", force_enable, opengl_props)
+    opengl_props = mod.check_support(force_enable)
+    log(f"{mod}.check_support({force_enable})={opengl_props}")
     if opengl_props:
-        return opengl_props, native_window
+        return opengl_props, mod
     return {}, None
+
 
 
 def get_test_gl_icon():
@@ -74,6 +98,7 @@ def no_idle_add(fn, *args, **kwargs):
     fn(*args, **kwargs)
 
 def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(1024, 1024), pixel_depth=24, show=False):
+    show = True
     #try to render using a temporary window:
     draw_result = {}
     window = None

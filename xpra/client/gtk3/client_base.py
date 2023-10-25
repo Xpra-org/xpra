@@ -1256,12 +1256,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         try:
             opengllog("init_opengl: going to import xpra.client.gl")
             __import__("xpra.client.gl", {}, {}, [])
-            from xpra.client.gl.window import (
-                get_gl_client_window_module,
-                test_gl_client_window,
-                )
-            force_enable = self.opengl_force or (enable_option in TRUE_OPTIONS)
-            self.opengl_props, gl_client_window_module = get_gl_client_window_module(force_enable)
+            from xpra.client.gl.window import get_gl_client_window_module, test_gl_client_window
+            self.opengl_props, gl_client_window_module = get_gl_client_window_module(enable_opengl)
             if not gl_client_window_module:
                 opengllog.warn("Warning: no OpenGL backend module found")
                 self.client_supports_opengl = False

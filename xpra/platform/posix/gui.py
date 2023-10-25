@@ -11,7 +11,7 @@ from collections.abc import Callable
 
 from xpra.os_util import (
     bytestostr, get_saved_env,
-    is_X11, is_Wayland, get_saved_env_var, first_time,
+    is_X11, get_saved_env_var, first_time,
 )
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
@@ -72,10 +72,6 @@ DBUS_SCREENSAVER = envbool("XPRA_DBUS_SCREENSAVER", False)
 
 
 def gl_check() -> str:
-    if not is_X11() and is_Wayland():
-        return "disabled under wayland with GTK3 (buggy)"
-    if is_X11() and not x11_bindings():
-        return "X11 bindings are missing"
     return ""
 
 
