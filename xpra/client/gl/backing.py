@@ -295,11 +295,14 @@ class GLWindowBackingBase(WindowBackingBase):
         self.pending_fbo_paint : list[tuple[int,int,int,int]] = []
         self.last_flush : float = monotonic()
         self.last_present_fbo_error : str = ""
-
+        self.bit_depth = pixel_depth
         super().__init__(wid, window_alpha and self.HAS_ALPHA)
+        self.opengl_init()
+
+    def opengl_init(self):
         self.init_gl_config()
         self.init_backing()
-        self.bit_depth : int = self.get_bit_depth(pixel_depth)
+        self.bit_depth : int = self.get_bit_depth(self.bit_depth)
         self.init_formats()
         self.draw_needs_refresh : bool = DRAW_REFRESH
         # the correct check would be this:
