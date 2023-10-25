@@ -445,9 +445,9 @@ class GLWindowBackingBase(WindowBackingBase):
         if not GREMEDY_DEBUG:
             return
         try:
-            s = msg[0] % msg[1:]
+            s = strtobytes(msg[0] % msg[1:])
         except TypeError:
-            s = str(msg)
+            s = strtobytes(msg)
         from ctypes import c_char_p  # pylint: disable=import-outside-toplevel
         c_string = c_char_p(s)
         glStringMarkerGREMEDY(0, c_string)
