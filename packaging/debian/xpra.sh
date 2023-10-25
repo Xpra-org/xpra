@@ -34,8 +34,9 @@ mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --no-in
 rm -f xpra-build-deps*
 
 #install latest cython since the one Debian / Ubuntu tends to be out of date:
-python -m pip install --upgrade pip
-pip install cython
+DEBIAN_FRONTEND=noninteractive apt-get -y install python3
+python3 -m pip install --upgrade pip
+pip3 install cython
 
 #add revision to version number to changelog
 REVISION=`PYTHONPATH=. python3 -c 'from xpra.src_info import REVISION;print(REVISION)'`
