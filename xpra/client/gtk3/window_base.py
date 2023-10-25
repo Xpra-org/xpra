@@ -354,7 +354,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         widget.connect("scroll-event", scroll)
         widget.connect("draw", self.draw_widget)
 
-    def draw_widget(self, widget, context) -> None:
+    def draw_widget(self, widget, context) -> bool:
         raise NotImplementedError()
 
     def get_drawing_area_geometry(self):

@@ -104,8 +104,9 @@ class GLDrawingArea(GLWindowBackingBase):
             self.context = None
             c.destroy()
 
-    def draw_fbo(self, _context) -> None:
+    def draw_fbo(self, _context) -> bool:
         w, h = self.size
         with self.gl_context() as ctx:
             self.gl_init(ctx)
             self.present_fbo(ctx, 0, 0, w, h)
+        return True

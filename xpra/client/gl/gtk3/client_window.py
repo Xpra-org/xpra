@@ -130,11 +130,11 @@ class GLClientWindowBase(ClientWindow):
         self.apply_geometry_hints(self.geometry_hints)
 
     def draw_widget(self, widget, context) -> bool:
-        log("draw_widget(%s, %s)", widget, context)
-        if not self.get_mapped():
-            return False
+        mapped = self.get_mapped()
         backing = self._backing
+        log(f"draw_widget({widget}, {context}) {mapped=}, {backing=}", )
+        if not mapped:
+            return False
         if not backing:
             return False
-        backing.draw_fbo(context)
-        return True
+        return backing.draw_fbo(context)
