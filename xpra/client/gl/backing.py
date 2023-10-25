@@ -207,17 +207,24 @@ if OPENGL_DEBUG:
             log.error("src %x type %x id %x severity %x length %d message %s, param=%s",
                       source, error_type, error_id, severity, length, message, param)
         gl_debug_callback = GLDEBUGPROC(py_gl_debug_callback)
+        GREMEDY_DEBUG = all(bool(x) for x in (
+            glInitStringMarkerGREMEDY,
+            glStringMarkerGREMEDY,
+            glInitFrameTerminatorGREMEDY,
+            glFrameTerminatorGREMEDY,
+        ))
     except ImportError:
         # This is normal- GREMEDY_string_marker is only available with OpenGL debuggers
         GREMEDY_DEBUG = False
         log("Unable to import GREMEDY OpenGL extension. Debug output will be more limited.")
     log("OpenGL debugging settings:")
-    log(" GL_DEBUG_OUTPUT=%s, GL_DEBUG_OUTPUT_SYNCHRONOUS=%s", GL_DEBUG_OUTPUT, GL_DEBUG_OUTPUT_SYNCHRONOUS)
-    log(" gl_debug_callback=%s", gl_debug_callback)
-    log(" glInitStringMarkerGREMEDY=%s, glStringMarkerGREMEDY=%s", glInitStringMarkerGREMEDY, glStringMarkerGREMEDY)
-    log(" glInitFrameTerminatorGREMEDY=%s, glFrameTerminatorGREMEDY=%s", glInitFrameTerminatorGREMEDY, glFrameTerminatorGREMEDY)
+    log(f" {GREMEDY_DEBUG=}")
+    log(f" {GL_DEBUG_OUTPUT=}, {GL_DEBUG_OUTPUT_SYNCHRONOUS}")
+    log(f" {gl_debug_callback=}")
+    log(f" {glInitStringMarkerGREMEDY=}, {glStringMarkerGREMEDY=}")
+    log(f" {glInitFrameTerminatorGREMEDY=}, {glFrameTerminatorGREMEDY=}")
 
-zerocopy_upload : bool = False
+zerocopy_upload = False
 if envbool("XPRA_ZEROCOPY_OPENGL_UPLOAD", True):
     try:
         import OpenGL_accelerate            #@UnresolvedImport

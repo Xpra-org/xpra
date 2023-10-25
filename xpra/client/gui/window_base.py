@@ -321,7 +321,8 @@ class ClientWindowBase(ClientWidgetBase):
                     "localhost",
                     "localhost.localdomain",
                     "",
-                    None):
+                    None,
+                ):
                     return None
                 return value
             def getvar(var):
@@ -835,9 +836,8 @@ class ClientWindowBase(ClientWidgetBase):
         backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
 
     def after_draw_refresh(self, success, message="") -> None:
-        plog("after_draw_refresh(%s, %s) pending_refresh=%s",
-             success, message, self.pending_refresh)
         backing = self._backing
+        plog(f"after_draw_refresh({success}, {message!r}) pending_refresh={self.pending_refresh}, {backing=}")
         if not backing:
             return
         if backing.repaint_all or self._xscale!=1 or self._yscale!=1 or is_Wayland():
