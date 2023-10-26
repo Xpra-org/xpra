@@ -7,6 +7,7 @@ from typing import Any
 from collections.abc import Callable
 from gi.repository import Gtk, Gdk, GObject
 
+from xpra.common import noop
 from xpra.util.str_fn import ellipsizer
 from xpra.client.gl.gtk3.client_window import GLClientWindowBase
 from xpra.client.gl.backing import GLWindowBackingBase
@@ -32,6 +33,7 @@ class GLAreaBacking(GLWindowBackingBase):
 
     def init_backing(self) -> None:
         da = Gtk.GLArea()
+        da.set_use_es(True)
         da.set_auto_render(True)
         da.set_has_alpha(self._alpha_enabled)
         da.set_has_depth_buffer(False)
@@ -45,16 +47,17 @@ class GLAreaBacking(GLWindowBackingBase):
         self._backing = da
 
     def on_realize(self, *args) -> None:
-        onrcb = self.on_realize_cb
-        log("GLAreaBacking.on_realize%s callbacks=%s", args, tuple(ellipsizer(x) for x in onrcb))
-        self.on_realize_cb = []
         gl_context = self.gl_context()
-        log("gl context version %s", gl_context.get_version())
         gl_context.make_current()
+        self.gl_init(gl_context)
+        # fire the delayed realized callbacks:
+        onrcb = self.on_realize_cb
+        log("GLAreaBacking.fire_realize_cb callbacks=%s", tuple(ellipsizer(x) for x in onrcb))
+        gl_context.update_geometry = noop
+        self.on_realize_cb = []
         for x, args in onrcb:
             with log.trap_error("Error calling realize callback %s", ellipsizer(x)):
                 x(gl_context, *args)
-        self.gl_init(gl_context)
 
     def with_gl_context(self, cb:Callable, *args):
         da = self._backing
@@ -92,8 +95,8 @@ class GLAreaBacking(GLWindowBackingBase):
     def on_render(self, glarea, glcontext):
         log(f"render({glarea}, {glcontext}) {self.textures=}, {self.offscreen_fbo=}")
         if self.textures is None or self.offscreen_fbo is None:
-            self.gl_init(glcontext)
-            return False
+            return True
+        glcontext.make_current()
         w, h = self.render_size
         from xpra.client.gl.backing import TEX_FBO
         if False:
