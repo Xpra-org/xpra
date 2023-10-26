@@ -50,7 +50,7 @@ from OpenGL.GL.ARB.vertex_program import (
 from OpenGL.GL.ARB.fragment_program import GL_FRAGMENT_PROGRAM_ARB
 from OpenGL.GL.ARB.framebuffer_object import (
     GL_FRAMEBUFFER, GL_DRAW_FRAMEBUFFER, GL_READ_FRAMEBUFFER,
-    GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, \
+    GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
     glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D, glBlitFramebuffer,
     )
 
@@ -494,9 +494,11 @@ class GLWindowBackingBase(WindowBackingBase):
                 log.info("Enabling GL frame terminator debugging.")
 
     def gl_init_textures(self) -> None:
+        log("gl_init_textures()")
         assert self.offscreen_fbo is None
         assert self.shaders is None
-        assert glGenFramebuffers, "no framebuffer support"
+        if not bool(glGenFramebuffers):
+            raise RuntimeError("current context lacks framebuffer support: no glGenFramebuffers")
         self.textures = glGenTextures(N_TEXTURES)
         self.offscreen_fbo = glGenFramebuffers(1)
         self.tmp_fbo = glGenFramebuffers(1)
@@ -505,6 +507,10 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def gl_init_shaders(self) -> None:
         assert self.shaders is None
+        if not bool(glGenProgramsARB):
+            log.warn("Warning: running without shaders")
+            self.shaders = ()
+            return
         # Create and assign fragment programs
         self.shaders = [ 1, 2, 3, 4 ]
         glGenProgramsARB(4, self.shaders)
@@ -577,8 +583,6 @@ class GLWindowBackingBase(WindowBackingBase):
         if not self.shaders:
             self.gl_init_shaders()
 
-        # Bind program 0 for YUV painting by default
-        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV_to_RGB_SHADER])
         self.gl_setup = True
         log("gl_init(%s, %s) done", context, skip_fbo)
 
