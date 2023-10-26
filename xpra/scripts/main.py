@@ -34,7 +34,7 @@ from xpra.os_util import (
     OSEnvContext,
     set_proc_title, gi_import,
     is_systemd_pid1,
-    WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu, stderr_print,
+    WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu, is_Wayland, stderr_print,
 )
 from xpra.scripts.parsing import (
     info, warn, error,
@@ -2450,7 +2450,7 @@ def do_run_glcheck(opts, show=False) -> dict[str,Any]:
 
 def run_glcheck(opts) -> ExitValue:
     log = Logger("opengl")
-    if POSIX and not OSX:
+    if POSIX and not OSX and not is_Wayland():
         with OSEnvContext(GDK_BACKEND="x11", PYOPENGL_BACKEND="x11"):
             try:
                 from xpra.x11.gtk3.display_source import init_gdk_display_source
