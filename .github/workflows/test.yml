@@ -41,6 +41,7 @@ jobs:
         # use pip to install cython v3:
         python -m pip install --upgrade pip
         pip install cython
+        pip install aioquic
 
     - name: "Build/Install/Test"
       run: >
