@@ -2456,7 +2456,6 @@ def run_glcheck(opts) -> ExitValue:
             except Exception:
                 log("error initializing gdk display source", exc_info=True)
     try:
-
         check_gtk_client()
         props = do_run_glcheck(opts)
     except Exception as e:

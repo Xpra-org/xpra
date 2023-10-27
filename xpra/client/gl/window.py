@@ -98,7 +98,6 @@ def no_idle_add(fn, *args, **kwargs):
     fn(*args, **kwargs)
 
 def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(1024, 1024), pixel_depth=24, show=False):
-    show = True
     #try to render using a temporary window:
     draw_result = {}
     window = None
