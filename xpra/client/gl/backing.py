@@ -56,7 +56,7 @@ from OpenGL.GL.ARB.framebuffer_object import (
 
 from xpra.os_util import (
     strtobytes, bytestostr, hexstr,
-    POSIX, OSX, first_time,
+    POSIX, OSX, is_Wayland, first_time,
 )
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool
@@ -78,19 +78,20 @@ from xpra.log import Logger
 log = Logger("opengl", "paint")
 fpslog = Logger("opengl", "fps")
 
+
 BLIT = envbool("XPRA_OPENGL_BLIT", True)
 OPENGL_DEBUG : bool = envbool("XPRA_OPENGL_DEBUG", False)
 PAINT_FLUSH : bool = envbool("XPRA_PAINT_FLUSH", True)
-JPEG_YUV : bool = envbool("XPRA_JPEG_YUV", True)
-WEBP_YUV : bool = envbool("XPRA_WEBP_YUV", True)
+JPEG_YUV : bool = envbool("XPRA_JPEG_YUV", not is_Wayland())
+WEBP_YUV : bool = envbool("XPRA_WEBP_YUV", not is_Wayland())
 FORCE_CLONE : bool = envbool("XPRA_OPENGL_FORCE_CLONE", False)
 FORCE_VIDEO_PIXEL_FORMAT : str = os.environ.get("XPRA_FORCE_VIDEO_PIXEL_FORMAT", "")
 DRAW_REFRESH : bool = envbool("XPRA_OPENGL_DRAW_REFRESH", True)
 FBO_RESIZE : bool = envbool("XPRA_OPENGL_FBO_RESIZE", True)
 FBO_RESIZE_DELAY : int = envint("XPRA_OPENGL_FBO_RESIZE_DELAY", -1)
 CONTEXT_REINIT : bool = envbool("XPRA_OPENGL_CONTEXT_REINIT", False)
-NVJPEG : bool = envbool("XPRA_OPENGL_NVJPEG", True)
-NVDEC : bool = envbool("XPRA_OPENGL_NVDEC", True)
+NVJPEG : bool = envbool("XPRA_OPENGL_NVJPEG", not is_Wayland())
+NVDEC : bool = envbool("XPRA_OPENGL_NVDEC", not is_Wayland())
 
 CURSOR_IDLE_TIMEOUT : int = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 
