@@ -52,12 +52,12 @@ class GLAreaBacking(GLWindowBackingBase):
         self.gl_init(gl_context)
         # fire the delayed realized callbacks:
         onrcb = self.on_realize_cb
-        log("GLAreaBacking.fire_realize_cb callbacks=%s", tuple(ellipsizer(x) for x in onrcb))
+        log(f"GLAreaBacking.on_realize({args}) callbacks=%s", tuple(ellipsizer(x) for x in onrcb))
         gl_context.update_geometry = noop
         self.on_realize_cb = []
-        for x, args in onrcb:
+        for x, xargs in onrcb:
             with log.trap_error("Error calling realize callback %s", ellipsizer(x)):
-                x(gl_context, *args)
+                x(gl_context, *xargs)
 
     def with_gl_context(self, cb:Callable, *args):
         da = self._backing
