@@ -300,6 +300,8 @@ def check_gtk_client() -> None:
             if isX11() and not isxwayland():
                 os.environ["GDK_BACKEND"] = "x11"
                 os.environ["PYOPENGL_PLATFORM"] = "x11"
+    if is_Wayland() and not os.environ.get("PYOPENGL_PLATFORM", ""):
+        os.environ["PYOPENGL_PLATFORM"] = "egl"
     check_gtk()
     try:
         from xpra.client import gui, gtk3
