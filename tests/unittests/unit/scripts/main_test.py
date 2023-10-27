@@ -50,9 +50,10 @@ class TestMain(unittest.TestCase):
         with OSEnvContext():
             os.environ["XPRA_LOG_SYSTEMD_WRAP"] = "0"
             os.environ["XPRA_LOG_SYSTEMD_WRAP_COMMAND"] = "0"
-            r = systemd_run_wrap("unused", ["xpra", "--version"], user=getuid()!=0, stdout=DEVNULL, stderr=DEVNULL)
+            cmd = get_xpra_command()+["--version"]
+            r = systemd_run_wrap("unused", cmd, user=getuid()!=0, stdout=DEVNULL, stderr=DEVNULL)
             if r:
-                raise ValueError(f"expected return code 0 but got {r}")
+                raise ValueError(f"expected return code 0 but got {r} running {cmd}")
 
     def test_display_type_check(self):
         for arg in ("ssh:host", "ssh/host", "tcp:IP", "ssl/host", "vsock:port"):
