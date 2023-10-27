@@ -17,7 +17,7 @@ from cairo import ( #pylint: disable=no-name-in-module
     )
 from gi.repository import Gtk, Gdk, Gio  # @UnresolvedImport
 
-from xpra.os_util import bytestostr, strtobytes, is_X11, WIN32, OSX, POSIX, first_time
+from xpra.os_util import bytestostr, strtobytes, is_X11, is_Wayland, WIN32, OSX, POSIX, first_time
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
@@ -54,22 +54,44 @@ alphalog = Logger("alpha")
 
 CAN_SET_WORKSPACE = False
 HAS_X11_BINDINGS = False
-USE_X11_BINDINGS = POSIX and envbool("XPRA_USE_X11_BINDINGS", is_X11())
+
 prop_get, prop_set, prop_del = None, None, None
 NotifyInferior = None
 X11Window = X11Core = None
-if USE_X11_BINDINGS:
+
+
+def use_x11_bindings() -> bool:
+    if not POSIX or OSX:
+        return False
+    if not is_X11() or is_Wayland():
+        return False
+    if envbool("XPRA_USE_X11_BINDINGS", False):
+        return True
+    try:
+        from xpra.x11.bindings.xwayland_info import isxwayland
+    except ImportError:
+        log("no xwayland bindings", exc_info=True)
+        return False
+    return not isxwayland()
+
+
+if use_x11_bindings():
     try:
         from xpra.gtk.error import xlog, verify_sync
         from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del
         from xpra.x11.bindings.window import constants, X11WindowBindings, SHAPE_KIND
         from xpra.x11.bindings.core import X11CoreBindings, set_context_check
         from xpra.x11.bindings.send_wm import send_wm_workspace
+        X11Window = X11WindowBindings()
+        X11Core = X11CoreBindings()
     except ImportError as x11e:
         log("x11 bindings", exc_info=True)
-        #gtk util should have already logged a detailed warning
+        # gtk util should have already logged a detailed warning
         log("cannot import the X11 bindings:")
         log(" %s", x11e)
+    except RuntimeError as e:
+        log("x11", exc_info=True)
+        log.error(f"Error loading X11 bindings: {e}")
     else:
         set_context_check(verify_sync)
         X11Window = X11WindowBindings()
