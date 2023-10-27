@@ -173,7 +173,7 @@ def get_context_info() -> dict[str,Any]:
     }
 
 
-def check_functions(force_enable, *functions) -> bool:
+def check_functions(*functions) -> str:
     missing = []
     available = []
     for x in functions:
@@ -186,15 +186,14 @@ def check_functions(force_enable, *functions) -> bool:
         else:
             available.append(name)
     if missing:
-        if not force_enable:
-            raise_fatal_error("some required OpenGL functions are missing:\n%s" % csv(missing))
         log("some functions are missing: %s", csv(missing))
+        return "missing functions: "+csv(missing)
     else:
         log("All the required OpenGL functions are available: %s " % csv(available))
-    return len(missing)==0
+    return ""
 
 
-def check_GL_functions(force_enable=False) -> bool:
+def check_base_functions() -> str:
     # check for specific functions we need:
     from OpenGL.GL import (
         glActiveTexture, glTexSubImage2D, glTexCoord2i,
@@ -207,7 +206,6 @@ def check_GL_functions(force_enable=False) -> bool:
         glVertex2i, glEnd,
     )
     return check_functions(
-        force_enable,
         glActiveTexture, glTexSubImage2D, glTexCoord2i,
         glViewport, glMatrixMode, glLoadIdentity, glOrtho,
         glEnableClientState, glGenTextures, glDisable,
@@ -219,42 +217,34 @@ def check_GL_functions(force_enable=False) -> bool:
     )
 
 
-def check_GL_ARB_functions(force_enable=False) -> bool:
+def check_framebuffer_functions() -> str:
     # check for framebuffer functions we need:
     from OpenGL.GL.ARB.framebuffer_object import (
         GL_FRAMEBUFFER,
         GL_COLOR_ATTACHMENT0,
         glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D,
     )
-    if not check_functions(force_enable,
-                           GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                           glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D,
-                           ):
-        return False
+    return check_functions(
+        GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+        glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D,
+    )
+
+def check_vertex_functions() -> str:
     from OpenGL.GL.ARB.vertex_program import (
         glGenProgramsARB, glDeleteProgramsARB,
         glBindProgramARB, glProgramStringARB,
     )
-    if not check_functions(force_enable,
-                           glGenProgramsARB, glDeleteProgramsARB, glBindProgramARB, glProgramStringARB,
-                           ):
-        return False
-    # this allows us to do CSC via OpenGL:
-    # see http://www.opengl.org/registry/specs/ARB/fragment_program.txt
+    return check_functions(
+        glGenProgramsARB, glDeleteProgramsARB, glBindProgramARB, glProgramStringARB,
+    )
+
+def check_frag_functions() -> str:
     from OpenGL.GL.ARB.fragment_program import glInitFragmentProgramARB
+    return check_functions(glInitFragmentProgramARB)
+
+def check_texture_functions() -> str:
     from OpenGL.GL.ARB.texture_rectangle import glInitTextureRectangleARB
-    for name, fn in {
-        "glInitFragmentProgramARB": glInitFragmentProgramARB,
-        "glInitTextureRectangleARB": glInitTextureRectangleARB,
-    }.items():
-        if not fn():
-            if not force_enable:
-                raise RuntimeError(f"OpenGL output requires {name}")
-            log("%s missing", name)
-            return False
-        else:
-            log("%s found", name)
-    return True
+    return check_functions(glInitTextureRectangleARB)
 
 
 def check_lists(props:dict[str,Any], force_enable=False) -> bool:
@@ -378,8 +368,12 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
     except (AttributeError, IndexError):
         pass
 
-    def unsafe():
+    def unsafe(warning:str):
+        log(f"unsafe: {warning}")
         props["safe"] = False
+        warnings = props.get("warning", [])
+        warnings.append(warning)
+        props["warning"] = warnings
 
     import OpenGL
     props["pyopengl"] = OpenGL.__version__  # @UndefinedVariable
@@ -395,19 +389,17 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
         gl_major = int(vparts[0])
         gl_minor = int(vparts[1])
     except (IndexError, ValueError) as e:
-        log("failed to parse gl version '%s': %s", bytestostr(gl_version_str), e)
+        msg = "failed to parse gl version '%s': %s" % (bytestostr(gl_version_str), e)
+        unsafe(msg)
         log(" assuming this is at least 1.1 to continue")
-        unsafe()
         gl_major = gl_minor = 0
     else:
         props["opengl"] = gl_major, gl_minor
         MIN_VERSION = (1, 1)
         if (gl_major, gl_minor) < MIN_VERSION:
-            if not force_enable:
-                req_vstr = ".".join([str(x) for x in MIN_VERSION])
-                raise_fatal_error(f"OpenGL output requires version {req_vstr} or greater, not {gl_major}.{gl_minor}")
-                return props
-            unsafe()
+            req_vstr = ".".join([str(x) for x in MIN_VERSION])
+            msg = f"OpenGL output requires version {req_vstr} or greater, not {gl_major}.{gl_minor}"
+            unsafe(msg)
         else:
             log(f"found valid OpenGL version: {gl_major}.{gl_minor}")
 
@@ -435,10 +427,11 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
     #we now require PyOpenGL 3.1.4 or later
     #3.1.4 was released in 2019
     if vernum<(3, 1, 4):
+        msg = f"PyOpenGL version {pyopengl_version} is too old and buggy"
+        unsafe(msg)
         if not force_enable:
-            raise_fatal_error(f"PyOpenGL version {pyopengl_version} is too old and buggy")
-            return {}
-        unsafe()
+            raise_fatal_error(msg)
+            return props
     props["zerocopy"] = bool(OpenGL_accelerate) and pyopengl_version==accel_version
 
     props.update(get_vendor_info())
@@ -448,10 +441,16 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
     props["texture-size-limit"] = get_max_texture_size()
     props["max-viewport-dims"] = get_max_viewport_dims()
 
-    if not check_GL_functions(force_enable):
-        unsafe()
-    if not check_GL_ARB_functions(force_enable):
-        unsafe()
+    for check_fn in (
+        check_base_functions,
+        check_framebuffer_functions,
+        check_texture_functions,
+        check_frag_functions,
+        check_vertex_functions,
+    ):
+        msg : str = check_fn()
+        if msg:
+            unsafe(msg)
 
     safe = check_lists(props, force_enable)
     if "safe" not in props:
