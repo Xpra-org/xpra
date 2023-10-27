@@ -289,19 +289,40 @@ def isdisplaytype(args, *dtypes) -> bool:
     d = args[0]
     return any(d.startswith(f"{dtype}/") or d.startswith(f"{dtype}:") for dtype in dtypes)
 
+
+def set_gdk_backend() -> None:
+    try:
+        from xpra.x11.bindings.xwayland import isX11, isxwayland
+    except ImportError:
+        pass
+    else:
+        if os.environ.get("DISPLAY") and isX11():
+            # we have an X11 display!
+            if isxwayland():
+                os.environ["GDK_BACKEND"] = "wayland"
+            else:
+                os.environ["GDK_BACKEND"] = "x11"
+    if is_Wayland():
+        os.environ["GDK_BACKEND"] = "wayland"
+
+
+def set_pyopengl_platform() -> None:
+    gdk_backend = os.environ.get("GDK_BACKEND", "")
+    if gdk_backend == "x11":
+        os.environ["PYOPENGL_PLATFORM"] = "x11"
+    elif gdk_backend == "wayland":
+            os.environ["PYOPENGL_PLATFORM"] = "egl"
+
+
 def check_gtk_client() -> None:
     no_gtk()
+
     if POSIX and not OSX and not os.environ.get("GDK_BACKEND"):
-        try:
-            from xpra.x11.bindings.xwayland import isX11, isxwayland
-        except ImportError:
-            pass
-        else:
-            if isX11() and not isxwayland():
-                os.environ["GDK_BACKEND"] = "x11"
-                os.environ["PYOPENGL_PLATFORM"] = "x11"
-    if is_Wayland() and not os.environ.get("PYOPENGL_PLATFORM", ""):
-        os.environ["PYOPENGL_PLATFORM"] = "egl"
+        set_gdk_backend()
+
+    if not os.environ.get("PYOPENGL_PLATFORM"):
+        set_pyopengl_platform()
+
     check_gtk()
     try:
         from xpra.client import gui, gtk3
