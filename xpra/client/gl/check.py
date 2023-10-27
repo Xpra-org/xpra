@@ -372,6 +372,11 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
     props : dict[str,Any] = {
         "platform"  : sys.platform,
         }
+    try:
+        from OpenGL import platform
+        props["backend"] = platform.PLATFORM.__module__.split(".")[-1]
+    except (AttributeError, IndexError):
+        pass
 
     def unsafe():
         props["safe"] = False
@@ -396,7 +401,7 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
         gl_major = gl_minor = 0
     else:
         props["opengl"] = gl_major, gl_minor
-        MIN_VERSION = (1,1)
+        MIN_VERSION = (1, 1)
         if (gl_major, gl_minor) < MIN_VERSION:
             if not force_enable:
                 req_vstr = ".".join([str(x) for x in MIN_VERSION])
