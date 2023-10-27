@@ -69,8 +69,8 @@ from xpra.client.gui.window_backing_base import (
     WEBP_PILLOW,
     )
 from xpra.client.gl.check import GL_ALPHA_SUPPORTED, get_max_texture_size
-from xpra.client.gl.colorspace_conversions import (
-    YUV_to_RGB_shader, YUV_to_RGB_FULL_shader, RGBP_to_RGB_shader, NV12_to_RGB_shader,
+from xpra.client.gl.shaders import (
+    YUV_to_RGB, YUV_to_RGB_FULL, RGBP_to_RGB, NV12_to_RGB,
     )
 from xpra.client.gl.spinner import draw_spinner
 from xpra.log import Logger
@@ -516,10 +516,10 @@ class GLWindowBackingBase(WindowBackingBase):
         self.shaders = [ 1, 2, 3, 4 ]
         glGenProgramsARB(4, self.shaders)
         for name, progid, progstr in (
-            ("YUV_to_RGB",      YUV_to_RGB_SHADER,      YUV_to_RGB_shader),
-            ("YUV_to_RGBFULL",  YUV_to_RGB_FULL_SHADER, YUV_to_RGB_FULL_shader),
-            ("RGBP_to_RGB",     RGBP_to_RGB_SHADER,     RGBP_to_RGB_shader),
-            ("NV12_to_RGB",     NV12_to_RGB_SHADER,     NV12_to_RGB_shader),
+            ("YUV_to_RGB",      YUV_to_RGB_SHADER,      YUV_to_RGB),
+            ("YUV_to_RGBFULL",  YUV_to_RGB_FULL_SHADER, YUV_to_RGB_FULL),
+            ("RGBP_to_RGB",     RGBP_to_RGB_SHADER,     RGBP_to_RGB),
+            ("NV12_to_RGB",     NV12_to_RGB_SHADER,     NV12_to_RGB),
             ):
             glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[progid])
             try:

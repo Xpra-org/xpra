@@ -4,7 +4,7 @@
 #http://www.mdk.org.pl/2007/11/17/gl-colorspace-conversions
 # "full-color" version by Antoine Martin <antoine@xpra.org>
 
-YUV_to_RGB_shader = b"""!!ARBfp1.0
+YUV_to_RGB = b"""!!ARBfp1.0
 # cgc version 3.1.0010, build date Feb 10 2012
 # command line args: -profile arbfp1
 # source file: yuv.cg
@@ -43,7 +43,7 @@ YUV_to_RGB_shader = b"""!!ARBfp1.0
 # 10 instructions, 2 R-regs
 """
 
-YUV_to_RGB_FULL_shader = b"""!!ARBfp1.0
+YUV_to_RGB_FULL = b"""!!ARBfp1.0
 # cgc version 3.0.0016, build date Feb 13 2011
 # command line args: -profile arbfp1
 # source file: yuv.cg
@@ -111,7 +111,7 @@ END
 #    return OUT;
 #}
 
-RGBP_to_RGB_shader = b"""!!ARBfp1.0
+RGBP_to_RGB = b"""!!ARBfp1.0
 # cgc version 3.1.0013, build date Apr 24 2012
 # command line args: -profile arbfp1
 # source file: a.cg
@@ -140,7 +140,7 @@ END
 # 6 instructions, 2 R-regs
 """
 
-NV12_to_RGB_shader = b"""!!ARBfp1.0
+NV12_to_RGB = b"""!!ARBfp1.0
 # cgc version 3.0.0016, build date Feb 13 2011
 # command line args: -profile arbfp1
 # source file: ./nv.cg
