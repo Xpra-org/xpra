@@ -130,7 +130,7 @@ class GLClientWindow(GLClientWindowBase):
 
     def repaint(self, x:int, y:int, w:int, h:int) -> None:
         widget = self.drawing_area
-        log.error(f"repaint%s {widget=}", (x, y, w, h))
+        log(f"repaint%s {widget=}", (x, y, w, h))
         if widget:
             widget.queue_render()
 
