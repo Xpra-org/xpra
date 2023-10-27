@@ -23,7 +23,7 @@ from collections.abc import Callable, Iterable
 
 from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra
-from xpra.common import noerr
+from xpra.common import noerr, noop
 from xpra.util.types import typedict
 from xpra.util.str_fn import nonl, csv, print_nested_dict, pver, sorted_nicely
 from xpra.util.env import envint, envbool
@@ -222,7 +222,7 @@ def configure_logging(options, mode) -> None:
                 add_debug_category(cat)
                 enable_debug_for(cat)
 
-    #always log debug level, we just use it selectively (see above)
+    # always log debug level, we just use it selectively (see above)
     logging.root.setLevel(logging.INFO)
 
 
@@ -231,7 +231,7 @@ def configure_network(options) -> None:
     compression.init_compressors(*(list(options.compressors)+["none"]))
     ecs = compression.get_enabled_compressors()
     if not ecs:
-        #force compression level to zero since we have no compressors available:
+        # force compression level to zero since we have no compressors available:
         options.compression_level = 0
     packet_encoding.init_encoders(*list(options.packet_encoders)+["none"])
     ees = set(packet_encoding.get_enabled_encoders())
@@ -239,7 +239,7 @@ def configure_network(options) -> None:
         ees.remove("none")
     except KeyError:
         pass
-    #verify that at least one real encoder is available:
+    # verify that at least one real encoder is available:
     if not ees:
         raise InitException("at least one valid packet encoder must be enabled")
 
@@ -247,10 +247,10 @@ def configure_env(env_str) -> None:
     if env_str:
         env = parse_env(env_str)
         if POSIX and getuid()==0:
-            #running as root!
-            #sanitize: only allow "safe" environment variables
-            #as these may have been specified by a non-root user
-            env = {k:v for k,v in env.items() if k.startswith("XPRA_")}
+            # running as root!
+            # sanitize: only allow "safe" environment variables
+            # as these may have been specified by a non-root user
+            env = {k: v for k, v in env.items() if k.startswith("XPRA_")}
         os.environ.update(env)
 
 
@@ -258,8 +258,8 @@ def systemd_run_command(mode, systemd_run_args=None, user:bool=True) -> list[str
     cmd = ["systemd-run", "--description" , "xpra-%s" % mode, "--scope"]
     if user:
         cmd.append("--user")
-    LOG_SYSTEMD_WRAP = envbool("XPRA_LOG_SYSTEMD_WRAP", True)
-    if not LOG_SYSTEMD_WRAP:
+    log_systemd_wrap = envbool("XPRA_LOG_SYSTEMD_WRAP", True)
+    if not log_systemd_wrap:
         cmd.append("--quiet")
     if systemd_run_args:
         cmd += shlex.split(systemd_run_args)
@@ -269,13 +269,13 @@ def systemd_run_wrap(mode:str, args, systemd_run_args=None, user:bool=True, **kw
     cmd = systemd_run_command(mode, systemd_run_args, user)
     cmd += args
     cmd.append("--systemd-run=no")
-    werr = getattr(sys.stderr, "write", None)
-    LOG_SYSTEMD_WRAP = envbool("XPRA_LOG_SYSTEMD_WRAP", True)
-    if LOG_SYSTEMD_WRAP and werr:
-        noerr(werr, f"using systemd-run to wrap {mode!r} xpra server subcommand\n")
-    LOG_SYSTEMD_WRAP_COMMAND = envbool("XPRA_LOG_SYSTEMD_WRAP_COMMAND", False)
-    if LOG_SYSTEMD_WRAP_COMMAND and werr:
-        noerr(werr, "%s\n" % " ".join(["'%s'" % x for x in cmd]))
+    errwrite = getattr(sys.stderr, "write", noop)
+    log_systemd_wrap = envbool("XPRA_LOG_SYSTEMD_WRAP", True)
+    if log_systemd_wrap:
+        noerr(errwrite, f"using systemd-run to wrap {mode!r} xpra server subcommand\n")
+    log_systemd_wrap_command = envbool("XPRA_LOG_SYSTEMD_WRAP_COMMAND", False)
+    if log_systemd_wrap_command:
+        noerr(errwrite, "%s\n" % " ".join(["'%s'" % x for x in cmd]))
     try:
         with Popen(cmd, **kwargs) as p:
             return p.wait()
@@ -2460,6 +2460,7 @@ def run_glcheck(opts) -> ExitValue:
             except Exception:
                 log("error initializing gdk display source", exc_info=True)
     try:
+
         check_gtk_client()
         props = do_run_glcheck(opts)
     except Exception as e:
