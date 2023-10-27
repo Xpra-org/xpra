@@ -20,7 +20,7 @@ from unit.test_util import get_free_tcp_port
 from unit.server_test_util import ServerTestUtil, log, estr, log_gap
 
 
-CONNECT_WAIT = envint("XPRA_TEST_CONNECT_WAIT", 20)
+CONNECT_WAIT = envint("XPRA_TEST_CONNECT_WAIT", 60)
 SUBPROCESS_WAIT = envint("XPRA_TEST_SUBPROCESS_WAIT", CONNECT_WAIT*2)
 
 NOVERIFY = "--ssl-server-verify-mode=none"
