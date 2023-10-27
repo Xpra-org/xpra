@@ -1,0 +1,28 @@
+From e727dc530f4abfe0091be068573d7dda311fc575 Mon Sep 17 00:00:00 2001
+From: Antoine Martin <totaam@xpra.org>
+Date: Fri, 27 Oct 2023 15:25:07 +0700
+Subject: [PATCH] fix resource warning
+
+```
+/usr/lib/python3.11/site-packages/OpenGL/platform/egl.py:76: ResourceWarning: unclosed file <_io.TextIOWrapper
+name='/proc/cpuinfo' mode='r' encoding='UTF-8'>
+  info = open('/proc/cpuinfo').read()
+```
+---
+ OpenGL/platform/egl.py | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/OpenGL/platform/egl.py b/OpenGL/platform/egl.py
+index 55fbb0be..44b55024 100644
+--- a/OpenGL/platform/egl.py
++++ b/OpenGL/platform/egl.py
+@@ -73,7 +73,8 @@ def EGL(self):
+         #   https://github.com/raspberrypi/firmware/issues/110
+         import os
+         if os.path.exists('/proc/cpuinfo'):
+-            info = open('/proc/cpuinfo').read()
++            with open('/proc/cpuinfo', 'r') as f:
++                info = f.read()
+             if 'BCM2708' in info or 'BCM2709' in info:
+                 assert self.GLES2
+         try:

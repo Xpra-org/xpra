@@ -19,12 +19,13 @@
 
 Name:           %{python3}-pyopengl
 Version:        3.1.7
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Python 3 bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
 Source0:        https://files.pythonhosted.org/packages/72/b6/970868d44b619292f1f54501923c69c9bd0ab1d2d44cf02590eac2706f4f/%{srcname}-%{version}.tar.gz
 Source1:        https://files.pythonhosted.org/packages/93/09/d08b3d07dbd88258276496a47273778f330f5ccf8390cb21b16b29d660de/%{srcname}-accelerate-%{version}.tar.gz
+Patch0:         pyopengl-egl-open-warning.patch
 
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-setuptools
@@ -70,6 +71,8 @@ if [ "${sha256}" != "2b123621273a939f7fd2ec227541e399f9b5d4e815d69ae0bdb1b6c70a2
 	exit 1
 fi
 %setup -q -c -n %{srcname}-%{version} -T -a0 -a1
+cd %{srcname}-%{version}
+%patch -p1 -P 0
 
 
 %build
@@ -112,6 +115,9 @@ rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %changelog
+* Fri Oct 27 2023 Antoine Martin <antoine@xpra.org> - 3.1.7-2
+- add patch to silence egl file open warning
+
 * Mon Oct 02 2023 Antoine Martin <antoine@xpra.org> - 3.1.7-1
 - new upstream release
 - remove 'xpra' package suffix
