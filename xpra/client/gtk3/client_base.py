@@ -1309,7 +1309,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 if not draw_result.get("success", False):
                     err("OpenGL test rendering failed:", draw_result.get("message", "unknown error"))
                     return
-                log("OpenGL test rendering succeeded")
+                opengllog(f"OpenGL test rendering succeeded: {draw_result}")
             if self.opengl_enabled:
                 opengllog.info(f"OpenGL enabled on {driver_info!r}")
                 #don't try to handle video dimensions bigger than this:
