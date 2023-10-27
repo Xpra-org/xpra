@@ -5,7 +5,7 @@
 
 from typing import Any
 from collections.abc import Callable
-from gi.repository import Gtk, Gdk, GObject
+from gi.repository import Gtk, Gdk, GObject, GLib
 
 from xpra.common import noop
 from xpra.util.str_fn import ellipsizer
@@ -14,6 +14,16 @@ from xpra.client.gl.backing import GLWindowBackingBase
 from xpra.log import Logger
 
 log = Logger("opengl", "paint")
+
+def GLArea(alpha:bool) -> Gtk.GLArea:
+    glarea = Gtk.GLArea()
+    glarea.set_use_es(True)
+    glarea.set_auto_render(True)
+    glarea.set_has_alpha(alpha)
+    glarea.set_has_depth_buffer(False)
+    glarea.set_has_stencil_buffer(False)
+    glarea.set_required_version(3, 2)
+    return glarea
 
 
 class GLAreaBacking(GLWindowBackingBase):
@@ -25,6 +35,9 @@ class GLAreaBacking(GLWindowBackingBase):
     def __repr__(self):
         return "GLAreaBacking(%#x, %s, %s)" % (self.wid, self.size, self.pixel_format)
 
+    def idle_add(self, *args, **kwargs):
+        GLib.idle_add(*args, **kwargs)
+
     def init_gl_config(self) -> None:
         pass
 
@@ -32,19 +45,13 @@ class GLAreaBacking(GLWindowBackingBase):
         return True
 
     def init_backing(self) -> None:
-        da = Gtk.GLArea()
-        da.set_use_es(True)
-        da.set_auto_render(True)
-        da.set_has_alpha(self._alpha_enabled)
-        da.set_has_depth_buffer(False)
-        da.set_has_stencil_buffer(False)
-        da.set_required_version(3, 2)
-        da.connect("realize", self.on_realize)
-        da.connect("render", self.on_render)
-        da.set_size_request(*self.size)
-        da.set_events(da.get_events() | Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.POINTER_MOTION_HINT_MASK)
-        da.show()
-        self._backing = da
+        glarea = GLArea(self._alpha_enabled)
+        glarea.connect("realize", self.on_realize)
+        glarea.connect("render", self.on_render)
+        glarea.set_size_request(*self.size)
+        glarea.set_events(glarea.get_events() | Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.POINTER_MOTION_HINT_MASK)
+        glarea.show()
+        self._backing = glarea
 
     def on_realize(self, *args) -> None:
         gl_context = self.gl_context()
@@ -83,13 +90,8 @@ class GLAreaBacking(GLWindowBackingBase):
         pass
 
     def draw_fbo(self, context) -> bool:
-        log.warn(f"draw_fbo({context})")
-        #window = self._backing.get_window()
-        #from xpra.client.gl.backing import TEX_FBO
-        #from OpenGL.GL import GL_TEXTURE
-        #w, h = self.render_size
-        #self.textures[TEX_FBO]
-        #Gdk.cairo_draw_from_gl(context, window, self.textures[TEX_FBO], GL_TEXTURE, 1, 0, 0, w, h)
+        log(f"draw_fbo({context})")
+        # we return False which will trigger the "render" signal
         return False
 
     def on_render(self, glarea, glcontext):
@@ -138,14 +140,20 @@ GObject.type_register(GLClientWindow)
 
 
 def check_support(force_enable=False):
-    if True:
-        from xpra.client.gl.window import test_gl_client_window
-        return test_gl_client_window(GLClientWindow)
-    window = Gtk.Window(title="opengl-check")
+    window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
     window.set_default_size(400, 400)
-    gl_area = GLAreaBacking()
-    gl_area.set_has_depth_buffer(False)
-    gl_area.set_has_stencil_buffer(False)
-    window.add(gl_area)
-    gl_area.realize()
-    return {}
+    window.resize(400, 400)
+    window.set_decorated(False)
+    window.realize()
+    glarea = GLArea(True)
+    from xpra.gtk.window import set_visual
+    set_visual(glarea, True)
+    window.add(glarea)
+    glarea.realize()
+    gl_context = glarea.get_context()
+    gl_context.make_current()
+    try:
+        from xpra.client.gl.check import check_PyOpenGL_support
+        return check_PyOpenGL_support(force_enable)
+    finally:
+        window.destroy()
