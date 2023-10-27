@@ -183,6 +183,7 @@ class ServerSocketsTest(ServerTestUtil):
         r = client.poll()
         self.verify_exitcode(expected=exit_code, actual=r)
 
+
     def verify_exitcode(self, client="info client", expected:ExitValue=ExitCode.OK, actual:ExitValue|None=ExitCode.OK):
         if actual is None:
             raise Exception(f"expected {client} to return %s but it is still running" % (estr(expected),))
@@ -244,7 +245,7 @@ class ServerSocketsTest(ServerTestUtil):
                 server = self.start_server(display, *server_args)
 
                 #test it with openssl client:
-                for verify_port in (tcp_port, ssl_port, ws_port, wss_port):
+                for mode, verify_port in proto_ports.items():
                     openssl_verify_command = (
                         "openssl", "s_client", "-connect",
                         "127.0.0.1:%i" % verify_port, "-CAfile", genssl.certfile,
@@ -252,7 +253,8 @@ class ServerSocketsTest(ServerTestUtil):
                     devnull = os.open(os.devnull, os.O_WRONLY)
                     openssl = self.run_command(openssl_verify_command, stdin=devnull, shell=True)
                     r = pollwait(openssl, 10)
-                    assert r==0, "openssl certificate verification failed, returned %s" % r
+                    if r!=0:
+                        raise RuntimeError(f"openssl certificate returned {r} for {mode} port {verify_port}")
                 errors : list[str] = []
                 def tc(mode:str, port:int):
                     uri = f"{mode}://foo:bar@127.0.0.1:{port}/"
@@ -260,7 +262,7 @@ class ServerSocketsTest(ServerTestUtil):
                     try:
                         self.verify_connect(uri, ExitCode.OK, NOVERIFY)
                     except RuntimeError as e:
-                        err = f"failed to connect to {stype} port using uri {uri}: {e}"
+                        err = f"failed to connect to {stype} port using uri {uri!r}: {e}"
                         log.error(f"Error: {err}")
                         errors.append(err)
                     #without NOVERIFY, should fail with SSL failure:
