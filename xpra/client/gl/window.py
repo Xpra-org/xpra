@@ -164,6 +164,7 @@ def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(10
             import gi
             gi.require_version("Gtk", "3.0")  # @UndefinedVariable
             from gi.repository import Gtk, GLib  # @UnresolvedImport
+
             def window_close_event(*_args):
                 Gtk.main_quit()
             noclient.window_close_event = window_close_event
@@ -180,6 +181,16 @@ def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(10
                 "success" : False,
                 "message" : "failed to present FBO on screen: %s" % window_backing.last_present_fbo_error
                 }
+    except Exception as e:
+        log(f"test_gl_client_window({gl_client_window_class}, {max_window_size}, {pixel_depth}, {show})", exc_info=True)
+        msg = str(e)
+        if len(msg)>128:
+            msg = msg.split(":", 1)[0]
+        draw_result.update({
+            "success" : False,
+            "safe" : False,
+            "message" : msg,
+        })
     finally:
         if window:
             window.close()
