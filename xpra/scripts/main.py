@@ -2399,6 +2399,15 @@ def run_glprobe(opts, show=False) -> int:
         from xpra.platform.gui import init, set_default_icon
         set_default_icon("opengl.png")
         init()
+    import signal
+
+    def signal_handler(signum, frame):
+        os._exit(1)
+    for name in ("ABRT", "BUS", "FPE", "HUP", "ILL", "INT", "PIPE", "SEGV", "TERM"):
+        value = getattr(signal, f"SIG{name}", 0)
+        if value:
+            signal.signal(value, signal_handler)
+
     props = do_run_glcheck(opts, show)
     if not props.get("success", False):
         return 3
