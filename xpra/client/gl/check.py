@@ -197,7 +197,7 @@ def get_context_info() -> dict[str,Any]:
     }
 
 
-def check_functions(*functions) -> str:
+def check_available(*functions) -> str:
     missing = []
     available = []
     for x in functions:
@@ -229,7 +229,7 @@ def check_base_functions() -> str:
         glMultiTexCoord2i,
         glVertex2i, glEnd,
     )
-    return check_functions(
+    return check_available(
         glActiveTexture, glTexSubImage2D, glTexCoord2i,
         glViewport, glMatrixMode, glLoadIdentity, glOrtho,
         glEnableClientState, glGenTextures, glDisable,
@@ -244,31 +244,33 @@ def check_base_functions() -> str:
 def check_framebuffer_functions() -> str:
     # check for framebuffer functions we need:
     from OpenGL.GL.ARB.framebuffer_object import (
-        GL_FRAMEBUFFER,
-        GL_COLOR_ATTACHMENT0,
+        GL_FRAMEBUFFER, GL_DRAW_FRAMEBUFFER, GL_READ_FRAMEBUFFER,
+        GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
         glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D,
     )
-    return check_functions(
-        GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+    return check_available(
+        GL_FRAMEBUFFER, GL_DRAW_FRAMEBUFFER, GL_READ_FRAMEBUFFER,
+        GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
         glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D,
     )
 
-def check_vertex_functions() -> str:
-    from OpenGL.GL.ARB.vertex_program import (
-        glGenProgramsARB, glDeleteProgramsARB,
-        glBindProgramARB, glProgramStringARB,
+def check_shader_functions() -> str:
+    from OpenGL.GL import (
+        glCreateShader, glDeleteShader,
+        glShaderSource, glCompileShader, glGetShaderiv, glGetShaderInfoLog,
+        GL_FRAGMENT_SHADER, GL_COMPILE_STATUS,
     )
-    return check_functions(
-        glGenProgramsARB, glDeleteProgramsARB, glBindProgramARB, glProgramStringARB,
+    # don't check GL_FALSE, which is zero!
+    return check_available(
+        glCreateShader, glDeleteShader,
+        glShaderSource, glCompileShader, glGetShaderiv, glGetShaderInfoLog,
+        GL_FRAGMENT_SHADER, GL_COMPILE_STATUS,
     )
 
-def check_frag_functions() -> str:
-    from OpenGL.GL.ARB.fragment_program import glInitFragmentProgramARB
-    return check_functions(glInitFragmentProgramARB)
 
 def check_texture_functions() -> str:
     from OpenGL.GL.ARB.texture_rectangle import glInitTextureRectangleARB
-    return check_functions(glInitTextureRectangleARB)
+    return check_available(glInitTextureRectangleARB)
 
 
 def check_lists(props:dict[str,Any], force_enable=False) -> bool:
@@ -473,8 +475,7 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
         check_base_functions,
         check_framebuffer_functions,
         check_texture_functions,
-        check_frag_functions,
-        check_vertex_functions,
+        check_shader_functions,
     ):
         msg : str = check_fn()
         if msg:

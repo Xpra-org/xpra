@@ -16,6 +16,7 @@ from OpenGL import version as OpenGL_version
 from OpenGL.error import GLError
 from OpenGL.constant import IntConstant
 from OpenGL.GL import (
+    GLuint,
     GL_PIXEL_UNPACK_BUFFER, GL_STREAM_DRAW,
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT,
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST,
@@ -31,7 +32,7 @@ from OpenGL.GL import (
     glTexEnvi, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE,
     glBlendFunc,
     glActiveTexture, glTexSubImage2D,
-    glGetString, glViewport,
+    glViewport,
     glGenTextures, glDisable,
     glBindTexture, glPixelStorei, glEnable, glBegin, glFlush,
     glBindBuffer, glGenBuffers, glBufferData, glDeleteBuffers,
@@ -43,11 +44,6 @@ from OpenGL.GL import (
     glDrawBuffer, glReadBuffer,
     )
 from OpenGL.GL.ARB.texture_rectangle import GL_TEXTURE_RECTANGLE_ARB
-from OpenGL.GL.ARB.vertex_program import (
-    glGenProgramsARB, glBindProgramARB, glProgramStringARB,
-    GL_PROGRAM_ERROR_STRING_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
-    )
-from OpenGL.GL.ARB.fragment_program import GL_FRAGMENT_PROGRAM_ARB
 from OpenGL.GL.ARB.framebuffer_object import (
     GL_FRAMEBUFFER, GL_DRAW_FRAMEBUFFER, GL_READ_FRAMEBUFFER,
     GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
@@ -255,12 +251,6 @@ TEX_CURSOR = 6
 TEX_FPS = 7
 N_TEXTURES = 8
 
-# Shader number assignment
-YUV_to_RGB_SHADER = 0
-RGBP_to_RGB_SHADER = 1
-YUV_to_RGB_FULL_SHADER = 2
-NV12_to_RGB_SHADER = 3
-
 
 """
 The logic is as follows:
@@ -284,7 +274,7 @@ class GLWindowBackingBase(WindowBackingBase):
         #can be: "YUV420P", "YUV422P", "YUV444P", "GBRP" or None when not initialized yet.
         self.pixel_format : str = ""
         self.textures = None # OpenGL texture IDs
-        self.shaders = None
+        self.shaders : dict[str,GLuint] = {}
         self.texture_size : tuple[int,int] = (0, 0)
         self.gl_setup : bool = False
         self.debug_setup : bool = False
@@ -497,7 +487,6 @@ class GLWindowBackingBase(WindowBackingBase):
     def gl_init_textures(self) -> None:
         log("gl_init_textures()")
         assert self.offscreen_fbo is None
-        assert self.shaders is None
         if not bool(glGenFramebuffers):
             raise RuntimeError("current context lacks framebuffer support: no glGenFramebuffers")
         self.textures = glGenTextures(N_TEXTURES)
@@ -507,32 +496,33 @@ class GLWindowBackingBase(WindowBackingBase):
             self, self.textures, self.offscreen_fbo, self.tmp_fbo)
 
     def gl_init_shaders(self) -> None:
-        assert self.shaders is None
-        if not bool(glGenProgramsARB):
-            log.warn("Warning: running without shaders")
-            self.shaders = ()
-            return
         # Create and assign fragment programs
-        self.shaders = [ 1, 2, 3, 4 ]
-        glGenProgramsARB(4, self.shaders)
-        for name, progid, progstr in (
-            ("YUV_to_RGB",      YUV_to_RGB_SHADER,      YUV_to_RGB),
-            ("YUV_to_RGBFULL",  YUV_to_RGB_FULL_SHADER, YUV_to_RGB_FULL),
-            ("RGBP_to_RGB",     RGBP_to_RGB_SHADER,     RGBP_to_RGB),
-            ("NV12_to_RGB",     NV12_to_RGB_SHADER,     NV12_to_RGB),
-            ):
-            glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[progid])
-            try:
-                glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, len(progstr), progstr)
-            except Exception as e:
-                err = glGetString(GL_PROGRAM_ERROR_STRING_ARB) or str(e)
-            else:
-                err = glGetString(GL_PROGRAM_ERROR_STRING_ARB)
-            if err:
+        from OpenGL.GL import (
+            glCreateShader, glDeleteShader,
+            glShaderSource, glCompileShader, glGetShaderiv, glGetShaderInfoLog,
+            GL_FRAGMENT_SHADER, GL_FALSE, GL_COMPILE_STATUS,
+        )
+        for name, progstr in (
+            ("YUV_to_RGB",      YUV_to_RGB),
+            ("YUV_to_RGB_FULL", YUV_to_RGB_FULL),
+            ("RGBP_to_RGB",     RGBP_to_RGB),
+            ("NV12_to_RGB",     NV12_to_RGB),
+        ):
+            if name in self.shaders:
+                continue
+            shader_id = glCreateShader(GL_FRAGMENT_SHADER)
+            glShaderSource(shader_id, progstr)
+            glCompileShader(shader_id)
+            status = glGetShaderiv(shader_id, GL_COMPILE_STATUS)
+            if status == GL_FALSE:
+                err = glGetShaderInfoLog(shader_id)
+                glDeleteShader(shader_id)
                 log.error("OpenGL shader %s failed:", name)
-                log.error(" %s", err)
-                raise RuntimeError(f"OpenGL shader {name} setup failure: {err}")
+                for line in bytestostr(err).split("\n"):
+                    log.error(" %s", line)
+                raise RuntimeError(f"OpenGL failed to compile fragment shader {name}: {err}")
             log("%s shader initialized", name)
+            self.shaders[name] = shader_id
 
     def gl_init(self, context, skip_fbo=False) -> None:
         #must be called within a context!
@@ -581,8 +571,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glBindTexture(target, 0)
 
         # Create and assign fragment programs
-        if not self.shaders:
-            self.gl_init_shaders()
+        self.gl_init_shaders()
 
         self.gl_setup = True
         log("gl_init(%s, %s) done", context, skip_fbo)
@@ -1124,7 +1113,7 @@ class GLWindowBackingBase(WindowBackingBase):
             flush = options.intget("flush", 0)
             w = img.get_width()
             h = img.get_height()
-            self.idle_add(self.gl_paint_planar, YUV_to_RGB_FULL_SHADER, flush, encoding, img,
+            self.idle_add(self.gl_paint_planar, "YUV_to_RGB_FULL", flush, encoding, img,
                           x, y, w, h, width, height, options, callbacks)
             return
         if encoding=="jpeg":
@@ -1205,7 +1194,7 @@ class GLWindowBackingBase(WindowBackingBase):
         w = img.get_width()
         h = img.get_height()
         options["pbo"] = True
-        self.do_gl_paint_planar(gl_context, NV12_to_RGB_SHADER, flush, encoding, img,
+        self.do_gl_paint_planar(gl_context, NV12_to_RGB, flush, encoding, img,
                            x, y, w, h, width, height,
                            options, callbacks)
 
@@ -1270,7 +1259,7 @@ class GLWindowBackingBase(WindowBackingBase):
             flush = options.intget("flush", 0)
             w = img.get_width()
             h = img.get_height()
-            self.idle_add(self.gl_paint_planar, YUV_to_RGB_SHADER, flush, "webp", img,
+            self.idle_add(self.gl_paint_planar, YUV_to_RGB, flush, "webp", img,
                           x, y, w, h, width, height, options, callbacks)
             return
         super().paint_webp(img_data, x, y, width, height, options, callbacks)
@@ -1283,7 +1272,7 @@ class GLWindowBackingBase(WindowBackingBase):
         w = img.get_width()
         h = img.get_height()
         if pixel_format.startswith("YUV"):
-            self.idle_add(self.gl_paint_planar, YUV_to_RGB_FULL_SHADER, flush, "avif", img,
+            self.idle_add(self.gl_paint_planar, YUV_to_RGB_FULL, flush, "avif", img,
                           x, y, w, h, width, height, options, callbacks)
         else:
             self.idle_add(self.do_paint_rgb, pixel_format, img.get_pixels(), x, y, w, h, width, height,
@@ -1410,15 +1399,15 @@ class GLWindowBackingBase(WindowBackingBase):
             super().do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
             return
         if pixel_format.startswith("GBRP"):
-            shader = RGBP_to_RGB_SHADER
+            shader = RGBP_to_RGB
         elif pixel_format=="NV12":
-            shader = NV12_to_RGB_SHADER
+            shader = NV12_to_RGB
         else:
-            shader = YUV_to_RGB_SHADER
+            shader = YUV_to_RGB
         self.idle_add(self.gl_paint_planar, shader, options.intget("flush", 0), options.strget("encoding"), img,
                       x, y, enc_width, enc_height, width, height, options, callbacks)
 
-    def gl_paint_planar(self, shader, flush:int, encoding:str, img,
+    def gl_paint_planar(self, shader:str, flush:int, encoding:str, img,
                         x : int, y : int, enc_width : int, enc_height : int, width : int, height : int,
                         options, callbacks):
         #this function runs in the UI thread, no video_decoder lock held
@@ -1427,7 +1416,7 @@ class GLWindowBackingBase(WindowBackingBase):
                              x, y, enc_width, enc_height,
                              width, height, options, callbacks)
 
-    def do_gl_paint_planar(self, context, shader, flush:int, encoding:str, img,
+    def do_gl_paint_planar(self, context, shader:str, flush:int, encoding:str, img,
                            x : int, y : int, enc_width : int, enc_height : int, width : int, height : int,
                            options, callbacks):
         x, y = self.gravity_adjust(x, y, options)
@@ -1555,7 +1544,7 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
         #glActiveTexture(GL_TEXTURE0)    #redundant, we always call render_planar_update afterwards
 
-    def render_planar_update(self, rx : int, ry : int, rw : int, rh : int, x_scale=1.0, y_scale=1.0, shader:int=YUV_to_RGB_SHADER):
+    def render_planar_update(self, rx : int, ry : int, rw : int, rh : int, x_scale=1.0, y_scale=1.0, shader="YUV_to_RGB"):
         log("%s.render_planar_update%s pixel_format=%s",
             self, (rx, ry, rw, rh, x_scale, y_scale, shader), self.pixel_format)
         if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "NV12", "GBRP16", "YUV444P16"):
@@ -1568,6 +1557,8 @@ class GLWindowBackingBase(WindowBackingBase):
             (GL_TEXTURE2, TEX_V),
             )[:len(divs)]
         self.gl_marker("painting planar update, format %s", self.pixel_format)
+        from OpenGL.GL.ARB.fragment_program import GL_FRAGMENT_PROGRAM_ARB
+        from OpenGL.GL.ARB.vertex_program import glBindProgramARB
         glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[shader])
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
         for texture, index in textures:
