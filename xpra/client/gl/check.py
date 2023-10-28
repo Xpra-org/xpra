@@ -89,19 +89,27 @@ def get_max_viewport_dims() -> tuple[int,int]:
 
 def get_extensions() -> list[str]:
     extensions : list[str] = []
+    from OpenGL.error import GLError
     try:
         from OpenGL.GL import glGetStringi, glGetIntegerv
         from OpenGL.GL import GL_NUM_EXTENSIONS, GL_EXTENSIONS
-        num = glGetIntegerv(GL_NUM_EXTENSIONS)
-        for i in range(num):
-            extensions.append(glGetStringi(GL_EXTENSIONS, i).decode("latin1"))
-        log("OpenGL extensions found: %s", csv(extensions))
-        return extensions
-    except ImportError:
-        pass
-    #legacy mode:
-    from OpenGL.GL import glGetString
-    extensions = glGetString(GL_EXTENSIONS).decode().split(" ")
+    except ImportError as e:
+        log(f"cannot query extensions using GL_NUM_EXTENSIONS / GL_EXTENSIONS: {e}")
+    else:
+        try:
+            num = glGetIntegerv(GL_NUM_EXTENSIONS)
+            for i in range(num):
+                extensions.append(glGetStringi(GL_EXTENSIONS, i).decode("latin1"))
+            log("OpenGL extensions found: %s", csv(extensions))
+        except GLError as e:
+            log(f"error querying extensions using GL_NUM_EXTENSIONS / GL_EXTENSIONS: {e}")
+    if not extensions:
+        # try legacy mode:
+        try:
+            from OpenGL.GL import glGetString
+            extensions = glGetString(GL_EXTENSIONS).decode().split(" ")
+        except GLError as e:
+            log(f"error querying extensions using glGetString(GL_EXTENSIONS): {e}")
     log("OpenGL extensions found: %s", csv(extensions))
     return extensions
 
