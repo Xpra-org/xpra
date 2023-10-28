@@ -11,6 +11,9 @@ from time import monotonic
 from subprocess import Popen, PIPE
 from threading import Event
 from typing import Any
+import gi
+gi.require_version("Gtk", "3.0")  # @UndefinedVariable
+gi.require_version("Gdk", "3.0")  # @UndefinedVariable
 from gi.repository import Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.util.types import typedict
