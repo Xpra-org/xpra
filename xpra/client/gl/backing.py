@@ -515,10 +515,10 @@ class GLWindowBackingBase(WindowBackingBase):
             glCompileShader(shader_id)
             status = glGetShaderiv(shader_id, GL_COMPILE_STATUS)
             if status == GL_FALSE:
-                err = glGetShaderInfoLog(shader_id).strip("\n\r")
+                err = bytestostr(glGetShaderInfoLog(shader_id)).strip("\n\r")
                 glDeleteShader(shader_id)
                 log.error(f"Error compiling {name!r} OpenGL shader:")
-                for line in bytestostr(err).split("\n"):
+                for line in err.split("\n"):
                     if line.strip():
                         log.error(" %s", line.strip())
                 raise RuntimeError(f"OpenGL failed to compile fragment shader {name}: {nonl(err)}")
