@@ -30,6 +30,7 @@ Patch0:         pyopengl-egl-open-warning.patch
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-setuptools
 BuildRequires:  %{python3}-numpy
+BuildRequires:  gcc
 Requires:       freeglut
 Requires:       %{python3}-numpy
 Obsoletes:      %{python3}-PyOpenGL < 3.1.5
