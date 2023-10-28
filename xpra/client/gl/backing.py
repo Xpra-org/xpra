@@ -54,7 +54,7 @@ from xpra.os_util import (
     strtobytes, bytestostr, hexstr,
     POSIX, OSX, is_Wayland, first_time,
 )
-from xpra.util.str_fn import repr_ellipsized
+from xpra.util.str_fn import repr_ellipsized, nonl
 from xpra.util.env import envint, envbool
 from xpra.common import noop, roundup
 from xpra.codecs.constants import get_subsampling_divs, get_plane_name
@@ -515,12 +515,13 @@ class GLWindowBackingBase(WindowBackingBase):
             glCompileShader(shader_id)
             status = glGetShaderiv(shader_id, GL_COMPILE_STATUS)
             if status == GL_FALSE:
-                err = glGetShaderInfoLog(shader_id)
+                err = glGetShaderInfoLog(shader_id).strip("\n\r")
                 glDeleteShader(shader_id)
-                log.error("OpenGL shader %s failed:", name)
+                log.error(f"Error compiling {name!r} OpenGL shader:")
                 for line in bytestostr(err).split("\n"):
-                    log.error(" %s", line)
-                raise RuntimeError(f"OpenGL failed to compile fragment shader {name}: {err}")
+                    if line.strip():
+                        log.error(" %s", line.strip())
+                raise RuntimeError(f"OpenGL failed to compile fragment shader {name}: {nonl(err)}")
             log("%s shader initialized", name)
             self.shaders[name] = shader_id
 
