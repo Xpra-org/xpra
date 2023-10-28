@@ -11,10 +11,10 @@ from xpra.os_util import WIN32, first_time
 import gi
 gi.require_version("Gdk", "3.0")  # @UndefinedVariable
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-from gi.repository import Gdk, Gtk     #@UnresolvedImport
+from gi.repository import Gdk, Gtk     # @UnresolvedImport
 
 
-def add_close_accel(window, callback):
+def add_close_accel(window, callback) -> list[Gtk.AccelGroup]:
     accel_groups = []
     def wa(s, cb):
         accel_groups.append(add_window_accel(window, s, cb))
