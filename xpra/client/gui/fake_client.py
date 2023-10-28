@@ -32,7 +32,9 @@ class FakeClient(AdHocStruct):
         self.server_pointer = False
         self.update_focus = noop
         self.has_focus = noop
-        self.handle_key_action = noop
+        def not_handled(*args):
+            return False
+        self.handle_key_action = not_handled
         self.window_ungrab = noop
         self.keyboard_grabbed = False
         self.window_with_grab = None

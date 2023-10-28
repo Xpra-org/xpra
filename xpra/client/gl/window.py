@@ -167,6 +167,9 @@ def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(10
 
             def window_close_event(*_args):
                 Gtk.main_quit()
+
+            from xpra.gtk.window import add_close_accel
+            add_close_accel(window, window_close_event)
             noclient.window_close_event = window_close_event
             GLib.timeout_add(REPAINT_DELAY, draw)
             Gtk.main()

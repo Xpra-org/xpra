@@ -112,6 +112,7 @@ class FakeClient(FileTransferHandler):
 
     def handle_key_action(self, *args):
         self.log("handle_key_action(%s)", args)
+        return False
 
     def send_mouse_position(self, *args):
         self.log("send_mouse_position(%s)", args)

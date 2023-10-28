@@ -322,6 +322,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.connect("unrealize", self.on_unrealize)
         self.connect("enter-notify-event", self.on_enter_notify_event)
         self.connect("leave-notify-event", self.on_leave_notify_event)
+        self.connect("key-press-event", self.handle_key_press_event)
+        self.connect("key-release-event", self.handle_key_release_event)
         self.add_events(self.get_window_event_mask())
         if DRAGNDROP and not self._client.readonly:
             self.init_dragndrop()
@@ -2442,7 +2444,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         keyeventlog("parse_key_event(%s, %s)=%s", event, pressed, key_event)
         return key_event
 
-    def do_key_press_event(self, event):
+    def handle_key_press_event(self, window, event):
         key_event = self.parse_key_event(event, True)
         if self.moveresize_event and key_event.keyname in BREAK_MOVERESIZE:
             #cancel move resize if there is one:
@@ -2450,7 +2452,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.cancel_moveresize_timer()
         return self._client.handle_key_action(self, key_event)
 
-    def do_key_release_event(self, event):
+    def handle_key_release_event(self, window, event):
         key_event = self.parse_key_event(event, False)
         return self._client.handle_key_action(self, key_event)
 
