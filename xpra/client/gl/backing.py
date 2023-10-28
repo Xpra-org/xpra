@@ -65,9 +65,7 @@ from xpra.client.gui.window_backing_base import (
     WEBP_PILLOW,
     )
 from xpra.client.gl.check import GL_ALPHA_SUPPORTED, get_max_texture_size
-from xpra.client.gl.shaders import (
-    YUV_to_RGB, YUV_to_RGB_FULL, RGBP_to_RGB, NV12_to_RGB,
-    )
+from xpra.client.gl.shaders import YUV_to_RGB, YUV_to_RGB_FULL, NV12_to_RGB
 from xpra.client.gl.spinner import draw_spinner
 from xpra.log import Logger
 
@@ -505,7 +503,6 @@ class GLWindowBackingBase(WindowBackingBase):
         for name, progstr in (
             ("YUV_to_RGB",      YUV_to_RGB),
             ("YUV_to_RGB_FULL", YUV_to_RGB_FULL),
-            ("RGBP_to_RGB",     RGBP_to_RGB),
             ("NV12_to_RGB",     NV12_to_RGB),
         ):
             if name in self.shaders:
@@ -1399,9 +1396,7 @@ class GLWindowBackingBase(WindowBackingBase):
             #which will end up calling paint rgb with r210 data
             super().do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
             return
-        if pixel_format.startswith("GBRP"):
-            shader = RGBP_to_RGB
-        elif pixel_format=="NV12":
+        if pixel_format=="NV12":
             shader = NV12_to_RGB
         else:
             shader = YUV_to_RGB

@@ -1,149 +1,81 @@
-# The following 2 fragprogs are:
-# * MIT X11 license, Copyright (c) 2007 by:
-# *      Michael Dominic K. <mdk@mdk.am>
-# http://www.mdk.org.pl/2007/11/17/gl-colorspace-conversions
-# "full-color" version by Antoine Martin <antoine@xpra.org>
+# This file is part of Xpra.
+# Copyright (C) 2023 Antoine Martin <antoine@xpra.org>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
 
 YUV_to_RGB = """
-struct pixel_in {
-    float2 texcoord1 : TEXCOORD0;
-    float2 texcoord2 : TEXCOORD1;
-    float2 texcoord3 : TEXCOORD2;
-    uniform samplerRECT texture1 : TEXUNIT0;
-    uniform samplerRECT texture2 : TEXUNIT1;
-    uniform samplerRECT texture3 : TEXUNIT2;
-    float4 color : COLOR0;
-};
-
-struct pixel_out {
-    float4 color : COLOR0;
-};
-
-pixel_out
-main (pixel_in IN)
+#version 330 core
+out vec4 FragColor;
+in vec2 texCoord;
+uniform sampler2D Y;
+uniform sampler2D U;
+uniform sampler2D V;
+void main()
 {
-    pixel_out OUT;
+    vec3 yuv, rgb;
+    vec3 yuv2r = vec3(1.164, 0.0, 1.596);
+    vec3 yuv2g = vec3(1.164, -0.391, -0.813);
+    vec3 yuv2b = vec3(1.164, 2.018, 0.0);
 
-    float3 pre;
+    yuv.x = texture(Y, texCoord).r - 0.0625;
+    yuv.y = texture(U, texCoord).r - 0.5;
+    yuv.z = texture(V, texCoord).r - 0.5;
 
-    pre.r = texRECT (IN.texture1, IN.texcoord1).x;
-    pre.g = texRECT (IN.texture2, IN.texcoord2).x - (128.0 / 256.0);
-    pre.b = texRECT (IN.texture3, IN.texcoord3).x - (128.0 / 256.0);
+    rgb.x = dot(yuv, yuv2r);
+    rgb.y = dot(yuv, yuv2g);
+    rgb.z = dot(yuv, yuv2b);
 
-    const float3 red   = float3 (1/219, 0.0, 1.371/219) * 255.0;
-    const float3 green = float3 (1/219, -0.336/219, -0.698/219) * 255.0;
-    const float3 blue  = float3 (1/219, 1.732/219, 0.0) * 255.0;
-
-    OUT.color.r = dot (red, pre);
-    OUT.color.g = dot (green, pre);
-    OUT.color.b = dot (blue, pre);
-    OUT.color.a = IN.color.a;
-
-    return OUT;
+    FragColor = vec4(rgb, 1.0);
 }
 """
 
 YUV_to_RGB_FULL = """
-struct pixel_in {
-    float2 texcoord1 : TEXCOORD0;
-    float2 texcoord2 : TEXCOORD1;
-    float2 texcoord3 : TEXCOORD2;
-    uniform samplerRECT texture1 : TEXUNIT0;
-    uniform samplerRECT texture2 : TEXUNIT1;
-    uniform samplerRECT texture3 : TEXUNIT2;
-    float4 color : COLOR0;
-};
-
-struct pixel_out {
-    float4 color : COLOR0;
-};
-
-pixel_out
-main (pixel_in IN)
+#version 330 core
+out vec4 FragColor;
+in vec2 texCoord;
+uniform sampler2D Y;
+uniform sampler2D U;
+uniform sampler2D V;
+void main()
 {
-    pixel_out OUT;
+    vec3 yuv, rgb;
+    vec3 yuv2r = vec3(1.0, 0.0, 1.5960271);
+    vec3 yuv2g = vec3(1.0, -0.3917616, -0.81296802);
+    vec3 yuv2b = vec3(1.0, 2.017231, 0.0);
 
-    float3 pre;
+    yuv.x = texture(Y, texCoord).r;
+    yuv.y = texture(U, texCoord).r - 0.5;
+    yuv.z = texture(V, texCoord).r - 0.5;
 
-    pre.r = texRECT (IN.texture1, IN.texcoord1).x;
-    pre.g = texRECT (IN.texture2, IN.texcoord2).x - (128.0 / 256.0);
-    pre.b = texRECT (IN.texture3, IN.texcoord3).x - (128.0 / 256.0);
+    rgb.x = dot(yuv, yuv2r);
+    rgb.y = dot(yuv, yuv2g);
+    rgb.z = dot(yuv, yuv2b);
 
-    const float3 red   = float3 (1.0/255.0, 0.0, 1.371/255.0) * 255.0;
-    const float3 green = float3 (1.0/255.0, -0.336/255.0, -0.698/255.0) * 255.0;
-    const float3 blue  = float3 (1.0/255.0, 1.732/255.0, 0.0) * 255.0;
-
-    OUT.color.r = dot (red, pre);
-    OUT.color.g = dot (green, pre);
-    OUT.color.b = dot (blue, pre);
-    OUT.color.a = IN.color.a;
-
-    return OUT;
-}
-"""
-
-RGBP_to_RGB = """
-struct pixel_in {
-    float2 texcoord1 : TEXCOORD0;
-    float2 texcoord2 : TEXCOORD1;
-    float2 texcoord3 : TEXCOORD2;
-    uniform samplerRECT texture1 : TEXUNIT0;
-    uniform samplerRECT texture2 : TEXUNIT1;
-    uniform samplerRECT texture3 : TEXUNIT2;
-    float4 color : COLOR0;
-};
-
-struct pixel_out {
-    float4 color : COLOR0;
-};
-
-pixel_out
-main (pixel_in IN)
-{
-    pixel_out OUT;
-
-    OUT.color.r = texRECT(IN.texture1, IN.texcoord1).r;
-    OUT.color.g = texRECT(IN.texture2, IN.texcoord2).r;
-    OUT.color.b = texRECT(IN.texture3, IN.texcoord3).r;
-    OUT.color.a = IN.color.a;
-
-    return OUT;
+    FragColor = vec4(rgb, 1.0);
 }
 """
 
 NV12_to_RGB = """
-struct pixel_in {
-    float2 texcoord1 : TEXCOORD0;
-    float2 texcoord2 : TEXCOORD1;
-    uniform samplerRECT texture1 : TEXUNIT0;
-    uniform samplerRECT texture2 : TEXUNIT1;
-    float4 color : COLOR0;
-};
-
-struct pixel_out {
-    float4 color : COLOR0;
-};
-
-pixel_out
-main (pixel_in IN)
+#version 330 core
+out vec4 FragColor;
+in vec2 texCoord;
+uniform sampler2D Y;
+uniform sampler2D UV;
+void main()
 {
-    pixel_out OUT;
+    vec3 yuv, rgb;
+    vec3 yuv2r = vec3(1.0, 0.0, 1.5960271);
+    vec3 yuv2g = vec3(1.0, -0.3917616, -0.81296802);
+    vec3 yuv2b = vec3(1.0, 2.017231, 0.0);
 
-    float3 pre;
+    yuv.x = texture(Y, texCoord).r - 0.0625;
+    yuv.y = texture(UV, texCoord).g - 0.5;
+    yuv.z = texture(UV, texCoord).r - 0.5;
 
-    pre.r = texRECT (IN.texture1, IN.texcoord1).x - (16.0 / 256.0);
-    pre.g = texRECT (IN.texture2, IN.texcoord2).x - (128.0 / 256.0);
-    pre.b = texRECT (IN.texture2, IN.texcoord2).y - (128.0 / 256.0);
+    rgb.x = dot(yuv, yuv2r);
+    rgb.y = dot(yuv, yuv2g);
+    rgb.z = dot(yuv, yuv2b);
 
-    const float3 red   = float3 (1.0/219.0, 0.0, 1.371/219.0) * 255.0;
-    const float3 green = float3 (1.0/219.0, -0.336/219.0, -0.698/219.0) * 255.0;
-    const float3 blue  = float3 (1.0/219.0, 1.732/219.0, 0.0) * 255.0;
-
-    OUT.color.r = pre.r;
-    OUT.color.g = pre.r;
-    OUT.color.b = pre.r;
-    OUT.color.a = IN.color.a;
-
-    return OUT;
+    FragColor = vec4(rgb, 1.0);
 }
 """
