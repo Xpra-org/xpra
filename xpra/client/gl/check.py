@@ -88,30 +88,46 @@ def get_max_viewport_dims() -> tuple[int,int]:
 
 
 def get_extensions() -> list[str]:
-    extensions : list[str] = []
-    from OpenGL.error import GLError
-    try:
-        from OpenGL.GL import glGetStringi, glGetIntegerv
-        from OpenGL.GL import GL_NUM_EXTENSIONS, GL_EXTENSIONS
-    except ImportError as e:
-        log(f"cannot query extensions using GL_NUM_EXTENSIONS / GL_EXTENSIONS: {e}")
-    else:
-        try:
-            num = glGetIntegerv(GL_NUM_EXTENSIONS)
-            for i in range(num):
-                extensions.append(glGetStringi(GL_EXTENSIONS, i).decode("latin1"))
-            log("OpenGL extensions found: %s", csv(extensions))
-        except GLError as e:
-            log(f"error querying extensions using GL_NUM_EXTENSIONS / GL_EXTENSIONS: {e}")
+    extensions : list[str] = _get_gl_enums("extensions", "GL_NUM_EXTENSIONS", "GL_EXTENSIONS")
     if not extensions:
         # try legacy mode:
+        from OpenGL.error import GLError
         try:
-            from OpenGL.GL import glGetString
+            from OpenGL.GL import glGetString, GL_EXTENSIONS
             extensions = glGetString(GL_EXTENSIONS).decode().split(" ")
         except GLError as e:
             log(f"error querying extensions using glGetString(GL_EXTENSIONS): {e}")
     log("OpenGL extensions found: %s", csv(extensions))
     return extensions
+
+
+def _get_gl_enums(name:str, num_const:str, values_const:str) -> list[str]:
+    values: list[str] = []
+    from OpenGL.error import GLError
+    from OpenGL import GL
+    from OpenGL.GL import glGetStringi, glGetIntegerv
+    num_enum = getattr(GL, num_const, None)
+    values_enum = getattr(GL, values_const, None)
+    if num_enum is None or values_enum is None:
+        log(f"cannot query {name} using {num_const} / {values_const}: constants not found!")
+        return values
+    try:
+        num = glGetIntegerv(num_enum)
+        for i in range(num):
+            values.append(glGetStringi(values_enum, i).decode("latin1"))
+        log(f"OpenGL {name} found: "+csv(values))
+    except GLError as e:
+        log(f"error querying {name} using {num_const} / {values_const}: {e}")
+    return values
+
+
+def get_shader_binary_formats() -> list[str]:
+    return _get_gl_enums("shader binary formats", "GL_NUM_SHADER_BINARY_FORMATS", "GL_SHADER_BINARY_FORMATS")
+
+
+def get_program_binary_formats() -> list[str]:
+    return _get_gl_enums("program binary formats", "GL_NUM_PROGRAM_BINARY_FORMATS", "GL_PROGRAM_BINARY_FORMATS")
+
 
 
 def fixstring(v) -> str:
@@ -444,10 +460,14 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
 
     props.update(get_vendor_info())
     props.update(get_GLU_info())
-    props["extensions"] = get_extensions()
-    props["array-handlers"] = get_array_handlers()
-    props["texture-size-limit"] = get_max_texture_size()
-    props["max-viewport-dims"] = get_max_viewport_dims()
+    props.update({
+        "extensions": get_extensions(),
+        "array-handlers": get_array_handlers(),
+        "texture-size-limit": get_max_texture_size(),
+        "max-viewport-dims": get_max_viewport_dims(),
+    })
+    # props["shader-binary-formats"] = get_shader_binary_formats()
+    # props["program-binary-formats"] = get_program_binary_formats()
 
     for check_fn in (
         check_base_functions,
