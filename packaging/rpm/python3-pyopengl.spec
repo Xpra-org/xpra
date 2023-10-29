@@ -19,7 +19,7 @@
 
 Name:           %{python3}-pyopengl
 Version:        3.1.7
-Release:        2%{?dist}
+Release:        4%{?dist}
 Summary:        Python 3 bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
@@ -116,6 +116,9 @@ rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %changelog
+* Sat Oct 28 2023 Antoine Martin <antoine@xpra.org> - 3.1.7-4
+- bump release number to update the build from Fedora 39
+
 * Fri Oct 27 2023 Antoine Martin <antoine@xpra.org> - 3.1.7-2
 - add patch to silence egl file open warning
 
