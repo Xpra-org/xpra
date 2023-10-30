@@ -779,7 +779,7 @@ def run_test_command(transport, cmd:str) -> tuple[bytes,bytes,int]:
     log(f"exec_command({cmd!r})={code}")
     def chan_read(read_fn) -> bytes:
         try:
-            return read_fn()
+            return b"\n".join(read_fn())
         except OSError:
             log(f"chan_read({read_fn})", exc_info=True)
             return b""
