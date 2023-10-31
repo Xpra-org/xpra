@@ -12,7 +12,7 @@
 %endif
 
 Name:		%{python3}-Cython
-Version:	3.0.4
+Version:	3.0.5
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
@@ -32,7 +32,7 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "d22c3fd0141860ef892f51ea834556ee42c3c9f83739ad92187dcf0b9f938786" ]; then
+if [ "${sha256}" != "28eafb657bf3f2f8d78eb7948ebb089be31e51ec76119d84925347c4dea68b59" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -67,6 +67,9 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
+* Tue Oct 31 2023 Antoine Martin <antoine@xpra.org> 3.0.5-1
+- new upstream release
+
 * Wed Oct 18 2023 Antoine Martin <antoine@xpra.org> 3.0.4-1
 - new upstream release
 
