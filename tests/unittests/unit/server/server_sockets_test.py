@@ -262,7 +262,7 @@ class ServerSocketsTest(ServerTestUtil):
                     try:
                         self.verify_connect(uri, ExitCode.OK, NOVERIFY)
                     except RuntimeError as e:
-                        err = f"failed to connect to {stype} port using uri {uri!r}: {e}"
+                        err = f"failed to connect to {stype} port using mode {mode} with uri {uri!r}: {e}"
                         log.error(f"Error: {err}")
                         errors.append(err)
                     #without NOVERIFY, should fail with SSL failure:
