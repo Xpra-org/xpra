@@ -757,7 +757,7 @@ class SSHAuthenticationError(InitExit):
         super().__init__(ExitCode.CONNECTION_FAILED, f"SSH Authentication failed for {host!r}")
         self.errors = errors
 
-def run_test_command(transport, cmd:str) -> tuple[bytes,bytes,int]:
+def run_test_command(transport, cmd:str) -> tuple[str,str,int]:
     from paramiko import SSHException
     log(f"run_test_command(transport, {cmd})")
     try:
@@ -777,12 +777,12 @@ def run_test_command(transport, cmd:str) -> tuple[bytes,bytes,int]:
         sleep(0.01)
     code = chan.recv_exit_status()
     log(f"exec_command({cmd!r})={code}")
-    def chan_read(read_fn) -> bytes:
+    def chan_read(read_fn) -> str:
         try:
-            return b"\n".join(read_fn())
+            return "\n".join(read_fn())
         except OSError:
             log(f"chan_read({read_fn})", exc_info=True)
-            return b""
+            return ""
     #don't wait too long for the data:
     chan.settimeout(EXEC_STDOUT_TIMEOUT)
     out = chan_read(chan.makefile().readlines)
@@ -801,7 +801,7 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
     from paramiko import SSHException
     assert remote_xpra
     log(f"will try to run xpra from: {remote_xpra}")
-    def rtc(cmd):
+    def rtc(cmd) -> tuple[str,str,int]:
         return run_test_command(transport, cmd)
     def detectosname() -> str:
         #first, try a syntax that should work with any ssh server:
