@@ -1345,7 +1345,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return (self.ClientWindowClass,)
 
     def can_use_opengl(self, w : int, h : int, metadata : typedict, override_redirect : bool) -> bool:
-        opengllog(f"can_use_opengl {self.GLClientWindowClass=}, {self.opengl_enabled=}, {self.opengl_force}")
+        opengllog(f"can_use_opengl {self.GLClientWindowClass=}, {self.opengl_enabled=}, {self.opengl_force=}")
         if self.GLClientWindowClass is None or not self.opengl_enabled:
             return False
         if not self.opengl_force:
