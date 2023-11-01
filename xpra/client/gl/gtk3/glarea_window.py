@@ -17,7 +17,7 @@ log = Logger("opengl", "paint")
 
 def GLArea(alpha:bool) -> Gtk.GLArea:
     glarea = Gtk.GLArea()
-    glarea.set_use_es(False)
+    glarea.set_use_es(True)
     glarea.set_auto_render(True)
     glarea.set_has_alpha(alpha)
     glarea.set_has_depth_buffer(False)
