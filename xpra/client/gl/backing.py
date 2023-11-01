@@ -55,7 +55,7 @@ from OpenGL.GL.ARB.framebuffer_object import (
 
 from xpra.os_util import (
     strtobytes, bytestostr, hexstr,
-    POSIX, OSX, is_Wayland, first_time,
+    POSIX, OSX, first_time,
 )
 from xpra.util.str_fn import repr_ellipsized, nonl
 from xpra.util.env import envint, envbool
@@ -85,8 +85,8 @@ DRAW_REFRESH = envbool("XPRA_OPENGL_DRAW_REFRESH", True)
 FBO_RESIZE = envbool("XPRA_OPENGL_FBO_RESIZE", True)
 FBO_RESIZE_DELAY = envint("XPRA_OPENGL_FBO_RESIZE_DELAY", -1)
 CONTEXT_REINIT = envbool("XPRA_OPENGL_CONTEXT_REINIT", False)
-NVJPEG = envbool("XPRA_OPENGL_NVJPEG", not is_Wayland())
-NVDEC = envbool("XPRA_OPENGL_NVDEC", not is_Wayland())
+NVJPEG = envbool("XPRA_OPENGL_NVJPEG", False)
+NVDEC = envbool("XPRA_OPENGL_NVDEC", False)
 
 CURSOR_IDLE_TIMEOUT: int = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 
