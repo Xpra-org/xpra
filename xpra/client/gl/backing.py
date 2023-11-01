@@ -8,6 +8,7 @@ import os
 import time
 from time import monotonic
 from typing import Any
+from ctypes import c_float, c_void_p
 from collections.abc import Callable, Iterable
 from contextlib import AbstractContextManager, nullcontext
 from gi.repository import GLib  # @UnresolvedImport
@@ -26,9 +27,8 @@ from OpenGL.GL import (
     GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_DITHER,
     GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, GL_RGBA8, GL_RGB8, GL_RGB10_A2, GL_RGB565, GL_RGB5_A1, GL_RGBA4, GL_RGBA16,
     GL_UNSIGNED_INT_2_10_10_10_REV, GL_UNSIGNED_INT_10_10_10_2, GL_UNSIGNED_SHORT_5_6_5,
-    GL_BLEND, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA,
+    GL_BLEND, GL_ONE, GL_ONE_MINUS_SRC_ALPHA,
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_BASE_LEVEL,
-    glTexEnvi, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE,
     glBlendFunc,
     glActiveTexture, glTexSubImage2D,
     glViewport,
@@ -37,11 +37,16 @@ from OpenGL.GL import (
     glBindBuffer, glGenBuffers, glBufferData, glDeleteBuffers,
     glTexParameteri,
     glTexImage2D,
-    glMultiTexCoord2i,
     glTexCoord2i, glVertex2i, glEnd,
     glClear, glClearColor, glLineWidth, glColor4f,
     glDrawBuffer, glReadBuffer,
-    )
+    GL_FLOAT, GL_ARRAY_BUFFER,
+    GL_STATIC_DRAW, GL_FALSE,
+    glDrawArrays, GL_TRIANGLE_STRIP,
+    glEnableVertexAttribArray, glVertexAttribPointer, glDisableVertexAttribArray,
+    glGenVertexArrays, glBindVertexArray, glDeleteVertexArrays,
+    glUseProgram, GL_TEXTURE_RECTANGLE, glGetUniformLocation, glUniform1i, glUniform2f,
+)
 from OpenGL.GL.ARB.texture_rectangle import GL_TEXTURE_RECTANGLE_ARB
 from OpenGL.GL.ARB.framebuffer_object import (
     GL_FRAMEBUFFER, GL_DRAW_FRAMEBUFFER, GL_READ_FRAMEBUFFER,
@@ -64,7 +69,6 @@ from xpra.client.gui.window_backing_base import (
     WEBP_PILLOW,
     )
 from xpra.client.gl.check import GL_ALPHA_SUPPORTED, get_max_texture_size
-from xpra.client.gl.shaders import YUV_to_RGB, YUV_to_RGB_FULL, NV12_to_RGB
 from xpra.client.gl.spinner import draw_spinner
 from xpra.log import Logger
 
@@ -72,11 +76,10 @@ log = Logger("opengl", "paint")
 fpslog = Logger("opengl", "fps")
 
 
-BLIT = envbool("XPRA_OPENGL_BLIT", True)
 OPENGL_DEBUG = envbool("XPRA_OPENGL_DEBUG", False)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
-JPEG_YUV = envbool("XPRA_JPEG_YUV", False)
-WEBP_YUV = envbool("XPRA_WEBP_YUV", False)
+JPEG_YUV = envbool("XPRA_JPEG_YUV", True)
+WEBP_YUV = envbool("XPRA_WEBP_YUV", True)
 FORCE_CLONE = envbool("XPRA_OPENGL_FORCE_CLONE", False)
 FORCE_VIDEO_PIXEL_FORMAT = os.environ.get("XPRA_FORCE_VIDEO_PIXEL_FORMAT", "")
 DRAW_REFRESH = envbool("XPRA_OPENGL_DRAW_REFRESH", True)
@@ -384,6 +387,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.internal_format = GL_RGBA8
         self.textures = None # OpenGL texture IDs
         self.shaders : dict[str,GLuint] = {}
+        self.programs : dict[str,GLuint] = {}
         self.texture_size : tuple[int,int] = (0, 0)
         self.gl_setup : bool = False
         self.debug_setup : bool = False
@@ -559,32 +563,73 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def gl_init_shaders(self) -> None:
         # Create and assign fragment programs
-        from OpenGL.GL import (
-            glCreateShader, glDeleteShader,
-            glShaderSource, glCompileShader, glGetShaderiv, glGetShaderInfoLog,
-            GL_FRAGMENT_SHADER, GL_FALSE, GL_COMPILE_STATUS,
-        )
-        for name, progstr in (
-            ("YUV_to_RGB",      YUV_to_RGB),
-            ("YUV_to_RGB_FULL", YUV_to_RGB_FULL),
-            ("NV12_to_RGB",     NV12_to_RGB),
-        ):
+        from OpenGL.GL import GL_FRAGMENT_SHADER, GL_VERTEX_SHADER
+        vertex_shader = self.gl_init_shader("vertex", GL_VERTEX_SHADER)
+        for name in ("YUV_to_RGB", "YUV_to_RGB_FULL", "NV12_to_RGB"):
             if name in self.shaders:
                 continue
-            shader_id = glCreateShader(GL_FRAGMENT_SHADER)
-            glShaderSource(shader_id, progstr)
-            glCompileShader(shader_id)
-            status = glGetShaderiv(shader_id, GL_COMPILE_STATUS)
-            if status == GL_FALSE:
-                err = bytestostr(glGetShaderInfoLog(shader_id)).strip("\n\r")
-                glDeleteShader(shader_id)
-                log.error(f"Error compiling {name!r} OpenGL shader:")
-                for line in err.split("\n"):
-                    if line.strip():
-                        log.error(" %s", line.strip())
-                raise RuntimeError(f"OpenGL failed to compile fragment shader {name}: {nonl(err)}")
-            log("%s shader initialized", name)
-            self.shaders[name] = shader_id
+            fragment_shader = self.gl_init_shader(name, GL_FRAGMENT_SHADER)
+            self.gl_init_program(name, vertex_shader, fragment_shader)
+        self.vao = glGenVertexArrays(1)
+
+    def gl_init_program(self, name: str, *shaders: int):
+        from OpenGL.GL import (
+            glAttachShader, glDetachShader,
+            glCreateProgram, glDeleteProgram, glLinkProgram, glGetProgramiv, glValidateProgram, glGetShaderInfoLog,
+            GL_FALSE, GL_LINK_STATUS,
+        )
+        program = glCreateProgram()
+        for shader in shaders:
+            glAttachShader(program, shader)
+        glLinkProgram(program)
+        infolog = glGetShaderInfoLog(shader) or "OK"
+        status = glGetProgramiv(program, GL_LINK_STATUS)
+        if status == GL_FALSE:
+            glDeleteProgram(program)
+            self.fail_shader(name, infolog)
+        log(f"{name} program linked: {infolog}")
+        status = glValidateProgram(program)
+        infolog = glGetShaderInfoLog(shader) or "OK"
+        if status == GL_FALSE:
+            glDeleteProgram(program)
+            self.fail_shader(name, infolog)
+        log(f"{name} program validated: {infolog}")
+        for shader in shaders:
+            glDetachShader(program, shader)
+        self.programs[name] = program
+
+    def fail_shader(self, name: str, err : bytes):
+        from OpenGL.GL import glDeleteShader
+        err_str = bytestostr(err).strip("\n\r")
+        shader = self.shaders.pop(name, None)
+        if shader:
+            glDeleteShader(shader)
+        log.error(f"Error compiling {name!r} OpenGL shader:")
+        for line in err_str.split("\n"):
+            if line.strip():
+                log.error(" %s", line.strip())
+        raise RuntimeError(f"OpenGL failed to compile shader {name!r}: {nonl(err_str)}")
+
+    def gl_init_shader(self, name, shader_type) -> int:
+        # Create and assign fragment programs
+        from OpenGL.GL import (
+            glCreateShader, glShaderSource, glCompileShader, glGetShaderInfoLog,
+            glGetShaderiv,
+            GL_COMPILE_STATUS, GL_VERTEX_SHADER, GL_FRAGMENT_SHADER, GL_FALSE,
+        )
+        assert shader_type in (GL_VERTEX_SHADER, GL_FRAGMENT_SHADER)
+        from xpra.client.gl.shaders import SOURCE
+        progstr = SOURCE[name]
+        shader = glCreateShader(shader_type)
+        self.shaders[name] = shader
+        glShaderSource(shader, progstr)
+        glCompileShader(shader)
+        infolog = glGetShaderInfoLog(shader) or "OK"
+        status = glGetShaderiv(shader, GL_COMPILE_STATUS)
+        if status == GL_FALSE:
+            self.fail_shader(name, infolog)
+        log(f"{name} shader initialized: {infolog}")
+        return shader
 
     def gl_init(self, context, skip_fbo=False) -> None:
         # must be called within a context!
@@ -597,7 +642,7 @@ class GLWindowBackingBase(WindowBackingBase):
             return
         mt = get_max_texture_size()
         w, h = self.size
-        if w>mt or h>mt:
+        if w > mt or h > mt:
             raise ValueError(f"invalid texture dimensions {w}x{h}, maximum size is {mt}x{mt}")
         gl_marker("Initializing GL context for window size %s, backing size %s, max texture size=%i",
                   self.render_size, self.size, mt)
@@ -628,9 +673,6 @@ class GLWindowBackingBase(WindowBackingBase):
         if not skip_fbo:
             # Define empty FBO texture and set rendering to FBO
             self.init_fbo(TEX_FBO, self.offscreen_fbo, w, h, mag_filter)
-
-        target = GL_TEXTURE_RECTANGLE_ARB
-        glBindTexture(target, 0)
 
         # Create and assign fragment programs
         self.gl_init_shaders()
@@ -679,6 +721,20 @@ class GLWindowBackingBase(WindowBackingBase):
             self._backing = None
             b.destroy()
         super().close()
+        from OpenGL.GL import glDeleteProgram, glDeleteShader
+        programs = self.programs
+        self.programs = {}
+        for name, program in programs.items():
+            glDeleteProgram(program)
+        shaders = self.shaders
+        self.shaders = {}
+        for name, shader in shaders.items():
+            glDeleteShader(shader)
+        vao = self.vao
+        if vao:
+            self.vao = None
+            glDeleteVertexArrays(1, [vao])
+
 
     def paint_scroll(self, scroll_data, options, callbacks) -> None: # pylint: disable=arguments-differ, arguments-renamed
         flush = options.intget("flush", 0)
@@ -857,36 +913,16 @@ class GLWindowBackingBase(WindowBackingBase):
         glEnable(target)      # redundant - done in rgb paint state
         glBindTexture(target, self.textures[TEX_FBO])
 
-        if BLIT:
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
-            glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
-            glReadBuffer(GL_COLOR_ATTACHMENT0)
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
+        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
+        glReadBuffer(GL_COLOR_ATTACHMENT0)
 
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
 
-            for x, y, w, h in rectangles:
-                glBlitFramebuffer(x, y, w, h,
-                                  x, y, w, h,
-                                  GL_COLOR_BUFFER_BIT, GL_NEAREST)
-        else:
-            if self._alpha_enabled:
-                # support alpha channel if present:
-                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-            glBegin(GL_QUADS)
-            for x, y, w, h in rectangles:
-                # note how we invert coordinates..
-                tx1, ty1, tx2, ty2 = x, bh-y,  x+w, bh-y-h
-                vx1, vy1, vx2, vy2 = x, y,     x+w, y+h
-                glTexCoord2i(tx1, ty1)
-                glVertex2i(vx1, vy1)        # top-left of window viewport
-                glTexCoord2i(tx1, ty2)
-                glVertex2i(vx1, vy2)        # bottom-left of window viewport
-                glTexCoord2i(tx2, ty2)
-                glVertex2i(vx2, vy2)        # bottom-right of window viewport
-                glTexCoord2i(tx2, ty1)
-                glVertex2i(vx2, vy1)        # top-right of window viewport
-            glEnd()
+        for x, y, w, h in rectangles:
+            glBlitFramebuffer(x, y, w, h,
+                              x, y, w, h,
+                              GL_COLOR_BUFFER_BIT, GL_NEAREST)
         glBindTexture(target, 0)
         glDisable(target)
 
@@ -1190,7 +1226,7 @@ class GLWindowBackingBase(WindowBackingBase):
         w = img.get_width()
         h = img.get_height()
         options["pbo"] = True
-        self.do_gl_paint_planar(gl_context, NV12_to_RGB, flush, encoding, img,
+        self.do_gl_paint_planar(gl_context, "NV12_to_RGB", flush, encoding, img,
                            x, y, w, h, width, height,
                            options, callbacks)
 
@@ -1254,7 +1290,7 @@ class GLWindowBackingBase(WindowBackingBase):
             flush = options.intget("flush", 0)
             w = img.get_width()
             h = img.get_height()
-            self.idle_add(self.gl_paint_planar, YUV_to_RGB, flush, "webp", img,
+            self.idle_add(self.gl_paint_planar, "YUV_to_RGB", flush, "webp", img,
                           x, y, w, h, width, height, options, callbacks)
             return
         super().paint_webp(img_data, x, y, width, height, options, callbacks)
@@ -1267,7 +1303,7 @@ class GLWindowBackingBase(WindowBackingBase):
         w = img.get_width()
         h = img.get_height()
         if pixel_format.startswith("YUV"):
-            self.idle_add(self.gl_paint_planar, YUV_to_RGB_FULL, flush, "avif", img,
+            self.idle_add(self.gl_paint_planar, "YUV_to_RGB_FULL", flush, "avif", img,
                           x, y, w, h, width, height, options, callbacks)
         else:
             self.idle_add(self.do_paint_rgb, pixel_format, img.get_pixels(), x, y, w, h, width, height,
@@ -1329,31 +1365,19 @@ class GLWindowBackingBase(WindowBackingBase):
             glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
             glTexImage2D(target, 0, self.internal_format, width, height, 0, pformat, ptype, img_data)
 
-            if BLIT:
-                glBindFramebuffer(GL_READ_FRAMEBUFFER, self.tmp_fbo)
-                glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_RGB], 0)
-                glReadBuffer(GL_COLOR_ATTACHMENT0)
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, self.tmp_fbo)
+            glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_RGB], 0)
+            glReadBuffer(GL_COLOR_ATTACHMENT0)
 
-                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
-                glBindTexture(target, self.textures[TEX_FBO])
-                glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, target, self.textures[TEX_FBO], 0)
-                glDrawBuffer(GL_COLOR_ATTACHMENT1)
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
+            glBindTexture(target, self.textures[TEX_FBO])
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, target, self.textures[TEX_FBO], 0)
+            glDrawBuffer(GL_COLOR_ATTACHMENT1)
 
-                rh = self.render_size[1]
-                glBlitFramebuffer(0, 0, width, height,
-                                  x, rh-y, x + render_width, rh - y - render_height,
-                                  GL_COLOR_BUFFER_BIT, GL_NEAREST)
-            else:
-                glBegin(GL_QUADS)
-                glTexCoord2i(0, 0)
-                glVertex2i(x, y)
-                glTexCoord2i(0, height)
-                glVertex2i(x, y+render_height)
-                glTexCoord2i(width, height)
-                glVertex2i(x+render_width, y+render_height)
-                glTexCoord2i(width, 0)
-                glVertex2i(x+render_width, y)
-                glEnd()
+            rh = self.render_size[1]
+            glBlitFramebuffer(0, 0, width, height,
+                              x, rh-y, x + render_width, rh - y - render_height,
+                              GL_COLOR_BUFFER_BIT, GL_NEAREST)
 
             glBindTexture(target, 0)
             glDisable(target)
@@ -1394,10 +1418,7 @@ class GLWindowBackingBase(WindowBackingBase):
             # which will end up calling paint rgb with r210 data
             super().do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
             return
-        if pixel_format=="NV12":
-            shader = NV12_to_RGB
-        else:
-            shader = YUV_to_RGB
+        shader = "NV12_to_RGB" if pixel_format == "NV12" else "YUV_to_RGB"
         self.idle_add(self.gl_paint_planar, shader, options.intget("flush", 0), options.strget("encoding"), img,
                       x, y, enc_width, enc_height, width, height, options, callbacks)
 
@@ -1450,7 +1471,7 @@ class GLWindowBackingBase(WindowBackingBase):
                   flush, img, (x, y, enc_width, enc_height), width, height)
         fire_paint_callbacks(callbacks, False, message)
 
-    def update_planar_textures(self, width: int, height: int, img, pixel_format, scaling:bool=False, pbo:bool=False):
+    def update_planar_textures(self, width: int, height: int, img, pixel_format, scaling=False, pbo=False):
         assert self.textures is not None, "no OpenGL textures!"
         upload_formats = PIXEL_UPLOAD_FORMAT[pixel_format]
         internal_formats = PIXEL_INTERNAL_FORMAT.get(pixel_format, (GL_R8, GL_R8, GL_R8))
@@ -1470,10 +1491,10 @@ class GLWindowBackingBase(WindowBackingBase):
             self.pixel_format = pixel_format
             self.texture_size = (width, height)
             # Create textures of the same size as the window's
+            target = GL_TEXTURE_RECTANGLE
             for texture, index in textures:
                 (div_w, div_h) = divs[index]
                 glActiveTexture(texture)
-                target = GL_TEXTURE_RECTANGLE_ARB
                 glBindTexture(target, self.textures[index])
                 mag_filter = GL_NEAREST
                 if scaling or (div_w > 1 or div_h > 1):
@@ -1514,7 +1535,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 continue
             glActiveTexture(texture)
 
-            target = GL_TEXTURE_RECTANGLE_ARB
+            target = GL_TEXTURE_RECTANGLE
             glBindTexture(target, self.textures[index])
             set_alignment(w, rowstride, tex_name)
             plane = img_data[index]
@@ -1551,33 +1572,55 @@ class GLWindowBackingBase(WindowBackingBase):
             (GL_TEXTURE2, TEX_V),
             )[:len(divs)]
         gl_marker("painting planar update, format %s", self.pixel_format)
-        from OpenGL.GL.ARB.fragment_program import GL_FRAGMENT_PROGRAM_ARB
-        from OpenGL.GL.ARB.vertex_program import glBindProgramARB
-        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[shader])
-        glEnable(GL_FRAGMENT_PROGRAM_ARB)
+
+        target = GL_TEXTURE_RECTANGLE
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
+        glBindTexture(target, self.textures[TEX_FBO])
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
+        glDrawBuffer(GL_COLOR_ATTACHMENT0)
+
+        ww, wh = self.render_size
+        # the region we're updating:
+        glViewport(rx, wh-ry-rh, rw, rh)
+
+        program = self.programs[shader]
+        glUseProgram(program)
         for texture, index in textures:
             glActiveTexture(texture)
-            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
+            glBindTexture(target, self.textures[index])
+            plane_name = shader[index:index+1]        #ie: "YUV_to_RGB"  0 -> "Y"
+            tex_loc = glGetUniformLocation(program, plane_name)   #ie: "Y" -> 0
+            glUniform1i(tex_loc, index)         # tell the shader where to find the texture: 0 -> TEXTURE_0
 
-        tw, th = self.texture_size
-        log("%s.render_planar_update(..) texture_size=%s, size=%s", self, self.texture_size, self.size)
-        glBegin(GL_QUADS)
-        for x, y in ((0, 0), (0, rh), (rw, rh), (rw, 0)):
-            ax = min(tw, x)
-            ay = min(th, y)
-            for texture, index in textures:
-                div_w, div_h = divs[index]
-                # same as GL_LUMINANCE_ALPHA in update_planar_textures,
-                # NV12's second plane combines `U` and `V`:
-                if index==1 and self.pixel_format=="NV12":
-                    div_w *= 2
-                glMultiTexCoord2i(texture, ax//div_w, ay//div_h)
-            glVertex2i(int(rx+ax*x_scale), int(ry+ay*y_scale))
-        glEnd()
-        for texture in (GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2):
+        vertices = [x for x in [
+            -1, -1, 1, -1, -1, 1, 1, 1,
+        ]]
+        c_vertices = (c_float * len(vertices))(*vertices)
+        # no need to call glGetAttribLocation(program, "position")
+        # since we specify the location in the shader:
+        position = 0
+
+        viewport_pos = glGetUniformLocation(program, "viewport_pos")
+        if viewport_pos >= 0:
+            glUniform2f(viewport_pos, rx, ry)
+
+        glBindVertexArray(self.vao)
+        pos_buffer = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, pos_buffer)
+        glBufferData(GL_ARRAY_BUFFER, len(vertices)*4, c_vertices, GL_STATIC_DRAW)
+        glVertexAttribPointer(position, 2, GL_FLOAT, GL_FALSE, 0, c_void_p(0))
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
+        glEnableVertexAttribArray(position)
+
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
+
+        glDeleteBuffers(1, [pos_buffer])
+        glDisableVertexAttribArray(position)
+        glBindVertexArray(0)
+        glUseProgram(0)
+        for texture, index in textures:
             glActiveTexture(texture)
-            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0)
-        glDisable(GL_FRAGMENT_PROGRAM_ARB)
+            glBindTexture(target, 0)
         glActiveTexture(GL_TEXTURE0)
 
     def gl_show(self, rect_count) -> None:
