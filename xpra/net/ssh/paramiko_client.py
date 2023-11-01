@@ -775,18 +775,20 @@ def run_test_command(transport, cmd:str) -> Tuple[bytes,bytes,int]:
         sleep(0.01)
     code = chan.recv_exit_status()
     log(f"exec_command({cmd!r})={code}")
-    def chan_read(read_fn) -> bytes:
+    def chan_read(fileobj):
         try:
-            return read_fn()
-        except socket.error:
-            log(f"chan_read({read_fn})", exc_info=True)
-            return b""
+            return fileobj.readlines()
+        except OSError:
+            log(f"chan_read({fileobj})", exc_info=True)
+            return []
+        finally:
+            noerr(fileobj.close)
     #don't wait too long for the data:
     chan.settimeout(EXEC_STDOUT_TIMEOUT)
-    out = chan_read(chan.makefile().readlines)
+    out = chan_read(chan.makefile())
     log(f"exec_command out={out!r}")
     chan.settimeout(EXEC_STDERR_TIMEOUT)
-    err = chan_read(chan.makefile_stderr().readlines)
+    err = chan_read(chan.makefile_stderr())
     log(f"exec_command err={err!r}")
     chan.close()
     return out, err, code
