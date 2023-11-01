@@ -84,6 +84,10 @@ def create_unix_domain_socket(sockpath:str, socket_permissions:int=0o600):
     def cleanup_socket() -> None:
         log = get_network_logger()
         try:
+            listener.close()
+        except OSError as e:
+            log(f"cleanup_socket() {listener.close}() error: {e}")
+        try:
             cur_inode = os.stat(sockpath).st_ino
         except OSError:
             log.info("socket '%s' already deleted", sockpath)
