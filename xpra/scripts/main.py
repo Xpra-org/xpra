@@ -919,7 +919,7 @@ def do_pick_display(dotxpra, error_cb, opts, extra_args, cmdline=()):
         return desc
     if len(extra_args) == 1:
         return parse_display_name(error_cb, opts, extra_args[0], cmdline, find_session_by_name=find_session_by_name)
-    error_cb(f"too many arguments ({len(extra_args)}): {extra_args}")
+    error_cb(f"too many arguments to choose a display ({len(extra_args)}): {extra_args}")
     assert False
 
 def single_display_match(dir_servers, error_cb, nomatch="cannot find any live servers to connect to"):
@@ -3141,7 +3141,7 @@ def run_list_mdns(error_cb, extra_args) -> ExitValue:
         except (IndexError, ValueError):
             pass
     else:
-        error_cb("too many arguments for mode")
+        error_cb("too many arguments for `list-mdns` mode")
     from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
     try:
         from xpra.net.mdns.avahi_listener import Avahilistener
@@ -3786,7 +3786,7 @@ def get_xpra_sessions(dotxpra:DotXpra, ignore_state=(DotXpra.UNKNOWN,), matching
 def run_list(error_cb:Callable, opts, extra_args, clean:bool=True) -> ExitValue:
     no_gtk()
     if extra_args:
-        error_cb("too many arguments for mode")
+        error_cb("too many arguments for `list` mode")
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
     results = dotxpra.socket_details()
     if not results:
@@ -3863,7 +3863,7 @@ def clean_sockets(dotxpra, sockets, timeout=LIST_REPROBE_TIMEOUT) -> None:
 def run_list_windows(error_cb, opts, extra_args) -> ExitValue:
     no_gtk()
     if extra_args:
-        error_cb("too many arguments for mode")
+        error_cb("too many arguments for `list-windows` mode")
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
     displays = dotxpra.displays()
     if not displays:

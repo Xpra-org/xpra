@@ -56,9 +56,9 @@ class ArgsControlCommand(ControlCommand):
 
     def run(self, *args):
         if self.min_args is not None and len(args)<self.min_args:
-            self.raise_error(f"not enough arguments, minimum is {self.min_args}")
+            self.raise_error(f"not enough arguments for control command {self.name!r}, minimum is {self.min_args}")
         if self.max_args is not None and len(args)>self.max_args:
-            self.raise_error(f"too many arguments, maximum is {self.max_args}")
+            self.raise_error(f"too many arguments for control command {self.name!r}, maximum is {self.max_args}")
         args = self.get_validated_args(*args)
         return super().run(*args)
 
