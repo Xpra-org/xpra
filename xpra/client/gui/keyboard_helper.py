@@ -17,7 +17,7 @@ from xpra.log import Logger
 log = Logger("keyboard")
 
 LAYOUT_GROUPS = envbool("XPRA_LAYOUT_GROUPS", True)
-DEBUG_KEY_EVENTS = tuple(x.lower() for x in os.environ.get("XPRA_DEBUG_KEY_EVENTS", "").split(","))
+DEBUG_KEY_EVENTS = tuple(x.strip().lower() for x in os.environ.get("XPRA_DEBUG_KEY_EVENTS", "").split(",") if x.strip())
 
 def add_xkbmap_legacy_prefix(props):
     #legacy format: flat with 'xkbmap_' prefix:
