@@ -91,7 +91,7 @@ DRAW_REFRESH = envbool("XPRA_OPENGL_DRAW_REFRESH", True)
 FBO_RESIZE = envbool("XPRA_OPENGL_FBO_RESIZE", True)
 FBO_RESIZE_DELAY = envint("XPRA_OPENGL_FBO_RESIZE_DELAY", -1)
 CONTEXT_REINIT = envbool("XPRA_OPENGL_CONTEXT_REINIT", False)
-NVJPEG = envbool("XPRA_OPENGL_NVJPEG", False)
+NVJPEG = envbool("XPRA_OPENGL_NVJPEG", True)
 NVDEC = envbool("XPRA_OPENGL_NVDEC", False)
 
 CURSOR_IDLE_TIMEOUT: int = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
@@ -953,7 +953,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def do_paint_jpeg(self, encoding, img_data, x: int, y: int, width: int, height: int,
                       options: typedict, callbacks: Iterable[Callable]) -> None:
-        if width>=16 and height>=16:
+        if width >= 16 and height >= 16:
             if self.nvjpeg_decoder and NVJPEG:
                 def paint_nvjpeg(gl_context):
                     self.paint_nvjpeg(gl_context, encoding, img_data, x, y, width, height, options, callbacks)
@@ -1082,17 +1082,20 @@ class GLWindowBackingBase(WindowBackingBase):
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
 
         set_alignment(width, width*len(rgb_format), rgb_format)
-        # Draw textured RGB quad at the right coordinates
-        glBegin(GL_QUADS)
-        glTexCoord2i(0, 0)
-        glVertex2i(x, y)
-        glTexCoord2i(0, height)
-        glVertex2i(x, y+height)
-        glTexCoord2i(width, height)
-        glVertex2i(x+width, y+height)
-        glTexCoord2i(width, 0)
-        glVertex2i(x+width, y)
-        glEnd()
+
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, self.tmp_fbo)
+        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_RGB], 0)
+        glReadBuffer(GL_COLOR_ATTACHMENT0)
+
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
+        glBindTexture(target, self.textures[TEX_FBO])
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, target, self.textures[TEX_FBO], 0)
+        glDrawBuffer(GL_COLOR_ATTACHMENT1)
+
+        rh = self.render_size[1]
+        glBlitFramebuffer(0, 0, width, height,
+                          x, rh - y, x + width, rh - y - height,
+                          GL_COLOR_BUFFER_BIT, GL_NEAREST)
 
         glBindTexture(target, 0)
 
