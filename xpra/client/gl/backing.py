@@ -22,23 +22,21 @@ from OpenGL.GL import (
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST,
     GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT,
     GL_LINEAR, GL_RED, GL_R8, GL_R16, GL_LUMINANCE, GL_LUMINANCE_ALPHA,
-    GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_LINES, GL_COLOR_BUFFER_BIT,
+    GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_COLOR_BUFFER_BIT,
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER,
     GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_DITHER,
     GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, GL_RGBA8, GL_RGB8, GL_RGB10_A2, GL_RGB565, GL_RGB5_A1, GL_RGBA4, GL_RGBA16,
     GL_UNSIGNED_INT_2_10_10_10_REV, GL_UNSIGNED_INT_10_10_10_2, GL_UNSIGNED_SHORT_5_6_5,
-    GL_BLEND, GL_ONE, GL_ONE_MINUS_SRC_ALPHA,
+    GL_BLEND,
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_BASE_LEVEL,
-    glBlendFunc,
     glActiveTexture, glTexSubImage2D,
     glViewport,
     glGenTextures, glDisable,
-    glBindTexture, glPixelStorei, glEnable, glBegin, glFlush,
+    glBindTexture, glPixelStorei, glEnable, glFlush,
     glBindBuffer, glGenBuffers, glBufferData, glDeleteBuffers,
     glTexParameteri,
     glTexImage2D,
-    glTexCoord2i, glVertex2i, glEnd,
-    glClear, glClearColor, glLineWidth, glColor4f,
+    glClear, glClearColor,
     glDrawBuffer, glReadBuffer,
     GL_FLOAT, GL_ARRAY_BUFFER,
     GL_STATIC_DRAW, GL_FALSE,
@@ -393,10 +391,10 @@ class GLWindowBackingBase(WindowBackingBase):
         from OpenGL.GL import GL_FRAGMENT_SHADER, GL_VERTEX_SHADER
         vertex_shader = self.gl_init_shader("vertex", GL_VERTEX_SHADER)
         for name in ("YUV_to_RGB", "YUV_to_RGB_FULL", "NV12_to_RGB"):
-            if name in self.shaders:
-                continue
             fragment_shader = self.gl_init_shader(name, GL_FRAGMENT_SHADER)
             self.gl_init_program(name, vertex_shader, fragment_shader)
+        overlay_shader = self.gl_init_shader("overlay", GL_FRAGMENT_SHADER)
+        self.gl_init_program("overlay", vertex_shader, overlay_shader)
         self.vao = glGenVertexArrays(1)
 
     def gl_init_program(self, name: str, *shaders: int):
@@ -781,17 +779,6 @@ class GLWindowBackingBase(WindowBackingBase):
         x = px
         y = py
         if not self.cursor_data:
-            # paint a fake one:
-            alpha = max(0, (5.0-elapsed)/5.0)
-            lw = 2
-            glLineWidth(lw)
-            glBegin(GL_LINES)
-            glColor4f(0, 0, 0, alpha)
-            glVertex2i(x-size, y-lw//2)
-            glVertex2i(x+size, y-lw//2)
-            glVertex2i(x, y-size)
-            glVertex2i(x, y+size)
-            glEnd()
             return
 
         w = self.cursor_data[3]
@@ -800,30 +787,45 @@ class GLWindowBackingBase(WindowBackingBase):
         yhot = self.cursor_data[6]
         x = px-xhot
         y = py-yhot
-        self.blend_texture(self.textures[TEX_CURSOR], x, y, w, h)
+        texture = int(self.textures[TEX_CURSOR])
+        self.overlay_texture(texture, x, y, w, h)
 
-    def blend_texture(self, texture, x: int, y: int, w: int, h: int) -> None:
+    def overlay_texture(self, texture: int, x: int, y: int, w: int, h: int) -> None:
+        log("overlay_texture%s", (texture, x, y, w, h))
         # paint this texture
         glActiveTexture(GL_TEXTURE0)
         target = GL_TEXTURE_RECTANGLE
         glEnable(target)
         glBindTexture(target, texture)
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
-        # glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 
-        glBegin(GL_QUADS)
-        glTexCoord2i(0, 0)
-        glVertex2i(x, y)
-        glTexCoord2i(0, h)
-        glVertex2i(x, y+h)
-        glTexCoord2i(w, h)
-        glVertex2i(x+w, y+h)
-        glTexCoord2i(w, 0)
-        glVertex2i(x+w, y)
-        glEnd()
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
 
-        glDisable(GL_BLEND)
+        ww, wh = self.render_size
+        # the region we're updating:
+        glViewport(x, wh-y-h, w, h)
+
+        program = self.programs["overlay"]
+        glUseProgram(program)
+        glActiveTexture(GL_TEXTURE0)
+        glBindTexture(target, texture)
+        tex_loc = glGetUniformLocation(program, "rgba")
+        glUniform1i(tex_loc, 0)         # 0 -> TEXTURE_0
+
+        viewport_pos = glGetUniformLocation(program, "viewport_pos")
+        glUniform2f(viewport_pos, x, y)
+
+        vertices = [-1, -1, 1, -1, -1, 1, 1, 1]
+        position = 0
+        pos_buffer = self.set_vao(position, vertices)
+
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
+
+        glBindVertexArray(0)
+        glUseProgram(0)
+
+        glDeleteBuffers(1, [pos_buffer])
+        glDisableVertexAttribArray(position)
+
         glBindTexture(target, 0)
         glDisable(target)
 
@@ -895,8 +897,8 @@ class GLWindowBackingBase(WindowBackingBase):
     def draw_fps(self) -> None:
         x, y = 2, 5
         width, height = self.fps_buffer_size
-        return
-        self.blend_texture(self.textures[TEX_FPS], x, y, width, height)
+        texture = int(self.textures[TEX_FPS])
+        self.overlay_texture(texture, x, y, width, height)
         self.cancel_fps_refresh()
 
         def refresh_screen(context):
@@ -925,9 +927,10 @@ class GLWindowBackingBase(WindowBackingBase):
     def set_cursor_data(self, cursor_data) -> None:
         if not cursor_data or cursor_data[0] is None:
             # use the default cursor
-            if not self.default_cursor_data:
+            if self.default_cursor_data:
+                cursor_data = list(self.default_cursor_data)
+            else:
                 return
-            cursor_data = list(self.default_cursor_data)
         self.cursor_data = cursor_data
         if not self.validate_cursor():
             return
@@ -1417,25 +1420,15 @@ class GLWindowBackingBase(WindowBackingBase):
             tex_loc = glGetUniformLocation(program, plane_name)   #ie: "Y" -> 0
             glUniform1i(tex_loc, index)         # tell the shader where to find the texture: 0 -> TEXTURE_0
 
-        vertices = [x for x in [
-            -1, -1, 1, -1, -1, 1, 1, 1,
-        ]]
-        c_vertices = (c_float * len(vertices))(*vertices)
         # no need to call glGetAttribLocation(program, "position")
         # since we specify the location in the shader:
         position = 0
 
         viewport_pos = glGetUniformLocation(program, "viewport_pos")
-        if viewport_pos >= 0:
-            glUniform2f(viewport_pos, rx, ry)
+        glUniform2f(viewport_pos, rx, ry)
 
-        glBindVertexArray(self.vao)
-        pos_buffer = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, pos_buffer)
-        glBufferData(GL_ARRAY_BUFFER, len(vertices)*4, c_vertices, GL_STATIC_DRAW)
-        glVertexAttribPointer(position, 2, GL_FLOAT, GL_FALSE, 0, c_void_p(0))
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
-        glEnableVertexAttribArray(position)
+        vertices = [-1, -1, 1, -1, -1, 1, 1, 1]
+        pos_buffer = self.set_vao(position, vertices)
 
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
 
@@ -1447,6 +1440,18 @@ class GLWindowBackingBase(WindowBackingBase):
             glActiveTexture(texture)
             glBindTexture(target, 0)
         glActiveTexture(GL_TEXTURE0)
+
+    def set_vao(self, index, vertices : list):
+        c_vertices = (c_float * len(vertices))(*vertices)
+        glBindVertexArray(self.vao)
+        buf = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, buf)
+        glBufferData(GL_ARRAY_BUFFER, len(vertices)*4, c_vertices, GL_STATIC_DRAW)
+        glVertexAttribPointer(index, 2, GL_FLOAT, GL_FALSE, 0, c_void_p(0))
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
+        glEnableVertexAttribArray(index)
+        return buf
+
 
     def gl_show(self, rect_count: int) -> None:
         start = monotonic()

@@ -107,8 +107,27 @@ void main()
 """
 
 
+OVERLAY_SHADER = f"""
+#version {GLSL_VERSION}
+layout(origin_upper_left) in vec4 gl_FragCoord;
+uniform vec2 viewport_pos;
+uniform sampler2DRect rgba;
+layout(location = 0) out vec4 frag_color;
+
+void main()
+{{
+    vec2 pos = gl_FragCoord.xy-viewport_pos.xy;
+    frag_color = texture(rgba, pos);
+    if ( frag_color.a < 0.3 ) {{
+        discard;
+    }}
+}}
+"""
+
+
 SOURCE = {
     "vertex": VERTEX_SHADER,
+    "overlay": OVERLAY_SHADER,
     "NV12_to_RGB": gen_NV12_to_RGB(),
     "YUV_to_RGB": gen_YUV_to_RGB(),
     "YUV_to_RGB_FULL": gen_YUV_to_RGB(full_range=True),
