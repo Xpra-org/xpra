@@ -24,7 +24,7 @@ from OpenGL.GL import (
     GL_LINEAR, GL_RED, GL_R8, GL_R16, GL_LUMINANCE, GL_LUMINANCE_ALPHA,
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_LINES, GL_COLOR_BUFFER_BIT,
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER,
-    GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_DITHER,
+    GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_DITHER,
     GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, GL_RGBA8, GL_RGB8, GL_RGB10_A2, GL_RGB565, GL_RGB5_A1, GL_RGBA4, GL_RGBA16,
     GL_UNSIGNED_INT_2_10_10_10_REV, GL_UNSIGNED_INT_10_10_10_2, GL_UNSIGNED_SHORT_5_6_5,
     GL_BLEND, GL_ONE, GL_ONE_MINUS_SRC_ALPHA,
@@ -54,13 +54,13 @@ from OpenGL.GL.ARB.framebuffer_object import (
     )
 
 from xpra.os_util import (
-    strtobytes, bytestostr, hexstr,
+    bytestostr, hexstr,
     POSIX, OSX, first_time,
 )
 from xpra.util.str_fn import repr_ellipsized, nonl
 from xpra.util.env import envint, envbool
 from xpra.util.types import typedict
-from xpra.common import noop, roundup
+from xpra.common import roundup
 from xpra.codecs.constants import get_subsampling_divs, get_plane_name
 from xpra.client.gui.window_border import WindowBorder
 from xpra.client.gui.paint_colors import get_paint_box_color
@@ -69,6 +69,7 @@ from xpra.client.gui.window_backing_base import (
     WEBP_PILLOW,
     )
 from xpra.client.gl.check import GL_ALPHA_SUPPORTED, get_max_texture_size
+from xpra.client.gl.debug import context_init_debug, gl_marker, gl_frame_terminator
 from xpra.client.gl.util import (
     save_fbo, SAVE_BUFFERS,
     zerocopy_upload, pixels_for_upload, set_alignment, upload_rgba_texture,
@@ -167,55 +168,6 @@ DATATYPE_TO_STR : dict[IntConstant,str] = {
     GL_UNSIGNED_SHORT_5_6_5         : "UNSIGNED_SHORT_5_6_5",
 }
 
-# debugging variables:
-GL_DEBUG_OUTPUT: int = 0
-GL_DEBUG_OUTPUT_SYNCHRONOUS: int = 0
-gl_debug_callback: Callable = noop
-glInitStringMarkerGREMEDY: Callable = noop
-glStringMarkerGREMEDY: Callable = noop
-glInitFrameTerminatorGREMEDY: Callable = noop
-glFrameTerminatorGREMEDY: Callable = noop
-GREMEDY_DEBUG = OPENGL_DEBUG
-KHR_DEBUG = OPENGL_DEBUG
-if OPENGL_DEBUG:
-    try:
-        # pylint: disable=ungrouped-imports
-        from OpenGL.GL import KHR
-        GL_DEBUG_OUTPUT = int(KHR.debug.GL_DEBUG_OUTPUT)  # @UndefinedVariable
-        GL_DEBUG_OUTPUT_SYNCHRONOUS = int(KHR.debug.GL_DEBUG_OUTPUT_SYNCHRONOUS)
-        from OpenGL.GL.KHR.debug import glDebugMessageControl, glDebugMessageCallback, glInitDebugKHR
-    except ImportError:
-        log("Unable to import GL_KHR_debug OpenGL extension. Debug output will be more limited.")
-        KHR_DEBUG = False
-    try:
-        from OpenGL.GL.GREMEDY import string_marker, frame_terminator
-        glInitStringMarkerGREMEDY = string_marker.glInitStringMarkerGREMEDY
-        glStringMarkerGREMEDY = string_marker.glStringMarkerGREMEDY
-        glInitFrameTerminatorGREMEDY = frame_terminator.glInitFrameTerminatorGREMEDY
-        glFrameTerminatorGREMEDY = frame_terminator.glFrameTerminatorGREMEDY
-        from OpenGL.GL import GLDEBUGPROC #@UnresolvedImport
-        def py_gl_debug_callback(source, error_type, error_id, severity, length, message, param):
-            log.error("src %x type %x id %x severity %x length %d message %s, param=%s",
-                      source, error_type, error_id, severity, length, message, param)
-        gl_debug_callback = GLDEBUGPROC(py_gl_debug_callback)
-        GREMEDY_DEBUG = all(bool(x) for x in (
-            glInitStringMarkerGREMEDY,
-            glStringMarkerGREMEDY,
-            glInitFrameTerminatorGREMEDY,
-            glFrameTerminatorGREMEDY,
-        ))
-    except ImportError:
-        # This is normal- GREMEDY_string_marker is only available with OpenGL debuggers
-        GREMEDY_DEBUG = False
-        log("Unable to import GREMEDY OpenGL extension. Debug output will be more limited.")
-    log("OpenGL debugging settings:")
-    log(f" {GREMEDY_DEBUG=}")
-    log(f" {GL_DEBUG_OUTPUT=}, {GL_DEBUG_OUTPUT_SYNCHRONOUS}")
-    log(f" {gl_debug_callback=}")
-    log(f" {glInitStringMarkerGREMEDY=}, {glStringMarkerGREMEDY=}")
-    log(f" {glInitFrameTerminatorGREMEDY=}, {glFrameTerminatorGREMEDY=}")
-
-
 paint_context_manager: AbstractContextManager = nullcontext()
 if POSIX and not OSX:
     # pylint: disable=ungrouped-imports
@@ -235,54 +187,6 @@ TEX_TMP_FBO = 5
 TEX_CURSOR = 6
 TEX_FPS = 7
 N_TEXTURES = 8
-
-
-def gl_marker(*msg) -> None:
-    log(*msg)
-    if not GREMEDY_DEBUG:
-        return
-    try:
-        s = strtobytes(msg[0] % msg[1:])
-    except TypeError:
-        s = strtobytes(msg)
-    from ctypes import c_char_p  # pylint: disable=import-outside-toplevel
-    c_string = c_char_p(s)
-    glStringMarkerGREMEDY(0, c_string)
-
-
-def gl_frame_terminator() -> None:
-    # Mark the end of the frame
-    # This makes the debug output more readable especially when doing single-buffered rendering
-    if not GREMEDY_DEBUG:
-        return
-    log("glFrameTerminatorGREMEDY()")
-    glFrameTerminatorGREMEDY()
-
-
-def gl_init_debug() -> None:
-    # ensure python knows which scope we're talking about:
-    global GREMEDY_DEBUG, KHR_DEBUG
-    # Ask GL to send us all debug messages
-    if KHR_DEBUG:
-        if GL_DEBUG_OUTPUT and gl_debug_callback and glInitDebugKHR() is True:
-            glEnable(GL_DEBUG_OUTPUT)
-            glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS)
-            glDebugMessageCallback(gl_debug_callback, None)
-            glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, None, GL_TRUE)
-        else:
-            KHR_DEBUG = False
-    # Initialize string_marker GL debugging extension if available
-    if GREMEDY_DEBUG:
-        if glInitStringMarkerGREMEDY and glInitStringMarkerGREMEDY() is True:
-            log.info("Extension GL_GREMEDY_string_marker available.")
-            log.info(" Will output detailed information about each frame.")
-        else:
-            # General case - running without debugger, extension not available
-            # don't bother trying again for another window:
-            GREMEDY_DEBUG = False
-        # Initialize frame_terminator GL debugging extension if available
-        if glInitFrameTerminatorGREMEDY and glInitFrameTerminatorGREMEDY() is True:
-            log.info("Enabling GL frame terminator debugging.")
 
 
 class GLWindowBackingBase(WindowBackingBase):
@@ -559,7 +463,7 @@ class GLWindowBackingBase(WindowBackingBase):
         # performs init if needed
         if not self.debug_setup:
             self.debug_setup = True
-            gl_init_debug()
+            context_init_debug()
 
         if self.gl_setup:
             return
