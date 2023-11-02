@@ -830,10 +830,7 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
         r = rtc(cmd)
         if r[2]!=0:
             return None
-        try:
-            out = r[0].decode("utf8")
-        except UnicodeDecodeError:
-            out = bytestostr(r[0])
+        out = r[0]
         for line in out:
             qmatch = re.search(r"InstallPath\s*\w*\s*(.*)", line)
             if qmatch:
