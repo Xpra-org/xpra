@@ -95,7 +95,7 @@ class GLAreaBacking(GLWindowBackingBase):
         return False
 
     def on_render(self, glarea, glcontext):
-        log(f"render({glarea}, {glcontext}) {self.textures=}, {self.offscreen_fbo=}")
+        log(f"on_render({glarea}, {glcontext}) {self.textures=}, {self.offscreen_fbo=}")
         if self.textures is None or self.offscreen_fbo is None:
             return True
         glcontext.make_current()
