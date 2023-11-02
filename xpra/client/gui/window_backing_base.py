@@ -29,7 +29,7 @@ log = Logger("paint")
 videolog = Logger("video", "paint")
 
 INTEGRITY_HASH = envbool("XPRA_INTEGRITY_HASH", False)
-PAINT_BOX = envint("XPRA_PAINT_BOX", 0) or envint("XPRA_OPENGL_PAINT_BOX", 0)
+PAINT_BOX = envint("XPRA_PAINT_BOX", 0)
 WEBP_PILLOW = envbool("XPRA_WEBP_PILLOW", False)
 REPAINT_ALL = envbool("XPRA_REPAINT_ALL", False)
 SHOW_FPS = envbool("XPRA_SHOW_FPS", False)
@@ -133,12 +133,12 @@ class WindowBackingBase:
         load_csc_options()
         load_video_decoders()
         self.wid : int = wid
-        self.size : tuple[int,int] = (0, 0)
-        self.render_size : tuple[int,int] = (0, 0)
+        self.size : tuple[int, int] = (0, 0)
+        self.render_size : tuple[int, int] = (0, 0)
         #padding between the window contents and where we actually draw the backing
         #(ie: if the window is bigger than the backing,
         # we may be rendering the backing in the center of the window)
-        self.offsets : tuple[int,int,int,int] = (0, 0, 0, 0)       #top,left,bottom,right
+        self.offsets : tuple[int, int, int, int] = (0, 0, 0, 0)       #top,left,bottom,right
         self.gravity : int = 0
         self._alpha_enabled = window_alpha
         self._backing = None
@@ -146,8 +146,8 @@ class WindowBackingBase:
         self._csc_decoder = None
         self._decoder_lock = Lock()
         self._PIL_encodings = []
-        self.default_paint_box_line_width : int = PAINT_BOX or 1
-        self.paint_box_line_width : int = PAINT_BOX
+        self.default_paint_box_line_width = PAINT_BOX or 1
+        self.paint_box_line_width = PAINT_BOX
         self.pointer_overlay = None
         self.cursor_data = None
         self.default_cursor_data = None

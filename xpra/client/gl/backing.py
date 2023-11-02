@@ -6,6 +6,7 @@
 
 import os
 import time
+import struct
 from time import monotonic
 from typing import Any
 from ctypes import c_float, c_void_p
@@ -22,7 +23,7 @@ from OpenGL.GL import (
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST,
     GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT,
     GL_LINEAR, GL_RED, GL_R8, GL_R16, GL_LUMINANCE, GL_LUMINANCE_ALPHA,
-    GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_LINE_LOOP, GL_LINES, GL_COLOR_BUFFER_BIT,
+    GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_LINES, GL_COLOR_BUFFER_BIT,
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER,
     GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_DITHER,
     GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, GL_RGBA8, GL_RGB8, GL_RGB10_A2, GL_RGB565, GL_RGB5_A1, GL_RGBA4, GL_RGBA16,
@@ -59,6 +60,7 @@ from xpra.os_util import (
 )
 from xpra.util.str_fn import repr_ellipsized, nonl
 from xpra.util.env import envint, envbool
+from xpra.util.types import typedict
 from xpra.common import noop, roundup
 from xpra.codecs.constants import get_subsampling_divs, get_plane_name
 from xpra.client.gui.window_border import WindowBorder
@@ -298,13 +300,6 @@ def gl_init_debug() -> None:
             log.info("Enabling GL frame terminator debugging.")
 
 
-def gl_clear_color_buffer() -> None:
-    try:
-        glClear(GL_COLOR_BUFFER_BIT)
-    except GLError:
-        log("ignoring glClear(GL_COLOR_BUFFER_BIT) error, buggy driver?", exc_info=True)
-
-
 def set_alignment(width: int, rowstride: int, pixel_format:str) -> None:
     bytes_per_pixel = len(pixel_format)       # ie: BGRX -> 4, Y -> 1, YY -> 2
     # Compute alignment and row length
@@ -343,7 +338,7 @@ def pixels_for_upload(img_data) -> tuple[str, Any]:
     return f"copy:bytes({type(img_data)})", strtobytes(img_data)
 
 
-def upload_rgba_texture(texture, width: int, height: int, pixels) -> None:
+def upload_rgba_texture(texture: int, width: int, height: int, pixels) -> None:
     upload, pixel_data = pixels_for_upload(pixels)
     rgb_format = "RGBA"
     glActiveTexture(GL_TEXTURE0)
@@ -375,7 +370,7 @@ class GLWindowBackingBase(WindowBackingBase):
     RGB_MODES : list[str] = ["YUV420P", "YUV422P", "YUV444P", "GBRP", "BGRA", "BGRX", "RGBA", "RGBX", "RGB", "BGR", "NV12"]
     HAS_ALPHA : bool = GL_ALPHA_SUPPORTED
 
-    def __init__(self, wid: int, window_alpha : bool, pixel_depth: int=0):
+    def __init__(self, wid: int, window_alpha: bool, pixel_depth: int = 0):
         self.wid: int = wid
         self.texture_pixel_format : IntConstant | None = None
         # this is the pixel format we are currently updating the fbo with
@@ -383,19 +378,20 @@ class GLWindowBackingBase(WindowBackingBase):
         self.pixel_format : str = ""
         self.internal_format = GL_RGBA8
         self.textures = None # OpenGL texture IDs
-        self.shaders : dict[str,GLuint] = {}
-        self.programs : dict[str,GLuint] = {}
-        self.texture_size : tuple[int,int] = (0, 0)
-        self.gl_setup : bool = False
-        self.debug_setup : bool = False
-        self.border : WindowBorder = WindowBorder(shown=False)
-        self.paint_screen : bool = False
-        self.paint_spinner : bool = False
+        self.shaders : dict[str, GLuint] = {}
+        self.programs : dict[str, GLuint] = {}
+        self.texture_size : tuple[int, int] = (0, 0)
+        self.gl_setup = False
+        self.debug_setup = False
+        self.border: WindowBorder = WindowBorder(shown=False)
+        self.paint_screen = False
+        self.paint_spinner = False
         self.offscreen_fbo = None
         self.tmp_fbo = None
+        self.vao = None
         self.pending_fbo_paint : list[tuple[int,int,int,int]] = []
-        self.last_flush : float = monotonic()
-        self.last_present_fbo_error : str = ""
+        self.last_flush = monotonic()
+        self.last_present_fbo_error = ""
         self.bit_depth = pixel_depth
         super().__init__(wid, window_alpha and self.HAS_ALPHA)
         self.opengl_init()
@@ -595,7 +591,7 @@ class GLWindowBackingBase(WindowBackingBase):
             glDetachShader(program, shader)
         self.programs[name] = program
 
-    def fail_shader(self, name: str, err : bytes):
+    def fail_shader(self, name: str, err: bytes):
         from OpenGL.GL import glDeleteShader
         err_str = bytestostr(err).strip("\n\r")
         shader = self.shaders.pop(name, None)
@@ -648,19 +644,12 @@ class GLWindowBackingBase(WindowBackingBase):
         # (as those are only applied when painting the window)
         glViewport(0, 0, w, h)
 
-        # Clear background to transparent black
-        glClearColor(0.0, 0.0, 0.0, 0.0)
-
         # we don't use the depth (2D only):
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_SCISSOR_TEST)
         glDisable(GL_DITHER)
         glDisable(GL_BLEND)
 
-        # Default state is good for YUV painting:
-        #  - fragment program enabled
-        #  - YUV fragment program bound
-        #  - render to offscreen FBO
         if self.textures is None:
             self.gl_init_textures()
 
@@ -694,7 +683,6 @@ class GLWindowBackingBase(WindowBackingBase):
         glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
         glBindFramebuffer(GL_FRAMEBUFFER, fbo)
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[texture_index], 0)
-        gl_clear_color_buffer()
 
     def close_gl_config(self) -> None:
         """
@@ -733,11 +721,11 @@ class GLWindowBackingBase(WindowBackingBase):
             glDeleteVertexArrays(1, [vao])
 
 
-    def paint_scroll(self, scroll_data, options, callbacks) -> None: # pylint: disable=arguments-differ, arguments-renamed
+    def paint_scroll(self, scroll_data, options: typedict, callbacks: Iterable[Callable]) -> None: # pylint: disable=arguments-differ, arguments-renamed
         flush = options.intget("flush", 0)
         self.idle_add(self.with_gl_context, self.do_scroll_paints, scroll_data, flush, callbacks)
 
-    def do_scroll_paints(self, context, scrolls, flush: int = 0, callbacks:Iterable[Callable] = ()) -> None:
+    def do_scroll_paints(self, context, scrolls, flush: int = 0, callbacks: Iterable[Callable] = ()) -> None:
         log("do_scroll_paints%s", (context, scrolls, flush))
         if not context:
             log("%s.do_scroll_paints(..) no context!", self)
@@ -886,21 +874,21 @@ class GLWindowBackingBase(WindowBackingBase):
         scale = context.get_scale_factor()
         left, top, right, bottom = self.offsets
         glViewport(0, 0, int((left+ww+right)*scale), int((top+wh+bottom)*scale))
-        if self._alpha_enabled:
-            # transparent background:
-            glClearColor(0.0, 0.0, 0.0, 0.0)
-        else:
-            # black, no alpha:
-            glClearColor(0.0, 0.0, 0.0, 1.0)
         if left or top or right or bottom:
-            gl_clear_color_buffer()
+            if self._alpha_enabled:
+                # transparent background:
+                glClearColor(0.0, 0.0, 0.0, 0.0)
+            else:
+                # black, no alpha:
+                glClearColor(0.0, 0.0, 0.0, 1.0)
+            glClear(GL_COLOR_BUFFER_BIT)
 
         # from now on, take the offsets and scaling into account:
         viewport = int(left*scale), int(top*scale), int(ww*scale), int(wh*scale)
         log(f"window viewport for {self.render_size=} and {self.offsets} with scale factor {scale}: {viewport}")
         glViewport(*viewport)
         target = GL_TEXTURE_RECTANGLE
-        if ww!=bw or wh!=bh or scale!=1:
+        if ww != bw or wh != bh or scale != 1:
             glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
             glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 
@@ -1038,14 +1026,56 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def draw_border(self) -> None:
         bw, bh = self.size
-        # double size since half the line will be off-screen
-        log("draw_border: %s", self.border)
-        glLineWidth(self.border.size*2)
-        glBegin(GL_LINE_LOOP)
-        glColor4f(self.border.red, self.border.green, self.border.blue, self.border.alpha)
-        for px,py in ((0, 0), (bw, 0), (bw, bh), (0, bh)):
-            glVertex2i(px, py)
-        glEnd()
+        rgba = tuple(round(v*256) for v in (self.border.red, self.border.green, self.border.blue, self.border.alpha))
+
+        # render to screen:
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
+
+        self.draw_rectangle(0, 0, bw, bh, self.border.size, *rgba)
+
+    def paint_box(self, encoding : str, x: int, y: int, w: int, h: int) -> None:
+        # show region being painted if debug paint box is enabled only:
+        if self.paint_box_line_width <= 0:
+            return
+        # render to offscreen fbo:
+        target = GL_TEXTURE_RECTANGLE
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
+        glBindTexture(target, self.textures[TEX_FBO])
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, target, self.textures[TEX_FBO], 0)
+        glDrawBuffer(GL_COLOR_ATTACHMENT1)
+
+        bw, bh = self.size
+        glViewport(0, 0, bw, bh)
+
+        color = get_paint_box_color(encoding)
+        rgba = tuple(round(v*256) for v in color)
+        self.draw_rectangle(x, y, w, h, self.paint_box_line_width, *rgba)
+
+    def draw_rectangle(self, x: int, y: int, w: int, h: int, size=1, red=0, green=0, blue=0, alpha=0) -> None:
+        log("draw_rectangle%s", (x, y, w, h, size, red, green, blue, alpha))
+        rgba = tuple(max(0, min(255, v)) for v in (red, green, blue, alpha))
+        pixel = struct.pack(b"!BBBB", *rgba)
+        texture = self.textures[TEX_RGB]
+        upload_rgba_texture(texture, 1, 1, pixel)
+
+        # set fbo with rgb texture as framebuffer source:
+        target = GL_TEXTURE_RECTANGLE
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, self.tmp_fbo)
+        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texture, 0)
+        glReadBuffer(GL_COLOR_ATTACHMENT0)
+
+        # invert y screen coordinates:
+        bh = self.size[1]
+
+        for rx, ry, rw, rh in (
+                (x, y, size, h),
+                (x+w-size, y, size, h),
+                (x+size, y, w-2*size, size),
+                (x+size, y+h-size, w-2*size, size),
+        ):
+            glBlitFramebuffer(0, 0, 1, 1,
+                              rx, bh-ry, rx + rw, bh-(ry + rh),
+                              GL_COLOR_BUFFER_BIT, GL_NEAREST)
 
     def update_fps_buffer(self, width, height, pixels) -> None:
         # we always call 'record_fps_event' from a gl context,
@@ -1055,6 +1085,7 @@ class GLWindowBackingBase(WindowBackingBase):
     def draw_fps(self) -> None:
         x, y = 2, 5
         width, height = self.fps_buffer_size
+        return
         self.blend_texture(self.textures[TEX_FPS], x, y, width, height)
         self.cancel_fps_refresh()
 
@@ -1100,18 +1131,6 @@ class GLWindowBackingBase(WindowBackingBase):
                 upload_rgba_texture(self.textures[TEX_CURSOR], cw, ch, pixels)
         self.with_gl_context(gl_upload_cursor)
 
-    def paint_box(self, encoding : str, x: int, y: int, w: int, h: int) -> None:
-        # show region being painted if debug paint box is enabled only:
-        if self.paint_box_line_width<=0:
-            return
-        glLineWidth(self.paint_box_line_width+0.5+int(encoding=="scroll")*2)
-        glBegin(GL_LINE_LOOP)
-        color = get_paint_box_color(encoding)
-        log("Painting colored box around %s screen update using: %s", encoding, color)
-        glColor4f(*color)
-        for px,py in ((x, y), (x+w, y), (x+w, y+h), (x, y+h)):
-            glVertex2i(px, py)
-        glEnd()
 
     def paint_jpeg(self, img_data, x, y, width, height, options, callbacks) -> None:
         self.do_paint_jpeg("jpeg", img_data, x, y, width, height, options, callbacks)
@@ -1308,7 +1327,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def gl_paint_rgb(self, context, rgb_format:str, img_data,
                      x: int, y: int, width: int, height: int, render_width: int, render_height: int,
-                     rowstride, options, callbacks):
+                     rowstride: int, options: typedict, callbacks : Iterable[Callable]):
         log("%s.gl_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d, options=%s)",
             self, rgb_format, len(img_data), x, y, width, height, rowstride, options)
         x, y = self.gravity_adjust(x, y, options)
@@ -1319,7 +1338,6 @@ class GLWindowBackingBase(WindowBackingBase):
         if not options.boolget("paint", True):
             fire_paint_callbacks(callbacks)
             return
-        rgb_format = bytestostr(rgb_format)
         try:
             upload, img_data = pixels_for_upload(img_data)
 
@@ -1368,6 +1386,7 @@ class GLWindowBackingBase(WindowBackingBase):
                               GL_COLOR_BUFFER_BIT, GL_NEAREST)
 
             glBindTexture(target, 0)
+
             self.paint_box(options.strget("encoding", ""), x, y, render_width, render_height)
             # Present update to screen
             if not self.draw_needs_refresh:
