@@ -1,12 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 # This class simply hooks the current GDK display into
 # the core X11 bindings.
 
-from xpra.os_util import is_X11
+from xpra.os_util import is_X11, gi_import
 from xpra.scripts.config import InitException
 from xpra.x11.bindings.xlib cimport Display
 from xpra.x11.bindings.display_source cimport set_display  #pylint: disable=syntax-error
@@ -32,9 +32,7 @@ cdef extern from "gtk-3.0/gdk/gdkx.h":
 
 
 #this import magic will make the window.get_xid() available!
-import gi
-gi.require_version('GdkX11', '3.0')
-from gi.repository import GdkX11
+GdkX11 = gi_import("GdkX11")
 if GdkX11 is None:
     raise RuntimeError("could not load GdkX11 3.0")
 
@@ -47,7 +45,7 @@ def init_gdk_display_source() -> None:
         raise InitException("cannot use X11 bindings with %s and GTK3 (buggy)" % (backend or "non-X11",))
     if display:
         return
-    from gi.repository import Gdk
+    Gdk = gi_import("Gdk")
     cdef GdkDisplay* gdk_display = gdk_display_get_default()
     if not gdk_display:
         raise InitException("cannot access the default display '%s'" % os.environ.get("DISPLAY", ""))

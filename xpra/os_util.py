@@ -169,6 +169,7 @@ def gi_import(mod="Gtk", version="3.0"):
     import warnings
     try:
         warnings.filterwarnings("ignore", category=ImportWarning)
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
         import gi
         gi.require_version(mod, version)
         import gi.repository
@@ -363,7 +364,7 @@ def is_Wayland() -> bool:
 
 def _is_Wayland(env : dict) -> bool:
     backend = env.get("GDK_BACKEND", "")
-    if backend=="wayland":
+    if backend == "wayland":
         return True
     return backend!="x11" and (
         bool(env.get("WAYLAND_DISPLAY")) or env.get("XDG_SESSION_TYPE")=="wayland"
