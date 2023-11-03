@@ -83,7 +83,7 @@ class GLAreaBacking(GLWindowBackingBase):
         return self._backing.get_context()
 
     def do_gl_show(self, rect_count) -> None:
-        log.warn(f"do_gl_show({rect_count})")
+        log(f"do_gl_show({rect_count})")
         self._backing.queue_render()
 
     def close_gl_config(self) -> None:
@@ -99,29 +99,11 @@ class GLAreaBacking(GLWindowBackingBase):
         if self.textures is None or self.offscreen_fbo is None:
             return True
         glcontext.make_current()
-        w, h = self.render_size
-        from xpra.client.gl.backing import TEX_FBO
-        if False:
-            def noscale():
-                return 1
-            glcontext.get_scale_factor = noscale
-            self.managed_present_fbo(glcontext)
-        else:
-            # TODO: handle widget scaling!
-            #https://discourse.gnome.org/t/solved-framebuffer-issue-render-to-texture-with-gtk3-glarea-vs-glfw-identical-opengl-program-works-in-glfw-but-not-gtk3s-glarea/3597
-            #current = glGetIntegerv(GL_FRAMEBUFFER_BINDING)
-            from OpenGL.GL import GL_COLOR_BUFFER_BIT, GL_NEAREST, glReadBuffer, glClear, glClearColor
-            from OpenGL.GL.ARB.texture_rectangle import GL_TEXTURE_RECTANGLE_ARB
-            from OpenGL.GL.ARB.framebuffer_object import glBindFramebuffer, GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, glBlitFramebuffer, glFramebufferTexture2D
-            glClearColor(0, 0, 0, 0)
-            glClear(GL_COLOR_BUFFER_BIT)
-            target = GL_TEXTURE_RECTANGLE_ARB
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
-            glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
-            glReadBuffer(GL_COLOR_ATTACHMENT0)
-            glBlitFramebuffer(0, 0, w, h,
-                              0, 0, w, h,
-                              GL_COLOR_BUFFER_BIT, GL_NEAREST)
+
+        def noscale():
+            return 1
+        glcontext.get_scale_factor = noscale
+        self.do_present_fbo(glcontext)
         return True
 
 

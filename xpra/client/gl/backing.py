@@ -668,6 +668,7 @@ class GLWindowBackingBase(WindowBackingBase):
         # flush>0 means we should wait for the final flush=0 paint
         if flush == 0 or not PAINT_FLUSH:
             self.record_fps_event()
+            gl_marker("presenting FBO on screen")
             self.managed_present_fbo(context)
 
     def managed_present_fbo(self, context) -> None:
@@ -675,7 +676,17 @@ class GLWindowBackingBase(WindowBackingBase):
             raise RuntimeError("missing opengl paint context")
         try:
             with paint_context_manager:
+                # Change state to target screen instead of our FBO
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
+
                 self.do_present_fbo(context)
+
+                # restore pbo viewport
+                bw, bh = self.size
+                glViewport(0, 0, bw, bh)
+                glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+                glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
         except Exception as e:
             log.error("Error presenting FBO:")
             log.estr(e)
@@ -683,6 +694,9 @@ class GLWindowBackingBase(WindowBackingBase):
             self.last_present_fbo_error = str(e)
 
     def do_present_fbo(self, context) -> None:
+        # the GL_DRAW_FRAMEBUFFER must already be set when calling this method
+        # some backends render to the screen (0), otherws may render elsewhere
+        # (ie: the GTK backend renders to its own buffer..)
         bw, bh = self.size
         rect_count = len(self.pending_fbo_paint)
         if self.is_double_buffered() or self.size!=self.render_size:
@@ -692,14 +706,10 @@ class GLWindowBackingBase(WindowBackingBase):
             # paint just the rectangles we have accumulated:
             rectangles = self.pending_fbo_paint
         self.pending_fbo_paint = []
+        log(f"do_present_fbo({context}) will blit {rectangles}")
 
         if SAVE_BUFFERS:
             self.save_fbo()
-
-        gl_marker("presenting FBO on screen, rectangles=%s", rectangles)
-        # Change state to target screen instead of our FBO
-        glBindFramebuffer(GL_FRAMEBUFFER, 0)
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
 
         # viewport for clearing the whole window:
         ww, wh = self.render_size
@@ -707,12 +717,8 @@ class GLWindowBackingBase(WindowBackingBase):
         left, top, right, bottom = self.offsets
         glViewport(0, 0, int((left+ww+right)*scale), int((top+wh+bottom)*scale))
         if left or top or right or bottom:
-            if self._alpha_enabled:
-                # transparent background:
-                glClearColor(0.0, 0.0, 0.0, 0.0)
-            else:
-                # black, no alpha:
-                glClearColor(0.0, 0.0, 0.0, 1.0)
+            alpha = 0.0 if self._alpha_enabled else 1.0
+            glClearColor(0.0, 0.0, 0.0, alpha)
             glClear(GL_COLOR_BUFFER_BIT)
 
         # from now on, take the offsets and scaling into account:
@@ -725,19 +731,14 @@ class GLWindowBackingBase(WindowBackingBase):
             glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 
         # Draw FBO texture on screen
-        glBindTexture(target, self.textures[TEX_FBO])
-
         glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
         glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
         glReadBuffer(GL_COLOR_ATTACHMENT0)
-
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
 
         for x, y, w, h in rectangles:
             glBlitFramebuffer(x, y, w, h,
                               x, y, w, h,
                               GL_COLOR_BUFFER_BIT, GL_NEAREST)
-        glBindTexture(target, 0)
 
         if self.pointer_overlay:
             self.draw_pointer()
@@ -756,11 +757,6 @@ class GLWindowBackingBase(WindowBackingBase):
         self.gl_show(rect_count)
         gl_frame_terminator()
 
-        # restore pbo viewport
-        glViewport(0, 0, bw, bh)
-        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
         log("%s.do_present_fbo() done", self)
 
     def save_fbo(self) -> None:
@@ -798,8 +794,6 @@ class GLWindowBackingBase(WindowBackingBase):
         glEnable(target)
         glBindTexture(target, texture)
 
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
-
         ww, wh = self.render_size
         # the region we're updating:
         glViewport(x, wh-y-h, w, h)
@@ -836,9 +830,6 @@ class GLWindowBackingBase(WindowBackingBase):
     def draw_border(self) -> None:
         bw, bh = self.size
         rgba = tuple(round(v*256) for v in (self.border.red, self.border.green, self.border.blue, self.border.alpha))
-
-        # render to screen:
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
 
         self.draw_rectangle(0, 0, bw, bh, self.border.size, *rgba)
 
@@ -930,7 +921,13 @@ class GLWindowBackingBase(WindowBackingBase):
             if self.default_cursor_data:
                 cursor_data = list(self.default_cursor_data)
             else:
-                return
+                x = y = 0
+                w = h = 32
+                xhot = yhot = 16
+                serial = 0
+                pixels = b"d"*w*h*4
+                name = "fake"
+                cursor_data = ("raw", x, y, w, h, xhot, yhot, serial, pixels, name)
         self.cursor_data = cursor_data
         if not self.validate_cursor():
             return
