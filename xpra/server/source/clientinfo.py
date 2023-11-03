@@ -130,6 +130,9 @@ class ClientInfoMixin(StubSourceMixin):
                     msg += "disabled"
                 else:
                     msg += "enabled"
+                    backend = self.client_opengl.strget("backend")
+                    if backend:
+                        msg += f" using {backend} backend"
                     driver_info = self.client_opengl.strget("renderer") or self.client_opengl.strget("vendor")
                     if driver_info:
                         msg += f" with {std(driver_info)}"
