@@ -591,7 +591,7 @@ cdef class Decoder:
         pdci.enableHistogram = 0
         cdef CUresult r = cuvidCreateDecoder(&self.context, &pdci)
         log(f"cuvidCreateDecoder(..)={r}")
-        cudacheck(r, "creating decoder returned error")
+        cudacheck(r, "creating nvdec decoder returned error")
 
     def __repr__(self):
         return f"nvdec({self.encoding})"
