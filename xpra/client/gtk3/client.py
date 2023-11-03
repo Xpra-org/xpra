@@ -20,7 +20,7 @@ class XpraClient(GTKXpraClient):
     ClientWindowClass = ClientWindow
 
     def __repr__(self):  #pylint: disable=arguments-differ
-        return "bindings.client"
+        return "gtk3.client"
 
     def client_type(self) -> str:
         return "Python/GTK3"
