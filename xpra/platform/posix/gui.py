@@ -151,6 +151,10 @@ def get_native_notifier_classes() -> List[Callable]:
 
 
 def get_session_type() -> str:
+    if is_Wayland():
+        return "Wayland"
+    if is_X11():
+        return "X11"
     return os.environ.get("XDG_SESSION_TYPE", "")
 
 
