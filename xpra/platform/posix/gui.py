@@ -10,7 +10,7 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.os_util import (
-    bytestostr, get_saved_env,
+    bytestostr, get_saved_env, is_Wayland,
     is_X11, get_saved_env_var, first_time,
 )
 from xpra.util.str_fn import csv
@@ -148,6 +148,10 @@ def get_native_notifier_classes() -> list[Callable]:
 
 
 def get_session_type() -> str:
+    if is_Wayland():
+        return "Wayland"
+    if is_X11():
+        return "X11"
     return os.environ.get("XDG_SESSION_TYPE", "")
 
 
