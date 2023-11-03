@@ -779,8 +779,12 @@ class WindowBackingBase:
             if self._video_decoder is None:
                 videolog("paint_with_video_decoder: new %s%s",
                     decoder_module.Decoder, (coding, enc_width, enc_height, input_colorspace))
-                vd = decoder_module.Decoder()
-                vd.init_context(coding, enc_width, enc_height, input_colorspace)
+                try:
+                    vd = decoder_module.Decoder()
+                    vd.init_context(coding, enc_width, enc_height, input_colorspace)
+                except Exception as e:
+                    log(f"failed to initialize decoder {decoder_module.get_type()}: {e}")
+                    raise
                 self._video_decoder = vd
                 videolog("paint_with_video_decoder: info=%s", vd.get_info())
 
