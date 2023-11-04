@@ -13,7 +13,7 @@ from xpra.common import noop
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.types import AtomicInteger, typedict
 from xpra.util.env import envint
-from xpra.os_util import WIN32, load_binary_file
+from xpra.os_util import WIN32, OSX, load_binary_file
 from xpra.log import Logger
 from xpra.platform.paths import get_icon_filename
 from xpra.client.gui.fake_client import FakeClient
@@ -33,11 +33,11 @@ def get_gl_client_window_module(opengl="on") -> tuple[dict,Any]:
     elif arg == "native":
         module_names = ("native", )
     else:
-        if os.environ.get("WAYLAND_DISPLAY"):
+        if os.environ.get("WAYLAND_DISPLAY") or OSX:
             module_names = ("glarea", "native")
         else:
             module_names = ("native", "glarea", )
-    force_enable = parts[0]=="force"
+    force_enable = parts[0] == "force"
     for module_name in module_names:
         props, window_module = test_window_module(module_name, force_enable)
         if window_module:
