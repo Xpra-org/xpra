@@ -95,7 +95,7 @@ NVDEC = envbool("XPRA_OPENGL_NVDEC", False)
 CURSOR_IDLE_TIMEOUT: int = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 
 
-PIXEL_FORMAT_TO_CONSTANT : dict[str,IntConstant] = {
+PIXEL_FORMAT_TO_CONSTANT : dict[str, IntConstant] = {
     "r210"  : GL_BGRA,
     "R210"  : GL_RGBA,
     "BGR"   : GL_BGR,
@@ -107,7 +107,7 @@ PIXEL_FORMAT_TO_CONSTANT : dict[str,IntConstant] = {
     "BGR565": GL_RGB,
     "RGB565": GL_RGB,
 }
-PIXEL_INTERNAL_FORMAT : dict[str,tuple[IntConstant,...]] = {
+PIXEL_INTERNAL_FORMAT : dict[str, tuple[IntConstant, ...]] = {
     # defaults to: GL_R8, GL_R8, GL_R8
     # (meaning: 3 planes, 8 bits each)
     # override for formats that use 16 bit per channel:
@@ -117,12 +117,12 @@ PIXEL_INTERNAL_FORMAT : dict[str,tuple[IntConstant,...]] = {
     "YUV444P10" : (GL_R16, GL_R16, GL_R16),
     "YUV444P16" : (GL_R16, GL_R16, GL_R16),
 }
-PIXEL_DATA_FORMAT : dict[str,tuple[IntConstant,...]] = {
+PIXEL_DATA_FORMAT : dict[str, tuple[IntConstant, ...]] = {
     # defaults to: (GL_RED, GL_RED, GL_RED))
     # (meaning: uploading one channel at a time)
     "NV12"  : (GL_LUMINANCE, GL_LUMINANCE_ALPHA),  # Y is one channel, UV contains two channels
 }
-PIXEL_UPLOAD_FORMAT : dict[str,Any] = {
+PIXEL_UPLOAD_FORMAT : dict[str, Any] = {
     "r210"  : GL_UNSIGNED_INT_2_10_10_10_REV,
     "R210"  : GL_UNSIGNED_INT_10_10_10_2,
     "RGB565": GL_UNSIGNED_SHORT_5_6_5,
@@ -143,13 +143,13 @@ PIXEL_UPLOAD_FORMAT : dict[str,Any] = {
     "YUV444P10" : (GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT),
     "YUV444P16" : (GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT),
 }
-CONSTANT_TO_PIXEL_FORMAT : dict[IntConstant,str] = {
+CONSTANT_TO_PIXEL_FORMAT : dict[IntConstant, str] = {
     GL_BGR   : "BGR",
     GL_RGB   : "RGB",
     GL_BGRA  : "BGRA",
     GL_RGBA  : "RGBA",
     }
-INTERNAL_FORMAT_TO_STR : dict[IntConstant,str] = {
+INTERNAL_FORMAT_TO_STR : dict[IntConstant, str] = {
     GL_RGB10_A2     : "RGB10_A2",
     GL_RGBA8        : "RGBA8",
     GL_RGB8         : "RGB8",
@@ -158,7 +158,7 @@ INTERNAL_FORMAT_TO_STR : dict[IntConstant,str] = {
     GL_RGBA4        : "RGBA4",
     GL_RGBA16       : "GL_RGBA16",
 }
-DATATYPE_TO_STR : dict[IntConstant,str] = {
+DATATYPE_TO_STR : dict[IntConstant, str] = {
     GL_UNSIGNED_INT_2_10_10_10_REV  : "UNSIGNED_INT_2_10_10_10_REV",
     GL_UNSIGNED_INT_10_10_10_2      : "UNSIGNED_INT_10_10_10_2",
     GL_UNSIGNED_BYTE                : "UNSIGNED_BYTE",
@@ -199,7 +199,11 @@ class GLWindowBackingBase(WindowBackingBase):
     or offscreen window movement.
     """
 
-    RGB_MODES : list[str] = ["YUV420P", "YUV422P", "YUV444P", "GBRP", "BGRA", "BGRX", "RGBA", "RGBX", "RGB", "BGR", "NV12"]
+    RGB_MODES : list[str] = [
+        "YUV420P", "YUV422P", "YUV444P", "NV12",
+        "GBRP", "BGRA", "BGRX", "RGBA", "RGBX",
+        "RGB", "BGR",
+    ]
     HAS_ALPHA : bool = GL_ALPHA_SUPPORTED
 
     def __init__(self, wid: int, window_alpha: bool, pixel_depth: int = 0):
@@ -208,7 +212,7 @@ class GLWindowBackingBase(WindowBackingBase):
         # can be: "YUV420P", "YUV422P", "YUV444P", "GBRP" or None when not initialized yet.
         self.pixel_format : str = ""
         self.internal_format = GL_RGBA8
-        self.textures = None # OpenGL texture IDs
+        self.textures = None  # OpenGL texture IDs
         self.shaders : dict[str, GLuint] = {}
         self.programs : dict[str, GLuint] = {}
         self.texture_size : tuple[int, int] = (0, 0)
@@ -221,14 +225,14 @@ class GLWindowBackingBase(WindowBackingBase):
         self.tmp_fbo = None
         self.vao = None
         self.vertex_buffer = None
-        self.pending_fbo_paint : list[tuple[int,int,int,int]] = []
+        self.pending_fbo_paint : list[tuple[int, int, int, int]] = []
         self.last_flush = monotonic()
         self.last_present_fbo_error = ""
         self.bit_depth = pixel_depth
         super().__init__(wid, window_alpha and self.HAS_ALPHA)
         self.opengl_init()
 
-    def opengl_init(self):
+    def opengl_init(self) -> None:
         self.init_gl_config()
         self.init_backing()
         self.bit_depth: int = self.get_bit_depth(self.bit_depth)
@@ -242,7 +246,7 @@ class GLWindowBackingBase(WindowBackingBase):
         assert self._backing is not None
         self._backing.show()
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         info = super().get_info()
         tif = self.internal_format
         info |= {
@@ -253,7 +257,7 @@ class GLWindowBackingBase(WindowBackingBase):
         }
         return info
 
-    def with_gl_context(self, cb:Callable, *args):
+    def with_gl_context(self, cb: Callable, *args):
         raise NotImplementedError()
 
     def init_gl_config(self) -> None:
@@ -271,7 +275,7 @@ class GLWindowBackingBase(WindowBackingBase):
     def is_double_buffered(self) -> bool:
         raise NotImplementedError()
 
-    def get_bit_depth(self, pixel_depth:int=0) -> int:
+    def get_bit_depth(self, pixel_depth: int = 0) -> int:
         return pixel_depth or 24
 
     def init_formats(self) -> None:
@@ -308,7 +312,7 @@ class GLWindowBackingBase(WindowBackingBase):
             INTERNAL_FORMAT_TO_STR.get(self.internal_format),
             self.RGB_MODES)
 
-    def get_encoding_properties(self) -> dict[str,Any]:
+    def get_encoding_properties(self) -> dict[str, Any]:
         props = super().get_encoding_properties()
         props["encoding.bit-depth"] = self.bit_depth
         return props
@@ -320,7 +324,7 @@ class GLWindowBackingBase(WindowBackingBase):
         # re-init gl projection with new dimensions
         # (see gl_init)
         self.render_size = ww, wh
-        if self.size!=(bw, bh):
+        if self.size != (bw, bh):
             self.cancel_fps_refresh()
             self.gl_setup = False
             oldw, oldh = self.size
@@ -405,21 +409,22 @@ class GLWindowBackingBase(WindowBackingBase):
     def gl_init_program(self, name: str, *shaders: int) -> None:
         from OpenGL.GL import (
             glAttachShader, glDetachShader,
-            glCreateProgram, glDeleteProgram, glLinkProgram, glGetProgramiv, glValidateProgram, glGetShaderInfoLog,
+            glCreateProgram, glDeleteProgram, glLinkProgram, glGetProgramInfoLog,
+            glGetProgramiv, glValidateProgram,
             GL_FALSE, GL_LINK_STATUS,
         )
         program = glCreateProgram()
         for shader in shaders:
             glAttachShader(program, shader)
         glLinkProgram(program)
-        infolog = glGetShaderInfoLog(shader) or "OK"
+        infolog = glGetProgramInfoLog(program) or "OK"
         status = glGetProgramiv(program, GL_LINK_STATUS)
         if status == GL_FALSE:
             glDeleteProgram(program)
             self.fail_shader(name, infolog)
         log(f"{name} program linked: {infolog}")
         status = glValidateProgram(program)
-        infolog = glGetShaderInfoLog(shader) or "OK"
+        infolog = glGetProgramInfoLog(program) or "OK"
         if status == GL_FALSE:
             glDeleteProgram(program)
             self.fail_shader(name, infolog)
@@ -561,11 +566,11 @@ class GLWindowBackingBase(WindowBackingBase):
             self.vertex_buffer = None
             glDeleteBuffers([vb])
 
-    def paint_scroll(self, scroll_data, options: typedict, callbacks: Iterable[Callable]) -> None: # pylint: disable=arguments-differ, arguments-renamed
+    def paint_scroll(self, scroll_data, options: typedict, callbacks: Iterable[Callable]) -> None:
         flush = options.intget("flush", 0)
         self.idle_add(self.with_gl_context, self.do_scroll_paints, scroll_data, flush, callbacks)
 
-    def do_scroll_paints(self, context, scrolls, flush = 0, callbacks: Iterable[Callable] = ()) -> None:
+    def do_scroll_paints(self, context, scrolls, flush=0, callbacks: Iterable[Callable] = ()) -> None:
         log("do_scroll_paints%s", (context, scrolls, flush))
         if not context:
             log("%s.do_scroll_paints(..) no context!", self)
@@ -598,11 +603,11 @@ class GLWindowBackingBase(WindowBackingBase):
                 w = bw-x
             if y+h > bh:
                 h = bh-y
-            if x+w+xdelta>bw:
+            if x+w+xdelta > bw:
                 w = bw-x-xdelta
                 if w <= 0:
                     continue        # nothing left!
-            if y+h+ydelta>bh:
+            if y+h+ydelta > bh:
                 h = bh-y-ydelta
                 if h <= 0:
                     continue        # nothing left!
@@ -637,7 +642,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if not self.draw_needs_refresh:
             self.present_fbo(context, 0, 0, bw, bh, flush)
 
-    def copy_fbo(self, w: int, h: int, sx = 0, sy = 0, dx = 0, dy = 0) -> None:
+    def copy_fbo(self, w: int, h: int, sx=0, sy=0, dx=0, dy=0) -> None:
         log("copy_fbo%s", (w, h, sx, sy, dx, dy))
         # copy from offscreen to tmp:
         glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
@@ -707,7 +712,7 @@ class GLWindowBackingBase(WindowBackingBase):
         # (ie: the GTK backend renders to its own buffer..)
         bw, bh = self.size
         rect_count = len(self.pending_fbo_paint)
-        if self.is_double_buffered() or self.size!=self.render_size:
+        if self.is_double_buffered() or self.size != self.render_size:
             # refresh the whole window:
             rectangles = ((0, 0, bw, bh), )
         else:
@@ -776,15 +781,12 @@ class GLWindowBackingBase(WindowBackingBase):
         elapsed = monotonic()-start_time
         log("pointer_overlay=%s, elapsed=%.1f, timeout=%s, cursor-data=%s",
             self.pointer_overlay, elapsed, CURSOR_IDLE_TIMEOUT, (self.cursor_data or [])[:7])
-        if elapsed>=CURSOR_IDLE_TIMEOUT:
+        if elapsed >= CURSOR_IDLE_TIMEOUT:
             # timeout - stop showing it:
             self.pointer_overlay = None
             return
-        x = px
-        y = py
         if not self.cursor_data:
             return
-
         w = self.cursor_data[3]
         h = self.cursor_data[4]
         xhot = self.cursor_data[5]
@@ -897,7 +899,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.overlay_texture(texture, x, y, width, height)
         self.cancel_fps_refresh()
 
-        def refresh_screen(context):
+        def refresh_screen(context) -> None:
             self.fps_refresh_timer = 0
             log("refresh_screen(%s)", context)
             if not self.paint_screen:
@@ -913,7 +915,7 @@ class GLWindowBackingBase(WindowBackingBase):
         ch: int = cursor_data[4]
         pixels = cursor_data[8]
         blen = cw*ch*4
-        if len(pixels)!=blen:
+        if len(pixels) != blen:
             log.error("Error: invalid cursor pixel buffer for %ix%i", cw, ch)
             log.error(" expected %i bytes but got %i (%s)", blen, len(pixels), type(pixels))
             log.error(" %s", repr_ellipsized(hexstr(pixels)))
@@ -940,7 +942,7 @@ class GLWindowBackingBase(WindowBackingBase):
         ch = cursor_data[4]
         pixels = cursor_data[8]
 
-        def gl_upload_cursor(context):
+        def gl_upload_cursor(context) -> None:
             if context:
                 self.gl_init(context)
                 texture = int(self.textures[TEX_CURSOR])
@@ -969,7 +971,7 @@ class GLWindowBackingBase(WindowBackingBase):
                     self.paint_nvdec(gl_context, encoding, img_data, x, y, width, height, options, callbacks)
                 self.idle_add(self.with_gl_context, paint_nvdec)
                 return
-        if JPEG_YUV and width>=2 and height>=2 and encoding=="jpeg":
+        if JPEG_YUV and width >= 2 and height >= 2 and encoding == "jpeg":
             img = self.jpeg_decoder.decompress_to_yuv(img_data)
             flush = options.intget("flush", 0)
             w = img.get_width()
@@ -977,9 +979,9 @@ class GLWindowBackingBase(WindowBackingBase):
             self.idle_add(self.gl_paint_planar, "YUV_to_RGB_FULL", flush, encoding, img,
                           x, y, w, h, width, height, options, callbacks)
             return
-        if encoding=="jpeg":
+        if encoding == "jpeg":
             img = self.jpeg_decoder.decompress_to_rgb("BGRX", img_data)
-        elif encoding=="jpega":
+        elif encoding == "jpega":
             alpha_offset = options.intget("alpha-offset", 0)
             img = self.jpeg_decoder.decompress_to_rgb("BGRA", img_data, alpha_offset)
         else:
@@ -1005,7 +1007,7 @@ class GLWindowBackingBase(WindowBackingBase):
         log("RegisteredBuffer%s=%s", (pbo, graphics_map_flags.WRITE_DISCARD), cuda_pbo)
         mapping = cuda_pbo.map(stream)
         ptr, msize = mapping.device_ptr_and_size()
-        if msize<size:
+        if msize < size:
             raise ValueError(f"registered buffer size {msize} too small for pbo size {size}")
         log("copying %i bytes from %s to mapping=%s at %#x", size, cuda_buffer, mapping, ptr)
         copy = Memcpy2D()
@@ -1022,7 +1024,7 @@ class GLWindowBackingBase(WindowBackingBase):
         cuda_pbo.unregister()
         return pbo
 
-    def paint_nvdec(self, gl_context, encoding, img_data, x: int, y: int, width: int, height: int,
+    def paint_nvdec(self, context, encoding, img_data, x: int, y: int, width: int, height: int,
                     options: typedict, callbacks: Iterable[Callable]) -> None:
         with self.assign_cuda_context(True):
             # we can import pycuda safely here,
@@ -1031,7 +1033,7 @@ class GLWindowBackingBase(WindowBackingBase):
             stream = Stream()
             options["stream"] = stream
             img = self.nvdec_decoder.decompress_with_device(encoding, img_data, width, height, options)
-            log("paint_nvdec: gl_context=%s, img=%s, downloading buffer to pbo", gl_context, img)
+            log("paint_nvdec: gl_context=%s, img=%s, downloading buffer to pbo", context, img)
             pixel_format = img.get_pixel_format()
             if pixel_format not in ("NV12", ):
                 raise ValueError(f"unexpected pixel format {pixel_format}")
@@ -1040,12 +1042,12 @@ class GLWindowBackingBase(WindowBackingBase):
             strides = img.get_rowstride()
             height = img.get_height()
             try:
-                y_pbo = self.cuda_buffer_to_pbo(gl_context, cuda_buffer, strides[0], 0, height, stream)
-                uv_pbo = self.cuda_buffer_to_pbo(gl_context, cuda_buffer, strides[1], roundup(height, 2), height//2, stream)
+                y_pbo = self.cuda_buffer_to_pbo(context, cuda_buffer, strides[0], 0, height, stream)
+                uv_pbo = self.cuda_buffer_to_pbo(context, cuda_buffer, strides[1], roundup(height, 2), height // 2, stream)
             except LogicError as e:
                 # disable nvdec from now on:
                 self.nvdec_decoder = None
-                log("paint_nvdec%s", (gl_context, encoding, img_data, x, y, width, height, options, callbacks))
+                log("paint_nvdec%s", (context, encoding, img_data, x, y, width, height, options, callbacks))
                 raise RuntimeError(f"failed to download nvdec cuda buffer to pbo: {e}")
             finally:
                 cuda_buffer.free()
@@ -1055,7 +1057,7 @@ class GLWindowBackingBase(WindowBackingBase):
         w = img.get_width()
         h = img.get_height()
         options["pbo"] = True
-        self.do_gl_paint_planar(gl_context, "NV12_to_RGB", flush, encoding, img,
+        self.do_gl_paint_planar(context, "NV12_to_RGB", flush, encoding, img,
                                 x, y, w, h, width, height,
                                 options, callbacks)
 
@@ -1116,7 +1118,7 @@ class GLWindowBackingBase(WindowBackingBase):
                    options: typedict, callbacks: Iterable[Callable]) -> None:
         subsampling = options.strget("subsampling")
         has_alpha = options.boolget("has_alpha")
-        if subsampling=="YUV420P" and WEBP_YUV and self.webp_decoder and not WEBP_PILLOW and not has_alpha and width>=2 and height>=2:
+        if subsampling == "YUV420P" and WEBP_YUV and self.webp_decoder and not WEBP_PILLOW and not has_alpha and width >= 2 and height >= 2:
             img = self.webp_decoder.decompress_yuv(img_data)
             flush = options.intget("flush", 0)
             w = img.get_width()
@@ -1126,7 +1128,7 @@ class GLWindowBackingBase(WindowBackingBase):
             return
         super().paint_webp(img_data, x, y, width, height, options, callbacks)
 
-    def paint_avif(self, img_data, x:int, y:int, width:int, height:int,
+    def paint_avif(self, img_data, x: int, y: int, width: int, height: int,
                    options: typedict, callbacks: Iterable[Callable]) -> None:
         alpha = options.boolget("alpha")
         img = self.avif_decoder.decompress(img_data, options, yuv=not alpha)
@@ -1151,7 +1153,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def gl_paint_rgb(self, context, rgb_format: str, img_data,
                      x: int, y: int, width: int, height: int, render_width: int, render_height: int, rowstride: int,
-                     options: typedict, callbacks : Iterable[Callable]):
+                     options: typedict, callbacks : Iterable[Callable]) -> None:
         log("%s.gl_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d, options=%s)",
             self, rgb_format, len(img_data), x, y, width, height, rowstride, options)
         x, y = self.gravity_adjust(x, y, options)
@@ -1254,7 +1256,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def gl_paint_planar(self, shader: str, flush: int, encoding: str, img,
                         x: int, y: int, enc_width: int, enc_height: int, width: int, height: int,
-                        options: typedict, callbacks: Iterable[Callable]):
+                        options: typedict, callbacks: Iterable[Callable]) -> None:
         # this function runs in the UI thread, no video_decoder lock held
         log("gl_paint_planar%s", (flush, encoding, img, x, y, enc_width, enc_height, width, height, options, callbacks))
         self.with_gl_context(self.do_gl_paint_planar, shader, flush, encoding, img,
@@ -1274,8 +1276,9 @@ class GLWindowBackingBase(WindowBackingBase):
                 fire_paint_callbacks(callbacks, False, "failed to get a gl context")
                 return
             self.gl_init(context)
-            scaling = enc_width!=width or enc_height!=height
-            self.update_planar_textures(enc_width, enc_height, img, pixel_format, scaling=scaling, pbo=options.get("pbo"))
+            pbo = options.boolget("pbo")
+            scaling = enc_width != width or enc_height != height
+            self.update_planar_textures(enc_width, enc_height, img, pixel_format, scaling=scaling, pbo=pbo)
 
             # Update FBO texture
             x_scale, y_scale = 1.0, 1.0
@@ -1301,7 +1304,7 @@ class GLWindowBackingBase(WindowBackingBase):
                   flush, img, (x, y, enc_width, enc_height), width, height)
         fire_paint_callbacks(callbacks, False, message)
 
-    def update_planar_textures(self, width: int, height: int, img, pixel_format, scaling=False, pbo=False):
+    def update_planar_textures(self, width: int, height: int, img, pixel_format, scaling=False, pbo=False) -> None:
         assert self.textures is not None, "no OpenGL textures!"
         upload_formats = PIXEL_UPLOAD_FORMAT[pixel_format]
         internal_formats = PIXEL_INTERNAL_FORMAT.get(pixel_format, (GL_R8, GL_R8, GL_R8))
@@ -1315,7 +1318,7 @@ class GLWindowBackingBase(WindowBackingBase):
             (GL_TEXTURE2, TEX_V),
             )[:len(divs)]
         log("%s.update_planar_textures%s textures=%s", self, (width, height, img, pixel_format, scaling, pbo), textures)
-        if self.pixel_format!=pixel_format or self.texture_size!=(width, height):
+        if self.pixel_format != pixel_format or self.texture_size != (width, height):
             gl_marker("Creating new planar textures, pixel format %s (was %s), texture size %s (was %s)",
                       pixel_format, self.pixel_format, (width, height), self.texture_size)
             self.pixel_format = pixel_format
@@ -1341,19 +1344,19 @@ class GLWindowBackingBase(WindowBackingBase):
         gl_marker("updating planar textures: %sx%s %s", width, height, pixel_format)
         rowstrides = img.get_rowstride()
         img_data = img.get_pixels()
-        if len(rowstrides)!=len(divs) or len(img_data)!=len(divs):
+        if len(rowstrides) != len(divs) or len(img_data) != len(divs):
             raise RuntimeError(f"invalid number of planes for {pixel_format}")
         for texture, index in textures:
             # "YUV420P" -> ("Y", "U", "V")
             # "GBRP16" -> ("GG", "BB", "RR")
             # "NV12" -> ("Y", "UV")
             tex_name = get_plane_name(pixel_format, index) * bytespp
-            dformat = data_formats[index]       #data format: ie: GL_RED
-            uformat = upload_formats[index]     #upload format: ie: UNSIGNED_BYTE
+            dformat = data_formats[index]       # data format: ie: GL_RED
+            uformat = upload_formats[index]     # upload format: ie: UNSIGNED_BYTE
             rowstride = rowstrides[index]
             div_w, div_h = divs[index]
             w = width//div_w
-            if dformat==GL_LUMINANCE_ALPHA:
+            if dformat == GL_LUMINANCE_ALPHA:
                 # uploading 2 components
                 w //= 2
             elif dformat not in (GL_RED, GL_LUMINANCE):
@@ -1382,14 +1385,14 @@ class GLWindowBackingBase(WindowBackingBase):
                 glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, 0)
             except GLError:
                 pass
-            log(f"texture {index}: {tex_name:2} div={div_w},{div_h}, rowstride={rowstride}, {w}x{h}, "+
+            log(f"texture {index}: {tex_name:2} div={div_w},{div_h}, rowstride={rowstride}, {w}x{h}, " +
                 f"data={size} bytes, upload={upload}, format={dformat}, type={uformat}")
             glTexSubImage2D(target, 0, 0, 0, w, h, dformat, uformat, pixel_data)
             glBindTexture(target, 0)
             glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
         # glActiveTexture(GL_TEXTURE0)    #redundant, we always call render_planar_update afterwards
 
-    def render_planar_update(self, rx: int, ry: int, rw: int, rh: int, x_scale=1.0, y_scale=1.0, shader="YUV_to_RGB"):
+    def render_planar_update(self, rx: int, ry: int, rw: int, rh: int, x_scale=1.0, y_scale=1.0, shader="YUV_to_RGB") -> None:
         log("%s.render_planar_update%s pixel_format=%s",
             self, (rx, ry, rw, rh, x_scale, y_scale, shader), self.pixel_format)
         if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "NV12", "GBRP16", "YUV444P16"):
@@ -1418,8 +1421,8 @@ class GLWindowBackingBase(WindowBackingBase):
         for texture, index in textures:
             glActiveTexture(texture)
             glBindTexture(target, self.textures[index])
-            plane_name = shader[index:index+1]        #ie: "YUV_to_RGB"  0 -> "Y"
-            tex_loc = glGetUniformLocation(program, plane_name)   #ie: "Y" -> 0
+            plane_name = shader[index:index+1]        # ie: "YUV_to_RGB"  0 -> "Y"
+            tex_loc = glGetUniformLocation(program, plane_name)   # ie: "Y" -> 0
             glUniform1i(tex_loc, index)         # tell the shader where to find the texture: 0 -> TEXTURE_0
 
         # no need to call glGetAttribLocation(program, "position")
@@ -1441,7 +1444,6 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindTexture(target, 0)
         glActiveTexture(GL_TEXTURE0)
 
-
     def gl_show(self, rect_count: int) -> None:
         start = monotonic()
         self.do_gl_show(rect_count)
@@ -1457,7 +1459,7 @@ class GLWindowBackingBase(WindowBackingBase):
             w, h = self.size
             rect = (0, 0, w, h)
 
-        def expose(context):
+        def expose(context) -> None:
             if context:
                 self.gl_init(context)
                 self.present_fbo(context, *rect)
