@@ -204,7 +204,6 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def __init__(self, wid: int, window_alpha: bool, pixel_depth: int = 0):
         self.wid: int = wid
-        self.texture_pixel_format : IntConstant | None = None
         # this is the pixel format we are currently updating the fbo with
         # can be: "YUV420P", "YUV422P", "YUV444P", "GBRP" or None when not initialized yet.
         self.pixel_format : str = ""
@@ -244,13 +243,11 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def get_info(self) -> dict[str,Any]:
         info = super().get_info()
-        tpf = self.texture_pixel_format
         tif = self.internal_format
         info |= {
             "type"                  : "OpenGL",
             "bit-depth"             : self.bit_depth,
             "pixel-format"          : self.pixel_format,
-            "texture-pixel-format"  : CONSTANT_TO_PIXEL_FORMAT.get(tpf) or str(tpf),
             "internal-format"       : INTERNAL_FORMAT_TO_STR.get(tif) or str(tif),
         }
         return info
@@ -301,18 +298,12 @@ class GLWindowBackingBase(WindowBackingBase):
         else:
             if self.bit_depth not in (0, 24, 32) and first_time(f"bit-depth-{self.bit_depth}"):
                 log.warn(f"Warning: invalid bit depth {self.bit_depth}, using 24")
-            # assume 24:
+            # (pixels are always stored in 32bpp - but this makes it clearer when we do/don't support alpha)
             if self._alpha_enabled:
                 self.internal_format = GL_RGBA8
             else:
                 self.internal_format = GL_RGB8
-        # (pixels are always stored in 32bpp - but this makes it clearer when we do/don't support alpha)
-        if self._alpha_enabled:
-            self.texture_pixel_format = GL_RGBA
-        else:
-            self.texture_pixel_format = GL_RGB
-        log("init_formats() texture pixel format=%s, internal format=%s, rgb modes=%s",
-            CONSTANT_TO_PIXEL_FORMAT.get(self.texture_pixel_format),
+        log("init_formats() internal format=%s, rgb modes=%s",
             INTERNAL_FORMAT_TO_STR.get(self.internal_format),
             self.RGB_MODES)
 
@@ -512,7 +503,7 @@ class GLWindowBackingBase(WindowBackingBase):
         # nvidia needs this even though we don't use mipmaps (repeated through this file):
         glTexParameteri(target, GL_TEXTURE_MAG_FILTER, mag_filter)
         glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
+        glTexImage2D(target, 0, self.internal_format, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
         glBindFramebuffer(GL_FRAMEBUFFER, fbo)
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[texture_index], 0)
 
