@@ -224,7 +224,6 @@ class GLWindowBackingBase(WindowBackingBase):
         self.offscreen_fbo = None
         self.tmp_fbo = None
         self.vao = None
-        self.vertex_buffer = None
         self.pending_fbo_paint : list[tuple[int, int, int, int]] = []
         self.last_flush = monotonic()
         self.last_present_fbo_error = ""
@@ -392,19 +391,18 @@ class GLWindowBackingBase(WindowBackingBase):
         overlay_shader = self.gl_init_shader("overlay", GL_FRAGMENT_SHADER)
         self.gl_init_program("overlay", vertex_shader, overlay_shader)
         self.vao = glGenVertexArrays(1)
-        self.vertex_buffer = glGenBuffers(1)
+
+    def set_vao(self, index):
         vertices = [-1, -1, 1, -1, -1, 1, 1, 1]
         c_vertices = (c_float * len(vertices))(*vertices)
         glBindVertexArray(self.vao)
-        glBindBuffer(GL_ARRAY_BUFFER, self.vertex_buffer)
-        glBufferData(GL_ARRAY_BUFFER, len(vertices)*4, c_vertices, GL_STATIC_DRAW)
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
-        glBindVertexArray(0)
-
-    def set_vao(self, index) -> None:
-        glBindVertexArray(self.vao)
+        buf = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, buf)
+        glBufferData(GL_ARRAY_BUFFER, len(vertices) * 4, c_vertices, GL_STATIC_DRAW)
         glVertexAttribPointer(index, 2, GL_FLOAT, GL_FALSE, 0, c_void_p(0))
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
         glEnableVertexAttribArray(index)
+        return buf
 
     def gl_init_program(self, name: str, *shaders: int) -> None:
         from OpenGL.GL import (
@@ -561,10 +559,6 @@ class GLWindowBackingBase(WindowBackingBase):
         if vao:
             self.vao = None
             glDeleteVertexArrays(1, [vao])
-        vb = self.vertex_buffer
-        if vb:
-            self.vertex_buffer = None
-            glDeleteBuffers(1, [vb])
 
     def paint_scroll(self, scroll_data, options: typedict, callbacks: Iterable[Callable]) -> None:
         flush = options.intget("flush", 0)
@@ -819,12 +813,13 @@ class GLWindowBackingBase(WindowBackingBase):
         glUniform2f(viewport_pos, x, y)
 
         position = 0
-        self.set_vao(position)
+        pos_buffer = self.set_vao(position)
 
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
 
         glBindVertexArray(0)
         glUseProgram(0)
+        glDeleteBuffers(1, [pos_buffer])
         glDisableVertexAttribArray(position)
 
         glBindTexture(target, 0)
@@ -1433,10 +1428,11 @@ class GLWindowBackingBase(WindowBackingBase):
         viewport_pos = glGetUniformLocation(program, "viewport_pos")
         glUniform2f(viewport_pos, rx, ry)
 
-        self.set_vao(position)
+        pos_buffer = self.set_vao(position)
 
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
 
+        glDeleteBuffers(1, [pos_buffer])
         glDisableVertexAttribArray(position)
         glBindVertexArray(0)
         glUseProgram(0)
