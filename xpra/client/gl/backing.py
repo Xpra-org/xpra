@@ -564,7 +564,7 @@ class GLWindowBackingBase(WindowBackingBase):
         vb = self.vertex_buffer
         if vb:
             self.vertex_buffer = None
-            glDeleteBuffers([vb])
+            glDeleteBuffers(1, [vb])
 
     def paint_scroll(self, scroll_data, options: typedict, callbacks: Iterable[Callable]) -> None:
         flush = options.intget("flush", 0)
@@ -777,7 +777,7 @@ class GLWindowBackingBase(WindowBackingBase):
         save_fbo(self.wid, self.offscreen_fbo, self.textures[TEX_FBO], width, height, self._alpha_enabled)
 
     def draw_pointer(self) -> None:
-        px, py, _, _, size, start_time = self.pointer_overlay
+        px, py, _, _, _, start_time = self.pointer_overlay
         elapsed = monotonic()-start_time
         log("pointer_overlay=%s, elapsed=%.1f, timeout=%s, cursor-data=%s",
             self.pointer_overlay, elapsed, CURSOR_IDLE_TIMEOUT, (self.cursor_data or [])[:7])
@@ -804,8 +804,8 @@ class GLWindowBackingBase(WindowBackingBase):
         glEnable(target)
         glBindTexture(target, texture)
 
-        ww, wh = self.render_size
-        # the region we're updating:
+        wh = self.render_size[1]
+        # the region we're updating (reversed):
         glViewport(x, wh-y-h, w, h)
 
         program = self.programs["overlay"]
@@ -1266,18 +1266,19 @@ class GLWindowBackingBase(WindowBackingBase):
     def do_gl_paint_planar(self, context, shader: str, flush: int, encoding: str, img,
                            x: int, y: int, enc_width: int, enc_height: int, width: int, height: int,
                            options: typedict, callbacks: Iterable[Callable]):
+        pixel_format = img.get_pixel_format()
+        if pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "NV12", "GBRP16", "YUV444P16"):
+            raise ValueError(f"the GL backing does not handle pixel format {pixel_format!r} yet!")
+        if not context:
+            log("%s._do_paint_rgb(..) no OpenGL context!", self)
+            fire_paint_callbacks(callbacks, False, "failed to get a gl context")
+            return
         x, y = self.gravity_adjust(x, y, options)
         try:
-            pixel_format = img.get_pixel_format()
-            if pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "NV12", "GBRP16", "YUV444P16"):
-                raise ValueError(f"the GL backing does not handle pixel format {pixel_format!r} yet!")
-            if not context:
-                log("%s._do_paint_rgb(..) no OpenGL context!", self)
-                fire_paint_callbacks(callbacks, False, "failed to get a gl context")
-                return
             self.gl_init(context)
             pbo = options.boolget("pbo")
             scaling = enc_width != width or enc_height != height
+            log.warn(f"{pbo=}, {scaling=}")
             self.update_planar_textures(enc_width, enc_height, img, pixel_format, scaling=scaling, pbo=pbo)
 
             # Update FBO texture
@@ -1412,7 +1413,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
         glDrawBuffer(GL_COLOR_ATTACHMENT0)
 
-        ww, wh = self.render_size
+        wh = self.render_size[1]
         # the region we're updating:
         glViewport(rx, wh-ry-rh, rw, rh)
 
