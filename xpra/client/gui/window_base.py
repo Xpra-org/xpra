@@ -106,9 +106,9 @@ class ClientWindowBase(ClientWidgetBase):
         self._been_mapped = False
         def wn(w):
             return WORKSPACE_NAMES.get(w, w)
-        workspace = typedict(self._client_properties).intget("workspace", None)
+        workspace = typedict(self._client_properties).intget("workspace", -1)
         workspacelog("init_window(..) workspace from client properties %s: %s", self._client_properties, wn(workspace))
-        if workspace is not None:
+        if workspace>=0:
             #client properties override application specified workspace value on init only:
             metadata["workspace"] = workspace
         self._window_workspace = WORKSPACE_UNSET        #will get set in set_metadata if present

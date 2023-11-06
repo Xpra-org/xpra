@@ -1102,11 +1102,11 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         Override so we can update the workspace on the window directly,
         instead of storing it as a client property
         """
-        workspace = typedict(new_client_properties).intget("workspace", None)
+        workspace = typedict(new_client_properties).intget("workspace", -1)
         def wn(w):
             return WORKSPACE_NAMES.get(w, w)
         workspacelog("workspace from client properties %s: %s", new_client_properties, wn(workspace))
-        if workspace is not None:
+        if workspace>=0:
             window.move_to_workspace(workspace)
             #we have handled it on the window directly, so remove it from client properties
             new_client_properties.pop("workspace", None)
