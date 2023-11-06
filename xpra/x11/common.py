@@ -17,23 +17,23 @@ class Unmanageable(Exception):
     pass
 
 
-REPR_FUNCTIONS : dict[type,Callable] = {}
+REPR_FUNCTIONS : dict[type, Callable] = {}
 
 
 # Just to make it easier to pass around and have a helpful debug logging.
 # Really, just a python objects where we can stick random bags of attributes.
 class X11Event:
-    def __init__(self, name:str):
-        self.name:str = name
+    def __init__(self, name: str):
+        self.name: str = name
 
     def __repr__(self):
         d = {}
-        for k,v in self.__dict__.items():
+        for k, v in self.__dict__.items():
             if k in ("name", "display", "type"):
                 continue
             if k in ("serial", "window", "delivered_to"):
                 d[k] = f"{v:x}"
-            elif k=="send_event" and v is False:
+            elif k == "send_event" and v is False:
                 continue
             else:
                 fn = REPR_FUNCTIONS.get(type(v), str)
@@ -41,11 +41,11 @@ class X11Event:
         return f"<X11:{self.name} {d!r}>"
 
 
-#we duplicate some of the code found in gtk_x11.prop ...
-#which is still better than having dependencies on that GTK2 code
-def get_X11_window_property(xid:int, name:str, req_type:str):
+# we duplicate some of the code found in gtk_x11.prop ...
+# which is still better than having dependencies on that GTK here
+def get_X11_window_property(xid: int, name: str, req_type: str):
     try:
-        from xpra.x11.bindings.window import X11WindowBindings, PropertyError #@UnresolvedImport
+        from xpra.x11.bindings.window import X11WindowBindings, PropertyError
         try:
             prop = X11WindowBindings().XGetWindowProperty(xid, name, req_type)
             log("get_X11_window_property(%#x, %s, %s)=%s, len=%s", xid, name, req_type, type(prop), len(prop or ()))
@@ -57,7 +57,8 @@ def get_X11_window_property(xid:int, name:str, req_type:str):
         log("get_X11_window_property%s", (xid, name, req_type), exc_info=True)
     return None
 
-def get_X11_root_property(name:str, req_type:str):
+
+def get_X11_root_property(name: str, req_type: str):
     try:
         from xpra.x11.bindings.window import X11WindowBindings
         return get_X11_window_property(X11WindowBindings().get_root_xid(), name, req_type)
@@ -85,15 +86,15 @@ def get_wm_name() -> str:
     return ""
 
 
-def get_icc_data() -> dict[str,Any]:
-    icc : dict[str,Any] = {}
+def get_icc_data() -> dict[str, Any]:
+    icc : dict[str, Any] = {}
     try:
         data = get_X11_root_property("_ICC_PROFILE", "CARDINAL")
         if data:
             log("_ICC_PROFILE=%s (%s)", type(data), len(data))
             version = get_X11_root_property("_ICC_PROFILE_IN_X_VERSION", "CARDINAL")
             log("get_icc_info() found _ICC_PROFILE_IN_X_VERSION=%s, _ICC_PROFILE=%s",
-                      hexstr(version or ""), hexstr(data))
+                hexstr(version or ""), hexstr(data))
             icc |= {
                 "source"    : "_ICC_PROFILE",
                 "data"      : data,
@@ -126,6 +127,7 @@ def get_current_desktop() -> int:
     log("get_current_desktop() %s=%s", hexstr(d or ""), v)
     return v
 
+
 def get_number_of_desktops() -> int:
     v = 0
     d = None
@@ -141,23 +143,24 @@ def get_number_of_desktops() -> int:
     log("get_number_of_desktops() %s=%s", hexstr(d or ""), v)
     return v
 
-def get_workarea() -> tuple[int,int,int,int] | None:
+
+def get_workarea() -> tuple[int, int, int, int] | None:
     try:
         d = get_current_desktop()
-        if d<0:
+        if d < 0:
             return None
         workarea = get_X11_root_property("_NET_WORKAREA", "CARDINAL")
         if not workarea:
             return None
         log("get_workarea() _NET_WORKAREA=%s (%s), len=%s",
             ellipsizer(workarea), type(workarea), len(workarea))
-        #workarea comes as a list of 4 CARDINAL dimensions (x,y,w,h), one for each desktop
+        # workarea comes as a list of 4 CARDINAL dimensions (x,y,w,h), one for each desktop
         sizeof_long = struct.calcsize(b"@L")
-        if len(workarea)<(d+1)*4*sizeof_long:
+        if len(workarea) < (d+1)*4*sizeof_long:
             log.warn(f"Warning: invalid `_NET_WORKAREA` value length: {workarea!r}")
         else:
             cur_workarea = workarea[d*4*sizeof_long:(d+1)*4*sizeof_long]
-            v = cast(tuple[int,int,int,int], struct.unpack(b"@LLLL", cur_workarea))
+            v = cast(tuple[int, int, int, int], struct.unpack(b"@LLLL", cur_workarea))
             log("get_workarea() %s=%s", hexstr(cur_workarea), v)
             return v
     except Exception as e:
@@ -166,6 +169,7 @@ def get_workarea() -> tuple[int,int,int,int] | None:
         log.estr(e)
     return None
 
+
 def get_desktop_names() -> tuple[str, ...]:
     v : tuple[str, ...] = ("Main", )
     d = None
@@ -173,7 +177,7 @@ def get_desktop_names() -> tuple[str, ...]:
         d = get_X11_root_property("_NET_DESKTOP_NAMES", "UTF8_STRING")
         if d:
             d = d.split(b"\0")
-            if len(d)>1 and d[-1]==b"":
+            if len(d) > 1 and d[-1] == b"":
                 d = d[:-1]
             return tuple(x.decode("utf8") for x in d)
     except Exception as e:
@@ -182,10 +186,11 @@ def get_desktop_names() -> tuple[str, ...]:
     log("get_desktop_names() %s=%s", hexstr(d or ""), v)
     return v
 
+
 def get_vrefresh() -> int:
     v = -1
     try:
-        from xpra.x11.bindings.randr import RandRBindings      #@UnresolvedImport
+        from xpra.x11.bindings.randr import RandRBindings
         randr = RandRBindings()
         if randr.has_randr():
             v = randr.get_vrefresh()
@@ -218,12 +223,12 @@ device_bell = None
 def system_bell(window, device, percent:int, _pitch, _duration:int, bell_class, bell_id, bell_name:str) -> bool:
     global device_bell
     if device_bell is False:
-        #failed already
+        # failed already
         return False
     if device_bell is None:
-        #try to load it:
+        # try to load it:
         try:
-            from xpra.x11.bindings.keyboard import X11KeyboardBindings       #@UnresolvedImport
+            from xpra.x11.bindings.keyboard import X11KeyboardBindings
             device_bell = X11KeyboardBindings().device_bell
         except ImportError:
             log("x11_bell()", exc_info=True)
@@ -247,6 +252,7 @@ def get_xsettings():
     from xpra.x11.xsettings_prop import bytes_to_xsettings
     return bytes_to_xsettings(data)
 
+
 def xsettings_to_dict(v) -> dict[str, tuple[int, Any]]:
     d : dict[str, tuple[int, Any]] = {}
     if v:
@@ -256,13 +262,13 @@ def xsettings_to_dict(v) -> dict[str, tuple[int, Any]]:
     return d
 
 
-def get_randr_dpi() -> tuple[int,int]:
+def get_randr_dpi() -> tuple[int, int]:
     from xpra.x11.bindings.randr import RandRBindings  # @UnresolvedImport
     randr_bindings = RandRBindings()
     if randr_bindings and randr_bindings.has_randr():
         wmm, hmm = randr_bindings.get_screen_size_mm()
-        if wmm>0 and hmm>0:
-            w, h =  randr_bindings.get_screen_size()
+        if wmm > 0 and hmm > 0:
+            w, h = randr_bindings.get_screen_size()
             dpix = round(w * 25.4 / wmm)
             dpiy = round(h * 25.4 / hmm)
             log("xdpi=%s, ydpi=%s - size-mm=%ix%i, size=%ix%i", dpix, dpiy, wmm, hmm, w, h)
@@ -270,21 +276,20 @@ def get_randr_dpi() -> tuple[int,int]:
     return -1, -1
 
 
-
-def get_xresources() -> dict[str,str] | None:
+def get_xresources() -> dict[str, str] | None:
     try:
         value = get_X11_root_property("RESOURCE_MANAGER", "STRING")
         log(f"RESOURCE_MANAGER={value}")
         if value is None:
             return None
-        #parse the resources into a dict:
-        values : dict[str,str] = {}
+        # parse the resources into a dict:
+        values : dict[str, str] = {}
         options = bytestostr(value).split("\n")
         for option in options:
             if not option:
                 continue
             parts = option.split(":\t", 1)
-            if len(parts)!=2:
+            if len(parts) != 2:
                 log(f"skipped invalid option: {option!r}")
                 continue
             values[parts[0]] = parts[1]
@@ -292,6 +297,7 @@ def get_xresources() -> dict[str,str] | None:
     except Exception as e:
         log(f"_get_xresources error: {e!r}")
     return None
+
 
 def get_cursor_size() -> int:
     d = get_xresources() or {}

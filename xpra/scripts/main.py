@@ -21,8 +21,6 @@ import traceback
 from typing import Any
 from collections.abc import Callable, Iterable
 
-from xpra import __version__ as XPRA_VERSION
-from xpra.platform.dotxpra import DotXpra
 from xpra.common import noerr, noop
 from xpra.util.types import typedict
 from xpra.util.str_fn import nonl, csv, print_nested_dict, pver, sorted_nicely
@@ -491,6 +489,12 @@ def is_connection_arg(mode, arg):
     if any(arg.startswith(f"{mode}/") for mode in SOCKET_TYPES):
         return True
     return False
+
+
+def DotXpra(*args, **kwargs):
+    from xpra.platform import dotxpra
+    return dotxpra.DotXpra(*args, **kwargs)
+
 
 def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, defaults) -> ExitValue:
     mode = MODE_ALIAS.get(mode, mode)
@@ -1762,7 +1766,8 @@ def run_opengl_probe():
 def make_client(error_cb:Callable, opts):
     progress_process = None
     if opts.splash is not False:
-        progress_process = make_progress_process("Xpra Client v%s" % XPRA_VERSION)
+        from xpra import __version__
+        progress_process = make_progress_process("Xpra Client v%s" % __version__)
 
     try:
         from xpra.platform.gui import init as gui_init

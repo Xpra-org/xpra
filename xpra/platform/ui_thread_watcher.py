@@ -50,17 +50,17 @@ class UI_thread_watcher:
         self.exit : Event = Event()
 
     def start(self):
-        if self.last_UI_thread_time>0:
+        if self.last_UI_thread_time > 0:
             log.warn("UI thread watcher already started!")
             return
-        #run once to initialize:
+        # run once to initialize:
         self.UI_thread_wakeup()
-        if self.polling_timeout>0:
+        if self.polling_timeout > 0:
             start_thread(self.poll_UI_loop, "UI thread polling", daemon=True)
         else:
             log("not starting an IO polling thread")
-        if FAKE_UI_LOCKUPS>0:
-            #watch out: sleeping in UI thread!
+        if FAKE_UI_LOCKUPS > 0:
+            # watch out: sleeping in UI thread!
             def sleep_in_ui_thread(*args):
                 t = threading.current_thread()
                 log.warn("sleep_in_ui_thread%s pausing %s for %ims", args, t, FAKE_UI_LOCKUPS)
@@ -80,7 +80,6 @@ class UI_thread_watcher:
     def add_alive_callback(self, cb:Callable):
         self.alive_callbacks.append(cb)
 
-
     def remove_fail_callback(self, cb:Callable):
         self.fail_callbacks.remove(cb)
 
@@ -89,7 +88,6 @@ class UI_thread_watcher:
 
     def remove_alive_callback(self, cb:Callable):
         self.alive_callbacks.remove(cb)
-
 
     @staticmethod
     def run_callbacks(callbacks:list[Callable]) -> None:
@@ -105,7 +103,7 @@ class UI_thread_watcher:
         self.ui_wakeup_timer = 0
         log("UI_thread_wakeup(%s) elapsed=%.2fms", scheduled_at, 1000*elapsed)
         self.last_UI_thread_time = monotonic()
-        #UI thread was blocked?
+        # UI thread was blocked?
         if self.UI_blocked:
             if self.announced_blocked:
                 log.info("UI thread is running again, resuming")
@@ -118,8 +116,9 @@ class UI_thread_watcher:
         log("poll_UI_loop() running")
         while not self.exit.is_set():
             delta = monotonic()-self.last_UI_thread_time
-            log("poll_UI_loop() last_UI_thread_time was %.1f seconds ago (max %i), UI_blocked=%s",
-                delta, self.max_delta/1000, self.UI_blocked)
+            if self.UI_blocked:
+                log("poll_UI_loop() last_UI_thread_time was %ims ago (max %i), UI_blocked=%s",
+                    delta*1000, self.max_delta, self.UI_blocked)
             if delta>self.max_delta/1000.0:
                 #UI thread is (still?) blocked:
                 if not self.UI_blocked:
@@ -129,26 +128,26 @@ class UI_thread_watcher:
                     self.announced_blocked = True
                     log.info("UI thread is now blocked")
             else:
-                #seems to be ok:
+                # seems to be ok:
                 log("poll_UI_loop() ok, firing %s", self.alive_callbacks)
                 self.run_callbacks(self.alive_callbacks)
             now = monotonic()
             self.ui_wakeup_timer = self.timeout_add(0, self.UI_thread_wakeup, now)
             wstart = monotonic()
-            wait_time = self.polling_timeout/1000.0     #convert to seconds
+            wait_time = self.polling_timeout/1000.0     # convert to seconds
             self.exit.wait(wait_time)
             if not self.exit.is_set():
                 wdelta = monotonic() - wstart
-                log("wait(%.4f) actually waited %.4f", self.polling_timeout/1000.0, wdelta)
-                if wdelta>(wait_time+1):
-                    #this can be caused by suspend + resume
+                log("wait(%.4f) actually waited %ims", self.polling_timeout/1000.0, wdelta*1000)
+                if wdelta > (wait_time+1):
+                    # this can be caused by suspend + resume
                     if wdelta>60 and not self.UI_blocked:
                         log.info("no service for %i seconds", wdelta)
                     else:
                         log.warn("Warning: long timer waiting time,")
                         log.warn(" UI thread polling waited %.1f seconds longer than intended (%.1f vs %.1f)",
                                  wdelta-wait_time, wdelta, wait_time)
-                    #force run resume (even if we never fired the fail callbacks)
+                    # force run resume (even if we never fired the fail callbacks)
                     self.UI_blocked = False
                     self.UI_thread_wakeup()
         self.init_vars()
@@ -159,8 +158,8 @@ class UI_thread_watcher:
             self.source_remove(uiwt)
 
 
-UI_watcher : UI_thread_watcher|None = None
-def get_UI_watcher(timeout_add=None, source_remove=None) -> UI_thread_watcher|None:
+UI_watcher : UI_thread_watcher | None = None
+def get_UI_watcher(timeout_add: Callable = None, source_remove: Callable = None) -> UI_thread_watcher | None:
     global UI_watcher
     if UI_watcher is None and timeout_add:
         UI_watcher = UI_thread_watcher(timeout_add, source_remove, POLLING, ANNOUNCE_TIMEOUT)
