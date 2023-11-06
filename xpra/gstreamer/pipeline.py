@@ -12,19 +12,20 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.gstreamer.common import GST_FLOW_OK, import_gst
-gst = import_gst()
-if not gst:
-    raise ImportError("GStreamer bindings not found")
-Gst : ModuleType = gst
-from gi.repository import GLib, GObject  # @UnresolvedImport
 
-from xpra.os_util import first_time
+from xpra.os_util import first_time, gi_import
 from xpra.common import noerr
 from xpra.util.types import AtomicInteger
 from xpra.gtk.gobject import one_arg_signal
 from xpra.log import Logger
 
 log = Logger("gstreamer")
+
+Gst : ModuleType = import_gst()
+if not Gst:
+    raise ImportError("GStreamer bindings not found")
+GLib = gi_import("GLib", "2.0")
+GObject = gi_import("GObject", "2.0")
 
 
 class Pipeline(GObject.GObject):

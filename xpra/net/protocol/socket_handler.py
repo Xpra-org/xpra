@@ -616,8 +616,6 @@ class SocketProtocol:
             if alias:
                 #replace the packet type with the alias:
                 packet[0] = alias
-            else:
-                log("packet type send alias not found for '%s'", packet_type)
         try:
             main_packet, proto_flags = self._encoder(packet)
         except Exception:

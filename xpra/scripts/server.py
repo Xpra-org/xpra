@@ -32,7 +32,10 @@ from xpra.scripts.config import (
     parse_bool,
     fixup_options, make_defaults_struct, read_config, dict_to_validated_config,
     )
-from xpra.common import CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE, SSH_AGENT_DISPATCH, ConnectionMessage, noerr
+from xpra.common import (
+    CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE, SSH_AGENT_DISPATCH,
+    ConnectionMessage, SocketState, noerr,
+)
 from xpra.exit_codes import ExitCode
 from xpra.os_util import (
     SIGNAMES, POSIX, WIN32, OSX,
@@ -43,6 +46,7 @@ from xpra.os_util import (
     getuid, get_groups, get_group_id,
     get_hex_uuid, osexpand,
     load_binary_file, is_writable,
+    gi_import,
     )
 from xpra.util.env import unsetenv, envbool
 from xpra.common import GROUP
@@ -223,7 +227,7 @@ def create_runtime_dir(xrd, uid, gid) -> str:
 def guess_xpra_display(socket_dir, socket_dirs) -> str:
     dotxpra = DotXpra(socket_dir, socket_dirs)
     results = dotxpra.sockets()
-    live = [display for state, display in results if state==DotXpra.LIVE]
+    live = [display for state, display in results if state==SocketState.LIVE]
     if not live:
         raise InitException("no existing xpra servers found")
     if len(live)>1:
@@ -331,7 +335,7 @@ def make_expand_server():
 
 
 def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=True, timeout=None) -> int:
-    #check that we can access the X11 display:
+    # check that we can access the X11 display:
     from xpra.log import Logger
     log = Logger("screen", "x11")
     if xvfb:
@@ -340,9 +344,9 @@ def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=Tru
             timeout = VFB_WAIT
         if not verify_display_ready(xvfb, display_name, shadowing, log_errors, timeout):
             return 1
-        log("X11 display is ready")
+        log(f"X11 display {display_name!r} is ready")
     no_gtk()
-    #we're going to load gtk:
+    # we're going to load gtk:
     bypass_no_gtk()
     display = verify_gdk_display(display_name)
     if not display:
@@ -836,7 +840,7 @@ def _do_run_server(script_file:str, cmdline,
             warn("Warning: upgrading from an environment connected to the same display")
         #try to stop the existing server if it exists:
         dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
-        sessions = get_xpra_sessions(dotxpra, ignore_state=(DotXpra.UNKNOWN, DotXpra.DEAD),
+        sessions = get_xpra_sessions(dotxpra, ignore_state=(SocketState.UNKNOWN, SocketState.DEAD),
                                      matching_display=display_name, query=True)
         session = sessions.get(display_name)
         if session:
@@ -1578,9 +1582,7 @@ def attach_client(options, defaults):
 def verify_gdk_display(display_name):
     # pylint: disable=import-outside-toplevel
     # Now we can safely load gtk and connect:
-    import gi
-    gi.require_version("Gdk", "3.0")  # @UndefinedVariable
-    from gi.repository import Gdk  # @UnresolvedImport
+    Gdk = gi_import("Gdk", "3.0")
     display = Gdk.Display.open(display_name)
     if not display:
         from xpra.scripts.config import InitException

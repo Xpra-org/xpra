@@ -26,7 +26,7 @@ from xpra.client.base.command import InfoTimerClient
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_nodock_command
 from xpra.util.stats import std_unit
-from xpra.common import GravityStr, noerr
+from xpra.common import GravityStr, SocketState, noerr
 from xpra.log import Logger
 
 log = Logger("gobject", "client")
@@ -340,7 +340,7 @@ class TopClient:
                 except Exception as e:
                     sinfo += f"(stat error: {e})"
             info.append(sinfo)
-            if state==DotXpra.LIVE:
+            if state==SocketState.LIVE:
                 valid_path = path
         if valid_path:
             d = get_display_id_info(valid_path)

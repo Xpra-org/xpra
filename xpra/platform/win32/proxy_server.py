@@ -8,6 +8,7 @@ from time import sleep
 
 from xpra.server.proxy.server import ProxyServer as _ProxyServer
 from xpra.platform.paths import get_app_dir
+from xpra.common import SocketState
 from xpra.util.env import envbool
 from xpra.os_util import pollwait, strtobytes
 from xpra.log import Logger
@@ -119,7 +120,7 @@ class ProxyServer(_ProxyServer):
             if t>=4:
                 state = dotxpra.get_display_state(named_pipe)
                 log("get_display_state(%s)=%s", state)
-                if state==DotXpra.LIVE:
+                if state==SocketState.LIVE:
                     #TODO: test the named pipe
                     sleep(2)
                     break

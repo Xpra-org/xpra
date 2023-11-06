@@ -21,7 +21,7 @@ import traceback
 from typing import Any
 from collections.abc import Callable, Iterable
 
-from xpra.common import noerr, noop
+from xpra.common import SocketState, noerr, noop
 from xpra.util.types import typedict
 from xpra.util.str_fn import nonl, csv, print_nested_dict, pver, sorted_nicely
 from xpra.util.env import envint, envbool
@@ -542,7 +542,7 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
                 display_name = display.get("display_name")
                 if display_name:
                     state = dotxpra.get_display_state(display_name)
-                    if state==DotXpra.LIVE:
+                    if state==SocketState.LIVE:
                         get_logger().info(f"existing live display found on {display_name}, attaching")
                         #we're connecting locally, so no need for these:
                         options.csc_modules = ["none"]
@@ -770,7 +770,7 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
 def find_session_by_name(opts, session_name:str) -> str:
     from xpra.platform.paths import get_nodock_command
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
-    socket_paths = dotxpra.socket_paths(check_uid=getuid(), matching_state=DotXpra.LIVE)
+    socket_paths = dotxpra.socket_paths(check_uid=getuid(), matching_state=SocketState.LIVE)
     if not socket_paths:
         return ""
     id_sessions = {}
@@ -894,7 +894,7 @@ def pick_display(error_cb, opts, extra_args, cmdline=()):
 def do_pick_display(dotxpra, error_cb, opts, extra_args, cmdline=()):
     if not extra_args:
         # Pick a default server
-        dir_servers = dotxpra.socket_details(matching_state=DotXpra.LIVE)
+        dir_servers = dotxpra.socket_details(matching_state=SocketState.LIVE)
         try:
             sockdir, display, sockpath = single_display_match(dir_servers, error_cb)
         except Exception:
@@ -933,7 +933,7 @@ def single_display_match(dir_servers, error_cb, nomatch="cannot find any live se
     noproxy = []
     for sockdir, servers in dir_servers.items():
         for state, display, path in servers:
-            if state==DotXpra.LIVE:
+            if state==SocketState.LIVE:
                 allservers.append((sockdir, display, path))
                 if not display.startswith(":proxy-"):
                     noproxy.append((sockdir, display, path))
@@ -1273,18 +1273,18 @@ def get_sockpath(display_desc:dict[str,Any], error_cb, timeout=CONNECT_TIMEOUT) 
             gid,
             )
         display = display_desc["display"]
-        def socket_details(state=DotXpra.LIVE):
+        def socket_details(state=SocketState.LIVE):
             return dotxpra.socket_details(matching_state=state, matching_display=display)
         dir_servers = socket_details()
         if display and not dir_servers:
             state = dotxpra.get_display_state(display)
-            if state in (DotXpra.UNKNOWN, DotXpra.DEAD) and timeout>0:
+            if state in (SocketState.UNKNOWN, SocketState.DEAD) and timeout>0:
                 #found the socket for this specific display in UNKNOWN state,
                 #or not found any sockets at all (DEAD),
                 #this could be a server starting up,
                 #so give it a bit of time:
-                if state==DotXpra.UNKNOWN:
-                    werr(f"server socket for display {display} is in {DotXpra.UNKNOWN} state")
+                if state==SocketState.UNKNOWN:
+                    werr(f"server socket for display {display} is in {SocketState.UNKNOWN} state")
                 else:
                     werr(f"server socket for display {display} not found")
                 werr(f" waiting up to {timeout} seconds")
@@ -1293,7 +1293,7 @@ def get_sockpath(display_desc:dict[str,Any], error_cb, timeout=CONNECT_TIMEOUT) 
                 while monotonic()-start<timeout:
                     state = dotxpra.get_display_state(display)
                     log(f"get_display_state({display})={state}")
-                    if state in (dotxpra.LIVE, dotxpra.INACCESSIBLE):
+                    if state in (SocketState.LIVE, SocketState.INACCESSIBLE):
                         #found a final state
                         break
                     time.sleep(0.1)
@@ -1310,7 +1310,7 @@ def run_client(script_file, cmdline, error_cb, opts, extra_args, mode:str) -> Ex
     if mode in ("attach", "detach") and len(extra_args)==1 and extra_args[0]=="all":
         #run this command for each display:
         dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
-        displays = dotxpra.displays(check_uid=getuid(), matching_state=DotXpra.LIVE)
+        displays = dotxpra.displays(check_uid=getuid(), matching_state=SocketState.LIVE)
         if not displays:
             sys.stdout.write("No xpra sessions found\n")
             return ExitCode.FILE_NOT_FOUND
@@ -1925,7 +1925,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode:str, defaults
                 display_name = display.get("display_name")
                 if display_name:
                     state = dotxpra.get_display_state(display_name)
-                    if state==DotXpra.LIVE:
+                    if state==SocketState.LIVE:
                         get_logger().info(f"existing live display found on {display_name}, attaching")
                         #we're connecting locally, so no need for these:
                         options.csc_modules = ["none"]
@@ -2600,7 +2600,7 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
     elapsed = 0.0
     while elapsed<WAIT_SERVER_TIMEOUT:
         state = dotxpra.get_display_state(display_name)
-        if state==DotXpra.LIVE:
+        if state==SocketState.LIVE:
             log("found live server '%s'", display_name)
             #give it a bit of time:
             #FIXME: poll until the server is ready instead
@@ -2659,7 +2659,7 @@ def start_server_subprocess(script_file, args, mode, opts,
     # get the current list of existing sockets,
     # so we can spot the new ones:
     existing_sockets = set(dotxpra.socket_paths(check_uid=uid,
-                                                matching_state=dotxpra.LIVE,
+                                                matching_state=SocketState.LIVE,
                                                 matching_display=matching_display))
     log(f"start_server_subprocess: existing_sockets={existing_sockets}")
 
@@ -2796,7 +2796,7 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
     from xpra.platform.paths import get_nodock_command
     while monotonic()-start<WAIT_SERVER_TIMEOUT and (proc is None or proc.poll() in (None, 0)):
         sockets = set(dotxpra.socket_paths(check_uid=matching_uid,
-                                           matching_state=dotxpra.LIVE,
+                                           matching_state=SocketState.LIVE,
                                            matching_display=matching_display))
         #sort because we prefer a socket in /run/* to one in /home/*:
         new_sockets = tuple(reversed(tuple(sockets-existing_sockets)))
@@ -2866,9 +2866,9 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults) -> Exi
                 display_name = display.get("display")
             if display_name:
                 state = dotxpra.get_display_state(display_name)
-                if state!=DotXpra.DEAD:
+                if state!=SocketState.DEAD:
                     stderr_print(f"found existing display {display_name} : {state}")
-        if state!=DotXpra.LIVE:
+        if state!=SocketState.LIVE:
             #strip defaults, only keep extra ones:
             for x in ("start", "start-child",
                       "start-after-connect", "start-child-after-connect",
@@ -2938,7 +2938,7 @@ def run_stopexit(mode:str, error_cb, opts, extra_args, cmdline) -> ExitValue:
             sockfile = get_sockpath(display_desc, error_cb, 0)
         except InitException:
             #on win32, we can't find the path when it is gone
-            final_state = DotXpra.DEAD
+            final_state = SocketState.DEAD
         else:
             #first 5 seconds: just check if the socket still exists:
             #without connecting (avoid warnings and log messages on server)
@@ -2947,19 +2947,19 @@ def run_stopexit(mode:str, error_cb, opts, extra_args, cmdline) -> ExitValue:
                     break
                 time.sleep(0.2)
             #next 5 seconds: actually try to connect
-            final_state = DotXpra.UNKNOWN
+            final_state = SocketState.UNKNOWN
             for _ in range(5):
                 final_state = sockdir.get_server_state(sockfile, 1)
-                if final_state is DotXpra.DEAD:
+                if final_state is SocketState.DEAD:
                     break
                 time.sleep(1)
-        if final_state is DotXpra.DEAD:
+        if final_state is SocketState.DEAD:
             print(f"xpra at {display} has exited.")
             return 0
-        if final_state is DotXpra.UNKNOWN:
+        if final_state is SocketState.UNKNOWN:
             print(f"How odd... I'm not sure what's going on with xpra at {display}")
             return 1
-        if final_state is DotXpra.LIVE:
+        if final_state is SocketState.LIVE:
             print(f"Failed to shutdown xpra at {display}")
             return 1
         raise RuntimeError(f"invalid state: {final_state}")
@@ -2988,7 +2988,7 @@ def run_stopexit(mode:str, error_cb, opts, extra_args, cmdline) -> ExitValue:
     if len(extra_args)==1 and extra_args[0]=="all":
         #stop or exit all
         dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
-        displays = dotxpra.displays(check_uid=getuid(), matching_state=DotXpra.LIVE)
+        displays = dotxpra.displays(check_uid=getuid(), matching_state=SocketState.LIVE)
         if not displays:
             sys.stdout.write("No xpra sessions found\n")
             return 1
@@ -3025,7 +3025,7 @@ def run_stopexit(mode:str, error_cb, opts, extra_args, cmdline) -> ExitValue:
     return e
 
 
-def may_cleanup_socket(state, display, sockpath, clean_states=(DotXpra.DEAD,)) -> None:
+def may_cleanup_socket(state, display, sockpath, clean_states=(SocketState.DEAD,)) -> None:
     sys.stdout.write(f"\t{state} session at {display}")
     if state in clean_states:
         try:
@@ -3286,7 +3286,7 @@ def run_clean(opts, args:Iterable[str]) -> ExitValue:
             continue
         sockpath = os.path.join(session_dir, "socket")
         state = dotxpra.is_socket_match(sockpath, check_uid=uid)
-        if state in (dotxpra.LIVE, dotxpra.INACCESSIBLE):
+        if state in (SocketState.LIVE, SocketState.INACCESSIBLE):
             #this session is still active
             #do not try to clean it!
             if args:
@@ -3381,7 +3381,7 @@ def run_clean_sockets(opts, args) -> ExitValue:
             raise InitInfo("too many arguments for 'clean' mode")
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
     results = dotxpra.socket_details(check_uid=getuid(),
-                                     matching_state=DotXpra.UNKNOWN,
+                                     matching_state=SocketState.UNKNOWN,
                                      matching_display=matching_display)
     if matching_display and not results:
         raise InitInfo(f"no UNKNOWN socket for display {matching_display!r}")
@@ -3745,7 +3745,7 @@ def exec_wminfo(display) -> dict[str,str]:
             wminfo[parts[0]] = parts[1]
     return wminfo
 
-def get_xpra_sessions(dotxpra:DotXpra, ignore_state=(DotXpra.UNKNOWN,), matching_display=None, query:bool=True) -> dict[str,Any]:
+def get_xpra_sessions(dotxpra:DotXpra, ignore_state=(SocketState.UNKNOWN,), matching_display=None, query:bool=True) -> dict[str,Any]:
     results = dotxpra.socket_details(matching_display=matching_display)
     log = get_logger()
     log("get_xpra_sessions%s socket_details=%s", (dotxpra, ignore_state, matching_display), results)
@@ -3804,7 +3804,7 @@ def run_list(error_cb:Callable, opts, extra_args, clean:bool=True) -> ExitValue:
         for state, display, sockpath in values:
             if clean:
                 may_cleanup_socket(state, display, sockpath)
-            if state is DotXpra.UNKNOWN:
+            if state is SocketState.UNKNOWN:
                 unknown.append((socket_dir, display, sockpath))
     if clean:
         #now, re-probe the "unknown" ones:
@@ -3834,9 +3834,9 @@ def clean_sockets(dotxpra, sockets, timeout=LIST_REPROBE_TIMEOUT) -> None:
         for v in probe_list:
             socket_dir, display, sockpath = v
             state = dotxpra.get_server_state(sockpath, 1)
-            if state is DotXpra.DEAD:
+            if state is SocketState.DEAD:
                 may_cleanup_socket(state, display, sockpath)
-            elif state is DotXpra.UNKNOWN:
+            elif state is SocketState.UNKNOWN:
                 unknown.append(v)
             else:
                 sys.stdout.write(f"\t{state} session at {display} ({socket_dir})\n")
@@ -3859,7 +3859,7 @@ def clean_sockets(dotxpra, sockets, timeout=LIST_REPROBE_TIMEOUT) -> None:
                 #wait maximum 3 seconds for old sockets
                 timeout = min(LIST_REPROBE_TIMEOUT, 3)
     #now cleanup those still unknown:
-    clean_states = [DotXpra.DEAD, DotXpra.UNKNOWN]
+    clean_states = [SocketState.DEAD, SocketState.UNKNOWN]
     for state, display, sockpath in unknown:
         state = dotxpra.get_server_state(sockpath)
         may_cleanup_socket(state, display, sockpath, clean_states=clean_states)
@@ -3907,14 +3907,14 @@ def run_list_windows(error_cb, opts, extra_args) -> ExitValue:
         sys.stdout.write("%-10s%-10s" % (display, state))
         sys.stdout.flush()
         name = "?"
-        if state==DotXpra.LIVE:
+        if state==SocketState.LIVE:
             name = exec_and_parse("id", display).get("session-name", "?")
             if len(name)>=15:
                 name = name[:12]+".. "
         sys.stdout.write("%-15s" % (name, ))
         sys.stdout.flush()
         windows = "?"
-        if state==DotXpra.LIVE:
+        if state==SocketState.LIVE:
             dinfo = exec_and_parse("info", display)
             if dinfo:
                 #first, find all the window properties:

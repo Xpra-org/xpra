@@ -25,7 +25,7 @@ from xpra.os_util import (
     )
 from xpra.util.types import typedict
 from xpra.util.str_fn import ellipsizer
-from xpra.common import ConnectionMessage, noerr
+from xpra.common import ConnectionMessage, SocketState, noerr
 from xpra.server.proxy.queue_scheduler import QueueScheduler
 from xpra.util.version import XPRA_VERSION
 from xpra.util.thread import start_thread
@@ -197,7 +197,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         log("%s.socket_path(%s)=%s", dotxpra, sockname, sockpath)
         state = dotxpra.get_server_state(sockpath)
         log("create_control_socket: socket path='%s', uid=%i, gid=%i, state=%s", sockpath, getuid(), getgid(), state)
-        if state in (DotXpra.LIVE, DotXpra.UNKNOWN, DotXpra.INACCESSIBLE):
+        if state in (SocketState.LIVE, SocketState.UNKNOWN, SocketState.INACCESSIBLE):
             log.error("Error: you already have a proxy server running at '%s'", sockpath)
             log.error(" the control socket will not be created")
             stop("socket already exists")

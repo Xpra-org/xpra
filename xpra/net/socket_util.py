@@ -10,7 +10,7 @@ from ctypes import Structure, c_uint8, sizeof
 from typing import Any
 from collections.abc import Callable, ByteString
 
-from xpra.common import GROUP, noerr
+from xpra.common import GROUP, SocketState, noerr
 from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
 from xpra.exit_codes import ExitCode
 from xpra.net.common import DEFAULT_PORT
@@ -660,8 +660,8 @@ def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
                 defs[("named-pipe", npl, sockpath, npl.stop)] = options
         else:
             def checkstate(sockpath, state):
-                if state not in (DotXpra.DEAD, DotXpra.UNKNOWN):
-                    if state==DotXpra.INACCESSIBLE:
+                if state not in (SocketState.DEAD, SocketState.UNKNOWN):
+                    if state==SocketState.INACCESSIBLE:
                         raise InitException(f"An xpra server is already running at {sockpath!r}\n")
                     raise InitExit(ExitCode.SERVER_ALREADY_EXISTS,
                                    f"You already have an xpra server running at {sockpath!r}\n"
@@ -677,7 +677,7 @@ def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
                     state = dotxpra.get_server_state(sockpath, 1)
                     log(f"state({sockpath})={state}")
                     checkstate(sockpath, state)
-                    if state==dotxpra.UNKNOWN:
+                    if state==SocketState.UNKNOWN:
                         unknown.append(sockpath)
                 d = os.path.dirname(sockpath)
                 try:
@@ -709,7 +709,7 @@ def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
                     while monotonic()-start<WAIT_PROBE_TIMEOUT:
                         state = dotxpra.get_server_state(sockpath, WAIT_PROBE_TIMEOUT)
                         log(f"timeout_probe() get_server_state({sockpath!r})={state}")
-                        if state not in (DotXpra.UNKNOWN, DotXpra.DEAD):
+                        if state not in (SocketState.UNKNOWN, SocketState.DEAD):
                             break
                         sleep(1)
                 log.warn("Warning: some of the sockets are in an unknown state:")

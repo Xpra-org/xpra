@@ -9,8 +9,9 @@ import glob
 import socket
 import errno
 
+from xpra.common import SocketState
 from xpra.os_util import get_util_logger, osexpand, umask_context, is_socket
-from xpra.platform.dotxpra_common import PREFIX, LIVE, DEAD, UNKNOWN, INACCESSIBLE
+from xpra.platform.dotxpra_common import PREFIX
 from xpra.platform import platform_import
 
 DISPLAY_PREFIX = ":"
@@ -96,34 +97,29 @@ class DotXpra:
     def socket_path(self, local_display_name:str) -> str:
         return norm_makepath(self._sockdir, local_display_name)
 
-    LIVE = LIVE
-    DEAD = DEAD
-    UNKNOWN = UNKNOWN
-    INACCESSIBLE = INACCESSIBLE
-
     def get_server_state(self, sockpath:str, timeout=5) -> str:
         if not os.path.exists(sockpath):
-            return DotXpra.DEAD
+            return SocketState.DEAD
         sock = socket.socket(socket.AF_UNIX)
         sock.settimeout(timeout)
         try:
             sock.connect(sockpath)
-            return DotXpra.LIVE
+            return SocketState.LIVE
         except OSError as e:
             debug(f"get_server_state: connect({sockpath!r})={e} (timeout={timeout}")
             err = e.args[0]
             if err==errno.EACCES:
-                return DotXpra.INACCESSIBLE
+                return SocketState.INACCESSIBLE
             if err==errno.ECONNREFUSED:
                 #could be the server is starting up
                 debug("ECONNREFUSED")
-                return DotXpra.UNKNOWN
+                return SocketState.UNKNOWN
             if err==errno.EWOULDBLOCK:
                 debug("EWOULDBLOCK")
-                return DotXpra.DEAD
+                return SocketState.DEAD
             if err==errno.ENOENT:
                 debug("ENOENT")
-                return DotXpra.DEAD
+                return SocketState.DEAD
             return self.UNKNOWN
         finally:
             try:

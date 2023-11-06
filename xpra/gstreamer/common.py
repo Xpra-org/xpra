@@ -9,12 +9,13 @@ import os
 from types import ModuleType
 from typing import Any
 
+from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
 from xpra.log import Logger
 
 log = Logger("audio", "gstreamer")
 # pylint: disable=import-outside-toplevel
-GST_FLOW_OK : int = 0     #Gst.FlowReturn.OK
+GST_FLOW_OK : int = 0     # Gst.FlowReturn.OK
 
 GST_FORMAT_BYTES : int = 2
 GST_FORMAT_TIME : int = 3
@@ -26,13 +27,14 @@ STREAM_TYPE : int = GST_APP_STREAM_TYPE_STREAM
 
 
 Gst : ModuleType | None = None
-def get_gst_version() -> tuple[int,...]:
+def get_gst_version() -> tuple[int, ...]:
     if not Gst:
         return ()
     return tuple(Gst.version())
 
 
 def import_gst() -> ModuleType | None:
+    log("import_gst()")
     global Gst
     if Gst is not None:
         return Gst
@@ -40,13 +42,9 @@ def import_gst() -> ModuleType | None:
         {k:v for k,v in os.environ.items() if (k.startswith("GST") or k.startswith("GI") or k=="PATH")})
     log("GStreamer 1.x sys.path=%s", csv(sys.path))
     try:
-        log("import gi")
-        import gi
-        gi.require_version('Gst', '1.0')  # @UndefinedVariable
-        from gi.repository import Gst as gst           #@UnresolvedImport
-        Gst = gst
-        log("Gst=%s", gst)
-        gst.init(None)
+        Gst = gi_import("Gst", "1.0")
+        log("Gst=%s", Gst)
+        Gst.init(None)
     except Exception as e:
         log("Warning failed to import GStreamer 1.x", exc_info=True)
         log.warn("Warning: failed to import GStreamer 1.x:")
@@ -65,6 +63,7 @@ def get_default_appsink_attributes() -> dict[str,Any]:
         "async"         : False,
         "qos"           : False,
         }
+
 
 def get_default_appsrc_attributes() -> dict[str,Any]:
     return {
@@ -105,6 +104,7 @@ def get_all_plugin_names() -> list[str]:
         log("found the following plugins: %s", all_plugin_names)
     return all_plugin_names
 
+
 def has_plugins(*names) -> bool:
     allp = get_all_plugin_names()
     #support names that contain a gstreamer chain, ie: "flacparse ! flacdec"
@@ -116,10 +116,10 @@ def has_plugins(*names) -> bool:
     missing = [name for name in snames if (name is not None and name not in allp)]
     if missing:
         log("missing %s from %s", missing, names)
-    return len(missing)==0
+    return len(missing) == 0
 
 
-def get_caps_str(ctype:str="video/x-raw", caps=None) -> str:
+def get_caps_str(ctype:str = "video/x-raw", caps=None) -> str:
     if not caps:
         return ctype
     def s(v):

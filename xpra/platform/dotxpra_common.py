@@ -9,8 +9,3 @@ import socket
 
 SOCKET_HOSTNAME = os.environ.get("XPRA_SOCKET_HOSTNAME", socket.gethostname())
 PREFIX = f"{SOCKET_HOSTNAME}-"
-
-LIVE = "LIVE"
-DEAD = "DEAD"
-UNKNOWN = "UNKNOWN"
-INACCESSIBLE = "INACCESSIBLE"

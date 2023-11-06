@@ -52,6 +52,13 @@ XPRA_GUID_BYTES = binascii.unhexlify(XPRA_GUID_STR.replace("-",""))
 XPRA_NOTIFICATIONS_OFFSET = 2**24
 
 
+class SocketState(StrEnum):
+    LIVE = "LIVE"
+    DEAD = "DEAD"
+    UNKNOWN = "UNKNOWN"
+    INACCESSIBLE = "INACCESSIBLE"
+
+
 #constants shared between client and server:
 #(do not modify the values, see also disconnect_is_an_error)
 #timeouts:
@@ -216,7 +223,7 @@ DEFAULT_XDG_DATA_DIRS : str = ":".join(
         )
     )
 
-def noop(*_args) -> None:
+def noop(*_args, **kwargs) -> None:
     """ do nothing """
 
 

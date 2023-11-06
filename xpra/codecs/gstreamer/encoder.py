@@ -4,10 +4,9 @@
 # later version. See the file COPYING for details.
 
 import os
-from gi.repository import GObject  # @UnresolvedImport
 from typing import Any
 
-from xpra.os_util import WIN32, OSX, first_time
+from xpra.os_util import WIN32, OSX, first_time, gi_import
 from xpra.common import roundup
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv
@@ -29,6 +28,7 @@ from xpra.codecs.gstreamer.common import (
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 
+GObject = gi_import("GObject", "2.0")
 Gst = import_gst()
 log = Logger("encoder", "gstreamer")
 

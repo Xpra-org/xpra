@@ -167,16 +167,21 @@ def set_proc_title(title) -> None:
 
 def gi_import(mod="Gtk", version="3.0"):
     import warnings
-    try:
-        warnings.filterwarnings("ignore", category=ImportWarning)
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
-        import gi
-        gi.require_version(mod, version)
-        import gi.repository
-        import importlib
-        return importlib.import_module(f"gi.repository.{mod}")
-    finally:
-        warnings.filterwarnings("default")
+    from contextlib import nullcontext
+    context = nullcontext()
+    if not sys.warnoptions:
+        context = warnings.catch_warnings()
+    with context:
+        try:
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            warnings.filterwarnings("ignore", category=ImportWarning)
+            import gi
+            gi.require_version(mod, version)
+            import gi.repository
+            import importlib
+            return importlib.import_module(f"gi.repository.{mod}")
+        finally:
+            warnings.filterwarnings("default")
 
 
 def getuid() -> int:

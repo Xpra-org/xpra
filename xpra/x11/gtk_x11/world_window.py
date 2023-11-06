@@ -7,6 +7,7 @@
 from gi.repository import GObject, Gtk # @UnresolvedImport
 
 from xpra.gtk.error import xlog
+from xpra.gtk.util import IgnoreWarningsContext
 from xpra.x11.bindings.window import constants     #@UnresolvedImport
 from xpra.x11.bindings.send_wm import send_wm_take_focus     #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set
@@ -136,8 +137,9 @@ class WorldWindow(Gtk.Window):
 
     def _resize(self, *_args) -> None:
         s = self.get_screen()
-        x = s.get_width()
-        y = s.get_height()
+        with IgnoreWarningsContext():
+            x = s.get_width()
+            y = s.get_height()
         log("sizing world to %sx%s", x, y)
         self.set_size_request(x, y)
         self.resize(x, y)

@@ -8,6 +8,7 @@ from collections import deque
 from typing import Deque
 from collections.abc import Callable
 
+from xpra.common import SocketState
 from xpra.platform.info import get_username
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_socket_dirs
@@ -250,7 +251,7 @@ class SysAuthenticatorBase:
             results = sockdir.sockets(check_uid=uid)
             displays = []
             for state, display in results:
-                if state==DotXpra.LIVE and display not in displays:
+                if state==SocketState.LIVE and display not in displays:
                     displays.append(display)
             log(f"sockdir={sockdir}, results={results}, displays={displays}")
         except Exception as e:

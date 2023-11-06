@@ -3,13 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gi
-gi.require_version('Gdk', '3.0')
-gi.require_version('Gtk', '3.0')
-gi.require_version('GdkX11', '3.0')
+from xpra.os_util import gi_import
 
-from gi.repository import GdkX11  #pylint: disable=wrong-import-position
-assert GdkX11
+gi_import("Gdk", "3.0")
+gi_import("Gtk", "3.0")
+GdkX11 = gi_import('GdkX11', '3.0')
+
 
 def GDKX11Window(*args, **kwargs) -> GdkX11.X11Window:
     # pylint: disable=import-outside-toplevel

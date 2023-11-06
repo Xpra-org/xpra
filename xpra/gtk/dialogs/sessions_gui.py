@@ -12,6 +12,7 @@ import gi
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
 from gi.repository import GLib, Gtk, Gio  # @UnresolvedImport
 
+from xpra.common import SocketState
 from xpra.platform.paths import get_xpra_command, get_nodock_command
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.gui import force_focus
@@ -159,13 +160,13 @@ class SessionsGUI(Gtk.Window):
 
     def poll_local_sessions(self):
         #TODO: run in a thread so we don't block the UI thread!
-        d = self.dotxpra.socket_details(matching_state=DotXpra.LIVE)
+        d = self.dotxpra.socket_details(matching_state=SocketState.LIVE)
         log("poll_local_sessions() socket_details=%s", d)
         info_cache = {}
         for d, details in d.items():
             log("poll_local_sessions() %s : %s", d, details)
             for state, display, sockpath in details:
-                assert state==DotXpra.LIVE
+                assert state==SocketState.LIVE
                 key = (display, sockpath)
                 info = self.local_info_cache.get(key)
                 if not info:

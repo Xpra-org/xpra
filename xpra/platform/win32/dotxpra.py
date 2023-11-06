@@ -7,7 +7,7 @@
 import os
 
 from xpra.os_util import get_util_logger, osexpand
-from xpra.platform.dotxpra_common import LIVE, DEAD, UNKNOWN, INACCESSIBLE
+from xpra.common import SocketState
 
 DISPLAY_PREFIX = ""
 
@@ -46,10 +46,6 @@ class DotXpra:
     def socket_path(self, local_display_name):
         return norm_makepath(None, local_display_name)
 
-    LIVE = LIVE
-    DEAD = DEAD
-    UNKNOWN = UNKNOWN
-    INACCESSIBLE = INACCESSIBLE
 
     def get_display_state(self, display):
         return self.get_server_state(PIPE_PREFIX+display)
@@ -57,8 +53,8 @@ class DotXpra:
     def get_server_state(self, sockpath, _timeout=5):
         full_path = PIPE_PATH+sockpath
         if os.path.exists(full_path):
-            return self.LIVE
-        return self.DEAD
+            return SocketState.LIVE
+        return SocketState.DEAD
 
     def socket_paths(self, check_uid=0, matching_state=None, matching_display=None):
         return self.get_all_namedpipes().values()
@@ -75,7 +71,7 @@ class DotXpra:
             return {}
         return {
             PIPE_PREFIX.rstrip("\\") : [
-                (LIVE, display, pipe_name) for display, pipe_name in np.items() if (
+                (SocketState.LIVE, display, pipe_name) for display, pipe_name in np.items() if (
                     matching_display is None or display in matching_display
                     )
                 ]

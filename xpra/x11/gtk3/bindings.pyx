@@ -9,18 +9,16 @@ from time import monotonic
 from collections.abc import Callable
 from typing import Dict, Set
 
-import gi
-gi.require_version('GdkX11', '3.0')
-from gi.repository import GObject           #@UnresolvedImport
-from gi.repository import GdkX11            #@UnresolvedImport @UnusedImport
-from gi.repository import Gdk               #@UnresolvedImport
-from gi.repository import Gtk               #@UnresolvedImport
-
-from xpra.os_util import strtobytes, bytestostr
+from xpra.os_util import strtobytes, bytestostr, gi_import
 from xpra.util.str_fn import csv
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "gtk")
+
+GObject = gi_import("GObject", '2.0')
+GdkX11= gi_import("GdkX11", '3.0')
+Gdk = gi_import("Gdk", '3.0')
+Gtk = gi_import("Gtk", '3.0')
 
 
 from xpra.x11.bindings.xlib cimport (
