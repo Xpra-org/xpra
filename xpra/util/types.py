@@ -179,19 +179,19 @@ class typedict(dict):
             self._warn(f" from {type(v)} using {conv}: {e}")
             return default
 
-    def strget(self, k, default:str | None=None) -> str:
+    def strget(self, k, default: str | None=None) -> str:
         return self.conv_get(k, default, bytestostr)
 
-    def bytesget(self, k , default:bytes | None=None) -> bytes:
+    def bytesget(self, k , default: bytes=b"") -> bytes:
         return self.conv_get(k, default, strtobytes)
 
-    def intget(self, k , default:int | None=0) -> int:
+    def intget(self, k , default: int=0) -> int:
         return self.conv_get(k, default, int)
 
-    def boolget(self, k , default:bool | None=False) -> bool:
+    def boolget(self, k , default: bool=False) -> bool:
         return self.conv_get(k, default, bool)
 
-    def dictget(self, k , default:dict | None=None) -> dict:
+    def dictget(self, k , default: dict | None=None) -> dict:
         return self.conv_get(k, default, checkdict)
 
     def intpair(self, k , default_value:tuple[int,int] | None=None) -> tuple[int, int] | None:
