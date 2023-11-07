@@ -11,14 +11,13 @@
 # - that menu looks bloody awful
 # etc
 
-import gi
 import os
 import sys
 import tempfile
 from time import monotonic
 
 from xpra.util.env import envbool
-from xpra.os_util import osexpand
+from xpra.os_util import osexpand, gi_import
 from xpra.client.gui.tray_base import TrayBase
 from xpra.platform.paths import get_icon_dir, get_icon_filename, get_xpra_tmp_dir
 from xpra.log import Logger
@@ -26,14 +25,12 @@ from xpra.log import Logger
 log = Logger("tray", "posix")
 
 try:
-    gi.require_version("AyatanaAppIndicator3", "0.1")  # @UndefinedVariable
-    from gi.repository import AyatanaAppIndicator3 as AppIndicator3 #pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
+    AppIndicator3 = gi_import("AyatanaAppIndicator3", "0.1")
     log("loaded `AyatanaAppIndicator3`")
 except (ImportError, ValueError):
     log("failed to load `AyatanaAppIndicator3`", exc_info=True)
     try:
-        gi.require_version("AppIndicator3", "0.1")  # @UndefinedVariable
-        from gi.repository import AppIndicator3 #pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
+        AppIndicator3 = gi_import("AppIndicator3", "0.1")  # @UndefinedVariable
         log("loaded `AppIndicator3`")
     except ValueError as ve:
         log("failed to load `AppIndicator3`", exc_info=True)
@@ -44,7 +41,9 @@ DELETE_TEMP_FILE = envbool("XPRA_APPINDICATOR_DELETE_TEMP_FILE", True)
 PASSIVE = AppIndicator3.IndicatorStatus.PASSIVE
 ACTIVE = AppIndicator3.IndicatorStatus.ACTIVE
 APPLICATION_STATUS = AppIndicator3.IndicatorCategory.APPLICATION_STATUS
-def Indicator(tooltip:str, filename:str, status:AppIndicator3.IndicatorStatus):
+
+
+def Indicator(tooltip: str, filename: str, status: AppIndicator3.IndicatorStatus):
     return AppIndicator3.Indicator.new(id=tooltip, icon_name=filename, category=status)
 
 
@@ -70,7 +69,7 @@ class AppindicatorTray(TrayBase):
             self.tray_widget.set_menu(self.menu)
 
     def get_geometry(self):
-        #no way to tell :(
+        # no way to tell :(
         return None
 
     def hide(self) -> None:
@@ -79,19 +78,19 @@ class AppindicatorTray(TrayBase):
     def show(self) -> None:
         self.tray_widget.set_status(ACTIVE)
 
-    def set_blinking(self, on:bool) -> None:
-        #"I'm Afraid I Can't Do That"
+    def set_blinking(self, on: bool) -> None:
+        # "I'm Afraid I Can't Do That"
         pass
 
     def set_tooltip(self, tooltip="") -> None:
-        #we only use this if we haven't got an icon
-        #as with appindicator this creates a large text label
-        #next to where the icon is/should be
+        # we only use this if we haven't got an icon
+        # as with appindicator this creates a large text label
+        # next to where the icon is/should be
         if not self._has_icon:
             self.tray_widget.set_label(tooltip or "Xpra")
 
-    def set_icon_from_data(self, pixels, has_alpha:bool, w:int, h:int, rowstride:int, _options=None) -> None:
-        #use a temporary file (yuk)
+    def set_icon_from_data(self, pixels, has_alpha: bool, w: int, h: int, rowstride: int, _options=None) -> None:
+        # use a temporary file (yuk)
         self.clean_last_tmp_icon()
         # pylint: disable=import-outside-toplevel
         from xpra.gtk.pixbuf import pixbuf_save_to_memory
@@ -118,7 +117,7 @@ class AppindicatorTray(TrayBase):
                 os.close(fd)
         self.do_set_icon_from_file(self.tmp_filename)
 
-    def do_set_icon_from_file(self, filename:str) -> None:
+    def do_set_icon_from_file(self, filename: str) -> None:
         if not hasattr(self.tray_widget, "set_icon_theme_path"):
             self.tray_widget.set_icon(filename)
             self._has_icon = True
@@ -127,7 +126,7 @@ class AppindicatorTray(TrayBase):
         if head:
             log(f"do_set_icon_from_file({filename!r}) setting icon theme path={head!r}")
             self.tray_widget.set_icon_theme_path(head)
-        #remove extension (wtf?)
+        # remove extension (wtf?)
         noext = os.path.splitext(icon_name)[0]
         log(f"do_set_icon_from_file({filename!r}) setting icon={noext}")
         try:
@@ -150,7 +149,7 @@ class AppindicatorTray(TrayBase):
         super().cleanup()
 
 
-def main(): # pragma: no cover
+def main():  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("AppIndicator-Test", "AppIndicator Test"):
@@ -159,9 +158,7 @@ def main(): # pragma: no cover
             enable_debug_for("tray")
 
         from xpra.gtk.signals import register_os_signals
-
-        gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-        from gi.repository import Gtk  # @UnresolvedImport
+        Gtk = gi_import("Gtk", "3.0")
         menu = Gtk.Menu()
         item = Gtk.MenuItem(label="Top Menu Item 1")
         submenu = Gtk.Menu()
