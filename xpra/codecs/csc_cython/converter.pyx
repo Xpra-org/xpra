@@ -30,7 +30,7 @@ cdef extern from "Python.h":
 cdef extern from "stdlib.h":
     void free(void *ptr)
 
-cdef inline int roundup(int n, int m):
+cdef inline int roundup(int n, int m) noexcept:
     return (n + m - 1) & ~(m - 1)
 
 #precalculate indexes in native endianness:
@@ -92,22 +92,22 @@ def cleanup_module() -> None:
 def get_type() -> str:
     return "cython"
 
-def get_version() -> Tuple[int,int]:
+def get_version() -> Tuple[int, int]:
     return (4, 2)
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> Dict[str, Any]:
     info = {
             "version"   : (4, 1),
             }
     return info
 
-def get_input_colorspaces() -> Tuple[str,...]:
+def get_input_colorspaces() -> Tuple[str, ...]:
     return tuple(COLORSPACES.keys())
 
 def get_output_colorspaces(input_colorspace) -> List[str]:
     return COLORSPACES[input_colorspace]
 
-def get_spec(in_colorspace:str, out_colorspace:str):
+def get_spec(in_colorspace:str, out_colorspace:str) -> csc_spec:
     assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, get_input_colorspaces())
     assert out_colorspace in COLORSPACES.get(in_colorspace), "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, get_output_colorspaces(in_colorspace))
     can_scale = True
@@ -195,7 +195,7 @@ DEF BU = 115999     #1.77     * 2**16
 DEF BV = 0
 
 
-cdef inline unsigned char clamp(const long v) nogil:
+cdef inline unsigned char clamp(const long v) noexcept nogil:
     if v<=0:
         return 0
     #v += 2**15
@@ -203,7 +203,7 @@ cdef inline unsigned char clamp(const long v) nogil:
         return 0xff         #2**8-1
     return <unsigned char> (v>>16)
 
-cdef inline unsigned short clamp10(const long v) nogil:
+cdef inline unsigned short clamp10(const long v) noexcept nogil:
     if v<=0:
         return 0
     #v += 2**15
@@ -214,7 +214,7 @@ cdef inline unsigned short clamp10(const long v) nogil:
 
 cdef inline void r210_to_BGR48_copy(unsigned short *bgr48, const unsigned int *r210,
                                     unsigned int w, unsigned int h,
-                                    unsigned int src_stride, unsigned int dst_stride) nogil:
+                                    unsigned int src_stride, unsigned int dst_stride) noexcept nogil:
     cdef unsigned int y
     cdef unsigned int i
     cdef unsigned int v
@@ -230,7 +230,7 @@ cdef inline void r210_to_BGR48_copy(unsigned short *bgr48, const unsigned int *r
 
 cdef inline void gbrp10_to_r210_copy(uintptr_t r210, uintptr_t[3] gbrp10,
                                      unsigned int width, unsigned int height,
-                                     unsigned int src_stride, unsigned int dst_stride) nogil:
+                                     unsigned int src_stride, unsigned int dst_stride) noexcept nogil:
     cdef unsigned int x, y
     cdef unsigned short *b
     cdef unsigned short *g
@@ -247,7 +247,7 @@ cdef inline void gbrp10_to_r210_copy(uintptr_t r210, uintptr_t[3] gbrp10,
 cdef inline void r210_to_YUV444P10_copy(unsigned short *Y, unsigned short *U, unsigned short *V, uintptr_t r210data,
                                         unsigned int width, unsigned int height,
                                         unsigned int Ystride, unsigned int Ustride, unsigned int Vstride,
-                                        unsigned int r210_stride) nogil:
+                                        unsigned int r210_stride) noexcept nogil:
     cdef const unsigned int *r210_row
     cdef unsigned int r210
     cdef unsigned int R, G, B
@@ -270,7 +270,7 @@ cdef inline void r210_to_YUV444P10_copy(unsigned short *Y, unsigned short *U, un
 cdef inline void YUV444P10_to_r210_copy(uintptr_t r210data, const unsigned short *Ybuf, const unsigned short *Ubuf, const unsigned short *Vbuf,
                                         unsigned int width, unsigned int height,
                                         unsigned int r210_stride,
-                                        unsigned int Ystride, unsigned int Ustride, unsigned int Vstride) nogil:
+                                        unsigned int Ystride, unsigned int Ustride, unsigned int Vstride) noexcept nogil:
         cdef unsigned short *Yrow
         cdef unsigned short *Urow
         cdef unsigned short *Vrow
@@ -416,8 +416,8 @@ cdef class Converter:
         else:
             raise ValueError("BUG: src_format=%s, dst_format=%s", src_format, dst_format)
 
-    def clean(self):
-        #overzealous clean is cheap!
+    def clean(self) -> None:
+        # overzealous clean is cheap!
         cdef int i                          #
         self.src_width = 0
         self.src_height = 0
@@ -484,7 +484,7 @@ cdef class Converter:
         return  "cython"
 
 
-    def convert_image(self, image):
+    def convert_image(self, image) -> CythonImageWrapper:
         cdef double start = time.time()
         fn = self.convert_image_function
         r = fn(image)
@@ -495,22 +495,28 @@ cdef class Converter:
         return r
 
 
-    def r210_to_YUV420P(self, image):
+    def r210_to_YUV420P(self, image) -> CythonImageWrapper:
         return self.do_RGB_to_YUV420P(image, 4, 0, 0, 0)
 
-    def BGR_to_YUV420P(self, image):
+    def BGR_to_YUV420P(self, image) -> CythonImageWrapper:
         return self.do_RGB_to_YUV420P(image, 3, BGR_R, BGR_G, BGR_B)
 
-    def RGB_to_YUV420P(self, image):
+    def RGB_to_YUV420P(self, image) -> CythonImageWrapper:
         return self.do_RGB_to_YUV420P(image, 3, RGB_R, RGB_G, RGB_B)
 
-    def BGRX_to_YUV420P(self, image):
+    def BGRX_to_YUV420P(self, image) -> CythonImageWrapper:
         return self.do_RGB_to_YUV420P(image, 4, BGRX_R, BGRX_G, BGRX_B)
 
-    def RGBX_to_YUV420P(self, image):
+    def RGBX_to_YUV420P(self, image) -> CythonImageWrapper:
         return self.do_RGB_to_YUV420P(image, 4, RGBX_R, RGBX_G, RGBX_B)
 
-    cdef do_RGB_to_YUV420P(self, image, const uint8_t Bpp, const uint8_t Rindex, const uint8_t Gindex, const uint8_t Bindex):
+    cdef do_RGB_to_YUV420P(self,
+                           image,
+                           const uint8_t Bpp,
+                           const uint8_t Rindex,
+                           const uint8_t Gindex,
+                           const uint8_t Bindex,
+                           ):
         cdef const unsigned int *input_r210
         cdef unsigned int x,y,o
         cdef unsigned int sx, sy, ox, oy
@@ -639,7 +645,7 @@ cdef class Converter:
         assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
         assert image.get_pixels(), "failed to get pixels from %s" % image
 
-    def r210_to_YUV444P10(self, image):
+    def r210_to_YUV444P10(self, image) -> CythonImageWrapper:
         self.validate_rgb_image(image)
         pixels = image.get_pixels()
         cdef unsigned int input_stride = image.get_rowstride()
@@ -671,7 +677,7 @@ cdef class Converter:
                                        input_stride)
         return self.planar3_image_wrapper(output_image)
 
-    def YUV444P10_to_r210(self, image):
+    def YUV444P10_to_r210(self, image) -> CythonImageWrapper:
         self.validate_planar3_image(image)
         planes = image.get_pixels()
         input_strides = image.get_rowstride()
@@ -713,7 +719,7 @@ cdef class Converter:
         return self.packed_image_wrapper(output_image, 30)
 
 
-    def r210_to_BGR48(self, image):
+    def r210_to_BGR48(self, image) -> CythonImageWrapper:
         self.validate_rgb_image(image)
         pixels = image.get_pixels()
         input_stride = image.get_rowstride()
@@ -746,13 +752,13 @@ cdef class Converter:
         return out_image
 
 
-    def validate_planar3_image(self, image):
+    def validate_planar3_image(self, image) -> None:
         assert image.get_planes()==ImageWrapper.PLANAR_3, "invalid input format: %s planes" % image.get_planes()
         assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
         assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
         assert image.get_pixels(), "failed to get pixels from %s" % image
 
-    def GBRP10_to_r210(self, image):
+    def GBRP10_to_r210(self, image) -> CythonImageWrapper:
         self.validate_planar3_image(image)
         pixels = image.get_pixels()
         input_strides = image.get_rowstride()
@@ -791,19 +797,25 @@ cdef class Converter:
         return self.packed_image_wrapper(<char *> r210, 30)
 
 
-    def YUV420P_to_RGBX(self, image):
+    def YUV420P_to_RGBX(self, image) -> CythonImageWrapper:
         return self.do_YUV420P_to_RGB(image, 4, RGBX_R, RGBX_G, RGBX_B, RGBX_X)
 
-    def YUV420P_to_RGB(self, image):
+    def YUV420P_to_RGB(self, image) -> CythonImageWrapper:
         return self.do_YUV420P_to_RGB(image, 3, RGB_R, RGB_G, RGB_B, 0)
 
-    def YUV420P_to_BGRX(self, image):
+    def YUV420P_to_BGRX(self, image) -> CythonImageWrapper:
         return self.do_YUV420P_to_RGB(image, 4, BGRX_R, BGRX_G, BGRX_B, BGRX_X)
 
-    def YUV420P_to_BGR(self, image):
+    def YUV420P_to_BGR(self, image) -> CythonImageWrapper:
         return self.do_YUV420P_to_RGB(image, 3, BGR_R, BGR_G, BGR_B, 0)
 
-    cdef do_YUV420P_to_RGB(self, image, const uint8_t Bpp, const uint8_t Rindex, const uint8_t Gindex, const uint8_t Bindex, const uint8_t Xindex):
+    cdef do_YUV420P_to_RGB(self, image,
+                           const uint8_t Bpp,
+                           const uint8_t Rindex,
+                           const uint8_t Gindex,
+                           const uint8_t Bindex,
+                           const uint8_t Xindex,
+                           ):
         cdef unsigned int x,y,o
         cdef unsigned int sx, sy, ox, oy
         cdef unsigned char dx, dy
@@ -873,14 +885,21 @@ cdef class Converter:
         return self.packed_image_wrapper(<char *> output_image, 24)
 
 
-    def GBRP_to_RGBX(self, image):
+    def GBRP_to_RGBX(self, image) -> CythonImageWrapper:
         return self.do_RGBP_to_RGB(image, 2, 0, 1, RGBX_R, RGBX_G, RGBX_B, RGBX_X)
 
-    def GBRP_to_BGRX(self, image):
+    def GBRP_to_BGRX(self, image) -> CythonImageWrapper:
         return self.do_RGBP_to_RGB(image, 2, 0, 1, RGBX_B, RGBX_G, RGBX_R, RGBX_X)
 
-    cdef do_RGBP_to_RGB(self, image, const uint8_t Rsrc, const uint8_t Gsrc, const uint8_t Bsrc,
-                                     const uint8_t Rdst, const uint8_t Gdst, const uint8_t Bdst, const uint8_t Xdst):
+    cdef do_RGBP_to_RGB(self, image,
+                        const uint8_t Rsrc,
+                        const uint8_t Gsrc,
+                        const uint8_t Bsrc,
+                        const uint8_t Rdst,
+                        const uint8_t Gdst,
+                        const uint8_t Bdst,
+                        const uint8_t Xdst,
+                        ):
         cdef unsigned int x,y,o
         cdef unsigned int sx, sy
         cdef unsigned char *Gptr
