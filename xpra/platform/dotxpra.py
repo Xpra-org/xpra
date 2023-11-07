@@ -120,7 +120,7 @@ class DotXpra:
             if err==errno.ENOENT:
                 debug("ENOENT")
                 return SocketState.DEAD
-            return self.UNKNOWN
+            return SocketState.UNKNOWN
         finally:
             try:
                 sock.close()
@@ -175,16 +175,16 @@ class DotXpra:
                 sockpath = os.path.join(session_dir, "socket")
                 if os.path.exists(sockpath):
                     state = self.is_socket_match(sockpath)
-                    if state is self.LIVE:
+                    if state is SocketState.LIVE:
                         return state
             #when not using a session directory,
             #add the prefix to prevent clashes on NFS:
             #ie: "~/.xpra/HOSTNAME-10"
             sockpath = os.path.join(d, PREFIX+strip_display_prefix(display))
             state = self.is_socket_match(sockpath)
-            if state is self.LIVE:
+            if state is SocketState.LIVE:
                 return state
-        return state or self.DEAD
+        return state or SocketState.DEAD
 
     #find the matching sockets, and return:
     #(state, local_display, sockpath) for each socket directory we probe
