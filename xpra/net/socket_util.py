@@ -19,6 +19,7 @@ from xpra.os_util import (
     getuid, get_username_for_uid, get_groups, get_group_id, osexpand,
     path_permission_info, umask_context, WIN32, OSX, POSIX,
     parse_encoded_bin_data,
+    SilenceWarningsContext,
     )
 from xpra.util.str_fn import std, csv, ellipsizer, print_nested_dict
 from xpra.util.parsing import parse_simple_dict
@@ -319,7 +320,8 @@ def create_sockets(opts, error_cb:Callable, retry:int=0):
         try:
             from xpra.net.ssh.util import nogssapi_context
             with nogssapi_context():
-                import paramiko
+                with SilenceWarningsContext(DeprecationWarning):
+                    import paramiko
             assert paramiko
         except ImportError as e:
             from xpra.log import Logger

@@ -12,8 +12,10 @@ import uuid
 import signal
 import socket
 import struct
+import warnings
 import binascii
 import threading
+from contextlib import AbstractContextManager, nullcontext
 from tempfile import NamedTemporaryFile
 from time import monotonic, sleep
 from subprocess import PIPE, Popen
@@ -166,7 +168,39 @@ def set_proc_title(title) -> None:
 
 
 def gi_import(mod="Gtk", version="3.0"):
-    import warnings
+    with SilenceWarningsContext(DeprecationWarning, ImportWarning):
+        import gi
+        gi.require_version(mod, version)
+        import gi.repository
+        import importlib
+        return importlib.import_module(f"gi.repository.{mod}")
+
+
+class SilenceWarningsContext(AbstractContextManager):
+
+    def __init__(self, *categories):
+        if sys.warnoptions:
+            self.context = nullcontext()
+            self.categories = ()
+        else:
+            self.categories = categories
+            self.context = warnings.catch_warnings()
+
+    def __enter__(self):
+        self.context.__enter__()
+        for category in self.categories:
+            warnings.filterwarnings("ignore", category=category)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        warnings.filterwarnings("default")
+        self.context.__exit__()
+
+    def __repr__(self):
+        return f"IgnoreWarningsContext({self.categories})"
+
+
+def silence_warnings_context(mod="Gtk", version="3.0"):
+
     from contextlib import nullcontext
     context = nullcontext()
     if not sys.warnoptions:

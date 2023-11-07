@@ -19,6 +19,7 @@ from gi.repository import GLib, Gdk, Gtk  #pylint: disable=no-name-in-module
 
 from xpra.util.env import envbool
 from xpra.util.version import dict_version_trim
+from xpra.os_util import SilenceWarningsContext
 from xpra.common import FULL_INFO
 from xpra.net.common import PacketType
 from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
@@ -209,8 +210,9 @@ class GTKServerBase(ServerBase):
         display = Gdk.Display.get_default()
         if not display:
             return {}
-        pos = display.get_default_screen().get_root_window().get_pointer()[-3:-1]
-        cinfo = {"position" : pos}
+        with SilenceWarningsContext(DeprecationWarning):
+            pos = display.get_default_screen().get_root_window().get_pointer()
+        cinfo = {"position" : (pos.x, pos.y)}
         for prop, size in {
             "default" : display.get_default_cursor_size(),
             "max"     : tuple(display.get_maximal_cursor_size()),

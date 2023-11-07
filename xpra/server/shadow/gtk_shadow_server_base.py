@@ -16,14 +16,14 @@ from xpra.util.str_fn import csv
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.env import envbool
 from xpra.common import XPRA_APP_ID
-from xpra.os_util import POSIX, OSX
+from xpra.os_util import POSIX, OSX, SilenceWarningsContext
 from xpra.scripts.config import parse_bool
 from xpra.server import features
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.gtk_server import GTKServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.codecs.constants import TransientCodecException, CodecStateException
-from xpra.gtk.util import get_default_root_window, IgnoreWarningsContext
+from xpra.gtk.util import get_default_root_window
 from xpra.gtk.info import get_screen_sizes
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.net.compression import Compressed
@@ -492,7 +492,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             if POSIX and not OSX:
                 self.tray_menu.popup_at_pointer()
             else:
-                with IgnoreWarningsContext():
+                with SilenceWarningsContext(DeprecationWarning):
                     self.tray_menu.popup(None, None, None, None, button, time)
             self.tray_menu_shown = True
 
