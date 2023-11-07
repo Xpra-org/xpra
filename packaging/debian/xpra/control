@@ -4,6 +4,7 @@ Priority: optional
 Maintainer: Antoine Martin <antoine@xpra.org>
 X-Python3-Version: >= 3.6
 Build-Depends: debhelper (>= 8)
+              ,pkgconf
               ,xz-utils
               ,lsb-release
               ,xserver-xorg-video-dummy
