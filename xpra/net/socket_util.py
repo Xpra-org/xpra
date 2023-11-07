@@ -750,19 +750,21 @@ def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
                                          f"(must be an octal number): {socket_permissions!r}") from None
                     if sperms<0 or sperms>0o777:
                         raise ValueError(f"invalid socket permission value {sperms:o}")
-                #now try to create all the sockets:
+                # now try to create all the sockets:
+                created = []
                 for sockpath, options in sockpaths.items():
-                    #create it:
-                    sock = None
                     try:
                         sock, cleanup_socket = create_unix_domain_socket(sockpath, sperms)
-                        log.info(f"created unix domain socket {sockpath!r}")
-                        defs[("socket", sock, sockpath, cleanup_socket)] = options
                     except Exception as e:
-                        if sock:
-                            noerr(sock.close)
                         handle_socket_error(sockpath, sperms, e)
                         del e
+                    else:
+                        created.append(sockpath)
+                        defs[("socket", sock, sockpath, cleanup_socket)] = options
+                if created:
+                    log.info("created unix domain sockets:")
+                    for cpath in created:
+                        log.info(f" {cpath!r}")
     except Exception:
         for sock, cleanup_socket in defs.items():
             try:
