@@ -237,6 +237,7 @@ class BaseWindowModel(CoreX11WindowModel):
         metalog("%s.read_initial_X11_properties()", self._MODELTYPE)
         self._updateprop("state", frozenset(self._read_wm_state()))
         super()._read_initial_X11_properties()
+        self._update_content_type()
 
     def _guess_window_type(self) -> str:
         #query the X11 property directly,
