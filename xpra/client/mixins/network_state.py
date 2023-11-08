@@ -13,7 +13,7 @@ from typing import Any
 from collections.abc import Callable
 from gi.repository import GLib
 
-from xpra.os_util import POSIX
+from xpra.os_util import POSIX, gi_import
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
@@ -52,9 +52,7 @@ def get_NM_adapter_type(device_name) -> str:
         log("get_NM_adapter_type() no main loop")
         return ""
     try:
-        import gi
-        gi.require_version("NM", "1.0")
-        from gi.repository import NM
+        NM = gi_import("NM", "1.0")
     except (ImportError, ValueError):
         log("get_NM_adapter_type() no network-manager bindings")
         return ""
