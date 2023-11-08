@@ -230,14 +230,23 @@ def load_command_to_type() -> dict[str, str]:
 
 def guess_content_type_from_command(window) -> str:
     if POSIX and not OSX:
-        command = getprop(window, "command")
+        command = getprop(window, "command") or ""
         log(f"guess_content_type_from_command({window}) command={command}")
         if command:
             ctt = load_command_to_type()
-            cmd = os.path.basename(command)
-            ctype = ctt.get(cmd)
-            log("content-type(%s)=%s", cmd, ctype)
-            return ctype
+            commands = [command]
+            for x in command.split("\0"):
+                if x and x not in commands:
+                    commands.append(x)
+            for x in command.split(" "):
+                if x and x not in commands:
+                    commands.append(x)
+            for x in commands:
+                cmd = os.path.basename(x)
+                ctype = ctt.get(cmd)
+                log("content-type(%s)=%s", cmd, ctype)
+                if ctype:
+                    return ctype
     return ""
 
 
