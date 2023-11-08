@@ -42,8 +42,12 @@ def create_unix_domain_socket(sockpath, socket_permissions=0o600):
     listener = socket.socket(socket.AF_UNIX)
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     #bind the socket, using umask to set the correct permissions
-    with umask_context(umask):
-        listener.bind(sockpath)
+    try:
+        with umask_context(umask):
+            listener.bind(sockpath)
+    except OSError:
+        listener.close()
+        raise
     try:
         inode = os.stat(sockpath).st_ino
     except (OSError, IOError):
