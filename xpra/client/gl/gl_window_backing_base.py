@@ -383,7 +383,10 @@ class GLWindowBackingBase(WindowBackingBase):
         log(*msg)
         if not bool(glStringMarkerGREMEDY):
             return
-        s = str(msg)
+        try:
+            s = strtobytes(msg[0] % msg[1:])
+        except:
+            s = strtobytes(msg)
         c_string = c_char_p(s)
         glStringMarkerGREMEDY(0, c_string)
 
