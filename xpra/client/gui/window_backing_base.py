@@ -13,7 +13,6 @@ from typing import Any
 from collections.abc import Callable, Iterable
 from gi.repository import GLib  # @UnresolvedImport
 
-import xpra.util.types
 from xpra.net.mmap import mmap_read
 from xpra.net import compression
 from xpra.util.types import typedict
@@ -688,7 +687,7 @@ class WindowBackingBase:
                     continue
                 options = {"speed" : speed}
                 try:
-                    csc = xpra.util.types.make_instance()
+                    csc = spec.codec_class()
                     csc.init_context(src_width, src_height, src_format,
                                dst_width, dst_height, dst_format, options)
                     return csc
