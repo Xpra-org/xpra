@@ -23,9 +23,9 @@ cdef int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_
 
 cdef int object_as_write_buffer(object  obj, void ** buffer, Py_ssize_t * buffer_len)
 
-cdef unsigned long long xxh64(const void* input, size_t length, unsigned long long seed) nogil
+cdef unsigned long long xxh64(const void* input, size_t length, unsigned long long seed) noexcept nogil
 
-cdef unsigned long long xxh3(const void* input, size_t length) nogil
+cdef unsigned long long xxh3(const void* input, size_t length) noexcept nogil
 
 
 cdef class MemBuf:

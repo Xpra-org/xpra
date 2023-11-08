@@ -113,8 +113,8 @@ cdef MemBuf MemBuf_init(const void *p, size_t l,
     return ret
 
 
-cdef unsigned long long xxh64(const void* input, size_t length, unsigned long long seed) nogil:
+cdef unsigned long long xxh64(const void* input, size_t length, unsigned long long seed) noexcept nogil:
     return XXH64(input, length, seed)
 
-cdef unsigned long long xxh3(const void* input, size_t length) nogil:
+cdef unsigned long long xxh3(const void* input, size_t length) noexcept nogil:
     return XXH3_64bits(input, length)
