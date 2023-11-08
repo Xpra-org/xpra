@@ -476,7 +476,7 @@ class WindowSource(WindowIconSource):
                   ""                : self.encodings,
                   "core"            : self.core_encodings,
                   "auto-refresh"    : self.client_refresh_encodings,
-                  "csc_modes"       : self.full_csc_modes or {},
+                  "csc_modes"       : dict(self.full_csc_modes or {}),
                   "decoder-speed"   : dict(self.decoder_speed),
                   }
         larm = self.last_auto_refresh_message

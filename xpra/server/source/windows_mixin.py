@@ -167,7 +167,7 @@ class WindowsMixin(StubSourceMixin):
             "max"   : self.window_max_size,
             })
         if self.window_frame_sizes:
-            wsize.update({"frame-sizes" : self.window_frame_sizes})
+            wsize.update({"frame-sizes" : dict(self.window_frame_sizes)})
         info.update(self.get_window_info())
         return info
 
