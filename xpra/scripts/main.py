@@ -1809,33 +1809,30 @@ def make_client(error_cb:Callable, opts):
         app.progress_process = progress_process
 
         if opts.opengl in ("probe", "nowarn"):
-            if os.environ.get("XDG_SESSION_TYPE")=="wayland":
-                Logger("opengl").debug("wayland session detected, OpenGL disabled")
-                opts.opengl = "no"
-                app.show_progress(20, "no OpenGL acceleration on Wayland")
+            app.show_progress(20, "validating OpenGL configuration")
+            probe, glinfo = run_opengl_probe()
+            if opts.opengl=="nowarn":
+                #just on or off from here on:
+                safe = glinfo.get("safe", "False").lower() in TRUE_OPTIONS
+                opts.opengl = ["off", "on"][safe]
             else:
-                app.show_progress(20, "validating OpenGL configuration")
-                probe, glinfo = run_opengl_probe()
-                if opts.opengl=="nowarn":
-                    #just on or off from here on:
-                    safe = glinfo.get("safe", "False").lower() in TRUE_OPTIONS
-                    opts.opengl = ["off", "on"][safe]
-                else:
-                    opts.opengl = f"probe-{probe}"
-                r = probe   #ie: "success"
-                if glinfo:
-                    renderer = glinfo.get("renderer")
-                    if renderer:
-                        #ie: "AMD Radeon RX 570 Series (polaris10, LLVM 14.0.0, DRM 3.47, 5.19.10-200.fc36.x86_64)"
-                        parts = renderer.split("(")
-                        if len(parts)>1 and len(parts[0])>10:
-                            renderer = parts[0].strip()
-                        r += f" ({renderer})"
-                app.show_progress(20, f"validating OpenGL: {r}")
-                if probe=="error":
-                    message = glinfo.get("message")
-                    if message:
-                        app.show_progress(21, f" {message}")
+                opts.opengl = f"probe-{probe}"
+            r = probe   #ie: "success"
+            if glinfo:
+                renderer = glinfo.get("renderer")
+                if renderer:
+                    #ie: "AMD Radeon RX 570 Series (polaris10, LLVM 14.0.0, DRM 3.47, 5.19.10-200.fc36.x86_64)"
+                    parts = renderer.split("(")
+                    if len(parts)>1 and len(parts[0])>10:
+                        renderer = parts[0].strip()
+                    else:
+                        renderer = renderer.split(";", 1)[0]
+                    r += f" ({renderer})"
+            app.show_progress(20, f"validating OpenGL: {r}")
+            if probe=="error":
+                message = glinfo.get("message")
+                if message:
+                    app.show_progress(21, f" {message}")
     except Exception:
         if progress_process:
             try:
