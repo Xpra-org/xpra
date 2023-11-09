@@ -254,17 +254,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return rate
 
 
-    def get_notifier_classes(self) -> list[type]:
-        #subclasses may add their toolkit specific variants
-        #by overriding this method
-        #use the native ones first:
-        from xpra.client.gui import features
-        assert features.notifications
-        from xpra.client.mixins.notification import NotificationClient
-        assert isinstance(self, NotificationClient)
-        return NotificationClient.get_notifier_classes(self)
-
-
     def _process_startup_complete(self, packet : PacketType) -> None:
         super()._process_startup_complete(packet)
         Gdk.notify_startup_complete()
