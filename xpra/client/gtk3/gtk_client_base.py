@@ -254,23 +254,15 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return rate
 
 
-    def get_notifier_classes(self) -> List[Type]:
+    def get_notifier_classes(self) -> list[type]:
         #subclasses may add their toolkit specific variants
         #by overriding this method
         #use the native ones first:
-        from xpra.client.gui import mixin_features
-        assert mixin_features.notifications
-        from xpra.client.mixins.notifications import NotificationClient
+        from xpra.client.gui import features
+        assert features.notifications
+        from xpra.client.mixins.notification import NotificationClient
         assert isinstance(self, NotificationClient)
-        ncs = NotificationClient.get_notifier_classes(self)
-        try:
-            from xpra.gtk_common.gtk_notifier import GTK_Notifier
-            ncs.append(GTK_Notifier)
-        except Exception as e:
-            notifylog("get_notifier_classes()", exc_info=True)
-            notifylog.warn("Warning: cannot load GTK notifier:")
-            notifylog.warn(f" {e}")
-        return ncs
+        return NotificationClient.get_notifier_classes(self)
 
 
     def _process_startup_complete(self, packet : PacketType) -> None:

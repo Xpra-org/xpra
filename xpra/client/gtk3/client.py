@@ -37,16 +37,26 @@ class XpraClient(GTKXpraClient):
 
     def get_notifier_classes(self):
         ncs = super().get_notifier_classes()
+
+        def nwarn(notifier_name: str, e: Exception):
+            from xpra.log import Logger
+            log = Logger("gtk", "client")
+            log("get_notifier_classes()", exc_info=True)
+            log.warn(f"Warning: failed to load the {notifier_name} notifier")
+            log.warn(f" {e}")
+
         if not OSX:
             # pylint: disable=import-outside-toplevel
             try:
-                from xpra.client.gtk3.gtk3_notifier import GTK3_Notifier
-                ncs.append(GTK3_Notifier)
+                from xpra.client.gtk3.notifier import GINotifier
+                ncs.append(GINotifier)
             except Exception as e:
-                from xpra.log import Logger
-                log = Logger("gtk", "client")
-                log.warn("Warning: failed to load the GTK3 notification class")
-                log.warn(" %s", e)
+                nwarn("GObject", e)
+        try:
+            from xpra.gtk.notifier import GTK_Notifier
+            ncs.append(GTK_Notifier)
+        except Exception as e:
+            nwarn("GTK", e)
         return ncs
 
     def get_screen_resolution(self) -> int:
