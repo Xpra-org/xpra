@@ -89,8 +89,6 @@ class EncodingsMixin(StubSourceMixin):
         #to make sure that it is safe to add the end of queue marker:
         #(all window sources will have stopped queuing data)
         self.queue_encode(None)
-        #this should be a noop since we inherit an initialized helper:
-        self.video_helper.cleanup()
 
     def free_cuda_device_context(self) -> None:
         cdd = self.cuda_device_context
