@@ -54,7 +54,7 @@ def get_enabled_mixins() -> tuple[type,...]:
     if features.windows:
         from xpra.server.source.windows import WindowsMixin
         mixins.append(WindowsMixin)
-        #must be after windows mixin so it can assume "self.send_windows" is set
+        # must be after windows mixin so it can assume "self.send_windows" is set
         if features.encoding:
             from xpra.server.source.encodings import EncodingsMixin
             mixins.append(EncodingsMixin)
@@ -77,10 +77,11 @@ def get_needed_based_classes(caps:typedict) -> tuple[type,...]:
             classes.append(c)
     return tuple(classes)
 
+
 def get_client_connection_class(caps):
 
     CC_BASES = get_needed_based_classes(caps)
-    ClientConnectionClass  = type('ClientConnectionClass', CC_BASES, {})
+    ClientConnectionClass = type('ClientConnectionClass', CC_BASES, {})
     log("ClientConnectionClass%s", CC_BASES)
 
     class ClientConnectionMuxer(ClientConnectionClass):
@@ -88,13 +89,14 @@ def get_client_connection_class(caps):
         def __init__(self, protocol, disconnect_cb, session_name, server,
                      idle_add, timeout_add, source_remove,
                      *args):
+            self.hello_sent = False
             self.idle_add = idle_add
             self.timeout_add = timeout_add
             self.source_remove = source_remove
             from xpra.server.source.client_connection import ClientConnection
             for bc in CC_BASES:
                 try:
-                    if bc==ClientConnection:
+                    if bc == ClientConnection:
                         initargs = [protocol, disconnect_cb, session_name]+list(args)
                     else:
                         initargs = []
@@ -116,7 +118,8 @@ def get_client_connection_class(caps):
                     bc.cleanup(self)
                 except Exception as e:
                     log("%s.cleanup()", bc, exc_info=True)
-                    log.error("Error closing connection")
+                    log.error("Error closing connection,")
+                    log.error(f" in {bc} module:")
                     log.estr(e)
                     raise RuntimeError(f"failed to close {bc}: {e}") from None
 
@@ -136,8 +139,7 @@ def get_client_connection_class(caps):
             for bc in CC_BASES:
                 bc.threaded_init_complete(self, server)
 
-
-        def get_info(self) -> dict[str,Any]:
+        def get_info(self) -> dict[str, Any]:
             def module_name(m):
                 name = str(m.__name__.split(".")[-1])
                 return name.replace("Mixin", "").replace("Connection", "").rstrip("_")
@@ -154,7 +156,7 @@ def get_client_connection_class(caps):
                     log.estr(e)
             return info
 
-        def parse_hello(self, c : typedict):
+        def parse_hello(self, c: typedict):
             self.ui_client = c.boolget("ui_client", True)
             self.wants : list[str] = list(c.strtupleget("wants", self.wants))
             for x, enabled in {
@@ -165,16 +167,16 @@ def get_client_connection_class(caps):
                 "versions"  : True,
                 "features"  : True,
                 "default_cursor"    : False,
-                }.items():
+            }.items():
                 if enabled:
                     self.wants.append(x)
             for bc in CC_BASES:
                 log("%s.parse_client_caps(..)", bc)
                 bc.parse_client_caps(self, c)
-            #log client info:
+            # log client info:
             cinfo = self.get_connect_info()
-            for i,ci in enumerate(cinfo):
-                log.info("%s%s", ["", " "][int(i>0)], ci)
+            for i, ci in enumerate(cinfo):
+                log.info("%s%s", ["", " "][int(i > 0)], ci)
             if self.client_proxy:
                 from xpra.util.version import version_compat_check
                 msg = version_compat_check(self.proxy_version)
