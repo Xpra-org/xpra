@@ -6,7 +6,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import hashlib
 import threading
 from math import sqrt, ceil
 from collections import deque
@@ -80,7 +79,6 @@ assert MAX_QUALITY>0 and MAX_SPEED>0
 MERGE_REGIONS = envbool("XPRA_MERGE_REGIONS", True)
 DOWNSCALE = envbool("XPRA_DOWNSCALE", True)
 DOWNSCALE_THRESHOLD = envint("XPRA_DOWNSCALE_THRESHOLD", 20)
-INTEGRITY_HASH = envbool("XPRA_INTEGRITY_HASH", False)
 MAX_SYNC_BUFFER_SIZE = envint("XPRA_MAX_SYNC_BUFFER_SIZE", 256)*1024*1024        #256MB
 AV_SYNC_RATE_CHANGE = envint("XPRA_AV_SYNC_RATE_CHANGE", 20)
 AV_SYNC_TIME_CHANGE = envint("XPRA_AV_SYNC_TIME_CHANGE", 500)
@@ -2723,16 +2721,6 @@ class WindowSource(WindowIconSource):
             if self.suspended:
                 return nodata("suspended after encoding")
         csize = len(data)
-        if INTEGRITY_HASH and coding!="mmap":
-            #could be a compressed wrapper or just raw bytes:
-            try:
-                v = data.data
-            except AttributeError:
-                v = data
-            chksum = hashlib.sha256(v).hexdigest()
-            client_options["z.sha256"] = chksum
-            client_options["z.len"] = len(data)
-            log("added len and hash of compressed data integrity %19s: %8i / %s", type(v), len(v), chksum)
         if (LOG_ENCODERS or compresslog.is_debug_enabled()) and "encoder" not in client_options:
             mod = "mmap_encode" if encoder == self.mmap_encode else get_encoder_type(encoder)
             client_options["encoder"] = mod

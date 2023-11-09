@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import hashlib
 from time import monotonic
 from threading import Lock
 from collections import deque
@@ -27,7 +26,6 @@ from xpra.log import Logger
 log = Logger("paint")
 videolog = Logger("video", "paint")
 
-INTEGRITY_HASH = envbool("XPRA_INTEGRITY_HASH", False)
 PAINT_BOX = envint("XPRA_PAINT_BOX", 0)
 WEBP_PILLOW = envbool("XPRA_WEBP_PILLOW", False)
 REPAINT_ALL = envbool("XPRA_REPAINT_ALL", False)
@@ -89,20 +87,6 @@ def fire_paint_callbacks(callbacks:Iterable[Callable], success:int|bool=True, me
     for x in callbacks:
         with log.trap_error("Error calling %s with %s", x, (success, message)):
             x(success, message)
-
-
-def verify_checksum(img_data, options):
-    l = options.intget("z.len")
-    if l and l!=len(img_data):
-        raise ValueError("compressed pixel data failed length integrity check:"+
-                         f" expected {l} bytes but got {len(img_data)}")
-    chksum = options.get("z.sha256")
-    if chksum:
-        h = hashlib.sha256(img_data)
-        hd = h.hexdigest()
-        if chksum!=hd:
-            raise ValueError("pixel data failed compressed chksum integrity check:"+
-                                 f" expected {chksum} but got {hd}")
 
 
 def rgba_text(text:str, width:int=64, height:int=32, x:int=20, y:int=10, bg=(128, 128, 128, 32)):
@@ -689,7 +673,7 @@ class WindowBackingBase:
                 try:
                     csc = spec.codec_class()
                     csc.init_context(src_width, src_height, src_format,
-                               dst_width, dst_height, dst_format, options)
+                                     dst_width, dst_height, dst_format, options)
                     return csc
                 except Exception as e:
                     videolog("make_csc%s",
@@ -886,8 +870,6 @@ class WindowBackingBase:
                 x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
             coding = bytestostr(coding)
             options["encoding"] = coding            #used for choosing the color of the paint box
-            if INTEGRITY_HASH:
-                verify_checksum(img_data, options)
             if coding == "mmap":
                 self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding in ("rgb24", "rgb32"):
