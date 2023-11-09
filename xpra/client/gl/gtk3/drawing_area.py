@@ -26,7 +26,7 @@ class GLDrawingArea(GLWindowBackingBase):
         super().__init__(wid, window_alpha, pixel_depth)
 
     def __repr__(self):
-        return "GLDrawingArea(%s, %s, %s)" % (self.wid, self.size, self.pixel_format)
+        return "GLDrawingArea(%s, %s)" % (self.wid, self.size)
 
     def idle_add(self, *args, **kwargs):
         GLib.idle_add(*args, **kwargs)
@@ -72,7 +72,6 @@ class GLDrawingArea(GLWindowBackingBase):
         else:
             log("GLDrawingArea.with_gl_context delayed: %s%s", cb, ellipsizer(args))
             self.on_realize_cb.append((cb, args))
-
 
     def get_bit_depth(self, pixel_depth=0) -> int:
         return pixel_depth or self.context.get_bit_depth() or 24
