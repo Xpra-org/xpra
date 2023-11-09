@@ -453,7 +453,7 @@ class WindowVideoSource(WindowSource):
         super().do_set_client_properties(properties)
         #encodings may have changed, so redo this:
         nv_common = set(self.picture_encodings) & set(self.core_encodings)
-        log("nv_common(%s & %s)=%s", self.picture_encodings, self.core_encodings, nv_common)
+        log("common non-video (%s & %s)=%s", self.picture_encodings, self.core_encodings, nv_common)
         self.non_video_encodings = preforder(nv_common)
         if not VIDEO_SKIP_EDGE:
             try:
@@ -2253,7 +2253,7 @@ class WindowVideoSource(WindowSource):
 
             Runs in the 'encode' thread.
         """
-        log("do_video_encode(%s, %s, %s)", encoding, image, options)
+        videolog("do_video_encode(%s, %s, %s)", encoding, image, options)
         x, y, w, h = image.get_geometry()[:4]
         src_format = image.get_pixel_format()
         stride = image.get_rowstride()
@@ -2303,7 +2303,7 @@ class WindowVideoSource(WindowSource):
             return self.video_fallback(image, options)
 
         if self.encoding=="grayscale":
-            from xpra.codecs.csc_libyuv.converter import argb_to_gray    #@UnresolvedImport pylint: disable=import-outside-toplevel
+            from xpra.codecs.csc_libyuv.converter import argb_to_gray
             image = argb_to_gray(image)
 
         vh = self.video_helper
@@ -2337,9 +2337,10 @@ class WindowVideoSource(WindowSource):
             return self.video_fallback(image, options, warn=True)
         ve = self._video_encoder
         if not ve:
+            videolog("no video encoder instance")
             return self.video_fallback(image, options, warn=True)
         if not ve.is_ready():
-            log("video encoder %s is not ready yet, using temporary fallback", ve)
+            videolog("video encoder %s is not ready yet, using temporary fallback", ve)
             return self.video_fallback(image, options, warn=False)
 
         #we're going to use the video encoder,
@@ -2427,6 +2428,7 @@ class WindowVideoSource(WindowSource):
                     #so send something as non-video
                     #and skip painting this video frame when it does come out:
                     self.start_video_frame = delayed
+                    videolog("delayed frame, so sending fallback encoding initially")
                     return self.video_fallback(image, options)
                 return ()
         else:
