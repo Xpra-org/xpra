@@ -33,7 +33,7 @@ class GLAreaBacking(GLWindowBackingBase):
         super().__init__(wid, window_alpha, pixel_depth)
 
     def __repr__(self):
-        return "GLAreaBacking(%#x, %s, %s)" % (self.wid, self.size, self.pixel_format)
+        return "GLAreaBacking(%#x, %s)" % (self.wid, self.size)
 
     def idle_add(self, *args, **kwargs):
         GLib.idle_add(*args, **kwargs)
@@ -95,8 +95,12 @@ class GLAreaBacking(GLWindowBackingBase):
         return False
 
     def on_render(self, glarea, glcontext):
-        log(f"on_render({glarea}, {glcontext}) {self.textures=}, {self.offscreen_fbo=}")
-        if self.textures is None or self.offscreen_fbo is None:
+        log(f"on_render({glarea}, {glcontext})")
+        if self.textures is None:
+            log(" not rendering: no textures!")
+            return True
+        if self.offscreen_fbo is None:
+            log(" not rendering: no offscreen fbo!")
             return True
         glcontext.make_current()
 

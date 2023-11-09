@@ -208,9 +208,9 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def __init__(self, wid: int, window_alpha: bool, pixel_depth: int = 0):
         self.wid: int = wid
-        # this is the pixel format we are currently updating the fbo with
+        # this is the planar pixel format we are currently updating the fbo with
         # can be: "YUV420P", "YUV422P", "YUV444P", "GBRP" or None when not initialized yet.
-        self.pixel_format : str = ""
+        self.planar_pixel_format : str = ""
         self.internal_format = GL_RGBA8
         self.textures = None  # OpenGL texture IDs
         self.shaders : dict[str, GLuint] = {}
@@ -251,7 +251,6 @@ class GLWindowBackingBase(WindowBackingBase):
         info |= {
             "type"                  : "OpenGL",
             "bit-depth"             : self.bit_depth,
-            "pixel-format"          : self.pixel_format,
             "internal-format"       : INTERNAL_FORMAT_TO_STR.get(tif) or str(tif),
         }
         return info
@@ -317,7 +316,7 @@ class GLWindowBackingBase(WindowBackingBase):
         return props
 
     def __repr__(self):
-        return f"GLWindowBacking({self.wid}, {self.size}, {self.pixel_format})"
+        return f"GLWindowBacking({self.wid}, {self.size})"
 
     def init(self, ww: int, wh: int, bw: int, bh: int) -> None:
         # re-init gl projection with new dimensions
@@ -1314,10 +1313,10 @@ class GLWindowBackingBase(WindowBackingBase):
             (GL_TEXTURE2, TEX_V),
             )[:len(divs)]
         log("%s.update_planar_textures%s textures=%s", self, (width, height, img, pixel_format, scaling, pbo), textures)
-        if self.pixel_format != pixel_format or self.texture_size != (width, height):
+        if self.planar_pixel_format != pixel_format or self.texture_size != (width, height):
             gl_marker("Creating new planar textures, pixel format %s (was %s), texture size %s (was %s)",
-                      pixel_format, self.pixel_format, (width, height), self.texture_size)
-            self.pixel_format = pixel_format
+                      pixel_format, self.planar_pixel_format, (width, height), self.texture_size)
+            self.planar_pixel_format = pixel_format
             self.texture_size = (width, height)
             # Create textures of the same size as the window's
             target = GL_TEXTURE_RECTANGLE
@@ -1390,17 +1389,17 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def render_planar_update(self, rx: int, ry: int, rw: int, rh: int, x_scale=1.0, y_scale=1.0, shader="YUV_to_RGB") -> None:
         log("%s.render_planar_update%s pixel_format=%s",
-            self, (rx, ry, rw, rh, x_scale, y_scale, shader), self.pixel_format)
-        if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "NV12", "GBRP16", "YUV444P16"):
+            self, (rx, ry, rw, rh, x_scale, y_scale, shader), self.planar_pixel_format)
+        if self.planar_pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "NV12", "GBRP16", "YUV444P16"):
             # not ready to render yet
             return
-        divs = get_subsampling_divs(self.pixel_format)
+        divs = get_subsampling_divs(self.planar_pixel_format)
         textures = (
             (GL_TEXTURE0, TEX_Y),
             (GL_TEXTURE1, TEX_U),
             (GL_TEXTURE2, TEX_V),
             )[:len(divs)]
-        gl_marker("painting planar update, format %s", self.pixel_format)
+        gl_marker("painting planar update, format %s", self.planar_pixel_format)
 
         target = GL_TEXTURE_RECTANGLE
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
