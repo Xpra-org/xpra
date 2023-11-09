@@ -466,14 +466,19 @@ class WindowVideoSource(WindowSource):
     def get_best_encoding_impl_default(self) -> Callable:
         log("get_best_encoding_impl_default() window_type=%s, encoding=%s", self.window_type, self.encoding)
         if self.is_tray:
+            log("using default for tray")
             return super().get_best_encoding_impl_default()
         if self.encoding=="stream":
+            log("using stream encoding")
             return self.get_best_encoding_video
         if self.window_type.intersection(LOSSLESS_WINDOW_TYPES):
+            log("using default for lossless window type %s", self.window_type)
             return super().get_best_encoding_impl_default()
         if self.encoding!="grayscale" or has_codec("csc_libyuv"):
             if self.common_video_encodings or self.supports_scrolling:
+                log("using video encoding")
                 return self.get_best_encoding_video
+        log("using default best encoding")
         return super().get_best_encoding_impl_default()
 
 
@@ -2297,9 +2302,11 @@ class WindowVideoSource(WindowSource):
 
         if not self.common_video_encodings:
             #we have to send using a non-video encoding as that's all we have!
+            videolog("no common video encodings: using fallback")
             return self.video_fallback(image, options)
         if self.image_depth not in (24, 30, 32):
             #this image depth is not supported for video
+            videolog("depth %s not supported for video: using fallback", self.image_depth)
             return self.video_fallback(image, options)
 
         if self.encoding=="grayscale":

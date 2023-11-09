@@ -971,22 +971,30 @@ class WindowSource(WindowIconSource):
         self.get_best_encoding = self.get_best_encoding_impl()
 
     def get_best_encoding_impl(self) -> Callable:
+        log("get_best_encoding_impl() hint=%r, encoding=%r, depth=%s, alpha=%s",
+            self._encoding_hint, self.encoding, self.image_depth, self._want_alpha)
         if HARDCODED_ENCODING:
+            log(f"using {HARDCODED_ENCODING=}")
             return self.hardcoded_encoding
         if self._encoding_hint and self._encoding_hint in self._encoders:
+            log("using encoding hint: %r", self._encoding_hint)
             return self.encoding_is_hint
         #choose which method to use for selecting an encoding
         #first the easy ones (when there is no choice):
         if self._mmap_size>0 and self.encoding!="grayscale":
+            log("using mmap")
             return self.encoding_is_mmap
         if self.encoding=="png/L":
             #(png/L would look awful if we mixed it with something else)
+            log("using png/L")
             return self.encoding_is_pngL
         if self.image_depth==8 or self.encoding=="png/P":
             #limited options:
             if self.encoding=="grayscale":
                 assert "png/L" in self.common_encodings
+                log("using png/L")
                 return self.encoding_is_pngL
+            log("using png/P")
             assert "png/P" in self.common_encodings
             return self.encoding_is_pngP
         if self.strict and self.encoding not in ("auto", "stream"):
@@ -995,36 +1003,48 @@ class WindowSource(WindowIconSource):
                 #choose between rgb32 and rgb24 already
                 #as alpha support does not change without going through this method
                 if self._want_alpha and "rgb32" in self.common_encodings:
+                    log("using rgb32 for strict mode alpha")
                     return self.encoding_is_rgb32
                 assert "rgb24" in self.common_encodings
+                log("using rgb24 for strict mode")
                 return self.encoding_is_rgb24
             return self.get_strict_encoding
         if self._want_alpha or self.is_tray:
             if self.encoding in ("rgb", "rgb32") and "rgb32" in self.common_encodings:
+                log("using rgb32 for tray")
                 return self.encoding_is_rgb32
             if self.encoding in ("png", "png/P", "png/L"):
                 #chosen encoding does alpha, stick to it:
                 #(prevents alpha bleeding artifacts,
                 # as different encoders may encode alpha differently)
+                log("using %s for tray", self.encoding)
                 return self.get_strict_encoding
             if self.encoding=="grayscale":
+                log("using grayscale")
                 return self.encoding_is_grayscale
             #choose an alpha encoding and keep it?
+            log("using transparent encoding")
             return self.get_transparent_encoding
         if self.encoding=="rgb":
             #if we're here we don't need alpha, so try rgb24 first:
             if "rgb24" in self.common_encodings:
+                log("using rgb24 for rgb encoding")
                 return self.encoding_is_rgb24
             if "rgb32" in self.common_encodings:
+                log("using rgb32 for rgb encoding")
                 return self.encoding_is_rgb32
+        log("using default auto best encoding")
         return self.get_best_encoding_impl_default()
 
     def get_best_encoding_impl_default(self) -> Callable:
         #stick to what is specified or use rgb for small regions:
         if self.encoding in ("auto", "stream"):
+            log(f"using {self.encoding}")
             return self.get_auto_encoding
         if self.encoding=="grayscale":
+            log(f"using {self.encoding}")
             return self.encoding_is_grayscale
+        log("using current or rgb")
         return self.get_current_or_rgb
 
     @staticmethod
