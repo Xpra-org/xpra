@@ -768,30 +768,52 @@ fi
 
 
 %changelog
-* Mon Oct 16 2023 Antoine Martin <antoine@xpra.org> 5.0.4-10
+* Thu Nov 09 2023 Antoine Martin <antoine@xpra.org> 5.0.4-10
+- Major:
+   fixup tray backport regression
+   signal watcher backport regression
+   avoid menu and input device errors when client is not set
+   ensure the content-type is initialized at least once
+   ensure all encoders are initialized before choosing an encoding
+   video modules lost after initial connection
 - `start-gui` fixes:
    display number ignored
    exit-with-children can't be unchecked in start-gui
    port number always specified but not validated
-   avoid menu and input device errors when client is not set
-   fixup tray backport regression
+- Platform and packaging
+   Cython 3.0.5
+   C functions cannot raise Python exceptions
+   MacOS pyobjc warnings
+   bogus date in changelog
+   improve session type detection
+   notification backend order
+   DEB packages should not rely on transitive dependencies
+   ignore some transient CI failures
+   use latest Cython with CI
 - Minor:
-   signal watcher backport regression
    shortcut out when signal watcher has already terminated
    move-resize test tool broken
    safer handshake calls
    use absolute script paths when re-connecting
    avoid errors with clients sending packets to disabled subsystems
+   close all sockets on errors, on permission errors and on exit
+   ssh error connecting to some hosts
+   type safety
+   don't include empty key event in debug list
+- OpenGL client accleration:
+   honour opengl=force option
+   X11 OpenGL context manager is not consistent
+   remove confusing unused method in OpenGL client window
+   OpenGL debugging errors
+   opengl test window misnamed
+   try harder to exit more cleanly on error
 - Cosmetic:
-   don't warn if `avif` decoder is missing, same for encoder
+   don't warn if `avif` encoder or decoder is missing
    add newline to clear stdout
    extra `%` in tray menu
-   opengl test window misnamed
    show failing script
    silence deprecation warning
-   X11 OpenGL context manager is not consistent
    man pages fixes
-
 
 * Thu Oct 05 2023 Antoine Martin <antoine@xpra.org> 5.0.3-10
 - Major:

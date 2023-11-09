@@ -1,18 +1,27 @@
 # Changelog
 
-## [5.0.4] 2023-10-16
+## [5.0.4] 2023-11-09
 * Major:
     * [fixup tray backport regression](https://github.com/Xpra-org/xpra/commit/6631cfe8b8c228894cd93b679d7ed78ef5715f81)
     * [signal watcher backport regression](https://github.com/Xpra-org/xpra/commit/96f0351ba1dbc5c1dee6bfcf760a4350b2d2b9c0)
+    * [avoid menu and input device errors when client is not set](https://github.com/Xpra-org/xpra/commit/ce25a2468194d1b25472562acde6070419fcad28)
+    * [ensure the content-type is initialized at least once](https://github.com/Xpra-org/xpra/commit/608bf55e822f78eabfd59f5a4f44929e71dad679)
+    * [ensure all encoders are initialized before choosing an encoding](https://github.com/Xpra-org/xpra/commit/dd808947a7ceff1524adae44bc930636eef7a4e7)
+    * [video modules lost after initial connection](https://github.com/Xpra-org/xpra/commit/8217fabfcee476c2f44ae78cde1c718ee609157f)
 * `start-gui` fixes:
     * [display number ignored](https://github.com/Xpra-org/xpra/commit/db7f6f4ea1530e7b6c901b2b0e44f00271c9d8b6)
     * [exit-with-children can't be unchecked in start-gui](https://github.com/Xpra-org/xpra/commit/98ee5a6f26cdac6bf62166b1ceca522b02f6fca4)
     * [port number always specified but not validated](https://github.com/Xpra-org/xpra/commit/bb1c06d77370bd6b4a94e28572311368c2c23817)
-    * [avoid menu and input device errors when client is not set](https://github.com/Xpra-org/xpra/commit/ce25a2468194d1b25472562acde6070419fcad28)
 * Platform and packaging:
     * [Cython 3.0.5](https://github.com/Xpra-org/xpra/commit/3a46ee575f0147f6e4ccc00bab27321825709ab1)
+    * [C functions cannot raise Python exceptions](https://github.com/Xpra-org/xpra/commit/55e4fe2450aaf96ba049f9b9e825e3c77d6b6b22) + [reorder](https://github.com/Xpra-org/xpra/commit/0618f163b0e6c9102be56b6fd02eef614baae19d)
     * [MacOS pyobjc warnings](https://github.com/Xpra-org/xpra/commit/c17caa0cb25f68fa8a75c975fe886504b142c9a6)
     * [bogus date in changelog](https://github.com/Xpra-org/xpra/commit/1562623a170cce00cf286a403bc0e5773aa05369)
+    * [improve session type detection](https://github.com/Xpra-org/xpra/commit/1233e0ce1100a7b82454cad728c08dc26cf35ac1)
+    * [notification backend order](https://github.com/Xpra-org/xpra/commit/8b3d31cab9220facc917b60d5db971c016638d0e)
+    * [DEB packages should not rely on transitive dependencies](https://github.com/Xpra-org/xpra/commit/a403a271a80a5d7b5468d9b9a27303188b83547d)
+    * [ignore some transient CI failures](https://github.com/Xpra-org/xpra/commit/47cb8affd6a3d59d26392697e1d98fe8ef3a8b00)
+    * [use latest Cython with CI](https://github.com/Xpra-org/xpra/commit/cecc5b2e624c78166a79cdac51d14adf896dcd9a)
 * Minor:
     * [shortcut out when signal watcher has already terminated](https://github.com/Xpra-org/xpra/commit/f3e922181e5fbabc63f778e9a7d6fe4a7809b6f7)
     * [move-resize test tool broken](https://github.com/Xpra-org/xpra/commit/5e79b41a830203412566b4f3c9fa4119a9a441a6)
@@ -20,14 +29,16 @@
     * [use absolute script paths when re-connecting](https://github.com/Xpra-org/xpra/commit/2d1dc323fadcc97df73472123abf7a680b22ef59)
     * [avoid errors with clients sending packets to disabled subsystems](https://github.com/Xpra-org/xpra/commit/9771a6853f512c7e8a188b06ef522c9ee6c38f75)
     * close all sockets [on errors](https://github.com/Xpra-org/xpra/commit/e07d80a42d9ab380fb440a5a77bc15efe8c0c480), [on permission errors](https://github.com/Xpra-org/xpra/commit/28c6dd726712f58aae67ac0b7bc03ecfba12f554) and [on exit](https://github.com/Xpra-org/xpra/commit/04a76b6a3b6a77eccafbbf34c8a293778302fb88)
-    * [ssh error connecting to some hosts](https://github.com/Xpra-org/xpra/commit/c00d9328ce57d4a95006f4ff7a9a69e05688d168)
+    * [ssh error connecting to some hosts](https://github.com/Xpra-org/xpra/commit/c00d9328ce57d4a95006f4ff7a9a69e05688d168) + [fixup](https://github.com/Xpra-org/xpra/commit/493477056fc6148ed551f62bbd93815064a18752)
     * [type safety](https://github.com/Xpra-org/xpra/commit/e490532251abf2a74c8683daa25b3df6f77465f4)
+    * [don't include empty key event in debug list](https://github.com/Xpra-org/xpra/commit/f91e7d261418117e7e03430bb9259b0c37f3e41d)
 * OpenGL client accleration:
     * [honour opengl=force option](https://github.com/Xpra-org/xpra/commit/b869ba0466cfe3fdeabb7815fee12d1cb6ab8f65)
     * [X11 OpenGL context manager is not consistent](https://github.com/Xpra-org/xpra/commit/e73187fc427aae60041ebd1dc65582790875d59b)
     * [remove confusing unused method in OpenGL client window](https://github.com/Xpra-org/xpra/commit/8a4151ebcf07b9a88ace25ff0a163c77ad1db356)
     * [OpenGL debugging errors](https://github.com/Xpra-org/xpra/commit/2a45a2e44449fecd1b96a38f26bd89227be440bb)
     * [opengl test window misnamed](https://github.com/Xpra-org/xpra/commit/62784a7510de5c37b8a15e035040a08106d29151)
+    * [try harder to exit more cleanly on error](https://github.com/Xpra-org/xpra/commit/fe64f343f149dc8e2b7a82aeaeef54bdcb8d122d)
 * Cosmetic:
     * [don't warn if `avif` decoder is missing](https://github.com/Xpra-org/xpra/commit/3d919bd6e7f7fe1018800ced86641e48151be900), [same for encoder](https://github.com/Xpra-org/xpra/commit/f829661b87631ceac56522d6260bcfe6ceb7c4df)
     * [add newline to clear stdout](https://github.com/Xpra-org/xpra/commit/00427351e049cab6d1c585be7df366248858321d)
