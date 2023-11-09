@@ -370,6 +370,11 @@ class WindowSource(WindowIconSource):
             self._encoders[encoding] = encode_fn
 
     def init_encoders(self) -> None:
+        self.do_init_encoders()
+        self.parse_csc_modes(self.encoding_options.dictget("full_csc_modes", default=None))
+        self.update_encoding_selection(self.encoding, init=True)
+
+    def do_init_encoders(self) -> None:
         self._all_encoders : Dict[str,List[Callable]] = {}
         self._encoders : Dict[str,Callable] = {}
         picture_encodings = set()
