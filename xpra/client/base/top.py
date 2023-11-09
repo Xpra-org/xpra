@@ -363,7 +363,7 @@ class TopClient:
                     try:
                         process = self.psprocess.get(pid)
                         if not process:
-                            import psutil  #@UnresolvedImport pylint: disable=import-outside-toplevel
+                            import psutil # pylint: disable=import-outside-toplevel
                             process = psutil.Process(pid)
                             self.psprocess[pid] = process
                         else:
@@ -573,7 +573,7 @@ class TopSessionClient(InfoTimerClient):
                     try:
                         process = self.psprocess.get(server_pid)
                         if not process:
-                            import psutil  #@UnresolvedImport
+                            import psutil
                             process = psutil.Process(server_pid)
                             self.psprocess[server_pid] = process
                         else:

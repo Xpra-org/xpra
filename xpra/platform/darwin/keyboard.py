@@ -109,7 +109,7 @@ class Keyboard(KeyboardBase):
         variants = []
         options = ""
         try:
-            from AppKit import NSTextInputContext, NSTextView       #@UnresolvedImport
+            from AppKit import NSTextInputContext, NSTextView
             text_input_context = NSTextInputContext.alloc()
             view = NSTextView.new()
             text_input_context.initWithClient_(view)

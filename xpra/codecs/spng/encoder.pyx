@@ -89,7 +89,7 @@ def encode(coding, image, options=None):
         if grayscale:
             input_formats = ("BGRX", "BGRA", "BGR", "RGB")
         if rgb_format not in input_formats:
-            from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
+            from xpra.codecs.argb.argb import argb_swap
             if not argb_swap(image, input_formats, supports_transparency=alpha):
                 log("spng: argb_swap failed to convert %s to a suitable format: %s" % (
                     rgb_format, input_formats))
@@ -105,7 +105,7 @@ def encode(coding, image, options=None):
 
     pixels = image.get_pixels()
     if grayscale:
-        from xpra.codecs.argb.argb import bgrx_to_l, bgra_to_la, bgr_to_l, rgb_to_l  #@UnresolvedImport
+        from xpra.codecs.argb.argb import bgrx_to_l, bgra_to_la, bgr_to_l, rgb_to_l
         if alpha:
             pixels = bgra_to_la(pixels)
             rgb_format = "LA"

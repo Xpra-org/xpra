@@ -13,7 +13,7 @@ from xpra.util.str_fn import std, csv
 from xpra.util.env import envbool
 from xpra.os_util import bytestostr
 from xpra.gtk.error import xsync, xlog
-from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
+from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.log import Logger
 
 init_gdk_display_source()

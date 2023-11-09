@@ -86,9 +86,9 @@ def do_get_system_conf_dirs() -> list[str]:
     dirs = []
     try:
         from Foundation import (
-            NSSearchPathForDirectoriesInDomains,    #@UnresolvedImport
-            NSApplicationSupportDirectory,          #@UnresolvedImport
-            NSLocalDomainMask, NSSystemDomainMask   #@UnresolvedImport
+            NSSearchPathForDirectoriesInDomains,
+            NSApplicationSupportDirectory,
+            NSLocalDomainMask, NSSystemDomainMask
             )
         sdirs = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSLocalDomainMask|NSSystemDomainMask, False)
         for x in sdirs:
@@ -111,8 +111,8 @@ def do_get_user_conf_dirs(_uid) -> list[str]:
         #when running sandboxed, it may look like this:
         #~/Library/Containers/<bundle_id>/Data/Library/Application Support/
         from Foundation import (
-            NSSearchPathForDirectoriesInDomains,                #@UnresolvedImport
-            NSApplicationSupportDirectory, NSUserDomainMask,    #@UnresolvedImport
+            NSSearchPathForDirectoriesInDomains,
+            NSApplicationSupportDirectory, NSUserDomainMask,
             )
         udirs = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, False)
         for x in udirs:
@@ -127,8 +127,8 @@ def do_get_default_log_dirs() -> list[str]:
     dirs = []
     try:
         from Foundation import (
-            NSSearchPathForDirectoriesInDomains,    #@UnresolvedImport
-            NSLibraryDirectory, NSUserDomainMask,   #@UnresolvedImport
+            NSSearchPathForDirectoriesInDomains,
+            NSLibraryDirectory, NSUserDomainMask,
             )
         udirs = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, False)
         for x in udirs:
@@ -159,7 +159,7 @@ def do_get_download_dir() -> str:
     d = "~/Downloads"
     try:
         from Foundation import (
-            NSSearchPathForDirectoriesInDomains, NSDownloadsDirectory, NSUserDomainMask,    #@UnresolvedImport
+            NSSearchPathForDirectoriesInDomains, NSDownloadsDirectory, NSUserDomainMask,
             )
         d = NSSearchPathForDirectoriesInDomains(NSDownloadsDirectory, NSUserDomainMask, False)[0]
         #(should be "~/Downloads")

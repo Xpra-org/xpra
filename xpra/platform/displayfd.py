@@ -14,7 +14,7 @@ DISPLAY_FD_TIMEOUT = envint("XPRA_DISPLAY_FD_TIMEOUT", 20)
 
 
 def write_displayfd(w_pipe, display, timeout=10):
-    import select   #@UnresolvedImport
+    import select
     import errno
     buf = ("%s\n" % display).encode("ascii")
     limit = monotonic()+timeout
@@ -48,7 +48,7 @@ def write_displayfd(w_pipe, display, timeout=10):
     return len(buf)==0
 
 def read_displayfd(r_pipe, timeout=DISPLAY_FD_TIMEOUT, proc=None):
-    import select   #@UnresolvedImport
+    import select
     import errno
     # Read the display number from the pipe we gave to Xvfb
     # waiting up to 10 seconds for it to show up

@@ -7,7 +7,7 @@ from typing import Any
 
 def get_pyobjc_version():
     try:
-        import objc     #@UnresolvedImport
+        import objc
         return objc.__version__
     except ImportError:
         return None

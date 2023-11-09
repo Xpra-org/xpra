@@ -14,9 +14,9 @@ log = Logger("cuda")
 with numpy_import_lock:
     from numpy import byte  # @UnresolvedImport
     from pycuda.driver import (
-        pagelocked_empty,   #@UnresolvedImport
-        memcpy_dtoh_async,  #@UnresolvedImport
-        LogicError,         #@UnresolvedImport
+        pagelocked_empty,
+        memcpy_dtoh_async,
+        LogicError,
         )
 
 

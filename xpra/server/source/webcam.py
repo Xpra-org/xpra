@@ -127,7 +127,7 @@ class WebcamMixin(StubSourceMixin):
             log("trying device %s: %s", vid, device_info)
             device_str = device_info.get("device")
             try:
-                from xpra.codecs.v4l2.virtual import VirtualWebcam, get_input_colorspaces    #@UnresolvedImport pylint: disable=import-outside-toplevel
+                from xpra.codecs.v4l2.virtual import VirtualWebcam, get_input_colorspaces # pylint: disable=import-outside-toplevel
                 in_cs = get_input_colorspaces()
                 p = VirtualWebcam()
                 src_format = in_cs[0]
@@ -192,7 +192,7 @@ class WebcamMixin(StubSourceMixin):
             #one of those two should be present
             try:
                 csc_mod = "csc_libyuv"
-                from xpra.codecs.libyuv.converter import (   #@UnresolvedImport
+                from xpra.codecs.libyuv.converter import (
                     get_input_colorspaces,
                     get_output_colorspaces,
                     Converter,

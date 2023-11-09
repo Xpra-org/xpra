@@ -8,7 +8,7 @@ from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.x11.desktop.base import DesktopServerBase
 from xpra.x11.desktop.desktop_model import ScreenDesktopModel
-from xpra.x11.bindings.randr import RandRBindings #@UnresolvedImport
+from xpra.x11.bindings.randr import RandRBindings
 from xpra.server import features
 from xpra.gtk.error import xsync, xlog
 from xpra.log import Logger

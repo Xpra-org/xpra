@@ -13,7 +13,7 @@ from xpra.log import Logger
 
 gi.require_version("Gdk", "3.0")  # @UndefinedVariable
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-from gi.repository import Gdk     #@UnresolvedImport
+from gi.repository import Gdk
 
 
 def get_default_root_window() -> Gdk.Window | None:
@@ -113,7 +113,7 @@ def main():
         from xpra.gtk.versions import get_gtk_version_info
         print("%s" % get_gtk_version_info())
         if POSIX and not OSX:
-            from xpra.x11.bindings.posix_display_source import init_posix_display_source    #@UnresolvedImport
+            from xpra.x11.bindings.posix_display_source import init_posix_display_source
             init_posix_display_source()
         import warnings
         warnings.simplefilter("ignore")

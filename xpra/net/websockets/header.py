@@ -9,7 +9,7 @@ import struct
 from collections.abc import ByteString
 
 from xpra.net.websockets.common import OPCODE_CLOSE
-from xpra.net.websockets.mask import hybi_unmask   #@UnresolvedImport
+from xpra.net.websockets.mask import hybi_unmask
 
 
 def close_packet(code : int = 1000, reason : str = "") -> bytes:

@@ -370,7 +370,7 @@ def set_initial_resolution(resolutions, dpi:int=0) -> None:
     log("set_initial_resolution(%s)", resolutions)
     try:
         #pylint: disable=import-outside-toplevel
-        from xpra.x11.bindings.randr import RandRBindings      #@UnresolvedImport
+        from xpra.x11.bindings.randr import RandRBindings
         #try to set a reasonable display size:
         randr = RandRBindings()
         if not randr.has_randr():
@@ -479,7 +479,7 @@ def check_xvfb_process(xvfb=None, cmd:str="Xvfb", timeout:int=0, command=None) -
     return False
 
 def verify_display_ready(xvfb, display_name:str, shadowing_check:bool=True, log_errors:bool=True, timeout=VFB_WAIT) -> bool:
-    from xpra.x11.bindings.wait_for_x_server import wait_for_x_server        #@UnresolvedImport pylint: disable=import-outside-toplevel
+    from xpra.x11.bindings.wait_for_x_server import wait_for_x_server # pylint: disable=import-outside-toplevel
     # Whether we spawned our server or not, it is now running -- or at least
     # starting.  First wait for it to start up:
     try:
@@ -512,7 +512,7 @@ def main():
     display = None
     if len(sys.argv)>1:
         display = strtobytes(sys.argv[1])
-    from xpra.x11.bindings.wait_for_x_server import wait_for_x_server        #@UnresolvedImport
+    from xpra.x11.bindings.wait_for_x_server import wait_for_x_server
     wait_for_x_server(display, VFB_WAIT)
     print("OK")
 

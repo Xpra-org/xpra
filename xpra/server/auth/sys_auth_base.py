@@ -57,7 +57,7 @@ def parse_gid(v) -> int:
             log(f"gid {v!r} is not an integer")
     if POSIX:
         try:
-            import grp          #@UnresolvedImport pylint: disable=import-outside-toplevel
+            import grp # pylint: disable=import-outside-toplevel
             return grp.getgrnam(v or DEFAULT_GID).gr_gid
         except Exception as e:
             log(f"parse_gid({v})", exc_info=True)

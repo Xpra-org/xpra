@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import socket
-from zeroconf import ServiceInfo, Zeroconf, __version__ as zeroconf_version #@UnresolvedImport
+from zeroconf import ServiceInfo, Zeroconf, __version__ as zeroconf_version
 
 from xpra.log import Logger
 from xpra.os_util import first_time

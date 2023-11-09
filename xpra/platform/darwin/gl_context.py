@@ -5,12 +5,12 @@
 
 from typing import Any
 
-import objc #@UnresolvedImport
+import objc
 from Cocoa import (
-    NSOpenGLContext, NSOpenGLPixelFormat, NSOpenGLPFAWindow,                #@UnresolvedImport
-    NSOpenGLPFAAlphaSize, NSOpenGLPFABackingStore, NSOpenGLPFAColorSize,    #@UnresolvedImport
-    NSOpenGLPFADepthSize, NSOpenGLPFADoubleBuffer, NSOpenGLPFAAccumSize,    #@UnresolvedImport
-    NSOpenGLPFAStencilSize, NSOpenGLPFAAuxBuffers, NSOpenGLCPSurfaceOpacity, #@UnresolvedImport
+    NSOpenGLContext, NSOpenGLPixelFormat, NSOpenGLPFAWindow,
+    NSOpenGLPFAAlphaSize, NSOpenGLPFABackingStore, NSOpenGLPFAColorSize,
+    NSOpenGLPFADepthSize, NSOpenGLPFADoubleBuffer, NSOpenGLPFAAccumSize,
+    NSOpenGLPFAStencilSize, NSOpenGLPFAAuxBuffers, NSOpenGLCPSurfaceOpacity,
     )
 from xpra.gtk.window import GDKWindow
 from xpra.client.gl.check import check_PyOpenGL_support

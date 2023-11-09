@@ -17,10 +17,10 @@ from xpra.gtk.info import get_screen_sizes
 from xpra.gtk.gobject import one_arg_signal
 from xpra.x11.gtk3.bindings import (
     add_catchall_receiver, remove_catchall_receiver,
-    add_event_receiver,          #@UnresolvedImport
+    add_event_receiver,
    )
 from xpra.x11.xroot_props import XRootPropWatcher
-from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
+from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.x11.server.base import X11ServerBase
 from xpra.gtk.error import xsync, xlog
 from xpra.log import Logger

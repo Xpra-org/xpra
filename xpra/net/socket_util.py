@@ -522,7 +522,7 @@ def parse_bind_ip(bind_ip:list[str], default_port:int=DEFAULT_PORT) -> dict[tupl
 def setup_vsock_socket(cid:int, iport:int) -> tuple[str, Any, tuple[int,int], Callable]:
     log = get_network_logger()
     try:
-        from xpra.net.vsock.vsock import bind_vsocket     #@UnresolvedImport
+        from xpra.net.vsock.vsock import bind_vsocket
         vsock_socket = bind_vsocket(cid=cid, port=iport)
     except Exception as e:
         raise InitExit(ExitCode.SOCKET_CREATION_ERROR,
@@ -538,7 +538,7 @@ def setup_vsock_socket(cid:int, iport:int) -> tuple[str, Any, tuple[int,int], Ca
 def parse_bind_vsock(bind_vsock:list[str]) -> dict[tuple[int,int],dict]:
     vsock_sockets : dict[tuple[int,int],dict] = {}
     if bind_vsock:
-        from xpra.scripts.parsing import parse_vsock_cid  #@UnresolvedImport pylint: disable=import-outside-toplevel
+        from xpra.scripts.parsing import parse_vsock_cid # pylint: disable=import-outside-toplevel
         for spec in bind_vsock:
             parts = spec.split(",", 1)
             cid_port = parts[0].split(":")

@@ -13,7 +13,7 @@ from xpra.gtk.error import xsync, xlog
 from xpra.x11.gtk_x11 import GDKX11Window
 from xpra.x11.gtk_x11.prop import prop_set, prop_get, raw_prop_set
 from xpra.gtk.util import get_default_root_window
-from xpra.x11.bindings.window import constants, X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.x11.gtk3.bindings import add_event_receiver, remove_event_receiver, get_xvisual
 from xpra.log import Logger
 

@@ -8,7 +8,7 @@ from gi.repository import GObject, Gdk  # @UnresolvedImport
 import xpra.gtk.info
 from xpra.gtk.error import XError, xsync
 from xpra.x11.desktop.model_base import DesktopModelBase
-from xpra.x11.bindings.randr import RandRBindings #@UnresolvedImport
+from xpra.x11.bindings.randr import RandRBindings
 from xpra.log import Logger
 
 RandR = RandRBindings()

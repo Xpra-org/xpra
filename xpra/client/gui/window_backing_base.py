@@ -37,7 +37,7 @@ def load_PIL_font():
     global _PIL_font
     if _PIL_font:
         return _PIL_font
-    from PIL import ImageFont   #@UnresolvedImport pylint: disable=import-outside-toplevel
+    from PIL import ImageFont # pylint: disable=import-outside-toplevel
     for font_file in (
         "/usr/share/fonts/gnu-free/FreeMono.ttf",
         "/usr/share/fonts/liberation-mono/LiberationMono-Regular.ttf",
@@ -91,7 +91,7 @@ def fire_paint_callbacks(callbacks:Iterable[Callable], success:int|bool=True, me
 
 def rgba_text(text:str, width:int=64, height:int=32, x:int=20, y:int=10, bg=(128, 128, 128, 32)):
     try:
-        from PIL import Image, ImageDraw  #@UnresolvedImport pylint: disable=import-outside-toplevel
+        from PIL import Image, ImageDraw # pylint: disable=import-outside-toplevel
     except ImportError:
         log("rgba_text(..)", exc_info=True)
         if first_time("pillow-text-overlay"):

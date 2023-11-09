@@ -505,7 +505,7 @@ def encode(coding, image, options=None):
     cdef double start, end
     input_formats = NVJPEG_INPUT_FORMATS[coding]
     if pfstr not in input_formats:
-        from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport @Reimport
+        from xpra.codecs.argb.argb import argb_swap # @Reimport
         start = monotonic()
         oldpfstr = pfstr
         if not argb_swap(image, input_formats):

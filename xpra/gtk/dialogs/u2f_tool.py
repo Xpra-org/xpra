@@ -66,7 +66,7 @@ def main():
         if not os.path.exists(conf_dir):
             os.mkdir(conf_dir)
 
-        from pyu2f.u2f import GetLocalU2FInterface      #@UnresolvedImport
+        from pyu2f.u2f import GetLocalU2FInterface
         try:
             dev = GetLocalU2FInterface()
         except Exception as e:

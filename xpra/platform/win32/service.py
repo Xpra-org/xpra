@@ -26,7 +26,7 @@ def main(argv):
             raise ValueError(f"unsupported subcommand {argv[1]!r}")
         return run_mode("stop", argv[:1]+["stop", "named-pipe://%s" % PIPE_NAME])
 
-    from multiprocessing import freeze_support #@UnresolvedImport
+    from multiprocessing import freeze_support
     freeze_support()
 
     os.environ["XPRA_REDIRECT_OUTPUT"] = "1"

@@ -13,11 +13,11 @@ from collections import deque
 from xpra.util.stats import get_list_stats, get_weighted_list_stats
 from xpra.util.str_fn import csv
 from xpra.util.env import envint
-from xpra.server.cystats import (logp,      #@UnresolvedImport
-    calculate_time_weighted_average,        #@UnresolvedImport
-    calculate_size_weighted_average,        #@UnresolvedImport
-    calculate_timesize_weighted_average,    #@UnresolvedImport
-    calculate_for_average,                  #@UnresolvedImport
+from xpra.server.cystats import (logp,
+    calculate_time_weighted_average,
+    calculate_size_weighted_average,
+    calculate_timesize_weighted_average,
+    calculate_for_average,
     )
 
 from xpra.log import Logger

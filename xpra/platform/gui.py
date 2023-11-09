@@ -378,7 +378,7 @@ def main() -> int:
 
         #naughty, but how else can I hook this up?
         if POSIX and not OSX:
-            from xpra.x11.bindings.posix_display_source import init_posix_display_source    #@UnresolvedImport
+            from xpra.x11.bindings.posix_display_source import init_posix_display_source
             init_posix_display_source()
         i = get_info()
         print_nested_dict(i, hex_keys=("data", "icc-data", "icc-profile"))

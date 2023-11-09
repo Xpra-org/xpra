@@ -252,7 +252,7 @@ cdef class Encoder:
         may_save_image("jpeg", cdata, now)
         client_options = {}
         if self.encoding=="jpega":
-            from xpra.codecs.argb.argb import alpha  #@UnresolvedImport
+            from xpra.codecs.argb.argb import alpha
             a = alpha(image)
             planes = (a, )
             rowstrides = (image.get_rowstride()//4, )
@@ -290,7 +290,7 @@ def encode(coding, image, options=None):
     log("encode%s", (coding, image, options))
     input_formats = JPEG_INPUT_FORMATS if coding=="jpeg" else JPEGA_INPUT_FORMATS
     if rgb_format not in input_formats or resize and len(rgb_format)!=4:
-        from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
+        from xpra.codecs.argb.argb import argb_swap
         if not argb_swap(image, input_formats):
             log("jpeg: argb_swap failed to convert %s to a suitable format: %s" % (
                 rgb_format, input_formats))
@@ -317,7 +317,7 @@ def encode(coding, image, options=None):
         may_save_image("jpeg", cdata, now)
         bpp = 24
         if coding=="jpega":
-            from xpra.codecs.argb.argb import alpha  #@UnresolvedImport
+            from xpra.codecs.argb.argb import alpha
             a = alpha(image)
             planes = (a, )
             rowstrides = (image.get_rowstride()//4, )

@@ -52,7 +52,7 @@ if not REDIRECT_OUTPUT:
 
 def is_wine():
     try:
-        import winreg   #@UnresolvedImport @Reimport
+        import winreg # @Reimport
         hKey = winreg.OpenKey(win32con.HKEY_LOCAL_MACHINE, r"Software\\Wine")   #@UndefinedVariable
         return bool(hKey)
     except Exception:

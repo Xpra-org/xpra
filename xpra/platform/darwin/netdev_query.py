@@ -7,11 +7,11 @@ import socket
 from typing import Any
 
 from SystemConfiguration import (
-    SCNetworkInterfaceCopyAll,                      #@UnresolvedImport
-    SCNetworkInterfaceGetBSDName,                   #@UnresolvedImport
-    SCNetworkInterfaceGetHardwareAddressString,     #@UnresolvedImport
-    SCNetworkInterfaceGetInterfaceType,             #@UnresolvedImport
-    SCNetworkInterfaceGetSupportedProtocolTypes,    #@UnresolvedImport
+    SCNetworkInterfaceCopyAll,
+    SCNetworkInterfaceGetBSDName,
+    SCNetworkInterfaceGetHardwareAddressString,
+    SCNetworkInterfaceGetInterfaceType,
+    SCNetworkInterfaceGetSupportedProtocolTypes,
     )
 
 

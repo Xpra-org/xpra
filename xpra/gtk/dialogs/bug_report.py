@@ -154,7 +154,7 @@ class BugReport:
         if not take_screenshot_fn:
             #try with Pillow:
             try:
-                from PIL import ImageGrab           #@UnresolvedImport
+                from PIL import ImageGrab
                 from io import BytesIO
                 def pillow_imagegrab_screenshot() -> ScreenshotData:
                     img = ImageGrab.grab()

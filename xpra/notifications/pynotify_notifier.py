@@ -6,7 +6,7 @@
 
 import sys
 from typing import Any
-import notify2                 #@UnresolvedImport
+import notify2
 
 from xpra.notifications.notifier_base import NotifierBase
 from xpra.common import NotificationID

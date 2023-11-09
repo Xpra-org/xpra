@@ -7,7 +7,7 @@ from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
 from xpra.gtk.bindings.gobject cimport unwrap
 
 import gi
-from gi.repository import Gdk               #@UnresolvedImport
+from gi.repository import Gdk
 
 from xpra.log import Logger
 log = Logger("bindings", "gtk")

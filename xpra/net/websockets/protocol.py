@@ -7,7 +7,7 @@ import os
 import struct
 from collections.abc import ByteString, Callable
 
-from xpra.net.websockets.mask import hybi_mask     #@UnresolvedImport
+from xpra.net.websockets.mask import hybi_mask
 from xpra.net.websockets.header import encode_hybi_header, decode_hybi, close_packet
 from xpra.net.websockets.common import (
     OPCODES,

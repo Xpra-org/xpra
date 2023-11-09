@@ -23,7 +23,7 @@ CHECK_SSL : bool = envbool("XPRA_VERSION_CHECK_SSL", True)
 SSL_CAFILE : str = ""
 if WIN32:
     try:
-        import certifi  #@UnresolvedImport
+        import certifi
         SSL_CAFILE = certifi.where()
     except (ImportError, AttributeError):
         get_util_logger().error("failed to locate SSL ca file", exc_info=True)

@@ -289,7 +289,7 @@ class ClipboardProxyCore:
                 img = img.convert("RGBA")
             w, h = img.size
             if IMAGE_OVERLAY:
-                from PIL import Image   #@UnresolvedImport
+                from PIL import Image
                 overlay = Image.open(IMAGE_OVERLAY)
                 if overlay.mode!="RGBA":
                     log.warn("Warning: cannot use overlay image '%s'", IMAGE_OVERLAY)

@@ -7,7 +7,7 @@ from xpra.log import Logger
 from xpra.os_util import strtobytes
 from xpra.gtk.error import xsync
 from xpra.x11.gtk_x11.prop import prop_get, get_python_type
-from xpra.x11.bindings.window import X11WindowBindings     #@UnresolvedImport
+from xpra.x11.bindings.window import X11WindowBindings
 
 window_bindings = X11WindowBindings()
 log = Logger("x11", "filters")

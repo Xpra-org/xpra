@@ -199,7 +199,7 @@ class SeamlessRootWindowModel(RootWindowModel):
                 return True
             #this should be the proper way using GetTitleBarInfo (but does not seem to work)
             #import ctypes
-            #from ctypes.windll.user32 import GetTitleBarInfo        #@UnresolvedImport
+            #from ctypes.windll.user32 import GetTitleBarInfo
             #from ctypes.wintypes import (DWORD, RECT)
             #class TITLEBARINFO(ctypes.Structure):
             #    pass

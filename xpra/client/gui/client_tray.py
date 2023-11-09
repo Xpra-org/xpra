@@ -256,7 +256,7 @@ class TrayBacking(WindowBackingBase):
             mode += "A"
             data_mode += "A"
         try:
-            from PIL import Image  #@UnresolvedImport pylint: disable=import-outside-toplevel
+            from PIL import Image # pylint: disable=import-outside-toplevel
         except ImportError as e:
             log(f"cannot save tray: {e}")
             return

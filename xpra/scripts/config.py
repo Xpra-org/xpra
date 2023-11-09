@@ -230,7 +230,7 @@ def wrap_cmd_str(cmd) -> str:
 def get_build_info() -> list[str]:
     info = []
     try:
-        from xpra.src_info import REVISION, LOCAL_MODIFICATIONS, BRANCH, COMMIT #@UnresolvedImport
+        from xpra.src_info import REVISION, LOCAL_MODIFICATIONS, BRANCH, COMMIT
         info.append(f"revision {REVISION}")
         if COMMIT:
             info.append(f"commit {COMMIT} from {BRANCH} branch")

@@ -6,8 +6,8 @@
 import os
 import struct
 from io import BytesIO
-import PIL                      #@UnresolvedImport
-from PIL import Image           #@UnresolvedImport
+import PIL
+from PIL import Image
 from typing import Any
 from collections.abc import Callable
 

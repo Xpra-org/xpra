@@ -28,7 +28,7 @@ def url_path_to_dict(path:str) -> dict[str,str]:
 def db_from_uri(uri:str):
     d = url_path_to_dict(uri)
     log("settings for uri=%s : %s", uri, d)
-    import mysql.connector as mysql  #@UnresolvedImport pylint: disable=import-outside-toplevel
+    import mysql.connector as mysql # pylint: disable=import-outside-toplevel
     db = mysql.connect(
         host = d.get("host", "localhost"),
         #port = int(d.get("port", 3306)),
@@ -65,7 +65,7 @@ class MySQLDatabaseUtil(DatabaseUtilBase):
 
     def __init__(self, uri):
         super().__init__(uri)
-        import mysql.connector as mysql  #@UnresolvedImport
+        import mysql.connector as mysql
         assert mysql.paramstyle=="pyformat"
         self.param = "%s"
 

@@ -10,7 +10,7 @@ import gi
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
 gi.require_version("Gdk", "3.0")  # @UndefinedVariable
 gi.require_version("Pango", "1.0")  # @UndefinedVariable
-from gi.repository import Gtk, Gdk, Pango     #@UnresolvedImport
+from gi.repository import Gtk, Gdk, Pango
 
 from xpra.gtk.util import IgnoreWarningsContext, ignorewarnings
 from xpra.log import Logger

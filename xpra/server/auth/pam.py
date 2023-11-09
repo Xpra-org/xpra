@@ -17,7 +17,7 @@ PAM_CHECK_ACCOUNT = envbool("XPRA_PAM_CHECK_ACCOUNT", False)
 
 def check(username:str, password:str, service:str=PAM_AUTH_SERVICE, check_account:bool=PAM_CHECK_ACCOUNT) -> bool:
     log("pam check(%s, [..])", username)
-    from xpra.server.pam import pam_session #@UnresolvedImport pylint: disable=import-outside-toplevel
+    from xpra.server.pam import pam_session # pylint: disable=import-outside-toplevel
     b = strtobytes
     session = pam_session(b(username), b(password), service)
     if not session.start(b(password)):

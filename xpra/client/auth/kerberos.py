@@ -47,7 +47,7 @@ class Handler:
             if WIN32:
                 import winkerberos as kerberos
             else:
-                import kerberos         #@UnresolvedImport
+                import kerberos
         except ImportError as e:
             log.warn("Warning: cannot use kerberos authentication handler")
             log.warn(" %s", e)

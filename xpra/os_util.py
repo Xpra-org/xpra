@@ -257,13 +257,13 @@ def get_home_for_uid(uid) -> str:
 
 def get_groups(username) -> list[str]:
     if POSIX:
-        import grp      #@UnresolvedImport
+        import grp
         return [gr.gr_name for gr in grp.getgrall() if username in gr.gr_mem]
     return []
 
 def get_group_id(group) -> int:
     try:
-        import grp      #@UnresolvedImport
+        import grp
         gr = grp.getgrnam(group)
         return gr.gr_gid
     except (ImportError, KeyError):
@@ -740,7 +740,7 @@ def path_permission_info(filename : str, ftype=None) -> tuple[str, ...]:
         info.append(f"permissions on {ftype} {filename}: {operm}")
         # pylint: disable=import-outside-toplevel
         import pwd
-        import grp      #@UnresolvedImport
+        import grp
         user = pwd.getpwuid(stat_info.st_uid)[0]
         group = grp.getgrgid(stat_info.st_gid)[0]
         info.append(f"ownership {user}:{group}")
@@ -940,7 +940,7 @@ def setuidgid(uid:int, gid:int) -> None:
         if hasattr(os, "initgroups"):   # python >= 2.7
             os.initgroups(username, gid)
         else:
-            import grp      #@UnresolvedImport
+            import grp
             groups = [gr.gr_gid for gr in grp.getgrall() if username in gr.gr_mem]
             os.setgroups(groups)
     #change uid and gid:

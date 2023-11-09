@@ -12,28 +12,28 @@ from weakref import WeakValueDictionary
 from typing import Any
 from collections.abc import Callable
 
-from gi.repository import GLib      #@UnresolvedImport
-import objc                         #@UnresolvedImport
-import Quartz                       #@UnresolvedImport
-import Quartz.CoreGraphics as CG    #@UnresolvedImport
+from gi.repository import GLib
+import objc
+import Quartz
+import Quartz.CoreGraphics as CG
 from Quartz import (
-    CGWindowListCopyWindowInfo, kCGDisplaySetModeFlag, kCGWindowListOptionOnScreenOnly, #@UnresolvedImport
-    kCGNullWindowID, kCGWindowListOptionAll,    #@UnresolvedImport
+    CGWindowListCopyWindowInfo, kCGDisplaySetModeFlag, kCGWindowListOptionOnScreenOnly,
+    kCGNullWindowID, kCGWindowListOptionAll,
     )
 from Quartz.CoreGraphics import (
-    CGDisplayRegisterReconfigurationCallback,   #@UnresolvedImport
-    CGDisplayRemoveReconfigurationCallback,     #@UnresolvedImport
+    CGDisplayRegisterReconfigurationCallback,
+    CGDisplayRemoveReconfigurationCallback,
     )
 from AppKit import (
-    NSObject, NSAppleEventManager, NSScreen, NSBeep,   #@UnresolvedImport
-    NSApp, NSApplication, NSWorkspace,              #@UnresolvedImport
-    NSWorkspaceActiveSpaceDidChangeNotification,    #@UnresolvedImport
-    NSWorkspaceWillSleepNotification,               #@UnresolvedImport
-    NSWorkspaceDidWakeNotification,                 #@UnresolvedImport
+    NSObject, NSAppleEventManager, NSScreen, NSBeep,
+    NSApp, NSApplication, NSWorkspace,
+    NSWorkspaceActiveSpaceDidChangeNotification,
+    NSWorkspaceWillSleepNotification,
+    NSWorkspaceDidWakeNotification,
     )
 from Foundation import (
-    NSUserNotification, NSUserNotificationCenter,   #@UnresolvedImport
-    NSUserNotificationDefaultSoundName,             #@UnresolvedImport
+    NSUserNotification, NSUserNotificationCenter,
+    NSUserNotificationDefaultSoundName,
     )
 
 from xpra.common import roundup, NotificationID
@@ -489,7 +489,7 @@ def get_CG_imagewrapper(rect=None):
 
 def take_screenshot() -> tuple[int,int,str,int,bytes]:
     log("grabbing screenshot")
-    from PIL import Image                       #@UnresolvedImport
+    from PIL import Image
     from io import BytesIO
     image = get_CG_imagewrapper()
     w = image.get_width()
@@ -807,7 +807,7 @@ class ClientExtras:
         #this is for running standalone
         log("starting console event loop")
         self.event_loop_started = True
-        import PyObjCTools.AppHelper as AppHelper   #@UnresolvedImport
+        import PyObjCTools.AppHelper as AppHelper
         AppHelper.runConsoleEventLoop(installInterrupt=True)
         #when running from the GTK main loop, we rely on another part of the code
         #to run the event loop for us
@@ -815,7 +815,7 @@ class ClientExtras:
     def stop(self) -> None:
         if self.event_loop_started:
             self.event_loop_started = False
-            import PyObjCTools.AppHelper as AppHelper   #@UnresolvedImport
+            import PyObjCTools.AppHelper as AppHelper
             AppHelper.stopEventLoop()
 
 

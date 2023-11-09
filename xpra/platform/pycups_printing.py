@@ -295,7 +295,7 @@ def add_printer(name, options, info, location, attributes, success_cb=None):
         log.error("Error: cannot add printer '%s':", name)
         log.error(" the printing system does not support %s", " or ".join(mimetypes))
         return
-    from urllib.parse import urlencode      #@UnresolvedImport pylint: disable=import-outside-toplevel
+    from urllib.parse import urlencode # pylint: disable=import-outside-toplevel
     command = [
                "-p", xpra_printer_name,
                "-v", FORWARDER_BACKEND+":"+FORWARDER_TMPDIR+"?"+urlencode(attributes),

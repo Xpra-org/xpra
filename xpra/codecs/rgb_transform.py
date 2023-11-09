@@ -10,7 +10,7 @@ from xpra.util.str_fn import csv
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 try:
-    from xpra.codecs.argb.argb import argb_swap #@UnresolvedImport
+    from xpra.codecs.argb.argb import argb_swap
 except ImportError:     # pragma: no cover
     argb_swap = None
 

@@ -24,7 +24,7 @@ from xpra.x11.gtk3.bindings import (
     add_event_receiver,
     add_fallback_receiver, remove_fallback_receiver,
     )
-from xpra.x11.bindings.window import constants, X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.log import Logger
 

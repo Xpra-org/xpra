@@ -295,7 +295,7 @@ class WindowClient(StubClientMixin):
                 import logging
                 logging.getLogger("PIL.PngImagePlugin").setLevel(logging.INFO)
                 try:
-                    from PIL import Image   #@UnresolvedImport
+                    from PIL import Image
                 except ImportError:
                     log.info("window icon overlay requires python-pillow")
                 else:

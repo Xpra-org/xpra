@@ -17,12 +17,12 @@ gi.require_version('Gdk', '3.0')  # @UndefinedVariable
 from gi.repository import GObject, Gtk, Gdk, GLib  # @UnresolvedImport
 
 from xpra.gtk.gobject import no_arg_signal, one_arg_signal
-from xpra.x11.bindings.window import constants, X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.x11.gtk3.bindings import (
-    add_event_receiver,         #@UnresolvedImport
-    remove_event_receiver,      #@UnresolvedImport
-    get_xatom,                  #@UnresolvedImport
-    get_pywindow,               #@UnresolvedImport
+    add_event_receiver,
+    remove_event_receiver,
+    get_xatom,
+    get_pywindow,
     )
 from xpra.exit_codes import ExitCode
 from xpra.util.env import envint

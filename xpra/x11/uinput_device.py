@@ -10,7 +10,7 @@ from uinput import (
     )
 
 from xpra.util.env import envint
-from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
+from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.gtk.error import xsync, xlog
 from xpra.log import Logger
 

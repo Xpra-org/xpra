@@ -18,10 +18,10 @@ COMTYPES_NOGENDIR = envbool("XPRA_COMTYPES_NOGENDIR", False)
 
 def comtypes_init() -> None:
     #pylint: disable=import-outside-toplevel
-    from comtypes import client                  #@UnresolvedImport
+    from comtypes import client
     if COMTYPES_NOGENDIR:
         client.gen_dir = None
-    from comtypes import CoInitialize               #@UnresolvedImport
+    from comtypes import CoInitialize
     CoInitialize()
 
 
@@ -59,7 +59,7 @@ class QuietenLogging:
         for logger in self.loggers:
             logger.setLevel(logging.WARNING)
         self.verbose = None
-        from comtypes import client                  #@UnresolvedImport pylint: disable=import-outside-toplevel
+        from comtypes import client # pylint: disable=import-outside-toplevel
         gen = getattr(client, "_generate", None)
         self._generate = gen
         if gen:
@@ -85,7 +85,7 @@ class CIMV2_Query(QuietenLogging):
 
     def __enter__(self):
         super().__enter__()
-        from comtypes.client import CreateObject        #@UnresolvedImport pylint: disable=import-outside-toplevel
+        from comtypes.client import CreateObject # pylint: disable=import-outside-toplevel
         o = CreateObject("WbemScripting.SWbemLocator")
         s = o.ConnectServer(".", "root\\cimv2")
         return s.ExecQuery(self.query)

@@ -5,8 +5,8 @@
 # later version. See the file COPYING for details.
 
 from cairo import ImageSurface, FORMAT_ARGB32  #pylint: disable=no-name-in-module
-from gi.repository import GLib              #@UnresolvedImport
-from gi.repository import GdkPixbuf         #@UnresolvedImport
+from gi.repository import GLib
+from gi.repository import GdkPixbuf
 
 from xpra.util.env import envbool
 from xpra.client.gtk3.cairo_backing_base import CairoBackingBase, FORMATS
@@ -15,7 +15,7 @@ from xpra.log import Logger
 log = Logger("paint", "cairo")
 
 try:
-    from xpra.client.gtk3.cairo_workaround import set_image_surface_data, CAIRO_FORMATS #@UnresolvedImport
+    from xpra.client.gtk3.cairo_workaround import set_image_surface_data, CAIRO_FORMATS
 except ImportError as e:
     log.warn("Warning: failed to load the bindings cairo workaround:")
     log.warn(" %s", e)

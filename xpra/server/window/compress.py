@@ -23,9 +23,9 @@ from xpra.common import MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ER
 from xpra.server.window.windowicon import WindowIconSource
 from xpra.server.window.perfstats import WindowPerformanceStatistics
 from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
-from xpra.server.cystats import time_weighted_average, logp #@UnresolvedImport
+from xpra.server.cystats import time_weighted_average, logp
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
-from xpra.util.rectangle import rectangle, add_rectangle, remove_rectangle, merge_all   #@UnresolvedImport
+from xpra.util.rectangle import rectangle, add_rectangle, remove_rectangle, merge_all
 from xpra.util.stats import get_list_stats
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs.loader import get_codec

@@ -6,10 +6,10 @@
 from io import BytesIO
 
 from AppKit import (
-    NSStringPboardType, NSTIFFPboardType, NSPasteboardTypePNG, NSPasteboardTypeURL,  #@UnresolvedImport
-    NSPasteboard,       #@UnresolvedImport
+    NSStringPboardType, NSTIFFPboardType, NSPasteboardTypePNG, NSPasteboardTypeURL,
+    NSPasteboard,
     )
-from CoreFoundation import NSData, CFDataGetBytes, CFDataGetLength  #@UnresolvedImport
+from CoreFoundation import NSData, CFDataGetBytes, CFDataGetLength
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.clipboard.timeout import ClipboardTimeoutHelper

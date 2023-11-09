@@ -42,9 +42,9 @@ class Authenticator(SysAuthenticatorBase):
     def check_password(self, password:str) -> bool:
         try:
             if WIN32:
-                import winkerberos as kerberos          #@UnresolvedImport @UnusedImport
+                import winkerberos as kerberos
             else:
-                import kerberos                         #@UnresolvedImport @Reimport
+                import kerberos # @Reimport
         except ImportError as e:
             log("check(..)", exc_info=True)
             log.warn("Warning: cannot use kerberos password authentication:")

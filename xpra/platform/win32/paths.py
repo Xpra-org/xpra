@@ -164,7 +164,7 @@ def do_get_user_conf_dirs(_uid) -> list[str]:
 
 def do_get_desktop_background_paths() -> list[str]:
     try:
-        from winreg import OpenKey, HKEY_CURRENT_USER, KEY_READ, QueryValueEx    #@UnresolvedImport @Reimport
+        from winreg import OpenKey, HKEY_CURRENT_USER, KEY_READ, QueryValueEx # @Reimport
         key_path = "Control Panel\\Desktop"
         key = OpenKey(HKEY_CURRENT_USER, key_path, 0, KEY_READ)    #@UndefinedVariable
         wallpaper = QueryValueEx(key, 'WallPaper')[0]    #@UndefinedVariable
@@ -178,7 +178,7 @@ def do_get_desktop_background_paths() -> list[str]:
 def do_get_download_dir() -> str:
     try:
         #values found here: https://stackoverflow.com/a/48706260
-        from winreg import OpenKey, HKEY_CURRENT_USER, QueryValueEx    #@UnresolvedImport @Reimport
+        from winreg import OpenKey, HKEY_CURRENT_USER, QueryValueEx # @Reimport
         sub_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders'
         downloads_guid = '{374DE290-123F-4565-9164-39C4925E467B}'
         with OpenKey(HKEY_CURRENT_USER, sub_key) as key:

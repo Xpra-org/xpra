@@ -8,7 +8,7 @@ import os
 import gi
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
 gi.require_version("Gdk", "3.0")  # @UndefinedVariable
-from gi.repository import GObject, Gdk               #@UnresolvedImport
+from gi.repository import GObject, Gdk
 
 from xpra.os_util import OSX, POSIX, is_Wayland
 from xpra.client.gtk3.client_base import GTKXpraClient

@@ -25,7 +25,7 @@ for x in ("Image", "PngImagePlugin", "WebPImagePlugin", "JpegImagePlugin"):
     logger = logging.getLogger("PIL.%s" % x)
     logger.setLevel(level)
 
-import PIL                      #@UnresolvedImport
-from PIL import Image           #@UnresolvedImport
+import PIL
+from PIL import Image
 assert PIL is not None and Image is not None
 Image.init()

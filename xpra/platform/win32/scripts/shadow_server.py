@@ -25,7 +25,7 @@ def get_commonappdata_dir():
         return None
 
 def main():
-    from multiprocessing import freeze_support #@UnresolvedImport
+    from multiprocessing import freeze_support
     freeze_support()
 
     os.environ["XPRA_REDIRECT_OUTPUT"] = "1"

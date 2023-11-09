@@ -29,9 +29,9 @@ from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
 from xpra.x11.gtk_x11.selection import AlreadyOwned
 from xpra.x11.gtk3.bindings import add_event_receiver, get_pywindow
-from xpra.x11.bindings.window import X11WindowBindings #@UnresolvedImport
-from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
-from xpra.x11.bindings.randr import RandRBindings  #@UnresolvedImport
+from xpra.x11.bindings.window import X11WindowBindings
+from xpra.x11.bindings.keyboard import X11KeyboardBindings
+from xpra.x11.bindings.randr import RandRBindings
 from xpra.x11.server.base import X11ServerBase
 from xpra.gtk.error import xsync, xswallow, xlog, XError
 from xpra.log import Logger
@@ -1194,8 +1194,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         rowstride = image.get_rowstride()
         img_data = image.get_pixels()
         rgb_format = image.get_pixel_format()
-        from xpra.codecs.argb.argb import ( #@UnresolvedImport
-            unpremultiply_argb, bgra_to_rgba, bgra_to_rgbx, r210_to_rgbx, bgr565_to_rgbx  #@UnresolvedImport
+        from xpra.codecs.argb.argb import (
+            unpremultiply_argb, bgra_to_rgba, bgra_to_rgbx, r210_to_rgbx, bgr565_to_rgbx
             )
         from cairo import OPERATOR_OVER, OPERATOR_SOURCE  #pylint: disable=no-name-in-module
         log("update_root_overlay%s rgb_format=%s, img_data=%i (%s)",

@@ -14,7 +14,7 @@ import struct
 from io import BytesIO
 
 from xpra.os_util import hexstr
-from xpra.x11.bindings.window import constants     #@UnresolvedImport
+from xpra.x11.bindings.window import constants
 from xpra.log import Logger
 
 log = Logger("x11", "window")

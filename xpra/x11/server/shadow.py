@@ -20,7 +20,7 @@ from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.x11.server.server_uuid import del_mode, del_uuid
 from xpra.x11.gtk_x11.prop import prop_get
-from xpra.x11.bindings.window import X11WindowBindings     #@UnresolvedImport
+from xpra.x11.bindings.window import X11WindowBindings
 from xpra.gtk.util import get_default_root_window, get_root_size
 from xpra.gtk.error import xsync, xlog
 from xpra.log import Logger
@@ -103,7 +103,7 @@ def window_matches(wspec, model_class):
                 pid = i(m[4:])
                 if pid:
                     try:
-                        from xpra.x11.bindings.res import ResBindings #@UnresolvedImport pylint: disable=import-outside-toplevel
+                        from xpra.x11.bindings.res import ResBindings # pylint: disable=import-outside-toplevel
                     except ImportError:
                         XRes = None
                     else:
@@ -183,7 +183,7 @@ class XImageCapture:
         log("XImageCapture(%#x)", xwindow)
         self.xshm = None
         self.xwindow = xwindow
-        from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport pylint: disable=import-outside-toplevel
+        from xpra.x11.bindings.ximage import XImageBindings # pylint: disable=import-outside-toplevel
         self.XImage = XImageBindings()
         assert XSHM and self.XImage.has_XShm(), "no XShm support"
         if is_Wayland():
@@ -285,7 +285,7 @@ def setup_capture(window):
             log("not using X11 capture using gstreamer", exc_info=True)
     if XSHM:
         try:
-            from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport pylint: disable=import-outside-toplevel
+            from xpra.x11.bindings.ximage import XImageBindings # pylint: disable=import-outside-toplevel
             XImage = XImageBindings()
         except ImportError as e:
             log(f"not using X11 capture using bindings: {e}")

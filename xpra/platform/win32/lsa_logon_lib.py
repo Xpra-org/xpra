@@ -10,7 +10,7 @@ import sys
 import ctypes
 import collections
 
-from ctypes import wintypes, get_last_error, WinError, WinDLL #@UnresolvedImport
+from ctypes import wintypes, get_last_error, WinError, WinDLL
 
 ntdll = WinDLL('ntdll')
 secur32 = WinDLL('secur32')

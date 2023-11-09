@@ -31,12 +31,12 @@ if WIN32 and not os.environ.get("CUDA_PATH") and getattr(sys, "frozen", None) in
 with numpy_import_lock:
     if is_WSL() and not envbool("XPRA_PYCUDA_WSL", False):
         raise ImportError("refusing to import pycuda on WSL, use XPRA_PYCUDA_WSL=1 to override")
-    import pycuda               #@UnresolvedImport
+    import pycuda
     from pycuda.driver import (
-        get_version, get_driver_version, mem_get_info, #@UnresolvedImport
-        init, #@UnresolvedImport
-        Device, device_attribute, ctx_flags, #@UnresolvedImport
-        module_from_buffer, LogicError, #@UnresolvedImport
+        get_version, get_driver_version, mem_get_info,
+        init,
+        Device, device_attribute, ctx_flags,
+        module_from_buffer, LogicError,
         )
 
 log = Logger("cuda")

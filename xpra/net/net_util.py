@@ -26,7 +26,7 @@ def import_netifaces() -> object:
     global _netifaces, netifaces_version
     if _netifaces is None:
         try:
-            import netifaces                #@UnresolvedImport pylint: disable=import-outside-toplevel
+            import netifaces # pylint: disable=import-outside-toplevel
             log("netifaces loaded successfully")
             _netifaces = netifaces
             netifaces_version = parse_version(netifaces.version)    #@UndefinedVariable

@@ -933,7 +933,7 @@ def _do_run_server(script_file:str, cmdline,
     PAM_OPEN = POSIX and envbool("XPRA_PAM_OPEN", ROOT and uid!=0)
     if PAM_OPEN:
         try:
-            from xpra.server.pam import pam_session #@UnresolvedImport
+            from xpra.server.pam import pam_session
         except ImportError as e:
             stderr.write("Error: failed to import pam module\n")
             stderr.write(f" {e}\n")

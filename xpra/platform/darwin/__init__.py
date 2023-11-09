@@ -12,7 +12,7 @@ def do_init():
         if x.startswith("-psn_"):
             sys.argv.remove(x)
     if os.environ.get("XPRA_HIDE_DOCK", "")=="1":
-        from AppKit import NSApp    #@UnresolvedImport
+        from AppKit import NSApp
         #NSApplicationActivationPolicyAccessory = 1
         NSApp.setActivationPolicy_(1)
 

@@ -6,7 +6,7 @@
 
 from gi.repository import Gdk  # @UnresolvedImport
 
-from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
+from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, MODIFIER_MAP
 
 X11Keyboard = X11KeyboardBindings()

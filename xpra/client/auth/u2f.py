@@ -32,8 +32,8 @@ class Handler:
             return None
         try:
             #pylint: disable=import-outside-toplevel
-            from pyu2f import model                     #@UnresolvedImport
-            from pyu2f.u2f import GetLocalU2FInterface  #@UnresolvedImport
+            from pyu2f import model
+            from pyu2f.u2f import GetLocalU2FInterface
         except ImportError as e:
             log.warn("Warning: cannot use u2f authentication handler")
             log.warn(" %s", e)

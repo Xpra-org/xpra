@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import sys
-from gi.repository import GObject               #@UnresolvedImport @UnusedImport
+from gi.repository import GObject
 
 from xpra.client.gl.gtk3.client_window import GLClientWindowBase
 from xpra.client.gl.gtk3.drawing_area import GLDrawingArea

@@ -432,7 +432,7 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
     from OpenGL import version as OpenGL_version
     pyopengl_version = OpenGL_version.__version__
     try:
-        import OpenGL_accelerate            #@UnresolvedImport
+        import OpenGL_accelerate
         accel_version = OpenGL_accelerate.__version__
         props["accelerate"] = accel_version
         log(f"OpenGL_accelerate version {accel_version}")

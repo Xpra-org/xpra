@@ -32,7 +32,7 @@ class Handler:
             return None
         try:
             #pylint: disable=import-outside-toplevel
-            import gssapi       #@UnresolvedImport
+            import gssapi
             self.gssapi = gssapi
             if OSX:
                 # this is a workaround for `py2app`,

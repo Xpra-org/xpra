@@ -45,7 +45,7 @@ if OPENGL_DEBUG:
         glStringMarkerGREMEDY = string_marker.glStringMarkerGREMEDY
         glInitFrameTerminatorGREMEDY = frame_terminator.glInitFrameTerminatorGREMEDY
         glFrameTerminatorGREMEDY = frame_terminator.glFrameTerminatorGREMEDY
-        from OpenGL.GL import GLDEBUGPROC #@UnresolvedImport
+        from OpenGL.GL import GLDEBUGPROC
         def py_gl_debug_callback(source, error_type, error_id, severity, length, message, param):
             log.error("src %x type %x id %x severity %x length %d message %s, param=%s",
                       source, error_type, error_id, severity, length, message, param)

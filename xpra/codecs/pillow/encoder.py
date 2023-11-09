@@ -6,7 +6,7 @@
 import os
 from io import BytesIO
 import PIL
-from PIL import Image, ImagePalette     #@UnresolvedImport
+from PIL import Image, ImagePalette
 from typing import Any
 
 from xpra.codecs.debug import may_save_image
@@ -95,7 +95,7 @@ def encode(coding : str, image, options=None) -> tuple[str,Compressed,dict[str,A
     # and deal with non-24-bit formats:
     if pixel_format=="r210":
         stride = image.get_rowstride()
-        from xpra.codecs.argb.argb import r210_to_rgba, r210_to_rgb #@UnresolvedImport pylint: disable=import-outside-toplevel
+        from xpra.codecs.argb.argb import r210_to_rgba, r210_to_rgb # pylint: disable=import-outside-toplevel
         if supports_transparency:
             pixels = r210_to_rgba(pixels, w, h, stride, w*4)
             pixel_format = "RGBA"
@@ -107,7 +107,7 @@ def encode(coding : str, image, options=None) -> tuple[str,Compressed,dict[str,A
             rgb = "RGB"
             bpp = 24
     elif pixel_format=="BGR565":
-        from xpra.codecs.argb.argb import bgr565_to_rgbx, bgr565_to_rgb    #@UnresolvedImport pylint: disable=import-outside-toplevel
+        from xpra.codecs.argb.argb import bgr565_to_rgbx, bgr565_to_rgb # pylint: disable=import-outside-toplevel
         if supports_transparency:
             image.set_rowstride(image.get_rowstride()*2)
             pixels = bgr565_to_rgbx(pixels)

@@ -8,7 +8,7 @@ import os
 import sys
 import time
 from time import monotonic
-from multiprocessing import Queue as MQueue, freeze_support #@UnresolvedImport
+from multiprocessing import Queue as MQueue, freeze_support
 from gi.repository import GLib  # @UnresolvedImport
 from typing import Any
 

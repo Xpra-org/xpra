@@ -82,7 +82,7 @@ log("gdkdll=%s", gdkdll)
 shell32 = WinDLL("shell32", use_last_error=True)
 set_window_group : Callable = noop
 try:
-    from xpra.platform.win32 import propsys     #@UnresolvedImport
+    from xpra.platform.win32 import propsys
     set_window_group = propsys.set_window_group
 except ImportError as e:
     log("propsys missing", exc_info=True)
@@ -196,7 +196,7 @@ def gl_check() -> str:
     # This is supposed to help `py2exe`
     # (must be done after we set up the `sys.path` in `platform.win32.paths`):
     try:
-        from OpenGL.platform import win32   #@UnresolvedImport @UnusedImport
+        from OpenGL.platform import win32
         assert win32
     except ImportError as e:
         get_util_logger().warn("gl_check()", exc_info=True)

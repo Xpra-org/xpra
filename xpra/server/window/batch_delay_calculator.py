@@ -8,8 +8,8 @@ from math import log as mathlog, sqrt
 from typing import Any
 
 from xpra.server.cystats import (
-    queue_inspect, logp, time_weighted_average, #@UnresolvedImport
-    calculate_timesize_weighted_average_score,  #@UnresolvedImport
+    queue_inspect, logp, time_weighted_average,
+    calculate_timesize_weighted_average_score,
     )
 from xpra.log import Logger
 

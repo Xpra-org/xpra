@@ -1973,7 +1973,7 @@ def show_audio_codec_help(is_server, speaker_codecs, microphone_codecs) -> list[
     return codec_help
 
 def parse_vsock_cid(cid_str:str) -> int:
-    from xpra.net.vsock.vsock import STR_TO_CID, CID_ANY  #@UnresolvedImport pylint: disable=import-outside-toplevel
+    from xpra.net.vsock.vsock import STR_TO_CID, CID_ANY # pylint: disable=import-outside-toplevel
     if cid_str.lower() in ("auto", "any"):
         return CID_ANY
     try:

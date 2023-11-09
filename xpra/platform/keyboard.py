@@ -31,7 +31,7 @@ def main():
         #naughty, but how else can I hook this up?
         if POSIX and not OSX:
             try:
-                from xpra.x11.bindings.posix_display_source import init_posix_display_source    #@UnresolvedImport
+                from xpra.x11.bindings.posix_display_source import init_posix_display_source
                 init_posix_display_source()
             except Exception as e:
                 print("failed to connect to the X11 server:")

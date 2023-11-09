@@ -238,7 +238,7 @@ class WindowIconSource:
         if pixel_format=="BGRA":
             #BGRA data is always unpremultiplied
             #(that's what we get from NetWMIcons)
-            from xpra.codecs.argb.argb import premultiply_argb  #@UnresolvedImport pylint: disable=import-outside-toplevel
+            from xpra.codecs.argb.argb import premultiply_argb # pylint: disable=import-outside-toplevel
             pixel_data = premultiply_argb(pixel_data)
 
         max_w, max_h = self.window_icon_max_size

@@ -883,7 +883,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             geomlog("screen %s lacks monitors information: %s", screen0)
             return None
         try:
-            from xpra.util.rectangle import rectangle #@UnresolvedImport
+            from xpra.util.rectangle import rectangle
         except ImportError as e:
             geomlog("cannot calculate offset: %s", e)
             return None
@@ -1189,7 +1189,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if LAZY_SHAPE or len(rectangles)<2:
             return self.lazy_scale_shape(rectangles)
         try:
-            from PIL import Image, ImageDraw        #@UnresolvedImport
+            from PIL import Image, ImageDraw
         except ImportError:
             return self.lazy_scale_shape(rectangles)
         ww, wh = self._size

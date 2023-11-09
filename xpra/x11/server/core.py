@@ -10,10 +10,10 @@ import threading
 from time import monotonic_ns
 from typing import Any
 
-from xpra.x11.bindings.core import set_context_check, X11CoreBindings     #@UnresolvedImport
-from xpra.x11.bindings.randr import RandRBindings  #@UnresolvedImport
-from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
-from xpra.x11.bindings.window import X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.core import set_context_check, X11CoreBindings
+from xpra.x11.bindings.randr import RandRBindings
+from xpra.x11.bindings.keyboard import X11KeyboardBindings
+from xpra.x11.bindings.window import X11WindowBindings
 from xpra.gtk.error import XError, xswallow, xsync, xlog, verify_sync
 from xpra.gtk.util import get_default_root_window
 from xpra.x11.server.server_uuid import save_uuid, get_uuid, save_mode
@@ -1029,7 +1029,7 @@ class X11ServerCore(GTKServerBase):
         width = maxx-minx
         height = maxy-miny
         log("screenshot: %sx%s, min x=%s y=%s", width, height, minx, miny)
-        from PIL import Image                           #@UnresolvedImport pylint: disable=import-outside-toplevel
+        from PIL import Image # pylint: disable=import-outside-toplevel
         screenshot = Image.new("RGBA", (width, height))
         for wid, x, y, img in reversed(regions):
             pixel_format = img.get_pixel_format()

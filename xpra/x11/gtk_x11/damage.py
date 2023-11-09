@@ -11,8 +11,8 @@ from xpra.x11.gtk3.bindings import add_event_receiver, remove_event_receiver
 from xpra.gtk.error import xsync, xswallow, xlog, XError
 from xpra.x11.common import Unmanageable
 
-from xpra.x11.bindings.ximage import XImageBindings #@UnresolvedImport
-from xpra.x11.bindings.window import constants, X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.ximage import XImageBindings
+from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.log import Logger
 
 log = Logger("x11", "window", "damage")

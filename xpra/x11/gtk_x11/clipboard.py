@@ -14,8 +14,8 @@ from xpra.gtk.gobject import n_arg_signal, one_arg_signal
 from xpra.gtk.util import get_default_root_window
 from xpra.x11.gtk_x11 import GDKX11Window
 from xpra.x11.gtk3.bindings import (
-    add_event_receiver,                          #@UnresolvedImport
-    remove_event_receiver,                       #@UnresolvedImport
+    add_event_receiver,
+    remove_event_receiver,
     init_x11_filter,
     cleanup_x11_filter,
     )
@@ -25,11 +25,11 @@ from xpra.clipboard.core import (
     must_discard, must_discard_extra,
     )
 from xpra.clipboard.timeout import ClipboardTimeoutHelper, CONVERT_TIMEOUT
-from xpra.x11.bindings.window import ( #@UnresolvedImport
-    constants, PropertyError,                   #@UnresolvedImport
-    X11WindowBindings,                          #@UnresolvedImport
+from xpra.x11.bindings.window import (
+    constants, PropertyError,
+    X11WindowBindings,
     )
-from xpra.x11.bindings.res import ResBindings #@UnresolvedImport
+from xpra.x11.bindings.res import ResBindings
 from xpra.os_util import bytestostr, memoryview_to_bytes, first_time
 from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized
 from xpra.log import Logger

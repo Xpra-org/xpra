@@ -61,7 +61,7 @@ class Authenticator(SysAuthenticatorBase):
     def check_password(self, password:str) -> bool:
         log("check_password(%s)", obsc(password))
         try:
-            from ldap3 import Server, Connection, Tls, ALL, SIMPLE, SASL, NTLM     #@UnresolvedImport
+            from ldap3 import Server, Connection, Tls, ALL, SIMPLE, SASL, NTLM
         except ImportError as e:
             log("check_password(..)", exc_info=True)
             log.warn("Warning: cannot use ldap3 authentication:")

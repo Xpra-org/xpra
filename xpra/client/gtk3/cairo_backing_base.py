@@ -38,7 +38,7 @@ def cairo_paint_pointer_overlay(context, cursor_data, px : int, py : int, start_
         return
     # pylint: disable=import-outside-toplevel
     from xpra.gtk.pixbuf import get_pixbuf_from_data
-    from xpra.codecs.argb.argb import unpremultiply_argb    #@UnresolvedImport
+    from xpra.codecs.argb.argb import unpremultiply_argb
     cw = cursor_data[3]
     ch = cursor_data[4]
     xhot = cursor_data[5]

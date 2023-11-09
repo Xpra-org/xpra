@@ -333,7 +333,7 @@ class win32NotifyIcon:
     def set_icon_from_data(self, pixels, has_alpha:bool, w:int, h:int, rowstride:int, options=None) -> None:
         #this is convoluted but it works..
         log("set_icon_from_data%s", ("%s pixels" % len(pixels), has_alpha, w, h, rowstride, options))
-        from PIL import Image   #@UnresolvedImport
+        from PIL import Image
         if has_alpha:
             img_format = "RGBA"
         else:
@@ -520,7 +520,7 @@ def main(args):
         if cid == 1024:
             from xpra.platform.win32.balloon import notify
             try:
-                from PIL import Image   #@UnresolvedImport
+                from PIL import Image
                 from io import BytesIO
                 img = Image.open("icons\\printer.png")
                 buf = BytesIO()

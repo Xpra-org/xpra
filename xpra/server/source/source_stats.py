@@ -10,9 +10,9 @@ from time import monotonic
 from typing import Any
 from collections import deque
 
-from xpra.server.cystats import (                                           #@UnresolvedImport
-    logp, calculate_time_weighted_average, calculate_size_weighted_average, #@UnresolvedImport
-    calculate_for_target, time_weighted_average, queue_inspect,             #@UnresolvedImport
+from xpra.server.cystats import (
+    logp, calculate_time_weighted_average, calculate_size_weighted_average,
+    calculate_for_target, time_weighted_average, queue_inspect,
     )
 from xpra.util.stats import get_list_stats
 from xpra.log import Logger

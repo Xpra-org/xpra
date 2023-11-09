@@ -13,10 +13,10 @@ log = Logger("webcam", "win32")
 #pylint: disable=wrong-import-position disable=wrong-import-order
 from xpra.platform.win32.comtypes_util import QuietenLogging, find_tlb_file, comtypes_init
 comtypes_init()
-import comtypes                                         #@UnresolvedImport
-from comtypes import client                             #@UnresolvedImport
-from comtypes.automation import VARIANT                 #@UnresolvedImport
-from comtypes.persist import IPropertyBag, IErrorLog    #@UnresolvedImport
+import comtypes
+from comtypes import client
+from comtypes.automation import VARIANT
+from comtypes.persist import IPropertyBag, IErrorLog
 
 
 directshow_tlb = find_tlb_file("DirectShow.tlb")
@@ -60,7 +60,7 @@ def get_device_information(moniker):
     return info
 
 def get_video_devices():
-    from comtypes.client import CreateObject    #@UnresolvedImport pylint: disable=import-outside-toplevel
+    from comtypes.client import CreateObject # pylint: disable=import-outside-toplevel
     dev_enum = CreateObject(DeviceEnumerator)
     class_enum = dev_enum.CreateClassEnumerator(CLSID_VideoInputDeviceCategory, 0)
     fetched = True

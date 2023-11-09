@@ -5,7 +5,7 @@
 
 from typing import Any
 
-import Quartz.CoreGraphics as CG    #@UnresolvedImport
+import Quartz.CoreGraphics as CG
 
 from xpra.util.env import envbool
 from xpra.os_util import memoryview_to_bytes
@@ -38,7 +38,7 @@ BTYPES = tuple((str, bytes, memoryview, bytearray))
 
 #ensure that picture_encode can deal with pixels as NSCFData:
 def patch_pixels_to_bytes() -> None:
-    from CoreFoundation import CFDataGetBytes, CFDataGetLength  #@UnresolvedImport
+    from CoreFoundation import CFDataGetBytes, CFDataGetLength
     def pixels_to_bytes(v):
         if isinstance(v, BTYPES):
             return memoryview_to_bytes(v)
@@ -127,7 +127,7 @@ class ShadowServer(GTKShadowServerBase):
 
     def do_screen_refresh(self, rlist:list) -> None:
         #TODO: improve damage method to handle lists directly:
-        from xpra.util.rectangle import rectangle     #@UnresolvedImport
+        from xpra.util.rectangle import rectangle
         model_rects = {}
         for model in self._id_to_window.values():
             model_rects[model] = rectangle(*model.geometry)

@@ -374,7 +374,7 @@ def get_uinput_device_path(device) -> str:
         log("get_uinput_device_path(%s)", device)
         fd = device._Device__uinput_fd
         log("fd(%s)=%s", device, fd)
-        import fcntl        #@UnresolvedImport
+        import fcntl
         import ctypes
         l = 16
         buf = ctypes.create_string_buffer(l)
@@ -462,9 +462,9 @@ def create_uinput_pointer_device(uuid, uid)-> tuple[str, Any, str] | None:
     if not envbool("XPRA_UINPUT_POINTER", True):
         return None
     from uinput import (
-        REL_X, REL_Y, REL_WHEEL,                    #@UnresolvedImport
-        BTN_LEFT, BTN_RIGHT, BTN_MIDDLE, BTN_SIDE,  #@UnresolvedImport
-        BTN_EXTRA, BTN_FORWARD, BTN_BACK,           #@UnresolvedImport
+        REL_X, REL_Y, REL_WHEEL,
+        BTN_LEFT, BTN_RIGHT, BTN_MIDDLE, BTN_SIDE,
+        BTN_EXTRA, BTN_FORWARD, BTN_BACK,
         )
     events = (
         REL_X, REL_Y, REL_WHEEL,
@@ -480,7 +480,7 @@ def create_uinput_touchpad_device(uuid, uid:int)-> tuple[str, Any, str] | None:
     if not envbool("XPRA_UINPUT_TOUCHPAD", False):
         return None
     from uinput import (
-        BTN_TOUCH, ABS_X, ABS_Y, ABS_PRESSURE,      #@UnresolvedImport
+        BTN_TOUCH, ABS_X, ABS_Y, ABS_PRESSURE,
         )
     events = (
         BTN_TOUCH,
