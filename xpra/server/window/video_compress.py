@@ -223,8 +223,11 @@ class WindowVideoSource(WindowSource):
             self.common_video_encodings = ()
             return
         #make sure we actually have encoders for these:
-        self.video_encodings = preforder(self.video_helper.get_encodings())
+        vencs = self.video_helper.get_encodings()
+        self.video_encodings = preforder(vencs)
         self.common_video_encodings = preforder(set(self.video_encodings) & set(self.core_encodings))
+        log(f"do_init_encoders() video encodings({vencs})={self.video_encodings}")
+        log(f"do_init_encoders() common video encodings={self.common_video_encodings}")
         video_enabled = []
         for x in self.common_video_encodings:
             self.append_encoder(x, self.video_encode)
@@ -238,7 +241,7 @@ class WindowVideoSource(WindowSource):
         enc_options = set(self.server_core_encodings) & set(self._encoders.keys())
         nv_common = (enc_options & set(self.core_encodings)) - set(self.video_encodings)
         self.non_video_encodings = preforder(nv_common)
-        log(f"init_encoders() server core encodings={self.server_core_encodings}, client core encodings={self.core_encodings}")
+        log(f"do_init_encoders() server core encodings={self.server_core_encodings}, client core encodings={self.core_encodings}")
         log(f" video encodings={self.video_encodings}")
         log(f" common video encodings={self.common_video_encodings}")
         log(f" non video encodings={self.non_video_encodings}")
