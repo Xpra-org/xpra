@@ -17,7 +17,7 @@ from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
 from xpra.codecs.image import ImageWrapper
 from xpra.server.window.compress import (
-    WindowSource, DelayedRegions,
+    WindowSource, DelayedRegions, get_encoder_type,
     STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, LOSSLESS_WINDOW_TYPES,
     DOWNSCALE_THRESHOLD, DOWNSCALE,
     COMPRESS_FMT_PREFIX, COMPRESS_FMT_SUFFIX, COMPRESS_FMT,
@@ -2240,8 +2240,19 @@ class WindowVideoSource(WindowSource):
         encoding = self.do_get_auto_encoding(w, h, options, None, fallback_encodings)
         if not encoding:
             return ()
-        encode_fn = self.video_fallback_encodings[encoding][0]
-        return encode_fn(encoding, image, options)
+        encoder = self.video_fallback_encodings[encoding][0]
+        ret = encoder(encoding, image, options)
+        if not ret:
+            return ()
+        if not LOG_ENCODERS and not compresslog.is_debug_enabled():
+            return ret
+        # coding, data, client_options, outw, outh, outstride, bpp = ret
+        client_options = ret[2]
+        if "encoder" not in client_options:
+            # add encoder info to packet data:
+            client_options["encoder"] = "fallback: " + ("mmap_encode" if encoder == self.mmap_encode
+                                                        else get_encoder_type(encoder))
+        return ret
 
     def video_encode(self, encoding : str, image : ImageWrapper, options : dict) -> tuple:
         try:
