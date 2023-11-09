@@ -11,7 +11,7 @@ from math import sqrt, ceil
 from functools import reduce
 from time import monotonic
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 
 from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
@@ -1244,7 +1244,7 @@ class WindowVideoSource(WindowSource):
         if self.is_cancelled():
             scorelog("cannot score: cancelled state")
             return
-        if self.content_type.find("text")>=0 and self.non_video_encodings and not TEXT_USE_VIDEO:
+        if self.content_type.find("text") >= 0 and self.non_video_encodings and not TEXT_USE_VIDEO:
             scorelog("no pipelines for content-type %r", self.content_type)
             return
         if not self.pixel_format:
@@ -1265,7 +1265,7 @@ class WindowVideoSource(WindowSource):
         else:
             if self.encoding not in self.common_video_encodings:
                 return checknovideo("non-video / unsupported encoding: %s", self.encoding)
-            eval_encodings = [self.encoding]
+            eval_encodings = (self.encoding, )
         ww, wh = self.window_dimensions
         w = ww & self.width_mask
         h = wh & self.height_mask
@@ -1355,7 +1355,7 @@ class WindowVideoSource(WindowSource):
         # everything is still valid:
         return True
 
-    def get_video_pipeline_options(self, encodings : tuple[str,...], width : int, height : int, src_format : str) -> tuple:
+    def get_video_pipeline_options(self, encodings : Iterable[str], width : int, height : int, src_format : str) -> tuple:
         """
             Given a picture format (width, height and src pixel format),
             we find all the pipeline options that will allow us to compress
@@ -1474,7 +1474,6 @@ class WindowVideoSource(WindowSource):
             self.last_pipeline_scores = s
         self.last_pipeline_time = monotonic()
         return s
-
 
     def get_video_fps(self, width : int, height : int) -> int:
         mvsub = self.matches_video_subregion(width, height)
