@@ -373,6 +373,11 @@ class WindowSource(WindowIconSource):
             self._encoders[encoding] = encode_fn
 
     def init_encoders(self) -> None:
+        self.do_init_encoders()
+        self.parse_csc_modes(self.encoding_options.dictget("full_csc_modes", default=None))
+        self.update_encoding_selection(self.encoding, init=True)
+
+    def do_init_encoders(self) -> None:
         self._all_encoders : dict[str,list[Callable]] = {}
         self._encoders : dict[str,Callable] = {}
         picture_encodings = set()
@@ -410,8 +415,6 @@ class WindowSource(WindowIconSource):
             if self.cuda_device_context:
                 add("enc_nvjpeg")
         self.picture_encodings = tuple(picture_encodings)
-        self.parse_csc_modes(self.encoding_options.dictget("full_csc_modes", default=None))
-        self.update_encoding_selection(self.encoding, init=True)
 
 
     def init_vars(self) -> None:

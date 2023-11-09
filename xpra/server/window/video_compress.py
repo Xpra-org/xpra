@@ -207,8 +207,8 @@ class WindowVideoSource(WindowSource):
         self._video_encoder = None
         self._last_pipeline_check = 0
 
-    def init_encoders(self) -> None:
-        super().init_encoders()
+    def do_init_encoders(self) -> None:
+        super().do_init_encoders()
         self._csc_encoder = None
         self._video_encoder = None
         self._last_pipeline_check = 0
@@ -244,7 +244,6 @@ class WindowVideoSource(WindowSource):
         log(f" non video encodings={self.non_video_encodings}")
         if "scroll" in self.server_core_encodings:
             add("scroll", self.scroll_encode)
-        self.supports_scrolling = "scroll" in self.common_encodings
 
     def do_set_auto_refresh_delay(self, min_delay, delay) -> None:
         super().do_set_auto_refresh_delay(min_delay, delay)
@@ -441,6 +440,7 @@ class WindowVideoSource(WindowSource):
         log("update_encoding_selection: common_video_encodings=%s, csc_encoder=%s, video_encoder=%s",
             self.common_video_encodings, self._csc_encoder, self._video_encoder)
         super().update_encoding_selection(encoding, exclude, init)
+        self.supports_scrolling = "scroll" in self.common_encodings
 
     def do_set_client_properties(self, properties : typedict) -> None:
         #client may restrict csc modes for specific windows
