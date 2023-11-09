@@ -1272,16 +1272,8 @@ class GLWindowBackingBase(WindowBackingBase):
             self.gl_init(context)
             pbo = options.boolget("pbo")
             scaling = enc_width != width or enc_height != height
-            log.warn(f"{pbo=}, {scaling=}")
             self.update_planar_textures(enc_width, enc_height, img, pixel_format, scaling=scaling, pbo=pbo)
-
-            # Update FBO texture
-            x_scale, y_scale = 1.0, 1.0
-            if scaling:
-                x_scale = width/enc_width
-                y_scale = height/enc_height
-
-            self.render_planar_update(x, y, enc_width, enc_height, x_scale, y_scale, shader)
+            self.render_planar_update(x, y, enc_width, enc_height, width, height, shader)
             self.paint_box(encoding, x, y, width, height)
             fire_paint_callbacks(callbacks, True)
             # Present it on screen
@@ -1387,9 +1379,9 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
         # glActiveTexture(GL_TEXTURE0)    #redundant, we always call render_planar_update afterwards
 
-    def render_planar_update(self, rx: int, ry: int, rw: int, rh: int, x_scale=1.0, y_scale=1.0, shader="YUV_to_RGB") -> None:
+    def render_planar_update(self, rx: int, ry: int, rw: int, rh: int, width: int, height: int, shader="YUV_to_RGB") -> None:
         log("%s.render_planar_update%s pixel_format=%s",
-            self, (rx, ry, rw, rh, x_scale, y_scale, shader), self.planar_pixel_format)
+            self, (rx, ry, rw, rh, width, height, shader), self.planar_pixel_format)
         if self.planar_pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "NV12", "GBRP16", "YUV444P16"):
             # not ready to render yet
             return
@@ -1407,9 +1399,18 @@ class GLWindowBackingBase(WindowBackingBase):
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
         glDrawBuffer(GL_COLOR_ATTACHMENT0)
 
-        wh = self.render_size[1]
+        ww, wh = self.render_size
         # the region we're updating:
-        glViewport(rx, wh-ry-rh, rw, rh)
+
+        def clampx(v: int) -> int:
+            return min(ww, max(0, v))
+
+        def clampy(v: int) -> int:
+            return min(wh, max(0, v))
+
+        viewport = clampx(rx), clampy(wh-ry-height), clampx(width), clampy(height)
+        glViewport(*viewport)
+        log("viewport: %s for size=%s render_size=%s", viewport, self.size, self.render_size)
 
         program = self.programs[shader]
         glUseProgram(program)
@@ -1426,6 +1427,9 @@ class GLWindowBackingBase(WindowBackingBase):
 
         viewport_pos = glGetUniformLocation(program, "viewport_pos")
         glUniform2f(viewport_pos, rx, ry)
+
+        scaling = glGetUniformLocation(program, "scaling")
+        glUniform2f(scaling, width / rw, height / rh)
 
         pos_buffer = self.set_vao(position)
 

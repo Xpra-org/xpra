@@ -45,6 +45,7 @@ def gen_YUV_to_RGB(cs="bt601", full_range=True):
 #version {GLSL_VERSION}
 layout(origin_upper_left) in vec4 gl_FragCoord;
 uniform vec2 viewport_pos;
+uniform vec2 scaling;
 uniform sampler2DRect Y;
 uniform sampler2DRect U;
 uniform sampler2DRect V;
@@ -52,7 +53,7 @@ layout(location = 0) out vec4 frag_color;
 
 void main()
 {{
-    vec2 pos = gl_FragCoord.xy-viewport_pos.xy;
+    vec2 pos = (gl_FragCoord.xy-viewport_pos.xy)/scaling;
     highp float y = texture(Y, pos).r {ymult};
     highp float u = (texture(U, pos/2.0).r - 0.5) {umult};
     highp float v = (texture(V, pos/2.0).r - 0.5) {vmult};
@@ -76,13 +77,14 @@ def gen_NV12_to_RGB(cs="bt601"):
 #version {GLSL_VERSION}
 layout(origin_upper_left) in vec4 gl_FragCoord;
 uniform vec2 viewport_pos;
+uniform vec2 scaling;
 uniform sampler2DRect Y;
 uniform sampler2DRect UV;
 layout(location = 0) out vec4 frag_color;
 
 void main()
 {{
-    vec2 pos = gl_FragCoord.xy-viewport_pos.xy;
+    vec2 pos = (gl_FragCoord.xy-viewport_pos.xy)/scaling;
     highp float y = texture(Y, pos).r;
     highp float u = texture(UV, pos).r - 0.5;
     highp float v = texture(UV, pos).g - 0.5;
