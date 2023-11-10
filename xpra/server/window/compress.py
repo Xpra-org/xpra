@@ -2113,7 +2113,7 @@ class WindowSource(WindowIconSource):
         return image
 
     def process_damage_region(self, damage_time, x : int, y : int, w : int, h : int,
-                              coding : str, options, flush=None) -> bool:
+                              coding : str, options, flush=0) -> bool:
         """
             Called by 'damage' or 'send_delayed_regions' to process a damage region.
 
@@ -2162,7 +2162,7 @@ class WindowSource(WindowIconSource):
         return None
 
     def make_data_packet_cb(self, w : int, h : int, damage_time, process_damage_time,
-                            image : ImageWrapper, coding : str, sequence : int, options, flush) -> None:
+                            image : ImageWrapper, coding : str, sequence : int, options, flush = 0) -> None:
         """ This function is called from the damage data thread!
             Extra care must be taken to prevent access to X11 functions on window.
         """
@@ -2644,7 +2644,7 @@ class WindowSource(WindowIconSource):
         return False
 
     def make_data_packet(self, damage_time, process_damage_time,
-                         image : ImageWrapper, coding : str, sequence : int, options, flush) -> tuple | None:
+                         image : ImageWrapper, coding : str, sequence : int, options, flush:int = 0) -> tuple | None:
         """
             Picture encoding - non-UI thread.
             Converts a damage item picked from the 'compression_work_queue'
@@ -2708,8 +2708,7 @@ class WindowSource(WindowIconSource):
             mod = "mmap_encode" if encoder == self.mmap_encode else get_encoder_type(encoder)
             client_options["encoder"] = mod
         # actual network packet:
-        if flush not in (None, 0):
-            client_options["flush"] = flush
+        client_options["flush"] = flush
         if self.send_timetamps:
             client_options["ts"] = image.get_timestamp()
         end = monotonic()
