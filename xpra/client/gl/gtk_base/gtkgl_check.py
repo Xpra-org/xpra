@@ -172,7 +172,7 @@ def test_gtkgl_rendering(glconfig, force_enable=False, check_colormap=False):
                 if w:
                     w.destroy()
                 del glext, glconfig
-    except OpenGLFatalError as e:
+    except OpenGLFatalError:
         log("check_support failed", exc_info=True)
         raise
     except Exception as e:

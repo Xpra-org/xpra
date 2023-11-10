@@ -135,5 +135,5 @@ class StubServerMixin(object):
     def add_packet_handlers(self, defs, main_thread=True):
         pass
 
-    def get_server_source(self, proto):
+    def get_server_source(self, _proto):
         return None

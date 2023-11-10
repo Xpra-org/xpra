@@ -16,11 +16,6 @@ assert init and log #tests will disable logging from here
 class Authenticator(SysAuthenticatorBase):
 
     def __init__(self, username, **kwargs):
-        def ipop(k):
-            try:
-                return int(kwargs.pop(k, 0))
-            except ValueError:
-                return 0
         self.service = kwargs.pop("service", "")
         self.uid = parse_uid(kwargs.pop("uid", None))
         self.gid = parse_gid(kwargs.pop("gid", None))

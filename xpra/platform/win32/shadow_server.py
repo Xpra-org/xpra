@@ -518,7 +518,7 @@ class ShadowServer(GTKShadowServerBase):
             self.get_server_source(proto).user_event()
             self.button_action(pointer, button, pressed, -1, *args)
 
-    def button_action(self, pointer, button, pressed, deviceid=-1, *args):
+    def button_action(self, pointer, button, pressed, deviceid=-1, *_args):
         event = BUTTON_EVENTS.get((button, pressed))
         if event is None:
             log.warn("no matching event found for button=%s, pressed=%s", button, pressed)

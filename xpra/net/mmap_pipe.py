@@ -124,7 +124,6 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
             #set the group permissions and gid if the mmap-group option is specified
             mmap_group = (mmap_group or "")
             if POSIX and mmap_group and mmap_group not in FALSE_OPTIONS:
-                group_id = None
                 if mmap_group=="SOCKET":
                     group_id = get_socket_group(socket_filename)
                 elif mmap_group.lower()=="auto":

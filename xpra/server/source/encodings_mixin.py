@@ -374,7 +374,7 @@ class EncodingsMixin(StubSourceMixin):
                 from xpra.codecs.cuda_common.cuda_context import get_device_context
                 self.cuda_device_context = get_device_context(self.encoding_options)
                 log("cuda_device_context=%s", self.cuda_device_context)
-            except Exception as e:
+            except Exception:
                 log("failed to get a cuda device contenxt using encoding options %s",
                     self.encoding_options, exc_info=True)
                 log.error("Error: failed to allocate a CUDA context")

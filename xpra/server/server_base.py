@@ -403,7 +403,7 @@ class ServerBase(ServerBaseClass):
 
             if self._closing:
                 raise Exception("server is shutting down")
-        except Exception as e:
+        except Exception:
             #log exception but don't disclose internal details to the client
             p = ss.protocol
             log("_process_hello_ui%s", (ss, c, auth_caps, send_ui, share_count))

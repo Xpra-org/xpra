@@ -251,7 +251,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         except ImportError as e:
             traylog.warn("Warning: failed to load systemtray:")
             traylog.warn(" %s", e)
-        except Exception as e:
+        except Exception:
             traylog.error("Error setting up system tray", exc_info=True)
 
 

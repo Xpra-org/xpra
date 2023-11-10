@@ -80,7 +80,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
                 log.error(" %s", e)
             try:
                 self.notify_callback(*args)
-            except Exception as e:
+            except Exception:
                 log.error("Error calling notification handler", exc_info=True)
         log("Notify returning %s", nid)
         return nid

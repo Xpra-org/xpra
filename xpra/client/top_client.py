@@ -117,7 +117,7 @@ class TopClient:
         self.psprocess = {}
         self.setup_connection(conn)
 
-    def setup_connection(self, conn):
+    def setup_connection(self, _conn):
         self.stdscr = curses_init()
         self.update_screen()
 

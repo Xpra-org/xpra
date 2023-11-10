@@ -147,7 +147,7 @@ def do_get_bind_ifacemask(iface):
                         b = socket.inet_pton(fam, addr)
                         log("socket.inet_pton(AF_INET%s, %s=%s", "6" if fam==socket.AF_INET6 else "", addr, b)
                         ipmasks.append((addr, mask))
-                    except Exception as e:
+                    except Exception:
                         log("do_get_bind_ifacemask(%s)", iface, exc_info=True)
                         log.error("Error converting address '%s' to binary, for interface %s", addr, iface)
     log("do_get_bind_ifacemask(%s)=%s", iface, ipmasks)
@@ -164,7 +164,7 @@ def get_iface(ip):
         try:
             v = socket.getaddrinfo(ip, None)
             assert len(v)>0
-        except Exception as e:
+        except Exception:
             log.error("Error: cannot revolve '%s'", ip)
             return None
         for i, x in enumerate(v):

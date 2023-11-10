@@ -808,7 +808,7 @@ class ClientExtras(object):
         try:
             import xpra.dbus
             assert xpra.dbus
-        except ImportError as e:
+        except ImportError:
             dbuslog("setup_dbus_signals()", exc_info=True)
             dbuslog.info("dbus support is not installed")
             dbuslog.info(" no support for power events")

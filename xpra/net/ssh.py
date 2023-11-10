@@ -535,7 +535,7 @@ keymd5(host_key),
                     log("failed to add key to '%s'", host_keys_filename)
                     log.error("Error adding key to '%s'", host_keys_filename)
                     log.error(" %s", e)
-                except Exception as e:
+                except Exception:
                     log.error("cannot add key", exc_info=True)
 
 
@@ -587,7 +587,7 @@ keymd5(host_key),
                             log.info("cannot load key from file '%s':", keyfile_path)
                             log.info(" %s", e)
                     break
-                except Exception as e:
+                except Exception:
                     log("auth_publickey() loading as %s", pkey_classname, exc_info=True)
                     key_data = load_binary_file(keyfile_path)
                     if key_data and key_data.find(b"BEGIN OPENSSH PRIVATE KEY")>=0 and paramiko.__version__<"2.7":

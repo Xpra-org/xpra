@@ -214,7 +214,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
         #identify -config xorg.conf argument and replace it with the uinput one:
         try:
             config_argindex = xvfb_cmd.index("-config")
-        except ValueError as e:
+        except ValueError:
             log.warn("Warning: cannot use uinput")
             log.warn(" '-config' argument not found in the xvfb command")
         else:
@@ -297,7 +297,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
                          stdin=PIPE, preexec_fn=preexec)
 
         xauth_add(xauthority, display_name, xauth_data, uid, gid)
-    except Exception as e:
+    except Exception:
         if xvfb and xvfb.poll() is None:
             log.error(" stopping vfb process with pid %i", xvfb.pid)
             xvfb.terminate()

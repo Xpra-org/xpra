@@ -1293,7 +1293,6 @@ class ServerCore(object):
             elif self.ssl_mode=="www":
                 http = True
             elif self.ssl_mode=="auto" or self.ssl_mode in TRUE_OPTIONS:
-                http = False
                 #use the header to guess:
                 if line1.find(b"HTTP/")>0 or peek_data.find(b"\x08http/1.1")>0:
                     http = True
@@ -1408,7 +1407,7 @@ class ServerCore(object):
             l(" for client %s:", pretty_socket(frominfo))
             l(" request: '%s'", nonl(bytestostr(line1)))
             l(" %s", e)
-        except Exception as e:
+        except Exception:
             wslog.error("Error: %s request failure for client %s:", req_info, pretty_socket(frominfo), exc_info=True)
         try:
             conn.close()

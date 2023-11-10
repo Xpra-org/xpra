@@ -255,7 +255,7 @@ class RFBProtocol(object):
             while not self._closed and callback():
                 pass
             log("io_thread_loop(%s, %s) loop ended, closed=%s", name, callback, self._closed)
-        except ConnectionClosedException as e:
+        except ConnectionClosedException:
             log("%s closed", self._conn, exc_info=True)
             if not self._closed:
                 #ConnectionClosedException means the warning has been logged already

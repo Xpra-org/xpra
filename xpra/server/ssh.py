@@ -287,7 +287,7 @@ def make_ssh_server_connection(conn, none_auth=False, password_auth=None):
                             if host_key not in host_keys:
                                 host_keys[host_key] = ff
                                 t.add_server_key(host_key)
-                        except IOError as e:
+                        except IOError:
                             log("cannot add host key '%s'", ff, exc_info=True)
                         except paramiko.SSHException as e:
                             log("error adding host key '%s'", ff, exc_info=True)

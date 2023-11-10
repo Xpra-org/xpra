@@ -389,7 +389,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                 try:
                     from xpra import client
                     assert client
-                except ImportError as e:
+                except ImportError:
                     if start_via_proxy is True:
                         error_cb("cannot start-via-proxy: xpra client is not installed")
                 else:
@@ -442,7 +442,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                 from xpra import server
                 assert server
                 from xpra.scripts.server import run_server, add_when_ready
-            except ImportError as e:
+            except ImportError:
                 error_cb("Xpra server is not installed")
             if options.attach is True:
                 def attach_client():
@@ -1192,7 +1192,7 @@ def socket_connect(dtype, host, port):
                 sock.connect(sockaddr)
                 sock.settimeout(None)
                 return sock
-            except Exception as e:
+            except Exception:
                 log = Logger("network")
                 log("failed to connect using %s%s for %s", sock.connect, sockaddr, addr, exc_info=True)
         if monotonic_time()-start>=CONNECT_TIMEOUT:
@@ -1619,7 +1619,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
     try:
         from xpra import client
         assert client
-    except ImportError as e:
+    except ImportError:
         error_cb("Xpra client is not installed")
 
     if opts.compression_level < 0 or opts.compression_level > 9:
