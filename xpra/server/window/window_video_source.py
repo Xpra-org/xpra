@@ -1937,7 +1937,7 @@ class WindowVideoSource(WindowSource):
                 coding, data, client_options, outw, outh, outstride, _ = ret
                 assert data
                 flush -= 1
-                if self.supports_flush and flush>0:
+                if self.supports_flush and flush>=0:
                     client_options["flush"] = flush
                 #if SAVE_TO_FILE:
                 #    #hard-coded for BGRA!
