@@ -1,3 +1,8 @@
+xpra (3.1.6-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 10 Nov 2023 19:56:32 +0700
+
 xpra (3.1.5-1) UNRELEASED; urgency=low
   * build, packaging and platforms:
    - MacOS arm64 builds

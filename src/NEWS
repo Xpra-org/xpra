@@ -1,3 +1,6 @@
+v3.1.6 (2023-11-10)
+	-- TODO
+
 v3.1.5 (2023-06-15)
 ======================
 	-- build, packaging and platforms:
@@ -954,7 +957,7 @@ v2.5 (2019-03-19)
 	 - clipboard: restrict clipboard data transfers size
 	 - audio: support wasapi on MS Windows
 	-- code cleanups, etc
-	
+
 
 v2.4 (2018-10-13)
 ======================
