@@ -175,8 +175,8 @@ class KeyboardConfig(KeyboardConfigBase):
         def hashadd(v):
             m.update(("/%s" % str(v)).encode("utf8"))
         m.update(KeyboardConfigBase.get_hash(self))
-        for x in (self.xkbmap_print, self.xkbmap_query, self.xkbmap_raw, \
-                  self.xkbmap_mod_meanings, self.xkbmap_mod_pointermissing, \
+        for x in (self.xkbmap_print, self.xkbmap_query, self.xkbmap_raw,
+                  self.xkbmap_mod_meanings, self.xkbmap_mod_pointermissing,
                   self.xkbmap_keycodes, self.xkbmap_x11_keycodes):
             hashadd(x)
         if self.xkbmap_query_struct:

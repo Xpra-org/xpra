@@ -271,18 +271,18 @@ def check_PyOpenGL_support(force_enable):
             glTexImage2D, \
             glMultiTexCoord2i, \
             glVertex2i, glEnd
-        check_functions(glActiveTexture, glTexSubImage2D, glTexCoord2i, \
-            glViewport, glMatrixMode, glLoadIdentity, glOrtho, \
-            glEnableClientState, glGenTextures, glDisable, \
-            glBindTexture, glPixelStorei, glEnable, glBegin, glFlush, \
-            glTexParameteri, glTexEnvi, glHint, glBlendFunc, glLineStipple, \
-            glTexImage2D, \
-            glMultiTexCoord2i, \
+        check_functions(glActiveTexture, glTexSubImage2D, glTexCoord2i,
+            glViewport, glMatrixMode, glLoadIdentity, glOrtho,
+            glEnableClientState, glGenTextures, glDisable,
+            glBindTexture, glPixelStorei, glEnable, glBegin, glFlush,
+            glTexParameteri, glTexEnvi, glHint, glBlendFunc, glLineStipple,
+            glTexImage2D,
+            glMultiTexCoord2i,
             glVertex2i, glEnd)
         #check for framebuffer functions we need:
         from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, \
             GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D
-        check_functions(GL_FRAMEBUFFER, \
+        check_functions(GL_FRAMEBUFFER,
             GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D)
 
         glEnablei = None

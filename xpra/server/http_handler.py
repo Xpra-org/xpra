@@ -152,8 +152,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         else:
             mode = "r"
         headers = {}
-        for f in sorted(os.listdir(http_headers_dir)):
-            header_file = os.path.join(http_headers_dir, f)
+        for fname in sorted(os.listdir(http_headers_dir)):
+            header_file = os.path.join(http_headers_dir, fname)
             if os.path.isfile(header_file):
                 log("may_reload_headers() loading from '%s'", header_file)
                 with open(header_file, mode) as f:

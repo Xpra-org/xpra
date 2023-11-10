@@ -50,7 +50,7 @@ def about(on_close=close_about):
     if not is_gtk3():
         import webbrowser
         def on_website_hook(*_args):
-            ''' called when the website item is selected '''
+            # called when the website item is selected
             webbrowser.open(SITE_URL)
         def on_email_hook(*_args):
             webbrowser.open("mailto://shifter-users@lists.devloop.org.uk")

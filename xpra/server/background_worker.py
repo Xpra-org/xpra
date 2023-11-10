@@ -22,9 +22,9 @@ class Worker_Thread(Thread):
 
     def __init__(self):
         Thread.__init__(self, name="Worker_Thread")
+        self.daemon = True
         self.items = Queue()
         self.exit = False
-        self.setDaemon(True)
 
     def __repr__(self):
         return "Worker_Thread(items=%s, exit=%s)" % (self.items.qsize(), self.exit)

@@ -111,7 +111,7 @@ class UI_thread_watcher(object):
 
     def poll_UI_loop(self):
         log("poll_UI_loop() running")
-        while not self.exit.isSet():
+        while not self.exit.is_set():
             delta = monotonic_time()-self.last_UI_thread_time
             log("poll_UI_loop() last_UI_thread_time was %.1f seconds ago (max %i), UI_blocked=%s",
                 delta, self.max_delta/1000, self.UI_blocked)
@@ -130,7 +130,7 @@ class UI_thread_watcher(object):
             wstart = monotonic_time()
             wait_time = self.polling_timeout/1000.0     #convert to seconds
             self.exit.wait(wait_time)
-            if not self.exit.isSet():
+            if not self.exit.is_set():
                 wdelta = monotonic_time() - wstart
                 log("wait(%.4f) actually waited %.4f", self.polling_timeout/1000.0, wdelta)
                 if wdelta>(wait_time+1):

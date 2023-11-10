@@ -102,7 +102,6 @@ MOD_KEYS = {
     win32con.VK_CAPITAL     : "lock",
     win32con.VK_LMENU       : "mod1",       #Alt_L
     win32con.VK_RMENU       : "mod1",       #Alt_R
-    win32con.VK_CAPITAL     : "lock",
     win32con.VK_NUMLOCK     : "num",
 }
 

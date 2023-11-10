@@ -83,7 +83,6 @@ class WGLContext(object):
         self.pixel_format_props = {}
 
     def check_support(self, force_enable=False):
-        global hInst, reg_atom
         #create a temporary window to query opengl attributes:
         hInst = GetModuleHandleA(0)
         log("check_support() GetModuleHandleW()=%#x", hInst or 0)

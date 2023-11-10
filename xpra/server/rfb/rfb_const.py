@@ -69,7 +69,6 @@ class RFBClientMessage(object):
         SETDESKTOPSIZE               : "SetDesktopSize",
         TIGHT                        : "Tight",
         GIICLIENTMESSAGE             : "GIIClientMessage",
-        VMWARE                       : "VMWare",
         QEMUCLIENTMESSAGE            : "QEMUClientMessage",
     }
     PACKET_FMT = {

@@ -42,7 +42,7 @@ class CairoBacking(CairoBackingBase):
             #log("cairo_stride=%s, stride=%s", cairo_stride, rowstride)
             pix_data = bytearray(img_data)
             img_surface = cairo.ImageSurface.create_for_data(pix_data, cairo_format, width, height, rowstride)
-            self.cairo_paint_surface(img_surface, x, y, options)
+            self.cairo_paint_surface(img_surface, x, y, width, height, options)
             return True
 
         if rgb_format in ("RGBA", "RGBX", "RGB"):

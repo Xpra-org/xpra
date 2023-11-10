@@ -407,8 +407,8 @@ class KeyboardHelper(object):
         h = hashlib.sha1()
         def hashadd(v):
             h.update(("/%s" % str(v)).encode("utf8"))
-        for x in (self.xkbmap_print, self.xkbmap_query, \
-                  self.xkbmap_mod_meanings, self.xkbmap_mod_pointermissing, \
+        for x in (self.xkbmap_print, self.xkbmap_query,
+                  self.xkbmap_mod_meanings, self.xkbmap_mod_pointermissing,
                   self.xkbmap_keycodes, self.xkbmap_x11_keycodes):
             hashadd(x)
         if self.xkbmap_query_struct:

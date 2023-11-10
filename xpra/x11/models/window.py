@@ -62,7 +62,6 @@ CW_MASK_TO_NAME = {
                    CWY              : "Y",
                    CWWidth          : "Width",
                    CWHeight         : "Height",
-                   CWBorderWidth    : "BorderWidth",
                    CWSibling        : "Sibling",
                    CWStackMode      : "StackMode",
                    CWBorderWidth    : "BorderWidth",

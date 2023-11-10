@@ -188,7 +188,7 @@ class ClientConnection(ClientConnectionClass):
 
 
     def is_closed(self):
-        return self.close_event.isSet()
+        return self.close_event.is_set()
 
     def close(self):
         log("%s.close()", self)
