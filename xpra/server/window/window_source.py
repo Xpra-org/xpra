@@ -2723,8 +2723,7 @@ class WindowSource(WindowIconSource):
             if mod:
                 client_options["encoder"] = mod
         #actual network packet:
-        if flush not in (None, 0):
-            client_options["flush"] = flush
+        client_options["flush"] = flush or 0
         if self.send_timetamps:
             client_options["ts"] = image.get_timestamp()
         end = monotonic()

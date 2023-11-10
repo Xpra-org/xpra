@@ -2122,9 +2122,7 @@ class WindowVideoSource(WindowSource):
         #send the scrolls if we have any
         #(zero change scrolls have been removed - so maybe there are none)
         if scrolls:
-            client_options = {}
-            if flush>0:
-                client_options["flush"] = flush
+            client_options = {"flush" : flush}
             coding = "scroll"
             end = monotonic()
             packet = self.make_draw_packet(x, y, w, h,
@@ -2164,8 +2162,7 @@ class WindowVideoSource(WindowSource):
                 if not data:
                     raise RuntimeError(f"no data from {encoding} function {encode_fn}")
                 flush -= 1
-                if flush>0:
-                    client_options["flush"] = flush
+                client_options["flush"] = flush
                 #if SAVE_TO_FILE:
                 #    #hard-coded for BGRA!
                 #    from xpra.os_util import memoryview_to_bytes
