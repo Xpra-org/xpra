@@ -37,7 +37,7 @@ def get_rgb_rawdata(window, x:int, y:int, width:int, height:int) -> tuple[int,in
     log("get_rgb_rawdata(..) pixbuf.get_from_drawable took %s ms", int(1000*(monotonic()-start)))
     raw_data = pixbuf.get_pixels()
     rowstride = pixbuf.get_rowstride()
-    return (x, y, width, height, raw_data, "RGB", 24, rowstride, 3)
+    return x, y, width, height, raw_data, "RGB", 24, rowstride, 3
 
 def take_png_screenshot(window) -> ScreenshotData | None:
     log("grabbing screenshot")
@@ -51,7 +51,7 @@ def take_png_screenshot(window) -> ScreenshotData | None:
 
 
 class GTKImageCapture:
-    __slots__ = ("window")
+    __slots__ = "window",
     def __init__(self, window):
         self.window = window
 

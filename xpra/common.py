@@ -223,7 +223,7 @@ DEFAULT_XDG_DATA_DIRS : str = ":".join(
         )
     )
 
-def noop(*_args, **kwargs) -> None:
+def noop(*_args, **_kwargs) -> None:
     """ do nothing """
 
 

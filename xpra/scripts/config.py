@@ -918,6 +918,7 @@ def get_defaults():
         conf_dirs.append(os.getcwd())
     except FileNotFoundError:
         pass
+    conf_dir = ""
     for conf_dir in conf_dirs:
         if conf_dir and os.path.exists(conf_dir):
             break

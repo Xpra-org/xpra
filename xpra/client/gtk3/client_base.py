@@ -538,22 +538,22 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return FileTransferHandler.accept_data(self, send_id, dtype, url, printit, openit)
         edtype = r[0]
         eurl = r[1]
-        if edtype!=dtype or eurl!=url:
+        if edtype != dtype or eurl != url:
             filelog.warn("Warning: the file attributes are different")
             filelog.warn(" from the ones that were used to accept the transfer")
             s = bytestostr
-            if edtype!=dtype:
+            if edtype != dtype:
                 filelog.warn(" expected data type '%s' but got '%s'", s(edtype), s(dtype))
-            if eurl!=url:
+            if eurl != url:
                 filelog.warn(" expected url '%s',", s(eurl))
                 filelog.warn("  but got url '%s'", s(url))
             return None
-        #return the printit and openit flag we got from the UI:
-        return (r[2], r[3])
+        # return the printit and openit flag we got from the UI:
+        return r[2], r[3]
 
     def file_size_warning(self, action, location, basefilename, filesize, limit):
         if self.file_size_dialog:
-            #close previous warning
+            # close previous warning
             self.file_size_dialog.close()
             self.file_size_dialog = None
         parent = None

@@ -94,8 +94,6 @@ if use_x11_bindings():
         log.error(f"Error loading X11 bindings: {e}")
     else:
         set_context_check(verify_sync)
-        X11Window = X11WindowBindings()
-        X11Core = X11CoreBindings()
         NotifyInferior = constants["NotifyInferior"]
         HAS_X11_BINDINGS = True
 
@@ -675,7 +673,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if UNDECORATED_TRANSIENT_IS_OR>0:
             transient_for = metadata.intget("transient-for", -1)
             decorations = metadata.intget("decorations", 0)
-            if transient_for>0 and decorations<=0:
+            if transient_for > 0 and decorations <= 0:
                 if UNDECORATED_TRANSIENT_IS_OR>1:
                     metalog("forcing POPUP type for window transient-for=%s", transient_for)
                     return True

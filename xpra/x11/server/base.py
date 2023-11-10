@@ -213,7 +213,7 @@ class X11ServerBase(X11ServerCore):
             with xswallow:
                 pos = X11Keyboard.query_pointer()
                 mouselog("X11Keyboard.query_pointer=%s", pos)
-            if pos==(ox, oy):
+            if pos == (ox, oy):
                 mouselog.warn("Warning: %s failed verification", self.pointer_device)
                 mouselog.warn(" expected pointer at %s, now at %s", (nx, ny), pos)
                 mouselog.warn(" using XTest fallback")

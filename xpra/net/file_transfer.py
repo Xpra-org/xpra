@@ -463,20 +463,20 @@ class FileTransferHandler(FileTransferAttributes):
         req = self.files_accepted.pop(send_id, None)
         filelog("accept_data: files_accepted[%s]=%s", send_id, req)
         if req is not None:
-            return (False, req)
+            return False, req
         if printit:
             if not self.printing or self.printing_ask:
                 printit = False
         elif not self.file_transfer or self.file_transfer_ask:
             return None
         if openit and (not self.open_files or self.open_files_ask):
-            #we can't ask in this implementation,
-            #so deny the request to open it:
+            # we can't ask in this implementation,
+            # so deny the request to open it:
             openit = False
-        return (printit, openit)
+        return printit, openit
 
     def _process_send_file(self, packet : PacketType) -> None:
-        #the remote end is sending us a file
+        # the remote end is sending us a file
         start = monotonic()
         basefilename = str(packet[1])
         mimetype = str(packet[2])

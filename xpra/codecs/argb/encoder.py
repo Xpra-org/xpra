@@ -14,13 +14,16 @@ log = Logger("encoder")
 
 
 def get_version() -> tuple[int,int]:
-    return (4, 3)
+    return 6, 0
+
 
 def get_type() -> str:
     return "rgb"
 
+
 def get_encodings() -> tuple[str,...]:
     return "rgb24", "rgb32"
+
 
 def get_info() -> dict[str,Any]:
     return  {
@@ -31,7 +34,7 @@ def get_info() -> dict[str,Any]:
 
 def encode(coding : str, image, options : dict) -> tuple[str,Compressed,dict[str,Any],int,int,int,int]:
     pixel_format = image.get_pixel_format()
-    #log("rgb_encode%s pixel_format=%s, rgb_formats=%s",
+    # log("rgb_encode%s pixel_format=%s, rgb_formats=%s",
     #    (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4), pixel_format, rgb_formats)
     if pixel_format in ("BGRX", "BGRA", "RGBA"):
         rgb_formats = options.get("rgb_formats", ("BGRX", "BGRA", "RGBA"))
@@ -45,21 +48,21 @@ def encode(coding : str, image, options : dict) -> tuple[str,Compressed,dict[str
             pixel_format, rgb_formats, supports_transparency)
         if not rgb_reformat(image, rgb_formats, supports_transparency):
             raise ValueError(f"no compatible rgb format for {pixel_format!r}! (only: {rgb_formats})")
-        #get the new format:
+        # get the new format:
         pixel_format = image.get_pixel_format()
-        #switch encoding if necessary:
+        # switch encoding if necessary:
         if len(pixel_format)==4:
             coding = "rgb32"
         elif len(pixel_format)==3:
             coding = "rgb24"
         else:
             raise ValueError(f"invalid pixel format {pixel_format!r}")
-    #we may still want to re-stride:
+    # we may still want to re-stride:
     image.may_restride()
-    #always tell client which pixel format we are sending:
+    # always tell client which pixel format we are sending:
     client_options = {"rgb_format" : pixel_format}
 
-    #compress here and return a wrapper so network code knows it is already zlib compressed:
+    # compress here and return a wrapper so network code knows it is already zlib compressed:
     pixels = image.get_pixels()
     if not pixels:
         raise RuntimeError(f"failed to get pixels from {image}")
@@ -68,30 +71,30 @@ def encode(coding : str, image, options : dict) -> tuple[str,Compressed,dict[str
     stride = image.get_rowstride()
     speed = options.get("speed", 50)
 
-    #compression stage:
+    # compression stage:
     level = 0
     algo = "not"
     l = len(pixels)
     lz4 = options.get("lz4", False)
     if not lz4:
         level = 0
-    elif l>=512 and (lz4 or speed<100):
-        if l>=4096:
+    elif l >= 512 and (lz4 or speed < 100):
+        if l >= 4096:
             level = 1+max(0, min(7, int(100-speed)//14))
         else:
-            #fewer pixels, make it more likely we won't bother compressing
-            #and use a lower level (max=3)
+            # fewer pixels, make it more likely we won't bother compressing
+            # and use a lower level (max=3)
             level = max(0, min(3, int(125-speed)//35))
     if level>0:
-        can_inline = l<=32768
+        can_inline = l <= 32768
         cwrapper = compressed_wrapper(coding, pixels, level=level,
                                       lz4=lz4,
                                       can_inline=can_inline)
         if isinstance(cwrapper, LevelCompressed):
-            #add compressed marker:
+            # add compressed marker:
             client_options[cwrapper.algorithm] = cwrapper.level & 0xF
-            #remove network layer compression marker
-            #so that this data will be decompressed by the decode thread client side:
+            # remove network layer compression marker
+            # so that this data will be decompressed by the decode thread client side:
             cwrapper.level = 0
         elif can_inline and isinstance(pixels, memoryview):
             assert isinstance(cwrapper, Compressed)
@@ -101,8 +104,8 @@ def encode(coding : str, image, options : dict) -> tuple[str,Compressed,dict[str
             # so we have to convert it to bytes:
             cwrapper.data = rgb_transform.pixels_to_bytes(pixels)
     else:
-        #can't pass a raw buffer to rencodeplus,
-        #and even if we could, the image containing those pixels may be freed by the time we get to the encoder
+        # can't pass a raw buffer to rencodeplus,
+        # and even if we could, the image containing those pixels may be freed by the time we get to the encoder
         algo = "not"
         cwrapper = Compressed(coding, rgb_transform.pixels_to_bytes(pixels), True)
     if pixel_format.find("A")>=0 or pixel_format.find("X")>=0:
@@ -111,6 +114,6 @@ def encode(coding : str, image, options : dict) -> tuple[str,Compressed,dict[str
         bpp = 24
     log("rgb_encode using level=%s for %5i bytes at %3i speed, %s compressed %4sx%-4s in %s/%s: %5s bytes down to %5s",
         level, l, speed, algo, width, height, coding, pixel_format, len(pixels), len(cwrapper.data))
-    #wrap it using "Compressed" so the network layer receiving it
-    #won't decompress it (leave it to the client's draw thread)
+    # wrap it using "Compressed" so the network layer receiving it
+    # won't decompress it (leave it to the client's draw thread)
     return coding, cwrapper, client_options, width, height, stride, bpp

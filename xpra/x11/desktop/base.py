@@ -52,6 +52,29 @@ DesktopServerBaseClass = type('DesktopServerBaseClass', DESKTOPSERVER_BASES, {})
 log("DesktopServerBaseClass%s", DESKTOPSERVER_BASES)
 
 
+def do_modify_gsettings(defs:dict[str,Any], value=False) -> dict[str,Any]:
+    modified = {}
+    schemas = Gio.Settings.list_schemas()
+    for schema, attributes in defs.items():
+        if schema not in schemas:
+            continue
+        try:
+            s = Gio.Settings.new(schema_id=schema)
+            restore = []
+            for attribute in attributes:
+                v = s.get_boolean(attribute)
+                if v:
+                    s.set_boolean(attribute, value)
+                    restore.append(attribute)
+            if restore:
+                modified[schema] = restore
+        except Exception as e:
+            log("error accessing schema '%s' and attributes %s", schema, attributes, exc_info=True)
+            log.error("Error accessing schema '%s' and attributes %s:", schema, csv(attributes))
+            log.estr(e)
+    return modified
+
+
 class DesktopServerBase(DesktopServerBaseClass):
     """
         A server base class for RFB / VNC-like virtual desktop or virtual monitors,
@@ -102,34 +125,12 @@ class DesktopServerBase(DesktopServerBaseClass):
 
 
     def modify_gsettings(self) -> None:
-        #try to suspend animations:
-        self.gsettings_modified = self.do_modify_gsettings({
+        # try to suspend animations:
+        self.gsettings_modified = do_modify_gsettings({
             "org.mate.interface" : ("gtk-enable-animations", "enable-animations"),
             "org.gnome.desktop.interface" : ("enable-animations",),
             "com.deepin.wrap.gnome.desktop.interface" : ("enable-animations",),
             })
-
-    def do_modify_gsettings(self, defs:dict[str,Any], value=False) -> dict[str,Any]:
-        modified = {}
-        schemas = Gio.Settings.list_schemas()
-        for schema, attributes in defs.items():
-            if schema not in schemas:
-                continue
-            try:
-                s = Gio.Settings.new(schema_id=schema)
-                restore = []
-                for attribute in attributes:
-                    v = s.get_boolean(attribute)
-                    if v:
-                        s.set_boolean(attribute, value)
-                        restore.append(attribute)
-                if restore:
-                    modified[schema] = restore
-            except Exception as e:
-                log("error accessing schema '%s' and attributes %s", schema, attributes, exc_info=True)
-                log.error("Error accessing schema '%s' and attributes %s:", schema, csv(attributes))
-                log.estr(e)
-        return modified
 
     def do_cleanup(self) -> None:
         remove_catchall_receiver("xpra-motion-event", self)
@@ -142,7 +143,7 @@ class DesktopServerBase(DesktopServerBaseClass):
             rpw.cleanup()
 
     def restore_gsettings(self) -> None:
-        self.do_modify_gsettings(self.gsettings_modified, True)
+        do_modify_gsettings(self.gsettings_modified, True)
 
     def notify_dpi_warning(self, body) -> None:
         """ ignore DPI warnings in desktop mode """

@@ -74,7 +74,7 @@ def image_data(img) -> IconData:
     data = buf.getvalue()
     buf.close()
     w,h = img.size
-    return ("png", w, h, data)
+    return "png", w, h, data
 
 
 def get_notification_icon(icon_string:str) -> IconData | None:

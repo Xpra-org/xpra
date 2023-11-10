@@ -121,7 +121,7 @@ def get_default_encoder_options() -> dict[str,dict[str,Any]]:
             "cpu-used"          : 5,
             "end-usage"         : 2,    #cq
             }
-    #now apply environment overrides:
+    # now apply environment overrides:
     for element in options.keys():
         enc_options_str = os.environ.get(f"XPRA_{element.upper()}_OPTIONS", "")
         if enc_options_str:
@@ -130,8 +130,9 @@ def get_default_encoder_options() -> dict[str,dict[str,Any]]:
             options[element] = encoder_options
     return options
 
-def get_default_decoder_options() -> dict[str,dict[str,Any]]:
-    options : dict[str,dict[str,Any]] = {
+
+def get_default_decoder_options() -> dict[str, dict[str, Any]]:
+    options : dict[str, dict[str, Any]] = {
         "av1dec"    : {
             "stream-format": "obu-stream",
             "alignment": "tu",
@@ -141,16 +142,20 @@ def get_default_decoder_options() -> dict[str,dict[str,Any]]:
 
 
 def get_version() -> tuple[int, ...]:
-    return (5, 0)
+    return 5, 0
+
 
 def get_type() -> str:
     return "gstreamer"
 
+
 def get_info() -> dict[str,Any]:
     return {"version"   : get_version()}
 
+
 def init_module() -> None:
     log("gstreamer.init_module()")
+
 
 def cleanup_module() -> None:
     log("gstreamer.cleanup_module()")
@@ -271,7 +276,6 @@ class VideoPipeline(Pipeline):
                 log.error(f" {k:<16}: {v}")
             return None
 
-
     def get_info(self) -> dict[str,Any]:
         info : dict[str,Any] = get_info()
         if not self.colorspace:
@@ -297,7 +301,6 @@ class VideoPipeline(Pipeline):
     def is_closed(self) -> bool:
         return not bool(self.colorspace)
 
-
     def get_encoding(self) -> str:
         return self.encoding
 
@@ -317,7 +320,6 @@ class VideoPipeline(Pipeline):
         self.colorspace = ""
         self.encoding = ""
         self.frames = 0
-
 
     def do_emit_info(self) -> None:
         self.emit_info_timer = 0

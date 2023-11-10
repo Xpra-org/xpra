@@ -16,19 +16,24 @@ log = Logger("encoder", "proxy")
 
 
 def get_version() -> tuple[int, ...]:
-    return (0, 2)
+    return 0, 2
+
 
 def get_type() -> str:
     return "proxy"
 
+
 def get_info() -> dict[str,Any]:
     return {"version"   : get_version()}
+
 
 def get_encodings() -> tuple[str, ...]:
     return ("proxy", )
 
+
 def init_module() -> None:
     log("enc_proxy.init_module()")
+
 
 def cleanup_module() -> None:
     log("enc_proxy.cleanup_module()")
@@ -117,13 +122,13 @@ class Encoder:
 
     def compress_image(self, image:ImageWrapper, options=None) -> tuple[bytes,dict]:
         log("compress_image(%s, %s)", image, options)
-        #pass the pixels as they are
-        if image.get_planes()!=ImageWrapper.PACKED:
+        # pass the pixels as they are
+        if image.get_planes() != ImageWrapper.PACKED:
             raise RuntimeError(f"invalid number of planes: {image.get_planes()}")
         pixels = image.get_pixels()
         if not pixels:
             raise RuntimeError(f"failed to get pixels from {image}")
-        #info used by proxy encoder:
+        # info used by proxy encoder:
         client_options = {
                 "proxy"     : True,
                 "frame"     : self.frames,
@@ -132,13 +137,13 @@ class Encoder:
                 "rowstride" : image.get_rowstride(),
                 "depth"     : image.get_depth(),
                 "rgb_format": image.get_pixel_format(),
-                #pass-through encoder options:
+                # pass-through encoder options:
                 "options"   : options or {},
                 }
-        if self.frames==0:
+        if self.frames == 0:
             self.first_frame_timestamp = image.get_timestamp()
-            #must pass dst_formats so the proxy can instantiate the video encoder
-            #with the correct CSC config:
+            # must pass dst_formats so the proxy can instantiate the video encoder
+            # with the correct CSC config:
             client_options["dst_formats"] = self.dst_formats
         log("compress_image(%s, %s) returning %s bytes and options=%s", image, options, len(pixels), client_options)
         self.last_frame_times.append(monotonic())

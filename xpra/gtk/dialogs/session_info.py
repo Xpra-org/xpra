@@ -236,11 +236,11 @@ class SessionInfo(Gtk.Window):
             self.set_icon(window_icon_pixbuf)
         self.set_position(Gtk.WindowPosition.CENTER)
 
-        #tab box to contain everything:
+        # tab box to contain everything:
         self.tab_box = Gtk.VBox(homogeneous=False, spacing=0)
         self.add(self.tab_box)
         self.tab_button_box = Gtk.HBox(homogeneous=True, spacing=0)
-        self.tabs:list[tuple(str, Any, Any, Callable)] = []
+        self.tabs: list[tuple[str, Any, Any, Callable]] = []
         self.row = AtomicInteger()
         self.grid = None
 
@@ -885,7 +885,7 @@ class SessionInfo(Gtk.Window):
         vbox = self.grid_tab("browse.png", "Statistics", self.populate_statistics)
         self.add_row(*(title_box(x) for x in ("", "Latest", "Minimum", "Average", "90 percentile", "Maximum")))
         def maths_labels(metric="", tooltip=""):
-            labels = [title_box(metric), slabel(), slabel(), slabel(), slabel(), slabel()]
+            labels = [title_box(metric, tooltip), slabel(), slabel(), slabel(), slabel(), slabel()]
             self.add_row(*labels)
             return labels[1:]
         self.server_latency_labels = maths_labels(

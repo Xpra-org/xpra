@@ -74,7 +74,7 @@ class BugReport:
             logo_button = Gtk.Button(label="")
             settings = logo_button.get_settings()
             settings.set_property('gtk-button-images', True)
-            def show_about(*args):
+            def show_about(*_args):
                 about(parent=self.window)
             logo_button.connect("clicked", show_about)
             logo_button.set_tooltip_text("About")
@@ -162,7 +162,7 @@ class BugReport:
                     img.save(out, format="PNG")
                     v = out.getvalue()
                     out.close()
-                    return (img.width, img.height, "png", img.width*3, v)
+                    return img.width, img.height, "png", img.width*3, v
                 take_screenshot_fn = pillow_imagegrab_screenshot
             except Exception as e:
                 log("cannot use Pillow's ImageGrab: %s", e)

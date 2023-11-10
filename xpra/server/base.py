@@ -251,7 +251,7 @@ class ServerBase(ServerBaseClass):
         authlog("handle_sharing%s lock=%s, sharing=%s, existing sources=%s, is existing client=%s",
             (proto, ui_client, detach_request, share, uuid),
             self.lock, self.sharing, existing_sources, is_existing_client)
-        #if other clients are connected, verify we can steal or share:
+        # if other clients are connected, verify we can steal or share:
         if existing_sources and not is_existing_client:
             if self.sharing is True or (self.sharing is None and share and all(ss.share for ss in existing_sources)):
                 authlog("handle_sharing: sharing with %s", tuple(existing_sources))
@@ -274,7 +274,7 @@ class ServerBase(ServerBaseClass):
                 self.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "new connection from the same uuid")
                 disconnected += 1
             elif ui_client and ss.ui_client:
-                #check if existing sessions are willing to share:
+                # check if existing sessions are willing to share:
                 if self.sharing is True:
                     share_count += 1
                 elif self.sharing is False:
@@ -291,7 +291,7 @@ class ServerBase(ServerBaseClass):
                     else:
                         share_count += 1
 
-        #don't accept this connection if we're going to exit-with-client:
+        # don't accept this connection if we're going to exit-with-client:
         accepted = True
         if disconnected>0 and share_count==0 and self.exit_with_client:
             self.disconnect_client(proto, ConnectionMessage.SERVER_SHUTDOWN, "last client has exited")
@@ -304,7 +304,7 @@ class ServerBase(ServerBaseClass):
             log.warn(" from an existing connection: %s", proto)
             return
         if ServerCore.hello_oked(self, proto, c, auth_caps):
-            #has been handled
+            # has been handled
             return
         if not self.sanity_checks(proto, c):
             return
@@ -314,10 +314,10 @@ class ServerBase(ServerBaseClass):
         if c.boolget("screenshot_request"):
             self.send_screenshot(proto)
             return
-        #added in 2.2:
+        # added in 2.2:
         request = c.strget("request")
         if not request:
-            #"normal" connection, so log welcome message:
+            # "normal" connection, so log welcome message:
             log.info("Handshake complete; enabling connection")
         else:
             log("handling request %s", request)
@@ -366,7 +366,7 @@ class ServerBase(ServerBaseClass):
             else:
                 dpi_caps = c.get("dpi")
                 if isinstance(dpi_caps, int):
-                    #legacy mode, ie: html5 client
+                    # legacy mode, ie: html5 client
                     self.dpi = self.xpdi = self.ydpi = int(dpi_caps)
                 else:
                     tdpi = typedict(c.dictget("dpi") or {})
@@ -381,11 +381,11 @@ class ServerBase(ServerBaseClass):
             screenlog("dpi=%s, dpi.x=%s, dpi.y=%s, antialias=%s, cursor_size=%s",
                       self.dpi, self.xdpi, self.ydpi, self.antialias, self.cursor_size)
             log("double-click time=%s, distance=%s", self.double_click_time, self.double_click_distance)
-            #if we're not sharing, reset all the settings:
+            # if we're not sharing, reset all the settings:
             reset = share_count==0
             self.update_all_server_settings(reset)
         self.accept_client(proto, c)
-        #use blocking sockets from now on:
+        # use blocking sockets from now on:
         if not WIN32:
             set_socket_timeout(proto._conn, None)
 
@@ -403,14 +403,14 @@ class ServerBase(ServerBaseClass):
         try:
             ss.parse_hello(c)
         except Exception:
-            #close it already
+            # close it already
             ss.close()
             raise
         self._server_sources[proto] = ss
         add_work_item(self.mdns_update)
         if uuid and send_ui and SSH_AGENT_DISPATCH:
             self.accept_client_ssh_agent(uuid, c.strget("ssh-auth-sock", ""))
-        #process ui half in ui thread:
+        # process ui half in ui thread:
         self.idle_add(self.process_hello_ui, ss, c, auth_caps, send_ui, share_count)
 
     def get_client_connection_class(self, caps) -> type:

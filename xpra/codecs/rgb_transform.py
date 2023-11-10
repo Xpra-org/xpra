@@ -9,46 +9,56 @@ from xpra.os_util import memoryview_to_bytes, first_time
 from xpra.util.str_fn import csv
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
-try:
-    from xpra.codecs.argb.argb import argb_swap
-except ImportError:     # pragma: no cover
-    argb_swap = None
-
-#"pixels_to_bytes" gets patched up by the OSX shadow server
-pixels_to_bytes = memoryview_to_bytes
 
 log = Logger("encoding")
 
 
-#source format  : [(PIL input format, output format), ..]
+def noswap(image, rgb_formats, supports_transparency):
+    pixel_format = image.get_pixel_format()
+    raise RuntimeError(f"cannot convert from {pixel_format} to {csv(rgb_formats)} without the argb module")
+
+
+argb_swap = noswap
+try:
+    from xpra.codecs.argb import argb
+    argb_swap = argb.argb_swap
+except ImportError:     # pragma: no cover
+    log("no argb_swap", exc_info=True)
+    log.warn("Warning: argb swap is missing")
+
+
+# "pixels_to_bytes" gets patched up by the OSX shadow server
+pixels_to_bytes = memoryview_to_bytes
+
+
+# source format  : [(PIL input format, output format), ..]
 PIL_conv : dict[str, tuple[tuple[str,str], ...]] = {
              "XRGB"   : (("XRGB", "RGB"), ),
-             #try to drop alpha channel since it isn't used:
+             # try to drop alpha channel since it isn't used:
              "BGRX"   : (("BGRX", "RGB"), ("BGRX", "RGBX")),
-             #try with alpha first:
+             # try with alpha first:
              "BGRA"   : (("BGRA", "RGBA"), ("BGRX", "RGB"), ("BGRX", "RGBX")),
              }
-#as above but for clients which cannot handle alpha:
+# as above but for clients which cannot handle alpha:
 PIL_conv_noalpha : dict[str, tuple[tuple[str,str], ...]] = {
              "XRGB"   : (("XRGB", "RGB"), ),
-             #try to drop alpha channel since it isn't used:
+             # try to drop alpha channel since it isn't used:
              "BGRX"   : (("BGRX", "RGB"), ("BGRX", "RGBX")),
-             #try with alpha first:
+             # try with alpha first:
              "BGRA"   : (("BGRX", "RGB"), ("BGRA", "RGBA"), ("BGRX", "RGBX")),
              }
 
 
 def rgb_reformat(image : ImageWrapper, rgb_formats, supports_transparency:bool) -> bool:
     """ convert the RGB pixel data into a format supported by the client """
-    #need to convert to a supported format!
+    # need to convert to a supported format!
     pixel_format = image.get_pixel_format()
     pixels = image.get_pixels()
     if not pixels:
         raise RuntimeError(f"failed to get pixels from {image}")
     if pixel_format in ("r210", "BGR565"):
-        #try to fall back to argb module
-        #(required for r210 which is not handled by PIL directly)
-        assert argb_swap, "no argb codec"
+        # try to fall back to argb module
+        # (required for r210 which is not handled by PIL directly)
         log("rgb_reformat: using argb_swap for %s", image)
         return argb_swap(image, rgb_formats, supports_transparency)
     modes : tuple[tuple[str,str], ...] = ()
@@ -66,8 +76,7 @@ def rgb_reformat(image : ImageWrapper, rgb_formats, supports_transparency:bool) 
     target_rgb : tuple[tuple[str,str], ...] = tuple((im,om) for (im,om) in modes if om in rgb_formats)
     if not target_rgb:
         log("rgb_reformat: no matching target modes for converting %s to %s", image, rgb_formats)
-        #try argb module:
-        assert argb_swap, "no argb codec"
+        # try argb module:
         if argb_swap(image, rgb_formats, supports_transparency):
             return True
         warning_key = f"rgb_reformat({pixel_format}, {rgb_formats}, {supports_transparency})"
@@ -79,13 +88,13 @@ def rgb_reformat(image : ImageWrapper, rgb_formats, supports_transparency:bool) 
     start = monotonic()
     w = image.get_width()
     h = image.get_height()
-    #PIL cannot use the memoryview directly:
+    # PIL cannot use the memoryview directly:
     if isinstance(pixels, memoryview):
         pixels = pixels.tobytes()
     img = Image.frombuffer(target_format, (w, h), pixels, "raw", input_format, image.get_rowstride())
-    rowstride = w*len(target_format)    #number of characters is number of bytes per pixel!
+    rowstride = w*len(target_format)    # number of characters is number of bytes per pixel!
     data = img.tobytes("raw", target_format)
-    if len(data)!=rowstride*h:
+    if len(data) != rowstride*h:
         raise RuntimeError(f"expected {rowstride*h} bytes in {target_format} format but got {len(data)}")
     image.set_pixels(data)
     image.set_rowstride(rowstride)

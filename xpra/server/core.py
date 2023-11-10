@@ -2618,4 +2618,5 @@ class ServerCore:
 
     def handle_rfb_connection(self, conn, data:bytes=b"") -> None:
         log.error("Error: RFB protocol is not supported by this server")
+        log("handle_rfb_connection%s", (conn, data))
         conn.close()

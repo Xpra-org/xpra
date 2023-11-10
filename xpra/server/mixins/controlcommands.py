@@ -316,16 +316,17 @@ class ServerBaseControlCommands(StubServerMixin):
                 clients += 1
         return f"url sent to {clients} clients"
 
-    def control_command_send_file(self, filename:str, openit:str="open", client_uuids="*", maxbitrate:int=0) -> str:
-        #we always get the values as strings from the command interface,
-        #but those may actually be utf8 encoded binary strings,
-        #so we may have to do an ugly roundtrip:
+    def control_command_send_file(self, filename: str, openit="open", client_uuids="*", maxbitrate=0) -> str:
+        # we always get the values as strings from the command interface,
+        # but those may actually be utf8 encoded binary strings,
+        # so we may have to do an ugly roundtrip:
         openit = str(openit).lower() in ("open", "true", "1")
         return self.do_control_file_command("send file", client_uuids, filename, "file_transfer", (False, openit))
 
-    def control_command_print(self, filename:str, printer:str="", client_uuids="*", maxbitrate:int=0, title:str="", *options_strs) -> str:
-        #FIXME: printer and bitrate are ignored
-        #parse options into a dict:
+    def control_command_print(self, filename: str, printer="", client_uuids="*",
+                              maxbitrate=0, title="", *options_strs) -> str:
+        # FIXME: printer and bitrate are ignored
+        # parse options into a dict:
         options = {}
         for arg in options_strs:
             argp = arg.split("=", 1)
@@ -334,7 +335,7 @@ class ServerBaseControlCommands(StubServerMixin):
         return self.do_control_file_command("print", client_uuids, filename, "printing", (True, True, options))
 
     def do_control_file_command(self, command_type, client_uuids, filename, source_flag_name, send_file_args) -> str:
-        #find the clients:
+        # find the clients:
         sources = self._control_get_sources(client_uuids)
         if not sources:
             raise ControlError(f"no clients found matching: {client_uuids!r}")
@@ -343,7 +344,7 @@ class ServerBaseControlCommands(StubServerMixin):
                 raise ControlError("file '%s' is too large: %sB (limit is %sB)" % (
                     filename, std_unit(file_size), std_unit(self.file_transfer.file_size_limit)))
 
-        #find the file and load it:
+        # find the file and load it:
         actual_filename = os.path.abspath(os.path.expanduser(filename))
         try:
             stat = os.stat(actual_filename)
@@ -357,10 +358,10 @@ class ServerBaseControlCommands(StubServerMixin):
         data = load_binary_file(actual_filename)
         if not data:
             raise ControlError(f"no data loaded from {actual_filename!r}")
-        #verify size:
+        # verify size:
         file_size = len(data)
         checksize(file_size)
-        #send it to each client:
+        # send it to each client:
         for ss in sources:
             #ie: ServerSource.file_transfer (found in FileTransferAttributes)
             if not getattr(ss, source_flag_name, False):

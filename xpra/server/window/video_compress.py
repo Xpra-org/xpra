@@ -931,7 +931,7 @@ class WindowVideoSource(WindowSource):
         if delay <= 25:
             send_nonvideo(regions=regions, encoding="", exclude_region=actual_vr)
         else:
-            self._damage_delayed = DelayedRegions(damage_time, regions, coding, options=options)
+            self._damage_delayed = DelayedRegions(damage_time, encoding=coding, options=options, regions=regions)
             sublog("send_regions: delaying non video regions %s some more by %ims", regions, delay)
             self.expire_timer = self.timeout_add(delay, self.expire_delayed_region)
 
@@ -1523,13 +1523,13 @@ class WindowVideoSource(WindowSource):
             # sort them from the smallest scaling value to the highest:
             sopts = {}
             for num, den in SCALING_OPTIONS:
-                sopts[num/den] = (num, den)
+                sopts[num/den] = num, den
             for ratio in reversed(sorted(sopts.keys())):
                 num, den = sopts[ratio]
                 if num == 1 and den == 1:
                     continue
                 if width*num/den <= mw and height*num/den <= mh:
-                    return (num, den)
+                    return num, den
             raise ValueError(f"BUG: failed to find a scaling value for window size {width}x{height}")
         def mrs(v=(1, 1), info="using minimum required scaling"):
             sv = get_min_required_scaling(v)

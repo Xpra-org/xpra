@@ -4,40 +4,42 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from cairo import ImageSurface, FORMAT_ARGB32  #pylint: disable=no-name-in-module
+from cairo import ImageSurface, FORMAT_ARGB32  # pylint: disable=no-name-in-module
 from gi.repository import GLib
 from gi.repository import GdkPixbuf
 
+from xpra.common import noop
 from xpra.util.env import envbool
 from xpra.client.gtk3.cairo_backing_base import CairoBackingBase, FORMATS
 
 from xpra.log import Logger
 log = Logger("paint", "cairo")
 
+CAIRO_USE_PIXBUF = envbool("XPRA_CAIRO_USE_PIXBUF", False)
+set_image_surface_data = noop
+CAIRO_FORMATS = {}
 try:
-    from xpra.client.gtk3.cairo_workaround import set_image_surface_data, CAIRO_FORMATS
+    from xpra.client.gtk3 import cairo_workaround
+    set_image_surface_data = cairo_workaround.set_image_surface_data
+    CAIRO_FORMATS.update(cairo_workaround.CAIRO_FORMATS)
 except ImportError as e:
     log.warn("Warning: failed to load the bindings cairo workaround:")
     log.warn(" %s", e)
     log.warn(" rendering will be slow!")
+    CAIRO_USE_PIXBUF = True
     del e
-    set_image_surface_data = None
-    CAIRO_FORMATS = {}
 
 
-CAIRO_USE_PIXBUF = envbool("XPRA_CAIRO_USE_PIXBUF", False)
-
-
-"""
-An area we draw onto with cairo
-This must be used with bindings since bindings no longer supports gdk pixmaps
-
-/RANT: ideally we would want to use pycairo's create_for_data method:
-#surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_RGB24, width, height)
-but this is disabled in most cases, or does not accept our rowstride, so we cannot use it.
-Instead we have to use PIL to convert via a PNG or Pixbuf!
-"""
 class CairoBacking(CairoBackingBase):
+    """
+    An area we draw onto with cairo
+    This must be used with bindings since bindings no longer supports gdk pixmaps
+
+    /RANT: ideally we would want to use pycairo's create_for_data method:
+    #surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_RGB24, width, height)
+    but this is disabled in most cases, or does not accept our rowstride, so we cannot use it.
+    Instead we have to use PIL to convert via a PNG or Pixbuf!
+    """
 
     RGB_MODES = ["BGRA", "BGRX", "RGBA", "RGBX", "BGR", "RGB", "r210", "BGR565"]
 
@@ -55,10 +57,10 @@ class CairoBacking(CairoBackingBase):
         """ must be called from UI thread """
         log("cairo._do_paint_rgb%s set_image_surface_data=%s, use pixbuf=%s",
             (FORMATS.get(cairo_format, cairo_format), has_alpha, len(img_data),
-            type(img_data), x, y, width, height, render_width, render_height,
-            rowstride, options), set_image_surface_data, CAIRO_USE_PIXBUF)
+             type(img_data), x, y, width, height, render_width, render_height,
+             rowstride, options), set_image_surface_data, CAIRO_USE_PIXBUF)
         rgb_format = options.strget("rgb_format", "RGB")
-        if set_image_surface_data and not CAIRO_USE_PIXBUF:
+        if not CAIRO_USE_PIXBUF:
             rgb_formats = CAIRO_FORMATS.get(cairo_format)
             if rgb_format in rgb_formats:
                 img_surface = ImageSurface(cairo_format, width, height)
@@ -72,9 +74,9 @@ class CairoBacking(CairoBackingBase):
             data = GLib.Bytes(img_data)
             pixbuf = GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB,
                                                      has_alpha, 8, width, height, rowstride)
-            if render_width!=width or render_height!=height:
+            if render_width != width or render_height != height:
                 resample = options.strget("resample", "bilinear")
-                if resample=="NEAREST":
+                if resample == "NEAREST":
                     interp_type = GdkPixbuf.InterpType.NEAREST
                 elif resample in ("BICUBIC", "LANCZOS"):
                     interp_type = GdkPixbuf.InterpType.HYPER

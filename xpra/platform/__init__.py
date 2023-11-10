@@ -8,6 +8,8 @@ import os
 
 
 _init_done = False
+
+
 def init(prgname=None, appname=None):
     """ do whatever is needed to prepare an application for running,
         some platforms may initialize logging to file, etc.
@@ -30,17 +32,20 @@ def do_init():  # pragma: no cover
 def init_env():
     do_init_env()
 
+
 def do_init_env():
     init_env_common()
 
+
 def init_env_common():
-    #turn off gdk scaling to make sure we get the actual window geometry:
+    # turn off gdk scaling to make sure we get the actual window geometry:
     os.environ["GDK_SCALE"] = os.environ.get("GDK_SCALE", "1")
     os.environ["GDK_DPI_SCALE"] = os.environ.get("GDK_DPI_SCALE", "1")
-    #client side decorations break window geometry,
-    #disable this "feature" unless explicitly enabled:
+    # client side decorations break window geometry,
+    # disable this "feature" unless explicitly enabled:
     os.environ["GTK_CSD"] = os.environ.get("GTK_CSD", "0")
     init_hashlib()
+
 
 def init_hashlib():
     from xpra.util.env import envbool
@@ -86,7 +91,7 @@ class program_context:
 _prgname = None
 _appname = None
 def set_default_name(prgname=None, appname=None):
-    #sets the default prg and app names
+    # sets the default prg and app names
     global _prgname, _appname
     if prgname is not None:
         _prgname = prgname
@@ -94,10 +99,11 @@ def set_default_name(prgname=None, appname=None):
         _appname = appname
 
 
-#platforms can override this
+# platforms can override this
 def command_error(message):
     from xpra.scripts.main import error
     error(message)
+
 
 def command_info(message):
     from xpra.scripts.main import info
@@ -111,6 +117,7 @@ def clean():
         _clean_done = True
         do_clean()
 
+
 def do_clean(): # pragma: no cover
     """ some platforms override this """
 
@@ -123,7 +130,7 @@ def set_name(prgname=None, appname=None):
         set_prgname(prgname or _prgname)
         set_application_name(appname or _appname)
 
-#platforms can override this
+# platforms can override this
 def set_prgname(name):
     if not name:
         return
@@ -134,12 +141,13 @@ def set_prgname(name):
     except ImportError:
         pass
 
+
 def get_prgname():
     global _prgname
     return _prgname
 
 
-#platforms can override this
+# platforms can override this
 def set_application_name(name):
     if not name:
         return
@@ -149,6 +157,7 @@ def set_application_name(name):
         pass
     else:
         GLib.set_application_name(name)
+
 
 def get_application_name():
     global _appname
@@ -170,9 +179,9 @@ def platform_import(where, pm, required, *imports):
     if pm:
         module += ".%s" % pm
 
-    #cannot log this early! (win32 needs log to file redirection..)
-    #log = Logger("platform", "import")
-    #log("importing %s from %s (required=%s)" % (imports, module, required))
+    # cannot log this early! (win32 needs log to file redirection..)
+    # log = Logger("platform", "import")
+    # log("importing %s from %s (required=%s)" % (imports, module, required))
     try:
         platform_module = __import__(module, {}, {}, imports)
     except ImportError:

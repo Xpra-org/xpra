@@ -116,7 +116,7 @@ class BaseGUIWindow(Gtk.Window):
         hb.show_all()
         self.set_titlebar(hb)
 
-    def ib(self, title="", icon_name="browse.png", tooltip="", callback:Callable=noop, sensitive=True) -> None:
+    def ib(self, title="", icon_name="browse.png", tooltip="", callback: Callable=noop, sensitive=True) -> None:
         label_font = "sans 16"
         icon = get_icon_pixbuf(icon_name)
         btn = imagebutton(

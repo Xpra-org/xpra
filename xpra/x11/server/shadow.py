@@ -449,7 +449,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         w, h, encoding, rowstride, data = capture.take_screenshot()
         assert encoding=="png"  #use fixed encoding for now
         # pylint: disable=import-outside-toplevel
-        return ("screenshot", w, h, encoding, rowstride, Compressed(encoding, data))
+        return "screenshot", w, h, encoding, rowstride, Compressed(encoding, data)
 
 
 def snapshot(filename) -> int:

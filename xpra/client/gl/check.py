@@ -418,7 +418,6 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
         msg = "failed to parse gl version '%s': %s" % (bytestostr(gl_version_str), e)
         unsafe(msg)
         log(" assuming this is at least 1.1 to continue")
-        gl_major = gl_minor = 0
     else:
         props["opengl"] = gl_major, gl_minor
         MIN_VERSION = (1, 1)

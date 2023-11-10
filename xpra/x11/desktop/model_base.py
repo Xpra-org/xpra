@@ -87,13 +87,13 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         X11Window.addDefaultEvents(self.xid)
         self._managed = True
         self._setup_done = True
-        #listen for property changes on the root window:
+        # listen for property changes on the root window:
         add_event_receiver(self.xid, self)
 
     def do_xpra_property_notify_event(self, event) -> None:
         eventlog(f"do_xpra_property_notify_event: {event.atom}")
-        #update the wm-name (and therefore the window's "title")
-        #whenever this property changes:
+        # update the wm-name (and therefore the window's "title")
+        # whenever this property changes:
         if str(event.atom) == "_NET_SUPPORTING_WM_CHECK":
             if self.update_wm_name():
                 self.update_icon()
@@ -109,7 +109,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
     def update_wm_name(self) -> bool:
         try:
             with xsync:
-                wm_name = get_wm_name()     #pylint: disable=assignment-from-none
+                wm_name = get_wm_name()     # pylint: disable=assignment-from-none
         except Exception:
             wm_name = ""
         iconlog("update_wm_name() wm-name=%s", wm_name)
@@ -144,7 +144,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
     def uses_XShm(self) -> bool:
         return bool(self._xshm_handle)
 
-    def get_default_window_icon(self, _size) -> tuple[int,int,str,bytes] | None:
+    def get_default_window_icon(self, _size) -> tuple[int, int, str, bytes] | None:
         icon_name = get_generic_os_name()+".png"
         icon = get_icon(icon_name)
         if not icon:
@@ -155,21 +155,21 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         return self.get_property("wm-name") or "xpra desktop"
 
     def get_property(self, prop:str) -> Any:
-        if prop=="depth":
+        if prop == "depth":
             return self._depth
-        if prop=="title":
+        if prop == "title":
             return self.get_title()
-        if prop=="client-machine":
+        if prop == "client-machine":
             return socket.gethostname()
-        if prop=="window-type":
+        if prop == "window-type":
             return ["NORMAL"]
-        if prop=="shadow":
+        if prop == "shadow":
             return True
-        if prop=="class-instance":
-            return ("xpra-desktop", "Xpra-Desktop")
-        if prop=="content-type":
+        if prop == "class-instance":
+            return "xpra-desktop", "Xpra-Desktop"
+        if prop == "content-type":
             return "desktop"
-        if prop=="set-initial-position":
+        if prop == "set-initial-position":
             return False
         return GObject.GObject.get_property(self, prop)
 
@@ -186,8 +186,8 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
             geomlog.error("Error: cannot honour resize request,")
             geomlog.error(" no RandR support on this display")
             return
-        #FIXME: small race if the user resizes with randr,
-        #at the same time as he resizes the window..
+        # FIXME: small race if the user resizes with randr,
+        # at the same time as he resizes the window..
         self.resize_value = (w, h)
         if not self.resize_timer:
             self.resize_timer = GLib.timeout_add(250, self.do_resize)

@@ -250,7 +250,7 @@ class subprocess_callee:
             item = self.send_queue.get(False)
         except Exception:
             item = None
-        return (item, None, None, self.send_queue.qsize()>0)
+        return item, None, None, self.send_queue.qsize() > 0
 
     def process_packet(self, proto, packet) -> None:
         command = bytestostr(packet[0])
@@ -447,7 +447,7 @@ class subprocess_caller:
             item = self.send_queue.get(False)
         except Exception:
             item = None
-        return (item, None, None, None, False, self.send_queue.qsize()>0)
+        return item, None, None, None, False, self.send_queue.qsize() > 0
 
     def send(self, *packet_data) -> None:
         self.send_queue.put(packet_data)

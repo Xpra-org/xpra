@@ -43,7 +43,7 @@ else:
 def rgba(c):
     r, g, b = (c >> 16) & 0xFF, (c >> 8) & 0xFF, c & 0xFF
     a = (c >> 24) & 0xff
-    return (r, g, b, a)
+    return r, g, b, a
 
 def get_frame_color():
     if not DwmGetColorizationParameters:

@@ -36,7 +36,7 @@ QUALITY_OPTIONS_COMMON = {
                 30      : "Low",
                 }
 MIN_QUALITY_OPTIONS = QUALITY_OPTIONS_COMMON.copy()
-MIN_QUALITY_OPTIONS | {
+MIN_QUALITY_OPTIONS |= {
     0 : "None",
     75  : "High",
 }

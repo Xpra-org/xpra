@@ -150,7 +150,7 @@ class ClientWindow(GTKClientWindowBase):
         else:
             x, y = self.get_position()
         w, h = self.get_size()
-        return (x, y, w, h)
+        return x, y, w, h
 
     def apply_geometry_hints(self, hints:typedict) -> None:
         """ we convert the hints as a dict into a gdk.Geometry + gdk.WindowHints """

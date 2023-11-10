@@ -193,7 +193,7 @@ class SilenceWarningsContext(AbstractContextManager):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         warnings.filterwarnings("default")
-        self.context.__exit__()
+        self.context.__exit__(exc_type, exc_val, exc_tb)
 
     def __repr__(self):
         return f"IgnoreWarningsContext({self.categories})"

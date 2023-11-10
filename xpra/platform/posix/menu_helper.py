@@ -86,7 +86,7 @@ if LOAD_FROM_THEME:
     except (ImportError, AttributeError):
         log("python xdg is missing", exc_info=True)
     else:
-        class KeepCacheLoadingContext():
+        class KeepCacheLoadingContext:
             __slots__ = ("cache_time", )
             def __enter__(self):
                 self.cache_time : int = Config.cache_time

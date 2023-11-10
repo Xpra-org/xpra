@@ -123,6 +123,7 @@ class GLClientWindow(GLClientWindowBase):
         if widget:
             widget.queue_render()
 
+
 GObject.type_register(GLClientWindow)
 
 

@@ -134,7 +134,7 @@ class ProxyServer(ServerCore):
                         mode = mode | SOCKET_DIR_MODE
                         log.warn(" changing to %s", oct(mode))
                         os.chmod(d, mode)
-                    if xpra_group_id>=0 and stat.st_gid!=xpra_group_id:
+                    if xpra_group_id >= 0 and stat.st_gid != xpra_group_id:
                         import grp
                         group = grp.getgrgid(stat.st_gid)[0]
                         log.warn("Warning: invalid group on '%s': %s", d, group)

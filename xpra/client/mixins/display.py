@@ -476,7 +476,7 @@ class DisplayClient(StubClientMixin):
             rrate = (get_refresh_rate_for_value(self.refresh_rate, vrefresh) or 0)//1000
         log("get_screen_settings() vrefresh=%s (from %s)", rrate, vrefresh)
         monitors = self.get_monitors_info()
-        return (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi, rrate, monitors)
+        return root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi, rrate, monitors
 
     def update_screen_size(self) -> None:
         self.screen_size_change_timer = 0

@@ -195,7 +195,7 @@ class GTKServerBase(ServerBase):
     def get_cursor_sizes(self) -> tuple[int,int]:
         display = Gdk.Display.get_default()
         if not display:
-            return (0, 0)
+            return 0, 0
         return int(display.get_default_cursor_size()), display.get_maximal_cursor_size()
 
 

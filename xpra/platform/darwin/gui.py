@@ -583,7 +583,7 @@ class AppDelegate(NSObject):
         self = objc.super(AppDelegate, self).init()
         if self is None:
             return None
-        self.callbacks : dict[str,Callable] = {}
+        self.callbacks : dict[str, Callable] = {}
         self.workspace = None
         self.notificationCenter = None
         return self

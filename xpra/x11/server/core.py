@@ -522,7 +522,7 @@ class X11ServerCore(GTKServerBase):
             cursorlog("get_cursor_data(): default cursor - clearing it")
             cursor_image = None
         cursor_sizes = self.get_cursor_sizes()
-        return (cursor_image, cursor_sizes)
+        return cursor_image, cursor_sizes
 
 
     def get_all_screen_sizes(self) -> tuple:
@@ -682,12 +682,6 @@ class X11ServerCore(GTKServerBase):
         #try to find the best screen size to resize to:
         w, h = self.get_best_screen_size(desired_w, desired_h)
 
-        ui_clients = [s for s in self._server_sources.values() if s.ui_client]
-        source = None
-        screen_sizes = []
-        if len(ui_clients)==1:
-            source = ui_clients[0]
-            screen_sizes = source.screen_sizes
         if w==root_w and h==root_h:
             screenlog.info("best resolution matching %sx%s is unchanged: %sx%s", desired_w, desired_h, w, h)
             return root_w, root_h
@@ -1020,7 +1014,7 @@ class X11ServerCore(GTKServerBase):
         #regions = array of (wid, x, y, PIL.Image)
         if not regions:
             log("screenshot: no regions found, returning empty 0x0 image!")
-            return ("screenshot", 0, 0, "png", 0, b"")
+            return "screenshot", 0, 0, "png", 0, b""
         #in theory, we could run the rest in a non-UI thread since we're done with GTK..
         minx : int = min(x for (_,x,_,_) in regions)
         miny : int = min(y for (_,_,y,_) in regions)

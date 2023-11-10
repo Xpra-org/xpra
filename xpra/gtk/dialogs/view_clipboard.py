@@ -106,6 +106,7 @@ class ClipboardInstance:
         return val
 
     def selection_value_callback(self, _cb, selection_data, *_args):
+        data = b""
         try:
             data = selection_data.get_data()
             if data is None:
