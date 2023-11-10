@@ -79,7 +79,7 @@ assert MAX_QUALITY > 0 and MAX_SPEED > 0
 MERGE_REGIONS = envbool("XPRA_MERGE_REGIONS", True)
 DOWNSCALE = envbool("XPRA_DOWNSCALE", True)
 DOWNSCALE_THRESHOLD = envint("XPRA_DOWNSCALE_THRESHOLD", 20)
-MAX_SYNC_BUFFER_SIZE = envint("XPRA_MAX_SYNC_BUFFER_SIZE", 256)*1024*1024        #256MB
+MAX_SYNC_BUFFER_SIZE = envint("XPRA_MAX_SYNC_BUFFER_SIZE", 256)*1024*1024        # 256MB
 AV_SYNC_RATE_CHANGE = envint("XPRA_AV_SYNC_RATE_CHANGE", 20)
 AV_SYNC_TIME_CHANGE = envint("XPRA_AV_SYNC_TIME_CHANGE", 500)
 SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
@@ -98,6 +98,8 @@ def get_env_encodings(etype:str, valid_options:Iterable[str]=()) -> tuple[str,..
         encodings = tuple(x for x in options if x in valid_options)
     log("%s encodings: %s", etype, encodings)
     return encodings
+
+
 TRANSPARENCY_ENCODINGS = get_env_encodings("TRANSPARENCY", ("webp", "png", "rgb32", "jpega"))
 if TRUE_LOSSLESS:
     LOSSLESS_ENCODINGS = ("rgb", "png", "png/P", "png/L", "webp", "avif")
@@ -107,7 +109,7 @@ LOSSLESS_ENCODINGS = get_env_encodings("LOSSLESS", LOSSLESS_ENCODINGS)
 REFRESH_ENCODINGS = get_env_encodings("REFRESH", LOSSLESS_ENCODINGS)
 
 LOSSLESS_WINDOW_TYPES = set(os.environ.get("XPRA_LOSSLESS_WINDOW_TYPES",
-                                       "DOCK,TOOLBAR,MENU,UTILITY,DROPDOWN_MENU,POPUP_MENU,TOOLTIP,NOTIFICATION,COMBO,DND").split(","))
+               "DOCK,TOOLBAR,MENU,UTILITY,DROPDOWN_MENU,POPUP_MENU,TOOLTIP,NOTIFICATION,COMBO,DND").split(","))
 
 
 COMPRESS_FMT_PREFIX : str = "compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s"
@@ -243,7 +245,7 @@ class WindowSource(WindowIconSource):
         self.mapped_at = None
         self.fullscreen : bool = not self.is_tray and window.get("fullscreen")
         if default_encoding_options.get("scaling.control") is None:
-            self.scaling_control = None     #means "auto"
+            self.scaling_control = None     # means "auto"
         else:
             # ClientConnection sets defaults with the client's scaling.control value
             self.scaling_control = default_encoding_options.intget("scaling.control", 1)
@@ -277,7 +279,7 @@ class WindowSource(WindowIconSource):
         self.bandwidth_limit = bandwidth_limit
         self.jitter = jitter
 
-        self.pixel_format = None                            #ie: BGRX
+        self.pixel_format = None                            # ie: BGRX
         self.image_depth : int = window.get_property("depth")
 
         # general encoding tunables (mostly used by video encoders):
@@ -461,7 +463,7 @@ class WindowSource(WindowIconSource):
         self.scaling = None
         self.maximized = False
         self.bandwidth_limit = 0
-        #for deciding between small regions and full screen updates:
+        # for deciding between small regions and full screen updates:
         self.max_small_regions : int = 40
         self.max_bytes_percent : int = 60
         self.small_packet_cost : int = 1024
@@ -518,7 +520,7 @@ class WindowSource(WindowIconSource):
         """
         info = self.statistics.get_info()
         info.update(super().get_info())
-        einfo = info.setdefault("encoding", {})     #defined in statistics.get_info()
+        einfo = info.setdefault("encoding", {})     # defined in statistics.get_info()
         einfo.update(self.get_quality_speed_info())
         einfo.update({
                       ""                    : self.encoding,
@@ -890,7 +892,7 @@ class WindowSource(WindowIconSource):
             ropts = set(self.client_refresh_encodings)
         else:
             # sane defaults:
-            ropts = set(REFRESH_ENCODINGS)  #default encodings for auto-refresh
+            ropts = set(REFRESH_ENCODINGS)  # default encodings for auto-refresh
         if (self.refresh_quality < 100 or not TRUE_LOSSLESS) and self.image_depth > 16:
             ropts.add("jpeg")
             ropts.add("jpega")
@@ -1075,7 +1077,7 @@ class WindowSource(WindowIconSource):
         return self.encoding
 
     def encoding_is_grayscale(self, *args) -> str:
-        e = self.get_auto_encoding(*args)  #pylint: disable=no-value-for-parameter
+        e = self.get_auto_encoding(*args)  # pylint: disable=no-value-for-parameter
         if e.startswith("rgb") or e.startswith("png"):
             return "png/L"
         return e
@@ -1459,10 +1461,10 @@ class WindowSource(WindowIconSource):
         # - when quality is low, we can refresh more slowly
         # - when speed is low, we can also refresh slowly
         # - delay a lot more when we have bandwidth issues
-        sizef = sqrt(ww*wh/(1000*1000))      #more than 1 megapixel -> delay more
+        sizef = sqrt(ww*wh/(1000*1000))      # more than 1 megapixel -> delay more
         qf = (150-self._current_quality)/100.0
         sf = (150-self._current_speed)/100.0
-        cf = (100+cv*500)/100.0    #high congestion value -> very high delay
+        cf = (100+cv*500)/100.0    # high congestion value -> very high delay
         # bandwidth limit is used to set a minimum on the delay
         min_delay = int(max(100*cf, self.auto_refresh_delay, 50 * sizef, self.batch_config.delay*4))
         bwl = self.bandwidth_limit or 0
@@ -2215,7 +2217,7 @@ class WindowSource(WindowIconSource):
                 )
             if encoding == "jpeg" and TRUE_LOSSLESS:
                 lossy = True
-        refresh_exclude = self.get_refresh_exclude()  #pylint: disable=assignment-from-none
+        refresh_exclude = self.get_refresh_exclude()  # pylint: disable=assignment-from-none
         now = monotonic()
         def rec(msg):
             self.last_auto_refresh_message = now, msg
@@ -2228,7 +2230,7 @@ class WindowSource(WindowIconSource):
             # (window video source may remove it from the video subregion)
             self.remove_refresh_region(region)
             if not self.refresh_timer:
-                #nothing due for refresh, still nothing to do
+                # nothing due for refresh, still nothing to do
                 return rec("lossless - nothing to do")
             if not self.refresh_regions:
                 self.cancel_refresh_timer()
@@ -2282,8 +2284,8 @@ class WindowSource(WindowIconSource):
         due_pixcount = sum(rect.width*rect.height for rect in self.refresh_regions)
         # a refresh is already due
         if added_pixcount >= due_pixcount//2:
-            #we have more than doubled the number of pixels to refresh
-            #use the total due
+            # we have more than doubled the number of pixels to refresh
+            # use the total due
             pct = 100*due_pixcount//window_pixcount
         # don't use sqrt() on pct,
         # so this will not move it forwards for small updates following bigger ones:
@@ -2363,7 +2365,7 @@ class WindowSource(WindowIconSource):
         if self.can_refresh() and regions and ret > 0:
             now = monotonic()
             options = self.get_refresh_options()
-            refresh_exclude = self.get_refresh_exclude()    #pylint: disable=assignment-from-none
+            refresh_exclude = self.get_refresh_exclude()    # pylint: disable=assignment-from-none
             refreshlog("timer_full_refresh() after %ims, auto_refresh_encodings=%s, options=%s, regions=%s, refresh_exclude=%s",
                        1000.0*(monotonic()-ret), self.auto_refresh_encodings, options, regions, refresh_exclude)
             self.do_send_regions(now, regions, self.auto_refresh_encodings[0], options,
@@ -2411,7 +2413,7 @@ class WindowSource(WindowIconSource):
     def get_refresh_options(self) -> dict[str,Any]:
         return {
                 "optimize"      : False,
-                "auto_refresh"  : True,     #not strictly an auto-refresh, just makes sure we won't trigger one
+                "auto_refresh"  : True,     # not strictly an auto-refresh, just makes sure we won't trigger one
                 "quality"       : self.refresh_quality,
                 "speed"         : self.refresh_speed,
                 }
@@ -2447,7 +2449,7 @@ class WindowSource(WindowIconSource):
             # only record slow send as congestion events
             # if the bandwidth limit is already below the threshold:
             if ldata > 1024 and self.bandwidth_limit < SLOW_SEND_THRESHOLD:
-                #if this packet completed late, record congestion send speed:
+                # if this packet completed late, record congestion send speed:
                 max_send_delay = 5 + self.estimate_send_delay(ldata)
                 if elapsed_ms > max_send_delay:
                     late_pct = round(elapsed_ms*100/max_send_delay)-100
@@ -2576,7 +2578,7 @@ class WindowSource(WindowIconSource):
             if frame_no!=0:
                 netlatency = int(1000*gs.min_client_latency*(100+ACK_JITTER)//100)
                 sendlatency = min(200, self.estimate_send_delay(bytecount))
-                # decode = pixels//100000         #0.1MPixel/s: 2160p -> 8MPixels, 80ms budget
+                # decode = pixels//100000         # 0.1MPixel/s: 2160p -> 8MPixels, 80ms budget
                 live_time = int(1000*(now-self.statistics.init_time))
                 ack_tolerance = self.jitter + ACK_TOLERANCE + max(0, 200-live_time//10)
                 latency = netlatency + sendlatency + decode_time + ack_tolerance
@@ -2637,11 +2639,9 @@ class WindowSource(WindowIconSource):
             self.decode_error_refresh_timer = 0
             self.source_remove(dert)
 
-
     def may_use_scrolling(self, _image, _options) -> bool:
         # overridden in video source
         return False
-
 
     def make_data_packet(self, damage_time, process_damage_time,
                          image : ImageWrapper, coding : str, sequence : int, options, flush) -> tuple | None:
@@ -2718,9 +2718,9 @@ class WindowSource(WindowIconSource):
             client_options['process_damage_time'] = int(process_damage_time * 1000)
             client_options['damage_packet_time'] = int(end * 1000)
         compresslog(COMPRESS_FMT,
-                 (end-start)*1000.0, outw, outh, x, y, self.wid, coding,
-                 100.0*csize/psize, ceil(psize/1024), ceil(csize/1024),
-                 self._damage_packet_sequence, client_options, options)
+                    (end-start)*1000.0, outw, outh, x, y, self.wid, coding,
+                    100.0*csize/psize, ceil(psize/1024), ceil(csize/1024),
+                    self._damage_packet_sequence, client_options, options)
         self.statistics.encoding_stats.append((end, coding, w*h, bpp, csize, end-start))
         return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options, options)
 
@@ -2781,7 +2781,7 @@ class WindowSource(WindowIconSource):
             raise RuntimeError(f"failed to get pixels from {image}")
         from xpra.net.mmap import mmap_write
         mmap_data, mmap_free_size = mmap_write(self._mmap, self._mmap_size, data)
-        # elapsed = monotonic()-start+0.000000001 #make sure never zero!
+        # elapsed = monotonic()-start+0.000000001 # make sure never zero!
         # log("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024),
         #    len(data), 1000*elapsed)
         if mmap_data is None:
