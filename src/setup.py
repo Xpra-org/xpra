@@ -20,7 +20,7 @@ try:
     from distutils.command.build import build
     from distutils.command.install_data import install_data
 except ImportError as e:
-    print(f"no distutils: {e}, trying setuptools")
+    print("no distutils: %s, trying setuptools" % e)
     from setuptools import setup
     from setuptools.command.build import build
     from setuptools.command.install import install as install_data
