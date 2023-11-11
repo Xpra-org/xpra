@@ -11,7 +11,7 @@ from Cocoa import (
     NSOpenGLPFAAlphaSize, NSOpenGLPFABackingStore, NSOpenGLPFAColorSize,
     NSOpenGLPFADepthSize, NSOpenGLPFADoubleBuffer, NSOpenGLPFAAccumSize,
     NSOpenGLPFAStencilSize, NSOpenGLPFAAuxBuffers, NSOpenGLCPSurfaceOpacity,
-    )
+)
 from xpra.gtk.window import GDKWindow
 from xpra.client.gl.check import check_PyOpenGL_support
 from xpra.platform.darwin.gdk3_bindings import get_nsview_ptr, enable_transparency, get_backing_scale_factor
@@ -70,7 +70,6 @@ class AGLContext:
         self.gl_context : NSOpenGLContext | None = None
         self.nsview_ptr : int = 0
         self.window_context : AGLWindowContext | None = None
-        self.pixel_format = NSOpenGLPixelFormat.new()
         attrs = [
             NSOpenGLPFAWindow,
             NSOpenGLPFADoubleBuffer,
@@ -79,10 +78,9 @@ class AGLContext:
             NSOpenGLPFAColorSize, 32,       #for high bit depth, we should switch to 64 and NSOpenGLPFAColorFloat
             NSOpenGLPFADepthSize, 24,
             ]
-        self.pixel_format = self.pixel_format.initWithAttributes_(attrs)
+        self.pixel_format = NSOpenGLPixelFormat.alloc().initWithAttributes_(attrs)
         assert self.pixel_format is not None, "failed to initialize NSOpenGLPixelFormat with {}".format(attrs)
-        c = NSOpenGLContext.alloc()
-        c = c.initWithFormat_shareContext_(self.pixel_format, None)
+        c = NSOpenGLContext.alloc().initWithFormat_shareContext_(self.pixel_format, None)
         assert c is not None, "failed to initialize NSOpenGLContext with {}".format(self.pixel_format)
         self.gl_context = c
 
