@@ -1,12 +1,12 @@
 %define _disable_source_fetch 0
 
 Name:           python2-pyxdg
-Version:        0.27
+Version:        0.28
 Release:        1%{?dist}
 Summary:		Python2 library to access freedesktop.org standards
 License:        LGPLv2
 URL:            http://freedesktop.org/Software/pyxdg
-Source0:        https://files.pythonhosted.org/packages/6f/2e/2251b5ae2f003d865beef79c8fcd517e907ed6a69f58c32403cec3eba9b2/pyxdg-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/b0/25/7998cd2dec731acbd438fbf91bc619603fc5188de0a9a17699a781840452/pyxdg-%{version}.tar.gz
 # https://gitlab.freedesktop.org/xdg/pyxdg/merge_requests/2
 BuildArch:      noarch
 BuildRequires:	hicolor-icon-theme
@@ -23,7 +23,7 @@ package contains a Python 2 version of PyXDG.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "80bd93aae5ed82435f20462ea0208fb198d8eec262e831ee06ce9ddb6b91c5a5" ]; then
+if [ "${sha256}" != "3267bb3074e934df202af2ee0868575484108581e6f3cb006af1da35395e88b4" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
