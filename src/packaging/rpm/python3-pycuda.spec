@@ -16,14 +16,13 @@
 %endif
 
 Name:           python3-pycuda
-Version:        2022.1
-Release:        2
+Version:        2023.1
+Release:        1
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
-Source0:        https://files.pythonhosted.org/packages/2d/1f/48a3a5b2c715345e7af1e09361100bd98c3d72b4025371692ab233f523d3/pycuda-%{version}.tar.gz
-Patch0:         pycuda-show-cleanup-failure-warning.patch
+Source0:        https://files.pythonhosted.org/packages/dd/b2/e30282f3286ddad05ef44548fa5c306a179ed3baceefa699af078e49ce6e/pycuda-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python3-pycuda
 
@@ -48,12 +47,11 @@ Suggests:       nvidia-driver-cuda-libs
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "acd9030d93e76e60b122e33ad16bcf01bb1344f4c304dedff1cd2bffb0f313a3" ]; then
+if [ "${sha256}" != "175ff675f0cf10e38e9adc03ed5df3ed8d8abf7da5134c8dccec752e8a0a3e91" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
 %setup -q -n pycuda-%{version}
-%patch -P 0 -p1
 
 %build
 CUDA=/opt/cuda
@@ -72,6 +70,8 @@ LDFLAGS=-L$CUDA/%{STUBS_DIR} CXXFLAGS=-L$CUDA/%{STUBS_DIR} %{__python3} setup.py
 %install
 CUDA=/opt/cuda
 LDFLAGS=-L$CUDA/%{STUBS_DIR} CXXFLAGS=-L$CUDA/%{STUBS_DIR} %{__python3} setup.py install --prefix=%{_prefix} --root=%{buildroot}
+# RHEL stream setuptools bug?
+rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 %clean
 rm -rf %{buildroot}
@@ -82,6 +82,12 @@ rm -rf %{buildroot}
 %{python3_sitearch}/pycuda*
 
 %changelog
+* Sat Nov 11 2023 Antoine Martin <antoine@xpra.org> - 2023.1-1
+- new upstream release
+
+* Sat Nov 11 2023 Antoine Martin <antoine@xpra.org> - 2022.2.2-1
+- new upstream release
+
 * Tue Aug 16 2022 Antoine Martin <antoine@xpra.org> - 2022.1-2
 - add patch to show context cleanup failures
 
