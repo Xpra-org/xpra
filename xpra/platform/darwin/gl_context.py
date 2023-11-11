@@ -11,6 +11,7 @@ from Cocoa import (
     NSOpenGLPFAAlphaSize, NSOpenGLPFABackingStore, NSOpenGLPFAColorSize,
     NSOpenGLPFADepthSize, NSOpenGLPFADoubleBuffer, NSOpenGLPFAAccumSize,
     NSOpenGLPFAStencilSize, NSOpenGLPFAAuxBuffers, NSOpenGLCPSurfaceOpacity,
+    NSOpenGLGetVersion,
 )
 from xpra.gtk.window import GDKWindow
 from xpra.client.gl.check import check_PyOpenGL_support
@@ -72,7 +73,9 @@ class AGLContext:
         self.window_context : AGLWindowContext | None = None
         attrs = [
             NSOpenGLPFAWindow,
+            #NSOpenGLPFAAccelerated,
             NSOpenGLPFADoubleBuffer,
+            #NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
             NSOpenGLPFAAlphaSize, 8,
             NSOpenGLPFABackingStore,
             NSOpenGLPFAColorSize, 32,       #for high bit depth, we should switch to 64 and NSOpenGLPFAColorFloat
@@ -107,6 +110,8 @@ class AGLContext:
             #"visible-mask"      : ?
             "double-buffered"   : (int,     NSOpenGLPFADoubleBuffer)
             }
+        major, minor = NSOpenGLGetVersion(None, None)
+        log(f"NSOpenGLGetVersion()={major},{minor}")
         nscreens = self.pixel_format.numberOfVirtualScreens()
         i = {
             #"pixel-format"      : self.pixel_format,
