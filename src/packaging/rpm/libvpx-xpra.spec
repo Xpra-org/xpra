@@ -1,7 +1,7 @@
 %define _disable_source_fetch 0
 
 Name:	     libvpx-xpra
-Version:     1.11.0
+Version:     1.13.0
 Release:     1%{?dist}
 Summary:     vpx library for xpra
 
@@ -36,12 +36,12 @@ This package contains the development files for %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "965e51c91ad9851e2337aebcc0f517440c637c506f3a03948062e3d5ea129a83" ]; then
+if [ "${sha256}" != "cb2a393c9c1fae7aba76b950bb0ad393ba105409fe1a147ccd61b0aaa1501066" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
-%if 0%{?el8}%{?fedora}
-echo "Fedora and RHEL8 should use system packages"
+%if ! 0%{?el7}
+echo "this package is only meant to be built for RHEL / CentOS 7.x"
 exit 1
 %endif
 %setup -q -n libvpx-%{version}
@@ -99,6 +99,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sat Nov 11 2022 Antoine Martin <antoine@xpra.org> 1.13.0-1
+- new upstream release
+
 * Mon Mar 21 2022 Antoine Martin <antoine@xpra.org> 1.11.0-1
 - new upstream release
 
