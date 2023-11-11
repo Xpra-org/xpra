@@ -18,13 +18,13 @@
 %define debug_package %{nil}
 
 Name:           %{python3}-pynvml
-Version:        12.535.108
+Version:        12.535.133
 Release:        1
 URL:            http://pythonhosted.org/nvidia-ml-py/
 Summary:        Python3 wrapper for NVML
 License:        BSD
 Group:          Development/Libraries/Python
-Source0:        https://files.pythonhosted.org/packages/2d/2b/fd33888dccd2e4c8a7a4be552200fa75f8cecd851f6612dc4acbf64fcf8d/nvidia-ml-py-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/c9/f5/35d8002a4a9532c58fa304046de2d9b8be18183c341c517ac48f2bce907a/nvidia-ml-py-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-setuptools
@@ -34,7 +34,7 @@ Python Bindings for the NVIDIA Management Library
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "141fe818771a165fb93f75dbe7f01f767c3bafa7c13f6876f53583511b078ee1" ]; then
+if [ "${sha256}" != "b1559af0d57dd20955bf58d05afff7b166ddd44947eb3051c9905638799eb1dc" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -59,6 +59,9 @@ rm -rf %{buildroot}
 %{python3_sitelib}/nvidia_ml_py-%{version}*-py*.egg-info
 
 %changelog
+* Sat Nov 11 2023 Antoine Martin <antoine@xpra.org> - 12.535.133-1
+- new upstream release
+
 * Wed Jul 12 2023 Antoine Martin <antoine@xpra.org> - 12.535.77-1
 - new upstream release
 
