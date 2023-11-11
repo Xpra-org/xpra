@@ -781,6 +781,7 @@ fi
    display number ignored
    exit-with-children can't be unchecked in start-gui
    port number always specified but not validated
+   OpenGL crash warnings on MacOS
 - Platform and packaging
    Cython 3.0.5
    C functions cannot raise Python exceptions
@@ -809,6 +810,7 @@ fi
    opengl test window misnamed
    try harder to exit more cleanly on error
 - Cosmetic:
+   outdated email address
    don't warn if `avif` encoder or decoder is missing
    add newline to clear stdout
    extra `%` in tray menu

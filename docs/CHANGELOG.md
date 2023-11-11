@@ -9,6 +9,7 @@
     * [ensure the content-type is initialized at least once](https://github.com/Xpra-org/xpra/commit/608bf55e822f78eabfd59f5a4f44929e71dad679)
     * [ensure all encoders are initialized before choosing an encoding](https://github.com/Xpra-org/xpra/commit/dd808947a7ceff1524adae44bc930636eef7a4e7)
     * [video modules lost after initial connection](https://github.com/Xpra-org/xpra/commit/8217fabfcee476c2f44ae78cde1c718ee609157f)
+    * [OpenGL crash warnings on MacOS](https://github.com/Xpra-org/xpra/commit/2e4248d5a61a20b81d4f39dce85464689136c69c)
 * `start-gui` fixes:
     * [display number ignored](https://github.com/Xpra-org/xpra/commit/db7f6f4ea1530e7b6c901b2b0e44f00271c9d8b6)
     * [exit-with-children can't be unchecked in start-gui](https://github.com/Xpra-org/xpra/commit/98ee5a6f26cdac6bf62166b1ceca522b02f6fca4)
@@ -41,6 +42,7 @@
     * [opengl test window misnamed](https://github.com/Xpra-org/xpra/commit/62784a7510de5c37b8a15e035040a08106d29151)
     * [try harder to exit more cleanly on error](https://github.com/Xpra-org/xpra/commit/fe64f343f149dc8e2b7a82aeaeef54bdcb8d122d)
 * Cosmetic:
+    * [outdated email address](https://github.com/Xpra-org/xpra/commit/a994becb5c3e2fbd0561d1296814f84e1770084a)
     * [don't warn if `avif` decoder is missing](https://github.com/Xpra-org/xpra/commit/3d919bd6e7f7fe1018800ced86641e48151be900), [same for encoder](https://github.com/Xpra-org/xpra/commit/f829661b87631ceac56522d6260bcfe6ceb7c4df)
     * [add newline to clear stdout](https://github.com/Xpra-org/xpra/commit/00427351e049cab6d1c585be7df366248858321d)
     * [extra `%` in tray menu](https://github.com/Xpra-org/xpra/commit/7bc5d5b6059c9c785d72794b945c340ece28486b), [twice](https://github.com/Xpra-org/xpra/commit/1cf818034cf64b12747b0ced126e1f955dfb9c9c)

@@ -7,6 +7,7 @@ xpra (5.0.4-1) UNRELEASED; urgency=low
     - ensure the content-type is initialized at least once
     - ensure all encoders are initialized before choosing an encoding
     - video modules lost after initial connection
+    - OpenGL crash warnings on MacOS
   * `start-gui` fixes:
     - display number ignored
     - exit-with-children can't be unchecked in start-gui
@@ -39,6 +40,7 @@ xpra (5.0.4-1) UNRELEASED; urgency=low
     - opengl test window misnamed
     - try harder to exit more cleanly on error
   * Cosmetic:
+    - outdated email address
     - don't warn if `avif` encoder or decoder is missing
     - add newline to clear stdout
     - extra `%` in tray menu
@@ -46,7 +48,7 @@ xpra (5.0.4-1) UNRELEASED; urgency=low
     - silence deprecation warning
     - man pages fixes
 
- -- Antoine Martin <antoine@xpra.org>  Sat, 11 Nov 2023 21:06:07 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sat, 11 Nov 2023 23:18:14 +0700
 
 xpra (5.0.3-1) UNRELEASED; urgency=low
   * Major:
