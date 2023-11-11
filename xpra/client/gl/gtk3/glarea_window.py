@@ -23,7 +23,7 @@ def GLArea(alpha:bool) -> Gtk.GLArea:
     glarea.set_has_alpha(alpha)
     glarea.set_has_depth_buffer(False)
     glarea.set_has_stencil_buffer(False)
-    glarea.set_required_version(3, 0)
+    glarea.set_required_version(3, 2)
     return glarea
 
 

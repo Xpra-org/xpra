@@ -32,7 +32,7 @@ from OpenGL.GL import (
     glActiveTexture, glTexSubImage2D,
     glViewport,
     glGenTextures, glDisable,
-    glBindTexture, glPixelStorei, glEnable, glFlush,
+    glBindTexture, glPixelStorei, glFlush,
     glBindBuffer, glGenBuffers, glBufferData, glDeleteBuffers,
     glTexParameteri,
     glTexImage2D,
@@ -794,7 +794,6 @@ class GLWindowBackingBase(WindowBackingBase):
         # paint this texture
         glActiveTexture(GL_TEXTURE0)
         target = GL_TEXTURE_RECTANGLE
-        glEnable(target)
         glBindTexture(target, texture)
 
         wh = self.render_size[1]
