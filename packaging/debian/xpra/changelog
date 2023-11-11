@@ -46,7 +46,7 @@ xpra (5.0.4-1) UNRELEASED; urgency=low
     - silence deprecation warning
     - man pages fixes
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 11 Nov 2023 21:06:07 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sat, 11 Nov 2023 21:06:07 +0700
 
 xpra (5.0.3-1) UNRELEASED; urgency=low
   * Major:
@@ -85,7 +85,7 @@ xpra (5.0.3-1) UNRELEASED; urgency=low
     - avoid uinput warning
     - incorrect start command request parameters
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 05 Oct 2023 22:23:30 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 05 Oct 2023 22:23:30 +0700
 
 xpra (5.0.2-1) UNRELEASED; urgency=low
   * Major fixes:
@@ -124,7 +124,7 @@ xpra (5.0.2-1) UNRELEASED; urgency=low
     - microphone support for Chromium
     - cleaner pulseaudio command options
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 13 Sep 2023 10:05:29 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 13 Sep 2023 10:05:29 +0700
 
 xpra (5.0.1-1) UNRELEASED; urgency=low
   * Major fixes:
@@ -146,7 +146,7 @@ xpra (5.0.1-1) UNRELEASED; urgency=low
     - typo in undocumented environment variable
     - gtk version info missing for verbosity level
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 26 Aug 2023 16:42:42 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sat, 26 Aug 2023 16:42:42 +0700
 
 xpra (5.0-1) UNRELEASED; urgency=low
   * Major improvements:
@@ -192,7 +192,7 @@ xpra (5.0-1) UNRELEASED; urgency=low
     - `stream` encoding for desktop mode
     - GStreamer codecs
 
- -- Antoine Martin <antoine@nagafix.co.uk> Sat, 19 Aug 2023 00:12:01 +0700
+ -- Antoine Martin <antoine@xpra.org> Sat, 19 Aug 2023 00:12:01 +0700
 
 xpra (4.4-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
@@ -261,7 +261,7 @@ xpra (4.4-1) UNRELEASED; urgency=low
     - Remove scary warnings
     - f-strings
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 01 Oct 2022 21:31:22 +0200
+ -- Antoine Martin <antoine@xpra.org>  Sat, 01 Oct 2022 21:31:22 +0200
 
 xpra (4.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
@@ -307,7 +307,7 @@ xpra (4.3-1) UNRELEASED; urgency=low
     - source /etc/profile: #3083
     - switch input method to ibus: #2359
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 08 Dec 2021 21:56:48 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 08 Dec 2021 21:56:48 +0700
 
 xpra (4.2-1) UNRELEASED; urgency=low
   * use pinentry for password prompts and ssh prompts
