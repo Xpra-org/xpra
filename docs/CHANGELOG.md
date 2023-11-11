@@ -1,7 +1,8 @@
 # Changelog
 
-## [5.0.4] 2023-11-09
+## [5.0.4] 2023-11-11
 * Major:
+    * [missing flush marker with some scroll screen updates](https://github.com/Xpra-org/xpra/commit/ff36bc1a085c6caca3bdb95791c5001c3c6909bb)
     * [fixup tray backport regression](https://github.com/Xpra-org/xpra/commit/6631cfe8b8c228894cd93b679d7ed78ef5715f81)
     * [signal watcher backport regression](https://github.com/Xpra-org/xpra/commit/96f0351ba1dbc5c1dee6bfcf760a4350b2d2b9c0)
     * [avoid menu and input device errors when client is not set](https://github.com/Xpra-org/xpra/commit/ce25a2468194d1b25472562acde6070419fcad28)
@@ -18,7 +19,7 @@
     * [MacOS pyobjc warnings](https://github.com/Xpra-org/xpra/commit/c17caa0cb25f68fa8a75c975fe886504b142c9a6)
     * [bogus date in changelog](https://github.com/Xpra-org/xpra/commit/1562623a170cce00cf286a403bc0e5773aa05369)
     * [improve session type detection](https://github.com/Xpra-org/xpra/commit/1233e0ce1100a7b82454cad728c08dc26cf35ac1)
-    * [notification backend order](https://github.com/Xpra-org/xpra/commit/8b3d31cab9220facc917b60d5db971c016638d0e)
+    * [notification backend order](https://github.com/Xpra-org/xpra/commit/8b3d31cab9220facc917b60d5db971c016638d0e) [and cleanup](https://github.com/Xpra-org/xpra/commit/a09f80b563822990619fb51e973b8a371b3a2e7f)
     * [DEB packages should not rely on transitive dependencies](https://github.com/Xpra-org/xpra/commit/a403a271a80a5d7b5468d9b9a27303188b83547d)
     * [ignore some transient CI failures](https://github.com/Xpra-org/xpra/commit/47cb8affd6a3d59d26392697e1d98fe8ef3a8b00)
     * [use latest Cython with CI](https://github.com/Xpra-org/xpra/commit/cecc5b2e624c78166a79cdac51d14adf896dcd9a)

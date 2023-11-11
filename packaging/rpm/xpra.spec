@@ -768,8 +768,9 @@ fi
 
 
 %changelog
-* Thu Nov 09 2023 Antoine Martin <antoine@xpra.org> 5.0.4-10
+* Sat Nov 11 2023 Antoine Martin <antoine@xpra.org> 5.0.4-10
 - Major:
+   missing flush marker with some scroll screen updates
    fixup tray backport regression
    signal watcher backport regression
    avoid menu and input device errors when client is not set

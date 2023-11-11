@@ -1,6 +1,7 @@
 xpra (5.0.4-1) UNRELEASED; urgency=low
   * Major:
-    -  - fixup tray backport regression
+    - missing flush marker with some scroll screen updates
+    - fixup tray backport regression
     - signal watcher backport regression
     - avoid menu and input device errors when client is not set
     - ensure the content-type is initialized at least once
@@ -45,7 +46,7 @@ xpra (5.0.4-1) UNRELEASED; urgency=low
     - silence deprecation warning
     - man pages fixes
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 09 Nov 2023 19:23:04 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 11 Nov 2023 21:06:07 +0700
 
 xpra (5.0.3-1) UNRELEASED; urgency=low
   * Major:
