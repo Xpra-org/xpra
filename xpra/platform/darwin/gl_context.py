@@ -132,7 +132,7 @@ class AGLContext:
         tmp = GDKWindow(window_type=Gdk.WindowType.TEMP, title="tmp-opengl-check")
         with self.get_paint_context(tmp):
             i.update(check_PyOpenGL_support(force_enable))
-        tmp.destroy()
+        tmp.close()
         return i
 
     def _get_pfa(self, attr, screen):
