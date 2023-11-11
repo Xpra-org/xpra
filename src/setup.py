@@ -1341,14 +1341,15 @@ if WIN32:
         setup_options["executables"] = executables
 
         def add_exe(script, icon, base_name, base="Console"):
-            executables.append(Executable(
-                        script                  = script,
-                        init_script             = None,
-                        #targetDir               = "dist",
-                        icon                    = "icons/%s" % icon,
-                        target_name             = "%s.exe" % base_name,
-                        base                    = base,
-                        ))
+            kwargs = {
+                "script" : script,
+                "init_script" if PYTHON3 else "initScript" : None,
+                # "targetDir" : "dist",
+                "icon" : "icons/%s" % icon,
+                "target_name" if PYTHON3 else "targetName" : "%s.exe" % base_name,
+                "base" : base,
+            }
+            executables.append(Executable(**kwargs))
 
         def add_console_exe(script, icon, base_name):
             add_exe(script, icon, base_name)
@@ -2040,6 +2041,7 @@ if client_ENABLED and WIN32 and MINGW_PREFIX:
         add_to_keywords(propsys_pkgconfig, 'extra_compile_args', "-DDEBUG")
     if WIN32:
         add_to_keywords(propsys_pkgconfig, 'extra_compile_args', "-Wno-error=address")
+        add_to_keywords(propsys_pkgconfig, 'extra_compile_args', "-Wno-error=register")
     add_to_keywords(propsys_pkgconfig, 'extra_link_args', "-luuid", "-lshlwapi", "-lole32", "-static-libgcc")
     cython_add(Extension("xpra.platform.win32.propsys",
                 ["xpra/platform/win32/propsys.pyx", "xpra/platform/win32/setappid.cpp"],
