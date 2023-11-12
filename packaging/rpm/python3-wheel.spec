@@ -14,9 +14,9 @@ exit
 
 %global pypi_name wheel
 Name:           %{python3}-%{pypi_name}
-Version:        0.41.2
+Version:        0.41.3
 Release:        1%{?dist}
-Source0:        https://files.pythonhosted.org/packages/a4/99/78c4f3bd50619d772168bec6a0f34379b02c19c9cced0ed833ecd021fd0d/%{pypi_name}-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/fb/d0/0b4c18a0b85c20233b0c3bc33f792aefd7f12a5832b4da77419949ff6fd9/%{pypi_name}-%{version}.tar.gz
 Summary:        Built-package format for Python
 Provides:       bundled(python3dist(packaging)) = 20.9
 BuildRequires:  %{python3}-devel
@@ -55,6 +55,10 @@ mv %{buildroot}%{_bindir}/%{pypi_name} %{buildroot}%{_bindir}/%{pypi_name}-%{pyt
 %{_bindir}/%{pypi_name}-%{python3_version}
 %{python3_sitelib}/%{pypi_name}*/
 
+
 %changelog
+* Sun Nov 12 2023 Antoine Martin <antoine@xpra.org> - 0.41.3-1
+- new upstream release
+
 * Mon Oct 02 2023 Antoine Martin <antoine@xpra.org> - 0.41.2-1
 - new upstream release
