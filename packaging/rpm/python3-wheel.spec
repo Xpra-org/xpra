@@ -38,6 +38,11 @@ It has two different roles:
 
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "4d4987ce51a49370ea65c0bfd2234e8ce80a12780820d9dc462597a6e60d0841" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %autosetup -n %{pypi_name}-%{version} -p1
 
 
