@@ -30,11 +30,15 @@ CRASH : bool = envbool("XPRA_OPENGL_FORCE_CRASH", False)
 TIMEOUT : int = envint("XPRA_OPENGL_FORCE_TIMEOUT", 0)
 
 
-#by default, we raise an ImportError as soon as we find something missing:
+# by default, we raise an ImportError as soon as we find something missing:
 def raise_error(msg) -> None:
     raise ImportError(msg)
+
+
 def raise_fatal_error(msg) -> None:
     raise OpenGLFatalError(msg)
+
+
 gl_check_error = raise_error
 gl_fatal_error = raise_fatal_error
 
@@ -55,7 +59,7 @@ def get_max_texture_size() -> int:
     from OpenGL.GL import glGetInteger, GL_MAX_TEXTURE_SIZE
     texture_size = glGetInteger(GL_MAX_TEXTURE_SIZE)
     log("GL_MAX_TEXTURE_SIZE=%s", texture_size)
-    #this one may be missing?
+    # this one may be missing?
     rect_texture_size = texture_size
     try:
         from OpenGL.GL import GL_MAX_RECTANGLE_TEXTURE_SIZE
@@ -70,7 +74,7 @@ def get_max_texture_size() -> int:
     return int(min(rect_texture_size, texture_size))
 
 
-def get_array_handlers() -> tuple[str,...]:
+def get_array_handlers() -> tuple[str, ...]:
     from OpenGL.arrays.arraydatatype import ArrayDatatype
     try:
         return tuple(set(ArrayDatatype.getRegistry().values()))
@@ -101,7 +105,7 @@ def get_extensions() -> list[str]:
     return extensions
 
 
-def _get_gl_enums(name:str, num_const:str, values_const:str) -> list[str]:
+def _get_gl_enums(name: str, num_const: str, values_const: str) -> list[str]:
     values: list[str] = []
     from OpenGL.error import GLError
     from OpenGL import GL
@@ -129,7 +133,6 @@ def get_program_binary_formats() -> list[str]:
     return _get_gl_enums("program binary formats", "GL_NUM_PROGRAM_BINARY_FORMATS", "GL_PROGRAM_BINARY_FORMATS")
 
 
-
 def fixstring(v) -> str:
     try:
         return str(v).strip()
@@ -137,10 +140,10 @@ def fixstring(v) -> str:
         return str(v)
 
 
-def get_vendor_info() -> dict[str,str]:
+def get_vendor_info() -> dict[str, str]:
     from OpenGL.GL import GL_RENDERER, GL_VENDOR, GL_SHADING_LANGUAGE_VERSION
     from OpenGL.GL import glGetString
-    info : dict[str,str] = {}
+    info : dict[str, str] = {}
     for d, s, fatal in (
         ("vendor", GL_VENDOR, True),
         ("renderer", GL_RENDERER, True),
@@ -158,24 +161,25 @@ def get_vendor_info() -> dict[str,str]:
     return info
 
 
-def get_GLU_info() -> dict[str,str]:
-    props : dict[str,str] = {}
+def get_GLU_info() -> dict[str, str]:
+    props : dict[str, str] = {}
     from OpenGL.GLU import gluGetString, GLU_VERSION, GLU_EXTENSIONS
     # maybe we can continue without?
     if not bool(gluGetString):
         return props
     for d, s in {
-        "GLU.version": GLU_VERSION,
+        "GLU": GLU_VERSION,
         "GLU.extensions": GLU_EXTENSIONS,
     }.items():
         v = gluGetString(s)
         v = fixstring(v.decode())
         log("%s: %s", d, v)
-        props[d] = v
+        if v:
+            props[d] = v
     return props
 
 
-def get_context_info() -> dict[str,Any]:
+def get_context_info() -> dict[str, Any]:
     from OpenGL.GL import (
         GL_CONTEXT_PROFILE_MASK, GL_CONTEXT_CORE_PROFILE_BIT,
         GL_CONTEXT_FLAGS,
@@ -254,6 +258,7 @@ def check_framebuffer_functions() -> str:
         glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D,
     )
 
+
 def check_shader_functions() -> str:
     from OpenGL.GL import (
         glCreateShader, glDeleteShader,
@@ -273,11 +278,11 @@ def check_texture_functions() -> str:
     return check_available(glInitTextureRectangleARB)
 
 
-def check_lists(props:dict[str,Any], force_enable=False) -> bool:
+def check_lists(props: dict[str, Any], force_enable=False) -> bool:
     def match_list(thelist: GL_MATCH_LIST, listname: str):
         for k, values in thelist.items():
             prop = str(props.get(k))
-            if prop and any(True for x in values if prop.find(x)>=0):
+            if prop and any(True for x in values if prop.find(x) >= 0):
                 log("%s '%s' found in %s: %s", k, prop, listname, values)
                 return k, prop
             log("%s '%s' not found in %s: %s", k, prop, listname, values)
@@ -300,17 +305,17 @@ def check_lists(props:dict[str,Any], force_enable=False) -> bool:
     return bool(whitelisted) or not bool(blacklisted)
 
 
-def check_PyOpenGL_support(force_enable) -> dict[str,Any]:
-    redirected_loggers: dict[str, tuple[Logger,list,bool]] = {}
+def check_PyOpenGL_support(force_enable) -> dict[str, Any]:
+    redirected_loggers: dict[str, tuple[Logger, list, bool]] = {}
     try:
         if CRASH:
             import ctypes
             ctypes.string_at(0)
             raise RuntimeError("should have crashed!")
-        if TIMEOUT>0:
+        if TIMEOUT > 0:
             import time
             time.sleep(TIMEOUT)
-        #log redirection:
+        # log redirection:
         for name in ("formathandler", "extensions", "acceleratesupport", "arrays", "converters", "plugins"):
             logger = logging.getLogger(f"OpenGL.{name}")
             redirected_loggers[name] = (logger, list(logger.handlers), logger.propagate)
@@ -320,52 +325,52 @@ def check_PyOpenGL_support(force_enable) -> dict[str,Any]:
         return do_check_PyOpenGL_support(force_enable)
 
     finally:
-        def recs(name) -> list[str]:
-            rlog = redirected_loggers.get(name)
+        def recs(rname) -> list[str]:
+            rlog = redirected_loggers.get(rname)
             if not rlog:
                 return []
             records = rlog[0].handlers[0].records
             return list(rec.getMessage() for rec in records)
 
         for msg in recs("acceleratesupport"):
-            #strip default message prefix:
+            # strip default message prefix:
             msg = msg.replace("No OpenGL_accelerate module loaded: ", "")
-            if msg=="No module named OpenGL_accelerate":
+            if msg == "No module named OpenGL_accelerate":
                 msg = "missing accelerate module"
-            if msg=="OpenGL_accelerate module loaded":
+            if msg == "OpenGL_accelerate module loaded":
                 log.info(msg)
             else:
                 log.warn("PyOpenGL warning: %s", msg)
 
-        #format handler messages:
-        STRIP_LOG_MESSAGE = "Unable to load registered array format handler "
+        # format handler messages:
+        strip_log_message = "Unable to load registered array format handler "
         missing_handlers = []
         for msg in recs("formathandler"):
-            p = msg.find(STRIP_LOG_MESSAGE)
-            if p<0:
-                #unknown message, log it:
+            p = msg.find(strip_log_message)
+            if p < 0:
+                # unknown message, log it:
                 log.info(msg)
                 continue
-            format_handler = msg[p+len(STRIP_LOG_MESSAGE):]
+            format_handler = msg[p+len(strip_log_message):]
             p = format_handler.find(":")
-            if p>0:
+            if p > 0:
                 format_handler = format_handler[:p]
                 missing_handlers.append(format_handler)
         if missing_handlers:
             log.warn("PyOpenGL warning: missing array format handlers: %s", csv(missing_handlers))
 
         for msg in recs("extensions"):
-            #ignore extension messages:
+            # ignore extension messages:
             p = msg.startswith("GL Extension ") and msg.endswith("available")
             if not p:
                 log.info(msg)
 
         missing_accelerators = []
-        STRIP_AR_HEAD = "Unable to load"
-        STRIP_AR_TAIL = "from OpenGL_accelerate"
+        strip_ar_head = "Unable to load"
+        strip_ar_tail = "from OpenGL_accelerate"
         for msg in recs("arrays")+recs("converters"):
-            if msg.startswith(STRIP_AR_HEAD) and msg.endswith(STRIP_AR_TAIL):
-                m = msg[len(STRIP_AR_HEAD):-len(STRIP_AR_TAIL)].strip()
+            if msg.startswith(strip_ar_head) and msg.endswith(strip_ar_tail):
+                m = msg[len(strip_ar_head):-len(strip_ar_tail)].strip()
                 m = m.replace("accelerators", "").replace("accelerator", "").strip()
                 missing_accelerators.append(m)
                 continue
@@ -385,7 +390,7 @@ def check_PyOpenGL_support(force_enable) -> dict[str,Any]:
 
 
 def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
-    props : dict[str,Any] = {
+    props : dict[str, Any] = {
         "platform"  : sys.platform,
         }
     try:
@@ -394,7 +399,7 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
     except (AttributeError, IndexError):
         pass
 
-    def unsafe(warning:str):
+    def unsafe(warning: str):
         log(f"unsafe: {warning}")
         props["safe"] = False
         warnings = props.get("warning", [])
@@ -408,7 +413,7 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
     if gl_version_str is None and not force_enable:
         raise_fatal_error("OpenGL version is missing - cannot continue")
         return props
-    #b'4.6.0 NVIDIA 440.59' -> ['4', '6', '0 NVIDIA...']
+    # b'4.6.0 NVIDIA 440.59' -> ['4', '6', '0 NVIDIA...']
     log("GL_VERSION=%s", bytestostr(gl_version_str))
     vparts = bytestostr(gl_version_str).split(" ", 1)[0].split(".")
     try:
@@ -420,16 +425,16 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
         log(" assuming this is at least 1.1 to continue")
     else:
         props["opengl"] = gl_major, gl_minor
-        MIN_VERSION = (1, 1)
-        if (gl_major, gl_minor) < MIN_VERSION:
-            req_vstr = ".".join([str(x) for x in MIN_VERSION])
+        min_version = (1, 1)
+        if (gl_major, gl_minor) < min_version:
+            req_vstr = ".".join([str(x) for x in min_version])
             msg = f"OpenGL output requires version {req_vstr} or greater, not {gl_major}.{gl_minor}"
             unsafe(msg)
         else:
             log(f"found valid OpenGL version: {gl_major}.{gl_minor}")
 
-    from OpenGL import version as OpenGL_version
-    pyopengl_version = OpenGL_version.__version__
+    from OpenGL import version as opengl_version
+    pyopengl_version = opengl_version.__version__
     try:
         import OpenGL_accelerate
         accel_version = OpenGL_accelerate.__version__
@@ -437,10 +442,9 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
         log(f"OpenGL_accelerate version {accel_version}")
     except ImportError:
         log("OpenGL_accelerate not found")
-        OpenGL_accelerate = None
-        accel_version = None
+        accel_version = ""
 
-    if accel_version is not None and pyopengl_version!=accel_version:
+    if accel_version is not None and pyopengl_version != accel_version:
         global _version_warning_shown
         if not _version_warning_shown:
             log.warn("Warning: version mismatch between PyOpenGL and PyOpenGL-accelerate")
@@ -449,15 +453,15 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
             _version_warning_shown = True
             gl_check_error(f"PyOpenGL vs accelerate version mismatch: {pyopengl_version} vs {accel_version}")
     vernum = parse_pyopengl_version(pyopengl_version)
-    #we now require PyOpenGL 3.1.4 or later
-    #3.1.4 was released in 2019
-    if vernum<(3, 1, 4):
+    # we now require PyOpenGL 3.1.4 or later
+    # 3.1.4 was released in 2019
+    if vernum < (3, 1, 4):
         msg = f"PyOpenGL version {pyopengl_version} is too old and buggy"
         unsafe(msg)
         if not force_enable:
             raise_fatal_error(msg)
             return props
-    props["zerocopy"] = bool(OpenGL_accelerate) and pyopengl_version==accel_version
+    props["zerocopy"] = accel_version and pyopengl_version == accel_version
 
     props.update(get_vendor_info())
     props.update(get_GLU_info())
@@ -505,11 +509,12 @@ def main() -> int:
             log.warn("No OpenGL context implementation found")
             return 1
         log("testing %s", GLContext)
-        gl_context = GLContext()  #pylint: disable=not-callable
+        gl_context = GLContext()   # pylint: disable=not-callable
         log("GLContext=%s", gl_context)
-        #replace ImportError with a log message:
+        # replace ImportError with a log message:
         global gl_check_error, gl_fatal_error
         errors = []
+
         def log_error(msg):
             log.error("ERROR: %s", msg)
             errors.append(msg)
