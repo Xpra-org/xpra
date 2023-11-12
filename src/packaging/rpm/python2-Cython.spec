@@ -28,7 +28,7 @@ if [ "${sha256}" != "41c0cfd2d754e383c9eeb95effc9aa4ab847d0c9747077ddd7c0dcb68c3
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
-%setup -q -n cython-%{version}
+%setup -q -n Cython-%{version}
 find -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python2}|'
 
 %build
