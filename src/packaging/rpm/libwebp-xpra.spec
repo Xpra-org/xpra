@@ -82,7 +82,7 @@ rm -rf %{buildroot}
 %{_libdir}/xpra/libwebpmux.a
 %{_libdir}/xpra/libwebpmux.so*
 %{_libdir}/xpra/libsharpyuv.so*
-%{_libdir}/xpra/libsharpyuv.
+%{_libdir}/xpra/libsharpyuv.a
 %{_libdir}/xpra/pkgconfig/libwebp.pc
 %{_libdir}/xpra/pkgconfig/libwebpdemux.pc
 %{_libdir}/xpra/pkgconfig/libwebpmux.pc
