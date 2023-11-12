@@ -22,7 +22,7 @@ from xpra.util.env import envint
 from xpra.common import noop
 from xpra.util.stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
 from xpra.client.gui import features
-from xpra.client.base.gobject import InfoTimerClient
+from xpra.client.base.command import InfoTimerClient
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.graph import make_graph_imagesurface
 from xpra.gtk.widget import imagebutton, title_box, slabel
@@ -387,14 +387,14 @@ class SessionInfo(Gtk.Window):
             if p_cb:
                 p_cb()
 
-    def add_graph_button(self, tooltip:str="", click_cb:Callable=noop):
+    def add_graph_button(self, tooltip: str = "", click_cb: Callable = noop) -> Gtk.Image:
         button = Gtk.EventBox()
         try:
             display = Gdk.Display.get_default()
             arrow_down = Gdk.Cursor.new_for_display(display, Gdk.CursorType.BASED_ARROW_DOWN)
         except TypeError:
             arrow_down = None
-        def set_cursor(widget):
+        def set_cursor(widget) -> None:
             widget.get_window().set_cursor(arrow_down)
         if arrow_down:
             button.connect("realize", set_cursor)
@@ -416,7 +416,7 @@ class SessionInfo(Gtk.Window):
             info = ss.get_info()
             if info:
                 info = typedict(info)
-                def qlookup(attr):
+                def qlookup(attr) -> int:
                     return int(newdictlook(info, ("queue", attr), 0))
                 self.audio_out_queue_cur.append(qlookup("cur"))
                 self.audio_out_queue_min.append(qlookup("min"))
@@ -1071,9 +1071,9 @@ class SessionInfo(Gtk.Window):
         if SHOW_PIXEL_STATS:
             bandwidth_label += ",\nand number of pixels rendered"
         self.bandwidth_graph = self.add_graph_button(bandwidth_label, self.save_graph)
-        self.latency_graph = self.add_graph_button(None, self.save_graph)
+        self.latency_graph = self.add_graph_button("", self.save_graph)
         if SHOW_SOUND_STATS:
-            self.audio_queue_graph = self.add_graph_button(None, self.save_graph)
+            self.audio_queue_graph = self.add_graph_button("", self.save_graph)
         else:
             self.audio_queue_graph = None
         self.connect("realize", self.populate_graphs)
