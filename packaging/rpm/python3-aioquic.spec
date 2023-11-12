@@ -1,13 +1,13 @@
 %define _disable_source_fetch 0
 
 Name:           python3-aioquic
-Version:        0.9.21
+Version:        0.9.22
 Release:        1%{?dist}
 Summary:        aioquic is a library for the QUIC network protocol in Python
 Group:          Development/Languages
 License:        MIT
 URL:            https://github.com/aiortc/aioquic
-Source0:        https://files.pythonhosted.org/packages/29/fe/1099419da44ce9ee372463a7ba8b6cd94c0187e7bb1e9fa5e7a997b09683/aioquic-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/37/c8/bac80ecdc006fc54d1519684015b1f1a685b9d0157f325c1a841a1becd26/aioquic-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
@@ -32,7 +32,7 @@ to read or write HTTP/3 headers compressed with QPACK.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "79c7ec06318e785627665ca4e8723adf347b7225b7d006e332d2575a1f516ef5" ]; then
+if [ "${sha256}" != "4015f60d865e101f3ddde86702cb11f9c5d889f5566020242c2a3d6706999c7a" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -61,6 +61,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Sun Nov 12 2023 Antoine Martin <antoine@xpra.org> - 0.9.22-1
+- new upstream release
+
 * Wed Jul 12 2023 Antoine Martin <antoine@xpra.org> - 0.9.21-1
 - initial packaging
 
