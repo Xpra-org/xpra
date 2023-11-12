@@ -75,6 +75,7 @@ exit 1
 %endif
 
 
+Source0:			https://xpra.org/src/xpra-%{version}.tar.xz
 Name:				xpra
 Version:			%{version}
 #grab the full revision number from the source archive's src_info.py file:
@@ -86,7 +87,6 @@ License:			GPLv2+ and BSD and LGPLv3+ and MIT
 URL:				https://xpra.org/
 Packager:			Antoine Martin <antoine@xpra.org>
 Vendor:				https://xpra.org/
-Source:				https://xpra.org/src/xpra-%{version}.tar.xz
 #rpm falls over itself if we try to make the top-level package noarch:
 #BuildArch: noarch
 BuildRoot:			%{_tmppath}/%{name}-%{version}-root
