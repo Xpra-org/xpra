@@ -2032,6 +2032,14 @@ def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, 
     """ Uses the regular XpraClient with patched proxy arguments to tell run_proxy to start the server """
     if not args:
         raise RuntimeError("no remote server specified")
+    if WIN32:
+        # see issue #4026
+        # we have to extract the exe name then get an abs path for it:
+        # so that someone running xpra using:
+        # `Xpra-x86_64_6.0-r34669M\xpra_cmd" attach ...`
+        # will still end up with a valid absolute path
+        # when the exe wrapper changes directory to `Xpra-x86_64_6.0-r34669M`.
+        script_file = os.path.basename(script_file)
     abs_script_file = os.path.abspath(script_file)
     display_name = args[0]
     params = parse_display_name(error_cb, opts, display_name, cmdline)
