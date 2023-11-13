@@ -6,6 +6,16 @@ import signal
 from collections.abc import Callable
 
 
+# use a more readable process name if specified:
+if len(sys.argv) > 1:
+    argstr = " ".join(sys.argv)
+    name = "xpra_signal_listener"
+    pos = argstr.find(name)
+    if pos >= 0:
+        from xpra.os_util import set_proc_title
+    set_proc_title(argstr[pos+len(name):].strip())
+
+
 def cb(signame: str):
     sys.stdout.write("%s\n" % signame)
     sys.stdout.flush()

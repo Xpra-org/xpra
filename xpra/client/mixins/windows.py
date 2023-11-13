@@ -30,6 +30,7 @@ from xpra.common import WINDOW_NOT_FOUND, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_E
 from xpra.platform.paths import get_icon_filename, get_resources_dir, get_python_execfile_command
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.thread import start_thread
+from xpra.util.str_fn import std
 from xpra.os_util import (
     bytestostr, memoryview_to_bytes,
     OSX, POSIX, is_Ubuntu, first_time,
@@ -80,17 +81,23 @@ ICON_OVERLAY : int = envint("XPRA_ICON_OVERLAY", 50)
 ICON_SHRINKAGE : int = envint("XPRA_ICON_SHRINKAGE", 75)
 SAVE_WINDOW_ICONS : bool = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 SAVE_CURSORS : bool = envbool("XPRA_SAVE_CURSORS", False)
-SIGNAL_WATCHER : bool = envbool("XPRA_SIGNAL_WATCHER", POSIX and not OSX)
-SIGNAL_WATCHER_COMMAND : str = os.environ.get("XPRA_SIGNAL_WATCHER_COMMAND", "xpra_signal_listener")
-if SIGNAL_WATCHER:
-    SIGNAL_WATCHER = False
-    for prefix in ("/usr", get_resources_dir()):
-        cmd = prefix+"/libexec/xpra/"+SIGNAL_WATCHER_COMMAND
-        if os.path.exists(cmd):
-            SIGNAL_WATCHER_COMMAND = cmd
-            SIGNAL_WATCHER = True
-    if not SIGNAL_WATCHER:
-        log.warn("Warning: %r not found", SIGNAL_WATCHER_COMMAND)
+
+
+def find_signal_watcher_command() -> str:
+    if not envbool("XPRA_SIGNAL_WATCHER", POSIX and not OSX):
+        return ""
+    cmd = os.environ.get("XPRA_SIGNAL_WATCHER_COMMAND", "xpra_signal_listener")
+    if cmd and os.path.isabs(cmd):
+        return cmd
+    if cmd:
+        for prefix in ("/usr", get_resources_dir()):
+            pcmd = prefix+"/libexec/xpra/"+cmd
+            if os.path.exists(pcmd):
+                return pcmd
+    log.warn("Warning: %r not found", cmd)
+
+
+SIGNAL_WATCHER_COMMAND = find_signal_watcher_command()
 
 FAKE_SUSPEND_RESUME : int = envint("XPRA_FAKE_SUSPEND_RESUME", 0)
 MOUSE_SCROLL_SQRT_SCALE : bool = envbool("XPRA_MOUSE_SCROLL_SQRT_SCALE", OSX)
@@ -865,7 +872,7 @@ class WindowClient(StubClientMixin):
         # find a "transient-for" value using the pid to find a suitable window
         # if possible, choosing the currently focused window (if there is one..)
         pid = metadata.intget("pid", 0)
-        watcher_pid = self.assign_signal_watcher_pid(wid, pid)
+        watcher_pid = self.assign_signal_watcher_pid(wid, pid, metadata.strget("title", ""))
         if override_redirect and pid>0 and metadata.intget("transient-for", 0)==0 and metadata.strget("role")=="popup":
             tfor = None
             twid = 0
@@ -930,13 +937,15 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # listen for process signals using a watcher process:
-    def assign_signal_watcher_pid(self, wid: int, pid: int) -> int:
-        if not SIGNAL_WATCHER or not pid:
+    def assign_signal_watcher_pid(self, wid: int, pid: int, title="") -> int:
+        if not SIGNAL_WATCHER_COMMAND or not pid:
             return 0
         proc = self._pid_to_signalwatcher.get(pid)
         if proc is None or proc.poll():
             from xpra.util.child_reaper import getChildReaper
-            cmd = get_python_execfile_command()+[SIGNAL_WATCHER_COMMAND]
+            if not title:
+                title = str(pid)
+            cmd = get_python_execfile_command()+[SIGNAL_WATCHER_COMMAND]+[f"signal watcher for {std(title)}"]
             execlog(f"assign_signal_watcher_pid({wid}, {pid}) starting {cmd}")
             try:
                 proc = Popen(cmd,
