@@ -98,14 +98,14 @@ void main()
 """
 
 
-VERTEX_SHADER = """
-#version 330 core
+VERTEX_SHADER = f"""
+#version {GLSL_VERSION}
 layout(location=0) in vec4 position;
 
 void main()
-{
+{{
     gl_Position = vec4(position.x, position.y, 1, 1);
-}
+}}
 """
 
 
