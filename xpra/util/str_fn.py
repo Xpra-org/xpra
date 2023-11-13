@@ -12,35 +12,14 @@ from collections.abc import Callable
 from xpra.util.env import envbool
 
 
-def std(s, extras:str="-,./: ") -> str:
-    s = s or ""
-    try:
-        s = s.decode("latin1")
-    except Exception:
-        pass
-    def c(v):
-        try:
-            return chr(v)
-        except Exception:
-            return str(v)
-    def f(v):
-        return str.isalnum(c(v)) or v in extras
-    return "".join(filter(f, s))
+def std(v, extras="-,./: ") -> str:
+    def f(c):
+        return str.isalnum(c) or c in extras
+    return "".join(filter(f, bytestostr(v or "")))
 
 
-def alnum(s) -> str:
-    try:
-        s = s.encode("latin1")
-    except Exception:
-        pass
-    def c(v):
-        try:
-            return chr(v)
-        except Exception:
-            return str(v)
-    def f(v):
-        return str.isalnum(c(v))
-    return "".join(c(v) for v in filter(f, s))
+def alnum(v) -> str:
+    return "".join(v for v in filter(str.isalnum, bytestostr(v)))
 
 
 def nonl(x) -> str:
