@@ -40,6 +40,9 @@ $PACMAN --noconfirm --needed -S ${XPKG}python-pip ${XPKG}python-pycryptodome ${X
 for x in browser-cookie3 pylsqpack aioquic pyaes pbkdf2 pytools; do
 	pip3 install $x
 done
+# to keep these libraries updated, you may need:
+# SETUPTOOLS_USE_DISTUTILS=stdlib pip install --upgrade $PACKAGE
+
 #for webcam support:
 #$PACMAN --noconfirm --needed -S ${XPKG}opencv ${XPKG}hdf5 ${XPKG}tesseract-ocr
 
