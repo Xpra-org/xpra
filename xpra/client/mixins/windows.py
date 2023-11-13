@@ -974,7 +974,7 @@ class WindowClient(StubClientMixin):
     def signal_watcher_event(self, fd, cb_condition, proc, pid:int, wid:int) -> bool:
         execlog("signal_watcher_event%s", (fd, cb_condition, proc, pid, wid))
         if cb_condition in (GLib.IOCondition.HUP, GLib.IOCondition.ERR):
-            clean_signalwatcher(proc)
+            kill_signalwatcher(proc)
             proc.stdout_io_watch = None
             return False
         if proc.stdout_io_watch is None:
