@@ -962,8 +962,9 @@ class WindowClient(StubClientMixin):
                                              callback=watcher_terminated)
                 execlog("using watcher pid=%i for server pid=%i", proc.pid, pid)
                 self._pid_to_signalwatcher[pid] = proc
+                ioc = GLib.IOCondition
                 proc.stdout_io_watch = GLib.io_add_watch(proc.stdout,
-                                                         GLib.PRIORITY_DEFAULT, GLib.IO_IN | GLib.IO_HUP | GLib.IO_ERR,
+                                                         GLib.PRIORITY_DEFAULT, ioc.IN | ioc.HUP | ioc.ERR,
                                                          self.signal_watcher_event, proc, pid, wid)
         if proc:
             self._signalwatcher_to_wids.setdefault(proc, []).append(wid)
@@ -972,14 +973,14 @@ class WindowClient(StubClientMixin):
 
     def signal_watcher_event(self, fd, cb_condition, proc, pid:int, wid:int) -> bool:
         execlog("signal_watcher_event%s", (fd, cb_condition, proc, pid, wid))
-        if cb_condition in (GLib.IO_HUP, GLib.IO_ERR):
+        if cb_condition in (GLib.IOCondition.HUP, GLib.IOCondition.ERR):
             clean_signalwatcher(proc)
             proc.stdout_io_watch = None
             return False
         if proc.stdout_io_watch is None:
             #no longer watched
             return False
-        if cb_condition==GLib.IO_IN:
+        if cb_condition==GLib.IOCondition.IN:
             try:
                 signame = bytestostr(proc.stdout.readline()).strip("\n\r")
                 execlog("signal_watcher_event: %s", signame)
