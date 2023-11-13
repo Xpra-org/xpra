@@ -821,7 +821,6 @@ class GLWindowBackingBase(WindowBackingBase):
         glDisableVertexAttribArray(position)
 
         glBindTexture(target, 0)
-        glDisable(target)
 
     def draw_spinner(self) -> None:
         bw, bh = self.size
