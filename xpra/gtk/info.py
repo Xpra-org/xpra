@@ -45,7 +45,7 @@ def get_screen_info(display, screen) -> dict[str,Any]:
     for i in range(screen.get_n_monitors()):
         m_info[i] = get_screen_monitor_info(screen, i)
     fo = screen.get_font_options()
-    #win32 and osx return nothing here...
+    # win32 and osx return nothing here...
     if fo:
         fontoptions = info.setdefault("fontoptions", {})
         fontoptions.update(get_font_info(fo))
@@ -59,7 +59,7 @@ def get_screen_info(display, screen) -> dict[str,Any]:
     if SHOW_ALL_VISUALS:
         for i, v in enumerate(screen.list_visuals()):
             visual(i, v)
-    #Gtk.settings
+    # Gtk.settings
     def get_setting(key, gtype):
         v = GObject.Value()
         v.init(gtype)
@@ -68,12 +68,12 @@ def get_screen_info(display, screen) -> dict[str,Any]:
         return None
     sinfo = info.setdefault("settings", {})
     for x, gtype in {
-        #NET:
+        # NET:
         "enable-event-sounds"   : GObject.TYPE_INT,
         "icon-theme-name"       : GObject.TYPE_STRING,
         "sound-theme-name"      : GObject.TYPE_STRING,
         "theme-name"            : GObject.TYPE_STRING,
-        #Xft:
+        # Xft:
         "xft-antialias" : GObject.TYPE_INT,
         "xft-dpi"       : GObject.TYPE_INT,
         "xft-hinting"   : GObject.TYPE_INT,
@@ -156,14 +156,14 @@ VINFO_CONV : dict[str,dict[Any,str]] = {
         }
 
 
-def get_visual_info(v) -> dict[str,Any]:
+def get_visual_info(v) -> dict[str, Any]:
     if not v:
         return {}
-    vinfo : dict[str,Any] = {}
+    vinfo : dict[str, Any] = {}
     for x, vdict in VINFO_CONV.items():
         val = None
         try:
-            #ugly workaround for "visual_type" -> "type" for GTK2...
+            # ugly workaround for "visual_type" -> "type" for GTK2...
             val = getattr(v, x.replace("visual_", ""))
         except AttributeError:
             try:
@@ -177,8 +177,8 @@ def get_visual_info(v) -> dict[str,Any]:
     return vinfo
 
 
-def get_screen_monitor_info(screen, i) -> dict[str,Any]:
-    info : dict[str,Any] = {}
+def get_screen_monitor_info(screen, i) -> dict[str, Any]:
+    info : dict[str, Any] = {}
     geom = screen.get_monitor_geometry(i)
     for x in ("x", "y", "width", "height"):
         info[x] = getattr(geom, x)
@@ -195,7 +195,7 @@ def get_screen_monitor_info(screen, i) -> dict[str,Any]:
     return info
 
 
-def get_monitors_info(xscale:float=1, yscale:float=1) -> dict[int,Any]:
+def get_monitors_info(xscale: float=1, yscale: float=1) -> dict[int, Any]:
     display = Gdk.Display.get_default()
     info : dict[int,Any] = {}
     n = display.get_n_monitors()
@@ -237,9 +237,9 @@ def get_monitors_info(xscale:float=1, yscale:float=1) -> dict[int,Any]:
 
 def get_display_info(xscale=1, yscale=1) -> dict[str,Any]:
     display = Gdk.Display.get_default()
-    def xy(v):
+    def xy(v) -> tuple[int, int]:
         return round(xscale*v[0]), round(yscale*v[1])
-    def avg(v):
+    def avg(v) -> int:
         return round((xscale*v+yscale*v)/2)
     root_size = get_root_size()
     info : dict[str, Any] = {
@@ -297,7 +297,7 @@ def get_screen_sizes(xscale:float=1, yscale:float=1):
         return xs(workarea[0]), ys(workarea[1]), xs(workarea[2]), ys(workarea[3])
     display = Gdk.Display.get_default()
     if not display:
-        return ()
+        return []
     MIN_DPI = envint("XPRA_MIN_DPI", 10)
     MAX_DPI = envint("XPRA_MIN_DPI", 500)
     def dpi(size_pixels, size_mm):

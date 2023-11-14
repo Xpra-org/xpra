@@ -224,7 +224,7 @@ class ClipboardClient(StubClientMixin):
         for helperclass in clipboard_options:
             try:
                 return self.setup_clipboard_helper(helperclass)
-            except ImportError as e:
+            except (ImportError, AttributeError) as e:
                 log.error("Error: cannot instantiate %s:", helperclass)
                 log.estr(e)
                 del e

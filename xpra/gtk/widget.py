@@ -25,8 +25,8 @@ def scaled_image(pixbuf, icon_size:int=0) -> Gtk.Image | None:
     return Gtk.Image.new_from_pixbuf(pixbuf)
 
 
-def imagebutton(title, icon=None, tooltip="", clicked_callback:Callable|None=None, icon_size=32,
-                default=False, min_size=None, label_color=None, label_font:str="") -> Gtk.Button:
+def imagebutton(title, icon=None, tooltip="", clicked_callback:Callable|None = None, icon_size=32,
+                default=False, min_size=None, label_color=None, label_font="") -> Gtk.Button:
     button = Gtk.Button(label=title)
     settings = button.get_settings()
     settings.set_property('gtk-button-images', True)
@@ -81,7 +81,7 @@ def menuitem(title, image=None, tooltip=None, cb=None) -> Gtk.ImageMenuItem:
     return menu_item
 
 
-def label(text:str="", tooltip:str="", font:str="") -> Gtk.Label:
+def label(text="", tooltip="", font="") -> Gtk.Label:
     l = Gtk.Label(label=text)
     if font:
         setfont(l, font)
@@ -134,15 +134,15 @@ def pack_start(self, child, expand=True, fill=True, padding=0):
 Gtk.Box.pack_start = pack_start
 
 
-def slabel(text:str="", tooltip:str="", font:str="") -> Gtk.Label:
-    l = label(text, tooltip, font)
-    l.set_margin_start(5)
-    l.set_margin_end(5)
-    l.set_margin_top(2)
-    l.set_margin_bottom(2)
-    l.set_selectable(True)
-    l.set_line_wrap(True)
-    return l
+def slabel(text="", tooltip="", font="") -> Gtk.Label:
+    lw = label(text, tooltip, font)
+    lw.set_margin_start(5)
+    lw.set_margin_end(5)
+    lw.set_margin_top(2)
+    lw.set_margin_bottom(2)
+    lw.set_selectable(True)
+    lw.set_line_wrap(True)
+    return lw
 
 
 def title_box(label_str:str, tooltip="") -> Gtk.EventBox:

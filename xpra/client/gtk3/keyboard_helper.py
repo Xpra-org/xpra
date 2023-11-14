@@ -17,8 +17,8 @@ class GTKKeyboardHelper(KeyboardHelper):
 
     def __init__(self, *args):
         KeyboardHelper.__init__(self, *args)
-        #used for delaying the sending of keymap changes
-        #(as we may be getting dozens of such events at a time)
+        # used for delaying the sending of keymap changes
+        # (as we may be getting dozens of such events at a time)
         self._keymap_changing = False
         self._keymap_change_handler_id = None
         self._keymap = None
@@ -55,11 +55,11 @@ class GTKKeyboardHelper(KeyboardHelper):
         display = Gdk.Display.get_default()
         self._keymap = Gdk.Keymap.get_for_display(display)
         if self._keymap_changing:
-            #timer due already
+            # timer is already due
             return
         self._keymap_changing = True
         def do_keys_changed():
-            #re-register the change handler:
+            # re-register the change handler:
             self._keymap_change_handler_id = self._keymap.connect("keys-changed", self.keymap_changed)
             self._keymap_changing = False
             if self.locked:
