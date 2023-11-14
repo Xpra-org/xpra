@@ -166,8 +166,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return self.exit_code
 
     def gtk_main(self) -> None:
-        log(f"GTKXpraClient.gtk_main() calling {Gtk.main}",)
-        Gtk.main()
+        if hasattr(Gtk, "main"):
+            log(f"GTKXpraClient.gtk_main() calling {Gtk.main}", )
+            Gtk.main()
+        else:
+            log("GTKXpraClient.gtk_main() calling GLib main loop")
+            self.run_loop()
         log("GTKXpraClient.gtk_main() ended")
 
 
@@ -175,16 +179,19 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         log(f"GTKXpraClient.quit({exit_code}) current exit_code={self.exit_code}")
         if self.exit_code is None:
             self.exit_code = exit_code
-        if Gtk.main_level()>0:
-            #if for some reason cleanup() hangs, maybe this will fire...
-            self.timeout_add(4*1000, self.exit)
-            #try harder!:
-            self.timeout_add(5*1000, self.force_quit)
+
+        if self.glib_mainloop:
+            self.exit_loop()
+        #if for some reason cleanup() hangs, maybe this will fire...
+        self.timeout_add(4*1000, self.exit)
+        #try harder!:
+        self.timeout_add(5*1000, self.force_quit)
         self.cleanup()
-        log(f"GTKXpraClient.quit({exit_code}) cleanup done, main_level={Gtk.main_level()}")
-        if Gtk.main_level()>0:
-            log(f"GTKXpraClient.quit({exit_code}) main loop at level {Gtk.main_level()}, calling gtk quit via timeout")
-            self.timeout_add(500, self.exit)
+        if hasattr(Gtk, "main_level"):
+            log(f"GTKXpraClient.quit({exit_code}) cleanup done, main_level={Gtk.main_level()}")
+            if Gtk.main_level()>0:
+                log(f"GTKXpraClient.quit({exit_code}) main loop at level {Gtk.main_level()}, calling gtk quit via timeout")
+                self.timeout_add(500, self.exit)
 
     def force_quit(self) -> None:
         from xpra.os_util import force_quit
@@ -193,8 +200,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def exit(self) -> None:
         self.show_progress(100, "terminating")
-        log(f"GTKXpraClient.exit() calling {Gtk.main_quit}", )
-        Gtk.main_quit()
+        if hasattr(Gtk, "main_quit"):
+            log(f"GTKXpraClient.exit() calling {Gtk.main_quit}", )
+            Gtk.main_quit()
 
     def cleanup(self) -> None:
         log("GTKXpraClient.cleanup()")
@@ -246,9 +254,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         rate = envint("XPRA_VREFRESH", 0)
         if rate:
             return rate
-        #try via GTK:
+        # try via GTK:
         rates = {}
         display = Gdk.Display.get_default()
+        if not hasattr(display, "get_n_monitors"):
+            # Gtk4
+            return -1
         for m in range(display.get_n_monitors()):
             monitor = display.get_monitor(m)
             log(f"monitor {m} ({monitor.get_model()}) refresh-rate={monitor.get_refresh_rate()}")
@@ -263,7 +274,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def _process_startup_complete(self, packet : PacketType) -> None:
         super()._process_startup_complete(packet)
-        Gdk.notify_startup_complete()
+        if hasattr(Gdk, "notify_startup_complete"):
+            Gdk.notify_startup_complete()
 
 
     def do_process_challenge_prompt(self, prompt="password"):
@@ -900,6 +912,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def has_transparency(self) -> bool:
         if not envbool("XPRA_ALPHA", True):
             return False
+        if not hasattr(Gdk, "Screen"):
+            # Gtk4
+            return True
         screen = Gdk.Screen.get_default()
         if screen is None:
             return is_Wayland()
@@ -1072,6 +1087,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         UIXpraClient.process_ui_capabilities(self, caps)
         #this requires the "DisplayClient" mixin:
         if not hasattr(self, "screen_size_changed"):
+            return
+        if not hasattr(Gdk, "Screen"):
+            # Gtk4
             return
         #always one screen per display:
         screen = Gdk.Screen.get_default()
@@ -1391,6 +1409,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return None
 
     def get_group_leader(self, wid:int, metadata, _override_redirect):
+        if not hasattr(Gdk, "WindowWindowClass"):
+            return None
         def find_gdk_window(metadata_key="transient-for"):
             return self.find_gdk_window(metadata, metadata_key)
         win = find_gdk_window("group-leader-wid") or find_gdk_window("transient-for") or find_gdk_window("parent")

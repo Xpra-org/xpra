@@ -25,7 +25,7 @@ def inject_css_overrides():
         return
     _done = True
     style_provider = get_style_provider()
-    if style_provider:
+    if style_provider and hasattr(Gdk, "Screen"):
         screen = Gdk.Screen.get_default()
         if not screen:
             log.warn("Warning: cannot inject GTK CSS overrides")

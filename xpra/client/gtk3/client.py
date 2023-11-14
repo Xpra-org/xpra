@@ -62,6 +62,9 @@ class XpraClient(GTKXpraClient):
         return ncs
 
     def get_screen_resolution(self) -> int:
+        if not hasattr(Gdk, "Screen"):
+            # Gtk4
+            return -1
         screen = Gdk.Screen.get_default()
         if not screen:
             #wayland?

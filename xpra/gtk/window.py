@@ -38,9 +38,13 @@ def GDKWindow(*args, **kwargs) -> Gdk.Window:
 
 
 def new_GDKWindow(gdk_window_class,
-                  parent=None, width=1, height=1, window_type=Gdk.WindowType.TOPLEVEL,
-                  event_mask=0, wclass=Gdk.WindowWindowClass.INPUT_OUTPUT, title=None,
+                  parent=None, width=1, height=1, window_type=None,
+                  event_mask=0, wclass=None, title=None,
                   x=None, y=None, override_redirect=False, visual=None) -> Gdk.Window:
+    if window_type is None:
+        window_type = Gdk.WindowType.TOPLEVEL
+    if wclass is None:
+        wclass = Gdk.WindowWindowClass.INPUT_OUTPUT
     attributes_mask = 0
     attributes = Gdk.WindowAttr()
     if x is not None:

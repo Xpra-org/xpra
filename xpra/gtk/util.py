@@ -14,30 +14,37 @@ Gdk = gi_import("Gdk")
 
 
 def get_default_root_window() -> Gdk.Window | None:
+    if not hasattr(Gdk, "Screen"):
+        # Gtk4
+        return None
     screen = Gdk.Screen.get_default()
     if screen is None:
         return None
     return screen.get_root_window()
 
+
 def get_root_size(default:None|tuple[int,int]=(1920, 1024)) -> tuple[int,int] | None:
+    if not hasattr(Gdk, "Screen"):
+        # Gtk4
+        return default
     if OSX:
-        #the easy way:
+        # the easy way:
         root = get_default_root_window()
         if not root:
             return default
         w, h = root.get_geometry()[2:4]
     else:
-        #GTK3 on win32 triggers this warning:
-        #"GetClientRect failed: Invalid window handle."
-        #if we try to use the root window,
-        #and on Linux with Wayland, we get bogus values...
+        # GTK3 on win32 triggers this warning:
+        # "GetClientRect failed: Invalid window handle."
+        # if we try to use the root window,
+        # and on Linux with Wayland, we get bogus values...
         screen = Gdk.Screen.get_default()
         if screen is None:
             return default
         with IgnoreWarningsContext():
             w = screen.get_width()
             h = screen.get_height()
-    if w<=0 or h<=0 or w>32768 or h>32768:
+    if w <= 0 or h <= 0 or w > 32768 or h > 32768:
         if first_time("Gtk root window dimensions"):
             log = Logger("gtk", "screen")
             log.warn(f"Warning: Gdk returned invalid root window dimensions: {w}x{h}")
@@ -47,13 +54,16 @@ def get_root_size(default:None|tuple[int,int]=(1920, 1024)) -> tuple[int,int] | 
     return w, h
 
 
-GRAB_STATUS_STRING = {
-    Gdk.GrabStatus.SUCCESS          : "SUCCESS",
-    Gdk.GrabStatus.ALREADY_GRABBED  : "ALREADY_GRABBED",
-    Gdk.GrabStatus.INVALID_TIME     : "INVALID_TIME",
-    Gdk.GrabStatus.NOT_VIEWABLE     : "NOT_VIEWABLE",
-    Gdk.GrabStatus.FROZEN           : "FROZEN",
-    }
+GRAB_STATUS_STRING = {}
+if hasattr(Gdk, "GrabStatus"):
+    # gone in Gtk4?
+    GRAB_STATUS_STRING.update({
+        Gdk.GrabStatus.SUCCESS          : "SUCCESS",
+        Gdk.GrabStatus.ALREADY_GRABBED  : "ALREADY_GRABBED",
+        Gdk.GrabStatus.INVALID_TIME     : "INVALID_TIME",
+        Gdk.GrabStatus.NOT_VIEWABLE     : "NOT_VIEWABLE",
+        Gdk.GrabStatus.FROZEN           : "FROZEN",
+    })
 
 dsinit : bool = False
 def init_display_source() -> None:

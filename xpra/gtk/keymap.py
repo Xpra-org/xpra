@@ -32,6 +32,9 @@ def do_get_gtk_keymap(display, ignore_keys:tuple[Any]) -> tuple[tuple[int,str,in
     if not display:
         return ()
     Gdk = gi_import("Gdk")
+    if not hasattr(Gdk, "Keymap"):
+        # removed in Gtk4?
+        return ()
     keymap = Gdk.Keymap.get_for_display(display)
     log("keymap_get_for_display(%s)=%s, direction=%s, bidirectional layouts: %s",
         display, keymap, keymap.get_direction(), keymap.have_bidi_layouts())

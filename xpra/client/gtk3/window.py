@@ -50,6 +50,9 @@ class ClientWindow(GTKClientWindowBase):
         return min(128, max(h, 24))
 
     def set_icon(self, pixbuf:GdkPixbuf.Pixbuf) -> None:
+        if not hasattr(self, "get_window"):
+            # Gtk4..
+            return
         super().set_icon(pixbuf)
         hbi = self.header_bar_image
         if hbi and WINDOW_ICON:

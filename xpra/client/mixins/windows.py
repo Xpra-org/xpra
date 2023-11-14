@@ -913,7 +913,7 @@ class WindowClient(StubClientMixin):
         return window
 
     def show_window(self, wid: int, window, metadata, override_redirect: bool) -> None:
-        window.show_all()
+        window.show()
         if override_redirect and self.should_force_grab(metadata):
             grablog.warn("forcing grab for OR window %i, matches %s", wid, OR_FORCE_GRAB)
             self.window_grab(wid, window)

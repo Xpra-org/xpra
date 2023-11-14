@@ -35,7 +35,11 @@ from xpra.gtk.bindings.gobject cimport wrap, unwrap
 from xpra.x11.common import REPR_FUNCTIONS
 def get_window_xid(window) -> str:
     return hex(window.get_xid())
-REPR_FUNCTIONS[GdkX11.X11Window] = get_window_xid
+if hasattr(GdkX11, "X11Window"):
+    REPR_FUNCTIONS[GdkX11.X11Window] = get_window_xid
+elif hasattr(GdkX11, "X11Surface"):
+    REPR_FUNCTIONS[GdkX11.X11Surface] = get_window_xid
+
 def get_display_name(display) -> str:
     return display.get_name()
 REPR_FUNCTIONS[Gdk.Display] = get_display_name

@@ -196,17 +196,19 @@ UNDECORATED_TYPE_HINTS : set[str] = {
                     "DND",
                     }
 
-GDK_MOVERESIZE_MAP = {int(d): we for d, we in {
-    MoveResize.SIZE_TOPLEFT: Gdk.WindowEdge.NORTH_WEST,
-    MoveResize.SIZE_TOP: Gdk.WindowEdge.NORTH,
-    MoveResize.SIZE_TOPRIGHT: Gdk.WindowEdge.NORTH_EAST,
-    MoveResize.SIZE_RIGHT: Gdk.WindowEdge.EAST,
-    MoveResize.SIZE_BOTTOMRIGHT: Gdk.WindowEdge.SOUTH_EAST,
-    MoveResize.SIZE_BOTTOM: Gdk.WindowEdge.SOUTH,
-    MoveResize.SIZE_BOTTOMLEFT: Gdk.WindowEdge.SOUTH_WEST,
-    MoveResize.SIZE_LEFT: Gdk.WindowEdge.WEST,
-    # MOVERESIZE_SIZE_KEYBOARD,
-}.items()}
+GDK_MOVERESIZE_MAP = {}
+if hasattr(Gdk, "WindowEdge"):
+    GDK_MOVERESIZE_MAP = {int(d): we for d, we in {
+        MoveResize.SIZE_TOPLEFT: Gdk.WindowEdge.NORTH_WEST,
+        MoveResize.SIZE_TOP: Gdk.WindowEdge.NORTH,
+        MoveResize.SIZE_TOPRIGHT: Gdk.WindowEdge.NORTH_EAST,
+        MoveResize.SIZE_RIGHT: Gdk.WindowEdge.EAST,
+        MoveResize.SIZE_BOTTOMRIGHT: Gdk.WindowEdge.SOUTH_EAST,
+        MoveResize.SIZE_BOTTOM: Gdk.WindowEdge.SOUTH,
+        MoveResize.SIZE_BOTTOMLEFT: Gdk.WindowEdge.SOUTH_WEST,
+        MoveResize.SIZE_LEFT: Gdk.WindowEdge.WEST,
+        # MOVERESIZE_SIZE_KEYBOARD,
+    }.items()}
 
 GDK_SCROLL_MAP = {
     Gdk.ScrollDirection.UP       : 4,
@@ -223,31 +225,35 @@ BUTTON_MASK : dict[int, int] = {
     Gdk.ModifierType.BUTTON5_MASK : 5,
     }
 
-em = Gdk.EventMask
-WINDOW_EVENT_MASK : Gdk.EventMask = em.STRUCTURE_MASK | em.KEY_PRESS_MASK | em.KEY_RELEASE_MASK \
-        | em.POINTER_MOTION_MASK | em.BUTTON_PRESS_MASK | em.BUTTON_RELEASE_MASK \
-        | em.PROPERTY_CHANGE_MASK | em.SCROLL_MASK
+WINDOW_EVENT_MASK  = 0
+if hasattr(Gdk, "EventMask"):
+    em = Gdk.EventMask
+    WINDOW_EVENT_MASK : Gdk.EventMask = em.STRUCTURE_MASK | em.KEY_PRESS_MASK | em.KEY_RELEASE_MASK \
+            | em.POINTER_MOTION_MASK | em.BUTTON_PRESS_MASK | em.BUTTON_RELEASE_MASK \
+            | em.PROPERTY_CHANGE_MASK | em.SCROLL_MASK
 
-del em
+    del em
 
-wth = Gdk.WindowTypeHint
-ALL_WINDOW_TYPES : tuple[Gdk.WindowTypeHint, ...] = (
-    wth.NORMAL,
-    wth.DIALOG,
-    wth.MENU,
-    wth.TOOLBAR,
-    wth.SPLASHSCREEN,
-    wth.UTILITY,
-    wth.DOCK,
-    wth.DESKTOP,
-    wth.DROPDOWN_MENU,
-    wth.POPUP_MENU,
-    wth.TOOLTIP,
-    wth.NOTIFICATION,
-    wth.COMBO,
-    wth.DND,
-    )
-del wth
+ALL_WINDOW_TYPES = ()
+if hasattr(Gdk, "WindowTypeHint"):
+    wth = Gdk.WindowTypeHint
+    ALL_WINDOW_TYPES : tuple[Gdk.WindowTypeHint, ...] = (
+        wth.NORMAL,
+        wth.DIALOG,
+        wth.MENU,
+        wth.TOOLBAR,
+        wth.SPLASHSCREEN,
+        wth.UTILITY,
+        wth.DOCK,
+        wth.DESKTOP,
+        wth.DROPDOWN_MENU,
+        wth.POPUP_MENU,
+        wth.TOOLTIP,
+        wth.NOTIFICATION,
+        wth.COMBO,
+        wth.DND,
+        )
+    del wth
 WINDOW_NAME_TO_HINT : dict[str,Gdk.WindowTypeHint] = {
     wth.value_name.replace("GDK_WINDOW_TYPE_HINT_", ""): wth for wth in ALL_WINDOW_TYPES
     }
@@ -287,13 +293,17 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def init_window(self, metadata):
         self.init_max_window_size()
-        if self._is_popup(metadata):
-            window_type = Gtk.WindowType.POPUP
-        else:
-            window_type = Gtk.WindowType.TOPLEVEL
         self.on_realize_cb = {}
-        Gtk.Window.__init__(self, type = window_type)
-        self.set_app_paintable(True)
+        if hasattr(Gtk, "WindowType"):
+            if self._is_popup(metadata):
+                window_type = Gtk.WindowType.POPUP
+            else:
+                window_type = Gtk.WindowType.TOPLEVEL
+            Gtk.Window.__init__(self, type=window_type)
+            self.set_app_paintable(True)
+        else:
+            # Gtk4
+            Gtk.Window.__init__(self)
         self.init_drawing_area()
         self.set_decorated(self._is_decorated(metadata))
         self._window_state = {}
@@ -318,31 +328,38 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         #add platform hooks
         self.connect_after("realize", self.on_realize)
         self.connect("unrealize", self.on_unrealize)
-        self.connect("enter-notify-event", self.on_enter_notify_event)
-        self.connect("leave-notify-event", self.on_leave_notify_event)
-        self.connect("key-press-event", self.handle_key_press_event)
-        self.connect("key-release-event", self.handle_key_release_event)
-        self.add_events(self.get_window_event_mask())
-        if DRAGNDROP and not self._client.readonly:
-            self.init_dragndrop()
-        self.init_focus()
+        if hasattr(Gtk, "WindowType"):
+            self.connect("enter-notify-event", self.on_enter_notify_event)
+            self.connect("leave-notify-event", self.on_leave_notify_event)
+            self.connect("key-press-event", self.handle_key_press_event)
+            self.connect("key-release-event", self.handle_key_release_event)
+            self.add_events(self.get_window_event_mask())
+            if DRAGNDROP and not self._client.readonly:
+                self.init_dragndrop()
+            self.init_focus()
         ClientWindowBase.init_window(self, metadata)
 
     def init_drawing_area(self) -> None:
         widget = Gtk.DrawingArea()
-        widget.set_app_paintable(True)
+        if hasattr(widget, "set_app_paintable"):
+            # not available with Gtk4
+            widget.set_app_paintable(True)
         widget.set_size_request(*self._size)
         widget.show()
         self.drawing_area = widget
         self.init_widget_events(widget)
-        self.add(widget)
+        if hasattr(self, "add"):
+            self.add(widget)
+        else:
+            # Gtk4:
+            self.set_child(widget)
 
-    def repaint(self, x:int, y:int, w:int, h:int) -> None:
+    def repaint(self, x: int, y: int, w: int, h: int) -> None:
         if OSX:
             self.queue_draw_area(x, y, w, h)
             return
         widget = self.drawing_area
-        #log("repaint%s widget=%s", (x, y, w, h), widget)
+        # log("repaint%s widget=%s", (x, y, w, h), widget)
         if widget:
             widget.queue_draw_area(x, y, w, h)
 
@@ -354,6 +371,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         return mask
 
     def init_widget_events(self, widget) -> None:
+        if not hasattr(widget, "add_events"):
+            # Nothing is available with Gtk4!?
+            return
         widget.add_events(self.get_window_event_mask())
         def motion(_w, event):
             self._do_motion_notify_event(event)
@@ -723,8 +743,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         log("setup_window%s OR=%s", args, self._override_redirect)
         self.set_alpha()
 
-        self.connect("property-notify-event", self.property_changed)
-        self.connect("window-state-event", self.window_state_updated)
+        if hasattr(self, "get_window"):
+            self.connect("property-notify-event", self.property_changed)
+            self.connect("window-state-event", self.window_state_updated)
 
         #this will create the backing:
         ClientWindowBase.setup_window(self, *args)
@@ -1146,6 +1167,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             prop_set(xid, prop_name, dtype, value)
 
     def set_class_instance(self, wmclass_name, wmclass_class) -> None:
+        if not hasattr(self, "set_wmclass"):
+            return
         if not self.get_realized():
             #Warning: window managers may ignore the icons we try to set
             #if the wm_class value is set and matches something somewhere undocumented
@@ -1524,6 +1547,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             send_wm_workspace(root.get_xid(), gdkwin.get_xid(), workspace)
 
     def get_desktop_workspace(self) -> int:
+        if not hasattr(self, "get_window"):
+            return -1
         window = self.get_window()
         if window:
             root = window.get_screen().get_root_window()
