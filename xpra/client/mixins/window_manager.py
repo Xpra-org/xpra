@@ -831,10 +831,11 @@ class WindowClient(StubClientMixin):
                 getChildReaper().add_process(proc, "signal listener for remote process %s" % pid, command="xpra_signal_listener", ignore=True, forget=True, callback=watcher_terminated)
                 log("using watcher pid=%i for server pid=%i", proc.pid, pid)
                 self._pid_to_signalwatcher[pid] = proc
+                ioflags = glib.IO_IN | glib.IO_HUP | glib.IO_ERR
                 if is_gtk3():
-                    proc.stdout_io_watch = glib.io_add_watch(proc.stdout, glib.PRIORITY_DEFAULT, glib.IO_IN, self.signal_watcher_event, proc, pid, wid)
+                    proc.stdout_io_watch = glib.io_add_watch(proc.stdout, glib.PRIORITY_DEFAULT, ioflags, self.signal_watcher_event, proc, pid, wid)
                 else:
-                    proc.stdout_io_watch = glib.io_add_watch(proc.stdout, glib.IO_IN, self.signal_watcher_event, proc, pid, wid)
+                    proc.stdout_io_watch = glib.io_add_watch(proc.stdout, ioflags, self.signal_watcher_event, proc, pid, wid)
         if proc:
             self._signalwatcher_to_wids.setdefault(proc, []).append(wid)
             return proc.pid
@@ -842,7 +843,8 @@ class WindowClient(StubClientMixin):
 
     def signal_watcher_event(self, fd, cb_condition, proc, pid, wid):
         log("signal_watcher_event%s", (fd, cb_condition, proc, pid, wid))
-        if cb_condition==glib.IO_HUP:
+        if cb_condition in (glib.IO_HUP, glib.IO_ERR):
+            self.kill_signalwatcher(proc)
             proc.stdout_io_watch = None
             return False
         if proc.stdout_io_watch is None:
