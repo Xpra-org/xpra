@@ -8,14 +8,10 @@
 import hashlib
 from typing import Any
 
-import gi
-gi.require_version('Gdk', '3.0')  # @UndefinedVariable
-from gi.repository import Gdk  # @UnresolvedImport
-
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, gi_import
 from xpra.gtk.keymap import get_gtk_keymap
 from xpra.gtk.util import get_default_root_window
 from xpra.gtk.error import xsync, xlog
@@ -34,12 +30,14 @@ from xpra.log import Logger
 
 log = Logger("keyboard")
 
+Gdk = gi_import("Gdk", "3.0")
+
 X11Keyboard = X11KeyboardBindings()
 
 MAP_MISSING_MODIFIERS : bool = envbool("XPRA_MAP_MISSING_MODIFIERS", True)
 SHIFT_LOCK : bool = envbool("XPRA_SHIFT_LOCK", False)
 
-ALL_X11_MODIFIERS : dict[str,int] = {
+ALL_X11_MODIFIERS : dict[str, int] = {
                     "shift"     : 0,
                     "lock"      : 1,
                     "control"   : 2,
@@ -50,12 +48,22 @@ ALL_X11_MODIFIERS : dict[str,int] = {
                     "mod5"      : 7
                     }
 
+
+def kmlog(keyname, msg, *args) -> None:
+    """ logs at info level is we are debugging this keyname """
+    if keyname in DEBUG_KEYSYMS:
+        lfn = log.info
+    else:
+        lfn = log
+    lfn(msg, *args)
+
+
 class KeyboardConfig(KeyboardConfigBase):
     def __init__(self):
         super().__init__()
         self.raw : bool = False
         self.query_struct = None
-        self.modifier_map : dict[str,int] = {}
+        self.modifier_map : dict[str, int] = {}
         self.mod_meanings = {}
         self.mod_managed = []
         self.mod_pointermissing = []
@@ -67,9 +75,9 @@ class KeyboardConfig(KeyboardConfigBase):
         self.options = None
         self.layout_groups = False
 
-        #this is shared between clients!
+        # this is shared between clients!
         self.keys_pressed = {}
-        #these are derived by calling set_keymap:
+        # these are derived by calling set_keymap:
         self.keynames_for_mod = {}
         self.keycode_translation = {}
         self.keycodes_for_modifier_keynames = {}
@@ -81,9 +89,9 @@ class KeyboardConfig(KeyboardConfigBase):
     def __repr__(self):
         return "KeyboardConfig(%s / %s / %s)" % (self.layout, self.variant, self.options)
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         info = super().get_info()
-        #keycodes:
+        # keycodes:
         if self.keycode_translation:
             ksinfo = info.setdefault("keysym", {})
             kssinf = info.setdefault("keysyms", {})
@@ -106,7 +114,7 @@ class KeyboardConfig(KeyboardConfigBase):
             for keyval, name, keycode, group, level in self.keycodes:
                 kminfo[i] = (keyval, name, keycode, group, level)
                 i += 1
-        #modifiers:
+        # modifiers:
         modinfo = {}
         modsinfo = {}
         modinfo["filter"] = self.modifiers_filter
@@ -131,36 +139,36 @@ class KeyboardConfig(KeyboardConfigBase):
         info["modifier"] = modinfo
         info["modifiers"] = modsinfo
         info["keys-pressed"] = self.keys_pressed
-        #this would need to always run in the UI thread:
-        #info["state"] = {
+        # this would need to always run in the UI thread:
+        # info["state"] = {
         #    "modifiers" : self.get_current_mask(),
         #    }
         log("keyboard info: %s", info)
         return info
-
 
     def parse_options(self, props) -> int:
         """ used by both process_hello and process_keymap
             to set the keyboard attributes """
         super().parse_options(props)
         modded = {}
-        #clients version 4.4 and later use a 'keymap' substructure:
+        # clients version 4.4 and later use a 'keymap' substructure:
         keymap_dict = typedict(props.dictget("keymap") or {})
+
         def parse_option(name, parse_fn, old_parse_fn, *parse_args):
             cv = getattr(self, name)
             if keymap_dict:
                 nv = parse_fn(name, *parse_args)
             else:
                 nv = old_parse_fn("xkbmap_%s" % name, *parse_args)
-            if cv!=nv:
+            if cv != nv:
                 setattr(self, name, nv)
                 modded[name] = nv
-        #lists:
+        # lists:
         parse_option("keycodes", keymap_dict.tupleget, props.tupleget)
-        #dicts:
+        # dicts:
         for x in ("mod_meanings", "x11_keycodes", "query_struct"):
             parse_option(x, keymap_dict.dictget, props.dictget, {})
-        #lists of strings:
+        # lists of strings:
         for x in ("mod_managed", "mod_pointermissing"):
             parse_option(x, keymap_dict.strtupleget, props.strtupleget)
         parse_option("raw", keymap_dict.boolget, props.boolget)
@@ -175,19 +183,19 @@ class KeyboardConfig(KeyboardConfigBase):
         self.variant = keymap_dict.strget("variant", "")
         self.options = keymap_dict.strget("options", "")
 
-
     def get_hash(self) -> str:
         """
             This hash will be different whenever the keyboard configuration changes.
         """
         m = hashlib.sha256()
+
         def hashadd(v):
             m.update(("/%s" % str(v)).encode("utf8"))
         m.update(super().get_hash())
         for x in (self.raw, self.mod_meanings, self.mod_pointermissing, self.keycodes, self.x11_keycodes):
             hashadd(x)
         if self.query_struct:
-            #flatten the dict in a predicatable order:
+            # flatten the dict in a predicatable order:
             for k in sorted(self.query_struct.keys()):
                 hashadd(self.query_struct.get(k))
         return "%s/%s/%s/%s" % (self.layout, self.variant, self.options, m.hexdigest())
@@ -212,10 +220,10 @@ class KeyboardConfig(KeyboardConfigBase):
             log("compute_modifiers() mod_meanings=%s", self.mod_meanings)
             log("compute_modifiers() keycodes=%s", self.keycodes)
             if self.mod_meanings:
-                #Unix-like OS provides modifier meanings:
+                # Unix-like OS provides modifier meanings:
                 self.keynames_for_mod = get_modifiers_from_meanings(self.mod_meanings)
             elif self.keycodes:
-                #non-Unix-like OS provides just keycodes for now:
+                # non-Unix-like OS provides just keycodes for now:
                 self.keynames_for_mod = get_modifiers_from_keycodes(self.keycodes, MAP_MISSING_MODIFIERS)
                 if MAP_MISSING_MODIFIERS:
                     map_missing_modifiers(self.keynames_for_mod)
@@ -225,7 +233,6 @@ class KeyboardConfig(KeyboardConfigBase):
         log("compute_modifiers() keynames_for_mod=%s", self.keynames_for_mod)
         log("compute_modifiers() keycodes_for_modifier_keynames=%s", self.keycodes_for_modifier_keynames)
         log("compute_modifiers() mod_meanings=%s", self.mod_meanings)
-
 
     def compute_modifier_keynames(self) -> None:
         self.keycodes_for_modifier_keynames = {}
@@ -238,7 +245,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     if keyname in DEFAULT_MODIFIER_NUISANCE_KEYNAMES:
                         self.mod_nuisance.add(modifier)
                     keyval = Gdk.keyval_from_name(bytestostr(keyname))
-                    if keyval==0:
+                    if keyval == 0:
                         log.error("Error: no keyval found for keyname '%s' (modifier '%s')", keyname, modifier)
                         continue
                     entries = keymap.get_entries_for_keyval(keyval)
@@ -250,39 +257,40 @@ class KeyboardConfig(KeyboardConfigBase):
                             l = self.keycodes_for_modifier_keynames.setdefault(keyname, [])
                             if keycode not in l:
                                 l.append(keycode)
-        log("compute_modifier_keynames: keycodes_for_modifier_keynames=%s", self.keycodes_for_modifier_keynames)
+        log("compute_modifier_keynames: keycodes_for_modifier_keynames=%s",
+            self.keycodes_for_modifier_keynames)
 
     def compute_client_modifier_keycodes(self) -> None:
         """ The keycodes for all modifiers (those are *client* keycodes!) """
         with log.trap_error("Error computing client modifier keycodes"):
             server_mappings = X11Keyboard.get_modifier_mappings()
             log("compute_client_modifier_keycodes() server mappings=%s", server_mappings)
-            #update the mappings to use the keycodes the client knows about:
+            # update the mappings to use the keycodes the client knows about:
             reverse_trans = {}
-            for k,v in self.keycode_translation.items():
+            for k, v in self.keycode_translation.items():
                 reverse_trans[v] = k
             self.modifier_client_keycodes = {}
             self.mod_nuisance = set(DEFAULT_MODIFIER_NUISANCE)
             for modifier, keys in server_mappings.items():
-                #ie: modifier=mod3, keys=[(115, 'Super_L'), (116, 'Super_R'), (127, 'Super_L')]
+                # ie: modifier=mod3, keys=[(115, 'Super_L'), (116, 'Super_R'), (127, 'Super_L')]
                 client_keydefs = []
-                for keycode,keysym in keys:
-                    #ie: keycode=115, keysym=Super_L
+                for keycode, keysym in keys:
+                    # ie: keycode=115, keysym=Super_L
                     client_def = reverse_trans.get(keycode, (0, keysym))
-                    #ie: client_def = (99, Super_L)
-                    #ie: client_def = Super_L
-                    #ie: client_def = (0, Super_L)
+                    # ie: client_def = (99, Super_L)
+                    # ie: client_def = Super_L
+                    # ie: client_def = (0, Super_L)
                     if isinstance(client_def, (list, tuple)):
-                        #ie:
+                        # ie:
                         # keycode, keysym:
                         #  client_def = (99, Super_L)
                         # or keysym, level:
                         #  client_def = (Super_L, 1)
                         client_keydefs.append(client_def)
-                    elif client_def==keysym:
-                        #ie: client_def = Super_L
+                    elif client_def == keysym:
+                        # ie: client_def = Super_L
                         client_keydefs.append((keycode, keysym))
-                    #record nuisacnde modifiers:
+                    # record nuisacnde modifiers:
                     if keysym in DEFAULT_MODIFIER_NUISANCE_KEYNAMES:
                         self.mod_nuisance.add(modifier)
                 self.modifier_client_keycodes[modifier] = client_keydefs
@@ -294,8 +302,7 @@ class KeyboardConfig(KeyboardConfigBase):
             self.modifier_map = grok_modifier_map(Gdk.Display.get_default(), self.mod_meanings)
         log("modifier_map(%s)=%s", self.mod_meanings, self.modifier_map)
 
-
-    def is_modifier(self, keycode:int) -> bool:
+    def is_modifier(self, keycode: int) -> bool:
         for mod, keys in self.keycodes_for_modifier_keynames.items():
             if keycode in keys:
                 log("is_modifier(%s) found modifier: %s", keycode, mod)
@@ -303,21 +310,19 @@ class KeyboardConfig(KeyboardConfigBase):
         log("is_modifier(%s) not found", keycode)
         return False
 
-
-    def set_layout(self, layout:str, variant:str, options) -> bool:
+    def set_layout(self, layout: str, variant: str, options) -> bool:
         log("set_layout(%s, %s, %s)", layout, variant, options)
-        if layout=="en":
+        if layout == "en":
             log.warn("Warning: invalid keyboard layout name '%s', using 'us' instead", layout)
             layout = "us"
-        if layout!=self.layout or variant!=self.variant or options!=self.options:
+        if layout != self.layout or variant != self.variant or options != self.options:
             self.layout = layout
             self.variant = variant
             self.options = options
             return True
         return False
 
-
-    def set_keymap(self, translate_only:bool=False) -> None:
+    def set_keymap(self, translate_only=False) -> None:
         if not self.enabled:
             return
         log("set_keymap(%s) layout=%r, variant=%r, options=%r, query-struct=%r",
@@ -336,33 +341,35 @@ class KeyboardConfig(KeyboardConfigBase):
             do_set_keymap(self.layout, self.variant, self.options, self.query_struct)
         log("set_keymap: query_struct=%r", self.query_struct)
         with xlog:
-            #first clear all existing modifiers:
+            # first clear all existing modifiers:
             clean_keyboard_state()
 
             if not self.raw:
                 clear_modifiers()
                 clean_keyboard_state()
 
-                #now set all the keycodes:
-                #first compute the modifier maps as this may have an influence
-                #on the keycode mappings (at least for the from_keycodes case):
+                # now set all the keycodes:
+                # first compute the modifier maps as this may have an influence
+                # on the keycode mappings (at least for the from_keycodes case):
                 self.compute_modifiers()
-                #key translation:
+                # key translation:
                 if self.x11_keycodes and self.query_struct:
-                    #native full mapping of all keycodes:
-                    self.keycode_translation = set_all_keycodes(self.x11_keycodes, self.keycodes, False, self.keynames_for_mod)
+                    # native full mapping of all keycodes:
+                    self.keycode_translation = set_all_keycodes(self.x11_keycodes, self.keycodes,
+                                                                False, self.keynames_for_mod)
                 elif self.keycodes:
-                    #if the client does not provide a full native keymap with all the keycodes,
-                    #try to preserve the initial server keycodes and translate the client keycodes instead:
-                    #(used by non X11 clients like osx,win32 or HTML5)
+                    # if the client does not provide a full native keymap with all the keycodes,
+                    # try to preserve the initial server keycodes and translate the client keycodes instead:
+                    # (used by non X11 clients like osx,win32 or HTML5)
                     self.keycode_translation = set_keycode_translation(self.x11_keycodes, self.keycodes)
                 else:
                     self.keycode_translation = {}
                 self.add_gtk_keynames()
 
-                #now set the new modifier mappings:
+                # now set the new modifier mappings:
                 clean_keyboard_state()
-                log("going to set modifiers, mod_meanings=%s, len(keycodes)=%s, keynames_for_mod=%s", self.mod_meanings, len(self.keycodes or []), self.keynames_for_mod)
+                log("going to set modifiers, mod_meanings=%s, len(keycodes)=%s, keynames_for_mod=%s",
+                    self.mod_meanings, len(self.keycodes or []), self.keynames_for_mod)
                 if self.keynames_for_mod:
                     set_modifiers(self.keynames_for_mod)
                 log("keynames_for_mod=%s", self.keynames_for_mod)
@@ -376,11 +383,10 @@ class KeyboardConfig(KeyboardConfigBase):
             clean_keyboard_state()
             self.update_keycode_mappings()
 
-
     def add_gtk_keynames(self) -> None:
-        #add the keynames we find via gtk
-        #since we may rely on finding those keynames from the client
-        #(used with non-native keymaps)
+        # add the keynames we find via gtk
+        # since we may rely on finding those keynames from the client
+        # (used with non-native keymaps)
         log("add_gtk_keynames() gtk keymap=%s", get_gtk_keymap())
         for _, keyname, keycode, _, _ in get_gtk_keymap():
             if keyname not in self.keycode_translation:
@@ -398,18 +404,18 @@ class KeyboardConfig(KeyboardConfigBase):
             return
         with xsync:
             clean_keyboard_state()
-            #keycodes:
+            # keycodes:
             keycode_to_keynames = get_keycode_mappings()
             self.keycode_translation = {}
-            #prefer keycodes that don't use the lowest level+mode:
-            default_for_keyname : dict[str,tuple[int,int]] = {}
+            # prefer keycodes that don't use the lowest level+mode:
+            default_for_keyname : dict[str, tuple[int, int]] = {}
             for keycode, keynames in keycode_to_keynames.items():
                 for i, keyname in enumerate(keynames):
                     self.keycode_translation[(keyname, i)] = keycode
                     if keyname in DEBUG_KEYSYMS:
                         log.info("set_default_keymap: %s=%s", (keyname, i), keycode)
                     kd = default_for_keyname.get(keyname)
-                    if kd is None or kd[1]>i:
+                    if kd is None or kd[1] > i:
                         default_for_keyname[keyname] = (keycode, i)
             for keyname, kd in default_for_keyname.items():
                 keycode = kd[0]
@@ -418,16 +424,16 @@ class KeyboardConfig(KeyboardConfigBase):
                     log.info("set_default_keymap: %s=%s", keyname, keycode)
             self.add_gtk_keynames()
             log("set_default_keymap: keycode_translation=%s", self.keycode_translation)
-            #modifiers:
+            # modifiers:
             self.keynames_for_mod = {}
-            #ie: {'control': [(37, 'Control_L'), (105, 'Control_R')], ...}
+            # ie: {'control': [(37, 'Control_L'), (105, 'Control_R')], ...}
             mod_mappings = X11Keyboard.get_modifier_mappings()
             log("set_default_keymap: using modifier mappings=%s", mod_mappings)
             for modifier, mappings in mod_mappings.items():
                 keynames = []
-                for m in mappings:      #ie: (37, 'Control_L'), (105, 'Control_R')
-                    if len(m)==2:
-                        keynames.append(m[1])   #ie: 'Control_L'
+                for m in mappings:      # ie: (37, 'Control_L'), (105, 'Control_R')
+                    if len(m) == 2:
+                        keynames.append(m[1])   # ie: 'Control_L'
                 self.keynames_for_mod[modifier] = set(keynames)
             self.compute_modifier_keynames()
             self.compute_client_modifier_keycodes()
@@ -439,31 +445,23 @@ class KeyboardConfig(KeyboardConfigBase):
     def update_keycode_mappings(self) -> None:
         self.keycode_mappings = get_keycode_mappings()
 
-
-    def kmlog(self, keyname, msg, *args) -> None:
-        """ logs at info level is we are debugging this keyname """
-        if keyname in DEBUG_KEYSYMS:
-            l = log.info
-        else:
-            l = log
-        l(msg, *args)
-
-    def do_get_keycode(self, client_keycode:int, keyname:str, pressed:bool, modifiers, keyval, keystr:str, group:int):
+    def do_get_keycode(self, client_keycode: int, keyname: str, pressed: bool, modifiers, keyval,
+                       keystr: str, group: int):
         if not self.enabled:
-            self.kmlog(keyname, "ignoring keycode since keyboard is turned off")
+            kmlog(keyname, "ignoring keycode since keyboard is turned off")
             return -1, group
-        if keyname=="0xffffff":
+        if keyname == "0xffffff":
             return -1, group
         if self.raw:
             return client_keycode, group
         if self.query_struct:
             keycode = self.keycode_translation.get((client_keycode, keyname)) or client_keycode
-            self.kmlog(keyname, "do_get_keycode (%i, %s)=%s (native keymap)", client_keycode, keyname, keycode)
+            kmlog(keyname, "do_get_keycode (%i, %s)=%s (native keymap)", client_keycode, keyname, keycode)
             return keycode, group
         return self.find_matching_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
 
-    def find_matching_keycode(self, client_keycode:int, keyname:str,
-                              pressed:bool, modifiers, keyval, keystr:str, group) -> tuple[int,int]:
+    def find_matching_keycode(self, client_keycode: int, keyname: str,
+                              pressed: bool, modifiers, keyval, keystr: str, group) -> tuple[int, int]:
         """
         from man xmodmap:
         The list of keysyms is assigned to the indicated keycode (which may be specified in decimal,
@@ -476,12 +474,16 @@ class KeyboardConfig(KeyboardConfigBase):
         """
         keycode = None
         rgroup = group
+
         def klog(msg, *args):
-            self.kmlog(keyname, "do_get_keycode%s"+msg, (client_keycode, keyname, pressed, modifiers, keyval, keystr, group), *args)
-        def kmlog(msg, *args):
-            self.kmlog(keyname, msg, *args)
-        #non-native: try harder to find matching keysym
-        #first, try to honour shift state:
+            kmlog(keyname, "do_get_keycode%s"+msg,
+                  (client_keycode, keyname, pressed, modifiers, keyval, keystr, group), *args)
+
+        def kml(msg, *args):
+            kmlog(keyname, msg, *args)
+
+        # non-native: try harder to find matching keysym
+        # first, try to honour shift state:
         lock = ("lock" in modifiers) and (SHIFT_LOCK or (bool(keystr) and keystr.isalpha()))
         shift = ("shift" in modifiers) ^ lock
         mode = 0
@@ -500,15 +502,15 @@ class KeyboardConfig(KeyboardConfigBase):
                     mode = 1
                     break
         levels = []
-        #try to preserve the mode (harder to toggle):
+        # try to preserve the mode (harder to toggle):
         for m in (int(bool(mode)), int(not mode)):
-            #try to preserve shift state:
+            # try to preserve shift state:
             for s in (int(bool(shift)), int(not shift)):
-                #group is comparatively easier to toggle (one function call):
+                # group is comparatively easier to toggle (one function call):
                 for g in (int(bool(group)), int(not group)):
                     level = int(g)*4 + int(m)*2 + int(s)*1
                     levels.append(level)
-        kmlog("will try levels: %s", levels)
+        kml("will try levels: %s", levels)
         for level in levels:
             keycode = self.keycode_translation.get((keyname, level))
             if keycode:
@@ -516,55 +518,56 @@ class KeyboardConfig(KeyboardConfigBase):
                 klog("=%i (level=%i, shift=%s, mode=%i, keysyms=%s)", keycode, level, shift, mode, keysyms)
                 level0 = levels[0]
                 uq_keysyms = set(keysyms)
-                if len(uq_keysyms)<=1 or (len(keysyms)>level0 and keysyms[level0]==""):
-                    #if the keysym we would match for this keycode is 'NoSymbol',
-                    #then we can probably ignore it ('NoSymbol' shows up as "")
-                    #same if there's only one actual keysym for this keycode
-                    kmlog("not toggling any modifiers state for keysyms=%s", keysyms)
+                if len(uq_keysyms) <= 1 or (len(keysyms) > level0 and keysyms[level0] == ""):
+                    # if the keysym we would match for this keycode is 'NoSymbol',
+                    # then we can probably ignore it ('NoSymbol' shows up as "")
+                    # same if there's only one actual keysym for this keycode
+                    kml("not toggling any modifiers state for keysyms=%s", keysyms)
                     break
+
                 def toggle_modifier(mod):
                     keynames = self.keynames_for_mod.get(mod, ())
                     if keyname in keynames:
-                        kmlog("not toggling '%s' since '%s' should deal with it", mod, keyname)
-                        #the keycode we're returning is for this modifier,
-                        #assume that this will end up doing what is needed
+                        kml("not toggling '%s' since '%s' should deal with it", mod, keyname)
+                        # the keycode we're returning is for this modifier,
+                        # assume that this will end up doing what is needed
                         return
                     if mod in modifiers:
-                        kmlog("removing '%s' from modifiers", mod)
+                        kml("removing '%s' from modifiers", mod)
                         modifiers.remove(mod)
                     else:
-                        kmlog("adding '%s' to modifiers", mod)
+                        kml("adding '%s' to modifiers", mod)
                         modifiers.append(mod)
-                #keypad overrules shift state (see #2702):
+                # keypad overrules shift state (see #2702):
                 if keyname.startswith("KP_"):
                     if numlock_modifier and not numlock:
                         toggle_modifier(numlock_modifier)
                 elif (level & 1) ^ shift:
-                    #shift state does not match
+                    # shift state does not match
                     toggle_modifier("shift")
                 if int(bool(level & 2)) ^ mode:
-                    #try to set / unset mode:
+                    # try to set / unset mode:
                     for mod, keynames in self.keynames_for_mod.items():
                         if "ISO_Level3_Shift" in keynames or "Mode_switch" in keynames:
-                            #found mode switch modified
+                            # found mode switch modified
                             toggle_modifier(mod)
                             break
                 rgroup = level//4
-                if rgroup!=group:
-                    kmlog("switching group from %i to %i", group, rgroup)
+                if rgroup != group:
+                    kml("switching group from %i to %i", group, rgroup)
                 break
-        #this should not find anything new?:
+        # this should not find anything new?:
         if keycode is None:
             keycode = self.keycode_translation.get(keyname, -1)
             klog("=%i, %i (keyname translation)", keycode, rgroup)
         if keycode is None:
-            #last resort, find using the keyval:
+            # last resort, find using the keyval:
             display = Gdk.Display.get_default()
             keymap = Gdk.Keymap.get_for_display(display)
             b, entries = keymap.get_entries_for_keyval(keyval)
             if b and entries:
                 for entry in entries:
-                    if entry.group==group:
+                    if entry.group == group:
                         return entry.keycode, entry.group
         return keycode or 0, rgroup or 0
 
@@ -600,14 +603,14 @@ class KeyboardConfig(KeyboardConfigBase):
             log("make_keymask_match: ignored as keynames_for_mod not assigned yet")
             return
         if ignored_modifier_keynames is None:
-            #this is not a keyboard event, ignore modifiers in "mod_pointermissing"
+            # this is not a keyboard event, ignore modifiers in "mod_pointermissing"
             def is_ignored(modifier, _modifier_keynames):
                 return modifier in (self.mod_pointermissing or [])
         else:
-            #keyboard event: ignore the keynames specified
-            #(usually the modifier key being pressed/unpressed)
+            # keyboard event: ignore the keynames specified
+            # (usually the modifier key being pressed/unpressed)
             def is_ignored(_modifier, modifier_keynames):
-                return len(set(modifier_keynames or []) & set(ignored_modifier_keynames or []))>0
+                return len(set(modifier_keynames or []) & set(ignored_modifier_keynames or [])) > 0
 
         def filtered_modifiers_set(modifiers):
             m = set()
@@ -631,20 +634,20 @@ class KeyboardConfig(KeyboardConfigBase):
                 modifier = bytestostr(modifier)
                 keynames = self.keynames_for_mod.get(modifier, None)
                 if keynames is None:
-                    log.error("Error: unknown modifier '%s'", modifier)
+                    log.error(f"Error: unknown modifier {modifier!r}")
                     log.error(" known modifiers: %s", csv(self.keynames_for_mod.keys()))
                     continue
                 if not keynames:
                     log.warn("Warning: found no keynames for '%s'", modifier)
                     continue
-                #find the keycodes that match the keynames for this modifier
+                # find the keycodes that match the keynames for this modifier
                 keycodes = []
-                #log.info("keynames(%s)=%s", modifier, keynames)
+                # log.info("keynames(%s)=%s", modifier, keynames)
                 for keyname in keynames:
                     if keyname in self.keys_pressed.values():
-                        #found the key which was pressed to set this modifier
+                        # found the key which was pressed to set this modifier
                         for keycode, name in self.keys_pressed.items():
-                            if name==keyname:
+                            if name == keyname:
                                 log("found the key pressed for %s: %s", modifier, name)
                                 keycodes.insert(0, keycode)
                     keycodes_for_keyname = self.keycodes_for_modifier_keynames.get(keyname)
@@ -655,14 +658,15 @@ class KeyboardConfig(KeyboardConfigBase):
                 if ignored_modifier_keycode is not None and ignored_modifier_keycode in keycodes:
                     log("modifier '%s' ignored (ignored keycode=%s)", modifier, ignored_modifier_keycode)
                     continue
-                #nuisance keys (lock, num, scroll) are toggled by a
-                #full key press + key release (so act accordingly in the loop below)
+                # nuisance keys (lock, num, scroll) are toggled by a
+                # full key press + key release (so act accordingly in the loop below)
                 nuisance = modifier in self.mod_nuisance
-                log("keynames(%s)=%s, keycodes=%s, nuisance=%s, nuisance keys=%s", modifier, keynames, keycodes, nuisance, self.mod_nuisance)
+                log("keynames(%s)=%s, keycodes=%s, nuisance=%s, nuisance keys=%s",
+                    modifier, keynames, keycodes, nuisance, self.mod_nuisance)
                 modkeycode = None
                 if not press:
-                    #since we want to unpress something,
-                    #let's try the keycodes we know are pressed first:
+                    # since we want to unpress something,
+                    # let's try the keycodes we know are pressed first:
                     kdown = X11Keyboard.get_keycodes_down()
                     pressed = [x for x in keycodes if x in kdown]
                     others = [x for x in keycodes if x not in kdown]
@@ -674,20 +678,22 @@ class KeyboardConfig(KeyboardConfigBase):
                     else:
                         X11Keyboard.xtest_fake_key(keycode, press)
                     new_mask = self.get_current_mask()
-                    success = (modifier in new_mask)==press
+                    success = (modifier in new_mask) == press
                     if success:
                         modkeycode = keycode
-                        log("change_mask(%s) %s modifier '%s' using keycode %s", info, modifier_list, modifier, keycode)
-                        break   #we're done for this modifier
+                        log("change_mask(%s) %s modifier '%s' using keycode %s",
+                            info, modifier_list, modifier, keycode)
+                        break   # we're done for this modifier
                     log("%s %s with keycode %s did not work", info, modifier, keycode)
                     if press and not nuisance:
                         log(" trying to unpress it!")
                         X11Keyboard.xtest_fake_key(keycode, False)
-                        #maybe doing the full keypress (down+up) worked:
+                        # maybe doing the full keypress (down+up) worked:
                         new_mask = self.get_current_mask()
-                        if (modifier in new_mask)==press:
+                        if (modifier in new_mask) == press:
                             break
-                    log("change_mask(%s) %s modifier '%s' using keycode %s, success: %s", info, modifier_list, modifier, keycode, success)
+                    log("change_mask(%s) %s modifier '%s' using keycode %s, success: %s",
+                        info, modifier_list, modifier, keycode, success)
                 if not modkeycode:
                     failed.append(modifier)
             log("change_mask(%s, %s, %s) failed=%s", modifiers, press, info, failed)
@@ -696,9 +702,11 @@ class KeyboardConfig(KeyboardConfigBase):
         with xsync:
             current = filtered_modifiers_set(self.get_current_mask())
             wanted = filtered_modifiers_set(modifier_list or [])
-            if current==wanted:
+            if current == wanted:
                 return
-            log("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s", modifier_list, current, wanted, ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
+            log("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s",
+                modifier_list, current, wanted,
+                ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
             fr = change_mask(current.difference(wanted), False, "remove")
             fa = change_mask(wanted.difference(current), True, "add")
             if not fr or fa:
@@ -709,12 +717,12 @@ class KeyboardConfig(KeyboardConfigBase):
             if fa:
                 log.warn("Warning: failed to add the following modifiers:")
                 log.warn(" %s", csv(fa))
-            #this should never happen.. but if it does?
-            #something didn't work, use the big hammer and start again from scratch:
+            # this should never happen.. but if it does?
+            # something didn't work, use the big hammer and start again from scratch:
             log.warn(" keys still pressed=%s", X11Keyboard.get_keycodes_down())
             X11Keyboard.unpress_all_keys()
             log.warn(" doing a full keyboard reset, keys now pressed=%s", X11Keyboard.get_keycodes_down())
-            #and try to set the modifiers one last time:
+            # and try to set the modifiers one last time:
             current = filtered_modifiers_set(self.get_current_mask())
             change_mask(current.difference(wanted), False, "remove")
             change_mask(wanted.difference(current), True, "add")
