@@ -44,6 +44,7 @@ if PYTHON3:
 
 
 USE_ALIASES = envbool("XPRA_USE_ALIASES", True)
+HELLO_COMPRESSED = envbool("XPRA_HELLO_COMPRESSED", False)
 READ_BUFFER_SIZE = envint("XPRA_READ_BUFFER_SIZE", 65536)
 #merge header and packet if packet is smaller than:
 PACKET_JOIN_SIZE = envint("XPRA_PACKET_JOIN_SIZE", READ_BUFFER_SIZE)
@@ -490,7 +491,7 @@ class Protocol(object):
 
     def enable_default_compressor(self):
         opts = compression.get_enabled_compressors()
-        if opts:
+        if opts and HELLO_COMPRESSED:
             self.enable_compressor(opts[0])
         else:
             self.enable_compressor("none")
