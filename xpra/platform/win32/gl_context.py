@@ -4,11 +4,11 @@
 # later version. See the file COPYING for details.
 
 from ctypes import (
-    FormatError,  # @UnresolvedImport
+    FormatError,
     sizeof, byref, cast, c_void_p,
     )
 from ctypes.wintypes import LPCWSTR
-from contextlib import nullcontext
+from contextlib import nullcontext, AbstractContextManager
 
 from xpra.client.gl.check import check_PyOpenGL_support
 from xpra.os_util import CaptureStdErr
@@ -36,13 +36,13 @@ log = Logger("opengl")
 DOUBLE_BUFFERED = True
 
 
-def DefWndProc(hwnd, msg, wParam, lParam):
-    return DefWindowProcA(hwnd, msg, wParam, lParam)
+def DefWndProc(hwnd, msg, w_param, l_param):
+    return DefWindowProcA(hwnd, msg, w_param, l_param)
 
 
 class WGLWindowContext:
 
-    def __init__(self, hwnd:int, hdc:int, context):
+    def __init__(self, hwnd: int, hdc: int, context):
         self.hwnd = hwnd
         self.hdc = hdc
         self.context = context
@@ -84,8 +84,9 @@ class WGLWindowContext:
 
 
 gl_init_done = False
-def get_gl_context_manager():
-    #capture stderr only the first time this is called
+
+def get_gl_context_manager() -> AbstractContextManager:
+    # capture stderr only the first time this is called
     global gl_init_done
     if not gl_init_done:
         gl_init_done = True
@@ -105,14 +106,14 @@ class WGLContext:
         self.pixel_format_props = {}
 
     def check_support(self, force_enable=False):
-        #create a temporary window to query opengl attributes:
-        hInst = GetModuleHandleA(0)
-        log("check_support() GetModuleHandleW()=%#x", hInst or 0)
+        # create a temporary window to query opengl attributes:
+        h_inst = GetModuleHandleA(0)
+        log("check_support() GetModuleHandleW()=%#x", h_inst or 0)
         classname = "Xpra Temporary Window for OpenGL"
         wndc = WNDCLASSEX()
         wndc.cbSize = sizeof(WNDCLASSEX)
         wndc.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW
-        wndc.hInstance = hInst
+        wndc.hInstance = h_inst
         wndc.hBrush = COLOR_WINDOW
         wndc.lpszClassName = classname
         wndc.lpfnWndProc = WNDPROC(DefWndProc)
@@ -124,7 +125,7 @@ class WGLContext:
         window_name = "Xpra OpenGL Test"
         self.hwnd = CreateWindowExA(0, reg_atom, window_name, style,
                                     CW_USEDEFAULT, CW_USEDEFAULT, 0, 0,
-                                    0, 0, hInst, None)
+                                    0, 0, h_inst, None)
         log("check_support() CreateWindowExW()=%#x", self.hwnd or 0)
         if not self.hwnd:
             return {"info" : "disabled: failed to create temporary window, %s" % FormatError()}
@@ -140,28 +141,28 @@ class WGLContext:
             if hwnd and not DestroyWindow(hwnd):
                 log.warn("Warning: failed to destroy temporary OpenGL test window")
             latom = c_void_p(reg_atom)
-            if not UnregisterClassW(cast(latom, LPCWSTR), hInst):
+            if not UnregisterClassW(cast(latom, LPCWSTR), h_inst):
                 log.warn("Warning: failed to unregister class for OpenGL test window")
-                log.warn(" for class %r and module handle %#x:", classname, hInst or 0)
+                log.warn(" for class %r and module handle %#x:", classname, h_inst or 0)
                 log.warn(" '%s'", FormatError())
 
-    def get_bit_depth(self):
+    def get_bit_depth(self) -> int:
         return 0
 
     def is_double_buffered(self) -> bool:
-        return DOUBLE_BUFFERED  #self.pixel_format_props.get("double-buffered", False)
+        return DOUBLE_BUFFERED  # self.pixel_format_props.get("double-buffered", False)
 
     def get_paint_context(self, gdk_window) -> WGLWindowContext:
         hwnd = get_window_handle(gdk_window)
-        if self.hwnd!=hwnd:
-            #(this shouldn't happen)
-            #just make sure we don't keep using a context for a different handle:
+        if self.hwnd != hwnd:
+            # (this shouldn't happen)
+            # just make sure we don't keep using a context for a different handle:
             self.destroy()
         if not self.context:
             self.context = self.create_wgl_context(hwnd)
         return WGLWindowContext(hwnd, self.hdc, self.context)
 
-    def create_wgl_context(self, hwnd:int) -> HGLRC:
+    def create_wgl_context(self, hwnd: int) -> HGLRC:
         bpc = 8
         self.hwnd = hwnd
         self.pixel_format_props = {}
@@ -194,7 +195,7 @@ class WGLContext:
         pfd.cDepthBits = 24
         pfd.cStencilBits = 2
         pfd.cAuxBuffers = 0
-        pfd.iLayerType = PFD_MAIN_PLANE #ignored
+        pfd.iLayerType = PFD_MAIN_PLANE  # ignored
         pfd.bReserved = 0
         pfd.dwLayerMask = 0
         pfd.dwVisibleMask = 0
@@ -214,7 +215,7 @@ class WGLContext:
         if not DescribePixelFormat(self.hdc, pf, sizeof(PIXELFORMATDESCRIPTOR), byref(pfd)):
             raise RuntimeError("DescribePixelFormat failed")
         self.pixel_format_props.update({
-            "rgba"              : pfd.iPixelType==PFD_TYPE_RGBA,
+            "rgba"              : pfd.iPixelType == PFD_TYPE_RGBA,
             "depth"             : pfd.cColorBits,
             "red-size"          : pfd.cRedBits,
             "green-size"        : pfd.cGreenBits,
@@ -250,5 +251,6 @@ class WGLContext:
 
     def __repr__(self):
         return "WGLContext(%#x)" % self.context
+
 
 GLContext = WGLContext

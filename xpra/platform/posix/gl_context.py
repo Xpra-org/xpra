@@ -8,6 +8,7 @@ from contextlib import AbstractContextManager
 from ctypes import c_int, c_void_p, byref, cast, POINTER
 from OpenGL import GLX
 from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
+from OpenGL.raw.GLX._types import struct__XDisplay, struct___GLXcontextRec
 
 from xpra.util.env import envbool, envfloat
 from xpra.client.gl.check import check_PyOpenGL_support
@@ -23,7 +24,7 @@ ARB_CONTEXT = envbool("XPRA_OPENGL_ARB_CONTEXT", True)
 CORE_PROFILE = envbool("XPRA_OPENGL_CORE_PROFILE", True)
 DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", True)
 SCALE_FACTOR = envfloat("XPRA_OPENGL_SCALE_FACTOR", 1)
-if SCALE_FACTOR<=0 or SCALE_FACTOR>10:
+if SCALE_FACTOR <= 0 or SCALE_FACTOR > 10:
     raise ValueError(f"invalid scale factor {SCALE_FACTOR}")
 
 
@@ -49,7 +50,7 @@ GLX_ATTRIBUTES : dict[Any,str] = {
 
 def c_attrs(props:dict):
     attrs = []
-    for k,v in props.items():
+    for k, v in props.items():
         if v is None:
             attrs += [k]
         else:
@@ -57,12 +58,12 @@ def c_attrs(props:dict):
     attrs += [0, 0]
     return (c_int * len(attrs))(*attrs)
 
+
 def get_xdisplay() -> int:
     ptr = get_display_ptr()
     if not ptr:
         raise RuntimeError("no X11 display registered")
     # pylint: disable=import-outside-toplevel
-    from OpenGL.raw.GLX._types import struct__XDisplay
     return cast(ptr, POINTER(struct__XDisplay))
 
 
@@ -155,8 +156,8 @@ class GLXWindowContext(AbstractContextManager):
 
 class GLXContext:
 
-    def __init__(self, alpha:bool=False):
-        self.props : dict[str,Any] = {}
+    def __init__(self, alpha=False):
+        self.props : dict[str, Any] = {}
         self.xdisplay : int = 0
         self.context = None
         self.bit_depth : int = 0
@@ -226,7 +227,12 @@ class GLXContext:
         if not getconfig(GLX.GLX_USE_GL):
             raise RuntimeError("OpenGL is not supported by this visual!")
 
-        self.bit_depth = sum(getconfig(x) for x in (GLX.GLX_RED_SIZE, GLX.GLX_GREEN_SIZE, GLX.GLX_BLUE_SIZE, GLX.GLX_ALPHA_SIZE))
+        self.bit_depth = sum(getconfig(x) for x in (
+            GLX.GLX_RED_SIZE,
+            GLX.GLX_GREEN_SIZE,
+            GLX.GLX_BLUE_SIZE,
+            GLX.GLX_ALPHA_SIZE,
+        ))
         self.props["depth"] = self.bit_depth
         # hide those because we don't use them
         # and because they're misleading: 'has-alpha' may be False
@@ -252,7 +258,7 @@ class GLXContext:
         self.props["display_mode"] = display_mode
         if ARB_CONTEXT and "GLX_ARB_create_context" in extensions:
             from OpenGL.raw.GLX.ARB.create_context import (
-                #glXCreateContextAttribsARB,
+                # glXCreateContextAttribsARB,
                 GLX_CONTEXT_FLAGS_ARB,
                 GLX_CONTEXT_MAJOR_VERSION_ARB, GLX_CONTEXT_MINOR_VERSION_ARB,
             )
@@ -269,7 +275,6 @@ class GLXContext:
             })
             glXCreateContextAttribsARB = GLX.glXGetProcAddress("glXCreateContextAttribsARB")
             log(f"{glXCreateContextAttribsARB=} {context_attrs=}")
-            from OpenGL.raw.GLX._types import struct__XDisplay, struct___GLXcontextRec
             glXCreateContextAttribsARB.argtypes = [POINTER(struct__XDisplay), c_void_p, c_int, c_int, POINTER(c_int)]
             glXCreateContextAttribsARB.restype = POINTER(struct___GLXcontextRec)
             self.context = glXCreateContextAttribsARB(self.xdisplay, fbconfig, 0, True, context_attrs)
@@ -293,7 +298,7 @@ class GLXContext:
         self.props.update(get_context_info())
         log("GLXContext(%s) context=%s, props=%s", alpha, self.context, self.props)
 
-    def check_support(self, force_enable:bool=False) -> dict[str,Any]:
+    def check_support(self, force_enable=False) -> dict[str,Any]:
         i = self.props
         if not self.xdisplay:
             return {
@@ -341,13 +346,14 @@ class GLXContext:
     def __repr__(self):
         return f"GLXContext({self.props})"
 
+
 GLContext = GLXContext
 
 
 def check_support() -> dict[str,Any]:
     ptr = get_display_ptr()
     if not ptr:
-        from xpra.x11.gtk3.display_source import init_gdk_display_source    #@UnresolvedImport, @UnusedImport
+        from xpra.x11.gtk3.display_source import init_gdk_display_source
         init_gdk_display_source()
 
     return GLContext().check_support()
