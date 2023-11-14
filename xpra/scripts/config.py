@@ -1216,10 +1216,13 @@ def parse_with_unit(numtype:str, v, subunit="bps", min_value=250000) -> int | No
             f *= 1000000
         elif unit=="g":
             f *= 1000000000
+        elif unit != "":
+            pass    #no multiplier
         elif unit!="b":
-            raise ValueError(f"unknown unit {unit}")
+            raise ValueError(f"unknown unit {unit!r}")
         if min_value is not None:
-            assert f>=min_value, "value is too low"
+            if f<min_value:
+                raise ValueError(f"value {f} is too low, minimum is {min_value}")
         return int(f)
     except Exception as e:
         raise InitException(f"invalid value for {numtype} {v!r}: {e}") from None
