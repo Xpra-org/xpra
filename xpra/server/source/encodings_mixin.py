@@ -282,8 +282,13 @@ class EncodingsMixin(StubSourceMixin):
         log("default batch config: %s", dbc)
 
         #encodings:
-        self.encodings = c.strlistget("encodings")
-        self.core_encodings = c.strlistget("encodings.core", self.encodings)
+        encodings = c.rawget("encodings")
+        if isinstance(encodings, dict):
+            self.encodings = typedict(encodings).strlistget("")
+            self.core_encodings = typedict(encodings).strlistget("core", self.encodings)
+        else:
+            self.encodings = c.strlistget("encodings")
+            self.core_encodings = c.strlistget("encodings.core", self.encodings)
         log("encodings=%s, core_encodings=%s", self.encodings, self.core_encodings)
         #we can't assume that the window mixin is loaded,
         #or that the ui_client flag exists:
@@ -301,7 +306,10 @@ class EncodingsMixin(StubSourceMixin):
             self.parse_encoding_caps(c)
 
     def parse_encoding_caps(self, c):
-        self.set_encoding(c.strget("encoding", None), None)
+        encoding = c.rawget("encoding")
+        if not isinstance(encoding, str):
+            encoding = "auto"
+        self.set_encoding(encoding, None)
         #encoding options (filter):
         #1: these properties are special cased here because we
         #defined their name before the "encoding." prefix convention,
