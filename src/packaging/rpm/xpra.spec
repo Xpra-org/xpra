@@ -35,9 +35,6 @@
 %else
 %define with_cuda 0
 %endif
-%if 0%{?fedora}>=38
-%define with_cuda 0
-%endif
 %if 0%{?with_cuda}
 %define build_args %{DEFAULT_BUILD_ARGS}
 %else
