@@ -917,8 +917,72 @@ fi
 
 
 %changelog
-* Fri Nov 10 2023 Antoine Martin <antoine@xpra.org> 3.1.6-10.1xpra1
-- TODO
+* Tue Nov 14 2023 Antoine Martin <antoine@xpra.org> 3.1.6-10.1xpra1
+- major fixes:
+    some `scroll` screen updates not flushed
+    crashes with newer versions of GI / GTK
+    pipe and process leak with signal watcher
+    RandR must re-use an existing mode if it exists
+    honour all 'start' options with remote starts
+- build, packaging and platforms:
+    library updates: ffmpeg 6.1, python2 dbus 1.2.18, python3 pycuda 2023.1, pbr 6.0, pyxdg 0.28, pynvml 12.535.133, libwebp 1.3.2, libvpx 1.13.0, pyopengl 3.1.7, cython 3.0.5 and 0.29.36
+    cx_Freeze packaging workarounds for python2 MS Windows builds
+    ensure `freetype2`, `cairo` and `certifi` are bundled in
+    python 3.12 compatibility
+    automatic RPM release numbers
+    support RPM downgrades from newer versions
+    drop support for Fedora versions older than 37
+    missing DEB pkgconf dependency
+    Cython 3.x and 0.29.x compatibility
+    more reliable ARCH detection
+    don't enable dbus module on MacOS or MS Windows
+    don't use `XDG_RUNTIME_DIR` on MacOS
+    `named-pipe` warnings
+- network:
+    ssh upgrades flag not disabled on import error
+    try harder to locate the start of websocket data
+    try to close sockets cleanly on exit and on errors
+    honour clipboard size limits
+    shortcut out if not binding to any local sockets
+    dpi values must be rounded to integers
+- trays and notifications:
+    avoid None value errors with MS Windows native notifier
+    prefer native system trays to Gtk's StatusIcon, except on X11
+    MacOS tray menu errors
+    missing system tray on MS Windows after explorer.exe restart
+    missing or disabled tray menus with `AppIndicator` backend
+- compatibility:
+    honour `opengl=force`
+    webcam forwarding geometry
+    compatibility with a wider range of Python Pillow versions
+    better detection of Wayland vs X11 sessions
+    force X11 backend for PyOpenGL
+    only enable compression after the handshake
+    partial compatibility with v6 clients and servers: encryption, mmap, encodings, dpi
+    never expose None values, our custom types or `numpy` types in `info` packet data or notifications
+    X11 OpenGL context manager inconsistency
+    remove outdated ogg latency fix warning
+    workaround NVENC deprecated presets
+    log clipboard backend failures
+    distribution detection fallback code path was broken
+- cosmetic:
+    cleaner client output
+    pyobjc warnings
+    bump large packet size to silence Java warnings
+    `ffmpeg`'s `register_all` was called twice unnecessarily
+    use attribute alias if available (cleanup code path)
+    errors in `GREMEDY` OpenGL debugging
+    formatting errors in verbose / x11 debug mode
+    `RFB` error when rejecting protocol versions
+    explicitly return a failure value from the ldap authentication module
+    no-prefix coloured output with more text subcommands
+    use integer division for counters
+    window filter invalid parsing
+    more RandR mode debug details
+    unused code and variables removed
+    valid linter warnings
+    `proxy-video-encoders` is a valid command line option
+    changelog formatting and bogus dates
 
 * Thu Jun 15 2023 Antoine Martin <antoine@xpra.org> 3.1.5-10.1xpra1
 - build, packaging and platforms:
