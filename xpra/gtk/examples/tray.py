@@ -5,6 +5,7 @@
 
 from collections.abc import Callable
 
+from xpra.os_util import gi_import
 from xpra.platform import program_context
 from xpra.platform.gui import get_native_tray_menu_helper_class, get_native_tray_classes
 from xpra.platform.paths import get_icon_filename
@@ -12,9 +13,9 @@ from xpra.gtk.widget import scaled_image
 from xpra.common import noop
 from xpra.log import Logger
 
-import gi
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-from gi.repository import GLib, Gtk, GdkPixbuf  # @UnresolvedImport
+Gtk = gi_import("Gtk")
+GLib = gi_import("GLib")
+GdkPixbuf = gi_import("GdkPixbuf")
 
 log = Logger("client")
 

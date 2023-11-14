@@ -104,7 +104,7 @@ class subprocess_callee:
         self.setup_mainloop()
 
     def setup_mainloop(self) -> None:
-        GLib = gi_import("GLib", "2.0")
+        GLib = gi_import("GLib")
         self.mainloop = GLib.MainLoop()
         self.idle_add = GLib.idle_add
         self.timeout_add = GLib.timeout_add
@@ -345,7 +345,7 @@ class subprocess_caller:
         #hook a default packet handlers:
         self.connect(CONNECTION_LOST, self.connection_lost)
         self.connect(GIBBERISH, self.gibberish)
-        GLib = gi_import("GLib", "2.0")
+        GLib = gi_import("GLib")
         self.idle_add = GLib.idle_add
         self.timeout_add = GLib.timeout_add
         self.source_remove = GLib.source_remove

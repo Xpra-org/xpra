@@ -11,10 +11,6 @@ from time import monotonic
 from subprocess import Popen, PIPE
 from threading import Event
 from typing import Any
-import gi
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("Gdk", "3.0")  # @UndefinedVariable
-from gi.repository import Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized, pver
@@ -22,6 +18,7 @@ from xpra.util.env import envint, envbool
 from xpra.os_util import (
     bytestostr, strtobytes, memoryview_to_bytes,
     hexstr, load_binary_file, osexpand,
+    gi_import,
     WIN32, OSX, POSIX, is_Wayland, first_time,
 )
 from xpra.net.common import PacketType
@@ -63,6 +60,10 @@ clipboardlog = Logger("gtk", "client", "clipboard")
 notifylog = Logger("gtk", "notify")
 grablog = Logger("client", "grab")
 focuslog = Logger("client", "focus")
+
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
+GdkPixbuf = gi_import("GdkPixbuf")
 
 missing_cursor_names = set()
 

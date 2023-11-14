@@ -4,19 +4,14 @@
 # later version. See the file COPYING for details.
 
 import os
-import gi
 from typing import Any
-
-gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-from gi.repository import Gtk, Gdk   #pylint: disable=no-name-in-module
 
 from xpra.util.screen import prettify_plug_name
 from xpra.util.str_fn import csv
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.env import envbool
 from xpra.common import XPRA_APP_ID
-from xpra.os_util import POSIX, OSX, SilenceWarningsContext
+from xpra.os_util import POSIX, OSX, SilenceWarningsContext, gi_import
 from xpra.scripts.config import parse_bool
 from xpra.server import features
 from xpra.server.shadow.root_window_model import RootWindowModel
@@ -28,6 +23,9 @@ from xpra.gtk.info import get_screen_sizes
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.net.compression import Compressed
 from xpra.log import Logger
+
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
 
 traylog = Logger("tray")
 notifylog = Logger("notify")

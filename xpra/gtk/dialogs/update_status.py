@@ -6,17 +6,15 @@
 
 import sys
 
-import gi
-
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
-from gi.repository import GLib, Gtk  # @UnresolvedImport
-
+from xpra.os_util import gi_import
 from xpra.platform.gui import init as gui_init, force_focus
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.log import Logger, enable_debug_for
+
+Gtk = gi_import("Gtk")
+GLib = gi_import("GLib")
 
 log = Logger("util")
 

@@ -128,14 +128,19 @@ def get_sysconfig_info() -> dict[str,Any]:
                 log.error("Error calling sysconfig.%s", fn, exc_info=True)
     return sysinfo
 
+
 def strtobytes(x) -> bytes:
     if isinstance(x, bytes):
         return x
     return str(x).encode("latin1")
+
+
 def bytestostr(x) -> str:
     if isinstance(x, (bytes, bytearray)):
         return x.decode("latin1")
     return str(x)
+
+
 def hexstr(v) -> str:
     return bytestostr(binascii.hexlify(memoryview_to_bytes(v)))
 
@@ -161,13 +166,27 @@ def memoryview_to_bytes(v) -> bytes:
 
 def set_proc_title(title) -> None:
     try:
-        import setproctitle  #pylint: disable=import-outside-toplevel
-        setproctitle.setproctitle(title)  #@UndefinedVariable pylint: disable=c-extension-no-member
+        import setproctitle  # pylint: disable=import-outside-toplevel
+        setproctitle.setproctitle(title)  # @UndefinedVariable pylint: disable=c-extension-no-member
     except ImportError as e:
         get_util_logger().debug("setproctitle is not installed: %s", e)
 
 
-def gi_import(mod="Gtk", version="3.0"):
+def gi_import(mod="Gtk", version=""):
+    gtk_version = os.environ.get("XPRA_GTK_VERSION", "3.0")
+    version = version or {
+        "Gtk": gtk_version,
+        "Gdk": gtk_version,
+        "GdkX11" : gtk_version,
+        "Pango": "1.0",
+        "PangoCairo" : "1.0",
+        "GLib": "2.0",
+        "GObject": "2.0",
+        "GdkPixbuf": "2.0",
+        "Gio": "2.0",
+        "Rsvg": "2.0",
+        "Gst": "1.0",
+    }.get(mod, "")
     with SilenceWarningsContext(DeprecationWarning, ImportWarning):
         import gi
         gi.require_version(mod, version)
@@ -223,10 +242,12 @@ def getuid() -> int:
         return os.getuid()
     return 0
 
+
 def getgid() -> int:
     if POSIX:
         return os.getgid()
     return 0
+
 
 def get_shell_for_uid(uid) -> str:
     if POSIX:
@@ -236,6 +257,7 @@ def get_shell_for_uid(uid) -> str:
         except KeyError:
             pass
     return ""
+
 
 def get_username_for_uid(uid) -> str:
     if POSIX:
@@ -255,11 +277,13 @@ def get_home_for_uid(uid) -> str:
             pass
     return ""
 
+
 def get_groups(username) -> list[str]:
     if POSIX:
         import grp
         return [gr.gr_name for gr in grp.getgrall() if username in gr.gr_mem]
     return []
+
 
 def get_group_id(group) -> int:
     try:

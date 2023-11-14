@@ -28,7 +28,7 @@ from xpra.codecs.gstreamer.common import (
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 
-GObject = gi_import("GObject", "2.0")
+GObject = gi_import("GObject")
 Gst = import_gst()
 log = Logger("encoder", "gstreamer")
 

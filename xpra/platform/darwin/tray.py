@@ -4,10 +4,8 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-import gi
-gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
-from gi.repository import GdkPixbuf  # @UnresolvedImport
 
+from xpra.os_util import gi_import
 from xpra.client.gui.tray_base import TrayBase
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.platform.darwin.menu import getOSXMenuHelper
@@ -15,9 +13,11 @@ from xpra.platform.darwin import set_exit_cb
 from xpra.platform.gui import ready as gui_ready
 from xpra.log import Logger
 
+GdkPixbuf = gi_import("GdkPixbuf")
+
 log = Logger("tray", "osx")
 
-#constants for attention_request:
+# constants for attention_request:
 CRITICAL_REQUEST = 0
 INFO_REQUEST = 10
 
@@ -103,8 +103,7 @@ class OSXTray(TrayBase):
     def set_dock_menu(self) -> None:
         #dock menu
         log("OSXTray.set_dock_menu()")
-        gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-        from gi.repository import Gtk  # @UnresolvedImport
+        Gtk = gi_import("Gtk")
         self.dock_menu = Gtk.Menu()
         self.disconnect_dock_item = Gtk.MenuItem(label="Disconnect")
         self.disconnect_dock_item.connect("activate", self.quit)

@@ -4,14 +4,12 @@
 # later version. See the file COPYING for details.
 
 import sys
-import gi
 
-from xpra.os_util import OSX, WIN32
+from xpra.os_util import OSX, WIN32, gi_import
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.log import Logger
 
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+Gtk = gi_import("Gtk")
 
 log = Logger("util")
 

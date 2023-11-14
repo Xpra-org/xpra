@@ -7,14 +7,9 @@ import os
 import re
 from collections.abc import Callable
 
-import gi
-gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
-from gi.repository import Gtk, GdkPixbuf  # @UnresolvedImport
-
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envbool
-from xpra.os_util import OSX, bytestostr
+from xpra.os_util import OSX, bytestostr, gi_import
 from xpra.codecs.icon_util import INKSCAPE_RE
 from xpra.gtk.widget import scaled_image, menuitem
 from xpra.gtk.util import IgnoreWarningsContext
@@ -25,6 +20,9 @@ from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger
 
 log = Logger("menu")
+
+Gtk = gi_import("Gtk")
+GdkPixbuf = gi_import("GdkPixbuf")
 
 MENU_ICONS = envbool("XPRA_MENU_ICONS", True)
 HIDE_DISABLED_MENU_ENTRIES = envbool("XPRA_HIDE_DISABLED_MENU_ENTRIES", False)

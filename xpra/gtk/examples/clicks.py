@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
 
 import sys
 
+from xpra.os_util import gi_import
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 
-import gi
-gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-gi.require_version('Gdk', '3.0')  # @UndefinedVariable
-from gi.repository import Gtk, Gdk, GLib  #pylint: disable=wrong-import-position @UnresolvedImport
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
+GLib = gi_import("GLib")
 
 
 class TestForm:

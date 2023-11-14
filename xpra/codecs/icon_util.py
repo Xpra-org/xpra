@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,7 +14,7 @@ from io import BytesIO
 
 from xpra.util.str_fn import ellipsizer
 from xpra.util.env import envint, envbool
-from xpra.os_util import load_binary_file, first_time
+from xpra.os_util import load_binary_file, first_time, gi_import
 from xpra.log import Logger
 
 log = Logger("menu")
@@ -32,10 +32,8 @@ _Rsvg = None
 def load_Rsvg():
     global _Rsvg
     if _Rsvg is None:
-        import gi  #pylint: disable=import-outside-toplevel
         try:
-            gi.require_version('Rsvg', '2.0')  # @UndefinedVariable
-            from gi.repository import Rsvg  # pylint: disable=import-outside-toplevel @UnresolvedImport
+            Rsvg = gi_import("Rsvg")
             log("load_Rsvg() Rsvg=%s", Rsvg)
             _Rsvg = Rsvg
         except (ValueError, ImportError) as e:

@@ -2,19 +2,19 @@
 # Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
 import os.path
 from importlib import import_module
-import gi
 
 from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode
+from xpra.os_util import gi_import
 from xpra.util.parsing import parse_simple_dict
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.widget import label
 from xpra.log import Logger
 
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+Gtk = gi_import("Gtk")
 
 log = Logger("util")
 

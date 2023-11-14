@@ -5,14 +5,14 @@
 # later version. See the file COPYING for details.
 
 import os.path
-import gi
-gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-from gi.repository import Gtk  # @UnresolvedImport
 
+from xpra.os_util import gi_import
 from xpra.util.version import XPRA_VERSION
 from xpra.scripts.config import get_build_info
 from xpra.gtk.window import add_close_accel
 from xpra.log import Logger
+
+Gtk = gi_import("Gtk")
 
 log = Logger("info")
 
@@ -38,6 +38,7 @@ about_dialog = None
 def close_about(*_args):
     if about_dialog:
         about_dialog.hide()
+
 
 def about(on_close=close_about, parent:Gtk.Window|None=None):
     global about_dialog

@@ -7,13 +7,13 @@ from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.os_util import gi_import
 
 from cairo import OPERATOR_CLEAR, OPERATOR_SOURCE  #pylint: disable=no-name-in-module
-import gi
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("Gdk", "3.0")  # @UndefinedVariable
-from gi.repository import Gtk, Gdk, GLib  # @UnresolvedImport
 
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
+GLib = gi_import("GLib")
 
 
 class ColorGradientWindow(Gtk.Window):

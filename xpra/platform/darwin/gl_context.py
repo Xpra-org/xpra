@@ -16,10 +16,10 @@ from Cocoa import (
 from xpra.gtk.window import GDKWindow
 from xpra.client.gl.check import check_PyOpenGL_support
 from xpra.platform.darwin.gdk3_bindings import get_nsview_ptr, enable_transparency, get_backing_scale_factor
+from xpra.os_util import gi_import
 from xpra.log import Logger
 
 log = Logger("opengl")
-
 
 
 class AGLWindowContext:
@@ -129,9 +129,7 @@ class AGLContext:
                     conv, const_val = vdef              #ie (bool, NSOpenGLPFAAlphaSize)
                     v = self._get_pfa(const_val, screen)#ie: NSOpenGLPFAAlphaSize=8
                     si[name] = conv(v)                   #ie: bool(8)
-        import gi
-        gi.require_version("Gdk", "3.0")  # @UndefinedVariable
-        from gi.repository import Gdk  # @UnresolvedImport
+        Gdk = gi_import("Gdk")
         tmp = GDKWindow(window_type=Gdk.WindowType.TEMP, title="tmp-opengl-check")
         with self.get_paint_context(tmp):
             i.update(check_PyOpenGL_support(force_enable))

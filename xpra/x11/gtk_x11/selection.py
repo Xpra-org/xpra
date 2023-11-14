@@ -11,10 +11,6 @@
 
 import sys
 from struct import unpack, calcsize
-import gi
-gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-gi.require_version('Gdk', '3.0')  # @UndefinedVariable
-from gi.repository import GObject, Gtk, Gdk, GLib  # @UnresolvedImport
 
 from xpra.gtk.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.bindings.window import constants, X11WindowBindings
@@ -26,7 +22,13 @@ from xpra.x11.gtk3.bindings import (
     )
 from xpra.exit_codes import ExitCode
 from xpra.util.env import envint
+from xpra.os_util import gi_import
 from xpra.log import Logger
+
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
+GLib = gi_import("GLib")
+GObject = gi_import("GObject")
 
 log = Logger("x11", "util")
 

@@ -8,15 +8,14 @@ from textwrap import wrap
 from subprocess import Popen, PIPE, check_call
 
 from xpra.util.types import AtomicInteger
-from xpra.os_util import is_X11, is_gnome, OSX, WIN32, POSIX
+from xpra.os_util import is_X11, is_gnome, gi_import, OSX, WIN32, POSIX
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.widget import label, slabel, title_box
 from xpra.platform.paths import get_image
 from xpra.log import Logger
 
-import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, GLib
+Gtk = gi_import("Gtk")
+GLib = gi_import("GLib")
 
 log = Logger("gstreamer", "util")
 

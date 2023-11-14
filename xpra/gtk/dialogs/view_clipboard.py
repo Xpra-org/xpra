@@ -6,8 +6,8 @@ import re
 import sys
 from collections import deque
 from collections.abc import Callable
-import gi
 
+from xpra.os_util import gi_import
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 from xpra.util.str_fn import csv
@@ -15,9 +15,9 @@ from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.platform.features import CLIPBOARDS
 
-gi.require_version("Gdk", "3.0")  # @UndefinedVariable
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-from gi.repository import Gtk, Gdk, GLib  # @UnresolvedImport
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
+GLib = gi_import("GLib")
 
 
 class ClipboardInstance:

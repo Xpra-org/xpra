@@ -331,8 +331,11 @@ def check_gtk_client() -> None:
 
 def check_gtk() -> None:
     Gtk = gi_import("Gtk")
-    r = Gtk.init_check(argv=None)
-    if not r[0]:
+    if Gtk._version[0]>"3":
+        r = Gtk.init_check()
+    else:
+        r = Gtk.init_check(argv=None)[0]
+    if not r:
         raise InitExit(ExitCode.NO_DISPLAY, "failed to initialize Gtk, no display?")
     check_display()
 

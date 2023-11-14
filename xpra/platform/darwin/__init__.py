@@ -30,9 +30,8 @@ def do_init_env():
 
 
 def default_gtk_main_exit():
-    import gi
-    gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-    from gi.repository import Gtk  # @UnresolvedImport
+    from xpra.os_util import gi_import
+    Gtk = gi_import("Gtk")
     Gtk.main_quit()
 
 

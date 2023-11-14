@@ -10,6 +10,7 @@ from OpenGL import GLX
 from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
 from OpenGL.raw.GLX._types import struct__XDisplay, struct___GLXcontextRec
 
+from xpra.os_util import gi_import
 from xpra.util.env import envbool, envfloat
 from xpra.client.gl.check import check_PyOpenGL_support
 from xpra.x11.bindings.display_source import get_display_ptr
@@ -161,9 +162,7 @@ class GLXContext:
         self.xdisplay : int = 0
         self.context = None
         self.bit_depth : int = 0
-        import gi
-        gi.require_version("Gdk", "3.0")  # @UndefinedVariable
-        from gi.repository import Gdk  # @UnresolvedImport
+        Gdk = gi_import("Gdk")
         display = Gdk.Display.get_default()
         if not display:
             log.warn("Warning: GLXContext: no default display")
@@ -307,9 +306,7 @@ class GLXContext:
                 "enabled"   : False,
                 "message"   : "cannot access X11 display",
                 }
-        import gi
-        gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-        from gi.repository import Gtk  # @UnresolvedImport
+        Gtk = gi_import("Gtk")
         tmp = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         tmp.resize(1, 1)
         tmp.set_decorated(False)

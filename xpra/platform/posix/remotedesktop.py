@@ -4,16 +4,16 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gi
-gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk
 from dbus.types import UInt32, Int32
 
+from xpra.os_util import gi_import
 from xpra.dbus.helper import native_to_dbus
 from xpra.net.common import PacketType
 from xpra.platform.posix.fd_portal import REMOTEDESKTOP_IFACE
 from xpra.platform.posix.fd_portal_shadow import PortalShadow
 from xpra.log import Logger
+
+Gdk = gi_import("Gdk")
 
 log = Logger("shadow")
 keylog = Logger("shadow", "keyboard")

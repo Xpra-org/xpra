@@ -1,11 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gi
-gi.require_version('Gdk', '3.0')  # @UndefinedVariable
-from gi.repository import Gdk  #pylint: disable=wrong-import-position @UnresolvedImport
+from xpra.os_util import gi_import
+
+Gdk = gi_import("Gdk")
 
 cursor_names = {}
 cursor_types = {}

@@ -10,13 +10,12 @@ from typing import Any
 import cairo
 
 from xpra.gtk.util import get_root_size, get_default_root_window, IgnoreWarningsContext
-from xpra.os_util import WIN32
+from xpra.os_util import WIN32, gi_import
 from xpra.util.env import envint, envbool
 from xpra.log import Logger
 
-import gi
-gi.require_version("Gdk", "3.0")
-from gi.repository import GObject, Gdk
+Gdk = gi_import("Gdk")
+GObject = gi_import("GObject")
 
 log = Logger("gtk", "util")
 screenlog = Logger("gtk", "screen")

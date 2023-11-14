@@ -30,7 +30,7 @@ from xpra.log import Logger
 
 log = Logger("keyboard")
 
-Gdk = gi_import("Gdk", "3.0")
+Gdk = gi_import("Gdk")
 
 X11Keyboard = X11KeyboardBindings()
 

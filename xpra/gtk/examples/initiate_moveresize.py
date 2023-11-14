@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
-# Copyright (C) 2020-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pylint: disable=wrong-import-position
-
-import gi
-gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-from gi.repository import Gtk, GLib  # @UnresolvedImport
-
+from xpra.os_util import gi_import
 from xpra.common import MoveResize, MOVERESIZE_DIRECTION_STRING
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.util import IgnoreWarningsContext
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.platform import program_context
+
+Gtk = gi_import("Gtk")
+GLib = gi_import("GLib")
 
 
 width = 400

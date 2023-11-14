@@ -29,17 +29,15 @@
 
 import traceback
 
-import gi
-gi.require_version("Gdk", "3.0")  # @UndefinedVariable
-from gi.repository import Gdk  # @UnresolvedImport
-
 from xpra.util.env import envbool
-from xpra.os_util import is_main_thread
+from xpra.os_util import is_main_thread, gi_import
 from xpra.log import Logger
+
+Gdk = gi_import("Gdk")
 
 __all__ = ["XError", "trap", "xsync", "xswallow", "xlog", "verify_sync"]
 
-#run xpra in synchronized mode to debug X11 errors:
+# run xpra in synchronized mode to debug X11 errors:
 XPRA_SYNCHRONIZE = envbool("XPRA_SYNCHRONIZE", False)
 XPRA_LOG_SYNC = envbool("XPRA_LOG_SYNC", False)
 VERIFY_MAIN_THREAD = envbool("XPRA_VERIFY_MAIN_THREAD", True)

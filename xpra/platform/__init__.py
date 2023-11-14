@@ -136,7 +136,7 @@ def set_prgname(name):
         return
     try:
         from xpra.os_util import gi_import
-        GLib = gi_import("GLib", "2.0")
+        GLib = gi_import("GLib")
         GLib.set_prgname(name)
     except ImportError:
         pass

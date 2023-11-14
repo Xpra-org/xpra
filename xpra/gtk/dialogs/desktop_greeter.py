@@ -7,18 +7,16 @@ import sys
 import os.path
 import subprocess
 
-import gi
-
-gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-from gi.repository import Gtk, GLib  # @UnresolvedImport
-
-from xpra.os_util import POSIX, OSX, which
+from xpra.os_util import POSIX, OSX, which, gi_import
 from xpra.gtk.signals import register_os_signals
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import imagebutton, label, setfont
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.thread import start_thread
 from xpra.log import Logger
+
+Gtk = gi_import("Gtk")
+GLib = gi_import("GLib")
 
 log = Logger("client", "util")
 

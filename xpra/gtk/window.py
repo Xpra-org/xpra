@@ -6,16 +6,15 @@
 
 from collections.abc import Callable
 
-from xpra.os_util import WIN32, first_time
+from xpra.os_util import WIN32, first_time, gi_import
 
-import gi
-gi.require_version("Gdk", "3.0")  # @UndefinedVariable
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-from gi.repository import Gdk, Gtk     # @UnresolvedImport
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
 
 
-def add_close_accel(window, callback) -> list[Gtk.AccelGroup]:
+def add_close_accel(window, callback: Callable) -> list[Gtk.AccelGroup]:
     accel_groups = []
+
     def wa(s, cb):
         accel_groups.append(add_window_accel(window, s, cb))
     wa('<control>F4', callback)
@@ -24,7 +23,7 @@ def add_close_accel(window, callback) -> list[Gtk.AccelGroup]:
     return accel_groups
 
 
-def add_window_accel(window, accel, callback) -> Gtk.AccelGroup:
+def add_window_accel(window, accel, callback: Callable) -> Gtk.AccelGroup:
     def connect(ag, *args):
         ag.connect(*args)
     accel_group = Gtk.AccelGroup()
@@ -50,8 +49,8 @@ def new_GDKWindow(gdk_window_class,
     if y is not None:
         attributes.y = y
         attributes_mask |= Gdk.WindowAttributesType.Y
-    #attributes.type_hint = Gdk.WindowTypeHint.NORMAL
-    #attributes_mask |= Gdk.WindowAttributesType.TYPE_HINT
+    # attributes.type_hint = Gdk.WindowTypeHint.NORMAL
+    # attributes_mask |= Gdk.WindowAttributesType.TYPE_HINT
     attributes.width = width
     attributes.height = height
     attributes.window_type = window_type
@@ -61,18 +60,18 @@ def new_GDKWindow(gdk_window_class,
     if visual:
         attributes.visual = visual
         attributes_mask |= Gdk.WindowAttributesType.VISUAL
-    #OR:
+    # OR:
     attributes.override_redirect = override_redirect
     attributes_mask |= Gdk.WindowAttributesType.NOREDIR
-    #events:
+    # events:
     attributes.event_mask = event_mask
-    #wclass:
+    # wclass:
     attributes.wclass = wclass
     mask = Gdk.WindowAttributesType(attributes_mask)
     return gdk_window_class(parent, attributes, mask)
 
 
-def set_visual(window, alpha : bool=True) -> Gdk.Visual | None:
+def set_visual(window, alpha=True) -> Gdk.Visual | None:
     screen = window.get_screen()
     if alpha:
         visual = screen.get_rgba_visual()
@@ -81,8 +80,8 @@ def set_visual(window, alpha : bool=True) -> Gdk.Visual | None:
     from xpra.log import Logger
     alphalog = Logger("gtk", "alpha")
     alphalog("set_visual(%s, %s) screen=%s, visual=%s", window, alpha, screen, visual)
-    #we can't do alpha on win32 with plain GTK,
-    #(though we handle it in the opengl backend)
+    # we can't do alpha on win32 with plain GTK,
+    # (though we handle it in the opengl backend)
     l : Callable = alphalog.warn
     if WIN32 or not first_time("no-rgba"):
         l = alphalog.debug

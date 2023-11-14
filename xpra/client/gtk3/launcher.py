@@ -17,14 +17,6 @@ import os.path
 import sys
 import traceback
 
-import gi
-
-
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
-# @UnresolvedImport pylint: disable=wrong-import-position
-from gi.repository import GLib, Gtk, GdkPixbuf  # @UnresolvedImport
-
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
 from xpra.gtk.signals import register_os_signals
 from xpra.gtk.util import IgnoreWarningsContext
@@ -32,7 +24,7 @@ from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, imagebutton, label, choose_file, modify_fg, color_parse
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.str_fn import csv, repr_ellipsized
-from xpra.os_util import WIN32, OSX
+from xpra.os_util import WIN32, OSX, gi_import
 from xpra.net.common import DEFAULT_PORT
 from xpra.util.thread import start_thread
 from xpra.gtk.dialogs.about import about
@@ -46,6 +38,10 @@ from xpra.platform.info import get_username
 from xpra.log import Logger, enable_debug_for
 
 log = Logger("launcher")
+
+Gtk = gi_import("Gtk")
+GdkPixbuf = gi_import("GdkPixbuf")
+GLib = gi_import("GLib")
 
 MODE_NESTED_SSH = "ssh -> ssh"
 MODE_SSH = "ssh"

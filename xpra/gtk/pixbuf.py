@@ -5,13 +5,13 @@
 
 import os.path
 
+from xpra.os_util import gi_import
 from xpra.log import Logger
+
+GdkPixbuf = gi_import("GdkPixbuf")
 
 log = Logger("gtk", "util")
 
-import gi
-gi.require_version("GdkPixbuf", "2.0")
-from gi.repository import GdkPixbuf
 
 def get_icon_from_file(filename):
     if not filename:

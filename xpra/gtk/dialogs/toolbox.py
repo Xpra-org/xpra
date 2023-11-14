@@ -3,16 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pylint: disable=wrong-import-position
+# pylint: disable=wrong-import-position
 
 import sys
 import glob
 import os.path
 import subprocess
-import gi
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("Gdk", "3.0")  # @UndefinedVariable
-from gi.repository import Gtk, Gio  # @UnresolvedImport
 
 from xpra.util.child_reaper import getChildReaper
 from xpra.gtk.signals import register_os_signals
@@ -21,8 +17,11 @@ from xpra.gtk.widget import imagebutton, label
 from xpra.gtk.util import IgnoreWarningsContext
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.platform.paths import get_python_execfile_command, get_python_exec_command
-from xpra.os_util import WIN32, OSX, is_X11
+from xpra.os_util import WIN32, OSX, is_X11, gi_import
 from xpra.log import Logger
+
+Gtk = gi_import("Gtk")
+Gio = gi_import("Gio")
 
 log = Logger("client", "util")
 

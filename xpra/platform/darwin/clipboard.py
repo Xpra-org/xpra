@@ -18,7 +18,7 @@ from xpra.clipboard.core import (
     )
 from xpra.platform.ui_thread_watcher import get_UI_watcher
 from xpra.util.str_fn import csv, ellipsizer
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, gi_import
 from xpra.log import Logger
 
 log = Logger("clipboard", "osx")
@@ -276,9 +276,8 @@ def main():
         get_UI_watcher(GLib.timeout_add, GLib.source_remove)
 
         log.info("testing pasteboard")
-        import gi
-        gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-        from gi.repository import Gtk  # @UnresolvedImport
+
+        Gtk = gi_import("Gtk")
         pasteboard = NSPasteboard.generalPasteboard()
         def nosend(*args):
             log("nosend%s", args)

@@ -42,7 +42,7 @@ def import_gst() -> ModuleType | None:
         {k:v for k,v in os.environ.items() if (k.startswith("GST") or k.startswith("GI") or k=="PATH")})
     log("GStreamer 1.x sys.path=%s", csv(sys.path))
     try:
-        Gst = gi_import("Gst", "1.0")
+        Gst = gi_import("Gst")
         log("Gst=%s", Gst)
         Gst.init(None)
     except Exception as e:

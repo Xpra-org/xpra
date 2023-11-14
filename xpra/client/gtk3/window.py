@@ -5,12 +5,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gi
-gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-gi.require_version("GdkPixbuf", "2.0")
-from gi.repository import GObject, Gdk, Gtk, Gio, GdkPixbuf  # @UnresolvedImport
-
 from xpra.client.gtk3.window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.client.gtk3.window_menu import WindowMenuHelper
 from xpra.gtk.widget import scaled_image
@@ -18,23 +12,28 @@ from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.util.types import typedict
 from xpra.util.env import envbool
-from xpra.os_util import bytestostr, is_gnome
+from xpra.os_util import bytestostr, is_gnome, gi_import
 from xpra.log import Logger
 
 paintlog = Logger("paint")
 metalog = Logger("metadata")
 geomlog = Logger("geometry")
 
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
+GdkPixbuf = gi_import("GdkPixbuf")
+GObject = gi_import("GObject")
+Gio = gi_import("Gio")
 
 WINDOW_ICON = envbool("XPRA_WINDOW_ICON", True)
 WINDOW_XPRA_MENU = envbool("XPRA_WINDOW_XPRA_MENU", is_gnome())
 WINDOW_MENU = envbool("XPRA_WINDOW_MENU", True)
 
 
-"""
-GTK3 version of the ClientWindow class
-"""
 class ClientWindow(GTKClientWindowBase):
+    """
+    GTK3 version of the ClientWindow class
+    """
 
     def init_window(self, metadata:typedict):
         super().init_window(metadata)
@@ -225,5 +224,6 @@ class ClientWindow(GTKClientWindowBase):
         if not self._client.server_ok():
             self.paint_spinner(context)
         return True
+
 
 GObject.type_register(ClientWindow)

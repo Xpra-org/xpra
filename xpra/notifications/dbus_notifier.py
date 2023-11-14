@@ -7,7 +7,7 @@ import os
 from typing import Any
 
 from xpra.util.str_fn import csv, ellipsizer
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, gi_import
 from xpra.dbus.helper import native_to_dbus
 from xpra.common import NotificationID
 from xpra.notifications.notifier_base import NotifierBase, log
@@ -208,9 +208,9 @@ class DBUS_Notifier(NotifierBase):
 
 def main():
     # pylint: disable=import-outside-toplevel
-    import gi
-    gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-    from gi.repository import GLib, Gtk  # @UnresolvedImport
+    Gtk = gi_import("Gtk")
+    GLib = gi_import("GLib")
+
     def show():
         n = DBUS_Notifier_factory()
         #actions = ["0", "Hello", "1", "Bye"]

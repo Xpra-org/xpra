@@ -5,10 +5,9 @@
 
 from xpra.platform import program_context
 from xpra.gtk.widget import choose_file
+from xpra.os_util import gi_import
 
-import gi
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-from gi.repository import Gtk    #pylint: disable=wrong-import-position @UnresolvedImport
+Gtk = gi_import("Gtk")
 
 
 def main():
@@ -18,6 +17,7 @@ def main():
         file_filter.add_pattern("*.xpra")
         window = None
         from xpra.gtk.signals import register_os_signals
+
         def signal_handler(*_args):
             Gtk.main_quit()
         register_os_signals(signal_handler)

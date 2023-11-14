@@ -1,23 +1,23 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from time import monotonic
-import gi
-gi.require_version('Gdk', '3.0')  # @UndefinedVariable
-gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-from gi.repository import GObject, Gtk, Gdk  # @UnresolvedImport
 
 from xpra.gtk.gobject import n_arg_signal, one_arg_signal
 from xpra.clipboard.core import (
     ClipboardProxyCore, TEXT_TARGETS,
     )
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
+from xpra.os_util import gi_import
 from xpra.util.str_fn import ellipsizer
 from xpra.util.env import envint
 from xpra.log import Logger
 
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
+GObject = gi_import("GObject")
 
 log = Logger("clipboard")
 

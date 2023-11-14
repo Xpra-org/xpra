@@ -7,6 +7,7 @@
 
 from typing import Any
 
+from xpra.os_util import gi_import
 from xpra.log import Logger
 
 log = Logger("keyboard")
@@ -23,18 +24,14 @@ def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")) -> tuple[tuple[
         by adding the keyval_name.
         We can also ignore some keys
     """
-    import gi
-    gi.require_version('Gdk', '3.0')  # @UndefinedVariable
-    from gi.repository import Gdk   # pylint: disable=import-outside-toplevel @UnresolvedImport
+    Gdk = gi_import("Gdk")
     display = Gdk.Display.get_default()
     return do_get_gtk_keymap(display, ignore_keys)
 
 def do_get_gtk_keymap(display, ignore_keys:tuple[Any]) -> tuple[tuple[int,str,int,int,int],...]:
     if not display:
         return ()
-    import gi
-    gi.require_version('Gdk', '3.0')  # @UndefinedVariable
-    from gi.repository import Gdk   # pylint: disable=import-outside-toplevel @UnresolvedImport
+    Gdk = gi_import("Gdk")
     keymap = Gdk.Keymap.get_for_display(display)
     log("keymap_get_for_display(%s)=%s, direction=%s, bidirectional layouts: %s",
         display, keymap, keymap.get_direction(), keymap.have_bidi_layouts())

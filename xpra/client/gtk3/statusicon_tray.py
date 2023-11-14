@@ -8,17 +8,16 @@
 
 import os
 from time import time, monotonic
-import gi
-gi.require_version('Gdk', '3.0')  # @UndefinedVariable
-gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
-from gi.repository import Gtk, Gdk, GdkPixbuf  # @UnresolvedImport
 
-from xpra.os_util import WIN32, OSX, POSIX
+from xpra.os_util import WIN32, OSX, POSIX, gi_import
 from xpra.util.env import envbool
 from xpra.client.gui.tray_base import TrayBase, log
 from xpra.gtk.util import get_default_root_window
 from xpra.gtk.pixbuf import get_icon_from_file, get_pixbuf_from_data
+
+Gdk = gi_import("Gdk")
+Gtk = gi_import("Gtk")
+GdkPixbuf = gi_import("GdkPixbuf")
 
 ORIENTATION = {
     Gtk.Orientation.HORIZONTAL  : "HORIZONTAL",

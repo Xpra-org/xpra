@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,7 +7,7 @@ import os.path
 from io import BytesIO
 from typing import TypeAlias
 
-from xpra.os_util import load_binary_file, first_time
+from xpra.os_util import load_binary_file, first_time, gi_import
 from xpra.log import Logger
 
 log = Logger("dbus", "notify")
@@ -129,9 +129,7 @@ def get_notification_icon(icon_string:str) -> IconData | None:
 def get_gtk_theme_icon(icon_string:str):
     # try to find it in the theme:
     try:
-        import gi
-        gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-        from gi.repository import Gtk  # pylint: disable=no-name-in-module
+        Gtk = gi_import("Gtk")
         theme = Gtk.IconTheme.get_default()
     except ImportError:
         return None

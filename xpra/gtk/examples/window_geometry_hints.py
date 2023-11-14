@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2020-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
-import gi
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("Gdk", "3.0")  # @UndefinedVariable
-from gi.repository import Gtk, Gdk, GLib   #pylint: disable=wrong-import-position @UnresolvedImport
 
+from xpra.os_util import gi_import
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
+
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
+GLib = gi_import("GLib")
 
 
 class HintedWindows(Gtk.Window):

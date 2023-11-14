@@ -16,7 +16,7 @@ from xpra.net.bytestreams import ConnectionClosedException
 from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode
 from xpra.os_util import (
-    bytestostr,
+    bytestostr, gi_import,
     restore_script_env, get_saved_env,
     WIN32, OSX, POSIX,
     )
@@ -38,9 +38,7 @@ def connect_failed(_message):
     #by the time ssh fails, we may have entered the gtk main loop
     #(and more than once thanks to the clipboard code..)
     if "gi.repository.Gtk" in sys.modules:
-        import gi
-        gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-        from gi.repository import Gtk  # @UnresolvedImport
+        Gtk = gi_import("Gtk")
         Gtk.main_quit()
 
 

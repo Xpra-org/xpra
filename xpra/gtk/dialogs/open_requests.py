@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,10 +8,9 @@ import sys
 import os.path
 import subprocess
 from time import monotonic
-import gi
 
 from xpra.util.env import envint
-from xpra.os_util import bytestostr, WIN32, OSX
+from xpra.os_util import bytestostr, gi_import, WIN32, OSX
 from xpra.gtk.signals import register_os_signals
 from xpra.util.child_reaper import getChildReaper
 from xpra.net.file_transfer import ACCEPT, OPEN, DENY
@@ -23,10 +22,10 @@ from xpra.platform.gui import set_window_progress
 from xpra.platform.paths import get_download_dir
 from xpra.log import Logger
 
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("Gdk", "3.0")  # @UndefinedVariable
-gi.require_version("Pango", "1.0")  # @UndefinedVariable
-from gi.repository import GLib, Gtk, Pango  # pylint: disable=wrong-import-order @UnresolvedImport
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
+GLib = gi_import("GLib")
+Pango = gi_import("Pango")
 
 log = Logger("gtk", "file")
 

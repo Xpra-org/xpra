@@ -2,18 +2,15 @@
 # Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
 import warnings
 from contextlib import AbstractContextManager
 from typing import Any
 
-import gi
-
-from xpra.os_util import OSX, POSIX, is_X11, first_time
+from xpra.os_util import OSX, POSIX, is_X11, first_time, gi_import
 from xpra.log import Logger
 
-gi.require_version("Gdk", "3.0")  # @UndefinedVariable
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-from gi.repository import Gdk
+Gdk = gi_import("Gdk")
 
 
 def get_default_root_window() -> Gdk.Window | None:

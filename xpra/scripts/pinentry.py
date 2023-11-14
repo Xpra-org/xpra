@@ -15,7 +15,7 @@ from xpra.util.env import envbool
 from xpra.os_util import (
     WIN32, OSX, POSIX,
     is_gnome, is_kde, which, bytestostr,
-    use_gui_prompt, is_main_thread,
+    use_gui_prompt, is_main_thread, gi_import,
     )
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS, InitExit
 from xpra.exit_codes import ExitCode
@@ -184,9 +184,8 @@ def force_focus() -> None:
     _force_focus()
 
 def dialog_run(run_fn:Callable):
-    import gi
-    gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-    from gi.repository import GLib, Gtk  # @UnresolvedImport
+    Gtk = gi_import("Gtk")
+    GLib = gi_import("GLib")
     log("dialog_run(%s) is_main_thread=%s, main_level=%i", run_fn, is_main_thread(), Gtk.main_level())
     if is_main_thread() or Gtk.main_level()==0:
         return run_fn()

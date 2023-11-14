@@ -24,8 +24,8 @@ log = Logger("gstreamer")
 Gst : ModuleType = import_gst()
 if not Gst:
     raise ImportError("GStreamer bindings not found")
-GLib = gi_import("GLib", "2.0")
-GObject = gi_import("GObject", "2.0")
+GLib = gi_import("GLib")
+GObject = gi_import("GObject")
 
 
 class Pipeline(GObject.GObject):

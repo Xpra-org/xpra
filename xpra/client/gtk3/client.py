@@ -5,15 +5,15 @@
 
 import os
 
-import gi
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("Gdk", "3.0")  # @UndefinedVariable
-from gi.repository import GObject, Gdk
-
-from xpra.os_util import OSX, POSIX, is_Wayland
+from xpra.os_util import OSX, POSIX, is_Wayland, gi_import
 from xpra.client.gtk3.client_base import GTKXpraClient
 from xpra.client.gtk3.window import ClientWindow
 from xpra.platform.gui import get_xdpi, get_ydpi
+
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
+GObject = gi_import("GObject")
+
 
 class XpraClient(GTKXpraClient):
 

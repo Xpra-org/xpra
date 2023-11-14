@@ -8,10 +8,6 @@ import sys
 import socket
 import subprocess
 
-import gi
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-from gi.repository import GLib, Gtk, Gio  # @UnresolvedImport
-
 from xpra.common import SocketState
 from xpra.platform.paths import get_xpra_command, get_nodock_command
 from xpra.platform.dotxpra import DotXpra
@@ -27,8 +23,12 @@ from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.signals import register_os_signals
 from xpra.net.common import DEFAULT_PORTS
 from xpra.util.types import typedict
-from xpra.os_util import bytestostr, WIN32
+from xpra.os_util import bytestostr, gi_import, WIN32
 from xpra.log import Logger
+
+Gtk = gi_import("Gtk")
+GLib = gi_import("GLib")
+Gio = gi_import("Gio")
 
 log = Logger("client", "util")
 

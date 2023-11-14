@@ -5,21 +5,16 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pylint: disable=wrong-import-position
+# pylint: disable=wrong-import-position
 
 import sys
 from time import monotonic
 from typing import Any
 from collections.abc import Callable
 
-import gi
-gi.require_version('Gdk', '3.0')  # @UndefinedVariable
-gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-from gi.repository import GLib, Gdk, Gtk  #pylint: disable=no-name-in-module
-
 from xpra.util.env import envbool
 from xpra.util.version import dict_version_trim
-from xpra.os_util import SilenceWarningsContext
+from xpra.os_util import SilenceWarningsContext, gi_import
 from xpra.common import FULL_INFO
 from xpra.net.common import PacketType
 from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
@@ -28,6 +23,10 @@ from xpra.server.base import ServerBase
 from xpra.gtk.util import get_root_size
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.log import Logger
+
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
+GLib = gi_import("GLib")
 
 UI_THREAD_WATCHER = envbool("XPRA_UI_THREAD_WATCHER")
 

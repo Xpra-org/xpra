@@ -5,15 +5,15 @@
 
 from collections.abc import Callable
 
-import gi
-
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("Gdk", "3.0")  # @UndefinedVariable
-gi.require_version("Pango", "1.0")  # @UndefinedVariable
-from gi.repository import Gtk, Gdk, Pango
-
+from xpra.os_util import gi_import
 from xpra.gtk.util import IgnoreWarningsContext, ignorewarnings
 from xpra.log import Logger
+
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
+Pango = gi_import("Pango")
+GdkPixbuf = gi_import("GdkPixbuf")
+
 log = Logger("gtk", "util")
 
 
@@ -21,8 +21,6 @@ def scaled_image(pixbuf, icon_size:int=0) -> Gtk.Image | None:
     if not pixbuf:
         return None
     if icon_size:
-        gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
-        from gi.repository import GdkPixbuf
         pixbuf = pixbuf.scale_simple(icon_size, icon_size, GdkPixbuf.InterpType.BILINEAR)
     return Gtk.Image.new_from_pixbuf(pixbuf)
 

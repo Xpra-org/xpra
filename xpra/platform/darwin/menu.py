@@ -5,10 +5,7 @@
 
 from collections.abc import Callable
 
-import gi
-gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-from gi.repository import GLib, Gtk  # @UnresolvedImport
-
+from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.common import noop
@@ -25,6 +22,9 @@ from xpra.platform.paths import get_icon
 from xpra.platform.darwin.gui import get_OSXApplication
 from xpra.client.gui import features
 from xpra.log import Logger
+
+Gtk = gi_import("Gtk")
+GLib = gi_import("GLib")
 
 log = Logger("osx", "tray", "menu")
 clipboardlog = Logger("osx", "menu", "clipboard")

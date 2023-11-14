@@ -1582,7 +1582,7 @@ def attach_client(options, defaults):
 def verify_gdk_display(display_name):
     # pylint: disable=import-outside-toplevel
     # Now we can safely load gtk and connect:
-    Gdk = gi_import("Gdk", "3.0")
+    Gdk = gi_import("Gdk")
     display = Gdk.Display.open(display_name)
     if not display:
         from xpra.scripts.config import InitException

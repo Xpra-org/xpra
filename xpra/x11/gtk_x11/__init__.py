@@ -7,7 +7,7 @@ from xpra.os_util import gi_import
 
 gi_import("Gdk", "3.0")
 gi_import("Gtk", "3.0")
-GdkX11 = gi_import('GdkX11', '3.0')
+GdkX11 = gi_import("GdkX11", "3.0")
 
 
 def GDKX11Window(*args, **kwargs) -> GdkX11.X11Window:

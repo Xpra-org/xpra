@@ -3,14 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gi
-
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.widget import label
+from xpra.os_util import gi_import
 from xpra.log import Logger
 
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+Gtk = gi_import("Gtk")
 
 log = Logger("util")
 

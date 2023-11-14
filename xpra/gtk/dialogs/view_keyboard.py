@@ -5,19 +5,18 @@
 import sys
 import warnings
 from collections import deque
-import gi
 
 from xpra.util.str_fn import csv
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, gi_import
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.log import enable_color, Logger
 
-gi.require_version("Gdk", "3.0")  # @UndefinedVariable
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-from gi.repository import GLib, Gtk, Gdk  # @UnresolvedImport
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
+GLib = gi_import("GLib")
 
 log = Logger("gtk", "keyboard")
 

@@ -5,6 +5,7 @@
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
+from xpra.os_util import gi_import
 from xpra.util.env import envbool
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
@@ -15,10 +16,10 @@ from cairo import (  #pylint: disable=no-name-in-module
     ANTIALIAS_NONE, ANTIALIAS_DEFAULT, ANTIALIAS_GRAY, ANTIALIAS_SUBPIXEL,
     FORMAT_RGB24,
     )
-import gi
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("PangoCairo", "1.0")  # @UndefinedVariable
-from gi.repository import PangoCairo, Gtk, GLib  # @UnresolvedImport
+
+Gtk = gi_import("Gtk")
+GLib = gi_import("GLib")
+PangoCairo = gi_import("PangoCairo")
 
 
 FONT = "Serif 27"

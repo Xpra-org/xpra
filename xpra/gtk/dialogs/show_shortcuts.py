@@ -1,21 +1,20 @@
 # This file is part of Xpra.
-# Copyright (C) 2020-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
-import gi
 
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-from gi.repository import Gtk, GLib  # @UnresolvedImport
-
-from xpra.os_util import SIGNAMES
+from xpra.os_util import SIGNAMES, gi_import
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.signals import install_signal_handlers
 from xpra.gtk.css_overrides import inject_css_overrides
 from xpra.log import Logger
+
+Gtk = gi_import("Gtk")
+GLib = gi_import("GLib")
 
 log = Logger("client", "util")
 

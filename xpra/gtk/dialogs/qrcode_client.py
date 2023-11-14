@@ -1,15 +1,14 @@
 # This file is part of Xpra.
-# Copyright (C) 2020-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
-from gi.repository import Gtk, GLib  # @UnresolvedImport
 
 from xpra.common import noerr
 from xpra.util.types import typedict
 from xpra.util.env import envbool
-from xpra.os_util import SIGNAMES, bytestostr
+from xpra.os_util import SIGNAMES, bytestostr, gi_import
 from xpra.exit_codes import ExitCode
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
@@ -21,6 +20,9 @@ from xpra.client.base.command import InfoXpraClient
 from xpra.platform.gui import force_focus
 from xpra.gtk.dialogs.qrcode import qr_pixbuf
 from xpra.log import Logger
+
+Gtk = gi_import("Gtk")
+GLib = gi_import("GLib")
 
 log = Logger("client", "util")
 

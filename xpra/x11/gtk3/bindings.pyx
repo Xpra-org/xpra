@@ -15,10 +15,10 @@ from xpra.util.str_fn import csv
 from xpra.log import Logger
 log = Logger("x11", "bindings", "gtk")
 
-GObject = gi_import("GObject", '2.0')
-GdkX11= gi_import("GdkX11", '3.0')
-Gdk = gi_import("Gdk", '3.0')
-Gtk = gi_import("Gtk", '3.0')
+GObject = gi_import("GObject")
+GdkX11= gi_import("GdkX11")
+Gdk = gi_import("Gdk")
+Gtk = gi_import("Gtk")
 
 
 from xpra.x11.bindings.xlib cimport (

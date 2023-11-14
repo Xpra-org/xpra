@@ -18,7 +18,7 @@ from xpra.util.env import envint, envbool
 from xpra.os_util import POSIX, gi_import
 from xpra.log import Logger
 
-GLib = gi_import("GLib", "2.0")
+GLib = gi_import("GLib")
 log = Logger("server", "util", "exec")
 
 

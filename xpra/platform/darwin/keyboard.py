@@ -11,7 +11,7 @@ from xpra.os_util import gi_import
 from xpra.platform.keyboard_base import KeyboardBase, log
 from xpra.platform.darwin.menu import getOSXMenuHelper
 
-Gdk = gi_import("Gdk", "3.0")
+Gdk = gi_import("Gdk")
 
 NUM_LOCK_KEYCODE = 71           # HARDCODED!
 # a key and the keys we want to translate it into when swapping keys

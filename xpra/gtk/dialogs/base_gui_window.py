@@ -6,21 +6,22 @@
 import os
 import signal
 import subprocess
-import gi
 from collections.abc import Callable
 
 from xpra.gtk.window import add_close_accel, add_window_accel
 from xpra.gtk.widget import imagebutton
 from xpra.gtk.util import IgnoreWarningsContext
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.os_util import gi_import
 from xpra.exit_codes import exit_str
 from xpra.common import NotificationID, noop
 from xpra.platform.paths import get_xpra_command
 from xpra.log import Logger
 
-gi.require_version('Gdk', '3.0')  # @UndefinedVariable
-gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-from gi.repository import GLib, Gtk, Gdk, Gio  # @UnresolvedImport
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
+GLib = gi_import("GLib")
+Gio = gi_import("Gio")
 
 log = Logger("util")
 

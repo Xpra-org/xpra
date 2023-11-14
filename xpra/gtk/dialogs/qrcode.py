@@ -1,16 +1,17 @@
 # This file is part of Xpra.
-# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gi
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
-from gi.repository import Gtk, GLib, GdkPixbuf  # @UnresolvedImport
-
+from xpra.os_util import gi_import
 from xpra.net.qrcode import qrencode
 from xpra.gtk.window import add_close_accel
 from xpra.log import Logger
+
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
+GLib = gi_import("GLib")
+GdkPixbuf = gi_import("GdkPixbuf")
 
 log = Logger("menu")
 

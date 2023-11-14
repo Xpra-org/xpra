@@ -13,7 +13,7 @@ from xpra.common import noop
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.types import AtomicInteger, typedict
 from xpra.util.env import envint
-from xpra.os_util import WIN32, OSX, load_binary_file
+from xpra.os_util import WIN32, OSX, load_binary_file, gi_import
 from xpra.log import Logger
 from xpra.platform.paths import get_icon_filename
 from xpra.client.gui.fake_client import FakeClient
@@ -164,9 +164,8 @@ def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(10
         if show:
             widget.show()
             window.show()
-            import gi
-            gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-            from gi.repository import Gtk, GLib  # @UnresolvedImport
+            Gtk = gi_import("Gtk")  # @UndefinedVariable
+            GLib = gi_import("GLib")
 
             def window_close_event(*_args):
                 Gtk.main_quit()

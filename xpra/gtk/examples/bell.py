@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,10 +7,10 @@ from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.os_util import gi_import
 
-import gi
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-from gi.repository import Gtk, GLib  # @UnresolvedImport
+Gtk = gi_import("Gtk")
+GLib = gi_import("GLib")
 
 
 class BellWindow(Gtk.Window):

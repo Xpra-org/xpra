@@ -1,17 +1,18 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
-import gi
-gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-from gi.repository import GLib, Gtk  # @UnresolvedImport
 
 from xpra.gtk.dialogs.sessions_gui import SessionsGUI
 from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE, get_listener_class
 from xpra.util.env import envbool
+from xpra.os_util import gi_import
 from xpra.log import Logger
+
+Gtk = gi_import("Gtk")
+GLib = gi_import("GLib")
 
 log = Logger("mdns", "util")
 

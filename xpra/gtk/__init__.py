@@ -3,8 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gi
-gi.require_version("Gdk", "3.0")  # @UndefinedVariable
-gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-gi.require_version("Pango", "1.0")  # @UndefinedVariable
-gi.require_version("GdkPixbuf", "2.0")  # @UndefinedVariable
+from xpra.os_util import gi_import
+gi_import("Gdk")
+gi_import("Gtk")
+gi_import("Pango")
+gi_import("GdkPixbuf")
