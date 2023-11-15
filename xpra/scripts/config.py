@@ -1207,7 +1207,7 @@ def parse_with_unit(numtype:str, v, subunit="bps", min_value=250000) -> int | No
         r = re.match(r'([0-9\.]*)(.*)', v)
         assert r
         f = float(r.group(1))
-        unit = r.group(2).lower()
+        unit = r.group(2).lower().strip()
         if unit.endswith(subunit):
             unit = unit[:-len(subunit)]     #ie: 10mbps -> 10m
         if unit=="k":
@@ -1216,9 +1216,9 @@ def parse_with_unit(numtype:str, v, subunit="bps", min_value=250000) -> int | No
             f *= 1000000
         elif unit=="g":
             f *= 1000000000
-        elif unit != "":
-            pass    #no multiplier
-        elif unit!="b":
+        elif unit in ("", "b"):
+            pass    # no multiplier
+        else:
             raise ValueError(f"unknown unit {unit!r}")
         if min_value is not None:
             if f<min_value:
