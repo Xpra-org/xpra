@@ -768,15 +768,17 @@ fi
 
 
 %changelog
-* Sat Nov 11 2023 Antoine Martin <antoine@xpra.org> 5.0.4-10
+* Wed Nov 15 2023 Antoine Martin <antoine@xpra.org> 5.0.4-10
 - Major:
    missing flush marker with some scroll screen updates
    fixup tray backport regression
    signal watcher backport regression
+   exit signal watcher on errors and hangups
    avoid menu and input device errors when client is not set
    ensure the content-type is initialized at least once
    ensure all encoders are initialized before choosing an encoding
    video modules lost after initial connection
+   client error if xpra-x11 is not installed
 - `start-gui` fixes:
    display number ignored
    exit-with-children can't be unchecked in start-gui
@@ -784,8 +786,11 @@ fi
    OpenGL crash warnings on MacOS
 - Platform and packaging
    Cython 3.0.5
+   also use Cython 3.x for Debian builds
+   library updates: aioquic 0.9.22, pylsqlpack 0.3.18
    C functions cannot raise Python exceptions
    MacOS pyobjc warnings
+   workaround py2app failure
    bogus date in changelog
    improve session type detection
    notification backend order
@@ -816,6 +821,7 @@ fi
    extra `%` in tray menu
    show failing script
    silence deprecation warning
+   weird Debian changelog format warning
    man pages fixes
 
 * Thu Oct 05 2023 Antoine Martin <antoine@xpra.org> 5.0.3-10

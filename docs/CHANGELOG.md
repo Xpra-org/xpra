@@ -1,23 +1,28 @@
 # Changelog
 
-## [5.0.4] 2023-11-11
+## [5.0.4] 2023-11-15
 * Major:
     * [missing flush marker with some scroll screen updates](https://github.com/Xpra-org/xpra/commit/ff36bc1a085c6caca3bdb95791c5001c3c6909bb)
     * [fixup tray backport regression](https://github.com/Xpra-org/xpra/commit/6631cfe8b8c228894cd93b679d7ed78ef5715f81)
     * [signal watcher backport regression](https://github.com/Xpra-org/xpra/commit/96f0351ba1dbc5c1dee6bfcf760a4350b2d2b9c0)
+    * [exit signal watcher on errors and hangups](https://github.com/Xpra-org/xpra/commit/713009f869468898857038051cffc6eb59f74f45)
     * [avoid menu and input device errors when client is not set](https://github.com/Xpra-org/xpra/commit/ce25a2468194d1b25472562acde6070419fcad28)
     * [ensure the content-type is initialized at least once](https://github.com/Xpra-org/xpra/commit/608bf55e822f78eabfd59f5a4f44929e71dad679)
     * [ensure all encoders are initialized before choosing an encoding](https://github.com/Xpra-org/xpra/commit/dd808947a7ceff1524adae44bc930636eef7a4e7)
     * [video modules lost after initial connection](https://github.com/Xpra-org/xpra/commit/8217fabfcee476c2f44ae78cde1c718ee609157f)
     * [OpenGL crash warnings on MacOS](https://github.com/Xpra-org/xpra/commit/2e4248d5a61a20b81d4f39dce85464689136c69c)
+    * [client error if xpra-x11 is not installed](https://github.com/Xpra-org/xpra/commit/5c131462755e004d74126e06db0dd3cd9555fe1a)
 * `start-gui` fixes:
     * [display number ignored](https://github.com/Xpra-org/xpra/commit/db7f6f4ea1530e7b6c901b2b0e44f00271c9d8b6)
     * [exit-with-children can't be unchecked in start-gui](https://github.com/Xpra-org/xpra/commit/98ee5a6f26cdac6bf62166b1ceca522b02f6fca4)
     * [port number always specified but not validated](https://github.com/Xpra-org/xpra/commit/bb1c06d77370bd6b4a94e28572311368c2c23817)
 * Platform and packaging:
     * [Cython 3.0.5](https://github.com/Xpra-org/xpra/commit/3a46ee575f0147f6e4ccc00bab27321825709ab1)
+    * [also use Cython 3.x for Debian builds](https://github.com/Xpra-org/xpra/commit/6c11d25ca987e5cb70f5977f34760da169c4605e)
+    * library updates: [aioquic 0.9.22](https://github.com/Xpra-org/xpra/commit/8070b632eb7f022d9529c1c7ca1e50842c447fef), [pylsqlpack 0.3.18](https://github.com/Xpra-org/xpra/commit/98e986ee177cfae7a2d11f9ff3db39db555755b6)
     * [C functions cannot raise Python exceptions](https://github.com/Xpra-org/xpra/commit/55e4fe2450aaf96ba049f9b9e825e3c77d6b6b22) + [reorder](https://github.com/Xpra-org/xpra/commit/0618f163b0e6c9102be56b6fd02eef614baae19d)
     * [MacOS pyobjc warnings](https://github.com/Xpra-org/xpra/commit/c17caa0cb25f68fa8a75c975fe886504b142c9a6)
+    * [workaround py2app failure](https://github.com/Xpra-org/xpra/commit/262cffc6b3745c68db8b528405652ed1ca709bc8)
     * [bogus date in changelog](https://github.com/Xpra-org/xpra/commit/1562623a170cce00cf286a403bc0e5773aa05369)
     * [improve session type detection](https://github.com/Xpra-org/xpra/commit/1233e0ce1100a7b82454cad728c08dc26cf35ac1)
     * [notification backend order](https://github.com/Xpra-org/xpra/commit/8b3d31cab9220facc917b60d5db971c016638d0e) [and cleanup](https://github.com/Xpra-org/xpra/commit/a09f80b563822990619fb51e973b8a371b3a2e7f)
@@ -48,6 +53,7 @@
     * [extra `%` in tray menu](https://github.com/Xpra-org/xpra/commit/7bc5d5b6059c9c785d72794b945c340ece28486b), [twice](https://github.com/Xpra-org/xpra/commit/1cf818034cf64b12747b0ced126e1f955dfb9c9c)
     * [show failing script](https://github.com/Xpra-org/xpra/commit/a9f0cc35d94e274d4830d320ccc89f959cc2c6d7)
     * [silence deprecation warning](https://github.com/Xpra-org/xpra/commit/6c98ef1c9d8fac81b5ea43e33971b398c9d51e07)
+    * [weird Debian changelog format warning](https://github.com/Xpra-org/xpra/commit/58914b4a8653e2af5172a50177bca53d9b0fe677)
     * [man pages fixes](https://github.com/Xpra-org/xpra/commit/1d22676e6d19d47978dd4ca01056b1a037be18bd)
 
 ## [5.0.3] 2023-10-05
