@@ -42,7 +42,7 @@ class XpraClient(GTKXpraClient):
 
         def nwarn(notifier_name: str, e: Exception):
             from xpra.log import Logger
-            log = Logger("gtk", "client")
+            log = Logger("gtk", "client", "notify")
             log("get_notifier_classes()", exc_info=True)
             log.warn(f"Warning: failed to load the {notifier_name} notifier")
             log.warn(f" {e}")
