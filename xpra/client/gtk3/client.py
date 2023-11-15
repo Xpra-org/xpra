@@ -48,8 +48,8 @@ class XpraClient(GTKXpraClient):
         if not OSX:
             # pylint: disable=import-outside-toplevel
             try:
-                from xpra.client.gtk3.notifier import GINotifier
-                ncs.append(GINotifier)
+                from xpra.client.gtk3.gtk3_notifier import GTK3_Notifier
+                ncs.append(GTK3_Notifier)
             except Exception as e:
                 nwarn("GObject", e)
         try:
