@@ -917,7 +917,7 @@ fi
 
 
 %changelog
-* Tue Nov 14 2023 Antoine Martin <antoine@xpra.org> 3.1.6-10.1xpra1
+* Wed Nov 15 2023 Antoine Martin <antoine@xpra.org> 3.1.6-10.1xpra1
 - major fixes:
     some `scroll` screen updates not flushed
     crashes with newer versions of GI / GTK
@@ -934,6 +934,7 @@ fi
     drop support for Fedora versions older than 37
     missing DEB pkgconf dependency
     Cython 3.x and 0.29.x compatibility
+    build with Cython 3.x for Python 3 on Debian
     more reliable ARCH detection
     don't enable dbus module on MacOS or MS Windows
     don't use `XDG_RUNTIME_DIR` on MacOS
