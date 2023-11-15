@@ -1906,7 +1906,7 @@ else:
                 if cdir!="/etc/sysconfig":
                     #also replace the reference to it in the service file below
                     subs[b"/etc/sysconfig"] = cdir.encode()
-                if os.path.exists("/bin/systemctl") or os.path.exists("/usr/bin/systemctl"):
+                if os.path.exists("/bin/systemctl") or os.path.exists("/usr/bin/systemctl") or sd_listen_ENABLED:
                     if sd_listen_ENABLED:
                         copytodir("fs/lib/systemd/system/xpra.service", systemd_dir,
                                   subs=subs)
