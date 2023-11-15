@@ -122,6 +122,16 @@ apt-get install cups-filters cups-common cups-pdf python3-cups
 ```
 </details>
 
+## Local Installation
+
+Please make sure to remove any packages before installing from source.
+```shell
+./setup.py install --prefix=/usr --install-layout=deb
+# the executable scripts may have been mangled, so overwrite them:
+cp fs/bin/* /bin/
+```
+You may also need to `export SETUPTOOLS_USE_DISTUTILS=stdlib`
+
 ## DEB Packaging
 Install the packaging tools
 ```shell
