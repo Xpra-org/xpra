@@ -1652,7 +1652,7 @@ else:
                 elif os.path.exists("/etc/default"):
                     copytodir("etc/sysconfig/xpra", "/etc/default")
                     subs[b"/etc/sysconfig"] = b"/etc/default"
-                if os.path.exists("/bin/systemctl"):
+                if os.path.exists("/bin/systemctl") or sd_listen_ENABLED:
                     if sd_listen_ENABLED:
                         copytodir("service/xpra.service", systemd_dir,
                                   subs=subs)
