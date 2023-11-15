@@ -1,8 +1,14 @@
+ffmpeg-xpra (6.1-1) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 15 Nov 2023 22:20:09 +0700
+
 ffmpeg-xpra (4.4-1) UNRELEASED; urgency=low
 
   * new upstream release
 
- -- Antoine Martin <antoine@xpra.org>  Thu, 03 JUn 2019 13:31:42 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 03 Jun 2019 13:31:42 +0700
 
 ffmpeg-xpra (4.2.1-1) UNRELEASED; urgency=low
 
