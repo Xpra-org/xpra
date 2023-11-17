@@ -40,6 +40,7 @@ export PYTHONPATH=".:`dirname $XPRA_MODULE_DIR`"
 echo "PYTHONPATH=${PYTHONPATH}"
 export PATH=$INSTALL_ROOT/bin:$PATH
 export XPRA_COMMAND=${XPRA_COMMAND:-$INSTALL_ROOT/usr/bin/xpra}
+export XPRA_SIGNAL_WATCHER_COMMAND=${XPRA_SIGNAL_WATCHER_COMMAND:-$INSTALL_ROOT/usr/libexec/xpra/xpra_signal_listener}
 export XPRA_CONF_DIR=${XPRA_CONF_DIR:-$INSTALL_ROOT/etc/xpra/}
 export XPRA_APP_DIR=${XPRA_APP_DIR:-$INSTALL_ROOT/usr/share/xpra/}
 #create a fake html5 client directory:
