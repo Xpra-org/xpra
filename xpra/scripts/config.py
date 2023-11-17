@@ -20,18 +20,27 @@ from xpra.os_util import (
     which, stderr_print,
 )
 
+
 def warn(msg:str) -> None:
     stderr_print(msg)
 
+
 def nodebug(*_args) -> None:
-    #can be overridden
     pass
+
+
+# can be overridden
 debug = nodebug
+
 
 class InitException(Exception):
     pass
+
+
 class InitInfo(Exception):
     pass
+
+
 class InitExit(Exception):
     def __init__(self, status, msg):
         self.status = status
@@ -46,7 +55,7 @@ DEFAULT_NET_WM_NAME : str = os.environ.get("XPRA_NET_WM_NAME", "Xpra")
 DEFAULT_POSTSCRIPT_PRINTER : str = ""
 if POSIX:
     DEFAULT_POSTSCRIPT_PRINTER = os.environ.get("XPRA_POSTSCRIPT_PRINTER", "drv:///sample.drv/generic.ppd")
-DEFAULT_PULSEAUDIO = None   #auto
+DEFAULT_PULSEAUDIO = None   # auto
 if OSX or WIN32: # pragma: no cover
     DEFAULT_PULSEAUDIO = False
 
@@ -88,7 +97,7 @@ def get_xorg_bin() -> str:
               ):
         if os.path.exists(p):
             return p
-    #look for it in $PATH:
+    # look for it in $PATH:
     for x in os.environ.get("PATH", "").split(os.pathsep): # pragma: no cover
         xorg = os.path.join(x, "Xorg")
         if os.path.isfile(xorg):
@@ -105,11 +114,12 @@ def get_Xdummy_confdir():
         base = "${HOME}/.xpra"
     return base+"/xorg.conf.d/$PID"
 
-def get_Xdummy_command(xorg_cmd:str="Xorg",
-                       log_dir:str="${XPRA_SESSION_DIR}",
-                       xorg_conf:str="${XORG_CONFIG_PREFIX}/etc/xpra/xorg.conf") -> list[str]:
+
+def get_Xdummy_command(xorg_cmd="Xorg",
+                       log_dir="${XPRA_SESSION_DIR}",
+                       xorg_conf="${XORG_CONFIG_PREFIX}/etc/xpra/xorg.conf") -> list[str]:
     return [
-        #ie: "Xorg" or "xpra_Xdummy" or "./install/bin/xpra_Xdummy"
+        # ie: "Xorg" or "xpra_Xdummy" or "./install/bin/xpra_Xdummy"
         xorg_cmd,
         "-noreset", "-novtswitch",
         "-nolisten", "tcp",
@@ -118,28 +128,31 @@ def get_Xdummy_command(xorg_cmd:str="Xorg",
         "+extension", "RENDER",
         "-auth", "$XAUTHORITY",
         "-logfile", f"{log_dir}/Xorg.log",
-        #must be specified with some Xorg versions (ie: arch linux)
-        #this directory can store xorg config files, it does not need to be created:
+        # must be specified with some Xorg versions (ie: arch linux)
+        # this directory can store xorg config files, it does not need to be created:
         "-configdir", f'"{get_Xdummy_confdir()}"',
         "-config", f'"{xorg_conf}"',
         ]
 
-def get_Xvfb_command(width:int=8192, height:int=4096, dpi:int=96) -> list[str]:
-    cmd = ["Xvfb",
-           "+extension", "GLX",
-           "+extension", "Composite",
-           "-screen", "0", f"{width}x{height}x24+32",
-           #better than leaving to vfb after a resize?
-           "-nolisten", "tcp",
-           "-noreset",
-           "-auth", "$XAUTHORITY"
-           ]
-    if dpi>0:
+
+def get_Xvfb_command(width = 8192, height = 4096, dpi = 96) -> list[str]:
+    cmd = [
+        "Xvfb",
+        "+extension", "GLX",
+        "+extension", "Composite",
+        "-screen", "0", f"{width}x{height}x24+32",
+        # better than leaving to vfb after a resize?
+        "-nolisten", "tcp",
+        "-noreset",
+        "-auth", "$XAUTHORITY",
+    ]
+    if dpi > 0:
         cmd += ["-dpi", f"{dpi}x{dpi}"]
     return cmd
 
-def detect_xvfb_command(conf_dir:str="/etc/xpra/", bin_dir:str="",
-                        Xdummy_ENABLED=None, Xdummy_wrapper_ENABLED=None, warn_fn:Callable=warn) -> list[str]:
+
+def detect_xvfb_command(conf_dir = "/etc/xpra/", bin_dir = "",
+                        Xdummy_ENABLED = None, Xdummy_wrapper_ENABLED = None, warn_fn:Callable = warn) -> list[str]:
     """
     This function returns the xvfb command to use.
     It can either be an `Xvfb` command or one that uses `Xdummy`,
@@ -152,14 +165,14 @@ def detect_xvfb_command(conf_dir:str="/etc/xpra/", bin_dir:str="",
     if sys.platform.find("bsd")>=0 and Xdummy_ENABLED is None:  # pragma: no cover
         warn_fn(f"Warning: sorry, no support for Xdummy on {sys.platform}")
         return get_Xvfb_command()
-    #if is_arm():
-        #arm used to struggle to launch Xdummy because of
-        #the large number of pre-defined resolutions,
-        #but it should work OK now that we use RandR 1.6
-        #return get_Xvfb_command()
+    # if is_arm():
+        # arm used to struggle to launch Xdummy because of
+        # the large number of pre-defined resolutions,
+        # but it should work OK now that we use RandR 1.6
+        # return get_Xvfb_command()
     if is_Ubuntu() or is_Debian():
-        #These distros do weird things and this can cause the real X11 server to crash
-        #see ticket #2834
+        # These distros do weird things and this can cause the real X11 server to crash
+        # see ticket #2834
         return get_Xvfb_command()
 
     if Xdummy_ENABLED is False:
@@ -169,19 +182,20 @@ def detect_xvfb_command(conf_dir:str="/etc/xpra/", bin_dir:str="",
         debug("Xdummy support unspecified, will try to detect")
     return detect_xdummy_command(conf_dir, bin_dir, Xdummy_wrapper_ENABLED, warn_fn)
 
-def detect_xdummy_command(conf_dir:str="/etc/xpra/", bin_dir:str="",
-                          Xdummy_wrapper_ENABLED:bool|None=None, warn_fn:Callable=warn) -> list[str]:
+
+def detect_xdummy_command(conf_dir = "/etc/xpra/", bin_dir = "",
+                          Xdummy_wrapper_ENABLED: bool|None = None, warn_fn: Callable = warn) -> list[str]:
     if not POSIX or OSX:
         return get_Xvfb_command()
     xorg_bin = get_xorg_bin()
     if Xdummy_wrapper_ENABLED is not None:
-        #honour what was specified:
+        # honour what was specified:
         use_wrapper = Xdummy_wrapper_ENABLED
     elif not xorg_bin:
         warn_fn("Warning: Xorg binary not found, assuming the wrapper is needed!")
         use_wrapper = True
     else:
-        #auto-detect
+        # auto-detect
         import stat
         xorg_stat = os.stat(xorg_bin)
         if (xorg_stat.st_mode & stat.S_ISUID)!=0:
@@ -197,7 +211,7 @@ def detect_xdummy_command(conf_dir:str="/etc/xpra/", bin_dir:str="",
         xorg_cmd = "xpra_Xdummy"
     else:
         xorg_cmd = xorg_bin or "Xorg"
-    #so we can run from install dir:
+    # so we can run from install dir:
     if bin_dir and os.path.exists(os.path.join(bin_dir, xorg_cmd)):
         if bin_dir not in os.environ.get("PATH", "/bin:/usr/bin:/usr/local/bin").split(os.pathsep):
             xorg_cmd = os.path.join(bin_dir, xorg_cmd)
@@ -214,7 +228,7 @@ def wrap_cmd_str(cmd) -> str:
             l = len(item)
             if (item.startswith("-") or item.startswith("+")) and len(cmd)>1:
                 l += len(cmd[1])
-            if s and len(s)+l>55:
+            if s and len(s)+l > 55:
                 break
             v = cmd.pop(0)
             if not s:
@@ -255,15 +269,15 @@ def get_build_info() -> list[str]:
             from xpra.build_info import BUILT_BY, BUILT_ON
             info.append(f"built on {BUILT_ON} by {BUILT_BY}")
         except ImportError:
-            #reproducible builds dropped this info
+            # reproducible builds dropped this info
             pass
         if BUILD_DATE and BUILD_TIME:
             info.append(f"{BUILD_DATE} {BUILD_TIME}")
-        if CYTHON_VERSION!="unknown" or COMPILER_VERSION!="unknown":
+        if CYTHON_VERSION != "unknown" or COMPILER_VERSION != "unknown":
             info.append("")
-        if CYTHON_VERSION!="unknown":
+        if CYTHON_VERSION != "unknown":
             info.append(f"using Cython {CYTHON_VERSION}")
-        if COMPILER_VERSION!="unknown":
+        if COMPILER_VERSION != "unknown":
             cv = COMPILER_VERSION.replace("Optimizing Compiler Version", "Optimizing Compiler\nVersion")
             info += cv.splitlines()
     except Exception as e:
@@ -271,10 +285,11 @@ def get_build_info() -> list[str]:
     return info
 
 
-def name_to_field(name:str) -> str:
+def name_to_field(name: str) -> str:
     return name.replace("-", "_")
 
-def save_config(conf_file:str, config, keys, extras_types=None):
+
+def save_config(conf_file: str, config, keys, extras_types=None):
     with open(conf_file, "w", encoding="utf8") as f:
         option_types = OPTION_TYPES.copy()
         if extras_types:
@@ -288,7 +303,8 @@ def save_config(conf_file:str, config, keys, extras_types=None):
             f.write(f"{key}={v}{os.linesep}")
         debug(f"save_config: saved {saved} to {conf_file!r}")
 
-def read_config(conf_file:str) -> dict[str,Any]:
+
+def read_config(conf_file: str) -> dict[str, Any]:
     """
         Parses a config file into a dict of strings.
         If the same key is specified more than once,
@@ -307,13 +323,13 @@ def read_config(conf_file:str) -> dict[str,Any]:
             if not sline:
                 debug("%4s empty line", no)
                 continue
-            if sline[0] in ( '!', '#' ):
+            if sline[0] in ('!', '#'):
                 debug("%4s skipping comments   : %s", no, sline[:16]+"..")
                 continue
             debug("%4s loaded              : %s", no, sline)
             lines.append(sline)
     debug("loaded %s lines", len(lines))
-    #aggregate any lines with trailing backslash
+    # aggregate any lines with trailing backslash
     agg_lines = []
     l = ""
     for line in lines:
@@ -324,16 +340,16 @@ def read_config(conf_file:str) -> dict[str,Any]:
             agg_lines.append(l)
             l = ""
     if l:
-        #last line had a trailing backslash... meh
+        # last line had a trailing backslash... meh
         agg_lines.append(l)
     debug("loaded %s aggregated lines", len(agg_lines))
-    #parse name=value pairs:
+    # parse name=value pairs:
     for sline in agg_lines:
-        if sline.find("=")<=0:
+        if sline.find("=") <= 0:
             debug(f"skipping line which is missing an equal sign: {sline!r}")
             continue
         props = sline.split("=", 1)
-        assert len(props)==2
+        assert len(props) == 2
         name = props[0].strip()
         value = props[1].strip()
         current_value = d.get(name)
@@ -353,7 +369,7 @@ def read_config(conf_file:str) -> dict[str,Any]:
     return d
 
 
-def conf_files(conf_dir:str, xpra_conf_filename:str=DEFAULT_XPRA_CONF_FILENAME) -> list[str]:
+def conf_files(conf_dir: str, xpra_conf_filename: str = DEFAULT_XPRA_CONF_FILENAME) -> list[str]:
     """
         Returns all the config file paths found in the config directory
         ie: ["/etc/xpra/conf.d/15_features.conf", ..., "/etc/xpra/xpra.conf"]
@@ -363,7 +379,7 @@ def conf_files(conf_dir:str, xpra_conf_filename:str=DEFAULT_XPRA_CONF_FILENAME) 
     if not os.path.exists(cdir) or not os.path.isdir(cdir):
         debug(f"invalid config directory: {cdir!r}")
         return d
-    #look for conf.d subdirectory:
+    # look for conf.d subdirectory:
     conf_d_dir = os.path.join(cdir, "conf.d")
     if os.path.exists(conf_d_dir) and os.path.isdir(conf_d_dir):
         for f in sorted(os.listdir(conf_d_dir)):
@@ -378,7 +394,8 @@ def conf_files(conf_dir:str, xpra_conf_filename:str=DEFAULT_XPRA_CONF_FILENAME) 
         d.append(conf_file)
     return d
 
-def read_xpra_conf(conf_dir:str, xpra_conf_filename:str=DEFAULT_XPRA_CONF_FILENAME):
+
+def read_xpra_conf(conf_dir:str, xpra_conf_filename:str = DEFAULT_XPRA_CONF_FILENAME):
     """
         Reads an <xpra_conf_filename> file from the given directory,
         returns a dict with values as strings and arrays of strings.
@@ -392,7 +409,8 @@ def read_xpra_conf(conf_dir:str, xpra_conf_filename:str=DEFAULT_XPRA_CONF_FILENA
         d.update(cd)
     return d
 
-def read_xpra_defaults(username:str|None=None, uid=None, gid=None):
+
+def read_xpra_defaults(username:str|None = None, uid=None, gid=None):
     """
         Reads the global <xpra_conf_filename> from the <conf_dir>
         and then the user-specific one.
@@ -408,7 +426,8 @@ def read_xpra_defaults(username:str|None=None, uid=None, gid=None):
     may_create_user_config()
     return defaults
 
-def get_xpra_defaults_dirs(username:str|None=None, uid=None, gid=None):
+
+def get_xpra_defaults_dirs(username: str|None = None, uid=None, gid=None):
     from xpra.platform.paths import get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs
     # load config files in this order (the later ones override earlier ones):
     # * application defaults   (ie: "/Volumes/Xpra/Xpra.app/Contents/Resources/" on OSX)
@@ -433,9 +452,10 @@ def get_xpra_defaults_dirs(username:str|None=None, uid=None, gid=None):
         defaults_dirs.append(ad)
     return defaults_dirs
 
-def may_create_user_config(xpra_conf_filename:str=DEFAULT_XPRA_CONF_FILENAME):
+
+def may_create_user_config(xpra_conf_filename:str = DEFAULT_XPRA_CONF_FILENAME):
     from xpra.platform.paths import get_user_conf_dirs
-    #save a user config template:
+    # save a user config template:
     udirs = get_user_conf_dirs()
     if udirs:
         has_user_conf = None
@@ -474,213 +494,213 @@ def may_create_user_config(xpra_conf_filename:str=DEFAULT_XPRA_CONF_FILENAME):
 OPTIONS_VALIDATION : dict[str, Callable] = {}
 
 OPTION_TYPES = {
-                    #string options:
-                    "encoding"          : str,
-                    "opengl"            : str,
-                    "title"             : str,
-                    "username"          : str,
-                    "password"          : str,
-                    "wm-name"           : str,
-                    "session-name"      : str,
-                    "dock-icon"         : str,
-                    "tray-icon"         : str,
-                    "window-icon"       : str,
-                    "keyboard-raw"      : bool,
-                    "keyboard-layout"   : str,
-                    "keyboard-layouts"  : list,
-                    "keyboard-variant"  : str,
-                    "keyboard-variants" : list,
-                    "keyboard-options"  : str,
-                    "clipboard"         : str,
-                    "clipboard-direction" : str,
-                    "clipboard-filter-file" : str,
-                    "remote-clipboard"  : str,
-                    "local-clipboard"   : str,
-                    "pulseaudio-command": str,
-                    "bandwidth-limit"   : str,
-                    "tcp-encryption"    : str,
-                    "tcp-encryption-keyfile": str,
-                    "encryption"        : str,
-                    "encryption-keyfile": str,
-                    "pidfile"           : str,
-                    "mode"              : str,
-                    "ssh"               : str,
-                    "systemd-run"       : str,
-                    "systemd-run-args"  : str,
-                    "system-proxy-socket" : str,
-                    "chdir"             : str,
-                    "xvfb"              : str,
-                    "socket-dir"        : str,
-                    "sessions-dir"      : str,
-                    "mmap"              : str,
-                    "log-dir"           : str,
-                    "log-file"          : str,
-                    "border"            : str,
-                    "window-close"      : str,
-                    "min-size"          : str,
-                    "max-size"          : str,
-                    "desktop-scaling"   : str,
-                    "refresh-rate"      : str,
-                    "display"           : str,
-                    "download-path"     : str,
-                    "open-command"      : str,
-                    "remote-logging"    : str,
-                    "lpadmin"           : str,
-                    "lpinfo"            : str,
-                    "add-printer-options" : list,
-                    "pdf-printer"       : str,
-                    "postscript-printer": str,
-                    "debug"             : str,
-                    "input-method"      : str,
-                    "video-scaling"     : str,
-                    "video"             : bool,
-                    "audio"             : bool,
-                    "microphone"        : str,
-                    "speaker"           : str,
-                    "audio-source"      : str,
-                    "html"              : str,
-                    "http-scripts"      : str,
-                    "socket-permissions": str,
-                    "exec-wrapper"      : str,
-                    "dbus-launch"       : str,
-                    "webcam"            : str,
-                    "mousewheel"        : str,
-                    "input-devices"     : str,
-                    "shortcut-modifiers": str,
-                    "open-files"        : str,
-                    "open-url"          : str,
-                    "file-transfer"     : str,
-                    "printing"          : str,
-                    "headerbar"         : str,
-                    "challenge-handlers": list,
-                    #ssl options:
-                    "ssl"               : str,
-                    "ssl-key"           : str,
-                    "ssl-key-password"  : str,
-                    "ssl-cert"          : str,
-                    "ssl-protocol"      : str,
-                    "ssl-ca-certs"      : str,
-                    "ssl-ca-data"       : str,
-                    "ssl-ciphers"       : str,
-                    "ssl-client-verify-mode"   : str,
-                    "ssl-server-verify-mode"   : str,
-                    "ssl-verify-flags"  : str,
-                    "ssl-check-hostname": bool,
-                    "ssl-server-hostname" : str,
-                    "ssl-options"       : str,
-                    #int options:
-                    "displayfd"         : int,
-                    "pings"             : int,
-                    "quality"           : int,
-                    "min-quality"       : int,
-                    "speed"             : int,
-                    "min-speed"         : int,
-                    "compression_level" : int,
-                    "dpi"               : int,
-                    "file-size-limit"   : str,
-                    "idle-timeout"      : int,
-                    "server-idle-timeout" : int,
-                    "sync-xvfb"         : int,
-                    "pixel-depth"       : int,
-                    "uid"               : int,
-                    "gid"               : int,
-                    "min-port"          : int,
-                    "rfb-upgrade"       : int,
-                    #float options:
-                    "auto-refresh-delay": float,
-                    #boolean options:
-                    "minimal"           : bool,
-                    "daemon"            : bool,
-                    "start-via-proxy"   : bool,
-                    "attach"            : bool,
-                    "use-display"       : str,
-                    "resize-display"    : str,
-                    "reconnect"         : bool,
-                    "tray"              : bool,
-                    "pulseaudio"        : bool,
-                    "mmap-group"        : str,
-                    "readonly"          : bool,
-                    "keyboard-sync"     : bool,
-                    "cursors"           : bool,
-                    "bell"              : bool,
-                    "notifications"     : bool,
-                    "xsettings"         : str,
-                    "system-tray"       : bool,
-                    "sharing"           : bool,
-                    "lock"              : bool,
-                    "delay-tray"        : bool,
-                    "windows"           : bool,
-                    "terminate-children": bool,
-                    "exit-with-children": bool,
-                    "exit-with-client"  : bool,
-                    "exit-with-windows" : bool,
-                    "exit-ssh"          : bool,
-                    "dbus-control"      : bool,
-                    "av-sync"           : bool,
-                    "mdns"              : bool,
-                    "swap-keys"         : bool,
-                    "start-new-commands": bool,
-                    "proxy-start-sessions": bool,
-                    "desktop-fullscreen": bool,
-                    "forward-xdg-open"  : bool,
-                    "modal-windows"     : bool,
-                    "bandwidth-detection" : bool,
-                    "ssl-upgrade"       : bool,
-                    "websocket-upgrade" : bool,
-                    "ssh-upgrade"       : bool,
-                    "splash"            : bool,
-                    #arrays of strings:
-                    "pulseaudio-configure-commands" : list,
-                    "socket-dirs"       : list,
-                    "client-socket-dirs" : list,
-                    "remote-xpra"       : list,
-                    "encodings"         : list,
-                    "proxy-video-encoders" : list,
-                    "video-encoders"    : list,
-                    "csc-modules"       : list,
-                    "video-decoders"    : list,
-                    "speaker-codec"     : list,
-                    "microphone-codec"  : list,
-                    "compressors"       : list,
-                    "packet-encoders"   : list,
-                    "key-shortcut"      : list,
-                    "source"            : list,
-                    "source-start"      : list,
-                    "start"             : list,
-                    "start-late"        : list,
-                    "start-child"       : list,
-                    "start-child-late"  : list,
-                    "start-after-connect"       : list,
-                    "start-child-after-connect" : list,
-                    "start-on-connect"          : list,
-                    "start-child-on-connect"    : list,
-                    "start-on-last-client-exit" : list,
-                    "start-child-on-last-client-exit"   : list,
-                    "bind"              : list,
-                    "bind-vsock"        : list,
-                    "bind-tcp"          : list,
-                    "bind-ws"           : list,
-                    "bind-wss"          : list,
-                    "bind-ssl"          : list,
-                    "bind-ssh"          : list,
-                    "bind-rfb"          : list,
-                    "bind-quic"         : list,
-                    "auth"              : list,
-                    "vsock-auth"        : list,
-                    "tcp-auth"          : list,
-                    "ws-auth"           : list,
-                    "wss-auth"          : list,
-                    "ssl-auth"          : list,
-                    "ssh-auth"          : list,
-                    "rfb-auth"          : list,
-                    "quic-auth"         : list,
-                    "password-file"     : list,
-                    "start-env"         : list,
-                    "env"               : list,
-               }
+    # string options:
+    "encoding"          : str,
+    "opengl"            : str,
+    "title"             : str,
+    "username"          : str,
+    "password"          : str,
+    "wm-name"           : str,
+    "session-name"      : str,
+    "dock-icon"         : str,
+    "tray-icon"         : str,
+    "window-icon"       : str,
+    "keyboard-raw"      : bool,
+    "keyboard-layout"   : str,
+    "keyboard-layouts"  : list,
+    "keyboard-variant"  : str,
+    "keyboard-variants" : list,
+    "keyboard-options"  : str,
+    "clipboard"         : str,
+    "clipboard-direction" : str,
+    "clipboard-filter-file" : str,
+    "remote-clipboard"  : str,
+    "local-clipboard"   : str,
+    "pulseaudio-command": str,
+    "bandwidth-limit"   : str,
+    "tcp-encryption"    : str,
+    "tcp-encryption-keyfile": str,
+    "encryption"        : str,
+    "encryption-keyfile": str,
+    "pidfile"           : str,
+    "mode"              : str,
+    "ssh"               : str,
+    "systemd-run"       : str,
+    "systemd-run-args"  : str,
+    "system-proxy-socket" : str,
+    "chdir"             : str,
+    "xvfb"              : str,
+    "socket-dir"        : str,
+    "sessions-dir"      : str,
+    "mmap"              : str,
+    "log-dir"           : str,
+    "log-file"          : str,
+    "border"            : str,
+    "window-close"      : str,
+    "min-size"          : str,
+    "max-size"          : str,
+    "desktop-scaling"   : str,
+    "refresh-rate"      : str,
+    "display"           : str,
+    "download-path"     : str,
+    "open-command"      : str,
+    "remote-logging"    : str,
+    "lpadmin"           : str,
+    "lpinfo"            : str,
+    "add-printer-options" : list,
+    "pdf-printer"       : str,
+    "postscript-printer": str,
+    "debug"             : str,
+    "input-method"      : str,
+    "video-scaling"     : str,
+    "video"             : bool,
+    "audio"             : bool,
+    "microphone"        : str,
+    "speaker"           : str,
+    "audio-source"      : str,
+    "html"              : str,
+    "http-scripts"      : str,
+    "socket-permissions": str,
+    "exec-wrapper"      : str,
+    "dbus-launch"       : str,
+    "webcam"            : str,
+    "mousewheel"        : str,
+    "input-devices"     : str,
+    "shortcut-modifiers": str,
+    "open-files"        : str,
+    "open-url"          : str,
+    "file-transfer"     : str,
+    "printing"          : str,
+    "headerbar"         : str,
+    "challenge-handlers": list,
+    # ssl options:
+    "ssl"               : str,
+    "ssl-key"           : str,
+    "ssl-key-password"  : str,
+    "ssl-cert"          : str,
+    "ssl-protocol"      : str,
+    "ssl-ca-certs"      : str,
+    "ssl-ca-data"       : str,
+    "ssl-ciphers"       : str,
+    "ssl-client-verify-mode"   : str,
+    "ssl-server-verify-mode"   : str,
+    "ssl-verify-flags"  : str,
+    "ssl-check-hostname": bool,
+    "ssl-server-hostname" : str,
+    "ssl-options"       : str,
+    # int options:
+    "displayfd"         : int,
+    "pings"             : int,
+    "quality"           : int,
+    "min-quality"       : int,
+    "speed"             : int,
+    "min-speed"         : int,
+    "compression_level" : int,
+    "dpi"               : int,
+    "file-size-limit"   : str,
+    "idle-timeout"      : int,
+    "server-idle-timeout" : int,
+    "sync-xvfb"         : int,
+    "pixel-depth"       : int,
+    "uid"               : int,
+    "gid"               : int,
+    "min-port"          : int,
+    "rfb-upgrade"       : int,
+    # float options:
+    "auto-refresh-delay": float,
+    # boolean options:
+    "minimal"           : bool,
+    "daemon"            : bool,
+    "start-via-proxy"   : bool,
+    "attach"            : bool,
+    "use-display"       : str,
+    "resize-display"    : str,
+    "reconnect"         : bool,
+    "tray"              : bool,
+    "pulseaudio"        : bool,
+    "mmap-group"        : str,
+    "readonly"          : bool,
+    "keyboard-sync"     : bool,
+    "cursors"           : bool,
+    "bell"              : bool,
+    "notifications"     : bool,
+    "xsettings"         : str,
+    "system-tray"       : bool,
+    "sharing"           : bool,
+    "lock"              : bool,
+    "delay-tray"        : bool,
+    "windows"           : bool,
+    "terminate-children": bool,
+    "exit-with-children": bool,
+    "exit-with-client"  : bool,
+    "exit-with-windows" : bool,
+    "exit-ssh"          : bool,
+    "dbus-control"      : bool,
+    "av-sync"           : bool,
+    "mdns"              : bool,
+    "swap-keys"         : bool,
+    "start-new-commands": bool,
+    "proxy-start-sessions": bool,
+    "desktop-fullscreen": bool,
+    "forward-xdg-open"  : bool,
+    "modal-windows"     : bool,
+    "bandwidth-detection" : bool,
+    "ssl-upgrade"       : bool,
+    "websocket-upgrade" : bool,
+    "ssh-upgrade"       : bool,
+    "splash"            : bool,
+    # arrays of strings:
+    "pulseaudio-configure-commands" : list,
+    "socket-dirs"       : list,
+    "client-socket-dirs" : list,
+    "remote-xpra"       : list,
+    "encodings"         : list,
+    "proxy-video-encoders" : list,
+    "video-encoders"    : list,
+    "csc-modules"       : list,
+    "video-decoders"    : list,
+    "speaker-codec"     : list,
+    "microphone-codec"  : list,
+    "compressors"       : list,
+    "packet-encoders"   : list,
+    "key-shortcut"      : list,
+    "source"            : list,
+    "source-start"      : list,
+    "start"             : list,
+    "start-late"        : list,
+    "start-child"       : list,
+    "start-child-late"  : list,
+    "start-after-connect"       : list,
+    "start-child-after-connect" : list,
+    "start-on-connect"          : list,
+    "start-child-on-connect"    : list,
+    "start-on-last-client-exit" : list,
+    "start-child-on-last-client-exit"   : list,
+    "bind"              : list,
+    "bind-vsock"        : list,
+    "bind-tcp"          : list,
+    "bind-ws"           : list,
+    "bind-wss"          : list,
+    "bind-ssl"          : list,
+    "bind-ssh"          : list,
+    "bind-rfb"          : list,
+    "bind-quic"         : list,
+    "auth"              : list,
+    "vsock-auth"        : list,
+    "tcp-auth"          : list,
+    "ws-auth"           : list,
+    "wss-auth"          : list,
+    "ssl-auth"          : list,
+    "ssh-auth"          : list,
+    "rfb-auth"          : list,
+    "quic-auth"         : list,
+    "password-file"     : list,
+    "start-env"         : list,
+    "env"               : list,
+}
 
-#in the options list, available in session files,
-#but not on the command line:
+# in the options list, available in session files,
+# but not on the command line:
 NON_COMMAND_LINE_OPTIONS : list[str] = [
     "mode",
     "wm-name",
@@ -698,67 +718,72 @@ START_COMMAND_OPTIONS : list[str] = [
     "start-on-connect", "start-child-on-connect",
     "start-on-last-client-exit", "start-child-on-last-client-exit",
     ]
-BIND_OPTIONS : list[str] = ["bind", "bind-tcp", "bind-ssl", "bind-ws", "bind-wss", "bind-vsock", "bind-rfb", "bind-quic"]
+BIND_OPTIONS : list[str] = [
+    "bind", "bind-tcp", "bind-ssl", "bind-ws", "bind-wss", "bind-vsock", "bind-rfb", "bind-quic",
+]
 
-#keep track of the options added since v5,
-#so we can generate command lines that work with older supported versions:
+# keep track of the options added since v5,
+# so we can generate command lines that work with older supported versions:
 OPTIONS_ADDED_SINCE_V5 : list[str] = [
     "minimal",
     ]
-OPTIONS_COMPAT_NAMES : dict[str,str] = {
+OPTIONS_COMPAT_NAMES : dict[str, str] = {
     "--compression_level=" : "-z"
     }
 
-CLIENT_OPTIONS : list[str] = ["title", "username", "password", "session-name",
-                  "dock-icon", "tray-icon", "window-icon",
-                  "clipboard", "clipboard-direction", "clipboard-filter-file",
-                  "remote-clipboard", "local-clipboard",
-                  "tcp-encryption", "tcp-encryption-keyfile", "encryption",  "encryption-keyfile",
-                  "systemd-run", "systemd-run-args",
-                  "socket-dir", "socket-dirs", "client-socket-dirs",
-                  "border", "window-close", "min-size", "max-size", "desktop-scaling",
-                  "file-transfer", "file-size-limit", "download-path",
-                  "open-command", "open-files", "printing", "open-url",
-                  "headerbar",
-                  "challenge-handlers",
-                  "remote-logging",
-                  "lpadmin", "lpinfo",
-                  "debug",
-                  "microphone", "speaker", "audio-source",
-                  "microphone-codec", "speaker-codec",
-                  "mmap", "encodings", "encoding",
-                  "quality", "min-quality", "speed", "min-speed",
-                  "compression_level",
-                  "dpi", "video-scaling", "auto-refresh-delay",
-                  "webcam", "mousewheel", "input-devices", "shortcut-modifiers", "pings",
-                  "tray", "keyboard-sync", "cursors", "bell", "notifications",
-                  "xsettings", "system-tray", "sharing", "lock",
-                  "delay-tray", "windows", "readonly",
-                  "av-sync", "swap-keys",
-                  "opengl",
-                  "start-new-commands",
-                  "desktop-fullscreen",
-                  "video-encoders", "csc-modules", "video-decoders",
-                  "compressors", "packet-encoders",
-                  "key-shortcut",
-                  "env"]
+CLIENT_OPTIONS : list[str] = [
+    "title", "username", "password", "session-name",
+    "dock-icon", "tray-icon", "window-icon",
+    "clipboard", "clipboard-direction", "clipboard-filter-file",
+    "remote-clipboard", "local-clipboard",
+    "tcp-encryption", "tcp-encryption-keyfile", "encryption",  "encryption-keyfile",
+    "systemd-run", "systemd-run-args",
+    "socket-dir", "socket-dirs", "client-socket-dirs",
+    "border", "window-close", "min-size", "max-size", "desktop-scaling",
+    "file-transfer", "file-size-limit", "download-path",
+    "open-command", "open-files", "printing", "open-url",
+    "headerbar",
+    "challenge-handlers",
+    "remote-logging",
+    "lpadmin", "lpinfo",
+    "debug",
+    "microphone", "speaker", "audio-source",
+    "microphone-codec", "speaker-codec",
+    "mmap", "encodings", "encoding",
+    "quality", "min-quality", "speed", "min-speed",
+    "compression_level",
+    "dpi", "video-scaling", "auto-refresh-delay",
+    "webcam", "mousewheel", "input-devices", "shortcut-modifiers", "pings",
+    "tray", "keyboard-sync", "cursors", "bell", "notifications",
+    "xsettings", "system-tray", "sharing", "lock",
+    "delay-tray", "windows", "readonly",
+    "av-sync", "swap-keys",
+    "opengl",
+    "start-new-commands",
+    "desktop-fullscreen",
+    "video-encoders", "csc-modules", "video-decoders",
+    "compressors", "packet-encoders",
+    "key-shortcut",
+    "env",
+]
 
-CLIENT_ONLY_OPTIONS : list[str] = ["username", "swap-keys", "dock-icon",
-                       "tray", "delay-tray", "tray-icon",
-                       "attach",
-                       "reconnect",
-                       ]
+CLIENT_ONLY_OPTIONS : list[str] = [
+    "username", "swap-keys", "dock-icon",
+    "tray", "delay-tray", "tray-icon",
+    "attach",
+    "reconnect",
+]
 
-#options that clients can pass to the proxy
-#and which will be forwarded to the new proxy instance process:
+# options that clients can pass to the proxy
+# and which will be forwarded to the new proxy instance process:
 PROXY_START_OVERRIDABLE_OPTIONS : list[str] = [
     "env", "start-env", "chdir",
     "dpi",
     "encoding", "encodings",
     "quality", "min-quality", "speed", "min-speed",
-    #"auto-refresh-delay",    float!
-    #no corresponding command line option:
-    #"wm-name", "download-path",
+    # "auto-refresh-delay",    float!
+    # no corresponding command line option:
+    # "wm-name", "download-path",
     "compression_level", "video-scaling",
     "title", "session-name",
     "clipboard", "clipboard-direction", "clipboard-filter-file",
@@ -788,17 +813,17 @@ PROXY_START_OVERRIDABLE_OPTIONS : list[str] = [
     "start-on-last-client-exit", "start-child-on-last-client-exit",
     "sessions-dir",
     ]
-tmp :str = os.environ.get("XPRA_PROXY_START_OVERRIDABLE_OPTIONS", "")
+tmp: str = os.environ.get("XPRA_PROXY_START_OVERRIDABLE_OPTIONS", "")
 if tmp:
     PROXY_START_OVERRIDABLE_OPTIONS = tmp.split(",")
 del tmp
 
 
 def get_default_key_shortcuts() -> list[str]:
-    return [shortcut for e,shortcut in (
+    return [shortcut for e, shortcut in (
                (True,   "Control+Menu:toggle_keyboard_grab"),
                (True,   "Shift+Menu:toggle_pointer_grab"),
-               (not OSX,"Shift+F11:toggle_fullscreen"),
+               (not OSX, "Shift+F11:toggle_fullscreen"),
                (OSX,    "Control+F11:toggle_fullscreen"),
                (True,   "#+F1:show_menu"),
                (True,   "#+F2:show_start_new_command"),
@@ -826,17 +851,19 @@ def get_default_key_shortcuts() -> list[str]:
                (OSX,    "meta+grave:void"),
                (OSX,    "meta+shift+asciitilde:void"),
                )
-                 if e]
+            if e]
+
 
 def get_default_systemd_run() -> str:
     if WIN32 or OSX:
         return "no"
-    #systemd-run was previously broken in Fedora 26:
-    #https://github.com/systemd/systemd/issues/3388
-    #but with newer kernels, it is working again..
-    #now that we test it before using it,
-    #it should be safe to leave it on auto:
+    # systemd-run was previously broken in Fedora 26:
+    # https://github.com/systemd/systemd/issues/3388
+    # but with newer kernels, it is working again..
+    # now that we test it before using it,
+    # it should be safe to leave it on auto:
     return "auto"
+
 
 def get_default_pulseaudio_command() -> list[str]:
     if WIN32 or OSX:
@@ -869,22 +896,19 @@ def get_default_pulseaudio_command() -> list[str]:
         "--log-level=2", "--log-target=stderr",
         ]
     from xpra.util.env import envbool
-    MEMFD = envbool("XPRA_PULSEAUDIO_MEMFD", False)
-    if not MEMFD:
+    if not envbool("XPRA_PULSEAUDIO_MEMFD", False):
         cmd.append("--enable-memfd=no")
-    REALTIME = envbool("XPRA_PULSEAUDIO_REALTIME", True)
-    if not REALTIME:
+    if not envbool("XPRA_PULSEAUDIO_REALTIME", True):
         cmd.append("--realtime=no")
-    HIGH_PRIORITY = envbool("XPRA_PULSEAUDIO_HIGH_PRIORITY", True)
-    if not HIGH_PRIORITY:
+    if not envbool("XPRA_PULSEAUDIO_HIGH_PRIORITY", True):
         cmd.append("--high-priority=no")
     return cmd
 
 
 GLOBAL_DEFAULTS = None
-#lowest common denominator here
-#(the xpra.conf file shipped is generally better tuned than this - especially for 'xvfb')
-def get_defaults():
+# lowest common denominator here
+# (the xpra.conf file shipped is generally better tuned than this - especially for 'xvfb')
+def get_defaults() -> dict[str, Any]:
     global GLOBAL_DEFAULTS
     if GLOBAL_DEFAULTS is not None:
         return GLOBAL_DEFAULTS
@@ -905,12 +929,12 @@ def get_defaults():
         xpra_cmd = sys.argv[0]
         for strip in ("/usr/bin", "/bin"):
             pos = xpra_cmd.find(strip)
-            if pos>=0:
+            if pos >= 0:
                 bin_dir = xpra_cmd[:pos+len(strip)]
                 root = xpra_cmd[:pos] or "/"
                 conf_dirs.append(os.path.join(root, "etc", "xpra"))
                 break
-    if sys.prefix=="/usr":
+    if sys.prefix == "/usr":
         conf_dirs.append("/etc/xpra")
     else:
         conf_dirs.append(os.path.join(sys.prefix, "etc", "xpra"))
@@ -999,7 +1023,7 @@ def get_defaults():
                     "printing"          : "yes",
                     "headerbar"         : ["auto", "no"][OSX or WIN32],
                     "challenge-handlers": ["all"],
-                    #ssl options:
+                    # ssl options:
                     "ssl"               : "auto",
                     "ssl-key"           : "",
                     "ssl-key-password"  : "",
@@ -1070,7 +1094,7 @@ def get_defaults():
                     "dbus-control"      : not WIN32 and not OSX,
                     "opengl"            : "probe",
                     "mdns"              : not WIN32,
-                    "swap-keys"         : OSX,  #only used on osx
+                    "swap-keys"         : OSX,  # only used on osx
                     "desktop-fullscreen": False,
                     "forward-xdg-open"  : None,
                     "modal-windows"     : False,
@@ -1128,10 +1152,11 @@ def get_defaults():
                     "env"               : list(DEFAULT_START_ENV),
                     }
     return GLOBAL_DEFAULTS
-#fields that got renamed:
-CLONES : dict[str, str] = {}
 
-#these options should not be specified in config files:
+# fields that got renamed:
+CLONES: dict[str, str] = {}
+
+# these options should not be specified in config files:
 NO_FILE_OPTIONS = ("daemon", )
 
 
@@ -1139,6 +1164,7 @@ TRUE_OPTIONS : tuple[Any, ...] = ("yes", "true", "1", "on", True)
 FALSE_OPTIONS : tuple[Any, ...] = ("no", "false", "0", "off", False)
 ALL_BOOLEAN_OPTIONS : tuple[Any, ...] = tuple(list(TRUE_OPTIONS)+list(FALSE_OPTIONS))
 OFF_OPTIONS : tuple[str, ...] = ("off", )
+
 
 def parse_bool(k:str, v, auto=None) -> bool|None:
     if isinstance(v, str):
@@ -1148,13 +1174,14 @@ def parse_bool(k:str, v, auto=None) -> bool|None:
     if v in FALSE_OPTIONS:
         return False
     if v in ("auto", None):
-        #keep default - which may be None!
+        # keep default - which may be None!
         return auto
     try:
         return bool(int(v))
     except ValueError:
         warn(f"Warning: cannot parse value {v!r} for {k!r} as a boolean")
         return auto
+
 
 def print_bool(k, v, true_str='yes', false_str='no') -> str:
     if v is None:
@@ -1166,8 +1193,10 @@ def print_bool(k, v, true_str='yes', false_str='no') -> str:
     warn(f"Warning: cannot print value {v!r} for {k!r} as a boolean")
     return ""
 
+
 def parse_bool_or_int(k, v) -> int | float | bool:
     return parse_bool_or_number(int, k, v)
+
 
 def parse_bool_or_number(numtype:Callable, k:str, v, auto=0) -> int | float | bool:
     if isinstance(v, str):
@@ -1178,10 +1207,11 @@ def parse_bool_or_number(numtype:Callable, k:str, v, auto=0) -> int | float | bo
         return 0
     return parse_number(numtype, k, v, auto)
 
+
 def parse_number(numtype, k, v, auto=0) -> int | float:
     if isinstance(v, str):
         v = v.lower()
-    if v=="auto":
+    if v == "auto":
         return auto
     try:
         return numtype(v)
@@ -1189,40 +1219,41 @@ def parse_number(numtype, k, v, auto=0) -> int | float:
         warn(f"Warning: cannot parse value {v!r} for {k} as a type {numtype}: {e}")
         return auto
 
+
 def print_number(i, auto_value=0) -> str:
-    if i==auto_value:
+    if i == auto_value:
         return "auto"
     return str(i)
+
 
 def parse_with_unit(numtype:str, v, subunit="bps", min_value=250000) -> int | None:
     if isinstance(v, int):
         return v
-    #special case for bandwidth-limit, which can be specified using units:
+    # special case for bandwidth-limit, which can be specified using units:
     try:
         v = str(v).lower().strip()
         if not v or v in FALSE_OPTIONS:
             return 0
-        if v=="auto":
+        if v == "auto":
             return None
-        r = re.match(r'([0-9\.]*)(.*)', v)
+        r = re.match(r'([0-9.]*)(.*)', v)
         assert r
         f = float(r.group(1))
         unit = r.group(2).lower().strip()
         if unit.endswith(subunit):
-            unit = unit[:-len(subunit)]     #ie: 10mbps -> 10m
-        if unit=="k":
+            unit = unit[:-len(subunit)]     # ie: 10mbps -> 10m
+        if unit == "k":
             f *= 1000
-        elif unit=="m":
+        elif unit == "m":
             f *= 1000000
-        elif unit=="g":
+        elif unit == "g":
             f *= 1000000000
         elif unit in ("", "b"):
             pass    # no multiplier
         else:
             raise ValueError(f"unknown unit {unit!r}")
-        if min_value is not None:
-            if f<min_value:
-                raise ValueError(f"value {f} is too low, minimum is {min_value}")
+        if min_value is not None and f < min_value:
+            raise ValueError(f"value {f} is too low, minimum is {min_value}")
         return int(f)
     except Exception as e:
         raise InitException(f"invalid value for {numtype} {v!r}: {e}") from None
@@ -1231,7 +1262,8 @@ def parse_with_unit(numtype:str, v, subunit="bps", min_value=250000) -> int | No
 def validate_config(d=None, discard=NO_FILE_OPTIONS, extras_types=None, extras_validation=None) -> dict[str,Any]:
     return do_validate_config(d or {}, discard, extras_types or {}, extras_validation or {})
 
-def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dict) -> dict[str,Any]:
+
+def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dict) -> dict[str, Any]:
     """
         Validates all the options given in a dict with fields as keys and
         strings or arrays of strings as values.
@@ -1242,7 +1274,7 @@ def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dic
     validations.update(extras_validation)
     option_types = OPTION_TYPES.copy()
     option_types.update(extras_types)
-    nd : dict[str,Any] = {}
+    nd : dict[str, Any] = {}
     for k, v in d.items():
         if k in discard:
             warn(f"Warning: option {k!r} is not allowed in configuration files")
@@ -1251,28 +1283,28 @@ def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dic
         if vt is None:
             warn(f"Warning: invalid option: {k!r}")
             continue
-        if vt==str:
+        if vt == str:
             if not isinstance(v, str):
                 warn(f"invalid value for {k!r}: {type(v)} (string required)")
                 continue
-        elif vt==int:
+        elif vt == int:
             v = parse_bool_or_number(int, k, v)
             if v is None:
                 continue
-        elif vt==float:
+        elif vt == float:
             v = parse_number(float, k, v)
             if v is None:
                 continue
-        elif vt==bool:
+        elif vt == bool:
             v = parse_bool(k, v)
             if v is None:
                 continue
-        elif vt==list:
+        elif vt == list:
             if isinstance(v, str):
-                #could just be that we specified it only once..
+                # could just be that we specified it only once..
                 v = [v]
             elif isinstance(v, list) or v is None:
-                #ok so far..
+                # ok so far..
                 pass
             else:
                 warn(f"Warning: invalid value for {k!r}: {type(v)} (a string or list of strings is required)")
@@ -1304,6 +1336,7 @@ def make_defaults_struct(extras_defaults=None, extras_types=None, extras_validat
     return do_make_defaults_struct(extras_defaults or {}, extras_types or {}, extras_validation or {},
                                    username, uid, gid)
 
+
 def do_make_defaults_struct(extras_defaults:dict, extras_types:dict, extras_validation:dict,
                             username:str, uid:int, gid:int) -> XpraConfig:
     #populate config with default values:
@@ -1312,11 +1345,12 @@ def do_make_defaults_struct(extras_defaults:dict, extras_types:dict, extras_vali
     defaults = read_xpra_defaults(username, uid, gid)
     return dict_to_validated_config(defaults, extras_defaults, extras_types, extras_validation)
 
+
 def dict_to_validated_config(d:dict, extras_defaults=None, extras_types=None, extras_validation=None) -> XpraConfig:
     options = get_defaults().copy()
     if extras_defaults:
         options.update(extras_defaults)
-    #parse config:
+    # parse config:
     validated = validate_config(d, extras_types=extras_types, extras_validation=extras_validation)
     options.update(validated)
     for k,v in CLONES.items():
@@ -1340,8 +1374,9 @@ def fixup_debug_option(value:str) -> str:
         return "all"
     if value.strip().lower() in ("no", "false", "off", "0"):
         return ""
-    #if we're here, the value should be a CSV list of categories
+    # if we're here, the value should be a CSV list of categories
     return value
+
 
 def csvstr(value) -> str:
     if isinstance(value, (tuple, list)):
@@ -1350,8 +1385,10 @@ def csvstr(value) -> str:
         return value.strip()
     raise ValueError(f"don't know how to convert {type(value)} to a csv list!")
 
+
 def csvstrl(value) -> str:
     return csvstr(value).lower()
+
 
 def nodupes(s):
     return remove_dupes(x.strip().lower() for x in s.split(","))
@@ -1382,6 +1419,7 @@ def fixup_pings(options) -> None:
     except ValueError:
         options.pings = 5
 
+
 def fixup_encodings(options) -> None:
     from xpra.codecs.constants import PREFERRED_ENCODING_ORDER
     estr = csvstr(options.encodings)
@@ -1400,10 +1438,10 @@ def fixup_encodings(options) -> None:
         except ValueError:
             break
         else:
-            #replace 'all' with the actual value:
+            # replace 'all' with the actual value:
             encodings = encodings[:i]+list(PREFERRED_ENCODING_ORDER)+encodings[i+1:]
-    #if the list only has items to exclude (ie: '-scroll,-jpeg')
-    #then 'all' is implied:
+    # if the list only has items to exclude (ie: '-scroll,-jpeg')
+    # then 'all' is implied:
     if not any(True for e in encodings if not e.startswith("-")):
         encodings = list(PREFERRED_ENCODING_ORDER)+encodings
     if "rgb" in encodings:
@@ -1416,7 +1454,7 @@ def fixup_encodings(options) -> None:
     if invalid:
         from xpra.exit_codes import ExitCode
         raise InitExit(ExitCode.UNSUPPORTED, "invalid encodings specified: " + csv(invalid))
-    #now we have a list of encodings, but some of them may be prefixed with "-"
+    # now we have a list of encodings, but some of them may be prefixed with "-"
     for rm in tuple(e for e in encodings if e.startswith("-")):
         while True:
             try:
@@ -1440,7 +1478,7 @@ def fixup_encodings(options) -> None:
             ("video-encoders", ALL_VIDEO_ENCODER_OPTIONS),
             ("video-decoders", ALL_VIDEO_DECODER_OPTIONS),
         ):
-            #ensure value is a list:
+            # ensure value is a list:
             attr_name = name.replace("-", "_")
             value = getattr(options, attr_name)
             vlist = [x for x in csvstrl(value).split(",") if x.strip()]
@@ -1450,12 +1488,11 @@ def fixup_encodings(options) -> None:
 
 
 def fixup_compression(options) -> None:
-    #packet compression:
     from xpra.net import compression
     cstr = csvstrl(options.compressors)
-    if cstr=="all":
+    if cstr == "all":
         compressors = compression.PERFORMANCE_ORDER
-    elif cstr=="none":
+    elif cstr == "none":
         compressors = ()
     else:
         compressors = nodupes(cstr)
@@ -1464,11 +1501,11 @@ def fixup_compression(options) -> None:
             warn("Warning: invalid compressor(s) specified: " + csv(unknown))
     options.compressors = list(compressors)
 
+
 def fixup_packetencoding(options) -> None:
-    #packet encoding
     from xpra.net import packet_encoding
     pestr = csvstrl(options.packet_encoders)
-    if pestr=="all":
+    if pestr == "all":
         packet_encoders = packet_encoding.PERFORMANCE_ORDER
     else:
         packet_encoders = nodupes(pestr)
@@ -1477,13 +1514,14 @@ def fixup_packetencoding(options) -> None:
             warn("Warning: invalid packet encoder(s) specified: " + csv(unknown))
     options.packet_encoders = packet_encoders
 
+
 def fixup_keyboard(options) -> None:
-    #variants and layouts can be specified as CSV, convert them to lists:
+    # variants and layouts can be specified as CSV, convert them to lists:
     def p(v) -> list[str]:
         try:
             r = remove_dupes(x.strip() for x in str(v).split(","))
             # remove empty string if that's the only value:
-            if r and len(r)==1 and r[0]=="":
+            if r and len(r) == 1 and r[0] == "":
                 r = []
             return r
         except Exception:
@@ -1492,13 +1530,14 @@ def fixup_keyboard(options) -> None:
     options.keyboard_variants = p(options.keyboard_variants)
     options.keyboard_raw = parse_bool("keyboard-raw", options.keyboard_raw)
 
+
 def fixup_clipboard(options) -> None:
     cd = options.clipboard_direction.lower().replace("-", "")
-    if cd=="toserver":
+    if cd == "toserver":
         options.clipboard_direction = "to-server"
-    elif cd=="toclient":
+    elif cd == "toclient":
         options.clipboard_direction = "to-client"
-    elif cd=="both":
+    elif cd == "both":
         options.clipboard_direction = "both"
     elif cd in ("disabled", "none"):
         options.clipboard_direction = "disabled"
@@ -1506,6 +1545,7 @@ def fixup_clipboard(options) -> None:
         warn(f"Warning: invalid value for clipboard-direction: {options.clipboard_direction!r}")
         warn(" specify 'to-server', 'to-client' or 'both'")
         options.clipboard_direction = "disabled"
+
 
 def abs_paths(options) -> None:
     ew = options.exec_wrapper
@@ -1515,12 +1555,8 @@ def abs_paths(options) -> None:
             abscmd = which(ewp[0])
             if abscmd:
                 ewp[0] = abscmd
-                try:
-                    options.exec_wrapper = shlex.join(ewp)
-                except AttributeError:
-                    #(shlex.join requires Python 3.8)
-                    options.exec_wrapper = " ".join(shlex.quote(x) for x in ewp)
-    #convert to absolute paths before we daemonize
+                options.exec_wrapper = shlex.join(ewp)
+    # convert to absolute paths before we daemonize
     for k in ("clipboard-filter-file",
               "tcp-encryption-keyfile", "encryption-keyfile",
               "log-dir",
@@ -1545,8 +1581,8 @@ def fixup_options(options) -> None:
     fixup_clipboard(options)
     fixup_keyboard(options)
     abs_paths(options)
-    #remote-xpra is meant to be a list, but the user can specify a string using the command line,
-    #in which case we replace all the default values with this single entry:
+    # remote-xpra is meant to be a list, but the user can specify a string using the command line,
+    # in which case we replace all the default values with this single entry:
     if not isinstance(options.remote_xpra, (list, tuple)):
         options.remote_xpra = [options.remote_xpra]
 
