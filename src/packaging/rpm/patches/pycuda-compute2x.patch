@@ -1,0 +1,15 @@
+--- a/src/wrapper/wrap_cudadrv.cpp	2023-11-17 07:00:41.268911913 -0500
++++ b/src/wrapper/wrap_cudadrv.cpp	2023-11-17 07:01:00.537912828 -0500
+@@ -1030,10 +1030,10 @@
+     .value("COMPUTE_12", CU_TARGET_COMPUTE_12)
+     .value("COMPUTE_13", CU_TARGET_COMPUTE_13)
+ #endif
+-#if CUDAPP_CUDA_VERSION >= 3000
++#if CUDAPP_CUDA_VERSION >= 300000
+     .value("COMPUTE_20", CU_TARGET_COMPUTE_20)
+ #endif
+-#if CUDAPP_CUDA_VERSION >= 3020
++#if CUDAPP_CUDA_VERSION >= 300020
+     .value("COMPUTE_21", CU_TARGET_COMPUTE_21)
+ #endif
+     ;

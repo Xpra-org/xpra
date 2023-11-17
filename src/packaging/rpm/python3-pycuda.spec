@@ -30,6 +30,7 @@ Group:          Development/Libraries/Python
 Source0:        https://files.pythonhosted.org/packages/dd/b2/e30282f3286ddad05ef44548fa5c306a179ed3baceefa699af078e49ce6e/pycuda-%{version}.tar.gz
 %else
 Source0:        https://files.pythonhosted.org/packages/2d/1f/48a3a5b2c715345e7af1e09361100bd98c3d72b4025371692ab233f523d3/pycuda-%{version}.tar.gz
+Patch1:		pycuda-compute2x.patch
 %endif
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python3-pycuda
@@ -64,6 +65,9 @@ if [ "${sha256}" != "acd9030d93e76e60b122e33ad16bcf01bb1344f4c304dedff1cd2bffb0f
 	exit 1
 fi
 %setup -q -n pycuda-%{version}
+%if 0%{?el8}
+%patch -P 1 -p1
+%endif
 
 %build
 CUDA=/opt/cuda
