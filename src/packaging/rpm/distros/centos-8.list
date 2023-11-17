@@ -2,6 +2,7 @@ fake-cuda
 libfakeXinerama
 xorg-x11-drv-dummy
 gstreamer1-plugin-timestamp
+python2-Cython
 python2-pbr
 python2-rencode
 python2-pkgconfig
