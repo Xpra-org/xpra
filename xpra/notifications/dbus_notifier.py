@@ -11,16 +11,12 @@ from xpra.os_util import bytestostr, gi_import
 from xpra.dbus.helper import native_to_dbus
 from xpra.common import NotificationID
 from xpra.notifications.notifier_base import NotifierBase, log
-try:
-    # new recommended way of using the glib main loop:
-    from dbus.mainloop.glib import DBusGMainLoop, threads_init
-    threads_init()
-    DBusGMainLoop(set_as_default=True)
-except ImportError:
-    # beware: this import has side-effects:
-    import dbus.glib
-    assert dbus.glib
-import dbus.exceptions  # pylint: disable=wrong-import-order
+import dbus
+from dbus.mainloop.glib import DBusGMainLoop, threads_init
+from dbus.exceptions import DBusException
+
+threads_init()
+DBusGMainLoop(set_as_default=True)
 
 NOTIFICATION_APP_NAME = os.environ.get("XPRA_NOTIFICATION_APP_NAME", "%s (via Xpra)")
 FD_NOTIFICATIONS = 'org.freedesktop.Notifications'
@@ -161,7 +157,7 @@ class DBUS_Notifier(NotifierBase):
 
     def NotifyError(self, dbus_error, *_args) -> bool:
         try:
-            if isinstance(dbus_error, dbus.exceptions.DBusException):
+            if isinstance(dbus_error, DBusException):
                 message = dbus_error.get_dbus_message()
                 dbus_error_name = dbus_error.get_dbus_name()
                 if dbus_error_name!="org.freedesktop.DBus.Error.ServiceUnknown":
