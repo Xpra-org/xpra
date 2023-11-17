@@ -1088,7 +1088,7 @@ def build_xpra_conf(install_dir):
         'printing'              : bstr(printing_ENABLED),
         'dbus_control'          : bstr(dbus_ENABLED),
         'mmap'                  : bstr(True),
-        'opengl'                : "probe",
+        'opengl'                : "no" if OSX else "probe",
         'headerbar'             : ["auto", "no"][OSX or WIN32],
         }
     def convert_templates(subdirs):
