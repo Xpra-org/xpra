@@ -15,21 +15,51 @@ from xpra.log import Logger
 
 log = Logger("dbus", "notify")
 
-BUS_NAME="org.freedesktop.Notifications"
-BUS_PATH="/org/freedesktop/Notifications"
+BUS_NAME = "org.freedesktop.Notifications"
+BUS_PATH = "/org/freedesktop/Notifications"
 
 ACTIONS = envbool("XPRA_NOTIFICATIONS_ACTIONS", True)
 
 
-"""
-We register this class as handling notifications on the session dbus,
-optionally replacing an existing instance if one exists.
+def parse_hints(dbus_hints):
+    hints = {}
+    h = dbus_to_native(dbus_hints)
+    for x in ("image-data", "icon_data"):
+        data = h.pop(x, None)
+        if data:
+            v = parse_image_data(data)
+            if v:
+                hints["image-data"] = v
+                break
+    if "image-data" not in hints:
+        image_path = h.pop("image-path", None)
+        v = parse_image_path(image_path)
+        if v:
+            hints["image-data"] = v
+    for x in ("action-icons", "category", "desktop-entry", "resident", "transient", "x", "y", "urgency"):
+        v = h.get(x)
+        if v is not None:
+            hints[x] = v
+    log("parse_hints(%s)=%s", dbus_hints, hints)
+    return hints
 
-The generalized callback signatures are:
- notify_callback(dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout)
- close_callback(nid)
-"""
+
+def get_capabilities():
+    caps = ["body", "icon-static"]
+    if ACTIONS:
+        caps += ["actions", "action-icons"]
+    return caps
+
+
 class DBUSNotificationsForwarder(dbus.service.Object):
+    """
+    We register this class as handling notifications on the session dbus,
+    optionally replacing an existing instance if one exists.
+
+    The generalized callback signatures are:
+     notify_callback(dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout)
+     close_callback(nid)
+    """
 
     def __init__(self, bus, notify_callback=None, close_callback=None):
         self.bus = bus
@@ -41,14 +71,14 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         bus_name = dbus.service.BusName(BUS_NAME, bus=bus)
         super().__init__(bus_name, BUS_PATH)
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         return {
             "active"        : tuple(self.active_notifications),
             "counter"       : self.counter,
             "dbus-id"       : self.dbus_id,
             "bus-name"      : BUS_NAME,
             "bus-path"      : BUS_PATH,
-            "capabilities"  : self.do_get_capabilities(),
+            "capabilities"  : get_capabilities(),
             }
 
     def next_id(self):
@@ -57,7 +87,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
 
     @dbus.service.method(BUS_NAME, in_signature='susssasa{sv}i', out_signature='u')
     def Notify(self, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout):
-        if replaces_nid==0:
+        if replaces_nid == 0:
             nid = self.next_id()
         else:
             nid = int(replaces_nid)
@@ -68,7 +98,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         if self.notify_callback:
             try:
                 actions = tuple(str(x) for x in actions)
-                hints = self.parse_hints(hints)
+                hints = parse_hints(hints)
                 args = (
                     self.dbus_id, int(nid), str(app_name),
                     int(replaces_nid), str(app_icon),
@@ -76,6 +106,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
                     actions, hints, int(expire_timeout),
                     )
             except Exception as e:
+                log("Notify(..)", exc_info=True)
                 log.error("Error: failed to parse Notify arguments:")
                 log.estr(e)
                 return 0
@@ -84,32 +115,9 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         log("Notify returning %s", nid)
         return nid
 
-    def parse_hints(self, dbus_hints):
-        hints = {}
-        h = dbus_to_native(dbus_hints)
-        for x in ("image-data", "icon_data"):
-            data = h.pop(x, None)
-            if data:
-                v = parse_image_data(data)
-                if v:
-                    hints["image-data"] = v
-                    break
-        if "image-data" not in hints:
-            image_path = h.pop("image-path", None)
-            v = parse_image_path(image_path)
-            if v:
-                hints["image-data"] = v
-        for x in ("action-icons", "category", "desktop-entry", "resident", "transient", "x", "y", "urgency"):
-            v = h.get(x)
-            if v is not None:
-                hints[x] = v
-        log("parse_hints(%s)=%s", dbus_hints, hints)
-        return hints
-
-
     @dbus.service.method(BUS_NAME, out_signature='ssss')
     def GetServerInformation(self):
-        #name, vendor, version, spec-version
+        # name, vendor, version, spec-version
         from xpra import __version__
         v = ["xpra-notification-proxy", "xpra", __version__, "0.9"]
         log("GetServerInformation()=%s", v)
@@ -117,14 +125,8 @@ class DBUSNotificationsForwarder(dbus.service.Object):
 
     @dbus.service.method(BUS_NAME, out_signature='as')
     def GetCapabilities(self):
-        caps = self.do_get_capabilities()
+        caps = get_capabilities()
         log("GetCapabilities()=%s", csv(caps))
-        return caps
-
-    def do_get_capabilities(self):
-        caps = ["body", "icon-static"]
-        if ACTIONS:
-            caps += ["actions", "action-icons"]
         return caps
 
     @dbus.service.method(BUS_NAME, in_signature='u')
@@ -137,7 +139,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         else:
             if self.close_callback:
                 self.close_callback(nid)
-            self.NotificationClosed(nid, 3)     #3="The notification was closed by a call to CloseNotification"
+            self.NotificationClosed(nid, 3)     # 3="The notification was closed by a call to CloseNotification"
 
     def is_notification_active(self, nid):
         return nid in self.active_notifications
@@ -149,7 +151,6 @@ class DBUSNotificationsForwarder(dbus.service.Object):
     @dbus.service.signal(BUS_NAME, signature='us')
     def ActionInvoked(self, nid, action_key):
         log(f"ActionInvoked({nid}, {action_key})")
-
 
     def release(self):
         try:
@@ -172,7 +173,7 @@ def register(notify_callback=None, close_callback=None, replace=False):
         flags |= dbus.bus.NAME_FLAG_REPLACE_EXISTING
     request = bus.request_name(BUS_NAME, flags)
     log(f"notifications: bus name {BUS_NAME!r}, request={request}")
-    if request==dbus.bus.REQUEST_NAME_REPLY_EXISTS:
+    if request == dbus.bus.REQUEST_NAME_REPLY_EXISTS:
         raise ValueError(f"the name {BUS_NAME!r} is already claimed on the session bus")
     return DBUSNotificationsForwarder(bus, notify_callback, close_callback)
 
@@ -182,6 +183,7 @@ def main():
     from gi.repository import GLib  # @UnresolvedImport
     mainloop = GLib.MainLoop()
     mainloop.run()
+
 
 if __name__ == "__main__":
     main()
