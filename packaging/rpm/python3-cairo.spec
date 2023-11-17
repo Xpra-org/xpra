@@ -35,12 +35,12 @@ Requires: %{python3}
 %description -n %{python3}-cairo
 Python 3 bindings for the cairo library.
 
-%package -n %{python3}-cairo-devel
+%package -n python3-cairo-devel
 Summary: Libraries and headers for py3cairo
 Requires: %{python3}-cairo%{?_isa} = %{version}-%{release}
 Requires: %{python3}-devel
 
-%description -n %{python3}-cairo-devel
+%description -n python3-cairo-devel
 This package contains files required to build wrappers for cairo add-on
 libraries so that they interoperate with py3cairo.
 
@@ -64,7 +64,7 @@ fi
 %{python3_sitearch}/cairo/
 %{python3_sitearch}/pycairo*.egg-info
 
-%files -n %{python3}-cairo-devel
+%files -n python3-cairo-devel
 %dir %{_includedir}/pycairo
 %{_includedir}/pycairo/py3cairo.h
 %{_libdir}/pkgconfig/py3cairo.pc

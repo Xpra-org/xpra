@@ -76,7 +76,7 @@ Requires:       %{python3}-gobject-base = %{version}-%{release}
 This package provides the non-cairo specific bits of the GObject Introspection
 library that are not architecture specific.
 
-%package     -n %{python3}-gobject-devel
+%package     -n python3-gobject-devel
 Summary:        Development files for embedding PyGObject introspection support
 Requires:       %{python3}-gobject%{?_isa} = %{version}-%{release}
 Requires:       gobject-introspection-devel%{?_isa}
@@ -84,7 +84,7 @@ Requires:       gobject-introspection-devel%{?_isa}
 Obsoletes:      pygobject3-devel < 3.34.0-2
 Provides:       pygobject3-devel = %{version}-%{release}
 
-%description -n %{python3}-gobject-devel
+%description -n python3-gobject-devel
 This package contains files required to embed PyGObject
 
 %prep
@@ -124,7 +124,7 @@ fi
 %{python3_sitelib}/gi/repository/
 %{python3_sitelib}/pygtkcompat/
 
-%files -n %{python3}-gobject-devel
+%files -n python3-gobject-devel
 %dir %{_includedir}/pygobject-3.0/
 %{_includedir}/pygobject-3.0/pygobject.h
 %{_libdir}/pkgconfig/pygobject-3.0.pc
