@@ -6,6 +6,17 @@ libyuv
 nasm
 x264-xpra
 ffmpeg-xpra
+python2-Cython
+python2-pbr
+python2-rencode
+python2-pkgconfig
+python2-lz4
+python2-dbus
+python2-pyxdg
+python2-netifaces
+python2-pillow
+python2-pynvml
+python2-pytools
 python3-pkgconfig
 python3-lz4
 python3-Cython
