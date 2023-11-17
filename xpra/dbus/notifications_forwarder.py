@@ -32,7 +32,7 @@ def parse_hints(dbus_hints):
                 hints["image-data"] = v
                 break
     if "image-data" not in hints:
-        image_path = h.pop("image-path", None)
+        image_path = h.pop("image-path", "")
         v = parse_image_path(image_path)
         if v:
             hints["image-data"] = v
