@@ -8,6 +8,7 @@ openh264
 python3-pynvml
 python3-pyu2f
 python3-uinput
+python3-wheel
 python3-pylsqpack
 python3-aioquic
 # default python version is too old,
@@ -26,6 +27,7 @@ python3-pyu2f
 python3-uinput
 python3-dbus
 python3-pyxdg
+python3-wheel
 python3-pylsqpack
 python3-pyopengl
 python3-cairo
