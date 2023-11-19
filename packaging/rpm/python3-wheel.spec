@@ -39,7 +39,7 @@ It has two different roles:
 
  1. A setuptools extension for building wheels that provides the bdist_wheel
     setuptools command.
- 2. A command line tool for working with wheel files.}
+ 2. A command line tool for working with wheel files.
 
 
 %prep
@@ -62,18 +62,28 @@ fi
 %install
 PYTHONPATH="%{buildroot}%{python3_sitelib}" %{python3} ./setup.py install --prefix %{buildroot}/usr
 # we don't want that unusable egg directory
-mv %{buildroot}%{python3_sitelib}/%{pypi_name}*egg/wheel %{buildroot}%{python3_sitelib}/
-rm -fr %{buildroot}%{python3_sitelib}/%{pypi_name}*egg/EGG-INFO
-rmdir %{buildroot}%{python3_sitelib}/%{pypi_name}*egg
+mv %{buildroot}%{python3_sitelib}/%{pypi_name}*egg/%{pypi_name} %{buildroot}%{python3_sitelib}/ || true
+rm -fr %{buildroot}%{python3_sitelib}/%{pypi_name}*egg
+# various files we don't care about,
+# that may get generated on some build variants:
 rm -fr %{buildroot}%{python3_sitelib}/__pycache__
 rm -f %{buildroot}%{python3_sitelib}/easy-install.pth
 rm -f %{buildroot}%{python3_sitelib}/site.py
+rm -f %{buildroot}%{python3_sitelib}/%{pypi_name}-*.egg-info
+# setuptools and / or pkg_resources generate an unusable mess,
+# so use this wrapper instead:
+mkdir -p %{buildroot}%{_bindir} >& /dev/null
+echo "#!/usr/bin/python%{python3_version}" > %{buildroot}%{_bindir}/%{pypi_name}
+echo "from wheel.__main__ import main" >> %{buildroot}%{_bindir}/%{pypi_name}
+echo "main()" >> %{buildroot}%{_bindir}/%{pypi_name}
+%if "%{python3}" != "python3"
 mv %{buildroot}%{_bindir}/%{pypi_name} %{buildroot}%{_bindir}/%{pypi_name}-%{python3_version}
+%endif
 
 %files -n %{python3}-%{pypi_name}
 %license LICENSE.txt
 %doc README.rst
-%{_bindir}/%{pypi_name}-%{python3_version}
+%{_bindir}/%{pypi_name}*
 %{python3_sitelib}/%{pypi_name}/
 
 
