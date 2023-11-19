@@ -58,7 +58,7 @@ fi
 
 
 %build
-%py3_build
+%{python3} ./setup.py build
 
 
 %install
