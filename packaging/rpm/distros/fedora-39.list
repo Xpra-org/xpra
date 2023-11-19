@@ -18,6 +18,8 @@ xpra
 PYTHON3=python3.10
 python3-setuptools
 python3-Cython
+python3-numpy
+python3-pycuda
 python3-pillow
 python3-pynvml
 python3-pyu2f
@@ -27,6 +29,7 @@ python3-dbus
 python3-pyxdg
 python3-wheel
 python3-pylsqpack
+python3-pyopengl
 python3-cairo
 pygobject3
 xpra
