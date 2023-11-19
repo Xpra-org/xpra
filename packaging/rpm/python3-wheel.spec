@@ -13,7 +13,6 @@ exit
 %endif
 %define python3_version %(%{python3} -c 'import sys;vi=sys.version_info;print(f"{vi[0]}.{vi[1]}")')
 %define python3_minor %(%{python3} -c 'import sys;vi=sys.version_info;print(f"{vi[1]}")')
-%echo OOOO %{python3_minor}
 
 %global pypi_name wheel
 Name:           %{python3}-%{pypi_name}
