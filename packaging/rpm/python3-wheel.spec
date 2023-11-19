@@ -60,11 +60,14 @@ fi
 
 
 %install
-%{python3} ./setup.py install --prefix %{buildroot}/usr
+PYTHONPATH="%{buildroot}%{python3_sitelib}" %{python3} ./setup.py install --prefix %{buildroot}/usr
 # we don't want that unusable egg directory
 mv %{buildroot}%{python3_sitelib}/%{pypi_name}*egg/wheel %{buildroot}%{python3_sitelib}/
 rm -fr %{buildroot}%{python3_sitelib}/%{pypi_name}*egg/EGG-INFO
 rmdir %{buildroot}%{python3_sitelib}/%{pypi_name}*egg
+rm -fr %{buildroot}%{python3_sitelib}/__pycache__
+rm -f %{buildroot}%{python3_sitelib}/easy-install.pth
+rm -f %{buildroot}%{python3_sitelib}/site.py
 mv %{buildroot}%{_bindir}/%{pypi_name} %{buildroot}%{_bindir}/%{pypi_name}-%{python3_version}
 
 %files -n %{python3}-%{pypi_name}
