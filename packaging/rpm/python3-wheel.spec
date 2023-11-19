@@ -1,7 +1,9 @@
 %define _disable_source_fetch 0
 %if "%{getenv:PYTHON3}" == ""
+%if 0%{?fedora}
 echo this must be built for the not default python3
 exit
+%endif
 %global python3 python3
 %else
 %global python3 %{getenv:PYTHON3}
