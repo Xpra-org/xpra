@@ -13,7 +13,9 @@ BuildRequires: gcc
 BuildRequires: cairo-devel
 BuildRequires: pkgconfig
 BuildRequires: python3-devel
+%if !0%{?el8}
 BuildRequires: python3-pytest
+%endif
 
 %description
 Python bindings for the cairo library.
@@ -49,7 +51,9 @@ libraries so that they interoperate with py3cairo.
 %py3_install
 
 %check
+%if !0%{?el8}
 %{__python3} setup.py test
+%endif
 
 %files -n python3-cairo
 %license COPYING*
