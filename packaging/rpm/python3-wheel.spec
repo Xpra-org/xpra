@@ -63,18 +63,15 @@ fi
 
 %install
 PYTHONPATH="%{buildroot}%{python3_sitelib}" %{python3} ./setup.py install --prefix %{buildroot}/usr
-%if !0%{?el9}
 # we don't want that unusable egg directory
-mv %{buildroot}%{python3_sitelib}/%{pypi_name}*egg/%{pypi_name} %{buildroot}%{python3_sitelib}/
-rm -fr %{buildroot}%{python3_sitelib}/%{pypi_name}*egg/EGG-INFO
-rmdir %{buildroot}%{python3_sitelib}/%{pypi_name}*egg
-%endif
+mv %{buildroot}%{python3_sitelib}/%{pypi_name}*egg/%{pypi_name} %{buildroot}%{python3_sitelib}/ || true
+rm -fr %{buildroot}%{python3_sitelib}/%{pypi_name}*egg
 # various files we don't care about,
 # that may get generated on some build variants:
 rm -fr %{buildroot}%{python3_sitelib}/__pycache__
 rm -f %{buildroot}%{python3_sitelib}/easy-install.pth
 rm -f %{buildroot}%{python3_sitelib}/site.py
-rm -f %{buildroot}%{python3_sitelib}/%{pypi_name}-*.err-info
+rm -f %{buildroot}%{python3_sitelib}/%{pypi_name}-*.egg-info
 # setuptools and / or pkg_resources generate an unusable mess,
 # so use this wrapper instead:
 mkdir -p %{buildroot}%{_bindir} >& /dev/null
