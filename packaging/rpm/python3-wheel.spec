@@ -8,14 +8,13 @@ exit
 %undefine __pythondist_requires
 %undefine __python_requires
 %define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
-%define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
 %define python3_version %(%{python3} -c 'import sys;vi=sys.version_info;print(f"{vi[0]}.{vi[1]}")')
 
 %global pypi_name wheel
 Name:           %{python3}-%{pypi_name}
 Version:        0.41.3
-Release:        1%{?dist}
+Release:        2%{?dist}
 Source0:        https://files.pythonhosted.org/packages/fb/d0/0b4c18a0b85c20233b0c3bc33f792aefd7f12a5832b4da77419949ff6fd9/%{pypi_name}-%{version}.tar.gz
 Summary:        Built-package format for Python
 Provides:       bundled(python3dist(packaging)) = 20.9
@@ -52,16 +51,23 @@ fi
 
 %install
 %{python3} ./setup.py install --prefix %{buildroot}/usr
+# we don't want that unusable egg directory
+mv %{buildroot}%{python3_sitelib}/%{pypi_name}*egg/wheel %{buildroot}%{python3_sitelib}/
+rm -fr %{buildroot}%{python3_sitelib}/%{pypi_name}*egg/EGG-INFO
+rmdir %{buildroot}%{python3_sitelib}/%{pypi_name}*egg
 mv %{buildroot}%{_bindir}/%{pypi_name} %{buildroot}%{_bindir}/%{pypi_name}-%{python3_version}
 
 %files -n %{python3}-%{pypi_name}
 %license LICENSE.txt
 %doc README.rst
 %{_bindir}/%{pypi_name}-%{python3_version}
-%{python3_sitelib}/%{pypi_name}*/
+%{python3_sitelib}/%{pypi_name}/
 
 
 %changelog
+* Sun Nov 19 2023 Antoine Martin <antoine@xpra.org> - 0.41.3-2
+- get rid of unusable egg directory
+
 * Sun Nov 12 2023 Antoine Martin <antoine@xpra.org> - 0.41.3-1
 - new upstream release
 
