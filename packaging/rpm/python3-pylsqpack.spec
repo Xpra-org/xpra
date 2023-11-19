@@ -11,6 +11,7 @@ Source0:        https://files.pythonhosted.org/packages/93/1d/3f400f2e7413caec3c
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
+BuildRequires:  python3-wheel
 BuildRequires:  gcc
 Requires:       python3
 
