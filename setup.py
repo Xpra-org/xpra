@@ -469,15 +469,15 @@ if share_xpra is None:
     share_xpra = os.path.join("share", "xpra")
 
 
-def should_rebuild(src_file, bin_file):
+def should_rebuild(src_file: str, bin_file: str) -> str:
     if not os.path.exists(bin_file):
         return "no file"
-    if rebuild_ENABLED and os.path.getctime(bin_file)<os.path.getctime(src_file):
+    if rebuild_ENABLED and os.path.getctime(bin_file) < os.path.getctime(src_file):
         return "binary file is out of date"
-    return None
+    return ""
 
 
-def convert_doc(fsrc, fdst, fmt="html", force=False):
+def convert_doc(fsrc: str, fdst: str, fmt="html", force=False):
     bsrc = os.path.basename(fsrc)
     bdst = os.path.basename(fdst)
     if not force and not should_rebuild(fsrc, fdst):
@@ -489,6 +489,7 @@ def convert_doc(fsrc, fdst, fmt="html", force=False):
         cmd += ["--lua-filter", "./fs/bin/links-to-html.lua"]
     r = subprocess.Popen(cmd).wait(30)
     assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
+
 
 def convert_doc_dir(src, dst, fmt="html", force=False):
     print(f"* {src:<20} -> {dst}")
