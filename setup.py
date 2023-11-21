@@ -234,7 +234,7 @@ dbus_ENABLED = DEFAULT and x11_ENABLED and not (OSX or WIN32)
 gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk3_ENABLED = DEFAULT and client_ENABLED
 opengl_ENABLED = DEFAULT and client_ENABLED
-pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and POSIX and not OSX and (find_header_file("/security", isdir=True) or pkg_config_ok("--exists", "pam", "pam_misc"))
+pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and LINUX and (find_header_file("/security", isdir=True) or pkg_config_ok("--exists", "pam", "pam_misc"))
 
 proc_use_procps         = LINUX and has_header_file("/proc/procps.h")
 proc_use_libproc        = LINUX and has_header_file("/libproc2/pids.h")
