@@ -278,7 +278,7 @@ notifications_ENABLED   = DEFAULT
 keyboard_ENABLED        = DEFAULT
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and not OPENBSD)
 evdi_ENABLED            = DEFAULT and LINUX and pkg_config_version("1.10", "evdi")
-drm_ENABLED             = DEFAULT and LINUX and pkg_config_version("2.4", "libdrm")
+drm_ENABLED             = DEFAULT and (LINUX or FREEBSD) and pkg_config_version("2.4", "libdrm")
 csc_cython_ENABLED      = DEFAULT
 nvidia_ENABLED          = DEFAULT and not OSX and BITS==64
 nvjpeg_encoder_ENABLED  = nvidia_ENABLED and pkg_config_ok("--exists", "nvjpeg")
@@ -2023,7 +2023,7 @@ if data_ENABLED:
     if not is_openSUSE():
         add_data_files(share_xpra,                  ["README.md", "COPYING"])
     add_data_files(share_xpra,                      ["fs/share/xpra/bell.wav"])
-    if LINUX:
+    if LINUX or FREEBSD:
         add_data_files(share_xpra,                  ["fs/share/xpra/autostart.desktop"])
     ICONS = glob.glob("fs/share/xpra/icons/*.png")
     if OSX:
