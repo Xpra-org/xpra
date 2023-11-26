@@ -33,18 +33,6 @@ sharing = auto
 # and this setting can then be changed from the system tray menu:
 lock = auto
 
-# Compressors:
-#compressors = all
-#compressors = none
-compressors = none, lz4, brotli
-
-# Default compression (0 to 9):
-compression_level = 1
-
-# Packet encoders (at least one is required):
-#packet-encoders = all
-packet-encoders = rencodeplus
-
 # Socket directories (may be specified more than once):
 #socket-dirs = /tmp
 #socket-dirs = ~/.xpra
