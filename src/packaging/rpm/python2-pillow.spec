@@ -21,12 +21,12 @@
 	%global lcms lcms2
 	%global with_filter 1
 	%global with_webp 1
+	%global with_qt4 0
+	%global with_tk 0
     %global tkinter python2-tkinter
 %endif
 %if 0%{?el8}
 	#don't override the system python3 package:
-	%global with_qt4 0
-	%global with_tk 0
 	%global with_filter 0
 %endif
 
@@ -80,9 +80,12 @@ BuildRequires:  %{PyQt4}
 %endif
 %if 0%{?el7}
 BuildRequires:  numpy
+%endif
 %else
+%if 0%{?el8}
 BuildRequires:  python2-numpy
 %endif
+
 
 %if 0%{with_filter} > 0
 %filter_provides_in %{python2_sitearch}
