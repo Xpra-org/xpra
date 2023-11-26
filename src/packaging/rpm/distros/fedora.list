@@ -10,6 +10,7 @@ python2-pkgconfig
 python2-setuptools_scm
 python2-lz4
 python2-dbus
+python2-pillow
 python2-pyxdg
 python2-netifaces
 python2-pynvml
