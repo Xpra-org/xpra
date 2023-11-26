@@ -81,7 +81,6 @@ BuildRequires:  %{PyQt4}
 %if 0%{?el7}
 BuildRequires:  numpy
 %endif
-%else
 %if 0%{?el8}
 BuildRequires:  python2-numpy
 %endif
