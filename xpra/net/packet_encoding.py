@@ -131,7 +131,7 @@ def do_yaml(data):
 def get_packet_encoding_caps():
     rp = {"" : use_rencodeplus}
     if has_rencodeplus:
-        assert rencode_version is not None
+        assert rencodeplus_version is not None
         rp["version"]    = rencodeplus_version
     r = {"" : use_rencode}
     if has_rencode:
