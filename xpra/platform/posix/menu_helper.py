@@ -71,7 +71,7 @@ def export(entry, properties : Tuple[str, ...]) -> Dict[str,Any]:
     return props
 
 
-MAX_THEMES : int = 2
+MAX_THEMES : int = 8
 IconTheme : Optional[Type] = None
 Config : Optional[Type] = None
 themes : Dict[str,Any] = {}
@@ -110,7 +110,7 @@ if LOAD_FROM_THEME:
             addtheme(Config.icon_theme)
             addtheme(get_saved_env().get("XDG_MENU_PREFIX"))
             addtheme(get_saved_env().get("XDG_SESSION_DESKTOP"))
-            if len(themes)>MAX_THEMES:
+            if len(themes)<MAX_THEMES:
                 for x in glob.glob(f"{sys.prefix}/share/icons/*/index.theme"):
                     parts = x.split(os.path.sep)
                     name = parts[-2]
