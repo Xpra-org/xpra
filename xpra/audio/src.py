@@ -198,12 +198,14 @@ class AudioSource(AudioPipeline):
                 v = self.src.get_property(x)
                 if v>=0:
                     info[x] = v
-        info["src"] = self.get_element_properties(
-            self.src,
-            "actual-buffer-time", "actual-latency-time",
-            "buffer-time", "latency-time",
-            "provide-clock",
-            )
+        if self.src_type != "autoaudiosrc":
+            info["src"] = self.get_element_properties(
+                self.src,
+                "actual-buffer-time", "actual-latency-time",
+                "buffer-time", "latency-time",
+                "provide-clock",
+                )
+            info["src"]["type"] = self.src_type
         return info
 
 
