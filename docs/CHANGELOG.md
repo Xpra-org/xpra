@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.4] 2023-11-15
+## [5.0.4] 2023-11-27
 * Major:
     * [missing flush marker with some scroll screen updates](https://github.com/Xpra-org/xpra/commit/ff36bc1a085c6caca3bdb95791c5001c3c6909bb)
     * [fixup tray backport regression](https://github.com/Xpra-org/xpra/commit/6631cfe8b8c228894cd93b679d7ed78ef5715f81)
@@ -12,14 +12,16 @@
     * [video modules lost after initial connection](https://github.com/Xpra-org/xpra/commit/8217fabfcee476c2f44ae78cde1c718ee609157f)
     * [OpenGL crash warnings on MacOS](https://github.com/Xpra-org/xpra/commit/2e4248d5a61a20b81d4f39dce85464689136c69c)
     * [client error if xpra-x11 is not installed](https://github.com/Xpra-org/xpra/commit/5c131462755e004d74126e06db0dd3cd9555fe1a)
+    * [DPI fix for older distributions](https://github.com/Xpra-org/xpra/commit/79f183744a16b1606c43baeed67134375ecdd3cb)
 * `start-gui` fixes:
     * [display number ignored](https://github.com/Xpra-org/xpra/commit/db7f6f4ea1530e7b6c901b2b0e44f00271c9d8b6)
     * [exit-with-children can't be unchecked in start-gui](https://github.com/Xpra-org/xpra/commit/98ee5a6f26cdac6bf62166b1ceca522b02f6fca4)
     * [port number always specified but not validated](https://github.com/Xpra-org/xpra/commit/bb1c06d77370bd6b4a94e28572311368c2c23817)
 * Platform and packaging:
+    * [pycuda 2023.1](https://github.com/Xpra-org/xpra/commit/f7b18df18e0f1b1a6134f15b2760d94e764b1b48), 2022.2.2 for RHEL8
     * [Cython 3.0.5](https://github.com/Xpra-org/xpra/commit/3a46ee575f0147f6e4ccc00bab27321825709ab1)
     * [also use Cython 3.x for Debian builds](https://github.com/Xpra-org/xpra/commit/6c11d25ca987e5cb70f5977f34760da169c4605e)
-    * library updates: [aioquic 0.9.22](https://github.com/Xpra-org/xpra/commit/8070b632eb7f022d9529c1c7ca1e50842c447fef), [pylsqlpack 0.3.18](https://github.com/Xpra-org/xpra/commit/98e986ee177cfae7a2d11f9ff3db39db555755b6)
+    * library updates: [aioquic 0.9.22](https://github.com/Xpra-org/xpra/commit/8070b632eb7f022d9529c1c7ca1e50842c447fef), [pylsqlpack 0.3.18](https://github.com/Xpra-org/xpra/commit/98e986ee177cfae7a2d11f9ff3db39db555755b6) + [python-wheel](https://github.com/Xpra-org/xpra/commit/a3a4fbefeb3f6a2761eb058a179b3e9895b14ad7) 0.41.3 (0.33.6 for Python 3.6)
     * [C functions cannot raise Python exceptions](https://github.com/Xpra-org/xpra/commit/55e4fe2450aaf96ba049f9b9e825e3c77d6b6b22) + [reorder](https://github.com/Xpra-org/xpra/commit/0618f163b0e6c9102be56b6fd02eef614baae19d)
     * [MacOS pyobjc warnings](https://github.com/Xpra-org/xpra/commit/c17caa0cb25f68fa8a75c975fe886504b142c9a6)
     * [workaround py2app failure](https://github.com/Xpra-org/xpra/commit/262cffc6b3745c68db8b528405652ed1ca709bc8)
@@ -29,6 +31,7 @@
     * [DEB packages should not rely on transitive dependencies](https://github.com/Xpra-org/xpra/commit/a403a271a80a5d7b5468d9b9a27303188b83547d)
     * [ignore some transient CI failures](https://github.com/Xpra-org/xpra/commit/47cb8affd6a3d59d26392697e1d98fe8ef3a8b00)
     * [use latest Cython with CI](https://github.com/Xpra-org/xpra/commit/cecc5b2e624c78166a79cdac51d14adf896dcd9a)
+    * [ship systemd service if building socket activation](https://github.com/Xpra-org/xpra/commit/b2b20f260bfae9951f0f803c1c19a124e1968297)
 * Minor:
     * [shortcut out when signal watcher has already terminated](https://github.com/Xpra-org/xpra/commit/f3e922181e5fbabc63f778e9a7d6fe4a7809b6f7)
     * [move-resize test tool broken](https://github.com/Xpra-org/xpra/commit/5e79b41a830203412566b4f3c9fa4119a9a441a6)
@@ -39,6 +42,7 @@
     * [ssh error connecting to some hosts](https://github.com/Xpra-org/xpra/commit/c00d9328ce57d4a95006f4ff7a9a69e05688d168) + [fixup](https://github.com/Xpra-org/xpra/commit/493477056fc6148ed551f62bbd93815064a18752)
     * [type safety](https://github.com/Xpra-org/xpra/commit/e490532251abf2a74c8683daa25b3df6f77465f4)
     * [don't include empty key event in debug list](https://github.com/Xpra-org/xpra/commit/f91e7d261418117e7e03430bb9259b0c37f3e41d)
+    * [parsing large numbers without units](https://github.com/Xpra-org/xpra/commit/a34c33573fddf319ec4f6a0e2a0c9f0b75396c45)
 * OpenGL client accleration:
     * [honour opengl=force option](https://github.com/Xpra-org/xpra/commit/b869ba0466cfe3fdeabb7815fee12d1cb6ab8f65)
     * [X11 OpenGL context manager is not consistent](https://github.com/Xpra-org/xpra/commit/e73187fc427aae60041ebd1dc65582790875d59b)

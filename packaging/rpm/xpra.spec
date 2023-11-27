@@ -768,7 +768,7 @@ fi
 
 
 %changelog
-* Wed Nov 15 2023 Antoine Martin <antoine@xpra.org> 5.0.4-10
+* Mon Nov 27 2023 Antoine Martin <antoine@xpra.org> 5.0.4-10
 - Major:
    missing flush marker with some scroll screen updates
    fixup tray backport regression
@@ -779,6 +779,7 @@ fi
    ensure all encoders are initialized before choosing an encoding
    video modules lost after initial connection
    client error if xpra-x11 is not installed
+   DPI fix for older distributions
 - `start-gui` fixes:
    display number ignored
    exit-with-children can't be unchecked in start-gui
@@ -787,7 +788,7 @@ fi
 - Platform and packaging
    Cython 3.0.5
    also use Cython 3.x for Debian builds
-   library updates: aioquic 0.9.22, pylsqlpack 0.3.18
+   library updates: aioquic 0.9.22, pylsqlpack 0.3.18, python-wheel 0.41.3 (0.33.6 for Python 3.6)
    C functions cannot raise Python exceptions
    MacOS pyobjc warnings
    workaround py2app failure
@@ -797,6 +798,7 @@ fi
    DEB packages should not rely on transitive dependencies
    ignore some transient CI failures
    use latest Cython with CI
+   ship systemd service if building socket activation
 - Minor:
    shortcut out when signal watcher has already terminated
    move-resize test tool broken
@@ -807,6 +809,7 @@ fi
    ssh error connecting to some hosts
    type safety
    don't include empty key event in debug list
+   parsing large numbers without units
 - OpenGL client accleration:
    honour opengl=force option
    X11 OpenGL context manager is not consistent
