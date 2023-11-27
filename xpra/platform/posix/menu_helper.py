@@ -114,7 +114,7 @@ if LOAD_FROM_THEME:
             addtheme(Config.icon_theme)
             addtheme(get_saved_env().get("XDG_MENU_PREFIX"))
             addtheme(get_saved_env().get("XDG_SESSION_DESKTOP"))
-            if len(themes) > MAX_THEMES:
+            if len(themes) < MAX_THEMES:
                 for x in glob.glob(f"{sys.prefix}/share/icons/*/index.theme"):
                     parts = x.split(os.path.sep)
                     name = parts[-2]
