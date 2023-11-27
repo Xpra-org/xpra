@@ -1663,7 +1663,6 @@ class ServerCore:
         except Exception as ce:
             wslog("error closing connection following error: %s", ce)
 
-
     def get_http_scripts(self) -> dict[str,Any]:
         return self._http_scripts
 
@@ -1671,22 +1670,23 @@ class ServerCore:
         return dict(parse_qsl(urlparse(path).query))
 
     def send_json_response(self, data):
-        import json  #pylint: disable=import-outside-toplevel
+        import json   # pylint: disable=import-outside-toplevel
         return self.http_response(json.dumps(data), "application/json")
 
-    def send_icon(self, icon_type, icon_data):
+    def send_icon(self, icon_type: str, icon_data: bytes):
         httplog("send_icon%s", (icon_type, ellipsizer(icon_data)))
         if not icon_data:
             icon_filename = get_icon_filename("noicon.png")
             icon_data = load_binary_file(icon_filename)
             icon_type = "png"
             httplog("using fallback transparent icon")
-        if icon_type=="svg" and icon_data:
-            from xpra.codecs.icon_util import svg_to_png  #pylint: disable=import-outside-toplevel
-            #call svg_to_png via the main thread,
-            #and wait for it to complete via an Event:
+        if icon_type == "svg" and icon_data:
+            from xpra.codecs.icon_util import svg_to_png  # pylint: disable=import-outside-toplevel
+            # call svg_to_png via the main thread,
+            # and wait for it to complete via an Event:
             icon = [icon_data, icon_type]
             event = threading.Event()
+
             def convert():
                 icon[0] = svg_to_png("", icon_data, 48, 48)
                 icon[1] = "png"

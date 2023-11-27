@@ -74,7 +74,6 @@ class MenuProvider:
         self.cancel_xdg_menu_reload()
         self.cancel_pynotify_watch()
 
-
     def setup_menu_watcher(self) -> None:
         try:
             self.do_setup_menu_watcher()
@@ -85,7 +84,7 @@ class MenuProvider:
 
     def do_setup_menu_watcher(self) -> None:
         if self.watch_manager or OSX or WIN32:
-            #already setup
+            # already setup
             return
         try:
             # pylint: disable=import-outside-toplevel
@@ -96,14 +95,19 @@ class MenuProvider:
             log.warn(" %s", e)
             return
         self.watch_manager = pyinotify.WatchManager()
-        def menu_data_updated(create, pathname):
+
+        def menu_data_updated(create: bool, pathname: str):
             log("menu_data_updated(%s, %s)", create, pathname)
             self.schedule_xdg_menu_reload()
+
         class EventHandler(pyinotify.ProcessEvent):
+
             def process_IN_CREATE(self, event):
                 menu_data_updated(True, event.pathname)
+
             def process_IN_DELETE(self, event):
                 menu_data_updated(False, event.pathname)
+
         mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE  #@UndefinedVariable pylint: disable=no-member
         handler = EventHandler()
         self.watch_notifier = pyinotify.ThreadedNotifier(self.watch_manager, handler)
@@ -138,9 +142,9 @@ class MenuProvider:
 
 
     def load_menu_data(self, force_reload:bool=False) -> None:
-        #start loading in a thread,
-        #as this may take a while and
-        #so server startup can complete:
+        # start loading in a thread,
+        # as this may take a while and
+        # so server startup can complete:
         def load() -> None:
             try:
                 self.get_menu_data(force_reload)
@@ -165,7 +169,7 @@ class MenuProvider:
             menu_data = self.menu_data
             try:
                 if self.menu_data is None or force_reload:
-                    from xpra.platform.menu_helper import load_menu  #pylint: disable=import-outside-toplevel
+                    from xpra.platform.menu_helper import load_menu  # pylint: disable=import-outside-toplevel
                     self.menu_data = load_menu()
                     add_work_item(self.got_menu_data)
             finally:
@@ -181,7 +185,7 @@ class MenuProvider:
         return False
 
     def clear_cache(self) -> None:
-        from xpra.platform.menu_helper import clear_cache  #pylint: disable=import-outside-toplevel
+        from xpra.platform.menu_helper import clear_cache  # pylint: disable=import-outside-toplevel
         log("%s()", clear_cache)
         clear_cache()
 
@@ -201,45 +205,42 @@ class MenuProvider:
         self.load_menu_data(True)
         return False
 
-
-    def get_menu_icon(self, category_name, app_name):
+    def get_menu_icon(self, category_name: str, app_name: str) -> tuple[str, bytes]:
         xdg_menu = self.get_menu_data()
         if not xdg_menu:
-            return None, None
+            return "", b""
         category = xdg_menu.get(category_name)
         if not category:
             log("get_menu_icon: invalid menu category '%s'", category_name)
-            return None, None
+            return "", b""
         if app_name is None:
             return category.get("IconType"), category.get("IconData")
         entries = category.get("Entries")
         if not entries:
             log("get_menu_icon: no entries for category '%s'", category_name)
-            return None, None
+            return "", b""
         app = entries.get(app_name)
         if not app:
             log("get_menu_icon: no matching application for '%s' in category '%s'",
                 app_name, category_name)
-            return None, None
-        return app.get("IconType"), app.get("IconData")
+            return "", b""
+        return app.get("IconType", ""), app.get("IconData", b"")
 
-
-    def get_desktop_sessions(self, force_reload:bool=False, remove_icons:bool=False) -> dict[str,Any]:
+    def get_desktop_sessions(self, force_reload: bool = False, remove_icons: bool = False) -> dict[str, Any]:
         if not POSIX or OSX:
             return {}
         if force_reload or self.desktop_sessions is None:
-            from xpra.platform.posix.menu_helper import load_desktop_sessions  #pylint: disable=import-outside-toplevel
+            from xpra.platform.posix.menu_helper import load_desktop_sessions  # pylint: disable=import-outside-toplevel
             self.desktop_sessions = load_desktop_sessions()
         desktop_sessions = self.desktop_sessions
         if remove_icons:
             desktop_sessions = noicondata(desktop_sessions)
         return desktop_sessions
 
-    def get_desktop_menu_icon(self, sessionname:str):
+    def get_desktop_menu_icon(self, sessionname: str) -> tuple[str, bytes]:
         desktop_sessions = self.get_desktop_sessions(False) or {}
         de = desktop_sessions.get(sessionname, {})
-        return de.get("IconType"), de.get("IconData")
+        return de.get("IconType", ""), de.get("IconData")
 
-
-    def get_info(self, _proto) -> dict[str,Any]:
+    def get_info(self, _proto) -> dict[str, Any]:
         return self.get_menu_data(remove_icons=True)
