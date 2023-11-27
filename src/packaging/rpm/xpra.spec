@@ -917,7 +917,7 @@ fi
 
 
 %changelog
-* Wed Nov 15 2023 Antoine Martin <antoine@xpra.org> 3.1.6-10.1xpra1
+* Mon Nov 27 2023 Antoine Martin <antoine@xpra.org> 3.1.6-10.1xpra1
 - major fixes:
     some `scroll` screen updates not flushed
     crashes with newer versions of GI / GTK
@@ -925,7 +925,7 @@ fi
     RandR must re-use an existing mode if it exists
     honour all 'start' options with remote starts
 - build, packaging and platforms:
-    library updates: ffmpeg 6.1, python2 dbus 1.2.18, python3 pycuda 2023.1, pbr 6.0, pyxdg 0.28, pynvml 12.535.133, libwebp 1.3.2, libvpx 1.13.0, pyopengl 3.1.7, cython 3.0.5 and 0.29.36
+    library updates: ffmpeg 6.1, python2 dbus 1.2.18, python3 pycuda 2023.1 (2022.1 for python2), pbr 6.0, pyxdg 0.28, pynvml 12.535.133, libwebp 1.3.2, libvpx 1.13.1, pyopengl 3.1.7 (3.1.6 for RHEL7), cython 3.0.6 and 0.29.36, dummy driver 0.4.1
     cx_Freeze packaging workarounds for python2 MS Windows builds
     ensure `freetype2`, `cairo` and `certifi` are bundled in
     python 3.12 compatibility
@@ -934,6 +934,8 @@ fi
     drop support for Fedora versions older than 37
     missing DEB pkgconf dependency
     Cython 3.x and 0.29.x compatibility
+    remove support for Debian Stretch
+    rely on distro DEB packages for python-opengl, python-lz4, rencode, xserver-xorg-video-dummy
     build with Cython 3.x for Python 3 on Debian
     more reliable ARCH detection
     don't enable dbus module on MacOS or MS Windows
@@ -946,6 +948,7 @@ fi
     honour clipboard size limits
     shortcut out if not binding to any local sockets
     dpi values must be rounded to integers
+    rencodeplus capability validation
 - trays and notifications:
     avoid None value errors with MS Windows native notifier
     prefer native system trays to Gtk's StatusIcon, except on X11
