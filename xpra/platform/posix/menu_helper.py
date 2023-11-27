@@ -74,7 +74,7 @@ def export(entry, properties : tuple[str, ...]) -> dict[str,Any]:
     return props
 
 
-MAX_THEMES : int = 2
+MAX_THEMES : int = 8
 IconTheme : type | None = None
 Config : type | None = None
 themes : dict[str, Any] = {}
