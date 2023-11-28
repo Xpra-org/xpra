@@ -198,7 +198,7 @@ def find_pixmap_icon(*names):
     pixmaps_dirs += (pixmaps_dir, os.path.join(pixmaps_dir, "comps"))
     for d in pixmaps_dirs:
         if not os.path.exists(d) or not os.path.isdir(d):
-            return None
+            continue
         for name in names:
             for ext in EXTENSIONS:
                 fn = os.path.join(d, f"{name}.{ext}")
