@@ -175,32 +175,33 @@ def load_entry_icon(props : dict):
     return props
 
 
-def find_icon(*names):
+def find_icon(*names) -> str:
     if not EXPORT_ICONS:
-        return None
+        return ""
     return find_resources_icon(*names) or \
         find_pixmap_icon(*names) or \
         find_theme_icon(*names) or \
         find_glob_icon("apps", *names)
 
 
-def find_resources_icon(*names):
+def find_resources_icon(*names) -> str:
     if not LOAD_FROM_RESOURCES:
-        return None
+        return ""
     # loads the icon from our own list of icons:
     for name in names:
         fn = get_icon_filename(name)
         if fn and os.path.exists(fn):
             return fn
-    return None
+    return ""
 
 
-def find_pixmap_icon(*names):
+def find_pixmap_icon(*names) -> str:
     if not LOAD_FROM_PIXMAPS:
-        return None
+        return ""
     pixmaps_dirs = [d + '/icons' for d in os.environ.get("XDG_DATA_DIRS", "").split(":") if d]
     pixmaps_dir = f"{sys.prefix}/share/pixmaps"
-    pixmaps_dirs += (pixmaps_dir, os.path.join(pixmaps_dir, "comps"))
+    icons_dir = f"{sys.prefix}/share/icons"
+    pixmaps_dirs += (pixmaps_dir, os.path.join(pixmaps_dir, "comps"), icons_dir)
     for d in pixmaps_dirs:
         if not os.path.exists(d) or not os.path.isdir(d):
             continue
@@ -209,21 +210,21 @@ def find_pixmap_icon(*names):
                 fn = os.path.join(d, f"{name}.{ext}")
                 if fn and os.path.exists(fn):
                     return fn
-    return None
+    return ""
 
 
-def find_theme_icon(*names):
+def find_theme_icon(*names) -> str:
     if not LOAD_FROM_THEME:
-        return None
+        return ""
     if not (IconTheme and Config and themes):
-        return None
+        return ""
     size = Config.icon_size
     for name in names:
         for theme in themes.values():
             fn = IconTheme.LookupIcon(name, size, theme=theme, extensions=EXTENSIONS)
             if fn and os.path.exists(fn):
                 return fn
-    return None
+    return ""
 
 
 def find_glob_icon(*names, category: str = "categories"):

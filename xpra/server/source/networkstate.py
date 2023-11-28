@@ -27,28 +27,28 @@ class NetworkStateMixin(StubSourceMixin):
     def is_needed(cls, caps : typedict) -> bool:
         return (
                 caps.boolget("network-state") or
-                typedict(caps.dictget("network") or {}).intget("pings")>0 or
-                caps.boolget("ping-echo-sourceid")      #legacy clients
+                typedict(caps.dictget("network") or {}).intget("pings") > 0 or
+                caps.boolget("ping-echo-sourceid")      # legacy clients
         )
 
     def init_state(self) -> None:
         self.last_ping_echoed_time = 0
-        self.check_ping_echo_timers : dict[int,int] = {}
+        self.check_ping_echo_timers : dict[int, int] = {}
         self.ping_timer = 0
         self.bandwidth_limit = 0
         self.client_load = (0,0,0)
-        self.client_connection_data : dict[str,Any] = {}
+        self.client_connection_data : dict[str, Any] = {}
 
     def cleanup(self) -> None:
         self.cancel_ping_echo_timers()
         self.cancel_ping_timer()
 
-    def get_caps(self) -> dict[str,Any]:
+    def get_caps(self) -> dict[str, Any]:
         return {"ping-echo-sourceid" : True}
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         lpe = 0
-        if self.last_ping_echoed_time>0:
+        if self.last_ping_echoed_time > 0:
             lpe = int(monotonic()*1000-self.last_ping_echoed_time)
         info = {
                 "bandwidth-limit"   : {
@@ -62,7 +62,7 @@ class NetworkStateMixin(StubSourceMixin):
     # pings:
     def ping(self) -> None:
         self.ping_timer = 0
-        #NOTE: all ping time/echo time/load avg values are in milliseconds
+        # NOTE: all ping time/echo time/load avg values are in milliseconds
         now_ms = int(1000*monotonic())
         log("sending ping to %s with time=%s", self.protocol, now_ms)
         self.send_async("ping", now_ms, int(time.time()*1000), will_have_more=False)
@@ -82,20 +82,20 @@ class NetworkStateMixin(StubSourceMixin):
             self.source_remove(t)
 
     def process_ping(self, time_to_echo, sid) -> None:
-        l1,l2,l3 = 0,0,0
+        l1, l2, l3 = 0, 0, 0
         cl = -1
         if PING_DETAILS:
-            #send back the load average:
+            # send back the load average:
             if POSIX:
                 fl1, fl2, fl3 = os.getloadavg()
-                l1,l2,l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
-            #and the last client ping latency we measured (if any):
+                l1, l2, l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
+            # and the last client ping latency we measured (if any):
             stats = getattr(self, "statistics", None)
             if stats and stats.client_ping_latency:
                 _, cl = stats.client_ping_latency[-1]
                 cl = int(1000.0*cl)
         self.send_async("ping_echo", time_to_echo, l1, l2, l3, cl, sid, will_have_more=False)
-        #if the client is pinging us, ping it too:
+        # if the client is pinging us, ping it too:
         if not self.ping_timer:
             self.ping_timer = self.timeout_add(500, self.ping)
 
