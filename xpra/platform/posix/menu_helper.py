@@ -18,7 +18,7 @@ from typing import Any
 from collections.abc import Generator
 
 from xpra.util.env import envbool
-from xpra.os_util import OSEnvContext, get_saved_env, first_time
+from xpra.os_util import OSEnvContext, IgnoreWarningsContext, get_saved_env, first_time
 from xpra.codecs import icon_util
 from xpra.platform.paths import get_icon_filename
 from xpra.log import Logger
@@ -426,7 +426,8 @@ def load_xdg_menu_data():
                 try:
                     log("parsing xdg menu data for prefix %r with XDG_CONFIG_DIRS=%s and XDG_MENU_PREFIX=%s",
                         prefix, os.environ.get("XDG_CONFIG_DIRS"), os.environ.get("XDG_MENU_PREFIX"))
-                    menu = parse()
+                    with IgnoreWarningsContext():
+                        menu = parse()
                     break
                 except Exception as e:
                     log("load_xdg_menu_data()", exc_info=True)
