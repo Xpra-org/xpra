@@ -1,19 +1,9 @@
 %define _disable_source_fetch 0
-%if "%{getenv:PYTHON3}" == ""
-echo this must be built for the not default python3
-exit
-%global python3 python3
-%else
-%global python3 %{getenv:PYTHON3}
-%undefine __pythondist_requires
-%undefine __python_requires
-%define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
-%endif
-%define python3_version %(%{python3} -c 'import sys;vi=sys.version_info;print(f"{vi[0]}.{vi[1]}")')
-%define python3_minor %(%{python3} -c 'import sys;vi=sys.version_info;print(f"{vi[1]}")')
+%define python3_version %(python3 -c 'import sys;vi=sys.version_info;print(f"{vi[0]}.{vi[1]}")')
+%define python3_minor %(python3 -c 'import sys;vi=sys.version_info;print(f"{vi[1]}")')
 
 %global pypi_name wheel
-Name:           %{python3}-%{pypi_name}
+Name:           python3-%{pypi_name}
 Release:        2%{?dist}
 %if 0%{python3_minor} < 7
 Version:        0.33.6
@@ -24,14 +14,14 @@ Source0:        https://files.pythonhosted.org/packages/fb/d0/0b4c18a0b85c20233b
 %endif
 Summary:        Built-package format for Python
 Provides:       bundled(python3dist(packaging)) = 20.9
-BuildRequires:  %{python3}-devel
-BuildRequires:  %{python3}-setuptools
+BuildRequires:  python3-devel
+BuildRequires:  python3-setuptools
 License:        MIT and (ASL 2.0 or BSD)
 URL:            https://github.com/pypa/wheel
 BuildArch:      noarch
 
 
-%description -n %{python3}-%{pypi_name}
+%description -n python3-%{pypi_name}
 Wheel is the reference implementation of the Python wheel packaging standard,
 as defined in PEP 427.
 
@@ -56,11 +46,11 @@ fi
 
 
 %build
-%{python3} ./setup.py build
+python3 ./setup.py build
 
 
 %install
-PYTHONPATH="%{buildroot}%{python3_sitelib}" %{python3} ./setup.py install --prefix %{buildroot}/usr
+PYTHONPATH="%{buildroot}%{python3_sitelib}" python3 ./setup.py install --prefix %{buildroot}/usr
 # we don't want that unusable egg directory
 mv %{buildroot}%{python3_sitelib}/%{pypi_name}*egg/%{pypi_name} %{buildroot}%{python3_sitelib}/ || true
 rm -fr %{buildroot}%{python3_sitelib}/%{pypi_name}*egg
@@ -76,11 +66,8 @@ mkdir -p %{buildroot}%{_bindir} >& /dev/null
 echo "#!/usr/bin/python%{python3_version}" > %{buildroot}%{_bindir}/%{pypi_name}
 echo "from wheel.__main__ import main" >> %{buildroot}%{_bindir}/%{pypi_name}
 echo "main()" >> %{buildroot}%{_bindir}/%{pypi_name}
-%if "%{python3}" != "python3"
-mv %{buildroot}%{_bindir}/%{pypi_name} %{buildroot}%{_bindir}/%{pypi_name}-%{python3_version}
-%endif
 
-%files -n %{python3}-%{pypi_name}
+%files -n python3-%{pypi_name}
 %license LICENSE.txt
 %doc README.rst
 %{_bindir}/%{pypi_name}*
@@ -88,6 +75,7 @@ mv %{buildroot}%{_bindir}/%{pypi_name} %{buildroot}%{_bindir}/%{pypi_name}-%{pyt
 
 
 %changelog
+%if 0%{python3_minor} >= 7
 * Sun Nov 19 2023 Antoine Martin <antoine@xpra.org> - 0.41.3-2
 - get rid of unusable egg directory
 
@@ -96,3 +84,8 @@ mv %{buildroot}%{_bindir}/%{pypi_name} %{buildroot}%{_bindir}/%{pypi_name}-%{pyt
 
 * Mon Oct 02 2023 Antoine Martin <antoine@xpra.org> - 0.41.2-1
 - new upstream release
+
+%else
+* Mon Oct 02 2023 Antoine Martin <antoine@xpra.org> - 0.33.6-1
+- new upstream release
+%endif
