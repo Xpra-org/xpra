@@ -19,12 +19,11 @@ import traceback
 
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
 from xpra.gtk.signals import register_os_signals
-from xpra.gtk.util import IgnoreWarningsContext
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, imagebutton, label, choose_file, modify_fg, color_parse
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.str_fn import csv, repr_ellipsized
-from xpra.os_util import WIN32, OSX, gi_import
+from xpra.os_util import WIN32, OSX, gi_import, IgnoreWarningsContext
 from xpra.net.common import DEFAULT_PORT
 from xpra.util.thread import start_thread
 from xpra.gtk.dialogs.about import about

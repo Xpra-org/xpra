@@ -17,12 +17,12 @@ from cairo import ( #pylint: disable=no-name-in-module
     )
 from gi.repository import Gtk, Gdk, Gio  # @UnresolvedImport
 
-from xpra.os_util import bytestostr, strtobytes, is_X11, is_Wayland, WIN32, OSX, POSIX, first_time
+from xpra.os_util import bytestostr, strtobytes, is_X11, is_Wayland, WIN32, OSX, POSIX, first_time, ignorewarnings
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.gtk.gobject import no_arg_signal, one_arg_signal
-from xpra.gtk.util import ds_inited, get_default_root_window, GRAB_STATUS_STRING, ignorewarnings
+from xpra.gtk.util import ds_inited, get_default_root_window, GRAB_STATUS_STRING
 from xpra.gtk.window import set_visual
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.gtk.keymap import KEY_TRANSLATIONS

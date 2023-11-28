@@ -9,10 +9,9 @@ from collections.abc import Callable
 
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envbool
-from xpra.os_util import OSX, bytestostr, gi_import
+from xpra.os_util import OSX, bytestostr, gi_import, IgnoreWarningsContext
 from xpra.codecs.icon_util import INKSCAPE_RE
 from xpra.gtk.widget import scaled_image, menuitem
-from xpra.gtk.util import IgnoreWarningsContext
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.gtk.dialogs.about import about, close_about
 from xpra.platform.gui import get_icon_size

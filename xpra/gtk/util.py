@@ -3,11 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import warnings
-from contextlib import AbstractContextManager
-from typing import Any
-
-from xpra.os_util import OSX, POSIX, is_X11, first_time, gi_import
+from xpra.os_util import OSX, POSIX, is_X11, first_time, gi_import, IgnoreWarningsContext
 from xpra.log import Logger
 
 Gdk = gi_import("Gdk")
@@ -79,27 +75,6 @@ def init_display_source() -> None:
 
 def ds_inited() -> bool:
     return dsinit
-
-
-class IgnoreWarningsContext(AbstractContextManager):
-
-    def __enter__(self):
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        warnings.filterwarnings("default")
-
-    def __repr__(self):
-        return "IgnoreWarningsContext"
-
-
-def ignorewarnings(fn, *args) -> Any:
-    import warnings
-    try:
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
-        return fn(*args)
-    finally:
-        warnings.filterwarnings("default")
 
 
 def main():

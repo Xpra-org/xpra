@@ -9,12 +9,11 @@ from time import sleep, monotonic
 
 from xpra import __version__
 from xpra.util.env import envint, envbool
-from xpra.os_util import SIGNAMES, OSX, WIN32, gi_import
+from xpra.os_util import SIGNAMES, OSX, WIN32, gi_import, ignorewarnings
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.common import SPLASH_EXIT_DELAY
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
-from xpra.gtk.util import ignorewarnings
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.signals import install_signal_handlers
 from xpra.gtk.css_overrides import inject_css_overrides

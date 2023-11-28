@@ -19,7 +19,7 @@ from xpra.os_util import (
     bytestostr, strtobytes, memoryview_to_bytes,
     hexstr, load_binary_file, osexpand,
     gi_import,
-    WIN32, OSX, POSIX, is_Wayland, first_time,
+    WIN32, OSX, POSIX, is_Wayland, first_time, IgnoreWarningsContext, ignorewarnings,
 )
 from xpra.net.common import PacketType
 from xpra.common import FULL_INFO, VIDEO_MAX_SIZE, NotificationID, DEFAULT_METADATA_SUPPORTED, noerr
@@ -29,8 +29,7 @@ from xpra.gtk.cursors import cursor_types, get_default_cursor
 from xpra.gtk.util import (
     get_default_root_window, get_root_size,
     GRAB_STATUS_STRING,
-    init_display_source, IgnoreWarningsContext, ignorewarnings,
-)
+    init_display_source, )
 from xpra.gtk.window import GDKWindow
 from xpra.gtk.info import get_monitors_info, get_screen_sizes
 from xpra.gtk.widget import scaled_image, label, color_parse

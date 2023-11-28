@@ -9,8 +9,8 @@ import sys
 from typing import Any
 import cairo
 
-from xpra.gtk.util import get_root_size, get_default_root_window, IgnoreWarningsContext
-from xpra.os_util import WIN32, gi_import
+from xpra.gtk.util import get_root_size, get_default_root_window
+from xpra.os_util import WIN32, gi_import, IgnoreWarningsContext
 from xpra.util.env import envint, envbool
 from xpra.log import Logger
 

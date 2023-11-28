@@ -1089,3 +1089,24 @@ class CaptureStdErr:
             noerr(sys.stderr.write, f"oops: {e}\n")
         if self.savedstderr is not None:
             os.dup2(self.savedstderr, 2)
+
+
+class IgnoreWarningsContext(AbstractContextManager):
+
+    def __enter__(self):
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        warnings.filterwarnings("default")
+
+    def __repr__(self):
+        return "IgnoreWarningsContext"
+
+
+def ignorewarnings(fn, *args) -> Any:
+    import warnings
+    try:
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        return fn(*args)
+    finally:
+        warnings.filterwarnings("default")
