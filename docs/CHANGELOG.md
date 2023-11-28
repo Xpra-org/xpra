@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.4] 2023-11-27
+## [5.0.4] 2023-11-28
 * Major:
     * [missing flush marker with some scroll screen updates](https://github.com/Xpra-org/xpra/commit/ff36bc1a085c6caca3bdb95791c5001c3c6909bb)
     * [fixup tray backport regression](https://github.com/Xpra-org/xpra/commit/6631cfe8b8c228894cd93b679d7ed78ef5715f81)
@@ -51,6 +51,8 @@
     * [opengl test window misnamed](https://github.com/Xpra-org/xpra/commit/62784a7510de5c37b8a15e035040a08106d29151)
     * [try harder to exit more cleanly on error](https://github.com/Xpra-org/xpra/commit/fe64f343f149dc8e2b7a82aeaeef54bdcb8d122d)
 * Cosmetic:
+    * [check all icon directories](https://github.com/Xpra-org/xpra/commit/83ab6c5f21e6546cd459ffb77b70968dbdc1e935) [and themes](https://github.com/Xpra-org/xpra/commit/ec6100cb8a3c12b57c17b9e21d62fecf8209a4a4)
+    * [silence GStreamer warnings with auto source](https://github.com/Xpra-org/xpra/commit/65ec4317a663a56af93890f4b76d48b7fea76ccf)
     * [outdated email address](https://github.com/Xpra-org/xpra/commit/a994becb5c3e2fbd0561d1296814f84e1770084a)
     * [don't warn if `avif` decoder is missing](https://github.com/Xpra-org/xpra/commit/3d919bd6e7f7fe1018800ced86641e48151be900), [same for encoder](https://github.com/Xpra-org/xpra/commit/f829661b87631ceac56522d6260bcfe6ceb7c4df)
     * [add newline to clear stdout](https://github.com/Xpra-org/xpra/commit/00427351e049cab6d1c585be7df366248858321d)

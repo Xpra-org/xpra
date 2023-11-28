@@ -48,6 +48,8 @@ xpra (5.0.4-1) UNRELEASED; urgency=low
     - opengl test window misnamed
     - try harder to exit more cleanly on error
   * Cosmetic:
+    - check all icon directories
+    - silence GStreamer warnings with auto source
     - outdated email address
     - don't warn if `avif` encoder or decoder is missing
     - add newline to clear stdout
@@ -57,7 +59,7 @@ xpra (5.0.4-1) UNRELEASED; urgency=low
     - weird Debian changelog format warning
     - man pages fixes
 
- -- Antoine Martin <antoine@xpra.org>  Mon, 27 Nov 2023 11:42:16 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 28 Nov 2023 18:28:04 +0700
 
 xpra (5.0.3-1) UNRELEASED; urgency=low
   * Major:

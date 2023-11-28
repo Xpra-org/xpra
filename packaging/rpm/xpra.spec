@@ -768,7 +768,7 @@ fi
 
 
 %changelog
-* Mon Nov 27 2023 Antoine Martin <antoine@xpra.org> 5.0.4-10
+* Tue Nov 28 2023 Antoine Martin <antoine@xpra.org> 5.0.4-10
 - Major:
    missing flush marker with some scroll screen updates
    fixup tray backport regression
@@ -818,6 +818,8 @@ fi
    opengl test window misnamed
    try harder to exit more cleanly on error
 - Cosmetic:
+   check all icon directories
+   silence GStreamer warnings with auto source
    outdated email address
    don't warn if `avif` encoder or decoder is missing
    add newline to clear stdout
