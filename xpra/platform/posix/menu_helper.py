@@ -201,7 +201,7 @@ def find_pixmap_icon(*names) -> str:
     pixmaps_dirs = [d + '/icons' for d in os.environ.get("XDG_DATA_DIRS", "").split(":") if d]
     pixmaps_dir = f"{sys.prefix}/share/pixmaps"
     icons_dir = f"{sys.prefix}/share/icons"
-    pixmaps_dirs += (pixmaps_dir, os.path.join(pixmaps_dir, "comps"), icons_dir)
+    pixmaps_dirs += [pixmaps_dir, os.path.join(pixmaps_dir, "comps"), icons_dir]
     for d in pixmaps_dirs:
         if not os.path.exists(d) or not os.path.isdir(d):
             continue
