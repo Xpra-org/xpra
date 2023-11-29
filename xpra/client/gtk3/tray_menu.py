@@ -483,9 +483,8 @@ class GTKTrayMenu(MenuHelper):
         return self.keyboard_shortcuts_menuitem
 
     def make_viewshortcutsmenuitem(self):
-        def show_shortcuts(*_args):
-            self.client.show_shortcuts()
-        return self.menuitem("View Shortcuts", tooltip="Show all active keyboard shortcuts", cb=show_shortcuts)
+        return self.menuitem("View Shortcuts", tooltip="Show all active keyboard shortcuts",
+                             cb=self.client.show_shortcuts)
 
 
     def make_openglmenuitem(self):
@@ -602,7 +601,7 @@ class GTKTrayMenu(MenuHelper):
 
 
     def make_encodingsmenuitem(self):
-        encodings = self.menuitem("Encoding", "encoding.png", "Choose picture data encoding", None)
+        encodings = self.menuitem("Encoding", "encoding.png", "Choose picture data encoding")
         set_sensitive(encodings, False)
         self.encodings_submenu = None
         def set_encodingsmenuitem(*args):
@@ -717,7 +716,7 @@ class GTKTrayMenu(MenuHelper):
 
 
     def make_qualitymenuitem(self):
-        self.quality = self.menuitem("Quality", "slider.png", "Picture quality", None)
+        self.quality = self.menuitem("Quality", "slider.png", "Picture quality")
         set_sensitive(self.quality, False)
         def may_enable_qualitymenu(*_args):
             self.quality.set_submenu(self.make_qualitysubmenu())
@@ -767,7 +766,7 @@ class GTKTrayMenu(MenuHelper):
 
 
     def make_speedmenuitem(self):
-        self.speed = self.menuitem("Speed", "speed.png", "Encoding latency vs size", None)
+        self.speed = self.menuitem("Speed", "speed.png", "Encoding latency vs size")
         set_sensitive(self.speed, False)
         def may_enable_speedmenu(*_args):
             self.speed.set_submenu(self.make_speedsubmenu())
@@ -852,7 +851,7 @@ class GTKTrayMenu(MenuHelper):
         log("mic_off(%s)", args)
         self.client.stop_sending_audio()
     def make_microphonemenuitem(self):
-        microphone = self.menuitem("Microphone", "microphone.png", "Forward audio input to the server", None)
+        microphone = self.menuitem("Microphone", "microphone.png", "Forward audio input to the server")
         set_sensitive(microphone, False)
         def is_microphone_on(*_args):
             return self.client.microphone_enabled
@@ -914,7 +913,7 @@ class GTKTrayMenu(MenuHelper):
         return menu
 
     def make_avsyncmenuitem(self):
-        sync = self.menuitem("Video Sync", "video.png", "Synchronize audio and video", None)
+        sync = self.menuitem("Video Sync", "video.png", "Synchronize audio and video")
         menu = Gtk.Menu()
         current_value = 0
         if not self.client.av_sync:
@@ -1079,7 +1078,7 @@ class GTKTrayMenu(MenuHelper):
         return keyboard_menu_item
 
     def make_layoutsmenuitem(self):
-        keyboard = self.menuitem("Layout", "keyboard.png", "Select your keyboard layout", None)
+        keyboard = self.menuitem("Layout", "keyboard.png", "Select your keyboard layout")
         set_sensitive(keyboard, False)
         self.layout_submenu = Gtk.Menu()
         keyboard.set_submenu(self.layout_submenu)
@@ -1550,4 +1549,4 @@ class GTKTrayMenu(MenuHelper):
 
 
     def make_closemenuitem(self):
-        return self.menuitem("Close Menu", "close.png", None, self.close_menu)
+        return self.menuitem("Close Menu", "close.png", cb=self.close_menu)

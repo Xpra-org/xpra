@@ -374,7 +374,7 @@ class MenuHelper:
         self.close_menu()
         close_about()
 
-    def close_menu(self, *_args) -> None:
+    def close_menu(self) -> None:
         if self.menu_shown:
             self.menu.popdown()
             self.menu_shown = False
@@ -427,7 +427,11 @@ class MenuHelper:
             if icon_name and not image:
                 icon_size = self.menu_icon_size or get_icon_size()
                 image = self.get_image(icon_name, icon_size)
-        return menuitem(title, image, tooltip, cb)
+
+        # Gtk adds ImageMenuItem as arguments to the callback, but we don't want any:
+        def menu_cb(*_args):
+            cb()
+        return menuitem(title, image, tooltip, menu_cb)
 
     def checkitem(self, title, cb:Callable|None=None, active=False) -> Gtk.CheckMenuItem:
         """ Utility method for easily creating a CheckMenuItem """
@@ -440,17 +444,15 @@ class MenuHelper:
 
 
     def make_aboutmenuitem(self) -> Gtk.ImageMenuItem:
-        def show_about(*_args):
-            about()
-        return self.menuitem("About Xpra", "xpra.png", None, show_about)
+        return self.menuitem("About Xpra", "xpra.png", cb=about)
 
     def make_updatecheckmenuitem(self) -> Gtk.ImageMenuItem:
-        def show_update_window(*_args):
+        def show_update_window():
             from xpra.gtk.dialogs.update_status import getUpdateStatusWindow
             w = getUpdateStatusWindow()
             w.show()
             w.check()
-        return self.menuitem("Check for updates", "update.png", None, show_update_window)
+        return self.menuitem("Check for updates", "update.png", cb=show_update_window)
 
 
     def make_qrmenuitem(self) -> Gtk.ImageMenuItem:
@@ -460,10 +462,10 @@ class MenuHelper:
             log(f"no qrcode support {e}")
             return None
         from xpra.gtk.dialogs.qrcode import show_qr
-        def show(*_args):
+        def show():
             uri = self.client.display_desc.get("display_name")
             show_qr(uri)
-        qr_menuitem = self.menuitem("Show QR connection string", "qr.png", None, show)
+        qr_menuitem = self.menuitem("Show QR connection string", "qr.png", cb=show)
         log("make_qrmenuitem() qrencode.encode_image=%s", encode_image)
         if encode_image:
             def with_connection(*_args):
@@ -486,19 +488,17 @@ class MenuHelper:
         return sessioninfomenuitem
 
     def make_bugreportmenuitem(self) -> Gtk.ImageMenuItem:
-        def show_bug_report_cb(*_args):
-            self.show_bug_report()
-        return  self.menuitem("Bug Report", "bugs.png", None, show_bug_report_cb)
+        return  self.menuitem("Bug Report", "bugs.png", cb=self.show_bug_report)
 
     def make_docsmenuitem(self) -> Gtk.ImageMenuItem:
-        def show_docs(*_args):
+        def show_docs():
             from xpra.scripts.main import run_docs
             from xpra.util.thread import start_thread
             start_thread(run_docs, "open documentation", True)
-        return self.menuitem("Documentation", "documentation.png", None, show_docs)
+        return self.menuitem("Documentation", "documentation.png", cb=show_docs)
 
     def make_html5menuitem(self) -> Gtk.ImageMenuItem:
-        def show_html5(*_args):
+        def show_html5():
             from xpra.scripts.main import run_html5
             from xpra.util.thread import start_thread
             url_options = {}
@@ -510,7 +510,7 @@ class MenuHelper:
             except Exception:
                 pass
             start_thread(run_html5, "open HTML5 client", True, args=(url_options, ))
-        return self.menuitem("HTML5 client", "browser.png", None, show_html5)
+        return self.menuitem("HTML5 client", "browser.png", cb=show_html5)
 
     def make_closemenuitem(self) -> Gtk.ImageMenuItem:
-        return self.menuitem("Close Menu", "close.png", None, self.close_menu)
+        return self.menuitem("Close Menu", "close.png", cb=self.close_menu)
