@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 5.0.4
+%define version 5.0.5
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild
@@ -768,6 +768,8 @@ fi
 
 
 %changelog
+* Wed Nov 29 2023 Antoine Martin <antoine@xpra.org> 5.0.5-10
+- TODO
 * Tue Nov 28 2023 Antoine Martin <antoine@xpra.org> 5.0.4-10
 - Major:
    missing flush marker with some scroll screen updates

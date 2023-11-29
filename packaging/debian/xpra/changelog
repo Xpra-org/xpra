@@ -1,3 +1,8 @@
+xpra (5.0.5-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 29 Nov 2023 13:00:52 +0700
+
 xpra (5.0.4-1) UNRELEASED; urgency=low
   * Major:
     - missing flush marker with some scroll screen updates

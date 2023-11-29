@@ -1,5 +1,8 @@
 # Changelog
 
+## [5.0.5] 2023-11-29
+* TODO
+
 ## [5.0.4] 2023-11-28
 * Major:
     * [missing flush marker with some scroll screen updates](https://github.com/Xpra-org/xpra/commit/ff36bc1a085c6caca3bdb95791c5001c3c6909bb)
