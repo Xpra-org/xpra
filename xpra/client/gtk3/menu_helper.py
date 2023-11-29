@@ -442,7 +442,9 @@ class MenuHelper:
 
 
     def make_aboutmenuitem(self) -> Gtk.ImageMenuItem:
-        return self.menuitem("About Xpra", "xpra.png", None, about)
+        def show_about(*_args):
+            about()
+        return self.menuitem("About Xpra", "xpra.png", None, show_about)
 
     def make_updatecheckmenuitem(self) -> Gtk.ImageMenuItem:
         def show_update_window(*_args):
