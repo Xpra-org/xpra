@@ -218,7 +218,7 @@ def find_theme_icon(*names) -> str:
         return ""
     if not (IconTheme and Config and themes):
         return ""
-    size = Config.icon_size
+    size = Config.icon_size or 32
     for name in names:
         for theme in themes.values():
             fn = IconTheme.LookupIcon(name, size, theme=theme, extensions=EXTENSIONS)
