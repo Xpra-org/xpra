@@ -211,7 +211,7 @@ def find_theme_icon(*names):
         return None
     if not (IconTheme and Config and themes):
         return None
-    size = Config.icon_size
+    size = Config.icon_size or 32
     #log.info("IconTheme.LookupIcon%s", (icon_name, size, themes.keys(), ("png", "svg", "xpm")))
     for name in names:
         for theme in themes.values():
