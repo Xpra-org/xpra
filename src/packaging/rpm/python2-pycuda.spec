@@ -21,6 +21,7 @@ Summary:        Python wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
 Source:        	https://files.pythonhosted.org/packages/46/61/47d3235a4c13eec5a5f03594ddb268f4858734e02980afbcd806e6242fa5/pycuda-%{version}.tar.gz
+Patch1:		pycuda-compute2x.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  make
 BuildRequires:  gcc-c++
@@ -39,9 +40,6 @@ Provides:       python-pycuda
 Obsoletes:      python-pycuda
 Conflicts:      python-pycuda
 %else
-BuildRequires:  python2-numpy
-BuildRequires:  boost-python2-devel
-Requires:       python2-numpy
 Requires:       python2-decorator
 Requires:       python2-six
 %endif
@@ -56,6 +54,7 @@ if [ "${sha256}" != "effa3b99b55af67f3afba9b0d1b64b4a0add4dd6a33bdd6786df1aa4cc8
 	exit 1
 fi
 %setup -q -n pycuda-%{version}
+%patch -P 1 -p1
 
 %build
 CUDA_ROOT="/opt/cuda"
