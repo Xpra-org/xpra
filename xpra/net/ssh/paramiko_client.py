@@ -31,7 +31,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, envfloat
 from xpra.log import Logger
 
-#pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel
 
 log = Logger("network", "ssh")
 if log.is_debug_enabled():
@@ -45,14 +45,14 @@ TIMEOUT = envint("XPRA_SSH_TIMEOUT", 60)
 VERIFY_HOSTKEY = envbool("XPRA_SSH_VERIFY_HOSTKEY", True)
 VERIFY_STRICT = envbool("XPRA_SSH_VERIFY_STRICT", False)
 ADD_KEY = envbool("XPRA_SSH_ADD_KEY", True)
-#which authentication mechanisms are enabled with paramiko:
+# which authentication mechanisms are enabled with paramiko:
 NONE_AUTH = envbool("XPRA_SSH_NONE_AUTH", True)
 PASSWORD_AUTH = envbool("XPRA_SSH_PASSWORD_AUTH", True)
 AGENT_AUTH = envbool("XPRA_SSH_AGENT_AUTH", True)
 KEY_AUTH = envbool("XPRA_SSH_KEY_AUTH", True)
 PASSWORD_RETRY = envint("XPRA_SSH_PASSWORD_RETRY", 2)
 SSH_AGENT = envbool("XPRA_SSH_AGENT", False)
-assert PASSWORD_RETRY>=0
+assert PASSWORD_RETRY >= 0
 LOG_FAILED_CREDENTIALS = envbool("XPRA_LOG_FAILED_CREDENTIALS", False)
 TEST_COMMAND_TIMEOUT = envint("XPRA_SSH_TEST_COMMAND_TIMEOUT", 10)
 EXEC_STDOUT_TIMEOUT = envfloat("XPRA_SSH_EXEC_STDOUT_TIMEOUT", 2)
@@ -88,7 +88,6 @@ class SSHSocketConnection(SocketConnection):
         start_thread(self._stderr_reader, "ssh-stderr-reader", daemon=True)
 
     def _stderr_reader(self):
-        #stderr = self._socket.makefile_stderr(mode="rb", bufsize=1)
         chan = self._socket
         stderr = chan.makefile_stderr("rb", 1)
         while self.active:
@@ -105,12 +104,12 @@ class SSHSocketConnection(SocketConnection):
             return b""
         return self._raw_socket.recv(n, socket.MSG_PEEK)
 
-    def get_socket_info(self) -> dict[str,Any]:
+    def get_socket_info(self) -> dict[str, Any]:
         if not self._raw_socket:
             return {}
         return self.do_get_socket_info(self._raw_socket)
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         i = super().get_info()
         s = self._socket
         if s:
@@ -129,13 +128,13 @@ class SSHProxyCommandConnection(SSHSocketConnection):
     def error_is_closed(self, e) -> bool:
         p = self.process
         if p:
-            #if the process has terminated,
-            #then the connection must be closed:
+            # if the process has terminated,
+            # then the connection must be closed:
             if p[0].poll() is not None:
                 return True
         return super().error_is_closed(e)
 
-    def get_socket_info(self) -> dict[str,Any]:
+    def get_socket_info(self) -> dict[str, Any]:
         p = self.process
         if not p:
             return {}
@@ -151,13 +150,13 @@ class SSHProxyCommandConnection(SSHSocketConnection):
     def close(self) -> None:
         try:
             super().close()
-        except Exception:
+        except OSError:
             # this can happen if the proxy command gets a SIGINT,
             # it's closed already and we don't care
             log("SSHProxyCommandConnection.close()", exc_info=True)
 
 
-def safe_lookup(config_obj, host:str) -> dict[Any, Any]:
+def safe_lookup(config_obj, host: str) -> dict[Any, Any]:
     try:
         return dict(config_obj.lookup(host) or {})
     except ImportError as e:
@@ -175,25 +174,26 @@ def safe_lookup(config_obj, host:str) -> dict[Any, Any]:
 
 def connect_to(display_desc):
     log(f"connect_to({display_desc})")
-    #plain socket attributes:
+    # plain socket attributes:
     host = display_desc["host"]
     port = display_desc.get("port", 22)
-    #ssh and command attributes:
+    # ssh and command attributes:
     username = display_desc.get("username") or get_username()
     if "proxy_host" in display_desc:
         display_desc.setdefault("proxy_username", get_username())
     password = display_desc.get("password", "")
     remote_xpra = display_desc["remote_xpra"]
-    proxy_command = display_desc["proxy_command"]       #ie: "_proxy_start"
+    proxy_command = display_desc["proxy_command"]       # ie: "_proxy_start"
     socket_dir = display_desc.get("socket_dir", "")
     display = display_desc.get("display", "")
-    display_as_args = display_desc["display_as_args"]   #ie: "--start=xterm :10"
+    display_as_args = display_desc["display_as_args"]   # ie: "--start=xterm :10"
     paramiko_config = display_desc.copy()
     paramiko_config.update(display_desc.get("paramiko-config", {}))
     socket_info = {
             "host"  : host,
             "port"  : port,
             }
+
     def get_keyfiles(host_config, config_name="key"):
         keyfiles = (host_config or {}).get("identityfile") or get_default_keyfiles()
         keyfile = paramiko_config.get(config_name)
@@ -201,13 +201,14 @@ def connect_to(display_desc):
             keyfiles.insert(0, keyfile)
         return keyfiles
 
-    def fail(msg:str) -> None:
+    def fail(msg: str) -> None:
         log("connect_to(%s)", display_desc, exc_info=True)
         raise InitExit(ExitCode.SSH_FAILURE, msg) from None
 
     with nogssapi_context():
         from paramiko import SSHConfig, ProxyCommand
         ssh_config = SSHConfig()
+
         def ssh_lookup(key):
             return safe_lookup(ssh_config, key)
         user_config_file = os.path.expanduser("~/.ssh/config")
@@ -243,6 +244,7 @@ def connect_to(display_desc):
                     log(f"ProxyCommand({proxycommand})={sock}")
                     from xpra.util.child_reaper import getChildReaper
                     cmd = getattr(sock, "cmd", [])
+
                     def proxycommand_ended(proc):
                         log(f"proxycommand_ended({proc}) exit code={proc.poll()}")
                     getChildReaper().add_process(sock.process, "paramiko-ssh-client", cmd, True, True,
@@ -256,10 +258,10 @@ def connect_to(display_desc):
                     ssh_client.connect(host, port, sock=sock)
                     transport = ssh_client.get_transport()
                     do_connect_to(transport, host,
-                                               username, password,
-                                               host_config or ssh_lookup("*"),
-                                               proxy_keys,
-                                               paramiko_config)
+                                  username, password,
+                                  host_config or ssh_lookup("*"),
+                                  proxy_keys,
+                                  paramiko_config)
                     chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
                     peername = (host, port)
                     conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
@@ -284,29 +286,29 @@ def connect_to(display_desc):
             if not sock:
                 fail(f"SSH proxy transport failed to connect to {proxy_host}:{proxy_port}")
             middle_transport = do_connect(sock, proxy_host,
-                                                       proxy_username, proxy_password,
-                                                       ssh_lookup(host) or ssh_lookup("*"),
-                                                       proxy_keys,
-                                                       paramiko_config)
+                                          proxy_username, proxy_password,
+                                          ssh_lookup(host) or ssh_lookup("*"),
+                                          proxy_keys,
+                                          paramiko_config)
             log("Opening proxy channel")
             chan_to_middle = middle_transport.open_channel("direct-tcpip", (host, port), ("localhost", 0))
             transport = do_connect(chan_to_middle, host,
-                                                username, password,
-                                                host_config or ssh_lookup("*"),
-                                                keys,
-                                                paramiko_config)
+                                   username, password,
+                                   host_config or ssh_lookup("*"),
+                                   keys,
+                                   paramiko_config)
             chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
             peername = (host, port)
             conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
-            conn.target = host_target_string("ssh", username, host, port, display) \
-                            + " via " + \
-                            host_target_string("ssh", proxy_username, proxy_host, proxy_port, None)
+            to_str = host_target_string("ssh", username, host, port, display)
+            proxy_str = host_target_string("ssh", proxy_username, proxy_host, proxy_port, None)
+            conn.target = f"{to_str} via {proxy_str}"
             conn.timeout = SOCKET_TIMEOUT
             conn.start_stderr_reader()
             return conn
 
-        #plain TCP connection to the server,
-        #we open it then give the socket to paramiko:
+        # plain TCP connection to the server,
+        # we open it then give the socket to paramiko:
         auth_modes = get_auth_modes(paramiko_config, host_config, password)
         log(f"authentication modes={auth_modes}")
         sock = None
@@ -320,10 +322,10 @@ def connect_to(display_desc):
             log(f"paramiko socket_connect: sockname={sockname}, peername={peername}")
             try:
                 transport = do_connect(sock, host, username, password,
-                                                    host_config or ssh_lookup("*"),
-                                                    keys,
-                                                    paramiko_config,
-                                                    auth_modes)
+                                       host_config or ssh_lookup("*"),
+                                       keys,
+                                       paramiko_config,
+                                       auth_modes)
             except SSHAuthenticationError as e:
                 log(f"paramiko authentication errors on socket {sock} with modes {auth_modes}: {e.errors}",
                     exc_info=True)
@@ -331,8 +333,8 @@ def connect_to(display_desc):
                 for errs in e.errors.values():
                     pw_errors += errs
                 if ("key" in auth_modes or "agent" in auth_modes) and PARAMIKO_SESSION_LOST in pw_errors:
-                    #try connecting again but without 'key' and 'agent' authentication:
-                    #see https://github.com/Xpra-org/xpra/issues/3223
+                    # try connecting again but without 'key' and 'agent' authentication:
+                    # see https://github.com/Xpra-org/xpra/issues/3223
                     for m in ("key", "agent"):
                         try:
                             auth_modes.remove(m)
@@ -349,13 +351,13 @@ def connect_to(display_desc):
 
         remote_port = display_desc.get("remote_port", 0)
         if remote_port:
-            #we want to connect directly to a remote port,
-            #we don't need to run a command
+            # we want to connect directly to a remote port,
+            # we don't need to run a command
             chan = transport.open_channel("direct-tcpip", ("localhost", remote_port), ('localhost', 0))
             log(f"direct channel to remote port {remote_port} : {chan}")
         else:
             chan = run_remote_xpra(transport, proxy_command, remote_xpra,
-                                            socket_dir, display_as_args, paramiko_config)
+                                   socket_dir, display_as_args, paramiko_config)
         conn = SSHSocketConnection(chan, sock, sockname, peername, (host, port), socket_info)
         conn.target = host_target_string("ssh", username, host, port, display)
         conn.timeout = SOCKET_TIMEOUT
@@ -365,15 +367,19 @@ def connect_to(display_desc):
 
 AUTH_MODES : tuple[str, ...] = ("none", "agent", "key", "password")
 
-def get_auth_modes(paramiko_config, host_config, password) -> list[str]:
-    def configvalue(key):
-        #if the paramiko config has a setting, honour it:
+
+def get_auth_modes(paramiko_config, host_config, password: str) -> list[str]:
+
+    def configvalue(key: str):
+        # if the paramiko config has a setting, honour it:
         if paramiko_config and key in paramiko_config:
             return paramiko_config.get(key)
-        #fallback to the value from the host config:
+        # fallback to the value from the host config:
         return (host_config or {}).get(key)
-    def configbool(key, default_value=True):
+
+    def configbool(key: str, default_value=True):
         return parse_bool(key, configvalue(key), default_value)
+
     auth_str = configvalue("auth")
     if auth_str:
         return auth_str.split("+")
@@ -410,8 +416,8 @@ class iauthhandler:
         return p
 
 
-def do_connect(chan, host:str, username:str, password:str,
-                            host_config=None, keyfiles=None, paramiko_config=None, auth_modes=AUTH_MODES):
+def do_connect(chan, host: str, username: str, password: str,
+               host_config=None, keyfiles=None, paramiko_config=None, auth_modes=AUTH_MODES):
     from paramiko import SSHException
     from paramiko.transport import Transport
     transport = Transport(chan)
@@ -423,24 +429,27 @@ def do_connect(chan, host:str, username:str, password:str,
         log("SSH negotiation failed", exc_info=True)
         raise InitExit(ExitCode.SSH_FAILURE, "SSH negotiation failed: %s" % e) from None
     return do_connect_to(transport, host, username, password,
-                                      host_config, keyfiles, paramiko_config, auth_modes)
+                         host_config, keyfiles, paramiko_config, auth_modes)
+
 
 def do_connect_to(transport, host:str, username:str, password:str,
-                               host_config=None, keyfiles=None, paramiko_config=None, auth_modes=AUTH_MODES):
+                  host_config=None, keyfiles=None, paramiko_config=None, auth_modes=AUTH_MODES):
     from paramiko import SSHException, PasswordRequiredException
     from paramiko.agent import Agent
     from paramiko.hostkeys import HostKeys
     log("do_connect_to%s", (transport, host, username, password, host_config, keyfiles, paramiko_config))
 
-    def configvalue(key):
-        #if the paramiko config has a setting, honour it:
+    def configvalue(key: str) -> Any:
+        # if the paramiko config has a setting, honour it:
         if paramiko_config and key in paramiko_config:
             return paramiko_config.get(key)
-        #fallback to the value from the host config:
+        # fallback to the value from the host config:
         return (host_config or {}).get(key)
-    def configbool(key, default_value=True) -> bool:
+
+    def configbool(key: str, default_value=True) -> bool:
         return parse_bool(key, configvalue(key), default_value)
-    def configint(key, default_value=0) -> int:
+
+    def configint(key: str, default_value=0) -> int:
         v = configvalue(key)
         if v is None:
             return default_value
@@ -468,6 +477,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
         log("host keys=%s", host_keys)
         keys = safe_lookup(host_keys, host)
         known_host_key = keys.get(host_key.get_name())
+
         def keyname():
             return host_key.get_name().replace("ssh-", "")
         if known_host_key and host_key==known_host_key:
@@ -484,6 +494,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
                     log.info("cannot check SSHFP DNS records")
                     log.info(" %s", e)
             log("dnscheck=%s", dnscheck)
+
             def adddnscheckinfo(q : list[str]):
                 if dnscheck is not True:
                     if dnscheck:
@@ -492,7 +503,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
                     else:
                         q.append("SSHFP validation failed")
             if dnscheck is True:
-                #DNSSEC provided a matching record
+                # DNSSEC provided a matching record
                 log.info("found a valid SSHFP record for host %s", host)
             elif known_host_key:
                 log.warn("Warning: SSH server key mismatch")
@@ -507,7 +518,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
                 adddnscheckinfo(qinfo)
                 if configbool("stricthostkeychecking", VERIFY_STRICT):
                     log.warn("Host key verification failed.")
-                    #TODO: show alert with no option to accept key
+                    # TODO: show alert with no option to accept key
                     qinfo += [
                         "Please contact your system administrator.",
                         "Add correct host key in %s to get rid of this message.",
@@ -540,8 +551,8 @@ def do_connect_to(transport, host:str, username:str, password:str,
             if configbool("addkey", ADD_KEY):
                 try:
                     if not host_keys_filename:
-                        #the first one is the default,
-                        #ie: ~/.ssh/known_hosts on posix
+                        # the first one is the default,
+                        # ie: ~/.ssh/known_hosts on posix
                         host_keys_filename = os.path.expanduser(KNOWN_HOSTS[0])
                     log(f"adding {keyname()} key for host {host!r} to {host_keys_filename!r}")
                     if not os.path.exists(host_keys_filename):
@@ -568,8 +579,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
     else:
         log("ssh host key verification skipped")
 
-
-    auth_errors : dict[str,list[str]] = {}
+    auth_errors : dict[str, list[str]] = {}
 
     def auth_agent() -> None:
         agent = Agent()
@@ -587,8 +597,8 @@ def do_connect_to(transport, host:str, username:str, password:str,
                     auth_errors.setdefault("agent", []).append(str(e))
                     log.info("SSH agent key '%s' rejected for user '%s'", keymd5(agent_key), username)
                     log("%s%s", transport.auth_publickey, (username, agent_key), exc_info=True)
-                    if str(e)==PARAMIKO_SESSION_LOST:
-                        #no point in trying more keys
+                    if str(e) == PARAMIKO_SESSION_LOST:
+                        # no point in trying more keys
                         break
             if not transport.is_authenticated():
                 log.info("agent authentication failed, tried %i keys", len(agent_keys))
@@ -657,8 +667,8 @@ def do_connect_to(transport, host:str, username:str, password:str,
                     log(f"key {keyfile_path!r} rejected", exc_info=True)
                     log.info(f"SSH authentication using key {keyfile_path!r} failed:")
                     log.info(f" {e}")
-                    if str(e)==PARAMIKO_SESSION_LOST:
-                        #no point in trying more keys
+                    if str(e) == PARAMIKO_SESSION_LOST:
+                        # no point in trying more keys
                         break
                 else:
                     if transport.is_authenticated():
@@ -718,13 +728,13 @@ def do_connect_to(transport, host:str, username:str, password:str,
     while not transport.is_authenticated() and auth:
         a = auth.pop(0)
         log("auth=%s", a)
-        if a=="none":
+        if a == "none":
             auth_none()
-        elif a=="agent":
+        elif a == "agent":
             auth_agent()
-        elif a=="key":
+        elif a == "key":
             auth_publickey()
-        elif a=="password":
+        elif a == "password":
             auth_interactive()
             if not transport.is_authenticated():
                 if password:
@@ -740,8 +750,8 @@ def do_connect_to(transport, host:str, username:str, password:str,
                             break
         else:
             log.warn(f"Warning: invalid authentication mechanism {a}")
-        #detect session-lost problems:
-        #(no point in continuing without a session)
+        # detect session-lost problems:
+        # (no point in continuing without a session)
         if auth_errors and not transport.is_authenticated():
             for err_strs in auth_errors.values():
                 if PARAMIKO_SESSION_LOST in err_strs:
@@ -752,12 +762,14 @@ def do_connect_to(transport, host:str, username:str, password:str,
         raise SSHAuthenticationError(host, auth_errors)
     return transport
 
+
 class SSHAuthenticationError(InitExit):
     def __init__(self, host, errors):
         super().__init__(ExitCode.CONNECTION_FAILED, f"SSH Authentication failed for {host!r}")
         self.errors = errors
 
-def run_test_command(transport, cmd:str) -> tuple[list[str],list[str],int]:
+
+def run_test_command(transport, cmd:str) -> tuple[list[str], list[str], int]:
     from paramiko import SSHException
     log(f"run_test_command(transport, {cmd})")
     try:
@@ -777,6 +789,7 @@ def run_test_command(transport, cmd:str) -> tuple[list[str],list[str],int]:
         sleep(0.01)
     code = chan.recv_exit_status()
     log(f"exec_command({cmd!r})={code}")
+
     def chan_read(fileobj) -> list[str]:
         try:
             return fileobj.readlines()
@@ -785,7 +798,8 @@ def run_test_command(transport, cmd:str) -> tuple[list[str],list[str],int]:
             return []
         finally:
             noerr(fileobj.close)
-    #don't wait too long for the data:
+
+    # don't wait too long for the data:
     chan.settimeout(EXEC_STDOUT_TIMEOUT)
     out = chan_read(chan.makefile())
     log(f"exec_command out={out!r}")
@@ -797,37 +811,40 @@ def run_test_command(transport, cmd:str) -> tuple[list[str],list[str],int]:
 
 
 def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
-                             socket_dir=None, display_as_args=None, paramiko_config=None):
+                    socket_dir=None, display_as_args=None, paramiko_config=None):
     log("run_remote_xpra%s", (transport, xpra_proxy_command, remote_xpra,
-                             socket_dir, display_as_args, paramiko_config))
+                              socket_dir, display_as_args, paramiko_config))
     from paramiko import SSHException
     assert remote_xpra
     log(f"will try to run xpra from: {remote_xpra}")
-    def rtc(cmd) -> tuple[list[str],list[str],int]:
+
+    def rtc(cmd) -> tuple[list[str], list[str], int]:
         return run_test_command(transport, cmd)
+
     def detectosname() -> str:
-        #first, try a syntax that should work with any ssh server:
+        # first, try a syntax that should work with any ssh server:
         r = rtc("echo %OS%")
-        if r[2]==0 and r[0]:
+        if r[2] == 0 and r[0]:
             name = r[0][-1].rstrip("\n\r")
             log(f"echo %OS%={name!r}")
-            if name!="%OS%":
-                #MS Windows OS will return "Windows_NT" here
+            if name != "%OS%":
+                # MS Windows OS will return "Windows_NT" here
                 log.info(f"ssh server OS is {name!r}")
                 return name
-        #this should work on all other OSes:
+        # this should work on all other OSes:
         r = rtc("echo $OSTYPE")
-        if r[2]==0 and r[0]:
+        if r[2] == 0 and r[0]:
             name = r[0][-1].rstrip("\n\r")
             log(f"OSTYPE={name!r}")
             log.info(f"ssh server OS is {name!r}")
             return name
         return "unknown"
     WIN32_REGISTRY_QUERY = "REG QUERY \"HKEY_LOCAL_MACHINE\\Software\\Xpra\" /v InstallPath"
+
     def getexeinstallpath():
         cmd = WIN32_REGISTRY_QUERY
         if osname=="msys":
-            #escape for msys shell:
+            # escape for msys shell:
             cmd = cmd.replace("/", "//")
         r = rtc(cmd)
         if r[2]!=0:
@@ -844,19 +861,19 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
     for xpra_cmd in remote_xpra:
         found = False
         if osname.startswith("Windows") or osname in ("msys", "cygwin"):
-            #on MS Windows,
-            #always prefer the application path found in the registry:
+            # on MS Windows,
+            # always prefer the application path found in the registry:
             def winpath(p) -> str:
-                if osname=="msys":
+                if osname == "msys":
                     return p.replace("\\", "\\\\")
-                if osname=="cygwin":
+                if osname == "cygwin":
                     return "/cygdrive/"+p.replace(":\\", "/").replace("\\", "/")
                 return p
             installpath = getexeinstallpath()
             if installpath:
                 xpra_cmd = winpath(f"{installpath}\\Xpra_cmd.exe")
                 found = True
-            elif xpra_cmd.find("/")<0 and xpra_cmd.find("\\")<0:
+            elif xpra_cmd.find("/") < 0 and xpra_cmd.find("\\") < 0:
                 test_path = winpath(f"{DEFAULT_WIN32_INSTALL_PATH}\\{xpra_cmd}")
                 cmd = f'dir "{test_path}"'
                 r = rtc(cmd)
@@ -871,23 +888,23 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
         if not found and find_command:
             r = rtc(f"{find_command} {xpra_cmd}")
             out = r[0]
-            if r[2]==0 and out:
-                #use the actual path returned by 'command -v' or 'which':
+            if r[2] == 0 and out:
+                # use the actual path returned by 'command -v' or 'which':
                 try:
                     xpra_cmd = out[-1].rstrip("\n\r ").lstrip("\t ")
                 except Exception as e:
                     log(f"cannot get command from {xpra_cmd}: {e}")
                 else:
                     if xpra_cmd.startswith(f"alias {xpra_cmd}="):
-                        #ie: "alias xpra='xpra -d proxy'" -> "xpra -d proxy"
+                        # ie: "alias xpra='xpra -d proxy'" -> "xpra -d proxy"
                         xpra_cmd = xpra_cmd.split("=", 1)[1].strip("'")
                     found = bool(xpra_cmd)
-            elif xpra_cmd=="xpra" and osname in ("msys", "cygwin"):
-                default_path = CYGWIN_DEFAULT_PATH if osname=="cygwin" else MSYS_DEFAULT_PATH
+            elif xpra_cmd == "xpra" and osname in ("msys", "cygwin"):
+                default_path = CYGWIN_DEFAULT_PATH if osname == "cygwin" else MSYS_DEFAULT_PATH
                 if default_path:
-                    #try the default system installation path
+                    # try the default system installation path
                     r = rtc(f"command -v '{default_path}'")
-                    if r[2]==0:
+                    if r[2] == 0:
                         xpra_cmd = default_path     #ie: "/mingw64/bin/xpra"
                         found = True
         if not found or xpra_cmd in tried:
@@ -902,8 +919,8 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
             cmd += " ".join(shellquote(x) for x in display_as_args)
         log(f"cmd({xpra_proxy_command}, {display_as_args})={cmd}")
 
-        #see https://github.com/paramiko/paramiko/issues/175
-        #WINDOW_SIZE = 2097152
+        # see https://github.com/paramiko/paramiko/issues/175
+        # WINDOW_SIZE = 2097152
         log(f"trying to open SSH session, window-size={WINDOW_SIZE}, timeout={TIMEOUT}")
         try:
             chan = transport.open_session(window_size=WINDOW_SIZE, max_packet_size=0, timeout=TIMEOUT)
