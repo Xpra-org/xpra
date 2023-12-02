@@ -114,6 +114,13 @@ if use_x11_bindings():
                 workspacelog.error("Error: failed to setup workspace hooks:")
                 workspacelog.estr(e)
         CAN_SET_WORKSPACE = can_set_workspace()
+elif WIN32:
+    try:
+        from pyvda.pyvda import get_virtual_desktops
+    except ImportError as e:
+        workspacelog(f"no workspace support: {e}")
+    else:
+        CAN_SET_WORKSPACE = len(get_virtual_desktops())>0
 
 
 AWT_DIALOG_WORKAROUND = envbool("XPRA_AWT_DIALOG_WORKAROUND", WIN32)
@@ -129,6 +136,7 @@ REPAINT_MAXIMIZED = envint("XPRA_REPAINT_MAXIMIZED", 0)
 REFRESH_MAXIMIZED = envbool("XPRA_REFRESH_MAXIMIZED", True)
 UNICODE_KEYNAMES = envbool("XPRA_UNICODE_KEYNAMES", False)
 SMOOTH_SCROLL = envbool("XPRA_SMOOTH_SCROLL", True)
+POLL_WORKSPACE = envbool("XPRA_POLL_WORKSPACE", WIN32)
 
 WINDOW_OVERFLOW_TOP = envbool("XPRA_WINDOW_OVERFLOW_TOP", False)
 AWT_RECENTER = envbool("XPRA_AWT_RECENTER", True)
@@ -298,7 +306,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.set_decorated(self._is_decorated(metadata))
         self._window_state = {}
         self._resize_counter = 0
-        self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
+        self._can_set_workspace = CAN_SET_WORKSPACE
         self._current_frame_extents = None
         self._monitor = None
         self._frozen : bool = False
@@ -315,6 +323,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.show_pointer_overlay_timer : int = 0
         self.moveresize_timer : int = 0
         self.moveresize_event = None
+        self.workspace_timer = 0
         #add platform hooks
         self.connect_after("realize", self.on_realize)
         self.connect("unrealize", self.on_unrealize)
@@ -325,6 +334,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.add_events(self.get_window_event_mask())
         if DRAGNDROP and not self._client.readonly:
             self.init_dragndrop()
+        self.init_workspace()
         self.init_focus()
         ClientWindowBase.init_window(self, metadata)
 
@@ -1420,6 +1430,31 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     ######################################################################
     # workspace
+    def init_workspace(self):
+        if not self._can_set_workspace:
+            return
+        if not POLL_WORKSPACE:
+            return
+        self.when_realized("workspace", self.init_workspace_timer)
+
+    def init_workspace_timer(self):
+        value = [-1]
+
+        def poll_workspace():
+            ws = self.get_window_workspace()
+            workspacelog(f"poll_workspace() {ws=}")
+            if value[0] != ws:
+                value[0] = ws
+                self.workspace_changed()
+            return True
+        self.workspace_timer = self.timeout_add(1000, poll_workspace)
+
+    def cancel_workspace_timer(self):
+        wt = self.workspace_timer
+        if wt:
+            self.workspace_timer = 0
+            self.source_remove(wt)
+
     def workspace_changed(self) -> None:
         #on X11 clients, this fires from the root window property watcher
         ClientWindowBase.workspace_changed(self)
@@ -1476,6 +1511,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def get_workspace_count(self) -> int:
         if not self._can_set_workspace:
             return 0
+        if WIN32:
+            from pyvda.pyvda import get_virtual_desktops
+            return len(get_virtual_desktops())
         root = get_default_root_window()
         return self.xget_u32_property(root, "_NET_NUMBER_OF_DESKTOPS")
 
@@ -1516,6 +1554,17 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if current==workspace:
             workspacelog("window workspace unchanged: %s", wn(workspace))
             return
+        if WIN32:
+            from xpra.platform.win32.gui import get_window_handle
+            from pyvda.pyvda import AppView, VirtualDesktop
+            hwnd = get_window_handle(self)
+            if not hwnd:
+                return
+            vd = VirtualDesktop(number=workspace+1)
+            app_view = AppView(hwnd=hwnd)
+            workspacelog(f"moving {app_view} to {vd}")
+            app_view.move(vd)
+            return
         gdkwin = self.get_window()
         workspacelog("do_set_workspace: gdkwindow: %#x, mapped=%s, visible=%s",
                      gdkwin.get_xid(), self.get_mapped(), gdkwin.is_visible())
@@ -1524,6 +1573,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             send_wm_workspace(root.get_xid(), gdkwin.get_xid(), workspace)
 
     def get_desktop_workspace(self) -> int:
+        if WIN32:
+            from pyvda.pyvda import VirtualDesktop
+            return VirtualDesktop.current().number-1
+
         window = self.get_window()
         if window:
             root = window.get_screen().get_root_window()
@@ -1534,6 +1587,13 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         return self.do_get_workspace(root, "_NET_CURRENT_DESKTOP")
 
     def get_window_workspace(self):
+        if WIN32:
+            from xpra.platform.win32.gui import get_window_handle
+            from pyvda.pyvda import AppView
+            hwnd = get_window_handle(self)
+            if not hwnd:
+                return 0
+            return AppView(hwnd).desktop.number-1
         return self.do_get_workspace(self.get_window(), "_NET_WM_DESKTOP", WORKSPACE_UNSET)
 
     def do_get_workspace(self, target, prop:str, default_value=0) -> int:
@@ -2342,6 +2402,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.cancel_focus_timer()
         self.cancel_moveresize_timer()
         self.cancel_follow_handler()
+        self.cancel_workspace_timer()
         self.on_realize_cb = {}
         ClientWindowBase.destroy(self)
         Gtk.Window.destroy(self)

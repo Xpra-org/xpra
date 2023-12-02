@@ -37,7 +37,7 @@ $PACMAN --noconfirm --needed -S ${XPKG}cython
 
 #these need to be converted to PKGBUILD:
 $PACMAN --noconfirm --needed -S ${XPKG}python-pip ${XPKG}python-pycryptodome ${XPKG}python-keyring ${XPKG}python-idna openssl-devel
-for x in browser-cookie3 pylsqpack aioquic pyaes pbkdf2 pytools; do
+for x in browser-cookie3 pylsqpack aioquic pyaes pbkdf2 pytools pyvda; do
 	pip3 install $x
 done
 # to keep these libraries updated, you may need:
