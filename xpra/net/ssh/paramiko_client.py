@@ -152,14 +152,14 @@ class SSHProxyCommandConnection(SSHSocketConnection):
         try:
             super().close()
         except Exception:
-            #this can happen if the proxy command gets a SIGINT,
-            #it's closed already and we don't care
+            # this can happen if the proxy command gets a SIGINT,
+            # it's closed already and we don't care
             log("SSHProxyCommandConnection.close()", exc_info=True)
 
 
-def safe_lookup(config_obj, host:str) -> dict[Any,Any]:
+def safe_lookup(config_obj, host:str) -> dict[Any, Any]:
     try:
-        return config_obj.lookup(host) or {}
+        return dict(config_obj.lookup(host) or {})
     except ImportError as e:
         log("%s.lookup(%s)", config_obj, host, exc_info=True)
         log.warn(f"Warning: unable to load SSH host config for {host!r}:")
@@ -182,11 +182,11 @@ def connect_to(display_desc):
     username = display_desc.get("username") or get_username()
     if "proxy_host" in display_desc:
         display_desc.setdefault("proxy_username", get_username())
-    password = display_desc.get("password")
+    password = display_desc.get("password", "")
     remote_xpra = display_desc["remote_xpra"]
     proxy_command = display_desc["proxy_command"]       #ie: "_proxy_start"
-    socket_dir = display_desc.get("socket_dir")
-    display = display_desc.get("display")
+    socket_dir = display_desc.get("socket_dir", "")
+    display = display_desc.get("display", "")
     display_as_args = display_desc["display_as_args"]   #ie: "--start=xterm :10"
     paramiko_config = display_desc.copy()
     paramiko_config.update(display_desc.get("paramiko-config", {}))
