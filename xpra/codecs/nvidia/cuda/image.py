@@ -5,13 +5,13 @@
 
 from time import monotonic
 
-from xpra.codecs.nvidia.util import numpy_import_lock
+from xpra.os_util import NumpyImportContext
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 
 log = Logger("cuda")
 
-with numpy_import_lock:
+with NumpyImportContext:
     from numpy import byte  # @UnresolvedImport
     from pycuda.driver import (
         pagelocked_empty,

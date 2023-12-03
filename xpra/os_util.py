@@ -21,7 +21,7 @@ from time import monotonic, sleep
 from subprocess import PIPE, Popen
 from typing import Any
 from collections.abc import Callable
-from threading import Thread
+from threading import Thread, RLock
 
 from xpra.common import noerr
 
@@ -1110,3 +1110,21 @@ def ignorewarnings(fn, *args) -> Any:
         return fn(*args)
     finally:
         warnings.filterwarnings("default")
+
+
+numpy_import_lock = RLock()
+
+
+class NumpyImportContext(AbstractContextManager):
+
+    def __enter__(self):
+        if not numpy_import_lock.acquire(blocking=False):
+            raise RuntimeError("the numpy import lock is already held!")
+        os.environ["XPRA_NUMPY_IMPORT"] = "1"
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        os.environ.pop("XPRA_NUMPY_IMPORT", None)
+        numpy_import_lock.release()
+
+    def __repr__(self):
+        return "numpy_import_context"
