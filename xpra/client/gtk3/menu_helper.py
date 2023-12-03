@@ -430,7 +430,8 @@ class MenuHelper:
 
         # Gtk adds ImageMenuItem as arguments to the callback, but we don't want any:
         def menu_cb(*_args):
-            cb()
+            if cb:
+                cb()
         return menuitem(title, image, tooltip, menu_cb)
 
     def checkitem(self, title, cb:Callable|None=None, active=False) -> Gtk.CheckMenuItem:
