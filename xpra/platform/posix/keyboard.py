@@ -11,7 +11,7 @@ from xpra.platform.keyboard_base import KeyboardBase
 from xpra.dbus.helper import DBusHelper, native_to_dbus, dbus_to_native
 from xpra.keyboard.mask import MODIFIER_MAP
 from xpra.log import Logger
-from xpra.os_util import is_X11, is_Wayland, bytestostr
+from xpra.os_util import is_X11, is_Wayland, bytestostr, first_time
 if is_X11():
     from xpra.gtk.error import xsync
 
@@ -101,7 +101,8 @@ class Keyboard(KeyboardBase):
     def do_get_keymap_modifiers(self):
         if not self.keyboard_bindings:
             if is_Wayland():
-                log.warn("Warning: incomplete keymap support under Wayland")
+                if first_time("wayland-keymap"):
+                    log.warn("Warning: incomplete keymap support under Wayland")
                 return {}, [], ["mod2", ]
             return {}, [], []
         from xpra.gtk.error import xlog
