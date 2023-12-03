@@ -1154,6 +1154,7 @@ def do_main(argv):
             app.update_options_from_file(args[0])
             #the compressors and packet encoders cannot be changed from the UI
             #so apply them now:
+            configure_env(app.config.env)
             configure_network(app.config)
         debug = fixup_debug_option(app.config.debug)
         if debug:
