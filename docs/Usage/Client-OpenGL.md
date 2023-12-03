@@ -22,7 +22,7 @@ Some screen updates, in particular for some of the [video codecs](./Encodings.md
 
 
 # GPUs and drivers
-Due to some known bugs and incompatibilities, some drivers are disabled by default. (see [gl driver list](https://github.com/Xpra-org/xpra/blob/master/xpra/client/gl/gl_drivers.py))
+Due to some known bugs and incompatibilities, some drivers are disabled by default. (see [gl driver list](https://github.com/Xpra-org/xpra/blob/master/xpra/client/gl/drivers.py))
 
 Basic information about the OpenGL driver in use can be found in the "Features" pane of the "Session Info" dialog or the client's command line output.\
 For more details, run `xpra opengl`. On MS Windows, there is an `OpenGL_check.exe` shortcut.
