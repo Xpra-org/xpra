@@ -24,10 +24,9 @@ class IdleMixin(StubSourceMixin):
     def is_needed(cls, caps : typedict) -> bool:
         return caps.boolget("keyboard") or caps.boolget("mouse") or caps.boolget("windows")
 
-
     def __init__(self) -> None:
         self.idle_timeout = 0
-        #duplicated from clientconnection:
+        # duplicated from clientconnection:
         self.notification_callbacks : dict[int,Callable] = {}
         self.send_notifications = False
         self.send_notifications_actions = False
@@ -37,7 +36,7 @@ class IdleMixin(StubSourceMixin):
 
     def init_state(self) -> None:
         self.last_user_event = monotonic()
-        #grace duration is at least 10 seconds:
+        # grace duration is at least 10 seconds:
         self.idle_grace_duration = max(10, int(self.idle_timeout*(100-GRACE_PERCENT)//100))
         self.idle = False
         self.idle_timer = 0
@@ -55,7 +54,7 @@ class IdleMixin(StubSourceMixin):
 
 
     def parse_client_caps(self, _c : typedict) -> None:
-        #start the timer
+        # start the timer
         self.schedule_idle_grace_timeout()
         self.schedule_idle_timeout()
 
@@ -70,7 +69,6 @@ class IdleMixin(StubSourceMixin):
             self.no_idle()
         if self.notification_callbacks.pop(NotificationID.IDLE, None):
             self.notify_close(NotificationID.IDLE)
-
 
     def cancel_idle_timeout(self) -> None:
         it = self.idle_timer
@@ -100,16 +98,16 @@ class IdleMixin(StubSourceMixin):
         self.idle_grace_timer = 0
         log("idle_grace_timedout()")
         if not self.send_notifications:
-            #not much we can do!
+            # not much we can do!
             return
-        #notify the user, giving him a chance to cancel the timeout:
+        # notify the user, giving him a chance to cancel the timeout:
         nid = NotificationID.IDLE
         if nid in self.notification_callbacks:
             return
         actions : tuple[str,...] = ()
         if self.send_notifications_actions:
             actions = ("cancel", "Cancel Timeout")
-        if self.session_name!="Xpra":
+        if self.session_name != "Xpra":
             summary = f"The Xpra session {self.session_name}"
         else:
             summary = "Xpra session"
@@ -123,7 +121,7 @@ class IdleMixin(StubSourceMixin):
 
     def idle_notification_action(self, nid:int, action_id) -> None:
         log("idle_notification_action(%i, %s)", nid, action_id)
-        if action_id=="cancel":
+        if action_id == "cancel":
             self.user_event()
 
     def idle_timedout(self) -> None:

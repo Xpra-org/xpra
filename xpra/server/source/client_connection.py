@@ -31,12 +31,12 @@ bandwidthlog = Logger("bandwidth")
 BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
 MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 5*1024*1024)
 AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
-assert 1<AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
+assert 1 < AUTO_BANDWIDTH_PCT <= 100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 YIELD = envbool("XPRA_YIELD", False)
 
 counter = AtomicInteger()
 
-ENCODE_WORK_ITEM_TUPLE = tuple[bool, Callable, tuple[Any,...]]
+ENCODE_WORK_ITEM_TUPLE = tuple[bool, Callable, tuple[Any, ...]]
 ENCODE_WORK_ITEM : TypeAlias = ENCODE_WORK_ITEM_TUPLE | None
 
 
@@ -71,16 +71,16 @@ class ClientConnection(StubSourceMixin):
         self.disconnect = disconnect_cb
         self.session_name = session_name
 
-        #holds actual packets ready for sending (already encoded)
-        #these packets are picked off by the "protocol" via 'next_packet()'
-        #format: packet, wid, pixels, start_send_cb, end_send_cb
-        #(only packet is required - the rest can be 0/None for clipboard packets)
+        # holds actual packets ready for sending (already encoded)
+        # these packets are picked off by the "protocol" via 'next_packet()'
+        # format: packet, wid, pixels, start_send_cb, end_send_cb
+        # (only packet is required - the rest can be 0/None for clipboard packets)
         self.packet_queue = deque()
         # the encode work queue is used by mixins that need to encode data before sending it,
         # ie: encodings and clipboard
-        #this queue will hold functions to call to compress data (pixels, clipboard)
-        #items placed in this queue are picked off by the "encode" thread,
-        #the functions should add the packets they generate to the 'packet_queue'
+        # this queue will hold functions to call to compress data (pixels, clipboard)
+        # items placed in this queue are picked off by the "encode" thread,
+        # the functions should add the packets they generate to the 'packet_queue'
         self.encode_work_queue : SimpleQueue[None |tuple[bool,Callable,tuple[Any,...]]] = SimpleQueue()
         self.encode_thread = None
         self.ordinary_packets : list[tuple[PacketType,bool,Callable,Callable]] = []
@@ -117,13 +117,12 @@ class ClientConnection(StubSourceMixin):
         self.adapter_type = ""
         self.jitter = 0
         self.ssh_auth_sock = ""
-        #what we send back in hello packet:
+        # what we send back in hello packet:
         self.ui_client = True
-        #default 'wants' is not including "events" or "default_cursor":
+        # default 'wants' is not including "events" or "default_cursor":
         self.wants = ["aliases", "encodings", "versions", "features", "display", "packet-types"]
-        #these statistics are shared by all WindowSource instances:
+        # these statistics are shared by all WindowSource instances:
         self.statistics = GlobalPerformanceStatistics()
-
 
     def is_closed(self) -> bool:
         return self.close_event.is_set()
@@ -134,55 +133,52 @@ class ClientConnection(StubSourceMixin):
         self.protocol = None
         self.statistics.reset(0)
 
-
     def may_notify(self, *args, **kwargs):
-        #fugly workaround,
-        #MRO is depth first and would hit the default implementation
-        #instead of the mixin unless we force it:
+        # fugly workaround,
+        # MRO is depth first and would hit the default implementation
+        # instead of the mixin unless we force it:
         notification_mixin = sys.modules.get("xpra.server.source.notification")
         if notification_mixin and isinstance(self, notification_mixin.NotificationMixin):
             notification_mixin.NotificationMixin.may_notify(self, *args, **kwargs)
 
-
     def compressed_wrapper(self, datatype, data, **kwargs):
-        #set compression flags based on self.lz4:
+        # set compression flags based on self.lz4:
         kw = {"lz4" : getattr(self, "lz4", False)}
         kw.update(kwargs)
         return compressed_wrapper(datatype, data, can_inline=False, **kw)
-
 
     def update_bandwidth_limits(self):
         if not self.bandwidth_detection:
             return
         mmap_size = getattr(self, "mmap_size", 0)
-        if mmap_size>0:
+        if mmap_size > 0:
             return
-        #calculate soft bandwidth limit based on send congestion data:
+        # calculate soft bandwidth limit based on send congestion data:
         bandwidth_limit = 0
         if BANDWIDTH_DETECTION:
             bandwidth_limit = self.statistics.avg_congestion_send_speed
             bandwidthlog("avg_congestion_send_speed=%s", bandwidth_limit)
             if bandwidth_limit>20*1024*1024:
-                #ignore congestion speed if greater 20Mbps
+                # ignore congestion speed if greater 20Mbps
                 bandwidth_limit = 0
         if (self.bandwidth_limit or 0)>0:
-            #command line options could overrule what we detect?
+            # command line options could overrule what we detect?
             bandwidth_limit = min(self.bandwidth_limit, bandwidth_limit)
         if bandwidth_limit>0:
             bandwidth_limit = max(MIN_BANDWIDTH, bandwidth_limit)
         self.soft_bandwidth_limit = bandwidth_limit
         bandwidthlog("update_bandwidth_limits() bandwidth_limit=%s, soft bandwidth limit=%s",
                      self.bandwidth_limit, bandwidth_limit)
-        #figure out how to distribute the bandwidth amongst the windows,
-        #we use the window size,
-        #(we should use the number of bytes actually sent: framerate, compression, etc..)
+        # figure out how to distribute the bandwidth amongst the windows,
+        # we use the window size,
+        # (we should use the number of bytes actually sent: framerate, compression, etc..)
         window_weight = {}
         for wid, ws in self.window_sources.items():
             weight = 0
             if not ws.suspended:
                 ww, wh = ws.window_dimensions
-                #try to reserve bandwidth for at least one screen update,
-                #and add the number of pixels damaged:
+                # try to reserve bandwidth for at least one screen update,
+                # and add the number of pixels damaged:
                 weight = ww*wh + ws.statistics.get_damage_pixels()
             window_weight[wid] = weight
         bandwidthlog("update_bandwidth_limits() window weights=%s", window_weight)
@@ -194,9 +190,8 @@ class ClientConnection(StubSourceMixin):
                 weight = window_weight.get(wid, 0)
                 ws.bandwidth_limit = max(MIN_BANDWIDTH//10, bandwidth_limit*weight//total_weight)
 
-
     def parse_client_caps(self, c : typedict):
-        #general features:
+        # general features:
         self.share = c.boolget("share")
         self.lock = c.boolget("lock")
         self.control_commands = c.strtupleget("control_commands")
@@ -224,29 +219,26 @@ class ClientConnection(StubSourceMixin):
         p = self.protocol
         if not p:
             return 0
-        #auto-detect:
+        # auto-detect:
         pinfo = p.get_info()
         socket_speed = pinfo.get("socket", {}).get("device", {}).get("speed")
         if not socket_speed:
             return 0
         bandwidthlog("get_socket_bandwidth_limit() socket_speed=%s", socket_speed)
-        #auto: use 80% of socket speed if we have it:
+        # auto: use 80% of socket speed if we have it:
         return socket_speed*AUTO_BANDWIDTH_PCT//100 or 0
-
 
     def startup_complete(self):
         log("startup_complete()")
         self.send("startup-complete")
 
-
-    #
     # The encode thread loop management:
     #
-    def start_queue_encode(self, item:ENCODE_WORK_ITEM) -> None:
-        #start the encode work queue:
-        #holds functions to call to compress data (pixels, clipboard)
-        #items placed in this queue are picked off by the "encode" thread,
-        #the functions should add the packets they generate to the 'packet_queue'
+    def start_queue_encode(self, item: ENCODE_WORK_ITEM) -> None:
+        # start the encode work queue:
+        # holds functions to call to compress data (pixels, clipboard)
+        # items placed in this queue are picked off by the "encode" thread,
+        # the functions should add the packets they generate to the 'packet_queue'
         self.queue_encode = self.encode_work_queue.put
         self.queue_encode(item)
         self.encode_thread = start_thread(self.encode_loop, "encode")
@@ -254,7 +246,7 @@ class ClientConnection(StubSourceMixin):
     def encode_queue_size(self) -> int:
         return self.encode_work_queue.qsize()
 
-    def call_in_encode_thread(self, optional:bool, fn:Callable, *args):
+    def call_in_encode_thread(self, optional: bool, fn: Callable, *args):
         """
             This is used by WindowSource to queue damage processing to be done in the 'encode' thread.
             The 'encode_and_send_cb' will then add the resulting packet to the 'packet_queue' via 'queue_packet'.
@@ -263,16 +255,19 @@ class ClientConnection(StubSourceMixin):
         self.queue_encode((optional, fn, args))
 
     def queue_packet(self, packet, wid=0, pixels=0,
-                     start_send_cb=None, end_send_cb=None, fail_cb=None, wait_for_more=False):
+                     start_send_cb : Callable | None = None,
+                     end_send_cb : Callable | None = None,
+                     fail_cb : Callable | None = None,
+                     wait_for_more=False):
         """
             Add a new 'draw' packet to the 'packet_queue'.
             Note: this code runs in the non-ui thread
         """
         now = monotonic()
         self.statistics.packet_qsizes.append((now, len(self.packet_queue)))
-        if wid>0:
+        if wid > 0:
             self.statistics.damage_packet_qpixels.append(
-                (now, wid, sum(x[2] for x in tuple(self.packet_queue) if x[1]==wid))
+                (now, wid, sum(x[2] for x in tuple(self.packet_queue) if x[1] == wid))
                 )
         self.packet_queue.append((packet, wid, pixels, start_send_cb, end_send_cb, fail_cb, wait_for_more))
         p = self.protocol
@@ -290,9 +285,9 @@ class ClientConnection(StubSourceMixin):
         while True:
             item = self.encode_work_queue.get(True)
             if item is None:
-                return              #empty marker
-            #some function calls are optional and can be skipped when closing:
-            #(but some are not, like encoder clean functions)
+                return              # empty marker
+            # some function calls are optional and can be skipped when closing:
+            # (but some are not, like encoder clean functions)
             optional_when_closing, fn, args = item
             if optional_when_closing and self.is_closed():
                 continue
@@ -341,7 +336,6 @@ class ClientConnection(StubSourceMixin):
         kwargs["will_have_more"] = False
         self.send(*parts, **kwargs)
 
-
     ######################################################################
     # info:
     def get_info(self) -> dict[str,Any]:
@@ -364,13 +358,11 @@ class ClientConnection(StubSourceMixin):
                 }
         p = self.protocol
         if p:
-            info.update({
-                         "connection"       : p.get_info(),
-                         })
+            info["connection"] = p.get_info()
         info.update(self.get_features_info())
         return info
 
-    def get_features_info(self) -> dict[str,Any]:
+    def get_features_info(self) -> dict[str, Any]:
         info = {
             "lock"  : bool(self.lock),
             "share" : bool(self.share),
@@ -378,19 +370,15 @@ class ClientConnection(StubSourceMixin):
             }
         return info
 
-
     def send_info_response(self, info):
         self.send_async("info-response", notypedict(info))
-
 
     def send_setting_change(self, setting, value):
         self.send_more("setting-change", setting, value)
 
-
     def send_server_event(self, *args):
         if "events" in self.wants:
             self.send_more("server-event", *args)
-
 
     def send_client_command(self, *args):
         if self.hello_sent:

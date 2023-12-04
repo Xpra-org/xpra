@@ -2,7 +2,7 @@
 # Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-#pylint: disable-msg=E1101
+# pylint: disable-msg=E1101
 
 import os
 import re
@@ -33,10 +33,10 @@ PING_TIMEOUT : int = envint("XPRA_PING_TIMEOUT", 60)
 MIN_PING_TIMEOUT : int = envint("XPRA_MIN_PING_TIMEOUT", 2)
 MAX_PING_TIMEOUT : int = envint("XPRA_MAX_PING_TIMEOUT", 10)
 SWALLOW_PINGS : bool = envbool("XPRA_SWALLOW_PINGS", False)
-#LOG_INFO_RESPONSE = ("^window.*position", "^window.*size$")
+# LOG_INFO_RESPONSE = ("^window.*position", "^window.*size$")
 LOG_INFO_RESPONSE : str = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
 AUTO_BANDWIDTH_PCT : int = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
-assert 1<AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
+assert 1 < AUTO_BANDWIDTH_PCT <= 100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 
 ETHERNET_JITTER : int = envint("XPRA_LOCAL_JITTER", 0)
 WAN_JITTER : int = envint("XPRA_WAN_JITTER", 20)
@@ -48,7 +48,7 @@ ADSL_LIMIT : int = envint("XPRA_WIFI_LIMIT", 1000*1000)
 
 
 def get_NM_adapter_type(device_name) -> str:
-    if not any (sys.modules.get(f"gi.repository.{mod}") for mod in ("GLib", "Gtk")):
+    if not any(sys.modules.get(f"gi.repository.{mod}") for mod in ("GLib", "Gtk")):
         log("get_NM_adapter_type() no main loop")
         return ""
     try:
@@ -83,6 +83,7 @@ def get_NM_adapter_type(device_name) -> str:
 def parse_speed(v):
     return parse_with_unit("speed", v)
 
+
 def get_device_value(coptions : dict, device_info : dict, attr: str, conv: Callable = str, default_value: Any = ""):
     # first try an env var:
     v = os.environ.get("XPRA_NETWORK_%s" % attr.upper().replace("-", "_"))
@@ -101,9 +102,10 @@ def get_device_value(coptions : dict, device_info : dict, attr: str, conv: Calla
             log.warn(" %r: %s", v, e)
     return default_value
 
+
 def guess_adapter_type(name:str) -> str:
     dnl = name.lower()
-    if dnl.startswith("wlan") or dnl.startswith("wlp") or any(dnl.find(x) >= 0 for x in ("wireless", "wlan", "80211", "modem")):
+    if dnl.startswith("wlan") or dnl.startswith("wlp") or any(dnl.find(x) >= 0 for x in("wireless", "wlan", "80211", "modem")):
         return "wireless"
     if dnl == "lo" or dnl.find("loopback") >= 0 or dnl.startswith("local"):
         return "loopback"
@@ -115,12 +117,14 @@ def guess_adapter_type(name:str) -> str:
         return "wan"
     return ""
 
+
 def jitter_for_adapter_type(adapter_type:str) -> int:
     if not adapter_type:
         return -1
     at = adapter_type.lower()
-    def anyfind(*args):
-        return any(at.find(str(x))>=0 for x in args)
+
+    def anyfind(*args) -> bool:
+        return any(at.find(str(x)) >= 0 for x in args)
     if anyfind("loopback"):
         return 0
     if anyfind("ether", "local", "fiber", "1394", "infiniband"):
@@ -131,10 +135,12 @@ def jitter_for_adapter_type(adapter_type:str) -> int:
         return WIRELESS_JITTER
     return -1
 
+
 def guess_bandwidth_limit(adapter_type:str) -> int:
     at = adapter_type.lower()
-    def anyfind(*args):
-        return any(at.find(str(x))>=0 for x in args)
+
+    def anyfind(*args) -> bool:
+        return any(at.find(str(x)) >= 0 for x in args)
     if anyfind("wireless", "wifi", "wimax", "modem"):
         return WIFI_LIMIT
     if anyfind("adsl", "ppp"):
@@ -152,33 +158,32 @@ class NetworkState(StubClientMixin):
     def __init__(self):
         super().__init__()
         self.server_start_time : float = -1
-        #legacy:
+        # legacy:
         self.compression_level : int = 0
 
-        #setting:
+        # setting:
         self.pings : bool = False
 
-        #bandwidth
+        # bandwidth
         self.bandwidth_limit : int = 0
         self.bandwidth_detection : bool = False
         self.server_bandwidth_limit : int = 0
         self.server_session_name : str = ""
 
-        #info requests
+        # info requests
         self.server_last_info : dict = {}
         self.info_request_pending : bool = False
 
-        #network state:
+        # network state:
         self.server_packet_encoders : tuple[str, ...] = ()
-        self.server_ping_latency : deque[tuple[float,float]] = deque(maxlen=1000)
+        self.server_ping_latency : deque[tuple[float, float]] = deque(maxlen=1000)
         self.server_load = (0, 0, 0)
-        self.client_ping_latency : deque[tuple[float,float]] = deque(maxlen=1000)
+        self.client_ping_latency : deque[tuple[float, float]] = deque(maxlen=1000)
         self._server_ok : bool = True
         self.last_ping_echoed_time = 0
         self.ping_timer : int = 0
         self.ping_echo_timers : dict[int,int] = {}
         self.ping_echo_timeout_timer = 0
-
 
     def init(self, opts) -> None:
         self.pings = opts.pings
@@ -186,12 +191,10 @@ class NetworkState(StubClientMixin):
         self.bandwidth_detection = opts.bandwidth_detection
         bandwidthlog("init bandwidth_limit=%s", self.bandwidth_limit)
 
-
     def cleanup(self) -> None:
         self.cancel_ping_timer()
         self.cancel_ping_echo_timers()
         self.cancel_ping_echo_timeout_timer()
-
 
     def get_info(self) -> dict[str,Any]:
         return {
@@ -209,15 +212,15 @@ class NetworkState(StubClientMixin):
             }
         ssh_auth_sock = os.environ.get("SSH_AUTH_SOCK")
         if SSH_AGENT and ssh_auth_sock and os.path.isabs(ssh_auth_sock):
-            #ensure agent forwarding is actually requested?
-            #(checking the socket type is not enough:
+            # ensure agent forwarding is actually requested?
+            # (checking the socket type is not enough:
             # one could still bind mount the path and connect via tcp! why though?)
-            #meh: if the transport doesn't have agent forwarding enabled,
+            # meh: if the transport doesn't have agent forwarding enabled,
             # then it won't create a server-side socket
             # and nothing will happen,
             # exposing this client-side path is no big deal
             caps["ssh-auth-sock"] = ssh_auth_sock
-        #get socket speed if we have it:
+        # get socket speed if we have it:
         pinfo = self._protocol.get_info()
         device_info = pinfo.get("socket", {}).get("device", {})
         try:
@@ -225,6 +228,7 @@ class NetworkState(StubClientMixin):
         except AttributeError:
             coptions = {}
         log("get_caps() device_info=%s, connection options=%s", device_info, coptions)
+
         def device_value(attr: str, conv: Callable = str, default_value: Any = ""):
             return get_device_value(coptions, device_info, attr, conv, default_value)
         device_name = device_info.get("name", "")
@@ -240,7 +244,7 @@ class NetworkState(StubClientMixin):
         connection_data = {}
         if adapter_type:
             connection_data["adapter-type"] = adapter_type
-        if jitter>=0:
+        if jitter >= 0:
             connection_data["jitter"] = jitter
         if socket_speed:
             connection_data["speed"] = socket_speed
@@ -251,7 +255,7 @@ class NetworkState(StubClientMixin):
         bandwidthlog("bandwidth-limit setting=%s, socket-speed=%s", self.bandwidth_limit, socket_speed)
         if bandwidth_limit is None:
             if socket_speed:
-                #auto: use 80% of socket speed if we have it:
+                # auto: use 80% of socket speed if we have it:
                 bandwidth_limit = socket_speed*AUTO_BANDWIDTH_PCT//100 or 0
             else:
                 bandwidth_limit = guess_bandwidth_limit(adapter_type)
@@ -263,7 +267,7 @@ class NetworkState(StubClientMixin):
         return caps
 
     def parse_server_capabilities(self, c : typedict) -> bool:
-        #make sure the server doesn't provide a start time in the future:
+        # make sure the server doesn't provide a start time in the future:
         import time
         self.server_start_time = min(time.time(), c.intget("start_time", -1))
         self.server_bandwidth_limit = c.intget("network.bandwidth-limit")
@@ -283,11 +287,10 @@ class NetworkState(StubClientMixin):
             GLib.source_remove(pt)
 
     def cancel_ping_echo_timers(self) -> None:
-        pet : tuple[int,...] = tuple(self.ping_echo_timers.values())
+        pet : tuple[int, ...] = tuple(self.ping_echo_timers.values())
         self.ping_echo_timers = {}
         for t in pet:
             GLib.source_remove(t)
-
 
     ######################################################################
     # info:
@@ -298,15 +301,15 @@ class NetworkState(StubClientMixin):
         if LOG_INFO_RESPONSE:
             items = LOG_INFO_RESPONSE.split(",")
             logres = [re.compile(v) for v in items]
-            log.info("info-response debug for %s:", csv(["'%s'" % x for x in items]))
+            log.info("info-response debug for %s:", csv("'%s'" % x for x in items))
             for k in sorted(self.server_last_info.keys()):
-                if LOG_INFO_RESPONSE=="all" or any(lr.match(k) for lr in logres):
+                if LOG_INFO_RESPONSE == "all" or any(lr.match(k) for lr in logres):
                     log.info(" %s=%s", k, self.server_last_info[k])
 
     def send_info_request(self, *categories) -> None:
         if not self.info_request_pending:
             self.info_request_pending = True
-            window_ids = () #no longer used or supported by servers
+            window_ids = ()  # no longer used or supported by servers
             self.send("info-request", [self.uuid], window_ids, categories)
 
 
@@ -318,7 +321,7 @@ class NetworkState(StubClientMixin):
     def check_server_echo(self, ping_sent_time):
         self.ping_echo_timers.pop(ping_sent_time, None)
         if self._protocol is None:
-            #no longer connected!
+            # no longer connected!
             return False
         last = self._server_ok
         self._server_ok = self.last_ping_echoed_time >= ping_sent_time
@@ -332,7 +335,7 @@ class NetworkState(StubClientMixin):
             self.cancel_ping_echo_timeout_timer()
         log("check_server_echo(%s) last=%s, server_ok=%s (last_ping_echoed_time=%s)",
             ping_sent_time, last, self._server_ok, self.last_ping_echoed_time)
-        if last!=self._server_ok:
+        if last != self._server_ok:
             self.server_connection_state_change()
         return False
 
@@ -348,9 +351,10 @@ class NetworkState(StubClientMixin):
     def check_echo_timeout(self, ping_time) -> None:
         self.ping_echo_timeout_timer = 0
         log("check_echo_timeout(%s) last_ping_echoed_time=%s", ping_time, self.last_ping_echoed_time)
-        if self.last_ping_echoed_time<ping_time:
-            #no point trying to use disconnect_and_quit() to tell the server here..
-            self.warn_and_quit(ExitCode.CONNECTION_LOST, "server ping timeout - waited %s seconds without a response" % PING_TIMEOUT)
+        if self.last_ping_echoed_time < ping_time:
+            # no point trying to use disconnect_and_quit() to tell the server here..
+            self.warn_and_quit(ExitCode.CONNECTION_LOST,
+                               "server ping timeout - waited %s seconds without a response" % PING_TIMEOUT)
 
     def send_ping(self) -> bool:
         p = self._protocol
@@ -378,36 +382,34 @@ class NetworkState(StubClientMixin):
         server_ping_latency = monotonic()-echoedtime/1000.0
         self.server_ping_latency.append((monotonic(), server_ping_latency))
         self.server_load = l1, l2, l3
-        if cl>=0:
+        if cl >= 0:
             self.client_ping_latency.append((monotonic(), cl/1000.0))
         log("ping echo server load=%s, measured client latency=%sms", self.server_load, cl)
 
     def _process_ping(self, packet : PacketType) -> None:
         echotime = packet[1]
-        l1,l2,l3 = 0,0,0
+        l1, l2, l3 = 0, 0, 0
         sid = ""
-        if len(packet)>=4:
+        if len(packet) >= 4:
             sid = packet[3]
         if POSIX:
             try:
                 (fl1, fl2, fl3) = os.getloadavg()
-                l1,l2,l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
+                l1, l2, l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
             except (OSError, AttributeError):
                 pass
         try:
             sl = self.server_ping_latency[-1][1]
         except IndexError:
             sl = -1
-        if SWALLOW_PINGS>0:
+        if SWALLOW_PINGS > 0:
             return
         self.send("ping_echo", echotime, l1, l2, l3, int(1000.0*sl), sid)
-
 
     ######################################################################
     def send_bandwidth_limit(self) -> None:
         bandwidthlog("send_bandwidth_limit() bandwidth-limit=%i", self.bandwidth_limit)
         self.send("bandwidth-limit", self.bandwidth_limit)
-
 
     ######################################################################
     # packets:
