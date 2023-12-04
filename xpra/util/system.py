@@ -37,7 +37,7 @@ def set_proc_title(title) -> None:
 
 
 def register_SIGUSR_signals(idle_add=no_idle) -> None:
-    if os.name!="posix":
+    if os.name != "posix":
         return
     from xpra.util.pysystem import dump_gc_frames
     from xpra.util.pysystem import dump_all_frames
@@ -63,24 +63,24 @@ def _is_Wayland(env : dict) -> bool:
     backend = env.get("GDK_BACKEND", "")
     if backend == "wayland":
         return True
-    return backend!="x11" and (
-        bool(env.get("WAYLAND_DISPLAY")) or env.get("XDG_SESSION_TYPE")=="wayland"
+    return backend != "x11" and (
+        bool(env.get("WAYLAND_DISPLAY")) or env.get("XDG_SESSION_TYPE") == "wayland"
         )
 
 
-def is_distribution_variant(variant=b"Debian") -> bool:
+def is_distribution_variant(variant="Debian") -> bool:
     if not POSIX:
         return False
     try:
         v = load_os_release_file()
-        return any(l.find(variant)>=0 for l in v.splitlines() if l.startswith(b"NAME="))
+        return any(line.find(variant) >= 0 for line in v.splitlines() if line.startswith("NAME="))
     except Exception:
         pass
     try:
         d = get_linux_distribution()[0]
-        if d== bytestostr(variant):
+        if d == bytestostr(variant):
             return True
-        if variant==b"RedHat" and d.startswith(bytestostr(variant)):
+        if variant == "RedHat" and d.startswith(variant):
             return True
     except Exception:
         pass
@@ -101,66 +101,25 @@ def get_distribution_version_id() -> str:
     return ""
 
 
-os_release_file_data : bytes | None = None
+os_release_file_data : str | None = None
 
 
-def load_os_release_file() -> bytes:
+def load_os_release_file() -> str:
     global os_release_file_data
     if os_release_file_data is None:
         try:
-            os_release_file_data = load_binary_file("/etc/os-release") or b""
-        except OSError: # pragma: no cover
-            os_release_file_data = b""
+            os_release_file_data = load_binary_file("/etc/os-release").decode() or ""
+        except (OSError, UnicodeDecodeError):  # pragma: no cover
+            os_release_file_data = ""
     return os_release_file_data
 
 
 def is_Ubuntu() -> bool:
-    return is_distribution_variant(b"Ubuntu")
+    return is_distribution_variant("Ubuntu")
 
 
 def is_Debian() -> bool:
-    return is_distribution_variant(b"Debian")
-
-
-def is_Raspbian() -> bool:
-    return is_distribution_variant(b"Raspbian")
-
-
-def is_Fedora() -> bool:
-    return is_distribution_variant(b"Fedora")
-
-
-def is_Arch() -> bool:
-    return is_distribution_variant(b"Arch")
-
-
-def is_CentOS() -> bool:
-    return is_distribution_variant(b"CentOS")
-
-
-def is_AlmaLinux() -> bool:
-    return is_distribution_variant(b"AlmaLinux")
-
-
-def is_RockyLinux() -> bool:
-    return is_distribution_variant(b"Rocky Linux")
-
-
-def is_OracleLinux() -> bool:
-    return is_distribution_variant(b"Oracle Linux")
-
-
-def is_RedHat() -> bool:
-    return is_distribution_variant(b"RedHat")
-
-
-def is_openSUSE() -> bool:
-    return is_distribution_variant(b"openSUSE")
-
-
-def is_arm() -> bool:
-    import platform
-    return platform.uname()[4].startswith("arm")
+    return is_distribution_variant("Debian")
 
 
 _linux_distribution = ("", "", "")
@@ -176,7 +135,7 @@ def get_linux_distribution() -> tuple[str,str,str]:
         try:
             p = Popen(cmd, stdout=PIPE, stderr=PIPE)
             out = p.communicate()[0]
-            assert p.returncode==0 and out
+            assert p.returncode == 0 and out
         except Exception:
             try:
                 import platform
@@ -199,18 +158,18 @@ def get_linux_distribution() -> tuple[str,str,str]:
 
 def is_unity() -> bool:
     d = os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
-    return d.find("unity")>=0 or d.find("ubuntu") >= 0
+    return d.find("unity") >= 0 or d.find("ubuntu") >= 0
 
 
 def is_gnome() -> bool:
     if os.environ.get("XDG_SESSION_DESKTOP", "").split("-", 1)[0] in ("i3", "ubuntu", ):
         # "i3-gnome" is not really gnome... ie: the systray does work!
         return False
-    return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().find("gnome")>=0
+    return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().find("gnome") >= 0
 
 
 def is_kde() -> bool:
-    return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().find("kde")>=0
+    return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().find("kde") >= 0
 
 
 def get_loaded_kernel_modules(*modlist):
@@ -230,7 +189,7 @@ def is_WSL() -> bool:
         r = load_binary_file(f)
         if r:
             break
-    return r is not None and r.find(b"Microsoft")>=0
+    return r is not None and r.find(b"Microsoft") >= 0
 
 
 def get_generic_os_name() -> str:
@@ -252,7 +211,7 @@ def do_get_generic_os_name() -> str:
 def is_X11() -> bool:
     if OSX or WIN32:
         return False
-    if os.environ.get("XPRA_NOX11", "")=="1":
+    if os.environ.get("XPRA_NOX11", "") == "1":
         return False
     try:
         from xpra import x11
@@ -274,11 +233,11 @@ def nn(x) -> str:
     return str(x)
 
 
-def get_frame_info(ignore_threads:tuple[Thread,...]=()) -> dict[str|int,Any]:
-    info : dict[str|int,Any] = {
+def get_frame_info(ignore_threads: tuple[Thread, ...] = ()) -> dict[str | int, Any]:
+    info : dict[str | int, Any] = {
         "count"         : threading.active_count() - len(ignore_threads),
         "native-id"     : threading.get_native_id(),
-        }
+    }
     try:
         import traceback
         thread_ident : dict[int | None, str | None] = {}
@@ -330,7 +289,7 @@ def get_sysconfig_info() -> dict[str,Any]:
         "python-version",
         "config-vars",
         "paths",
-        ):
+    ):
         fn = "get_"+attr.replace("-", "_")
         getter = getattr(sysconfig, fn, None)
         if getter:

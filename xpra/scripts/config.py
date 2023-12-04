@@ -19,7 +19,7 @@ from xpra.os_util import (
 )
 from xpra.util.env import osexpand
 from xpra.util.io import stderr_print, which
-from xpra.util.system import is_Ubuntu, is_Debian, is_arm
+from xpra.util.system import is_Ubuntu, is_Debian
 
 
 def warn(msg:str) -> None:
@@ -28,6 +28,11 @@ def warn(msg:str) -> None:
 
 def nodebug(*_args) -> None:
     pass
+
+
+def is_arm() -> bool:
+    import platform
+    return platform.uname()[4].startswith("arm")
 
 
 # can be overridden

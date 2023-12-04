@@ -14,8 +14,10 @@ from xpra.os_util import (
 from xpra.util.env import OSEnvContext
 from xpra.util.thread import is_main_thread
 from xpra.util.io import livefds
-from xpra.util.system import is_Ubuntu, is_Debian, is_Raspbian, is_Fedora, is_Arch, is_CentOS, is_RedHat, is_unity, \
-    is_gnome, is_kde, is_WSL
+from xpra.util.system import (
+    is_Ubuntu, is_Debian, is_unity,
+    is_gnome, is_kde, is_WSL,
+)
 from xpra.util.str_fn import strtobytes, bytestostr, hexstr, memoryview_to_bytes
 
 
@@ -40,11 +42,6 @@ class TestOSUtil(unittest.TestCase):
     def test_distribution_variant(self):
         is_Ubuntu()
         is_Debian()
-        is_Raspbian()
-        is_Fedora()
-        is_Arch()
-        is_CentOS()
-        is_RedHat()
         is_WSL()
 
     def test_de(self):

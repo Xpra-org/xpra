@@ -32,19 +32,43 @@ except ImportError as e:
     from setuptools.command.install import install as install_data
 
 import xpra
-from xpra.os_util import (
-    getuid,
-    BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD,
-)
-from xpra.util.system import is_Ubuntu, is_Debian, is_Fedora, is_CentOS, is_AlmaLinux, is_RockyLinux, is_OracleLinux, \
-    is_RedHat, is_openSUSE
+from xpra.os_util import BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD, getuid
+from xpra.util.system import is_distribution_variant, is_Ubuntu, is_Debian
 from xpra.util.io import load_binary_file, get_status_output
 
-if BITS!=64:
+if BITS != 64:
     print(f"Warning: {BITS}-bit architecture, only 64-bits are officially supported")
     for _ in range(5):
         sleep(1)
         print(".")
+
+
+def is_Fedora() -> bool:
+    return is_distribution_variant("Fedora")
+
+
+def is_RedHat() -> bool:
+    return is_distribution_variant("RedHat")
+
+
+def is_AlmaLinux() -> bool:
+    return is_distribution_variant("AlmaLinux")
+
+
+def is_RockyLinux() -> bool:
+    return is_distribution_variant("Rocky Linux")
+
+
+def is_CentOS() -> bool:
+    return is_distribution_variant("CentOS")
+
+
+def is_openSUSE() -> bool:
+    return is_distribution_variant("openSUSE")
+
+
+def is_OracleLinux() -> bool:
+    return is_distribution_variant("Oracle Linux")
 
 
 #*******************************************************************************
