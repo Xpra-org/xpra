@@ -8,7 +8,8 @@ import time
 import unittest
 
 from xpra.util.types import typedict
-from xpra.os_util import pollwait, which, OSX, POSIX
+from xpra.os_util import OSX, POSIX
+from xpra.util.io import pollwait, which
 from unit.server_test_util import ServerTestUtil, log
 
 

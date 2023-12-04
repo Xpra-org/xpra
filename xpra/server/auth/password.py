@@ -5,7 +5,7 @@
 
 from collections.abc import Callable
 
-from xpra.os_util import bytestostr
+from xpra.util.str_fn import bytestostr
 from xpra.server.auth.sys_auth_base import SysAuthenticator
 
 

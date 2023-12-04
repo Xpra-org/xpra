@@ -8,7 +8,7 @@ import os
 import socket
 from typing import Any
 
-from xpra.os_util import get_util_logger
+from xpra.util.io import get_util_logger
 from xpra.common import WORKSPACE_UNSET
 
 SKIP_METADATA = os.environ.get("XPRA_SKIP_METADATA", "").split(",")

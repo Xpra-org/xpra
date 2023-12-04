@@ -13,7 +13,7 @@ from xpra.platform.gui import get_native_notifier_classes, get_wm_name
 from xpra.platform.paths import get_icon_dir
 from xpra.server import features
 from xpra.net.common import PacketType
-from xpra.os_util import is_Wayland
+from xpra.util.system import is_Wayland
 from xpra.util.env import envint, envbool
 from xpra.common import NotificationID, ConnectionMessage
 from xpra.log import Logger

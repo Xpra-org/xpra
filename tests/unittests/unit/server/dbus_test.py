@@ -7,7 +7,8 @@
 import os
 import unittest
 
-from xpra.os_util import OSX, POSIX, OSEnvContext
+from xpra.os_util import OSX, POSIX
+from xpra.util.env import OSEnvContext
 
 
 def noop(*_args, **_kwargs):

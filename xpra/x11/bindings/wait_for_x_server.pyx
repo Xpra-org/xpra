@@ -8,7 +8,7 @@
 # see http://partiwm.org/ticket/34 for details
 
 from time import sleep, monotonic
-from xpra.os_util import bytestostr
+from xpra.util.str_fn import bytestostr
 
 from xpra.x11.bindings.xlib cimport Display, XOpenDisplay, XCloseDisplay
 

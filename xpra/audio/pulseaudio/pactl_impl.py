@@ -10,7 +10,9 @@ import os.path
 from typing import Any, Optional
 
 from xpra.audio.pulseaudio.common_util import get_pulse_server_x11_property, get_pulse_id_x11_property
-from xpra.os_util import which, WIN32, OSX, bytestostr, strtobytes
+from xpra.os_util import WIN32, OSX
+from xpra.util.io import which
+from xpra.util.str_fn import strtobytes, bytestostr
 
 from xpra.log import Logger
 log = Logger("audio")
@@ -215,7 +217,7 @@ def get_info() -> dict[str,Any]:
 
 def main():
     from xpra.util.str_fn import print_nested_dict
-    from xpra.os_util import load_binary_file
+    from xpra.util.io import load_binary_file
     if "-v" in sys.argv:
         log.enable_debug()
         sys.argv.remove("-v")

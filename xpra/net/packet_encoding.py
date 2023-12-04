@@ -16,7 +16,7 @@ from xpra.net.protocol.header import (
     FLAGS_RENCODE, FLAGS_RENCODEPLUS, FLAGS_YAML, FLAGS_NOHEADER,
     pack_header,
     )
-from xpra.os_util import strtobytes
+from xpra.util.str_fn import strtobytes
 from xpra.util.env import envbool
 
 #all the encoders we know about:

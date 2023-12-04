@@ -12,7 +12,9 @@ from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.util.types import typedict
 from xpra.util.env import envbool
-from xpra.os_util import bytestostr, is_gnome, gi_import
+from xpra.os_util import gi_import
+from xpra.util.system import is_gnome
+from xpra.util.str_fn import bytestostr
 from xpra.log import Logger
 
 paintlog = Logger("paint")

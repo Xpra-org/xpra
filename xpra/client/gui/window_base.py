@@ -12,11 +12,12 @@ from typing import Any
 from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window_backing_base import fire_paint_callbacks
 from xpra.util.parsing import scaleup_value, scaledown_value
-from xpra.os_util import bytestostr, OSX, WIN32, is_Wayland, ignorewarnings
+from xpra.os_util import OSX, WIN32
+from xpra.util.system import is_Wayland
 from xpra.common import GravityStr, WORKSPACE_UNSET, WORKSPACE_NAMES
 from xpra.util.types import typedict
-from xpra.util.str_fn import std
-from xpra.util.env import envint, envbool
+from xpra.util.str_fn import std, bytestostr
+from xpra.util.env import envint, envbool, ignorewarnings
 from xpra.log import Logger
 
 log = Logger("window")

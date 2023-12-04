@@ -6,7 +6,7 @@
 from ctypes import create_string_buffer, sizeof, byref, addressof
 from ctypes.wintypes import MAX_PATH
 
-from xpra.os_util import strtobytes
+from xpra.util.str_fn import strtobytes
 from xpra.platform.win32 import constants as win32con
 from xpra.log import Logger
 

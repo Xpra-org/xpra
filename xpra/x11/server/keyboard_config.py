@@ -9,9 +9,9 @@ import hashlib
 from typing import Any
 
 from xpra.util.types import typedict
-from xpra.util.str_fn import csv
+from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envbool
-from xpra.os_util import bytestostr, gi_import
+from xpra.os_util import gi_import
 from xpra.gtk.keymap import get_gtk_keymap
 from xpra.gtk.util import get_default_root_window
 from xpra.gtk.error import xsync, xlog

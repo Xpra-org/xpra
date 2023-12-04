@@ -10,7 +10,8 @@ import subprocess
 from time import monotonic
 
 from xpra.util.env import envint
-from xpra.os_util import bytestostr, gi_import, WIN32, OSX
+from xpra.os_util import gi_import, WIN32, OSX
+from xpra.util.str_fn import bytestostr
 from xpra.gtk.signals import register_os_signals
 from xpra.util.child_reaper import getChildReaper
 from xpra.net.file_transfer import ACCEPT, OPEN, DENY

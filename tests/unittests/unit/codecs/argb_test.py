@@ -7,7 +7,7 @@
 import unittest
 from time import monotonic
 
-from xpra.os_util import hexstr
+from xpra.util.str_fn import hexstr
 from xpra.codecs.argb.argb import r210_to_rgba, r210_to_rgbx, argb_to_rgba, bgra_to_rgba    #pylint: disable=no-name-in-module
 
 

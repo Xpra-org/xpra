@@ -8,7 +8,9 @@ import sys
 import glob
 import os.path
 
-from xpra.os_util import hexstr, osexpand, load_binary_file, use_gui_prompt, bytestostr
+from xpra.util.env import osexpand
+from xpra.util.io import load_binary_file, use_gui_prompt
+from xpra.util.str_fn import bytestostr, hexstr
 from xpra.platform.paths import get_user_conf_dirs
 from xpra.log import Logger
 

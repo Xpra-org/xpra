@@ -38,7 +38,7 @@ from Foundation import (
 
 from xpra.common import roundup, NotificationID
 from xpra.util.env import envint, envbool
-from xpra.os_util import CaptureStdErr
+from xpra.util.io import CaptureStdErr
 from xpra.notifications.notifier_base import NotifierBase
 from xpra.platform.darwin import get_OSXApplication
 from xpra.log import Logger

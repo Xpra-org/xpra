@@ -15,10 +15,10 @@ from contextlib import nullcontext
 from typing import ContextManager, Any
 from collections.abc import Callable, Iterable
 
-from xpra.os_util import POSIX, OSX, first_time
+from xpra.os_util import POSIX, OSX
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv, repr_ellipsized, decode_str
-from xpra.util.env import envint, envbool
+from xpra.util.env import envint, envbool, first_time
 from xpra.common import MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
 from xpra.server.window.windowicon import WindowIconSource
 from xpra.server.window.perfstats import WindowPerformanceStatistics

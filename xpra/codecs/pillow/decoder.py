@@ -12,8 +12,7 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.util.types import typedict
-from xpra.util.str_fn import csv
-from xpra.os_util import hexstr, strtobytes
+from xpra.util.str_fn import csv, strtobytes, hexstr
 from xpra.codecs.debug import may_save_image
 from xpra.log import Logger
 

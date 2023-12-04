@@ -12,7 +12,7 @@ if len(sys.argv) > 1:
     name = "xpra_signal_listener"
     pos = argstr.find(name)
     if pos >= 0:
-        from xpra.os_util import set_proc_title
+        from xpra.util.system import set_proc_title
     set_proc_title(argstr[pos+len(name):].strip())
 
 

@@ -7,7 +7,7 @@ import sys
 import traceback
 from collections.abc import Callable
 
-from xpra.os_util import get_util_logger
+from xpra.util.io import get_util_logger
 
 
 def dump_all_frames(logger=None) -> None:
@@ -80,7 +80,6 @@ def mem_watcher(ms, pid:int=os.getpid()) -> None:
         #get_util_logger().info("memory usage: %s", mem.mem//1024//1024)
         get_util_logger().info("memory usage for %s: %s", pid, mem)
         time.sleep(ms/1000.0)
-
 
 def log_mem_info(prefix="memory usage: ", pid=os.getpid()) -> None:
     import psutil

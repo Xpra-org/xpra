@@ -15,10 +15,11 @@ from xpra.common import noop
 from xpra.util.str_fn import csv
 from xpra.os_util import (
     WIN32, OSX, POSIX,
-    osexpand, getuid, getgid, get_username_for_uid,
-    is_Debian, is_Ubuntu, is_arm,
-    which, stderr_print,
+    getuid, getgid, get_username_for_uid,
 )
+from xpra.util.env import osexpand
+from xpra.util.io import stderr_print, which
+from xpra.util.system import is_Ubuntu, is_Debian, is_arm
 
 
 def warn(msg:str) -> None:

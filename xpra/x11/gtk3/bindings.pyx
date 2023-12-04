@@ -9,8 +9,8 @@ from time import monotonic
 from collections.abc import Callable
 from typing import Dict, Set
 
-from xpra.os_util import strtobytes, bytestostr, gi_import
-from xpra.util.str_fn import csv
+from xpra.os_util import gi_import
+from xpra.util.str_fn import strtobytes, bytestostr, csv
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "gtk")

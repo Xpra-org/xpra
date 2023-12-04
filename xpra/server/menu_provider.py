@@ -13,9 +13,8 @@ from gi.repository import GLib  # @UnresolvedImport
 from xpra.common import DEFAULT_XDG_DATA_DIRS
 from xpra.os_util import (
     OSX, POSIX, WIN32,
-    osexpand,
-    )
-from xpra.util.env import envint, envbool
+)
+from xpra.util.env import envint, envbool, osexpand
 from xpra.util.thread import start_thread
 from xpra.server.background_worker import add_work_item
 from xpra.log import Logger

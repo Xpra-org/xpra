@@ -5,7 +5,8 @@
 
 import sys
 
-from xpra.os_util import SIGNAMES, gi_import
+from xpra.os_util import gi_import
+from xpra.util.system import SIGNAMES
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf

@@ -6,7 +6,9 @@
 import signal
 from collections.abc import Callable
 
-from xpra.os_util import SIGNAMES, stderr_print, get_util_logger, POSIX
+from xpra.os_util import POSIX
+from xpra.util.system import SIGNAMES
+from xpra.util.io import stderr_print, get_util_logger
 
 _glib_unix_signals : dict[int, int] = {}
 

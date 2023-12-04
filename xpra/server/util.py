@@ -2,7 +2,7 @@
 # Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
+import os
 import sys
 import json
 import shlex
@@ -10,13 +10,11 @@ import os.path
 from subprocess import Popen, PIPE
 from typing import Any
 
-from xpra.util.env import envbool
+from xpra.util.env import envbool, shellsub, osexpand
 from xpra.os_util import (
     OSX, POSIX,
-    which,
-    shellsub,
-    osexpand, umask_context,
-    )
+)
+from xpra.util.io import umask_context, which, get_util_logger
 from xpra.log import Logger
 from xpra.platform.dotxpra import norm_makepath
 from xpra.platform.paths import get_python_exec_command
@@ -522,3 +520,45 @@ def create_uinput_devices(uinput_uuid, uid:int) -> dict[str,Any]:
 
 def create_input_devices(uinput_uuid, uid:int) -> dict[str,Any]:
     return create_uinput_devices(uinput_uuid, uid)
+
+
+def setuidgid(uid:int, gid:int) -> None:
+    if not POSIX:
+        return
+    log = get_util_logger()
+    if os.getuid()!=uid or os.getgid()!=gid:
+        #find the username for the given uid:
+        from pwd import getpwuid
+        try:
+            username = getpwuid(uid).pw_name
+        except KeyError:
+            raise ValueError(f"uid {uid} not found") from None
+        #set the groups:
+        if hasattr(os, "initgroups"):   # python >= 2.7
+            os.initgroups(username, gid)
+        else:
+            import grp
+            groups = [gr.gr_gid for gr in grp.getgrall() if username in gr.gr_mem]
+            os.setgroups(groups)
+    #change uid and gid:
+    try:
+        if os.getgid()!=gid:
+            os.setgid(gid)
+    except OSError as e:
+        log.error(f"Error: cannot change gid to {gid}")
+        if os.getgid()==0:
+            #don't run as root!
+            raise
+        log.estr(e)
+        log.error(f" continuing with gid={os.getgid()}")
+    try:
+        if os.getuid()!=uid:
+            os.setuid(uid)
+    except OSError as e:
+        log.error(f"Error: cannot change uid to {uid}")
+        if os.getuid()==0:
+            #don't run as root!
+            raise
+        log.estr(e)
+        log.error(f" continuing with uid={os.getuid()}")
+    log(f"new uid={os.getuid()}, gid={os.getgid()}")

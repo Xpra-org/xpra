@@ -13,8 +13,9 @@ import re
 from io import BytesIO
 
 from xpra.util.str_fn import ellipsizer
-from xpra.util.env import envint, envbool
-from xpra.os_util import load_binary_file, first_time, gi_import
+from xpra.util.env import envint, envbool, first_time
+from xpra.os_util import gi_import
+from xpra.util.io import load_binary_file
 from xpra.log import Logger
 
 log = Logger("menu")

@@ -38,7 +38,7 @@ def get_interface_info(_fd, iface):
                     return props
     except Exception as e:
         log("get_interface_info(%s)", iface, exc_info=True)
-        from xpra.os_util import first_time
+        from xpra.util.env import first_time
         if first_time("win32-network-query"):
             log.info("cannot query network interface:")
             log.info(" %s", e)

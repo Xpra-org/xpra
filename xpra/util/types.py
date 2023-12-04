@@ -7,7 +7,7 @@ from itertools import chain
 from typing import Any
 
 from xpra.util.str_fn import strtobytes, bytestostr
-from xpra.os_util import get_util_logger
+from xpra.util.io import get_util_logger
 
 
 class AtomicInteger:

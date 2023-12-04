@@ -16,9 +16,9 @@ from gi.repository import GLib  # @UnresolvedImport
 from xpra.common import noop
 from xpra.net.compression import Compressible
 from xpra.net.common import PacketType
-from xpra.os_util import POSIX, bytestostr, hexstr
+from xpra.os_util import POSIX
 from xpra.util.types import typedict
-from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized
+from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized, bytestostr, hexstr
 from xpra.util.env import envint, envbool
 from xpra.platform.features import CLIPBOARDS as PLATFORM_CLIPBOARDS
 from xpra.log import Logger, is_debug_enabled

@@ -4,11 +4,15 @@
 # later version. See the file COPYING for details.
 
 import os
+import socket
+import struct
 import threading
 from typing import Any, Union, TypeAlias
 from collections.abc import Callable, ByteString
 
 from xpra.net.compression import Compressed, Compressible, LargeStructure
+from xpra.os_util import LINUX, FREEBSD
+from xpra.util.io import get_util_logger
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool
 from xpra.log import Logger
@@ -145,14 +149,37 @@ def _may_log_packet(sending, packet_type, packet) -> None:
                 s = repr_ellipsized(s, PACKET_LOG_MAX_SIZE)
             log.info(s)
 
+
 LOG_PACKETS : tuple[str, ...] = ()
 NOLOG_PACKETS : tuple[str, ...] = ()
 LOG_PACKET_TYPE : bool = False
 PACKET_LOG_MAX_SIZE : int = 500
 
+
 def noop(*_args) -> None:
     """ the default implementation is to do nothing """
 may_log_packet : Callable = noop
+
+
+def get_peercred(sock) -> tuple[int, int, int] | None:
+    log = get_util_logger()
+    if LINUX:
+        SO_PEERCRED = 17
+        try:
+            creds = sock.getsockopt(socket.SOL_SOCKET, SO_PEERCRED, struct.calcsize(b'3i'))
+            pid, uid, gid = struct.unpack(b'3i',creds)
+            log("peer: %s", (pid, uid, gid))
+            return pid, uid, gid
+        except OSError as  e:
+            log("getsockopt", exc_info=True)
+            log.error(f"Error getting peer credentials: {e}")
+            return None
+    elif FREEBSD:
+        log.warn("Warning: peercred is not yet implemented for FreeBSD")
+        #use getpeereid
+        #then pwd to get the gid?
+    return None
+
 
 def init() -> None:
     global LOG_PACKETS, NOLOG_PACKETS, LOG_PACKET_TYPE, PACKET_LOG_MAX_SIZE

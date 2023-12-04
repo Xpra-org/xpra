@@ -11,7 +11,10 @@ from xpra.platform.keyboard_base import KeyboardBase
 from xpra.dbus.helper import DBusHelper, native_to_dbus, dbus_to_native
 from xpra.keyboard.mask import MODIFIER_MAP
 from xpra.log import Logger
-from xpra.os_util import is_X11, is_Wayland, bytestostr, first_time
+from xpra.util.env import first_time
+from xpra.util.system import is_Wayland, is_X11
+from xpra.util.str_fn import bytestostr
+
 if is_X11():
     from xpra.gtk.error import xsync
 

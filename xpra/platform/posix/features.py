@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.os_util import is_Wayland
+from xpra.util.system import is_Wayland
 
 AUTOSTART = True
 

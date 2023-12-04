@@ -30,14 +30,13 @@ from xpra.common import WINDOW_NOT_FOUND, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_E
 from xpra.platform.paths import get_icon_filename, get_resources_dir, get_python_execfile_command
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.thread import start_thread
-from xpra.util.str_fn import std
+from xpra.util.str_fn import std, bytestostr, memoryview_to_bytes
 from xpra.os_util import (
-    bytestostr, memoryview_to_bytes,
-    OSX, POSIX, is_Ubuntu, first_time,
-)
+    OSX, POSIX, )
+from xpra.util.system import is_Ubuntu
 from xpra.util.types import typedict, make_instance
 from xpra.util.str_fn import repr_ellipsized
-from xpra.util.env import envint, envbool
+from xpra.util.env import envint, envbool, first_time
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 

@@ -13,7 +13,8 @@ from xpra.common import noop
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.types import AtomicInteger, typedict
 from xpra.util.env import envint
-from xpra.os_util import WIN32, OSX, load_binary_file, gi_import
+from xpra.os_util import WIN32, OSX, gi_import
+from xpra.util.io import load_binary_file
 from xpra.log import Logger
 from xpra.platform.paths import get_icon_filename
 from xpra.client.gui.fake_client import FakeClient

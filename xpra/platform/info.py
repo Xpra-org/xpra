@@ -37,7 +37,7 @@ def get_posix_sys_info() -> dict[str, dict[str, dict[str, int]]]:
                     value = int(value)
                 kinfo[var] = value
     except OSError:   # pragma: no cover
-        from xpra.os_util import get_util_logger
+        from xpra.util.io import get_util_logger
         get_util_logger().error("Error getting memory usage info", exc_info=True)
     return {
         "memory" : meminfo,

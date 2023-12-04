@@ -9,9 +9,9 @@ from subprocess import Popen
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util.types import typedict
-from xpra.util.str_fn import std, alnum
-from xpra.util.env import envint
-from xpra.os_util import OSX, shellsub, bytestostr, first_time
+from xpra.util.str_fn import std, alnum, bytestostr
+from xpra.util.env import envint, shellsub, first_time
+from xpra.os_util import OSX
 from xpra.scripts.config import TRUE_OPTIONS
 from xpra.util.child_reaper import getChildReaper
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log

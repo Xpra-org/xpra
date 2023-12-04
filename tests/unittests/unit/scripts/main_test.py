@@ -12,7 +12,9 @@ import tempfile
 import unittest
 from subprocess import Popen, DEVNULL, PIPE
 
-from xpra.os_util import OSEnvContext, pollwait, getuid, POSIX, OSX
+from xpra.os_util import getuid, POSIX, OSX
+from xpra.util.env import OSEnvContext
+from xpra.util.io import pollwait
 from xpra.util.types import AdHocStruct
 from xpra.platform.paths import get_xpra_command
 from xpra.common import noop, noerr

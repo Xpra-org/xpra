@@ -11,7 +11,8 @@ import unittest
 from subprocess import Popen, PIPE
 
 from xpra.util.env import envbool
-from xpra.os_util import pollwait, POSIX, OSX
+from xpra.os_util import POSIX, OSX
+from xpra.util.io import pollwait
 from unit.process_test_util import ProcessTestUtil, log
 
 

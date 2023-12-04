@@ -16,13 +16,11 @@ from gi.repository import GLib
 from xpra.platform.features import COMMAND_SIGNALS
 from xpra.util.child_reaper import getChildReaper, ProcInfo, reaper_cleanup
 from xpra.os_util import (
-    bytestostr,
-    restore_script_env,
     OSX, WIN32,
     )
 from xpra.util.types import typedict
-from xpra.util.str_fn import csv, ellipsizer
-from xpra.util.env import envint
+from xpra.util.str_fn import csv, ellipsizer, bytestostr
+from xpra.util.env import envint, restore_script_env
 from xpra.net.common import PacketType
 from xpra.util.thread import start_thread
 from xpra.scripts.parsing import parse_env, get_subcommands

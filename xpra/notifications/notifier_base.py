@@ -6,7 +6,7 @@
 import os
 import tempfile
 
-from xpra.os_util import osexpand
+from xpra.util.env import osexpand
 from xpra.log import Logger
 from xpra.common import NotificationID
 

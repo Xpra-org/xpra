@@ -8,7 +8,8 @@ import os
 import tempfile
 
 from xpra.util.env import envbool
-from xpra.os_util import pollwait, which, WIN32, OSX, POSIX
+from xpra.os_util import WIN32, OSX, POSIX
+from xpra.util.io import pollwait, which
 from xpra.exit_codes import exit_str
 from unit.test_util import get_free_tcp_port
 from unit.server_test_util import ServerTestUtil, log

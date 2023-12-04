@@ -3,7 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.os_util import gi_import, IgnoreWarningsContext
+from xpra.os_util import gi_import
+from xpra.util.env import IgnoreWarningsContext
 from xpra.common import MoveResize, MOVERESIZE_DIRECTION_STRING
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf

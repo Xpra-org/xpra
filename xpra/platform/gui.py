@@ -11,7 +11,7 @@ import binascii
 from typing import Any
 
 from xpra.platform import platform_import
-from xpra.os_util import bytestostr
+from xpra.util.str_fn import bytestostr
 from xpra.log import Logger
 
 

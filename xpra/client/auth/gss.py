@@ -5,8 +5,8 @@
 
 import os
 
-from xpra.util.str_fn import csv
-from xpra.os_util import bytestostr, OSX
+from xpra.util.str_fn import csv, bytestostr
+from xpra.os_util import OSX
 from xpra.log import Logger
 
 log = Logger("auth")

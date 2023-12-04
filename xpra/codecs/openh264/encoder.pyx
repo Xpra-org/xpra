@@ -12,9 +12,8 @@ from typing import Any, Dict
 from xpra.log import Logger
 log = Logger("encoder", "openh264")
 
-from xpra.util.str_fn import csv
+from xpra.util.str_fn import csv, bytestostr, strtobytes
 from xpra.util.types import typedict, AtomicInteger
-from xpra.os_util import bytestostr, strtobytes
 from xpra.codecs.constants import video_spec
 from collections import deque
 

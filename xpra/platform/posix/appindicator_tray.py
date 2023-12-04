@@ -16,8 +16,8 @@ import sys
 import tempfile
 from time import monotonic
 
-from xpra.util.env import envbool
-from xpra.os_util import osexpand, gi_import
+from xpra.util.env import envbool, osexpand
+from xpra.os_util import gi_import
 from xpra.client.gui.tray_base import TrayBase
 from xpra.platform.paths import get_icon_dir, get_icon_filename, get_xpra_tmp_dir
 from xpra.log import Logger

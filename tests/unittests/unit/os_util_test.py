@@ -7,16 +7,16 @@
 import unittest
 
 from xpra.os_util import (
-    strtobytes, bytestostr, memoryview_to_bytes, hexstr,
-    OSEnvContext,
     POSIX,
-    is_main_thread,
     getuid, getgid, get_shell_for_uid, get_username_for_uid, get_home_for_uid,
     get_hex_uuid, get_int_uuid, get_user_uuid,
-    is_Ubuntu, is_Debian, is_Raspbian, is_Fedora, is_Arch, is_CentOS, is_RedHat, is_WSL,
-    is_unity, is_gnome, is_kde,
-    livefds,
-    )
+)
+from xpra.util.env import OSEnvContext
+from xpra.util.thread import is_main_thread
+from xpra.util.io import livefds
+from xpra.util.system import is_Ubuntu, is_Debian, is_Raspbian, is_Fedora, is_Arch, is_CentOS, is_RedHat, is_unity, \
+    is_gnome, is_kde, is_WSL
+from xpra.util.str_fn import strtobytes, bytestostr, hexstr, memoryview_to_bytes
 
 
 class TestOSUtil(unittest.TestCase):

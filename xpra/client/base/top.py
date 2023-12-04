@@ -13,13 +13,12 @@ from datetime import datetime, timedelta
 
 from xpra.util.version import caps_to_version, full_version_str
 from xpra.util.types import typedict
-from xpra.util.str_fn import std, csv
+from xpra.util.str_fn import std, csv, bytestostr
 from xpra.util.env import envint
 from xpra.os_util import (
-    platform_name, get_machine_id,
-    bytestostr,
-    POSIX, SIGNAMES,
-    )
+    get_machine_id,
+    POSIX, )
+from xpra.util.system import platform_name, SIGNAMES
 from xpra.exit_codes import ExitCode
 from xpra.util.thread import start_thread
 from xpra.client.base.command import InfoTimerClient

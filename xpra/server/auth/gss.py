@@ -6,7 +6,7 @@
 
 import sys
 
-from xpra.os_util import stderr_print
+from xpra.util.io import stderr_print
 from xpra.util.types import typedict
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
 from xpra.net.digest import get_salt, get_digests, gendigest

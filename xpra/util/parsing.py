@@ -2,13 +2,14 @@
 # Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
+import binascii
 import os
 
-from xpra.os_util import get_util_logger
+from xpra.util.io import get_util_logger
 from xpra.util.env import envfloat
 from xpra.log import Logger
 from xpra.scripts.config import TRUE_OPTIONS
+from xpra.util.str_fn import bytestostr
 
 log = Logger("scaling")
 
@@ -185,3 +186,24 @@ def intrangevalidator(v, min_value=None, max_value=None):
     if max_value is not None and v>max_value:
         raise ValueError(f"value must be lower than {max_value}")
     return v
+
+
+def parse_encoded_bin_data(data:str) -> bytes:
+    if not data:
+        return b""
+    header = bytestostr(data).lower()[:10]
+    if header.startswith("0x"):
+        return binascii.unhexlify(data[2:])
+    import base64
+    if header.startswith("b64:"):
+        return base64.b64decode(data[4:])
+    if header.startswith("base64:"):
+        return base64.b64decode(data[7:])
+    try:
+        return binascii.unhexlify(data)
+    except (TypeError, binascii.Error):
+        try:
+            return base64.b64decode(data)
+        except Exception:
+            pass
+    return b""

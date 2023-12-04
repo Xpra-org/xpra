@@ -11,10 +11,10 @@ from typing import Any
 from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.common import FULL_INFO, NotificationID
-from xpra.os_util import get_machine_id, get_user_uuid, bytestostr, first_time
+from xpra.os_util import get_machine_id, get_user_uuid
 from xpra.util.types import typedict
-from xpra.util.str_fn import csv
-from xpra.util.env import envint, envbool
+from xpra.util.str_fn import csv, bytestostr
+from xpra.util.env import envint, envbool, first_time
 from xpra.log import Logger
 
 log = Logger("audio")

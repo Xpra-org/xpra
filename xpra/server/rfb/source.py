@@ -12,10 +12,8 @@ from xpra.net.rfb.encode import (
     raw_encode, tight_encode, tight_png, rgb222_encode, #zlib_encode,
     )
 from xpra.net.protocol.socket_handler import PACKET_JOIN_SIZE
-from xpra.os_util import memoryview_to_bytes
-from xpra.os_util import strtobytes
 from xpra.util.types import AtomicInteger
-from xpra.util.str_fn import csv
+from xpra.util.str_fn import csv, strtobytes, memoryview_to_bytes
 from xpra.log import Logger
 
 log = Logger("rfb")

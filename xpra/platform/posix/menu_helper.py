@@ -17,8 +17,7 @@ from contextlib import nullcontext
 from typing import Any
 from collections.abc import Generator
 
-from xpra.util.env import envbool
-from xpra.os_util import OSEnvContext, IgnoreWarningsContext, get_saved_env, first_time
+from xpra.util.env import envbool, OSEnvContext, first_time, IgnoreWarningsContext, get_saved_env
 from xpra.codecs import icon_util
 from xpra.platform.paths import get_icon_filename
 from xpra.log import Logger

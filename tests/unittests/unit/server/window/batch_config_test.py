@@ -9,7 +9,7 @@ import unittest
 from time import monotonic
 
 from unit.test_util import silence_warn
-from xpra.os_util import OSEnvContext
+from xpra.util.env import OSEnvContext
 from xpra.server.window import batch_config
 from xpra.server.window.batch_config import DamageBatchConfig, ival
 

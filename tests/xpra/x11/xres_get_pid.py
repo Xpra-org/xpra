@@ -24,7 +24,7 @@ def main(args):
         pid = res.get_pid(w)
         cmdline = ""
         if pid:
-            from xpra.os_util import load_binary_file
+            from xpra.util.io import load_binary_file
             cmdline = (load_binary_file("/proc/%i/cmdline" % pid) or b"").decode()
         print("pid(%#x)=%s      %s" % (w, pid, cmdline))
 

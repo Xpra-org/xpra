@@ -19,10 +19,9 @@ from xpra.x11.bindings.xlib cimport (
     CurrentTime, Success,
     )
 from xpra.common import DEFAULT_REFRESH_RATE
-from xpra.util.env import envint, envbool
-from xpra.util.str_fn import csv, decode_str
+from xpra.util.env import envint, envbool, first_time
+from xpra.util.str_fn import csv, decode_str, strtobytes, bytestostr
 from xpra.util.screen import prettify_plug_name
-from xpra.os_util import first_time, strtobytes, bytestostr
 
 
 TIMESTAMPS = envbool("XPRA_RANDR_TIMESTAMPS", False)

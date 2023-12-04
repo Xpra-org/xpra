@@ -12,9 +12,9 @@ from time import monotonic
 from typing import Any
 from collections.abc import Callable
 
-from xpra.util.env import envbool
+from xpra.util.env import envbool, SilenceWarningsContext
 from xpra.util.version import dict_version_trim
-from xpra.os_util import SilenceWarningsContext, gi_import
+from xpra.os_util import gi_import
 from xpra.common import FULL_INFO
 from xpra.net.common import PacketType
 from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
@@ -89,7 +89,7 @@ class GTKServerBase(ServerBase):
         Gtk.main_quit()
         log("do_quit: Gtk.main_quit done")
         #from now on, we can't rely on the main loop:
-        from xpra.os_util import register_SIGUSR_signals    # pylint: disable=import-outside-toplevel
+        from xpra.util.system import register_SIGUSR_signals
         register_SIGUSR_signals()
 
     def late_cleanup(self) -> None:

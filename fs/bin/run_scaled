@@ -47,7 +47,7 @@ def parse_scale(scale):
 def get_screen_spec():
     #figure out the dpi and vfb size to use,
     dpi = width = height = 0
-    from xpra.os_util import OSEnvContext
+    from xpra.util.env import OSEnvContext
     with OSEnvContext():
         os.environ["GDK_SCALE"] = "1"
         os.environ["GDK_DPI_SCALE"] = "1"

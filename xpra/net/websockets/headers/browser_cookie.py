@@ -5,7 +5,7 @@
 
 import browser_cookie3  # @UnresolvedImport
 
-from xpra.os_util import strtobytes
+from xpra.util.str_fn import strtobytes
 
 
 def get_headers(host:str, _port:int) -> dict[bytes,bytes]:    #pylint: disable=unused-argument

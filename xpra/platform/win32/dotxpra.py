@@ -6,7 +6,8 @@
 
 import os
 
-from xpra.os_util import get_util_logger, osexpand
+from xpra.util.env import osexpand
+from xpra.util.io import get_util_logger
 from xpra.common import SocketState
 
 DISPLAY_PREFIX = ""

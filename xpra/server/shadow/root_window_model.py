@@ -7,10 +7,8 @@ import socket
 from collections import namedtuple
 from typing import Any
 
-from xpra.os_util import (
-    get_generic_os_name, do_get_generic_os_name,
-    load_binary_file, get_linux_distribution,
-    )
+from xpra.util.system import get_linux_distribution, get_generic_os_name, do_get_generic_os_name
+from xpra.util.io import load_binary_file
 from xpra.platform.paths import get_icon_filename
 from xpra.log import Logger
 

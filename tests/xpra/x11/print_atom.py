@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.os_util import bytestostr
+from xpra.util.str_fn import bytestostr
 from xpra.x11.gtk3 import gdk_display_source    #@UnresolvedImport, @Reimport
 gdk_display_source.init_gdk_display_source()  # @UndefinedVariable
 

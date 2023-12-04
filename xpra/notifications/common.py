@@ -7,7 +7,9 @@ import os.path
 from io import BytesIO
 from typing import TypeAlias
 
-from xpra.os_util import load_binary_file, first_time, gi_import
+from xpra.os_util import gi_import
+from xpra.util.env import first_time
+from xpra.util.io import load_binary_file
 from xpra.log import Logger
 
 log = Logger("dbus", "notify")

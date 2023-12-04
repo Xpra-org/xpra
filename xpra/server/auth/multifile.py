@@ -8,7 +8,7 @@
 
 from xpra.server.auth.sys_auth_base import parse_uid, parse_gid, SessionData
 from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase
-from xpra.os_util import bytestostr, hexstr
+from xpra.util.str_fn import bytestostr, hexstr
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.types import typedict
 from xpra.net.digest import verify_digest

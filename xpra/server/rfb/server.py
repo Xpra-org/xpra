@@ -4,8 +4,8 @@
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
-from xpra.util.str_fn import repr_ellipsized
-from xpra.os_util import is_X11, bytestostr
+from xpra.util.str_fn import repr_ellipsized, bytestostr
+from xpra.util.system import is_X11
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.net.rfb.const import RFB_KEYNAMES
 from xpra.server.rfb.protocol import RFBServerProtocol

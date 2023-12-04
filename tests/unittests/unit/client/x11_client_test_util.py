@@ -6,7 +6,8 @@
 
 import os
 
-from xpra.os_util import get_hex_uuid, osexpand
+from xpra.os_util import get_hex_uuid
+from xpra.util.env import osexpand
 from unit.server_test_util import ServerTestUtil, log
 
 class X11ClientTestUtil(ServerTestUtil):

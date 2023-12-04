@@ -9,7 +9,7 @@ import struct
 import unittest
 import binascii
 
-from xpra.os_util import OSEnvContext
+from xpra.util.env import OSEnvContext
 from unit.test_util import LoggerSilencer
 
 

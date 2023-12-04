@@ -6,8 +6,8 @@
 import os
 from typing import Any
 
-from xpra.util.str_fn import csv, ellipsizer
-from xpra.os_util import bytestostr, gi_import
+from xpra.util.str_fn import csv, ellipsizer, bytestostr
+from xpra.os_util import gi_import
 from xpra.dbus.helper import native_to_dbus
 from xpra.common import NotificationID
 from xpra.notifications.notifier_base import NotifierBase, log

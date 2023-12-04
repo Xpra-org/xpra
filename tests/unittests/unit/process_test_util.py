@@ -12,12 +12,12 @@ import tempfile
 import unittest
 import subprocess
 
-from xpra.util.str_fn import repr_ellipsized
-from xpra.util.env import envint, envbool
+from xpra.util.str_fn import repr_ellipsized, bytestostr
+from xpra.util.env import envint, envbool, osexpand, OSEnvContext
 from xpra.os_util import (
-    OSX, OSEnvContext, POSIX,
-    pollwait, osexpand, bytestostr,
-    )
+    OSX, POSIX,
+)
+from xpra.util.io import pollwait
 from xpra.platform.paths import get_xpra_command
 from xpra.platform.dotxpra import DISPLAY_PREFIX
 from xpra.scripts.main import X11_SOCKET_DIR, stat_display_socket

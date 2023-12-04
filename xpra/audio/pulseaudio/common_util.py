@@ -7,8 +7,8 @@
 import os
 import sys
 
-from xpra.util.env import envbool
-from xpra.os_util import bytestostr, first_time
+from xpra.util.env import envbool, first_time
+from xpra.util.str_fn import bytestostr
 from xpra.log import Logger
 log = Logger("audio")
 
@@ -50,7 +50,7 @@ def get_x11_property(atom_name:str) -> bytes:
                     return b""
                 log("XGetWindowProperty(..)=%s", prop)
                 if prop:
-                    from xpra.os_util import strtobytes
+                    from xpra.util.str_fn import strtobytes
                     from xpra.x11.prop_conv import prop_decode
                     v = prop_decode("latin1", prop)
                     log("get_x11_property(%s)=%s", atom_name, v)

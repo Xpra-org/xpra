@@ -22,12 +22,10 @@ from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
 from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode
 from xpra.os_util import (
-    bytestostr, load_binary_file,
-    umask_context,
-    WIN32, stderr_print,
-)
+    WIN32, )
+from xpra.util.io import load_binary_file, stderr_print, umask_context
 from xpra.common import noerr
-from xpra.util.str_fn import csv
+from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint, envbool, envfloat
 from xpra.log import Logger
 

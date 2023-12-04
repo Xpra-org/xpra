@@ -12,7 +12,7 @@ from urllib.parse import quote
 from typing import Any
 from collections.abc import Callable
 
-from xpra.os_util import strtobytes, bytestostr
+from xpra.util.str_fn import strtobytes, bytestostr
 from xpra.log import Logger
 
 log = Logger("websocket")

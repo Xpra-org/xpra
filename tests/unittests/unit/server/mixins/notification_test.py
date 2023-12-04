@@ -10,7 +10,8 @@ import time
 import unittest
 
 from xpra.util.types import AdHocStruct
-from xpra.os_util import OSEnvContext, WIN32, OSX
+from xpra.os_util import WIN32, OSX
+from xpra.util.env import OSEnvContext
 
 from unit.test_util import silence_info
 from unit.server.mixins.servermixintest_util import ServerMixinTest

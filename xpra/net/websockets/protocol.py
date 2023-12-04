@@ -14,8 +14,8 @@ from xpra.net.websockets.common import (
     OPCODE_BINARY, OPCODE_CONTINUE, OPCODE_TEXT, OPCODE_CLOSE, OPCODE_PING, OPCODE_PONG,
     )
 from xpra.net.protocol.socket_handler import SocketProtocol
-from xpra.util.env import envbool
-from xpra.os_util import memoryview_to_bytes, hexstr, first_time
+from xpra.util.env import envbool, first_time
+from xpra.util.str_fn import hexstr, memoryview_to_bytes
 from xpra.log import Logger
 
 log = Logger("websocket")

@@ -22,13 +22,11 @@ from xpra.net.net_util import get_info as get_net_info
 from xpra.util.child_reaper import reaper_cleanup
 from xpra.platform.info import get_sys_info
 from xpra.os_util import (
-    platform_name, bytestostr,
-    POSIX, WIN32, OSX, is_Wayland,
-    get_frame_info, get_info_env, get_sysconfig_info,
-    )
+    POSIX, WIN32, OSX, )
+from xpra.util.system import is_Wayland, get_frame_info, get_info_env, get_sysconfig_info, platform_name
 from xpra.util.types import typedict, merge_dicts
 from xpra.util.screen import log_screen_sizes
-from xpra.util.str_fn import std, csv, ellipsizer, repr_ellipsized
+from xpra.util.str_fn import std, csv, ellipsizer, repr_ellipsized, bytestostr
 from xpra.util.env import envint, envbool
 from xpra.scripts.config import parse_bool
 from xpra.exit_codes import ExitCode, ExitValue

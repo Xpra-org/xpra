@@ -12,8 +12,7 @@ from threading import Lock
 from typing import Any
 from collections.abc import Callable
 
-from xpra.os_util import bytestostr, memoryview_to_bytes
-from xpra.util.str_fn import repr_ellipsized
+from xpra.util.str_fn import repr_ellipsized, bytestostr, memoryview_to_bytes
 from xpra.net.common import PacketType
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin

@@ -8,8 +8,7 @@ import socket
 from zeroconf import ServiceInfo, Zeroconf, __version__ as zeroconf_version
 
 from xpra.log import Logger
-from xpra.os_util import first_time
-from xpra.util.env import envbool
+from xpra.util.env import envbool, first_time
 from xpra.net.net_util import get_interfaces_addresses
 from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
 from xpra.net.net_util import get_iface

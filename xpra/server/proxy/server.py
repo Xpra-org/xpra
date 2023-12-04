@@ -13,14 +13,14 @@ from gi.repository import GLib  # @UnresolvedImport
 from typing import Any
 
 from xpra.util.types import typedict
-from xpra.util.str_fn import csv, repr_ellipsized, print_nested_dict
+from xpra.util.str_fn import csv, repr_ellipsized, print_nested_dict, bytestostr
 from xpra.util.env import envint, envbool, envfloat
 from xpra.common import ConnectionMessage
 from xpra.os_util import (
-    get_username_for_uid, get_groups, get_home_for_uid, bytestostr,
-    getuid, getgid, WIN32, POSIX, OSX,
-    umask_context, get_group_id,
+    get_username_for_uid, get_groups, get_home_for_uid, getuid, getgid, WIN32, POSIX, OSX,
+    get_group_id,
     )
+from xpra.util.io import umask_context
 from xpra.net.common import PacketType
 from xpra.net.socket_util import SOCKET_DIR_MODE, SOCKET_DIR_GROUP
 from xpra.server.core import ServerCore
@@ -267,7 +267,7 @@ class ProxyServer(ServerCore):
     def do_quit(self) -> None:
         self.main_loop.quit()
         #from now on, we can't rely on the main loop:
-        from xpra.os_util import register_SIGUSR_signals  # pylint: disable=import-outside-toplevel
+        from xpra.util.system import register_SIGUSR_signals
         register_SIGUSR_signals()
 
     def log_closing_message(self) -> None:

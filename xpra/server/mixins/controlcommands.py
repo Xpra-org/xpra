@@ -11,7 +11,7 @@ from xpra.util.parsing import parse_scaling_value, from0to100
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv
 from xpra.common import ConnectionMessage
-from xpra.os_util import load_binary_file
+from xpra.util.io import load_binary_file
 from xpra.net.common import PacketType
 from xpra.util.stats import std_unit
 from xpra.scripts.config import parse_bool, FALSE_OPTIONS, TRUE_OPTIONS

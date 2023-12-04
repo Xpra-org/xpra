@@ -13,7 +13,7 @@ Functions for converting to and from X11 properties.
 import struct
 from io import BytesIO
 
-from xpra.os_util import hexstr
+from xpra.util.str_fn import hexstr
 from xpra.x11.bindings.window import constants
 from xpra.log import Logger
 

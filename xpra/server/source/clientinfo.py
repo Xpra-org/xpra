@@ -10,7 +10,7 @@ from xpra.util.str_fn import std
 from xpra.common import FULL_INFO
 from xpra.util.version import vparts
 from xpra.server.source.stub_source_mixin import StubSourceMixin
-from xpra.os_util import platform_name
+from xpra.util.system import platform_name
 from xpra.log import Logger
 
 log = Logger("server")

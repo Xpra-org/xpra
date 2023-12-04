@@ -9,7 +9,7 @@ from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window_backing_base import WindowBackingBase
-from xpra.os_util import memoryview_to_bytes
+from xpra.util.str_fn import memoryview_to_bytes
 from xpra.util.env import envbool
 from xpra.log import Logger
 

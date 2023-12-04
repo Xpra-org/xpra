@@ -15,10 +15,9 @@ try:
 except ImportError:
     Image = None
 
-
-from xpra.os_util import load_binary_file, memoryview_to_bytes
+from xpra.util.io import load_binary_file
 from xpra.net import compression
-from xpra.util.str_fn import csv
+from xpra.util.str_fn import csv, memoryview_to_bytes
 from xpra.util.env import envint, envbool
 from xpra.log import Logger
 

@@ -8,7 +8,8 @@ import os
 import tempfile
 import unittest
 
-from xpra.os_util import OSEnvContext
+from xpra.util.env import OSEnvContext
+
 
 # pylint: disable=import-outside-toplevel
 

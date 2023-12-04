@@ -9,8 +9,7 @@ import os
 import sys
 import unittest
 
-from xpra.util.str_fn import ellipsizer
-from xpra.os_util import memoryview_to_bytes as mtb
+from xpra.util.str_fn import ellipsizer, memoryview_to_bytes as mtb
 from xpra.log import add_debug_category, enable_debug_for, Logger
 
 log = Logger("brotli")

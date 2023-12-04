@@ -5,7 +5,8 @@
 
 from collections.abc import Callable
 
-from xpra.os_util import gi_import, IgnoreWarningsContext, ignorewarnings
+from xpra.os_util import gi_import
+from xpra.util.env import IgnoreWarningsContext, ignorewarnings
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")

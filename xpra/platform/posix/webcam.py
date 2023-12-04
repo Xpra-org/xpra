@@ -9,7 +9,7 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.util.env import envbool
-from xpra.os_util import is_Ubuntu, is_Debian
+from xpra.util.system import is_Ubuntu, is_Debian
 from xpra.log import Logger
 
 log = Logger("webcam")

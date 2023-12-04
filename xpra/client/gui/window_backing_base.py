@@ -15,11 +15,10 @@ from gi.repository import GLib  # @UnresolvedImport
 from xpra.net.mmap import mmap_read
 from xpra.net import compression
 from xpra.util.types import typedict
-from xpra.util.str_fn import csv
-from xpra.util.env import envint, envbool
+from xpra.util.str_fn import csv, bytestostr
+from xpra.util.env import envint, envbool, first_time
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video import getVideoHelper
-from xpra.os_util import bytestostr, first_time
 from xpra.common import Gravity
 from xpra.log import Logger
 

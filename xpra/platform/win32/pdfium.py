@@ -13,8 +13,7 @@ from ctypes import (
     c_void_p, Structure, c_int, c_uint, c_ulong, c_char_p, cast, pointer, POINTER,
     )
 
-from xpra.util.str_fn import ellipsizer
-from xpra.os_util import strtobytes
+from xpra.util.str_fn import ellipsizer, strtobytes
 from xpra.platform.win32.common import GetDeviceCaps
 from xpra.platform.win32 import win32con
 from xpra.platform.win32.ctypes_printing import GDIPrinterContext, DOCINFO, StartDocA, EndDoc, LPCSTR

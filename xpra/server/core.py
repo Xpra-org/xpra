@@ -54,15 +54,14 @@ from xpra.platform.paths import (
     )
 from xpra.platform.dotxpra import DotXpra
 from xpra.os_util import (
-    register_SIGUSR_signals, force_quit,
-    get_frame_info, get_info_env, get_sysconfig_info,
-    filedata_nocrlf, get_machine_id, get_user_uuid, platform_name, get_ssh_port,
-    strtobytes, bytestostr, get_hex_uuid,
-    getuid, hexstr,
-    POSIX, OSX,
-    parse_encoded_bin_data, load_binary_file,
-    osexpand, which, get_saved_env, first_time,
+    force_quit,
+    get_machine_id, get_user_uuid,
+    get_hex_uuid,
+    getuid, POSIX, OSX, WIN32,
 )
+from xpra.util.system import get_frame_info, get_info_env, get_sysconfig_info, platform_name, register_SIGUSR_signals
+from xpra.util.parsing import parse_encoded_bin_data
+from xpra.util.io import load_binary_file, filedata_nocrlf, which
 from xpra.server.background_worker import stop_worker, get_worker, add_work_item
 from xpra.server.menu_provider import get_menu_provider
 from xpra.server.auth.auth_helper import get_auth_module
@@ -70,8 +69,9 @@ from xpra.util.thread import start_thread
 from xpra.common import LOG_HELLO, FULL_INFO, ConnectionMessage, noerr
 from xpra.util.pysystem import dump_all_frames
 from xpra.util.types import typedict, notypedict, merge_dicts
-from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized, print_nested_dict, nicestr
-from xpra.util.env import envint, envbool, envfloat
+from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized, print_nested_dict, nicestr, strtobytes, bytestostr, \
+    hexstr
+from xpra.util.env import envint, envbool, envfloat, osexpand, first_time, get_saved_env
 from xpra.log import Logger, get_info as get_log_info
 
 #pylint: disable=import-outside-toplevel
@@ -122,6 +122,14 @@ HTTP_UNSUPORTED = b"""HTTP/1.1 400 Bad request syntax or unsupported method
 #from useful messages we do want to pass on
 class ClientException(Exception):
     pass
+
+
+def get_ssh_port() -> int:
+    # on Linux, we can run "ssh -T | grep port"
+    # but this usually requires root permissions to access /etc/ssh/sshd_config
+    if WIN32:
+        return 0
+    return 22
 
 
 def get_server_info() -> dict[str,Any]:

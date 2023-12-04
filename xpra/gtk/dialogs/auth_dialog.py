@@ -109,7 +109,7 @@ class AuthDialog(Gtk.Window):
 
 def main():
     # pylint: disable=import-outside-toplevel
-    from xpra.os_util import stderr_print
+    from xpra.util.io import stderr_print
     from xpra.platform import program_context
     with program_context("Session Access"):
         from xpra.platform.gui import init as gui_init

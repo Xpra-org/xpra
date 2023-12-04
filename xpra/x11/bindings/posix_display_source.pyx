@@ -7,7 +7,7 @@
 # This module can be used to open the local $DISPLAY and hook it into the X11 bindings
 
 import os
-from xpra.os_util import strtobytes
+from xpra.util.str_fn import strtobytes
 from xpra.x11.bindings.xlib cimport Display, XOpenDisplay, XCloseDisplay
 from xpra.x11.bindings.display_source cimport set_display, get_display  #pylint: disable=syntax-error
 from xpra.x11.bindings.display_source import set_display_name  # @UnresolvedImport

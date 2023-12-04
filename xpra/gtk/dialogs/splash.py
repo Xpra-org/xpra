@@ -8,8 +8,9 @@ import signal
 from time import sleep, monotonic
 
 from xpra import __version__
-from xpra.util.env import envint, envbool
-from xpra.os_util import SIGNAMES, OSX, WIN32, gi_import, ignorewarnings
+from xpra.util.env import envint, envbool, ignorewarnings
+from xpra.os_util import OSX, WIN32, gi_import
+from xpra.util.system import SIGNAMES
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.common import SPLASH_EXIT_DELAY
 from xpra.gtk.window import add_close_accel

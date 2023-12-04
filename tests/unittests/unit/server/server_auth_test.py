@@ -8,7 +8,9 @@ import os
 import unittest
 from time import sleep
 
-from xpra.os_util import pollwait, strtobytes, OSX, POSIX
+from xpra.os_util import OSX, POSIX
+from xpra.util.io import pollwait
+from xpra.util.str_fn import strtobytes
 from xpra.exit_codes import ExitCode
 from unit.server_test_util import ServerTestUtil, estr, log
 

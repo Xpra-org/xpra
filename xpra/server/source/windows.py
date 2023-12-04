@@ -19,7 +19,7 @@ from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window.metadata import make_window_metadata
 from xpra.server.window.filters import get_window_filter
 from xpra.net.compression import Compressed
-from xpra.os_util import memoryview_to_bytes, bytestostr
+from xpra.util.str_fn import bytestostr, memoryview_to_bytes
 from xpra.util.types import typedict
 from xpra.util.env import envint, envbool
 from xpra.common import NotificationID, DEFAULT_METADATA_SUPPORTED

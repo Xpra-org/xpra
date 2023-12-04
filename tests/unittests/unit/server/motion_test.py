@@ -9,7 +9,8 @@ from zlib import crc32
 from time import monotonic
 
 from xpra.util.env import envbool
-from xpra.os_util import strtobytes
+from xpra.util.str_fn import strtobytes
+
 try:
     from xpra.server.window import motion
     log = motion.log        #@UndefinedVariable

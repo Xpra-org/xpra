@@ -12,7 +12,7 @@ from ctypes import addressof, byref, c_ulong, c_char_p, c_char, c_void_p, cast, 
 from ctypes.wintypes import DWORD
 from typing import Any
 
-from xpra.os_util import strtobytes, memoryview_to_bytes
+from xpra.util.str_fn import strtobytes, memoryview_to_bytes
 from xpra.net.bytestreams import Connection
 from xpra.net.common import ConnectionClosedException
 from xpra.platform.win32.common import (

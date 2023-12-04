@@ -9,9 +9,9 @@ import threading
 from collections.abc import Callable
 
 from xpra.net.bytestreams import untilConcludes
-from xpra.util.str_fn import repr_ellipsized
+from xpra.util.str_fn import repr_ellipsized, hexstr
 from xpra.util.env import envint, envbool
-from xpra.os_util import hexstr, force_quit, POSIX
+from xpra.os_util import force_quit, POSIX
 from xpra.log import Logger
 
 log = Logger("proxy")

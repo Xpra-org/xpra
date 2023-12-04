@@ -8,7 +8,7 @@
 from time import monotonic
 from typing import Any
 
-from xpra.os_util import bytestostr
+from xpra.util.str_fn import bytestostr
 from xpra.util.types import typedict
 from xpra.util.env import envbool
 from xpra.net.common import PacketType

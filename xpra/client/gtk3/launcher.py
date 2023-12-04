@@ -23,7 +23,8 @@ from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, imagebutton, label, choose_file, modify_fg, color_parse
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.str_fn import csv, repr_ellipsized
-from xpra.os_util import WIN32, OSX, gi_import, IgnoreWarningsContext
+from xpra.os_util import WIN32, OSX, gi_import
+from xpra.util.env import IgnoreWarningsContext
 from xpra.net.common import DEFAULT_PORT
 from xpra.util.thread import start_thread
 from xpra.gtk.dialogs.about import about
@@ -1109,7 +1110,7 @@ def main(argv):
         return do_main(argv)
 
 def do_main(argv):
-    from xpra.os_util import SIGNAMES
+    from xpra.util.system import SIGNAMES
     from xpra.scripts.main import InitExit, InitInfo
     from xpra.platform.gui import init as gui_init, ready as gui_ready
     from xpra.gtk.util import init_display_source

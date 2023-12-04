@@ -10,7 +10,8 @@ import socket
 import errno
 
 from xpra.common import SocketState
-from xpra.os_util import get_util_logger, osexpand, umask_context, is_socket
+from xpra.util.env import osexpand
+from xpra.util.io import is_socket, umask_context, get_util_logger
 from xpra.platform.dotxpra_common import PREFIX
 from xpra.platform import platform_import
 

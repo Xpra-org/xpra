@@ -57,7 +57,7 @@ class ellipsizer:
 
 def repr_ellipsized(obj, limit=100) -> str:
     if isinstance(obj, str):
-        if len(obj)>limit>6:
+        if len(obj) > limit > 6:
             return nonl(obj[:limit // 2 - 2] + " .. " + obj[2 - limit // 2:])
         return nonl(obj)
     if isinstance(obj, memoryview):
@@ -67,20 +67,22 @@ def repr_ellipsized(obj, limit=100) -> str:
             s = nonl(repr(obj))
         except Exception:
             s = binascii.hexlify(obj).decode()
-        if len(s)>limit>6:
+        if len(s) > limit > 6:
             return nonl(s[:limit // 2 - 2] + " .. " + s[2 - limit // 2:])
         return s
     return repr_ellipsized(repr(obj), limit)
 
 
-def print_nested_dict(d:dict, prefix:str="", lchar:str="*", pad:int=32, vformat=None, print_fn:Callable|None=None,
-                      version_keys=("version", "revision"), hex_keys=("data", )):
-    #"smart" value formatting function:
+def print_nested_dict(d: dict, prefix: str = "", lchar: str = "*", pad: int = 32,
+                      vformat=None, print_fn: Callable|None = None,
+                      version_keys=("version", "revision"), hex_keys=("data", )) -> None:
+    # "smart" value formatting function:
     def sprint(arg):
         if print_fn:
             print_fn(arg)
         else:
             print(arg)
+
     def vf(k, v):
         if vformat:
             fmt = vformat
@@ -89,9 +91,9 @@ def print_nested_dict(d:dict, prefix:str="", lchar:str="*", pad:int=32, vformat=
             if fmt is not None:
                 return nonl(fmt(v))
         try:
-            if any(k.find(x)>=0 for x in version_keys):
+            if any(k.find(x) >= 0 for x in version_keys):
                 return nonl(pver(v)).lstrip("v")
-            if any(k.find(x)>=0 for x in hex_keys):
+            if any(k.find(x) >= 0 for x in hex_keys):
                 return binascii.hexlify(v)
         except Exception:
             pass
@@ -113,7 +115,7 @@ def print_nested_dict(d:dict, prefix:str="", lchar:str="*", pad:int=32, vformat=
             sprint("%s%s %s : %s" % (prefix, lchar, bytestostr(k).ljust(l), vf(k, v)))
 
 
-def nicestr(obj):
+def nicestr(obj) -> str:
     """ Python 3.10 and older don't give us a nice string representation for enums """
     if isinstance(obj, Enum):
         return str(obj.value)
@@ -132,7 +134,11 @@ def bytestostr(x) -> str:
     return str(x)
 
 
-def decode_str(x, try_encoding="utf8"):
+def hexstr(v) -> str:
+    return bytestostr(binascii.hexlify(memoryview_to_bytes(v)))
+
+
+def decode_str(x, try_encoding="utf8") -> str:
     """
     When we want to decode something (usually a byte string) no matter what.
     Try with utf8 first then fallback to just bytestostr().
@@ -143,16 +149,16 @@ def decode_str(x, try_encoding="utf8"):
         return bytestostr(x)
 
 
-def pver(v, numsep:str=".", strsep:str=", ") -> str:
-    #print for lists with version numbers, or CSV strings
+def pver(v, numsep: str = ".", strsep: str = ", ") -> str:
+    # print for lists with version numbers, or CSV strings
     if isinstance(v, (list, tuple)):
         types = list(set(type(x) for x in v))
-        if len(types)==1:
-            if types[0]==int:
+        if len(types) == 1:
+            if types[0] == int:
                 return numsep.join(str(x) for x in v)
-            if types[0]==str:
+            if types[0] == str:
                 return strsep.join(str(x) for x in v)
-            if types[0]==bytes:
+            if types[0] == bytes:
                 def s(x):
                     try:
                         return x.decode("utf8")
@@ -168,6 +174,17 @@ def sorted_nicely(l:Iterable):
         if text.isdigit():
             return int(text)
         return text
+
     def alphanum_key(key):
         return [convert(c) for c in re.split(r"(\d+)", bytestostr(key))]
     return sorted(l, key = alphanum_key)
+
+
+def memoryview_to_bytes(v) -> bytes:
+    if isinstance(v, bytes):
+        return v
+    if isinstance(v, memoryview):
+        return v.tobytes()
+    if isinstance(v, bytearray):
+        return bytes(v)
+    return strtobytes(v)

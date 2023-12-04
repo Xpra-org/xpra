@@ -12,7 +12,7 @@ from typing import Any, Dict
 from xpra.log import Logger
 log = Logger("webcam")
 
-from xpra.os_util import path_permission_info
+from xpra.util.io import path_permission_info
 from xpra.util.str_fn import print_nested_dict
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.constants import get_subsampling_divs

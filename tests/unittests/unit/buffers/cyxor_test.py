@@ -8,7 +8,8 @@ import unittest
 import binascii
 from time import monotonic
 
-from xpra.os_util import strtobytes
+from xpra.util.str_fn import strtobytes
+
 try:
     from xpra.buffers.cyxor import xor_str       #@UnresolvedImport
 except ImportError:

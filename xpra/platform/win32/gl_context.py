@@ -11,7 +11,7 @@ from ctypes.wintypes import LPCWSTR
 from contextlib import nullcontext, AbstractContextManager
 
 from xpra.client.gl.check import check_PyOpenGL_support
-from xpra.os_util import CaptureStdErr
+from xpra.util.io import CaptureStdErr
 from xpra.platform.win32.gui import get_window_handle
 from xpra.platform.win32.constants import (
     CS_OWNDC, CS_HREDRAW, CS_VREDRAW, COLOR_WINDOW,

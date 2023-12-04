@@ -47,7 +47,7 @@ from xpra.common import KeyEvent
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
-from xpra.os_util import get_util_logger
+from xpra.util.io import get_util_logger
 from xpra.log import Logger
 
 log = Logger("win32")

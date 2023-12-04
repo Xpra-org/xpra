@@ -7,7 +7,7 @@
 
 from gi.repository import Gdk
 
-from xpra.os_util import bytestostr
+from xpra.util.str_fn import bytestostr
 from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
 
 

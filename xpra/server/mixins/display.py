@@ -7,7 +7,8 @@ from typing import Any
 
 from xpra.util.types import typedict
 from xpra.util.screen import log_screen_sizes
-from xpra.os_util import bytestostr, is_Wayland
+from xpra.util.system import is_Wayland
+from xpra.util.str_fn import bytestostr
 from xpra.net.common import PacketType
 from xpra.util.version import parse_version, dict_version_trim
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS

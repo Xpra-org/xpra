@@ -4,11 +4,30 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
 
-from xpra.os_util import osexpand, nomodule_context
+from xpra.util.env import osexpand
 
 
-#workaround incompatibility between paramiko and gssapi:
+# workaround incompatibility between paramiko and gssapi:
+class nomodule_context:
+    __slots__ = ("module_name", "saved_module")
+    def __init__(self, module_name):
+        self.module_name = module_name
+    def __enter__(self):
+        self.saved_module = sys.modules.get(self.module_name)
+        # noinspection PyTypeChecker
+        sys.modules[self.module_name] = None        # type: ignore[assignment]
+    def __exit__(self, *_args):
+        if sys.modules.get(self.module_name) is None:
+            if self.saved_module is None:
+                sys.modules.pop(self.module_name, None)
+            else:
+                sys.modules[self.module_name] = self.saved_module
+    def __repr__(self):
+        return f"nomodule_context({self.module_name})"
+
+
 class nogssapi_context(nomodule_context):
 
     def __init__(self):

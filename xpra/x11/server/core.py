@@ -22,9 +22,9 @@ from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del
 from xpra.x11.gtk3.display_source import close_gdk_display_source
 from xpra.x11.gtk3.bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
 from xpra.common import MAX_WINDOW_SIZE, FULL_INFO, NotificationID
-from xpra.os_util import bytestostr, first_time
+from xpra.util.str_fn import bytestostr
 from xpra.util.types import typedict
-from xpra.util.env import envbool
+from xpra.util.env import envbool, first_time
 from xpra.net.compression import Compressed
 from xpra.net.common import PacketType
 from xpra.server.gtk_server import GTKServerBase

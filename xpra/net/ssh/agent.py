@@ -6,7 +6,7 @@
 import os
 from collections.abc import Iterable
 
-from xpra.os_util import is_socket
+from xpra.util.io import is_socket
 from xpra.log import Logger
 
 log = Logger("server", "ssh")

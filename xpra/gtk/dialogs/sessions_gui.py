@@ -22,7 +22,9 @@ from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.signals import register_os_signals
 from xpra.net.common import DEFAULT_PORTS
 from xpra.util.types import typedict
-from xpra.os_util import bytestostr, gi_import, WIN32, IgnoreWarningsContext
+from xpra.os_util import gi_import, WIN32
+from xpra.util.env import IgnoreWarningsContext
+from xpra.util.str_fn import bytestostr
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")

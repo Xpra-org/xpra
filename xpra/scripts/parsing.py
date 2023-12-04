@@ -21,7 +21,8 @@ from xpra.util.str_fn import csv
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.env import envbool
 from xpra.net.common import DEFAULT_PORT, DEFAULT_PORTS
-from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid, stderr_print
+from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid
+from xpra.util.io import stderr_print
 from xpra.scripts.config import (
     XpraConfig,
     OPTION_TYPES, TRUE_OPTIONS,

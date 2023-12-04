@@ -7,7 +7,7 @@
 import unittest
 import binascii
 
-from xpra.os_util import hexstr, memoryview_to_bytes
+from xpra.util.str_fn import hexstr, memoryview_to_bytes
 from xpra.codecs import loader
 from xpra.codecs.checks import make_test_image
 

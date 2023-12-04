@@ -6,7 +6,8 @@
 
 from collections.abc import Callable
 
-from xpra.os_util import WIN32, first_time, gi_import
+from xpra.os_util import WIN32, gi_import
+from xpra.util.env import first_time
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")

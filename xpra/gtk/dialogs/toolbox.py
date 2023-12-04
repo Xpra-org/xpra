@@ -16,7 +16,9 @@ from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import imagebutton, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.platform.paths import get_python_execfile_command, get_python_exec_command
-from xpra.os_util import WIN32, OSX, is_X11, gi_import, IgnoreWarningsContext
+from xpra.os_util import WIN32, OSX, gi_import
+from xpra.util.env import IgnoreWarningsContext
+from xpra.util.system import is_X11
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")

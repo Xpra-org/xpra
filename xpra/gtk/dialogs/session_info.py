@@ -14,10 +14,10 @@ from gi.repository import GLib, Gtk, Gdk  # @UnresolvedImport
 from collections.abc import Callable
 
 from xpra.util.version import XPRA_VERSION, revision_str, make_revision_str
-from xpra.os_util import bytestostr, strtobytes, get_linux_distribution
+from xpra.util.system import get_linux_distribution, platform_name
 from xpra.util.types import typedict, AtomicInteger
 from xpra.util.screen import prettify_plug_name
-from xpra.util.str_fn import csv
+from xpra.util.str_fn import csv, strtobytes, bytestostr
 from xpra.util.env import envint
 from xpra.common import noop
 from xpra.util.stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
@@ -144,7 +144,6 @@ def settimedeltastr(label_widget, from_time):
 
 
 def make_os_str(sys_platform, platform_release, platform_platform, platform_linux_distribution) -> str:
-    from xpra.os_util import platform_name
     s = [platform_name(sys_platform, platform_release)]
     if platform_linux_distribution and len(platform_linux_distribution) == 3 and len(platform_linux_distribution[0]) > 0:
         s.append(" ".join([str(x) for x in platform_linux_distribution]))

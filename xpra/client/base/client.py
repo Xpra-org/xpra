@@ -42,16 +42,16 @@ from xpra.net.crypto import (
 from xpra.util.version import get_version_info, vparts, XPRA_VERSION
 from xpra.platform.info import get_name, get_username
 from xpra.os_util import (
-    get_machine_id, get_user_uuid, register_SIGUSR_signals,
-    filedata_nocrlf, force_quit,
-    SIGNAMES, BITS,
-    strtobytes, bytestostr, hexstr, use_gui_prompt,
-    parse_encoded_bin_data, stderr_print,
+    get_machine_id, get_user_uuid, force_quit,
+    BITS,
 )
+from xpra.util.system import SIGNAMES, register_SIGUSR_signals
+from xpra.util.io import filedata_nocrlf, stderr_print, use_gui_prompt
 from xpra.util.pysystem import dump_all_frames, detect_leaks
 from xpra.util.types import typedict
-from xpra.util.str_fn import std, nonl, obsc, csv, ellipsizer, repr_ellipsized, print_nested_dict
-from xpra.util.parsing import parse_simple_dict
+from xpra.util.str_fn import std, nonl, obsc, csv, ellipsizer, repr_ellipsized, print_nested_dict, strtobytes, \
+    bytestostr, hexstr
+from xpra.util.parsing import parse_simple_dict, parse_encoded_bin_data
 from xpra.util.env import envint, envbool
 from xpra.client.base.serverinfo import ServerInfoMixin
 from xpra.client.base.fileprint import FilePrintMixin

@@ -17,7 +17,8 @@ from xpra.gtk.widget import imagebutton, label, setfont
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.str_fn import repr_ellipsized
 from xpra.common import noop
-from xpra.os_util import POSIX, OSX, WIN32, is_Wayland, platform_name
+from xpra.os_util import POSIX, OSX, WIN32
+from xpra.util.system import is_Wayland, platform_name
 from xpra.util.stats import std_unit_dec
 from xpra.scripts.config import (
     get_defaults, parse_bool,

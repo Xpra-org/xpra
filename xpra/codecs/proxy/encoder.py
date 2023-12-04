@@ -9,7 +9,7 @@ from typing import Any
 
 from xpra.codecs.image import ImageWrapper
 from xpra.util.types import typedict
-from xpra.os_util import memoryview_to_bytes
+from xpra.util.str_fn import memoryview_to_bytes
 from xpra.log import Logger
 
 log = Logger("encoder", "proxy")

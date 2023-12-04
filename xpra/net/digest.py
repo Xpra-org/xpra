@@ -8,10 +8,9 @@ import hmac
 import hashlib
 from collections.abc import Callable, ByteString
 
-from xpra.util.str_fn import csv
+from xpra.util.str_fn import csv, strtobytes, hexstr, memoryview_to_bytes
 from xpra.util.env import envint
 from xpra.log import Logger
-from xpra.os_util import strtobytes, memoryview_to_bytes, hexstr
 
 log = Logger("network", "crypto")
 

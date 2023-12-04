@@ -14,7 +14,7 @@ from ctypes import (
     )
 from ctypes.wintypes import MAX_PATH
 
-from xpra.os_util import get_util_logger
+from xpra.util.io import get_util_logger
 
 shell32 = WinDLL("shell32", use_last_error=True)
 SHGetFolderPath = shell32.SHGetFolderPathW

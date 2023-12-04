@@ -9,7 +9,8 @@ from typing import Any, Dict
 
 from libc.stdint cimport uint32_t, uint16_t, uint8_t  #pylint: disable=syntax-error
 
-from xpra.os_util import strtobytes, bytestostr, load_binary_file, LINUX
+from xpra.util.str_fn import strtobytes, bytestostr
+from xpra.os_util import load_binary_file, LINUX
 from xpra.log import Logger
 
 log = Logger("util", "network")

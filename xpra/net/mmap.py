@@ -10,8 +10,8 @@ from typing import Any
 from collections.abc import ByteString
 
 from xpra.common import roundup
-from xpra.util.env import envbool
-from xpra.os_util import shellsub, get_group_id, WIN32, POSIX
+from xpra.util.env import envbool, shellsub
+from xpra.os_util import get_group_id, WIN32, POSIX
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.stats import std_unit
 from xpra.log import Logger

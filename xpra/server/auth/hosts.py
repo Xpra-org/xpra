@@ -8,7 +8,8 @@ import sys
 from ctypes import CDLL, c_int, c_char_p
 
 from xpra.util.types import typedict
-from xpra.os_util import POSIX, strtobytes
+from xpra.os_util import POSIX
+from xpra.util.str_fn import strtobytes
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 
 LIBWRAP = os.environ.get("XPRA_LIBWRAP", "libwrap.so.0")

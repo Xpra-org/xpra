@@ -10,8 +10,8 @@ from types import ModuleType
 from typing import Any
 
 from xpra.util.str_fn import csv, print_nested_dict, pver
-from xpra.util.env import envbool
-from xpra.os_util import OSX, WIN32, NumpyImportContext
+from xpra.util.env import envbool, NumpyImportContext
+from xpra.os_util import OSX, WIN32
 from xpra.util.version import parse_version
 from xpra.codecs.constants import HELP_ORDER
 from xpra.log import Logger
@@ -416,7 +416,7 @@ def main(args) -> int:
                 return 1
             list_codecs = ALL_CODECS
             #not really a codec, but gets used by codecs, so include version info:
-            with NumpyImportContext:
+            with NumpyImportContext():
                 add_codec_version("numpy", "numpy")
 
         #use another logger for printing the results,

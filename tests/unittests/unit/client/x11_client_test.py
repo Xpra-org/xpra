@@ -11,7 +11,8 @@ import unittest
 
 from xpra.util.env import envint
 from xpra.exit_codes import exit_str
-from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
+from xpra.os_util import OSX, POSIX
+from xpra.util.io import load_binary_file, pollwait
 from xpra.platform.paths import get_download_dir
 from unit.client.x11_client_test_util import X11ClientTestUtil, log
 

@@ -8,7 +8,7 @@ import struct
 from xpra.net.rfb.const import RFBEncoding
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs.pillow.encoder import encode
-from xpra.os_util import hexstr, bytestostr
+from xpra.util.str_fn import bytestostr, hexstr
 from xpra.log import Logger
 
 log = Logger("rfb")

@@ -14,9 +14,12 @@ from xpra.common import noerr
 from xpra.util.env import envbool
 from xpra.os_util import (
     WIN32, OSX, POSIX,
-    is_gnome, is_kde, which, bytestostr,
-    use_gui_prompt, is_main_thread, gi_import,
+    gi_import,
     )
+from xpra.util.thread import is_main_thread
+from xpra.util.io import use_gui_prompt, which
+from xpra.util.system import is_gnome, is_kde
+from xpra.util.str_fn import bytestostr
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS, InitExit
 from xpra.exit_codes import ExitCode
 from xpra.log import Logger

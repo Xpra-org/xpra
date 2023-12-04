@@ -5,7 +5,7 @@
 
 import os
 
-from xpra.os_util import load_binary_file
+from xpra.util.io import load_binary_file
 from xpra.log import Logger
 
 log = Logger("auth")

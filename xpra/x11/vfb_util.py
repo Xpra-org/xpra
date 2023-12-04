@@ -17,15 +17,14 @@ import os.path
 
 from xpra.common import RESOLUTION_ALIASES, DEFAULT_REFRESH_RATE, get_refresh_rate_for_value
 from xpra.scripts.config import InitException, get_Xdummy_confdir, FALSE_OPTIONS
-from xpra.util.str_fn import csv
-from xpra.util.env import envint, envbool
+from xpra.util.str_fn import csv, strtobytes, bytestostr
+from xpra.util.env import envint, envbool, shellsub, osexpand
 from xpra.os_util import (
-    shellsub,
-    setuidgid, getuid, getgid,
-    strtobytes, bytestostr, osexpand,
-    pollwait, is_writable,
+    getuid, getgid,
     POSIX, OSX,
     )
+from xpra.server.util import setuidgid
+from xpra.util.io import is_writable, pollwait
 from xpra.platform.displayfd import read_displayfd, parse_displayfd
 from xpra.log import Logger
 

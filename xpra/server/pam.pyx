@@ -12,7 +12,7 @@ from typing import Any, Dict
 from xpra.log import Logger
 log = Logger("util", "auth")
 
-from xpra.os_util import strtobytes, bytestostr
+from xpra.util.str_fn import strtobytes, bytestostr
 from ctypes import addressof, create_string_buffer, sizeof
 
 from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error

@@ -23,17 +23,16 @@ from collections.abc import Callable, Iterable
 
 from xpra.common import SocketState, noerr, noop
 from xpra.util.types import typedict
-from xpra.util.str_fn import nonl, csv, print_nested_dict, pver, sorted_nicely
-from xpra.util.env import envint, envbool
+from xpra.util.str_fn import nonl, csv, print_nested_dict, pver, sorted_nicely, bytestostr
+from xpra.util.env import envint, envbool, osexpand, save_env, OSEnvContext
+from xpra.util.thread import set_main_thread
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import (
     getuid, getgid, get_username_for_uid,
-    bytestostr, use_tty, osexpand, is_socket,
-    OSEnvContext,
-    set_proc_title, gi_import,
-    is_systemd_pid1,
-    WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu, is_Wayland, stderr_print,
-)
+    gi_import,
+    WIN32, OSX, POSIX, )
+from xpra.util.io import is_socket, stderr_print, use_tty
+from xpra.util.system import is_Wayland, is_Ubuntu, SIGNAMES, set_proc_title, is_systemd_pid1
 from xpra.scripts.parsing import (
     info, warn, error,
     get_usage,
@@ -64,7 +63,8 @@ SYSTEMD_RUN : bool = envbool("XPRA_SYSTEMD_RUN", True)
 VERIFY_SOCKET_TIMEOUT : int = envint("XPRA_VERIFY_SOCKET_TIMEOUT", 1)
 LIST_REPROBE_TIMEOUT : int = envint("XPRA_LIST_REPROBE_TIMEOUT", 10)
 
-#pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel
+
 
 def nox() -> str:
     DISPLAY = os.environ.get("DISPLAY")
@@ -76,19 +76,24 @@ def nox() -> str:
     warnings.filterwarnings("error", "could not open display")
     return str(DISPLAY or "") or os.environ.get("WAYLAND_DISPLAY", "")
 
+
 def werr(*msg) -> None:
     for x in msg:
         stderr_print(str(x))
+
 
 def add_process(*args, **kwargs):
     from xpra.util.child_reaper import getChildReaper
     return getChildReaper().add_process(*args, **kwargs)
 
-def get_logger():
+
+def get_logger() -> Logger:
     return Logger("util")
 
 
 def main(script_file:str, cmdline) -> ExitValue:
+    set_main_thread()
+    save_env()
     ml = envint("XPRA_MEM_USAGE_LOGGER")
     if ml>0:
         from xpra.util.pysystem import start_mem_watcher
@@ -242,6 +247,7 @@ def configure_network(options) -> None:
     if not ees:
         raise InitException("at least one valid packet encoder must be enabled")
 
+
 def configure_env(env_str) -> None:
     if env_str:
         env = parse_env(env_str)
@@ -329,6 +335,7 @@ def check_gtk_client() -> None:
     except ImportError:
         raise InitExit(ExitCode.FILE_NOT_FOUND, "`xpra-client-bindings` is not installed") from None
 
+
 def check_gtk() -> None:
     Gtk = gi_import("Gtk")
     if Gtk._version[0]>"3":
@@ -339,10 +346,12 @@ def check_gtk() -> None:
         raise InitExit(ExitCode.NO_DISPLAY, "failed to initialize Gtk, no display?")
     check_display()
 
+
 def check_display() -> None:
     from xpra.platform.gui import can_access_display
     if not can_access_display():    # pragma: no cover
         raise InitExit(ExitCode.NO_DISPLAY, "cannot access display")
+
 
 def use_systemd_run(s) -> bool:
     if not SYSTEMD_RUN or not POSIX or OSX:
@@ -377,6 +386,7 @@ def use_systemd_run(s) -> bool:
         except TimeoutExpired:  # pragma: no cover
             r = None
     return r==0
+
 
 def verify_gir():
     try:

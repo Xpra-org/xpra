@@ -6,7 +6,7 @@
 
 from time import monotonic
 
-from xpra.os_util import bytestostr
+from xpra.util.str_fn import bytestostr
 from xpra.x11.bindings.display_source import get_display_name   # @UnresolvedImport
 from xpra.log import Logger
 

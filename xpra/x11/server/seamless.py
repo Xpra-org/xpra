@@ -16,7 +16,7 @@ from gi.repository import GObject, Gdk, GdkX11  # @UnresolvedImport
 from xpra.util.version import XPRA_VERSION
 from xpra.util.types import typedict
 from xpra.util.env import envint, envbool
-from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr
+from xpra.util.str_fn import strtobytes, bytestostr, memoryview_to_bytes
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES
 from xpra.net.common import PacketType
 from xpra.scripts.config import InitException  #pylint: disable=import-outside-toplevel

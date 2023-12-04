@@ -6,7 +6,7 @@
 import re
 from typing import Any
 
-from xpra.os_util import get_util_logger
+from xpra.util.io import get_util_logger
 
 
 def log_screen_sizes(root_w, root_h, sizes):

@@ -11,7 +11,8 @@ from collections.abc import Callable
 from xpra.gtk.window import add_close_accel, add_window_accel
 from xpra.gtk.widget import imagebutton
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.os_util import gi_import, IgnoreWarningsContext
+from xpra.os_util import gi_import
+from xpra.util.env import IgnoreWarningsContext
 from xpra.exit_codes import exit_str
 from xpra.common import NotificationID, noop
 from xpra.platform.paths import get_xpra_command

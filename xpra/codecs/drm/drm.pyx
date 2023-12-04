@@ -5,7 +5,7 @@
 
 #cython: wraparound=False
 
-from xpra.os_util import bytestostr
+from xpra.util.str_fn import bytestostr
 
 from xpra.log import Logger
 log = Logger("drm")

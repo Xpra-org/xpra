@@ -8,7 +8,8 @@
 import os
 import unittest
 
-from xpra.os_util import nomodule_context, WIN32
+from xpra.os_util import WIN32
+from xpra.net.ssh.util import nomodule_context
 from xpra.scripts.parsing import (
     parse_ssh_option, get_ssh_args, get_ssh_proxy_args, parse_remote_display,
     )

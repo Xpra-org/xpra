@@ -8,8 +8,7 @@ import struct
 from socket import error as socket_error
 from queue import Queue
 
-from xpra.os_util import hexstr
-from xpra.util.str_fn import repr_ellipsized
+from xpra.util.str_fn import repr_ellipsized, hexstr
 from xpra.util.env import envint
 from xpra.util.thread import make_thread, start_thread
 from xpra.util.stats import std_unit

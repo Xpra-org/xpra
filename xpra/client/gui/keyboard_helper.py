@@ -11,9 +11,8 @@ from collections.abc import Callable
 
 from xpra.common import KeyEvent
 from xpra.client.gui.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
-from xpra.util.str_fn import std, csv, ellipsizer
+from xpra.util.str_fn import std, csv, ellipsizer, bytestostr
 from xpra.util.env import envbool
-from xpra.os_util import bytestostr
 from xpra.log import Logger
 
 log = Logger("keyboard")

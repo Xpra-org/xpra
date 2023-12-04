@@ -16,11 +16,11 @@ from xpra.net.bytestreams import ConnectionClosedException
 from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode
 from xpra.os_util import (
-    bytestostr, gi_import,
-    restore_script_env, get_saved_env,
+    gi_import,
     WIN32, OSX, POSIX,
     )
-from xpra.util.env import envbool
+from xpra.util.str_fn import bytestostr
+from xpra.util.env import envbool, restore_script_env, get_saved_env
 from xpra.log import Logger, is_debug_enabled
 
 #pylint: disable=import-outside-toplevel

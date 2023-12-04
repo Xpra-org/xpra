@@ -212,7 +212,7 @@ def get_platform_name():
     if sys.platform.find("bsd")>=0:
         return "BSD"
     try:
-        from xpra.os_util import get_linux_distribution
+        from xpra.util.system import get_linux_distribution
         ld = get_linux_distribution()
         if ld:
             return "Linux %s" % (" ".join(ld))

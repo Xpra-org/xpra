@@ -6,7 +6,8 @@
 
 import sys
 from subprocess import Popen, TimeoutExpired
-from xpra.os_util import which, LINUX
+from xpra.os_util import LINUX
+from xpra.util.io import which
 
 from xpra.log import Logger
 log = Logger("evdi")

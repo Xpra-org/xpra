@@ -10,7 +10,7 @@ from time import monotonic
 from typing import Dict
 from collections.abc import Callable
 
-from xpra.os_util import strtobytes, bytestostr
+from xpra.util.str_fn import strtobytes, bytestostr
 from xpra.gtk.error import XError, xsync
 from xpra.x11.common import X11Event
 from xpra.util.str_fn import csv

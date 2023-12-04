@@ -5,7 +5,8 @@
 
 import os
 
-from xpra.os_util import OSX, POSIX, is_Wayland, gi_import
+from xpra.os_util import OSX, POSIX, gi_import
+from xpra.util.system import is_Wayland
 from xpra.client.gtk3.client_base import GTKXpraClient
 from xpra.client.gtk3.window import ClientWindow
 from xpra.platform.gui import get_xdpi, get_ydpi

@@ -38,17 +38,15 @@ from xpra.common import (
 )
 from xpra.exit_codes import ExitCode
 from xpra.os_util import (
-    SIGNAMES, POSIX, WIN32, OSX,
+    POSIX, WIN32, OSX,
     force_quit,
-    which,
-    get_saved_env, get_saved_env_var,
-    get_username_for_uid, get_home_for_uid, get_shell_for_uid, setuidgid,
-    getuid, get_groups, get_group_id,
-    get_hex_uuid, osexpand,
-    load_binary_file, is_writable,
-    gi_import,
+    get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, get_groups, get_group_id,
+    get_hex_uuid, gi_import,
     )
-from xpra.util.env import unsetenv, envbool
+from xpra.server.util import setuidgid
+from xpra.util.system import SIGNAMES
+from xpra.util.io import load_binary_file, is_writable, which
+from xpra.util.env import unsetenv, envbool, osexpand, get_saved_env, get_saved_env_var
 from xpra.common import GROUP
 from xpra.util.child_reaper import getChildReaper
 from xpra.platform.dotxpra import DotXpra
@@ -1177,7 +1175,7 @@ def _do_run_server(script_file:str, cmdline,
                     os.fchmod(xauth_file.fileno(), 0o640)
                     if ROOT and (uid!=0 or gid!=0):
                         os.fchown(xauth_file.fileno(), uid, gid)
-            elif not is_writable(xauthority) and not ROOT:
+            elif not is_writable(xauthority, uid, gid) and not ROOT:
                 log(f"chmoding XAUTHORITY file {xauthority!r}")
                 os.chmod(xauthority, 0o640)
             write_session_file("xauthority", xauthority)

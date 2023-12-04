@@ -10,7 +10,7 @@ from typing import Any
 
 from xpra.x11.server.core import X11ServerCore
 from xpra.net.compression import Compressed
-from xpra.os_util import is_Wayland, get_loaded_kernel_modules
+from xpra.util.system import is_Wayland, get_loaded_kernel_modules
 from xpra.util.types import AdHocStruct, merge_dicts
 from xpra.util.env import envint, envbool
 from xpra.common import NotificationID
@@ -455,7 +455,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 def snapshot(filename) -> int:
     #pylint: disable=import-outside-toplevel
     from io import BytesIO
-    from xpra.os_util import memoryview_to_bytes
+    from xpra.util.str_fn import memoryview_to_bytes
     root = get_default_root_window()
     capture = setup_capture(root)
     capture.refresh()

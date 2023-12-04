@@ -10,7 +10,8 @@ from xpra.server.proxy.server import ProxyServer as _ProxyServer
 from xpra.platform.paths import get_app_dir
 from xpra.common import SocketState
 from xpra.util.env import envbool
-from xpra.os_util import pollwait, strtobytes
+from xpra.util.io import pollwait
+from xpra.util.str_fn import strtobytes
 from xpra.log import Logger
 
 log = Logger("proxy")

@@ -8,7 +8,9 @@ import sys
 from xpra.common import noerr
 from xpra.util.types import typedict
 from xpra.util.env import envbool
-from xpra.os_util import SIGNAMES, bytestostr, gi_import
+from xpra.os_util import gi_import
+from xpra.util.system import SIGNAMES
+from xpra.util.str_fn import bytestostr
 from xpra.exit_codes import ExitCode
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label

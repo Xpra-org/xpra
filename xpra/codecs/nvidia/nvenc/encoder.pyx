@@ -13,24 +13,24 @@ import ctypes
 from ctypes import cdll, POINTER
 from threading import Lock
 
-from xpra.os_util import WIN32, LINUX, strtobytes, first_time
+from xpra.os_util import WIN32, LINUX
 from xpra.util.thread import start_thread
 from xpra.util.types import AtomicInteger, typedict
-from xpra.util.str_fn import csv, pver
-from xpra.util.env import envint, envbool
+from xpra.util.str_fn import csv, pver, strtobytes
+from xpra.util.env import envint, envbool, first_time
 from xpra.codecs.nvidia.cuda.context import (
     init_all_devices, get_devices, get_device_name,
     get_cuda_info, get_pycuda_info, reset_state,
     get_CUDA_function, record_device_failure, record_device_success,
     cuda_device_context, load_device,
-    )
+)
 from xpra.codecs.nvidia.cuda.errors import get_error_name
 from xpra.codecs.constants import video_spec, TransientCodecException
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.nvidia.util import (
     get_nvidia_module_version, get_license_keys,
     validate_driver_yuv444lossless, get_cards,
-    )
+)
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
 
@@ -70,7 +70,7 @@ device_lock = Lock()
 YUV444_CODEC_SUPPORT = {
     "h264"  : True,
     "h265"  : True,
-    }
+}
 LOSSLESS_CODEC_SUPPORT = {}
 
 #so we can warn just once per unknown preset:

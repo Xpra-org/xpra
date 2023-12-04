@@ -9,12 +9,9 @@ import sys
 from typing import Any
 from collections.abc import Callable
 
-from xpra.os_util import (
-    bytestostr, get_saved_env, is_Wayland,
-    is_X11, get_saved_env_var, first_time,
-)
-from xpra.util.str_fn import csv
-from xpra.util.env import envint, envbool
+from xpra.util.system import is_Wayland, is_X11
+from xpra.util.str_fn import csv, bytestostr
+from xpra.util.env import envint, envbool, first_time, get_saved_env, get_saved_env_var
 from xpra.log import Logger
 
 log = Logger("posix")

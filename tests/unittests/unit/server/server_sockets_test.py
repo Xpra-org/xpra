@@ -13,7 +13,8 @@ from subprocess import Popen
 
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint
-from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
+from xpra.os_util import OSX, POSIX
+from xpra.util.io import load_binary_file, pollwait
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.platform.dotxpra import DISPLAY_PREFIX
 from unit.test_util import get_free_tcp_port

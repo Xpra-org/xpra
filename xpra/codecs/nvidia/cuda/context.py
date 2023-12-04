@@ -16,18 +16,20 @@ from typing import Any
 from xpra.codecs.constants import TransientCodecException
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv, print_nested_dict
-from xpra.util.env import envint, envbool
+from xpra.util.env import envint, envbool, first_time, NumpyImportContext
 from xpra.platform.paths import (
     get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs,
     get_resources_dir, get_app_dir,
     )
-from xpra.os_util import load_binary_file, is_WSL, WIN32, first_time, NumpyImportContext
+from xpra.os_util import WIN32
+from xpra.util.system import is_WSL
+from xpra.util.io import load_binary_file
 from xpra.log import Logger
 
 if WIN32 and not os.environ.get("CUDA_PATH") and getattr(sys, "frozen", None) in ("windows_exe", "console_exe", True):
     os.environ["CUDA_PATH"] = get_app_dir()
 
-with NumpyImportContext:
+with NumpyImportContext():
     if is_WSL() and not envbool("XPRA_PYCUDA_WSL", False):
         raise ImportError("refusing to import pycuda on WSL, use XPRA_PYCUDA_WSL=1 to override")
     import pycuda
@@ -493,7 +495,7 @@ class cuda_device_context:
     def make_context(self) -> None:
         start = monotonic()
         if self.opengl:
-            with NumpyImportContext:
+            with NumpyImportContext():
                 from pycuda import gl  # @UnresolvedImport pylint: disable=import-outside-toplevel
                 self.context = gl.make_context(self.device)
         else:

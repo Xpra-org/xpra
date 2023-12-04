@@ -15,7 +15,8 @@ platform_import(globals(), "keyboard", True,
 
 def main():
     import sys
-    from xpra.os_util import WIN32, OSX, POSIX, bytestostr
+    from xpra.os_util import WIN32, OSX, POSIX
+    from xpra.util.str_fn import bytestostr
     from xpra.util.str_fn import print_nested_dict
     from xpra.util.str_fn import csv
     from xpra.platform import program_context

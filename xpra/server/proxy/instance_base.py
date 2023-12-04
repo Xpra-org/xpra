@@ -21,11 +21,10 @@ from xpra.codecs.video import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.scripts.config import parse_number, parse_bool
 from xpra.common import FULL_INFO, ConnectionMessage
 from xpra.os_util import (
-    get_hex_uuid, strtobytes, first_time,
-)
+    get_hex_uuid, )
 from xpra.util.types import typedict
-from xpra.util.str_fn import csv, ellipsizer
-from xpra.util.env import envint, envbool
+from xpra.util.str_fn import csv, ellipsizer, strtobytes
+from xpra.util.env import envint, envbool, first_time
 from xpra.util.version import XPRA_VERSION, vparts
 from xpra.util.thread import start_thread
 from xpra.server.core import get_server_info, get_thread_info, proto_crypto_caps

@@ -11,7 +11,8 @@ import subprocess
 
 from unit.process_test_util import ProcessTestUtil
 from xpra.util.env import envint
-from xpra.os_util import pollwait, WIN32
+from xpra.os_util import WIN32
+from xpra.util.io import pollwait
 from xpra.exit_codes import exit_str
 from xpra.platform.dotxpra import DotXpra, DISPLAY_PREFIX
 from xpra.log import Logger

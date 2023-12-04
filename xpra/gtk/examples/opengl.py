@@ -9,7 +9,7 @@ def main(argv=()):
     from xpra.platform import program_context
     with program_context("opengl", "OpenGL"):
         try:
-            from xpra.os_util import is_X11
+            from xpra.util.system import is_X11
             from xpra.client.gl.window import get_gl_client_window_module, test_gl_client_window
             if is_X11():
                 from xpra.x11.gtk3.display_source import init_gdk_display_source

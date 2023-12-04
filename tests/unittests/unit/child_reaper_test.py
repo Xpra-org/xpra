@@ -10,7 +10,7 @@ import logging
 import unittest
 import subprocess
 
-from xpra.os_util import OSEnvContext
+from xpra.util.env import OSEnvContext
 from xpra.util import child_reaper
 from xpra.util.child_reaper import getChildReaper, reaper_cleanup, log
 

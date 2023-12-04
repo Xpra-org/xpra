@@ -6,11 +6,11 @@
 import os
 from typing import Any
 
-from xpra.os_util import WIN32, OSX, first_time, gi_import
+from xpra.os_util import WIN32, OSX, gi_import
 from xpra.common import roundup
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv
-from xpra.util.env import envbool
+from xpra.util.env import envbool, first_time
 from xpra.codecs.constants import video_spec, get_profile
 from xpra.gstreamer.common import (
     import_gst, normv, get_all_plugin_names,

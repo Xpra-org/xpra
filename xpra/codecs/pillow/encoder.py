@@ -11,7 +11,7 @@ from typing import Any
 
 from xpra.codecs.debug import may_save_image
 from xpra.util.types import typedict
-from xpra.util.str_fn import csv
+from xpra.util.str_fn import csv, hexstr
 from xpra.net.compression import Compressed
 from xpra.log import Logger
 
@@ -265,7 +265,6 @@ def encode(coding : str, image, options=None) -> tuple[str,Compressed,dict[str,A
 def selftest(full=False) -> None:
     global ENCODINGS
     # pylint: disable=import-outside-toplevel
-    from xpra.os_util import hexstr
     from xpra.codecs.checks import make_test_image
     img = make_test_image("BGRA", 128, 128)
     vrange : tuple[int, ...] = (50, )

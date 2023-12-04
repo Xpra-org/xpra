@@ -9,9 +9,9 @@ from typing import Any
 from xpra.util.screen import prettify_plug_name
 from xpra.util.str_fn import csv
 from xpra.util.parsing import parse_simple_dict
-from xpra.util.env import envbool
+from xpra.util.env import envbool, SilenceWarningsContext
 from xpra.common import XPRA_APP_ID
-from xpra.os_util import POSIX, OSX, SilenceWarningsContext, gi_import
+from xpra.os_util import POSIX, OSX, gi_import
 from xpra.scripts.config import parse_bool
 from xpra.server import features
 from xpra.server.shadow.root_window_model import RootWindowModel

@@ -10,7 +10,8 @@ from collections.abc import Callable
 from xpra.common import KeyEvent
 from xpra.keyboard.mask import mask_to_names, MODIFIER_MAP
 from xpra.log import Logger
-from xpra.os_util import bytestostr
+from xpra.util.str_fn import bytestostr
+
 log = Logger("keyboard")
 
 

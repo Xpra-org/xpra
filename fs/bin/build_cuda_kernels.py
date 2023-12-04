@@ -10,7 +10,8 @@ import sys
 import glob
 import shutil
 
-from xpra.os_util import get_status_output, WIN32
+from xpra.os_util import WIN32
+from xpra.util.io import get_status_output
 from xpra.util.str_fn import sorted_nicely
 
 

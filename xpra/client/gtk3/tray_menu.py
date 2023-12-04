@@ -8,9 +8,9 @@ import re
 from gi.repository import GLib, Gtk  # @UnresolvedImport
 
 from xpra.util.types import typedict, reverse_dict
-from xpra.util.str_fn import ellipsizer, repr_ellipsized
+from xpra.util.str_fn import ellipsizer, repr_ellipsized, bytestostr
 from xpra.util.env import envbool
-from xpra.os_util import bytestostr, OSX, WIN32
+from xpra.os_util import OSX, WIN32
 from xpra.common import RESOLUTION_ALIASES, ConnectionMessage
 from xpra.client.gtk3.menu_helper import (
     MenuHelper,

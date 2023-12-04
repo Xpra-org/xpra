@@ -38,7 +38,7 @@ class ClientMixinTest(unittest.TestCase):
         enable_debug_for("all")
 
     def dump_packets(self):
-        from xpra.os_util import get_util_logger
+        from xpra.util.io import get_util_logger
         log = get_util_logger()
         log.info("dump_packets() %i packets to send:", len(self.packets))
         for x in self.packets:

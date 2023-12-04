@@ -52,11 +52,9 @@ from OpenGL.GL.ARB.framebuffer_object import (
     )
 
 from xpra.os_util import (
-    bytestostr, hexstr,
-    POSIX, OSX, first_time,
-)
-from xpra.util.str_fn import repr_ellipsized, nonl
-from xpra.util.env import envint, envbool
+    POSIX, OSX, )
+from xpra.util.str_fn import repr_ellipsized, nonl, bytestostr, hexstr
+from xpra.util.env import envint, envbool, first_time
 from xpra.util.types import typedict
 from xpra.common import roundup
 from xpra.codecs.constants import get_subsampling_divs, get_plane_name

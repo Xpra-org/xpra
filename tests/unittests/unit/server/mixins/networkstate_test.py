@@ -8,7 +8,7 @@ import os
 import unittest
 
 from xpra.util.types import typedict, AdHocStruct
-from xpra.os_util import OSEnvContext
+from xpra.util.env import OSEnvContext
 from unit.test_util import silence_info
 from unit.server.mixins.servermixintest_util import ServerMixinTest
 

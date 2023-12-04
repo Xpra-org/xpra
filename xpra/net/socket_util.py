@@ -16,14 +16,12 @@ from xpra.exit_codes import ExitCode
 from xpra.net.common import DEFAULT_PORT
 from xpra.net.bytestreams import set_socket_timeout, pretty_socket, SOCKET_TIMEOUT
 from xpra.os_util import (
-    getuid, get_username_for_uid, get_groups, get_group_id, osexpand,
-    path_permission_info, umask_context, WIN32, OSX, POSIX,
-    parse_encoded_bin_data,
-    SilenceWarningsContext,
-    )
+    getuid, get_username_for_uid, get_groups, get_group_id, WIN32, OSX, POSIX,
+)
+from xpra.util.io import path_permission_info, umask_context
 from xpra.util.str_fn import std, csv, ellipsizer, print_nested_dict
-from xpra.util.parsing import parse_simple_dict
-from xpra.util.env import envint, envbool
+from xpra.util.parsing import parse_simple_dict, parse_encoded_bin_data
+from xpra.util.env import envint, envbool, osexpand, SilenceWarningsContext
 from xpra.util.thread import start_thread
 
 #pylint: disable=import-outside-toplevel

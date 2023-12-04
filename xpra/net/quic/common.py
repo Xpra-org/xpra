@@ -7,7 +7,7 @@ from time import time
 from email.utils import formatdate
 
 from xpra.util.env import envint
-from xpra.os_util import strtobytes
+from xpra.util.str_fn import strtobytes
 
 SERVER_NAME = "xpra/aioquic"
 USER_AGENT = "xpra/aioquic"

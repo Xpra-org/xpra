@@ -11,7 +11,8 @@ from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label, modify_fg, color_parse
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.platform.gui import force_focus
-from xpra.os_util import get_util_logger, gi_import
+from xpra.os_util import gi_import
+from xpra.util.io import get_util_logger
 
 Gtk = gi_import("Gtk")
 GdkPixbuf = gi_import("GdkPixbuf")

@@ -12,13 +12,12 @@ from typing import Any
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util.types import typedict
-from xpra.util.str_fn import nonl, csv, ellipsizer, repr_ellipsized, sorted_nicely
-from xpra.util.env import envint
+from xpra.util.str_fn import nonl, csv, ellipsizer, repr_ellipsized, sorted_nicely, bytestostr, hexstr
+from xpra.util.env import envint, first_time
 from xpra.common import ConnectionMessage, disconnect_is_an_error
 from xpra.os_util import (
-    bytestostr, get_hex_uuid, hexstr,
-    POSIX, OSX, stderr_print, first_time,
-)
+    get_hex_uuid, POSIX, OSX, )
+from xpra.util.io import stderr_print
 from xpra.net.common import PacketType
 from xpra.util.stats import std_unit
 from xpra.client.base.client import EXTRA_TIMEOUT
@@ -583,7 +582,7 @@ class PrintClient(SendCommandConnectClient):
             if size>self.file_size_limit:
                 sizeerr(size)
                 return
-            from xpra.os_util import load_binary_file
+            from xpra.util.io import load_binary_file
             self.file_data = load_binary_file(self.filename)
             log("read %i bytes from %s", len(self.file_data), self.filename)
         size = len(self.file_data)

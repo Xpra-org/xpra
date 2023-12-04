@@ -5,7 +5,8 @@
 # later version. See the file COPYING for details.
 
 from xpra.util.version import version_compat_check, parse_version
-from xpra.os_util import bytestostr, get_util_logger
+from xpra.util.io import get_util_logger
+from xpra.util.str_fn import bytestostr
 from xpra.util.types import typedict
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.exit_codes import ExitCode

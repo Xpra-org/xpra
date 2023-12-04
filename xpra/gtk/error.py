@@ -30,7 +30,8 @@
 import traceback
 
 from xpra.util.env import envbool
-from xpra.os_util import is_main_thread, gi_import
+from xpra.os_util import gi_import
+from xpra.util.thread import is_main_thread
 from xpra.log import Logger
 
 Gdk = gi_import("Gdk")

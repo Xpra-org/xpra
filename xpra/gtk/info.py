@@ -10,8 +10,8 @@ from typing import Any
 import cairo
 
 from xpra.gtk.util import get_root_size, get_default_root_window
-from xpra.os_util import WIN32, gi_import, IgnoreWarningsContext
-from xpra.util.env import envint, envbool
+from xpra.os_util import WIN32, gi_import
+from xpra.util.env import envint, envbool, IgnoreWarningsContext
 from xpra.log import Logger
 
 Gdk = gi_import("Gdk")

@@ -11,8 +11,10 @@ import hashlib
 from typing import Any
 
 from xpra.util.stats import to_std_unit, std_unit
-from xpra.os_util import bytestostr, osexpand, load_binary_file, WIN32, POSIX
-from xpra.util.str_fn import repr_ellipsized
+from xpra.os_util import WIN32, POSIX
+from xpra.util.env import osexpand
+from xpra.util.io import load_binary_file
+from xpra.util.str_fn import repr_ellipsized, bytestostr
 from xpra.common import NotificationID
 from xpra.net.common import PacketType
 from xpra.net.file_transfer import FileTransferAttributes

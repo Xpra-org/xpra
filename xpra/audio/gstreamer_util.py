@@ -19,9 +19,9 @@ from xpra.audio.common import (
     VORBIS, FLAC, MP3, MP3_MPEG4, OPUS, SPEEX, WAV, WAVPACK, MP3_ID3V2, \
     MPEG4, MKA, OGG,
     )
-from xpra.os_util import WIN32, OSX, POSIX, bytestostr
+from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util.types import reverse_dict
-from xpra.util.str_fn import csv
+from xpra.util.str_fn import csv, bytestostr
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.env import envint, envbool
 from xpra.log import Logger

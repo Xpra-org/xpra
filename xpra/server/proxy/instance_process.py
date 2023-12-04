@@ -16,15 +16,13 @@ from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.socket_util import SOCKET_DIR_MODE
 from xpra.os_util import (
-    SIGNAMES, POSIX,
-    bytestostr,
-    osexpand,
-    set_proc_title,
-    getuid, getgid, get_username_for_uid, setuidgid,
-    register_SIGUSR_signals,
-    )
+    POSIX,
+    getuid, getgid, get_username_for_uid, )
+from xpra.util.env import osexpand
+from xpra.server.util import setuidgid
+from xpra.util.system import SIGNAMES, register_SIGUSR_signals, set_proc_title
 from xpra.util.types import typedict
-from xpra.util.str_fn import ellipsizer
+from xpra.util.str_fn import ellipsizer, bytestostr
 from xpra.common import ConnectionMessage, SocketState, noerr
 from xpra.server.proxy.queue_scheduler import QueueScheduler
 from xpra.util.version import XPRA_VERSION

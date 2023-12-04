@@ -33,12 +33,12 @@ except ImportError as e:
 
 import xpra
 from xpra.os_util import (
-    get_status_output, load_binary_file,
     getuid,
     BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD,
-    is_Ubuntu, is_Debian, is_Fedora,
-    is_CentOS, is_AlmaLinux, is_RockyLinux, is_RedHat, is_openSUSE, is_OracleLinux,
-    )
+)
+from xpra.util.system import is_Ubuntu, is_Debian, is_Fedora, is_CentOS, is_AlmaLinux, is_RockyLinux, is_OracleLinux, \
+    is_RedHat, is_openSUSE
+from xpra.util.io import load_binary_file, get_status_output
 
 if BITS!=64:
     print(f"Warning: {BITS}-bit architecture, only 64-bits are officially supported")

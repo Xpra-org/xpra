@@ -8,7 +8,7 @@ import os
 import tempfile
 import unittest
 
-from xpra.os_util import load_binary_file
+from xpra.util.io import load_binary_file
 from xpra.platform.displayfd import write_displayfd, read_displayfd
 
 class DisplayFDTest(unittest.TestCase):

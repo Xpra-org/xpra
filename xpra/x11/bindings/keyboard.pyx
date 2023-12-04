@@ -11,7 +11,7 @@ from typing import List, Dict
 from xpra.log import Logger
 log = Logger("x11", "bindings", "keyboard")
 
-from xpra.os_util import bytestostr, strtobytes
+from xpra.util.str_fn import bytestostr, strtobytes
 from xpra.x11.bindings.xlib cimport (
     Display, XID, Bool, KeySym, KeyCode, Atom, Window, Status, Time, XRectangle, CARD32,
     XModifierKeymap,

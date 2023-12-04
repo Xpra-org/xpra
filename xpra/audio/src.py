@@ -10,7 +10,7 @@ from time import monotonic
 from typing import Any
 from gi.repository import GObject  # @UnresolvedImport
 
-from xpra.os_util import SIGNAMES
+from xpra.util.system import SIGNAMES
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, envfloat
 from xpra.audio.audio_pipeline import AudioPipeline
@@ -330,7 +330,7 @@ def main() -> int:
             return 1
         filename = sys.argv[1]
         if filename=="-":
-            from xpra.os_util import disable_stdout_buffering
+            from xpra.util.io import disable_stdout_buffering
             disable_stdout_buffering()
         elif os.path.exists(filename):
             log.error("file %s already exists", filename)

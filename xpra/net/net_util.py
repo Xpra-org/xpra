@@ -457,7 +457,7 @@ def main(): # pragma: no cover
                 if info:
                     print(f"  {info}")
 
-        from xpra.os_util import bytestostr
+        from xpra.util.str_fn import bytestostr
         def pver(v):
             if isinstance(v, (tuple, list)):
                 s = ""

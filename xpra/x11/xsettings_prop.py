@@ -20,8 +20,7 @@ from typing import Any
 
 from xpra.log import Logger
 from xpra.util.env import envbool
-from xpra.os_util import strtobytes, bytestostr, hexstr
-
+from xpra.util.str_fn import strtobytes, bytestostr, hexstr
 
 log : Logger = Logger("x11", "xsettings")
 

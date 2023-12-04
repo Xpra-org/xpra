@@ -5,8 +5,8 @@
 
 from time import monotonic
 
-from xpra.os_util import memoryview_to_bytes, first_time
-from xpra.util.str_fn import csv
+from xpra.util.env import first_time
+from xpra.util.str_fn import csv, memoryview_to_bytes
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 

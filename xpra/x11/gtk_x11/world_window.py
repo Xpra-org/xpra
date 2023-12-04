@@ -7,7 +7,7 @@
 from gi.repository import GObject, Gtk # @UnresolvedImport
 
 from xpra.gtk.error import xlog
-from xpra.os_util import IgnoreWarningsContext, ignorewarnings
+from xpra.util.env import IgnoreWarningsContext, ignorewarnings
 from xpra.x11.bindings.window import constants
 from xpra.x11.bindings.send_wm import send_wm_take_focus
 from xpra.x11.gtk_x11.prop import prop_set

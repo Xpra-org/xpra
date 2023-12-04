@@ -17,7 +17,8 @@ from collections.abc import Callable
 from cups import Connection  # @UnresolvedImport
 
 from xpra.common import DEFAULT_XDG_DATA_DIRS
-from xpra.os_util import OSX, bytestostr
+from xpra.os_util import OSX
+from xpra.util.str_fn import bytestostr
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.env import envint, envbool
 from xpra.log import Logger

@@ -8,7 +8,8 @@ from typing import Any
 
 from xpra.scripts.config import parse_bool_or_int, csvstrl
 from xpra.util.env import envint
-from xpra.os_util import bytestostr, OSX
+from xpra.os_util import OSX
+from xpra.util.str_fn import bytestostr
 from xpra.net.common import PacketType
 from xpra.util.version import vtrim
 from xpra.codecs.constants import preforder, STREAM_ENCODINGS

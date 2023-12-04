@@ -18,8 +18,8 @@ import paramiko
 from xpra.net.ssh.paramiko_client import SSHSocketConnection
 from xpra.net.bytestreams import pretty_socket
 from xpra.util.str_fn import csv, decode_str
-from xpra.util.env import envint
-from xpra.os_util import osexpand, getuid, WIN32, POSIX, first_time
+from xpra.util.env import envint, osexpand, first_time
+from xpra.os_util import getuid, WIN32, POSIX
 from xpra.util.thread import start_thread
 from xpra.scripts.config import parse_bool
 from xpra.common import SSH_AGENT_DISPATCH

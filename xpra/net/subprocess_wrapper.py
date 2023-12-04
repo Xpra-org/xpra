@@ -10,13 +10,15 @@ from queue import SimpleQueue
 from typing import Any
 
 from xpra.gtk.signals import register_os_signals
-from xpra.util.str_fn import csv, repr_ellipsized
+from xpra.util.str_fn import csv, repr_ellipsized, bytestostr, hexstr
 from xpra.util.env import envint, envbool
 from xpra.net.bytestreams import TwoFileConnection
 from xpra.net.common import ConnectionClosedException, PACKET_TYPES
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH
-from xpra.os_util import setbinarymode, SIGNAMES, bytestostr, hexstr, gi_import, WIN32
+from xpra.os_util import gi_import, WIN32
+from xpra.util.io import setbinarymode
+from xpra.util.system import SIGNAMES
 from xpra.util.child_reaper import getChildReaper
 from xpra.log import Logger
 

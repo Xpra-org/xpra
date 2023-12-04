@@ -6,7 +6,7 @@
 
 import os
 
-from xpra.os_util import strtobytes
+from xpra.util.str_fn import strtobytes
 
 
 def get_headers(host:str, port:int) -> dict[bytes,bytes]:    #pylint: disable=unused-argument

@@ -7,7 +7,8 @@
 import os.path
 from typing import Any
 
-from xpra.os_util import OSX, POSIX, bytestostr
+from xpra.os_util import OSX, POSIX
+from xpra.util.str_fn import bytestostr
 from xpra.net.common import PacketType
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin

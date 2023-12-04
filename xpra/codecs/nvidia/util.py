@@ -7,9 +7,10 @@
 import sys
 import os
 
-from xpra.util.str_fn import csv, print_nested_dict, pver
+from xpra.util.str_fn import csv, print_nested_dict, pver, strtobytes, bytestostr
 from xpra.util.env import envbool
-from xpra.os_util import bytestostr, strtobytes, load_binary_file, POSIX
+from xpra.os_util import POSIX
+from xpra.util.io import load_binary_file
 from xpra.platform.paths import get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs
 from xpra.log import Logger
 

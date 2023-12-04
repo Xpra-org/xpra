@@ -8,7 +8,8 @@ import os
 import unittest
 
 from unit.server_test_util import ServerTestUtil
-from xpra.os_util import POSIX, OSX, OSEnvContext
+from xpra.os_util import POSIX, OSX
+from xpra.util.env import OSEnvContext
 
 
 class TestDisplayUtil(ServerTestUtil):

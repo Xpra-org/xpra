@@ -9,9 +9,8 @@ import sys
 import logging
 from typing import Any
 
-from xpra.util.str_fn import csv, print_nested_dict
-from xpra.util.env import envint, envbool
-from xpra.os_util import bytestostr, NumpyImportContext
+from xpra.util.str_fn import csv, print_nested_dict, bytestostr
+from xpra.util.env import envint, envbool, NumpyImportContext
 from xpra.log import Logger, CaptureHandler
 from xpra.client.gl.drivers import (
     GL_MATCH_LIST, WHITELIST, GREYLIST, BLACKLIST,

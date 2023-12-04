@@ -17,9 +17,8 @@ from xpra.gtk.info import get_display_info
 from xpra.gtk.widget import scaled_image, label, choose_file
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.versions import get_gtk_version_info
-from xpra.os_util import hexstr
 from xpra.platform.gui import force_focus
-from xpra.util.str_fn import nonl, repr_ellipsized
+from xpra.util.str_fn import nonl, repr_ellipsized, hexstr
 from xpra.util.env import envint
 from xpra.common import FULL_INFO
 from xpra.log import Logger

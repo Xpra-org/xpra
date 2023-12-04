@@ -14,9 +14,10 @@ from xpra.server.core import ServerCore
 from xpra.server.background_worker import add_work_item
 from xpra.common import SSH_AGENT_DISPATCH, FULL_INFO, noop, ConnectionMessage
 from xpra.net.common import may_log_packet, ServerPacketHandlerType, PacketType
-from xpra.os_util import bytestostr, is_socket, WIN32
+from xpra.os_util import WIN32
+from xpra.util.io import is_socket
 from xpra.util.types import typedict, merge_dicts
-from xpra.util.str_fn import csv
+from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envbool
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.server import features

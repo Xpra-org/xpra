@@ -36,9 +36,8 @@ from xpra.clipboard.core import (
     TEXT_TARGETS, MAX_CLIPBOARD_PACKET_SIZE,
     )
 from xpra.common import roundup
-from xpra.util.str_fn import csv, ellipsizer
+from xpra.util.str_fn import csv, ellipsizer, bytestostr
 from xpra.util.env import envint, envbool
-from xpra.os_util import bytestostr
 from xpra.platform.win32.constants import PROCESS_QUERY_INFORMATION
 
 CP_UTF8 = 65001

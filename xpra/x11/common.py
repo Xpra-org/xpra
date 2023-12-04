@@ -7,8 +7,7 @@ import struct
 from typing import Any, cast
 from collections.abc import Callable
 
-from xpra.util.str_fn import ellipsizer
-from xpra.os_util import hexstr, bytestostr
+from xpra.util.str_fn import ellipsizer, bytestostr, hexstr
 from xpra.log import Logger
 log = Logger("x11")
 

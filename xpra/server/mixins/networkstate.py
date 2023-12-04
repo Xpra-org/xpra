@@ -14,7 +14,8 @@ from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.scripts.config import parse_with_unit
 from xpra.util.stats import std_unit
 from xpra.net.common import PacketType
-from xpra.os_util import livefds, POSIX
+from xpra.os_util import POSIX
+from xpra.util.io import livefds
 from xpra.util.pysystem import detect_leaks
 from xpra.util.types import typedict
 from xpra.util.env import envint, envbool

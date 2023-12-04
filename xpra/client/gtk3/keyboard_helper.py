@@ -7,7 +7,8 @@
 
 from xpra.client.gui.keyboard_helper import KeyboardHelper, log
 from xpra.gtk.keymap import get_gtk_keymap
-from xpra.os_util import is_X11, gi_import
+from xpra.os_util import gi_import
+from xpra.util.system import is_X11
 
 Gdk = gi_import("Gdk")
 GLib = gi_import("GLib")

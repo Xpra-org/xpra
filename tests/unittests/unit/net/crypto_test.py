@@ -7,7 +7,7 @@
 
 import unittest
 from time import monotonic
-from xpra.os_util import hexstr
+from xpra.util.str_fn import hexstr
 from xpra.util.env import envbool
 
 from xpra.net.crypto import (

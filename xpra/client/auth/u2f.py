@@ -7,7 +7,9 @@ import os
 import logging
 import binascii
 
-from xpra.os_util import load_binary_file, strtobytes, osexpand, bytestostr
+from xpra.util.env import osexpand
+from xpra.util.io import load_binary_file
+from xpra.util.str_fn import strtobytes, bytestostr
 from xpra.log import Logger, is_debug_enabled
 
 log = Logger("auth")

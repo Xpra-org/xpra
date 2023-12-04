@@ -7,7 +7,7 @@
 import os
 import unittest
 
-from xpra.os_util import OSEnvContext
+from xpra.util.env import OSEnvContext
 from xpra.net import common
 
 class TestLogPackets(unittest.TestCase):

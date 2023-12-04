@@ -6,8 +6,8 @@ import sys
 import warnings
 from collections import deque
 
-from xpra.util.str_fn import csv
-from xpra.os_util import bytestostr, gi_import
+from xpra.util.str_fn import csv, bytestostr
+from xpra.os_util import gi_import
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 from xpra.gtk.widget import label

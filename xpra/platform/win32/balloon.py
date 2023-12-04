@@ -13,7 +13,7 @@ from ctypes import (
     )
 from ctypes.wintypes import BOOL, DWORD
 
-from xpra.os_util import strtobytes
+from xpra.util.str_fn import strtobytes
 from xpra.platform.win32.constants import SM_CXSMICON, SM_CYSMICON
 from xpra.platform.win32.common import GetSystemMetrics
 from xpra.log import Logger

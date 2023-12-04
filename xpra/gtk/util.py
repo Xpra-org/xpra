@@ -3,7 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.os_util import OSX, POSIX, is_X11, first_time, gi_import, IgnoreWarningsContext
+from xpra.os_util import OSX, POSIX, gi_import
+from xpra.util.env import first_time, IgnoreWarningsContext
+from xpra.util.system import is_X11
 from xpra.log import Logger
 
 Gdk = gi_import("Gdk")
