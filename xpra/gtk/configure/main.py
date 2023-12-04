@@ -37,6 +37,7 @@ class ConfigureGUI(BaseGUIWindow):
         self.sub("Features", "features.png","Enable or disable feature groups", "features")
         self.sub("Picture compression", "encoding.png","Encodings, speed and quality", "encodings")
         self.sub("GStreamer", "gstreamer.png","Configure the GStreamer codecs", "gstreamer")
+        self.sub("OpenGL acceleration", "opengl.png","Test and validate OpenGL renderer", "opengl")
 
     def sub(self, title="", icon_name="browse.png", tooltip="", configure:str="") -> None:
         def callback(btn):

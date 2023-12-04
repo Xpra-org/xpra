@@ -34,7 +34,7 @@ def exec_command(cmd):
     return proc
 
 
-def button(tooltip:str, icon_name:str, callback:Callable):
+def button(tooltip: str, icon_name: str, callback: Callable):
     btn = Gtk.Button()
     icon = Gio.ThemedIcon(name=icon_name)
     image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
@@ -55,7 +55,7 @@ class BaseGUIWindow(Gtk.Window):
                  wm_class=("xpra-gui", "Xpra-GUI"),
                  default_size=(640, 300),
                  header_bar=(True, True),
-                 parent:Gtk.Window|None=None,
+                 parent : Gtk.Window | None = None,
                  ):
         self.exit_code = 0
         super().__init__()
@@ -93,7 +93,6 @@ class BaseGUIWindow(Gtk.Window):
         log(f"dismiss{args} calling {self.do_dismiss}")
         self.do_dismiss()
 
-
     def add_headerbar(self, about=True, toolbox=True):
         hb = Gtk.HeaderBar()
         hb.set_show_close_button(True)
@@ -108,6 +107,7 @@ class BaseGUIWindow(Gtk.Window):
             else:
                 def show(*_args):
                     w = None
+
                     def hide(*_args):
                         w.hide()
                     ToolboxGUI.quit = hide
@@ -117,7 +117,7 @@ class BaseGUIWindow(Gtk.Window):
         hb.show_all()
         self.set_titlebar(hb)
 
-    def ib(self, title="", icon_name="browse.png", tooltip="", callback: Callable=noop, sensitive=True) -> None:
+    def ib(self, title="", icon_name="browse.png", tooltip="", callback: Callable = noop, sensitive=True) -> None:
         label_font = "sans 16"
         icon = get_icon_pixbuf(icon_name)
         btn = imagebutton(
@@ -168,13 +168,13 @@ class BaseGUIWindow(Gtk.Window):
         if proc.poll() is None:
             self.busy_cursor(btn)
             from xpra.util.child_reaper import getChildReaper
-            getChildReaper().add_process(proc, "subcommand", cmd, ignore=True, forget=True, callback=self.command_ended)
+            getChildReaper().add_process(proc, "subcommand", cmd, ignore=True, forget=True,
+                                         callback=self.command_ended)
 
     def command_ended(self, proc):
         self.reset_cursors()
         log(f"command_ended({proc})")
         if proc.returncode:
-
             self.may_notify(NotificationID.FAILURE,
                             "Subcommand Failed",
                             "The subprocess terminated abnormally\n\rand returned %s" % exit_str(proc.returncode)
@@ -201,17 +201,18 @@ class BaseGUIWindow(Gtk.Window):
         proc = exec_command(cmd)
         if proc.poll() is None:
             self.hide()
+
             def may_exit():
                 if proc.poll() is None:
                     self.quit()
                 else:
                     self.show()
-            #don't ask me why,
-            #but on macos we can get file descriptor errors
-            #if we exit immediately after we spawn the attach command
+            # don't ask me why,
+            # but on macos we can get file descriptor errors
+            # if we exit immediately after we spawn the attach command
             GLib.timeout_add(2000, may_exit)
 
-    def may_notify(self, nid:NotificationID, summary:str, body:str):
+    def may_notify(self, nid: NotificationID, summary:str, body:str):
         log.info(summary)
         log.info(body)
         from xpra.platform.gui import get_native_notifier_classes
@@ -227,5 +228,5 @@ class BaseGUIWindow(Gtk.Window):
         icon_filename = get_icon_filename(self.icon_name)
         icon = parse_image_path(icon_filename)
         notifier.show_notify(0, None, nid,
-                              "xpra GUI Window", 0, self.icon_name,
-                              summary, body, {}, {}, 10, icon)
+                             "xpra GUI Window", 0, self.icon_name,
+                             summary, body, {}, {}, 10, icon)
