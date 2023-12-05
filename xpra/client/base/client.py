@@ -38,19 +38,18 @@ from xpra.net.crypto import (
     ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT,
     DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS,
     DEFAULT_MODE, DEFAULT_KEYSIZE, DEFAULT_KEY_HASH, DEFAULT_KEY_STRETCH,
-    )
+)
 from xpra.util.version import get_version_info, vparts, XPRA_VERSION
 from xpra.platform.info import get_name, get_username
-from xpra.os_util import (
-    get_machine_id, get_user_uuid, force_quit,
-    BITS,
-)
+from xpra.os_util import get_machine_id, get_user_uuid, force_quit, gi_import, BITS
 from xpra.util.system import SIGNAMES, register_SIGUSR_signals
 from xpra.util.io import filedata_nocrlf, stderr_print, use_gui_prompt
 from xpra.util.pysystem import dump_all_frames, detect_leaks
 from xpra.util.types import typedict
-from xpra.util.str_fn import std, nonl, obsc, csv, ellipsizer, repr_ellipsized, print_nested_dict, strtobytes, \
-    bytestostr, hexstr
+from xpra.util.str_fn import (
+    std, nonl, obsc, csv, ellipsizer, repr_ellipsized, print_nested_dict, strtobytes,
+    bytestostr, hexstr,
+)
 from xpra.util.parsing import parse_simple_dict, parse_encoded_bin_data
 from xpra.util.env import envint, envbool
 from xpra.client.base.serverinfo import ServerInfoMixin
@@ -646,19 +645,17 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.cancel_send_mouse_position_timer()
         dump_all_frames()
 
-
     @staticmethod
     def glib_init() -> None:
-        #this will take care of calling threads_init if needed:
-        from gi.repository import GLib  # @UnresolvedImport
-        register_SIGUSR_signals(GLib.idle_add)
+        glib = gi_import("GLib")
+        register_SIGUSR_signals(glib.idle_add)
 
     def run(self) -> ExitValue:
         self.start_protocol()
         return 0
 
     def start_protocol(self) -> None:
-        #protocol may be None in "listen" mode
+        # protocol may be None in "listen" mode
         if self._protocol:
             self._protocol.start()
 

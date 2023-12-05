@@ -9,14 +9,11 @@ import sys
 from time import monotonic
 from typing import Any
 
-from gi.repository import GLib  # @UnresolvedImport
-
 from xpra.util.types import typedict
 from xpra.util.str_fn import nonl, csv, ellipsizer, repr_ellipsized, sorted_nicely, bytestostr, hexstr
 from xpra.util.env import envint, first_time
 from xpra.common import ConnectionMessage, disconnect_is_an_error
-from xpra.os_util import (
-    get_hex_uuid, POSIX, OSX, )
+from xpra.os_util import gi_import, get_hex_uuid, POSIX, OSX
 from xpra.util.io import stderr_print
 from xpra.net.common import PacketType
 from xpra.util.stats import std_unit
@@ -26,6 +23,8 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.log import Logger
 
 log = Logger("gobject", "client")
+
+GLib = gi_import("GLib")
 
 
 def errwrite(msg):

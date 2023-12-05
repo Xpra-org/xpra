@@ -9,7 +9,6 @@ import sys
 import time
 from time import monotonic
 from multiprocessing import Queue as MQueue, freeze_support
-from gi.repository import GLib  # @UnresolvedImport
 from typing import Any
 
 from xpra.util.types import typedict
@@ -17,8 +16,9 @@ from xpra.util.str_fn import csv, repr_ellipsized, print_nested_dict, bytestostr
 from xpra.util.env import envint, envbool, envfloat
 from xpra.common import ConnectionMessage
 from xpra.os_util import (
-    get_username_for_uid, get_groups, get_home_for_uid, getuid, getgid, WIN32, POSIX, OSX,
-    get_group_id,
+    get_username_for_uid, get_groups, get_home_for_uid, getuid, getgid, get_group_id,
+    WIN32, POSIX, OSX,
+    gi_import,
     )
 from xpra.util.io import umask_context
 from xpra.net.common import PacketType
@@ -34,6 +34,8 @@ from xpra.log import Logger
 
 log = Logger("proxy")
 authlog = Logger("proxy", "auth")
+
+GLib = gi_import("GLib")
 
 freeze_support()
 

@@ -2,7 +2,7 @@
 # Copyright (C) 2022-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-#pylint: disable-msg=E1101
+# pylint: disable-msg=E1101
 
 import os
 import sys
@@ -13,7 +13,7 @@ from xpra.util.types import typedict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint, envbool, envfloat
 from xpra.common import ConnectionMessage
-from xpra.os_util import get_machine_id, WIN32
+from xpra.os_util import get_machine_id, gi_import, WIN32
 from xpra.net.bytestreams import log_new_connection
 from xpra.net.socket_util import create_sockets, add_listen_socket, accept_connection, setup_local_sockets
 from xpra.net.net_util import get_network_caps
@@ -205,8 +205,8 @@ class Networklistener(StubClientMixin):
                 if not fn:
                     hello_reply({"error" : "%s not found" % request})
                 else:
-                    from gi.repository import GLib  # @UnresolvedImport
-                    GLib.idle_add(fn)
+                    glib = gi_import("GLib")
+                    glib.idle_add(fn)
                     hello_reply({})
             elif request=="show-session-info":
                 self.show_session_info()

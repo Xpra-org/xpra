@@ -3,8 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.common import  noop
+from xpra.common import noop
 from xpra.util.types import AdHocStruct
+from xpra.os_util import gi_import
 from xpra.log import Logger
 
 log = Logger("client")
@@ -39,10 +40,10 @@ class FakeClient(AdHocStruct):
         self.keyboard_grabbed = False
         self.window_with_grab = None
         self.keyboard_helper = None
-        from gi.repository import GLib
-        self.idle_add = GLib.idle_add
-        self.timeout_add = GLib.timeout_add
-        self.source_remove = GLib.source_remove
+        glib = gi_import("GLib")
+        self.idle_add = glib.idle_add
+        self.timeout_add = glib.timeout_add
+        self.source_remove = glib.source_remove
 
     def get_window_frame_sizes(self, *args):
         return None

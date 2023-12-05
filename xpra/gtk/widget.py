@@ -17,7 +17,7 @@ GdkPixbuf = gi_import("GdkPixbuf")
 log = Logger("gtk", "util")
 
 
-def scaled_image(pixbuf, icon_size:int=0) -> Gtk.Image | None:
+def scaled_image(pixbuf, icon_size: int = 0) -> Gtk.Image | None:
     if not pixbuf:
         return None
     if icon_size:
@@ -25,7 +25,7 @@ def scaled_image(pixbuf, icon_size:int=0) -> Gtk.Image | None:
     return Gtk.Image.new_from_pixbuf(pixbuf)
 
 
-def imagebutton(title, icon=None, tooltip="", clicked_callback:Callable|None = None, icon_size=32,
+def imagebutton(title, icon=None, tooltip="", clicked_callback: Callable | None = None, icon_size=32,
                 default=False, min_size=None, label_color=None, label_font="") -> Gtk.Button:
     button = Gtk.Button(label=title)
     settings = button.get_settings()
@@ -43,18 +43,19 @@ def imagebutton(title, icon=None, tooltip="", clicked_callback:Callable|None = N
     if default:
         button.set_can_default(True)
     if label_color or label_font:
-        l = button
+        widget = button
         try:
             alignment = button.get_children()[0]
             b_hbox = alignment.get_children()[0]
-            l = b_hbox.get_children()[1]
+            widget = b_hbox.get_children()[1]
         except (IndexError, AttributeError):
             pass
         if label_color:
-            modify_fg(l, label_color)
+            modify_fg(widget, label_color)
         if label_font:
-            setfont(l, label_font)
+            setfont(widget, label_font)
     return button
+
 
 def modify_fg(widget, color, state=Gtk.StateType.NORMAL):
     if hasattr(widget, "modify_fg"):
@@ -68,7 +69,7 @@ def menuitem(title, image=None, tooltip=None, cb=None) -> Gtk.ImageMenuItem:
     menu_item.set_label(title)
     if image:
         ignorewarnings(menu_item.set_image, image)
-        #override gtk defaults: we *want* icons:
+        # override gtk defaults: we *want* icons:
         settings = menu_item.get_settings()
         settings.set_property('gtk-menu-images', True)
         if hasattr(menu_item, "set_always_show_image"):
@@ -82,12 +83,12 @@ def menuitem(title, image=None, tooltip=None, cb=None) -> Gtk.ImageMenuItem:
 
 
 def label(text="", tooltip="", font="") -> Gtk.Label:
-    l = Gtk.Label(label=text)
+    widget = Gtk.Label(label=text)
     if font:
-        setfont(l, font)
+        setfont(widget, font)
     if tooltip:
-        l.set_tooltip_text(tooltip)
-    return l
+        widget.set_tooltip_text(tooltip)
+    return widget
 
 
 def setfont(widget, font=""):
@@ -101,8 +102,11 @@ def choose_files(parent_window, title, action=Gtk.FileChooserAction.OPEN, action
                  callback=None, file_filter=None, multiple=True):
     log("choose_files%s", (parent_window, title, action, action_button, callback, file_filter))
     chooser = Gtk.FileChooserDialog(title,
-                                parent=parent_window, action=action,
-                                buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, action_button, Gtk.ResponseType.OK))
+                                    parent=parent_window, action=action,
+                                    buttons=(
+                                        Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                                        action_button, Gtk.ResponseType.OK,
+                                    ))
     chooser.set_select_multiple(multiple)
     chooser.set_default_response(Gtk.ResponseType.OK)
     if file_filter:
@@ -111,7 +115,7 @@ def choose_files(parent_window, title, action=Gtk.FileChooserAction.OPEN, action
     filenames = chooser.get_filenames()
     chooser.hide()
     chooser.destroy()
-    if response!=Gtk.ResponseType.OK:
+    if response != Gtk.ResponseType.OK:
         return None
     return filenames
 
@@ -119,7 +123,7 @@ def choose_files(parent_window, title, action=Gtk.FileChooserAction.OPEN, action
 def choose_file(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_button=Gtk.STOCK_OPEN,
                 callback=None, file_filter=None):
     filenames = choose_files(parent_window, title, action, action_button, callback, file_filter, False)
-    if not filenames or len(filenames)!=1:
+    if not filenames or len(filenames) != 1:
         return
     filename = filenames[0]
     if callback:
@@ -131,6 +135,8 @@ orig_pack_start = Gtk.Box.pack_start
 
 def pack_start(self, child, expand=True, fill=True, padding=0):
     orig_pack_start(self, child, expand, fill, padding)
+
+
 Gtk.Box.pack_start = pack_start
 
 
@@ -145,7 +151,7 @@ def slabel(text="", tooltip="", font="") -> Gtk.Label:
     return lw
 
 
-def title_box(label_str:str, tooltip="") -> Gtk.EventBox:
+def title_box(label_str: str, tooltip="") -> Gtk.EventBox:
     eb = Gtk.EventBox()
     lbl = slabel(label_str, tooltip=tooltip)
     modify_fg(lbl, Gdk.Color(red=48*256, green=0, blue=0))

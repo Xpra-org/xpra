@@ -24,21 +24,23 @@ POSIX : bool = os.name == "posix"
 BITS : int = struct.calcsize(b"P")*8
 
 
+GIR_VERSIONS : dict[str, str] = {
+    "Gtk": "3.0",
+    "Gdk": "3.0",
+    "GdkX11" : "3.0",
+    "Pango": "1.0",
+    "PangoCairo" : "1.0",
+    "GLib": "2.0",
+    "GObject": "2.0",
+    "GdkPixbuf": "2.0",
+    "Gio": "2.0",
+    "Rsvg": "2.0",
+    "Gst": "1.0",
+}
+
+
 def gi_import(mod="Gtk", version=""):
-    gtk_version = os.environ.get("XPRA_GTK_VERSION", "3.0")
-    version = version or {
-        "Gtk": gtk_version,
-        "Gdk": gtk_version,
-        "GdkX11" : gtk_version,
-        "Pango": "1.0",
-        "PangoCairo" : "1.0",
-        "GLib": "2.0",
-        "GObject": "2.0",
-        "GdkPixbuf": "2.0",
-        "Gio": "2.0",
-        "Rsvg": "2.0",
-        "Gst": "1.0",
-    }.get(mod, "")
+    version = version or GIR_VERSIONS.get(mod, "")
     from xpra.util.env import SilenceWarningsContext
     with SilenceWarningsContext(DeprecationWarning, ImportWarning):
         import gi
@@ -77,6 +79,7 @@ def get_username_for_uid(uid) -> str:
         except KeyError:
             pass
     return ""
+
 
 def get_home_for_uid(uid) -> str:
     if POSIX:

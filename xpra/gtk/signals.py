@@ -13,14 +13,15 @@ from xpra.util.io import stderr_print, get_util_logger
 _glib_unix_signals : dict[int, int] = {}
 
 
-def register_os_signals(callback:Callable, commandtype:str="", signals=(signal.SIGINT, signal.SIGTERM)):
+def register_os_signals(callback: Callable, commandtype: str = "", signals=(signal.SIGINT, signal.SIGTERM)):
     for signum in signals:
         register_os_signal(callback, commandtype, signum)
 
 
-def register_os_signal(callback:Callable, commandtype:str="", signum:signal.Signals=signal.SIGINT):
-    from gi.repository import GLib  #pylint: disable=import-outside-toplevel @UnresolvedImport
+def register_os_signal(callback: Callable, commandtype: str = "", signum: signal.Signals = signal.SIGINT):
+    from gi.repository import GLib
     signame = SIGNAMES.get(signum, str(signum))
+
     def write_signal() -> None:
         if not commandtype:
             return
@@ -29,16 +30,18 @@ def register_os_signal(callback:Callable, commandtype:str="", signum:signal.Sign
             cstr = ""
             if commandtype:
                 cstr = commandtype+" "
-            get_util_logger().info("%sgot signal %s", cstr, signame)
+            get_util_logger().info(f"{cstr}got signal {signame}")
         except OSError:
             pass
+
     def do_handle_signal() -> None:
         callback(int(signum))
     if POSIX:
-        #replace the previous definition if we had one:
+        # replace the previous definition if we had one:
         current = _glib_unix_signals.get(signum, None)
         if current:
             GLib.source_remove(current)
+
         def handle_signal(_signum) -> bool:
             write_signal()
             do_handle_signal()
@@ -52,29 +55,32 @@ def register_os_signal(callback:Callable, commandtype:str="", signum:signal.Sign
         signal.signal(signum, os_signal)
 
 
-def register_SIGUSR_signals(commandtype:str="Server"):
+def register_SIGUSR_signals(commandtype: str = "Server"):
     if not POSIX:
         return
     from xpra.util.pysystem import dump_all_frames, dump_gc_frames
     log = get_util_logger()
+
     def sigusr1(_sig):
         log.info("SIGUSR1")
         dump_all_frames(log.info)
         return True
+
     def sigusr2(*_args):
         log.info("SIGUSR2")
         dump_gc_frames(log.info)
         return True
+
     register_os_signals(sigusr1, commandtype, (signal.SIGUSR1, ))
     register_os_signals(sigusr2, commandtype, (signal.SIGUSR2, ))
 
 
-def install_signal_handlers(sstr:str, signal_handler:Callable):
-    #only register the glib signal handler
-    #once the main loop is running,
-    #before that we just trigger a KeyboardInterrupt
+def install_signal_handlers(sstr: str, signal_handler: Callable):
+    # only register the glib signal handler
+    # once the main loop is running,
+    # before that we just trigger a KeyboardInterrupt
     def do_install_signal_handlers():
         register_os_signals(signal_handler, sstr)
         register_SIGUSR_signals(sstr)
-    from gi.repository import GLib  #pylint: disable=import-outside-toplevel @UnresolvedImport
+    from gi.repository import GLib
     GLib.idle_add(do_install_signal_handlers)
