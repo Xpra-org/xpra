@@ -991,7 +991,7 @@ def get_base_conf_dir(install_dir, stripbuildroot=True):
                 dirs = dirs[i+2:]
         elif pkgdir and install_dir.startswith(pkgdir):
             #arch build dir:
-            dirs = install_dir.lstrip(pkgdir).split(os.path.sep)
+            dirs = install_dir[len(pkgdir):].split(os.path.sep)
         elif "usr" in dirs:
             #ie: ["some", "path", "to", "usr"] -> ["usr"]
             #assume "/usr" or "/usr/local" is the build root
