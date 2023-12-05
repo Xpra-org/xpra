@@ -30,7 +30,8 @@ from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import (
     getuid, getgid, get_username_for_uid,
     gi_import,
-    WIN32, OSX, POSIX, )
+    WIN32, OSX, POSIX
+)
 from xpra.util.io import is_socket, stderr_print, use_tty
 from xpra.util.system import is_Wayland, is_Ubuntu, SIGNAMES, set_proc_title, is_systemd_pid1
 from xpra.scripts.parsing import (
@@ -40,7 +41,7 @@ from xpra.scripts.parsing import (
     fixup_defaults,
     validated_encodings, validate_encryption, do_parse_cmdline, show_audio_codec_help,
     MODE_ALIAS, REVERSE_MODE_ALIAS,
-    )
+)
 from xpra.scripts.config import (
     XpraConfig,
     OPTION_TYPES, TRUE_OPTIONS, FALSE_OPTIONS, OFF_OPTIONS, ALL_BOOLEAN_OPTIONS,
@@ -50,7 +51,7 @@ from xpra.scripts.config import (
     fixup_options,
     dict_to_validated_config, get_xpra_defaults_dirs, get_defaults, read_xpra_conf,
     make_defaults_struct, parse_bool, has_audio_support, name_to_field,
-    )
+)
 from xpra.net.common import DEFAULT_PORTS
 from xpra.log import is_debug_enabled, Logger, get_debug_args
 assert callable(error), "used by modules importing this function from here"
@@ -758,16 +759,17 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
         script = xpra_runner_shell_script(script_file, os.getcwd())
         write_runner_shell_scripts(script, False)
         return ExitCode.OK
-    if mode=="auth":
+    if mode == "auth":
         return run_auth(options, args)
     if mode == "configure":
-        return run_configure(args)
+        from xpra.gtk.configure.main import main
+        return main(args)
     if mode == "showconfig":
         return run_showconfig(options, args)
     if mode == "showsetting":
         return run_showsetting(args)
-    #unknown subcommand:
-    if mode!="help":
+    # unknown subcommand:
+    if mode != "help":
         print(f"Invalid subcommand {mode!r}")
     print("Usage:")
     if not POSIX or OSX:
@@ -1382,7 +1384,7 @@ def connect_to_server(app, display_desc:dict[str,Any], opts) -> None:
     #before we can call connect()
     #because connect() may run a subprocess,
     #and Gdk locks up the system if the main loop is not running by then!
-    from gi.repository import GLib  # @UnresolvedImport
+    GLib = gi_import("GLib")
     log = Logger("network")
     def do_setup_connection():
         try:
@@ -3176,7 +3178,7 @@ def run_list_mdns(error_cb, extra_args) -> ExitValue:
         except ImportError:
             error_cb("sorry, 'list-mdns' requires an mdns module")
     from xpra.dbus.common import loop_init
-    from gi.repository import GLib  # @UnresolvedImport
+    GLib = gi_import("GLib")
     loop_init()
     found : dict[tuple[str,str,str],list] = {}
     shown = set()
@@ -3718,8 +3720,8 @@ def display_wm_info(args) -> dict[str,Any]:
         init_gdk_display_source()
         from xpra.x11.gtk_x11.wm_check import get_wm_info
         info = get_wm_info()
-        from gi.repository import Gdk  #pylint: disable=import-outside-toplevel
-        display = Gdk.Display.get_default()
+        gdk = gi_import("Gdk")
+        display = gdk.Display.get_default()
         info["display"] = display.get_name(),
         return info
 
@@ -3970,19 +3972,6 @@ def run_auth(_options, args) -> ExitValue:
         raise InitExit(ExitCode.UNSUPPORTED, f"no command line utility for {auth!r} authentication module")
     argv = [auth_module.__file__]+args[1:]
     return main_fn(argv)
-
-
-def run_configure(args) -> ExitValue:
-    mod = "main"
-    if args:
-        mod = args[0]
-        valid = ("main", "gstreamer", "encodings", "features")
-        if mod not in valid:
-            raise ValueError(f"unsupported 'configure' argument {mod}, must be one of {csv(valid)}")
-        args = args[1:]
-    from importlib import import_module
-    mod = import_module(f"xpra.gtk.configure.{mod}")
-    return mod.main(args)
 
 
 def run_showconfig(options, args) -> ExitValue:

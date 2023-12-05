@@ -89,6 +89,10 @@ class BaseGUIWindow(Gtk.Window):
         self.connect("focus-in-event", self.focus_in)
         self.connect("focus-out-event", self.focus_out)
 
+    def clear_vbox(self):
+        for x in self.vbox.get_children():
+            self.vbox.remove(x)
+
     def dismiss(self, *args):
         log(f"dismiss{args} calling {self.do_dismiss}")
         self.do_dismiss()
@@ -212,7 +216,7 @@ class BaseGUIWindow(Gtk.Window):
             # if we exit immediately after we spawn the attach command
             GLib.timeout_add(2000, may_exit)
 
-    def may_notify(self, nid: NotificationID, summary:str, body:str):
+    def may_notify(self, nid: NotificationID, summary: str, body: str):
         log.info(summary)
         log.info(body)
         from xpra.platform.gui import get_native_notifier_classes

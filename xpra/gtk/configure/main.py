@@ -6,10 +6,10 @@
 import os.path
 from importlib import import_module
 
+from xpra.gtk.configure.common import get_user_config_file
 from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode
 from xpra.os_util import gi_import
-from xpra.util.parsing import parse_simple_dict
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.widget import label
 from xpra.log import Logger
@@ -29,18 +29,19 @@ class ConfigureGUI(BaseGUIWindow):
             default_size=(480, 300),
             header_bar=(True, False),
         )
-        self.dialogs : dict[str,BaseGUIWindow] = {}
+        self.dialogs : dict[str, BaseGUIWindow] = {}
 
     def populate(self):
         self.vbox.add(label("Configure Xpra", font="sans 20"))
         self.vbox.add(label("Tune your xpra configuration:", font="sans 14"))
-        self.sub("Features", "features.png","Enable or disable feature groups", "features")
-        self.sub("Picture compression", "encoding.png","Encodings, speed and quality", "encodings")
-        self.sub("GStreamer", "gstreamer.png","Configure the GStreamer codecs", "gstreamer")
-        self.sub("OpenGL acceleration", "opengl.png","Test and validate OpenGL renderer", "opengl")
+        self.sub("Features", "features.png", "Enable or disable feature groups", "features")
+        self.sub("Picture compression", "encoding.png", "Encodings, speed and quality", "encodings")
+        self.sub("GStreamer", "gstreamer.png", "Configure the GStreamer codecs", "gstreamer")
+        self.sub("OpenGL acceleration", "opengl.png", "Test and validate OpenGL renderer", "opengl")
 
-    def sub(self, title="", icon_name="browse.png", tooltip="", configure:str="") -> None:
-        def callback(btn):
+    def sub(self, title="", icon_name="browse.png", tooltip="", configure: str = "") -> None:
+
+        def callback(_btn):
             dialog = self.dialogs.get(configure)
             if dialog is None:
                 mod = import_module(f"xpra.gtk.configure.{configure}")
@@ -68,29 +69,11 @@ def run_gui(gui_class=ConfigureGUI) -> int:
         return 0
 
 
-def get_user_config_file() -> str:
-    from xpra.platform.paths import get_user_conf_dirs
-    return os.path.join(get_user_conf_dirs()[0], "99_configure_tool.conf")
-
-def parse_user_config_file() -> dict:
-    filename = get_user_config_file()
-    if not os.path.exists(filename):
-        return {}
-    with open(filename, "r", encoding="utf8") as f:
-        return parse_simple_dict(f.read())
-
-def save_user_config_file(options:dict) -> None:
-    filename = get_user_config_file()
-    with open(filename, "w", encoding="utf8") as f:
-        for k,v in options.items():
-            f.write(f"{k} = {v}")
-
-
 def main(args) -> ExitCode:
     if args:
         conf = get_user_config_file()
         subcommand = args[0]
-        if subcommand=="reset":
+        if subcommand == "reset":
             import datetime
             now = datetime.datetime.now()
             with open(conf, "w", encoding="utf8") as f:
@@ -105,7 +88,7 @@ def main(args) -> ExitCode:
                 with open(bak, "w", encoding="utf8") as write:
                     write.write(read.read())
             return ExitCode.OK
-        elif subcommand=="show":
+        elif subcommand == "show":
             if not os.path.exists(conf):
                 print(f"# {conf!r} does not exist yet")
             else:
@@ -113,7 +96,13 @@ def main(args) -> ExitCode:
                     print(f.read())
             return ExitCode.OK
         else:
-            raise InitExit(ExitCode.FILE_NOT_FOUND, f"unknown configure subcommand {subcommand!r}")
+            if any(not str.isalnum(x) for x in subcommand):
+                raise ValueError("invalid characters found in subcommand")
+            from importlib import import_module
+            mod = import_module(f"xpra.gtk.configure.{subcommand}")
+            if not mod:
+                raise InitExit(ExitCode.FILE_NOT_FOUND, f"unknown configure subcommand {subcommand!r}")
+            return mod.main(args[1:])
     return run_gui(ConfigureGUI)
 
 

@@ -3,9 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os.path
 from subprocess import check_call
 
 from xpra.os_util import POSIX
+from xpra.util.env import osexpand
+from xpra.util.parsing import parse_simple_dict
 
 DISCLAIMER = """
 IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
@@ -21,3 +24,23 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 def sync() -> None:
     if POSIX:
         check_call("sync")
+
+
+def get_user_config_file() -> str:
+    from xpra.platform.paths import get_user_conf_dirs
+    return osexpand(os.path.join(get_user_conf_dirs()[0], "99_configure_tool.conf"))
+
+
+def parse_user_config_file() -> dict:
+    filename = get_user_config_file()
+    if not os.path.exists(filename):
+        return {}
+    with open(filename, "r", encoding="utf8") as f:
+        return parse_simple_dict(f.read())
+
+
+def save_user_config_file(options: dict) -> None:
+    filename = get_user_config_file()
+    with open(filename, "w", encoding="utf8") as f:
+        for k, v in options.items():
+            f.write(f"{k} = {v}\n")

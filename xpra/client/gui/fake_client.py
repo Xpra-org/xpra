@@ -21,6 +21,7 @@ class FakeClient(AdHocStruct):
         self.mmap = None
         self.readonly = False
         self.encoding_defaults = {}
+        self.modal_windows = []
         self._focused = None
         self._remote_server_mode = "seamless"
         self.wheel_smooth = False

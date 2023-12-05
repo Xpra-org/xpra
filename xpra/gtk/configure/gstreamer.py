@@ -41,8 +41,7 @@ class ConfigureGUI(BaseGUIWindow):
         self.set_resizable(False)
 
     def populate(self):
-        for x in self.vbox.get_children():
-            self.vbox.remove(x)
+        self.clear_vbox()
         if not self.warning_shown:
             self.populate_with_warning()
         else:
