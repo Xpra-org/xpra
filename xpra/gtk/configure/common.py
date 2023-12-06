@@ -36,7 +36,8 @@ def parse_user_config_file() -> dict:
     if not os.path.exists(filename):
         return {}
     with open(filename, "r", encoding="utf8") as f:
-        return parse_simple_dict(f.read())
+        data = f.read().replace("\r", "\n")
+        return parse_simple_dict(data, sep="\n")
 
 
 def save_user_config_file(options: dict) -> None:
