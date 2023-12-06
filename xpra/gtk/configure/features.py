@@ -4,31 +4,98 @@
 # later version. See the file COPYING for details.
 
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
+from xpra.scripts.config import make_defaults_struct, parse_bool
+from xpra.gtk.configure.common import parse_user_config_file, save_user_config_file
+from xpra.util.thread import start_thread
 from xpra.gtk.widget import label
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
+GLib = gi_import("GLib")
 
 log = Logger("util")
 
 
 class ConfigureGUI(BaseGUIWindow):
 
-    def __init__(self, parent:Gtk.Window|None=None):
+    def __init__(self, parent: Gtk.Window | None = None):
+        self.subsystem_switch = {}
         super().__init__(
             "Configure Xpra's Features",
             "features.png",
             wm_class=("xpra-configure-features-gui", "Xpra Configure Features GUI"),
-            default_size=(640, 300),
+            default_size=(640, 500),
             header_bar=(True, False),
             parent=parent,
         )
 
     def populate(self):
-        self.add_widget(label("Configure Xpra Features", font="sans 20"))
-        self.add_widget(label("This dialog allows you to turn on or off whole subsystems", font="sans 14"))
+        self.clear_vbox()
+        self.add_widget(label("Configure Xpra's Features", font="sans 20"))
+        lines = (
+            "Turning off subsystems can save memory,",
+            "improve security by reducing the attack surface,",
+            "and also make xpra start and connect faster",
+            "",
+        )
+        text = "\n".join(lines)
+        lbl = label(text, font="Sans 14")
+        lbl.set_line_wrap(True)
+        self.add_widget(lbl)
 
+        grid = Gtk.Grid()
+        grid.set_margin_start(40)
+        grid.set_margin_end(40)
+        grid.set_row_homogeneous(True)
+        grid.set_column_homogeneous(False)
+        self.add_widget(grid)
+
+        for i, (subsystem, description) in enumerate(
+                {
+                    "Audio" : "Audio forwarding: speaker and microphone",
+                    "Video" : "Video codecs: h264, vpx, etc",
+                    # "Webcam", "Remote Logging",
+                    "System Tray" : "System tray forwarding",
+                    "Clipboard" : "Copy & Paste to and from the server",
+                    "Notifications" : "Notifications forwarding",
+                    "Windows" : "Windows forwarding",
+                }.items()
+        ):
+            sub = subsystem.lower().replace(" ", "_")
+            lbl = label(subsystem, tooltip=description)
+            lbl.set_hexpand(True)
+            grid.attach(lbl, 0, i, 1, 1)
+            switch = Gtk.Switch()
+            switch.set_sensitive(False)
+            switch.set_state(i % 2 == 0)
+            switch.connect("state-set", self.toggle_subsystem, sub)
+            grid.attach(switch, 1, i, 1, 1)
+            self.subsystem_switch[sub] = switch
+        self.show_all()
+        # load config in a thread as this involves IO:
+        start_thread(self.load_config, "load-config", daemon=True)
+
+    def load_config(self):
+        defaults = make_defaults_struct()
+        GLib.idle_add(self.configure_switches, defaults)
+
+    def configure_switches(self, defaults):
+        for subsystem, switch in self.subsystem_switch.items():
+            value = getattr(defaults, subsystem, None)
+            log(f"configure_switches: {subsystem}={value}")
+            enabled = parse_bool(subsystem, value, False)
+            switch.set_sensitive(True)
+            switch.set_state(enabled)
+            switch.connect("state-set", self.toggle_subsystem, subsystem)
+        return False
+
+    @staticmethod
+    def toggle_subsystem(switch, state, subsystem):
+        config = parse_user_config_file()
+        config[subsystem] = str(state).lower()
+        log(f"state_set({(switch, state, subsystem)} saving {config}")
+        save_user_config_file(config)
 
 
 def main(_args) -> int:
