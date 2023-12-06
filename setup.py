@@ -2056,7 +2056,7 @@ if data_ENABLED:
     if WIN32:
         ICONS += glob.glob("fs/share/xpra/icons/*.ico")
     add_data_files(f"{share_xpra}/icons",         ICONS)
-    add_data_files(f"{share_xpra}/images",        glob.glob("fs/share/xpra/images/*.png"))
+    add_data_files(f"{share_xpra}/images",        glob.glob("fs/share/xpra/images/*"))
     add_data_files(f"{share_xpra}/css",           glob.glob("fs/share/xpra/css/*"))
 
 #*******************************************************************************

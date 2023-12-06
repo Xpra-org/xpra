@@ -3,10 +3,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os.path
 import struct
 
 from xpra.os_util import gi_import, WIN32
+from xpra.codecs.loader import load_codec
 from xpra.util.types import typedict
+from xpra.platform.paths import get_image, get_image_dir
+from xpra.util.io import load_binary_file
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.configure.common import sync, parse_user_config_file, save_user_config_file, get_user_config_file
 from xpra.gtk.widget import label
@@ -38,13 +42,13 @@ def draw_data(x: int, y: int, w: int, h: int, pixel_data: bytes):
 
 
 CLEAR = (
-        "white background",
-        (
-            draw_data(0, 0, WW, WH, BGRA(0xff, 0xff, 0xff, 0xff)),
-        ),
-    )
+    "white background",
+    (
+        draw_data(0, 0, WW, WH, BGRA(0xff, 0xff, 0xff, 0xff)),
+    ),
+)
 
-TEST_STEPS = (
+TEST_STEPS = [
     CLEAR,
     (
         "a grey square in the top left corner",
@@ -61,7 +65,36 @@ TEST_STEPS = (
             draw_data(0, WH//2, WW//2, WH//2, BGR(0x40, 0x40, 0x40)),
         ),
     ),
-)
+]
+
+
+def add_test_images():
+    encodings = []
+    for decoder_name in ("pillow", "jpeg", "webp", "spng", "avif"):
+        decoder = load_codec(f"dec_{decoder_name}")
+        if decoder:
+            encodings += decoder.get_encodings()
+
+    for name, description in {
+        "smpte-rp-219.png" : "smpte-rp-219 test bars (png)",
+        "pinwheel.jpg" : "pinwheel pattern (jpeg)",
+        "gradient.webp" : "gradient pattern (webp)",
+    }.items():
+        encoding = name.split(".")[-1]
+        if encoding not in encodings:
+            continue
+        filename = os.path.join(get_image_dir(), name)
+        image_data = load_binary_file(filename)
+        image = get_image(name)
+        if image and image_data:
+            paint_data = (
+                0, 0, image.get_width(), image.get_height(),
+                encoding, image_data, 0, {},
+            )
+            TEST_STEPS.append((description, (paint_data, )))
+
+
+add_test_images()
 
 
 def create_twin_test_windows():
@@ -82,13 +115,13 @@ def create_twin_test_windows():
         "modal" : True,
         "has-alpha" : not WIN32,
     })
-    border = WindowBorder()
+    border = WindowBorder(False)
     max_window_size = None  # (1024, 1024)
     default_cursor_data = None
     windows = []
     for i, window_class, title in (
-            (0, gl_window_class, "OpenGL Window"),
-            (1, ClientWindow, "Non-OpenGL Window"),
+        (0, gl_window_class, "OpenGL Window"),
+        (1, ClientWindow, "Non-OpenGL Window"),
     ):
         x, y = 100+ww*i, 100
         window = window_class(noclient, None, 0, 2 ** 32 - 1, x, y, ww, wh, ww, wh,
@@ -187,7 +220,7 @@ class ConfigureGUI(BaseGUIWindow):
         )
 
     def paint_twin_windows(self, description: str, paint_data: tuple):
-        log("paint_step() %r", description)
+        log("paint_twin_windows() %r", description)
         callbacks = []
         seq = 1
         for x, y, w, h, encoding, img_data, rowstride, options in paint_data:
@@ -196,9 +229,13 @@ class ConfigureGUI(BaseGUIWindow):
             seq += 1
 
     def restart(self, *args):
+        self.close_test_windows()
+        self.start_test()
+
+    def close_test_windows(self):
         for window in self.windows:
             window.destroy()
-        self.start_test()
+        self.windows = []
 
     def test_passed(self, *_args):
         log("test_passed()")
@@ -207,9 +244,12 @@ class ConfigureGUI(BaseGUIWindow):
             self.paint_step()
             return
         # reached the last step!
+        self.close_test_windows()
         self.populate_form(
             (
                 "OpenGL can be enabled safely using this GPU.",
+                ""
+                "You revert this change by running this tool again, or resetting your user configuration."
             ),
             ("Enable OpenGL", self.enable_opengl),
             ("Exit", self.dismiss),
@@ -230,6 +270,7 @@ class ConfigureGUI(BaseGUIWindow):
 
     def test_failed(self, *_args):
         description = self.test_steps[self.step][0]
+        self.close_test_windows()
         self.populate_form(
             (
                 "Please report this issue at https://github.com/Xpra-org/xpra/issues/new/choose",
