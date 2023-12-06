@@ -86,10 +86,13 @@ def add_test_images():
         filename = os.path.join(get_image_dir(), name)
         image_data = load_binary_file(filename)
         image = get_image(name)
+        options : dict[str, str] = {}
         if image and image_data:
+            w = int(image.get_width())
+            h = int(image.get_height())
             paint_data = (
-                0, 0, image.get_width(), image.get_height(),
-                encoding, image_data, 0, {},
+                0, 0, w, h,
+                encoding, bytes(image_data), 0, options,
             )
             TEST_STEPS.append((description, (paint_data, )))
 
@@ -182,7 +185,7 @@ class ConfigureGUI(BaseGUIWindow):
         renderer = glp.get("renderer", "unknown").split(";")[0]
         backend = glp.get("backend", "unknown")
         vendor = glp.get("vendor", "unknown vendor")
-        glinfo = f"OpenGL {version} has been initialized using the {backend!r} backend"+\
+        glinfo = f"OpenGL {version} has been initialized using the {backend!r} backend" + \
             f"and {renderer!r} driver from {vendor}"
         self.populate_form(
             (
@@ -228,7 +231,7 @@ class ConfigureGUI(BaseGUIWindow):
                 window.draw_region(x, y, w, h, encoding, img_data, rowstride, seq, typedict(options), callbacks)
             seq += 1
 
-    def restart(self, *args):
+    def restart(self, *_args):
         self.close_test_windows()
         self.start_test()
 

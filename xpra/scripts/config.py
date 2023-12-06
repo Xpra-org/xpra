@@ -453,7 +453,7 @@ def get_xpra_defaults_dirs(username: str|None = None, uid=None, gid=None):
             continue
         ad = osexpand(d, actual_username=username, uid=uid, gid=gid)
         if not os.path.exists(ad):
-            debug(f"read_xpra_defaults: skipping {ad!r}")
+            debug(f"get_xpra_defaults_dirs: skipped missing directory {ad!r}")
             continue
         defaults_dirs.append(ad)
     return defaults_dirs
