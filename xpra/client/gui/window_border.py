@@ -5,7 +5,8 @@
 
 class WindowBorder:
 
-    def __init__(self, shown:bool=True, red:float=0.9, green:float=0.1, blue:float=0.1, alpha:float=0.6, size:int=4):
+    def __init__(self, shown: bool = True,
+                 red: float = 0.9, green: float = 0.1, blue: float = 0.1, alpha: float = 0.6, size: int = 4):
         self.shown : bool = shown
         self.red : float = red
         self.green : float = green
@@ -25,4 +26,7 @@ class WindowBorder:
             if b<16:
                 return f"0{b:X}"
             return f"{b:X}"
-        return "WindowBorder(%s, 0x%s%s%s, %s, %s)" % (self.shown, hex2(self.red), hex2(self.green), hex2(self.blue), self.alpha, self.size)
+        return "WindowBorder(%s, 0x%s%s%s, %s, %s)" % (
+            self.shown,
+            hex2(self.red), hex2(self.green), hex2(self.blue), self.alpha, self.size,
+        )
