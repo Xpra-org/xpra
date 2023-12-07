@@ -149,6 +149,8 @@ def parse_simple_dict(s: str = "", sep: str = ",") -> dict[str, str | list[str]]
     for el in s.split(sep):
         if not el:
             continue
+        if el.startswith("#") and el.find("=")<0:
+            continue
         try:
             k, v = el.split("=", 1)
             k = k.strip()
