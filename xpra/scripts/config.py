@@ -7,6 +7,7 @@
 import re
 import sys
 import os
+import glob
 import shlex
 from typing import Any
 from collections.abc import Callable, Iterable
@@ -401,13 +402,18 @@ def conf_files(conf_dir: str, xpra_conf_filename: str = DEFAULT_XPRA_CONF_FILENA
     return d
 
 
-def read_xpra_conf(conf_dir:str, xpra_conf_filename:str = DEFAULT_XPRA_CONF_FILENAME):
+def read_xpra_conf(conf_dir: str) -> dict[str, Any]:
     """
-        Reads an <xpra_conf_filename> file from the given directory,
-        returns a dict with values as strings and arrays of strings.
+        Reads all config files from the directory,
+        returns a dict with key as strings,
+        values as strings or arrays of strings.
     """
-    files = conf_files(conf_dir, xpra_conf_filename)
-    debug(f"read_xpra_conf({conf_dir}, {xpra_conf_filename}) conf files: {files}")
+    cdir = os.path.expanduser(conf_dir)
+    if not os.path.exists(cdir) or not os.path.isdir(cdir):
+        debug(f"invalid config directory: {cdir!r}")
+        return {}
+    files = glob.glob(f"{cdir}/{DEFAULT_XPRA_CONF_FILENAME}") + glob.glob(f"{cdir}/conf.d/*.conf")
+    debug(f"read_xpra_conf({conf_dir}) found conf files: {files}")
     d = {}
     for f in files:
         cd = read_config(f)
@@ -427,8 +433,9 @@ def read_xpra_defaults(username:str|None = None, uid=None, gid=None):
     dirs = get_xpra_defaults_dirs(username, uid, gid)
     defaults = {}
     for d in dirs:
-        defaults.update(read_xpra_conf(d))
-        debug(f"read_xpra_defaults: updated defaults with {d}")
+        conf_data = read_xpra_conf(d)
+        defaults.update(conf_data)
+        debug(f"read_xpra_defaults: updated defaults with {d!r} : {conf_data}")
     may_create_user_config()
     return defaults
 
@@ -466,7 +473,7 @@ def may_create_user_config(xpra_conf_filename:str = DEFAULT_XPRA_CONF_FILENAME):
     if udirs:
         has_user_conf = None
         for d in udirs:
-            if conf_files(d):
+            if os.path.exists(d):
                 has_user_conf = d
                 break
         if not has_user_conf:
