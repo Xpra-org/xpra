@@ -46,6 +46,7 @@ Name: "{group}\Xpra Session Browser"; Filename: "{app}\Xpra.exe"; Parameters: "s
 Name: "{group}\Xpra Homepage"; Filename: "{app}\website.url"
 Name: "{group}\Xpra Command Manual"; Filename: "{app}\manual.html"
 Name: "{group}\Xpra Shadow Server"; Filename: "{app}\Xpra.exe"; WorkingDir: {app}; Parameters: "shadow --bind-tcp=0.0.0.0:14500,auth=sys,ssl-cert=auto"; IconFilename: {app}\icons\server-connected.ico
+Name: "{group}\Xpra Configuration"; Filename: "{app}\Configure.exe"; WorkingDir: {app}; IconFilename: {app}\icons\toolbox.ico
 
 
 [Run]
