@@ -56,12 +56,16 @@ class ConfigureGUI(BaseGUIWindow):
                     "Video" : "Video codecs: h264, vpx, etc",
                     # "Webcam", "Remote Logging",
                     "System Tray" : "System tray forwarding",
+                    "File transfer" : "Upload and download of files to and from the server",
+                    "Printing" : "Printer forwarding to the client's printer",
                     "Clipboard" : "Copy & Paste to and from the server",
                     "Notifications" : "Notifications forwarding",
                     "Windows" : "Windows forwarding",
+                    # "Splash" : "Show the splash screen GUI",
+                    # "Readonly" : "Prevent any keyboard or pointer events from being forwarded",
                 }.items()
         ):
-            sub = subsystem.lower().replace(" ", "_")
+            sub = subsystem.lower().replace(" ", "-")
             lbl = label(subsystem, tooltip=description)
             lbl.set_hexpand(True)
             grid.attach(lbl, 0, i, 1, 1)
