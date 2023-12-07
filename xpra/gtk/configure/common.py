@@ -4,11 +4,21 @@
 # later version. See the file COPYING for details.
 
 import os.path
+from datetime import datetime
 from subprocess import check_call
+from collections.abc import Callable
 
-from xpra.os_util import POSIX
+from xpra.os_util import POSIX, gi_import
 from xpra.util.env import osexpand
 from xpra.util.parsing import parse_simple_dict
+from xpra.util.thread import start_thread
+from xpra.scripts.config import make_defaults_struct
+from xpra.log import Logger
+
+log = Logger("util")
+
+GLib = gi_import("GLib")
+
 
 DISCLAIMER = """
 IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
@@ -28,7 +38,7 @@ def sync() -> None:
 
 def get_user_config_file() -> str:
     from xpra.platform.paths import get_user_conf_dirs
-    return osexpand(os.path.join(get_user_conf_dirs()[0], "99_configure_tool.conf"))
+    return osexpand(os.path.join(get_user_conf_dirs()[0], "conf.d", "99_configure_tool.conf"))
 
 
 def parse_user_config_file() -> dict:
@@ -42,6 +52,27 @@ def parse_user_config_file() -> dict:
 
 def save_user_config_file(options: dict) -> None:
     filename = get_user_config_file()
+    conf_dir = os.path.dirname(filename)
+    if not os.path.exists(conf_dir):
+        os.mkdir(conf_dir, mode=0o755)
     with open(filename, "w", encoding="utf8") as f:
+        f.write("# generated on " + datetime.now().strftime("%c")+"\n\n")
         for k, v in options.items():
             f.write(f"{k} = {v}\n")
+
+
+def update_config_attribute(attribute, value):
+    log(f"update config: {attribute}={value}")
+    config = parse_user_config_file()
+    config[attribute] = str(value)
+    save_user_config_file(config)
+
+
+def with_config(cb: Callable):
+    # load config in a thread as this involves IO,
+    # then run the callback in the UI thread
+    def load_config():
+        defaults = make_defaults_struct()
+        GLib.idle_add(cb, defaults)
+
+    start_thread(load_config, "load-config", daemon=True)

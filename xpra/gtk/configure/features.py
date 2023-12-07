@@ -1,12 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
-from xpra.scripts.config import make_defaults_struct, parse_bool
-from xpra.gtk.configure.common import parse_user_config_file, save_user_config_file
-from xpra.util.thread import start_thread
+from xpra.scripts.config import parse_bool
+from xpra.gtk.configure.common import update_config_attribute, with_config
 from xpra.gtk.widget import label
 from xpra.os_util import gi_import
 from xpra.log import Logger
@@ -68,17 +67,11 @@ class ConfigureGUI(BaseGUIWindow):
             grid.attach(lbl, 0, i, 1, 1)
             switch = Gtk.Switch()
             switch.set_sensitive(False)
-            switch.set_state(i % 2 == 0)
             switch.connect("state-set", self.toggle_subsystem, sub)
             grid.attach(switch, 1, i, 1, 1)
             self.subsystem_switch[sub] = switch
         self.show_all()
-        # load config in a thread as this involves IO:
-        start_thread(self.load_config, "load-config", daemon=True)
-
-    def load_config(self):
-        defaults = make_defaults_struct()
-        GLib.idle_add(self.configure_switches, defaults)
+        with_config(self.configure_switches)
 
     def configure_switches(self, defaults):
         for subsystem, switch in self.subsystem_switch.items():
@@ -91,16 +84,14 @@ class ConfigureGUI(BaseGUIWindow):
         return False
 
     @staticmethod
-    def toggle_subsystem(switch, state, subsystem):
-        config = parse_user_config_file()
-        config[subsystem] = str(state).lower()
-        log(f"state_set({(switch, state, subsystem)} saving {config}")
-        save_user_config_file(config)
+    def toggle_subsystem(widget, state, subsystem):
+        update_config_attribute(subsystem, state)
 
 
 def main(_args) -> int:
     from xpra.gtk.configure.main import run_gui
     return run_gui(ConfigureGUI)
+
 
 if __name__ == "__main__":
     import sys

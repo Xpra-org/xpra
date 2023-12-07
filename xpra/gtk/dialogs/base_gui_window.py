@@ -82,6 +82,8 @@ class BaseGUIWindow(Gtk.Window):
         with IgnoreWarningsContext():
             self.set_wmclass(*wm_class)
         self.vbox = Gtk.VBox(homogeneous=False, spacing=10)
+        self.vbox.set_margin_start(40)
+        self.vbox.set_margin_end(40)
         self.add(self.vbox)
         self.populate()
         self.vbox.show_all()
