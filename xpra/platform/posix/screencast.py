@@ -15,13 +15,12 @@ class ScreenCast(PortalShadow):
     def get_server_mode(self) -> str:
         return "pipewire screencast"
 
-
     def on_session_created(self) -> None:
-        #skip select_devices() and go straight to sources then start:
+        # skip select_devices() and go straight to sources then start:
         self.select_sources()
 
     def set_keymap(self, server_source, force=False) -> None:
-        #no input devices
+        # no input devices
         pass
 
     def do_process_button_action(self, *args) -> None:

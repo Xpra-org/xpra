@@ -4055,6 +4055,7 @@ def vstr(otype:type, v) -> str:
         return csv(vstr(otype, x) for x in v)
     return str(v)
 
+
 def run_showsetting(args) -> ExitValue:
     if not args:
         raise InitException("specify a setting to display")
@@ -4069,11 +4070,15 @@ def run_showsetting(args) -> ExitValue:
         else:
             settings.append(arg)
 
+    if not settings:
+        return 0
+
     from xpra.platform.info import get_username
     dirs = get_xpra_defaults_dirs(username=get_username(), uid=getuid(), gid=getgid())
 
-    #default config:
+    # default config:
     config = get_defaults()
+
     def show_settings():
         for setting in settings:
             value = config.get(setting)

@@ -9,7 +9,7 @@ import subprocess
 from collections.abc import Callable
 
 from xpra.gtk.window import add_close_accel, add_window_accel
-from xpra.gtk.widget import imagebutton
+from xpra.gtk.widget import imagebutton, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.os_util import gi_import
 from xpra.util.env import IgnoreWarningsContext
@@ -82,8 +82,8 @@ class BaseGUIWindow(Gtk.Window):
         with IgnoreWarningsContext():
             self.set_wmclass(*wm_class)
         self.vbox = Gtk.VBox(homogeneous=False, spacing=10)
-        self.vbox.set_margin_start(40)
-        self.vbox.set_margin_end(40)
+        self.set_box_margin()
+        self.vbox.set_vexpand(True)
         self.add(self.vbox)
         self.populate()
         self.vbox.show_all()
@@ -91,9 +91,31 @@ class BaseGUIWindow(Gtk.Window):
         self.connect("focus-in-event", self.focus_in)
         self.connect("focus-out-event", self.focus_out)
 
+    def set_box_margin(self, start=40, end=40, top=0, bottom=20):
+        self.vbox.set_margin_start(start)
+        self.vbox.set_margin_end(end)
+        self.vbox.set_margin_top(top)
+        self.vbox.set_margin_bottom(bottom)
+
     def clear_vbox(self):
         for x in self.vbox.get_children():
             self.vbox.remove(x)
+
+    def populate_form(self, lines: tuple[str, ...] = (), *buttons):
+        self.clear_vbox()
+        self.add_widget(label(self.get_title(), font="sans 20"))
+        text = "\n".join(lines)
+        lbl = label(text, font="Sans 14")
+        lbl.set_line_wrap(True)
+        self.add_widget(lbl)
+        hbox = Gtk.HBox()
+        hbox.set_vexpand(False)
+        self.add_widget(hbox)
+        for button_label, callback in buttons:
+            btn = Gtk.Button.new_with_label(button_label)
+            btn.connect("clicked", callback)
+            hbox.pack_start(btn, True, True)
+        self.show_all()
 
     def dismiss(self, *args):
         log(f"dismiss{args} calling {self.do_dismiss}")
@@ -123,7 +145,7 @@ class BaseGUIWindow(Gtk.Window):
         hb.show_all()
         self.set_titlebar(hb)
 
-    def ib(self, title="", icon_name="browse.png", tooltip="", callback: Callable = noop, sensitive=True) -> None:
+    def ib(self, title="", icon_name="browse.png", tooltip="", callback: Callable = noop, sensitive=True) -> Gtk.Button:
         label_font = "sans 16"
         icon = get_icon_pixbuf(icon_name)
         btn = imagebutton(
@@ -132,6 +154,7 @@ class BaseGUIWindow(Gtk.Window):
             icon_size=48, label_font=label_font,
         )
         self.add_widget(btn)
+        return btn
 
     def add_widget(self, widget):
         self.vbox.add(widget)

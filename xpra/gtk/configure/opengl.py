@@ -13,7 +13,6 @@ from xpra.platform.paths import get_image, get_image_dir
 from xpra.util.io import load_binary_file
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.configure.common import sync, parse_user_config_file, save_user_config_file, get_user_config_file
-from xpra.gtk.widget import label
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
@@ -167,11 +166,8 @@ class ConfigureGUI(BaseGUIWindow):
                 "This tool can cause your system to crash if your GPU drivers are buggy.",
                 "Use with caution.",
                 "",
-                "When enabled, OpenGL rendering is faster.",
-                "Your xpra client will be able to skip its OpenGL self-tests and start faster.",
-                "",
-                "This test will present two windows which will be painted using various picture encodings.",
-                "You will be asked to confirm that the rendering was correct and identical in both windows.",
+                "Enabling the OpenGL renderer can improve the framerate and general performance of the client.",
+                "Your xpra client will also be able to skip its OpenGL self-tests and start faster.",
             ),
             ("Proceed", self.start_test),
             ("Exit", self.dismiss),
@@ -190,11 +186,11 @@ class ConfigureGUI(BaseGUIWindow):
         self.populate_form(
             (
                 glinfo,
-                "",
-                "This tool will now be showing two windows which will be painted using various picture encodings.",
-                "Try to arrange them side by side.",
-                "",
+                ""
+                "This tool will now present two windows which will be painted using various picture encodings.",
                 "You will be asked to confirm that the rendering was correct and identical in both windows.",
+                "",
+                "Try to arrange them side by side to make it easier to compare.",
             ),
             ("Understood", self.paint_step),
             ("Exit", self.dismiss),
@@ -252,7 +248,7 @@ class ConfigureGUI(BaseGUIWindow):
             (
                 "OpenGL can be enabled safely using this GPU.",
                 ""
-                "You revert this change by running this tool again, or resetting your user configuration."
+                "You can revert this change by running this tool again, or by resetting your user configuration."
             ),
             ("Enable OpenGL", self.enable_opengl),
             ("Exit", self.dismiss),
@@ -273,7 +269,6 @@ class ConfigureGUI(BaseGUIWindow):
 
     def test_failed(self, *_args):
         description = self.test_steps[self.step][0]
-        self.close_test_windows()
         self.populate_form(
             (
                 "Please report this issue at https://github.com/Xpra-org/xpra/issues/new/choose",
@@ -283,21 +278,6 @@ class ConfigureGUI(BaseGUIWindow):
             ),
             ("Exit", self.dismiss),
         )
-
-    def populate_form(self, lines: tuple[str, ...] = (), *buttons):
-        self.clear_vbox()
-        self.add_widget(label("Configure Xpra's OpenGL Renderer", font="sans 20"))
-        text = "\n".join(lines)
-        lbl = label(text, font="Sans 14")
-        lbl.set_line_wrap(True)
-        self.add_widget(lbl)
-        hbox = Gtk.HBox()
-        self.add_widget(hbox)
-        for button_label, callback in buttons:
-            btn = Gtk.Button.new_with_label(button_label)
-            btn.connect("clicked", callback)
-            hbox.pack_start(btn, True, True)
-        self.show_all()
 
 
 def main(_args) -> int:

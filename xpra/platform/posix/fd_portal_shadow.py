@@ -40,7 +40,7 @@ VIDEO_MODE_ENCODINGS = os.environ.get("XPRA_PIPEWIRE_VIDEO_ENCODINGS", "h264,vp8
 class PipewireWindowModel(RootWindowModel):
     __slots__ = ("pipewire_id", "pipewire_props")
 
-    def __init__(self, root_window, capture, title:str, geometry, node_id:int, props:typedict):
+    def __init__(self, root_window, capture, title:str, geometry, node_id: int, props:typedict):
         super().__init__(root_window=root_window, capture=capture, title=title, geometry=geometry)
         self.pipewire_id = node_id
         self.pipewire_props = props
@@ -56,14 +56,13 @@ class PortalShadow(GTKShadowServerBase):
         self.authenticating_client = None
         self.capture : Capture | None = None
         self.portal_interface = get_portal_interface()
+        self.input_devices = 0
         log(f"setup_capture() self.portal_interface={self.portal_interface}")
-        #we're not using X11, so no need for this check:
+        # we're not using X11, so no need for this check:
         os.environ["XPRA_UI_THREAD_CHECK"] = "0"
-
 
     def get_server_mode(self) -> str:
         return "portal shadow"
-
 
     def notify_new_user(self, ss) -> None:
         log("notify_new_user() start capture")
@@ -77,7 +76,7 @@ class PortalShadow(GTKShadowServerBase):
         self.stop_capture()
         self.stop_session()
 
-    def client_auth_error(self, message:str) -> None:
+    def client_auth_error(self, message: str) -> None:
         self.disconnect_authenticating_client(ConnectionMessage.AUTHENTICATION_FAILED, message)
 
     def disconnect_authenticating_client(self, reason : ConnectionMessage, message : str) -> None:
@@ -86,7 +85,6 @@ class PortalShadow(GTKShadowServerBase):
             self.authenticating_client = None
             self.disconnect_protocol(ac.protocol, reason, message)
             self.cleanup_source(ac)
-
 
     def makeRootWindowModels(self) -> list:
         log("makeRootWindowModels()")
@@ -99,8 +97,7 @@ class PortalShadow(GTKShadowServerBase):
     def set_keymap(self, server_source, force=False) -> None:
         raise NotImplementedError()
 
-
-    def start_refresh(self, wid:int) -> None:
+    def start_refresh(self, wid: int) -> None:
         self.start_capture()
 
     def start_capture(self) -> None:
@@ -119,13 +116,12 @@ class PortalShadow(GTKShadowServerBase):
         GTKShadowServerBase.cleanup(self)
         self.portal_interface = None
 
-
     def stop_session(self) -> None:
         s = self.session
         if not s:
             return
         self.session = None
-        #https://gitlab.gnome.org/-/snippets/1122
+        # https://gitlab.gnome.org/-/snippets/1122
         log(f"trying to close the session {s}")
         try:
             s.Close(dbus_interface=PORTAL_SESSION_INTERFACE)
@@ -137,7 +133,7 @@ class PortalShadow(GTKShadowServerBase):
         session_counter += 1
         token = f"u{session_counter}"
         self.session_path = f"/org/freedesktop/portal/desktop/session/{dbus_sender_name}/{token}"
-        options : dict[str,Any] = {
+        options : dict[str, Any] = {
             "session_handle_token"  : token,
             }
         log(f"create_session() session_counter={session_counter}")
@@ -169,7 +165,6 @@ class PortalShadow(GTKShadowServerBase):
     def on_session_created(self) -> None:
         self.select_devices()
 
-
     def select_devices(self) -> None:
         log("select_devices()")
         options = {
@@ -191,7 +186,6 @@ class PortalShadow(GTKShadowServerBase):
             return
         log(f"on_select_devices_response devices selected, results={res}")
         self.select_sources()
-
 
     def select_sources(self) -> None:
         options = {
@@ -215,7 +209,6 @@ class PortalShadow(GTKShadowServerBase):
             return
         log(f"on_select_sources_response sources selected, results={res}")
         self.portal_start()
-
 
     def portal_start(self) -> None:
         log("portal_start()")
@@ -245,12 +238,11 @@ class PortalShadow(GTKShadowServerBase):
             self.start_pipewire_capture(int(node_id), typedict(props))
         self.input_devices = res.intget("devices")
         if not self.input_devices and not self.readonly:
-            #ss.notify("", nid, "Xpra", 0, "", title, body, [], {}, 10*1000, icon)
+            # ss.notify("", nid, "Xpra", 0, "", title, body, [], {}, 10*1000, icon)
             log.warn("Warning: no input devices,")
             log.warn(" keyboard and pointer events cannot be forwarded")
 
-
-    def create_capture_pipeline(self, fd : int, node_id : int, w : int, h : int) -> Capture:
+    def create_capture_pipeline(self, fd: int, node_id: int, w: int, h: int) -> Capture:
         el = get_element_str("pipewiresrc", {
             "fd" : fd,
             "path" : str(node_id),
@@ -269,13 +261,13 @@ class PortalShadow(GTKShadowServerBase):
                     log.info(f"cannot use {encoding}: {e}")
         return Capture(el, pixel_format="BGRX", width=w, height=h)
 
-    def start_pipewire_capture(self, node_id:int, props:typedict) -> None:
+    def start_pipewire_capture(self, node_id: int, props: typedict) -> None:
         log(f"start_pipewire_capture({node_id}, {props})")
         if not isinstance(node_id, int):
             raise ValueError(f"node-id is a {type(node_id)}, must be an int")
         x, y = props.inttupleget("position", (0, 0))
         w, h = props.inttupleget("size", (0, 0))
-        if w<=0 or h<=0:
+        if w <= 0 or h <= 0:
             raise ValueError(f"invalid dimensions: {w}x{h}")
         empty_dict = Dictionary(signature="sv")
         fd_object = self.portal_interface.OpenPipeWireRemote(
@@ -294,12 +286,12 @@ class PortalShadow(GTKShadowServerBase):
         title = f"{AvailableSourceTypes(source_type)} {node_id}"
         geometry = (x, y, w, h)
         model = PipewireWindowModel(self.root, self.capture, title, geometry, node_id, props)
-        #must be called from the main thread:
+        # must be called from the main thread:
         log(f"new model: {model}")
         self.do_add_new_window_common(node_id, model)
         self._send_new_window_packet(model)
 
-    def capture_new_image(self, capture, coding:str, data, client_info:dict) -> None:
+    def capture_new_image(self, capture, coding: str, data, client_info: dict) -> None:
         wid = capture.node_id
         model = self._id_to_window.get(wid)
         log(f"capture_new_image({capture}, {coding}, {type(data)}, {client_info}) model({wid})={model}")
@@ -312,18 +304,17 @@ class PortalShadow(GTKShadowServerBase):
         if not isinstance(data, bytes):
             log.warn(f"Warning: unexpected image datatype: {type(data)}")
             return
-        #this is a frame from a compressed stream,
-        #send it to all the window sources for this window:
+        # this is a frame from a compressed stream,
+        # send it to all the window sources for this window:
         for ss in tuple(self._server_sources.values()):
             if not hasattr(ss, "get_window_source"):
-                #client is not showing any windows
+                # client is not showing any windows
                 continue
             ws = ss.get_window_source(wid)
             if not ws:
-                #client not showing this window
+                # client not showing this window
                 continue
             ws.direct_queue_draw(coding, data, client_info)
-
 
     def capture_error(self, capture, message) -> None:
         wid = capture.node_id
