@@ -12,6 +12,7 @@ import sys
 from typing import Any
 from collections.abc import Callable
 
+from xpra.net.bytestreams import get_socket_config
 from xpra.util.version import parse_version
 from xpra.net.common import FLUSH_HEADER
 from xpra.common import FULL_INFO
@@ -310,27 +311,15 @@ def get_net_sys_config() -> dict[str,Any]:
         addproc(f"/proc/sys/net/ipv4/{k}",  "ipv4", k, int)
     return net_sys_config
 
-def get_net_config() -> dict[str,Any]:
-    config = {}
-    try:
-        from xpra.net.bytestreams import VSOCK_TIMEOUT, SOCKET_TIMEOUT, SOCKET_NODELAY  # pylint: disable=import-outside-toplevel
-        config = {
-                "vsocket.timeout"    : VSOCK_TIMEOUT,
-                "socket.timeout"     : SOCKET_TIMEOUT,
-                }
-        if SOCKET_NODELAY is not None:
-            config["socket.nodelay"] = SOCKET_NODELAY
-    except Exception:   # pragma: no cover
-        log("get_net_config()", exc_info=True)
-    return config
-
 
 SSL_CONV : dict[str, tuple[str,Callable]] = {
     ""           : ("version-str", str),
     "_INFO"      : ("version", parse_version),
     "_NUMBER"    : ("version-number", int),
     }
-def get_ssl_info(show_constants=False) -> dict[str,Any]:
+
+
+def get_ssl_info(show_constants=False) -> dict[str, Any]:
     try:
         import ssl  # pylint: disable=import-outside-toplevel
     except ImportError as e:    # pragma: no cover
@@ -399,7 +388,7 @@ def get_info() -> dict[str,Any]:
         s = get_net_sys_config()
         if s:
             i["system"] = s
-    i["config"] = get_net_config()
+    i["config"] = get_socket_config()
     paramiko = sys.modules.get("paramiko")
     if paramiko:
         i["paramiko"] = {
@@ -500,7 +489,7 @@ def main(): # pragma: no cover
 
         print("")
         print("Network Config:")
-        print_nested_dict(get_net_config())
+        print_nested_dict(get_socket_config())
 
         net_sys = get_net_sys_config()
         if net_sys:

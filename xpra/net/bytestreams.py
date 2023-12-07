@@ -664,3 +664,18 @@ def log_new_connection(conn, socket_info="") -> None:
     else:
         if socket_info:
             log.info(" on %s", pretty_socket(socket_info))
+
+
+def get_socket_config() -> dict[str,Any]:
+    config = {}
+    try:
+        from xpra.net.bytestreams import VSOCK_TIMEOUT, SOCKET_TIMEOUT, SOCKET_NODELAY  # pylint: disable=import-outside-toplevel
+        config = {
+                "vsocket.timeout"    : VSOCK_TIMEOUT,
+                "socket.timeout"     : SOCKET_TIMEOUT,
+                }
+        if SOCKET_NODELAY is not None:
+            config["socket.nodelay"] = SOCKET_NODELAY
+    except Exception:   # pragma: no cover
+        log("get_net_config()", exc_info=True)
+    return config
