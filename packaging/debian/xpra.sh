@@ -35,6 +35,7 @@ rm -f xpra-build-deps*
 
 #install latest cython since the one Debian / Ubuntu tends to be out of date:
 DEBIAN_FRONTEND=noninteractive apt-get -y install python3-pip
+DEBIAN_FRONTEND=noninteractive apt-get -y remove cython3
 PIP_BREAK_SYSTEM_PACKAGES=1 pip3 install cython
 
 #add revision to version number to changelog
