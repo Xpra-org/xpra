@@ -498,8 +498,8 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 log("colorspace=%s", COLOR_PROFILES.get(header.bV5CSType, header.bV5CSType))
                 #if header.bV5Compression in (BI_JPEG, BI_PNG):
                 #    pass
-                if header.bV5Compression!=BI_RGB:
-                    errback("cannot handle %s compression yet" % BI_FORMATS.get(header.bV5Compression, header.bV5Compression))
+                if header.bV5Compression != BI_RGB:
+                    errback("cannot handle %r compression yet" % BI_FORMATS.get(header.bV5Compression, "unknown"))
                     return True
                 if bits==24:
                     save_format = "RGB"

@@ -2504,7 +2504,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         keyeventlog("parse_key_event(%s, %s)=%s", event, pressed, key_event)
         return key_event
 
-    def handle_key_press_event(self, window, event):
+    def handle_key_press_event(self, _window, event):
         key_event = self.parse_key_event(event, True)
         if self.moveresize_event and key_event.keyname in BREAK_MOVERESIZE:
             #cancel move resize if there is one:
@@ -2512,7 +2512,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.cancel_moveresize_timer()
         return self._client.handle_key_action(self, key_event)
 
-    def handle_key_release_event(self, window, event):
+    def handle_key_release_event(self, _window, event):
         key_event = self.parse_key_event(event, False)
         return self._client.handle_key_action(self, key_event)
 

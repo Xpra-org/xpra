@@ -186,9 +186,7 @@ def get_iface(ip) -> str:
             ip = sockaddr[0]
 
     ipv6 = ip.find(":")>=0
-    if ipv6:
-        ip_parts = ip.split(":")
-    else:
+    if not ipv6:
         ip_parts = ip.split(".")
         if len(ip_parts)!=4:
             return ""

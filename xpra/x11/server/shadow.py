@@ -396,7 +396,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         X11ServerCore.last_client_exited(self)
 
 
-    def do_get_cursor_data(self) -> tuple[Any,Any]:
+    def do_get_cursor_data(self) -> tuple[Any, Any]:
         return X11ServerCore.get_cursor_data(self)
 
 

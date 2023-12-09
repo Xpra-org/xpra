@@ -508,7 +508,7 @@ class X11ServerCore(GTKServerBase):
         with xlog:
             return X11Keyboard.get_cursor_image()
 
-    def get_cursor_data(self, skip_default=True) -> tuple:
+    def get_cursor_data(self, skip_default=True) -> tuple[Any, Any]:
         #must be called from the UI thread!
         cursor_image = self.get_cursor_image()
         if cursor_image is None:
@@ -525,7 +525,7 @@ class X11ServerCore(GTKServerBase):
         return cursor_image, cursor_sizes
 
 
-    def get_all_screen_sizes(self) -> tuple:
+    def get_all_screen_sizes(self) -> tuple[tuple[int, int], ...]:
         #workaround for #2910: the resolutions we add are not seen by XRRSizes!
         # so we keep track of the ones we have added ourselves:
         sizes = list(RandR.get_xrr_screen_sizes())

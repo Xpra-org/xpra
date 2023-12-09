@@ -236,7 +236,7 @@ def find_lib(libname: str) -> str:
     # it found the library in
     libpaths = os.environ.get("LD_LIBRARY_PATH", "").split(":")
     if sys.platlibdir not in libpaths:
-        libpaths.append(sys.platlibdir)
+        libpaths.append(str(sys.platlibdir))
     for libpath in libpaths:
         if not libpath or not os.path.exists(libpath):
             continue

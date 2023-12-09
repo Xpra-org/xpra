@@ -373,7 +373,7 @@ class SocketProtocol:
             return
         #log("add_packet_to_queue(%s ... %s, %s, %s)", packet[0], synchronous, has_more, wait_for_more)
         packet_type : str | int = packet[0]
-        chunks : NetPacketType = self.encode(packet)
+        chunks : NetPacketType = tuple(self.encode(packet))
         with self._write_lock:
             if self._closed:
                 return

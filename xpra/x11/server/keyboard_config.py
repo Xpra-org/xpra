@@ -408,7 +408,7 @@ class KeyboardConfig(KeyboardConfigBase):
             keycode_to_keynames = get_keycode_mappings()
             self.keycode_translation = {}
             # prefer keycodes that don't use the lowest level+mode:
-            default_for_keyname : dict[str, tuple[int, int]] = {}
+            default_for_keyname : dict[str, tuple[str | int, int]] = {}
             for keycode, keynames in keycode_to_keynames.items():
                 for i, keyname in enumerate(keynames):
                     self.keycode_translation[(keyname, i)] = keycode

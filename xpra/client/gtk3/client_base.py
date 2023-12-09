@@ -1319,7 +1319,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.ClientWindowClass, self.GLClientWindowClass,
             self.opengl_enabled, self.mmap_enabled, self.encoding)
         if self.can_use_opengl(w, h, metadata, override_redirect):
-            return (self.GLClientWindowClass, self.ClientWindowClass)
+            return self.GLClientWindowClass, self.ClientWindowClass
         opengllog(f"OpenGL not available for {w}x{h} {override_redirect=} window {metadata}")
         return (self.ClientWindowClass,)
 
@@ -1338,7 +1338,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 return False
             #avoid opengl for tooltips:
             window_types = metadata.strtupleget("window-type")
-            if any(x in (NO_OPENGL_WINDOW_TYPES) for x in window_types):
+            if any(x in NO_OPENGL_WINDOW_TYPES for x in window_types):
                 log("not using opengl for %s window-type", csv(window_types))
                 return False
             if metadata.intget("transient-for", 0)>0:

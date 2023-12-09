@@ -44,11 +44,11 @@ def dump_frames(frames, logger=None) -> None:
                 logger("%s", l)
 
 
-def detect_leaks() -> Callable[[], None]:
+def detect_leaks() -> Callable[[], bool]:
     import tracemalloc
     tracemalloc.start()
     last_snapshot = [tracemalloc.take_snapshot()]
-    def print_leaks():
+    def print_leaks() -> bool:
         s1 = last_snapshot[0]
         s2 = tracemalloc.take_snapshot()
         last_snapshot[0] = s2
