@@ -1605,6 +1605,7 @@ if WIN32:
             add_console_exe("xpra/platform/keyboard.py",        "keymap.ico",       "Keyboard_info")
             add_gui_exe("xpra/gtk/examples/tray.py", "xpra.ico",         "SystemTray_Test")
             add_gui_exe("xpra/gtk/dialogs/u2f_tool.py",     "authentication.ico", "U2F_Tool")
+            add_gui_exe("xpra/gtk/configure/main.py",             "toolbox.ico", "Configure")
         if client_ENABLED or server_ENABLED:
             add_console_exe("xpra/platform/win32/scripts/exec.py",     "python.ico", "Python_exec_cmd")
             add_gui_exe("xpra/platform/win32/scripts/exec.py",     "python.ico", "Python_exec_gui")
