@@ -1,26 +1,25 @@
 %define _disable_source_fetch 0
-%define COMMIT 6900494d90ae095d44405cd4cc3f346971fa69c9
+%define COMMIT b2528b0be934de1918e20c85fc170d809eeb49ab
 %define __cmake_in_source_build 1
+%global _default_patch_fuzz 2
 
 Name:		libyuv
 Summary:	YUV conversion and scaling functionality library
 Version:	0
-Release:	0.1832.20220629git6900494.1%{?dist}
+Release:	0.1857.20230123gitb2528b0b.1%{?dist}
 License:	BSD
 URL:		https://chromium.googlesource.com/libyuv/libyuv
 #VCS:		scm:git:https://chromium.googlesource.com/libyuv/libyuv
-## git clone https://chromium.googlesource.com/libyuv/libyuv
-## cd libyuv
-## git archive --format=tar --prefix=libyuv-0/ 4bd08cb | xz  > ../libyuv-0.tar.xz
-Source0:	https://github.com/lemenkov/%{name}/archive/%{COMMIT}.zip
+Source0:	https://xpra.org/src/libyuv-%{COMMIT}.tar.xz
 # Fedora-specific. Upstream isn't interested in these patches.
 Patch1:		libyuv-0001-Use-a-proper-so-version.patch
 Patch2:		libyuv-0002-Link-against-shared-library.patch
 Patch3:		libyuv-0003-Disable-static-library.patch
 Patch4:		libyuv-0004-Don-t-install-conversion-tool.patch
 Patch5:		libyuv-0005-Use-library-suffix-during-installation.patch
-Patch6:		libyuv-0006-Link-main-library-against-libjpeg.patch
+# I don't know how to fix this properly and I don't care:
 Patch7:		libyuv-0007-nojpeg.patch
+Patch8:		libyuv-0008-noconstants.patch
 BuildRequires:	make
 BuildRequires:	cmake
 BuildRequires:	gcc-c++
@@ -52,7 +51,7 @@ Additional header files for development with %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "d5cd10a5bd6ae8fe2be275d8c55f8bc1836b11317b9263b709650d3d551ca572" ]; then
+if [ "${sha256}" != "c330f4b86dac5b377fe6caaab78a0bfaedae73410605305944523420d93cc3b5" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -73,7 +72,7 @@ EOF
 
 %build
 LIBYUV_DISABLE_JPEG=1 %cmake .
-LIBYUV_DISABLE_JPEG=1 %make_build
+CXX_FLAGS="${CXX_FLAGS} -lm" LIBYUV_DISABLE_JPEG=1 %make_build
 
 %install
 %make_install
@@ -101,6 +100,9 @@ cp -a %{name}.pc %{buildroot}%{_libdir}/pkgconfig/
 
 
 %changelog
+* Fri Feb 03 2023 Antoine Martin <totaam@xpra.org> - 0-0.1857.20230123gitb2528b0b.1
+- new upstream git snapshot - now hosted on xpra.org
+
 * Sun Aug 07 2022 Antoine Martin <totaam@xpra.org> - 0-0.1832.20220629git6900494.1
 - new upstream git snapshot
 
