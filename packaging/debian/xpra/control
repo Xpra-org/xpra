@@ -279,8 +279,8 @@ Depends: xpra-codecs (= ${binary:Version})
 #lunar:              ,libavif15
 #mantic:              ,libavif15
 #bookworm:              ,libavif15
-#trixie:              ,libavif15
-#sid:              ,libavif15
+#trixie:              ,libavif16
+#sid:              ,libavif16
 Recommends:
         ,gstreamer-plugins-ugly
         ,gstreamer1.0-vaapi
