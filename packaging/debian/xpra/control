@@ -282,8 +282,8 @@ Depends: xpra-common (= ${binary:Version})
 #lunar:              ,libavif15
 #mantic:              ,libavif15
 #bookworm:              ,libavif15
-#trixie:              ,libavif15
-#sid:              ,libavif15
+#trixie:              ,libavif16
+#sid:              ,libavif16
 #jammy:              ,libyuv0
 #lunar:              ,libyuv0
 #mantic:              ,libyuv0
