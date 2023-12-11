@@ -10,7 +10,7 @@ import os
 from time import time, monotonic
 
 from xpra.os_util import WIN32, OSX, POSIX, gi_import
-from xpra.util.env import envbool
+from xpra.util.env import envbool, ignorewarnings
 from xpra.client.gui.tray_base import TrayBase, log
 from xpra.gtk.util import get_default_root_window
 from xpra.gtk.pixbuf import get_icon_from_file, get_pixbuf_from_data
@@ -35,14 +35,14 @@ class GTKStatusIconTray(TrayBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.tray_widget = Gtk.StatusIcon()
-        self.tray_widget.set_tooltip_text(self.tooltip or "Xpra")
+        ignorewarnings(self.tray_widget.set_tooltip_text, self.tooltip or "Xpra")
         self.tray_widget.connect('activate', self.activate_menu)
         self.tray_widget.connect('popup-menu', self.popup_menu)
         if self.size_changed_cb:
             self.tray_widget.connect('size-changed', self.size_changed_cb)
         if self.default_icon_filename:
             self.set_icon()
-        self.tray_widget.set_visible(True)
+        ignorewarnings(self.tray_widget.set_visible, True)
 
     def may_guess(self):
         log("may_guess() GUESS_GEOMETRY=%s, current guess=%s", GUESS_GEOMETRY, self.geometry_guess)
@@ -99,10 +99,10 @@ class GTKStatusIconTray(TrayBase):
         assert self.tray_widget
         # on X11, if we don't have an `xid`, don't bother querying its geometry,
         # as this would trigger some ugly GTK warnings we can do nothing about
-        if POSIX and os.environ.get("DISPLAY") and self.tray_widget.get_x11_window_id()==0:
+        if POSIX and os.environ.get("DISPLAY") and ignorewarnings(self.tray_widget.get_x11_window_id)==0:
             ag = None
         else:
-            ag = self.tray_widget.get_geometry()
+            ag = ignorewarnings(self.tray_widget.get_geometry)
             log("GTKStatusIconTray.get_geometry() %s.get_geometry()=%s", self.tray_widget, ag)
         if ag is None:
             if not self.geometry_guess:
@@ -131,7 +131,7 @@ class GTKStatusIconTray(TrayBase):
 
     def set_tooltip(self, tooltip=None):
         if self.tray_widget:
-            self.tray_widget.set_tooltip_text(tooltip or "Xpra")
+            ignorewarnings(self.tray_widget.set_tooltip_text, tooltip or "Xpra")
 
     def set_blinking(self, on):
         #no longer supported with GTK3
@@ -163,7 +163,7 @@ class GTKStatusIconTray(TrayBase):
             filename = "./statusicon-%s.png" % time()
             tray_icon.savev(filename, "png")
             log.info("statusicon tray saved to %s", filename)
-        self.tray_widget.set_from_pixbuf(tray_icon)
+        ignorewarnings(self.tray_widget.set_from_pixbuf, tray_icon)
         self.icon_timestamp = monotonic()
 
 
