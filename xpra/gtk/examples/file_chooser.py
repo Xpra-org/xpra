@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (C) 2020-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,7 @@ from xpra.gtk.widget import choose_file
 from xpra.os_util import gi_import
 
 Gtk = gi_import("Gtk")
+GLib = gi_import("GLib")
 
 
 def main():
@@ -19,7 +20,7 @@ def main():
         from xpra.gtk.signals import register_os_signals
 
         def signal_handler(*_args):
-            Gtk.main_quit()
+            GLib.idle_add(Gtk.main_quit)
         register_os_signals(signal_handler)
         choose_file(window, "test", Gtk.FileChooserAction.OPEN, Gtk.STOCK_OPEN, None)
         return 0

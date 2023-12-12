@@ -182,7 +182,7 @@ def main():
     with program_context("tray", "Tray"):
         from xpra.gtk.signals import register_os_signals
         def signal_handler(*_args):
-            Gtk.main_quit()
+            GLib.idle_add(Gtk.main_quit)
         register_os_signals(signal_handler)
         FakeApplication()
         Gtk.main()
