@@ -38,7 +38,7 @@ class ConfigureGUI(BaseGUIWindow):
             "encoding.png",
             wm_class=("xpra-configure-encodings-gui", "Xpra Configure Encodings GUI"),
             default_size=(640, 500),
-            header_bar=(True, False),
+            header_bar=(False, False),
             parent=parent,
         )
 

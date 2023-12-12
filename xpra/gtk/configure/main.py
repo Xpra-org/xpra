@@ -27,7 +27,7 @@ class ConfigureGUI(BaseGUIWindow):
             "toolbox.png",
             wm_class=("xpra-configure-gui", "Xpra Configure GUI"),
             default_size=(480, 300),
-            header_bar=(True, False),
+            header_bar=(False, False),
         )
         self.dialogs : dict[str, BaseGUIWindow] = {}
 

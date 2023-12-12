@@ -151,7 +151,7 @@ class ConfigureGUI(BaseGUIWindow):
             "Configure Xpra's OpenGL Renderer",
             "opengl.png",
             wm_class=("xpra-configure-opengl-gui", "Xpra Configure OpenGL GUI"),
-            header_bar=None,
+            header_bar=(False, False),
             parent=parent,
         )
 

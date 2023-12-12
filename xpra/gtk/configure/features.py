@@ -25,7 +25,7 @@ class ConfigureGUI(BaseGUIWindow):
             "features.png",
             wm_class=("xpra-configure-features-gui", "Xpra Configure Features GUI"),
             default_size=(640, 500),
-            header_bar=(True, False),
+            header_bar=(False, False),
             parent=parent,
         )
 
@@ -88,7 +88,7 @@ class ConfigureGUI(BaseGUIWindow):
         return False
 
     @staticmethod
-    def toggle_subsystem(widget, state, subsystem):
+    def toggle_subsystem(_widget, state, subsystem):
         update_config_attribute(subsystem, state)
 
 
