@@ -155,7 +155,7 @@ def main():
     with program_context("font-rendering", "Font Rendering"):
         from xpra.gtk_common.gobject_compat import register_os_signals
         def signal_handler(*_args):
-            Gtk.main_quit()
+            GLib.idle_add(Gtk.main_quit)
         register_os_signals(signal_handler)
         w = FontWindow()
         add_close_accel(w, Gtk.main_quit)

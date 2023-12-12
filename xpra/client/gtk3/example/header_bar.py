@@ -55,7 +55,7 @@ class HeaderBarWindow(Gtk.Window):
 def main():
     with program_context("header-bar", "Header Bar"):
         def signal_handler(*_args):
-            Gtk.main_quit()
+            GLib.idle_add(Gtk.main_quit)
         from xpra.gtk_common.gobject_compat import register_os_signals
         register_os_signals(signal_handler)
         w = HeaderBarWindow()

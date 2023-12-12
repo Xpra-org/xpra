@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (C) 2020-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@ from xpra.gtk_common.gtk_util import choose_file
 
 import gi
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
-from gi.repository import Gtk    #pylint: disable=wrong-import-position @UnresolvedImport
+from gi.repository import Gtk, GLib    #pylint: disable=wrong-import-position @UnresolvedImport
 
 
 def main():
@@ -19,7 +19,7 @@ def main():
         window = None
         from xpra.gtk_common.gobject_compat import register_os_signals
         def signal_handler(*_args):
-            Gtk.main_quit()
+            GLib.idle_add(Gtk.main_quit)
         register_os_signals(signal_handler)
         choose_file(window, "test", Gtk.FileChooserAction.OPEN, Gtk.STOCK_OPEN, None)
         return 0

@@ -51,7 +51,7 @@ def main():
             w.present()
         GLib.idle_add(show_with_focus)
         def signal_handler(*_args):
-            Gtk.main_quit()
+            GLib.idle_add(Gtk.main_quit)
         from xpra.gtk_common.gobject_compat import register_os_signals
         register_os_signals(signal_handler)
         Gtk.main()
