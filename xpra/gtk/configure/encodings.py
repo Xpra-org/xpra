@@ -53,12 +53,13 @@ class ConfigureGUI(BaseGUIWindow):
             f"Please read <a href='{url}'>the documentation</a>.",
         )
         text = "\n".join(lines)
-        lbl = label(text, font="Sans 14")
+        lbl = label(text, font="Sans 16")
         lbl.set_line_wrap(True)
         lbl.set_use_markup(True)
         self.add_widget(lbl)
         self.add_widget(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
-        self.add_widget(label("Minimum Speed (percentage)"))
+        self.add_widget(label("Minimum Speed (percentage)", font="Sans 14"))
+        self.add_widget(label("Increasing the speed costs bandwidth and CPU time"))
         scale = make_scale(adj1_100(config.min_speed), {
             1 : "Lowest",
             50 : "Average",
@@ -67,7 +68,8 @@ class ConfigureGUI(BaseGUIWindow):
         scale.connect("value-changed", self.speed_changed)
         self.add_widget(scale)
         self.add_widget(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
-        self.add_widget(label("Minimum Quality (percentage)"))
+        self.add_widget(label("Minimum Quality (percentage)", font="Sans 14"))
+        self.add_widget(label("Increasing the quality costs bandwidth, CPU time and may also increase the latency"))
         scale = make_scale(adj1_100(config.min_quality), {
             1 : "Lowest",
             50 : "Average",
@@ -76,7 +78,8 @@ class ConfigureGUI(BaseGUIWindow):
         scale.connect("value-changed", self.quality_changed)
         self.add_widget(scale)
         self.add_widget(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
-        self.add_widget(label("Auto Refresh Delay (milliseconds)"))
+        self.add_widget(label("Auto Refresh Delay (milliseconds)", font="Sans 14"))
+        self.add_widget(label("Longer delays may become noticeable but save bandwidth"))
         adjust = Gtk.Adjustment(value=config.auto_refresh_delay, lower=0, upper=1000,
                                 step_increment=50, page_increment=0, page_size=0)
         scale = make_scale(adjust, {
