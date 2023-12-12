@@ -171,7 +171,7 @@ class BaseGUIWindow(Gtk.Window):
         if self.exit_code is None:
             self.exit_code = 128 + int(signum)
         log("app_signal(%s) exit_code=%i", signum, self.exit_code)
-        self.quit()
+        GLib.idle_add(self.quit)
 
     def hide(self, *args):
         log("hide%s", args)

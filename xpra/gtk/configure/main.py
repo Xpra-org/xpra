@@ -56,12 +56,12 @@ def run_gui(gui_class=ConfigureGUI) -> int:
     from xpra.platform import program_context
     from xpra.log import enable_color
     from xpra.platform.gui import init, ready
-    from xpra.gtk.signals import register_os_signals
+    from xpra.gtk.signals import install_signal_handlers
     with program_context("xpra-configure-gui", "Xpra Configure GUI"):
         enable_color()
         init()
         gui = gui_class()
-        register_os_signals(gui.app_signal)
+        install_signal_handlers("xpra-configure-gui", gui.app_signal)
         ready()
         gui.show()
         Gtk.main()
