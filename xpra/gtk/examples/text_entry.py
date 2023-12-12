@@ -52,11 +52,8 @@ def main():
             w.show_all()
             w.present()
         GLib.idle_add(show_with_focus)
-        def signal_handler(*_args):
-            GLib.idle_add(Gtk.main_quit)
-
-        from xpra.gtk.signals import register_os_signals
-        register_os_signals(signal_handler)
+        from xpra.gtk.signals import quit_on_signals
+        quit_on_signals("text entry test window")
         Gtk.main()
 
 

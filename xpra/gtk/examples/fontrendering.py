@@ -155,10 +155,8 @@ class FontWindow(Gtk.Window):
 
 def main():
     with program_context("font-rendering", "Font Rendering"):
-        from xpra.gtk.signals import register_os_signals
-        def signal_handler(*_args):
-            GLib.idle_add(Gtk.main_quit)
-        register_os_signals(signal_handler)
+        from xpra.gtk.signals import quit_on_signals
+        quit_on_signals("font test window")
         w = FontWindow()
         add_close_accel(w, Gtk.main_quit)
         GLib.idle_add(w.show_with_focus)

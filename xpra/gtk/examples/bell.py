@@ -37,16 +37,14 @@ class BellWindow(Gtk.Window):
         system_bell(self.get_window(), 0, 100, 2000, 1000, 0, 0, "test")
 
 def main():
-    from xpra.gtk.signals import register_os_signals
+    from xpra.gtk.signals import quit_on_signals
     from xpra.gtk.util import init_display_source
     with program_context("bell", "Bell"):
         init_display_source()
         w = BellWindow()
         add_close_accel(w, Gtk.main_quit)
         GLib.idle_add(w.show_with_focus)
-        def signal_handler(_signal):
-            GLib.idle_add(Gtk.main_quit)
-        register_os_signals(signal_handler)
+        quit_on_signals("bell test window")
         Gtk.main()
         return 0
 

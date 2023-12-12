@@ -17,11 +17,8 @@ def main():
         file_filter.set_name("Xpra")
         file_filter.add_pattern("*.xpra")
         window = None
-        from xpra.gtk.signals import register_os_signals
-
-        def signal_handler(*_args):
-            GLib.idle_add(Gtk.main_quit)
-        register_os_signals(signal_handler)
+        from xpra.gtk.signals import quit_on_signals
+        quit_on_signals("file chooser test window")
         choose_file(window, "test", Gtk.FileChooserAction.OPEN, Gtk.STOCK_OPEN, None)
         return 0
 

@@ -105,10 +105,8 @@ def main():
         set_default_icon("encoding.png")
         init()
 
-        from xpra.gtk.signals import register_os_signals
-        def signal_handler(*_args):
-            GLib.idle_add(Gtk.main_quit)
-        register_os_signals(signal_handler, "test window")
+        from xpra.gtk.signals import quit_on_signals
+        quit_on_signals("colors test window")
         w = AnimatedColorWindow()
         add_close_accel(w, Gtk.main_quit)
         GLib.idle_add(w.show_with_focus)

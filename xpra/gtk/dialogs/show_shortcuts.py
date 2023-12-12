@@ -6,11 +6,10 @@
 import sys
 
 from xpra.os_util import gi_import
-from xpra.util.system import SIGNAMES
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.gtk.signals import install_signal_handlers
+from xpra.gtk.signals import quit_on_signals
 from xpra.gtk.css_overrides import inject_css_overrides
 from xpra.log import Logger
 
@@ -123,10 +122,8 @@ def main(_args):
 
         w = ShortcutInfo(modifiers, shortcuts)
         w.connect('delete_event', Gtk.main_quit)
-        def handle_signal(signum, frame=None):
-            log("handle_signal(%s, %s)", SIGNAMES.get(signum, signum), frame)
-            GLib.idle_add(Gtk.main_quit)
-        install_signal_handlers("Keyboard-Shortcuts", handle_signal)
+
+        quit_on_signals("Keyboard-Shortcuts")
         add_close_accel(w, Gtk.main_quit)
         force_focus()
         w.show_all()

@@ -73,11 +73,9 @@ class ColorPlainWindow(Gtk.Window):
 
 
 def main():
-    from xpra.gtk.signals import register_os_signals
+    from xpra.gtk.signals import quit_on_signals
     with program_context("colors-plain", "Colors Plain"):
-        def signal_handler(*_args):
-            GLib.idle_add(Gtk.main_quit)
-        register_os_signals(signal_handler)
+        quit_on_signals("colors test window")
         w = ColorPlainWindow()
         add_close_accel(w, Gtk.main_quit)
         GLib.idle_add(w.show_with_focus)

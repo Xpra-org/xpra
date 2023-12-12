@@ -171,10 +171,8 @@ def main():
         set_default_icon("keyboard.png")
         init()
 
-        from xpra.gtk.signals import register_os_signals
-        def signal_handler(*_args):
-            GLib.idle_add(Gtk.main_quit)
-        register_os_signals(signal_handler, "test window")
+        from xpra.gtk.signals import quit_on_signals
+        quit_on_signals("keyboard test window")
 
         init_display_source()
         w = KeyboardStateInfoWindow()

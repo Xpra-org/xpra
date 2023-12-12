@@ -117,10 +117,9 @@ def main():
     with program_context("window-states", "Window States"):
         w = make_window()
         add_close_accel(w, Gtk.main_quit)
-        from xpra.gtk.signals import register_os_signals
-        def signal_handler(*_args):
-            GLib.idle_add(Gtk.main_quit)
-        register_os_signals(signal_handler)
+        from xpra.gtk.signals import quit_on_signals
+        quit_on_signals("window states test")
+
         def show_with_focus():
             force_focus()
             w.show_all()
