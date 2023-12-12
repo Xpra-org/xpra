@@ -153,6 +153,7 @@ class BaseGUIWindow(Gtk.Window):
             tooltip=tooltip, clicked_callback=callback,
             icon_size=48, label_font=label_font,
         )
+        btn.set_sensitive(sensitive)
         self.add_widget(btn)
         return btn
 
