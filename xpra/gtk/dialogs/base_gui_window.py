@@ -26,7 +26,7 @@ Gio = gi_import("Gio")
 log = Logger("util")
 
 
-def exec_command(cmd):
+def exec_command(cmd) -> subprocess.Popen:
     env = os.environ.copy()
     env["XPRA_WAIT_FOR_INPUT"] = "0"
     proc = subprocess.Popen(cmd, env=env)
@@ -34,7 +34,7 @@ def exec_command(cmd):
     return proc
 
 
-def button(tooltip: str, icon_name: str, callback: Callable):
+def button(tooltip: str, icon_name: str, callback: Callable) -> Gtk.Button:
     btn = Gtk.Button()
     icon = Gio.ThemedIcon(name=icon_name)
     image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
@@ -91,37 +91,43 @@ class BaseGUIWindow(Gtk.Window):
         self.connect("focus-in-event", self.focus_in)
         self.connect("focus-out-event", self.focus_out)
 
-    def set_box_margin(self, start=40, end=40, top=0, bottom=20):
+    def set_box_margin(self, start=40, end=40, top=0, bottom=20) -> None:
         self.vbox.set_margin_start(start)
         self.vbox.set_margin_end(end)
         self.vbox.set_margin_top(top)
         self.vbox.set_margin_bottom(bottom)
 
-    def clear_vbox(self):
+    def clear_vbox(self) -> None:
         for x in self.vbox.get_children():
             self.vbox.remove(x)
 
-    def populate_form(self, lines: tuple[str, ...] = (), *buttons):
+    def populate_form(self, lines: tuple[str, ...] = (), *buttons) -> None:
         self.clear_vbox()
         self.add_widget(label(self.get_title(), font="sans 20"))
         text = "\n".join(lines)
         lbl = label(text, font="Sans 14")
         lbl.set_line_wrap(True)
         self.add_widget(lbl)
+        self.add_buttons(*buttons)
+
+    def add_buttons(self, *buttons) -> list[Gtk.Button]:
         hbox = Gtk.HBox()
         hbox.set_vexpand(False)
         self.add_widget(hbox)
+        btnlist = []
         for button_label, callback in buttons:
             btn = Gtk.Button.new_with_label(button_label)
             btn.connect("clicked", callback)
+            btnlist.append(btn)
             hbox.pack_start(btn, True, True)
         self.show_all()
+        return btnlist
 
-    def dismiss(self, *args):
+    def dismiss(self, *args) -> None:
         log(f"dismiss{args} calling {self.do_dismiss}")
         self.do_dismiss()
 
-    def add_headerbar(self, about=True, toolbox=True):
+    def add_headerbar(self, about=True, toolbox=True) -> None:
         hb = Gtk.HeaderBar()
         hb.set_show_close_button(True)
         hb.props.title = "Xpra"
@@ -157,42 +163,42 @@ class BaseGUIWindow(Gtk.Window):
         self.add_widget(btn)
         return btn
 
-    def add_widget(self, widget):
+    def add_widget(self, widget) -> None:
         self.vbox.add(widget)
 
-    def focus_in(self, window, event):
+    def focus_in(self, window, event) -> None:
         log("focus_in(%s, %s)", window, event)
 
-    def focus_out(self, window, event):
+    def focus_out(self, window, event) -> None:
         log("focus_out(%s, %s)", window, event)
         self.reset_cursors()
 
-    def app_signal(self, signum : int | signal.Signals):
+    def app_signal(self, signum : int | signal.Signals) -> None:
         if self.exit_code is None:
             self.exit_code = 128 + int(signum)
         log("app_signal(%s) exit_code=%i", signum, self.exit_code)
         GLib.idle_add(self.quit)
 
-    def hide(self, *args):
+    def hide(self, *args) -> None:
         log("hide%s", args)
         super().hide()
 
-    def quit(self, *args):
+    def quit(self, *args) -> None:
         log("quit%s", args)
         self.do_quit()
 
-    def do_quit(self):
+    def do_quit(self) -> None:
         log("do_quit()")
         Gtk.main_quit()
 
-    def show_about(self, *_args):
+    def show_about(self, *_args) -> None:
         from xpra.gtk.dialogs.about import about
         about(parent=self)
 
-    def get_xpra_command(self, *args):
+    def get_xpra_command(self, *args) -> list[str]:
         return get_xpra_command()+list(args)
 
-    def button_command(self, btn, *args):
+    def button_command(self, btn, *args) -> None:
         cmd = self.get_xpra_command(*args)
         proc = exec_command(cmd)
         if proc.poll() is None:
@@ -201,7 +207,7 @@ class BaseGUIWindow(Gtk.Window):
             getChildReaper().add_process(proc, "subcommand", cmd, ignore=True, forget=True,
                                          callback=self.command_ended)
 
-    def command_ended(self, proc):
+    def command_ended(self, proc) -> None:
         self.reset_cursors()
         log(f"command_ended({proc})")
         if proc.returncode:
@@ -210,7 +216,7 @@ class BaseGUIWindow(Gtk.Window):
                             "The subprocess terminated abnormally\n\rand returned %s" % exit_str(proc.returncode)
                             )
 
-    def busy_cursor(self, widget):
+    def busy_cursor(self, widget) -> None:
         from xpra.gtk.cursors import cursor_types
         watch = cursor_types.get("WATCH")
         if watch:
@@ -219,11 +225,11 @@ class BaseGUIWindow(Gtk.Window):
             widget.get_window().set_cursor(cursor)
             GLib.timeout_add(5*1000, self.reset_cursors)
 
-    def reset_cursors(self, *_args):
+    def reset_cursors(self, *_args) -> None:
         for widget in self.vbox.get_children():
             widget.get_window().set_cursor(None)
 
-    def exec_subcommand(self, subcommand, *args):
+    def exec_subcommand(self, subcommand, *args) -> None:
         log("exec_subcommand(%s, %s)", subcommand, args)
         cmd = get_xpra_command()
         cmd.append(subcommand)
@@ -242,7 +248,7 @@ class BaseGUIWindow(Gtk.Window):
             # if we exit immediately after we spawn the attach command
             GLib.timeout_add(2000, may_exit)
 
-    def may_notify(self, nid: NotificationID, summary: str, body: str):
+    def may_notify(self, nid: NotificationID, summary: str, body: str) -> None:
         log.info(summary)
         log.info(body)
         from xpra.platform.gui import get_native_notifier_classes

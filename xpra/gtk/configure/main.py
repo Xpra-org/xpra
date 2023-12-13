@@ -9,7 +9,7 @@ from importlib import import_module
 from xpra.gtk.configure.common import get_user_config_file
 from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode
-from xpra.os_util import gi_import
+from xpra.os_util import gi_import, LINUX
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.widget import label
 from xpra.log import Logger
@@ -34,6 +34,8 @@ class ConfigureGUI(BaseGUIWindow):
     def populate(self):
         self.vbox.add(label("Configure Xpra", font="sans 20"))
         self.vbox.add(label("Tune your xpra configuration:", font="sans 14"))
+        if LINUX:
+            self.sub("Packages", "package.png", "Install or remove xpra packages", "packages")
         self.sub("Features", "features.png", "Enable or disable feature groups", "features")
         self.sub("Picture compression", "encoding.png", "Encodings, speed and quality", "encodings")
         self.sub("GStreamer", "gstreamer.png", "Configure the GStreamer codecs", "gstreamer")
