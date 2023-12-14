@@ -22,22 +22,27 @@ from xpra.client.gui.fake_client import FakeClient
 log = Logger("opengl", "paint")
 
 
-def get_gl_client_window_module(opengl="on") -> tuple[dict,Any]:
-    log(f"get_gl_client_window_module({opengl})")
+def get_opengl_module_names(opengl="on") -> tuple[str, ...]:
+    log(f"get_opengl_module_names({opengl})")
     # ie: "auto", "no", "probe-success", "yes:gtk", "gtk", "yes:native", "native"
     parts = opengl.lower().split(":")
     if parts[0].lower() in FALSE_OPTIONS:
-        return {}, None
+        return ()
     arg = parts[-1]
     if arg in ("gtk", "glarea"):
-        module_names = ("glarea", )
-    elif arg == "native":
-        module_names = ("native", )
-    else:
-        if os.environ.get("WAYLAND_DISPLAY") or OSX:
-            module_names = ("glarea", "native")
-        else:
-            module_names = ("native", "glarea", )
+        return ("glarea", )
+    if arg == "native":
+        return ("native", )
+    # auto-detect:
+    if os.environ.get("WAYLAND_DISPLAY") or OSX:
+        return ("glarea", "native")
+    return ("native", "glarea", )
+
+
+def get_gl_client_window_module(opengl="on") -> tuple[dict,Any]:
+    module_names = get_opengl_module_names(opengl)
+    log(f"get_gl_client_window_module({opengl}) module names={module_names}")
+    parts = opengl.lower().split(":")
     force_enable = parts[0] == "force"
     for module_name in module_names:
         props, window_module = test_window_module(module_name, force_enable)
