@@ -105,7 +105,7 @@ def create_twin_test_windows():
     from xpra.client.gui.window_border import WindowBorder
     from xpra.client.gl.window import get_gl_client_window_module
     from xpra.client.gtk3.window import ClientWindow
-    opengl_props, gl_client_window_module = get_gl_client_window_module()
+    opengl_props, gl_client_window_module = get_gl_client_window_module("force")
     gl_window_class = gl_client_window_module.GLClientWindow
     pixel_depth = 0  # int(opts.pixel_depth)
     noclient = FakeClient()
