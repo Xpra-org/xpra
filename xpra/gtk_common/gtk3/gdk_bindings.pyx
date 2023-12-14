@@ -111,7 +111,7 @@ def calc_constrained_size(int width, int height, object hints):
     if max_width>0:
         width = min(max_width, width)
     if max_height>0:
-        height = max(min_height, height)
+        height = min(max_height, height)
 
     base_width, base_height = getintpair("base-size", 0, 0)
     increment_x, increment_y = getintpair("increment", 0, 0)
