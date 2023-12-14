@@ -767,9 +767,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                                 framelog.warn(f" this is probably a bug in {wm_name!r}")
                             framelog.warn(f" using {v[4:]} instead")
                         v = v[4:]
-                    l, r, t, b = v
-                    wfs["frame"] = (l, r, t, b)
-                    wfs["offset"] = (l, t)
+                    if max(abs(value) for value in v) > 256:
+                        if first_time("invalid-frame-extents"):
+                            framelog.warn(f"Warning: invalid frame extents value {v!r}")
+                    else:
+                        l, r, t, b = v
+                        wfs["frame"] = (l, r, t, b)
+                        wfs["offset"] = (l, t)
                 except Exception as e:
                     framelog.warn(f"Warning: invalid frame extents value {v}")
                     framelog.warn(f" {e}")
