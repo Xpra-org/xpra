@@ -138,6 +138,7 @@ REFRESH_MAXIMIZED = envbool("XPRA_REFRESH_MAXIMIZED", True)
 UNICODE_KEYNAMES = envbool("XPRA_UNICODE_KEYNAMES", False)
 SMOOTH_SCROLL = envbool("XPRA_SMOOTH_SCROLL", True)
 POLL_WORKSPACE = envbool("XPRA_POLL_WORKSPACE", WIN32)
+ICONIFY_LATENCY = envint("XPRA_ICONIFY_LATENCY", 150)
 
 WINDOW_OVERFLOW_TOP = envbool("XPRA_WINDOW_OVERFLOW_TOP", False)
 AWT_RECENTER = envbool("XPRA_AWT_RECENTER", True)
@@ -1110,7 +1111,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         #calculate a good delay to prevent races causing minimize/unminimize loops:
         if self._client.readonly:
             return
-        delay = 150
+        delay = ICONIFY_LATENCY
         spl = tuple(self._client.server_ping_latency)
         if spl:
             worst = max(x[1] for x in self._client.server_ping_latency)
