@@ -156,8 +156,7 @@ class ConfigureGUI(BaseGUIWindow):
         )
 
     def dismiss(self, *args):
-        for window in self.windows:
-            window.close()
+        self.close_test_windows()
         super().dismiss()
 
     def populate(self):
