@@ -172,7 +172,7 @@ class ConfigureGUI(BaseGUIWindow):
         self.show_all()
         start_thread(self.query_packages, "query-packages", daemon=True)
 
-    def query_packages(self, connect = True):
+    def query_packages(self, connect=True):
         if self.package_system == "dnf":
             cmd = "rpm -qa"
         else:

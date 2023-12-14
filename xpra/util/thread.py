@@ -19,13 +19,13 @@ from threading import Thread
 from collections.abc import Callable
 
 
-def make_thread(target : Callable, name : str, daemon : bool=False, args=()) -> Thread:
+def make_thread(target : Callable, name : str, daemon : bool = False, args=()) -> Thread:
     t = Thread(target=target, name=name, args=args)
     t.daemon = daemon
     return t
 
 
-def start_thread(target : Callable, name : str, daemon : bool=False, args=()) -> Thread:
+def start_thread(target : Callable, name : str, daemon : bool = False, args=()) -> Thread:
     t = make_thread(target, name, daemon, args=args)
     t.start()
     return t
