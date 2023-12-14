@@ -43,7 +43,7 @@ class GUI(BaseGUIWindow):
     def __init__(self, argv=()):
         self.argv = argv
         self.widgets = []
-        super().__init__()
+        super().__init__(header_bar=(True, True, True))
 
     def populate(self):
         if has_client():

@@ -54,7 +54,7 @@ class BaseGUIWindow(Gtk.Window):
                  icon_name="xpra.png",
                  wm_class=("xpra-gui", "Xpra-GUI"),
                  default_size=(640, 300),
-                 header_bar=(True, True),
+                 header_bar=(True, True, False),
                  parent : Gtk.Window | None = None,
                  ):
         self.exit_code = 0
@@ -127,27 +127,41 @@ class BaseGUIWindow(Gtk.Window):
         log(f"dismiss{args} calling {self.do_dismiss}")
         self.do_dismiss()
 
-    def add_headerbar(self, about=True, toolbox=True) -> None:
+    def add_headerbar(self, about=True, toolbox=True, configure=False) -> None:
         hb = Gtk.HeaderBar()
         hb.set_show_close_button(True)
         hb.props.title = "Xpra"
         if about:
             hb.add(button("About", "help-about", self.show_about))
+
+        def add_gui(text: str, icon_name: str, gui_class):
+
+            def show_gui(*_args):
+                w = None
+
+                def hide(*_args):
+                    w.hide()
+
+                gui_class.quit = hide
+                w = gui_class()
+                w.show()
+
+            hb.add(button(text, icon_name, show_gui))
+
         if toolbox:
             try:
                 from xpra.gtk.dialogs.toolbox import ToolboxGUI
             except ImportError:
                 pass
             else:
-                def show(*_args):
-                    w = None
-
-                    def hide(*_args):
-                        w.hide()
-                    ToolboxGUI.quit = hide
-                    w = ToolboxGUI()
-                    w.show()
-                hb.add(button("Toolbox", "applications-utilities", show))
+                add_gui("Toolbox", "applications-utilities", ToolboxGUI)
+        if configure:
+            try:
+                from xpra.gtk.configure.main import ConfigureGUI
+            except ImportError:
+                pass
+            else:
+                add_gui("Configure", "applications-system", ConfigureGUI)
         hb.show_all()
         self.set_titlebar(hb)
 
