@@ -1112,11 +1112,12 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if self._client.readonly:
             return
         delay = ICONIFY_LATENCY
-        spl = tuple(self._client.server_ping_latency)
-        if spl:
-            worst = max(x[1] for x in self._client.server_ping_latency)
-            delay += int(1000*worst)
-            delay = min(1000, delay)
+        if delay>0:
+            spl = tuple(self._client.server_ping_latency)
+            if spl:
+                worst = max(x[1] for x in self._client.server_ping_latency)
+                delay += int(1000*worst)
+                delay = min(1000, delay)
         statelog("telling server about iconification with %sms delay", delay)
         self.send_iconify_timer = self.timeout_add(delay, self.send_iconify)
 
