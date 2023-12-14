@@ -750,10 +750,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def set_initial_position(self, pos):
         x, y = self.adjusted_position(*pos)
+        w, h = self._size
         if self.is_OR():
             #make sure OR windows are mapped on screen
             if self._client._current_screen_sizes:
-                w, h = self._size
                 self.window_offset = self.calculate_window_offset(x, y, w, h)
                 geomlog("OR offsets=%s", self.window_offset)
                 if self.window_offset:
@@ -770,8 +770,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 v = wfs.get("offset")
                 if v:
                     dx, dy = v
-                    x = max(0, x-dx)
-                    y = max(0, y-dy)
+                    x = max(32-w, x-dx)
+                    y = max(32-h, y-dy)
                     self._pos = x, y
                     geomlog("setup_window() adjusted initial position=%s", self._pos)
         self.move(x, y)
