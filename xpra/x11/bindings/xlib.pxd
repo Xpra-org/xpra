@@ -221,6 +221,18 @@ cdef extern from "X11/Xlib.h":
     int XFlush(Display *dpy)
     int XSync(Display *dpy, Bool discard)
 
+    # Icon sizes
+    ctypedef struct XIconSize:
+        int min_width
+        int min_height
+        int max_width
+        int max_height
+        int width_inc;
+        int height_inc;
+
+    XIconSize *XAllocIconSize()
+    int XSetIconSizes(Display *display, Window w, XIconSize* size_list, int count)
+
     # Keyboard bindings
     XModifierKeymap* XGetModifierMapping(Display* display)
     int XFreeModifiermap(XModifierKeymap* modifiermap)

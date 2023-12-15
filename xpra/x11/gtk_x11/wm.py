@@ -66,6 +66,7 @@ DEFAULT_NET_SUPPORTED = [
 
         "WM_NAME", "_NET_WM_NAME",
         "WM_ICON_NAME", "_NET_WM_ICON_NAME",
+        "WM_ICON_SIZE",
         "WM_CLASS",
         "WM_PROTOCOLS",
         "_NET_WM_PID",
@@ -258,6 +259,7 @@ class Wm(GObject.GObject):
         # Also watch for focus change events on the root window
         X11Window.selectFocusChange(rxid)
         X11Keyboard.selectBellNotification(True)
+        X11Window.setRootIconSizes(64, 64)
 
         # FIXME:
         # Need viewport abstraction for _NET_CURRENT_DESKTOP...

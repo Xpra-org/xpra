@@ -25,6 +25,7 @@ from xpra.x11.bindings.xlib cimport (
     XGetGeometry, XTranslateCoordinates, XConfigureWindow, XMoveResizeWindow,
     XGetInputFocus, XSetInputFocus,
     XAllocClassHint, XAllocSizeHints, XGetClassHint, XSetClassHint,
+    XAllocIconSize, XIconSize, XSetIconSizes,
     XQueryTree,
     XKillClient,
     )
@@ -1113,6 +1114,20 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     def XRemoveFromSaveSet(self, Window xwindow):
         self.context_check("XRemoveFromSaveSet")
         XRemoveFromSaveSet(self.display, xwindow)
+
+
+    def setRootIconSizes(self, int w, int h):
+        cdef Window root = XDefaultRootWindow(self.display);
+        cdef XIconSize *icon_size = XAllocIconSize()
+        assert icon_size
+        icon_size.min_width = w
+        icon_size.max_width = w
+        icon_size.width_inc = 0
+        icon_size.min_height = h
+        icon_size.max_height = h
+        icon_size.height_inc = 0
+        XSetIconSizes(self.display, root, icon_size, 1)
+        XFree(icon_size)
 
 
     def setClassHint(self, Window xwindow, wmclass, wmname):
