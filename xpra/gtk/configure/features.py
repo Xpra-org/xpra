@@ -15,6 +15,30 @@ GLib = gi_import("GLib")
 
 log = Logger("util")
 
+FEATURES = (
+    ("Audio", "Audio forwarding: speaker and microphone", "xpra.audio"),
+    ("Video", "Video codecs: h264, vpx, etc", "xpra.codecs.vpx"),
+    # ("Webcam", "Webcam forwarding", "xpra.codecs.v4l2"),
+    ("System Tray", "System tray forwarding", "xpra.client"),
+    ("File transfer", "Upload and download of files to and from the server", "xpra.net"),
+    ("Printing", "Printer forwarding to the client's printer", "xpra.net"),
+    ("Clipboard", "Copy & Paste to and from the server", "xpra.clipboard"),
+    ("Notifications", "Notifications forwarding", "xpra.notifications"),
+    ("Windows", "Windows forwarding", "xpra.client.gtk3"),
+     # ("Splash", "Show the splash screen GUI", "xpra.gtk.dialogs.splash")
+     # ("Readonly", "Prevent any keyboard or pointer events from being forwarded", "xpra.client.gtk3"),
+)
+
+
+def plabel(text, tooltip="", sensitive=False, font="sans 12"):
+    lbl = label(text, tooltip=tooltip, font=font)
+    lbl.set_hexpand(False)
+    lbl.set_halign(Gtk.Align.START)
+    lbl.set_margin_start(5)
+    lbl.set_margin_end(5)
+    lbl.set_sensitive(sensitive)
+    return lbl
+
 
 class ConfigureGUI(BaseGUIWindow):
 
@@ -44,36 +68,29 @@ class ConfigureGUI(BaseGUIWindow):
         self.add_widget(lbl)
 
         grid = Gtk.Grid()
-        grid.set_margin_start(40)
-        grid.set_margin_end(40)
+        grid.set_margin_start(20)
+        grid.set_margin_end(20)
         grid.set_row_homogeneous(True)
         grid.set_column_homogeneous(False)
         self.add_widget(grid)
 
-        for i, (subsystem, description) in enumerate(
-                {
-                    "Audio" : "Audio forwarding: speaker and microphone",
-                    "Video" : "Video codecs: h264, vpx, etc",
-                    # "Webcam", "Remote Logging",
-                    "System Tray" : "System tray forwarding",
-                    "File transfer" : "Upload and download of files to and from the server",
-                    "Printing" : "Printer forwarding to the client's printer",
-                    "Clipboard" : "Copy & Paste to and from the server",
-                    "Notifications" : "Notifications forwarding",
-                    "Windows" : "Windows forwarding",
-                    # "Splash" : "Show the splash screen GUI",
-                    # "Readonly" : "Prevent any keyboard or pointer events from being forwarded",
-                }.items()
-        ):
+        for i, (subsystem, description, module) in enumerate(FEATURES):
+            import importlib
+            try:
+                found = bool(importlib.import_module(module))
+                tooltip = ""
+            except ImportError as e:
+                found = False
+                tooltip = f"this feature is missing: {e}"
             sub = subsystem.lower().replace(" ", "-")
-            lbl = label(subsystem, tooltip=description)
-            lbl.set_hexpand(True)
-            grid.attach(lbl, 0, i, 1, 1)
+            grid.attach(plabel(subsystem, tooltip, found), 0, i, 1, 1)
+            grid.attach(plabel(description, tooltip, found, font="sans 10"), 1, i, 1, 1)
             switch = Gtk.Switch()
             switch.set_sensitive(False)
-            switch.connect("state-set", self.toggle_subsystem, sub)
-            grid.attach(switch, 1, i, 1, 1)
-            self.subsystem_switch[sub] = switch
+            grid.attach(switch, 2, i, 1, 1)
+            if found:
+                switch.connect("state-set", self.toggle_subsystem, sub)
+                self.subsystem_switch[sub] = switch
         self.show_all()
         with_config(self.configure_switches)
 
