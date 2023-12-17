@@ -776,7 +776,7 @@ class X11ServerCore(GTKServerBase):
             screenlog("using XRRSetScreenConfigAndRate with %ix%i", w, h)
             with xsync:
                 RandR.set_screen_size(w, h)
-            if RandR.check_randr():
+            if RandR.check_randr_sizes():
                 #Xvfb with randr > 1.2
                 #we can use XRRSetScreenSize:
                 try:
