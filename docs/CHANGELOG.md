@@ -1,7 +1,18 @@
 # Changelog
 
-## [5.0.5] 2023-11-29
-* TODO
+## [5.0.5] 2023-12-17
+* Major:
+    * [fixup DPI backport for Xvfb users](https://github.com/Xpra-org/xpra/commit/30c7cfa5a9f119aac300b5652d3d545f9ca799cf)
+    * [window max-height nor honoured](https://github.com/Xpra-org/xpra/commit/824d488b11d78df580657181fcb10d8021c6c78d)
+    * [tools and examples hang on SIGINT](https://github.com/Xpra-org/xpra/commit/6b83eab06d691adcfcf6f7d9d0618aded1d0b774)
+    * [workaround missing icon size config](https://github.com/Xpra-org/xpra/commit/efcb254105600987b06539b9929c66911f9713b5)
+    * [broken about dialog](https://github.com/Xpra-org/xpra/commit/356dda7aa3fcba9a1ca23e2875dc6ee1c6f13009)
+* Platforms and packaging:
+    * (Free)BSD compatibility: [don't build pam](https://github.com/Xpra-org/xpra/commit/dd80ab2f02fbd2f4e72165c99012d072a5373952), [do build drm](https://github.com/Xpra-org/xpra/commit/4753b487a56b16d065b868ababc8a27e99e025d0)
+* Minor:
+    * [make iconify delay configurable](https://github.com/Xpra-org/xpra/commit/a9441fb82745fb6cd8e0c2f2d085a1c1a7e3fe4c)
+    * [update trixie and sid libavif dependency](https://github.com/Xpra-org/xpra/commit/4ba44484eb9d8a3225d11d823f4ea57794dd08b7)
+    * [simplify regex syntax](https://github.com/Xpra-org/xpra/commit/8cf8494340a26a1149ee7f273eaa27c1e62a0aab)
 
 ## [5.0.4] 2023-11-28
 * Major:
