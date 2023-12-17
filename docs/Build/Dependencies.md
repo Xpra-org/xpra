@@ -9,8 +9,10 @@ Unless otherwise stated, the dependencies are all optional.
 Those are required by almost every component.
 | Project | Source Download Link | Purpose | Client or Server | Notes |
 |---------|----------------------|---------|------------------|:------|
+|[Cython](https://cython.org/)|[https://pypi.org/project/Cython/#files](https://pypi.org/project/Cython/#files)|C extensions for Python|both|Required|
 |[glib](https://developer.gnome.org/glib/)|[https://ftp.gnome.org/pub/gnome/sources/glib/](https://ftp.gnome.org/pub/gnome/sources/glib/)|low-level library|both|Required|
 |[gtk](http://www.gtk.org/)|http://ftp.gnome.org/pub/gnome/sources/gtk+/|UI Toolkit|both|Required|
+|[PyGObject](https://pypi.org/project/PyGObject/)|[https://pypi.org/project/PyGObject/#files](https://pypi.org/project/PyGObject/#files)|Bindings for GObject based libraries such as GTK and GStreamer|both|Required|
 |[pyopengl](http://pyopengl.sourceforge.net/)|https://pypi.python.org/pypi/PyOpenGL and <br /> https://pypi.python.org/pypi/PyOpenGL-accelerate|[client OpenGL accelerated rendering](./Client-OpenGL)|client| |
 |[pycups](https://github.com/zdohnal/pycups)|https://pypi.org/project/pycups/|[Printing](./Printing)|both| |
 </details>
