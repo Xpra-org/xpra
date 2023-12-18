@@ -465,7 +465,7 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
         print("build switches:")
         for k in sorted(SWITCHES):
             v = switches_info[k]
-            print("* %s : %s" % (str(k).ljust(20), {None : "Auto", True : "Y", False : "N"}.get(v, v)))
+            print("* %s : %s" % (str(k).ljust(20), {None : "Auto", True : "Yes", False : "No"}.get(v, v)))
     show_switch_info()
 
     #sanity check the flags:
