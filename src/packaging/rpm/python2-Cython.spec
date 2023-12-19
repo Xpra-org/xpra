@@ -4,7 +4,7 @@
 %define _disable_source_fetch 0
 
 Name:		python2-Cython
-Version:	0.29.36
+Version:	0.29.37.1
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
@@ -59,6 +59,9 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
+* Tue Dec 19 2023 Antoine Martin <antoine@xpra.org> 0.29.37.1-1
+- new upstream release
+
 * Wed May 24 2023 Antoine Martin <antoine@xpra.org> 0.29.35-1
 - new upstream release
 
