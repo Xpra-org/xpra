@@ -612,9 +612,7 @@ def parse_ssh_option(ssh_setting:str) -> list[str]:
         #try paramiko:
         from xpra.log import is_debug_enabled, Logger
         try:
-            from xpra.net.ssh.util import nogssapi_context
-            with nogssapi_context():
-                import paramiko
+            import paramiko
             assert paramiko, "paramiko not found"
             ssh_cmd = ["paramiko"]
             if is_debug_enabled("ssh"):

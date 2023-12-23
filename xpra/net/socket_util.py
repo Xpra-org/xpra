@@ -316,11 +316,8 @@ def create_sockets(opts, error_cb:Callable, retry:int=0):
     ssh_upgrades = opts.ssh_upgrade
     if ssh_upgrades:
         try:
-            from xpra.net.ssh.util import nogssapi_context
-            with nogssapi_context():
-                with SilenceWarningsContext(DeprecationWarning):
-                    import paramiko
-            assert paramiko
+            with SilenceWarningsContext(DeprecationWarning):
+                import paramiko
         except ImportError as e:
             from xpra.log import Logger
             sshlog = Logger("ssh")

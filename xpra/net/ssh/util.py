@@ -28,12 +28,6 @@ class nomodule_context:
         return f"nomodule_context({self.module_name})"
 
 
-class nogssapi_context(nomodule_context):
-
-    def __init__(self):
-        super().__init__("gssapi")
-
-
 def get_default_keyfiles() -> list[str]:
     dkf = os.environ.get("XPRA_SSH_DEFAULT_KEYFILES", None)
     if dkf is not None:

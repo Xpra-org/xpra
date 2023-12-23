@@ -17,7 +17,7 @@ from xpra.platform.paths import get_ssh_known_hosts_files
 from xpra.platform.info import get_username
 from xpra.scripts.config import parse_bool, TRUE_OPTIONS
 from xpra.scripts.pinentry import input_pass, confirm
-from xpra.net.ssh.util import nogssapi_context, get_default_keyfiles
+from xpra.net.ssh.util import get_default_keyfiles
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
 from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode
@@ -203,74 +203,73 @@ def connect_to(display_desc):
         log("connect_to(%s)", display_desc, exc_info=True)
         raise InitExit(ExitCode.SSH_FAILURE, msg) from None
 
-    with nogssapi_context():
-        from paramiko import SSHConfig, ProxyCommand
-        ssh_config = SSHConfig()
+    from paramiko import SSHConfig, ProxyCommand
+    ssh_config = SSHConfig()
 
-        def ssh_lookup(key):
-            return safe_lookup(ssh_config, key)
-        user_config_file = os.path.expanduser("~/.ssh/config")
-        sock = None
-        host_config = None
-        if os.path.exists(user_config_file):
-            with open(user_config_file, encoding="utf8") as f:
-                try:
-                    ssh_config.parse(f)
-                except Exception as e:
-                    log(f"parse({user_config_file})", exc_info=True)
-                    log.error(f"Error parsing {user_config_file!r}:")
-                    log.estr(e)
-            log(f"parsed user config {user_config_file!r}")
+    def ssh_lookup(key):
+        return safe_lookup(ssh_config, key)
+    user_config_file = os.path.expanduser("~/.ssh/config")
+    sock = None
+    host_config = None
+    if os.path.exists(user_config_file):
+        with open(user_config_file, encoding="utf8") as f:
             try:
-                log("%i hosts found", len(ssh_config.get_hostnames()))
-            except KeyError:
-                pass
-            host_config = ssh_lookup(host)
-            if host_config:
-                log(f"got host config for {host!r}: {host_config}")
-                host = host_config.get("hostname", host)
-                username = host_config.get("user", username)
-                port = host_config.get("port", port)
-                try:
-                    port = int(port)
-                except (TypeError, ValueError):
-                    raise InitExit(ExitCode.SSH_FAILURE, f"invalid ssh port specified: {port!r}") from None
-                proxycommand = host_config.get("proxycommand")
-                if proxycommand:
-                    log(f"found proxycommand={proxycommand!r} for host {host!r}")
-                    sock = ProxyCommand(proxycommand)
-                    log(f"ProxyCommand({proxycommand})={sock}")
-                    from xpra.util.child_reaper import getChildReaper
-                    cmd = getattr(sock, "cmd", [])
+                ssh_config.parse(f)
+            except Exception as e:
+                log(f"parse({user_config_file})", exc_info=True)
+                log.error(f"Error parsing {user_config_file!r}:")
+                log.estr(e)
+        log(f"parsed user config {user_config_file!r}")
+        try:
+            log("%i hosts found", len(ssh_config.get_hostnames()))
+        except KeyError:
+            pass
+        host_config = ssh_lookup(host)
+        if host_config:
+            log(f"got host config for {host!r}: {host_config}")
+            host = host_config.get("hostname", host)
+            username = host_config.get("user", username)
+            port = host_config.get("port", port)
+            try:
+                port = int(port)
+            except (TypeError, ValueError):
+                raise InitExit(ExitCode.SSH_FAILURE, f"invalid ssh port specified: {port!r}") from None
+            proxycommand = host_config.get("proxycommand")
+            if proxycommand:
+                log(f"found proxycommand={proxycommand!r} for host {host!r}")
+                sock = ProxyCommand(proxycommand)
+                log(f"ProxyCommand({proxycommand})={sock}")
+                from xpra.util.child_reaper import getChildReaper
+                cmd = getattr(sock, "cmd", [])
 
-                    def proxycommand_ended(proc):
-                        log(f"proxycommand_ended({proc}) exit code={proc.poll()}")
-                    getChildReaper().add_process(sock.process, "paramiko-ssh-client", cmd, True, True,
-                                                 callback=proxycommand_ended)
-                    proxy_keys = get_keyfiles(host_config, "proxy_key")
-                    log(f"{proxy_keys=}")
-                    from paramiko.client import SSHClient
-                    ssh_client = SSHClient()
-                    ssh_client.load_system_host_keys()
-                    log("ssh proxy command connect to %s", (host, port, sock))
-                    ssh_client.connect(host, port, sock=sock)
-                    transport = ssh_client.get_transport()
-                    do_connect_to(transport, host,
-                                  username, password,
-                                  host_config or ssh_lookup("*"),
-                                  proxy_keys,
-                                  paramiko_config)
-                    chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
-                    peername = (host, port)
-                    conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
-                    conn.target = host_target_string("ssh", username, host, port, display)
-                    conn.timeout = SOCKET_TIMEOUT
-                    conn.start_stderr_reader()
-                    conn.process = (sock.process, "ssh", cmd)
-                    from xpra.net import bytestreams
-                    from paramiko.ssh_exception import ProxyCommandFailure
-                    bytestreams.CLOSED_EXCEPTIONS = tuple(list(bytestreams.CLOSED_EXCEPTIONS)+[ProxyCommandFailure])
-                    return conn
+                def proxycommand_ended(proc):
+                    log(f"proxycommand_ended({proc}) exit code={proc.poll()}")
+                getChildReaper().add_process(sock.process, "paramiko-ssh-client", cmd, True, True,
+                                             callback=proxycommand_ended)
+                proxy_keys = get_keyfiles(host_config, "proxy_key")
+                log(f"{proxy_keys=}")
+                from paramiko.client import SSHClient
+                ssh_client = SSHClient()
+                ssh_client.load_system_host_keys()
+                log("ssh proxy command connect to %s", (host, port, sock))
+                ssh_client.connect(host, port, sock=sock)
+                transport = ssh_client.get_transport()
+                do_connect_to(transport, host,
+                              username, password,
+                              host_config or ssh_lookup("*"),
+                              proxy_keys,
+                              paramiko_config)
+                chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
+                peername = (host, port)
+                conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
+                conn.target = host_target_string("ssh", username, host, port, display)
+                conn.timeout = SOCKET_TIMEOUT
+                conn.start_stderr_reader()
+                conn.process = (sock.process, "ssh", cmd)
+                from xpra.net import bytestreams
+                from paramiko.ssh_exception import ProxyCommandFailure
+                bytestreams.CLOSED_EXCEPTIONS = tuple(list(bytestreams.CLOSED_EXCEPTIONS)+[ProxyCommandFailure])
+                return conn
 
         keys = get_keyfiles(host_config)
         from xpra.net.socket_util import socket_connect
