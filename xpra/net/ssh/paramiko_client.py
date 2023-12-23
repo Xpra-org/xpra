@@ -597,7 +597,12 @@ def do_connect_to(transport, host:str, username:str, password:str,
                     log("tried ssh-agent key '%s'", keymd5(agent_key))
                     if transport.is_authenticated():
                         log("authenticated using agent and key '%s'", keymd5(agent_key))
-                        break
+                        return
+                except AttributeError as e:
+                    log(f"auth_publickey({username}, {agent_key})")
+                    log.warn("Warning: paramiko bug during public key agent authentication")
+                    log.warn(f" {type(e)}: {e}")
+                    log.warn(f" using key {type(agent_key)}: {agent_key}")
                 except SSHException as e:
                     auth_errors.setdefault("agent", []).append(str(e))
                     log.info("SSH agent key '%s' rejected for user '%s'", keymd5(agent_key), username)
