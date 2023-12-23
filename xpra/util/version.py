@@ -20,6 +20,7 @@ from xpra.util.system import get_linux_distribution, platform_release, platform_
 from xpra.common import FULL_INFO
 
 XPRA_VERSION = xpra.__version__     #@UndefinedVariable
+XPRA_NUMERIC_VERSION = xpra.__version_info__
 
 CHECK_SSL : bool = envbool("XPRA_VERSION_CHECK_SSL", True)
 SSL_CAFILE : str = ""
@@ -100,13 +101,11 @@ def version_compat_check(remote_version) -> str | None:
     except ValueError:
         warn(f"Warning: failed to parse remote version {remote_version!r}")
         return None
-    try:
-        lv = parse_version(XPRA_VERSION)
-    except ValueError:
-        warn(f"Warning: failed to parse local version {XPRA_VERSION!r}")
-        return None
-    if rv==lv:
+    if rv==XPRA_NUMERIC_VERSION:
         log("identical remote version: %s", remote_version)
+        return None
+    if rv[:2]==XPRA_NUMERIC_VERSION[:2]:
+        log("identical major.minor remote version: %s", remote_version)
         return None
     if rv[0:2]<(3, 0):
         #this is the oldest version we support
