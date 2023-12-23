@@ -6,6 +6,7 @@
 import os
 import re
 import socket
+import sys
 from time import sleep, monotonic
 from typing import Any
 
@@ -192,13 +193,6 @@ def connect_to(display_desc):
             "port"  : port,
             }
 
-    def get_keyfiles(host_config, config_name="key"):
-        keyfiles = (host_config or {}).get("identityfile") or get_default_keyfiles()
-        keyfile = paramiko_config.get(config_name)
-        if keyfile:
-            keyfiles.insert(0, keyfile)
-        return keyfiles
-
     def fail(msg: str) -> None:
         log("connect_to(%s)", display_desc, exc_info=True)
         raise InitExit(ExitCode.SSH_FAILURE, msg) from None
@@ -208,77 +202,90 @@ def connect_to(display_desc):
 
     def ssh_lookup(key):
         return safe_lookup(ssh_config, key)
-    user_config_file = os.path.expanduser("~/.ssh/config")
-    sock = None
-    host_config = None
-    if os.path.exists(user_config_file):
-        with open(user_config_file, encoding="utf8") as f:
+    etc = "etc" if sys.prefix == "/usr" else sys.prefix+"/etc"
+    for config_file in (
+        f"{etc}/ssh/ssh_config",
+        os.path.expanduser("~/.ssh/config"),
+    ):
+        if not os.path.exists(config_file):
+            continue
+        with open(config_file, encoding="utf8") as f:
             try:
                 ssh_config.parse(f)
             except Exception as e:
-                log(f"parse({user_config_file})", exc_info=True)
-                log.error(f"Error parsing {user_config_file!r}:")
+                log(f"parse({config_file})", exc_info=True)
+                log.error(f"Error parsing {config_file!r}:")
                 log.estr(e)
-        log(f"parsed user config {user_config_file!r}")
+        log(f"parsed user config {config_file!r}")
+    try:
+        log("%i hosts found", len(ssh_config.get_hostnames()))
+    except KeyError:
+        pass
+    sock = None
+    host_config: dict = ssh_lookup("*")
+    host_config.update(ssh_lookup(host))
+
+    def get_keyfiles(config_name="key"):
+        keyfiles = host_config.get("identityfile") or get_default_keyfiles()
+        keyfile = paramiko_config.get(config_name)
+        if keyfile:
+            keyfiles.insert(0, keyfile)
+        return keyfiles
+
+    if host_config:
+        log(f"got host config for {host!r}: {host_config}")
+        host = host_config.get("hostname", host)
+        username = host_config.get("user", username)
+        port = host_config.get("port", port)
         try:
-            log("%i hosts found", len(ssh_config.get_hostnames()))
-        except KeyError:
-            pass
-        host_config = ssh_lookup(host)
-        if host_config:
-            log(f"got host config for {host!r}: {host_config}")
-            host = host_config.get("hostname", host)
-            username = host_config.get("user", username)
-            port = host_config.get("port", port)
-            try:
-                port = int(port)
-            except (TypeError, ValueError):
-                raise InitExit(ExitCode.SSH_FAILURE, f"invalid ssh port specified: {port!r}") from None
-            proxycommand = host_config.get("proxycommand")
-            if proxycommand:
-                log(f"found proxycommand={proxycommand!r} for host {host!r}")
-                sock = ProxyCommand(proxycommand)
-                log(f"ProxyCommand({proxycommand})={sock}")
-                from xpra.util.child_reaper import getChildReaper
-                cmd = getattr(sock, "cmd", [])
+            port = int(port)
+        except (TypeError, ValueError):
+            raise InitExit(ExitCode.SSH_FAILURE, f"invalid ssh port specified: {port!r}") from None
+        proxycommand = host_config.get("proxycommand")
+        if proxycommand:
+            log(f"found proxycommand={proxycommand!r} for host {host!r}")
+            sock = ProxyCommand(proxycommand)
+            log(f"ProxyCommand({proxycommand})={sock}")
+            from xpra.util.child_reaper import getChildReaper
+            cmd = getattr(sock, "cmd", [])
 
-                def proxycommand_ended(proc):
-                    log(f"proxycommand_ended({proc}) exit code={proc.poll()}")
-                getChildReaper().add_process(sock.process, "paramiko-ssh-client", cmd, True, True,
-                                             callback=proxycommand_ended)
-                proxy_keys = get_keyfiles(host_config, "proxy_key")
-                log(f"{proxy_keys=}")
-                from paramiko.client import SSHClient
-                ssh_client = SSHClient()
-                ssh_client.load_system_host_keys()
-                log("ssh proxy command connect to %s", (host, port, sock))
-                ssh_client.connect(host, port, sock=sock)
-                transport = ssh_client.get_transport()
-                do_connect_to(transport, host,
-                              username, password,
-                              host_config or ssh_lookup("*"),
-                              proxy_keys,
-                              paramiko_config)
-                chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
-                peername = (host, port)
-                conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
-                conn.target = host_target_string("ssh", username, host, port, display)
-                conn.timeout = SOCKET_TIMEOUT
-                conn.start_stderr_reader()
-                conn.process = (sock.process, "ssh", cmd)
-                from xpra.net import bytestreams
-                from paramiko.ssh_exception import ProxyCommandFailure
-                bytestreams.CLOSED_EXCEPTIONS = tuple(list(bytestreams.CLOSED_EXCEPTIONS)+[ProxyCommandFailure])
-                return conn
+            def proxycommand_ended(proc):
+                log(f"proxycommand_ended({proc}) exit code={proc.poll()}")
+            getChildReaper().add_process(sock.process, "paramiko-ssh-client", cmd, True, True,
+                                         callback=proxycommand_ended)
+            proxy_keys = get_keyfiles("proxy_key")
+            log(f"{proxy_keys=}")
+            from paramiko.client import SSHClient
+            ssh_client = SSHClient()
+            ssh_client.load_system_host_keys()
+            log("ssh proxy command connect to %s", (host, port, sock))
+            ssh_client.connect(host, port, sock=sock)
+            transport = ssh_client.get_transport()
+            do_connect_to(transport, host,
+                          username, password,
+                          host_config,
+                          proxy_keys,
+                          paramiko_config)
+            chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
+            peername = (host, port)
+            conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
+            conn.target = host_target_string("ssh", username, host, port, display)
+            conn.timeout = SOCKET_TIMEOUT
+            conn.start_stderr_reader()
+            conn.process = (sock.process, "ssh", cmd)
+            from xpra.net import bytestreams
+            from paramiko.ssh_exception import ProxyCommandFailure
+            bytestreams.CLOSED_EXCEPTIONS = tuple(list(bytestreams.CLOSED_EXCEPTIONS)+[ProxyCommandFailure])
+            return conn
 
-        keys = get_keyfiles(host_config)
+        keys = get_keyfiles()
         from xpra.net.socket_util import socket_connect
         if "proxy_host" in display_desc:
             proxy_host = display_desc["proxy_host"]
             proxy_port = int(display_desc.get("proxy_port", 22))
             proxy_username = display_desc.get("proxy_username", username)
             proxy_password = display_desc.get("proxy_password", password)
-            proxy_keys = get_keyfiles(host_config, "proxy_key")
+            proxy_keys = get_keyfiles("proxy_key")
             sock = socket_connect(proxy_host, proxy_port)
             if not sock:
                 fail(f"SSH proxy transport failed to connect to {proxy_host}:{proxy_port}")
@@ -291,7 +298,7 @@ def connect_to(display_desc):
             chan_to_middle = middle_transport.open_channel("direct-tcpip", (host, port), ("localhost", 0))
             transport = do_connect(chan_to_middle, host,
                                    username, password,
-                                   host_config or ssh_lookup("*"),
+                                   host_config,
                                    keys,
                                    paramiko_config)
             chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
@@ -319,7 +326,7 @@ def connect_to(display_desc):
             log(f"paramiko socket_connect: sockname={sockname}, peername={peername}")
             try:
                 transport = do_connect(sock, host, username, password,
-                                       host_config or ssh_lookup("*"),
+                                       host_config,
                                        keys,
                                        paramiko_config,
                                        auth_modes)
@@ -365,14 +372,14 @@ def connect_to(display_desc):
 AUTH_MODES : tuple[str, ...] = ("none", "agent", "key", "password")
 
 
-def get_auth_modes(paramiko_config, host_config, password: str) -> list[str]:
+def get_auth_modes(paramiko_config, host_config: dict, password: str) -> list[str]:
 
     def configvalue(key: str):
         # if the paramiko config has a setting, honour it:
         if paramiko_config and key in paramiko_config:
             return paramiko_config.get(key)
         # fallback to the value from the host config:
-        return (host_config or {}).get(key)
+        return host_config.get(key)
 
     def configbool(key: str, default_value=True):
         return parse_bool(key, configvalue(key), default_value)
@@ -587,6 +594,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
                 log("trying ssh-agent key '%s'", keymd5(agent_key))
                 try:
                     transport.auth_publickey(username, agent_key)
+                    log("tried ssh-agent key '%s'", keymd5(agent_key))
                     if transport.is_authenticated():
                         log("authenticated using agent and key '%s'", keymd5(agent_key))
                         break
