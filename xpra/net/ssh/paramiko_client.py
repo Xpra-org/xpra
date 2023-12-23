@@ -657,17 +657,8 @@ def do_connect_to(transport, host:str, username:str, password:str,
                 except Exception:
                     log(f"auth_publickey() loading as {pkey_classname}", exc_info=True)
                     key_data = load_binary_file(keyfile_path)
-                    if key_data and key_data.find(b"BEGIN OPENSSH PRIVATE KEY")>=0 and paramiko.__version__<"2.7":
-                        log.warn(f"Warning: private key {keyfile_path!r}")
-                        log.warn(" this file seems to be using OpenSSH's own format")
-                        log.warn(" please convert it to something more standard (ie: PEM)")
-                        log.warn(" so it can be used with the paramiko backend")
-                        if WIN32:
-                            log.warn(" or switch to the Putty Plink backend with:")
-                            log.warn(" '--ssh=plink -ssh -agent'")
-                        else:
-                            log.warn(" or switch to the OpenSSH backend with:")
-                            log.warn(" '--ssh=ssh'")
+                    if key_data and key_data.find(b"BEGIN OPENSSH PRIVATE KEY")>=0:
+                        log(" (OpenSSH private key file)")
             if key:
                 log(f"auth_publickey using {keyfile_path!r} as {pkey_classname}: {keymd5(key)}")
                 try:
