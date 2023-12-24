@@ -76,9 +76,6 @@ class DisplayManager(StubServerMixin):
         if self.opengl.lower()=="noprobe" or self.opengl.lower() in FALSE_OPTIONS:
             gllog("query_opengl() skipped because opengl=%s", self.opengl)
             return props
-        if is_Wayland():
-            gllog("query_opengl() skipped on wayland")
-            return props
         try:
             # pylint: disable=import-outside-toplevel
             from subprocess import Popen, PIPE
