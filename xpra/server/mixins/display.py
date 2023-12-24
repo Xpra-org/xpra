@@ -77,6 +77,14 @@ class DisplayManager(StubServerMixin):
             gllog("query_opengl() skipped because opengl=%s", self.opengl)
             return props
         try:
+            from xpra.client.gl import backing
+            assert backing
+        except ImportError as e:
+            return {
+                'error': '`xpra-client-gtk3` is not installed',
+                'success': False,
+            }
+        try:
             # pylint: disable=import-outside-toplevel
             from subprocess import Popen, PIPE
             from xpra.platform.paths import get_xpra_command
