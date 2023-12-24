@@ -334,7 +334,7 @@ def check_gtk_client() -> None:
         from xpra.client import gui, gtk3
         assert gui, gtk3
     except ImportError:
-        raise InitExit(ExitCode.FILE_NOT_FOUND, "`xpra-client-bindings` is not installed") from None
+        raise InitExit(ExitCode.FILE_NOT_FOUND, "`xpra-client-gtk3` is not installed") from None
 
 
 def check_gtk() -> None:
@@ -1441,7 +1441,7 @@ def get_client_app(cmdline, error_cb, opts, extra_args, mode:str):
         from xpra import client
         assert client
     except ImportError:
-        error_cb("Xpra client is not installed")
+        error_cb("`xpra-client` is not installed")
 
     if opts.compression_level < 0 or opts.compression_level > 9:
         error_cb("Compression level must be between 0 and 9 inclusive.")
@@ -1966,7 +1966,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode:str, defaults
         assert server
         from xpra.scripts.server import do_run_server
     except ImportError:
-        error_cb("Xpra server is not installed")
+        error_cb("`xpra-server` is not installed")
         sys.exit(1)
     return do_run_server(script_file, cmdline, error_cb, options, args, mode, str(display or ""), defaults)
 
@@ -1986,7 +1986,7 @@ def start_server_via_proxy(script_file:str, cmdline, error_cb, options, args, mo
         assert client
     except ImportError:
         if start_via_proxy is True:
-            error_cb("cannot start-via-proxy: xpra client is not installed")
+            error_cb("cannot start-via-proxy: `xpra-client` is not installed")
         return None
     ################################################################################
     try:

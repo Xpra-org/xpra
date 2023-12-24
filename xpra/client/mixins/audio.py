@@ -111,7 +111,7 @@ class AudioClient(StubClientMixin):
                 assert common
             except ImportError:
                 self.may_notify_audio("No Audio",
-                                      "audio subsystem is not installed\n" +
+                                      "`xpra-audio` subsystem is not installed\n" +
                                       " speaker and microphone forwarding are disabled")
                 self.speaker_allowed = False
                 self.microphone_allowed = False
