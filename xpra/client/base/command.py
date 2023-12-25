@@ -215,6 +215,9 @@ class InfoXpraClient(CommandConnectClient):
                     return hexstr(v)
                 return bytestostr(v)
             elif isinstance(v, (tuple, list)):
+                eltypes = set(type(x) for x in v)
+                if len(eltypes) == 1 and tuple(eltypes)[0] in (int, bool, float):
+                    return str(v)
                 return str(type(v)(prettify(k, x) for x in v))
             return str(v)
         def print_dict(d:dict, path=""):
