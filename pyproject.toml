@@ -25,3 +25,10 @@ dependencies = [
 line-length = 120
 
 ignore = ["E741"]
+
+
+[tool.flake8]
+ignore = ["E203", "E231", "E225", "E226", "E252", "E221", "E741", ]
+
+max-line-length = 120
+
