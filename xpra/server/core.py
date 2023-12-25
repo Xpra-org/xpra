@@ -1062,6 +1062,7 @@ class ServerCore:
                     log.error("failed to set socket path to %s: %s", info, e)
                     del e
         if self.unix_socket_paths:
+            self.touch_sockets()
             self.touch_timer = self.timeout_add(60*1000, self.touch_sockets)
 
 
