@@ -3846,8 +3846,8 @@ def clean_sockets(dotxpra, sockets, timeout=LIST_REPROBE_TIMEOUT) -> None:
         return
     sys.stdout.write("Re-probing unknown sessions in: %s\n" % csv(list(set(x[0] for x in sockets))))
     counter = 0
-    unknown = []
-    while reprobe and counter<timeout:
+    unknown = list(reprobe)
+    while unknown and counter<timeout:
         time.sleep(1)
         counter += 1
         probe_list = list(reprobe)
