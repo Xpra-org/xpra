@@ -4,15 +4,17 @@
 # later version. See the file COPYING for details.
 
 import socket
+from xpra.platform import platform_import
+
 
 def get_interface_info(*_args):
     return {}
+
 
 def get_tcp_info(_sock):  #pylint: disable=unused-argument
     return {}
 
 
-from xpra.platform import platform_import
 platform_import(globals(), "netdev_query", False,
                 "get_tcp_info",
                 "get_interface_info",
@@ -42,6 +44,7 @@ def print_address(iface, addr, defs):
                 finally:
                     if sock:
                         sock.close()
+
 
 def print_iface(iface):
     from xpra.os_util import POSIX

@@ -8,8 +8,9 @@
 import os
 
 from xpra.util.env import envbool
+from xpra.platform import platform_import
 
-#defaults which may be overridden by platform_import:
+# defaults which may be overridden by platform_import:
 CAN_DAEMONIZE : bool = True
 REINIT_WINDOWS : bool = False
 AUTOSTART : bool = False
@@ -78,7 +79,7 @@ _features_list_ : tuple[str, ...] = (
                    "IP_OPTIONS",
                    "TCP_OPTIONS",
                    )
-from xpra.platform import platform_import
+
 platform_import(globals(), "features", False,
                 *_features_list_)
 

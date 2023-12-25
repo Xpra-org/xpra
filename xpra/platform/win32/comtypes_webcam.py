@@ -3,20 +3,20 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
 from ctypes import POINTER
 
-from xpra.log import Logger
+from xpra.log import Logger  # noqa: E402
 log = Logger("webcam", "win32")
 
 #we need a logger before we import comtypes, so:
 #pylint: disable=wrong-import-position disable=wrong-import-order
-from xpra.platform.win32.comtypes_util import QuietenLogging, find_tlb_file, comtypes_init
+from xpra.platform.win32.comtypes_util import QuietenLogging, find_tlb_file, comtypes_init  # noqa: E402
 comtypes_init()
-import comtypes
-from comtypes import client
-from comtypes.automation import VARIANT
-from comtypes.persist import IPropertyBag, IErrorLog
+import comtypes  # noqa: E402
+from comtypes import client  # noqa: E402
+from comtypes.automation import VARIANT  # noqa: E402
+from comtypes.persist import IPropertyBag, IErrorLog  # noqa: E402
+
 
 
 directshow_tlb = find_tlb_file("DirectShow.tlb")

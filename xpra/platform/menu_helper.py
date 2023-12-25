@@ -5,23 +5,27 @@
 # later version. See the file COPYING for details.
 
 import sys
+from xpra.platform import platform_import
+
 
 def load_menu():
     return {}
 
+
 def load_desktop_sessions():
     return {}
+
 
 def clear_cache():
     """ the Posix override has a cache to clear """
 
 
-from xpra.platform import platform_import
 platform_import(globals(), "menu_helper", False,
                 "load_menu",
                 "load_desktop_sessions",
                 "clear_cache",
                 )
+
 
 def main():
     import os
@@ -60,6 +64,7 @@ def main():
             else:
                 print("no session menu data found")
     return 0
+
 
 if __name__ == "__main__":
     r = main()

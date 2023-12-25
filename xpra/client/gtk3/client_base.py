@@ -76,7 +76,7 @@ NO_OPENGL_WINDOW_TYPES = os.environ.get("XPRA_NO_OPENGL_WINDOW_TYPES",
 inject_css_overrides()
 init_display_source()
 #must come after init_display_source()
-from xpra.client.gtk3.window_base import HAS_X11_BINDINGS, XSHAPE
+from xpra.client.gtk3.window_base import HAS_X11_BINDINGS, XSHAPE # noqa: E402
 
 
 # pylint: disable=import-outside-toplevel

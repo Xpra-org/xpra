@@ -18,6 +18,7 @@ from xpra.x11.common import Unmanageable
 from xpra.gtk.gobject import one_arg_signal, n_arg_signal
 from xpra.gtk.error import XError, xsync, xswallow
 from xpra.codecs.image import ImageWrapper
+from xpra.platform.posix.proc import get_parent_pid
 from xpra.x11.bindings.window import X11WindowBindings, constants, SHAPE_KIND
 from xpra.x11.bindings.res import ResBindings
 from xpra.x11.bindings.send_wm import send_wm_delete_window
@@ -42,7 +43,6 @@ if not XRes.check_xres():
     log.warn("Warning: X Resource Extension missing or too old")
     XRes = None
 
-from xpra.platform.posix.proc import get_parent_pid
 if get_parent_pid is None:
     log("proc.get_parent_pid is not available")
 

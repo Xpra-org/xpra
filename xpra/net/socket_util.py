@@ -8,6 +8,7 @@ import socket
 from time import sleep, monotonic
 from ctypes import Structure, c_uint8, sizeof
 from typing import Any
+from importlib.util import find_spec
 from collections.abc import Callable, ByteString
 
 from xpra.common import GROUP, SocketState, noerr
@@ -317,14 +318,12 @@ def create_sockets(opts, error_cb:Callable, retry:int=0):
     if ssh_upgrades:
         try:
             with SilenceWarningsContext(DeprecationWarning):
-                import paramiko
-        except ImportError as e:
-            from xpra.log import Logger
-            sshlog = Logger("ssh")
-            sshlog("import paramiko", exc_info=True)
-            sshlog.warn("Warning: cannot enable SSH socket upgrades")
-            sshlog.warn(f" {e}")
-            opts.ssh_upgrades = False
+                if not find_spec("paramiko"):
+                    from xpra.log import Logger
+                    sshlog = Logger("ssh")
+                    sshlog.warn("Warning: cannot enable SSH socket upgrades")
+                    sshlog.warn(" `paramiko` module not found")
+                    opts.ssh_upgrades = False
         except Exception as e:
             from xpra.log import Logger
             sshlog = Logger("ssh")

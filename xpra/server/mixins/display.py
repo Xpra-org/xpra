@@ -7,7 +7,6 @@ from typing import Any
 
 from xpra.util.types import typedict
 from xpra.util.screen import log_screen_sizes
-from xpra.util.system import is_Wayland
 from xpra.util.str_fn import bytestostr
 from xpra.net.common import PacketType
 from xpra.util.version import parse_version, dict_version_trim
@@ -79,7 +78,7 @@ class DisplayManager(StubServerMixin):
         try:
             from xpra.client.gl import backing
             assert backing
-        except ImportError as e:
+        except ImportError:
             return {
                 'error': '`xpra-client-gtk3` is not installed',
                 'success': False,
