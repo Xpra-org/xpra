@@ -4,6 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xpra"
+version = "6.0"
 authors = [
     {name = "Antoine Martin", email = "antoine@xpra.org"},
 ]
