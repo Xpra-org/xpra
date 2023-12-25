@@ -55,10 +55,11 @@ class ShellMixin(StubSourceMixin):
             self.send("shell-reply", 2, stderr)
         return stdout, stderr
 
-    def do_shell_exec(self, code) -> tuple[str,str]:
+    def do_shell_exec(self, code) -> tuple[str, str]:
         log("shell_exec(%r)", code)
+        if not self.shell_enabled:
+            return "shell support is not available with this connection", ""
         try:
-            assert self.shell_enabled, "shell support is not available with this connection"
             _globals = {
                 "connection" : self,
                 "server"    : self._server,
@@ -67,7 +68,7 @@ class ShellMixin(StubSourceMixin):
             stdout = io.StringIO()
             stderr = io.StringIO()
             with redirect_stdout(stdout), redirect_stderr(stderr):
-                exec(code, _globals, {})  #pylint: disable=exec-used
+                exec(code, _globals, {})   # pylint: disable=exec-used
             return stdout.getvalue(), stderr.getvalue()
         except Exception as e:
             log("shell_exec(..)", exc_info=True)
