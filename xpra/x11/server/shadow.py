@@ -81,6 +81,7 @@ def window_matches(wspec, model_class):
                     if re_c.match(vstr):
                         xids.append(wxid)
             return xids
+
         def i(v):
             try:
                 if v.startswith("0x"):
@@ -89,7 +90,6 @@ def window_matches(wspec, model_class):
             except ValueError:
                 return 0
 
-        #log.error("get_all_x11_windows()=%s", allw)
         windows = []
         skip = []
         for m in wspec:
@@ -103,7 +103,7 @@ def window_matches(wspec, model_class):
                 pid = i(m[4:])
                 if pid:
                     try:
-                        from xpra.x11.bindings.res import ResBindings # pylint: disable=import-outside-toplevel
+                        from xpra.x11.bindings.res import ResBindings  # pylint: disable=import-outside-toplevel
                     except ImportError:
                         XRes = None
                     else:
@@ -119,31 +119,29 @@ def window_matches(wspec, model_class):
                 _class = m[len("class="):]
                 xids += matchre(_class, classes)
             else:
-                #assume this is a window name:
+                # assume this is a window name:
                 xids += matchre(m, names)
             for xid in sorted(xids):
                 if xid in skip:
-                    #log.info("%s skipped", hex(xid))
                     continue
-                #log.info("added %s", hex(xid))
+                # log.info("added %s", hex(xid))
                 windows.append(xid)
                 if skip_children:
                     children = wb.get_all_children(xid)
                     skip += children
-                #for cxid in wb.get_all_children(xid):
+                # for cxid in wb.get_all_children(xid):
                 #    if cxid not in windows:
                 #        windows.append(cxid)
-        #log.error("windows(%s)=%s", self.window_matches, tuple(hex(window) for window in windows))
         models = {}
         for xid in windows:
             x, y, w, h = wb.getGeometry(xid)[:4]
-            #absp = wb.get_absolute_position(xid)
+            # absp = wb.get_absolute_position(xid)
             if w>0 and h>0:
                 title = names.get(xid, "unknown window")
                 model = model_class(title, (x, y, w, h))
                 models[xid] = model
         log("window_matches(%s, %s)=%s", wspec, model_class, models)
-        #find relative position and 'transient-for':
+        # find relative position and 'transient-for':
         for xid, model in models.items():
             model.xid = xid
             model.override_redirect = wb.is_override_redirect(xid)
@@ -166,7 +164,7 @@ def window_matches(wspec, model_class):
                         log.warn(f"Warning: {rel_parent} is the parent of {model}")
                         break
             model.parent = rel_parent
-            #"class-instance", "client-machine", "window-type",
+            # "class-instance", "client-machine", "window-type",
             if rel_parent:
                 parent_g = rel_parent.get_geometry()
                 dx = model.geometry[0]-parent_g[0]
@@ -179,11 +177,12 @@ def window_matches(wspec, model_class):
 
 class XImageCapture:
     __slots__ = ("xshm", "xwindow", "XImage")
-    def __init__(self, xwindow:int):
+
+    def __init__(self, xwindow: int):
         log("XImageCapture(%#x)", xwindow)
         self.xshm = None
         self.xwindow = xwindow
-        from xpra.x11.bindings.ximage import XImageBindings # pylint: disable=import-outside-toplevel
+        from xpra.x11.bindings.ximage import XImageBindings     # pylint: disable=import-outside-toplevel
         self.XImage = XImageBindings()
         assert XSHM and self.XImage.has_XShm(), "no XShm support"
         if is_Wayland():
@@ -216,7 +215,7 @@ class XImageCapture:
 
     def refresh(self) -> bool:
         if self.xshm:
-            #discard to ensure we will call XShmGetImage next time around
+            # discard to ensure we will call XShmGetImage next time around
             self.xshm.discard()
             return True
         try:
@@ -285,7 +284,7 @@ def setup_capture(window):
             log("not using X11 capture using gstreamer", exc_info=True)
     if XSHM:
         try:
-            from xpra.x11.bindings.ximage import XImageBindings # pylint: disable=import-outside-toplevel
+            from xpra.x11.bindings.ximage import XImageBindings  # pylint: disable=import-outside-toplevel
             XImage = XImageBindings()
         except ImportError as e:
             log(f"not using X11 capture using bindings: {e}")
@@ -297,6 +296,7 @@ def setup_capture(window):
 
 class X11ShadowModel(RootWindowModel):
     __slots__ = ("xid", "override_redirect", "transient_for", "parent", "relative_position")
+
     def __init__(self, root_window, capture=None, title="", geometry=None):
         super().__init__(root_window, capture, title, geometry)
         self.property_names += ["transient-for", "parent", "relative-position"]
@@ -319,8 +319,8 @@ class X11ShadowModel(RootWindowModel):
         return f"X11ShadowModel({self.capture} : {self.geometry} : {self.xid:x}{info})"
 
 
-#FIXME: warning: this class inherits from ServerBase twice..
-#so many calls will happen twice there (__init__ and init)
+# FIXME: warning: this class inherits from ServerBase twice..
+# so many calls will happen twice there (__init__ and init)
 class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
     def __init__(self, multi_window:bool=True):
@@ -334,11 +334,10 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
     def init(self, opts) -> None:
         GTKShadowServerBase.init(self, opts)
-        #don't call init on X11ServerCore,
-        #this would call up to GTKServerBase.init(opts) again:
+        # don't call init on X11ServerCore,
+        # this would call up to GTKServerBase.init(opts) again:
         X11ServerCore.do_init(self, opts)
         self.modify_keymap = opts.keyboard_layout.lower() in ("client", "auto")
-
 
     def set_keymap(self, server_source, force:bool=False) -> None:
         if self.readonly:
@@ -350,7 +349,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
     def cleanup(self) -> None:
         GTKShadowServerBase.cleanup(self)
-        X11ServerCore.cleanup(self)     #@UndefinedVariable
+        X11ServerCore.cleanup(self)
         for fn in (del_mode, del_uuid):
             try:
                 fn()
@@ -358,27 +357,24 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
                 log("cleanup() failed to remove X11 attribute", exc_info=True)
         self.do_clean_session_files("xauthority")
 
-
     def setup_capture(self):
         capture = setup_capture(self.root)
         log(f"setup_capture({self.root})={capture}")
         return capture
 
-
     def get_root_window_model_class(self) -> type:
         return X11ShadowModel
-
 
     def makeDynamicWindowModels(self):
         assert self.window_matches
         rwmc = self.get_root_window_model_class()
         root = get_default_root_window()
+
         def model_class(title, geometry):
             model = rwmc(root, self.capture, title, geometry)
             model.dynamic_property_names.append("size-hints")
             return model
         return window_matches(self.window_matches, model_class)
-
 
     def client_startup_complete(self, ss) -> None:
         super().client_startup_complete(ss)
@@ -386,28 +382,23 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         if is_Wayland():
             ss.may_notify(NotificationID.SHADOWWAYLAND,
                           "Wayland Shadow Server",
-                          "This shadow session seems to be running under wayland,\n"+
+                          "This shadow session seems to be running under wayland,\n"
                           "the screen scraping will probably come up empty",
                           icon_name="unticked")
-
 
     def last_client_exited(self) -> None:
         GTKShadowServerBase.last_client_exited(self)
         X11ServerCore.last_client_exited(self)
 
-
     def do_get_cursor_data(self) -> tuple[Any, Any]:
         return X11ServerCore.get_cursor_data(self)
-
 
     def send_initial_data(self, ss, c, send_ui:bool, share_count:int) -> None:
         super().send_initial_data(ss, c, send_ui, share_count)
         if getattr(ss, "ui_client", True) and getattr(ss, "send_windows", True):
             self.verify_capture(ss)
 
-
     def verify_capture(self, ss) -> None:
-        #verify capture works:
         log(f"verify_capture({ss})")
         nid = NotificationID.DISPLAY
         try:
@@ -430,7 +421,6 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         except Exception as e:
             ss.may_notify(nid, "Shadow Error", f"Error shadowing the display:\n{e}", icon_name="bugs")
 
-
     def make_hello(self, source) -> dict[str,Any]:
         capabilities = X11ServerCore.make_hello(self, source)
         capabilities.update(GTKShadowServerBase.make_hello(self, source))
@@ -447,13 +437,13 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
     def do_make_screenshot_packet(self) -> tuple[str,int,int,str,int,Compressed]:
         capture = GTKImageCapture(self.root)
         w, h, encoding, rowstride, data = capture.take_screenshot()
-        assert encoding=="png"  #use fixed encoding for now
+        assert encoding == "png"  # use fixed encoding for now
         # pylint: disable=import-outside-toplevel
         return "screenshot", w, h, encoding, rowstride, Compressed(encoding, data)
 
 
 def snapshot(filename) -> int:
-    #pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     from io import BytesIO
     from xpra.util.str_fn import memoryview_to_bytes
     root = get_default_root_window()
@@ -486,12 +476,13 @@ def main(*args) -> int:
     assert len(args)>0
     if args[0].endswith(".png"):
         return snapshot(args[0])
+
     def cb(title, geom):
         s = AdHocStruct()
         s.title = title
         s.geometry = geom
         return s
-    from xpra.x11.gtk3 import gdk_display_source  #pylint: disable=import-outside-toplevel, no-name-in-module
+    from xpra.x11.gtk3 import gdk_display_source  # pylint: disable=import-outside-toplevel, no-name-in-module
     gdk_display_source.init_gdk_display_source()  # @UndefinedVariable
     for w in window_matches(args, cb):
         print(f"{w}")

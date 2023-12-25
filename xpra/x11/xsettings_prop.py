@@ -22,21 +22,25 @@ from xpra.log import Logger
 from xpra.util.env import envbool
 from xpra.util.str_fn import strtobytes, bytestostr, hexstr
 
-log : Logger = Logger("x11", "xsettings")
+log: Logger = Logger("x11", "xsettings")
 
-BLACKLISTED_XSETTINGS : list[str] = os.environ.get("XPRA_BLACKLISTED_XSETTINGS",
-                                       "Gdk/WindowScalingFactor,Gtk/SessionBusId,Gtk/IMModule").split(",")
+BLACKLISTED_XSETTINGS : list[str] = os.environ.get(
+    "XPRA_BLACKLISTED_XSETTINGS",
+    "Gdk/WindowScalingFactor,Gtk/SessionBusId,Gtk/IMModule"
+).split(",")
 
 
-#undocumented XSETTINGS endianness values:
+# undocumented XSETTINGS endianness values:
 LITTLE_ENDIAN : int = 0
 BIG_ENDIAN : int    = 1
+
+
 def get_local_byteorder() -> int:
     if sys.byteorder=="little":
         return LITTLE_ENDIAN
     return BIG_ENDIAN   # pragma: no cover
 
-#the 3 types of settings supported:
+# the 3 types of settings supported:
 
 
 class XSettingsType(IntEnum):
@@ -44,19 +48,22 @@ class XSettingsType(IntEnum):
     String = 1
     Color = 2
 
+
 XSettingsNames : dict[int,str] = {
-                XSettingsType.Integer    : "Integer",
-                XSettingsType.String     : "String",
-                XSettingsType.Color      : "Color",
-                }
+    XSettingsType.Integer    : "Integer",
+    XSettingsType.String     : "String",
+    XSettingsType.Color      : "Color",
+}
 
 
 XSETTINGS_CACHE : tuple[int, list[tuple]] = (0, [])
-def bytes_to_xsettings(d:bytes) -> tuple[int,list[tuple[int,str,Any,int]]]:
+
+
+def bytes_to_xsettings(d:bytes) -> tuple[int, list[tuple[int, str, Any, int]]]:
     global XSETTINGS_CACHE
     DEBUG_XSETTINGS = envbool("XPRA_XSETTINGS_DEBUG", False)
-    #parse xsettings according to
-    #http://standards.freedesktop.org/xsettings-spec/xsettings-spec-0.5.html
+    # parse xsettings according to
+    # http://standards.freedesktop.org/xsettings-spec/xsettings-spec-0.5.html
     assert len(d)>=12, "_XSETTINGS_SETTINGS property is too small: %s" % len(d)
     if DEBUG_XSETTINGS:
         log("bytes_to_xsettings(%s)", tuple(d))
@@ -93,6 +100,7 @@ def bytes_to_xsettings(d:bytes) -> tuple[int,list[tuple[int,str,Any,int]]]:
             log("bytes_to_xsettings(..) found property %s of type %s, serial=%s",
                 prop_name, XSettingsNames.get(setting_type, "INVALID!"), last_change_serial)
         # extract value:
+
         def add(value):
             setting = setting_type, prop_name, value, last_change_serial
             if DEBUG_XSETTINGS:
@@ -121,8 +129,9 @@ def bytes_to_xsettings(d:bytes) -> tuple[int,list[tuple[int,str,Any,int]]]:
     XSETTINGS_CACHE = (serial, settings)
     return serial, settings
 
-def xsettings_to_bytes(d : tuple[int,list[tuple[int,str,Any,int]]]) -> bytes:
-    if len(d)!=2:
+
+def xsettings_to_bytes(d : tuple[int, list[tuple[int, str, Any, int]]]) -> bytes:
+    if len(d) != 2:
         raise ValueError(f"invalid format for XSETTINGS: {d!r}")
     serial, settings = d
     log("xsettings_to_bytes(%s) serial=%s, %s settings", d, serial, len(settings))
@@ -160,15 +169,15 @@ def xsettings_to_bytes(d : tuple[int,list[tuple[int,str,Any,int]]]) -> bytes:
             log.error("Error processing XSettings property %s:", bytestostr(prop_name))
             log.error(" type=%s, value=%s", XSettingsNames.get(setting_type, "INVALID!"), value)
             log.estr(e)
-    #header
+    # header
     v = struct.pack(b"=BBBBII", get_local_byteorder(), 0, 0, 0, serial, len(all_bin_settings))
-    v += b"".join(all_bin_settings)  #values
-    v += b'\0'                       #null terminated
+    v += b"".join(all_bin_settings)  # values
+    v += b'\0'                       # null terminated
     log("xsettings_to_bytes(%s)=%s", d, tuple(v))
     return v
 
 
-def main() -> int: # pragma: no cover
+def main() -> int:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     from xpra.platform.gui import init as gui_init
     from xpra.os_util import POSIX
@@ -182,7 +191,7 @@ def main() -> int: # pragma: no cover
             for x in get_all_loggers():
                 x.enable_debug()
 
-        #naughty, but how else can I hook this up?
+        # naughty, but how else can I hook this up?
         if not POSIX:
             print("xsettings require a posix OS")
             return 1

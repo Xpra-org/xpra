@@ -38,6 +38,7 @@ InputHint       = constants["InputHint"]
 def unsupported(*_args):
     raise RuntimeError("unsupported")
 
+
 def _force_length(name, data, length, noerror_length=None):
     if len(data)==length:
         return data
@@ -65,7 +66,7 @@ class NetWMStrut:
                 self.right_start_y, self.right_end_y,
                 self.top_start_x, self.top_end_x,
                 self.bottom_start_x, self.bottom_stop_x,
-                ) = struct.unpack(b"@" + b"L" * 12, data)
+            ) = struct.unpack(b"@" + b"L" * 12, data)
 
     def todict(self):
         return self.__dict__
@@ -76,15 +77,16 @@ class NetWMStrut:
 
 class MotifWMHints:
     __slots__ = ("flags", "functions", "decorations", "input_mode", "status")
+
     def __init__(self, data):
-        #some applications use the wrong size (ie: blender uses 16) so pad it:
+        # some applications use the wrong size (ie: blender uses 16) so pad it:
         sizeof_long = struct.calcsize(b"@L")
         pdata = _force_length("_MOTIF_WM_HINTS", data, sizeof_long*5, sizeof_long*4)
         self.flags, self.functions, self.decorations, self.input_mode, self.status = \
             struct.unpack(b"@LLLlL", pdata)
         log("MotifWMHints(%s)=%s", hexstr(data), self)
 
-    #found in mwmh.h:
+    # found in mwmh.h:
     # "flags":
     FUNCTIONS_BIT   = 0
     DECORATIONS_BIT = 1
@@ -111,11 +113,11 @@ class MotifWMHints:
     MENU_BIT        = 4
     # MINIMIZE_BIT    = 5 (same as above)
     # MAXIMIZE_BIT    = 6 (same as above)
-    #CLOSE_BIT                # non-standard close button
-    #RESIZE_BIT               # non-standard resize button
-    #SHADE_BIT,               # non-standard shade button
-    #STICK_BIT,               # non-standard stick button
-    #MAXIMUS_BIT              # non-standard maxim
+    # CLOSE_BIT                # non-standard close button
+    # RESIZE_BIT               # non-standard resize button
+    # SHADE_BIT,               # non-standard shade button
+    # STICK_BIT,               # non-standard stick button
+    # MAXIMUS_BIT              # non-standard maxim
     # "input":
     MODELESS        = 0
     PRIMARY_APPLICATION_MODAL = 1
@@ -129,7 +131,7 @@ class MotifWMHints:
         DECORATIONS_BIT    : "decorations",
         INPUT_MODE_BIT     : "input",
         STATUS_BIT         : "status",
-        }
+    }
     FUNCTIONS_STR = {
         ALL_BIT        : "all",
         RESIZE_BIT     : "resize",
@@ -143,7 +145,7 @@ class MotifWMHints:
         ABOVE_BIT      : "above",
         BELOW_BIT      : "below",
         MAXIMUS_BIT    : "maximus",
-        }
+    }
     DECORATIONS_STR = {
         ALL_BIT      : "all",
         BORDER_BIT   : "border",
@@ -152,39 +154,44 @@ class MotifWMHints:
         MENU_BIT     : "menu",
         MINIMIZE_BIT : "minimize",
         MAXIMIZE_BIT : "maximize",
-        }
+    }
     INPUT_STR = {
         MODELESS                   : "modeless",
         PRIMARY_APPLICATION_MODAL  : "primary-application-modal",
         SYSTEM_MODAL               : "system-modal",
         FULL_APPLICATION_MODAL     : "full-application-modal",
-        }
+    }
 
     STATUS_STR = {
         TEAROFF_WINDOW : "tearoff",
-        }
+    }
 
     def bits_to_strs(self, int_val, flag_bit, dict_str):
         if flag_bit and not self.flags & (2**flag_bit):
-            #the bit is not set, ignore this attribute
+            # the bit is not set, ignore this attribute
             return ()
         return tuple(v for k,v in dict_str.items() if int_val & (2**k))
+
     def flags_strs(self):
         return self.bits_to_strs(self.flags,
                                  0,
                                  MotifWMHints.FLAGS_STR)
+
     def functions_strs(self):
         return self.bits_to_strs(self.functions,
                                  MotifWMHints.FUNCTIONS_BIT,
                                  MotifWMHints.FUNCTIONS_STR)
+
     def decorations_strs(self):
         return self.bits_to_strs(self.decorations,
                                  MotifWMHints.DECORATIONS_BIT,
                                  MotifWMHints.DECORATIONS_STR)
+
     def input_strs(self):
         if self.flags & (2**MotifWMHints.INPUT_MODE_BIT):
             return MotifWMHints.INPUT_STR.get(self.input_mode, "unknown mode: %i" % self.input_mode)
         return "modeless"
+
     def status_strs(self):
         return self.bits_to_strs(self.input_mode,
                                  MotifWMHints.STATUS_BIT,
@@ -197,7 +204,7 @@ class MotifWMHints:
             "decorations"   : self.decorations_strs(),
             "input_mode"    : self.input_strs(),
             "status"        : self.status_strs(),
-            }
+        }
         return f"MotifWMHints({attrs})"
 
 
@@ -216,7 +223,7 @@ def _read_image(stream):
                      expected, len(data))
             return None
         if int_size!=long_size:
-            #long to ints (CARD32):
+            # long to ints (CARD32):
             longs = struct.unpack(b"@"+b"l"*(width*height), data)
             data = struct.pack(b"@"+b"i"*(width*height), *longs)
     except Exception:
@@ -227,6 +234,8 @@ def _read_image(stream):
 # This returns a list of icons from a _NET_WM_ICON property.
 # each icon is a tuple:
 # (width, height, fmt, data)
+
+
 def NetWMIcons(data):
     icons = []
     stream = BytesIO(data)
@@ -243,11 +252,14 @@ def NetWMIcons(data):
 def _to_latin1(v:str) -> bytes:
     return v.encode("latin1")
 
+
 def _from_latin1(v:bytes) -> str:
     return v.decode("latin1")
 
+
 def _to_utf8(v:str) -> bytes:
     return v.encode("UTF-8")
+
 
 def _from_utf8(v:bytes) -> str:
     return v.decode("UTF-8")
@@ -255,6 +267,7 @@ def _from_utf8(v:bytes) -> str:
 
 def _to_long(v:int) -> bytes:
     return struct.pack(b"@L", v)
+
 
 def _from_long(v:bytes) -> int:
     return struct.unpack(b"@L", v)[0]
@@ -276,11 +289,11 @@ PROP_TYPES = {
     "motif-hints": (MotifWMHints, "_MOTIF_WM_HINTS", 32, unsupported, MotifWMHints, None),
     "icons": (list, "CARDINAL", 32, unsupported, NetWMIcons, None),
     "window": (int, "WINDOW", 32, _to_long, _from_long, b""),
-    }
+}
 
 PROP_SIZES = {
-    "icons" : 4*1024*1024,
-    }
+    "icons": 4*1024*1024,
+}
 
 
 def prop_encode(etype, value):
@@ -288,10 +301,12 @@ def prop_encode(etype, value):
         return _prop_encode_list(etype[0], value)
     return _prop_encode_scalar(etype, value)
 
+
 def _prop_encode_scalar(etype, value):
     pytype, atom, formatbits, serialize = PROP_TYPES[etype][:4]
     assert isinstance(value, pytype), "value for atom %s is not a %s: %s" % (atom, pytype, type(value))
     return atom, formatbits, serialize(value)
+
 
 def _prop_encode_list(etype, value):
     _, atom, formatbits, _, _, terminator = PROP_TYPES[etype]
@@ -307,14 +322,16 @@ def prop_decode(etype, data):
         return _prop_decode_list(etype[0], data)
     return _prop_decode_scalar(etype, data)
 
+
 def _prop_decode_scalar(etype, data):
-    (pytype, _, _, _, deserialize, _) = PROP_TYPES[etype]
+    pytype, _, _, _, deserialize, _ = PROP_TYPES[etype]
     value = deserialize(data)
     assert value is None or isinstance(value, pytype), "expected a %s but value is a %s" % (pytype, type(value))
     return value
 
+
 def _prop_decode_list(etype, data):
-    (_, _, formatbits, _, _, terminator) = PROP_TYPES[etype]
+    _, _, formatbits, _, _, terminator = PROP_TYPES[etype]
     if terminator:
         datums = data.split(terminator)
     else:

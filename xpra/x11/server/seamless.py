@@ -11,15 +11,15 @@ import math
 from time import monotonic, sleep
 from collections import deque
 from typing import Any
-from gi.repository import GObject, Gdk, GdkX11  # @UnresolvedImport
 
+from xpra.os_util import gi_import
 from xpra.util.version import XPRA_VERSION
 from xpra.util.types import typedict
 from xpra.util.env import envint, envbool
 from xpra.util.str_fn import strtobytes, bytestostr, memoryview_to_bytes
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES
 from xpra.net.common import PacketType
-from xpra.scripts.config import InitException  #pylint: disable=import-outside-toplevel
+from xpra.scripts.config import InitException  # pylint: disable=import-outside-toplevel
 from xpra.server import features, EXITING_CODE
 from xpra.gtk.gobject import one_arg_signal
 from xpra.gtk.util import get_default_root_window
@@ -35,6 +35,11 @@ from xpra.x11.bindings.randr import RandRBindings
 from xpra.x11.server.base import X11ServerBase
 from xpra.gtk.error import xsync, xswallow, xlog, XError
 from xpra.log import Logger
+
+
+GObject = gi_import("GObject")
+Gdk = gi_import("Gdk")
+GdkX11 = gi_import("GdkX11")
 
 log = Logger("server")
 focuslog = Logger("server", "focus")
@@ -65,7 +70,7 @@ DUMMY_MONITORS = envbool("XPRA_DUMMY_MONITORS", True)
 WINDOW_SIGNALS = os.environ.get("XPRA_WINDOW_SIGNALS", "SIGINT,SIGTERM,SIGQUIT,SIGCONT,SIGUSR1,SIGUSR2").split(",")
 
 
-def rindex(alist:list | tuple, avalue:Any) -> int:
+def rindex(alist: list | tuple, avalue: Any) -> int:
     return len(alist) - alist[::-1].index(avalue) - 1
 
 
@@ -74,7 +79,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         "xpra-child-map-event"  : one_arg_signal,
         "xpra-cursor-event"     : one_arg_signal,
         "server-event"          : one_arg_signal,
-        }
+    }
 
     def __init__(self, clobber):
         self.clobber = clobber
@@ -101,6 +106,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         self.system_tray = opts.system_tray
         self._exit_with_windows = opts.exit_with_windows
         super().init(opts)
+
         def log_server_event(_, event):
             eventlog("server-event: %s", event)
         self.connect("server-event", log_server_event)
@@ -112,15 +118,17 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if features.display and self.randr and (self.initial_resolutions or not self.clobber):
             from xpra.x11.vfb_util import set_initial_resolution, parse_env_resolutions
             DEFAULT_VFB_RESOLUTIONS = parse_env_resolutions(default_refresh_rate=self.refresh_rate)
+            dpi = self.dpi or self.default_dpi
+            resolutions = self.initial_resolutions or DEFAULT_VFB_RESOLUTIONS
             with xlog:
-                set_initial_resolution(self.initial_resolutions or DEFAULT_VFB_RESOLUTIONS, self.dpi or self.default_dpi)
+                set_initial_resolution(resolutions, dpi)
 
     def validate(self) -> bool:
         if not X11Window.displayHasXComposite():
             log.error("Xpra 'start' subcommand runs as a compositing manager")
             log.error(" it cannot use a display which lacks the XComposite extension!")
             return False
-        #check for an existing window manager:
+        # check for an existing window manager:
         from xpra.x11.gtk_x11.wm_check import wm_check
         return wm_check(self.clobber & CLOBBER_UPGRADE)
 
@@ -144,7 +152,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if self.sync_xvfb>0:
             self.init_root_overlay()
         self.init_wm()
-        #for handling resize synchronization between client and server (this is not xsync!):
+        # for handling resize synchronization between client and server (this is not xsync!):
         self.last_client_configure_event = 0.0
         self.snc_timer = 0
 
@@ -171,7 +179,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 X11Window.XCompositeReleaseOverlayWindow(ro)
 
     def init_wm(self) -> None:
-        ### Create the WM object
+        # Create the WM object
         from xpra.x11.gtk_x11.wm import Wm
         x11_errors = []
         self._wm = None
@@ -182,7 +190,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             except AlreadyOwned:
                 log("Error: cannot create our window manager", exc_info=True)
                 display = os.environ.get("DISPLAY", "")
-                #make sure we don't kill the vfb since we don't own it:
+                # make sure we don't kill the vfb since we don't own it:
                 self._upgrading = EXITING_CODE
                 wm_name = "another window manager"
                 with xsync:
@@ -197,13 +205,12 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                     for x in list(set(str(x) for x in x11_errors)):
                         log.error(" %s", x)
                     raise
-                #retry:
+                # retry:
                 sleep(0.010*count)
         if features.windows:
             self._wm.connect("new-window", self._new_window_signaled)
         self._wm.connect("quit", lambda _: self.clean_quit(True))
         self._wm.connect("show-desktop", self._show_desktop)
-
 
     def do_cleanup(self) -> None:
         if self._tray:
@@ -216,8 +223,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             self._wm.cleanup()
             self._wm = None
         if self._has_grab:
-            #normally we set this value when we receive the NotifyUngrab
-            #but at this point in the cleanup, we probably won't, so force set it:
+            # normally we set this value when we receive the NotifyUngrab
+            # but at this point in the cleanup, we probably won't, so force set it:
             self._has_grab = 0
             self.X11_ungrab()
         X11ServerBase.do_cleanup(self)
@@ -226,41 +233,35 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         super().clean_x11_properties()
         self.do_clean_x11_properties("XPRA_SERVER")
 
-
     def last_client_exited(self) -> None:
-        #last client is gone:
+        # last client is gone:
         X11ServerBase.last_client_exited(self)
         if self._has_grab:
             self._has_grab = 0
             self.X11_ungrab()
-
 
     def update_size_constraints(self, minw, minh, maxw, maxh) -> None:
         wm = self._wm
         if wm:
             wm.set_size_constraints(minw, minh, maxw, maxh)
         elif features.windows:
-            #update the static default so the Wm instance will use it
-            #when we do instantiate it:
+            # update the static default so the Wm instance will use it
+            # when we do instantiate it:
             from xpra.x11.gtk_x11 import wm as wm_module
             wm_module.DEFAULT_SIZE_CONSTRAINTS = (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
-
 
     def init_packet_handlers(self) -> None:
         X11ServerBase.init_packet_handlers(self)
         self.add_packet_handler("window-signal", self._process_window_signal)
 
-
     def get_server_mode(self) -> str:
         return "X11 seamless"
-
 
     def server_event(self, *args) -> None:
         super().server_event(*args)
         self.emit("server-event", args)
 
-
-    def make_hello(self, source) -> dict[str,Any]:
+    def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)
         if "features" in source.wants:
             capabilities.setdefault("pointer", {})["grabs"] = True
@@ -273,32 +274,34 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                     "iconified", "focused", "fullscreen",
                     "above", "below",
                     "sticky", "iconified", "maximized",
-                    ],
+                ],
             })
         return capabilities
-
 
     ##########################################################################
     # info:
     #
-    def do_get_info(self, proto, server_sources) -> dict[str,Any]:
+
+    def do_get_info(self, proto, server_sources) -> dict[str, Any]:
         info = super().do_get_info(proto, server_sources)
         info["exit-with-windows"] = self._exit_with_windows
-        info.setdefault("state", {}).update({
-                                             "focused"  : self._has_focus,
-                                             "grabbed"  : self._has_grab,
-                                             })
+        info.setdefault("state", {}).update(
+            {
+                "focused"  : self._has_focus,
+                "grabbed"  : self._has_grab,
+            }
+        )
         return info
 
-    def get_ui_info(self, proto, wids=None, *args) -> dict[str,Any]:
+    def get_ui_info(self, proto, wids=None, *args) -> dict[str, Any]:
         info = super().get_ui_info(proto, wids, *args)
-        #_NET_WM_NAME:
+        # _NET_WM_NAME:
         wm = self._wm
         if wm:
             info.setdefault("state", {})["window-manager-name"] = wm.get_net_wm_name()
         return info
 
-    def get_window_info(self, window) -> dict[str,Any]:
+    def get_window_info(self, window) -> dict[str, Any]:
         info = super().get_window_info(window)
         info |= {
             "focused"  : bool(self._has_focus and self._window_to_id.get(window, -1)==self._has_focus),
@@ -311,22 +314,22 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 if cg:
                     info["client-geometry"] = cg
             except KeyError:
-                pass        #`OR` or tray window
+                pass        # `OR` or tray window
         return info
-
 
     ##########################################################################
     # Manage the virtual screen:
     #
+
     def set_screen_size(self, desired_w:int, desired_h:int):
-        #clamp all window models to the new screen size:
+        # clamp all window models to the new screen size:
         for window in tuple(self._window_to_id.keys()):
             if window.is_tray() or window.is_OR():
                 continue
             cg = window.get_property("client-geometry")
             if cg:
                 x, y, w, h = cg
-                if x>=desired_w or y>=desired_h:
+                if x >= desired_w or y >= desired_h:
                     x = min(x, desired_w-64)
                     y = min(y, desired_h-64)
                     geomlog("clamped window %s", window)
@@ -334,17 +337,16 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         with xlog:
             d16 = X11RandR.is_dummy16()
         screenlog("set_screen_size%s randr=%s, randr_exact_size=%s, is_dummy16()=%s",
-              (desired_w, desired_h), self.randr, self.randr_exact_size, d16)
+                  (desired_w, desired_h), self.randr, self.randr_exact_size, d16)
         if DUMMY_MONITORS and self.randr and self.randr_exact_size and d16:
             if self.mirror_client_monitor_layout():
                 return desired_w, desired_h
         return super().set_screen_size(desired_w, desired_h)
 
-
     def set_screen_geometry_attributes(self, w:int, h:int) -> None:
-        #only run the default code if there are no clients,
-        #when we have clients, this should have been done already
-        #in the code that synchronizes the screen resolution
+        # only run the default code if there are no clients,
+        # when we have clients, this should have been done already
+        # in the code that synchronizes the screen resolution
         if not self._server_sources:
             super().set_screen_geometry_attributes(w, h)
 
@@ -380,8 +382,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             wm.set_desktop_geometry(width, height)
 
     def set_dpi(self, xdpi:int, ydpi:int) -> None:
-        #this is used by some newer versions of the dummy driver (xf86-driver-dummy)
-        #(and will not be honoured by anything else..)
+        # this is used by some newer versions of the dummy driver (xf86-driver-dummy)
+        # (and will not be honoured by anything else..)
         if DUMMY_DPI:
             root = get_default_root_window()
             xid = root.get_xid()
@@ -389,12 +391,10 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             prop_set(xid, "dummy-constant-ydpi", "u32", ydpi)
             screenlog("set_dpi(%i, %i)", xdpi, ydpi)
 
-
     def add_system_tray(self) -> None:
         # Tray handler:
         with xlog:
             self._tray = SystemTray()
-
 
     ##########################################################################
     # Manage windows:
@@ -404,7 +404,6 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if not self._wm:
             return
 
-        ### Load in existing windows:
         for window in self._wm.get_property("windows"):
             self._add_new_window(window)
 
@@ -430,9 +429,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             raise RuntimeError(f"window id value {wid!r} is a {type(wid)} and not a number")
         return self._id_to_window.get(wid)
 
-
     def parse_hello_ui_window_settings(self, ss, _caps) -> None:
-        #FIXME: with multiple users, don't set any frame size?
+        # FIXME: with multiple users, don't set any frame size?
         frame = None
         if ss in self.window_sources():
             window_frame_sizes = ss.window_frame_sizes
@@ -441,7 +439,6 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 frame = typedict(window_frame_sizes).inttupleget("frame", (0, 0, 0, 0), 4, 4)
         if self._wm:
             self._wm.set_default_frame_extents(frame)
-
 
     def send_initial_windows(self, ss, sharing=False) -> None:
         # We send the new-window packets sorted by id because this sorts them
@@ -453,34 +450,33 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         for wid in sorted(self._id_to_window.keys()):
             window = self._id_to_window[wid]
             if not window.is_managed():
-                #we keep references to windows that aren't meant to be displayed..
+                # we keep references to windows that aren't meant to be displayed..
                 continue
             # most of the code here is duplicated from the send functions,
             # so we can send just to the new client and request damage
             # just for the new client too:
             if window.is_tray():
-                #code more or less duplicated from _send_new_tray_window_packet:
+                # code more or less duplicated from _send_new_tray_window_packet:
                 w, h = window.get_dimensions()
                 if ss.system_tray:
                     ss.new_tray(wid, window, w, h)
                     ss.damage(wid, window, 0, 0, w, h)
                 elif not sharing:
-                    #park it outside the visible area
+                    # park it outside the visible area
                     window.move_resize(-200, -200, w, h)
             elif window.is_OR():
-                #code more or less duplicated from _send_new_or_window_packet:
+                # code more or less duplicated from _send_new_or_window_packet:
                 x, y, w, h = window.get_property("geometry")
                 wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
                 ss.new_window("new-override-redirect", wid, window, x, y, w, h, wprops)
                 ss.damage(wid, window, 0, 0, w, h)
             else:
-                #code more or less duplicated from send_new_window_packet:
+                # code more or less duplicated from send_new_window_packet:
                 if not sharing:
                     window.hide()
                 x, y, w, h = window.get_property("geometry")
                 wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
                 ss.new_window("new-window", wid, window, x, y, w, h, wprops)
-
 
     def _new_window_signaled(self, _wm, window) -> None:
         self.last_raised = None
@@ -509,20 +505,18 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             try:
                 window_prop_set("_XPRA_WID", "u32", wid)
             except XError:
-                pass    #this can fail if the window disappears
-                #but we don't really care, it will get cleaned up soon enough
+                pass    # this can fail if the window disappears
+                # but we don't really care, it will get cleaned up soon enough
         return wid
 
-
     def _x11_property_changed(self, window, event) -> None:
-        #name, dtype, dformat, value = event
+        # name, dtype, dformat, value = event
         metadata = {"x11-property" : event}
         wid = self._window_to_id[window]
         for ss in self.window_sources():
             ms = getattr(ss, "metadata_supported", ())
             if "x11-property" in ms:
                 ss.send("window-metadata", wid, metadata)
-
 
     def _add_new_window(self, window) -> None:
         wid = self._add_new_window_common(window)
@@ -532,7 +526,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         window.send_configure_notify()
         self._send_new_window_packet(window)
         if PRE_MAP:
-            #pre-map the window if any client will be showing it
+            # pre-map the window if any client will be showing it
             sources = tuple(self._server_sources.values())
             if sources:
                 log("pre-mapping window %i for %s at %s", wid, sources, geometry)
@@ -543,7 +537,6 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                     s.map_window(wid, window, geometry)
                 self.schedule_configure_damage(wid, 0)
 
-
     def _window_resized_signaled(self, window, *args) -> None:
         x, y, nw, nh = window.get_property("geometry")[:4]
         geom = window.get_property("client-geometry")
@@ -551,7 +544,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 window, args, (x, y, nw, nh), geom)
         if geom==[x, y, nw, nh]:
             geomlog("XpraServer._window_resized_signaled: unchanged")
-            #unchanged
+            # unchanged
             return
         window.set_property("client-geometry", (x, y, nw, nh))
         lcce = self.last_client_configure_event
@@ -560,9 +553,9 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             return
         if self.snc_timer>0:
             self.source_remove(self.snc_timer)
-        #TODO: find a better way to choose the timer delay:
-        #for now, we wait at least 100ms, up to 250ms if the client has just sent us a resize:
-        #(lcce should always be in the past, so min(..) should be redundant here)
+        # TODO: find a better way to choose the timer delay:
+        # for now, we wait at least 100ms, up to 250ms if the client has just sent us a resize:
+        # (lcce should always be in the past, so min(..) should be redundant here)
         delay = max(100, min(250, 250 + round(1000 * (lcce-monotonic()))))
         self.snc_timer = self.timeout_add(int(delay), self.size_notify_clients, window, lcce)
 
@@ -581,9 +574,9 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         resize_counter = window.get_property("resize-counter")
         for ss in self.window_sources():
             ss.move_resize_window(wid, window, x, y, nw, nh, resize_counter)
-            #refresh to ensure the client gets the new window contents:
-            #TODO: to save bandwidth, we should compare the dimensions and skip the refresh
-            #if the window is smaller than before, or at least only send the new edges rather than the whole window
+            # refresh to ensure the client gets the new window contents:
+            # TODO: to save bandwidth, we should compare the dimensions and skip the refresh
+            # if the window is smaller than before, or at least only send the new edges rather than the whole window
             ss.damage(wid, window, 0, 0, nw, nh)
 
     def _add_new_or_window(self, xid:int) -> None:
@@ -592,8 +585,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             return
         gdk_window = get_pywindow(xid)
         if not gdk_window or gdk_window.get_window_type()==Gdk.WindowType.TEMP:
-            #ignoring one of gtk's temporary windows
-            #all the windows we manage should be Gdk.WINDOW_FOREIGN
+            # ignoring one of gtk's temporary windows
+            # all the windows we manage should be Gdk.WINDOW_FOREIGN
             windowlog("ignoring TEMP window %#x", xid)
             return
         WINDOW_MODEL_KEY = "_xpra_window_model_"
@@ -606,8 +599,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 self.refresh_window_area(window, 0, 0, ww, wh, options={"min_delay" : 50})
                 return
             windowlog("found existing model %s (but no longer managed!) for %#x", type(window), xid)
-            #we could try to re-use the existing model and window ID,
-            #but for now it is just easier to create a new one:
+            # we could try to re-use the existing model and window ID,
+            # but for now it is just easier to create a new one:
             self._lost_window(window)
         try:
             with xsync:
@@ -638,15 +631,15 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         except Unmanageable as e:
             if window:
                 windowlog("window %s is not manageable: %s", window, e)
-                #if window is set, we failed after instantiating it,
-                #so we need to fail it manually:
+                # if window is set, we failed after instantiating it,
+                # so we need to fail it manually:
                 window.setup_failed(e)
                 if window in self._window_to_id:
                     self._lost_window(window, False)
             else:
                 windowlog.warn("cannot add window %#x: %s", xid, e)
-            #from now on, we return to the gtk main loop,
-            #so we *should* get a signal when the window goes away
+            # from now on, we return to the gtk main loop,
+            # so we *should* get a signal when the window goes away
 
     def _or_window_geometry_changed(self, window, _pspec=None) -> None:
         geom = window.get_property("geometry")
@@ -659,13 +652,13 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         for ss in self.window_sources():
             ss.or_window_geometry(wid, window, x, y, w, h)
 
-
     def add_control_commands(self) -> None:
         if not features.control:
             return
         super().add_control_commands()
         from xpra.server.control_command import ArgsControlCommand
         cmd = ArgsControlCommand("show-all-windows", "make all the windows visible", validation=[])
+
         def control_cb():
             self.show_all_windows()
             return "%i windows shown" % len(self._id_to_window)
@@ -681,36 +674,36 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         for ss in self.window_sources():
             ss.show_desktop(show)
 
-
     def _focus(self, server_source, wid:int, modifiers) -> None:
         focuslog("focus wid=%s has_focus=%s", wid, self._has_focus)
         if self.last_raised!=wid:
             self.last_raised = None
         if self._has_focus==wid:
-            #nothing to do!
+            # nothing to do!
             return
         self._focus_history.append(wid)
         hfid = self._has_focus
         had_focus = self._id_to_window.get(hfid)
+
         def reset_focus():
             toplevel = None
             if self._wm:
                 toplevel = self._wm.get_property("toplevel")
             focuslog("reset_focus() %s / %s had focus (toplevel=%s)", hfid, had_focus, toplevel)
-            #this will call clear_keys_pressed() if the server is an InputServer:
+            # this will call clear_keys_pressed() if the server is an InputServer:
             self.reset_focus()
             # FIXME: kind of a hack:
             self._has_focus = 0
-            #toplevel may be None during cleanup!
+            # toplevel may be None during cleanup!
             if toplevel:
                 toplevel.reset_x_focus()
 
         if wid == 0:
-            #wid==0 means root window
+            # wid==0 means root window
             return reset_focus()
         window = self._id_to_window.get(wid)
         if not window:
-            #not found! (go back to root)
+            # not found! (go back to root)
             return reset_focus()
         if window.is_OR():
             focuslog.warn("Warning: cannot focus OR window: %s", window)
@@ -733,7 +726,6 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
     def get_focus(self):
         return self._has_focus
 
-
     def _send_new_window_packet(self, window) -> None:
         self._do_send_new_window_packet("new-window", window, window.get_property("geometry"))
 
@@ -748,7 +740,6 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             ss.new_tray(wid, window, ww, wh)
         self.refresh_window(window)
 
-
     def _lost_window(self, window, wm_exiting=False) -> None:
         wid = self._remove_window(window)
         self.cancel_configure_damage(wid)
@@ -761,7 +752,6 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
     def _contents_changed(self, window, event) -> None:
         if window.is_OR() or window.is_tray() or window.get_property("shown"):
             self.refresh_window_area(window, event.x, event.y, event.width, event.height, options={"damage" : True})
-
 
     def _window_grab(self, window, event) -> None:
         grab_id = self._window_to_id.get(window, -1)
@@ -783,36 +773,33 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         for ss in self.window_sources():
             ss.pointer_ungrab(grab_id)
 
-
     def _initiate_moveresize(self, window, event) -> None:
         log("initiate_moveresize(%s, %s)", window, event)
         assert len(event.data)==5
-        #x_root, y_root, direction, button, source_indication = event.data
+        # x_root, y_root, direction, button, source_indication = event.data
         wid = self._window_to_id[window]
-        #find clients that handle windows:
+        # find clients that handle windows:
         wsources = self.window_sources()
         if not wsources:
             return
-        #prefer the "UI driver" if we find it:
+        # prefer the "UI driver" if we find it:
         driversources = [ss for ss in wsources if self.ui_driver==ss.uuid]
         if driversources:
             driversources[0].initiate_moveresize(wid, window, *event.data)
             return
-        #otherwise, fallback to the first one:
+        # otherwise, fallback to the first one:
         wsources[0].initiate_moveresize(wid, window, *event.data)
-
 
     def _restack_window(self, window, detail, sibling) -> None:
         wid = self._window_to_id[window]
         focuslog("restack window(%s) wid=%s, current focus=%s", (window, detail, sibling), wid, self._has_focus)
         if self.last_raised!=wid:
-            #ensure we will raise the window for the next pointer event
+            # ensure we will raise the window for the next pointer event
             self.last_raised = None
-        if detail==0 and self._has_focus==wid:  #Above=0
+        if detail == 0 and self._has_focus == wid:  # Above=0
             return
         for ss in self.window_sources():
             ss.restack_window(wid, window, detail, sibling)
-
 
     def _set_window_state(self, proto, wid:int, window, new_window_state) -> tuple[str,...]:
         if proto not in self._server_sources:
@@ -823,10 +810,10 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         metadatalog("set_window_state%s", (wid, window, new_window_state))
         changes : dict[str, Any] = {}
         if "frame" in new_window_state:
-            #the size of the window frame may have changed
+            # the size of the window frame may have changed
             frame = nws.inttupleget("frame", (0, 0, 0, 0))
             window.set_property("frame", frame)
-        #boolean: but not a wm_state and renamed in the model... (iconic vs inconified!)
+        # boolean: but not a wm_state and renamed in the model... (iconic vs inconified!)
         iconified = nws.boolget("iconified", None)
         if iconified is not None:
             if window.is_OR():
@@ -835,28 +822,27 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 if window.get_property("iconic")!=bool(iconified):
                     window.set_property("iconic", iconified)
                     changes["iconified"] = bool(iconified)
-        #handle wm_state virtual booleans:
+        # handle wm_state virtual booleans:
         for k in (
             "maximized", "above",
             "below", "fullscreen",
             "sticky", "shaded",
             "skip-pager", "skip-taskbar", "focused",
-            ):
-            #metadatalog.info("window.get_property=%s", window.get_property)
-            new_state = nws.boolget(k, None)
+        ):
+            # metadatalog.info("window.get_property=%s", window.get_property)
+            new_state = nws.boolget(k)
             if new_state is None:
                 continue
             cur_state = bool(window.get_property(k))
-            #metadatalog.info("set window state for '%s': current state=%s, new state=%s", k, cur_state, new_state)
+            # metadatalog.info("set window state for '%s': current state=%s, new state=%s", k, cur_state, new_state)
             if cur_state!=new_state:
                 window.update_wm_state(k, new_state)
                 changes[k] = new_state
         metadatalog("set_window_state: changes=%s", changes)
         return tuple(changes.keys())
 
-
-    def get_window_position(self, window) -> tuple[int,int] | None:
-        #used to adjust the pointer position with multiple clients
+    def get_window_position(self, window) -> tuple[int, int] | None:
+        # used to adjust the pointer position with multiple clients
         if window is None or window.is_OR() or window.is_tray():
             return None
         pos = window.get_property("client-geometry")
@@ -866,8 +852,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 return None
         return tuple(pos[:2])
 
-
-    def client_configure_window(self, win, geometry, resize_counter:int=0) -> None:
+    def client_configure_window(self, win, geometry, resize_counter: int = 0) -> None:
         log("client_configure_window(%s, %s, %s)", win, geometry, resize_counter)
         old_geom = win.get_property("client-geometry")
         update_geometry = geometry!=old_geom
@@ -883,7 +868,6 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             return
         if update_geometry:
             win._update_client_geometry()
-
 
     def _process_map_window(self, proto, packet : PacketType) -> None:
         wid, x, y, w, h = packet[1:6]
@@ -902,8 +886,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         cp = {}
         if len(packet)>=7:
             cp = packet[6]
-        #this ensures that we will initialize the window source completely,
-        #even if the client did not provide any client properties:
+        # this ensures that we will initialize the window source completely,
+        # even if the client did not provide any client properties:
         cp["event"] = "map"
         self._set_client_properties(proto, wid, window, cp)
         if not self.ui_driver:
@@ -914,7 +898,6 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             geometry = self.client_clamp_window(proto, wid, window, x, y, w, h)
             self.client_configure_window(window, geometry)
         self.refresh_window_area(window, 0, 0, w, h)
-
 
     def _process_unmap_window(self, proto, packet : PacketType) -> None:
         wid = packet[1]
@@ -927,11 +910,11 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if ss is None:
             return
         self._window_mapped_at(proto, wid, window)
-        #if self.ui_driver!=ss.uuid:
+        # if self.ui_driver!=ss.uuid:
         #    return
         if len(packet)>=4:
-            #optional window_state added in 0.15 to update flags
-            #during iconification events:
+            # optional window_state added in 0.15 to update flags
+            # during iconification events:
             self._set_window_state(proto, wid, window, packet[3])
         if window.get_property("shown"):
             geomlog("client %s unmapped window %s - %s", ss, wid, window)
@@ -948,7 +931,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if not CLAMP_WINDOW_TO_ROOT:
             return False, (x, y, w, h)
         rw, rh = self.get_root_window_size()
-        #clamp to root window size
+        # clamp to root window size
         mod = False
         if x+w<0:
             x = 0
@@ -969,7 +952,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             return x, y, w, h
         mod, geom = self.clamp_window(x, y, w, h)
         if mod:
-            #tell this client to honour the new location
+            # tell this client to honour the new location
             ss = self.get_server_source(proto)
             if ss:
                 resize_counter = max(resize_counter, window.get_property("resize-counter"))
@@ -986,7 +969,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         ss = self.get_server_source(proto)
         if not ss:
             return
-        #some "configure-window" packets are only meant for metadata updates:
+        # some "configure-window" packets are only meant for metadata updates:
         skip_geometry = (len(packet)>=10 and packet[9]) or window.is_OR()
         if not skip_geometry:
             self._window_mapped_at(proto, wid, window, (x, y, w, h))
@@ -1016,13 +999,13 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 pointer = packet[11]
                 modifiers = packet[12]
                 if pwid==wid and window.is_OR():
-                    #some clients may send the OR window wid
-                    #this causes focus issues (see #1999)
+                    # some clients may send the OR window wid
+                    # this causes focus issues (see #1999)
                     pwid = -1
                 device_id = -1
                 mouselog("configure pointer data: %s", (pwid, pointer, modifiers))
                 if self.process_mouse_common(proto, device_id, pwid, pointer):
-                    #only update modifiers if the window is in focus:
+                    # only update modifiers if the window is in focus:
                     if self._has_focus==wid:
                         self._update_modifiers(proto, wid, modifiers)
             if window.is_tray():
@@ -1058,7 +1041,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                     else:
                         resized = True
                     if resized and SHARING_SYNC_SIZE:
-                        #try to ensure this won't trigger a resizing loop:
+                        # try to ensure this won't trigger a resizing loop:
                         counter = max(0, resize_counter-1)
                         for s in self.window_sources():
                             if s!=ss:
@@ -1074,10 +1057,11 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             self.schedule_configure_damage(wid)
 
     def schedule_configure_damage(self, wid:int, delay=CONFIGURE_DAMAGE_RATE) -> None:
-        #rate-limit the damage events
+        # rate-limit the damage events
         timer = self.configure_damage_timers.get(wid)
         if timer:
-            return  #we already have one pending
+            return  # we already have one pending
+
         def damage():
             self.configure_damage_timers.pop(wid, None)
             window = self._lookup_window(wid)
@@ -1096,27 +1080,26 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         for timer in timers:
             self.source_remove(timer)
 
-
     def _set_client_properties(self, proto, wid:int, window, new_client_properties) -> None:
         """
         Override so we can update the workspace on the window directly,
         instead of storing it as a client property
         """
         workspace = typedict(new_client_properties).intget("workspace", -1)
+
         def wn(w):
             return WORKSPACE_NAMES.get(w, w)
         workspacelog("workspace from client properties %s: %s", new_client_properties, wn(workspace))
         if workspace>=0:
             window.move_to_workspace(workspace)
-            #we have handled it on the window directly, so remove it from client properties
+            # we have handled it on the window directly, so remove it from client properties
             new_client_properties.pop("workspace", None)
-        #handle the rest as normal:
+        # handle the rest as normal:
         super()._set_client_properties(proto, wid, window, new_client_properties)
 
-
-    """ override so we can raise the window under the cursor
-        (gtk raise does not change window stacking, just focus) """
-    def _move_pointer(self, device_id:int, wid:int, pos, props=None) -> None:
+    def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
+        """ override so we can raise the window under the cursor
+            (gtk raise does not change window stacking, just focus) """
         if wid>0 and (self.last_raised!=wid or ALWAYS_RAISE_WINDOW):
             window = self._lookup_window(wid)
             if not window:
@@ -1127,7 +1110,6 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 with xswallow:
                     window.raise_window()
         super()._move_pointer(device_id, wid, pos, props)
-
 
     def _process_close_window(self, proto, packet : PacketType) -> None:
         if proto not in self._server_sources:
@@ -1140,7 +1122,6 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         else:
             windowlog("cannot close window %s: it is already gone!", wid)
         self.repaint_root_overlay()
-
 
     def _process_window_signal(self, proto, packet : PacketType) -> None:
         if proto not in self._server_sources:
@@ -1160,14 +1141,13 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             log.warn(f"Warning: no pid found for window {wid}, cannot send {sig}")
             return
         try:
-            sigval = getattr(signal, sig)       #ie: signal.SIGINT
+            sigval = getattr(signal, sig)       # ie: signal.SIGINT
             os.kill(pid, sigval)
             log.info(f"sent signal {sig!r} to pid {pid} for window {wid}")
         except Exception as e:
             log("_process_window_signal(%s, %s)", proto, packet, exc_info=True)
             log.error(f"Error: failed to send signal {sig!r} to pid {pid} for window {wid}")
             log.estr(e)
-
 
     def refresh_window_area(self, window, x:int, y:int, width:int, height:int, options=None) -> None:
         super().refresh_window_area(window, x, y, width, height, options)
@@ -1176,8 +1156,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             if image:
                 self.update_root_overlay(window, x, y, image)
 
-
-    ##########################################################################
+    # #########################################################################
     # paint the root overlay
     # so the server-side root window gets updated if this feature is enabled
     #
@@ -1186,7 +1165,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         display = Gdk.Display.get_default()
         overlaywin = GdkX11.X11Window.foreign_new_for_display(display, self.root_overlay)
         wx, wy = window.get_property("geometry")[:2]
-        #FIXME: we should paint the root overlay directly
+        # FIXME: we should paint the root overlay directly
         # either using XCopyArea or XShmPutImage,
         # using GTK and having to unpremultiply then convert to RGB is just too slooooow
         width = image.get_width()
@@ -1196,22 +1175,22 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         rgb_format = image.get_pixel_format()
         from xpra.codecs.argb.argb import (
             unpremultiply_argb, bgra_to_rgba, bgra_to_rgbx, r210_to_rgbx, bgr565_to_rgbx
-            )
-        from cairo import OPERATOR_OVER, OPERATOR_SOURCE  #pylint: disable=no-name-in-module
+        )
+        from cairo import OPERATOR_OVER, OPERATOR_SOURCE    # pylint: disable=no-name-in-module
         log("update_root_overlay%s rgb_format=%s, img_data=%i (%s)",
-                 (window, x, y, image), rgb_format, len(img_data), type(img_data))
+            (window, x, y, image), rgb_format, len(img_data), type(img_data))
         operator = OPERATOR_SOURCE
-        if rgb_format=="BGRA":
+        if rgb_format == "BGRA":
             img_data = unpremultiply_argb(img_data)
             img_data = bgra_to_rgba(img_data)
             operator = OPERATOR_OVER
-        elif rgb_format=="BGRX":
+        elif rgb_format == "BGRX":
             img_data = bgra_to_rgbx(img_data)
-        elif rgb_format=="r210":
-            #lossy...
+        elif rgb_format == "r210":
+            # lossy...
             img_data = r210_to_rgbx(img_data, width, height, rowstride, width*4)
             rowstride = width*4
-        elif rgb_format=="BGR565":
+        elif rgb_format == "BGR565":
             img_data = bgr565_to_rgbx(img_data)
             rowstride *= 2
         else:
@@ -1250,12 +1229,14 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         overlaywin = GdkX11.X11Window.foreign_new_for_display(display, self.root_overlay)
         log("overlaywin: %s", overlaywin.get_geometry())
         cr = overlaywin.cairo_create()
+
         def fill_grey_rect(shade, x, y, w, h):
             log("paint_grey_rect%s", (shade, x, y, w, h))
             cr.new_path()
             cr.set_source_rgb(*shade)
             cr.rectangle(x, y, w, h)
             cr.fill()
+
         def paint_grey_rect(shade, x, y, w, h):
             log("paint_grey_rect%s", (shade, x, y, w, h))
             cr.new_path()
@@ -1263,7 +1244,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             cr.set_source_rgb(*shade)
             cr.rectangle(x, y, w, h)
             cr.stroke()
-        #clear to black
+        # clear to black
         fill_grey_rect((0, 0, 0), 0, 0, root_width, root_height)
         sources = [source for source in self._server_sources.values() if source.ui_client]
         ss = None
@@ -1274,23 +1255,23 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 if len(screen1)>=10:
                     display_name, width, height, width_mm, height_mm, \
                         monitors, work_x, work_y, work_width, work_height = screen1[:10]
-                    assert display_name or width_mm or height_mm or True    #just silences pydev warnings
-                    #paint dark grey background for display dimensions:
+                    assert display_name or width_mm or height_mm or True    # just silences pydev warnings
+                    # paint dark grey background for display dimensions:
                     fill_grey_rect((0.2, 0.2, 0.2), 0, 0, width, height)
                     paint_grey_rect((0.2, 0.2, 0.4), 0, 0, width, height)
-                    #paint lighter grey background for workspace dimensions:
+                    # paint lighter grey background for workspace dimensions:
                     paint_grey_rect((0.5, 0.5, 0.5), work_x, work_y, work_width, work_height)
-                    #paint each monitor with even lighter shades of grey:
+                    # paint each monitor with even lighter shades of grey:
                     for m in monitors:
-                        if len(m)<7:
+                        if len(m) < 7:
                             continue
                         plug_name, plug_x, plug_y, plug_width, plug_height, plug_width_mm, plug_height_mm = m[:7]
-                        assert plug_name or plug_width_mm or plug_height_mm or True #just silences pydev warnings
+                        assert plug_name or plug_width_mm or plug_height_mm or True  # just silences pydev warnings
                         paint_grey_rect((0.7, 0.7, 0.7), plug_x, plug_y, plug_width, plug_height)
-                        if len(m)>=10:
+                        if len(m) >= 10:
                             dwork_x, dwork_y, dwork_width, dwork_height = m[7:11]
                             paint_grey_rect((1, 1, 1), dwork_x, dwork_y, dwork_width, dwork_height)
-        #now paint all the windows on top:
+        # now paint all the windows on top:
         order = {}
         focus_history = tuple(self._focus_history)
         for wid, window in self._id_to_window.items():
@@ -1299,7 +1280,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 try:
                     prio = rindex(focus_history, wid)
                 except ValueError:
-                    pass        #not in focus history!
+                    pass        # not in focus history!
             order[(prio, wid)] = window
         log("do_repaint_root_overlay() has_focus=%s, has_grab=%s, windows in order=%s",
             self._has_focus, self._has_grab, order)
@@ -1318,14 +1299,14 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                     top = max(1, top)
                     bottom = max(1, bottom)
                     rectangles = (
-                                  (x-left,      y,          left,           h,      True),      #left side
-                                  (x-left,      y-top,      w+left+right,   top,    True),      #top
-                                  (x+w,         y,          right,          h,      True),      #right
-                                  (x-left,      y+h,        w+left+right,   bottom, True),      #bottom
+                        (x-left,      y,          left,           h,      True),      # left side
+                        (x-left,      y-top,      w+left+right,   top,    True),      # top
+                        (x+w,         y,          right,          h,      True),      # right
+                        (x-left,      y+h,        w+left+right,   bottom, True),      # bottom
                                  )
                 else:
                     rectangles = (
-                                  (x, y, w, h, False),
+                        (x, y, w, h, False),
                                  )
                 log("rectangles for window frame=%s and geometry=%s : %s", frame, (x, y, w, h), rectangles)
                 for x, y, w, h, fill in rectangles:
@@ -1337,10 +1318,10 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                         cr.fill()
                     else:
                         cr.stroke()
-        #FIXME: use server mouse position, and use current cursor shape
+        # FIXME: use server mouse position, and use current cursor shape
         if ss:
             mlp = getattr(ss, "mouse_last_position", (0, 0))
-            if mlp!=(0, 0):
+            if mlp != (0, 0):
                 x, y = mlp
                 cr.set_source_rgb(1.0, 0.5, 0.7)
                 cr.new_path()
@@ -1349,7 +1330,6 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 cr.set_source_rgb(0.3, 0.4, 0.6)
                 cr.fill()
         return False
-
 
     def do_make_screenshot_packet(self):
         log("grabbing screenshot")
@@ -1383,13 +1363,12 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             if window.is_OR() or window.is_tray():
                 OR_regions.append(item)
             elif self._has_focus==wid:
-                #window with focus first (drawn last)
+                # window with focus first (drawn last)
                 regions.insert(0, item)
             else:
                 regions.append(item)
         log("screenshot: found regions=%s, OR_regions=%s", len(regions), len(OR_regions))
         return self.make_screenshot_packet_from_regions(OR_regions+regions)
-
 
     def make_dbus_server(self):
         from xpra.x11.dbus.x11_dbus_server import X11_DBUS_Server

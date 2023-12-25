@@ -23,7 +23,7 @@ def get_x11_window_value(prop, window):
         x11type = None
     if x11type:
         ptype = get_python_type(x11type)
-        #log("%s: %s (%s)", filter_object.property_name, x11type, ptype)
+        # log("%s: %s (%s)", filter_object.property_name, x11type, ptype)
         assert ptype, "type '%s' is not handled!" % x11type
         v = prop_get(window.get_xid(), prop, ptype)
         log("prop_get(%s, %s, %s)=%s", window, prop, ptype, v)
@@ -34,8 +34,10 @@ def get_x11_window_value(prop, window):
     log("%s=%s (type=%s)", prop, v, x11type)
     return v
 
+
 def get_window_value(filter_object, gdkwin):
     return get_x11_window_value(filter_object.property_name, gdkwin)
+
 
 def get_window(filter_object, window):
     xid = window.get_property("xid")
@@ -54,6 +56,7 @@ def get_window(filter_object, window):
             break
     return p
 
+
 def init_x11_window_filters():
     from xpra.server.window import filters
     original_get_window_filter = filters.get_window_filter
@@ -62,7 +65,7 @@ def init_x11_window_filters():
         oname = object_name.lower()
         wf = original_get_window_filter(oname.replace("x11:", ""), property_name, operator, value)
         if oname.startswith("x11:"):
-            #same filter but use X11 properties:
+            # same filter but use X11 properties:
             import types
             wf.get_window = types.MethodType(get_window, wf)
             wf.get_window_value = types.MethodType(get_window_value, wf)

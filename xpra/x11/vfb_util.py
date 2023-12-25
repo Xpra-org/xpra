@@ -19,10 +19,7 @@ from xpra.common import RESOLUTION_ALIASES, DEFAULT_REFRESH_RATE, get_refresh_ra
 from xpra.scripts.config import InitException, get_Xdummy_confdir, FALSE_OPTIONS
 from xpra.util.str_fn import csv, strtobytes, bytestostr
 from xpra.util.env import envint, envbool, shellsub, osexpand
-from xpra.os_util import (
-    getuid, getgid,
-    POSIX, OSX,
-    )
+from xpra.os_util import getuid, getgid, POSIX, OSX
 from xpra.server.util import setuidgid
 from xpra.util.io import is_writable, pollwait
 from xpra.platform.displayfd import read_displayfd, parse_displayfd
@@ -36,7 +33,7 @@ XVFB_EXTRA_ARGS = os.environ.get("XPRA_XVFB_EXTRA_ARGS", "")
 def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tuple[int,...] | None:
     if not s:
         return None
-    s = s.upper()       #ie: 4K60
+    s = s.upper()       # ie: 4K60
     res_part = s
     hz = get_refresh_rate_for_value(str(default_refresh_rate), DEFAULT_REFRESH_RATE)//1000
     for sep in ("@", "K", "P"):
@@ -59,12 +56,16 @@ def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tupl
     reshz = list(res)
     reshz.append(int(hz))
     return tuple(reshz)
+
+
 def parse_resolutions(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tuple | None:
     if not s or s.lower() in FALSE_OPTIONS:
         return None
     if s.lower() in ("none", "default"):
         return ()
     return tuple(parse_resolution(v, default_refresh_rate) for v in s.split(","))
+
+
 def parse_env_resolutions(envkey="XPRA_DEFAULT_VFB_RESOLUTIONS",
                           single_envkey="XPRA_DEFAULT_VFB_RESOLUTION",
                           default_res="8192x4096",
@@ -74,27 +75,34 @@ def parse_env_resolutions(envkey="XPRA_DEFAULT_VFB_RESOLUTIONS",
         return parse_resolutions(s, default_refresh_rate)
     return (parse_resolution(os.environ.get(single_envkey, default_res), default_refresh_rate), )
 
+
 def get_desktop_vfb_resolutions(default_refresh_rate=DEFAULT_REFRESH_RATE//1000):
     return parse_env_resolutions("XPRA_DEFAULT_DESKTOP_VFB_RESOLUTIONS",
                                  "XPRA_DEFAULT_DESKTOP_VFB_RESOLUTION",
                                  "1280x1024",
                                  default_refresh_rate=default_refresh_rate)
+
+
 PRIVATE_XAUTH = envbool("XPRA_PRIVATE_XAUTH", False)
 XAUTH_PER_DISPLAY = envbool("XPRA_XAUTH_PER_DISPLAY", True)
 
 
 vfb_logger = None
+
+
 def get_vfb_logger() -> Logger:
     global vfb_logger
     if not vfb_logger:
         vfb_logger = Logger("server", "x11", "screen")
     return vfb_logger
 
+
 def osclose(fd) -> None:
     try:
         os.close(fd)
     except OSError:
         pass
+
 
 def create_xorg_device_configs(xorg_conf_dir:str, device_uuid, uid:int, gid:int) -> None:
     log = get_vfb_logger()
@@ -107,7 +115,7 @@ def create_xorg_device_configs(xorg_conf_dir:str, device_uuid, uid:int, gid:int)
         os.mkdir(dirname)
         os.lchown(dirname, uid, gid)
 
-    #create conf dir if needed:
+    # create conf dir if needed:
     d = xorg_conf_dir
     dirs : list[str] = []
     while d and not os.path.exists(d):
@@ -121,13 +129,14 @@ def create_xorg_device_configs(xorg_conf_dir:str, device_uuid, uid:int, gid:int)
     for i, dev_type in (
         (0, "pointer"),
         (1, "touchpad"),
-        ) :
+    ):
         f = save_input_conf(xorg_conf_dir, i, dev_type, device_uuid, uid, gid)
         conf_files.append(f)
 
-#create individual device files:
+
 def save_input_conf(xorg_conf_dir:str, i, dev_type, device_uuid, uid:int, gid:int) -> str:
-    upper_dev_type = dev_type[:1].upper()+dev_type[1:]   #ie: Pointer
+    # create individual device files:
+    upper_dev_type = dev_type[:1].upper()+dev_type[1:]   # ie: Pointer
     product_name = f"Xpra Virtual {upper_dev_type} {bytestostr(device_uuid)}"
     identifier = f"xpra-virtual-{dev_type}"
     conf_file = os.path.join(xorg_conf_dir, f"{i:02}-{dev_type}.conf")
@@ -143,10 +152,11 @@ Option "Ignore" "False"
 EndSection
 """)
         os.fchown(f.fileno(), uid, gid)
-    #Option "AccelerationProfile" "-1"
-    #Option "AccelerationScheme" "none"
-    #Option "AccelSpeed" "-1"
+    # Option "AccelerationProfile" "-1"
+    # Option "AccelerationScheme" "none"
+    # Option "AccelSpeed" "-1"
     return conf_file
+
 
 def valid_xauth(filename:str, uid:int=getuid(), gid:int=getgid()) -> str:
     if not filename:
@@ -158,6 +168,7 @@ def valid_xauth(filename:str, uid:int=getuid(), gid:int=getgid()) -> str:
         log.info(f"ignoring non-writable XAUTHORITY={filename!r}")
         return ""
     return filename
+
 
 def get_xauthority_path(display_name) -> str:
     assert POSIX
@@ -174,7 +185,9 @@ def get_xauthority_path(display_name) -> str:
         filename = ".Xauthority"
     return os.path.join(d, filename)
 
-def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, uid:int, gid:int, username:str, uinput_uuid=None):
+
+def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd,
+               uid:int, gid:int, username:str, uinput_uuid=None):
     if not POSIX:
         raise InitException(f"starting an Xvfb is not supported on {os.name}")
     if OSX:
@@ -190,7 +203,8 @@ def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, u
     if XVFB_EXTRA_ARGS:
         xvfb_str += " "+XVFB_EXTRA_ARGS
 
-    subs : dict[str,str] = {}
+    subs: dict[str,str] = {}
+
     def pathexpand(s):
         return osexpand(s, actual_username=username, uid=uid, gid=gid, subs=subs)
     etc_prefix = os.environ.get("XPRA_INSTALL_PREFIX", "")
@@ -202,29 +216,29 @@ def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, u
         "XORG_CONFIG_PREFIX" : os.environ.get("XORG_CONFIG_PREFIX", etc_prefix),
     }
 
-    #identify logfile argument if it exists,
-    #as we may have to rename it, or create the directory for it:
+    # identify logfile argument if it exists,
+    # as we may have to rename it, or create the directory for it:
     xvfb_cmd = shlex.split(xvfb_str)
     if not xvfb_cmd:
         raise InitException("cannot start Xvfb, the command definition is missing!")
-    #make sure all path values are expanded:
+    # make sure all path values are expanded:
     xvfb_cmd = [pathexpand(s) for s in xvfb_cmd]
 
-    #try to honour initial geometries if specified:
+    # try to honour initial geometries if specified:
     if vfb_geom and xvfb_cmd[0].endswith("Xvfb"):
-        #find the '-screen' arguments:
-        #"-screen 0 8192x4096x24+32"
+        # find the '-screen' arguments:
+        # "-screen 0 8192x4096x24+32"
         try:
             no_arg = xvfb_cmd.index("0")
         except ValueError:
             no_arg = -1
         geom_str = "%sx%s" % ("x".join(str(x) for x in vfb_geom[:2]), pixel_depth)
         if no_arg>0 and xvfb_cmd[no_arg-1]=="-screen" and len(xvfb_cmd)>(no_arg+1):
-            #found an existing "-screen" argument for this screen number,
-            #replace it:
+            # found an existing "-screen" argument for this screen number,
+            # replace it:
             xvfb_cmd[no_arg+1] = geom_str
         else:
-            #append:
+            # append:
             xvfb_cmd += ["-screen", "0", geom_str]
     try:
         logfile_argindex = xvfb_cmd.index('-logfile')
@@ -238,7 +252,7 @@ def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, u
         if use_display_fd:
             # keep track of it, so that we can rename it later:
             tmp_xorg_log_file = xorg_log_file
-        #make sure the Xorg log directory exists:
+        # make sure the Xorg log directory exists:
         xorg_log_dir = os.path.dirname(xorg_log_file)
         if not os.path.exists(xorg_log_dir):
             try:
@@ -253,8 +267,8 @@ def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, u
                 raise InitException(f"failed to create the Xorg log directory {xorg_log_dir!r}: {e}") from None
 
     if uinput_uuid:
-        #use uinput:
-        #identify -config xorg.conf argument and replace it with the uinput one:
+        # use uinput:
+        # identify -config xorg.conf argument and replace it with the uinput one:
         try:
             config_argindex = xvfb_cmd.index("-config")
         except ValueError:
@@ -268,8 +282,8 @@ def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, u
                 xorg_conf = xorg_conf.replace("xorg.conf", "xorg-uinput.conf")
                 if os.path.exists(xorg_conf):
                     xvfb_cmd[config_argindex+1] = xorg_conf
-            #create uinput device definition files:
-            #(we have to assume that Xorg is configured to use this path..)
+            # create uinput device definition files:
+            # (we have to assume that Xorg is configured to use this path..)
             xorg_conf_dir = pathexpand(get_Xdummy_confdir())
             create_xorg_device_configs(xorg_conf_dir, uinput_uuid, uid, gid)
 
@@ -284,9 +298,10 @@ def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, u
                 raise InitException(f"{xvfb_executable}: {msg}")
             r_pipe, w_pipe = os.pipe()
             try:
-                os.set_inheritable(w_pipe, True)        #@UndefinedVariable
+                os.set_inheritable(w_pipe, True)
                 xvfb_cmd += ["-displayfd", str(w_pipe)]
                 xvfb_cmd[0] = f"{xvfb_executable}-for-Xpra-" + display_name.lstrip(":")
+
                 def preexec():
                     os.setpgrp()
                     if getuid()==0 and uid:
@@ -314,10 +329,10 @@ def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, u
             new_display_name = f":{n}"
             log(f"Using display number provided by {xvfb_executable}: {new_display_name}")
             if tmp_xorg_log_file:
-                #ie: ${HOME}/.xpra/Xorg.${DISPLAY}.log -> /home/antoine/.xpra/Xorg.S14700.log
+                # ie: ${HOME}/.xpra/Xorg.${DISPLAY}.log -> /home/antoine/.xpra/Xorg.S14700.log
                 f0 = shellsub(tmp_xorg_log_file, subs)
                 subs["DISPLAY"] = new_display_name
-                #ie: ${HOME}/.xpra/Xorg.${DISPLAY}.log -> /home/antoine/.xpra/Xorg.:1.log
+                # ie: ${HOME}/.xpra/Xorg.${DISPLAY}.log -> /home/antoine/.xpra/Xorg.:1.log
                 f1 = shellsub(tmp_xorg_log_file, subs)
                 if f0 != f1:
                     try:
@@ -331,6 +346,7 @@ def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, u
             # use display specified
             xvfb_cmd[0] = f"{xvfb_executable}-for-Xpra-"+display_name.lstrip(":")
             xvfb_cmd.append(display_name)
+
             def preexec():
                 if getuid()==0 and (uid!=0 or gid!=0):
                     setuidgid(uid, gid)
@@ -368,9 +384,9 @@ def set_initial_resolution(resolutions, dpi:int=0) -> None:
     log = get_vfb_logger()
     log("set_initial_resolution(%s)", resolutions)
     try:
-        #pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
         from xpra.x11.bindings.randr import RandRBindings
-        #try to set a reasonable display size:
+        # try to set a reasonable display size:
         randr = RandRBindings()
         if not randr.has_randr():
             log.warn("Warning: no RandR support,")
@@ -385,15 +401,16 @@ def set_initial_resolution(resolutions, dpi:int=0) -> None:
                     raise ValueError(f"resolution values must be ints, found: {res} ({csv(type(v) for v in res)})")
                 w, h, hz = res
                 mdpi = dpi
-                #guess the DPI if we don't have one:
+                # guess the DPI if we don't have one:
                 if mdpi<=0:
-                    #use a higher DPI for higher resolutions
+                    # use a higher DPI for higher resolutions
                     if w>=4096 or h>=2560:
                         mdpi = 144
                     elif w>=2560 or h>=1440:
                         mdpi = 120
                     else:
                         mdpi = 96
+
                 def rdpi(v):
                     return round(v * 25.4 / mdpi)
                 monitors[i] = {
@@ -404,10 +421,10 @@ def set_initial_resolution(resolutions, dpi:int=0) -> None:
                     "height-mm" : rdpi(h),
                     "refresh-rate" : hz*1000,
                     "automatic" : True,
-                    }
+                }
                 x += w
-                #arranging vertically:
-                #y += h
+                # arranging vertically:
+                # y += h
             randr.set_crtc_config(monitors)
             return
         res = resolutions[0][:2]
@@ -417,7 +434,7 @@ def set_initial_resolution(resolutions, dpi:int=0) -> None:
         if res not in sizes:
             log.warn(f"Warning: cannot set resolution to {res}")
             log.warn(" (this resolution is not available)")
-        elif res==size:
+        elif res == size:
             log(f"initial resolution already set: {res}")
         else:
             log(f"RandR setting new screen size to {res}")
@@ -444,7 +461,7 @@ def xauth_add(filename:str, display_name:str, xauth_data:str, uid:int, gid:int) 
         elapsed = round(end-start)
         if code!=0 and elapsed>=10:
             log.warn(f"Warning: xauth command took {elapsed} seconds and failed")
-            #took more than 10 seconds to fail, check for stale locks:
+            # took more than 10 seconds to fail, check for stale locks:
             if glob.glob(f"{filename}-*"):
                 log.warn("Warning: trying to clean some stale xauth locks")
                 xauth_cmd = ["xauth", "-b"]+xauth_args
@@ -453,19 +470,20 @@ def xauth_add(filename:str, display_name:str, xauth_data:str, uid:int, gid:int) 
         if code!=0:
             raise OSError(f"non-zero exit code: {code}")
     except OSError as e:
-        #trying to continue anyway!
+        # trying to continue anyway!
         log = get_vfb_logger()
         log(f"xauth_add%s xauth_cmd={xauth_cmd}", (filename, display_name, xauth_data, uid, gid))
         log.error(f"Error adding xauth entry for {display_name}")
         log.error(" using command \"%s\":" % (" ".join(xauth_cmd)))
         log.estr(e)
 
+
 def check_xvfb_process(xvfb=None, cmd:str="Xvfb", timeout:int=0, command=None) -> bool:
     if xvfb is None:
-        #we don't have a process to check
+        # we don't have a process to check
         return True
     if pollwait(xvfb, timeout) is None:
-        #process is running
+        # process is running
         return True
     log = get_vfb_logger()
     log.error("")
@@ -477,8 +495,9 @@ def check_xvfb_process(xvfb=None, cmd:str="Xvfb", timeout:int=0, command=None) -
     log.error("")
     return False
 
-def verify_display_ready(xvfb, display_name:str, shadowing_check:bool=True, log_errors:bool=True, timeout=VFB_WAIT) -> bool:
-    from xpra.x11.bindings.wait_for_x_server import wait_for_x_server # pylint: disable=import-outside-toplevel
+
+def verify_display_ready(xvfb, display_name:str, shadowing_check=True, log_errors=True, timeout=VFB_WAIT) -> bool:
+    from xpra.x11.bindings.wait_for_x_server import wait_for_x_server  # pylint: disable=import-outside-toplevel
     # Whether we spawned our server or not, it is now running -- or at least
     # starting.  First wait for it to start up:
     try:
@@ -491,10 +510,10 @@ def verify_display_ready(xvfb, display_name:str, shadowing_check:bool=True, log_
             log.estr(e)
         return False
     if shadowing_check and not check_xvfb_process(xvfb):
-        #if we're here, there is an X11 server, but it isn't the one we started!
+        # if we're here, there is an X11 server, but it isn't the one we started!
         log = get_vfb_logger()
         log("verify_display_ready%s display exists, but the vfb process has terminated",
-                (xvfb, display_name, shadowing_check, log_errors))
+            (xvfb, display_name, shadowing_check, log_errors))
         if log_errors:
             log.error(f"There is an X11 server already running on display {display_name}:")
             log.error("You may want to use:")

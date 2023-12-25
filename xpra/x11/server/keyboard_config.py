@@ -24,7 +24,7 @@ from xpra.x11.xkbhelper import (
     clear_modifiers, set_modifiers, map_missing_modifiers,
     clean_keyboard_state, get_keycode_mappings,
     DEBUG_KEYSYMS,
-    )
+)
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.log import Logger
 
@@ -38,15 +38,15 @@ MAP_MISSING_MODIFIERS : bool = envbool("XPRA_MAP_MISSING_MODIFIERS", True)
 SHIFT_LOCK : bool = envbool("XPRA_SHIFT_LOCK", False)
 
 ALL_X11_MODIFIERS : dict[str, int] = {
-                    "shift"     : 0,
-                    "lock"      : 1,
-                    "control"   : 2,
-                    "mod1"      : 3,
-                    "mod2"      : 4,
-                    "mod3"      : 5,
-                    "mod4"      : 6,
-                    "mod5"      : 7
-                    }
+    "shift"     : 0,
+    "lock"      : 1,
+    "control"   : 2,
+    "mod1"      : 3,
+    "mod2"      : 4,
+    "mod3"      : 5,
+    "mod4"      : 6,
+    "mod5"      : 7
+}
 
 
 def kmlog(keyname, msg, *args) -> None:

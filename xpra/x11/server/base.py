@@ -35,15 +35,17 @@ def root_prop_set(prop_name:str, prop_type, value) -> None:
     # pylint: disable=import-outside-toplevel
     prop_set(X11Keyboard.get_root_xid(), prop_name, prop_type, value)
 
+
 def root_prop_del(prop_name:str):
     prop_del(X11Keyboard.get_root_xid(), prop_name)
+
 
 def _get_antialias_hintstyle(antialias:typedict) -> str:
     hintstyle = antialias.strget("hintstyle", "").lower()
     if hintstyle in ("hintnone", "hintslight", "hintmedium", "hintfull"):
-        #X11 clients can give us what we need directly:
+        # X11 clients can give us what we need directly:
         return hintstyle
-    #win32 style contrast value:
+    # win32 style contrast value:
     contrast = antialias.intget("contrast", -1)
     if contrast>1600:
         return "hintfull"
@@ -77,9 +79,9 @@ class X11ServerBase(X11ServerCore):
 
     def do_init(self, opts) -> None:
         super().do_init(opts)
-        #the server class sets the default value for 'xsettings_enabled'
-        #it is overridden in the seamless server (enabled by default),
-        #and we let the options have the final say here:
+        # the server class sets the default value for 'xsettings_enabled'
+        # it is overridden in the seamless server (enabled by default),
+        # and we let the options have the final say here:
         self._xsettings_enabled = parse_bool("xsettings", opts.xsettings, self._xsettings_enabled)
         log("xsettings_enabled(%s)=%s", opts.xsettings, self._xsettings_enabled)
         if self._xsettings_enabled:
@@ -96,8 +98,7 @@ class X11ServerBase(X11ServerCore):
         super().clean_x11_properties()
         self.do_clean_x11_properties("XPRA_SERVER_PID")
 
-
-    def init_display_pid(self, pid:int) -> None:
+    def init_display_pid(self, pid: int) -> None:
         if not pid:
             log.info("xvfb pid not found")
         else:
@@ -120,41 +121,41 @@ class X11ServerBase(X11ServerCore):
                     "Xorg.log.old",
                     "xorg.conf.d/*"
                     "xorg.conf.d"
-                    )
-
+                )
 
     def late_cleanup(self) -> None:
         super().late_cleanup()
         self.kill_display()
 
-
-    def configure_best_screen_size(self) -> tuple[int,int]:
+    def configure_best_screen_size(self) -> tuple[int, int]:
         root_w, root_h = super().configure_best_screen_size()
         if self.touchpad_device:
             self.touchpad_device.root_w = root_w
             self.touchpad_device.root_h = root_h
         return root_w, root_h
 
-
-    def init_dbus(self, dbus_pid:int, dbus_env:dict[str,str]) -> None:
+    def init_dbus(self, dbus_pid:int, dbus_env:dict[str, str]) -> None:
         dbuslog("init_dbus(%s, %s)", dbus_pid, dbus_env)
         if dbus_pid and dbus_env:
             os.environ.update(dbus_env)
             self.dbus_pid = dbus_pid
             self.dbus_env = dbus_env
-            #now we can save values on the display
-            #(we cannot access bindings until dbus has started up)
+            # now we can save values on the display
+            # (we cannot access bindings until dbus has started up)
+
             def _save_int(prop_name, pid):
                 root_prop_set(prop_name, "u32", pid)
+
             def _save_str(prop_name, s):
                 root_prop_set(prop_name, "latin1", s)
-            #DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-B8CDeWmam9,guid=b77f682bd8b57a5cc02f870556cbe9e9
-            #DBUS_SESSION_BUS_PID=11406
-            #DBUS_SESSION_BUS_WINDOWID=50331649
-            for n,conv,save in (
-                    ("ADDRESS",     bytestostr,     _save_str),
-                    ("PID",         int,            _save_int),
-                    ("WINDOW_ID",   int,            _save_int)):
+            # DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-B8CDeWmam9,guid=b77f682bd8b57a5cc02f870556cbe9e9
+            # DBUS_SESSION_BUS_PID=11406
+            # DBUS_SESSION_BUS_WINDOWID=50331649
+            for n, conv, save in (
+                ("ADDRESS", bytestostr, _save_str),
+                ("PID", int, _save_int),
+                ("WINDOW_ID", int, _save_int),
+            ):
                 k = f"DBUS_SESSION_BUS_{n}"
                 v = dbus_env.get(k)
                 if v is None:
@@ -168,15 +169,14 @@ class X11ServerBase(X11ServerCore):
                     log.error(f" with value {v!r}")
                     log.estr(e)
 
-
     def last_client_exited(self) -> None:
         self.reset_settings()
         super().last_client_exited()
 
     def init_virtual_devices(self, devices:dict[str,Any]) -> None:
         # pylint: disable=import-outside-toplevel
-        #(this runs in the main thread - before the main loop starts)
-        #for the time being, we only use the pointer if there is one:
+        # (this runs in the main thread - before the main loop starts)
+        # for the time being, we only use the pointer if there is one:
         pointer = devices.get("pointer")
         touchpad = devices.get("touchpad")
         mouselog("init_virtual_devices(%s) got pointer=%s, touchpad=%s", devices, pointer, touchpad)
@@ -208,8 +208,9 @@ class X11ServerBase(X11ServerCore):
             xtest.move_pointer(ox, oy)
         nx, ny = 200, 200
         self.pointer_device.move_pointer(nx, ny)
+
         def verify_uinput_moved():
-            pos = None  #@UnusedVariable
+            pos = None  # @UnusedVariable
             with xswallow:
                 pos = X11Keyboard.query_pointer()
                 mouselog("X11Keyboard.query_pointer=%s", pos)
@@ -221,13 +222,11 @@ class X11ServerBase(X11ServerCore):
                 self.input_devices = "xtest"
         self.timeout_add(1000, verify_uinput_moved)
 
-
     def dpi_changed(self) -> None:
-        #re-apply the same settings, which will apply the new dpi override to it:
+        # re-apply the same settings, which will apply the new dpi override to it:
         self.update_server_settings()
 
-
-    def get_info(self, proto=None, client_uuids=None) -> dict[str,Any]:
+    def get_info(self, proto=None, client_uuids=None) -> dict[str, Any]:
         info = super().get_info(proto=proto, client_uuids=client_uuids)
         display_info = info.setdefault("display", {})
         if self.display_pid:
@@ -235,10 +234,10 @@ class X11ServerBase(X11ServerCore):
         display_info["icc"] = self.get_icc_info()
         return info
 
-    def get_icc_info(self) -> dict[str,Any]:
-        icc_info : dict[str,Any] = {
-            "sync"  : SYNC_ICC,
-            }
+    def get_icc_info(self) -> dict[str, Any]:
+        icc_info : dict[str, Any] = {
+            "sync" : SYNC_ICC,
+        }
         if SYNC_ICC:
             icc_info["profile"] = hexstr(self.icc_profile)
         return icc_info
@@ -247,7 +246,7 @@ class X11ServerBase(X11ServerCore):
         if not SYNC_ICC:
             return
         ui_clients = [s for s in self._server_sources.values() if s.ui_client]
-        if len(ui_clients)!=1:
+        if len(ui_clients) != 1:
             screenlog("%i UI clients, resetting ICC profile to default", len(ui_clients))
             self.reset_icc_profile()
             return
@@ -270,7 +269,6 @@ class X11ServerBase(X11ServerCore):
         root_prop_del("_ICC_PROFILE_IN_X_VERSION")
         self.icc_profile = b""
 
-
     def reset_settings(self) -> None:
         if not self._xsettings_enabled:
             return
@@ -289,23 +287,25 @@ class X11ServerBase(X11ServerCore):
 
     def init_all_server_settings(self) -> None:
         log("init_all_server_settings() dpi=%i, default_dpi=%i", self.dpi, self.default_dpi)
-        #almost like update_all, except we use the default_dpi,
-        #since this is called before the first client connects
-        self.do_update_server_settings({
-            "resource-manager"  : b"",
-            "xsettings-blob"    : (0, [])
-            }, reset = True, dpi = self.default_dpi, cursor_size=24)
+        # almost like update_all, except we use the default_dpi,
+        # since this is called before the first client connects
+        self.do_update_server_settings(
+            {
+                "resource-manager": b"",
+                "xsettings-blob": (0, [])
+            }, reset=True, dpi=self.default_dpi, cursor_size=24)
 
     def update_all_server_settings(self, reset=False) -> None:
-        self.update_server_settings({
-            "resource-manager"  : b"",
-            "xsettings-blob"    : (0, []),
+        self.update_server_settings(
+            {
+                "resource-manager": b"",
+                "xsettings-blob": (0, []),
             }, reset=reset)
 
     def update_server_settings(self, settings=None, reset=False) -> None:
         self.do_update_server_settings(settings or self._settings, reset,
-                                self.dpi, self.double_click_time, self.double_click_distance,
-                                self.antialias, self.cursor_size)
+                                       self.dpi, self.double_click_time, self.double_click_distance,
+                                       self.antialias, self.cursor_size)
 
     def do_update_server_settings(self, settings, reset=False,
                                   dpi=0, double_click_time=0, double_click_distance=(-1, -1),
@@ -314,11 +314,11 @@ class X11ServerBase(X11ServerCore):
             log(f"ignoring xsettings update: {settings}")
             return
         if reset:
-            #FIXME: preserve serial? (what happens when we change values which had the same serial?)
+            # FIXME: preserve serial? (what happens when we change values which had the same serial?)
             self.reset_settings()
             self._settings = {}
             if self._default_xsettings:
-                #try to parse default xsettings into a dict:
+                # try to parse default xsettings into a dict:
                 try:
                     for _, prop_name, value, _ in self._default_xsettings[1]:
                         self._settings[prop_name] = value
@@ -332,14 +332,14 @@ class X11ServerBase(X11ServerCore):
         log(f" {dpi=}")
         log(f" {double_click_time=}, {double_click_distance=}")
         log(f" {antialias=}")
-        #older versions may send keys as "bytes":
-        settings = {bytestostr(k): v for k,v in settings.items()}
+        # older versions may send keys as "bytes":
+        settings = {bytestostr(k): v for k, v in settings.items()}
         self._settings.update(settings)
         for k, v in settings.items():
-            #cook the "resource-manager" value to add the DPI and/or antialias values:
-            if k=="resource-manager" and (dpi>0 or antialias or cursor_size>0):
+            # cook the "resource-manager" value to add the DPI and/or antialias values:
+            if k == "resource-manager" and (dpi > 0 or antialias or cursor_size > 0):
                 value = bytestostr(v)
-                #parse the resources into a dict:
+                # parse the resources into a dict:
                 values={}
                 options = value.split("\n")
                 for option in options:
@@ -363,9 +363,9 @@ class X11ServerBase(X11ServerCore):
                     ad = typedict(antialias)
                     subpixel_order = "none"
                     sss = tuple(self._server_sources.values())
-                    if len(sss)==1:
-                        #only honour sub-pixel hinting if a single client is connected
-                        #and only when it is not using any scaling (or overridden with SCALED_FONT_ANTIALIAS):
+                    if len(sss) == 1:
+                        # only honour sub-pixel hinting if a single client is connected
+                        # and only when it is not using any scaling (or overridden with SCALED_FONT_ANTIALIAS):
                         ss = sss[0]
                         ds_unscaled = getattr(ss, "desktop_size_unscaled", None)
                         ds_scaled = getattr(ss, "desktop_size", None)
@@ -378,59 +378,61 @@ class X11ServerBase(X11ServerCore):
                         "Xft.hintstyle"  : _get_antialias_hintstyle(ad),
                     }
                 log(f"server_settings: resource-manager {values=}")
-                #convert the dict back into a resource string:
+                # convert the dict back into a resource string:
                 value = ''
                 for vk, vv in values.items():
                     value += f"{vk}:\t{vv}\n"
-                #record the actual value used
+                # record the actual value used
                 self._settings["resource-manager"] = value
                 v = value.encode("utf-8")
 
-            #cook xsettings to add various settings:
-            #(as those may not be present in xsettings on some platforms.. like win32 and osx)
-            if k=="xsettings-blob" and \
-            (self.double_click_time>0 or self.double_click_distance!=(-1, -1) or antialias or dpi>0):
-                #start by removing blacklisted options:
+            # cook xsettings to add various settings:
+            # (as those may not be present in xsettings on some platforms.. like win32 and osx)
+            have_override = self.double_click_time > 0 or self.double_click_distance != (-1, -1) or antialias or dpi > 0
+            if k == "xsettings-blob" and have_override:
+                # start by removing blacklisted options:
                 def filter_blacklisted():
                     serial, values = v
                     new_values = []
-                    for _t,_n,_v,_s in values:
+                    for _t, _n, _v, _s in values:
                         if bytestostr(_n) in BLACKLISTED_XSETTINGS:
                             log("skipped blacklisted option %s", (_t, _n, _v, _s))
                         else:
                             new_values.append((_t, _n, _v, _s))
                     return serial, new_values
                 v = filter_blacklisted()
+
                 def set_xsettings_value(name, value_type, value):
-                    #remove existing one, if any:
+                    # remove existing one, if any:
                     serial, values = v
                     bn = name.encode("utf-8")
                     new_values = [(_t,_n,_v,_s) for (_t,_n,_v,_s) in values if _n!=bn]
                     new_values.append((value_type, bn, value, 0))
                     return serial, new_values
+
                 def set_xsettings_int(name, value):
-                    if value<0: #not set, return v unchanged
+                    if value < 0:  # not set, return v unchanged
                         return v
                     return set_xsettings_value(name, XSettingsType.Integer, value)
-                if dpi>0:
+                if dpi > 0:
                     v = set_xsettings_int("Xft/DPI", dpi*1024)
                 if double_click_time>0:
                     v = set_xsettings_int("Net/DoubleClickTime", self.double_click_time)
                 if antialias:
                     ad = typedict(antialias)
-                    v = set_xsettings_int("Xft/Antialias",  ad.intget("enabled", -1))
-                    v = set_xsettings_int("Xft/Hinting",    ad.intget("hinting", -1))
+                    v = set_xsettings_int("Xft/Antialias", ad.intget("enabled", -1))
+                    v = set_xsettings_int("Xft/Hinting", ad.intget("hinting", -1))
                     orientation = ad.strget("orientation", "none").lower()
-                    v = set_xsettings_value("Xft/RGBA",     XSettingsType.String, orientation)
+                    v = set_xsettings_value("Xft/RGBA", XSettingsType.String, orientation)
                     v = set_xsettings_value("Xft/HintStyle", XSettingsType.String, _get_antialias_hintstyle(ad))
                 if double_click_distance!=(-1, -1):
-                    #some platforms give us a value for each axis,
-                    #but X11 only has one, so take the average
+                    # some platforms give us a value for each axis,
+                    # but X11 only has one, so take the average
                     try:
                         x,y = double_click_distance
-                        if x>0 and y>0:
+                        if x > 0 and y > 0:
                             d = round((x+y)/2)
-                            d = max(1, min(128, d))     #sanitize it a bit
+                            d = max(1, min(128, d))     # sanitize it a bit
                             v = set_xsettings_int("Net/DoubleClickDistance", d)
                     except Exception as e:
                         log.warn("error setting double click distance from %s: %s", double_click_distance, e)

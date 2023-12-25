@@ -17,7 +17,7 @@ class XRootPropWatcher(GObject.GObject):
     __gsignals__ = {
         "root-prop-changed": (SIGNAL_RUN_LAST, GObject.TYPE_NONE, (GObject.TYPE_STRING, )),
         "xpra-property-notify-event": one_arg_signal,
-        }
+    }
 
     def __init__(self, props, root_window):
         super().__init__()
@@ -29,14 +29,12 @@ class XRootPropWatcher(GObject.GObject):
         add_event_receiver(self.xid, self)
 
     def cleanup(self):
-        #this must be called from the UI thread!
+        # this must be called from the UI thread!
         remove_event_receiver(self.xid, self)
         self._root.set_events(self._saved_event_mask)
 
-
-    def __repr__(self):  #pylint: disable=arguments-differ
+    def __repr__(self):  # pylint: disable=arguments-differ
         return "XRootPropWatcher"
-
 
     def do_xpra_property_notify_event(self, event):
         log("XRootPropWatcher.do_xpra_property_notify_event(%s)", event)

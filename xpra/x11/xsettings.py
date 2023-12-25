@@ -16,9 +16,9 @@ from xpra.log import Logger
 
 log = Logger("x11", "xsettings")
 
-#the X11 atom name for the XSETTINGS property:
+# the X11 atom name for the XSETTINGS property:
 XSETTINGS = "_XSETTINGS_SETTINGS"
-#constant type in prop.py:
+# constant type in prop.py:
 XSETTINGS_TYPE = "xsettings-settings"
 
 XNone = 0
@@ -26,6 +26,7 @@ XNone = 0
 
 class XSettingsManager:
     __slots__ = ("_manager", "_window")
+
     def __init__(self, screen_number=0):
         selection = f"_XSETTINGS_S{screen_number}"
         self._manager = ManagerSelection(selection)
@@ -89,7 +90,8 @@ class XSettingsWatcher(XSettingsHelper, GObject.GObject):
 
         "xpra-property-notify-event": one_arg_signal,
         "xpra-client-message-event": one_arg_signal,
-        }
+    }
+
     def __init__(self, screen_number=0):
         GObject.GObject.__init__(self)
         XSettingsHelper.__init__(self, screen_number)
@@ -106,10 +108,8 @@ class XSettingsWatcher(XSettingsHelper, GObject.GObject):
         if owner is not None:
             add_event_receiver(owner.get_xid(), self)
 
-    def do_xpra_client_message_event(self, event):
-        if (event.window is self.xid
-            and event.message_type == "MANAGER"
-            and event.data[1] == get_xatom(self._selection)):
+    def do_xpra_client_message_event(self, evt):
+        if evt.window is self.xid and evt.message_type == "MANAGER" and evt.data[1] == get_xatom(self._selection):
             log("XSettings manager changed")
             self._add_watch()
             self.emit("xsettings-changed")
@@ -118,6 +118,7 @@ class XSettingsWatcher(XSettingsHelper, GObject.GObject):
         if str(event.atom) == XSETTINGS:
             log("XSettings property value changed")
             self.emit("xsettings-changed")
+
 
 GObject.type_register(XSettingsWatcher)
 
@@ -131,7 +132,7 @@ def main():
     assert s
     seq, data = s
     print(f"XSettings: (sequence {seq})")
-    for vtype, prop, value, serial  in data:
+    for vtype, prop, value, serial in data:
         if isinstance(value, bytes):
             vstr = value.decode()
         else:

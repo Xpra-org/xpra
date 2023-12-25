@@ -6,17 +6,21 @@
 from xpra.x11.gtk_x11.prop import prop_set, prop_get, prop_del
 from xpra.gtk.util import get_default_root_window
 
+
 def root_xid() -> int:
     root = get_default_root_window()
     if not root:
         return 0
     return root.get_xid()
 
+
 def save_uuid(uuid):
     prop_set(root_xid(), "XPRA_SERVER_UUID", "latin1", uuid)
 
+
 def get_uuid():
     return prop_get(root_xid(), "XPRA_SERVER_UUID", "latin1", ignore_errors=True)
+
 
 def del_uuid():
     prop_del(root_xid(), "XPRA_SERVER_UUID")
@@ -25,8 +29,10 @@ def del_uuid():
 def save_mode(mode):
     prop_set(root_xid(), "XPRA_SERVER_MODE", "latin1", mode)
 
+
 def get_mode():
     return prop_get(root_xid(), "XPRA_SERVER_MODE", "latin1", ignore_errors=True)
+
 
 def del_mode():
     prop_del(root_xid(), "XPRA_SERVER_MODE")

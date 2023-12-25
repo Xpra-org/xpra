@@ -7,7 +7,7 @@ from uinput import (
     BTN_LEFT, BTN_RIGHT, BTN_MIDDLE, BTN_SIDE, BTN_EXTRA,   # @UnresolvedImport
     REL_WHEEL, REL_HWHEEL,                                  # @UnresolvedImport
     REL_X, REL_Y, BTN_TOUCH, ABS_X, ABS_Y, ABS_PRESSURE,    # @UnresolvedImport
-    )
+)
 
 from xpra.util.env import envint
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
@@ -30,27 +30,29 @@ BUTTON_STR = {
     BTN_EXTRA    : "BTN_EXTRA",
     REL_WHEEL    : "REL_WHEEL",
     REL_HWHEEL   : "REL_HWHEEL",
-    }
+}
 BUTTON_MAP = {
     1   : BTN_LEFT,
     3   : BTN_RIGHT,
     2   : BTN_MIDDLE,
     8   : BTN_SIDE,
     9   : BTN_EXTRA,
-    }
+}
 
 
 class UInputDevice:
     __slots__ = ("device", "device_path", "wheel_delta")
+
     def __init__(self, device, device_path):
         self.device = device
         self.device_path : str = device_path
         self.wheel_delta : dict[int,float] = {}
-        #the first event always goes MIA:
-        #http://who-t.blogspot.co.at/2012/06/xi-21-protocol-design-issues.html
-        #so synthesize a dummy one now:
+        # the first event always goes MIA:
+        # http://who-t.blogspot.co.at/2012/06/xi-21-protocol-design-issues.html
+        # so synthesize a dummy one now:
         with xlog:
-            from xpra.x11.bindings.xi2 import X11XI2Bindings  #pylint: disable=no-name-in-module, import-outside-toplevel
+            # pylint: disable=no-name-in-module, import-outside-toplevel
+            from xpra.x11.bindings.xi2 import X11XI2Bindings
             xi2 = X11XI2Bindings()
             v = xi2.get_xi_version()
             log("XInput version %s", ".".join(str(x) for x in v))
@@ -58,29 +60,29 @@ class UInputDevice:
                 self.wheel_motion(4, 1)
 
     def click(self, button, pressed, props):
-        #this multiplier is based on the values defined in 71-xpra-virtual-pointer.rules as:
-        #MOUSE_WHEEL_CLICK_COUNT=360
-        #MOUSE_WHEEL_CLICK_ANGLE=1
+        # this multiplier is based on the values defined in 71-xpra-virtual-pointer.rules as:
+        # MOUSE_WHEEL_CLICK_COUNT=360
+        # MOUSE_WHEEL_CLICK_ANGLE=1
         mult = MOUSE_WHEEL_CLICK_MULTIPLIER
         if button==4:
             ubutton = REL_WHEEL
             val = 1*mult
-            if pressed: #only send one event
+            if pressed:     # only send one event
                 return
         elif button==5:
             ubutton = REL_WHEEL
             val = -1*mult
-            if pressed: #only send one event
+            if pressed:     # only send one event
                 return
         elif button==6:
             ubutton = REL_HWHEEL
             val = 1*mult
-            if pressed: #only send one event
+            if pressed:     # only send one event
                 return
         elif button==7:
             ubutton = REL_HWHEEL
             val = -1*mult
-            if pressed: #only send one event
+            if pressed:     # only send one event
                 return
         else:
             ubutton = BUTTON_MAP.get(button)
@@ -117,6 +119,7 @@ class UInputDevice:
     def has_precise_wheel(self) -> bool:
         return True
 
+
 class UInputPointerDevice(UInputDevice):
 
     def __repr__(self):
@@ -124,23 +127,25 @@ class UInputPointerDevice(UInputDevice):
 
     def move_pointer(self, x:int, y:int, props=None):
         log("UInputPointerDevice.move_pointer(%i, %s, %s)", x, y, props)
-        #calculate delta:
+        # calculate delta:
         with xsync:
             cx, cy = X11Keyboard.query_pointer()
             log("X11Keyboard.query_pointer=%s, %s", cx, cy)
             dx = x-cx
             dy = y-cy
             log("delta(%s, %s)=%s, %s", cx, cy, dx, dy)
-        #self.device.emit(ABS_X, x, syn=(dy==0))
-        #self.device.emit(ABS_Y, y, syn=True)
+        # self.device.emit(ABS_X, x, syn=(dy==0))
+        # self.device.emit(ABS_Y, y, syn=True)
         if dx or dy:
             if dx!=0:
                 self.device.emit(REL_X, dx, syn=(dy==0))
             if dy!=0:
                 self.device.emit(REL_Y, dy, syn=True)
 
+
 class UInputTouchpadDevice(UInputDevice):
     __slots__ = ("root_w", "root_h")
+
     def __init__(self, device, device_path, root_w, root_h):
         super().__init__(device, device_path)
         self.root_w = root_w
