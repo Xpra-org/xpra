@@ -827,13 +827,25 @@ class ServerCore:
     def handle_command_request(self, proto, *args) -> None:
         """ client sent a command request as part of the hello packet """
         assert args, "no arguments supplied"
-        code, response = self.process_control_command(*args)
+        code, response = self.process_control_command(proto, *args)
         hello = {"command_response"  : (code, response)}
         proto.send_now(("hello", hello))
 
-    def process_control_command(self, *args):
+    def process_control_command(self, protocol, *args):
+        try:
+            options = protocol._conn.options
+            control = options.get("control", "yes")
+        except AttributeError:
+            control = "no"
+        if not parse_bool("control", control):
+            err = "control commands are not enabled on this connection"
+            log.warn(f"Warning: {err}")
+            return 6, err
         from xpra.server.control_command import ControlError
-        assert args, "control command must have arguments"
+        if not args:
+            err = "control command must have arguments"
+            log.warn(f"Warning: {err}")
+            return 6, err
         name = args[0]
         try:
             command = self.control_commands.get(name) or self.control_commands.get("*")
