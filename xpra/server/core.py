@@ -59,7 +59,7 @@ from xpra.os_util import (
     get_hex_uuid,
     getuid, POSIX, OSX, WIN32,
 )
-from xpra.util.system import get_frame_info, get_info_env, get_sysconfig_info, platform_name, register_SIGUSR_signals
+from xpra.util.system import get_frame_info, get_env_info, get_sysconfig_info, platform_name, register_SIGUSR_signals
 from xpra.util.parsing import parse_encoded_bin_data
 from xpra.util.io import load_binary_file, filedata_nocrlf, which
 from xpra.server.background_worker import stop_worker, get_worker, add_work_item
@@ -2516,7 +2516,7 @@ class ServerCore:
             up("logging", get_log_info())
             from xpra.platform.info import get_sys_info
             up("sys", get_sys_info())
-            up("env", get_info_env())
+            up("env", get_env_info())
             if self.child_reaper:
                 info.update(self.child_reaper.get_info())
             if self.dbus_pid:

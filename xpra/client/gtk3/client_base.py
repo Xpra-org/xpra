@@ -15,9 +15,7 @@ from typing import Any
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized, pver, strtobytes, bytestostr, hexstr, memoryview_to_bytes
 from xpra.util.env import envint, envbool, osexpand, first_time, IgnoreWarningsContext, ignorewarnings
-from xpra.os_util import (
-    gi_import,
-    WIN32, OSX, POSIX, )
+from xpra.os_util import gi_import, WIN32, OSX, POSIX
 from xpra.util.system import is_Wayland, is_gnome
 from xpra.util.io import load_binary_file
 from xpra.net.common import PacketType

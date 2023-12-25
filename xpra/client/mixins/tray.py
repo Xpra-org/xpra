@@ -131,16 +131,11 @@ class TrayClient(StubClientMixin):
         t : list[str] = []
         if self.session_name or self.server_session_name:
             t.append(self.session_name or self.server_session_name)
-        p = self._protocol
-        if p:
-            conn = getattr(p, "_conn", None)
-            if conn:
-                from xpra.net.bytestreams import pretty_socket
-                cinfo = conn.get_info()
-                endpoint = pretty_socket(cinfo.get("endpoint", conn.target)).split("?")[0]
-                t.append(endpoint)
+        ce = self.get_connection_endpoint()
+        if ce:
+            t.append(ce)
         if not t:
             t.insert(0, "Xpra")
-        v = "\n".join(str(x) for x in t)
+        v = "\n".join(str(x) for x in t if x)
         log("get_tray_title()=%r (items=%s)", v, tuple(bytestostr(x) for x in t))
         return v

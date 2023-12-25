@@ -18,12 +18,9 @@ from xpra.common import FULL_INFO, noop, NotificationID, ConnectionMessage, noer
 from xpra.util.version import full_version_str
 from xpra.net import compression, packet_encoding
 from xpra.net.common import PacketType
-from xpra.net.net_util import get_info as get_net_info
 from xpra.util.child_reaper import reaper_cleanup
-from xpra.platform.info import get_sys_info
-from xpra.os_util import (
-    POSIX, WIN32, OSX, )
-from xpra.util.system import is_Wayland, get_frame_info, get_info_env, get_sysconfig_info, platform_name
+from xpra.os_util import POSIX, WIN32, OSX
+from xpra.util.system import is_Wayland, platform_name
 from xpra.util.types import typedict, merge_dicts
 from xpra.util.screen import log_screen_sizes
 from xpra.util.str_fn import std, csv, ellipsizer, repr_ellipsized, bytestostr
@@ -32,7 +29,7 @@ from xpra.scripts.config import parse_bool
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.util.version import get_platform_info
 from xpra.client.gui import features
-from xpra.log import Logger, get_info as get_log_info
+from xpra.log import Logger
 
 
 CLIENT_BASES : list[type] = [XpraClientBase]
@@ -82,7 +79,6 @@ log("UIXpraClient%s: %s", ClientBaseClass, CLIENT_BASES)
 
 NOTIFICATION_EXIT_DELAY = envint("XPRA_NOTIFICATION_EXIT_DELAY", 2)
 MOUSE_DELAY_AUTO = envbool("XPRA_MOUSE_DELAY_AUTO", True)
-SYSCONFIG = envbool("XPRA_SYSCONFIG", FULL_INFO>1)
 DELAY_KEYBOARD_DATA = envbool("XPRA_DELAY_KEYBOARD_DATA", True)
 
 
@@ -285,19 +281,10 @@ class UIXpraClient(ClientBaseClass):
         log("UIXpraClient.signal_cleanup() done")
 
 
-    def get_info(self) -> dict[str,Any]:
-        info : dict[str,Any] = {}
+    def get_info(self) -> dict[str, Any]:
+        info : dict[str, Any] = super().get_info()
         if FULL_INFO>0:
-            info |= {
-                "pid"       : os.getpid(),
-                "sys"       : get_sys_info(),
-                "network"   : get_net_info(),
-                "logging"   : get_log_info(),
-                "threads"   : get_frame_info(),
-                "env"       : get_info_env(),
-            }
-        if SYSCONFIG:
-            info["sysconfig"] = get_sysconfig_info()
+            info["session-name"] = self.session_name
         for c in CLIENT_BASES:
             with log.trap_error("Error collection information from %s", c):
                 i = c.get_info(self)

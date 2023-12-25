@@ -14,7 +14,6 @@ from time import monotonic
 from typing import Any
 from collections.abc import Callable
 
-from xpra.log import Logger
 from xpra.scripts.config import InitExit
 from xpra.common import (
     SPLASH_EXIT_DELAY, FULL_INFO, LOG_HELLO,
@@ -40,9 +39,11 @@ from xpra.net.crypto import (
     DEFAULT_MODE, DEFAULT_KEYSIZE, DEFAULT_KEY_HASH, DEFAULT_KEY_STRETCH,
 )
 from xpra.util.version import get_version_info, vparts, XPRA_VERSION
-from xpra.platform.info import get_name, get_username
+from xpra.net.net_util import get_info as get_net_info
+from xpra.log import Logger, get_info as get_log_info
+from xpra.platform.info import get_name, get_username, get_sys_info
 from xpra.os_util import get_machine_id, get_user_uuid, force_quit, gi_import, BITS
-from xpra.util.system import SIGNAMES, register_SIGUSR_signals
+from xpra.util.system import SIGNAMES, register_SIGUSR_signals, get_frame_info, get_env_info, get_sysconfig_info
 from xpra.util.io import filedata_nocrlf, stderr_print, use_gui_prompt
 from xpra.util.pysystem import dump_all_frames, detect_leaks
 from xpra.util.types import typedict
@@ -71,6 +72,7 @@ MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 0)
 SPLASH_LOG = envbool("XPRA_SPLASH_LOG", False)
 LOG_DISCONNECT = envbool("XPRA_LOG_DISCONNECT", True)
 SKIP_UI = envbool("XPRA_SKIP_UI", False)
+SYSCONFIG = envbool("XPRA_SYSCONFIG", FULL_INFO>1)
 
 ALL_CHALLENGE_HANDLERS = os.environ.get("XPRA_ALL_CHALLENGE_HANDLERS",
                                         "uri,file,env,kerberos,gss,u2f,prompt,prompt,prompt,prompt").split(",")
@@ -329,6 +331,22 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def client_type(self) -> str:
         #overridden in subclasses!
         return "Python"
+
+    def get_info(self) -> dict[str, Any]:
+        info : dict[str, Any] = {}
+        if FULL_INFO > 0:
+            info |= {
+                "pid"       : os.getpid(),
+                "sys"       : get_sys_info(),
+                "network"   : get_net_info(),
+                "logging"   : get_log_info(),
+                "threads"   : get_frame_info(),
+                "env"       : get_env_info(),
+                "endpoint"  : self.get_connection_endpoint(),
+            }
+        if SYSCONFIG:
+            info["sysconfig"] = get_sysconfig_info()
+        return info
 
     def get_scheduler(self):
         raise NotImplementedError()
@@ -658,6 +676,17 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         # protocol may be None in "listen" mode
         if self._protocol:
             self._protocol.start()
+
+    def get_connection_endpoint(self) -> str:
+        p = self._protocol
+        if not p:
+            return ""
+        conn = getattr(p, "_conn", None)
+        if not conn:
+            return ""
+        from xpra.net.bytestreams import pretty_socket
+        cinfo = conn.get_info()
+        return pretty_socket(cinfo.get("endpoint", conn.target)).split("?")[0]
 
     def quit(self, exit_code:int|ExitCode=0) -> None:
         raise NotImplementedError()

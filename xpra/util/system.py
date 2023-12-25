@@ -271,7 +271,7 @@ def get_frame_info(ignore_threads: tuple[Thread, ...] = ()) -> dict[str | int, A
     return info
 
 
-def get_info_env() -> dict[str,str]:
+def get_env_info() -> dict[str, str]:
     filtered_env = os.environ.copy()
     if filtered_env.get('XPRA_PASSWORD'):
         filtered_env['XPRA_PASSWORD'] = "*****"
