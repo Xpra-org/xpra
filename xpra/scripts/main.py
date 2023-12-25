@@ -13,6 +13,7 @@ import glob
 import socket
 import time
 import logging
+from math import ceil
 from time import monotonic
 from subprocess import Popen, PIPE, TimeoutExpired
 import signal
@@ -3860,28 +3861,18 @@ def clean_sockets(dotxpra, sockets, timeout=LIST_REPROBE_TIMEOUT) -> None:
                 unknown.append(v)
             else:
                 sys.stdout.write(f"\t{state} session at {display} ({socket_dir})\n")
-        reprobe = unknown
-        if reprobe and timeout==LIST_REPROBE_TIMEOUT:
-            #if all the remaining sockets are old,
-            #we don't need to poll for very long,
-            #as they're very likely to be dead:
-            newest : float = 0
-            for x in reprobe:
-                sockpath = x[2]
-                try:
-                    mtime = os.stat(sockpath).st_mtime
-                except Exception:
-                    pass
-                else:
-                    newest = max(mtime, newest)
-            elapsed = time.time()-newest
-            if elapsed>60*5:
-                #wait maximum 3 seconds for old sockets
-                timeout = min(LIST_REPROBE_TIMEOUT, 3)
     #now cleanup those still unknown:
     clean_states = [SocketState.DEAD, SocketState.UNKNOWN]
     for state, display, sockpath in unknown:
         state = dotxpra.get_server_state(sockpath)
+        if state == SocketState.UNKNOWN:
+            try:
+                mtime = os.stat(sockpath).st_mtime
+                elapsed = ceil(time.time() - mtime)
+                sys.stdout.write(f"\t{state} session at {sockpath} ignored, modified {elapsed} seconds ago\n")
+                continue
+            except OSError:
+                pass
         may_cleanup_socket(state, display, sockpath, clean_states=clean_states)
 
 
