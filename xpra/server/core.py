@@ -96,7 +96,7 @@ SIMULATE_SERVER_HELLO_ERROR = envbool("XPRA_SIMULATE_SERVER_HELLO_ERROR", False)
 SERVER_SOCKET_TIMEOUT = envfloat("XPRA_SERVER_SOCKET_TIMEOUT", 0.1)
 CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
 
-SYSCONFIG = envbool("XPRA_SYSCONFIG", FULL_INFO>0)
+SYSCONFIG = envbool("XPRA_SYSCONFIG", FULL_INFO>1)
 SHOW_NETWORK_ADDRESSES = envbool("XPRA_SHOW_NETWORK_ADDRESSES", True)
 INIT_THREAD_TIMEOUT = envint("XPRA_INIT_THREAD_TIMEOUT", 10)
 HTTP_HTTPS_REDIRECT = envbool("XPRA_HTTP_HTTPS_REDIRECT", True)
@@ -2486,7 +2486,7 @@ class ServerCore:
             si = self.get_server_info()
             si.update(self.get_server_load_info())
             si.update(self.get_server_exec_info())
-            if SYSCONFIG and FULL_INFO>1:
+            if SYSCONFIG:
                 si["sysconfig"] = get_sysconfig_info()
         else:
             si = self.get_minimal_server_info()
