@@ -3,8 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#must be done before importing gobject!
-#pylint: disable=wrong-import-position
+# must be done before importing gobject!
+# pylint: disable=wrong-import-position
 
 from time import monotonic
 from types import ModuleType
@@ -22,7 +22,7 @@ from xpra.log import Logger
 
 log = Logger("gstreamer")
 
-Gst : ModuleType = import_gst()
+Gst: ModuleType = import_gst()
 if not Gst:
     raise ImportError("GStreamer bindings not found")
 GLib = gi_import("GLib")
@@ -38,7 +38,7 @@ class Pipeline(GObject.GObject):
         "error"             : one_arg_signal,
         "new-stream"        : one_arg_signal,
         "info"              : one_arg_signal,
-        }
+    }
 
     def __init__(self):
         super().__init__()
@@ -82,7 +82,6 @@ class Pipeline(GObject.GObject):
                 f.write(x)
             f.flush()
 
-
     def idle_emit(self, sig, *args) -> None:
         self.idle_add(self.emit, sig, *args)
 
@@ -95,7 +94,7 @@ class Pipeline(GObject.GObject):
         self.emit_info_timer = 0
         if self.pipeline:
             info = self.get_info()
-            #reset info:
+            # reset info:
             self.info = {}
             self.emit("info", info)
 
@@ -104,7 +103,6 @@ class Pipeline(GObject.GObject):
         if eit:
             self.emit_info_timer = 0
             self.source_remove(eit)
-
 
     def get_info(self) -> dict[str,Any]:
         return self.info.copy()
@@ -134,13 +132,13 @@ class Pipeline(GObject.GObject):
 
     def do_get_state(self, state) -> str:
         if not self.pipeline:
-            return  "stopped"
+            return "stopped"
         return {
             Gst.State.PLAYING   : "active",
             Gst.State.PAUSED    : "paused",
             Gst.State.NULL      : "stopped",
             Gst.State.READY     : "ready",
-            }.get(state, "unknown")
+        }.get(state, "unknown")
 
     def get_state(self) -> str:
         return self.state
@@ -160,9 +158,9 @@ class Pipeline(GObject.GObject):
         if not p:
             return
         log("Pipeline.stop() state=%s", self.state)
-        #uncomment this to see why we end up calling stop()
-        #import traceback
-        #for x in traceback.format_stack():
+        # uncomment this to see why we end up calling stop()
+        # import traceback
+        # for x in traceback.format_stack():
         #    for s in x.split("\n"):
         #        v = s.replace("\r", "").replace("\n", "")
         #        if v:
@@ -191,7 +189,6 @@ class Pipeline(GObject.GObject):
             noerr(f.close)
         log("Pipeline.cleanup() done")
 
-
     def gstloginfo(self, msg, *args) -> None:
         if self.state!="stopped":
             log.info(msg, *args)
@@ -204,17 +201,13 @@ class Pipeline(GObject.GObject):
         else:
             log(msg, *args)
 
-
     def onstart(self) -> None:
         """ this is overriden in some subclasses """
-
 
     def parse_tag_message(self, message) -> None:
         """ this is overriden in some subclasses """
 
-
     def on_message(self, _bus, message) -> int:
-        #log("on_message(%s, %s)", bus, message)
         log("on_message: %s", message)
         p = self.pipeline
         if not p:
@@ -233,7 +226,7 @@ class Pipeline(GObject.GObject):
                 if l!=err.message:
                     log(" %s", l)
             try:
-                #prettify (especially on win32):
+                # prettify (especially on win32):
                 p = details.find("\\Source\\")
                 if p>0:
                     details = details[p+len("\\Source\\"):]
@@ -245,7 +238,7 @@ class Pipeline(GObject.GObject):
                 log.estr(details)
             self.update_state("error")
             self.idle_emit("error", str(err))
-            #exit
+            # exit
             self.cleanup()
         elif t == Gst.MessageType.TAG:
             try:
@@ -306,8 +299,8 @@ class Pipeline(GObject.GObject):
     def parse_element_message(self, message) -> None:
         structure = message.get_structure()
         props = {
-            "seqnum"    : int(message.seqnum),
-            }
+            "seqnum" : int(message.seqnum),
+        }
         for i in range(structure.n_fields()):
             name = structure.nth_field_name(i)
             props[name] = structure.get_value(name)
@@ -315,7 +308,6 @@ class Pipeline(GObject.GObject):
 
     def do_parse_element_message(self, message, name, props=None) -> None:
         log("do_parse_element_message%s", (message, name, props))
-
 
     def get_element_properties(self, element, *properties, ignore_missing=False) -> dict[str,Any]:
         info = {}

@@ -9,14 +9,14 @@ from xpra.log import Logger
 
 
 def dbus_to_native(value):
-    #log("dbus_to_native(%s) type=%s", value, type(value))
+    # log("dbus_to_native(%s) type=%s", value, type(value))
     if value is None:
         return None
     if isinstance(value, int):
         return int(value)
     if isinstance(value, dict):
         d = {}
-        for k,v in value.items():
+        for k, v in value.items():
             d[dbus_to_native(k)] = dbus_to_native(v)
         return d
     if isinstance(value, str):
@@ -29,6 +29,7 @@ def dbus_to_native(value):
     if isinstance(value, Struct):
         return [dbus_to_native(value[i]) for i in range(len(value))]
     return value
+
 
 def native_to_dbus(value, signature=None):
     try:
@@ -48,7 +49,7 @@ def native_to_dbus(value, signature=None):
             return types.Array(signature="s")
         keytypes = set(type(x) for x in value)
         if not signature and len(keytypes)==1:
-            #just one type of key:
+            # just one type of key:
             keytype = tuple(keytypes)[0]
             if keytype is int:
                 signature = "i"
@@ -60,7 +61,7 @@ def native_to_dbus(value, signature=None):
             value = [native_to_dbus(v) for v in value]
         else:
             signature = "s"
-            #use strings as keys
+            # use strings as keys
             value = [native_to_dbus(str(v)) for v in value]
         return types.Array(value, signature=signature)
     if isinstance(value, dict):
@@ -70,7 +71,7 @@ def native_to_dbus(value, signature=None):
             keytypes = set(type(x) for x in value.keys())
             sig = None
             if len(keytypes)==1:
-                #just one type of key:
+                # just one type of key:
                 keytype = tuple(keytypes)[0]
                 if keytype is int:
                     sig = "i"
@@ -82,7 +83,7 @@ def native_to_dbus(value, signature=None):
                 value = {k: native_to_dbus(v) for k,v in value.items()}
             else:
                 sig = "s"
-                #use strings as keys
+                # use strings as keys
                 value = {str(k): native_to_dbus(v) for k,v in value.items()}
             signature = f"{sig}v"
         return types.Dictionary(value, signature=signature)
@@ -101,16 +102,16 @@ class DBusHelper:
     def dbus_to_native(self, *args):
         return dbus_to_native(*args)
 
-
     def call_function(self, bus_name, path, interface, function, args, ok_cb, err_cb):
         log = Logger("dbus")
+
         def err(msg):
             log("DBusHelper: %s", msg)
             err_cb(msg)
             return None
         from dbus import DBusException
         try:
-            #remote_object = self.bus.get_object("com.example.SampleService","/SomeObject")
+            # remote_object = self.bus.get_object("com.example.SampleService","/SomeObject")
             obj = self.bus.get_object(bus_name, path)
             log("dbus.get_object(%s, %s)=%s", bus_name, path, obj)
         except DBusException:

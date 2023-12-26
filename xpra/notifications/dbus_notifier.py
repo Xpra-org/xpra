@@ -34,6 +34,7 @@ def DBUS_Notifier_factory(*args):
         log.warn(" disable notifications to avoid this warning")
         return None
 
+
 class DBUS_Notifier(NotifierBase):
 
     def __init__(self, *args):
@@ -66,8 +67,8 @@ class DBUS_Notifier(NotifierBase):
             self.do_close(nid, actual_id)
         super().cleanup()
 
-    def show_notify(self, dbus_id, tray, nid: int|NotificationID,
-                    app_name: str, replaces_nid: int|NotificationID, app_icon,
+    def show_notify(self, dbus_id, tray, nid: int | NotificationID,
+                    app_name: str, replaces_nid: int | NotificationID, app_icon,
                     summary: str, body: str, actions, hints, timeout: int, icon) -> None:
         if not self.dbus_check(dbus_id):
             return
@@ -86,7 +87,7 @@ class DBUS_Notifier(NotifierBase):
             self.last_notification = (
                 dbus_id, tray, nid, app_name, replaces_nid,
                 app_icon, summary, body, actions, hints, timeout, icon,
-                )
+            )
 
             def NotifyReply(notification_id):
                 log("NotifyReply(%s) for nid=%i", notification_id, nid)
@@ -137,11 +138,11 @@ class DBUS_Notifier(NotifierBase):
     def NotificationClosed(self, actual_id: dbus.UInt32, reason) -> None:
         nid = self._find_nid(actual_id)
         reason_str = {
-             1  : "expired",
-             2  : "dismissed by the user",
-             3  : "closed by a call to CloseNotification",
-             4  : "Undefined/reserved reasons",
-            }.get(int(reason), str(reason))
+            1: "expired",
+            2: "dismissed by the user",
+            3: "closed by a call to CloseNotification",
+            4: "Undefined/reserved reasons",
+        }.get(int(reason), str(reason))
         log("NotificationClosed(%s, %s) nid=%s, reason=%s", actual_id, reason, nid, reason_str)
         if nid:
             self.actual_notification_id.pop(nid, None)

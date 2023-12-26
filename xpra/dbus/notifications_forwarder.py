@@ -79,7 +79,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
             "bus-name"      : BUS_NAME,
             "bus-path"      : BUS_PATH,
             "capabilities"  : get_capabilities(),
-            }
+        }
 
     def next_id(self):
         self.counter += 1
@@ -104,7 +104,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
                     int(replaces_nid), str(app_icon),
                     str(summary), str(body),
                     actions, hints, int(expire_timeout),
-                    )
+                )
             except Exception as e:
                 log("Notify(..)", exc_info=True)
                 log.error("Error: failed to parse Notify arguments:")

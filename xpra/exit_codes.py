@@ -6,6 +6,7 @@
 from enum import IntEnum
 from typing import TypeAlias
 
+
 class ExitCode(IntEnum):
     OK = 0
     CONNECTION_LOST = 1
@@ -53,4 +54,4 @@ RETRY_EXIT_CODES : list[ExitCode] = [
     ExitCode.CONNECTION_LOST,
     ExitCode.PACKET_FAILURE,
     ExitCode.UPGRADE,
-    ]
+]

@@ -8,7 +8,7 @@ import os
 from enum import Enum, IntEnum
 
 try:
-    #Python 3.11 and later:
+    # Python 3.11 and later:
     from enum import StrEnum
 except ImportError:     # pragma: no cover
     StrEnum = Enum      # type: ignore
@@ -27,7 +27,8 @@ RESOLUTION_ALIASES : dict[str,tuple[int,int]] = {
     "5K"    : (5120, 2880),
     "6K"    : (6144, 3456),
     "8K"    : (7680, 4320),
-    }
+}
+
 
 def get_default_video_max_size() -> tuple[int,int]:
     svalues = os.environ.get("XPRA_VIDEO_MAX_SIZE", "").replace("x", ",").split(",")
@@ -59,14 +60,14 @@ class SocketState(StrEnum):
     INACCESSIBLE = "INACCESSIBLE"
 
 
-#constants shared between client and server:
-#(do not modify the values, see also disconnect_is_an_error)
-#timeouts:
+# constants shared between client and server:
+# (do not modify the values, see also disconnect_is_an_error)
+# timeouts:
 class ConnectionMessage(StrEnum):
     CLIENT_PING_TIMEOUT     = "client ping timeout"
     LOGIN_TIMEOUT           = "login timeout"
     CLIENT_EXIT_TIMEOUT     = "client exit timeout"
-    #errors:
+    # errors:
     PROTOCOL_ERROR          = "protocol error"
     VERSION_ERROR           = "version error"
     CONTROL_COMMAND_ERROR   = "control command error"
@@ -76,7 +77,7 @@ class ConnectionMessage(StrEnum):
     SERVER_ERROR            = "server error"
     CONNECTION_ERROR        = "connection error"
     SESSION_NOT_FOUND       = "session not found error"
-    #informational (not a problem):
+    # informational (not a problem):
     DONE                    = "done"
     SERVER_EXIT             = "server exit"
     SERVER_UPGRADE          = "server upgrade"
@@ -86,7 +87,7 @@ class ConnectionMessage(StrEnum):
     NEW_CLIENT              = "new client"
     IDLE_TIMEOUT            = "idle timeout"
     SESSION_BUSY            = "session busy"
-    #client telling the server:
+    # client telling the server:
     CLIENT_EXIT             = "client exit"
 
 
@@ -114,7 +115,7 @@ class NotificationID(IntEnum):
 
 
 class Gravity(IntEnum):
-    #X11 constants we use for gravity:
+    # X11 constants we use for gravity:
     NorthWest   = 1
     North       = 2
     NorthEast   = 3
@@ -126,6 +127,7 @@ class Gravity(IntEnum):
     SouthEast   = 9
     Static      = 10
 
+
 def GravityStr(v):
     try:
         return str(Gravity(v))
@@ -133,7 +135,7 @@ def GravityStr(v):
         return str(v)
 
 
-#initiate-moveresize X11 constants
+# initiate-moveresize X11 constants
 class MoveResize(IntEnum):
     SIZE_TOPLEFT      = 0
     SIZE_TOP          = 1
@@ -162,33 +164,32 @@ MOVERESIZE_DIRECTION_STRING = {
     MoveResize.SIZE_KEYBOARD     : "SIZE_KEYBOARD",
     MoveResize.MOVE_KEYBOARD     : "MOVE_KEYBOARD",
     MoveResize.CANCEL            : "CANCEL",
-    }
+}
 SOURCE_INDICATION_UNSET     = 0
 SOURCE_INDICATION_NORMAL    = 1
 SOURCE_INDICATION_PAGER     = 2
 SOURCE_INDICATION_STRING    = {
-                               SOURCE_INDICATION_UNSET      : "UNSET",
-                               SOURCE_INDICATION_NORMAL     : "NORMAL",
-                               SOURCE_INDICATION_PAGER      : "PAGER",
-                               }
+    SOURCE_INDICATION_UNSET      : "UNSET",
+    SOURCE_INDICATION_NORMAL     : "NORMAL",
+    SOURCE_INDICATION_PAGER      : "PAGER",
+}
 
 
-#magic value for "workspace" window property, means unset
+# magic value for "workspace" window property, means unset
 WORKSPACE_UNSET = 65535
 WORKSPACE_ALL = 0xffffffff
 WORKSPACE_NAMES = {
-                   WORKSPACE_UNSET  : "unset",
-                   WORKSPACE_ALL    : "all",
-                   }
-
+    WORKSPACE_UNSET  : "unset",
+    WORKSPACE_ALL    : "all",
+}
 
 
 CLOBBER_UPGRADE : int = 0x1
 CLOBBER_USE_DISPLAY : int = 0x2
 
-#if you want to use a virtual screen bigger than this
-#you will need to change those values, but some broken toolkits
-#will then misbehave (they use signed shorts instead of signed ints..)
+# if you want to use a virtual screen bigger than this
+# you will need to change those values, but some broken toolkits
+# will then misbehave (they use signed shorts instead of signed ints..)
 MAX_WINDOW_SIZE : int = 2**15-2**13
 
 
@@ -214,14 +215,15 @@ DEFAULT_REFRESH_RATE : int = envint("XPRA_DEFAULT_REFRESH_RATE", 50*1000)
 SPLASH_EXIT_DELAY : int = envint("XPRA_SPLASH_EXIT_DELAY", 4)
 
 DEFAULT_XDG_DATA_DIRS : str = ":".join(
-        (
+    (
         "/usr/share",
         "/usr/local/share",
         "~/.local/share/applications",
         "~/.local/share/flatpak/exports/share",
         "/var/lib/flatpak/exports/share",
-        )
     )
+)
+
 
 def noop(*_args, **_kwargs) -> None:
     """ do nothing """
@@ -259,30 +261,30 @@ def get_refresh_rate_for_value(refresh_rate_str, invalue) -> int:
         except ValueError:
             return invalue
     if refresh_rate_str.lower() in ("none", "auto"):
-        #just honour whatever the client supplied:
+        # just honour whatever the client supplied:
         return i(invalue)
     v = i(refresh_rate_str)
     if v is not None:
-        #server specifies an absolute value:
+        # server specifies an absolute value:
         if 0<v<1000:
             return v*1000
         if v>=1000:
             return v
     if refresh_rate_str.endswith("%"):
-        #server specifies a percentage:
-        mult = i(refresh_rate_str[:-1])  #ie: "80%" -> 80
+        # server specifies a percentage:
+        mult = i(refresh_rate_str[:-1])  # ie: "80%" -> 80
         iv = i(invalue)
         if mult and iv:
             return iv*mult//100
-    #fallback to client supplied value, if any:
+    # fallback to client supplied value, if any:
     return i(invalue)
 
 
 def adjust_monitor_refresh_rate(refresh_rate_str, mdef) -> dict[int,dict]:
     adjusted = {}
     for i, monitor in mdef.items():
-        #make a copy, don't modify in place!
-        #(as this may be called multiple times on the same input dict)
+        # make a copy, don't modify in place!
+        # (as this may be called multiple times on the same input dict)
         mprops = dict(monitor)
         if refresh_rate_str!="auto":
             value = monitor.get("refresh-rate", DEFAULT_REFRESH_RATE)
@@ -306,9 +308,9 @@ DEFAULT_METADATA_SUPPORTED = (
     "command", "workspace", "above", "below", "sticky",
     "set-initial-position", "requested-position",
     "content-type",
-    #4.4:
-    #"parent", "relative-position",
-    )
+    # 4.4:
+    # "parent", "relative-position",
+)
 
 
 def noerr(fn, *args):

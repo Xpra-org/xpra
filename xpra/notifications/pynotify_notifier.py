@@ -14,11 +14,11 @@ from xpra.common import NotificationID
 
 class PyNotify_Notifier(NotifierBase):
 
-    CACHE : dict[int,Any] = {}
+    CACHE: dict[int,Any] = {}
 
-    def show_notify(self, dbus_id, tray, nid:int|NotificationID,
-                    app_name:str, replaces_nid:int|NotificationID, app_icon,
-                    summary:str, body:str, actions, hints, timeout:int, icon) -> None:
+    def show_notify(self, dbus_id, tray, nid: int | NotificationID,
+                    app_name: str, replaces_nid: int | NotificationID, app_icon,
+                    summary: str, body: str, actions, hints, timeout: int, icon) -> None:
         if not self.dbus_check(dbus_id):
             return
         icon_string = self.get_icon_string(nid, app_icon, icon)

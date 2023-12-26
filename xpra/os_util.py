@@ -165,5 +165,3 @@ def force_quit(status=1) -> None:
 
 def no_idle(fn, *args, **kwargs):
     fn(*args, **kwargs)
-
-

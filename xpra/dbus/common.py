@@ -4,6 +4,8 @@
 # later version. See the file COPYING for details.
 
 _loop = None
+
+
 def loop_init():
     global _loop
     if not _loop:
@@ -12,7 +14,10 @@ def loop_init():
         _loop = DBusGMainLoop(set_as_default=True)
     return _loop
 
+
 _session_bus = None
+
+
 def init_session_bus(private=False):
     global _session_bus
     if _session_bus and not private:
@@ -22,7 +27,10 @@ def init_session_bus(private=False):
     _session_bus = dbus.SessionBus(private=private)
     return _session_bus
 
+
 _system_bus = None
+
+
 def init_system_bus():
     global _system_bus
     if _system_bus:

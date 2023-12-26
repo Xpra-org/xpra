@@ -16,7 +16,7 @@ log = Logger("notify")
 class NotifierBase:
 
     def __init__(self, closed_cb=None, action_cb=None):
-        #posix only - but degrades ok on non-posix:
+        # posix only - but degrades ok on non-posix:
         self.dbus_id = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
         self.temp_files = {}
         self.closed_cb = closed_cb
@@ -30,14 +30,14 @@ class NotifierBase:
             for nid in self.temp_files:
                 self.clean_notification(nid)
 
-    def show_notify(self, dbus_id, tray, nid:int|NotificationID,
-                    app_name:str, replaces_nid:int|NotificationID, app_icon,
-                    summary:str, body:str, actions, hints, timeout:int, icon) -> None:
+    def show_notify(self, dbus_id, tray, nid: int | NotificationID,
+                    app_name: str, replaces_nid: int | NotificationID, app_icon,
+                    summary: str, body: str, actions, hints, timeout: int, icon) -> None:
         raise NotImplementedError()
 
-    def get_icon_string(self, nid : int|NotificationID, app_icon, icon) -> str:
+    def get_icon_string(self, nid: int | NotificationID, app_icon, icon) -> str:
         if app_icon and not os.path.isabs(app_icon):
-            #safe to use
+            # safe to use
             return app_icon
         if not icon:
             return ""
@@ -61,7 +61,7 @@ class NotifierBase:
             return temp.name
         return ""
 
-    def clean_notification(self, nid:int|NotificationID) -> None:
+    def clean_notification(self, nid: int | NotificationID) -> None:
         temp_file = self.temp_files.pop(int(nid), None)
         log("clean_notification(%s) temp_file=%s", nid, temp_file)
         if temp_file:
@@ -76,5 +76,5 @@ class NotifierBase:
             log.warn("remote dbus instance is the same as our local one")
             log.warn(" cannot forward notification to ourself as this would create a loop")
             log.warn(" disable notifications to avoid this warning")
-            return  False
+            return False
         return True
