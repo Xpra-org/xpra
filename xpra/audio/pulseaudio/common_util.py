@@ -63,8 +63,10 @@ def get_x11_property(atom_name:str) -> bytes:
             log.estr(e)
     return b""
 
+
 def get_pulse_server_x11_property() -> str:
     return bytestostr(get_x11_property("PULSE_SERVER"))
+
 
 def get_pulse_id_x11_property() -> str:
     return bytestostr(get_x11_property("PULSE_ID"))

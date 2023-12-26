@@ -12,7 +12,7 @@ from xpra.gstreamer.common import import_gst, format_element_options
 from xpra.audio.gstreamer_util import (
     parse_audio_source, get_source_plugins, get_sink_plugins, get_default_sink_plugin, get_default_source,
     can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names,
-    )
+)
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, exec_kwargs, exec_env
 from xpra.platform.paths import get_audio_command
 from xpra.common import FULL_INFO
@@ -41,7 +41,7 @@ def get_full_audio_command():
 def get_audio_wrapper_env():
     env = {}
     if WIN32:
-        #we don't want the output to go to a log file
+        # we don't want the output to go to a log file
         env["XPRA_REDIRECT_OUTPUT"] = "0"
     elif POSIX and not OSX:
         try:
@@ -53,9 +53,9 @@ def get_audio_wrapper_env():
     return env
 
 
-#this wrapper takes care of launching src.py or sink.py
+# this wrapper takes care of launching src.py or sink.py
 #
-#the command line should look something like:
+# the command line should look something like:
 # xpra MODE IN OUT PLUGIN PLUGIN_OPTIONS CODECS CODEC_OPTIONS VOLUME
 # * MODE can be _audio_record or _audio_play
 # * IN is where we read the encoded commands from, specify "-" for stdin
@@ -74,12 +74,12 @@ def get_audio_wrapper_env():
 # The output will be a regular xpra packet, containing serialized signals that we receive
 # The input can be a regular xpra packet, those are converted into method calls
 
-class audio_subprocess(subprocess_callee):
+class AudioSubprocess(subprocess_callee):
     """ Utility superclass for audio subprocess wrappers
         (see audio_record and audio_play below)
     """
     def __init__(self, wrapped_object, method_whitelist, exports_list):
-        #add bits common to both record and play:
+        # add bits common to both record and play:
         methods = method_whitelist+["set_volume", "cleanup"]
         exports = ["state-changed", "info", "error"] + exports_list
         super().__init__(wrapped_object=wrapped_object, method_whitelist=methods)
@@ -104,7 +104,7 @@ class audio_subprocess(subprocess_callee):
         wo = self.wrapped_object
         log("cleanup() wrapped object=%s", wo)
         if wo:
-            #this will stop the audio pipeline:
+            # this will stop the audio pipeline:
             self.wrapped_object = None
             try:
                 wo.cleanup()
@@ -119,7 +119,7 @@ class audio_subprocess(subprocess_callee):
         return wo is not None
 
 
-class audio_record(audio_subprocess):
+class audio_record(AudioSubprocess):
     """ wraps SoundSource as a subprocess """
     def __init__(self, *pipeline_args):
         from xpra.audio.src import AudioSource
@@ -127,7 +127,8 @@ class audio_record(audio_subprocess):
         super().__init__(audio_pipeline, [], ["new-stream", "new-buffer"])
         self.large_packets = ["new-buffer"]
 
-class audio_play(audio_subprocess):
+
+class audio_play(AudioSubprocess):
     """ wraps AudioSink as a subprocess """
     def __init__(self, *pipeline_args):
         from xpra.audio.sink import AudioSink
@@ -142,29 +143,29 @@ def run_audio(mode, error_cb, options, args):
     gst = import_gst()
     if not gst:
         return 1
-    info = mode.replace("_audio_", "")  #ie: "_audio_record" -> "record"
+    info = mode.replace("_audio_", "")      # ie: "_audio_record" -> "record"
     from xpra.platform import program_context
     with program_context(f"Xpra-Audio-{info}", f"Xpra Audio {info}"):
         log("run_audio(%s, %s, %s, %s) gst=%s", mode, error_cb, options, args, gst)
-        if info=="record":
+        if info == "record":
             subproc = audio_record
-        elif info=="play":
+        elif info == "play":
             subproc = audio_play
-        elif info=="query":
+        elif info == "query":
             plugins = get_all_plugin_names()
             sources = [x for x in get_source_plugins() if x in plugins]
             sinks = [x for x in get_sink_plugins() if x in plugins]
             from xpra.audio.gstreamer_util import get_gst_version
             d = {
-                 "encoders"         : can_encode(),
-                 "decoders"         : can_decode(),
-                 "sources"          : sources,
-                 "source.default"   : get_default_source() or "",
-                 "sinks"            : sinks,
-                 "sink.default"     : get_default_sink_plugin() or "",
-                 "muxers"           : get_muxers(),
-                 "demuxers"         : get_demuxers(),
-                 }
+                "encoders"         : can_encode(),
+                "decoders"         : can_decode(),
+                "sources"          : sources,
+                "source.default"   : get_default_source() or "",
+                "sinks"            : sinks,
+                "sink.default"     : get_default_sink_plugin() or "",
+                "muxers"           : get_muxers(),
+                "demuxers"         : get_demuxers(),
+            }
             if FULL_INFO>=1:
                 d["gst.version"] = tuple(int(x) for x in get_gst_version())
             if FULL_INFO>=2:
@@ -183,15 +184,15 @@ def run_audio(mode, error_cb, options, args):
             return 1
         assert len(args)>=6, "not enough arguments"
 
-        #the plugin to use (ie: 'pulsesrc' for src.py or 'autoaudiosink' for sink.py)
+        # the plugin to use (ie: 'pulsesrc' for src.py or 'autoaudiosink' for sink.py)
         plugin = args[2]
-        #plugin options (ie: "device=monitor_device,something=value")
+        # plugin options (ie: "device=monitor_device,something=value")
         options = parse_simple_dict(args[3])
-        #codecs:
+        # codecs:
         codecs = [x.strip() for x in args[4].split(",")]
-        #codec options:
+        # codec options:
         codec_options = parse_simple_dict(args[5])
-        #volume (optional):
+        # volume (optional):
         try:
             volume = int(args[6])
         except (ValueError, IndexError):
@@ -223,12 +224,12 @@ def _add_debug_args(command:list[str]):
         if (DEBUG_SOUND or f in debug_enabled_categories) and (f not in debug):
             debug.append(f)
     if debug:
-        #forward debug flags:
+        # forward debug flags:
         command.append("--debug")
         command.append(",".join(debug))
 
 
-class audio_subprocess_wrapper(subprocess_caller):
+class AudioSubprocessWrapper(subprocess_caller):
     """ This utility superclass deals with the caller side of the audio subprocess wrapper:
         * starting the wrapper subprocess
         * handling state-changed signal, so we have a local copy of the current value ready
@@ -241,7 +242,7 @@ class audio_subprocess_wrapper(subprocess_caller):
         self.codec = "unknown"
         self.codec_description = ""
         self.info = {}
-        #hook some default packet handlers:
+        # hook some default packet handlers:
         self.connect("state-changed", self.state_changed)
         self.connect("info", self.info_update)
         self.connect("signal", self.subprocess_signal)
@@ -250,7 +251,7 @@ class audio_subprocess_wrapper(subprocess_caller):
         env = super().get_env()
         env.update(get_audio_wrapper_env())
         env.pop("DISPLAY", None)
-        #env.pop("WAYLAND_DISPLAY", None)
+        # env.pop("WAYLAND_DISPLAY", None)
         return env
 
     def start(self):
@@ -259,15 +260,13 @@ class audio_subprocess_wrapper(subprocess_caller):
         log("start() %s subprocess(%s)=%s", self.description, self.command, self.process.pid)
         self.timeout_add(SOUND_START_TIMEOUT, self.verify_started)
 
-
     def cleanup(self):
         log("cleanup() sending cleanup request to %s", self.description)
         self.send("cleanup")
-        #cleanup should cause the process to exit
+        # cleanup should cause the process to exit
         self.timeout_add(500, self.send, "stop")
         self.timeout_add(1000, self.send, "exit")
         self.timeout_add(1500, self.stop)
-
 
     def verify_started(self):
         p = self.process
@@ -278,24 +277,21 @@ class audio_subprocess_wrapper(subprocess_caller):
         if p.poll() is not None:
             log("process has already terminated: exit code=%s", p.poll())
             return
-        #if we don't get an "info" packet, then the pipeline must have failed to start
+        # if we don't get an "info" packet, then the pipeline must have failed to start
         if not self.info:
             log.warn("Warning: the %s process has failed to start", self.description)
             self.cleanup()
 
-
     def subprocess_signal(self, _wrapper, proc):
         log("subprocess_signal: %s", proc)
-        #call via idle_add to prevent deadlocks on win32!
+        # call via idle_add to prevent deadlocks on win32!
         self.idle_add(self.stop_protocol)
-
 
     def state_changed(self, _wrapper, new_state):
         self.state = new_state
 
     def get_state(self):
         return self.state
-
 
     def get_info(self) -> dict:
         return self.info
@@ -309,7 +305,6 @@ class audio_subprocess_wrapper(subprocess_caller):
             self.info["pid"] = p.pid
         self.codec_description = info.get("codec_description")
 
-
     def set_volume(self, v):
         self.send("set_volume", int(v*100))
 
@@ -317,7 +312,7 @@ class audio_subprocess_wrapper(subprocess_caller):
         return self.info.get("volume", 100)/100.0
 
 
-class source_subprocess_wrapper(audio_subprocess_wrapper):
+class SourceSubprocessWrapper(AudioSubprocessWrapper):
 
     def __init__(self, plugin, options, codecs, volume, element_options):
         super().__init__("audio capture")
@@ -327,7 +322,7 @@ class source_subprocess_wrapper(audio_subprocess_wrapper):
             plugin or "", format_element_options(element_options),
             ",".join(codecs), "",
             str(volume),
-            ]
+        ]
         _add_debug_args(self.command)
 
     def __repr__(self):
@@ -340,7 +335,7 @@ class source_subprocess_wrapper(audio_subprocess_wrapper):
         return f"source_subprocess_wrapper({proc})"
 
 
-class sink_subprocess_wrapper(audio_subprocess_wrapper):
+class SinkSubprocessWrapper(AudioSubprocessWrapper):
 
     def __init__(self, plugin, codec, volume, element_options):
         super().__init__("audio playback")
@@ -351,7 +346,7 @@ class sink_subprocess_wrapper(audio_subprocess_wrapper):
             plugin or "", format_element_options(element_options),
             codec, "",
             str(volume),
-            ]
+        ]
         _add_debug_args(self.command)
 
     def add_data(self, data, metadata=None, packet_metadata=()):
@@ -369,11 +364,13 @@ class sink_subprocess_wrapper(audio_subprocess_wrapper):
         return "sink_subprocess_wrapper(%s)" % proc
 
 
-def start_sending_audio(plugins, audio_source_plugin, device, codec, volume, want_monitor_device, remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id):
+def start_sending_audio(plugins, audio_source_plugin, device, codec, volume, want_monitor_device,
+                        remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id):
     log("start_sending_audio%s",
-        (plugins, audio_source_plugin, device, codec, volume, want_monitor_device, remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id))
+        (plugins, audio_source_plugin, device, codec, volume, want_monitor_device,
+         remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id))
     with log.trap_error("Error setting up audio source"):
-        #info about the remote end:
+        # info about the remote end:
         PAInfo = namedtuple("PAInfo", "pulseaudio_server,pulseaudio_id,remote_decoders")
         remote = PAInfo(pulseaudio_server=remote_pulseaudio_server,
                         pulseaudio_id=remote_pulseaudio_id,
@@ -381,17 +378,18 @@ def start_sending_audio(plugins, audio_source_plugin, device, codec, volume, wan
         plugin, options = parse_audio_source(plugins, audio_source_plugin, device, want_monitor_device, remote)
         if not plugin:
             log.error("Error setting up '%s' audio stream source", (audio_source_plugin or "auto"))
-            return  None
+            return None
         log("parsed '%s':", audio_source_plugin)
         log("plugin=%s", plugin)
         log("options=%s", options)
-        return source_subprocess_wrapper(plugin, options, remote_decoders, volume, options)
+        return SourceSubprocessWrapper(plugin, options, remote_decoders, volume, options)
 
 
 def start_receiving_audio(codec):
     log("start_receiving_audio(%s)", codec)
     with log.trap_error("Error starting audio sink"):
-        return sink_subprocess_wrapper(None, codec, 1.0, {})
+        return SinkSubprocessWrapper(None, codec, 1.0, {})
+
 
 def query_audio() -> typedict:
     import subprocess
@@ -401,8 +399,10 @@ def query_audio() -> typedict:
     env = exec_env()
     env.update(get_audio_wrapper_env())
     env.pop("DISPLAY", None)
-    log(f"query_audio() command=`{command}`, env={env}, kwargs={kwargs}")
-    proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=env, universal_newlines=True, **kwargs)
+    log(f"query_audio() command={command!r}, env={env}, kwargs={kwargs}")
+    proc = subprocess.Popen(command,
+                            stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=env, universal_newlines=True,
+                            **kwargs)
     out, err = proc.communicate(None)
     log(f"query_audio() process returned {proc.returncode}")
     log(f"query_audio() out={out!r}, err={err!r}")
@@ -412,12 +412,12 @@ def query_audio() -> typedict:
     for x in out.splitlines():
         kv = x.split("=", 1)
         if len(kv)==2:
-            #ie: kv = ["decoders", "mp3,vorbis"]
+            # ie: kv = ["decoders", "mp3,vorbis"]
             k,v = kv
-            #fugly warning: all the other values are lists.. but this one is not:
+            # fugly warning: all the other values are lists.. but this one is not:
             if k!="python.bits":
                 v = v.split(",")
-            #d["decoders"] = ["mp3", "vorbis"]
+            # d["decoders"] = ["mp3", "vorbis"]
             d[k] = v
     log(f"query_audio()={d}")
     return d

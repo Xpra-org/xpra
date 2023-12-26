@@ -8,8 +8,8 @@ import sys
 import os.path
 from time import monotonic
 from typing import Any
-from gi.repository import GObject  # @UnresolvedImport
 
+from xpra.os_util import gi_import
 from xpra.util.system import SIGNAMES
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, envfloat
@@ -23,10 +23,12 @@ from xpra.audio.gstreamer_util import (
     get_encoders, get_queue_time,
     MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS,
     MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM,
-    )
+)
 from xpra.net.compression import compressed_wrapper
 from xpra.scripts.config import InitExit
 from xpra.log import Logger
+
+GObject = gi_import("GObject")
 
 log = Logger("audio")
 gstlog = Logger("gstreamer")
@@ -34,8 +36,8 @@ gstlog = Logger("gstreamer")
 JITTER = envint("XPRA_SOUND_SOURCE_JITTER", 0)
 SOURCE_QUEUE_TIME = get_queue_time(50, "SOURCE_")
 
-BUFFER_TIME = envint("XPRA_SOUND_SOURCE_BUFFER_TIME", 0)    #ie: 64
-LATENCY_TIME = envint("XPRA_SOUND_SOURCE_LATENCY_TIME", 0)  #ie: 32
+BUFFER_TIME = envint("XPRA_SOUND_SOURCE_BUFFER_TIME", 0)    # ie: 64
+LATENCY_TIME = envint("XPRA_SOUND_SOURCE_LATENCY_TIME", 0)  # ie: 32
 BUNDLE_METADATA = envbool("XPRA_SOUND_BUNDLE_METADATA", True)
 LOG_CUTTER = envbool("XPRA_SOUND_LOG_CUTTER", False)
 CUTTER_THRESHOLD = envfloat("XPRA_CUTTER_THRESHOLD", 0.0001)
@@ -73,11 +75,13 @@ class AudioSource(AudioPipeline):
                 default_src_options = {"device" : monitor_device}
             src_options = default_src_options
         if src_type not in get_source_plugins():
-            raise InitExit(1, "invalid source plugin '%s', valid options are: %s" % (src_type, ",".join(get_source_plugins())))
+            raise InitExit(1, "invalid source plugin '%s', valid options are: %s" % (src_type,
+                                                                                     ",".join(get_source_plugins())))
         matching = [x for x in CODEC_ORDER if (x in codecs and x in get_encoders())]
         log("AudioSource(..) found matching codecs %s", matching)
         if not matching:
-            raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (csv(codecs), csv(get_encoders().keys())))
+            raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (
+                csv(codecs), csv(get_encoders().keys())))
         codec = matching[0]
         encoder, fmt, stream_compressor = get_encoder_elements(codec)
         super().__init__(codec)
@@ -99,7 +103,7 @@ class AudioSource(AudioPipeline):
             src_options = {}
         src_options["name"] = "src"
         source_str = plugin_str(src_type, src_options)
-        #FIXME: this is ugly and relies on the fact that we don't pass any codec options to work!
+        # FIXME: this is ugly and relies on the fact that we don't pass any codec options to work!
         pipeline_els = [source_str]
         log("has plugin(timestamp)=%s", has_plugins("timestamp"))
         if has_plugins("timestamp"):
@@ -112,15 +116,15 @@ class AudioSource(AudioPipeline):
                 "max-size-bytes"        : 0,
                 "max-size-time"         : SOURCE_QUEUE_TIME*MS_TO_NS,
                 "leaky"                 : GST_QUEUE_LEAK_DOWNSTREAM,
-                }))
-        #if encoder in ENCODER_NEEDS_AUDIOCONVERT or src_type in SOURCE_NEEDS_AUDIOCONVERT:
+            }))
+        # if encoder in ENCODER_NEEDS_AUDIOCONVERT or src_type in SOURCE_NEEDS_AUDIOCONVERT:
         pipeline_els += ["audioconvert"]
         if has_plugins("removesilence"):
             pipeline_els += [
                 "removesilence",
                 "audioconvert",
                 "audioresample"
-                ]
+            ]
         pipeline_els.append(get_element_str("volume", {"name" : "volume", "volume" : volume}))
         if encoder:
             encoder_str = plugin_str(encoder, codec_options or get_encoder_default_options(encoder))
@@ -155,7 +159,7 @@ class AudioSource(AudioPipeline):
             except Exception as e:
                 gstlog("no %s property on %s: %s", x, self.src, e)
                 self.buffer_latency = False
-        #if the env vars have been set, try to honour the settings:
+        # if the env vars have been set, try to honour the settings:
         global BUFFER_TIME, LATENCY_TIME
         if BUFFER_TIME>0:
             if BUFFER_TIME<LATENCY_TIME:
@@ -163,6 +167,7 @@ class AudioSource(AudioPipeline):
             else:
                 log("latency tuning for %s, will try to set buffer-time=%i, latency-time=%i",
                     src_type, BUFFER_TIME, LATENCY_TIME)
+
                 def settime(attr, v):
                     try:
                         cval = self.src.get_property(attr)
@@ -176,8 +181,7 @@ class AudioSource(AudioPipeline):
                 settime("latency-time", LATENCY_TIME)
         self.init_file(codec)
 
-
-    def __repr__(self):  #pylint: disable=arguments-differ
+    def __repr__(self):  # pylint: disable=arguments-differ
         return "AudioSource('%s' - %s)" % (self.pipeline_str, self.state)
 
     def cleanup(self) -> None:
@@ -204,10 +208,9 @@ class AudioSource(AudioPipeline):
                 "actual-buffer-time", "actual-latency-time",
                 "buffer-time", "latency-time",
                 "provide-clock",
-                )
+            )
             info["src"]["type"] = self.src_type
         return info
-
 
     def do_parse_element_message(self, _message, name, props=None) -> None:
         if name=="cutter" and props:
@@ -225,7 +228,6 @@ class AudioSource(AudioPipeline):
                 l = gstlog
             l("cutter message, above=%s, min-timestamp=%s, max-timestamp=%s",
               above, self.min_timestamp, self.max_timestamp)
-
 
     def on_new_preroll(self, _appsink) -> int:
         gstlog('new preroll')
@@ -245,20 +247,20 @@ class AudioSource(AudioPipeline):
         data = buf.extract_dup(0, size)
         duration = normv(buf.duration)
         metadata = {
-            "timestamp"  : pts,
-            "duration"   : duration,
-            }
+            "timestamp": pts,
+            "duration": duration,
+        }
         if self.timestamp:
             delta = self.timestamp.get_property("delta")
-            ts = (pts+delta)//1000000           #ns to ms
+            ts = (pts+delta)//1000000           # ns to ms
             now = monotonic()
             latency = int(1000*now)-ts
-            #log.info("emit_buffer: delta=%i, pts=%i, ts=%s, time=%s, latency=%ims",
+            # log.info("emit_buffer: delta=%i, pts=%i, ts=%s, time=%s, latency=%ims",
             #    delta, pts, ts, now, (latency//1000000))
             ts_info = {
-                "ts"        : ts,
-                "latency"   : latency,
-                }
+                "ts": ts,
+                "latency": latency,
+            }
             metadata.update(ts_info)
             self.info.update(ts_info)
         if pts==-1 and duration==-1 and BUNDLE_METADATA and len(self.pending_metadata)<10:
@@ -278,12 +280,12 @@ class AudioSource(AudioPipeline):
                 log("skipped inefficient %s stream compression: %i bytes down to %i bytes",
                     self.stream_compressor, len(data), len(cdata))
         if self.state=="stopped":
-            #don't bother
+            # don't bother
             return GST_FLOW_OK
         if JITTER>0:
-            #will actually emit the buffer after a random delay
+            # will actually emit the buffer after a random delay
             if self.jitter_queue.empty():
-                #queue was empty, schedule a timer to flush it
+                # queue was empty, schedule a timer to flush it
                 from random import randint
                 jitter = randint(1, JITTER)
                 self.timeout_add(jitter, self.flush_jitter_queue)
@@ -295,7 +297,6 @@ class AudioSource(AudioPipeline):
             return GST_FLOW_OK
         log("emit_buffer data=%s, len=%i, metadata=%s", type(data), len(data), metadata)
         return self.do_emit_buffer(data, metadata)
-
 
     def flush_jitter_queue(self) -> None:
         while not self.jitter_queue.empty():
@@ -314,6 +315,7 @@ class AudioSource(AudioPipeline):
         self.pending_metadata = []
         self.emit_info()
         return GST_FLOW_OK
+
 
 GObject.type_register(AudioSource)
 
@@ -354,8 +356,8 @@ def main() -> int:
                 codec = MP3
                 log.info("using default codec: %s", codec)
 
-        #in case we're running against pulseaudio,
-        #try to set up the env:
+        # in case we're running against pulseaudio,
+        # try to set up the env:
         try:
             from xpra.platform.paths import get_icon_filename
             f = get_icon_filename("xpra.png")
@@ -371,6 +373,7 @@ def main() -> int:
             f = open(filename, "wb")
         ss = AudioSource(codecs=[codec])
         lock = Lock()
+
         def new_buffer(_audiosource, data, metadata, packet_metadata):
             log.info("new buffer: %s bytes (%s), metadata=%s", len(data), type(data), metadata)
             with lock:
@@ -387,10 +390,12 @@ def main() -> int:
         ss.start()
 
         import signal
+
         def deadly_signal(sig, _frame):
             log.warn("got deadly signal %s", SIGNAMES.get(sig, sig))
             GLib.idle_add(ss.stop)
             GLib.idle_add(glib_mainloop.quit)
+
             def force_quit(_sig, _frame):
                 sys.exit()
             signal.signal(signal.SIGINT, force_quit)

@@ -5,13 +5,14 @@
 
 from typing import Any
 
-from gi.repository import GLib  # @UnresolvedImport
-
+from xpra.os_util import gi_import
 from xpra.clipboard.core import ClipboardProtocolHelperCore, ClipboardProxyCore
 from xpra.util.str_fn import ellipsizer, repr_ellipsized
 from xpra.util.env import envint
 from xpra.log import Logger
 from xpra.platform.features import CLIPBOARD_GREEDY
+
+GLib = gi_import("GLib")
 
 log = Logger("clipboard")
 
@@ -20,20 +21,20 @@ if not 0<CONVERT_TIMEOUT<=5000:
     log.warn("Warning: invalid value for 'XPRA_CLIPBOARD_CONVERT_TIMEOUT'")
     CONVERT_TIMEOUT = max(0, min(5000, CONVERT_TIMEOUT))
 REMOTE_TIMEOUT = envint("XPRA_CLIPBOARD_REMOTE_TIMEOUT", 2500)
-if not 0<REMOTE_TIMEOUT<=5000:
+if not 0 < REMOTE_TIMEOUT <= 5000:
     log.warn("Warning: invalid value for 'XPRA_CLIPBOARD_REMOTE_TIMEOUT'")
     REMOTE_TIMEOUT = max(0, min(5000, REMOTE_TIMEOUT))
 
 
 class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
+    # a clipboard superclass that handles timeouts
 
-    #a clipboard superclass that handles timeouts
     def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
         super().__init__(send_packet_cb, progress_cb, **kwargs)
         self._clipboard_outstanding_requests : dict[int, tuple[int,str,str]] = {}
 
     def cleanup(self) -> None:
-        #reply to outstanding requests with "no data":
+        # reply to outstanding requests with "no data":
         for request_id in tuple(self._clipboard_outstanding_requests.keys()):
             self._clipboard_got_contents(request_id)
         self._clipboard_outstanding_requests = {}
@@ -51,10 +52,9 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
 
     def set_want_targets_client(self, want_targets:bool) -> None:
         super().set_want_targets_client(want_targets)
-        #pass it on to the ClipboardProxy instances:
+        # pass it on to the ClipboardProxy instances:
         for proxy in self._clipboard_proxies.values():
             proxy.set_want_targets(want_targets)
-
 
     ############################################################################
     # network methods for communicating with the remote clipboard:
@@ -65,10 +65,10 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         remote = self.local_to_remote(proxy._selection)
         packet : list[Any] = ["clipboard-token", remote]
         if packet_data:
-            #append 'TARGETS' unchanged:
+            # append 'TARGETS' unchanged:
             packet.append(packet_data[0])
-            #if present, the next element is the target data,
-            #which we have to convert to wire format:
+            # if present, the next element is the target data,
+            # which we have to convert to wire format:
             if len(packet_data)>=2:
                 target, dtype, dformat, data = packet_data[1]
                 wire_encoding, wire_data = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
@@ -126,7 +126,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
 
     def client_reset(self) -> None:
         super().client_reset()
-        #timeout all pending requests
+        # timeout all pending requests
         cor = self._clipboard_outstanding_requests
         if cor:
             log.info("cancelling %i clipboard requests", len(cor))

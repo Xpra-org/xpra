@@ -161,11 +161,11 @@ WIN32_LAYOUTS : dict[int,tuple[str, str, str, int, str, tuple[str, ...]]]= {
     20490: ("ESU", "Puerto Rico",   "Spanish",                  1252,   "latam", LATAM_VARIANTS),
     58378: ("",    "LatAm",         "Spanish",                  1252,   "latam", LATAM_VARIANTS),
     58380: ("",    "North Africa",  "French",                   1252,   "fr", FR_VARIANTS),
-    }
+}
 
-#map win32 keyboard codes to x11 names:
-#based on
-#https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/windows-language-pack-default-values
+# map win32 keyboard codes to x11 names:
+# based on
+# https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/windows-language-pack-default-values
 WIN32_KEYBOARDS : dict[int, tuple[str, str]] = {
     0x0000041c  : ("al", "Albania"),
     0x00000401  : ("ar", "Arabic (101)"),
@@ -231,8 +231,8 @@ WIN32_KEYBOARDS : dict[int, tuple[str, str]] = {
     0x00010407  : ("de", "German (IBM)"),
     0x000c0c00  : ("??", "Gothic"),
     0x00000408  : ("gr", "Greek"),
-    #Duplicate of 'tr':
-    #0x00010408  : ("gr", "Greek (220)"),
+    # Duplicate of 'tr':
+    # 0x00010408  : ("gr", "Greek (220)"),
     0x00030408  : ("gr", "Greek (220) Latin"),
     0x00020408  : ("gr", "Greek (319)"),
     0x00040408  : ("gr", "Greek (319) Latin"),
@@ -293,8 +293,8 @@ WIN32_KEYBOARDS : dict[int, tuple[str, str]] = {
     0x000f0c00  : ("??", "Old Italic"),
     0x000e0c00  : ("??", "Osmanya"),
     0x00000463  : ("af", "Pashto (Afghanistan)"),
-    #duplicate of 'ku'
-    #0x00000429  : ("ir", "Persian"),
+    # duplicate of 'ku'
+    # 0x00000429  : ("ir", "Persian"),
     0xa0000429  : ("ir", "Persian (Standard)"),
     0x000a0c00  : ("cn", "Phags-pa"),
     0x00010415  : ("pl", "Polish (214)"),
@@ -309,8 +309,8 @@ WIN32_KEYBOARDS : dict[int, tuple[str, str]] = {
     0x00000419  : ("ru", "Russian"),
     0x00020419  : ("ru", "Russian - Mnemonic"),
     0x00010419  : ("ru", "Russian (Typewriter)"),
-    #duplicate of 'tr'
-    #0x00000485  : ("ru", "Sakha"),
+    # duplicate of 'tr'
+    # 0x00000485  : ("ru", "Sakha"),
     0x0002083b  : ("fi", "Sami Extended Finland-Sweden"),
     0x0001043b  : ("no", "Sami Extended Norway"),
     0x00011809  : ("gb", "Scottish Gaelic"),
@@ -369,7 +369,7 @@ WIN32_KEYBOARDS : dict[int, tuple[str, str]] = {
     0x00000488  : ("fr", "Wolof"),
     0x00000485  : ("tr", "Yakut"),
     0x0000046a  : ("??", "Yoruba"),
-    }
+}
 
 # This is generated from the table above,
 # so we can let the user choose his own layout.
@@ -385,7 +385,8 @@ for win32layout in WIN32_LAYOUTS.values():
         if variant not in l:
             l.append(variant)
 
-def parse_xkbmap_query(xkbmap_query:str) -> dict[str,str]:
+
+def parse_xkbmap_query(xkbmap_query:str) -> dict[str, str]:
     """ parses the output of "setxkbmap -query" into a dict """
     import re
     settings = {}
@@ -397,6 +398,7 @@ def parse_xkbmap_query(xkbmap_query:str) -> dict[str,str]:
             if v.strip(","):
                 settings[m.group(1)] = v
     return settings
+
 
 def xkbmap_query_tostring(query_dict:dict) -> str:
     """ converts an xkb query dict back into a string """

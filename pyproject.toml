@@ -23,12 +23,10 @@ dependencies = [
 
 [tool.ruff]
 line-length = 120
-
 ignore = ["E741"]
 
 
 [tool.flake8]
-ignore = ["E203", "E231", "E225", "E226", "E252", "E221", "E741", ]
-
 max-line-length = 120
-
+ignore = ["E203", "E231", "E225", "E226", "E252", "E221", "E741", ]
+per-file-ignores = "xpra/audio/gstreamer_util.py:E241 xpra/keyboard/layouts.py:E241,E501 xpra/x11/gtk_x11/wm_check.py:E241 xpra/x11/server/seamless.py:E241"

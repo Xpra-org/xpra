@@ -3,8 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#must be done before importing gobject!
-#pylint: disable=wrong-import-position
+# must be done before importing gobject!
+# pylint: disable=wrong-import-position
 
 import os
 from typing import Any
@@ -43,10 +43,10 @@ class AudioPipeline(Pipeline):
         self.byte_count = 0
         self.emit_info_timer = 0
         self.volume = None
-        self.info : dict[str,Any] = {
-                     "codec"        : self.codec,
-                     "state"        : self.state,
-                     }
+        self.info : dict[str, Any] = {
+            "codec"        : self.codec,
+            "state"        : self.state,
+        }
 
     def init_file(self, codec:str) -> None:
         gen = self.generation.increase()
@@ -60,14 +60,12 @@ class AudioPipeline(Pipeline):
             self.file = open(filename, 'wb')
             log.info(f"saving {codec} stream to {filename!r}")
 
-
     def update_bitrate(self, new_bitrate:int):
         if new_bitrate==self.bitrate:
             return
         self.bitrate = new_bitrate
         log("new bitrate: %s", self.bitrate)
         self.info["bitrate"] = new_bitrate
-
 
     def inc_buffer_count(self, inc:int=1) -> None:
         self.buffer_count += inc
@@ -76,7 +74,6 @@ class AudioPipeline(Pipeline):
     def inc_byte_count(self, count:int) -> None:
         self.byte_count += count
         self.info["bytes"]  = self.byte_count
-
 
     def set_volume(self, volume:int=100) -> None:
         if self.volume:
@@ -87,7 +84,6 @@ class AudioPipeline(Pipeline):
         if self.volume:
             return int(self.volume.get_property("volume")*100)
         return GST_FLOW_OK
-
 
     def start(self) -> None:
         if not super().start():
@@ -127,11 +123,10 @@ class AudioPipeline(Pipeline):
         self.state = None
         self.volume = None
 
-
     def onstart(self) -> None:
-        #we don't always get the "audio-codec" message..
-        #so print the codec from here instead (and assume gstreamer is using what we told it to)
-        #after a delay, just in case we do get the real "audio-codec" message!
+        # we don't always get the "audio-codec" message..
+        # so print the codec from here instead (and assume gstreamer is using what we told it to)
+        # after a delay, just in case we do get the real "audio-codec" message!
         self.timeout_add(500, self.new_codec_description, self.codec.split("+")[0])
 
     def on_message(self, bus, message) -> int:
@@ -141,12 +136,12 @@ class AudioPipeline(Pipeline):
             self.emit_info()
 
     def parse_message(self, message) -> None:
-        #message parsing code for GStreamer 1.x
+        # message parsing code for GStreamer 1.x
         taglist = message.parse_tag()
         tags = [taglist.nth_tag_name(x) for x in range(taglist.n_tags())]
         gstlog("bus message with tags=%s", tags)
         if not tags:
-            #ignore it
+            # ignore it
             return
         if "bitrate" in tags:
             new_bitrate = taglist.get_uint("bitrate")
@@ -180,13 +175,12 @@ class AudioPipeline(Pipeline):
             structure = message.get_structure()
             self.gstloginfo("unknown audio pipeline tag message: %s, tags=%s", structure.to_string(), tags)
 
-
     def new_codec_description(self, desc) -> None:
         log("new_codec_description(%s) current codec description=%s", desc, self.codec_description)
         if not desc:
             return
         dl = desc.lower()
-        if dl=="wav" and self.codec_description:
+        if dl == "wav" and self.codec_description:
             return
         cdl = self.codec_description.lower()
         if not cdl or (cdl!=dl and dl.find(cdl)<0 and cdl.find(dl)<0):
@@ -200,9 +194,9 @@ class AudioPipeline(Pipeline):
             return
         cdl = self.container_description.lower()
         dl = {
-              "mka"         : "matroska",
-              "mpeg4"       : "iso fmp4",
-              }.get(desc.lower(), desc.lower())
+            "mka" : "matroska",
+            "mpeg4" : "iso fmp4",
+        }.get(desc.lower(), desc.lower())
         if not cdl or (cdl!=dl and dl.find(cdl)<0 and cdl.find(dl)<0):
             self.gstloginfo("using '%s' container format", dl)
         self.container_description = dl
