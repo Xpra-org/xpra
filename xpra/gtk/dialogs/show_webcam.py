@@ -7,6 +7,7 @@
 
 import sys
 
+
 def main():
     from xpra.platform import program_context, command_error
     from xpra.platform.gui import init, set_default_icon
@@ -51,8 +52,9 @@ def main():
             if cv2.waitKey(10) & 0xFF in (ord('q'), 27):    # @UndefinedVariable
                 break
         cap.release()
-        cv2.destroyAllWindows() # @UndefinedVariable
+        cv2.destroyAllWindows()
     return 0
+
 
 if __name__ == "__main__":
     v = main()

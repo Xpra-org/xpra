@@ -65,7 +65,7 @@ class GUI(BaseGUIWindow):
         grid.set_row_homogeneous(True)
         grid.set_column_homogeneous(True)
         for i, widget in enumerate(self.widgets):
-            grid.attach(widget, i%2, i//2, 1, 1)
+            grid.attach(widget, i % 2, i//2, 1, 1)
         self.vbox.add(grid)
 
     def add_widget(self, widget):
@@ -99,7 +99,7 @@ class GUI(BaseGUIWindow):
         self.exec_subcommand("attach", url)
 
 
-def main(argv): # pragma: no cover
+def main(argv):   # pragma: no cover
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.log import enable_color

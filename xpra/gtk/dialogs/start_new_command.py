@@ -20,6 +20,8 @@ log = Logger("exec")
 
 
 _instance = None
+
+
 def getStartNewCommand(run_callback, can_share=False, xdg_menu=None):
     global _instance
     if _instance is None:
@@ -78,7 +80,7 @@ class StartNewCommand:
             hbox.pack_start(label("Command:"))
             hbox.pack_start(self.command_combo)
             self.command_combo.connect("changed", self.command_changed)
-            #this will populate the command combo:
+            # this will populate the command combo:
             self.category_changed()
         # always show the command as text so that it can be edited:
         entry_label = label("Command to run:", font="sans 14")
@@ -90,7 +92,7 @@ class StartNewCommand:
 
         if can_share:
             self.share = Gtk.CheckButton(label="Shared", use_underline=False)
-            #Shared commands will also be shown to other clients
+            # shared commands will also be shown to other clients
             self.share.set_active(True)
             vbox.add(self.share)
         else:
@@ -108,7 +110,6 @@ class StartNewCommand:
         vbox.show_all()
         self.window.vbox = vbox
         self.window.add(vbox)
-
 
     def category_changed(self, *args):
         category = self.category_combo.get_active_text()
@@ -165,7 +166,6 @@ class StartNewCommand:
         self.close()
         Gtk.main_quit()
 
-
     def run_command(self, *_args):
         self.hide()
         command = self.entry.get_text()
@@ -174,12 +174,11 @@ class StartNewCommand:
             self.run_callback(command, self.share is None or self.share.get_active())
 
 
-def main(): # pragma: no cover
+def main():  # pragma: no cover
     from xpra.platform.gui import init as gui_init, ready as gui_ready
     from xpra.platform import program_context
     gui_init()
     with program_context("Start-New-Command", "Start New Command"):
-        #logging init:
         if "-v" in sys.argv:
             enable_debug_for("util")
 

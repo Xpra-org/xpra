@@ -11,7 +11,7 @@ from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.util.system import SIGNAMES
 from xpra.util.str_fn import bytestostr
-from xpra.exit_codes import ExitCode
+from xpra.exit_codes import ExitCode, ExitValue
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
@@ -33,6 +33,7 @@ IPV6 = envbool("XPRA_IPV6", False)
 
 inject_css_overrides()
 
+
 def dpath(caps : typedict, *path):
     d = caps
     for x in path:
@@ -46,20 +47,17 @@ def dpath(caps : typedict, *path):
 class QRCodeClient(InfoXpraClient):
 
     def do_command(self, caps : typedict):
-        #log.error("do_command(%s)", caps)
         sockets = dpath(caps, "network", "sockets")
         if not sockets:
             log.error("Error: network.sockets path not found in server info response")
             super().quit(ExitCode.PACKET_FAILURE)
             return
-        #this will also prevent timeouts:
+        # this will also prevent timeouts:
         self._protocol.close()
         self.exit_code = 0
-        #log("sockets=%s", sockets)
         addr_types = {}
         for socktype in ("ws", "wss"):
             sockdefs = typedict(sockets.dictget(socktype, {}))
-            #log("sockets(%s)=%s", socktype, sockdefs)
             addresses = sockdefs.tupleget("addresses", ())
             for address in addresses:
                 try:
@@ -86,6 +84,7 @@ class QRCodeClient(InfoXpraClient):
                 else:
                     uri = "%s://%s:%i/" % (proto, host, port)
                 uris.append(uri)
+
             def show_addresses():
                 w = QRCodeWindow(uris)
                 w.show_all()
@@ -98,7 +97,7 @@ class QRCodeClient(InfoXpraClient):
     def exit_loop(self):
         Gtk.main_quit()
 
-    def quit(self, exit_code:int|ExitCode=0):
+    def quit(self, exit_code: ExitValue=0):
         # only exit if we encountered an error
         # InfoXpraClient calls quit(ExitCode.OK) on `connection-lost`,
         # but we don't want to exit then
@@ -106,7 +105,7 @@ class QRCodeClient(InfoXpraClient):
             super().quit(exit_code)
 
     def run(self):
-        #override so we can use a GTK main loop instead
+        # override so we can use a GTK main loop instead
         XpraClientBase.run(self)
         Gtk.main()
         return self.exit_code
@@ -166,8 +165,9 @@ def do_main(opts):
     with program_context("qrcode", "QRCode"):
         Gtk.Window.set_auto_startup_notification(setting=False)
         c = QRCodeClient(opts)
-        #add_close_accel(w, Gtk.main_quit)
+        # add_close_accel(w, Gtk.main_quit)
         return c.run()
+
 
 def main(_args):
     from xpra.scripts.config import make_defaults_struct

@@ -71,7 +71,6 @@ class ConfigureGUI(BaseGUIWindow):
         lbl.set_use_markup(True)
         self.add_widget(lbl)
 
-
     def populate(self):
         self.clear_vbox()
         self.add_widget(label("Install or remove xpra packages", font="sans 20"))
@@ -238,8 +237,14 @@ class ConfigureGUI(BaseGUIWindow):
         log("toggle_package%s", (widget, state, package))
 
     def apply(self, *_args):
-        remove = [f"xpra-{x}" for x in self.initial_state.keys() if self.initial_state[x] and not self.current_state[x]]
-        install = [f"xpra-{x}" for x in self.initial_state.keys() if not self.initial_state[x] and self.current_state[x]]
+        remove = [
+            f"xpra-{x}" for x in self.initial_state.keys()
+            if self.initial_state[x] and not self.current_state[x]
+        ]
+        install = [
+            f"xpra-{x}" for x in self.initial_state.keys()
+            if not self.initial_state[x] and self.current_state[x]
+        ]
         log(f"apply: {remove=}, {install=}")
         command = [self.sudo] if getuid() > 0 else []
         command += [self.terminal, "-e"]

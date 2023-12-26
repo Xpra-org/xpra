@@ -73,8 +73,9 @@ def show_confirm_dialog(argv):
     gui_init()
 
     log("show_confirm_dialog(%s)", argv)
+
     def arg(n):
-        if len(argv)<=n:
+        if len(argv) <= n:
             return ""
         return argv[n].replace("\\n\\r", "\\n").replace("\\n", "\n")
     title = arg(0) or "Confirm Key"
@@ -104,7 +105,6 @@ def show_confirm_dialog(argv):
 def main():
     from xpra.platform import program_context
     with program_context("Confirm-Dialog", "Confirm Dialog"):
-        #logging init:
         if "-v" in sys.argv or "--verbose" in sys.argv:
             from xpra.log import enable_debug_for
             enable_debug_for("util")

@@ -26,6 +26,7 @@ class mdns_sessions(SessionsGUI):
         listener_class = get_listener_class()
         assert listener_class
         self.listeners = []
+
         def add(service_type):
             instance = listener_class(service_type,
                                       mdns_found=None,
@@ -49,13 +50,11 @@ class mdns_sessions(SessionsGUI):
     def mdns_remove(self, r_interface, r_protocol, r_name, r_stype, r_domain, r_flags):
         log("mdns_remove%s", (r_interface, r_protocol, r_name, r_stype, r_domain, r_flags))
         old_recs = self.records
-        self.records = [(interface, protocol, name, stype, domain, host, address, port, text) for
-                        (interface, protocol, name, stype, domain, host, address, port, text) in self.records
-                        if (interface!=r_interface or
-                            protocol!=r_protocol or
-                            name!=r_name or
-                            stype!=r_stype or
-                            domain!=r_domain)]
+        self.records = [
+            (interface, protocol, name, stype, domain, host, address, port, text) for
+            (interface, protocol, name, stype, domain, host, address, port, text) in self.records
+            if (interface!=r_interface or protocol!=r_protocol or name!=r_name or stype!=r_stype or domain!=r_domain)
+        ]
         if old_recs!=self.records:
             GLib.idle_add(self.populate_table)
 
@@ -64,8 +63,8 @@ class mdns_sessions(SessionsGUI):
         if HIDE_IPV6 and address.find(":")>=0:
             return
         text = text or {}
-        #strip service from hostname:
-        #(win32 servers add it? why!?)
+        # strip service from hostname:
+        # (win32 servers add it? why!?)
         if host:
             if stype and host.endswith(stype):
                 host = host[:-len(stype)]
@@ -102,6 +101,7 @@ def do_main(opts):
             gui = SessionsGUI(opts)
         Gtk.main()
         return gui.exit_code
+
 
 def main():
     # pylint: disable=import-outside-toplevel

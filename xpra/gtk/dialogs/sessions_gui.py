@@ -112,7 +112,6 @@ class SessionsGUI(Gtk.Window):
             username = get_username()
         except Exception:
             username = ""
-        #log.info("options=%s (%s)", options, type(options))
         self.local_info_cache = {}
         self.dotxpra = DotXpra(options.socket_dir, options.socket_dirs, username)
         self.poll_local_sessions()
@@ -121,8 +120,9 @@ class SessionsGUI(Gtk.Window):
         self.vbox.show()
         self.show()
 
-    def show(self):  #pylint: disable=arguments-differ
+    def show(self):  # pylint: disable=arguments-differ
         super().show()
+
         def show():
             force_focus()
             self.present()
@@ -145,11 +145,9 @@ class SessionsGUI(Gtk.Window):
     def cleanup(self):
         self.close()
 
-
     def show_about(self, *_args):
         from xpra.gtk.dialogs.about import about
         about(parent=self)
-
 
     def update(self):
         if self.poll_local_sessions():
@@ -160,7 +158,7 @@ class SessionsGUI(Gtk.Window):
         self.populate_table()
 
     def poll_local_sessions(self):
-        #TODO: run in a thread so we don't block the UI thread!
+        # TODO: run in a thread so we don't block the UI thread!
         d = self.dotxpra.socket_details(matching_state=SocketState.LIVE)
         log("poll_local_sessions() socket_details=%s", d)
         info_cache = {}
@@ -171,7 +169,7 @@ class SessionsGUI(Gtk.Window):
                 key = (display, sockpath)
                 info = self.local_info_cache.get(key)
                 if not info:
-                    #try to query it
+                    # try to query it
                     try:
                         info = self.get_session_info(sockpath)
                         if not info:
@@ -187,12 +185,12 @@ class SessionsGUI(Gtk.Window):
                         del e
                     if not info:
                         continue
-                #log("info(%s)=%s", sockpath, repr_ellipsized(str(info)))
                 info_cache[key] = info
         if WIN32:
             socktype = "named-pipe"
         else:
             socktype = "socket"
+
         def make_text(info):
             text = {"mode" : socktype}
             for k, name in {
@@ -201,19 +199,19 @@ class SessionsGUI(Gtk.Window):
                 "display"        : "display",
                 "session-type"   : "type",
                 "session-name"   : "name",
-                }.items():
+            }.items():
                 v = info.get(k)
                 if v is not None:
                     text[name] = v
             return text
-        #first remove any records that are no longer found:
+        # first remove any records that are no longer found:
         for key in self.local_info_cache:
             if key not in info_cache:
                 display, sockpath = key
                 self.records = [(interface, protocol, name, stype, domain, host, address, port, text) for
                                 (interface, protocol, name, stype, domain, host, address, port, text) in self.records
                                 if (protocol!="socket" or domain!="local" or address!=sockpath)]
-        #add the new ones:
+        # add the new ones:
         for key, info in info_cache.items():
             if key not in self.local_info_cache:
                 display, sockpath = key
@@ -224,7 +222,7 @@ class SessionsGUI(Gtk.Window):
         return changed
 
     def get_session_info(self, sockpath):
-        #the lazy way using a subprocess
+        # the lazy way using a subprocess
         if WIN32:
             socktype = "named-pipe"
         else:
@@ -244,7 +242,6 @@ class SessionsGUI(Gtk.Window):
         log("get_sessions_info(%s)=%s", sockpath, info)
         return info
 
-
     def populate_table(self):
         log("populate_table: %i records", len(self.records))
         if self.contents:
@@ -260,6 +257,7 @@ class SessionsGUI(Gtk.Window):
         self.password_box.show()
         self.set_size_request(-1, -1)
         grid = Gtk.Grid()
+
         def l(s=""):    # noqa: E743
             widget = label(s)
             widget.set_margin_start(5)
@@ -267,7 +265,7 @@ class SessionsGUI(Gtk.Window):
             return widget
         for i, text in enumerate(("Host", "Display", "Name", "Platform", "Type", "URI", "Connect", "Open in Browser")):
             grid.attach(l(text), i, 1, 1, 1)
-        #group them by uuid
+        # group them by uuid
         d = {}
         session_names = {}
         address = ""
@@ -300,7 +298,7 @@ class SessionsGUI(Gtk.Window):
             else:
                 display = ""
                 uuid = str(key)
-                #try to find a valid host name:
+                # try to find a valid host name:
                 hosts = [rec[5] for rec in recs if not rec[5].startswith("local")]
                 if not hosts:
                     hosts = [rec[5] for rec in recs]
@@ -320,7 +318,7 @@ class SessionsGUI(Gtk.Window):
             host_label = l(title)
             if uuid!=title:
                 host_label.set_tooltip_text(uuid)
-            #try to use an icon for the platform:
+            # try to use an icon for the platform:
             platform_icon_name = self.get_platform_icon_name(platform)
             pwidget = None
             if platform_icon_name:
@@ -339,16 +337,17 @@ class SessionsGUI(Gtk.Window):
         self.contents = grid
         self.vbox.add(grid)
 
-    def get_uri(self, password, interface, protocol, name:str, stype:str, domain, host:str, address, port:int, text) -> str:
+    def get_uri(self, password, interface, protocol, name:str, stype:str, domain, host:str,
+                address, port:int, text) -> str:
         dstr = ""
         tt = typedict(text)
         display = tt.strget("display", "")
         username = tt.strget("username", "")
         mode = tt.strget("mode", "")
         if not mode:
-            #guess the mode from the service name,
-            #ie: "localhost.localdomain :2 (wss)" -> "wss"
-            #ie: "localhost.localdomain :2 (ssh-2)" -> "ssh"
+            # guess the mode from the service name,
+            # ie: "localhost.localdomain :2 (wss)" -> "wss"
+            # ie: "localhost.localdomain :2 (ssh-2)" -> "ssh"
             pos = name.rfind("(")
             if name.endswith(")") and pos>0:
                 mode = name[pos+1:-1].split("-")[0]
@@ -358,9 +357,9 @@ class SessionsGUI(Gtk.Window):
                 mode = "tcp"
         if display and display.startswith(":"):
             dstr = display[1:]
-        #append interface to IPv6 host URI for link local addresses ("fe80:"):
+        # append interface to IPv6 host URI for link local addresses ("fe80:"):
         if interface and address.lower().startswith("fe80:"):
-            #ie: "fe80::c1:ac45:7351:ea69%eth1"
+            # ie: "fe80::c1:ac45:7351:ea69%eth1"
             try:
                 address += "%" + socket.if_indextoname(interface)
             except OSError:
@@ -384,17 +383,18 @@ class SessionsGUI(Gtk.Window):
 
     def attach(self, key, uri):
         self.warning.set_text("")
-        #preserve ssl command line arguments
+        # preserve ssl command line arguments
         option_types = {k:v for k,v in OPTION_TYPES.items() if k.startswith("ssl")}
         cmd = get_xpra_command() + ["attach", uri] + get_command_args(
             self.options,
             option_types=option_types,
             cmdline=sys.argv,
-            )
+        )
         env = os.environ.copy()
         env["XPRA_NOTTY"] = "1"
         proc = subprocess.Popen(cmd, env=env)
         log("attach() Popen(%s)=%s", cmd, proc)
+
         def proc_exit(*args):
             log("proc_exit%s", args)
             c = proc.poll()
@@ -421,8 +421,8 @@ class SessionsGUI(Gtk.Window):
         else:
             assert url.startswith("ws")
             url = "http"+url[2:]
-        #trim end of URL:
-        #http://192.168.1.7:10000/10 -> http://192.168.1.7:10000/
+        # trim end of URL:
+        #  http://192.168.1.7:10000/10 -> http://192.168.1.7:10000/
         url = url[:url.rfind("/")]
         webbrowser.open_new_tab(url)
 
@@ -431,6 +431,7 @@ class SessionsGUI(Gtk.Window):
         proc = self.clients.get(key)
         if proc and proc.poll() is None:
             icon = get_icon_pixbuf("disconnected.png")
+
             def disconnect_client(btn):
                 log("disconnect_client(%s) proc=%s", btn, proc)
                 self.clients_disconnecting.add(key)
@@ -444,14 +445,16 @@ class SessionsGUI(Gtk.Window):
 
         icon = get_icon_pixbuf("connect.png")
         if len(recs)==1:
-            #single record, single uri:
+            # single record, single uri:
             rec = recs[0]
             uri = self.get_uri(None, *rec)
             bopen.set_sensitive(uri.startswith("ws"))
+
             def browser_open(*_args):
                 self.browser_open(rec)
             bopen.connect("clicked", browser_open)
             d[uri] = rec
+
             def clicked(*_args):
                 password = self.password_entry.get_text()
                 uri = self.get_uri(password, *rec)
@@ -459,22 +462,23 @@ class SessionsGUI(Gtk.Window):
             btn = imagebutton("Connect", icon, clicked_callback=clicked)
             return label(uri), btn, bopen
 
-        #multiple modes / uris
+        # multiple modes / uris
         uri_menu = Gtk.ComboBoxText()
         uri_menu.set_size_request(340, 48)
-        #sort by protocol so TCP comes first
+        # sort by protocol so TCP comes first
         order = {"socket" : 0, "ssh" : 1, "tcp" :2, "ssl" : 3, "ws" : 4, "wss" : 8}
         if WIN32:
-            #on MS Windows, prefer ssh which has a GUI for accepting keys
-            #and entering the password:
+            # on MS Windows, prefer ssh which has a GUI for accepting keys
+            # and entering the password:
             order["ssh"] = 0
+
         def cmp_key(v):
-            text = v[-1]    #the text record
+            text = v[-1]    # the text record
             mode = (text or {}).get("mode", "")
             host = v[6]
             host_len = len(host)
-            #log("cmp_key(%s) text=%s, mode=%s, host=%s, host_len=%s", v, text, mode, host, host_len)
-            #prefer order (from mode), then shorter host string:
+            # log("cmp_key(%s) text=%s, mode=%s, host=%s, host_len=%s", v, text, mode, host, host_len)
+            # prefer order (from mode), then shorter host string:
             return "%s-%s" % (order.get(mode, mode), host_len)
         srecs = sorted(recs, key=cmp_key)
         has_ws = False
@@ -484,6 +488,7 @@ class SessionsGUI(Gtk.Window):
             d[uri] = rec
             if uri.startswith("ws"):
                 has_ws = True
+
         def connect(*_args):
             uri = uri_menu.get_active_text()
             rec = d[uri]
@@ -492,6 +497,7 @@ class SessionsGUI(Gtk.Window):
             self.attach(key, uri)
         uri_menu.set_active(0)
         btn = imagebutton("Connect", icon, clicked_callback=connect)
+
         def uri_changed(*_args):
             uri = uri_menu.get_active_text()
             ws = uri.startswith("ws")
@@ -504,6 +510,7 @@ class SessionsGUI(Gtk.Window):
                 bopen.set_tooltip_text("select a 'ws' or 'wss' URI")
         uri_menu.connect("changed", uri_changed)
         uri_changed()
+
         def browser_open_option(*_args):
             uri = uri_menu.get_active_text()
             rec = d[uri]
@@ -517,7 +524,7 @@ class SessionsGUI(Gtk.Window):
             "darwin"    : "osx",
             "linux"     : "linux",
             "freebsd"   : "freebsd",
-            }.items():
+        }.items():
             if platform.startswith(p):
                 return i
         return None
@@ -534,7 +541,8 @@ def do_main(opts):
         log("do_main() gui.exit_code=%i", gui.exit_code)
         return gui.exit_code
 
-def main(): # pragma: no cover
+
+def main():  # pragma: no cover
     from xpra.scripts.config import make_defaults_struct
     opts = make_defaults_struct()
     return do_main(opts)

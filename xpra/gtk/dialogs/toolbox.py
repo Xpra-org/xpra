@@ -93,50 +93,50 @@ class ToolboxGUI(Gtk.Window):
                 if button:
                     hbox.add(self.button(*button))
 
-        #some things don't work on wayland:
+        # some things don't work on wayland:
         wox11 = WIN32 or OSX or (os.environ.get("GDK_BACKEND", "")=="x11" or is_X11())
 
         addhbox("Colors:", (
             ("Squares", "Shows RGB+Grey squares in a window", epath+"colors_plain"),
             ("Animated", "Shows RGB+Grey squares animated", epath+"colors"),
             ("Bit Depth", "Shows color gradients and visualize bit depth clipping", epath+"colors_gradient"),
-            ))
+        ))
         addhbox("Transparency and Rendering", (
             ("Circle", "Shows a semi-opaque circle in a transparent window", epath+"transparent_window"),
             ("RGB Squares", "RGB+Black shaded squares in a transparent window", epath+"transparent_colors"),
             ("OpenGL", "OpenGL window - transparent on some platforms", epath+"opengl", wox11),
-            ))
+        ))
         addhbox("Widgets:", (
             ("Text Entry", "Simple text entry widget", epath+"text_entry"),
             ("File Selector", "Open the file selector widget", epath+"file_chooser"),
             ("Header Bar", "Window with a custom header bar", epath+"header_bar"),
-            ))
+        ))
         addhbox("Events:", (
             ("Grabs", "Test keyboard and pointer grabs", epath+"grabs"),
             ("Clicks", "Double and triple click events", epath+"clicks"),
             ("Focus", "Shows window focus events", epath+"window_focus"),
-            ))
+        ))
         addhbox("Windows:", (
             ("States", "Toggle various window attributes", epath+"window_states"),
             ("Title", "Update the window title", epath+"window_title"),
             ("Opacity", "Change window opacity", epath+"window_opacity"),
             ("Transient", "Show transient windows", epath+"window_transient"),
             ("Override Redirect", "Shows an override redirect window", epath+"window_overrideredirect"),
-            ))
+        ))
         addhbox("Geometry:", (
             ("Size constraints", "Specify window geometry size constraints", epath+"window_geometry_hints"),
             ("Move-Resize", "Initiate move resize from application", epath+"initiate_moveresize", wox11),
-            ))
+        ))
         addhbox("Keyboard and Clipboard:", (
             ("Keyboard", "Keyboard event viewer", "xpra.gtk.dialogs.view_keyboard"),
             ("Clipboard", "Clipboard event viewer", "xpra.gtk.dialogs.view_clipboard"),
-            ))
+        ))
         addhbox("Misc:", (
-                ("Tray", "Show a system tray icon", epath+"tray"),
-                ("Font Rendering", "Render characters with and without anti-aliasing", epath+"fontrendering"),
-                ("Bell", "Test system bell", epath+"bell"),
-                ("Cursors", "Show named cursors", epath+"cursors"),
-                ))
+            ("Tray", "Show a system tray icon", epath+"tray"),
+            ("Font Rendering", "Render characters with and without anti-aliasing", epath+"fontrendering"),
+            ("Bell", "Test system bell", epath+"bell"),
+            ("Cursors", "Show named cursors", epath+"cursors"),
+        ))
         self.vbox.show_all()
 
     @staticmethod
@@ -167,6 +167,7 @@ class ToolboxGUI(Gtk.Window):
             log.warn(f"Warning: cannot find '{modpath}'")
         else:
             log(f"{label_str} : {cmd}")
+
         def cb(_btn):
             proc = exec_command(cmd)
             getChildReaper().add_process(proc, label_str, cmd, ignore=True, forget=True)

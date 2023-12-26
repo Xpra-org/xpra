@@ -18,7 +18,7 @@ log = Logger("menu")
 
 def show_qr(uri:str, width:int=640, height:int=640):
     assert uri.find(":")>0, "invalid uri"
-    #support old-style URIs, ie: tcp:host:port
+    # support old-style URIs, ie: tcp:host:port
     if uri.find(":")!=uri.find("://"):
         uri = uri.replace(":", "://", 1)
     parts = uri.split(":", 1)
@@ -35,6 +35,7 @@ def show_qr(uri:str, width:int=640, height:int=640):
     window.add(image)
     window.set_size_request(width, height)
     window.set_resizable(False)
+
     def close(*_args):
         window.close()
     add_close_accel(window, close)
@@ -45,6 +46,7 @@ def show_qr(uri:str, width:int=640, height:int=640):
             Gtk.main_quit()
         window.connect("delete-event", gtk_quit)
         Gtk.main()
+
 
 def qr_pixbuf(uri:str, width:int=640, height:int=640):
     img = qrencode(uri)

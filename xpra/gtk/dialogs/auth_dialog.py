@@ -50,7 +50,6 @@ class AuthDialog(Gtk.Window):
             self.vbox.add(self.timeout_label)
             GLib.timeout_add(1000, self.update_timeout)
 
-        #buttons:
         al = Gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
         al.set_padding(0, 0, 10, 10)
         hbox = Gtk.HBox(homogeneous=False, spacing=10)

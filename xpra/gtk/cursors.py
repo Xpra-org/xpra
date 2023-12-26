@@ -10,10 +10,11 @@ Gdk = gi_import("Gdk")
 cursor_names = {}
 cursor_types = {}
 
+
 def _init_map():
     for x in dir(Gdk.CursorType):
         if not x.isupper():
-            #probably a method
+            # probably a method
             continue
         try:
             v = int(getattr(Gdk.CursorType, x))
@@ -41,4 +42,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -20,6 +20,8 @@ log = Logger("util")
 
 
 _instance = None
+
+
 def getUpdateStatusWindow():
     global _instance
     if _instance is None:
@@ -54,6 +56,7 @@ class UpdateStatusWindow:
         # Buttons:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
+
         def btn(label, tooltip, callback, icon_name=None):
             btn = Gtk.Button(label=label)
             btn.set_tooltip_text(tooltip)
@@ -73,7 +76,6 @@ class UpdateStatusWindow:
         self.window.vbox = vbox
         self.window.add(vbox)
         self.newer_version : None |bool |tuple[int,...] = None
-
 
     def check(self):
         if self.progress:
@@ -99,12 +101,13 @@ class UpdateStatusWindow:
             version_str = ".".join(str(x) for x in self.newer_version)
             self.label.set_label("A newer version is available: %s" % version_str)
             return False
-        self.label.set_label("Checking for new versions %s" % (["-", "\\", "|", "/"][self.progress%4]))
+        self.label.set_label("Checking for new versions %s" % (["-", "\\", "|", "/"][self.progress % 4]))
         self.progress += 1
         return True
 
     def show(self):
         log("show()")
+
         def show():
             force_focus()
             self.window.show()
@@ -126,7 +129,6 @@ class UpdateStatusWindow:
             self.window.destroy()
             self.window = None
 
-
     def run(self):
         log("run()")
         Gtk.main()
@@ -136,7 +138,6 @@ class UpdateStatusWindow:
         log("quit%s", args)
         self.close()
         Gtk.main_quit()
-
 
     def download(self, *_args):
         self.hide()
@@ -148,7 +149,6 @@ def main():
     from xpra.platform import program_context
     from xpra.platform.gui import ready as gui_ready
     with program_context("Xpra-Version-Check", "Xpra Version Check"):
-        #logging init:
         if "-v" in sys.argv:
             enable_debug_for("util")
 

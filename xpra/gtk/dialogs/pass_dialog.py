@@ -47,8 +47,8 @@ class PasswordInputDialogWindow(Gtk.Dialog):
             vbox.add(al)
             al.show_all()
 
-        #window title is visible so this would be redundant:
-        #al(title, "sans 18", 0.5)
+        # window title is visible so this would be redundant:
+        # al(title, "sans 18", 0.5)
         al(prompt, "sans 14")
         self.password_input = Gtk.Entry()
         self.password_input.set_max_length(255)
@@ -63,10 +63,10 @@ class PasswordInputDialogWindow(Gtk.Dialog):
         self.set_focus(self.confirm_btn)
         self.cancel_btn = self.add_button("Cancel", 1)
 
-
-    def show(self):  #pylint: disable=arguments-differ
+    def show(self):
         log("PasswordInputDialogWindow.show()")
         self.show_all()
+
         def show():
             force_focus()
             self.present()
@@ -105,6 +105,7 @@ def show_pass_dialog(argv):
     gui_init()
 
     log("show_pass_dialog(%s)", argv)
+
     def arg(n):
         if len(argv)<=n:
             return ""

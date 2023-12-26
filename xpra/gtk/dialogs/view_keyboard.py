@@ -23,7 +23,7 @@ log = Logger("gtk", "keyboard")
 
 class KeyboardStateInfoWindow:
 
-    def    __init__(self):
+    def __init__(self):
         self.init_constants()
         self.window = Gtk.Window()
         self.window.connect("destroy", self.destroy)
@@ -91,14 +91,14 @@ class KeyboardStateInfoWindow:
         self.mouse.set_text("%s %s" % (x, y))
         modifiers = self.mask_to_names(current_mask, self.modifier_names)
         self.modifiers.set_text(str(modifiers))
-        return    True
+        return True
 
     def mask_to_names(self, mask, names_dict):
         names = []
         for m,name in names_dict.items():
             if mask & m:
                 names.append(name)
-        return  names
+        return names
 
     def keymap_changed(self, *args):
         log.info("keymap_changed%s" % (args,))
@@ -111,16 +111,16 @@ class KeyboardStateInfoWindow:
         if not Keyboard:
             log.warn("no keyboard support!")
             return
-        keyboard = Keyboard()      #pylint: disable=not-callable
+        keyboard = Keyboard()      # pylint: disable=not-callable
         layout, layouts, variant, variants, options = keyboard.get_layout_spec()
         self.add_event_text(msg)
-        for k,v in {
+        for k, v in {
             "layout"    : layout,
             "variant"   : variant,
             "layouts"   : layouts,
             "variants"  : variants,
             "options"  : options,
-            }.items():
+        }.items():
             if v:
                 if isinstance(v, (list, tuple)):
                     v = csv(bytestostr(x) for x in v)

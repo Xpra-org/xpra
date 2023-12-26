@@ -22,6 +22,8 @@ SITE_URL = f"https://{SITE_DOMAIN}/"
 
 
 GPL2 = None
+
+
 def load_license():
     global GPL2
     if GPL2 is None:
@@ -30,17 +32,20 @@ def load_license():
         if os.path.exists(gpl2_file):
             with open(gpl2_file, mode="rb") as f:
                 GPL2 = f.read().decode("latin1")
-    return GPL2
+    return GPL2 or "Your installation may be corrupted,"\
+                   " the license text for GPL version 2 could not be found,"\
+                   "\nplease refer to:\nhttp://www.gnu.org/licenses/gpl-2.0.txt"
 
 
 about_dialog = None
+
 
 def close_about(*_args):
     if about_dialog:
         about_dialog.hide()
 
 
-def about(on_close=close_about, parent:Gtk.Window|None=None):
+def about(on_close=close_about, parent: Gtk.Window | None=None):
     global about_dialog
     if about_dialog:
         about_dialog.show()
@@ -58,9 +63,7 @@ def about(on_close=close_about, parent:Gtk.Window|None=None):
                         'Nathaniel Smith <njs@pobox.com>',
                         'Serviware - Arthur Huillet <ahuillet@serviware.com>'))
     _license = load_license()
-    dialog.set_license(_license or "Your installation may be corrupted,"
-                    + " the license text for GPL version 2 could not be found,"
-                    + "\nplease refer to:\nhttp://www.gnu.org/licenses/gpl-2.0.txt")
+    dialog.set_license(_license)
     dialog.set_comments("\n".join(get_build_info()))
     dialog.set_website(SITE_URL)
     dialog.set_website_label(SITE_DOMAIN)

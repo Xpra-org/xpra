@@ -75,7 +75,7 @@ class ClipboardInstance:
         filtered = [x for x in (targets or []) if x not in ("MULTIPLE", "TARGETS")]
         ct = self.get_targets.get_active_text()
         if not ct:
-            #choose a good default target:
+            # choose a good default target:
             for x in ("STRING", "UTF8_STRING"):
                 if x in filtered:
                     ct = x
@@ -113,9 +113,9 @@ class ClipboardInstance:
                 s = ""
             else:
                 s = "type=%s, format=%s, data=%s" % (
-                        selection_data.get_data_type(),
-                        selection_data.get_format(),
-                        self.ellipsis(re.escape(data)))
+                    selection_data.get_data_type(),
+                    selection_data.get_format(),
+                    self.ellipsis(re.escape(data)))
         except TypeError:
             try:
                 s = self.ellipsis("\\".join([str(x) for x in bytearray(data)]))
@@ -132,11 +132,10 @@ class ClipboardInstance:
         self.clipboard.request_contents(atom, self.selection_value_callback, None)
 
     def selection_clear_cb(self, _clipboard, _data):
-        #print("selection_clear_cb(%s, %s)", clipboard, data)
         self.log("Selection has been cleared")
 
     def selection_get_callback(self, _clipboard, selectiondata, _info, *_args):
-        #log("selection_get_callback(%s, %s, %s, %s) targets=%s",
+        # log("selection_get_callback(%s, %s, %s, %s) targets=%s",
         #    clipboard, selectiondata, info, args, selectiondata.get_targets())
         value = self.value_entry.get_text()
         self.log("Answering selection request with value: '%s'" % self.ellipsis(value))
@@ -155,7 +154,7 @@ class ClipboardInstance:
         self.value_label.set_text(self.ellipsis(value))
 
     def do_get_string(self, *_args):
-        #self.log("do_get_string%s on %s.%s" % (args, self, self.clipboard))
+        # self.log("do_get_string%s on %s.%s" % (args, self, self.clipboard))
         self.clipboard.request_text(self.string_value_callback, None)
 
     def do_set_string(self, *_args):
@@ -163,20 +162,17 @@ class ClipboardInstance:
 
     def owner_changed(self, _cb, event):
         owner = self.clipboard.get_owner()
-        #print("xid=%s, owner=%s" % (self.value_entry.get_window().xid, event.owner))
         weownit = (owner is not None)
         if weownit:
             owner_info = "(us)"
         else:
             owner_info = str(event.owner or 0)
-        self.log("Owner changed, reason: %s, new owner=%s" % (
-                        event.reason, owner_info))
-
+        self.log("Owner changed, reason: %s, new owner=%s" % (event.reason, owner_info))
 
 
 class ClipboardStateInfoWindow:
 
-    def    __init__(self):
+    def __init__(self):
         self.window = Gtk.Window()
         self.window.connect("destroy", self.destroy)
         self.window.set_default_size(640, 300)
@@ -192,7 +188,7 @@ class ClipboardStateInfoWindow:
             self.log.append("")
         self.events = label("", font="monospace 9")
 
-        #how many clipboards to show:
+        # how many clipboards to show:
         self.clipboards = CLIPBOARDS
 
         grid = Gtk.Grid()

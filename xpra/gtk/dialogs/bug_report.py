@@ -73,6 +73,7 @@ class BugReport:
             logo_button = Gtk.Button(label="")
             settings = logo_button.get_settings()
             settings.set_property('gtk-button-images', True)
+
             def show_about(*_args):
                 about(parent=self.window)
             logo_button.connect("clicked", show_about)
@@ -82,7 +83,7 @@ class BugReport:
             logo_button.set_image(image)
             hbox.pack_start(logo_button, expand=False, fill=False)
 
-        #the box containing all the input:
+        # the box containing all the input:
         ibox = Gtk.VBox(homogeneous=False, spacing=0)
         ibox.set_spacing(3)
         vbox.pack_start(ibox)
@@ -91,31 +92,30 @@ class BugReport:
         al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
         al.add(label("Please describe the problem:"))
         ibox.pack_start(al)
-        #self.description = Gtk.Entry(max=128)
-        #self.description.set_width_chars(40)
         self.description = Gtk.TextView()
         self.description.set_accepts_tab(True)
         self.description.set_justification(Gtk.Justification.LEFT)
         self.description.set_border_width(2)
         self.description.set_size_request(300, 80)
-        #self.description.modify_bg(Gtk.StateType.NORMAL, Gdk.Color(red=32768, green=32768, blue=32768))
         ibox.pack_start(self.description, expand=False, fill=False)
 
         # Toggles:
         al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
         al.add(label("Include:"))
         ibox.pack_start(al)
-        #generic toggles:
+        # generic toggles:
         from xpra.gtk.keymap import get_gtk_keymap
         from xpra.codecs.loader import codec_versions, load_codecs, show_codecs
         load_codecs()
         show_codecs()
         try:
             from xpra.audio.wrapper import query_audio
+
             def get_audio_info():
                 return query_audio()
         except ImportError:
             get_audio_info = None
+
         def get_gl_info():
             if self.opengl_info:
                 return self.opengl_info
@@ -123,38 +123,40 @@ class BugReport:
         from xpra.platform.paths import get_info as get_path_info
         from xpra.platform.gui import get_info as get_gui_info
         from xpra.util.version import get_version_info, get_platform_info, get_host_info
+
         def get_sys_info():
             from xpra.platform.info import get_user_info
             from xpra.scripts.config import read_xpra_defaults
             return {
-                    "argv"          : sys.argv,
-                    "path"          : sys.path,
-                    "exec_prefix"   : sys.exec_prefix,
-                    "executable"    : sys.executable,
-                    "version"       : get_version_info(),
-                    "platform"      : get_platform_info(),
-                    "host"          : get_host_info(FULL_INFO),
-                    "paths"         : get_path_info(),
-                    "gtk"           : get_gtk_version_info(),
-                    "gui"           : get_gui_info(),
-                    "display"       : get_display_info(),
-                    "user"          : get_user_info(),
-                    "env"           : os.environ,
-                    "config"        : read_xpra_defaults(),
-                    }
+                "argv"          : sys.argv,
+                "path"          : sys.path,
+                "exec_prefix"   : sys.exec_prefix,
+                "executable"    : sys.executable,
+                "version"       : get_version_info(),
+                "platform"      : get_platform_info(),
+                "host"          : get_host_info(FULL_INFO),
+                "paths"         : get_path_info(),
+                "gtk"           : get_gtk_version_info(),
+                "gui"           : get_gui_info(),
+                "display"       : get_display_info(),
+                "user"          : get_user_info(),
+                "env"           : os.environ,
+                "config"        : read_xpra_defaults(),
+            }
         get_screenshot : Callable = noop
         take_screenshot_fn : Callable = noop
-        #screenshot: may have OS-specific code
+        # screenshot: may have OS-specific code
         try:
             from xpra.platform.gui import take_screenshot
             take_screenshot_fn = take_screenshot
         except ImportError:
             log("failed to load platform specific screenshot code", exc_info=True)
         if not take_screenshot_fn:
-            #try with Pillow:
+            # try with Pillow:
             try:
                 from PIL import ImageGrab
                 from io import BytesIO
+
                 def pillow_imagegrab_screenshot() -> ScreenshotData:
                     img = ImageGrab.grab()
                     out = BytesIO()
@@ -166,7 +168,7 @@ class BugReport:
             except Exception as e:
                 log("cannot use Pillow's ImageGrab: %s", e)
         if not take_screenshot_fn:
-            #default: gtk screen capture
+            # default: gtk screen capture
             try:
                 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
                 rwm = GTKImageCapture(get_default_root_window())
@@ -175,32 +177,34 @@ class BugReport:
                 log.warn("Warning: failed to load gtk screenshot code", exc_info=True)
         log("take_screenshot_fn=%s", take_screenshot_fn)
         if take_screenshot_fn:
+
             def _get_screenshot():
-                #take_screenshot() returns: w, h, "png", rowstride, data
+                # take_screenshot() returns: w, h, "png", rowstride, data
                 return take_screenshot_fn()[4]
             get_screenshot = _get_screenshot
+
         def get_server_log():
             return self.server_log
         self.toggles = (
-            ("system",       "txt",  "System",           get_sys_info,   True,
+            ("system", "txt", "System", get_sys_info, True,
              "Xpra version, platform and host information - including hostname and account information"),
-            ("server-log",   "txt",  "Server Log",       get_server_log, bool(self.server_log),
+            ("server-log", "txt", "Server Log", get_server_log, bool(self.server_log),
              "Xpra version, platform and host information - including hostname and account information"),
-            ("network",      "txt",  "Network",          get_net_info,   True,
+            ("network", "txt", "Network", get_net_info, True,
              "Compression, packet encoding and encryption"),
-            ("encoding",     "txt",  "Encodings",        codec_versions, bool(codec_versions),
+            ("encoding", "txt", "Encodings", codec_versions, bool(codec_versions),
              "Picture encodings supported"),
-            ("opengl",       "txt",  "OpenGL",           get_gl_info,    bool(self.opengl_info),
+            ("opengl", "txt", "OpenGL", get_gl_info, bool(self.opengl_info),
              "OpenGL driver and features"),
-            ("audio",        "txt",  "Audio",            get_audio_info, bool(get_audio_info),
+            ("audio", "txt", "Audio", get_audio_info, bool(get_audio_info),
              "Audio codecs and GStreamer version information"),
-            ("keyboard",     "txt",  "Keyboard Mapping", get_gtk_keymap, True,
+            ("keyboard", "txt", "Keyboard Mapping", get_gtk_keymap, True,
              "Keyboard layout and key mapping"),
-            ("xpra-info",    "txt",  "Server Info",      self.get_server_info,   bool(self.get_server_info),
+            ("xpra-info", "txt", "Server Info", self.get_server_info, bool(self.get_server_info),
              "Full server information from 'xpra info'"),
-            ("screenshot",   "png",  "Screenshot",       get_screenshot, bool(get_screenshot),
+            ("screenshot", "png", "Screenshot", get_screenshot, bool(get_screenshot),
              ""),
-            )
+        )
         self.checkboxes = {}
         for name, _, title, value_cb, sensitive, tooltip in self.toggles:
             cb = Gtk.CheckButton(label=title+[" (not available)", ""][bool(value_cb)])
@@ -213,6 +217,7 @@ class BugReport:
         # Buttons:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
+
         def btn(label, tooltip_text, callback, icon_name=None):
             b = Gtk.Button(label=label)
             b.set_tooltip_text(tooltip_text)
@@ -242,7 +247,6 @@ class BugReport:
         if cb:
             cb.set_sensitive(bool(filedata))
 
-
     def show(self):
         log("show()")
         if not self.window:
@@ -269,7 +273,6 @@ class BugReport:
             self.window.destroy()
             self.window = None
 
-
     @staticmethod
     def run():
         log("run()")
@@ -280,7 +283,6 @@ class BugReport:
         log("quit%s", args)
         self.close()
         Gtk.main_quit()
-
 
     def get_data(self):
         log("get_data() collecting bug report data")
@@ -297,7 +299,7 @@ class BugReport:
             if not cb.get_active():
                 continue
             log("%s is enabled (%s)", name, tooltip)
-            #OK, the checkbox is selected, get the data
+            # OK, the checkbox is selected, get the data
             value = value_cb
             if not isinstance(value_cb, dict):
                 try:
@@ -325,6 +327,7 @@ class BugReport:
 
     def copy_clicked(self, *_args):
         data = self.get_data()
+
         def cdata(v):
             if isinstance(v, bytes):
                 return hexstr(v)
@@ -339,7 +342,7 @@ class BugReport:
         file_filter = Gtk.FileFilter()
         file_filter.set_name("ZIP")
         file_filter.add_pattern("*.zip")
-        choose_file(self.window, "Save Bug Report Data",  Gtk.FileChooserAction.SAVE, Gtk.STOCK_SAVE, self.do_save)
+        choose_file(self.window, "Save Bug Report Data", Gtk.FileChooserAction.SAVE, Gtk.STOCK_SAVE, self.do_save)
 
     def do_save(self, filename):
         log("do_save(%s)", filename)
@@ -355,7 +358,7 @@ class BugReport:
                 cfile = os.path.join(basenoext, title.replace(" ", "_")+"."+dtype)
                 info = zipfile.ZipInfo(cfile, date_time=time.localtime(time.time()))
                 info.compress_type = zipfile.ZIP_DEFLATED
-                #very poorly documented:
+                # very poorly documented:
                 info.external_attr = 0o644 << 16
                 info.comment = str(tooltip).encode("utf8")
                 if isinstance(s, bytes):
@@ -383,6 +386,7 @@ class BugReport:
             dialog = Gtk.MessageDialog(self.window, 0, Gtk.MessageType.WARNING,
                                        Gtk.ButtonsType.CLOSE, "Failed to save ZIP file")
             dialog.format_secondary_text("%s" % e)
+
             def close(*_args):
                 dialog.close()
             dialog.connect("response", close)
@@ -405,7 +409,6 @@ def main(argv=()):
         init()
 
         from xpra.log import enable_debug_for
-        #logging init:
         if "-v" in argv:
             enable_debug_for("util")
 

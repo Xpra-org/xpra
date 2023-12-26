@@ -19,6 +19,8 @@ log = Logger("util")
 
 
 _instance = None
+
+
 def getServerCommandsWindow(client):
     global _instance
     if _instance is None:
@@ -54,6 +56,7 @@ class ServerCommandsWindow:
         # Buttons:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
+
         def btn(label, tooltip, callback, icon_name=None):
             b = self.btn(label, tooltip, callback, icon_name)
             hbox.pack_start(b)
@@ -85,6 +88,7 @@ class ServerCommandsWindow:
             if self.contents:
                 self.alignment.remove(self.contents)
             grid = Gtk.Grid()
+
             def l(s=""):    # noqa: E743
                 widget = label(s)
                 widget.set_margin_start(5)
@@ -98,7 +102,7 @@ class ServerCommandsWindow:
             for row, procinfo in enumerate(self.commands_info.values()):
                 if not isinstance(procinfo, dict):
                     continue
-                #some records aren't procinfos:
+                # some records aren't procinfos:
                 pi = typedict(procinfo)
                 command = pi.strtupleget("command")
                 pid = pi.intget("pid", 0)
@@ -108,11 +112,12 @@ class ServerCommandsWindow:
                     rstr = ""
                     if returncode is not None:
                         rstr = "%s" % returncode
-                    #find the windows matching this pid
+                    # find the windows matching this pid
                     windows = ()
                     from xpra.client.gui import features
                     if features.windows:
-                        windows = tuple(w for w in self.client._id_to_window.values() if getattr(w, "_metadata", {}).get("pid")==pid)
+                        windows = tuple(w for w in self.client._id_to_window.values()
+                                        if getattr(w, "_metadata", {}).get("pid")==pid)
                         log(f"windows matching pid={pid}: {windows}")
                     icon = label()
                     if windows:
@@ -148,6 +153,7 @@ class ServerCommandsWindow:
         combo = Gtk.ComboBoxText()
         for x in self.client.server_commands_signals:
             combo.append_text(x)
+
         def send(*_args):
             a = combo.get_active()
             if a>=0:
@@ -169,7 +175,6 @@ class ServerCommandsWindow:
             self.populate_timer = 0
             GLib.source_remove(pt)
 
-
     def show(self):
         log("show()")
         self.window.show_all()
@@ -190,7 +195,6 @@ class ServerCommandsWindow:
             self.window.close()
             self.window = None
 
-
     def run(self):
         log("run()")
         Gtk.main()
@@ -202,19 +206,21 @@ class ServerCommandsWindow:
         Gtk.main_quit()
 
 
-def main(): # pragma: no cover
+def main():   # pragma: no cover
     from xpra.platform import program_context
     from xpra.platform.gui import ready as gui_ready, init as gui_init
     gui_init()
     with program_context("Start-New-Command", "Start New Command"):
-        #logging init:
         if "-v" in sys.argv:
             enable_debug_for("util")
 
         client = AdHocStruct()
         client.server_last_info_time = monotonic()
         commands_info = {
-            0: {'returncode': None, 'name': 'xterm', 'pid': 542, 'dead': False, 'ignore': True, 'command': ('xterm',), 'forget': False},
+            0: {
+                'returncode': None, 'name': 'xterm', 'pid': 542, 'dead': False,
+                'ignore': True, 'command': ('xterm',), 'forget': False,
+            },
             'start-child'              : (),
             'start-new'                : True,
             'start-after-connect-done' : True,
@@ -224,10 +230,11 @@ def main(): # pragma: no cover
             'exit-with-children'       : False,
             'start-child-after-connect': (),
             'start-on-connect'         : (),
-            }
+        }
         client.server_last_info = {"commands" : commands_info}
         client.server_start_new_commands = True
         client.server_commands_signals = ("SIGINT", "SIGTERM", "SIGUSR1")
+
         def nosend(*_args):
             """
             this is for testing only - we are not connected to a server
@@ -235,10 +242,11 @@ def main(): # pragma: no cover
         client.send_info_request = nosend
         client.send = nosend
         window1 = AdHocStruct()
-        window1._metadata = {"pid" : 542}  #pylint: disable=protected-access
-        client._id_to_window = {  #pylint: disable=protected-access
+        window1._metadata = {"pid" : 542}  # pylint: disable=protected-access
+        client._id_to_window = {   # pylint: disable=protected-access
             1 : window1
-            }
+        }
+
         def show_start_new_command(*_args):
             from xpra.gtk.dialogs.start_new_command import getStartNewCommand
             getStartNewCommand(None).show()

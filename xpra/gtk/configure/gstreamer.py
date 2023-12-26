@@ -82,6 +82,7 @@ class ConfigureGUI(BaseGUIWindow):
                 al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0.0)
                 al.add(lbl)
                 grid.attach(al, 3, r, 1, 1)
+
                 def run_test(btn, lbl):
                     log(f"run_test({btn}, {lbl})")
                     lbl.set_label(f"Testing {element}")
@@ -91,13 +92,17 @@ class ConfigureGUI(BaseGUIWindow):
             row.increase()
         if is_X11():
             lal("X11 Capture", "ximagesrc",
-                f"ximagesrc use-damage=0 ! video/x-raw,framerate={FRAMERATE}/1 ! videoscale method=0 ! video/x-raw,width={WIDTH},height={HEIGHT}  ! {videosink}")
+                f"ximagesrc use-damage=0 ! video/x-raw,framerate={FRAMERATE}/1 !"
+                f" videoscale method=0 ! video/x-raw,width={WIDTH},height={HEIGHT}  ! {videosink}")
         if is_gnome():
             lal("pipewire ScreenCast", "pipewiresrc")
             lal("pipewire RemoteDesktop", "pipewiresrc")
 
         def testencoder(element, fmt) -> str:
-            return f"videotestsrc num-buffers=50 ! 'video/x-raw,format=(string)NV12,width={WIDTH},height={HEIGHT},framerate=(fraction){FRAMERATE}/1' ! videoconvert ! {element} ! avdec_{fmt} ! videoconvert ! {videosink}"
+            return "videotestsrc num-buffers=50 !"\
+                   f" 'video/x-raw,format=(string)NV12,width={WIDTH},height={HEIGHT},"\
+                   f"framerate=(fraction){FRAMERATE}/1' !"\
+                   " videoconvert ! {element} ! avdec_{fmt} ! videoconvert ! {videosink}"
 
         def encoder_option(text:str, element:str, fmt:str):
             lal(text, element, testencoder(element, fmt))
@@ -118,8 +123,10 @@ class ConfigureGUI(BaseGUIWindow):
                 lal(f"AMD AMF {fmt}", f"amf{fmt}enc", fmt)
 
     def test_element(self, lbl, element, test):
+
         def set_label(message="OK"):
             GLib.timeout_add(1000, lbl.set_label, message)
+
         def run_test_cmd(cmd):
             try:
                 log.info(f"running {cmd!r}")
@@ -135,7 +142,7 @@ class ConfigureGUI(BaseGUIWindow):
                 set_label(f"Error: {e}")
             return False
         sync()
-        #first make sure that the element exists:
+        # first make sure that the element exists:
         if not run_test_cmd(["gst-inspect-1.0", element]):
             return
         set_label("Element found")

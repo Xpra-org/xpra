@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2020-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,11 +7,13 @@
 
 import os.path
 
-from gi.repository import Gtk, Gdk  # @UnresolvedImport
-
+from xpra.os_util import gi_import
 from xpra.util.env import envbool
 from xpra.platform.paths import get_resources_dir
 from xpra.log import Logger
+
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
 
 log = Logger("gtk", "util")
 
@@ -19,6 +21,8 @@ CSS_OVERRIDES = envbool("XPRA_CSS_OVERRIDES", True)
 
 
 _done = False
+
+
 def inject_css_overrides():
     global _done
     if _done or not CSS_OVERRIDES:
@@ -37,7 +41,10 @@ def inject_css_overrides():
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
 
+
 _style_provider = None
+
+
 def get_style_provider():
     global _style_provider
     if _style_provider:
@@ -46,12 +53,14 @@ def get_style_provider():
     load_css(_style_provider)
     return _style_provider
 
+
 def load_css(provider):
     css_dir = os.path.join(get_resources_dir(), "css")
     if not os.path.exists(css_dir) or not os.path.isdir(css_dir):
         log.error("Error: cannot find directory '%s'", css_dir)
         return None
     filename = None
+
     def parsing_error(_css_provider, _section, error):
         log.error("Error: CSS parsing error on")
         log.error(" '%s'", filename)

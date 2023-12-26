@@ -6,9 +6,7 @@
 from time import monotonic
 
 from xpra.gtk.gobject import n_arg_signal, one_arg_signal
-from xpra.clipboard.core import (
-    ClipboardProxyCore, TEXT_TARGETS,
-    )
+from xpra.clipboard.core import ClipboardProxyCore, TEXT_TARGETS
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.os_util import gi_import
 from xpra.util.str_fn import ellipsizer
@@ -43,7 +41,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
     __gsignals__ = {
         "send-clipboard-token"                  : one_arg_signal,
         "send-clipboard-request"                : n_arg_signal(2),
-        }
+    }
 
     def __init__(self, selection="CLIPBOARD"):
         ClipboardProxyCore.__init__(self, selection)
@@ -58,7 +56,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.clipboard.connect("owner-change", self.owner_change)
 
     def __repr__(self):
-        return  "GTKClipboardProxy(%s)" % self._selection
+        return "GTKClipboardProxy(%s)" % self._selection
 
     def got_token(self, targets, target_data=None, claim=True, synchronous_client=False) -> None:
         # the remote end now owns the clipboard
@@ -85,7 +83,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 self._owner_change_embargo = monotonic()
                 self.clipboard.set_text(text, len(text))
                 return
-            #we should handle more datatypes here..
+            # we should handle more datatypes here..
 
     ############################################################################
     # forward local requests to the remote clipboard:
@@ -118,7 +116,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
 
     def owner_change(self, clipboard, event):
         log("owner_change(%s, %s) window=%s, selection=%s",
-                 clipboard, event, event.window, event.selection)
+            clipboard, event, event.window, event.selection)
         self.do_owner_changed()
 
     def do_owner_changed(self):
@@ -128,7 +126,6 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
         if not self._enabled or elapsed<BLOCK_DELAY:
             return
         self.schedule_emit_token()
-
 
     def get_contents(self, target, got_contents, time=0):
         log("get_contents(%s, %s, %i) have-token=%s",
@@ -146,7 +143,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 got_contents(target, 8, text)
                 return
         else:
-            #data = wait_for_contents(target)?
+            # data = wait_for_contents(target)?
             pass
         got_contents(target, 0, None)
 

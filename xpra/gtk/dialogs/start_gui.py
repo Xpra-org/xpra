@@ -20,10 +20,7 @@ from xpra.common import noop
 from xpra.os_util import POSIX, OSX, WIN32
 from xpra.util.system import is_Wayland, platform_name
 from xpra.util.stats import std_unit_dec
-from xpra.scripts.config import (
-    get_defaults, parse_bool,
-    OPTION_TYPES, FALSE_OPTIONS, TRUE_OPTIONS,
-    )
+from xpra.scripts.config import get_defaults, parse_bool, OPTION_TYPES, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.client.gtk3.menu_helper import BANDWIDTH_MENU_OPTIONS
 from xpra.util.types import AtomicInteger
 from xpra.util.thread import start_thread
@@ -58,9 +55,11 @@ def xal(widget, xalign=1.0):
     al.add(widget)
     return al
 
+
 def sf(w, font="sans 14"):
     setfont(w, font)
     return w
+
 
 def l(text):    # noqa: E743
     widget = label(text)
@@ -71,6 +70,7 @@ def link_btn(link:str, text="", icon_name="question.png"):
     def open_link():
         import webbrowser
         webbrowser.open(link)
+
     def help_clicked(*args):
         log("help_clicked%s opening '%s'", args, link)
         start_thread(open_link, "open-link", True)
@@ -78,10 +78,11 @@ def link_btn(link:str, text="", icon_name="question.png"):
     btn = imagebutton("" if icon else text, icon, text, help_clicked, 12, False)
     return btn
 
+
 def get_default_port(mode):
     return {
         "SSH" : 22,
-        }.get(mode, 14500)
+    }.get(mode, 14500)
 
 
 class StartSession(Gtk.Window):
@@ -91,8 +92,6 @@ class StartSession(Gtk.Window):
         self.exit_code = None
         self.options_window = None
         self.default_config = get_defaults()
-        #log("default_config=%s", self.default_config)
-        #log("options=%s (%s)", options, type(options))
         super().__init__()
         self.set_border_width(20)
         self.set_title("Start Xpra Session")
@@ -109,6 +108,7 @@ class StartSession(Gtk.Window):
 
         # choose the session type:
         hbox = Gtk.HBox(homogeneous=True, spacing=40)
+
         def rb(sibling=None, text="", cb:Callable=noop, tooltip_text="") -> Gtk.RadioButton:
             btn = Gtk.RadioButton.new_with_label_from_widget(sibling, text)
             if cb!=noop:
@@ -188,7 +188,6 @@ class StartSession(Gtk.Window):
         self.entry = sf(Gtk.Entry())
         self.entry.set_max_length(255)
         self.entry.set_width_chars(32)
-        #self.entry.connect('activate', self.run_command)
         self.entry.connect('changed', self.entry_changed)
         self.entry_box.pack_start(self.entry_label, True)
         self.entry_box.pack_start(self.entry, True, False)
@@ -229,57 +228,59 @@ class StartSession(Gtk.Window):
         hbox = Gtk.HBox(homogeneous=False, spacing=12)
         hbox.pack_start(l("Options:"), True, False)
         for text, icon_name, tooltip_text, cb in (
-            ("Features",    "features.png", "Session features", self.configure_features),
-            ("Network",     "connect.png",  "Network options", self.configure_network),
-            ("Display",     "display.png",  "Display settings", self.configure_display),
-            ("Encodings",   "encoding.png", "Picture compression", self.configure_encoding),
-            ("Keyboard",    "keyboard.png", "Keyboard layout and options", self.configure_keyboard),
-            ("Audio",       "speaker.png",  "Audio forwarding options", self.configure_audio),
-            ("Webcam",      "webcam.png",   "Webcam forwarding options", self.configure_webcam),
-            ("Printing",    "printer.png",  "Printer forwarding options", self.configure_printing),
-            ):
+            ("Features", "features.png", "Session features", self.configure_features),
+            ("Network", "connect.png", "Network options", self.configure_network),
+            ("Display", "display.png", "Display settings", self.configure_display),
+            ("Encodings", "encoding.png", "Picture compression", self.configure_encoding),
+            ("Keyboard", "keyboard.png", "Keyboard layout and options", self.configure_keyboard),
+            ("Audio", "speaker.png", "Audio forwarding options", self.configure_audio),
+            ("Webcam", "webcam.png", "Webcam forwarding options", self.configure_webcam),
+            ("Printing", "printer.png", "Printer forwarding options", self.configure_printing),
+        ):
             icon = get_icon_pixbuf(icon_name)
             ib = imagebutton("", icon=icon, tooltip=text or tooltip_text,
-                                  clicked_callback=cb, icon_size=32,
-                                  label_font="sans 14")
+                             clicked_callback=cb, icon_size=32,
+                             label_font="sans 14")
             hbox.pack_start(ib, True, False)
         options_box.pack_start(hbox, True, False)
 
         # Action buttons:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox, False, True, 20)
+
         def btn(text, tooltip, callback, default=False):
             ib = imagebutton(text, tooltip=tooltip, clicked_callback=callback, icon_size=32,
-                            default=default, label_font="sans 16")
+                             default=default, label_font="sans 16")
             hbox.pack_start(ib)
             return ib
         self.cancel_btn = btn("Cancel", "", self.quit)
-        self.run_btn = btn("Start", "Start the xpra session", self.run_command)
-        self.runattach_btn = btn("Start & Attach", "Start the xpra session and attach to it", self.runattach_command, True)
+        self.run_btn = btn("Start", "Start the xpra session",
+                           self.run_command)
+        self.runattach_btn = btn("Start & Attach", "Start the xpra session and attach to it",
+                                 self.runattach_command, True)
         self.runattach_btn.set_sensitive(False)
 
         vbox.show_all()
         self.display_combo.hide()
         self.add(vbox)
-        #load encodings in the background:
+        # load encodings in the background:
         self.load_codecs_thread = start_thread(self.load_codecs, "load-codecs", daemon=True)
-        #poll the list of X11 displays in the background:
+        # poll the list of X11 displays in the background:
         self.display_list = ()
         if not OSX:
             self.load_displays_thread = start_thread(self.load_displays, "load-displays", daemon=True)
 
     def load_codecs(self) -> None:
         log("load_codecs()")
-        from xpra.codecs.video import getVideoHelper  #pylint: disable=import-outside-toplevel
+        from xpra.codecs.video import getVideoHelper  # pylint: disable=import-outside-toplevel
         vh = getVideoHelper()
         vh.set_modules(video_decoders=self.session_options.video_decoders,
                        csc_modules=self.session_options.csc_modules)
         vh.init()
-        from xpra.codecs.loader import load_codecs, show_codecs  #pylint: disable=import-outside-toplevel
+        from xpra.codecs.loader import load_codecs, show_codecs  # pylint: disable=import-outside-toplevel
         load_codecs()
         show_codecs()
         log("load_codecs() done")
-
 
     def no_display_combo(self) -> None:
         self.display_entry.show()
@@ -333,13 +334,12 @@ class StartSession(Gtk.Window):
         self.display_combo.set_active(selected)
 
     def set_options(self, options):
-        #cook some attributes,
-        #so they won't trigger "changes" messages later
-        #- we don't show "auto" as an option, convert to either true or false:
+        # cook some attributes,
+        # so they won't trigger "changes" messages later
+        # - we don't show "auto" as an option, convert to either true or false:
         options.splash = (str(options.splash) or "").lower() not in FALSE_OPTIONS
         options.xsettings = (str(options.xsettings) or "").lower() not in FALSE_OPTIONS
         self.session_options = options
-
 
     def app_signal(self, signum) -> None:
         if self.exit_code is None:
@@ -363,24 +363,30 @@ class StartSession(Gtk.Window):
 
     def configure_features(self, *_args) -> None:
         self.run_dialog(FeaturesWindow)
+
     def configure_network(self, *_args) -> None:
         self.run_dialog(NetworkWindow)
+
     def configure_display(self, *_args) -> None:
         self.run_dialog(DisplayWindow)
+
     def configure_encoding(self, *_args) -> None:
         if self.load_codecs_thread.is_alive():
             log("waiting for loader thread to complete")
             self.load_codecs_thread.join()
         self.run_dialog(EncodingWindow)
+
     def configure_keyboard(self, *_args) -> None:
         self.run_dialog(KeyboardWindow)
+
     def configure_audio(self, *_args) -> None:
         self.run_dialog(AudioWindow)
+
     def configure_webcam(self, *_args) -> None:
         self.run_dialog(WebcamWindow)
+
     def configure_printing(self, *_args) -> None:
         self.run_dialog(PrintingWindow)
-
 
     def populate_menus(self) -> None:
         localhost = self.localhost_btn.get_active()
@@ -395,7 +401,7 @@ class StartSession(Gtk.Window):
         else:
             self.address_box.show_all()
         if shadow_mode:
-            #only option we show is the optional display input
+            # only option we show is the optional display input
             self.entry_box.hide()
             self.category_box.hide()
             self.command_box.hide()
@@ -405,7 +411,7 @@ class StartSession(Gtk.Window):
             self.display_entry.show()
             self.exit_with_children_cb.show()
             if xdg and localhost:
-                #we have the xdg menus and the server is local, so we can use them:
+                # we have the xdg menus and the server is local, so we can use them:
                 self.entry_box.hide()
                 self.command_label.set_text("Command:" if seamless else "Desktop Environment:")
                 self.command_box.show_all()
@@ -417,13 +423,12 @@ class StartSession(Gtk.Window):
                     self.populate_command()
                 self.exit_with_children_cb.set_sensitive(True)
             else:
-                #remote server (or missing xdg data)
+                # remote server (or missing xdg data)
                 self.command_box.hide()
                 self.category_box.hide()
                 self.entry_label.set_text("Command:" if seamless else "Desktop Environment:")
                 self.entry_box.show_all()
                 self.exit_with_children_cb.set_sensitive(bool(self.entry.get_text()))
-
 
     def populate_category(self) -> None:
         self.categories = {}
@@ -452,11 +457,11 @@ class StartSession(Gtk.Window):
         self.desktop_entry = None
         if category:
             from xdg.Menu import Menu, MenuEntry
-            #find the matching submenu:
+            # find the matching submenu:
             submenu = self.categories[category]
             assert isinstance(submenu, Menu)
             for entry in submenu.getEntries():
-                #can we have more than 2 levels of submenus?
+                # can we have more than 2 levels of submenus?
                 if isinstance(entry, MenuEntry):
                     name = entry.DesktopEntry.getName()
                     self.commands[name] = entry.DesktopEntry
@@ -466,7 +471,6 @@ class StartSession(Gtk.Window):
         if self.commands:
             self.command_combo.set_active(0)
         self.command_box.show()
-
 
     def populate_command(self) -> None:
         log("populate_command()")
@@ -528,7 +532,7 @@ class StartSession(Gtk.Window):
         if shadow:
             self.exit_with_client_cb.set_active(True)
         elif local_shadow_only and localhost:
-            #can only do shadow on localhost, so switch to remote:
+            # can only do shadow on localhost, so switch to remote:
             self.remote_btn.set_active(True)
         can_use_localhost = shadow or not local_shadow_only
         self.localhost_btn.set_sensitive(can_use_localhost)
@@ -559,12 +563,10 @@ class StartSession(Gtk.Window):
         if not (self.shadow_btn.get_active() and self.localhost_btn.get_active()):
             self.no_display_combo()
 
-
     def hide_window(self, *args) -> bool:
         log("hide_window%s", args)
         self.hide()
         return True
-
 
     def run_command(self, *_args) -> None:
         self.do_run()
@@ -619,11 +621,11 @@ class StartSession(Gtk.Window):
             else:
                 cmd.append("--start=%s" % command)
         cmd.append("--attach=%s" % attach)
-        #process session_config if we have one:
+        # process session_config if we have one:
         for k in (
             "splash", "border", "headerbar", "notifications", "system-tray", "cursors", "bell", "modal-windows",
             "pixel-depth", "mousewheel",
-            ):
+        ):
             fn = k.replace("-", "_")
             if not hasattr(self.session_options, fn):
                 continue
@@ -704,7 +706,7 @@ class SessionOptions(Gtk.Window):
     def populate_form(self) -> None:
         raise NotImplementedError()
 
-    def close(self, *_args) -> None:  #pylint: disable=arguments-differ
+    def close(self, *_args) -> None:  # pylint: disable=arguments-differ
         self.set_value_from_widgets()
         super().close()
 
@@ -722,7 +724,7 @@ class SessionOptions(Gtk.Window):
     def _save_widget(self, fn:str, widget, widget_type:str, **kwargs) -> None:
         setattr(self, "%s_widget" % fn, widget)
         setattr(self, "%s_widget_type" % fn, widget_type)
-        for k,v in kwargs.items():
+        for k, v in kwargs.items():
             setattr(self, "{}_{}".format(fn, k), v)
 
     def get_widget(self, fn):
@@ -730,7 +732,6 @@ class SessionOptions(Gtk.Window):
 
     def get_widget_options(self, fn):
         return getattr(self, "%s_options" % fn)
-
 
     def bool_cb(self, text, option_name, tooltip_text="", link="") -> Gtk.Switch:
         self.attach_label(text, tooltip_text, link)
@@ -751,7 +752,7 @@ class SessionOptions(Gtk.Window):
             "yes"   : TRUE_OPTIONS,
             "no"    : FALSE_OPTIONS,
             "auto"  : ("auto", "", None),
-            })
+        })
 
     def radio_cb(self, text:str, option_name:str, tooltip_text="", link="", options=None) -> Gtk.RadioButton:
         self.attach_label(text, tooltip_text, link)
@@ -759,7 +760,6 @@ class SessionOptions(Gtk.Window):
         widget_base_name = "%s_widget" % fn
         self.widgets.append(option_name)
         value = getattr(self.options, fn)
-        #log.warn("%s=%s", fn, value)
         hbox = Gtk.HBox(homogeneous=True, spacing=10)
         i = 0
         sibling = None
@@ -773,10 +773,10 @@ class SessionOptions(Gtk.Window):
             matched = value in match or str(value).lower() in match
             btn.set_active(matched)
             if matched:
-                #ensure we save the current value first,
-                #so that's what we will set as value when retrieving the form values:
+                # ensure we save the current value first,
+                # so that's what we will set as value when retrieving the form values:
                 saved_match = [value]+list(match)
-            if i==0:
+            if i == 0:
                 sibling = btn
             i += 1
             saved_options[option] = saved_match
@@ -833,24 +833,24 @@ class SessionOptions(Gtk.Window):
     def set_value_from_widget(self, option_name:str) -> None:
         fn = option_name.replace("-", "_")
         widget_type = getattr(self, "%s_widget_type" % fn)
-        if widget_type=="bool":
+        if widget_type == "bool":
             values = self.valuesfromswitch(option_name)
-        elif widget_type=="radio":
+        elif widget_type == "radio":
             values = self.valuesfromradio(option_name)
-        elif widget_type=="combo":
+        elif widget_type == "combo":
             values = self.valuesfromcombo(option_name)
-        elif widget_type=="scale":
+        elif widget_type == "scale":
             values = self.valuesfromscale(option_name)
         else:
             log.warn("unknown widget type '%s'", widget_type)
             return
-        if len(values)!=1 or values[0]!=UNSET:
+        if len(values) != 1 or values[0] != UNSET:
             current_value = getattr(self.options, fn)
             for v in values:
                 if current_value==v:
-                    #unchanged
+                    # unchanged
                     return
-            #pick the first one:
+            # pick the first one:
             value = values[0]
             log.info("changed: %s=%r (%s) - was %r (%s)", fn, value, type(value), current_value, type(current_value))
             setattr(self.options, fn, value)
@@ -917,23 +917,23 @@ class FeaturesWindow(SessionOptions):
             "blue"  : ("blue",),
             "red"   : ("red",),
             "green" : ("green", )
-            })
+        })
         self.radio_cb("Header Bar", "headerbar", "", "", {
             "auto"  : ["auto"]+list(TRUE_OPTIONS),
             "no"    : FALSE_OPTIONS,
             "force" : ("force",),
-            })
+        })
         self.sep()
-        #"https://github.com/Xpra-org/xpra/blob/master/docs/Features/Notifications.md")
+        # "https://github.com/Xpra-org/xpra/blob/master/docs/Features/Notifications.md")
         self.bool_cb("Xpra's System Tray", "tray")
         self.bool_cb("Forward System Trays", "system-tray")
         self.bool_cb("Notifications", "notifications")
-        #"https://github.com/Xpra-org/xpra/blob/master/docs/Features/System-Tray.md")
-        #self.bool_cb("Cursors", "cursors")
-        #self.bool_cb("Bell", "bell")
+        # "https://github.com/Xpra-org/xpra/blob/master/docs/Features/System-Tray.md")
+        # self.bool_cb("Cursors", "cursors")
+        # self.bool_cb("Bell", "bell")
         self.bool_cb("Modal Windows", "modal-windows")
         self.sep()
-        #"https://github.com/Xpra-org/xpra/blob/master/docs/Features/Image-Depth.md")
+        # "https://github.com/Xpra-org/xpra/blob/master/docs/Features/Image-Depth.md")
         self.combo("Mouse Wheel", "mousewheel", {
             "on" : "on",
             "no" : "disabled",
@@ -941,13 +941,13 @@ class FeaturesWindow(SessionOptions):
             "invert-y" : "invert Y axis",
             "invert-z" : "invert Z axis",
             "invert-all" : "invert all axes",
-            })
+        })
         self.combo("Clipboard", "clipboard-direction", {
             "both"      : "enabled",
             "to-server" : "to server only",
             "to-client" : "to client only",
             "disabled"  : "disabled",
-            })
+        })
         if POSIX and not OSX and not is_Wayland():
             self.bool_cb("XSettings", "xsettings")
         self.vbox.show_all()
@@ -961,8 +961,7 @@ class NetworkWindow(SessionOptions):
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Network/README.md",
                        "Open Network Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
-
-        #"https://github.com/Xpra-org/xpra/blob/master/docs/Network/Multicast-DNS.md")
+        # "https://github.com/Xpra-org/xpra/blob/master/docs/Network/Multicast-DNS.md")
         self.radio_cb_auto("Session Sharing", "sharing")
         self.radio_cb_auto("Session Lock", "lock", "Prevent sessions from being taken over by new clients")
         self.sep()
@@ -970,7 +969,7 @@ class NetworkWindow(SessionOptions):
         self.bool_cb("Bandwidth Detection", "bandwidth-detection", "Automatically detect runtime bandwidth limits")
         bwoptions = {
             "auto" : "Auto",
-            }
+        }
         for bwlimit in BANDWIDTH_MENU_OPTIONS:
             if bwlimit<=0:
                 s = "None"
@@ -980,13 +979,13 @@ class NetworkWindow(SessionOptions):
                 s = "%sbps" % std_unit_dec(bwlimit)
             bwoptions[bwlimit] = s
         self.combo("Bandwidth Limit", "bandwidth-limit", bwoptions)
-        #ssl options
-        #ssh=paramiko | plink
-        #exit-ssh
-        #Remote Logging
-        #open-files
-        #open-url
-        #file-size-limit
+        # ssl options
+        # ssh=paramiko | plink
+        # exit-ssh
+        # Remote Logging
+        # open-files
+        # open-url
+        # file-size-limit
         self.vbox.show_all()
 
 
@@ -1006,8 +1005,8 @@ class DisplayWindow(SessionOptions):
             pixel_depths[pd] = pd
         if self.run_mode=="start-desktop":
             size_options = {
-                "yes"    : "auto",
-                }
+                "yes" : "auto",
+            }
             for size in SCREEN_SIZES:
                 try:
                     w, h = size.split("x")
@@ -1022,7 +1021,7 @@ class DisplayWindow(SessionOptions):
             96      : "96",
             144     : "144",
             192     : "192",
-            })
+        })
         self.combo("Desktop Scaling", "desktop-scaling", {
             "on"    : "auto",
             "no"    : "disabled",
@@ -1030,13 +1029,13 @@ class DisplayWindow(SessionOptions):
             "100%"  : "100%",
             "150%"  : "150%",
             "200%"  : "200%",
-            })
+        })
         self.radio_cb("OpenGL Acceleration", "opengl", "", "", {
             "probe" : "probe",
             "auto"  : ["auto"]+list(TRUE_OPTIONS),
             "no"    : FALSE_OPTIONS,
             "force" : ("force",),
-            })
+        })
         self.vbox.show_all()
 
 
@@ -1055,18 +1054,18 @@ class EncodingWindow(SessionOptions):
             50  : "Medium",
             75  : "High",
             100 : "Lossless",
-            })
+        })
         self.scale("Minimum Speed", "min-speed", marks={
             0   : "Low Bandwidth",
             100 : "Low Latency",
-            })
+        })
         self.sep()
         self.combo("Auto-refresh", "auto-refresh-delay", {
             0       : "disabled",
             0.1     : "fast",
             0.15    : "normal",
             0.5     : "slow",
-            })
+        })
         from xpra.client.mixins.encodings import get_core_encodings
         encodings = ["auto", "rgb"] + list(get_core_encodings())
         encodings.remove("rgb24")
@@ -1075,13 +1074,7 @@ class EncodingWindow(SessionOptions):
             encodings.append("grayscale")
         from xpra.codecs.loader import get_encoding_name
         encoding_options = {encoding: get_encoding_name(encoding) for encoding in encodings}
-        #opts.encodings
         self.combo("Encoding", "encoding", encoding_options)
-        #attach(label("Colourspace Modules"), 0)
-        #inc()
-        #attach(label("Video Encoders"), 0)
-        #inc()
-        #attach(label("Video Decoders"), 0)
         self.vbox.show_all()
 
 
@@ -1095,10 +1088,10 @@ class KeyboardWindow(SessionOptions):
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         from xpra.platform.keyboard import Keyboard
-        kbd = Keyboard()  #pylint: disable=not-callable
+        kbd = Keyboard()  # pylint: disable=not-callable
         layouts = {
-            ""  : "auto",
-            }
+            "" : "auto",
+        }
         layouts.update(kbd.get_all_x11_layouts())
         self.combo("Keyboard Layout", "keyboard-layout", layouts)
         self.bool_cb("State Synchronization", "keyboard-sync")
@@ -1111,13 +1104,13 @@ class KeyboardWindow(SessionOptions):
             "IBus"  : "IBus",
             "SCIM"  : "SCIM",
             "uim"   : "uim",
-            })
+        })
         self.combo("Shortcut Modifiers", "shortcut-modifiers", {
             "auto"  : "auto",
             "shift + control"   : "Shift+Control",
             "control + alt"     : "Control+Alt",
             "shift + alt"       : "Shift+Alt",
-            })
+        })
         self.vbox.show_all()
 
 
@@ -1134,26 +1127,14 @@ class AudioWindow(SessionOptions):
             "on"        : TRUE_OPTIONS,
             "off"       : FALSE_OPTIONS,
             "disabled"  : ("disabled", ),
-            })
+        })
         self.sep()
-        #attach(label("Speaker Codec"))
-        #self.speaker_codec_widget = Gtk.ComboBoxText()
-        #for v in ("mp3", "wav"):
-        #    self.speaker_codec_widget.append_text(v)
-        #attach(self.speaker_codec_widget, 1)
-        #inc()
         self.radio_cb("Microphone", "microphone", "", "", {
             "on"        : TRUE_OPTIONS,
             "off"       : FALSE_OPTIONS,
             "disabled"  : ("disabled", ),
-            })
+        })
         self.sep()
-        #attach(label("Microphone Codec"))
-        #self.microphone_codec_widget = Gtk.ComboBoxText()
-        #for v in ("mp3", "wav"):
-        #    self.microphone_codec_widget.append_text(v)
-        #attach(self.microphone_codec_widget, 1)
-        #inc()
         self.bool_cb("AV Sync", "av-sync")
         self.vbox.show_all()
 
@@ -1171,8 +1152,8 @@ class WebcamWindow(SessionOptions):
         if OSX or WIN32:
             cb.set_sensitive(False)
             cb.set_active(False)
-            #self.grid.attach(label(), 0, self.row.get(), 2, 1)
-            self.grid.attach(label("Webcam forwarding is not supported on %s" % platform_name()), 0, self.row.increase(), 2, 1)
+            self.grid.attach(label("Webcam forwarding is not supported on %s" % platform_name()),
+                             0, self.row.increase(), 2, 1)
         self.vbox.show_all()
 
 
@@ -1189,7 +1170,7 @@ class PrintingWindow(SessionOptions):
         self.vbox.show_all()
 
 
-def main(options=None) -> int: # pragma: no cover
+def main(options=None) -> int:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.log import enable_color

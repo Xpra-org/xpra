@@ -20,6 +20,7 @@ log = Logger("client", "util")
 
 inject_css_overrides()
 
+
 def lal(s, font=""):
     al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0.0)
     l = label(s, font=font)
@@ -31,6 +32,7 @@ class ShortcutInfo(Gtk.Window):
 
     def __init__(self, shortcut_modifiers=(), shortcuts=()):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
+
         def window_deleted(*_args):
             self.is_closed = True
         self.connect('delete_event', window_deleted)
@@ -43,12 +45,13 @@ class ShortcutInfo(Gtk.Window):
         icon = get_icon_pixbuf("keyboard.png")
         if icon:
             self.set_icon(icon)
+
         def vlabel(text, font="", padding=0):
             vbox.pack_start(lal(text, font), True, True, padding)
 
         vlabel("Help: shortcuts", "sans 18", 10)
         vlabel("Prefix: %s" % ("+".join(shortcut_modifiers)), padding=0)
-        #each key may have multiple shortcuts, count them all:
+        # each key may have multiple shortcuts, count them all:
         total = 0
         for keyname in shortcuts:
             total += len(shortcuts[keyname])
@@ -59,6 +62,7 @@ class ShortcutInfo(Gtk.Window):
         grid.set_column_homogeneous(True)
 
         row = 0
+
         def attach(s, x=0, font=""):
             al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0.0)
             l = label(s, font=font)
@@ -105,12 +109,12 @@ def main(_args):
                 log("init_posix_display_source failure", exc_info=True)
                 log.warn("Warning: failed to connect to the X11 server")
                 log.warn(f" {e}")
-                #hope for the best..
+                # hope for the best..
 
         if not Keyboard:
             log.warn("missing keyboard support")
             return
-        keyboard = Keyboard()  #pylint: disable=not-callable
+        keyboard = Keyboard()   # pylint: disable=not-callable
         mod_meanings = keyboard.get_keymap_modifiers()[0]
         modifier_names = get_modifier_names(mod_meanings)
 

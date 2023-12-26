@@ -33,9 +33,11 @@ def xal(widget, xalign=1):
     al.add(widget)
     return al
 
+
 def sf(w, font="sans 14"):
     setfont(w, font)
     return w
+
 
 def l(text):    # noqa: E743
     widget = label(text)
@@ -60,17 +62,16 @@ class DesktopGreeter(Gtk.Window):
         vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(10)
 
-        #self.entry_label = l("Command:")
-        #vbox.add(self.entry_label)
         self.desktop_combo = sf(Gtk.ComboBoxText())
         vbox.add(self.desktop_combo)
 
         # Action buttons:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox, False, True, 20)
+
         def btn(text, tooltip, callback, default=False):
             ib = imagebutton(text, tooltip=tooltip, clicked_callback=callback, icon_size=32,
-                            default=default, label_font="sans 16")
+                             default=default, label_font="sans 16")
             hbox.pack_start(ib)
             return ib
         self.cancel_btn = btn("Exit", "", self.quit)
@@ -101,7 +102,7 @@ class DesktopGreeter(Gtk.Window):
         cmd = name
         if cmd in self.desktop_sessions:
             session = self.desktop_sessions.get(cmd)
-            #ie:
+            # ie:
             # session={
             #    'Type': '',
             #    'VersionString': '',
@@ -160,7 +161,7 @@ class DesktopGreeter(Gtk.Window):
         self.desktop_combo.set_active(0)
 
 
-def main(_options=None): # pragma: no cover
+def main(_options=None):   # pragma: no cover
     # pylint: disable=import-outside-toplevel
     assert POSIX and not OSX
     from xpra.platform import program_context
