@@ -337,8 +337,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def get_notifier_classes(self) -> tuple[type,...]:
         ncs = list(ShadowServerBase.get_notifier_classes(self))
         try:
-            from xpra.gtk.notifier import GTK_Notifier   # pylint: disable=import-outside-toplevel
-            ncs.append(GTK_Notifier)
+            from xpra.gtk.notifier import GTKNotifier   # pylint: disable=import-outside-toplevel
+            ncs.append(GTKNotifier)
         except Exception as e:
             notifylog("get_notifier_classes()", exc_info=True)
             notifylog.warn("Warning: cannot load GTK notifier:")

@@ -12,7 +12,7 @@ from xpra.log import Logger
 
 log = Logger("keyboard")
 
-#this allows platforms to inject keyname workarounds
+# this allows platforms to inject keyname workarounds
 # the key is a tuple (keyname, keyval, keycode)
 # the value is the keyname override
 KEY_TRANSLATIONS : dict[tuple, str] = {}
@@ -28,6 +28,7 @@ def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")) -> tuple[tuple[
     display = Gdk.Display.get_default()
     return do_get_gtk_keymap(display, ignore_keys)
 
+
 def do_get_gtk_keymap(display, ignore_keys:tuple[Any]) -> tuple[tuple[int,str,int,int,int],...]:
     if not display:
         return ()
@@ -38,7 +39,7 @@ def do_get_gtk_keymap(display, ignore_keys:tuple[Any]) -> tuple[tuple[int,str,in
     keycodes : list[tuple[int,str,int,int,int]] = []
     for i in range(0, 2**8):
         entries = keymap.get_entries_for_keycode(i)
-        if not entries: # pragma: no cover
+        if not entries:     # pragma: no cover
             continue
         found, keys, keyvals = entries
         if not found:
@@ -60,7 +61,7 @@ def do_get_gtk_keymap(display, ignore_keys:tuple[Any]) -> tuple[tuple[int,str,in
     return tuple(keycodes)
 
 
-def main(): # pragma: no cover
+def main():   # pragma: no cover
     # pylint: disable=import-outside-toplevel
     import sys
     from xpra.platform import program_context
@@ -71,6 +72,7 @@ def main(): # pragma: no cover
             log.enable_debug()
         gtk_keymap = get_gtk_keymap()
         sizes = [16, 28, 8, 8, 8]
+
         def pkey(*entries):
             print(("".join([str(x).ljust(sizes[i]) for i,x in enumerate(entries)])).strip())
         pkey("keyval", "name", "keycode", "group", "level")

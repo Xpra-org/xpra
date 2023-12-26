@@ -21,7 +21,9 @@ def quit_on_signals(commandtype: str = ""):
     register_os_signals(signal_handler, commandtype)
 
 
-def register_os_signals(callback: Callable[[int], None], commandtype: str = "", signals=(signal.SIGINT, signal.SIGTERM)):
+def register_os_signals(callback: Callable[[int], None],
+                        commandtype: str = "",
+                        signals=(signal.SIGINT, signal.SIGTERM)):
     for signum in signals:
         register_os_signal(callback, commandtype, signum)
 

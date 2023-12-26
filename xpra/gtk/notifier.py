@@ -33,14 +33,14 @@ GdkPixbuf = gi_import("GdkPixbuf")
 DEFAULT_FG_COLOUR = None
 DEFAULT_BG_COLOUR = None
 if OSX:
-    #black on white fits better with osx
+    # black on white fits better with osx
     DEFAULT_FG_COLOUR = color_parse("black")
     DEFAULT_BG_COLOUR = color_parse("#f2f2f2")
 DEFAULT_WIDTH = 340
 DEFAULT_HEIGHT = 100
 
 
-class GTK_Notifier(NotifierBase):
+class GTKNotifier(NotifierBase):
 
     def __init__(self, closed_cb=None, action_cb=None, size_x=DEFAULT_WIDTH, size_y=DEFAULT_HEIGHT, timeout=5):
         super().__init__(closed_cb, action_cb)
@@ -79,14 +79,14 @@ class GTK_Notifier(NotifierBase):
         display = Gdk.Display.get_default()
         n = display.get_n_monitors()
         log("monitors=%s", n)
-        #if n<2:
+        # if n<2:
         monitor = display.get_monitor(0)
         geom = monitor.get_geometry()
         self.max_width = geom.width
         self.max_height = geom.height
         log("first monitor dimensions: %dx%d", self.max_width, self.max_height)
-        self.x = self.max_width - 20        #keep away from the edge
-        self.y = self.max_height - 64        #space for a panel
+        self.x = self.max_width - 20            # keep away from the edge
+        self.y = self.max_height - 64           # space for a panel
         log("our reduced dimensions: %dx%d", self.x, self.y)
 
     def cleanup(self):
@@ -96,23 +96,21 @@ class GTK_Notifier(NotifierBase):
             x.hide_notification()
         super().cleanup()
 
-
     def get_origin_x(self):
         return self.x
 
     def get_origin_y(self):
         return self.y
 
-
     def close_notify(self, nid):
         for x in self._notify_stack:
             if x.nid==nid:
                 x.hide_notification()
 
-    def show_notify(self, dbus_id, tray, nid:int|NotificationID,
-                    app_name:str, replaces_nid:int|NotificationID, app_icon,
-                    summary:str, body:str, actions, hints, timeout, icon):
-        GLib.idle_add(self.new_popup, nid, summary, body, actions, icon, timeout, 0<timeout<=600)
+    def show_notify(self, dbus_id, tray, nid: int | NotificationID,
+                    app_name: str, replaces_nid: int | NotificationID, app_icon,
+                    summary: str, body: str, actions, hints, timeout, icon):
+        GLib.idle_add(self.new_popup, nid, summary, body, actions, icon, timeout, 0 < timeout <= 600)
 
     def new_popup(self, nid:int, summary:str, body:str, actions:tuple, icon, timeout=10*1000, show_timeout=False):
         """Create a new Popup instance, or update an existing one """
@@ -139,7 +137,7 @@ class GTK_Notifier(NotifierBase):
     def destroy_popup_cb(self, popup):
         if popup in self._notify_stack:
             self._notify_stack.remove(popup)
-            #move popups down if required
+            # move popups down if required
             offset = 0
             for note in self._notify_stack:
                 offset = note.reposition(offset, self)
@@ -152,7 +150,6 @@ class GTK_Notifier(NotifierBase):
     def popup_action(self, nid, action_id):
         if self.action_cb:
             self.action_cb(nid, action_id)
-
 
 
 class Popup(Gtk.Window):
@@ -246,7 +243,7 @@ class Popup(Gtk.Window):
     def set_content(self, title, message, actions=(), image=None):
         self.header.set_markup("<b>%s</b>" % title)
         self.message.set_text(message)
-        #remove any existing actions:
+        # remove any existing actions:
         for w in tuple(self.buttons_box.get_children()):
             self.buttons_box.remove(w)
         while len(actions)>=2:
@@ -261,10 +258,10 @@ class Popup(Gtk.Window):
         else:
             self.image.hide()
 
-
     def action_button(self, action_id, action_text):
         button = Gtk.Button(label=action_text)
         button.set_relief(Gtk.ReliefStyle.NORMAL)
+
         def popup_cb_clicked(*args):
             self.hide_notification()
             log("popup_cb_clicked%s for action_id=%s, action_text=%s", args, action_id, action_text)
@@ -278,7 +275,7 @@ class Popup(Gtk.Window):
             x = self.stack.max_width - w
         x = max(0, x)                          # or on the left
         log("get_x(%s)=%s", w, x)
-        return    x
+        return x
 
     def get_y(self, h):
         y = self.stack.get_origin_y()
@@ -288,7 +285,7 @@ class Popup(Gtk.Window):
             y = self.stack.max_height - h
         y = max(0, y)
         log("get_y(%s)=%s", h, y)
-        return    y
+        return y
 
     def reposition(self, offset, stack):
         """Move the notification window down, when an older notification is removed"""
@@ -324,7 +321,7 @@ class Popup(Gtk.Window):
         if opacity <= 0:
             self.in_progress = False
             self.hide_notification()
-            self.fade_out_timer = 0 #redundant
+            self.fade_out_timer = 0   # redundant
             self.popup_closed(self.nid, 1)
             return False
         self.set_opacity(opacity)
@@ -347,15 +344,14 @@ class Popup(Gtk.Window):
             if v:
                 setattr(self, timer, None)
                 GLib.source_remove(v)
-        #destroy window from the UI thread:
+        # destroy window from the UI thread:
         GLib.idle_add(self.destroy)
         self.close()
         self.destroy_cb(self)
 
 
-
 def main():
-    #example usage
+    # example usage
     import random
     color_combos = (("red", "white"), ("white", "blue"), ("green", "black"))
     messages : list[tuple[int,str,str,tuple]] = [
@@ -365,25 +361,28 @@ def main():
         (4, "A long message", "The quick brown fox jumped over the lazy dog. " * 6, ()),
         (1, "Hello Again", "Replacing the first notification", ()),
         (2, "Actions Again", "Replacing with just 1 action", (999, "Action 999")),
-        ]
-    #images = ("logo1_64.png", None)
+    ]
+    # images = ("logo1_64.png", None)
+
     def notify_factory():
         color = random.choice(color_combos)
         nid, title, message, actions = messages.pop(0)
-        icon = None #random.choice(images)
+        icon = None   # random.choice(images)
         notifier.bg_color = color_parse(color[0])
         notifier.fg_color = color_parse(color[1])
         notifier.show_timeout = random.choice((True, False))
         notifier.new_popup(nid, title, message, actions, icon)
         return len(messages)
+
     def gtk_main_quit():
         print("quitting")
         Gtk.main_quit()
 
-    notifier = GTK_Notifier(timeout=6)
+    notifier = GTKNotifier(timeout=6)
     GLib.timeout_add(4000, notify_factory)
     GLib.timeout_add(30000, gtk_main_quit)
     Gtk.main()
+
 
 if __name__ == "__main__":
     main()

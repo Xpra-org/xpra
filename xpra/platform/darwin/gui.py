@@ -125,11 +125,11 @@ class OSX_Notifier(NotifierBase):
         if actions and GTK_NOTIFIER:
             #try to use GTK notifier if we have actions buttons to handle:
             try:
-                from xpra.gtk.notifier import GTK_Notifier
+                from xpra.gtk.notifier import GTKNotifier
             except ImportError as e:
                 log("cannot use GTK notifier for handling actions: %s", e)
             else:
-                self.gtk_notifier = GTK_Notifier(self.closed_cb, self.action_cb)
+                self.gtk_notifier = GTKNotifier(self.closed_cb, self.action_cb)
                 self.gtk_notifier.show_notify(dbus_id, tray, nid, app_name, replaces_nid, app_icon,
                                               summary, body, actions, hints, expire_timeout, icon)
                 self.gtk_notifications.add(nid)

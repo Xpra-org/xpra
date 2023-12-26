@@ -25,8 +25,8 @@ class StatusIcon:
             if envbool("XPRA_NATIVE_NOTIFIER", True):
                 from xpra.platform.gui import get_native_notifier_classes
                 nc += get_native_notifier_classes()
-            from xpra.gtk.notifier import GTK_Notifier
-            nc.append(GTK_Notifier)
+            from xpra.gtk.notifier import GTKNotifier
+            nc.append(GTKNotifier)
             self.notifier = nc[0](self.notification_closed, self.notification_action)
             self.notifier.app_name_format = "%s"
             #ensure we can send the image-path hint with the dbus backend:

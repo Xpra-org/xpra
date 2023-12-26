@@ -57,6 +57,7 @@ def get_pixbuf_from_data(rgb_data, has_alpha : bool, w : int, h : int, rowstride
 
 def pixbuf_save_to_memory(pixbuf, fmt="png") -> bytes:
     buf = []
+
     def save_to_memory(data, *_args, **_kwargs):
         buf.append(data)
         return True

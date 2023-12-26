@@ -18,7 +18,7 @@ def get_default_root_window() -> Gdk.Window | None:
     return screen.get_root_window()
 
 
-def get_root_size(default:None|tuple[int,int]=(1920, 1024)) -> tuple[int,int] | None:
+def get_root_size(default: None | tuple[int, int] = (1920, 1024)) -> tuple[int, int] | None:
     if OSX:
         # the easy way:
         root = get_default_root_window()
@@ -52,9 +52,12 @@ GRAB_STATUS_STRING = {
     Gdk.GrabStatus.INVALID_TIME     : "INVALID_TIME",
     Gdk.GrabStatus.NOT_VIEWABLE     : "NOT_VIEWABLE",
     Gdk.GrabStatus.FROZEN           : "FROZEN",
-    }
+}
+
 
 dsinit : bool = False
+
+
 def init_display_source() -> None:
     """
     On X11, we want to be able to access the bindings,
@@ -74,6 +77,7 @@ def init_display_source() -> None:
             log.warn("Warning: the Gtk-3.0 X11 bindings are missing")
             log.warn(" some features may be degraded or unavailable")
             log.warn(" ie: keyboard mapping, focus, etc")
+
 
 def ds_inited() -> bool:
     return dsinit

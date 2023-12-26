@@ -70,6 +70,8 @@ class XError(Exception):
 
 
 xerror_to_name : dict[int,str] = {}
+
+
 def get_X_error(xerror) -> str:
     global xerror_to_name
     if not isinstance(xerror, int):
@@ -181,6 +183,7 @@ class _ErrorManager:
     def assert_out(self):
         assert self.depth == 0
 
+
 trap = _ErrorManager()
 
 
@@ -194,11 +197,12 @@ class XSyncContext:
             trap.Xexit()
         except XError as e:
             if e_typ is None:
-                #we are not handling an exception yet, so raise this one:
+                # we are not handling an exception yet, so raise this one:
                 raise
             log(f"Ignoring {e_typ} during Xexit, {e_typ} will be raised instead", exc_info=e)
-        #raise the original exception:
+        # raise the original exception:
         return False
+
 
 xsync = XSyncContext()
 
@@ -212,8 +216,9 @@ class XSwallowContext:
         if e_typ:
             log("XError swallowed: %s, %s", e_typ, e_val, exc_info=trcbak)
         trap.safe_x_exit()
-        #don't raise exceptions:
+        # don't raise exceptions:
         return True
+
 
 xswallow = XSwallowContext()
 
@@ -227,8 +232,9 @@ class XLogContext:
         if e_typ:
             log.error("Error: %s, %s", e_typ, e_val, exc_info=trcbak)
         trap.safe_x_exit()
-        #don't raise exceptions:
+        # don't raise exceptions:
         return True
+
 
 xlog = XLogContext()
 
@@ -243,4 +249,4 @@ def verify_sync(*args):
         for x in s:
             for v in x.splitlines():
                 log.error(" %s", v)
-        #raise Exception("unmanaged context")
+        # raise Exception("unmanaged context")

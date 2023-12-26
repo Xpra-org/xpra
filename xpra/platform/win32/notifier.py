@@ -13,7 +13,7 @@ from xpra.platform.win32.balloon import notify
 GTK_NOTIFIER = envbool("XPRA_WIN32_GTK_NOTIFIER", False)
 if GTK_NOTIFIER:
     try:
-        from xpra.gtk.notifier import GTK_Notifier
+        from xpra.gtk.notifier import GTKNotifier
     except ImportError:
         GTK_NOTIFIER = False
 
@@ -39,7 +39,7 @@ class Win32_Notifier(NotifierBase):
     def get_gtk_notifier(self):
         if self.gtk_notifier is None and GTK_NOTIFIER:
             try:
-                self.gtk_notifier = GTK_Notifier(self.closed_cb, self.action_cb)
+                self.gtk_notifier = GTKNotifier(self.closed_cb, self.action_cb)
             except Exception:
                 log("failed to load GTK Notifier fallback", exc_info=True)
         return self.gtk_notifier

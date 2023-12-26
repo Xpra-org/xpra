@@ -56,8 +56,8 @@ class XpraClient(GTKXpraClient):
             except Exception as e:
                 nwarn("GObject", e)
         try:
-            from xpra.gtk.notifier import GTK_Notifier
-            ncs.append(GTK_Notifier)
+            from xpra.gtk.notifier import GTKNotifier
+            ncs.append(GTKNotifier)
         except Exception as e:
             nwarn("GTK", e)
         return ncs
