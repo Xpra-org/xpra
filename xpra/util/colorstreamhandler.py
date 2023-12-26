@@ -26,6 +26,7 @@ import os
 import sys
 import logging
 
+
 class _AnsiColorStreamHandler(logging.StreamHandler):
     DEFAULT = '\x1b[0m'
     RED     = '\x1b[31m'
@@ -64,6 +65,7 @@ class _AnsiColorStreamHandler(logging.StreamHandler):
         color = self._get_color(record.levelno)
         return color + text + self.DEFAULT
 
+
 class _WinColorStreamHandler(logging.StreamHandler):
     # wincon.h
     FOREGROUND_BLACK     = 0x0000
@@ -74,7 +76,7 @@ class _WinColorStreamHandler(logging.StreamHandler):
     FOREGROUND_MAGENTA   = 0x0005
     FOREGROUND_YELLOW    = 0x0006
     FOREGROUND_GREY      = 0x0007
-    FOREGROUND_INTENSITY = 0x0008 # foreground color is intensified.
+    FOREGROUND_INTENSITY = 0x0008  # foreground color is intensified.
     FOREGROUND_WHITE     = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED
 
     BACKGROUND_BLACK     = 0x0000
@@ -85,7 +87,7 @@ class _WinColorStreamHandler(logging.StreamHandler):
     BACKGROUND_MAGENTA   = 0x0050
     BACKGROUND_YELLOW    = 0x0060
     BACKGROUND_GREY      = 0x0070
-    BACKGROUND_INTENSITY = 0x0080 # background color is intensified.
+    BACKGROUND_INTENSITY = 0x0080  # background color is intensified.
 
     DEFAULT  = FOREGROUND_GREEN
     CRITICAL = BACKGROUND_YELLOW | FOREGROUND_MAGENTA | FOREGROUND_INTENSITY | BACKGROUND_INTENSITY
@@ -110,7 +112,7 @@ class _WinColorStreamHandler(logging.StreamHandler):
 
     def _set_color(self, code):
         import ctypes
-        ctypes.windll.kernel32.SetConsoleTextAttribute(self._outhdl, code)      #@UndefinedVariable
+        ctypes.windll.kernel32.SetConsoleTextAttribute(self._outhdl, code)
 
     def __init__(self, stream=None):
         super().__init__(stream)
@@ -118,13 +120,14 @@ class _WinColorStreamHandler(logging.StreamHandler):
         import ctypes.util
         crtname = ctypes.util.find_msvcrt()  # @UndefinedVariable
         crtlib = ctypes.cdll.LoadLibrary(crtname)
-        self._outhdl = crtlib._get_osfhandle(stream.fileno())   #pylint: disable=protected-access
+        self._outhdl = crtlib._get_osfhandle(stream.fileno())   # pylint: disable=protected-access
 
     def emit(self, record):
         color = self._get_color(record.levelno)
         self._set_color(color)
         super().emit(record)
         self._set_color(self.FOREGROUND_WHITE)
+
 
 # select ColorStreamHandler based on platform
 if sys.platform.startswith("win") and not os.environ.get("MSYSCON"):

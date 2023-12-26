@@ -49,7 +49,7 @@ def filedata_nocrlf(filename:str) -> bytes:
     return v.strip(b"\n\r")
 
 
-def is_socket(sockpath:str, check_uid:int|None=None) -> bool:
+def is_socket(sockpath:str, check_uid:int | None=None) -> bool:
     try:
         s = os.stat(sockpath)
     except OSError as e:
@@ -98,12 +98,13 @@ def stderr_print(msg:str= "") -> bool:
 
 class CaptureStdErr:
     __slots__ = ("savedstderr", "tmp", "stderr")
+
     def __init__(self, *_args):
         self.savedstderr = None
         self.stderr = b""
 
     def __enter__(self):
-        noerr(sys.stderr.flush) # <--- important when redirecting to files
+        noerr(sys.stderr.flush)   # <--- important when redirecting to files
         self.savedstderr = os.dup(2)
         self.tmp = NamedTemporaryFile(prefix="stderr")
         fd = self.tmp.fileno()
@@ -198,12 +199,16 @@ def use_gui_prompt() -> bool:
 
 class umask_context:
     __slots__ = ("umask", "orig_umask")
+
     def __init__(self, umask):
         self.umask = umask
+
     def __enter__(self):
         self.orig_umask = os.umask(self.umask)
+
     def __exit__(self, *_args):
         os.umask(self.orig_umask)
+
     def __repr__(self):
         return f"umask_context({self.umask})"
 
@@ -224,7 +229,7 @@ def find_lib_ldconfig(libname:str) -> str:
     import subprocess
     p = subprocess.Popen(f"{ldconfig} -p", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     data = bytestostr(p.communicate()[0])
-    libpath = re.search(pattern, data, re.MULTILINE)        #@UndefinedVariable
+    libpath = re.search(pattern, data, re.MULTILINE)
     if libpath:
         return libpath.group(1)
     return ""
@@ -273,7 +278,7 @@ def get_which_impl() -> Callable[[str],str]:
     except ImportError:
         pass
     try:
-        from distutils.spawn import find_executable # pylint: disable=deprecated-module
+        from distutils.spawn import find_executable   # pylint: disable=deprecated-module
         return find_executable
     except ImportError:
         return find_in_PATH

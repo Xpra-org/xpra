@@ -79,7 +79,8 @@ def shellsub(s : str, subs=None) -> str:
                     s = s.replace(f"${var}", vstr)
                     s = s.replace("${%s}" % var, vstr)
             except (TypeError, ValueError):
-                raise ValueError(f"failed to substitute {var!r} with value {value!r} ({type(value)}) in {s!r}") from None
+                msg = f"failed to substitute {var!r} with value {value!r} ({type(value)}) in {s!r}"
+                raise ValueError(msg) from None
     return s
 
 
@@ -121,15 +122,19 @@ def osexpand(s : str, actual_username="", uid=0, gid=0, subs=None) -> str:
 
 class OSEnvContext:
     __slots__ = ("env", "kwargs")
+
     def __init__(self, **kwargs):
         self.env = {}
         self.kwargs = kwargs
+
     def __enter__(self):
         self.env = os.environ.copy()
         os.environ.update(self.kwargs)
+
     def __exit__(self, *_args):
         os.environ.clear()
         os.environ.update(self.env)
+
     def __repr__(self):
         return "OSEnvContext"
 

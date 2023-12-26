@@ -10,7 +10,6 @@ import socket
 import platform
 from typing import Any
 
-#tricky: use xpra.scripts.config to get to the python "platform" module
 import xpra
 from xpra.util.types import typedict
 from xpra.util.env import envbool
@@ -19,7 +18,7 @@ from xpra.util.io import get_util_logger
 from xpra.util.system import get_linux_distribution, platform_release, platform_name
 from xpra.common import FULL_INFO
 
-XPRA_VERSION = xpra.__version__     #@UndefinedVariable
+XPRA_VERSION = xpra.__version__
 XPRA_NUMERIC_VERSION = xpra.__version_info__
 
 CHECK_SSL : bool = envbool("XPRA_VERSION_CHECK_SSL", True)
@@ -35,6 +34,8 @@ SSL_CAFILE = os.environ.get("XPRA_SSL_CAFILE", SSL_CAFILE)
 
 def log(msg, *args, **kwargs) -> None:
     get_util_logger().debug(msg, *args, **kwargs)
+
+
 def warn(msg, *args, **kwargs) -> None:
     get_util_logger().warn(msg, *args, **kwargs)
 
@@ -47,10 +48,12 @@ def version_str() -> str:
     rstr = revision_str()
     return XPRA_VERSION if not rstr else XPRA_VERSION+"-"+rstr
 
+
 def full_version_str() -> str:
     rstr = version_str()
     try:
-        from xpra.src_info import BRANCH  # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        from xpra.src_info import BRANCH
     except ImportError:
         pass
     else:
@@ -58,8 +61,10 @@ def full_version_str() -> str:
             rstr += " beta"
     return rstr
 
+
 def caps_to_version(caps : typedict) -> str:
     return caps.strget("version", "0")+"-"+caps_to_revision(caps)
+
 
 def caps_to_revision(caps : typedict) -> str:
     revision = caps.strget("revision")
@@ -68,14 +73,17 @@ def caps_to_revision(caps : typedict) -> str:
     branch = caps.strget("branch")
     return make_revision_str(revision, local_modifications, branch, commit)
 
+
 def revision_str() -> str:
     try:
-        from xpra.src_info import REVISION, LOCAL_MODIFICATIONS, BRANCH, COMMIT  #pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        from xpra.src_info import REVISION, LOCAL_MODIFICATIONS, BRANCH, COMMIT
     except ImportError:
         pass
     else:
         return make_revision_str(REVISION, LOCAL_MODIFICATIONS, BRANCH, COMMIT)
     return ""
+
 
 def make_revision_str(revision, local_modifications, branch, commit) -> str:
     rstr = ""
@@ -84,7 +92,7 @@ def make_revision_str(revision, local_modifications, branch, commit) -> str:
             rstr += "r%i" % revision
         if isinstance(local_modifications, int) and local_modifications>0:
             rstr += "M"
-        if branch=="master" and commit:
+        if branch == "master" and commit:
             rstr += " (%s)" % commit
     except TypeError:
         get_util_logger().debug("make_revision_str%s", (revision, local_modifications, branch, commit), exc_info=True)
@@ -101,26 +109,26 @@ def version_compat_check(remote_version) -> str | None:
     except ValueError:
         warn(f"Warning: failed to parse remote version {remote_version!r}")
         return None
-    if rv==XPRA_NUMERIC_VERSION:
+    if rv == XPRA_NUMERIC_VERSION:
         log("identical remote version: %s", remote_version)
         return None
-    if rv[:2]==XPRA_NUMERIC_VERSION[:2]:
+    if rv[:2] == XPRA_NUMERIC_VERSION[:2]:
         log("identical major.minor remote version: %s", remote_version)
         return None
-    if rv[0:2]<(3, 0):
-        #this is the oldest version we support
+    if rv[0:2] < (3, 0):
+        # this is the oldest version we support
         msg = f"remote version {rv[:2]} is too old, sorry"
         log(msg)
         return msg
-    if rv[0]>0:
+    if rv[0] > 0:
         log(f"newer remote version {remote_version} should work, we'll see..")
         return None
     log(f"local version {XPRA_VERSION!r} should be compatible with remote version {remote_version!r}")
     return None
 
 
-def get_host_info(full_info:int=1) -> dict[str, Any]:
-    #this function is for non UI thread info
+def get_host_info(full_info: int=1) -> dict[str, Any]:
+    # this function is for non UI thread info
     info : dict[str, Any] = {}
     if full_info>1:
         info |= {
@@ -129,9 +137,9 @@ def get_host_info(full_info:int=1) -> dict[str, Any]:
                 "bits"                  : BITS,
                 "full_version"          : sys.version,
                 "version"               : ".".join(str(x) for x in sys.version_info[:3]),
-                },
-            }
-    if full_info>0:
+            },
+        }
+    if full_info > 0:
         try:
             hostname = socket.gethostname()
             if hostname:
@@ -142,57 +150,61 @@ def get_host_info(full_info:int=1) -> dict[str, Any]:
             info |= {
                 "uid"   : os.getuid(),
                 "gid"   : os.getgid(),
-                }
+            }
     return info
 
-def get_version_info(full:int=1) -> dict[str, Any]:
-    info : dict[str, Any] = {"version" : vparts(XPRA_VERSION, full+1)}
+
+def get_version_info(full: int=1) -> dict[str, Any]:
+    info: dict[str, Any] = {"version" : vparts(XPRA_VERSION, full+1)}
     if full>0:
         try:
             # pylint: disable=import-outside-toplevel
             from xpra.src_info import LOCAL_MODIFICATIONS, REVISION, COMMIT, BRANCH
-            for k,v in {
+            for k, v in {
                 "local_modifications"   : LOCAL_MODIFICATIONS,
                 "revision"              : REVISION,
                 "branch"                : BRANCH,
                 "commit"                : COMMIT,
-                }.items():
+            }.items():
                 if v is not None and v!="unknown":
                     info[k] = v
         except ImportError as e:
             warn("missing some source information: %s", e)
-    if full>1:
+    if full > 1:
         info["build"] = get_build_info()
     return info
 
-def get_build_info(full:int=1) -> dict[str, Any]:
-    info : dict[str, Any] = {}
+
+def get_build_info(full: int=1) -> dict[str, Any]:
+    info: dict[str, Any] = {}
     try:
         from xpra import build_info  # pylint: disable=import-outside-toplevel
-        #rename these build info properties:
-        for k,bk in {
-                    "date"                 : "BUILD_DATE",
-                    "time"                 : "BUILD_TIME",
-                    "bit"                  : "BUILD_BIT",
-                    "cpu"                  : "BUILD_CPU",
-                    "compiler"             : "COMPILER_VERSION",
-                    "nvcc"                 : "NVCC_VERSION",
-                    "linker"               : "LINKER_VERSION",
-                    "python"               : "PYTHON_VERSION",
-                    "cython"               : "CYTHON_VERSION",
-                  }.items():
+        # rename these build info properties:
+        for k, bk in {
+            "date"                 : "BUILD_DATE",
+            "time"                 : "BUILD_TIME",
+            "bit"                  : "BUILD_BIT",
+            "cpu"                  : "BUILD_CPU",
+            "compiler"             : "COMPILER_VERSION",
+            "nvcc"                 : "NVCC_VERSION",
+            "linker"               : "LINKER_VERSION",
+            "python"               : "PYTHON_VERSION",
+            "cython"               : "CYTHON_VERSION",
+        }.items():
             v = getattr(build_info, bk, None)
             if v is not None:
                 if bk.endswith("_VERSION"):
                     v = parse_version(v)
                 info[k] = v
-        #record library versions:
+        # record library versions:
         if full>1:
-            info["lib"] = {k.lstrip("lib_"): parse_version(getattr(build_info, k)) for k in dir(build_info) if k.startswith("lib_")}
+            info["lib"] = {k.lstrip("lib_"): parse_version(getattr(build_info, k))
+                           for k in dir(build_info) if k.startswith("lib_")}
     except Exception as e:
         warn("missing some build information: %s", e)
     log(f"get_build_info({full})={info}")
     return info
+
 
 def parse_version(v) -> tuple[Any, ...]:
     if isinstance(v, str):
@@ -204,10 +216,12 @@ def parse_version(v) -> tuple[Any, ...]:
         v = tuple(maybeint(x) for x in v.split("-")[0].split("."))
     return tuple(v or ())
 
+
 def vtrim(v, parts=FULL_INFO+1):
     if isinstance(v, (list, tuple)):
         return v[:parts]
     return v
+
 
 def dict_version_trim(d, parts=FULL_INFO+1):
     """
@@ -225,6 +239,7 @@ def dict_version_trim(d, parts=FULL_INFO+1):
 def do_get_platform_info() -> dict[str, Any]:
     # pylint: disable=import-outside-toplevel
     pp = sys.modules.get("../platform", platform)
+
     def get_processor_name():
         if pp.system() == "Windows":
             return pp.processor()
@@ -261,8 +276,12 @@ def do_get_platform_info() -> dict[str, Any]:
         "processor" : get_processor_name(),
     }
     return info
-#cache the output:
+
+
+# cache the output:
 platform_info_cache = None
+
+
 def get_platform_info():
     global platform_info_cache
     if platform_info_cache is None:
@@ -290,14 +309,15 @@ def get_version_from_url(url) -> tuple[int,...] | None:
             log("Error retrieving URL '%s': %s", url, e)
     return None
 
+
 def version_update_check():
     FAKE_NEW_VERSION = envbool("XPRA_FAKE_NEW_VERSION", False)
     CURRENT_VERSION_URL = ("https" if CHECK_SSL else "http") + "://xpra.org/CURRENT_VERSION"
     PLATFORM_FRIENDLY_NAMES = {
-        "linux2"    : "LINUX",
-        "win"       : "WINDOWS",
-        "darwin"    : "OSX",
-        }
+        "linux2" : "LINUX",
+        "win" : "WINDOWS",
+        "darwin" : "OSX",
+    }
     our_version_no = tuple(int(y) for y in XPRA_VERSION.split("."))
     platform_name = PLATFORM_FRIENDLY_NAMES.get(sys.platform, sys.platform)
     arch = get_platform_info().get("machine")
@@ -305,7 +325,7 @@ def version_update_check():
         f"{CURRENT_VERSION_URL}_{platform_name}_{arch}?{XPRA_VERSION}",
         f"{CURRENT_VERSION_URL}_{platform_name}?{XPRA_VERSION}",
         f"{CURRENT_VERSION_URL}?{XPRA_VERSION}",
-        ):
+    ):
         latest_version_no = get_version_from_url(url)
         if latest_version_no:
             break

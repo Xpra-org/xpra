@@ -12,17 +12,18 @@ from xpra.util.io import get_util_logger
 
 class AtomicInteger:
     __slots__ = ("counter", "lock")
-    def __init__(self, integer : int = 0):
-        self.counter : int = integer
+
+    def __init__(self, integer: int=0):
+        self.counter: int = integer
         from threading import RLock
         self.lock : RLock = RLock()
 
-    def increase(self, inc = 1) -> int:
+    def increase(self, inc: int=1) -> int:
         with self.lock:
             self.counter = self.counter + inc
             return self.counter
 
-    def decrease(self, dec = 1) -> int:
+    def decrease(self, dec: int=1) -> int:
         with self.lock:
             self.counter = self.counter - dec
             return self.counter
@@ -39,7 +40,6 @@ class AtomicInteger:
 
     def __repr__(self) -> str:
         return f"AtomicInteger({self.counter})"
-
 
     def __int__(self) -> int:
         return self.counter
@@ -59,14 +59,15 @@ class AtomicInteger:
 
 class MutableInteger:
     __slots__ = ("counter", )
-    def __init__(self, integer : int = 0):
+
+    def __init__(self, integer: int = 0):
         self.counter : int = integer
 
-    def increase(self, inc = 1) -> int:
+    def increase(self, inc: int=1) -> int:
         self.counter = self.counter + inc
         return self.counter
 
-    def decrease(self, dec = 1) -> int:
+    def decrease(self, dec: int=1) -> int:
         self.counter = self.counter - dec
         return self.counter
 
@@ -79,49 +80,61 @@ class MutableInteger:
     def __repr__(self) -> str:
         return f"MutableInteger({self.counter})"
 
-
     def __int__(self) -> int:
         return self.counter
 
     def __eq__(self, other) -> bool:
         return self.counter==int(other)
+
     def __ne__(self, other) -> bool:
         return self.counter!=int(other)
+
     def __lt__(self, other) -> bool:
         return self.counter<int(other)
+
     def __le__(self, other) -> bool:
         return self.counter<=int(other)
+
     def __gt__(self, other) -> bool:
         return self.counter>int(other)
+
     def __ge__(self, other) -> bool:
         return self.counter>=int(other)
+
     def __cmp__(self, other) -> int:
         return self.counter-int(other)
 
 
 _RaiseKeyError = object()
 
+
 class typedict(dict):
-    __slots__ = ("warn", ) # no __dict__ - that would be redundant
-    @staticmethod # because this doesn't make sense as a global function.
+    __slots__ = ("warn", )  # no __dict__ - that would be redundant
+
+    @staticmethod  # because this doesn't make sense as a global function.
     def _process_args(mapping=(), **kwargs) -> dict[str,Any]:
         if hasattr(mapping, "items"):
             mapping = getattr(mapping, "items")()
         return {bytestostr(k): v for k, v in chain(mapping, getattr(kwargs, "items")())}
+
     def __init__(self, mapping=(), **kwargs):
         super().__init__(self._process_args(mapping, **kwargs))
         self.warn = self._warn
+
     def __getitem__(self, k):
         return super().__getitem__(bytestostr(k))
+
     def __setitem__(self, k, v):
         return super().__setitem__(bytestostr(k), v)
+
     def __delitem__(self, k):
         return super().__delitem__(bytestostr(k))
+
     def get(self, k, default=None):
         kstr = bytestostr(k)
         if kstr in self:
             return super().get(kstr, default)
-        #try to locate this value in a nested dictionary:
+        # try to locate this value in a nested dictionary:
         if kstr.find(".")>0:
             prefix, k = kstr.split(".", 1)
             if prefix in self:
@@ -129,19 +142,25 @@ class typedict(dict):
                 if isinstance(v, dict):
                     return typedict(v).get(k, default)
         return default
+
     def setdefault(self, k, default=None):
         return super().setdefault(bytestostr(k), default)
+
     def pop(self, k, v=_RaiseKeyError):
         if v is _RaiseKeyError:
             return super().pop(bytestostr(k))
         return super().pop(bytestostr(k), v)
+
     def update(self, mapping=(), **kwargs):
         super().update(self._process_args(mapping, **kwargs))
+
     def __contains__(self, k):
         return super().__contains__(bytestostr(k))
+
     @classmethod
     def fromkeys(cls, keys, v=None):
         return super().fromkeys((bytestostr(k) for k in keys), v)
+
     def __repr__(self):
         return f'{type(self).__name__}({super().__repr__()})'
 
@@ -154,7 +173,7 @@ class typedict(dict):
         if strkey in self:
             v = super().get(strkey)
         else:
-            #try harder by recursing:
+            # try harder by recursing:
             d = self
             while strkey.find(".")>0:
                 prefix, k = strkey.split(".", 1)
@@ -199,24 +218,28 @@ class typedict(dict):
         if v is None:
             return default_value
         if len(v)!=2:
-            #"%s is not a pair of numbers: %s" % (k, len(v))
+            # "%s is not a pair of numbers: %s" % (k, len(v))
             return default_value
         try:
             return int(v[0]), int(v[1])
         except ValueError:
             return default_value
 
-    def strtupleget(self, k , default_value=(), min_items:int | None=None, max_items:int | None=None) -> tuple[str, ...]:
+    def strtupleget(self, k, default_value=(),
+                    min_items:int | None=None, max_items:int | None=None) -> tuple[str, ...]:
         return self.tupleget(k, default_value, str, min_items, max_items)
 
-    def inttupleget(self, k , default_value=(), min_items:int | None=None, max_items:int | None=None) -> tuple[int, ...]:
+    def inttupleget(self, k, default_value=(),
+                    min_items:int | None=None, max_items:int | None=None) -> tuple[int, ...]:
         return self.tupleget(k, default_value, int, min_items, max_items)
 
-    def tupleget(self, k , default_value=(), item_type=None, min_items:int | None=None, max_items:int | None=None) -> tuple[Any, ...]:
+    def tupleget(self, k, default_value=(), item_type=None,
+                 min_items:int | None=None, max_items:int | None=None) -> tuple[Any, ...]:
         v = self._listget(k, default_value, item_type, min_items, max_items)
         return tuple(v or ())
 
-    def _listget(self, k , default_value, item_type=None, min_items:int | None=None, max_items:int | None=None) -> list[Any] | tuple[Any,...]:
+    def _listget(self, k, default_value, item_type=None,
+                 min_items:int | None=None, max_items:int | None=None) -> list[Any] | tuple[Any,...]:
         v = self.get(k)
         if v is None:
             return default_value
@@ -315,7 +338,7 @@ def merge_dicts(a : dict[str,Any], b : dict[str,Any], path:list[str] | None=None
             if isinstance(a[key], dict) and isinstance(b[key], dict):
                 merge_dicts(a[key], b[key], path + [str(key)])
             elif a[key] == b[key]:
-                pass # same leaf value
+                pass  # same leaf value
             else:
                 raise ValueError('Conflict at %s: existing value is %s, new value is %s' % (
                     '.'.join(path + [str(key)]), a[key], b[key]))

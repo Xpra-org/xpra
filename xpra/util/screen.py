@@ -23,11 +23,11 @@ def prettify_plug_name(s, default="") -> str:
         s = s.decode("utf8")
     except (AttributeError, UnicodeDecodeError):
         pass
-    #prettify strings on win32
+    # prettify strings on win32
     s = re.sub(r"[0-9\.]*\\", "-", s).lstrip("-")
     if s.startswith("WinSta-"):
         s = s[len("WinSta-"):]
-    #ie: "(Standard monitor types) DELL ..."
+    # ie: "(Standard monitor types) DELL ..."
     if s.startswith("(") and s.lower().find("standard")<s.find(") "):
         s = s.split(") ", 1)[1]
     if s=="0":
@@ -38,19 +38,21 @@ def prettify_plug_name(s, default="") -> str:
 def do_log_screen_sizes(root_w, root_h, sizes):
     from xpra.log import Logger
     log = Logger("screen")
-    #old format, used by some clients (android):
+    # old format, used by some clients (android):
     if not isinstance(sizes, (tuple, list)):
         return
     if any(True for x in sizes if not isinstance(x, (tuple, list))):
         return
+
     def dpi(size_pixels, size_mm):
         if size_mm==0:
             return 0
         return round(size_pixels * 254 / size_mm / 10)
+
     def add_workarea(info, wx, wy, ww, wh):
         info.append("workarea: %4ix%-4i" % (ww, wh))
-        if wx!=0 or wy!=0:
-            #log position if not (0, 0)
+        if wx != 0 or wy != 0:
+            # log position if not (0, 0)
             info.append("at %4ix%-4i" % (wx, wy))
     if len(sizes)!=1:
         log.warn("Warning: more than one screen found")
@@ -61,13 +63,12 @@ def do_log_screen_sizes(root_w, root_h, sizes):
     if len(s)<10:
         log.info(" %s", s)
         return
-    #more detailed output:
-    display_name, width, height, width_mm, height_mm, \
-    monitors, work_x, work_y, work_width, work_height = s[:10]
-    #always log plug name:
+    # more detailed output:
+    display_name, width, height, width_mm, height_mm, monitors, work_x, work_y, work_width, work_height = s[:10]
+    # always log plug name:
     info = ["%s" % prettify_plug_name(display_name)]
     if width!=root_w or height!=root_h:
-        #log plug dimensions if not the same as display (root):
+        # log plug dimensions if not the same as display (root):
         info.append("%ix%i" % (width, height))
     sdpix = dpi(width, width_mm)
     sdpiy = dpi(height, height_mm)
@@ -76,7 +77,7 @@ def do_log_screen_sizes(root_w, root_h, sizes):
     if work_width!=width or work_height!=height or work_x!=0 or work_y!=0:
         add_workarea(info, work_x, work_y, work_width, work_height)
     log.info("  "+" ".join(info))
-    #sort monitors from left to right, top to bottom:
+    # sort monitors from left to right, top to bottom:
     monitors_distances = []
     for m in monitors:
         plug_x, plug_y = m[1:3]
@@ -102,22 +103,22 @@ def do_log_screen_sizes(root_w, root_h, sizes):
             info.append("(%3ix%-3i mm%s)" % (plug_width_mm, plug_height_mm, dpistr))
         if len(m)>=11:
             dwork_x, dwork_y, dwork_width, dwork_height = m[7:11]
-            #only show it again if different from the screen workarea
+            # only show it again if different from the screen workarea
             if dwork_x!=work_x or dwork_y!=work_y or dwork_width!=work_width or dwork_height!=work_height:
                 add_workarea(info, dwork_x, dwork_y, dwork_width, dwork_height)
         if len(sorted_monitors)==1 and len(info)==1 and info[0].strip() in ("Canvas", "DUMMY0"):
-            #no point in logging just `Canvas` on its own
+            # no point in logging just `Canvas` on its own
             continue
         istr = (" ".join(info)).rstrip(" ")
         if len(monitors)==1 and istr.lower() in ("unknown unknown", "0", "1", default_name, "screen", "monitor"):
-            #a single monitor with no real name,
-            #so don't bother showing it:
+            # a single monitor with no real name,
+            # so don't bother showing it:
             continue
         log.info("    "+istr)
 
 
 def get_screen_info(screen_sizes) -> dict[int, dict[str, Any]]:
-    #same format as above
+    # same format as above
     if not screen_sizes:
         return {}
     info : dict[int, dict[str, Any]] = {}
@@ -136,10 +137,10 @@ def get_screen_info(screen_sizes) -> dict[int, dict[str, Any]]:
                 if len(monitor)>=7:
                     minfo : dict[str,Any] = sinfo.setdefault("monitor", {}).setdefault(j, {})
                     for k,v in {
-                                "name"      : monitor[0],
-                                "geometry"  : monitor[1:5],
-                                "size_mm"   : monitor[5:7],
-                                }.items():
+                        "name"      : monitor[0],
+                        "geometry"  : monitor[1:5],
+                        "size_mm"   : monitor[5:7],
+                    }.items():
                         minfo[k] = v
         if len(x)>=10:
             sinfo["workarea"] = x[6:10]

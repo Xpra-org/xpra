@@ -12,7 +12,7 @@ from xpra.util.io import get_util_logger
 
 def dump_all_frames(logger=None) -> None:
     try:
-        frames = sys._current_frames()      #pylint: disable=protected-access
+        frames = sys._current_frames()      # pylint: disable=protected-access
     except AttributeError:
         return
     else:
@@ -48,6 +48,7 @@ def detect_leaks() -> Callable[[], bool]:
     import tracemalloc
     tracemalloc.start()
     last_snapshot = [tracemalloc.take_snapshot()]
+
     def print_leaks() -> bool:
         s1 = last_snapshot[0]
         s2 = tracemalloc.take_snapshot()
@@ -77,9 +78,9 @@ def mem_watcher(ms, pid:int=os.getpid()) -> None:
     process = psutil.Process(pid)
     while True:
         mem = process.memory_full_info()
-        #get_util_logger().info("memory usage: %s", mem.mem//1024//1024)
         get_util_logger().info("memory usage for %s: %s", pid, mem)
         time.sleep(ms/1000.0)
+
 
 def log_mem_info(prefix="memory usage: ", pid=os.getpid()) -> None:
     import psutil

@@ -91,10 +91,10 @@ def get_weighted_list_stats(weighted_values, show_percentile=False):
         tv += v * w
     avg = tv/tw
     stats = {
-             "min"   : int(min(values)),
-             "max"   : int(max(values)),
-             "avg"   : int(avg),
-             }
+        "min"   : int(min(values)),
+        "max"   : int(max(values)),
+        "avg"   : int(avg),
+    }
     if show_percentile:
         # percentile
         svalues = sorted(values)
@@ -134,11 +134,11 @@ def get_list_stats(in_values, show_percentile=(5, 8, 9), show_dev=False):
     # arithmetic mean
     avg = sum(values)/len(values)
     lstats = {
-              "cur"       : int(values[-1]),
-              "min"       : int(min(values)),
-              "max"       : int(max(values)),
-              "avg"       : int(avg),
-              }
+        "cur"       : int(values[-1]),
+        "min"       : int(min(values)),
+        "max"       : int(max(values)),
+        "avg"       : int(avg),
+    }
     if show_dev:
         p = 1           # geometric mean
         h = 0           # harmonic mean

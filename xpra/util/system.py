@@ -65,7 +65,7 @@ def _is_Wayland(env : dict) -> bool:
         return True
     return backend != "x11" and (
         bool(env.get("WAYLAND_DISPLAY")) or env.get("XDG_SESSION_TYPE") == "wayland"
-        )
+    )
 
 
 def is_distribution_variant(variant="Debian") -> bool:
@@ -202,7 +202,7 @@ def do_get_generic_os_name() -> str:
             "darwin"    : "MacOS",
             "win"       : "Win32",
             "freebsd"   : "FreeBSD",
-            }.items():
+    }.items():
         if sys.platform.startswith(k):
             return v
     return sys.platform     # pragma: no cover
@@ -247,9 +247,9 @@ def get_frame_info(ignore_threads: tuple[Thread, ...] = ()) -> dict[str | int, A
             else:
                 thread_ident[t.ident] = None
         thread_ident |= {
-                threading.current_thread().ident  : "info",
-                main_thread.ident                 : "main",
-                }
+            threading.current_thread().ident  : "info",
+            main_thread.ident                 : "main",
+        }
         frames = sys._current_frames()  # pylint: disable=protected-access
         stack = None
         for i,frame_pair in enumerate(frames.items()):
@@ -264,7 +264,7 @@ def get_frame_info(ignore_threads: tuple[Thread, ...] = ()) -> dict[str | int, A
             info[i] = {
                 ""          : tident,
                 "stack"     : sanestack,
-                }
+            }
         del frames, stack
     except Exception as e:
         get_util_logger().error("failed to get frame info: %s", e)
@@ -331,7 +331,7 @@ def platform_name(sys_platform=sys.platform, release=None) -> str:
         "darwin"   : "Mac OS X",
         "freebsd.*": "FreeBSD",
         "os2"      : "OS/2",
-        }
+    }
 
     def rel(v):
         values = [v]

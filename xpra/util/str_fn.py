@@ -44,11 +44,14 @@ def csv(v) -> str:
 
 class ellipsizer:
     __slots__ = ("obj", "limit")
+
     def __init__(self, obj, limit=100):
         self.obj = obj
         self.limit = limit
+
     def __str__(self):
         return self.__repr__()
+
     def __repr__(self):
         if self.obj is None:
             return "None"
@@ -74,7 +77,7 @@ def repr_ellipsized(obj, limit=100) -> str:
 
 
 def print_nested_dict(d: dict, prefix: str = "", lchar: str = "*", pad: int = 32,
-                      vformat=None, print_fn: Callable|None = None,
+                      vformat=None, print_fn: Callable | None = None,
                       version_keys=("version", "revision"), hex_keys=("data", )) -> None:
     # "smart" value formatting function:
     def sprint(arg):
@@ -177,7 +180,7 @@ def sorted_nicely(l:Iterable):
 
     def alphanum_key(key):
         return [convert(c) for c in re.split(r"(\d+)", bytestostr(key))]
-    return sorted(l, key = alphanum_key)
+    return sorted(l, key=alphanum_key)
 
 
 def memoryview_to_bytes(v) -> bytes:
