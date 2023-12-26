@@ -32,23 +32,23 @@ class WindowDamageHandler:
     MAX_RECEIVERS = 3
 
     __common_gsignals__ = {
-                           "xpra-damage-event"     : one_arg_signal,
-                           "xpra-unmap-event"      : one_arg_signal,
-                           "xpra-configure-event"  : one_arg_signal,
-                           "xpra-reparent-event"   : one_arg_signal,
-                           }
+        "xpra-damage-event"     : one_arg_signal,
+        "xpra-unmap-event"      : one_arg_signal,
+        "xpra-configure-event"  : one_arg_signal,
+        "xpra-reparent-event"   : one_arg_signal,
+    }
 
     # This may raise XError.
-    def __init__(self, xid : int, use_xshm : bool=USE_XSHM):
+    def __init__(self, xid: int, use_xshm: bool = USE_XSHM):
         if not isinstance(xid, int):
             raise ValueError(f"xid must be an int, not a {type(xid)}")
-        self.xid : int = xid
+        self.xid: int = xid
         log("WindowDamageHandler.__init__(%#x, %s)", self.xid, use_xshm)
-        self._use_xshm : bool = use_xshm
-        self._damage_handle : int = 0
-        self._xshm_handle = None        #XShmWrapper instance
-        self._contents_handle  = None   #PixmapWrapper instance
-        self._border_width : int = 0
+        self._use_xshm: bool = use_xshm
+        self._damage_handle: int = 0
+        self._xshm_handle = None        # XShmWrapper instance
+        self._contents_handle = None   # PixmapWrapper instance
+        self._border_width: int = 0
 
     def __repr__(self):
         return f"WindowDamageHandler({self.xid:x})"
@@ -90,7 +90,7 @@ class WindowDamageHandler:
             self._xshm_handle = None
             with xlog:
                 sh.cleanup()
-        #note: this should be redundant, but it's cheap and safer
+        # note: this should be redundant, but it's cheap and safer
         self.invalidate_pixmap()
 
     def acknowledge_changes(self) -> None:
@@ -100,7 +100,7 @@ class WindowDamageHandler:
         if sh:
             sh.discard()
         if dh and self.xid:
-            #"Synchronously modifies the regions..." so unsynced?
+            # "Synchronously modifies the regions..." so unsynced?
             with xlog:
                 X11Window.XDamageSubtract(dh)
             self.invalidate_pixmap()
@@ -127,22 +127,22 @@ class WindowDamageHandler:
                 return None
             ww, wh = geom[2:4]
             if sw!=ww or sh!=wh:
-                #size has changed!
-                #make sure the current wrapper gets garbage collected:
+                # size has changed!
+                # make sure the current wrapper gets garbage collected:
                 self._xshm_handle.cleanup()
                 self._xshm_handle = None
         if self._xshm_handle is None:
-            #make a new one:
+            # make a new one:
             self._xshm_handle = XImage.get_XShmWrapper(self.xid)
             if self._xshm_handle is None:
-                #failed (may retry)
+                # failed (may retry)
                 return None
             init_ok, retry_window, xshm_failed = self._xshm_handle.setup()
             if not init_ok:
-                #this handle is not valid, clear it:
+                # this handle is not valid, clear it:
                 self._xshm_handle = None
             if not retry_window:
-                #and it looks like it is not worth re-trying this window:
+                # and it looks like it is not worth re-trying this window:
                 self._use_xshm = False
             if xshm_failed:
                 log.warn("Warning: disabling XShm support following irrecoverable error")
@@ -154,7 +154,7 @@ class WindowDamageHandler:
 
     def get_contents_handle(self):
         if not self.xid:
-            #shortcut out
+            # shortcut out
             return None
         if self._contents_handle is None:
             log("refreshing named pixmap")
@@ -162,21 +162,18 @@ class WindowDamageHandler:
                 self._set_pixmap()
         return self._contents_handle
 
-
     def get_image(self, x:int, y:int, width:int, height:int):
         handle = self.get_contents_handle()
         if handle is None:
             log("get_image(..) pixmap is None for window %#x", self.xid)
             return None
 
-        #try XShm:
+        # try XShm:
         try:
             with xsync:
                 shm = self.get_xshm_handle()
-                #log("get_image(..) XShm handle: %s, handle=%s, pixmap=%s", shm, handle, handle.get_pixmap())
                 if shm is not None:
                     shm_image = shm.get_image(handle.get_pixmap(), x, y, width, height)
-                    #log("get_image(..) XShm image: %s", shm_image)
                     if shm_image:
                         return shm_image
         except XError as e:
@@ -198,7 +195,6 @@ class WindowDamageHandler:
             else:
                 log.warn("Warning: cannot capture image of geometry %", (x, y, width, height), exc_info=True)
             return None
-
 
     def do_xpra_damage_event(self, _event) -> None:
         raise NotImplementedError()

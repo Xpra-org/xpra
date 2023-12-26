@@ -5,8 +5,8 @@
 
 import os
 from typing import Any
-from gi.repository import GObject, Gdk, Gio  # @UnresolvedImport
 
+from xpra.os_util import gi_import
 from xpra.util.screen import log_screen_sizes
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
@@ -15,15 +15,16 @@ from xpra.server import features
 from xpra.gtk.util import get_root_size
 from xpra.gtk.info import get_screen_sizes
 from xpra.gtk.gobject import one_arg_signal
-from xpra.x11.gtk3.bindings import (
-    add_catchall_receiver, remove_catchall_receiver,
-    add_event_receiver,
-   )
+from xpra.x11.gtk3.bindings import add_catchall_receiver, remove_catchall_receiver, add_event_receiver
 from xpra.x11.xroot_props import XRootPropWatcher
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.x11.server.base import X11ServerBase
 from xpra.gtk.error import xsync, xlog
 from xpra.log import Logger
+
+GObject = gi_import("GObject")
+Gdk = gi_import("Gdk")
+Gio = gi_import("Gio")
 
 X11Keyboard = X11KeyboardBindings()
 
@@ -39,7 +40,6 @@ MODIFY_GSETTINGS : bool = envbool("XPRA_MODIFY_GSETTINGS", True)
 MULTI_MONITORS : bool = envbool("XPRA_DESKTOP_MULTI_MONITORS", True)
 
 
-
 def get_desktop_server_base_classes() -> tuple[type,...]:
     classes : list[type] = [GObject.GObject]
     if features.rfb:
@@ -47,6 +47,8 @@ def get_desktop_server_base_classes() -> tuple[type,...]:
         classes.append(RFBServer)
     classes.append(X11ServerBase)
     return tuple(classes)
+
+
 DESKTOPSERVER_BASES = get_desktop_server_base_classes()
 DesktopServerBaseClass = type('DesktopServerBaseClass', DESKTOPSERVER_BASES, {})
 log("DesktopServerBaseClass%s", DESKTOPSERVER_BASES)
@@ -80,12 +82,12 @@ class DesktopServerBase(DesktopServerBaseClass):
         A server base class for RFB / VNC-like virtual desktop or virtual monitors,
         used with the "start-desktop" subcommand.
     """
-    __common_gsignals__ : dict[str,tuple] = {
-        "xpra-xkb-event"        : one_arg_signal,
-        "xpra-cursor-event"     : one_arg_signal,
-        "xpra-motion-event"     : one_arg_signal,
-        "xpra-configure-event"  : one_arg_signal,
-        }
+    __common_gsignals__ : dict[str, tuple] = {
+        "xpra-xkb-event": one_arg_signal,
+        "xpra-cursor-event": one_arg_signal,
+        "xpra-motion-event": one_arg_signal,
+        "xpra-configure-event": one_arg_signal,
+    }
 
     def __init__(self):
         X11ServerBase.__init__(self)  # pylint: disable=non-parent-init-called
@@ -97,9 +99,8 @@ class DesktopServerBase(DesktopServerBaseClass):
 
     def init(self, opts) -> None:
         for c in DESKTOPSERVER_BASES:
-            if c!=GObject.GObject:
+            if c != GObject.GObject:
                 c.init(self, opts)
-
 
     def x11_init(self) -> None:
         X11ServerBase.x11_init(self)
@@ -123,14 +124,13 @@ class DesktopServerBase(DesktopServerBaseClass):
             window.update_wm_name()
             window.update_icon()
 
-
     def modify_gsettings(self) -> None:
         # try to suspend animations:
         self.gsettings_modified = do_modify_gsettings({
             "org.mate.interface" : ("gtk-enable-animations", "enable-animations"),
             "org.gnome.desktop.interface" : ("enable-animations",),
             "com.deepin.wrap.gnome.desktop.interface" : ("enable-animations",),
-            })
+        })
 
     def do_cleanup(self) -> None:
         remove_catchall_receiver("xpra-motion-event", self)
@@ -148,7 +148,6 @@ class DesktopServerBase(DesktopServerBaseClass):
     def notify_dpi_warning(self, body) -> None:
         """ ignore DPI warnings in desktop mode """
 
-
     def print_screen_info(self) -> None:
         super().print_screen_info()
         root_w, root_h = get_root_size()
@@ -162,17 +161,14 @@ class DesktopServerBase(DesktopServerBaseClass):
     def do_screen_changed(self, screen) -> None:
         pass
 
-
-
-    def set_desktop_geometry_attributes(self, w:int, h:int):
-        #geometry is not synced with the client's for desktop servers
+    def set_desktop_geometry_attributes(self, w: int, h: int):
+        # geometry is not synced with the client's for desktop servers
         pass
-
 
     def get_server_mode(self) -> str:
         return "X11 desktop"
 
-    def make_hello(self, source) -> dict[str,Any]:
+    def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)
         if "features" in source.wants:
             capabilities.setdefault("pointer", {})["grabs"] = True
@@ -184,10 +180,8 @@ class DesktopServerBase(DesktopServerBaseClass):
             capabilities["screen_sizes"] = get_screen_sizes()
         return capabilities
 
-
     def load_existing_windows(self):
         raise NotImplementedError
-
 
     def send_initial_windows(self, ss, sharing:bool=False) -> None:
         windowlog("send_initial_windows(%s, %s) will send: %s", ss, sharing, self._id_to_window)
@@ -202,7 +196,6 @@ class DesktopServerBase(DesktopServerBaseClass):
         wid = self._window_to_id[model]
         ss.damage(wid, model, 0, 0, w, h)
 
-
     def _lost_window(self, window, wm_exiting=False) -> None:
         """ could be used to slow down the refresh rate? """
 
@@ -210,13 +203,12 @@ class DesktopServerBase(DesktopServerBaseClass):
         log("contents changed on %s: %s", window, event)
         self.refresh_window_area(window, event.x, event.y, event.width, event.height)
 
-
     def _set_window_state(self, proto, wid:int, window, new_window_state) -> list[str]:
         if not new_window_state:
             return []
         metadatalog("set_window_state%s", (proto, wid, window, new_window_state))
         changes = []
-        #boolean: but not a wm_state and renamed in the model... (iconic vs iconified!)
+        # boolean: but not a wm_state and renamed in the model... (iconic vs iconified!)
         iconified = new_window_state.get("iconified")
         if iconified is not None and window._updateprop("iconic", iconified):
             changes.append("iconified")
@@ -225,11 +217,9 @@ class DesktopServerBase(DesktopServerBaseClass):
             changes.append("focused")
         return changes
 
-
     def get_window_position(self, _window) -> tuple[int,int]:
-        #we export the whole desktop as a window:
+        # we export the whole desktop as a window:
         return 0, 0
-
 
     def _process_map_window(self, proto, packet : PacketType) -> None:
         wid, x, y, w, h = (int(x) for x in packet[1:6])
@@ -245,7 +235,6 @@ class DesktopServerBase(DesktopServerBaseClass):
             self._set_client_properties(proto, wid, window, packet[6])
         self.refresh_window_area(window, 0, 0, w, h)
 
-
     def _process_unmap_window(self, proto, packet : PacketType) -> None:
         wid = int(packet[1])
         window = self._id_to_window.get(wid)
@@ -253,14 +242,13 @@ class DesktopServerBase(DesktopServerBaseClass):
             log("cannot map window %s: already removed!", wid)
             return
         if len(packet)>=4:
-            #optional window_state added in 0.15 to update flags
-            #during iconification events:
+            # optional window_state added in 0.15 to update flags
+            # during iconification events:
             self._set_window_state(proto, wid, window, packet[3])
         assert not window.is_OR()
         self._window_mapped_at(proto, wid, window)
-        #TODO: handle inconification?
-        #iconified = len(packet)>=3 and bool(packet[2])
-
+        # TODO: handle inconification?
+        # iconified = len(packet)>=3 and bool(packet[2])
 
     def _process_configure_window(self, proto, packet : PacketType) -> None:
         wid, x, y, w, h = (int(x) for x in packet[1:6])
@@ -271,7 +259,7 @@ class DesktopServerBase(DesktopServerBaseClass):
             device_id = -1
             if self.process_mouse_common(proto, device_id, pwid, pointer):
                 self._update_modifiers(proto, wid, modifiers)
-        #some "configure-window" packets are only meant for metadata updates:
+        # some "configure-window" packets are only meant for metadata updates:
         skip_geometry = len(packet)>=10 and packet[9]
         window = self._id_to_window.get(wid)
         if not window:
@@ -294,7 +282,6 @@ class DesktopServerBase(DesktopServerBaseClass):
         if damage:
             self.refresh_window_area(window, 0, 0, w, h)
 
-
     def _adjust_pointer(self, proto, device_id:int, wid:int, pointer):
         mouselog("_adjust_pointer%s", (proto, device_id, wid, pointer))
         window = self._id_to_window.get(wid)
@@ -303,7 +290,7 @@ class DesktopServerBase(DesktopServerBaseClass):
             self.suspend_cursor(proto)
             return None
         pointer = super()._adjust_pointer(proto, device_id, wid, pointer)
-        #maybe the pointer is off-screen:
+        # maybe the pointer is off-screen:
         ww, wh = window.get_dimensions()
         x, y = pointer[:2]
         if x<0 or x>=ww or y<0 or y>=wh:
@@ -322,26 +309,22 @@ class DesktopServerBase(DesktopServerBaseClass):
         with xsync:
             X11ServerBase._move_pointer(self, device_id, wid, pos, props)
 
-
     def _process_close_window(self, proto, packet : PacketType) -> None:
-        #disconnect?
+        # disconnect?
         pass
-
 
     def _process_desktop_size(self, proto, packet : PacketType) -> None:
         pass
+
     def calculate_workarea(self, w:int, h:int):
         pass
-
 
     def make_dbus_server(self) -> None:
         from xpra.x11.dbus.x11_dbus_server import X11_DBUS_Server
         self.dbus_server = X11_DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
 
-
     def show_all_windows(self) -> None:
         log.warn("Warning: show_all_windows not implemented for desktop server")
-
 
     def do_make_screenshot_packet(self) -> tuple:
         log("grabbing screenshot")
@@ -371,7 +354,7 @@ class DesktopServerBase(DesktopServerBaseClass):
                 log.warn("window pixels for window %s using an unexpected rgb format: %s", wid, img.get_pixel_format())
                 continue
             regions.append((wid, offset_x+x, offset_y+y, img))
-            #tile them horizontally:
+            # tile them horizontally:
             offset_x += w
             offset_y += 0
         return self.make_screenshot_packet_from_regions(regions)

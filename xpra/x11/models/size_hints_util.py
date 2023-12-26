@@ -14,7 +14,7 @@ log = Logger("x11", "window")
 MAX_ASPECT = 2**15-1
 
 
-def sanitize_size_hints(size_hints : dict[str,Any]) -> None:
+def sanitize_size_hints(size_hints: dict[str, Any]) -> None:
     """
         Some applications may set nonsensical values,
         try our best to come up with something that can actually be used.
@@ -28,13 +28,13 @@ def sanitize_size_hints(size_hints : dict[str,Any]) -> None:
                 f = float(v)
             except ValueError:
                 f = None
-            if f is None or f<=0 or f>=MAX_ASPECT:
+            if f is None or f <= 0 or f >= MAX_ASPECT:
                 log.warn("Warning: clearing invalid aspect hint value for %s: %s", attr, v)
                 del size_hints[attr]
     for attr in ("minimum-aspect-ratio", "maximum-aspect-ratio"):
         v = size_hints.get(attr)
         if v is not None:
-            if v[1]==0:
+            if v[1] == 0:
                 f = None
             else:
                 try:
@@ -48,49 +48,49 @@ def sanitize_size_hints(size_hints : dict[str,Any]) -> None:
         v = size_hints.get(attr)
         if v is not None:
             try:
-                w,h = v
+                w, h = v
                 int(w)
                 int(h)
             except (ValueError, TypeError):
-                w,h = None,None
-            if (w is None or h is None) or w>=MAX_WINDOW_SIZE or h>=MAX_WINDOW_SIZE:
+                w, h = None, None
+            if (w is None or h is None) or w >= MAX_WINDOW_SIZE or h >= MAX_WINDOW_SIZE:
                 log("clearing invalid size hint value for %s: %s", attr, v)
                 del size_hints[attr]
-    #if max-size is smaller than min-size (bogus), clamp it..
+    # if max-size is smaller than min-size (bogus), clamp it..
     clamped = False
     mins = size_hints.get("minimum-size")
     if mins:
         minw, minh = mins
-        if minw<=0 and minh<=0:
-            #doesn't do anything
+        if minw <= 0 and minh <= 0:
+            # doesn't do anything
             size_hints.pop("minimum-size")
             mins = None
             clamped = True
     maxs = size_hints.get("maximum-size")
     if maxs:
         maxw,maxh = maxs
-        if maxw<=0 and maxh<=0:
-            #doesn't make sense!
+        if maxw <= 0 and maxh <= 0:
+            # doesn't make sense!
             size_hints["maximum-size"] = None
             maxs = None
             clamped = True
     if mins and maxs:
         minw, minh = mins
         maxw, maxh = maxs
-        if minw>0 and minw>maxw:
-            #min higher than max!
-            if minw<=256:
+        if minw > 0 and minw > maxw:
+            # min higher than max!
+            if minw <= 256:
                 maxw = minw
-            elif maxw>=256:
+            elif maxw >= 256:
                 minw = maxw
             else:
                 minw = maxw = 256
             clamped = True
-        if minh>0 and minh>maxh:
-            #min higher than max!
-            if minh<=256:
+        if minh > 0 and minh > maxh:
+            # min higher than max!
+            if minh <= 256:
                 maxh = minh
-            elif maxh>=256:
+            elif maxh >= 256:
                 minh = maxh
             else:
                 minh = maxh = 256

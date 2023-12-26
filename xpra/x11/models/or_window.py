@@ -17,10 +17,12 @@ class OverrideRedirectWindowModel(BaseWindowModel):
     __gsignals__ = dict(BaseWindowModel.__common_signals__)
     __gproperties__ = dict(BaseWindowModel.__common_properties__)
     __gproperties__ |= {
-        "override-redirect": (GObject.TYPE_BOOLEAN,
-                       "Is the window of type override-redirect", "",
-                       True,
-                       GObject.ParamFlags.READABLE),
+        "override-redirect": (
+            GObject.TYPE_BOOLEAN,
+            "Is the window of type override-redirect", "",
+            True,
+            GObject.ParamFlags.READABLE,
+        ),
     }
     _property_names = BaseWindowModel._property_names + ["override-redirect"]
     _MODELTYPE = "OR-Window"
@@ -40,5 +42,6 @@ class OverrideRedirectWindowModel(BaseWindowModel):
         ch = self._composite.get_contents_handle()
         if ch is None:
             raise Unmanageable("failed to get damage handle")
+
 
 GObject.type_register(OverrideRedirectWindowModel)

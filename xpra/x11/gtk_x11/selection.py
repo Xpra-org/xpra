@@ -14,12 +14,7 @@ from struct import unpack, calcsize
 
 from xpra.gtk.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.bindings.window import constants, X11WindowBindings
-from xpra.x11.gtk3.bindings import (
-    add_event_receiver,
-    remove_event_receiver,
-    get_xatom,
-    get_pywindow,
-    )
+from xpra.x11.gtk3.bindings import add_event_receiver, remove_event_receiver, get_xatom, get_pywindow
 from xpra.exit_codes import ExitCode
 from xpra.util.env import envint
 from xpra.os_util import gi_import
@@ -41,13 +36,14 @@ XNone = constants["XNone"]
 class AlreadyOwned(Exception):
     pass
 
+
 class ManagerSelection(GObject.GObject):
     __gsignals__ = {
         "selection-lost": no_arg_signal,
         "xpra-destroy-event": one_arg_signal,
-        }
+    }
 
-    def __str__(self):  #pylint: disable=arguments-differ
+    def __str__(self):  # pylint: disable=arguments-differ
         return "ManagerSelection(%s)" % self.atom
 
     def __init__(self, selection):
@@ -74,12 +70,13 @@ class ManagerSelection(GObject.GObject):
     # If the selection is already owned, then steal it and return immediately.
     # Created for the use of tests.
     FORCE_AND_RETURN = "force_and_return"
+
     def acquire(self, when):
         old_owner = self._owner()
         if when is self.IF_UNOWNED and old_owner != XNone:
             raise AlreadyOwned
 
-        #we can only set strings with GTK3,
+        # we can only set strings with GTK3,
         # we should try to be compliant with ICCCM version 2.0 (see section 4.3)
         # and use this format instead:
         # outdata.set("INTEGER", 32, pack("@ii", 2, 0))
@@ -107,13 +104,13 @@ class ManagerSelection(GObject.GObject):
         log("ManagerSelection.acquire(%s) %s.wait_for_contents(%s)=%s",
             when, self.clipboard, timestamp_atom, ts_data)
 
-        #data is a timestamp, X11 datatype is Time which is CARD32,
-        #(which is 64 bits on 64-bit systems!)
+        # data is a timestamp, X11 datatype is Time which is CARD32,
+        # (which is 64 bits on 64-bit systems!)
         Lsize = calcsize("@L")
         if len(ts_data)==Lsize:
             ts_num = unpack("@L", ts_data[:Lsize])[0]
         else:
-            ts_num = 0      #CurrentTime
+            ts_num = 0      # CurrentTime=0
             log.warn("invalid data for 'TIMESTAMP': %s", tuple(hex(ord(x)) for x in ts_data))
         log("selection timestamp(%s)=%s", ts_data, ts_num)
         # Calculate the X atom for this selection:
@@ -124,8 +121,8 @@ class ManagerSelection(GObject.GObject):
         root = self.clipboard.get_display().get_default_screen().get_root_window()
         xid = root.get_xid()
         X11WindowBindings().sendClientMessage(xid, xid, False, StructureNotifyMask,
-                          "MANAGER",
-                          ts_num, selection_xatom, self.xid)
+                                              "MANAGER",
+                                              ts_num, selection_xatom, self.xid)
 
         if old_owner != XNone and when is self.FORCE:
             # Block in a recursive mainloop until the previous owner has
@@ -157,11 +154,11 @@ class ManagerSelection(GObject.GObject):
     def _owner_change(self, clipboard, event) -> None:
         log(f"owner_change({clipboard}, {event}) selection={event.selection}")
         if str(event.selection)!=self.atom or not event.owner:
-            #log("_owner_change(..) not our selection: %s vs %s", event.selection, self.atom)
+            # log("_owner_change(..) not our selection: %s vs %s", event.selection, self.atom)
             return
         owner = event.owner.get_xid()
         log(f"owner_change({clipboard}, {event}) selection={event.selection}, owner={owner:x}, xid={self.xid:x}")
-        if owner==self.xid:
+        if owner == self.xid:
             log("_owner_change(..) we still own %s", event.selection)
             return
         if self.xid:
@@ -178,5 +175,6 @@ class ManagerSelection(GObject.GObject):
         if self.xid is None:
             return None
         return get_pywindow(self.xid)
+
 
 GObject.type_register(ManagerSelection)

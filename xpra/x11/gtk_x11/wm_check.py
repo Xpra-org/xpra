@@ -19,6 +19,7 @@ _NEW_WM_CM_S0 = "_NEW_WM_CM_S0"
 
 FORCE_REPLACE_WM = envbool("XPRA_FORCE_REPLACE_WM", False)
 
+
 def get_ewmh_xid() -> int:
     with xlog:
         X11Window = X11WindowBindings()
@@ -31,11 +32,12 @@ def get_ewmh_xid() -> int:
                 return ewmh_xid
             except Exception as e:
                 log(f"getGeometry({ewmh_xid:x}) {e}")
-                #invalid
+                # invalid
                 ewmh_xid = 0
     return 0
 
-def get_wm_info() -> dict[str,Any]:
+
+def get_wm_info() -> dict[str, Any]:
     with xsync:
         X11Window = X11WindowBindings()
         root_xid = X11Window.get_root_xid()
@@ -43,7 +45,7 @@ def get_wm_info() -> dict[str,Any]:
             "root"      : root_xid,
             "WM_S0"     : X11Window.XGetSelectionOwner(WM_S0) or 0,
             "_NEW_WM_CM_S0" : X11Window.XGetSelectionOwner(_NEW_WM_CM_S0) or 0,
-            }
+        }
     ewmh_xid = get_ewmh_xid()
     if ewmh_xid:
         info["_NET_SUPPORTING_WM_CHECK"] = ewmh_xid
@@ -61,12 +63,13 @@ def get_wm_info() -> dict[str,Any]:
         ("dbus-address",        "DBUS_SESSION_BUS_ADDRESS",     "latin1"),
         ("dbus-pid",            "DBUS_SESSION_BUS_PID",         "u32"),
         ("dbus-window",         "DBUS_SESSION_BUS_WINDOW_ID",   "u32"),
-        ):
+    ):
         v = prop_get(root_xid, prop_name, prop_type, ignore_errors=True, raise_xerrors=False)
         if v is not None:
             info[name] = v
     log("get_wm_info()=%s", info)
     return info
+
 
 def wm_check(upgrading=False) -> bool:
     info = get_wm_info()
@@ -98,7 +101,7 @@ def wm_check(upgrading=False) -> bool:
         log.warn(" it does not own the selection '%s' or '%s'", WM_S0, _NEW_WM_CM_S0)
         log.warn(" so we cannot take over and make it exit")
         log.warn(" please stop %s so you can run xpra on this display",
-                  name or "the existing window manager")
+                 name or "the existing window manager")
         log.warn(" if you are certain that the window manager is already gone,")
         log.warn(" you may set XPRA_FORCE_REPLACE_WM=1 to force xpra to continue")
         log.warn(" at your own risk")

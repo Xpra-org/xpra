@@ -47,20 +47,19 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
         Stub for all window models
     """
 
-    #things that we expose:
-    _property_names : list[str]        = []
-    #exposed and changing (should be watched for notify signals):
-    _dynamic_property_names : list[str] = []
-    _internal_property_names : list[str] = []
-    _MODELTYPE : str = "Stub"
+    # things that we expose:
+    _property_names: list[str] = []
+    # exposed and changing (should be watched for notify signals):
+    _dynamic_property_names: list[str] = []
+    _internal_property_names: list[str] = []
+    _MODELTYPE: str = "Stub"
 
     def __init__(self):
         AutoPropGObjectMixin.__init__(self)
         GObject.GObject.__init__(self)
-        self._setup_done : bool = False            #so we can ignore notify() events during setup
-        self._managed : bool = False
-        self._managed_handlers : list[int] = []
-
+        self._setup_done: bool = False            # so we can ignore notify() events during setup
+        self._managed: bool = False
+        self._managed_handlers: list[int] = []
 
     #########################################
     # Setup and teardown
@@ -71,7 +70,6 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
 
     def unmanage(self, _exiting=False) -> None:
         self.managed_disconnect()
-
 
     #########################################
     # Connect to signals in a "managed" way
@@ -88,14 +86,12 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
             self.disconnect(handler_id)
         self._managed_handlers = []
 
-
     ################################
     # Property reading
     ################################
 
     def get_dimensions(self):
         return NotImplementedError()
-
 
     #########################################
     # Properties we choose to expose
@@ -113,12 +109,13 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
         """ The properties that should not be exposed to the client """
         return self._internal_property_names
 
-    def get_logger(self, property_name) -> Callable:
+    @staticmethod
+    def get_logger(property_name) -> Callable:
         if property_name in PROPERTIES_DEBUG:
             return metalog.info
         return metalog.debug
 
-    def _updateprop(self, name : str, value) -> bool:
+    def _updateprop(self, name: str, value) -> bool:
         """ Updates the property and fires notify(),
             but only if the value has changed
             and if the window has finished setting up, and it is still managed.
@@ -137,7 +134,7 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
         l("updateprop(%s, %s) unchanged", name, value)
         return False
 
-    def get(self, name : str, default_value=None) -> object:
+    def get(self, name: str, default_value=None) -> object:
         """ Allows us to avoid defining all the attributes we may ever query,
             returns the default value if the property does not exist.
         """
@@ -151,14 +148,13 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
                 l("get(%s, %s) not a property of %s, returning default value=%s", name, default_value, type(self), v)
         return v
 
-
     def show(self) -> None:
         """
         implemented for real windows only,
         trays and OR windows are always "shown" somewhere
         """
 
-    #temporary? / convenience access methods:
+    # temporary? / convenience access methods:
     def is_OR(self) -> bool:
         """ Is this an override-redirect window? """
         return bool(self.get("override-redirect", False))

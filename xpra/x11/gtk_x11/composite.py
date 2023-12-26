@@ -28,8 +28,8 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
 
     __gsignals__ = WindowDamageHandler.__common_gsignals__.copy()
     __gsignals__ |= {
-        #emit:
-        "contents-changed"      : one_arg_signal,
+        # emit:
+        "contents-changed" : one_arg_signal,
     }
 
     # This may raise XError.
@@ -122,10 +122,10 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
             # invariant:
             self._listening_to = listening
 
-
     def do_xpra_damage_event(self, event) -> None:
         event.x += self._border_width
         event.y += self._border_width
         self.emit("contents-changed", event)
+
 
 GObject.type_register(CompositeHelper)

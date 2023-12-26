@@ -4,8 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject, Gtk # @UnresolvedImport
-
+from xpra.os_util import gi_import
 from xpra.gtk.error import xlog
 from xpra.util.env import IgnoreWarningsContext, ignorewarnings
 from xpra.x11.bindings.window import constants
@@ -13,6 +12,9 @@ from xpra.x11.bindings.send_wm import send_wm_take_focus
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.gtk.util import get_default_root_window
 from xpra.log import Logger
+
+GObject = gi_import("GObject")
+Gtk = gi_import("Gtk")
 
 log = Logger("x11", "window")
 focuslog = Logger("x11", "window", "focus")
@@ -88,10 +90,14 @@ def root_set(*args):
     xid = root.get_xid()
     prop_set(xid, *args)
 
+
 world_window = None
+
+
 def get_world_window():
     global world_window
     return world_window
+
 
 def destroy_world_window():
     global world_window
@@ -128,7 +134,7 @@ class WorldWindow(Gtk.Window):
         self._resize()
         self.get_screen().connect("size-changed", self._resize)
 
-    def __repr__(self):  #pylint: disable=arguments-differ
+    def __repr__(self):
         xid = 0
         w = self.get_window()
         if w:
@@ -176,7 +182,7 @@ class WorldWindow(Gtk.Window):
     def add(self, widget) -> None:
         w = widget.get_window()
         log("add(%s) realized=%s, widget window=%s", widget, self.get_realized(), w)
-        #the DesktopManager does not have a window..
+        # the DesktopManager does not have a window..
         if w:
             super().add(widget)
 
@@ -206,6 +212,7 @@ class WorldWindow(Gtk.Window):
 
     def reset_x_focus(self) -> None:
         focuslog("reset_x_focus: widget with focus: %s", self.get_focus())
+
         def do_reset_x_focus():
             self._take_focus()
             root_set("_NET_ACTIVE_WINDOW", "u32", XNone)
@@ -218,5 +225,6 @@ class WorldWindow(Gtk.Window):
         # default handler.
         if self.get_focus() is not None:
             self.reset_x_focus()
+
 
 GObject.type_register(WorldWindow)

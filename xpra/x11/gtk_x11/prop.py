@@ -34,11 +34,12 @@ def _get_atom(d) -> str | None:
         pyatom = X11WindowBindings().XGetAtomName(unpacked)
     if not pyatom:
         log.error("invalid atom: %s - %s", repr(d), repr(unpacked))
-        return  None
+        return None
     if not isinstance(pyatom, str):
-        #py3k:
+        # py3k:
         return pyatom.decode()
     return pyatom
+
 
 def _get_xatom(str_or_int):
     with xsync:
@@ -53,22 +54,26 @@ PYTHON_TYPES : dict[str,str] = {
     "INTEGER"       : "integer",
     "VISUALID"      : "visual",
     "WINDOW"        : "window",
-    }
+}
+
+
 def get_python_type(scalar_type:str) -> str:
-    #ie: get_python_type("STRING") = "latin1"
+    # ie: get_python_type("STRING") = "latin1"
     return PYTHON_TYPES.get(scalar_type, scalar_type)
+
 
 def _to_atom(a) -> bytes:
     return struct.pack(b"@L", _get_xatom(a))
 
 
-#add the GTK / GDK types to the conversion function list:
+# add the GTK / GDK types to the conversion function list:
 PROP_TYPES["atom"] = (str, "ATOM", 32, _to_atom, _get_atom, b"")
 
 
 def prop_set(xid:int, key:str, etype, value) -> None:
     dtype, dformat, data = prop_encode(etype, value)
     raw_prop_set(xid, key, dtype, dformat, data)
+
 
 def raw_prop_set(xid:int, key:str, dtype, dformat, data) -> None:
     if not isinstance(xid, int):
@@ -87,19 +92,21 @@ def prop_type_get(xid:int, key:str):
 
 # May return None.
 def prop_get(xid:int, key:str, etype, ignore_errors:bool=False, raise_xerrors:bool=False):
-    #ie: 0x4000, "_NET_WM_PID", "u32"
+    # ie: 0x4000, "_NET_WM_PID", "u32"
     if isinstance(etype, (list, tuple)):
         scalar_type = etype[0]
     else:
-        scalar_type = etype #ie: "u32"
-    type_atom = PROP_TYPES[scalar_type][1]  #ie: "CARDINAL"
+        scalar_type = etype         # ie: "u32"
+    type_atom = PROP_TYPES[scalar_type][1]  # ie: "CARDINAL"
     buffer_size = PROP_SIZES.get(scalar_type, 65536)
     data = raw_prop_get(xid, key, type_atom, buffer_size, ignore_errors, raise_xerrors)
     if data is None:
         return None
     return do_prop_decode(key, etype, data, ignore_errors)
 
-def raw_prop_get(xid:int, key:str, type_atom:str, buffer_size:int=65536, ignore_errors:bool=False, raise_xerrors:bool=False):
+
+def raw_prop_get(xid: int, key: str, type_atom: str, buffer_size: int = 65536,
+                 ignore_errors: bool = False, raise_xerrors: bool = False):
     if not isinstance(xid, int):
         raise TypeError(f"xid must be an int, not a {type(xid)}")
     try:
@@ -123,17 +130,19 @@ def raw_prop_get(xid:int, key:str, type_atom:str, buffer_size:int=65536, ignore_
         return None
     return data
 
+
 def _etypestr(etype) -> str:
     if isinstance(etype, (list, tuple)):
         scalar_type = etype[0]
         return f"array of {scalar_type}"
     return str(etype)
 
+
 def do_prop_decode(key, etype, data, ignore_errors=False):
     try:
         with XSyncContext():
             return prop_decode(etype, data)
-    except :
+    except Exception:
         if ignore_errors:
             log("prop_get%s", (key, etype, ignore_errors), exc_info=True)
             return None
@@ -145,6 +154,7 @@ def do_prop_decode(key, etype, data, ignore_errors=False):
             pass
         log.warn(" data: %r", repr_ellipsized(str(data)), exc_info=True)
         raise
+
 
 def prop_del(xid:int, key:str):
     if not isinstance(xid, int):

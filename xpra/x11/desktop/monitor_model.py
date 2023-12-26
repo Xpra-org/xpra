@@ -28,8 +28,8 @@ class MonitorDesktopModel(DesktopModelBase):
     """
     __gsignals__ = dict(DesktopModelBase.__common_gsignals__)
 
-    #bump the number of receivers,
-    #because we add all the monitor models as receivers for the root window:
+    # bump the number of receivers,
+    # because we add all the monitor models as receivers for the root window:
     MAX_RECEIVERS = 20
 
     def __repr__(self):
@@ -47,10 +47,11 @@ class MonitorDesktopModel(DesktopModelBase):
         width = monitor.get("width", 0)
         height = monitor.get("height", 0)
         self.monitor_geometry = (x, y, width, height)
-        self._updateprop("size-hints", {
-            "minimum-size"          : MIN_SIZE,
-            "maximum-size"          : MAX_SIZE,
-            })
+        self._updateprop("size-hints",
+                         {
+                             "minimum-size": MIN_SIZE,
+                             "maximum-size": MAX_SIZE,
+                         })
 
     def get_title(self) -> str:
         with xlog:
@@ -67,7 +68,6 @@ class MonitorDesktopModel(DesktopModelBase):
     def get_dimensions(self) -> tuple[int,int]:
         return self.monitor_geometry[2:4]
 
-
     def get_definition(self) -> dict[str,Any]:
         x, y, width, height = self.monitor_geometry
         return {
@@ -77,30 +77,28 @@ class MonitorDesktopModel(DesktopModelBase):
             "width"     : width,
             "height"    : height,
             "name"      : self.name,
-            }
-
+        }
 
     def do_xpra_damage_event(self, event) -> None:
-        #ie: <X11:DamageNotify {'send_event': '0', 'serial': '0x4da', 'delivered_to': '0x56e', 'window': '0x56e',
+        # ie: <X11:DamageNotify {'send_event': '0', 'serial': '0x4da', 'delivered_to': '0x56e', 'window': '0x56e',
         #                       'damage': '2097157', 'x': '313', 'y': '174', 'width': '6', 'height': '13'}>)
         damaged_area = rectangle(event.x, event.y, event.width, event.height)
         x, y, width, height = self.monitor_geometry
         monitor_damaged_area = damaged_area.intersection(x, y, width, height)
         if monitor_damaged_area:
-            #use an event relative to this monitor's coordinates:
+            # use an event relative to this monitor's coordinates:
             mod_event = MonitorDamageNotify(monitor_damaged_area.x-x, monitor_damaged_area.y-y,
                                             monitor_damaged_area.width, monitor_damaged_area.height)
             self.emit("client-contents-changed", mod_event)
 
     def get_image(self, x, y, width, height):
-        #adjust the coordinates with the monitor's position:
+        # adjust the coordinates with the monitor's position:
         mx, my = self.monitor_geometry[:2]
         image = super().get_image(mx+x, my+y, width, height)
         if image:
             image.set_target_x(x)
             image.set_target_y(y)
         return image
-
 
     def do_resize(self) -> None:
         self.resize_timer = 0

@@ -5,9 +5,9 @@
 
 import struct
 from enum import IntEnum
-from gi.repository import GObject, Gdk, GdkX11  # @UnresolvedImport
 
 from xpra.util.env import envint
+from xpra.os_util import gi_import
 from xpra.gtk.gobject import one_arg_signal
 from xpra.gtk.error import xsync, xlog
 from xpra.x11.gtk_x11 import GDKX11Window
@@ -16,6 +16,10 @@ from xpra.gtk.util import get_default_root_window
 from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.x11.gtk3.bindings import add_event_receiver, remove_event_receiver, get_xvisual
 from xpra.log import Logger
+
+GObject = gi_import("GObject")
+Gdk = gi_import("Gdk")
+GdkX11 = gi_import("GdkX11")
 
 X11Window = X11WindowBindings()
 
@@ -27,6 +31,7 @@ StructureNotifyMask = constants["StructureNotifyMask"]
 
 
 XEMBED_VERSION = 0
+
 
 # XEmbed
 class XEMBED(IntEnum):
@@ -46,18 +51,23 @@ class XEMBED(IntEnum):
     ACTIVATE_ACCELERATOR     = 14
 # A detail code is required for XEMBED_FOCUS_IN. The following values are valid:
 # Details for  XEMBED_FOCUS_IN:
+
+
 class XEMBED_FOCUS(IntEnum):
     CURRENT    = 0
     FIRST      = 1
     LAST       = 2
 
+
 SELECTION = "_NET_SYSTEM_TRAY_S0"
 SYSTRAY_VISUAL = "_NET_SYSTEM_TRAY_VISUAL"
 SYSTRAY_ORIENTATION = "_NET_SYSTEM_TRAY_ORIENTATION"
 
+
 class TRAY_ORIENTATION(IntEnum):
     HORZ   = 0
     VERT   = 1
+
 
 XPRA_TRAY_WINDOW_PROPERTY = "_xpra_tray_window_"
 
@@ -65,10 +75,9 @@ SYSTEM_TRAY_REQUEST_DOCK = 0
 SYSTEM_TRAY_BEGIN_MESSAGE = 1
 SYSTEM_TRAY_CANCEL_MESSAGE = 2
 
-#TRANSPARENCY = False
 TRANSPARENCY = True
 
-#Java can send this message to the tray (no idea why):
+# Java can send this message to the tray (no idea why):
 IGNORED_MESSAGE_TYPES = ("_GTK_LOAD_ICONTHEMES", )
 
 
@@ -78,13 +87,16 @@ MAX_TRAY_SIZE = envint("XPRA_MAX_TRAY_SIZE", 64)
 def get_tray_window(tray_window) -> int:
     return getattr(tray_window, XPRA_TRAY_WINDOW_PROPERTY, 0)
 
+
 def set_tray_window(tray_window, xid:int):
     setattr(tray_window, XPRA_TRAY_WINDOW_PROPERTY, xid)
+
 
 def set_tray_visual(xid:int, gdk_visual):
     xvisual = get_xvisual(gdk_visual)
     value = struct.pack(b"@L", xvisual)
     raw_prop_set(xid, SYSTRAY_VISUAL, "VISUALID", 32, value)
+
 
 def set_tray_orientation(xid:int, orientation:TRAY_ORIENTATION):
     prop_set(xid, SYSTRAY_ORIENTATION, "u32", int(orientation))
@@ -100,16 +112,16 @@ class SystemTray(GObject.GObject):
     __gsignals__ = {
         "xpra-unmap-event": one_arg_signal,
         "xpra-client-message-event": one_arg_signal,
-        }
+    }
 
     def __init__(self):
         super().__init__()
-        #the window where we embed all the tray icons:
+        # the window where we embed all the tray icons:
         self.tray_window : GdkX11.X11Window | None = None
         self.xid : int = 0
-        #map xid to the gdk window:
+        # map xid to the gdk window:
         self.window_trays : dict[int,Gdk.Window] = {}
-        #map gdk windows to their corral window:
+        # map gdk windows to their corral window:
         self.tray_windows : dict[GdkX11.X11Window,GdkX11.X11Window] = {}
         self.setup_tray_window()
 
@@ -257,7 +269,7 @@ class SystemTray(GObject.GObject):
         log(f"adjusted geometry={window.get_geometry()}, title={title!r}")
         visual = window.get_visual()
         tray_window = GDKX11Window(root, width=w, height=h,
-                                   event_mask = event_mask,
+                                   event_mask=event_mask,
                                    title=title,
                                    x=-200, y=-200,
                                    override_redirect=True,
@@ -287,5 +299,6 @@ class SystemTray(GObject.GObject):
         log(f"SystemTray.do_xpra_unmap_event({event}) gdk window={gdk_window}, container window={tray_window}")
         if tray_window:
             tray_window.destroy()
+
 
 GObject.type_register(SystemTray)

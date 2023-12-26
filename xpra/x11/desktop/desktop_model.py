@@ -33,12 +33,10 @@ class ScreenDesktopModel(DesktopModelBase):
     def __repr__(self):
         return f"ScreenDesktopModel({self.xid:x})"
 
-
     def setup(self):
         super().setup()
         self.screen.connect("size-changed", self._screen_size_changed)
         self.update_size_hints()
-
 
     def get_geometry(self):
         return 0, 0, self.screen.get_width(), self.screen.get_height()
@@ -46,12 +44,10 @@ class ScreenDesktopModel(DesktopModelBase):
     def get_dimensions(self):
         return self.screen.get_width(), self.screen.get_height()
 
-
     def get_property(self, prop):
         if prop=="xid":
             return self.xid
         return super().get_property(prop)
-
 
     def do_resize(self):
         self.resize_timer = 0
@@ -69,9 +65,9 @@ class ScreenDesktopModel(DesktopModelBase):
             with xsync:
                 w, h = RandR.get_screen_size()
             if (ow, oh) == (w, h):
-                #this is already the resolution we have,
-                #but the client has other ideas,
-                #so tell the client we ain't budging:
+                # this is already the resolution we have,
+                # but the client has other ideas,
+                # so tell the client we ain't budging:
                 self.emit("resized")
         except Exception as e:
             geomlog("do_resize() %ix%i", rw, rh, exc_info=True)
@@ -91,6 +87,7 @@ class ScreenDesktopModel(DesktopModelBase):
         w, h = self.screen.get_width(), self.screen.get_height()
         screenlog("screen dimensions: %ix%i", w, h)
         size_hints = {}
+
         def use_fixed_size():
             size = w, h
             size_hints.update({
@@ -100,8 +97,8 @@ class ScreenDesktopModel(DesktopModelBase):
             })
         if RandR.has_randr():
             if self.resize_exact:
-                #assume resize_exact is enabled
-                #no size restrictions
+                # assume resize_exact is enabled
+                # no size restrictions
                 size_hints = {}
             else:
                 try:
@@ -113,16 +110,16 @@ class ScreenDesktopModel(DesktopModelBase):
                     if not screen_sizes:
                         use_fixed_size()
                     else:
-                        #find the maximum size supported:
+                        # find the maximum size supported:
                         max_size = {}
                         for tw, th in screen_sizes:
                             max_size[tw*th] = (tw, th)
                         max_pixels = sorted(max_size.keys())[-1]
                         size_hints["maximum-size"] = max_size[max_pixels]
-                        #find the best increment we can use:
+                        # find the best increment we can use:
                         inc_hits = {}
-                        #we should also figure out what the potential increments are,
-                        #rather than hardcoding them here:
+                        # we should also figure out what the potential increments are,
+                        # rather than hardcoding them here:
                         INC_VALUES = (16, 32, 64, 128, 256)
                         for inc in INC_VALUES:
                             hits = 0
@@ -134,11 +131,11 @@ class ScreenDesktopModel(DesktopModelBase):
                         screenlog("size increment hits: %s", inc_hits)
                         max_hits = max(inc_hits.values())
                         if max_hits>16:
-                            #find the first increment value matching the max hits
+                            # find the first increment value matching the max hits
                             for inc in INC_VALUES:
                                 if inc_hits[inc]==max_hits:
                                     break
-                            #TODO: also get these values from the screen sizes:
+                            # TODO: also get these values from the screen sizes:
                             size_hints |= {
                                 "base-size"             : (640, 640),
                                 "minimum-size"          : (640, 640),
@@ -150,5 +147,6 @@ class ScreenDesktopModel(DesktopModelBase):
             use_fixed_size()
         screenlog("size-hints=%s", size_hints)
         self._updateprop("size-hints", size_hints)
+
 
 GObject.type_register(ScreenDesktopModel)

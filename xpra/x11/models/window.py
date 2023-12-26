@@ -47,18 +47,18 @@ CWSibling       = constants["CWSibling"]
 CWStackMode     = constants["CWStackMode"]
 CONFIGURE_GEOMETRY_MASK = CWX | CWY | CWWidth | CWHeight
 CW_MASK_TO_NAME = {
-                   CWX              : "X",
-                   CWY              : "Y",
-                   CWWidth          : "Width",
-                   CWHeight         : "Height",
-                   CWSibling        : "Sibling",
-                   CWStackMode      : "StackMode",
-                   CWBorderWidth    : "BorderWidth",
-                   }
+    CWX              : "X",
+    CWY              : "Y",
+    CWWidth          : "Width",
+    CWHeight         : "Height",
+    CWSibling        : "Sibling",
+    CWStackMode      : "StackMode",
+    CWBorderWidth    : "BorderWidth",
+}
 
 
 def configure_bits(value_mask):
-    return "|".join(v for k,v in CW_MASK_TO_NAME.items() if k&value_mask)
+    return "|".join(v for k, v in CW_MASK_TO_NAME.items() if k & value_mask)
 
 
 FORCE_XSETINPUTFOCUS = envbool("XPRA_FORCE_XSETINPUTFOCUS", False)
@@ -80,56 +80,56 @@ def calc_constrained_size(width : int, height : int, hints):
                 pass
         return dv1, dv2
 
-    min_width : int
-    min_height : int
-    max_width : int
-    max_height : int
-    base_width : int
-    base_height : int
-    e_width : int
-    e_height : int
-    increment_x : int
-    increment_y : int
+    min_width: int
+    min_height: int
+    max_width: int
+    max_height: int
+    base_width: int
+    base_height: int
+    e_width: int
+    e_height: int
+    increment_x: int
+    increment_y: int
 
     min_width, min_height = getintpair("minimum-size", 0, 0)
-    if min_width>0:
+    if min_width > 0:
         width = max(min_width, width)
-    if min_height>0:
+    if min_height > 0:
         height = max(min_height, height)
 
     max_width, max_height = getintpair("maximum-size", 2**16-1, 2**16-1)
-    if max_width>0:
+    if max_width > 0:
         width = min(max_width, width)
-    if max_height>0:
+    if max_height > 0:
         height = min(max_height, height)
 
     base_width, base_height = getintpair("base-size", 0, 0)
     increment_x, increment_y = getintpair("increment", 0, 0)
     if increment_x:
-        e_width = max(width-base_width, 0)
-        width -= e_width%increment_x
+        e_width = max(width - base_width, 0)
+        width -= e_width % increment_x
     if increment_y:
-        e_height = max(height-base_height, 0)
-        height -= e_height%increment_y
+        e_height = max(height - base_height, 0)
+        height -= e_height % increment_y
 
-    min_aspect : float
-    max_aspect : float
+    min_aspect: float
+    max_aspect: float
     if "min_aspect" in hints:
         min_aspect = hints.get("min_aspect")
-        assert min_aspect>0
-        if width/height<min_aspect:
+        assert min_aspect > 0
+        if width/height < min_aspect:
             height = ceil(width*min_aspect)
-            if increment_y>1 or base_height>0:
-                e_height = max(height-base_height, 0)
-                height += increment_y-(e_height%increment_y)
+            if increment_y > 1 or base_height > 0:
+                e_height = max(height - base_height, 0)
+                height += increment_y - (e_height % increment_y)
     if "max_aspect" in hints:
         max_aspect = hints.get("max_aspect")
-        assert max_aspect>0
-        if width/height>max_aspect:
+        assert max_aspect > 0
+        if width/height > max_aspect:
             height = floor(width*max_aspect)
-            if increment_y>1 or base_height>0:
-                e_height = max(height-base_height, 0)
-                height = max(1, height-e_height%increment_y)
+            if increment_y > 1 or base_height > 0:
+                e_height = max(height - base_height, 0)
+                height = max(1, height - e_height % increment_y)
     return width, height
 
 
@@ -147,60 +147,84 @@ class WindowModel(BaseWindowModel):
     __gproperties__ |= {
         # Client(s) state, is this window shown somewhere?
         # (then it can't be iconified)
-        "shown": (GObject.TYPE_BOOLEAN,
-                  "Is this window shown somewhere", "",
-                  False,
-                  GObject.ParamFlags.READWRITE),
+        "shown": (
+            GObject.TYPE_BOOLEAN,
+            "Is this window shown somewhere", "",
+            False,
+            GObject.ParamFlags.READWRITE,
+        ),
         # To prevent resizing loops,
         # the client must provide this counter when resizing the window
         # (and if the counter has been incremented since, we ignore the request)
-        "resize-counter": (GObject.TYPE_INT64,
-                           "", "",
-                           0, GLib.MAXINT64, 1,
-                           GObject.ParamFlags.READWRITE),
-        "client-geometry": (GObject.TYPE_PYOBJECT,
-                            "The current window geometry used by client(s)", "",
-                            GObject.ParamFlags.READWRITE),
+        "resize-counter": (
+            GObject.TYPE_INT64,
+            "", "",
+            0, GLib.MAXINT64, 1,
+            GObject.ParamFlags.READWRITE,
+        ),
+        "client-geometry": (
+            GObject.TYPE_PYOBJECT,
+            "The current window geometry used by client(s)", "",
+            GObject.ParamFlags.READWRITE,
+        ),
         # Interesting properties of the client window, that will be
         # automatically kept up to date:
-        "requested-position": (GObject.TYPE_PYOBJECT,
-                               "Client-requested position on screen", "",
-                               GObject.ParamFlags.READABLE),
-        "requested-size": (GObject.TYPE_PYOBJECT,
-                           "Client-requested size on screen", "",
-                           GObject.ParamFlags.READABLE),
-        "set-initial-position": (GObject.TYPE_BOOLEAN,
-                                 "Should the requested position be honoured?", "",
-                                 False,
-                                 GObject.ParamFlags.READWRITE),
+        "requested-position": (
+            GObject.TYPE_PYOBJECT,
+            "Client-requested position on screen", "",
+            GObject.ParamFlags.READABLE,
+        ),
+        "requested-size": (
+            GObject.TYPE_PYOBJECT,
+            "Client-requested size on screen", "",
+            GObject.ParamFlags.READABLE
+        ),
+        "set-initial-position": (
+            GObject.TYPE_BOOLEAN,
+            "Should the requested position be honoured?", "",
+            False,
+            GObject.ParamFlags.READWRITE,
+        ),
         # Toggling this property does not actually make the window `iconified`,
         # i.e. make it appear or disappear from the screen -- it merely
         # updates the various window manager properties that inform the world
         # whether or not the window is `iconified`.
-        "iconic": (GObject.TYPE_BOOLEAN,
-                   "ICCCM 'iconic' state -- any sort of 'not on desktop'.", "",
-                   False,
-                   GObject.ParamFlags.READWRITE),
-        #from WM_NORMAL_HINTS
-        "size-hints": (GObject.TYPE_PYOBJECT,
-                       "Client hints on constraining its size", "",
-                       GObject.ParamFlags.READABLE),
-        #from _NET_WM_ICON_NAME or WM_ICON_NAME
-        "icon-title": (GObject.TYPE_PYOBJECT,
-                       "Icon title (unicode or None)", "",
-                       GObject.ParamFlags.READABLE),
-        #from _NET_WM_ICON
-        "icons": (GObject.TYPE_PYOBJECT,
-                 "Icons in raw RGBA format, by size", "",
-                 GObject.ParamFlags.READABLE),
-        #from _MOTIF_WM_HINTS.decorations
-        "decorations": (GObject.TYPE_INT,
-                       "Should the window decorations be shown", "",
-                       -1, 65535, -1,
-                       GObject.ParamFlags.READABLE),
-        "children" : (GObject.TYPE_PYOBJECT,
-                        "Sub-windows", None,
-                        GObject.ParamFlags.READABLE),
+        "iconic": (
+            GObject.TYPE_BOOLEAN,
+            "ICCCM 'iconic' state -- any sort of 'not on desktop'.", "",
+            False,
+            GObject.ParamFlags.READWRITE,
+        ),
+        # from WM_NORMAL_HINTS
+        "size-hints": (
+            GObject.TYPE_PYOBJECT,
+            "Client hints on constraining its size", "",
+            GObject.ParamFlags.READABLE,
+        ),
+        # from _NET_WM_ICON_NAME or WM_ICON_NAME
+        "icon-title": (
+            GObject.TYPE_PYOBJECT,
+            "Icon title (unicode or None)", "",
+            GObject.ParamFlags.READABLE,
+        ),
+        # from _NET_WM_ICON
+        "icons": (
+            GObject.TYPE_PYOBJECT,
+            "Icons in raw RGBA format, by size", "",
+            GObject.ParamFlags.READABLE,
+        ),
+        # from _MOTIF_WM_HINTS.decorations
+        "decorations": (
+            GObject.TYPE_INT,
+            "Should the window decorations be shown", "",
+            -1, 65535, -1,
+            GObject.ParamFlags.READABLE,
+        ),
+        "children" : (
+            GObject.TYPE_PYOBJECT,
+            "Sub-windows", None,
+            GObject.ParamFlags.READABLE,
+        ),
     }
     __gsignals__ = dict(BaseWindowModel.__common_signals__)
     __gsignals__ |= {
@@ -210,16 +234,18 @@ class WindowModel(BaseWindowModel):
     }
 
     _property_names         = BaseWindowModel._property_names + [
-                              "size-hints", "icon-title", "icons", "decorations",
-                              "modal", "set-initial-position", "requested-position",
-                              "iconic",
-                              ]
+        "size-hints", "icon-title", "icons", "decorations",
+        "modal", "set-initial-position", "requested-position",
+        "iconic",
+    ]
     _dynamic_property_names = BaseWindowModel._dynamic_property_names + [
-                              "size-hints", "icon-title", "icons", "decorations", "modal", "iconic"]
+        "size-hints", "icon-title", "icons", "decorations", "modal", "iconic",
+    ]
     _initial_x11_properties = BaseWindowModel._initial_x11_properties + [
-                              "WM_HINTS", "WM_NORMAL_HINTS", "_MOTIF_WM_HINTS",
-                              "WM_ICON_NAME", "_NET_WM_ICON_NAME", "_NET_WM_ICON",
-                              "_NET_WM_STRUT", "_NET_WM_STRUT_PARTIAL"]
+        "WM_HINTS", "WM_NORMAL_HINTS", "_MOTIF_WM_HINTS",
+        "WM_ICON_NAME", "_NET_WM_ICON_NAME", "_NET_WM_ICON",
+        "_NET_WM_STRUT", "_NET_WM_STRUT_PARTIAL",
+    ]
     _internal_property_names = BaseWindowModel._internal_property_names+["children"]
     _MODELTYPE = "Window"
 
@@ -283,61 +309,59 @@ class WindowModel(BaseWindowModel):
             raise Unmanageable(f"window {self.xid:x} disappeared already")
         geomlog("setup() geometry=%s, ogeom=%s", geom, ogeom)
         nx, ny, w, h = geom[:4]
-        #after reparenting, the coordinates of the client window should be 0,0
-        #use the coordinates of the corral window:
-        if nx==ny==0:
+        # after reparenting, the coordinates of the client window should be 0,0
+        # use the coordinates of the corral window:
+        if nx == ny == 0:
             nx, ny = x, y
         hints = self.get_property("size-hints")
         geomlog("setup() hints=%s size=%ix%i", hints, w, h)
         nw, nh = self.calc_constrained_size(w, h, hints)
         pos = hints.get("position")
-        if pos==(0, 0) and (nx!=0 or ny!=0):
-            #never override with 0,0
+        if pos == (0, 0) and (nx != 0 or ny != 0):
+            # never override with 0,0
             hints.pop("position")
             pos = None
-        if ox==0 and oy==0 and pos:
+        if ox == 0 and oy == 0 and pos:
             nx, ny = pos
         self._updateprop("geometry", (nx, ny, nw, nh))
         geomlog("setup() resizing windows to %sx%s, moving to %i,%i", nw, nh, nx, ny)
-        #don't trigger a move or resize unless we have to:
-        if ox!=nx or oy!=ny or ow!=nw or oh!=nh:
+        # don't trigger a move or resize unless we have to:
+        if ox != nx or oy != ny or ow != nw or oh != nh:
             X11Window.MoveResizeWindow(self.corral_xid, nx, ny, nw, nh)
-        if ow!=nw or oh!=nh:
+        if ow != nw or oh != nh:
             X11Window.MoveResizeWindow(self.xid, 0, 0, nw, nh)
         if not X11Window.is_mapped(self.xid):
             X11Window.MapWindow(self.xid)
-        #this is here to trigger X11 errors if any are pending
-        #or if the window is deleted already:
+        # this is here to trigger X11 errors if any are pending
+        # or if the window is deleted already:
         assert X11Window.getGeometry(self.xid)
         self._internal_set_property("shown", False)
         self._internal_set_property("resize-counter", 0)
         self._internal_set_property("client-geometry", None)
 
-
-    def _clamp_to_desktop(self, x:int, y:int, w:int, h:int) -> tuple[int,int]:
+    def _clamp_to_desktop(self, x: int, y: int, w: int, h: int) -> tuple[int, int]:
         if self.desktop_geometry:
             dw, dh = self.desktop_geometry
-            if x+w<0:
+            if x+w < 0:
                 x = min(0, CLAMP_OVERLAP-w)
-            elif x>=dw:
+            elif x >= dw:
                 x = max(0, dw-CLAMP_OVERLAP)
-            if y+h<0:
+            if y+h < 0:
                 y = min(0, CLAMP_OVERLAP-h)
-            elif y>dh:
+            elif y > dh:
                 y = max(0, dh-CLAMP_OVERLAP)
         return x, y
 
-    def update_desktop_geometry(self, width:int, height:int) -> None:
-        if self.desktop_geometry==(width, height):
-            return  #no need to do anything
+    def update_desktop_geometry(self, width: int, height: int) -> None:
+        if self.desktop_geometry == (width, height):
+            return  # no need to do anything
         self.desktop_geometry = (width, height)
         with xsync:
             x, y, w, h = X11Window.getGeometry(self.corral_xid)[:4]
         nx, ny = self._clamp_to_desktop(x, y, w, h)
-        if nx!=x or ny!=y:
+        if nx != x or ny != y:
             log("update_desktop_geometry(%i, %i) adjusting corral window to new location: %i,%i", width, height, nx, ny)
             X11Window.MoveResizeWindow(self.corral_xid, nx, ny, w, h)
-
 
     def _read_initial_X11_properties(self) -> None:
         metalog("read_initial_X11_properties() window")
@@ -356,17 +380,18 @@ class WindowModel(BaseWindowModel):
         # initial states are read off from the client, and (2) is accomplished
         # by having WM_HINTS affect _NET_WM_STATE.  But this means that
         # WM_HINTS and _NET_WM_STATE handling become intertangled.
+
         def set_if_unset(propname, value):
-            #the property may not be initialized yet,
-            #if that's the case then calling get_property throws an exception:
+            # the property may not be initialized yet,
+            # if that's the case then calling get_property throws an exception:
             try:
                 if self.get_property(propname) not in (None, ""):
                     return
             except TypeError:
                 pass
             self._internal_set_property(propname, value)
-        #"decorations" needs to be set before reading the X11 properties
-        #because handle_wm_normal_hints_change reads it:
+        # "decorations" needs to be set before reading the X11 properties
+        # because handle_wm_normal_hints_change reads it:
         set_if_unset("decorations", -1)
         super()._read_initial_X11_properties()
         net_wm_state = self.get_property("state")
@@ -374,13 +399,13 @@ class WindowModel(BaseWindowModel):
         geom = X11Window.getGeometry(self.xid)
         if not geom:
             raise Unmanageable(f"failed to get geometry for {self.xid:x}")
-        #initial position and size, from the Window object,
-        #but allow size hints to override it if specified
+        # initial position and size, from the Window object,
+        # but allow size hints to override it if specified
         x, y, w, h = geom[:4]
         size_hints = self.get_property("size-hints")
         ax, ay = size_hints.get("position", (0, 0))
-        if ax==ay==0 and (x!=0 or y!=0):
-            #don't override with 0,0
+        if ax == ay == 0 and (x != 0 or y != 0):
+            # don't override with 0,0
             size_hints.pop("position", None)
             ax, ay = x, y
         aw, ah = size_hints.get("size", (w, h))
@@ -389,7 +414,7 @@ class WindowModel(BaseWindowModel):
         set_if_unset("modal", "_NET_WM_STATE_MODAL" in net_wm_state)
         set_if_unset("requested-position", (ax, ay))
         set_if_unset("requested-size", (aw, ah))
-        #it may have been set already:
+        # it may have been set already:
         sip = self.get_property("set-initial-position")
         if not sip and ("position" in size_hints):
             self._internal_set_property("set-initial-position", True)
@@ -432,7 +457,7 @@ class WindowModel(BaseWindowModel):
                 with xswallow:
                     if not X11Window.is_mapped(self.xid):
                         X11Window.MapWindow(self.xid)
-            #it is now safe to destroy the corral window:
+            # it is now safe to destroy the corral window:
             with xsync:
                 X11Window.DestroyWindow(cxid)
         super().do_unmanaged(wm_exiting)
@@ -440,7 +465,6 @@ class WindowModel(BaseWindowModel):
     def send_configure_notify(self) -> None:
         with xswallow:
             X11Window.sendConfigureNotify(self.xid)
-
 
     #########################################
     # Actions specific to WindowModel
@@ -462,7 +486,6 @@ class WindowModel(BaseWindowModel):
             if not X11Window.is_mapped(self.xid):
                 X11Window.MapWindow(self.xid)
                 log("client window %#x mapped", self.xid)
-
 
     #########################################
     # X11 Events
@@ -506,7 +529,6 @@ class WindowModel(BaseWindowModel):
         assert event.window==self.xid
         super().do_xpra_destroy_event(event)
 
-
     #########################################
     # Hooks for WM
     #########################################
@@ -529,7 +551,6 @@ class WindowModel(BaseWindowModel):
             X11Window.Reparent(self.corral_xid, self.parking_window_xid, 0, 0)
             X11Window.sendConfigureNotify(self.xid)
 
-
     def _update_client_geometry(self) -> None:
         """ figure out where we're supposed to get the window geometry from,
             and call do_update_client_geometry which will send a Configure and Notify
@@ -538,7 +559,7 @@ class WindowModel(BaseWindowModel):
         if geometry is not None:
             geomlog("_update_client_geometry: using client-geometry=%s", geometry)
         elif not self._setup_done:
-            #try to honour initial size and position requests during setup:
+            # try to honour initial size and position requests during setup:
             w, h = self.get_property("requested-size")
             x, y = self.get_property("requested-position")
             geometry = x, y, w, h
@@ -547,7 +568,6 @@ class WindowModel(BaseWindowModel):
             geometry = self.get_property("geometry")
             geomlog("_update_client_geometry: using current geometry=%s", geometry)
         self._do_update_client_geometry(geometry)
-
 
     def _do_update_client_geometry(self, geometry) -> None:
         geomlog("_do_update_client_geometry(%s)", geometry)
@@ -565,16 +585,16 @@ class WindowModel(BaseWindowModel):
                 event, self.corral_xid, self.xid, self._managed)
         if not self._managed or not self.corral_xid or not self.xid:
             return
-        if event.window==self.corral_xid:
-            #we only care about events on the client window
+        if event.window == self.corral_xid:
+            # we only care about events on the client window
             geomlog(f"ignored configure event on the corral window {self.corral_xid:x}")
             return
-        if event.window!=self.xid:
-            #we only care about events on the client window
+        if event.window != self.xid:
+            # we only care about events on the client window
             geomlog(f"ignored configure event on window {event.window:x} (not the client window)")
             return
         try:
-            #workaround applications whose windows disappear from underneath us:
+            # workaround applications whose windows disappear from underneath us:
             with xsync:
                 if not X11Window.is_mapped(self.corral_xid):
                     geomlog(f"WindowModel.do_xpra_configure_event: corral window {self.corral_xid:x} is not visible")
@@ -582,7 +602,7 @@ class WindowModel(BaseWindowModel):
                 if not X11Window.is_mapped(self.xid):
                     geomlog(f"WindowModel.do_xpra_configure_event: client window {self.xid:x} is not visible")
                     return
-                #event.border_width unused
+                # event.border_width unused
                 self.resize_corral_window(event.x, event.y, event.width, event.height)
                 self.update_children()
         except XError as e:
@@ -603,20 +623,20 @@ class WindowModel(BaseWindowModel):
             if not geom:
                 continue
             if geom[2]==geom[3]==1:
-                #skip 1x1 windows, as those are usually just event windows
+                # skip 1x1 windows, as those are usually just event windows
                 continue
             if geom[0]==geom[1]==0 and geom[2]==ww and geom[3]==wh:
-                #exact same geometry as the window itself
+                # exact same geometry as the window itself
                 continue
-            #record xid and geometry:
+            # record xid and geometry:
             children.append([xid]+list(geom))
         self._internal_set_property("children", children)
 
-    def resize_corral_window(self, x : int, y : int, w : int, h : int) -> None:
-        #the client window may have been resized or moved (generally programmatically)
-        #so we may need to update the corral_window to match
+    def resize_corral_window(self, x: int, y: int, w: int, h: int) -> None:
+        # the client window may have been resized or moved (generally programmatically)
+        # so we may need to update the corral_window to match
         cow, coh = X11Window.getGeometry(self.corral_xid)[2:4]
-        #size changes (and position if any):
+        # size changes (and position if any):
         hints = self.get_property("size-hints")
         w, h = self.calc_constrained_size(w, h, hints)
         cx, cy, cw, ch = self.get_property("geometry")
@@ -631,7 +651,7 @@ class WindowModel(BaseWindowModel):
             return
         X11Window.MoveResizeWindow(self.corral_xid, x, y, w, h)
         if moved:
-            #always keep it in the top corner:
+            # always keep it in the top corner:
             X11Window.MoveResizeWindow(self.xid, 0, 0, w, h)
         self._updateprop("geometry", (x, y, w, h))
 
@@ -670,8 +690,8 @@ class WindowModel(BaseWindowModel):
 
         if VALIDATE_CONFIGURE_REQUEST:
             w, h = self.calc_constrained_size(w, h, hints)
-        #update the geometry now, as another request may come in
-        #before we've had a chance to process the ConfigureNotify that the code below will generate
+        # update the geometry now, as another request may come in
+        # before we've had a chance to process the ConfigureNotify that the code below will generate
         self._updateprop("geometry", (x, y, w, h))
         geomlog("do_child_configure_request_event updated requested geometry from %s to  %s", ogeom, (x, y, w, h))
         # As per ICCCM 4.1.5, even if we ignore the request
@@ -683,8 +703,8 @@ class WindowModel(BaseWindowModel):
         # meaningful and should perhaps even be respected.)
 
     def process_client_message_event(self, event) -> bool:
-        if event.message_type=="_NET_MOVERESIZE_WINDOW":
-            #TODO: honour gravity, show source indication
+        if event.message_type == "_NET_MOVERESIZE_WINDOW":
+            # TODO: honour gravity, show source indication
             with xsync:
                 geom = X11Window.getGeometry(self.corral_xid)
                 x, y, w, h, _ = geom
@@ -699,7 +719,7 @@ class WindowModel(BaseWindowModel):
                 if (event.data[0] & 0x100) or (event.data[0] & 0x200):
                     self._internal_set_property("set-initial-position", True)
                     self._internal_set_property("requested-position", (x, y))
-                #honour hints:
+                # honour hints:
                 hints = self.get_property("size-hints")
                 w, h = self.calc_constrained_size(w, h, hints)
                 geomlog("_NET_MOVERESIZE_WINDOW on %s (data=%s, current geometry=%s, new geometry=%s)",
@@ -714,13 +734,14 @@ class WindowModel(BaseWindowModel):
         geomlog("calc_constrained_size%s=%s (size_constraints=%s)", (w, h, mhints), (cw, ch), self.size_constraints)
         return cw, ch
 
-    def update_size_constraints(self, minw:int=0, minh:int=0, maxw:int=MAX_WINDOW_SIZE, maxh:int=MAX_WINDOW_SIZE) -> None:
-        if self.size_constraints==(minw, minh, maxw, maxh):
+    def update_size_constraints(self, minw: int=0, minh: int=0,
+                                maxw: int=MAX_WINDOW_SIZE, maxh: int=MAX_WINDOW_SIZE) -> None:
+        if self.size_constraints == (minw, minh, maxw, maxh):
             geomlog("update_size_constraints%s unchanged", (minw, minh, maxw, maxh))
-            return  #no need to do anything
+            return  # no need to do anything
         ominw, ominh, omaxw, omaxh = self.size_constraints
         self.size_constraints = minw, minh, maxw, maxh
-        if minw<=ominw and minh<=ominh and maxw>=omaxw and maxh>=omaxh:
+        if minw <= ominw and minh <= ominh and maxw >= omaxw and maxh >= omaxh:
             geomlog("update_size_constraints%s less restrictive, no need to recalculate", (minw, minh, maxw, maxh))
             return
         geomlog("update_size_constraints%s recalculating client geometry", (minw, minh, maxw, maxh))
@@ -740,25 +761,23 @@ class WindowModel(BaseWindowModel):
         self._updateprop("icon-title", sanestr(icon_name))
 
     def _handle_motif_wm_hints_change(self) -> None:
-        #motif_hints = self.prop_get("_MOTIF_WM_HINTS", "motif-hints")
         motif_hints = self.prop_get("_MOTIF_WM_HINTS", "motif-hints", ignore_errors=False, raise_xerrors=True)
         metalog("_MOTIF_WM_HINTS=%s", motif_hints)
         if motif_hints:
             if motif_hints.flags & (2**MotifWMHints.DECORATIONS_BIT):
                 if self._updateprop("decorations", motif_hints.decorations):
-                    #we may need to clamp the window size:
+                    # we may need to clamp the window size:
                     self._handle_wm_normal_hints_change()
             if motif_hints.flags & (2**MotifWMHints.INPUT_MODE_BIT):
                 self._updateprop("modal", int(motif_hints.input_mode))
-
 
     def _handle_wm_normal_hints_change(self) -> None:
         with xswallow:
             size_hints = X11Window.getSizeHints(self.xid)
         metalog("WM_NORMAL_HINTS=%s", size_hints)
-        #getSizeHints exports fields using their X11 names as defined in the "XSizeHints" structure,
-        #but we use a different naming (for historical reason and backwards compatibility)
-        #so rename the fields:
+        # getSizeHints exports fields using their X11 names as defined in the "XSizeHints" structure,
+        # but we use a different naming (for historical reason and backwards compatibility)
+        # so rename the fields:
         hints = {}
         if size_hints:
             TRANSLATED_NAMES = {
@@ -769,43 +788,45 @@ class WindowModel(BaseWindowModel):
                 "win_gravity"       : "gravity",
                 "min_aspect_ratio"  : "minimum-aspect-ratio",
                 "max_aspect_ratio"  : "maximum-aspect-ratio",
-                }
+            }
             for k,v in size_hints.items():
                 trans_name = TRANSLATED_NAMES.get(k)
                 if trans_name:
                     hints[trans_name] = v
-        #handle min-size and max-size,
-        #applying our size constraints if we have any:
+        # handle min-size and max-size,
+        # applying our size constraints if we have any:
         mhints = typedict(size_hints or {})
         hminw, hminh = mhints.inttupleget("min_size", (0, 0), 2, 2)
         hmaxw, hmaxh = mhints.inttupleget("max_size", (MAX_WINDOW_SIZE, MAX_WINDOW_SIZE), 2, 2)
-        d : int = self.get("decorations", -1)
-        decorated = d==-1 or any((d & 2**b) for b in (
-            MotifWMHints.ALL_BIT,
-            MotifWMHints.TITLE_BIT,
-            MotifWMHints.MINIMIZE_BIT,
-            MotifWMHints.MAXIMIZE_BIT,
-            ))
+        d: int = self.get("decorations", -1)
+        decorated = d == -1 or any(
+            (d & 2**b) for b in (
+                MotifWMHints.ALL_BIT,
+                MotifWMHints.TITLE_BIT,
+                MotifWMHints.MINIMIZE_BIT,
+                MotifWMHints.MAXIMIZE_BIT,
+            )
+        )
         cminw, cminh, cmaxw, cmaxh = self.size_constraints
         if decorated:
-            #min-size only applies to decorated windows
-            if cminw>0 and cminw>hminw:
+            # min-size only applies to decorated windows
+            if cminw > 0 and cminw > hminw:
                 hminw = cminw
-            if cminh>0 and cminh>hminh:
+            if cminh > 0 and cminh > hminh:
                 hminh = cminh
-        #max-size applies to all windows:
-        if 0<cmaxw<hmaxw:
+        # max-size applies to all windows:
+        if 0 < cmaxw < hmaxw:
             hmaxw = cmaxw
-        if 0<cmaxh<hmaxh:
+        if 0 < cmaxh < hmaxh:
             hmaxh = cmaxh
-        #if the values mean something, expose them:
+        # if the values mean something, expose them:
         if hminw>0 or hminh>0:
             hints["minimum-size"] = hminw, hminh
         if hmaxw<MAX_WINDOW_SIZE or hmaxh<MAX_WINDOW_SIZE:
             hints["maximum-size"] = hmaxw, hmaxh
         sanitize_size_hints(hints)
-        #we don't use the "size" attribute for anything yet,
-        #and changes to this property could send us into a loop
+        # we don't use the "size" attribute for anything yet,
+        # and changes to this property could send us into a loop
         hints.pop("size", None)
         # Don't send out notify and ConfigureNotify events when this property
         # gets no-op updated -- some apps like FSF Emacs 21 like to update
@@ -815,7 +836,6 @@ class WindowModel(BaseWindowModel):
             metalog("updated: size-hints=%s", hints)
             if self._setup_done and self.get_property("shown"):
                 self._update_client_geometry()
-
 
     def _handle_net_wm_icon_change(self) -> None:
         iconlog("_NET_WM_ICON changed on %#x, re-reading", self.xid)
@@ -831,7 +851,6 @@ class WindowModel(BaseWindowModel):
         "_NET_WM_ICON"                  : _handle_net_wm_icon_change,
     }
 
-
     def get_default_window_icon(self, size:int=48):
         return None
 
@@ -839,13 +858,12 @@ class WindowModel(BaseWindowModel):
         state_names = self._state_properties.get(prop)
         assert state_names, f"invalid window state {prop}"
         log("get_wm_state(%s) state_names=%s", prop, state_names)
-        #this is a virtual property for _NET_WM_STATE:
-        #return True if any is set (only relevant for maximized)
+        # this is a virtual property for _NET_WM_STATE:
+        # return True if any is set (only relevant for maximized)
         for x in state_names:
             if self._state_isset(x):
                 return True
         return False
-
 
     ################################
     # Focus handling:

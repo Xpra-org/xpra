@@ -49,8 +49,7 @@ class XpraDesktopServer(DesktopServerBase):
         with xlog:
             set_initial_resolution(res, self.dpi or self.default_dpi)
 
-
-    def configure_best_screen_size(self) -> tuple[int,int]:
+    def configure_best_screen_size(self) -> tuple[int, int]:
         """ for the first client, honour desktop_mode_size if set """
         root_w, root_h = self.root_window.get_geometry()[2:4]
         if not self.randr:
@@ -79,8 +78,8 @@ class XpraDesktopServer(DesktopServerBase):
             geomlog.error("Error: cannot honour resize request,")
             geomlog.error(" no RandR support on this display")
             return
-        #FIXME: small race if the user resizes with randr,
-        #at the same time as he resizes the window..
+        # FIXME: small race if the user resizes with randr,
+        # at the same time as he resizes the window..
         self.resize_value = (w, h)
         if not self.resize_timer:
             self.resize_timer = self.timeout_add(250, self.do_resize)
@@ -93,16 +92,15 @@ class XpraDesktopServer(DesktopServerBase):
                 ow, oh = RandR.get_screen_size()
             w, h = self.set_screen_size(rw, rh)
             if (ow, oh) == (w, h):
-                #this is already the resolution we have,
-                #but the client has other ideas,
-                #so tell the client we ain't budging:
+                # this is already the resolution we have,
+                # but the client has other ideas,
+                # so tell the client we ain't budging:
                 for win in self._window_to_id.keys():
                     win.emit("resized")
         except Exception as e:
             geomlog("do_resize() %ix%i", rw, rh, exc_info=True)
             geomlog.error(f"Error: failed to resize desktop display to {rw}x{rh}")
             geomlog.estr(e)
-
 
     def get_server_mode(self) -> str:
         return "X11 desktop"
@@ -112,7 +110,6 @@ class XpraDesktopServer(DesktopServerBase):
         if "features" in source.wants:
             capabilities["desktop"] =True
         return capabilities
-
 
     def load_existing_windows(self) -> None:
         with xsync:
@@ -125,7 +122,7 @@ class XpraDesktopServer(DesktopServerBase):
             model.managed_connect("motion", self._motion_signaled)
 
     def send_updated_screen_size(self, model) -> None:
-        #the vfb has been resized
+        # the vfb has been resized
         wid = self._window_to_id[model]
         x, y, w, h = model.get_geometry()
         geomlog("send_updated_screen_size(%s) geometry=%s", model, (x, y, w, h))

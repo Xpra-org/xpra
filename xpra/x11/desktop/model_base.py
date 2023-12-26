@@ -40,27 +40,39 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
     }
 
     __gproperties__ = {
-        "iconic": (GObject.TYPE_BOOLEAN,
-                   "ICCCM 'iconic' state -- any sort of 'not on desktop'.", "",
-                   False,
-                   GObject.ParamFlags.READWRITE),
-        "focused": (GObject.TYPE_BOOLEAN,
-                       "Is the window focused", "",
-                       False,
-                       GObject.ParamFlags.READWRITE),
-        "size-hints": (GObject.TYPE_PYOBJECT,
-                       "Client hints on constraining its size", "",
-                       GObject.ParamFlags.READABLE),
-        "wm-name": (GObject.TYPE_PYOBJECT,
-                       "The name of the window manager or session manager", "",
-                       GObject.ParamFlags.READABLE),
-        "title": (GObject.TYPE_PYOBJECT,
-                       "The name of this desktop or monitor", "",
-                       GObject.ParamFlags.READABLE),
-        "icons": (GObject.TYPE_PYOBJECT,
-                       "The icon of the window manager or session manager", "",
-                       GObject.ParamFlags.READABLE),
-        }
+        "iconic": (
+            GObject.TYPE_BOOLEAN,
+            "ICCCM 'iconic' state -- any sort of 'not on desktop'.", "",
+            False,
+            GObject.ParamFlags.READWRITE,
+        ),
+        "focused": (
+            GObject.TYPE_BOOLEAN,
+            "Is the window focused", "",
+            False,
+            GObject.ParamFlags.READWRITE,
+        ),
+        "size-hints": (
+            GObject.TYPE_PYOBJECT,
+            "Client hints on constraining its size", "",
+            GObject.ParamFlags.READABLE,
+        ),
+        "wm-name": (
+            GObject.TYPE_PYOBJECT,
+            "The name of the window manager or session manager", "",
+            GObject.ParamFlags.READABLE,
+        ),
+        "title": (
+            GObject.TYPE_PYOBJECT,
+            "The name of this desktop or monitor", "",
+            GObject.ParamFlags.READABLE,
+        ),
+        "icons": (
+            GObject.TYPE_PYOBJECT,
+            "The icon of the window manager or session manager", "",
+            GObject.ParamFlags.READABLE,
+        ),
+    }
 
     _property_names = [
         "client-machine", "window-type",
@@ -68,7 +80,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         "focused", "title", "depth", "icons",
         "content-type",
         "set-initial-position",
-        ]
+    ]
     _dynamic_property_names = ["size-hints", "title", "icons"]
 
     def __init__(self):
@@ -179,7 +191,6 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
 
     def do_xpra_motion_event(self, event) -> None:
         self.emit("motion", event)
-
 
     def resize(self, w:int, h:int):
         geomlog("resize(%i, %i)", w, h)

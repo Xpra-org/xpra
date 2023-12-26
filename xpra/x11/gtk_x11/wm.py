@@ -6,9 +6,9 @@
 
 import os
 from typing import Any
-from gi.repository import GObject, Gdk  # @UnresolvedImport
 
 from xpra.util.env import envbool
+from xpra.os_util import gi_import
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.gtk.error import xsync, xswallow, xlog
 from xpra.x11.gtk_x11.prop import prop_set, prop_get, prop_del, raw_prop_set, prop_encode
@@ -20,13 +20,13 @@ from xpra.x11.gtk_x11 import GDKX11Window
 from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.models.window import WindowModel, configure_bits
 from xpra.x11.gtk_x11.world_window import WorldWindow, destroy_world_window
-from xpra.x11.gtk3.bindings import (
-    add_event_receiver,
-    add_fallback_receiver, remove_fallback_receiver,
-    )
+from xpra.x11.gtk3.bindings import add_event_receiver, add_fallback_receiver, remove_fallback_receiver
 from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.log import Logger
+
+GObject = gi_import("GObject")
+Gdk = gi_import("Gdk")
 
 log = Logger("x11", "window")
 
@@ -37,112 +37,112 @@ focuslog = Logger("x11", "window", "focus")
 screenlog = Logger("x11", "window", "screen")
 framelog = Logger("x11", "window", "frame")
 
-CWX             = constants["CWX"]
-CWY             = constants["CWY"]
-CWWidth         = constants["CWWidth"]
-CWHeight        = constants["CWHeight"]
+CWX = constants["CWX"]
+CWY = constants["CWY"]
+CWWidth = constants["CWWidth"]
+CWHeight = constants["CWHeight"]
 
-NotifyPointerRoot   = constants["NotifyPointerRoot"]
-NotifyDetailNone    = constants["NotifyDetailNone"]
+NotifyPointerRoot = constants["NotifyPointerRoot"]
+NotifyDetailNone = constants["NotifyDetailNone"]
 
 LOG_MANAGE_FAILURES = envbool("XPRA_LOG_MANAGE_FAILURES", False)
 
 NO_NET_SUPPORTED = os.environ.get("XPRA_NO_NET_SUPPORTED", "").split(",")
 
 DEFAULT_NET_SUPPORTED = [
-        "_NET_SUPPORTED", # a bit redundant, perhaps...
-        "_NET_SUPPORTING_WM_CHECK",
-        "_NET_WM_FULL_PLACEMENT",
-        "_NET_WM_HANDLED_ICONS",
-        "_NET_CLIENT_LIST",
-        "_NET_CLIENT_LIST_STACKING",
-        "_NET_DESKTOP_VIEWPORT",
-        "_NET_DESKTOP_GEOMETRY",
-        "_NET_NUMBER_OF_DESKTOPS",
-        "_NET_DESKTOP_NAMES",
-        "_NET_WORKAREA",
-        "_NET_ACTIVE_WINDOW",
-        "_NET_CURRENT_DESKTOP",
+    "_NET_SUPPORTED",  # a bit redundant, perhaps...
+    "_NET_SUPPORTING_WM_CHECK",
+    "_NET_WM_FULL_PLACEMENT",
+    "_NET_WM_HANDLED_ICONS",
+    "_NET_CLIENT_LIST",
+    "_NET_CLIENT_LIST_STACKING",
+    "_NET_DESKTOP_VIEWPORT",
+    "_NET_DESKTOP_GEOMETRY",
+    "_NET_NUMBER_OF_DESKTOPS",
+    "_NET_DESKTOP_NAMES",
+    "_NET_WORKAREA",
+    "_NET_ACTIVE_WINDOW",
+    "_NET_CURRENT_DESKTOP",
 
-        "WM_NAME", "_NET_WM_NAME",
-        "WM_ICON_NAME", "_NET_WM_ICON_NAME",
-        "WM_ICON_SIZE",
-        "WM_CLASS",
-        "WM_PROTOCOLS",
-        "_NET_WM_PID",
-        "WM_CLIENT_MACHINE",
-        "WM_STATE",
+    "WM_NAME", "_NET_WM_NAME",
+    "WM_ICON_NAME", "_NET_WM_ICON_NAME",
+    "WM_ICON_SIZE",
+    "WM_CLASS",
+    "WM_PROTOCOLS",
+    "_NET_WM_PID",
+    "WM_CLIENT_MACHINE",
+    "WM_STATE",
 
-        "_NET_WM_FULLSCREEN_MONITORS",
+    "_NET_WM_FULLSCREEN_MONITORS",
 
-        "_NET_WM_ALLOWED_ACTIONS",
-        "_NET_WM_ACTION_CLOSE",
-        "_NET_WM_ACTION_FULLSCREEN",
+    "_NET_WM_ALLOWED_ACTIONS",
+    "_NET_WM_ACTION_CLOSE",
+    "_NET_WM_ACTION_FULLSCREEN",
 
-        # We don't actually use _NET_WM_USER_TIME at all (yet), but it is
-        # important to say we support the _NET_WM_USER_TIME_WINDOW property,
-        # because this tells applications that they do not need to constantly
-        # ping any pagers etc. that might be running -- see EWMH for details.
-        # (Though it's not clear that any applications actually take advantage
-        # of this yet.)
-        "_NET_WM_USER_TIME",
-        "_NET_WM_USER_TIME_WINDOW",
-        # Not fully:
-        "WM_HINTS",
-        "WM_NORMAL_HINTS",
-        "WM_TRANSIENT_FOR",
-        "_NET_WM_STRUT",
-        "_NET_WM_STRUT_PARTIAL"
-        "_NET_WM_ICON",
+    # We don't actually use _NET_WM_USER_TIME at all (yet), but it is
+    # important to say we support the _NET_WM_USER_TIME_WINDOW property,
+    # because this tells applications that they do not need to constantly
+    # ping any pagers etc. that might be running -- see EWMH for details.
+    # (Though it's not clear that any applications actually take advantage
+    # of this yet.)
+    "_NET_WM_USER_TIME",
+    "_NET_WM_USER_TIME_WINDOW",
+    # Not fully:
+    "WM_HINTS",
+    "WM_NORMAL_HINTS",
+    "WM_TRANSIENT_FOR",
+    "_NET_WM_STRUT",
+    "_NET_WM_STRUT_PARTIAL"
+    "_NET_WM_ICON",
 
-        "_NET_CLOSE_WINDOW",
+    "_NET_CLOSE_WINDOW",
 
-        # These aren't supported in any particularly meaningful way, but hey.
-        "_NET_WM_WINDOW_TYPE",
-        "_NET_WM_WINDOW_TYPE_NORMAL",
-        "_NET_WM_WINDOW_TYPE_DESKTOP",
-        "_NET_WM_WINDOW_TYPE_DOCK",
-        "_NET_WM_WINDOW_TYPE_TOOLBAR",
-        "_NET_WM_WINDOW_TYPE_MENU",
-        "_NET_WM_WINDOW_TYPE_UTILITY",
-        "_NET_WM_WINDOW_TYPE_SPLASH",
-        "_NET_WM_WINDOW_TYPE_DIALOG",
-        "_NET_WM_WINDOW_TYPE_DROPDOWN_MENU",
-        "_NET_WM_WINDOW_TYPE_POPUP_MENU",
-        "_NET_WM_WINDOW_TYPE_TOOLTIP",
-        "_NET_WM_WINDOW_TYPE_NOTIFICATION",
-        "_NET_WM_WINDOW_TYPE_COMBO",
-        # "_NET_WM_WINDOW_TYPE_DND",
+    # These aren't supported in any particularly meaningful way, but hey.
+    "_NET_WM_WINDOW_TYPE",
+    "_NET_WM_WINDOW_TYPE_NORMAL",
+    "_NET_WM_WINDOW_TYPE_DESKTOP",
+    "_NET_WM_WINDOW_TYPE_DOCK",
+    "_NET_WM_WINDOW_TYPE_TOOLBAR",
+    "_NET_WM_WINDOW_TYPE_MENU",
+    "_NET_WM_WINDOW_TYPE_UTILITY",
+    "_NET_WM_WINDOW_TYPE_SPLASH",
+    "_NET_WM_WINDOW_TYPE_DIALOG",
+    "_NET_WM_WINDOW_TYPE_DROPDOWN_MENU",
+    "_NET_WM_WINDOW_TYPE_POPUP_MENU",
+    "_NET_WM_WINDOW_TYPE_TOOLTIP",
+    "_NET_WM_WINDOW_TYPE_NOTIFICATION",
+    "_NET_WM_WINDOW_TYPE_COMBO",
+    # "_NET_WM_WINDOW_TYPE_DND",
 
-        "_NET_WM_STATE",
-        "_NET_WM_STATE_DEMANDS_ATTENTION",
-        "_NET_WM_STATE_MODAL",
-        # More states to support:
-        "_NET_WM_STATE_STICKY",
-        "_NET_WM_STATE_MAXIMIZED_VERT",
-        "_NET_WM_STATE_MAXIMIZED_HORZ",
-        "_NET_WM_STATE_SHADED",
-        "_NET_WM_STATE_SKIP_TASKBAR",
-        "_NET_WM_STATE_SKIP_PAGER",
-        "_NET_WM_STATE_HIDDEN",
-        "_NET_WM_STATE_FULLSCREEN",
-        "_NET_WM_STATE_ABOVE",
-        "_NET_WM_STATE_BELOW",
-        "_NET_WM_STATE_FOCUSED",
+    "_NET_WM_STATE",
+    "_NET_WM_STATE_DEMANDS_ATTENTION",
+    "_NET_WM_STATE_MODAL",
+    # More states to support:
+    "_NET_WM_STATE_STICKY",
+    "_NET_WM_STATE_MAXIMIZED_VERT",
+    "_NET_WM_STATE_MAXIMIZED_HORZ",
+    "_NET_WM_STATE_SHADED",
+    "_NET_WM_STATE_SKIP_TASKBAR",
+    "_NET_WM_STATE_SKIP_PAGER",
+    "_NET_WM_STATE_HIDDEN",
+    "_NET_WM_STATE_FULLSCREEN",
+    "_NET_WM_STATE_ABOVE",
+    "_NET_WM_STATE_BELOW",
+    "_NET_WM_STATE_FOCUSED",
 
-        "_NET_WM_DESKTOP",
+    "_NET_WM_DESKTOP",
 
-        "_NET_WM_MOVERESIZE",
-        "_NET_MOVERESIZE_WINDOW",
+    "_NET_WM_MOVERESIZE",
+    "_NET_MOVERESIZE_WINDOW",
 
-        "_MOTIF_WM_HINTS",
-        "_MOTIF_WM_INFO",
+    "_MOTIF_WM_HINTS",
+    "_MOTIF_WM_INFO",
 
-        "_NET_REQUEST_FRAME_EXTENTS",
-        "_NET_RESTACK_WINDOW",
+    "_NET_REQUEST_FRAME_EXTENTS",
+    "_NET_RESTACK_WINDOW",
 
-        "_NET_WM_OPAQUE_REGION",
-        ]
+    "_NET_WM_OPAQUE_REGION",
+]
 FRAME_EXTENTS = envbool("XPRA_FRAME_EXTENTS", True)
 if FRAME_EXTENTS:
     DEFAULT_NET_SUPPORTED.append("_NET_FRAME_EXTENTS")
@@ -161,7 +161,7 @@ class Wm(GObject.GObject):
         "toplevel": (GObject.TYPE_PYOBJECT,
                      "Toplevel container widget for the display", "",
                      GObject.ParamFlags.READABLE),
-        }
+    }
     __gsignals__ = {
         # Public use:
         # A new window has shown up:
@@ -179,7 +179,7 @@ class Wm(GObject.GObject):
         "xpra-focus-out-event": one_arg_signal,
         "xpra-client-message-event": one_arg_signal,
         "xpra-xkb-event": one_arg_signal,
-        }
+    }
 
     def __init__(self, replace_other_wm:bool, wm_name:str, display=None):
         super().__init__()
@@ -283,31 +283,29 @@ class Wm(GObject.GObject):
         v = [width, height]
         screenlog("_NET_DESKTOP_GEOMETRY=%s", v)
         self.root_set("_NET_DESKTOP_GEOMETRY", ["u32"], v)
-        #update all the windows:
+        # update all the windows:
         for model in self._windows.values():
             model.update_desktop_geometry(width, height)
 
     def set_size_constraints(self, minw:int=0, minh:int=0, maxw:int=MAX_WINDOW_SIZE, maxh:int=MAX_WINDOW_SIZE) -> None:
         log("set_size_constraints%s", (minw, minh, maxw, maxh))
         self.size_constraints = minw, minh, maxw, maxh
-        #update all the windows:
+        # update all the windows:
         for model in self._windows.values():
             model.update_size_constraints(minw, minh, maxw, maxh)
-
 
     def set_default_frame_extents(self, v):
         framelog("set_default_frame_extents(%s)", v)
         if not v or len(v)!=4:
             v = (0, 0, 0, 0)
         self.root_set("DEFAULT_NET_FRAME_EXTENTS", ["u32"], v)
-        #update the models that are using the global default value:
+        # update the models that are using the global default value:
         for win in self._windows.values():
             if win.is_OR() or win.is_tray():
                 continue
             cur = win.get_property("frame")
             if cur is None:
                 win._handle_frame_changed()
-
 
     def do_get_property(self, pspec):
         if pspec.name == "windows":
@@ -320,7 +318,7 @@ class Wm(GObject.GObject):
     # have detected a new client window, and start managing it:
     def _manage_client(self, xid:int):
         if xid in self._windows:
-            #already managed
+            # already managed
             return
         try:
             with xsync:
@@ -383,17 +381,17 @@ class Wm(GObject.GObject):
             show = bool(event.data[0])
             self.emit("show-desktop", show)
         elif event.message_type=="_NET_REQUEST_FRAME_EXTENTS" and FRAME_EXTENTS:
-            #if we're here, that means the window model does not exist
-            #(or it would have processed the event)
-            #so this must be an unmapped window
+            # if we're here, that means the window model does not exist
+            # (or it would have processed the event)
+            # so this must be an unmapped window
             frame = None
             with xswallow:
                 xid = event.window
                 if not X11Window.is_override_redirect(xid):
-                    #use the global default:
+                    # use the global default:
                     frame = self.root_get("DEFAULT_NET_FRAME_EXTENTS", ["u32"], ignore_errors=True)
                 if not frame:
-                    #fallback:
+                    # fallback:
                     frame = (0, 0, 0, 0)
                 framelog("_NET_REQUEST_FRAME_EXTENTS: setting _NET_FRAME_EXTENTS=%s on %#x", frame, xid)
                 prop_set(event.window, "_NET_FRAME_EXTENTS", ["u32"], frame)
@@ -416,7 +414,6 @@ class Wm(GObject.GObject):
             prop_del(xid, "_NET_WM_NAME")
         destroy_world_window()
 
-
     def do_child_map_request_event(self, event) -> None:
         log("Found a potential client")
         self._manage_client(event.window)
@@ -434,9 +431,9 @@ class Wm(GObject.GObject):
             return
         model = self._windows.get(xid)
         if model:
-            #the window has been reparented already,
-            #but we're getting the configure request event on the root window
-            #forward it to the model
+            # the window has been reparented already,
+            # but we're getting the configure request event on the root window
+            # forward it to the model
             log("do_child_configure_request_event(%s) value_mask=%s, forwarding to %s",
                 event, configure_bits(event.value_mask), model)
             model.do_child_configure_request_event(event)
@@ -501,10 +498,12 @@ class Wm(GObject.GObject):
 
     def get_net_wm_name(self) -> str:
         try:
-            return prop_get(self._ewmh_window.get_xid(), "_NET_WM_NAME", "utf8", ignore_errors=False, raise_xerrors=False)
+            return prop_get(self._ewmh_window.get_xid(), "_NET_WM_NAME", "utf8",
+                            ignore_errors=False, raise_xerrors=False)
         except Exception as e:
             log.error("Error querying _NET_WM_NAME")
             log.estr(e)
             return ""
+
 
 GObject.type_register(Wm)
