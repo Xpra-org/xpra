@@ -30,6 +30,8 @@ INKSCAPE_SODIPODI_DTD = b'xmlns:sodipodi="http://inkscape.sourceforge.net/DTD/so
 large_icons = []
 
 _rsvg = None
+
+
 def load_Rsvg():
     global _rsvg
     if _rsvg is None:

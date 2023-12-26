@@ -14,7 +14,7 @@ from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window import batch_config
 from xpra.server.core import ClientException
 from xpra.codecs.video import getVideoHelper
-from xpra.codecs.constants import video_spec
+from xpra.codecs.constants import VideoSpec
 from xpra.net.compression import use
 from xpra.server.background_worker import add_work_item
 from xpra.util.types import typedict
@@ -413,12 +413,12 @@ class EncodingsMixin(StubSourceMixin):
                         log.warn("Warning: invalid proxy video encoding '%s':", encoding)
                         log.warn(" missing colorspace attributes")
                         continue
-                    spec = video_spec(codec_class=Encoder,
-                                      has_lossless_mode=spec_prop.boolget("has_lossless_mode", False),
-                                      input_colorspace=input_colorspace,
-                                      output_colorspaces=output_colorspaces,
-                                      codec_type="proxy", encoding=encoding,
-                                      )
+                    spec = VideoSpec(codec_class=Encoder,
+                                     has_lossless_mode=spec_prop.boolget("has_lossless_mode", False),
+                                     input_colorspace=input_colorspace,
+                                     output_colorspaces=output_colorspaces,
+                                     codec_type="proxy", encoding=encoding,
+                                     )
                     for k,v in spec_prop.items():
                         if k.startswith("_") or not hasattr(spec, k):
                             log.warn("Warning: invalid proxy codec attribute '%s'", k)

@@ -10,14 +10,14 @@ from typing import Any
 from xpra.gstreamer.common import (
     GST_FLOW_OK, STREAM_TYPE, GST_FORMAT_BYTES,
     make_buffer, has_plugins,
-    get_caps_str,
-    )
+    get_caps_str, get_element_str,
+)
 from xpra.codecs.gstreamer.common import (
     VideoPipeline,
     get_version, get_type, get_info,
     init_module, cleanup_module,
     get_default_decoder_options,
-    )
+)
 from xpra.os_util import WIN32
 from xpra.common import roundup
 from xpra.util.types import typedict
@@ -32,16 +32,16 @@ FORMATS = os.environ.get("XPRA_GSTREAMER_DECODER_FORMATS", "h264,hevc,vp8,vp9,av
 
 
 def get_default_mappings() -> dict[str,tuple[str,...]]:
-    #should always be available:
+    # should always be available:
     m : dict[str,tuple[str,...]] = {
         "vp8"   : ("vp8dec", ),
         "vp9"   : ("vp9dec", ),
-        }
+    }
     if WIN32:
         m["h264"] = ("d3d11h264dec", )
     else:
         m["av1"] = ("av1dec", )
-        #enable nv decoder unless we don't find nvidia hardware:
+        # enable nv decoder unless we don't find nvidia hardware:
         h264 = ["nvh264dec"]
         try:
             from xpra.codecs.nvidia.util import has_nvidia_hardware
@@ -60,15 +60,16 @@ def get_codecs_options() -> dict[str,tuple[str,...]]:
     if not dm:
         return get_default_mappings()
     codec_options = {}
-    for mapping in dm.split(";"):   #ie: mapping="vp8:vp8dec"
+    for mapping in dm.split(";"):   # ie: mapping="vp8:vp8dec"
         try:
             enc, elements_str = mapping.split(":", 1)
         except IndexError:
             log.warn(f"Warning: invalid decoder mapping {mapping}")
         else:
-            #ie: codec_options["h264"] = ["avdec_h264", "nvh264dec"]
+            # ie: codec_options["h264"] = ["avdec_h264", "nvh264dec"]
             codec_options[enc] = tuple(elements_str.split(","))
     return codec_options
+
 
 def find_codecs(options) -> dict[str,str]:
     codecs : dict[str,str] = {}
@@ -87,14 +88,16 @@ CODECS = find_codecs(get_codecs_options())
 def get_encodings() -> tuple[str,...]:
     return tuple(CODECS.keys())
 
+
 def get_min_size(_encoding:str):
     return 48, 16
+
 
 def get_input_colorspaces(encoding:str) -> tuple[str,...]:
     if encoding not in CODECS:
         raise ValueError(f"unsupported encoding {encoding}")
     return ("YUV420P", )
-    #return ("YUV420P", "BGRX", )
+
 
 def get_output_colorspace(encoding:str, input_colorspace:str) -> str:
     encoder = CODECS.get(encoding)
@@ -121,7 +124,7 @@ class Decoder(VideoPipeline):
         stream_attrs : dict[str,Any] = {
             "width"     : self.width,
             "height"    : self.height,
-            }
+        }
         eopts = get_default_decoder_options().get(decoder, {})
         if not eopts:
             eopts = {
@@ -139,15 +142,33 @@ class Decoder(VideoPipeline):
             gst_format = "I420"
             self.output_format = "YUV420P"
         output_caps = get_caps_str("video/x-raw", {
-            "width" : self.width,
-            "height" : self.height,
-            "format" : gst_format,
-            })
+            "width": self.width,
+            "height": self.height,
+            "format": gst_format,
+        })
         elements = [
-            f"appsrc name=src emit-signals=1 block=0 is-live=1 do-timestamp=1 stream-type={STREAM_TYPE} format={GST_FORMAT_BYTES} caps={stream_caps}",
+            get_element_str("appsrc", {
+                "name": "src",
+                "emit-signals": 1,
+                "block": 0,
+                "is-live": 1,
+                "do-timestamp": 1,
+                "stream-type": STREAM_TYPE,
+                "format": GST_FORMAT_BYTES,
+                "caps": stream_caps,
+            }),
             f"{decoder} name=decoder",
-            f"appsink name=sink emit-signals=1 max-buffers=10 drop=false sync=false async=true qos=false caps={output_caps}",
-            ]
+            get_element_str("appsink", {
+                "name": "sink",
+                "emit-signals": 1,
+                "max-buffers": 10,
+                "drop": False,
+                "sync": False,
+                "async": True,
+                "qos": False,
+                "caps": output_caps,
+            })
+        ]
         if not self.setup_pipeline_and_bus(elements):
             raise RuntimeError("failed to setup gstreamer pipeline")
 
@@ -161,7 +182,7 @@ class Decoder(VideoPipeline):
         log("on_new_sample size=%s, output_format=%s", size, self.output_format)
         if size:
             mem = memoryview(buf.extract_dup(0, size))
-            #I420 gstreamer definition:
+            # I420 gstreamer definition:
             Ystride = roundup(self.width, 4)
             Ysize = Ystride*roundup(self.height, 2)
             Y = mem[:Ysize]
@@ -188,21 +209,21 @@ class Decoder(VideoPipeline):
             self.frame_queue.put(image)
         return GST_FLOW_OK
 
-
-    def decompress_image(self, data:bytes, options=None):
+    def decompress_image(self, data: bytes, options=None):
         log(f"decompress_image(.., {options}) state={self.state} data size={len(data)}")
         if self.state in ("stopped", "error"):
             log(f"pipeline is in {self.state} state, dropping buffer")
             return None
         buf = make_buffer(data)
-        #duration = normv(0)
-        #if duration>0:
+        # duration = normv(0)
+        # if duration>0:
         #    buf.duration = duration
-        #buf.size = size
-        #buf.timestamp = timestamp
-        #buf.offset = offset
-        #buf.offset_end = offset_end
+        # buf.size = size
+        # buf.timestamp = timestamp
+        # buf.offset = offset
+        # buf.offset_end = offset_end
         return self.process_buffer(buf)
+
 
 GObject.type_register(Decoder)
 

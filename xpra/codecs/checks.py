@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pylint: disable=line-too-long
+# pylint: disable=line-too-long
 
 import binascii
 from collections.abc import Callable
@@ -14,9 +14,10 @@ from xpra.util.str_fn import csv
 from xpra.log import Logger
 log = Logger("encoding")
 
-#Warning: many systems will fail above 8k because of memory constraints
+# Warning: many systems will fail above 8k because of memory constraints
 # encoders can allocate many times more memory to hold the frames..
 TEST_LIMIT_W, TEST_LIMIT_H = 8192, 8192
+
 
 def unhex(s:str) -> bytes:
     return binascii.unhexlify(s.replace(" ", "").replace("\n", "").replace("\r", ""))
@@ -24,8 +25,8 @@ def unhex(s:str) -> bytes:
 
 DEFAULT_TEST_SIZE = 128, 128
 
-#this test data was generated using a 24x16 blank image as input
-TEST_COMPRESSED_DATA : dict[str,dict[str,dict[tuple[int,int],tuple[bytes,...]]]] = {
+# this test data was generated using a 24x16 blank image as input
+TEST_COMPRESSED_DATA : dict[str, dict[str, dict[tuple[int, int],tuple[bytes, ...]]]] = {
     "h264": {
         "YUV420P" : {
             (24, 16) : (
@@ -34,15 +35,15 @@ TEST_COMPRESSED_DATA : dict[str,dict[str,dict[tuple[int,int],tuple[bytes,...]]]]
                 unhex("000000010930000001419a401aa7"),
                 unhex("000000010930000001419a601aa7"),
                 unhex("000000010930000001419a801aa7"),
-                ),
+            ),
             (128, 128) : (
                 unhex("000000010910000000016742c015da0811b016a0c0c0d4a0000003002000000791e2c5d40000000168ce3c800000010605ffffb0dc45e9bde6d948b7962cd820d923eeef78323634202d20636f7265203136342072333039352062616565343030202d20482e3236342f4d5045472d342041564320636f646563202d20436f70796c65667420323030332d32303232202d20687474703a2f2f7777772e766964656f6c616e2e6f72672f783236342e68746d6c202d206f7074696f6e733a2063616261633d30207265663d31206465626c6f636b3d303a303a3020616e616c7973653d303a30206d653d646961207375626d653d30207073793d31207073795f72643d312e30303a302e3030206d697865645f7265663d30206d655f72616e67653d3136206368726f6d615f6d653d31207472656c6c69733d30203878386463743d302063716d3d3020646561647a6f6e653d32312c313120666173745f70736b69703d31206368726f6d615f71705f6f66667365743d3020746872656164733d32206c6f6f6b61686561645f746872656164733d3220736c696365645f746872656164733d3120736c696365733d32206e723d3020646563696d6174653d3120696e7465726c616365643d3020626c757261795f636f6d7061743d3020636f6e73747261696e65645f696e7472613d3020626672616d65733d3020776569676874703d30206b6579696e743d333030206b6579696e745f6d696e3d3330207363656e656375743d3020696e7472615f726566726573683d302072635f6c6f6f6b61686561643d302072633d636272206d62747265653d3020626974726174653d323034382072617465746f6c3d312e302071636f6d703d302e36302071706d696e3d302071706d61783d3639207170737465703d34207662765f6d6178726174653d32303438207662765f62756673697a653d31323238206e616c5f6872643d6e6f6e652066696c6c65723d302069705f726174696f3d312e34302061713d30008000000165888406a8930a0003e4d24f2727272727275d75d75d75d75d75d75d75d75d75d75d75d7800000016504222101aa24c28000f93493c9c9c9c9c9c9d75d75d75d75d75d75d75d75d75d75d75d75e0"),
                 unhex("000000010930000001419a201aa0430000014104268806a810c0"),
                 unhex("000000010930000001419a401aa0430000014104269006a810c0"),
                 unhex("000000010930000001419a601aa0430000014104269806a810c0"),
                 unhex("000000010930000001419a801aa043000001410426a006a810c0"),
-                ),
-            #gst-launch-1.0 videotestsrc pattern=white !
+            ),
+            # gst-launch-1.0 videotestsrc pattern=white !
             #    ! video/x-raw,width=320,height=240,format="I420"
             #    ! x264enc bframes=0 byte-stream=yes cabac=false mb-tree=false me=0 ref=1 speed-preset=ultrafast tune=zerolatency
             #    ! multifilesink location="frame%d.h264"
@@ -52,33 +53,33 @@ TEST_COMPRESSED_DATA : dict[str,dict[str,dict[tuple[int,int],tuple[bytes,...]]]]
                 unhex("00000001419a460845fffa580103000001410329a460845ffa58010300000141019269182117fffa580103"),
                 unhex("00000001419a66084dfffc84008380000001410329a66084dffc8400838000000141019269982137fffc84008380"),
                 unhex("00000001419a86084dfffc84008381000001410329a86084dffc840083810000014101926a182137fffc84008381"),
-                ),
-            },
+            ),
+        },
         "YUV422P" : {
             (24, 16) : (
                 unhex("00000001677a000abcb317cbc2000003000200000300651e244cd00000000168e970312c8b0000010605ffff56dc45e9bde6d948b7962cd820d923eeef78323634202d20636f726520313432202d20482e3236342f4d5045472d342041564320636f646563202d20436f70796c65667420323030332d32303134202d20687474703a2f2f7777772e766964656f6c616e2e6f72672f783236342e68746d6c202d206f7074696f6e733a2063616261633d31207265663d35206465626c6f636b3d313a303a3020616e616c7973653d3078333a3078313133206d653d756d68207375626d653d38207073793d31207073795f72643d312e30303a302e3030206d697865645f7265663d31206d655f72616e67653d3136206368726f6d615f6d653d31207472656c6c69733d31203878386463743d312063716d3d3020646561647a6f6e653d32312c313120666173745f70736b69703d31206368726f6d615f71705f6f66667365743d2d3220746872656164733d31206c6f6f6b61686561645f746872656164733d3120736c696365645f746872656164733d30206e723d3020646563696d6174653d3120696e7465726c616365643d3020626c757261795f636f6d7061743d3020636f6e73747261696e65645f696e7472613d3020626672616d65733d3020776569676874703d32206b6579696e743d393939393939206b6579696e745f6d696e3d353030303030207363656e656375743d343020696e7472615f726566726573683d302072633d637266206d62747265653d30206372663d33382e322071636f6d703d302e36302071706d696e3d302071706d61783d3639207170737465703d342069705f726174696f3d312e34302061713d313a312e3030008000000165888404bffe841fc0a667f891ec3d121e72aecb5f"),
-                ),
+            ),
             (128, 128) : (
                 unhex("00000001677a000bbcb6102342000003000200000300651e2855c00000000168eac7cb0000010605ffff63dc45e9bde6d948b7962cd820d923eeef78323634202d20636f726520313634202d20482e3236342f4d5045472d342041564320636f646563202d20436f70796c65667420323030332d32303232202d20687474703a2f2f7777772e766964656f6c616e2e6f72672f783236342e68746d6c202d206f7074696f6e733a2063616261633d31207265663d32206465626c6f636b3d313a303a3020616e616c7973653d3078333a3078313133206d653d686578207375626d653d34207073793d31207073795f72643d312e30303a302e3030206d697865645f7265663d30206d655f72616e67653d3136206368726f6d615f6d653d31207472656c6c69733d31203878386463743d312063716d3d3020646561647a6f6e653d32312c313120666173745f70736b69703d31206368726f6d615f71705f6f66667365743d3020746872656164733d32206c6f6f6b61686561645f746872656164733d3220736c696365645f746872656164733d3120736c696365733d32206e723d3020646563696d6174653d3120696e7465726c616365643d3020626c757261795f636f6d7061743d3020636f6e73747261696e65645f696e7472613d3020626672616d65733d3020776569676874703d31206b6579696e743d696e66696e697465206b6579696e745f6d696e3d353336383730393133207363656e656375743d343020696e7472615f726566726573683d302072633d637266206d62747265653d30206372663d32352e352071636f6d703d302e36302071706d696e3d302071706d61783d3639207170737465703d342069705f726174696f3d312e34302061713d313a312e30300080000001658884046fdcfe0bb9ecd9a9eb03bd86a12e98c759aadef0e758b724399e770a4e6982d7f24eed50c22ea4cb1ecaee80075d00000165042221011bffdcfe0bb9ecd9a9eb03bd86a12e98c759aadef0e758b724399e770a4e6982d7f24eed50c22ea4cb1ecaee80075d"),
                 unhex("00000001419a3b1052fffeb52a82160000014104268ec414bffeb52a8216"),
                 unhex("00000001419a4608297ffeb52a821700000141042691820a5ffeb52a8217"),
                 unhex("00000001419a66082b7ffeb52a821600000141042699820adffeb52a8216"),
                 unhex("00000001419a86082b7ffeb52a8217000001410426a1820adffeb52a8217"),
-                ),
-            },
+            ),
+        },
         "YUV444P" : {
             (24, 16) : (
                 unhex("00000001677a000abcb317cbc2000003000200000300651e244cd00000000168e970312c8b0000010605ffff56dc45e9bde6d948b7962cd820d923eeef78323634202d20636f726520313432202d20482e3236342f4d5045472d342041564320636f646563202d20436f70796c65667420323030332d32303134202d20687474703a2f2f7777772e766964656f6c616e2e6f72672f783236342e68746d6c202d206f7074696f6e733a2063616261633d31207265663d35206465626c6f636b3d313a303a3020616e616c7973653d3078333a3078313133206d653d756d68207375626d653d38207073793d31207073795f72643d312e30303a302e3030206d697865645f7265663d31206d655f72616e67653d3136206368726f6d615f6d653d31207472656c6c69733d31203878386463743d312063716d3d3020646561647a6f6e653d32312c313120666173745f70736b69703d31206368726f6d615f71705f6f66667365743d2d3220746872656164733d31206c6f6f6b61686561645f746872656164733d3120736c696365645f746872656164733d30206e723d3020646563696d6174653d3120696e7465726c616365643d3020626c757261795f636f6d7061743d3020636f6e73747261696e65645f696e7472613d3020626672616d65733d3020776569676874703d32206b6579696e743d393939393939206b6579696e745f6d696e3d353030303030207363656e656375743d343020696e7472615f726566726573683d302072633d637266206d62747265653d30206372663d33382e322071636f6d703d302e36302071706d696e3d302071706d61783d3639207170737465703d342069705f726174696f3d312e34302061713d313a312e3030008000000165888404bffe841fc0a667f891ec3d121e72aecb5f"),
-                ),
+            ),
             (128, 128) : (
                 unhex("0000000167f4000b9196c2046840000003004000000ca3c50ab80000000168eac71921900000010605ffff63dc45e9bde6d948b7962cd820d923eeef78323634202d20636f726520313634202d20482e3236342f4d5045472d342041564320636f646563202d20436f70796c65667420323030332d32303232202d20687474703a2f2f7777772e766964656f6c616e2e6f72672f783236342e68746d6c202d206f7074696f6e733a2063616261633d31207265663d32206465626c6f636b3d313a303a3020616e616c7973653d3078333a3078313133206d653d686578207375626d653d34207073793d31207073795f72643d312e30303a302e3030206d697865645f7265663d30206d655f72616e67653d3136206368726f6d615f6d653d31207472656c6c69733d31203878386463743d312063716d3d3020646561647a6f6e653d32312c313120666173745f70736b69703d31206368726f6d615f71705f6f66667365743d3620746872656164733d32206c6f6f6b61686561645f746872656164733d3220736c696365645f746872656164733d3120736c696365733d32206e723d3020646563696d6174653d3120696e7465726c616365643d3020626c757261795f636f6d7061743d3020636f6e73747261696e65645f696e7472613d3020626672616d65733d3020776569676874703d31206b6579696e743d696e66696e697465206b6579696e745f6d696e3d353336383730393133207363656e656375743d343020696e7472615f726566726573683d302072633d637266206d62747265653d30206372663d32352e352071636f6d703d302e36302071706d696e3d302071706d61783d3639207170737465703d342069705f726174696f3d312e34302061713d313a312e30300080000001658884046fdcfe0b77671337ee87d69a9ad78f78266669bfefb6dfffa887fa2dfe57fdb2f2ef19f3afec13fd4a3ac85fe755041d54fe89f0ac38dc590f600000f98100000165042221011bffdcfe0b77671337ee87d69a9ad78f78266669bfefb6dfffa887fa2dfe57fdb2f2ef19f3afec13fd4a3ac85fe755041d54fe89f0ac38dc590f600000f981"),
                 unhex("00000001419a3b1052fffeb52a82160000014104268ec414bffeb52a8216"),
                 unhex("00000001419a4608297ffeb52a821700000141042691820a5ffeb52a8217"),
                 unhex("00000001419a66082b7ffeb52a821600000141042699820adffeb52a8216"),
                 unhex("00000001419a86082b7ffeb52a8217000001410426a1820adffeb52a8217"),
-                ),
-            #generated using:
-            #gst-launch-1.0 videotestsrc pattern=white
+            ),
+            # generated using:
+            # gst-launch-1.0 videotestsrc pattern=white
             # ! video/x-raw,width=320,height=240
             # ! x264enc
             # ! multifilesink location="frame%d.h264"
@@ -88,48 +89,48 @@ TEST_COMPRESSED_DATA : dict[str,dict[str,dict[tuple[int,int],tuple[bytes,...]]]]
                 unhex("00000001419a460845ff67d71a1a7009dd48522f4d23548358fcfcf7cb94dea7b9a9b2b9bedac66d77716374c5460b556f10a39a375f9ddac016ac8f4b73ef1b5c5694d4e42a108982b9d01d8c662b0b4e7bfa36d53951a27932964fc1000001410329a460845ffa5807572a8354835e18d7ee90315eab4de2066ae6fdf91cdaf8ef637547026ff88f87afe92533495d4c01d5a9c8028600377673d114526efd568d920d4900000141019269182117fffa5807572a8354835e18d7ee90315eab4de2066ae6fdf91cdaf8ef637547026ff88f87afe92533495d4c01d5a9c8028600377673d114526efd56821f07dc28a21c501b801d85df46363e3e71"),
                 unhex("00000001419a660845fffa580103000001410329a660845ffa58010300000141019269982117fffa580103"),
                 unhex("00000001419a860845fffa580103000001410329a860845ffa5801030000014101926a182117fffa580103"),
-                )
-            },
+            )
         },
+    },
     "vp8" : {
         "YUV420P" : {
             (24, 16) : (
                 unhex("1003009d012a1800100000070885858899848800281013ad501fc01fd01050122780feffbb029ffffa2546bd18c06f7ffe8951fffe8951af46301bdfffa22a00"),
-                ),
+            ),
             (320, 240) : (
                 unhex("3012009d012a4001f000004708858588998488020200061604f70681649f6bdb9b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387b27387af400feffa3de00"),
                 unhex("d102000b116000180018582ff400088004335fad724f9c730000"),
                 unhex("d102000b112800180018582ff400088004335fad724f9c730000"),
                 unhex("d102000b10f800180018582ff400088004335fad724f9c730000"),
                 unhex("d102000b10cc00180018582ff400088004335fad724f9c730000"),
-                )
-            },
+            )
         },
+    },
     "vp9" : {
         "YUV420P" : {
             (24, 16) : (
                 unhex("8249834200017000f60038241c18000000200000047ffffffba9da00059fffffff753b413bffffffeea7680000"),
-                ),
+            ),
             (128, 128) : (
                 unhex("824983420007f007f60c38241c18900000f047d8fd620cdbe9cd6f5721d7b400006b31c5aa6ce921164007ec134d6336dae2f48372f5c44a826c5b54a60ff0451c1b136691c51b2830f807c83155903eeb2d0926d4f000"),
                 unhex("860040929c444f8000037000005a0480"),
                 unhex("860040929c444f8000037000005a0480"),
                 unhex("860040929c344c8000037000005a0480"),
                 unhex("860040929c2c49e000037000005a0480"),
-                ),
-            },
+            ),
+        },
         "YUV444P" : {
             (24, 16) : (
                 unhex("a249834200002e001ec007048383000000040000223fffffeea76800c7ffffffeea7680677ffffff753b40081000"),
-                ),
+            ),
             (128, 128) : (
                 unhex("a24983420000fe00fec1870483831200001e47d8fd620cdbe9cd6f5721d7b400006b31c5aa6ce921164007ec134d6336dae2f48372f5c44a826c5b54a60ff0451c1b136691c51b2830f807c80efd58636455d6695137c000"),
                 unhex("a60040929c444f8000037000005a0480"),
                 unhex("a60040929c444f8000037000005a0480"),
                 unhex("a60040929c344c8000037000005a0480"),
                 unhex("a60040929c2c49e000037000005a0480"),
-                )
-            },
+            )
+        },
         "YUV444P10" : {
             (128, 128) : (
                 unhex("b124c1a100003f803fb061c120e0c48000140047d8fdf83ef11f47913f8fd8f0e0be8318fdf7f897fdbf918f84ff549eafe6"
@@ -176,16 +177,16 @@ TEST_COMPRESSED_DATA : dict[str,dict[str,dict[tuple[int,int],tuple[bytes,...]]]]
                 unhex("b30020494e2227c00001807000002b7fffffff6fbf4c7fffffff6fbf4c7fffffff6fbf4c7fffffff6fbf4c7fffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98fffffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffffffedf7ea7fffffffdbefd4ffffffffb7dfa9ffffffff6fbf53fffffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffffffdbefd4ffffffffb7dfa9ffffffff6fbf53fffffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7e9f57fffffb7dfa63fffffffb7dfa63fffffffb7dfa63fffffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63ffffffff6fbf53fffffffedf7ea7fffffffdbefd4ffffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffffff6fbf53fffffffedf7ea7fffffffdbefd4ffffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa7d5fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7e9f57fffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa600"),
                 unhex("b30020494e2227c00001807000002b7fffffff6fbf4c7fffffff6fbf4c7fffffff6fbf4c7fffffff6fbf4c7fffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98fffffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffffffedf7ea7fffffffdbefd4ffffffffb7dfa9ffffffff6fbf53fffffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffffffdbefd4ffffffffb7dfa9ffffffff6fbf53fffffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7e9f57fffffb7dfa63fffffffb7dfa63fffffffb7dfa63fffffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63ffffffff6fbf53fffffffedf7ea7fffffffdbefd4ffffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffffff6fbf53fffffffedf7ea7fffffffdbefd4ffffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa7d5fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7e9f57fffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa600"),
                 unhex("b30020494e2227c00001807000002b7fffffff6fbf4c7fffffff6fbf4c7fffffff6fbf4c7fffffff6fbf4c7fffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98fffffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffffffedf7ea7fffffffdbefd4ffffffffb7dfa9ffffffff6fbf53fffffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffffffdbefd4ffffffffb7dfa9ffffffff6fbf53fffffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7e9f57fffffb7dfa63fffffffb7dfa63fffffffb7dfa63fffffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63ffffffff6fbf53fffffffedf7ea7fffffffdbefd4ffffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffffff6fbf53fffffffedf7ea7fffffffdbefd4ffffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa7d5fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7e9f57fffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63fffffdbefd31fffffedf7e98ffffff6fbf4c7fffffb7dfa63ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa9ffffff6fbf53fffffedf7ea7fffffdbefd4ffffffb7dfa600"),
-                )
-            },
+            )
         },
+    },
     "av1" : {
         "YUV420P" : {
             (64, 64) : (
                 unhex("12000a0b00000002affff036be40103219110100010000004b17c531ecb5321932af9b2fab54ee58012c"),
-                ),
-            },
+            ),
         },
+    },
 }
 
 TEST_PICTURES : dict[str,dict[tuple[int,int], tuple[bytes, ...]]] = {
@@ -193,39 +194,39 @@ TEST_PICTURES : dict[str,dict[tuple[int,int], tuple[bytes, ...]]] = {
         (32, 32) : (
             unhex("89504e470d0a1a0a0000000d4948445200000020000000200806000000737a7af40000002849444154785eedd08100000000c3a0f9531fe4855061c0800103060c183060c0800103060cbc0f0c102000013337932a0000000049454e44ae426082"),
             unhex("89504e470d0a1a0a0000000d4948445200000020000000200802000000fc18eda30000002549444154785eedd03101000000c2a0f54fed610d884061c0800103060c183060c080810f0c0c20000174754ae90000000049454e44ae426082"),
-            ),
-        },
+        ),
+    },
     "png/L" : {
         (32, 32) : (
             unhex("89504e470d0a1a0a0000000d4948445200000020000000200800000000561125280000000274524e5300ff5b9122b50000002049444154785e63fccf801f3011906718550009a1d170180d07e4bc323cd20300a33d013f95f841e70000000049454e44ae426082"),
             unhex("89504e470d0a1a0a0000000d4948445200000020000000200800000000561125280000001549444154785e63601805a321301a02a321803d0400042000017854be5c0000000049454e44ae426082"),
-            ),
-        },
+        ),
+    },
     "png/P" : {
         (32, 32) : (
             unhex("89504e470d0a1a0a0000000d494844520000002000000020080300000044a48ac600000300504c5445000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b330f4880000010074524e53ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0053f707250000001c49444154785e63f84f00308c2a0087c068384012c268388ca87000003f68fc2e077ed1070000000049454e44ae426082"),
             unhex("89504e470d0a1a0a0000000d494844520000002000000020080300000044a48ac600000300504c5445000000000000000000000000000000000000000000000000000000000000000000330000660000990000cc0000ff0000003300333300663300993300cc3300ff3300006600336600666600996600cc6600ff6600009900339900669900999900cc9900ff990000cc0033cc0066cc0099cc00cccc00ffcc0000ff0033ff0066ff0099ff00ccff00ffff00000033330033660033990033cc0033ff0033003333333333663333993333cc3333ff3333006633336633666633996633cc6633ff6633009933339933669933999933cc9933ff993300cc3333cc3366cc3399cc33cccc33ffcc3300ff3333ff3366ff3399ff33ccff33ffff33000066330066660066990066cc0066ff0066003366333366663366993366cc3366ff3366006666336666666666996666cc6666ff6666009966339966669966999966cc9966ff996600cc6633cc6666cc6699cc66cccc66ffcc6600ff6633ff6666ff6699ff66ccff66ffff66000099330099660099990099cc0099ff0099003399333399663399993399cc3399ff3399006699336699666699996699cc6699ff6699009999339999669999999999cc9999ff999900cc9933cc9966cc9999cc99cccc99ffcc9900ff9933ff9966ff9999ff99ccff99ffff990000cc3300cc6600cc9900cccc00ccff00cc0033cc3333cc6633cc9933cccc33ccff33cc0066cc3366cc6666cc9966cccc66ccff66cc0099cc3399cc6699cc9999cccc99ccff99cc00cccc33cccc66cccc99ccccccccccffcccc00ffcc33ffcc66ffcc99ffccccffccffffcc0000ff3300ff6600ff9900ffcc00ffff00ff0033ff3333ff6633ff9933ffcc33ffff33ff0066ff3366ff6666ff9966ffcc66ffff66ff0099ff3399ff6699ff9999ffcc99ffff99ff00ccff33ccff66ccff99ccffccccffffccff00ffff33ffff66ffff99ffffccffffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000023faca40000001549444154785e63601805a321301a02a321803d0400042000017854be5c0000000049454e44ae426082"),
-            ),
-        },
+        ),
+    },
     "jpeg" : {
         (32, 32) : (
             unhex("ffd8ffe000104a46494600010100000100010000ffdb004300100b0c0e0c0a100e0d0e1211101318281a181616183123251d283a333d3c3933383740485c4e404457453738506d51575f626768673e4d71797064785c656763ffdb0043011112121815182f1a1a2f634238426363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363ffc00011080020002003012200021101031101ffc4001500010100000000000000000000000000000007ffc40014100100000000000000000000000000000000ffc40014010100000000000000000000000000000000ffc40014110100000000000000000000000000000000ffda000c03010002110311003f009f800000000000ffd9"),
             unhex("ffd8ffe000104a46494600010100000100010000ffdb004300100b0c0e0c0a100e0d0e1211101318281a181616183123251d283a333d3c3933383740485c4e404457453738506d51575f626768673e4d71797064785c656763ffdb0043011112121815182f1a1a2f634238426363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363ffc00011080020002003012200021101031101ffc4001500010100000000000000000000000000000007ffc40014100100000000000000000000000000000000ffc40014010100000000000000000000000000000000ffc40014110100000000000000000000000000000000ffda000c03010002110311003f009f800000000000ffd9"),
-            ),
+        ),
         (128, 128) : (
             unhex("ffd8ffe000104a46494600010100000100010000ffdb004300100b0c0e0c0a100e0d0e1211101318281a181616183123251d283a333d3c3933383740485c4e404457453738506d51575f626768673e4d71797064785c656763ffdb0043011112121815182f1a1a2f634238426363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363ffc00011080080008003012200021101031101ffc4001f0000010501010101010100000000000000000102030405060708090a0bffc400b5100002010303020403050504040000017d01020300041105122131410613516107227114328191a1082342b1c11552d1f02433627282090a161718191a25262728292a3435363738393a434445464748494a535455565758595a636465666768696a737475767778797a838485868788898a92939495969798999aa2a3a4a5a6a7a8a9aab2b3b4b5b6b7b8b9bac2c3c4c5c6c7c8c9cad2d3d4d5d6d7d8d9dae1e2e3e4e5e6e7e8e9eaf1f2f3f4f5f6f7f8f9faffc4001f0100030101010101010101010000000000000102030405060708090a0bffc400b51100020102040403040705040400010277000102031104052131061241510761711322328108144291a1b1c109233352f0156272d10a162434e125f11718191a262728292a35363738393a434445464748494a535455565758595a636465666768696a737475767778797a82838485868788898a92939495969798999aa2a3a4a5a6a7a8a9aab2b3b4b5b6b7b8b9bac2c3c4c5c6c7c8c9cad2d3d4d5d6d7d8d9dae2e3e4e5e6e7e8e9eaf2f3f4f5f6f7f8f9faffda000c03010002110311003f00f40a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2800a28a2803fffd9"),
-            )
-        },
+        )
+    },
     "webp" : {
         (32, 32) : (
             unhex("524946465c00000057454250565038580a000000100000001f00001f0000414c50480f00000001071011110012c2ffef7a44ff530f005650382026000000d002009d012a200020003ed162aa4fa825a3a2280801001a096900003da3a000fef39d800000"),
             unhex("524946465c00000057454250565038580a000000100000001f00001f0000414c50480f00000001071011110012c2ffef7a44ff530f005650382026000000d002009d012a200020003ed162aa4fa825a3a2280801001a096900003da3a000fef39d800000"),
-            ),
+        ),
         (128, 128) : (
             unhex("524946468600000057454250565038580a000000100000007f00007f0000414c50480a0000000107509088084444ff035650382056000000d007009d012a800080002e9968b45a22a828280800984b4b76ff817a05e00fd0091f506c40478a31f01eb66666666666666666666666666666666666666666666666666666650000fef7973fff61f9eb5ebd44000000"),
-            ),
-        },
-    }
+        ),
+    },
+}
 
 
 def makebuf(size, b=0x20) -> bytearray:
@@ -233,16 +234,17 @@ def makebuf(size, b=0x20) -> bytearray:
     return bytearray(d)
 
 
-def make_test_image(pixel_format:str, w:int, h:int, plane_values=(0x20, 0x80, 0x80, 0x0)):
+def make_test_image(pixel_format: str, w: int, h: int, plane_values=(0x20, 0x80, 0x80, 0x0)):
     # pylint: disable=import-outside-toplevel
     from xpra.codecs.image import ImageWrapper
     from xpra.codecs.constants import get_subsampling_divs
     if isinstance(plane_values, str):
-        #assume this is a path
+        # assume this is a path
         from PIL import Image
         img = Image.open(plane_values)
     else:
         img = None
+
     def makeimage(pixels, **kwargs):
         kwargs["thread_safe"] = True
         kwargs["pixel_format"] = kwargs.get("pixel_format", pixel_format)
@@ -252,7 +254,7 @@ def make_test_image(pixel_format:str, w:int, h:int, plane_values=(0x20, 0x80, 0x
     if pixel_format.startswith("YUV") or pixel_format.startswith("GBRP") or pixel_format=="NV12":
         divs = get_subsampling_divs(pixel_format)
         try:
-            depth = int(pixel_format.split("P")[1])   #ie: YUV444P10 -> 10
+            depth = int(pixel_format.split("P")[1])         # ie: YUV444P10 -> 10
         except (IndexError, ValueError):
             depth = 8
         Bpp = roundup(depth, 8)//8
@@ -261,13 +263,13 @@ def make_test_image(pixel_format:str, w:int, h:int, plane_values=(0x20, 0x80, 0x
         sizes = tuple(strides[i]*h//divs[i][1]*Bpp for i in range(nplanes))
         if img:
             raise RuntimeError("YUV from file not implemented yet!")
-            #yuv = img.convert("YCbCr")
-            #yuv444 = yuv.tobytes("raw", "YCbCr")
-            #planes = ()
+            # yuv = img.convert("YCbCr")
+            # yuv444 = yuv.tobytes("raw", "YCbCr")
+            # planes = ()
         else:
             planes = tuple(makebuf(sizes[i]) for i in range(nplanes))
         return makeimage(planes, rowstride=strides, planes=nplanes)
-        #l = len(y)+len(u)+len(v)
+        # l = len(y)+len(u)+len(v)
     if pixel_format in ("RGB", "BGR", "RGBX", "BGRX", "XRGB", "BGRA", "RGBA", "r210", "BGR48"):
         Bpp = len(pixel_format)
         if pixel_format=="BGR48":
@@ -278,7 +280,7 @@ def make_test_image(pixel_format:str, w:int, h:int, plane_values=(0x20, 0x80, 0x
             rgb_data = rgb.tobytes("raw", "RGB")
             log.warn(f"using {rgb} from {plane_values}")
             image = makeimage(rgb_data, pixel_format="RGB", rowstride=w*3)
-            #must convert to pixel_format!
+            # must convert to pixel_format!
             if pixel_format!="RGB":
                 from xpra.codecs.rgb_transform import rgb_reformat
                 if not rgb_reformat(image, (pixel_format,), False):
@@ -312,17 +314,18 @@ def testdecoder(decoder_module, full:bool):
         log.error(f"{dtype}: all the codecs have failed! {csv(decoder_module.get_encodings())}")
     return tuple(codecs)
 
-def testdecoding(decoder_module, encoding:str, full:bool):
-    test_data_set : dict[str,dict[tuple[int,int],tuple[bytes,...]]] | None = TEST_COMPRESSED_DATA.get(encoding)
+
+def testdecoding(decoder_module, encoding: str, full: bool):
+    test_data_set : dict[str, dict[tuple[int, int],tuple[bytes, ...]]] | None = TEST_COMPRESSED_DATA.get(encoding)
     for cs in decoder_module.get_input_colorspaces(encoding):
         min_w, min_h = decoder_module.get_min_size(encoding)
-        test_data : dict[tuple[int,int],tuple[bytes,...]] = {}
+        test_data : dict[tuple[int, int],tuple[bytes, ...]] = {}
         if test_data_set:
             test_data = test_data_set.get(cs, {})
         elif encoding in TEST_PICTURES:
-            #maybe this is a picture format:
+            # maybe this is a picture format:
             test_data = TEST_PICTURES[encoding]
-        #add a context init test, without any data to decode:
+        # add a context init test, without any data to decode:
         test_data.setdefault((256, 128), ())
         for size, frames in test_data.items():
             w, h = size
@@ -354,7 +357,7 @@ def testdecoding(decoder_module, encoding:str, full:bool):
                             raise
                 if full:
                     log(f"{decoder_module.get_type()}: testing {encoding} / {cs} with junk data")
-                    #test failures:
+                    # test failures:
                     try:
                         image = decoder.decompress_image(b"junk")
                     except ValueError:
@@ -381,10 +384,12 @@ def testencoder(encoder_module, full:bool):
         log.error(f"{etype}: all the codecs have failed! ({csv(encoder_module.get_encodings())})")
     return tuple(codecs)
 
+
 def testencoding(encoder_module, encoding:str, full:bool):
-    #test a bit bigger so we exercise more code:
+    # test a bit bigger so we exercise more code:
     W, H = DEFAULT_TEST_SIZE
     do_testencoding(encoder_module, encoding, W, H, full)
+
 
 def get_encoder_max_sizes(encoder_module):
     w, h = TEST_LIMIT_W, TEST_LIMIT_H
@@ -394,12 +399,15 @@ def get_encoder_max_sizes(encoder_module):
         h = min(h, eh)
     return w, h
 
+
 def get_encoder_max_size(encoder_module, encoding:str, limit_w:int=TEST_LIMIT_W, limit_h:int=TEST_LIMIT_H):
-    #probe to find the max dimensions:
-    #(it may go higher but we don't care as windows can't)
+    # probe to find the max dimensions:
+    # (it may go higher but we don't care as windows can't)
     etype = encoder_module.get_type()
+
     def einfo():
         return f"{etype} {encoding} {encoder_module.get_version()}"
+
     def elog(s, *args):
         log(f"{einfo()} "+s, *args)
     log("get_encoder_max_size%s", (encoder_module, encoding, limit_w, limit_h))
@@ -427,10 +435,10 @@ def get_encoder_max_size(encoder_module, encoding:str, limit_w:int=TEST_LIMIT_W,
             del e
             break
     elog(f"max height={maxh}")
-    #now try combining width and height
-    #as there might be a lower limit based on the total number of pixels:
+    # now try combining width and height
+    # as there might be a lower limit based on the total number of pixels:
     MAX_WIDTH, MAX_HEIGHT = maxw, maxh
-    #start at half:
+    # start at half:
     v = max(512, min(maxw, maxh)//2)
     while v<max(limit_w, limit_h):
         for tw, th in ((v, v), (v*2, v)):
@@ -458,17 +466,18 @@ def do_testencoding(encoder_module, encoding, W:int, H:int, full:bool=False, lim
             for spec in encoder_module.get_specs(encoding, cs_in):
                 test_encoder_spec(spec.codec_class, encoding, cs_in, cs_out, W, H, full, limit_w, limit_h)
 
+
 def test_encoder_spec(encoder_class:Callable, encoding:str, cs_in:str, cs_out:str, W:int, H:int, full:bool=False, limit_w:int=TEST_LIMIT_W, limit_h:int=TEST_LIMIT_H):
     e = None
     try:
         e = encoder_class()
         etype = e.get_type()
         options = typedict({
-            #"b-frames" : True,
+            # "b-frames" : True,
             "dst-formats" : [cs_out],
             "quality" : 50,
             "speed" : 50,
-            })
+        })
         e.init_context(encoding, W, H, cs_in, options)
         N = 5
         data = meta = None
@@ -482,7 +491,7 @@ def test_encoder_spec(encoder_class:Callable, encoding:str, cs_in:str, cs_out:st
                 delayed = meta.get("delayed", 0)
                 assert delayed>0, "data is empty and there are no delayed frames!"
                 if i>0:
-                    #now we should get one:
+                    # now we should get one:
                     data, meta = e.flush(delayed)
         del image
         if data is None:
@@ -492,12 +501,9 @@ def test_encoder_spec(encoder_class:Callable, encoding:str, cs_in:str, cs_out:st
         if meta is None:
             raise RuntimeError(f"missing metadata for {etype} using {encoding} encoding with {cs_in} / {cs_out}")
         log(f"{etype}: {encoding} / {cs_in} / {cs_out} passed")
-        #print("test_encoder: %s.compress_image(%s)=%s" % (encoder_module.get_type(), image, (data, meta)))
-        #print("compressed data with %s: %s bytes (%s), metadata: %s" % (encoder_module.get_type(), len(data), type(data), meta))
-        #print("compressed data(%s, %s)=%s" % (encoding, cs_in, binascii.hexlify(data)))
         if full:
             wrong_formats = [x for x in ("YUV420P", "YUV444P", "BGRX", "r210") if x!=cs_in]
-            #log("wrong formats (not %s): %s", cs_in, wrong_formats)
+            # log("wrong formats (not %s): %s", cs_in, wrong_formats)
             if wrong_formats:
                 wrong_format = wrong_formats[0]
                 try:
@@ -531,12 +537,13 @@ def testcsc(csc_module, full=False, test_cs_in=None, test_cs_out=None):
         do_testcsc(csc_module, W, H, W*2, H*2, full, test_cs_in, test_cs_out)
         do_testcsc(csc_module, W, H, W//2, H//2, full, test_cs_in, test_cs_out)
 
+
 def get_csc_max_size(converter, test_cs_in=None, test_cs_out=None, limit_w:int=TEST_LIMIT_W, limit_h:int=TEST_LIMIT_H):
-    #probe to find the max dimensions:
-    #(it may go higher but we don't care as windows can't)
+    # probe to find the max dimensions:
+    # (it may go higher but we don't care as windows can't)
     MAX_WIDTH, MAX_HEIGHT = 512, 512
     cs = converter
-    #as there might be a lower limit based on the total number of pixels:
+    # as there might be a lower limit based on the total number of pixels:
     v = 512
     while v<=min(limit_w, limit_h):
         for tw, th in ((v, v), (v*2, v)):
@@ -554,8 +561,9 @@ def get_csc_max_size(converter, test_cs_in=None, test_cs_out=None, limit_w:int=T
     return MAX_WIDTH, MAX_HEIGHT
 
 
-def do_testcsc(csc_module, iw:int, ih:int, ow:int, oh:int,
-               full:bool=False, test_cs_in=None, test_cs_out=None, limit_w:int=TEST_LIMIT_W, limit_h:int=TEST_LIMIT_H):
+def do_testcsc(csc_module, iw: int, ih: int, ow: int, oh: int,
+               full: bool = False, test_cs_in=None, test_cs_out=None,
+               limit_w: int = TEST_LIMIT_W, limit_h: int = TEST_LIMIT_H):
     log("do_testcsc%s", (csc_module, iw, ih, ow, oh, full, test_cs_in, test_cs_out, TEST_LIMIT_W, TEST_LIMIT_H))
     cstype = csc_module.get_type()
     cs_in_list = test_cs_in
@@ -576,16 +584,15 @@ def do_testcsc(csc_module, iw:int, ih:int, ow:int, oh:int,
                 e.init_context(iw, ih, cs_in, ow, oh, cs_out)
                 image = make_test_image(cs_in, iw, ih)
                 out = e.convert_image(image)
-                #print("convert_image(%s)=%s" % (image, out))
-                if out.get_width()!=ow:
+                if out.get_width() != ow:
                     raise RuntimeError(f"expected image of width {ow} but got {out.get_width()}")
-                if out.get_height()!=oh:
+                if out.get_height() != oh:
                     raise RuntimeError(f"expected image of height {oh} but got {out.get_height()}")
-                if out.get_pixel_format()!=cs_out:
+                if out.get_pixel_format() != cs_out:
                     raise RuntimeError(f"expected pixel format {cs_out} but got {out.get_pixel_format()}")
                 if full:
                     for w,h in ((iw*2, ih//2), (iw//2, ih**2)):
-                        if w>limit_w or h>limit_h:
+                        if w > limit_w or h > limit_h:
                             continue
                         try:
                             image = make_test_image(cs_in, w, h)

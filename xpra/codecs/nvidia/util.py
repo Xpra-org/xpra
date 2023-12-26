@@ -23,6 +23,8 @@ NVIDIA_HARDWARE = envbool("XPRA_NVIDIA_HARDWARE", False)
 
 
 nvidia_hardware = 0
+
+
 def has_nvidia_hardware():
     global nvidia_hardware
     if nvidia_hardware==0:
@@ -30,10 +32,11 @@ def has_nvidia_hardware():
     log(f"has_nvidia_hardware()={nvidia_hardware}")
     return nvidia_hardware
 
+
 def _has_nvidia_hardware():
     if NVIDIA_HARDWARE:
         return True
-    #first, check for the kernel module file, this should be very quick:
+    # first, check for the kernel module file, this should be very quick:
     try:
         if os.path.exists(NVIDIA_PROC_FILE):
             log(f"has_nvidia_hardware() found kernel module proc file {NVIDIA_PROC_FILE!r}")
@@ -42,7 +45,7 @@ def _has_nvidia_hardware():
         log(f"failed to query {NVIDIA_PROC_FILE!r}", exc_info=True)
     # pylint: disable=import-outside-toplevel
     if POSIX:
-        #the drm module should also be quick:
+        # the drm module should also be quick:
         try:
             from xpra.codecs.drm import drm
             info = drm.query()
@@ -76,12 +79,14 @@ def _has_nvidia_hardware():
         finally:
             if count is not None:
                 nvmlShutdown()
-    #hope for the best
+    # hope for the best
     log("has_nvidia_hardware() unable to ascertain, returning None")
     return None
 
 
 nvml_init_warned = False
+
+
 def wrap_nvml_init(nvmlInit, warn=True) -> bool:
     try:
         nvmlInit()
@@ -95,6 +100,7 @@ def wrap_nvml_init(nvmlInit, warn=True) -> bool:
             log.warn(" %s", e)
             nvml_init_warned = True
         return False
+
 
 def get_nvml_driver_version():
     try:
@@ -138,7 +144,7 @@ def get_proc_driver_version():
 
 def identify_nvidia_module_version():
     v = get_nvml_driver_version() or get_proc_driver_version()
-    #only keep numeric values:
+    # only keep numeric values:
     numver = []
     try:
         for x in v:
@@ -154,7 +160,10 @@ def identify_nvidia_module_version():
         log.warn(f"failed to parse Nvidia driver version {v!r}: {e}")
     return ()
 
+
 nvidia_module_version = None
+
+
 def get_nvidia_module_version(probe=True):
     global nvidia_module_version
     if nvidia_module_version is None and probe:
@@ -178,12 +187,14 @@ def identify_cards():
                 handle = nvmlDeviceGetHandleByIndex(i)
                 log(f"identify_cards() handle({i})={handle}")
                 props = {}
+
                 def meminfo(memory):
                     return {
-                            "total"  : int(memory.total),
-                            "free"   : int(memory.free),
-                            "used"   : int(memory.used),
-                            }
+                        "total"  : int(memory.total),
+                        "free"   : int(memory.free),
+                        "used"   : int(memory.used),
+                    }
+
                 def pciinfo(pci):
                     i = {}
                     for nvname, pubname in {
@@ -192,7 +203,7 @@ def identify_cards():
                         "device"            : "device",
                         "pciDeviceId"       : "pci-device-id",
                         "pciSubSystemId"    : "pci-subsystem-id",
-                        }.items():
+                    }.items():
                         try:
                             i[pubname] = int(getattr(pci, nvname))
                         except (ValueError, AttributeError):
@@ -203,26 +214,26 @@ def identify_cards():
                         pass
                     return i
                 for prefix, prop, fn_name, args, conv in (
-                       ("", "name",                     "nvmlDeviceGetName",                    (),     strtobytes),
-                       ("", "serial",                   "nvmlDeviceGetSerial",                  (),     strtobytes),
-                       ("", "uuid",                     "nvmlDeviceGetUUID",                    (),     strtobytes),
-                       ("", "pci",                      "nvmlDeviceGetPciInfo",                 (),     pciinfo),
-                       ("", "memory",                   "nvmlDeviceGetMemoryInfo",              (),     meminfo),
-                       ("pcie-link", "generation-max",  "nvmlDeviceGetMaxPcieLinkGeneration",   (),     int),
-                       ("pcie-link", "width-max",       "nvmlDeviceGetMaxPcieLinkWidth",        (),     int),
-                       ("pcie-link", "generation",      "nvmlDeviceGetCurrPcieLinkGeneration",  (),     int),
-                       ("pcie-link", "width",           "nvmlDeviceGetCurrPcieLinkWidth",       (),     int),
-                       ("clock-info", "graphics",       "nvmlDeviceGetClockInfo",               (0,),   int),
-                       ("clock-info", "sm",             "nvmlDeviceGetClockInfo",               (1,),   int),
-                       ("clock-info", "mem",            "nvmlDeviceGetClockInfo",               (2,),   int),
-                       ("clock-info", "graphics-max",   "nvmlDeviceGetMaxClockInfo",            (0,),   int),
-                       ("clock-info", "sm-max",         "nvmlDeviceGetMaxClockInfo",            (1,),   int),
-                       ("clock-info", "mem-max",        "nvmlDeviceGetMaxClockInfo",            (2,),   int),
-                       ("", "fan-speed",                "nvmlDeviceGetFanSpeed",                (),     int),
-                       ("", "temperature",              "nvmlDeviceGetTemperature",             (0,),   int),
-                       ("", "power-state",              "nvmlDeviceGetPowerState",              (),     int),
-                       ("", "vbios-version",            "nvmlDeviceGetVbiosVersion",            (),     strtobytes),
-                       ):
+                    ("", "name",                     "nvmlDeviceGetName",                    (),     strtobytes),
+                    ("", "serial",                   "nvmlDeviceGetSerial",                  (),     strtobytes),
+                    ("", "uuid",                     "nvmlDeviceGetUUID",                    (),     strtobytes),
+                    ("", "pci",                      "nvmlDeviceGetPciInfo",                 (),     pciinfo),
+                    ("", "memory",                   "nvmlDeviceGetMemoryInfo",              (),     meminfo),
+                    ("pcie-link", "generation-max",  "nvmlDeviceGetMaxPcieLinkGeneration",   (),     int),
+                    ("pcie-link", "width-max",       "nvmlDeviceGetMaxPcieLinkWidth",        (),     int),
+                    ("pcie-link", "generation",      "nvmlDeviceGetCurrPcieLinkGeneration",  (),     int),
+                    ("pcie-link", "width",           "nvmlDeviceGetCurrPcieLinkWidth",       (),     int),
+                    ("clock-info", "graphics",       "nvmlDeviceGetClockInfo",               (0,),   int),
+                    ("clock-info", "sm",             "nvmlDeviceGetClockInfo",               (1,),   int),
+                    ("clock-info", "mem",            "nvmlDeviceGetClockInfo",               (2,),   int),
+                    ("clock-info", "graphics-max",   "nvmlDeviceGetMaxClockInfo",            (0,),   int),
+                    ("clock-info", "sm-max",         "nvmlDeviceGetMaxClockInfo",            (1,),   int),
+                    ("clock-info", "mem-max",        "nvmlDeviceGetMaxClockInfo",            (2,),   int),
+                    ("", "fan-speed",                "nvmlDeviceGetFanSpeed",                (),     int),
+                    ("", "temperature",              "nvmlDeviceGetTemperature",             (0,),   int),
+                    ("", "power-state",              "nvmlDeviceGetPowerState",              (),     int),
+                    ("", "vbios-version",            "nvmlDeviceGetVbiosVersion",            (),     strtobytes),
+                ):
                     try:
                         fn = getattr(pynvml, fn_name)
                     except AttributeError:
@@ -243,8 +254,8 @@ def identify_cards():
                         continue
                 log(f"identify_cards() [{i}]={props}")
                 devices[i] = props
-            #unitCount = nvmlUnitGetCount()
-            #log.info("unitCount=%s", unitCount)
+            # unitCount = nvmlUnitGetCount()
+            # log.info("unitCount=%s", unitCount)
         except Exception as e:
             log("identify_cards() pynvml error", exc_info=True)
             log.warn("Warning: failed to query the NVidia cards using NVML:")
@@ -259,6 +270,8 @@ def identify_cards():
 
 
 _cards = None
+
+
 def get_cards(probe=True):
     global _cards
     if _cards is None and probe:
@@ -275,12 +288,14 @@ def is_blacklisted():
         except Exception as e:
             log.warn(f"Warning: error checking driver version {v!r}:")
             log.warn(" %s", e)
-    return None     #we don't know: unreleased / untested
+    return None     # we don't know: unreleased / untested
 
 
 _version_warning = False
+
+
 def validate_driver_yuv444lossless():
-    #this should log the kernel module version
+    # this should log the kernel module version
     v = get_nvidia_module_version()
     if not v:
         log.warn("Warning: unknown NVidia driver version")
@@ -308,15 +323,17 @@ def validate_driver_yuv444lossless():
 
 
 def parse_nvfbc_hex_key(s):
-    #ie: 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10
-    #ie: 0102030405060708090A0B0C0D0E0F10
-    #start by removing spaces and 0x:
+    # ie: 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10
+    # ie: 0102030405060708090A0B0C0D0E0F10
+    # start by removing spaces and 0x:
     hexstr = s.replace("0x", "").replace(",", "").replace(" ", "")
-    import binascii # pylint: disable=import-outside-toplevel
+    import binascii     # pylint: disable=import-outside-toplevel
     return binascii.unhexlify(hexstr)
 
 
 license_keys : dict[str, tuple] = {}
+
+
 def get_license_keys(version=0, basefilename="nvenc"):
     filename = f"{basefilename}%s.keys" % (version or "")
     keys = license_keys.get(filename)
@@ -328,10 +345,10 @@ def get_license_keys(version=0, basefilename="nvenc"):
         keys = [x.strip() for x in env_keys.split(",")]
         log(f"using {basefilename} keys from environment variable {env_name} : {csv(keys)}")
     else:
-        #try to load the license file
+        # try to load the license file
         keys = []
         with log.trap_error(f"Error loading {basefilename!r} license keys"):
-            #see read_xpra_defaults for an explanation of paths
+            # see read_xpra_defaults for an explanation of paths
             dirs = get_default_conf_dirs() + get_system_conf_dirs() + get_user_conf_dirs()
             for d in dirs:
                 if not d:
@@ -368,7 +385,7 @@ def main():
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Nvidia-Info", "Nvidia Info"):
-        #this will log the version number:
+        # this will log the version number:
         get_nvidia_module_version()
         if is_blacklisted():
             log.warn("Warning: this driver version is blacklisted")

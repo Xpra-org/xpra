@@ -29,7 +29,9 @@ class ImageWrapper:
     PLANAR_2 : PlanarFormat = PlanarFormat.PLANAR_2
     PLANAR_3 : PlanarFormat = PlanarFormat.PLANAR_3
     PLANAR_4 : PlanarFormat = PlanarFormat.PLANAR_4
-    PLANE_OPTIONS : tuple[PlanarFormat, PlanarFormat, PlanarFormat, PlanarFormat] = (PACKED, PLANAR_2, PLANAR_3, PLANAR_4)
+    PLANE_OPTIONS : tuple[PlanarFormat, PlanarFormat, PlanarFormat, PlanarFormat] = (
+        PACKED, PLANAR_2, PLANAR_3, PLANAR_4,
+    )
 
     def __init__(self, x : int, y : int, width : int, height : int, pixels, pixel_format, depth : int, rowstride,
                  bytesperpixel : int=4, planes : PlanarFormat=PACKED, thread_safe : bool=True, palette=None):
@@ -129,7 +131,6 @@ class ImageWrapper:
         """ time in millis """
         return self.timestamp
 
-
     def set_timestamp(self, timestamp : int):
         self.timestamp = timestamp
 
@@ -153,7 +154,7 @@ class ImageWrapper:
     def allocate_buffer(self, _buf_len, _free_existing=1) -> int:
         if self.freed:
             raise RuntimeError("image wrapper has already been freed")
-        #only defined for XImage wrappers:
+        # only defined for XImage wrappers:
         return 0
 
     def may_restride(self) -> bool:
@@ -166,7 +167,7 @@ class ImageWrapper:
         if self.freed:
             raise RuntimeError("image wrapper has already been freed")
         if self.planes>0:
-            #not supported yet for planar images
+            # not supported yet for planar images
             return False
         pixels = self.pixels
         assert pixels, "no pixel data to restride"
@@ -177,10 +178,10 @@ class ImageWrapper:
             lines.append(memoryview_to_bytes(pixels[pos:pos+rowstride]))
             pos += oldstride
         if self.height>0 and oldstride<rowstride:
-            #the last few lines may need padding if the new rowstride is bigger
-            #(usually just the last line)
-            #we do this here to avoid slowing down the main loop above
-            #as this should be a rarer case
+            # the last few lines may need padding if the new rowstride is bigger
+            # (usually just the last line)
+            # we do this here to avoid slowing down the main loop above
+            # as this should be a rarer case
             for h in range(self.height):
                 i = -(1+h)
                 line = lines[i]
@@ -195,7 +196,7 @@ class ImageWrapper:
     def freeze(self) -> bool:
         if self.freed:
             raise RuntimeError("image wrapper has already been freed")
-        #some wrappers (XShm) need to be told to stop updating the pixel buffer
+        # some wrappers (XShm) need to be told to stop updating the pixel buffer
         return False
 
     def clone_pixel_data(self) -> None:
@@ -208,17 +209,17 @@ class ImageWrapper:
         if planes<0:
             raise ValueError(f"invalid number of planes {planes}")
         if planes == 0:
-            #no planes, simple buffer:
+            # no planes, simple buffer:
             self.pixels = clone_plane(pixels)
         else:
             self.pixels = [clone_plane(pixels[i]) for i in range(planes)]
         self.thread_safe = True
         if self.freed:  # pragma: no cover
-            #could be a race since this can run threaded
+            # could be a race since this can run threaded
             self.free()
 
     def get_sub_image(self, x : int, y : int, w : int, h : int):
-        #raise NotImplementedError("no sub-images for %s" % type(self))
+        # raise NotImplementedError("no sub-images for %s" % type(self))
         if w<=0 or h<=0:
             raise ValueError(f"invalid sub-image size: {w}x{h}")
         if x+w>self.width:
@@ -228,9 +229,9 @@ class ImageWrapper:
         if self.planes!=ImageWrapper.PACKED:
             raise NotImplementedError("cannot sub-divide a planar image!")
         if x==0 and y==0 and w==self.width and h==self.height:
-            #same dimensions, use the same wrapper
+            # same dimensions, use the same wrapper
             return self
-        #copy to local variables:
+        # copy to local variables:
         pixels = self.pixels
         oldstride = self.rowstride
         pos = y*oldstride + x*self.bytesperpixel
@@ -240,7 +241,7 @@ class ImageWrapper:
             lines.append(memoryview_to_bytes(pixels[pos:pos+newstride]))
             pos += oldstride
         image = ImageWrapper(self.x+x, self.y+y, w, h, b"".join(lines), self.pixel_format, self.depth, newstride,
-                            planes=self.planes, thread_safe=True, palette=self.palette)
+                             planes=self.planes, thread_safe=True, palette=self.palette)
         image.set_target_x(self.target_x+x)
         image.set_target_y(self.target_y+y)
         return image

@@ -17,7 +17,7 @@ with NumpyImportContext():
         pagelocked_empty,
         memcpy_dtoh_async,
         LogicError,
-        )
+    )
 
 
 class CUDAImageWrapper(ImageWrapper):
@@ -34,7 +34,6 @@ class CUDAImageWrapper(ImageWrapper):
         if s and not s.is_done():
             self.stream.synchronize()
 
-
     def may_download(self):
         ctx = self.cuda_context
         if self.pixels is not None or not ctx or self.freed:
@@ -42,8 +41,8 @@ class CUDAImageWrapper(ImageWrapper):
         assert self.cuda_device_buffer, "bug: no device buffer"
         start = monotonic()
         ctx.push()
-        host_buffer = pagelocked_empty(self.buffer_size, dtype=byte)   #pylint: disable=no-member
-        memcpy_dtoh_async(host_buffer, self.cuda_device_buffer, self.stream) #pylint: disable=no-member
+        host_buffer = pagelocked_empty(self.buffer_size, dtype=byte)   # pylint: disable=no-member
+        memcpy_dtoh_async(host_buffer, self.cuda_device_buffer, self.stream)  # pylint: disable=no-member
         self.wait_for_stream()
         self.pixels = host_buffer.tobytes()
         elapsed = monotonic()-start
@@ -54,7 +53,7 @@ class CUDAImageWrapper(ImageWrapper):
         ctx.pop()
 
     def freeze(self):
-        #this image is already a copy when we get it
+        # this image is already a copy when we get it
         return True
 
     def get_gpu_buffer(self):
@@ -97,6 +96,6 @@ class CUDAImageWrapper(ImageWrapper):
     def clean(self):
         try:
             self.wait_for_stream()
-        except LogicError:  #pylint: disable=no-member @UndefinedVariable
+        except LogicError:  # pylint: disable=no-member @UndefinedVariable
             log("%s.clean()", self, exc_info=True)
         self.free()

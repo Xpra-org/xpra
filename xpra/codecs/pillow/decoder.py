@@ -23,23 +23,40 @@ Image.init()
 DECODE_FORMATS = os.environ.get("XPRA_PILLOW_DECODE_FORMATS", "png,png/L,png/P,jpeg,webp").split(",")
 
 PNG_HEADER = struct.pack("BBBBBBBB", 137, 80, 78, 71, 13, 10, 26, 10)
+
+
 def is_png(data) -> bool:
     return data.startswith(PNG_HEADER)
+
+
 RIFF_HEADER = b"RIFF"
 WEBP_HEADER = b"WEBP"
+
+
 def is_webp(data) -> bool:
     return data[:4]==RIFF_HEADER and data[8:12]==WEBP_HEADER
+
+
 JPEG_HEADER = struct.pack("BBB", 0xFF, 0xD8, 0xFF)
+
+
 def is_jpeg(data) -> bool:
-    #the jpeg header is actually more complicated than this,
-    #but in practice all the data we receive from the server
-    #will have this type of header
+    # the jpeg header is actually more complicated than this,
+    # but in practice all the data we receive from the server
+    # will have this type of header
     return data[:3]==JPEG_HEADER
+
+
 def is_svg(data) -> bool:
     return strtobytes(data[:5])==b"<?xml" or strtobytes(data[:4])==b"<svg"
+
+
 XPM_HEADER = b"/* XPM */"
+
+
 def is_xpm(data) -> bool:
     return data[:9]==XPM_HEADER
+
 
 def is_tiff(data) -> bool:
     if data[:2]==b"II":
@@ -56,7 +73,8 @@ HEADERS : dict[Callable, str] = {
     is_svg  : "svg",
     is_xpm  : "xpm",
     is_tiff : "tiff",
-    }
+}
+
 
 def get_image_type(data) -> str:
     if not data:
@@ -80,32 +98,38 @@ def open_only(data, types=("png", "jpeg", "webp")) -> Image:
 def get_version() -> str:
     return PIL.__version__
 
+
 def get_type() -> str:
     return "pillow"
+
 
 def do_get_encodings() -> list[str]:
     log("PIL.Image.OPEN=%s", Image.OPEN)
     encodings = []
     for encoding in DECODE_FORMATS:
-        #strip suffix (so "png/L" -> "png")
+        # strip suffix (so "png/L" -> "png")
         stripped = encoding.split("/")[0].upper()
         if stripped in Image.OPEN:
             encodings.append(encoding)
     log("do_get_encodings()=%s", encodings)
     return encodings
 
+
 def get_encodings() -> tuple[str,...]:
     return ENCODINGS
 
+
 ENCODINGS : tuple[str,...] = tuple(do_get_encodings())
 
-def get_info() -> dict[str,Any]:
-    return  {
-            "version"       : get_version(),
-            "encodings"     : get_encodings(),
-            }
 
-def decompress(coding:str, img_data:bytes, options:typedict) -> tuple[str,bytes,int,int,int]:
+def get_info() -> dict[str,Any]:
+    return {
+        "version"       : get_version(),
+        "encodings"     : get_encodings(),
+    }
+
+
+def decompress(coding: str, img_data: bytes, options: typedict) -> tuple[str, bytes, int, int, int]:
     # can be called from any thread
     actual = get_image_type(img_data)
     if not actual or not coding.startswith(actual):
@@ -116,19 +140,20 @@ def decompress(coding:str, img_data:bytes, options:typedict) -> tuple[str,bytes,
     transparency = options.intget("transparency", -1)
     if img.mode=="P":
         if transparency>=0:
-            #this deals with alpha without any extra work
+            # this deals with alpha without any extra work
             img = img.convert("RGBA")
         else:
             img = img.convert("RGB")
     elif img.mode=="L":
         if transparency>=0:
-            #why do we have to deal with alpha ourselves??
+            # why do we have to deal with alpha ourselves??
             def mask_value(a):
                 if a!=transparency:
                     return 255
                 return 0
             mask = Image.eval(img, mask_value)
             mask = mask.convert("L")
+
             def nomask_value(a):
                 if a!=transparency:
                     return a
@@ -138,17 +163,17 @@ def decompress(coding:str, img_data:bytes, options:typedict) -> tuple[str,bytes,
             img.putalpha(mask)
         else:
             img = img.convert("RGB")
-    elif img.mode=="LA":
+    elif img.mode == "LA":
         img = img.convert("RGBA")
 
     width, height = img.size
     if img.mode=="RGB":
-        #PIL flattens the data to a continuous straightforward RGB format:
+        # PIL flattens the data to a continuous straightforward RGB format:
         rowstride = width*3
         rgb_format = options.strget("rgb_format", "")
         rgb_format = rgb_format.replace("A", "").replace("X", "")
-        #the webp encoder only takes BGRX input,
-        #so we have to swap things around if it was fed "RGB":
+        # the webp encoder only takes BGRX input,
+        # so we have to swap things around if it was fed "RGB":
         if rgb_format=="RGB":
             rgb_format = "BGR"
         else:
@@ -157,8 +182,8 @@ def decompress(coding:str, img_data:bytes, options:typedict) -> tuple[str,bytes,
         rowstride = width*4
         rgb_format = options.strget("rgb_format", img.mode)
         if coding=="webp":
-            #the webp encoder only takes BGRX input,
-            #so we have to swap things around if it was fed "RGBA":
+            # the webp encoder only takes BGRX input,
+            # so we have to swap things around if it was fed "RGBA":
             if rgb_format=="RGBA":
                 rgb_format = "BGRA"
             elif rgb_format=="RGBX":
@@ -179,11 +204,11 @@ def decompress(coding:str, img_data:bytes, options:typedict) -> tuple[str,bytes,
 
 def selftest(_full=False) -> None:
     global ENCODINGS
-    from xpra.codecs.checks import TEST_PICTURES  #pylint: disable=import-outside-toplevel
-    #test data generated using the encoder:
+    from xpra.codecs.checks import TEST_PICTURES   # pylint: disable=import-outside-toplevel
+    # test data generated using the encoder:
     for encoding, test_data in TEST_PICTURES.items():
         if encoding not in ENCODINGS:
-            #removed already
+            # removed already
             continue
         for size, samples in test_data.items():
             log(f"testing {encoding} at size {size} with {len(samples)} samples")
@@ -195,7 +220,7 @@ def selftest(_full=False) -> None:
                     assert img, "failed to open image data"
                     raw_data = img.tobytes("raw", img.mode)
                     assert raw_data
-                    #now try with junk:
+                    # now try with junk:
                     cdata = b"ABCD"+cdata
                     buf = BytesIO(cdata)
                     try:

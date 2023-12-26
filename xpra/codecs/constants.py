@@ -15,8 +15,8 @@ from xpra.util.env import envint
 FAST_DECODE_MIN_SPEED : int = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)
 
 
-#note: this is just for defining the order of encodings,
-#so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
+# note: this is just for defining the order of encodings,
+# so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
 PREFERRED_ENCODING_ORDER : tuple[str, ...] = (
     "h264", "vp9", "vp8", "mpeg4",
     "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm",
@@ -26,19 +26,19 @@ PREFERRED_ENCODING_ORDER : tuple[str, ...] = (
     "scroll",
     "grayscale",
     "stream",
-    )
+)
 STREAM_ENCODINGS : tuple[str,...] = (
     "h264", "vp9", "vp8", "mpeg4",
     "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm",
     "h265", "av1",
-    )
+)
 
-#encoding order for edges (usually one pixel high or wide):
+# encoding order for edges (usually one pixel high or wide):
 EDGE_ENCODING_ORDER : tuple[str, ...] = (
     "rgb24", "rgb32",
     "png", "webp",
     "png/P", "png/L", "rgb", "jpeg", "jpega",
-    )
+)
 
 HELP_ORDER : tuple[str, ...] = (
     "auto",
@@ -48,25 +48,26 @@ HELP_ORDER : tuple[str, ...] = (
     "png", "png/P", "png/L", "webp", "avif",
     "rgb", "jpeg", "jpega",
     "scroll",
-    )
+)
 
 
-#value: how much smaller the output is
+# value: how much smaller the output is
 LOSSY_PIXEL_FORMATS : dict[str, float | int] = {
     "NV12"    : 2,
     "YUV420P" : 2,
     "YUV422P" : 1.5,
-    }
+}
 
-def get_plane_name(pixel_format : str="YUV420P", index : int=0) -> str:
+
+def get_plane_name(pixel_format: str = "YUV420P", index: int = 0) -> str:
     return {
         "NV12" : ("Y", "UV"),
-        }.get(pixel_format, list(pixel_format))[index]
+    }.get(pixel_format, list(pixel_format))[index]
 
 
 PIXEL_SUBSAMPLING : dict[str,tuple] = {
-    #NV12 is actually subsampled horizontally too - just like YUV420P
-    #(but combines U and V planes so the resulting rowstride for the UV plane is the same as the Y plane):
+    # NV12 is actually subsampled horizontally too - just like YUV420P
+    # (but combines U and V planes so the resulting rowstride for the UV plane is the same as the Y plane):
     "NV12"      : ((1, 1), (1, 2)),
     "YUV420P"   : ((1, 1), (2, 2), (2, 2)),
     "YUV422P"   : ((1, 1), (2, 1), (2, 1)),
@@ -78,54 +79,64 @@ PIXEL_SUBSAMPLING : dict[str,tuple] = {
     "YUV444P10" : ((1, 1), (1, 1), (1, 1)),
     "YUV444P16" : ((1, 1), (1, 1), (1, 1)),
 }
-def get_subsampling_divs(pixel_format:str) -> tuple[tuple[int,int],...]:
+
+
+def get_subsampling_divs(pixel_format:str) -> tuple[tuple[int, int], ...]:
     # Return size dividers for the given pixel format
     #  (Y_w, Y_h), (U_w, U_h), (V_w, V_h)
     if pixel_format not in PIXEL_SUBSAMPLING:
         raise ValueError(f"invalid pixel format: {pixel_format!r}")
     return PIXEL_SUBSAMPLING[pixel_format]
 
+
 def preforder(encodings) -> tuple[str, ...]:
-    encs : set[str] = set(encodings)
+    encs: set[str] = set(encodings)
     return tuple(x for x in PREFERRED_ENCODING_ORDER if x in encs)
 
 
-def get_profile(options:typedict, encoding:str="h264", csc_mode:str="YUV420P", default_profile:str="constrained-baseline") -> str:
-    return (
-        options.strget(f"{encoding}.{csc_mode}.profile") or
-        options.strget(f"{encoding}.profile") or
-        os.environ.get(f"XPRA_{encoding.upper()}_{csc_mode}_PROFILE") or
-        os.environ.get(f"XPRA_{encoding.upper()}_PROFILE") or
-        default_profile
-        )
+def get_profile(options:typedict, encoding: str = "h264", csc_mode: str = "YUV420P",
+                default_profile: str = "constrained-baseline") -> str:
+    for x in (
+        options.strget(f"{encoding}.{csc_mode}.profile"),
+        options.strget(f"{encoding}.profile"),
+        os.environ.get(f"XPRA_{encoding.upper()}_{csc_mode}_PROFILE"),
+        os.environ.get(f"XPRA_{encoding.upper()}_PROFILE"),
+        default_profile,
+    ):
+        if x:
+            return x
+    return ""
 
-def get_x264_quality(pct:int, profile:str="") -> int:
-    if pct>=100 and profile=="high444":
+
+def get_x264_quality(pct:int, profile: str = "") -> int:
+    if pct >= 100 and profile == "high444":
         return 0
     return 50 - (min(100, max(0, pct)) * 49 // 100)
 
-def get_x264_preset(speed:int=50, fast_decode:bool=False) -> int:
+
+def get_x264_preset(speed: int=50, fast_decode: bool=False) -> int:
     if fast_decode:
         speed = max(FAST_DECODE_MIN_SPEED, speed)
     if speed > 99:
-        #only allow "ultrafast" if pct > 99
+        # only allow "ultrafast" if pct > 99
         return 0
     return 5 - max(0, min(4, speed // 20))
 
 
-RGB_FORMATS : tuple[str, ...] = (
-               "XRGB",
-               "BGRX",
-               "ARGB",
-               "BGRA",
-               "RGB",
-               "BGR",
-               "r210",
-               )
+RGB_FORMATS: tuple[str, ...] = (
+    "XRGB",
+    "BGRX",
+    "ARGB",
+    "BGRA",
+    "RGB",
+    "BGR",
+    "r210",
+)
 
 
 class TransientCodecException(Exception):
     pass
+
 
 class CodecStateException(Exception):
     pass
@@ -157,8 +168,8 @@ class _codec_spec:
 
     def make_instance(self) -> object:
         # pylint: disable=import-outside-toplevel
-        #I can't imagine why someone would have more than this many
-        #encoders or csc modules active at the same time!
+        # I can't imagine why someone would have more than this many
+        # encoders or csc modules active at the same time!
         WARN_LIMIT = envint("XPRA_CODEC_INSTANCE_COUNT_WARN", 25)
         from xpra.log import Logger
         log = Logger("encoding")
@@ -179,7 +190,6 @@ class _codec_spec:
         self.instances.add(v)
         return v
 
-
     def get_instance_count(self) -> int:
         return len(self.instances)
 
@@ -190,22 +200,22 @@ class _codec_spec:
         return v
 
     def get_runtime_factor(self) -> float:
-        #a cost multiplier that some encoder may want to override
-        #1.0 means no change:
+        # a cost multiplier that some encoder may want to override
+        # 1.0 means no change:
         mi = self.max_instances
         ic = len(self.instances)
-        if ic==0 or mi==0:
-            return 1.0                      #no problem
-        if ic>=mi:
-            return 0                        #not possible
-        if mi>0 and ic>0:
-            #squared slope: 50% utilisation -> value=0.75
+        if ic == 0 or mi == 0:
+            return 1.0                      # no problem
+        if ic >= mi:
+            return 0                        # not possible
+        if mi > 0 and ic > 0:
+            # squared slope: 50% utilisation -> value=0.75
             return max(0.0, 1.0 - (1.0*ic/mi)**2)
         return 1.0
 
 
 @dataclass(kw_only=True)
-class video_spec(_codec_spec):
+class VideoSpec(_codec_spec):
 
     encoding            : str = "invalid"
     input_colorspace    : str = "invalid"
@@ -217,7 +227,7 @@ class video_spec(_codec_spec):
 
 
 @dataclass(kw_only=True)
-class csc_spec(_codec_spec):
+class CSCSpec(_codec_spec):
 
     input_colorspace: str = "invalid"
     output_colorspace: str = "invalid"

@@ -3,8 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pylint: disable=wrong-import-order
-#pylint: disable=wrong-import-position
+# pylint: disable=wrong-import-order
+# pylint: disable=wrong-import-position
 
 import logging
 
@@ -19,13 +19,13 @@ if PIL_DEBUG:   # pragma: no cover
 else:
     level = logging.INFO
 
-#newer versions use this logger,
-#we must initialize it before we load the class:
+# newer versions use this logger,
+# we must initialize it before we load the class:
 for x in ("Image", "PngImagePlugin", "WebPImagePlugin", "JpegImagePlugin"):
     logger = logging.getLogger("PIL.%s" % x)
     logger.setLevel(level)
 
-import PIL # noqa: E402
-from PIL import Image # noqa: E402
+import PIL  # noqa: E402
+from PIL import Image  # noqa: E402
 assert PIL is not None and Image is not None
 Image.init()

@@ -71,8 +71,8 @@ class Encoder:
             "encoding"  : self.encoding,
             "src_format": self.src_format,
             "dst_formats" : self.dst_formats,
-            })
-        #calculate fps:
+        })
+        # calculate fps:
         now = monotonic()
         last_time = now
         cut_off = now-10.0
@@ -130,16 +130,16 @@ class Encoder:
             raise RuntimeError(f"failed to get pixels from {image}")
         # info used by proxy encoder:
         client_options = {
-                "proxy"     : True,
-                "frame"     : self.frames,
-                "pts"       : image.get_timestamp()-self.first_frame_timestamp,
-                "timestamp" : image.get_timestamp(),
-                "rowstride" : image.get_rowstride(),
-                "depth"     : image.get_depth(),
-                "rgb_format": image.get_pixel_format(),
-                # pass-through encoder options:
-                "options"   : options or {},
-                }
+            "proxy"     : True,
+            "frame"     : self.frames,
+            "pts"       : image.get_timestamp()-self.first_frame_timestamp,
+            "timestamp" : image.get_timestamp(),
+            "rowstride" : image.get_rowstride(),
+            "depth"     : image.get_depth(),
+            "rgb_format": image.get_pixel_format(),
+            # pass-through encoder options:
+            "options"   : options or {},
+        }
         if self.frames == 0:
             self.first_frame_timestamp = image.get_timestamp()
             # must pass dst_formats so the proxy can instantiate the video encoder

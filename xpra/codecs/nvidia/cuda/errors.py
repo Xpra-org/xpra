@@ -4,8 +4,8 @@
 # later version. See the file COPYING for details.
 
 
-#ctypedef int cudaError_t
-#cdef extern from "cuda_runtime_api.h":
+# ctypedef int cudaError_t
+# cdef extern from "cuda_runtime_api.h":
 #    const char *cudaGetErrorName(cudaError_t err)
 #    const char *cudaGetErrorString(cudaError_t err)
 
@@ -19,6 +19,7 @@ def cudacheck(r, fn=None):
 
 def get_error_name(error):
     return CUDA_ERRORS.get(error) or str(error)
+
 
 CUDA_ERRORS = {
     0   : "SUCCESS",
@@ -113,4 +114,4 @@ CUDA_ERRORS = {
     910 : "GRAPH_EXEC_UPDATE_FAILURE",
     911 : "EXTERNAL_DEVICE",
     912 : "INVALID_CLUSTER_SIZE",
-    }
+}

@@ -12,6 +12,7 @@ from xpra.util.io import which
 from xpra.log import Logger
 log = Logger("evdi")
 
+
 def load_evdi_module(device_count=1):
     log(f"load_evdi_module({device_count})")
     if not LINUX:

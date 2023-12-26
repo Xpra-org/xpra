@@ -22,9 +22,10 @@ def get_capture_module():
         from xpra.codecs.nvidia.nvfbc import fbc_capture_win
         return fbc_capture_win
     if LINUX:
-        from xpra.codecs.nvidia.nvfbc import fbc_capture_linux # @Reimport
+        from xpra.codecs.nvidia.nvfbc import fbc_capture_linux  # @Reimport
         return fbc_capture_linux
     return None
+
 
 def get_capture_instance(cuda=USE_NVFBC_CUDA):
     fbc_module = get_capture_module()
@@ -32,8 +33,8 @@ def get_capture_instance(cuda=USE_NVFBC_CUDA):
         return None
     fbc_module.init_nvfbc_library()
     if cuda:
-        return fbc_module.NvFBC_CUDACapture()     #@UndefinedVariable
-    return fbc_module.NvFBC_SysCapture()      #@UndefinedVariable
+        return fbc_module.NvFBC_CUDACapture()     # @UndefinedVariable
+    return fbc_module.NvFBC_SysCapture()      # @UndefinedVariable
 
 
 def main(argv):

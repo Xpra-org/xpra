@@ -35,10 +35,10 @@ CODEC_TO_MODULE : dict[str, str] = {
     "dec_nvjpeg"    : "nvidia.nvjpeg.decoder",
     "dec_gstreamer" : "gstreamer.decoder",
     "enc_gstreamer" : "gstreamer.encoder",
-    }
+}
 
 
-def has_codec_module(module_name:str) -> bool:
+def has_codec_module(module_name: str) -> bool:
     top_module = f"xpra.codecs.{module_name}"
     try:
         __import__(top_module, {}, {}, [])
@@ -49,11 +49,11 @@ def has_codec_module(module_name:str) -> bool:
         return False
 
 
-def autoprefix(prefix:str, name:str) -> str:
+def autoprefix(prefix:str, name: str) -> str:
     return (name if (name.startswith(prefix) or name.endswith(prefix)) else f"{prefix}_{name}").replace("-", "_")
 
 
-def try_import_modules(prefix:str, *codec_names) -> list[str]:
+def try_import_modules(prefix: str, *codec_names) -> list[str]:
     names = []
     for codec_name in codec_names:
         codec_name = autoprefix(prefix, codec_name)
@@ -64,10 +64,10 @@ def try_import_modules(prefix:str, *codec_names) -> list[str]:
 
 
 # all the codecs we know about:
-ALL_VIDEO_ENCODER_OPTIONS : tuple[str, ...] = ("x264", "openh264", "vpx", "nvenc", "nvjpeg", "jpeg", "webp", "gstreamer")
-HARDWARE_ENCODER_OPTIONS : tuple[str, ...] = ("nvenc", "nvjpeg")
-ALL_CSC_MODULE_OPTIONS : tuple[str, ...] = ("cython", "libyuv")
-ALL_VIDEO_DECODER_OPTIONS : tuple[str, ...] = ("openh264", "vpx", "gstreamer", "nvdec")
+ALL_VIDEO_ENCODER_OPTIONS: tuple[str, ...] = ("x264", "openh264", "vpx", "nvenc", "nvjpeg", "jpeg", "webp", "gstreamer")
+HARDWARE_ENCODER_OPTIONS: tuple[str, ...] = ("nvenc", "nvjpeg")
+ALL_CSC_MODULE_OPTIONS: tuple[str, ...] = ("cython", "libyuv")
+ALL_VIDEO_DECODER_OPTIONS: tuple[str, ...] = ("openh264", "vpx", "gstreamer", "nvdec")
 
 PREFERRED_ENCODER_ORDER : tuple[str, ...] = tuple(
     autoprefix("enc", x) for x in (
@@ -467,6 +467,8 @@ class VideoHelper:
 
 
 instance = None
+
+
 def getVideoHelper() -> VideoHelper:
     global instance
     if instance is None:

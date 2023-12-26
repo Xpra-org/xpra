@@ -7,15 +7,16 @@
 from xpra.log import Logger
 log = Logger("encoding")
 
-#more scaling functions can be added here later
+# more scaling functions can be added here later
 
 RGB_SCALE_FORMATS = ("BGRX", "BGRA", "RGBA", "RGBX", )
+
 
 def scale_image(image, width:int, height:int):
     rgb_format = image.get_pixel_format()
     if rgb_format in RGB_SCALE_FORMATS:
         try:
-            from xpra.codecs.libyuv.converter import argb_scale  #pylint: disable=import-outside-toplevel
+            from xpra.codecs.libyuv.converter import argb_scale   # pylint: disable=import-outside-toplevel
         except ImportError as e:
             log("cannot downscale: %s", e)
         else:

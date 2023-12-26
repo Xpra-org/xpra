@@ -32,21 +32,21 @@ pixels_to_bytes = memoryview_to_bytes
 
 
 # source format  : [(PIL input format, output format), ..]
-PIL_conv : dict[str, tuple[tuple[str,str], ...]] = {
-             "XRGB"   : (("XRGB", "RGB"), ),
-             # try to drop alpha channel since it isn't used:
-             "BGRX"   : (("BGRX", "RGB"), ("BGRX", "RGBX")),
-             # try with alpha first:
-             "BGRA"   : (("BGRA", "RGBA"), ("BGRX", "RGB"), ("BGRX", "RGBX")),
-             }
+PIL_conv: dict[str, tuple[tuple[str,str], ...]] = {
+    "XRGB": (("XRGB", "RGB"), ),
+    # try to drop alpha channel since it isn't used:
+    "BGRX": (("BGRX", "RGB"), ("BGRX", "RGBX")),
+    # try with alpha first:
+    "BGRA": (("BGRA", "RGBA"), ("BGRX", "RGB"), ("BGRX", "RGBX")),
+}
 # as above but for clients which cannot handle alpha:
 PIL_conv_noalpha : dict[str, tuple[tuple[str,str], ...]] = {
-             "XRGB"   : (("XRGB", "RGB"), ),
-             # try to drop alpha channel since it isn't used:
-             "BGRX"   : (("BGRX", "RGB"), ("BGRX", "RGBX")),
-             # try with alpha first:
-             "BGRA"   : (("BGRX", "RGB"), ("BGRA", "RGBA"), ("BGRX", "RGBX")),
-             }
+    "XRGB": (("XRGB", "RGB"), ),
+    # try to drop alpha channel since it isn't used:
+    "BGRX": (("BGRX", "RGB"), ("BGRX", "RGBX")),
+    # try with alpha first:
+    "BGRA": (("BGRX", "RGB"), ("BGRA", "RGBA"), ("BGRX", "RGBX")),
+}
 
 
 def rgb_reformat(image : ImageWrapper, rgb_formats, supports_transparency:bool) -> bool:

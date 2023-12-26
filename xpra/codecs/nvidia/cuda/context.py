@@ -4,8 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#@PydevCodeAnalysisIgnore
-#pylint: disable=no-member
+# @PydevCodeAnalysisIgnore
+# pylint: disable=no-member
 
 import os
 import sys
@@ -20,7 +20,7 @@ from xpra.util.env import envint, envbool, first_time, NumpyImportContext
 from xpra.platform.paths import (
     get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs,
     get_resources_dir, get_app_dir,
-    )
+)
 from xpra.os_util import WIN32
 from xpra.util.system import is_WSL
 from xpra.util.io import load_binary_file
@@ -38,17 +38,19 @@ with NumpyImportContext():
         init,
         Device, device_attribute, ctx_flags,
         module_from_buffer, LogicError,
-        )
+    )
 
 log = Logger("cuda")
 
 MIN_FREE_MEMORY = envint("XPRA_CUDA_MIN_FREE_MEMORY", 10)
 
-#record when we get failures/success:
+# record when we get failures/success:
 DEVICE_STATE : dict[int,bool] = {}
+
 
 def record_device_failure(device_id:int):
     DEVICE_STATE[device_id] = False
+
 
 def record_device_success(device_id:int):
     DEVICE_STATE[device_id] = True
@@ -59,19 +61,22 @@ def device_info(d) -> str:
         return "None"
     return f"{d.name()} @ {d.pci_bus_id()}"
 
+
 def pci_bus_id(d) -> str:
     if not d:
         return "None"
     return d.pci_bus_id()
+
 
 def device_name(d) -> str:
     if not d:
         return "None"
     return d.name()
 
-def compute_capability(d):
-    SMmajor, SMminor = d.compute_capability()
-    return (SMmajor<<4) + SMminor
+
+def compute_capability(d) -> int:
+    smmajor, smminor = d.compute_capability()
+    return (smmajor << 4) + smminor
 
 
 def get_pycuda_version() -> tuple[int,...]:
@@ -84,36 +89,46 @@ def get_pycuda_info() -> dict[str,Any]:
         "version" : {
             ""        : pycuda.VERSION,
             "text"    : pycuda.VERSION_TEXT,
-            }
         }
+    }
     if pycuda.VERSION_STATUS:
         i["version.status"] = pycuda.VERSION_STATUS
     return i
 
+
 def get_cuda_info() -> dict[str,Any]:
     init_all_devices()
     return {
-        "driver"    : {
+        "driver": {
             "version"        : get_version(),
             "driver_version" : get_driver_version(),
-            }
         }
+    }
 
 
-DEVICE_INFO : dict[int,str] = {}
-def get_device_info(i:int) -> str:
+DEVICE_INFO : dict[int, str] = {}
+
+
+def get_device_info(i: int) -> str:
     return DEVICE_INFO.get(i, "")
-DEVICE_NAME : dict[int,str] = {}
-def get_device_name(i:int) -> str:
+
+
+DEVICE_NAME : dict[int, str] = {}
+
+
+def get_device_name(i: int) -> str:
     return DEVICE_NAME.get(i, "")
 
 
 PREFS = None
+
+
 def get_prefs() -> dict[str,Any]:
     global PREFS
     if PREFS is None:
         PREFS = do_get_prefs()
     return PREFS or {}
+
 
 def do_get_prefs() -> dict[str,Any]:
     prefs : dict[str,Any] = {}
@@ -149,9 +164,10 @@ def do_get_prefs() -> dict[str,Any]:
         prefs.update(c_prefs)
     return prefs
 
+
 def get_pref(name:str):
     assert name in ("device-id", "device-name", "enabled-devices", "disabled-devices", "load-balancing")
-    #ie: env_name("device-id")="XPRA_CUDA_DEVICE_ID"
+    # ie: env_name("device-id")="XPRA_CUDA_DEVICE_ID"
     env_name = "XPRA_CUDA_" + str(name).upper().replace("-", "_")
     env_value = os.environ.get(env_name)
     if env_value is not None:
@@ -159,6 +175,7 @@ def get_pref(name:str):
             return env_value.split(",")
         return env_value
     return get_prefs().get(name)
+
 
 def get_gpu_list(list_type):
     v = get_pref(list_type)
@@ -169,6 +186,7 @@ def get_gpu_list(list_type):
         return True
     if "none" in v:
         return []
+
     def dev(x):
         try:
             return int(x)
@@ -181,7 +199,10 @@ def get_gpu_list(list_type):
         log.error(f"Error: invalid value for {list_type!r} CUDA preference")
         return None
 
+
 driver_init_done = None
+
+
 def driver_init() -> bool:
     global driver_init_done
     if driver_init_done is None:
@@ -204,6 +225,8 @@ def driver_init() -> bool:
 
 
 DEVICES : list[int] | None = None
+
+
 def init_all_devices():
     global DEVICES, DEVICE_INFO
     if DEVICES is not None:
@@ -223,7 +246,7 @@ def init_all_devices():
     if ngpus==0:
         return DEVICES
     for i in range(ngpus):
-        #shortcut if this GPU number is disabled:
+        # shortcut if this GPU number is disabled:
         if disabled_gpus is not None and i in disabled_gpus:
             log(f"device {i} is in the list of disabled gpus, skipped")
             continue
@@ -240,6 +263,7 @@ def init_all_devices():
             log.error("error on device %s: %s", devinfo, e)
     return DEVICES
 
+
 def check_device(i:int, device, min_compute:int=0) -> bool:
     ngpus = Device.count()
     da = device_attribute
@@ -251,16 +275,17 @@ def check_device(i:int, device, min_compute:int=0) -> bool:
         log.warn("skipping device %s (cannot map host memory)", devinfo)
         return False
     compute = compute_capability(device)
-    if compute<min_compute:
+    if compute < min_compute:
         log("ignoring device %s: compute capability %#x (minimum %#x required)",
             device_info(device), compute, min_compute)
         return False
     enabled_gpus = get_gpu_list("enabled-devices")
     disabled_gpus = get_gpu_list("disabled-devices")
-    if enabled_gpus not in (None, True) and \
-        i not in enabled_gpus and devname not in enabled_gpus and pci not in enabled_gpus:
-        log("device %i '%s' / '%s' is not in the list of enabled gpus, skipped", i, devname, pci)
-        return False
+    if enabled_gpus not in (None, True):
+        # check the enabled gpu list:
+        if not any(x in enabled_gpus for x in (i, devname, pci)):
+            log("device %i '%s' / '%s' is not in the list of enabled gpus, skipped", i, devname, pci)
+            return False
     if disabled_gpus is not None and (devname in disabled_gpus or pci in disabled_gpus):
         log("device '%s' / '%s' is in the list of disabled gpus, skipped", i, devname, pci)
         return False
@@ -270,7 +295,7 @@ def check_device(i:int, device, min_compute:int=0) -> bool:
         log("   created context=%s", context)
         log("   api version=%s", context.get_api_version())
         free, total = mem_get_info()
-        log("   memory: free=%sMB, total=%sMB",  int(free//1024//1024), int(total//1024//1024))
+        log("   memory: free=%sMB, total=%sMB", int(free//1024//1024), int(total//1024//1024))
         log("   multi-processors: %s, clock rate: %s",
             device.get_attribute(da.MULTIPROCESSOR_COUNT), device.get_attribute(da.CLOCK_RATE))
         log("   max block sizes: (%s, %s, %s)",
@@ -288,11 +313,11 @@ def check_device(i:int, device, min_compute:int=0) -> bool:
         log("   maximum texture size: %sx%s", max_width, max_height)
         log("   max pitch: %s", device.get_attribute(da.MAX_PITCH))
         SMmajor, SMminor = device.compute_capability()
-        compute = (SMmajor<<4) + SMminor
+        compute = (SMmajor << 4) + SMminor
         log("   compute capability: %#x (%s.%s)", compute, SMmajor, SMminor)
         if i==0:
-            #we print the list info "header" from inside the loop
-            #so that the log output is bunched up together
+            # we print the list info "header" from inside the loop
+            # so that the log output is bunched up together
             log.info("CUDA %s / PyCUDA %s, found %s devices:",
                      ".".join([str(x) for x in get_version()]), pycuda.VERSION_TEXT, ngpus)
         mfree = round(100*free/total)
@@ -307,6 +332,7 @@ def check_device(i:int, device, min_compute:int=0) -> bool:
 
 def get_devices():
     return DEVICES
+
 
 def check_devices() -> None:
     devices = init_all_devices()
@@ -343,7 +369,10 @@ def select_device(preferred_device_id=-1, min_compute=0):
         log.warn("Warning: invalid load balancing value '%s'", load_balancing)
     return select_best_free_memory(min_compute)
 
+
 rr = 0
+
+
 def select_round_robin(min_compute:int):
     if not driver_init():
         return -1, None
@@ -373,11 +402,11 @@ def select_round_robin(min_compute:int):
 
 
 def select_best_free_memory(min_compute:int=0) -> tuple[int,Any]:
-    #load preferences:
+    # load preferences:
     preferred_device_name = get_pref("device-name")
     devices = init_all_devices()
     free_pct = 0
-    #split device list according to device state:
+    # split device list according to device state:
     ok_devices = [device_id for device_id in devices if DEVICE_STATE.get(device_id, True) is True]
     nok_devices = [device_id for device_id in devices if DEVICE_STATE.get(device_id, True) is not True]
     for list_name, device_list in {"OK" : ok_devices, "failing" : nok_devices}.items():
@@ -416,6 +445,7 @@ def select_best_free_memory(min_compute:int=0) -> tuple[int,Any]:
             return selected_device_id, selected_device
     return -1, None
 
+
 def load_device(device_id:int):
     log("load_device(%i)", device_id)
     try:
@@ -425,6 +455,7 @@ def load_device(device_id:int):
         log.error("Error: allocating CUDA device %s", device_id)
         log.estr(e)
     return None
+
 
 def make_device_context(device_id:int):
     log(f"make_device_context({device_id}")
@@ -443,7 +474,7 @@ def make_device_context(device_id:int):
         return None
     log(f"created context={context}")
     free, total = mem_get_info()
-    log("memory: free=%sMB, total=%sMB",  int(free/1024/1024), int(total/1024/1024))
+    log("memory: free=%sMB, total=%sMB", int(free/1024/1024), int(total/1024/1024))
     tpct = 100*free//total
     return device, context, tpct
 
@@ -457,6 +488,8 @@ def get_device_context(options:typedict):
 
 
 default_device_context = None
+
+
 def get_default_device_context():
     global default_device_context
     if default_device_context is None:
@@ -473,6 +506,7 @@ def get_default_device_context():
 
 class cuda_device_context:
     __slots__ = ("device_id", "device", "context", "lock", "opengl")
+
     def __init__(self, device_id, device, opengl=False):
         assert device, "no cuda device"
         self.device_id = device_id
@@ -516,11 +550,10 @@ class cuda_device_context:
         c = self.context
         if c:
             c.pop()
-        #except driver.LogicError as e:
-        #log.warn("Warning: PyCUDA %s", e)
-        #self.clean()
-        #self.init_cuda()
-
+        # except driver.LogicError as e:
+        # log.warn("Warning: PyCUDA %s", e)
+        # self.clean()
+        # self.init_cuda()
 
     def __repr__(self):
         extra = " - locked" if self.lock._is_owned() else ""
@@ -533,13 +566,12 @@ class cuda_device_context:
                 "name"         : self.device.name(),
                 "pci_bus_id"   : self.device.pci_bus_id(),
                 "memory"       : int(self.device.total_memory()//1024//1024),
-                },
+            },
             "opengl"    : self.opengl,
-            }
+        }
         if self.context:
             info["api_version"] = self.context.get_api_version()
         return info
-
 
     def __del__(self):
         self.free()
@@ -555,8 +587,10 @@ class cuda_device_context:
                 c.detach()
 
 
-#cache kernel fatbin files:
+# cache kernel fatbin files:
 KERNELS : dict[str,bytes] = {}
+
+
 def get_CUDA_function(function_name):
     """
         Returns the compiled kernel for the given device
@@ -576,7 +610,7 @@ def get_CUDA_function(function_name):
             return None
         log(f" loaded {len(data)} bytes")
         KERNELS[function_name] = data
-    #now load from cubin:
+    # now load from cubin:
     start = monotonic()
     try:
         mod = module_from_buffer(data)
@@ -612,6 +646,7 @@ def main():
         print_nested_dict(get_prefs(), print_fn=log.info)
         log.info("device automatically selected:")
         log.info(" %s", device_info(select_device()[1]))
+
 
 if __name__ == "__main__":
     main()

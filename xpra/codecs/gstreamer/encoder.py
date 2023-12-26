@@ -11,20 +11,20 @@ from xpra.common import roundup
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool, first_time
-from xpra.codecs.constants import video_spec, get_profile
+from xpra.codecs.constants import VideoSpec, get_profile
 from xpra.gstreamer.common import (
     import_gst, normv, get_all_plugin_names,
     get_caps_str, get_element_str, wrap_buffer,
     get_default_appsink_attributes, get_default_appsrc_attributes,
     BUFFER_FORMAT, GST_FLOW_OK,
-    )
+)
 from xpra.codecs.gstreamer.common import (
     VideoPipeline,
     get_version, get_type, get_info,
     init_module, cleanup_module,
     get_gst_encoding, get_gst_rgb_format, get_video_encoder_caps,
     get_video_encoder_options,
-    )
+)
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 
@@ -42,17 +42,21 @@ log(f"encoder: {get_type()} {get_version()}, {init_module}, {cleanup_module}")
 
 PACKED_RGB_FORMATS = ("RGBA", "BGRA", "ARGB", "ABGR", "RGB", "BGR", "BGRX", "XRGB", "XBGR")
 
-assert get_type() #all codecs must define this function
-COLORSPACES : dict[str,dict[str,list[str]]] = {}
-def get_encodings() -> tuple[str,...]:
+assert get_type()  # all codecs must define this function
+COLORSPACES : dict[str, dict[str, list[str]]] = {}
+
+
+def get_encodings() -> tuple[str, ...]:
     return tuple(COLORSPACES.keys())
 
-def get_input_colorspaces(encoding:str) -> tuple[str,...]:
+
+def get_input_colorspaces(encoding: str) -> tuple[str, ...]:
     colorspaces = COLORSPACES.get(encoding)
     assert colorspaces, f"invalid input colorspace for {encoding}"
     return tuple(colorspaces.keys())
 
-def get_output_colorspaces(encoding:str, input_colorspace:str) -> tuple[str,...]:
+
+def get_output_colorspaces(encoding: str, input_colorspace: str) -> tuple[str, ...]:
     colorspaces = COLORSPACES.get(encoding)
     assert colorspaces, f"invalid input colorspace for {encoding}"
     out_colorspaces = colorspaces.get(input_colorspace)
@@ -60,20 +64,22 @@ def get_output_colorspaces(encoding:str, input_colorspace:str) -> tuple[str,...]
     log.warn(f"get_output_colorspaces({encoding}, {input_colorspace})={out_colorspaces}")
     return tuple(out_colorspaces)
 
-def ElementEncoderClass(element:str):
+
+def ElementEncoderClass(element: str):
     class ElementEncoder(Encoder):
         pass
     ElementEncoder.encoder_element = element
     return ElementEncoder
 
-def make_spec(element:str, encoding:str, cs_in:str, css_out:tuple[str,...], cpu_cost:int=50, gpu_cost:int=50):
-    #use a metaclass so all encoders are gstreamer.encoder.Encoder subclasses,
-    #each with different pipeline arguments based on the make_spec parameters:
+
+def make_spec(element: str, encoding: str, cs_in: str, css_out: tuple[str, ...], cpu_cost: int=50, gpu_cost: int=50):
+    # use a metaclass so all encoders are gstreamer.encoder.Encoder subclasses,
+    # each with different pipeline arguments based on the make_spec parameters:
     if cs_in in PACKED_RGB_FORMATS:
         width_mask = height_mask = 0xFFFF
     else:
         width_mask = height_mask = 0xFFFE
-    spec = video_spec(
+    spec = VideoSpec(
         encoding=encoding, input_colorspace=cs_in,
         output_colorspaces=css_out,
         has_lossless_mode=False,
@@ -87,8 +93,10 @@ def make_spec(element:str, encoding:str, cs_in:str, css_out:tuple[str,...], cpu_
     return spec
 
 
-SPECS : dict[str,dict[str,list[video_spec]]] = {}
-def get_specs(encoding:str, colorspace:str) -> video_spec | None:
+SPECS : dict[str, dict[str, list[VideoSpec]]] = {}
+
+
+def get_specs(encoding: str, colorspace: str) -> VideoSpec | None:
     colorspaces = SPECS.get(encoding)
     assert colorspaces, f"invalid encoding: {encoding} (must be one of %s)" % csv(SPECS.keys())
     assert colorspace in colorspaces, f"invalid colorspace: {colorspace} (must be one of %s)" % csv(colorspaces.keys())
@@ -96,11 +104,12 @@ def get_specs(encoding:str, colorspace:str) -> video_spec | None:
 
 
 def init_all_specs(*exclude) -> None:
-    #by default, try to enable everything
-    #the self-tests should disable what isn't available / doesn't work
+    # by default, try to enable everything
+    # the self-tests should disable what isn't available / doesn't work
     specs : dict[str,dict[str,list]] = {}
     colorspaces : dict[str,dict[str,list]] = {}
     missing : list[str] = []
+
     def add(element:str, encoding:str, cs_in:str, css_out, *args):
         if element in missing:
             return
@@ -112,11 +121,11 @@ def init_all_specs(*exclude) -> None:
         if element not in get_all_plugin_names():
             missing.append(element)
             return
-        #add spec:
+        # add spec:
         css_out = css_out or (cs_in, )
         spec = make_spec(element, encoding, cs_in, css_out, *args)
         specs.setdefault(encoding, {}).setdefault(cs_in, []).append(spec)
-        #update colorspaces map (add new output colorspaces - if any):
+        # update colorspaces map (add new output colorspaces - if any):
         cur = colorspaces.setdefault(encoding, {}).setdefault(cs_in, [])
         for v in css_out:
             if v not in cur:
@@ -148,10 +157,10 @@ def init_all_specs(*exclude) -> None:
     if not OSX:
         add("av1enc", "av1", "YUV420P", ("YUV420P", ), 100, 0)
         add("av1enc", "av1", "YUV444P", ("YUV444P", ), 100, 0)
-    #svt encoders error out:
-    #add("svtav1enc", "av1", "YUV420P", ("YUV420P", ), 100, 0)
-    #add("svtvp9enc", "vp9", "YUV420P", ("YUV420P", ), 100, 0)
-    #add: nvh264enc, nvh265enc ?
+    # svt encoders error out:
+    # add("svtav1enc", "av1", "YUV420P", ("YUV420P", ), 100, 0)
+    # add("svtvp9enc", "vp9", "YUV420P", ("YUV420P", ), 100, 0)
+    # add: nvh264enc, nvh265enc ?
     global SPECS, COLORSPACES
     SPECS = specs
     COLORSPACES = colorspaces
@@ -179,16 +188,16 @@ class Encoder(VideoPipeline):
             raise ValueError(f"invalid encoding {self.encoding!r}")
         self.dst_formats = options.strtupleget("dst-formats")
         gst_rgb_format = get_gst_rgb_format(self.colorspace)
-        vcaps : dict[str,Any] = {
-            "width" : self.width,
-            "height" : self.height,
-            "format" : gst_rgb_format,
-            "framerate" : (60,1),
-            "interlace" : "progressive",
-            "colorimetry" : "bt709",
-            }
+        vcaps: dict[str,Any] = {
+            "width": self.width,
+            "height": self.height,
+            "format": gst_rgb_format,
+            "framerate": (60,1),
+            "interlace": "progressive",
+            "colorimetry": "bt709",
+        }
         CAPS = get_caps_str("video/x-raw", vcaps)
-        self.profile = self.get_profile(options)        #ie: "high"
+        self.profile = self.get_profile(options)        # ie: "high"
         eopts = get_video_encoder_options(self.encoder_element, self.profile, options)
         vcaps = get_video_encoder_caps(self.encoder_element)
         self.extra_client_info = vcaps.copy()
@@ -201,26 +210,26 @@ class Encoder(VideoPipeline):
             "do-timestamp"  : True,
             "format"        : BUFFER_FORMAT,
             "caps"          : CAPS,
-            #"leaky-type"    : 0,        #default is 0 and this is not available before GStreamer 1.20
+            # "leaky-type"    : 0,        # default is 0 and this is not available before GStreamer 1.20
         }
-        gst_encoding = get_gst_encoding(self.encoding)  #ie: "hevc" -> "video/x-h265"
+        gst_encoding = get_gst_encoding(self.encoding)   # ie: "hevc" -> "video/x-h265"
         elements = [
             get_element_str("appsrc", appsrc_opts),
             get_element_str(self.encoder_element, eopts),
             get_caps_str(gst_encoding, vcaps),
             get_element_str("appsink", get_default_appsink_attributes())
-            ]
+        ]
         if not self.setup_pipeline_and_bus(elements):
             raise RuntimeError("failed to setup gstreamer pipeline")
 
     def get_profile(self, options : typedict) -> str:
-        default_profile : str = {
-            #"x264enc"   : "constrained-baseline",
-            #"vaapih264enc" : "constrained-baseline",
-            #"nvh264enc" : "main",
-            "vp8enc"   : "", #0-4
-            "vp9enc"   : "", #0-4
-            }.get(self.encoder_element, "")
+        default_profile: str = {
+            # "x264enc"   : "constrained-baseline",
+            # "vaapih264enc" : "constrained-baseline",
+            # "nvh264enc" : "main",
+            "vp8enc": "",  # 0-4
+            "vp9enc": "",  # 0-4
+        }.get(self.encoder_element, "")
         return get_profile(options, self.encoding, self.colorspace, default_profile)
 
     def get_src_format(self) -> str:
@@ -235,7 +244,6 @@ class Encoder(VideoPipeline):
     def clean(self) -> None:
         self.cleanup()
 
-
     def on_new_sample(self, _bus) -> int:
         sample = self.sink.emit("pull-sample")
         buf = sample.get_buffer()
@@ -248,10 +256,10 @@ class Encoder(VideoPipeline):
             client_info["frame"] = self.frames
             self.frames += 1
             pts = normv(buf.pts)
-            if pts>=0:
+            if pts >= 0:
                 client_info["timestamp"] = pts
             duration = normv(buf.duration)
-            if duration>=0:
+            if duration >= 0:
                 client_info["duration"] = duration
             qs = self.frame_queue.qsize()
             if qs>0:
@@ -268,13 +276,14 @@ class Encoder(VideoPipeline):
             if rowstride!=want_rowstride and not image.restride(want_rowstride):
                 raise RuntimeError(f"failed to restride image from {rowstride}to {want_rowstride}")
         else:
-            #merge all planes into a single buffer:
+            # merge all planes into a single buffer:
             data = b"".join(image.get_pixels())
         log(f"compress_image({image}, {options}) state={self.state} pixel buffer size={len(data)}")
         if self.state in ("stopped", "error"):
             log(f"pipeline is in {self.state} state, dropping buffer")
             return None
         return self.process_buffer(wrap_buffer(data))
+
 
 GObject.type_register(Encoder)
 
@@ -283,7 +292,7 @@ def selftest(_full=False):
     log("gstreamer encoder selftest: %s", get_info())
     from xpra.codecs.checks import test_encoder_spec, DEFAULT_TEST_SIZE
     W, H = DEFAULT_TEST_SIZE
-    #test individual specs
+    # test individual specs
     skip = []
     log(f"will self test: {SPECS}")
     for encoding, cs_map in SPECS.items():
@@ -299,5 +308,6 @@ def selftest(_full=False):
                     log.warn(f" {e}")
                     skip.append(spec.gstreamer_element)
     init_all_specs(*skip)
+
 
 init_all_specs()

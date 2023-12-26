@@ -26,13 +26,13 @@ def get_encodings() -> tuple[str,...]:
 
 
 def get_info() -> dict[str,Any]:
-    return  {
-            "version"       : get_version(),
-            "encodings"     : get_encodings(),
-            }
+    return {
+        "version"       : get_version(),
+        "encodings"     : get_encodings(),
+    }
 
 
-def encode(coding : str, image, options : dict) -> tuple[str,Compressed,dict[str,Any],int,int,int,int]:
+def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str, Any], int, int, int, int]:
     pixel_format = image.get_pixel_format()
     # log("rgb_encode%s pixel_format=%s, rgb_formats=%s",
     #    (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4), pixel_format, rgb_formats)
