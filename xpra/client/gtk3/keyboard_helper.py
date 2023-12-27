@@ -59,6 +59,7 @@ class GTKKeyboardHelper(KeyboardHelper):
             # timer is already due
             return
         self._keymap_changing = True
+
         def do_keys_changed():
             # re-register the change handler:
             self._keymap_change_handler_id = self._keymap.connect("keys-changed", self.keymap_changed)
@@ -98,7 +99,7 @@ class GTKKeyboardHelper(KeyboardHelper):
 
 
 def main():
-    #use gtk as display source:
+    # use gtk as display source:
     # pylint: disable=import-outside-toplevel
     from xpra.gtk.util import init_display_source
     from xpra.util.str_fn import print_nested_dict
@@ -108,6 +109,7 @@ def main():
         x = GTKKeyboardHelper(None, True, "")
         x.query_xkbmap()
         print_nested_dict(x.get_keymap_properties())
+
 
 if __name__ == "__main__":
     main()

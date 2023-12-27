@@ -22,7 +22,7 @@ GdkPixbuf = gi_import("GdkPixbuf")
 ORIENTATION = {
     Gtk.Orientation.HORIZONTAL  : "HORIZONTAL",
     Gtk.Orientation.VERTICAL    : "VERTICAL",
-    }
+}
 
 GUESS_GEOMETRY = WIN32 or OSX
 GUESS_GEOMETRY = envbool("XPRA_GUESS_ICON_GEOMETRY", GUESS_GEOMETRY)
@@ -74,7 +74,6 @@ class GTKStatusIconTray(TrayBase):
             self.click_cb(button, 1, event_time)
             self.click_cb(button, 0, event_time)
 
-
     def hide(self):
         log("%s.set_visible(False)", self.tray_widget)
         if self.tray_widget:
@@ -84,7 +83,6 @@ class GTKStatusIconTray(TrayBase):
         log("%s.set_visible(True)", self.tray_widget)
         if self.tray_widget:
             self.tray_widget.set_visible(True)
-
 
     def get_orientation(self):
         if not self.tray_widget:
@@ -128,17 +126,15 @@ class GTKStatusIconTray(TrayBase):
         s = max(8, min(256, self.tray_widget.get_size()))
         return [s, s]
 
-
-    def set_tooltip(self, tooltip=None):
+    def set_tooltip(self, tooltip:str=""):
         if self.tray_widget:
             ignorewarnings(self.tray_widget.set_tooltip_text, tooltip or "Xpra")
 
-    def set_blinking(self, on):
+    def set_blinking(self, on: bool):
         #no longer supported with GTK3
         pass
 
-
-    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, _options=None):
+    def set_icon_from_data(self, pixels, has_alpha: bool, w: int, h: int, rowstride: int, _options=None):
         tray_icon = get_pixbuf_from_data(pixels, has_alpha, w, h, rowstride)
         self.set_icon_from_pixbuf(tray_icon)
 
@@ -169,7 +165,7 @@ class GTKStatusIconTray(TrayBase):
 
 def main():
     log.enable_debug()
-    from gi.repository import GLib  # @UnresolvedImport
+    GLib = gi_import("GLib")
     log.enable_debug()
     s = GTKStatusIconTray(None, None, None, "test", "xpra.png", None, None, None, Gtk.main_quit)
     GLib.timeout_add(1000*2, s.set_blinking, True)

@@ -43,7 +43,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             "send-data-response": self._process_send_data_response,
             "ack-file-chunk"    : self._process_ack_file_chunk,
             "send-file-chunk"   : self._process_send_file_chunk,
-            }, False)
+        }, False)
 
     def get_caps(self) -> dict[str,Any]:
         return self.get_file_transfer_features()
@@ -66,9 +66,8 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             printlog("parse_printing_capabilities() server printing support=%s", server_printing)
             if server_printing:
                 self.printer_attributes = caps.strtupleget("printer.attributes",
-                                                        ("printer-info", "device-uri"))
+                                                           ("printer-info", "device-uri"))
                 self.timeout_add(INIT_PRINTING_DELAY*1000, self.init_printing)
-
 
     def init_printing(self) -> None:
         try:
@@ -122,19 +121,20 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
         from xpra.platform.printing import get_printers, get_mimetypes  # pylint: disable=import-outside-toplevel
         try:
             printers = get_printers()
-        except Exception as  e:
+        except Exception as e:
             printlog("%s", get_printers, exc_info=True)
             printlog.error("Error: cannot access the list of printers")
             printlog.estr(e)
             return
         printlog("send_printers_thread() found printers=%s", printers)
         try:
-            #remove xpra-forwarded printers to avoid loops and multi-forwards,
-            #also ignore stopped printers
-            #and only keep the attributes that the server cares about (self.printer_attributes)
+            # remove xpra-forwarded printers to avoid loops and multi-forwards,
+            # also ignore stopped printers
+            # and only keep the attributes that the server cares about (self.printer_attributes)
             exported_printers = {}
+
             def used_attrs(d):
-                #filter attributes so that we only compare things that are actually used
+                # filter attributes so that we only compare things that are actually used
                 if not d:
                     return d
                 return {k:v for k,v in d.items() if k in self.printer_attributes}
@@ -147,9 +147,9 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
                         printlog("do_send_printers() skipping xpra forwarded printer=%s", k)
                         continue
                 state = v.get("printer-state")
-                #"3" if the destination is idle,
-                #"4" if the destination is printing a job,
-                #"5" if the destination is stopped.
+                # "3" if the destination is idle,
+                # "4" if the destination is printing a job,
+                # "5" if the destination is stopped.
                 if state==5 and SKIP_STOPPED_PRINTERS:
                     printlog("do_send_printers() skipping stopped printer=%s", k)
                     continue
@@ -170,8 +170,8 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             removed = tuple(k for k in self.exported_printers if k not in exported_printers)
             if removed:
                 printlog("send_printers_thread() printers removed: %s", removed)
-            modified = tuple(k for k,v in exported_printers.items() if
-                        self.exported_printers.get(k)!=v and k not in added)
+            modified = tuple(k for k, v in exported_printers.items() if
+                             self.exported_printers.get(k) != v and k not in added)
             if modified:
                 printlog("send_printers_thread() printers modified: %s", modified)
             printlog("send_printers_thread() printers=%s", exported_printers.keys())

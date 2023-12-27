@@ -49,7 +49,6 @@ class Networklistener(StubClientMixin):
         self._potential_protocols = []
         self._close_timers = {}
 
-
     def init(self, opts) -> None:
         def err(msg):
             raise InitException(msg)
@@ -58,9 +57,9 @@ class Networklistener(StubClientMixin):
             log(f"setup_local_sockets bind={opts.bind}, client_socket_dirs={opts.client_socket_dirs}")
             try:
                 local_sockets = setup_local_sockets(opts.bind,
-                                                "", opts.client_socket_dirs, "",
-                                                str(os.getpid()), True,
-                                                opts.mmap_group, opts.socket_permissions)
+                                                    "", opts.client_socket_dirs, "",
+                                                    str(os.getpid()), True,
+                                                    opts.mmap_group, opts.socket_permissions)
             except (OSError, InitExit, ImportError) as e:
                 log("setup_local_sockets bind=%s, client_socket_dirs=%s",
                     opts.bind, opts.client_socket_dirs, exc_info=True)
@@ -74,7 +73,6 @@ class Networklistener(StubClientMixin):
 
     def cleanup(self) -> None:
         self.cleanup_sockets()
-
 
     def cleanup_sockets(self) -> None:
         ct = dict(self._close_timers)
@@ -95,7 +93,6 @@ class Networklistener(StubClientMixin):
             c = sdef[-1]
             with log.trap_error("Error during socket cleanup %s", c):
                 c()
-
 
     def start_listen_sockets(self) -> None:
         for sock_def, options in self.sockets.items():
@@ -138,7 +135,7 @@ class Networklistener(StubClientMixin):
         conn = accept_connection(socktype, listener, SOCKET_TIMEOUT, socket_options)
         if conn is None:
             return
-        #limit number of concurrent network connections:
+        # limit number of concurrent network connections:
         if len(self._potential_protocols)>=MAX_CONCURRENT_CONNECTIONS:
             log.error("Error: too many connections (%i)", len(self._potential_protocols))
             log.error(" ignoring new one: %s", conn.endpoint or conn)
@@ -148,8 +145,7 @@ class Networklistener(StubClientMixin):
             sockname = conn._socket.getsockname()
         except Exception:
             sockname = ""
-        log("handle_new_connection%s sockname=%s",
-               (socktype, listener, handle), sockname)
+        log("handle_new_connection%s sockname=%s", (socktype, listener, handle), sockname)
         socket_info = self.socket_info.get(listener)
         log_new_connection(conn, socket_info)
         self.make_protocol(socktype, conn, listener)
@@ -157,16 +153,17 @@ class Networklistener(StubClientMixin):
     def make_protocol(self, socktype, conn, listener) -> None:
         socktype = socktype.lower()
         protocol = SocketProtocol(self, conn, self.process_network_packet)
-        #protocol.large_packets.append(b"info-response")
+        # protocol.large_packets.append(b"info-response")
         protocol.socket_type = socktype
         self._potential_protocols.append(protocol)
         protocol.authenticators = ()
         protocol.start()
-        #self.schedule_verify_connection_accepted(protocol, self._accept_timeout)
+        # self.schedule_verify_connection_accepted(protocol, self._accept_timeout)
 
     def process_network_packet(self, proto, packet) -> None:
         log("process_network_packet: %s", packet)
         packet_type = bytestostr(packet[0])
+
         def close():
             t = self._close_timers.pop(proto, None)
             if t:
@@ -175,6 +172,7 @@ class Networklistener(StubClientMixin):
                 self._potential_protocols.remove(proto)
             except ValueError:
                 pass
+
         def hello_reply(data):
             proto.send_now(["hello", data])
         if packet_type=="hello":
@@ -216,6 +214,7 @@ class Networklistener(StubClientMixin):
             elif request=="command":
                 command = caps.strtupleget("command_request")
                 log("command request: %s", command)
+
                 def process_control():
                     try:
                         self._process_control(["control"]+list(command))
@@ -250,4 +249,4 @@ class Networklistener(StubClientMixin):
             "platform"      : sys.platform,
             "pid"           : os.getpid(),
             "machine-id"    : get_machine_id(),
-            }
+        }

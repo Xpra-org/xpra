@@ -49,10 +49,9 @@ from OpenGL.GL.ARB.framebuffer_object import (
     GL_FRAMEBUFFER, GL_DRAW_FRAMEBUFFER, GL_READ_FRAMEBUFFER,
     GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
     glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D, glBlitFramebuffer,
-    )
+)
 
-from xpra.os_util import (
-    POSIX, OSX, )
+from xpra.os_util import POSIX, OSX
 from xpra.util.str_fn import repr_ellipsized, nonl, bytestostr, hexstr
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.types import typedict
@@ -60,10 +59,7 @@ from xpra.common import roundup
 from xpra.codecs.constants import get_subsampling_divs, get_plane_name
 from xpra.client.gui.window_border import WindowBorder
 from xpra.client.gui.paint_colors import get_paint_box_color
-from xpra.client.gui.window_backing_base import (
-    fire_paint_callbacks, WindowBackingBase,
-    WEBP_PILLOW,
-    )
+from xpra.client.gui.window_backing_base import fire_paint_callbacks, WindowBackingBase, WEBP_PILLOW
 from xpra.client.gl.check import GL_ALPHA_SUPPORTED, get_max_texture_size
 from xpra.client.gl.debug import context_init_debug, gl_marker, gl_frame_terminator
 from xpra.client.gl.util import (
@@ -146,7 +142,7 @@ CONSTANT_TO_PIXEL_FORMAT : dict[IntConstant, str] = {
     GL_RGB   : "RGB",
     GL_BGRA  : "BGRA",
     GL_RGBA  : "RGBA",
-    }
+}
 INTERNAL_FORMAT_TO_STR : dict[IntConstant, str] = {
     GL_RGB10_A2     : "RGB10_A2",
     GL_RGBA8        : "RGBA8",
@@ -604,13 +600,11 @@ class GLWindowBackingBase(WindowBackingBase):
                     continue        # nothing left!
             if x+xdelta < 0:
                 rect = (x, y, w, h)
-                fail(f"horizontal scroll by {xdelta}"
-                     + f" rectangle {rect} overflows the backing buffer size {self.size}")
+                fail(f"horizontal scroll by {xdelta} rectangle {rect} overflows the backing buffer size {self.size}")
                 continue
             if y+ydelta < 0:
                 rect = (x, y, w, h)
-                fail(f"vertical scroll by {ydelta}"
-                     + f" rectangle {rect} overflows the backing buffer size {self.size}")
+                fail(f"vertical scroll by {ydelta} rectangle {rect} overflows the backing buffer size {self.size}")
                 continue
             # opengl buffer is upside down, so we must invert Y coordinates: bh-(..)
             glBlitFramebuffer(x, bh-y, x+w, bh-(y+h),
@@ -1031,9 +1025,10 @@ class GLWindowBackingBase(WindowBackingBase):
             cuda_buffer = img.get_pixels()
             strides = img.get_rowstride()
             height = img.get_height()
+            uvheight = height // 2
             try:
                 y_pbo = self.cuda_buffer_to_pbo(context, cuda_buffer, strides[0], 0, height, stream)
-                uv_pbo = self.cuda_buffer_to_pbo(context, cuda_buffer, strides[1], roundup(height, 2), height // 2, stream)
+                uv_pbo = self.cuda_buffer_to_pbo(context, cuda_buffer, strides[1], roundup(height, 2), uvheight, stream)
             except LogicError as e:
                 # disable nvdec from now on:
                 self.nvdec_decoder = None
@@ -1108,14 +1103,16 @@ class GLWindowBackingBase(WindowBackingBase):
                    options: typedict, callbacks: Iterable[Callable]) -> None:
         subsampling = options.strget("subsampling")
         has_alpha = options.boolget("has_alpha")
-        if subsampling == "YUV420P" and WEBP_YUV and self.webp_decoder and not WEBP_PILLOW and not has_alpha and width >= 2 and height >= 2:
-            img = self.webp_decoder.decompress_yuv(img_data)
-            flush = options.intget("flush", 0)
-            w = img.get_width()
-            h = img.get_height()
-            self.idle_add(self.gl_paint_planar, "YUV_to_RGB", flush, "webp", img,
-                          x, y, w, h, width, height, options, callbacks)
-            return
+        if subsampling == "YUV420P" and WEBP_YUV and self.webp_decoder and not WEBP_PILLOW:
+            # validate dimensions:
+            if not has_alpha and width >= 2 and height >= 2:
+                img = self.webp_decoder.decompress_yuv(img_data)
+                flush = options.intget("flush", 0)
+                w = img.get_width()
+                h = img.get_height()
+                self.idle_add(self.gl_paint_planar, "YUV_to_RGB", flush, "webp", img,
+                              x, y, w, h, width, height, options, callbacks)
+                return
         super().paint_webp(img_data, x, y, width, height, options, callbacks)
 
     def paint_avif(self, img_data, x: int, y: int, width: int, height: int,
@@ -1168,7 +1165,7 @@ class GLWindowBackingBase(WindowBackingBase):
             if pformat is None:
                 raise ValueError(f"could not find pixel type for {rgb_format!r}")
 
-            gl_marker("%s update at (%d,%d) size %dx%d (%s bytes) to %dx%d, using GL %s format=%s / %s to internal format=%s",
+            gl_marker("%s update at (%d,%d) size %dx%d (%s bytes) to %dx%d, using GL %s format=%s / %s to internal=%s",
                       rgb_format, x, y, width, height, len(img_data), render_width, render_height,
                       upload, CONSTANT_TO_PIXEL_FORMAT.get(pformat), DATATYPE_TO_STR.get(ptype),
                       INTERNAL_FORMAT_TO_STR.get(self.internal_format)
@@ -1299,7 +1296,7 @@ class GLWindowBackingBase(WindowBackingBase):
             (GL_TEXTURE0, TEX_Y),
             (GL_TEXTURE1, TEX_U),
             (GL_TEXTURE2, TEX_V),
-            )[:len(divs)]
+        )[:len(divs)]
         log("%s.update_planar_textures%s textures=%s", self, (width, height, img, pixel_format, scaling, pbo), textures)
         if self.planar_pixel_format != pixel_format or self.texture_size != (width, height):
             gl_marker("Creating new planar textures, pixel format %s (was %s), texture size %s (was %s)",
@@ -1368,14 +1365,15 @@ class GLWindowBackingBase(WindowBackingBase):
                 glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, 0)
             except GLError:
                 pass
-            log(f"texture {index}: {tex_name:2} div={div_w},{div_h}, rowstride={rowstride}, {w}x{h}, " +
+            log(f"texture {index}: {tex_name:2} div={div_w},{div_h}, rowstride={rowstride}, {w}x{h}, "
                 f"data={size} bytes, upload={upload}, format={dformat}, type={uformat}")
             glTexSubImage2D(target, 0, 0, 0, w, h, dformat, uformat, pixel_data)
             glBindTexture(target, 0)
             glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
         # glActiveTexture(GL_TEXTURE0)    #redundant, we always call render_planar_update afterwards
 
-    def render_planar_update(self, rx: int, ry: int, rw: int, rh: int, width: int, height: int, shader="YUV_to_RGB") -> None:
+    def render_planar_update(self, rx: int, ry: int, rw: int, rh: int, width: int, height: int,
+                             shader="YUV_to_RGB") -> None:
         log("%s.render_planar_update%s pixel_format=%s",
             self, (rx, ry, rw, rh, width, height, shader), self.planar_pixel_format)
         if self.planar_pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "NV12", "GBRP16", "YUV444P16"):
@@ -1386,7 +1384,7 @@ class GLWindowBackingBase(WindowBackingBase):
             (GL_TEXTURE0, TEX_Y),
             (GL_TEXTURE1, TEX_U),
             (GL_TEXTURE2, TEX_V),
-            )[:len(divs)]
+        )[:len(divs)]
         gl_marker("painting planar update, format %s", self.planar_pixel_format)
 
         target = GL_TEXTURE_RECTANGLE

@@ -50,7 +50,8 @@ class GLAreaBacking(GLWindowBackingBase):
         glarea.connect("realize", self.on_realize)
         glarea.connect("render", self.on_render)
         glarea.set_size_request(*self.size)
-        glarea.set_events(glarea.get_events() | Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.POINTER_MOTION_HINT_MASK)
+        add_events = Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.POINTER_MOTION_HINT_MASK
+        glarea.set_events(glarea.get_events() | add_events)
         glarea.show()
         self._backing = glarea
 

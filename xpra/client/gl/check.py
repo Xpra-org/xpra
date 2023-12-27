@@ -12,10 +12,7 @@ from typing import Any
 from xpra.util.str_fn import csv, print_nested_dict, bytestostr
 from xpra.util.env import envint, envbool, NumpyImportContext
 from xpra.log import Logger, CaptureHandler
-from xpra.client.gl.drivers import (
-    GL_MATCH_LIST, WHITELIST, GREYLIST, BLACKLIST,
-    OpenGLFatalError,
-)
+from xpra.client.gl.drivers import GL_MATCH_LIST, WHITELIST, GREYLIST, BLACKLIST, OpenGLFatalError
 
 log = Logger("opengl")
 
@@ -49,6 +46,7 @@ def parse_pyopengl_version(vstr : str) -> tuple[int,...]:
         except ValueError:
             return 0
     return tuple(numv(x) for x in vstr.split("."))
+
 
 _version_warning_shown = False
 
@@ -390,9 +388,9 @@ def check_PyOpenGL_support(force_enable) -> dict[str, Any]:
 
 
 def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
-    props : dict[str, Any] = {
+    props: dict[str, Any] = {
         "platform"  : sys.platform,
-        }
+    }
     try:
         from OpenGL import platform
         props["backend"] = platform.PLATFORM.__module__.split(".")[-1]

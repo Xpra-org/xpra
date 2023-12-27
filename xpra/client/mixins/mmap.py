@@ -40,7 +40,6 @@ class MmapClient(StubClientMixin):
         self.mmap_delete : bool = False
         self.mmap_supported : bool = True
 
-
     def init(self, opts) -> None:
         self.mmap_group = opts.mmap_group
         if os.path.isabs(opts.mmap):
@@ -49,23 +48,20 @@ class MmapClient(StubClientMixin):
         else:
             self.mmap_supported = opts.mmap.lower() in TRUE_OPTIONS
 
-
     def cleanup(self) -> None:
         self.clean_mmap()
-
 
     def setup_connection(self, conn) -> None:
         if self.mmap_supported:
             self.init_mmap(self.mmap_filename, self.mmap_group, conn.filename)
 
-
     def get_root_size(self) -> tuple[int,int]:
-        #subclasses should provide real values
+        # subclasses should provide real values
         return 1024, 1024
 
     def parse_server_capabilities(self, c : typedict) -> bool:
         mmap_caps = c.dictget("mmap")
-        #new format with namespace
+        # new format with namespace
         c = typedict(mmap_caps or {})
         self.mmap_enabled = bool(self.mmap_supported and self.mmap_enabled and c.intget("enabled"))
         log("parse_server_capabilities(..) mmap_enabled=%s", self.mmap_enabled)
@@ -88,18 +84,17 @@ class MmapClient(StubClientMixin):
             self.clean_mmap()
         return True
 
-
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         return self.get_caps()
 
-    def get_caps(self) -> dict[str,Any]:
+    def get_caps(self) -> dict[str, Any]:
         if not self.mmap_enabled:
             return {}
         return {
-            "mmap" : self.get_raw_caps(),
-            }
+            "mmap": self.get_raw_caps(),
+        }
 
-    def get_raw_caps(self) -> dict[str,Any]:
+    def get_raw_caps(self) -> dict[str, Any]:
         return {
             "file"          : self.mmap_filename,
             "size"          : self.mmap_size,
@@ -107,17 +102,17 @@ class MmapClient(StubClientMixin):
             "token_index"   : self.mmap_token_index,
             "token_bytes"   : self.mmap_token_bytes,
             "group"         : self.mmap_group or "",
-            }
+        }
 
     def init_mmap(self, mmap_filename, mmap_group, socket_filename) -> None:
         log("init_mmap(%s, %s, %s)", mmap_filename, mmap_group, socket_filename)
         from xpra.net.mmap import (  #pylint: disable=import-outside-toplevel
             init_client_mmap, write_mmap_token,
             DEFAULT_TOKEN_BYTES,
-            )
-        #calculate size:
+        )
+        # calculate size:
         root_w, root_h = self.get_root_size()
-        #at least 256MB, or 8 fullscreen RGBX frames:
+        # at least 256MB, or 8 fullscreen RGBX frames:
         mmap_size : int = max(512*1024*1024, root_w*root_h*4*8)
         mmap_size = min(2048*1024*1024, mmap_size)
         self.mmap_enabled, self.mmap_delete, self.mmap, self.mmap_size, self.mmap_tempfile, self.mmap_filename = \
@@ -137,7 +132,7 @@ class MmapClient(StubClientMixin):
                 log("clean_mmap error closing file %s: %s", self.mmap_tempfile, e)
             self.mmap_tempfile = None
         if self.mmap_delete:
-            #this should be redundant: closing the tempfile should get it deleted
+            # this should be redundant: closing the tempfile should get it deleted
             if self.mmap_filename and os.path.exists(self.mmap_filename):
                 from xpra.net.mmap import clean_mmap
                 clean_mmap(self.mmap_filename)

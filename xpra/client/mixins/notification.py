@@ -34,7 +34,7 @@ class NotificationClient(StubClientMixin):
         self.notifier = None
         self.tray = None
         self.callbacks = {}
-        #override the default handler in client base:
+        # override the default handler in client base:
         self.may_notify = self.do_notify
 
     def init(self, opts):
@@ -50,7 +50,6 @@ class NotificationClient(StubClientMixin):
                 log("using notifier=%s", self.notifier)
                 self.client_supports_notifications = self.notifier is not None
 
-
     def cleanup(self):
         n = self.notifier
         log("NotificationClient.cleanup() notifier=%s", n)
@@ -59,21 +58,18 @@ class NotificationClient(StubClientMixin):
             with log.trap_error(f"Error on notifier {n!r} cleanup"):
                 n.cleanup()
 
-
-    def parse_server_capabilities(self, c : typedict) -> bool:
+    def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_notifications = "notifications" in c
         self.notifications_enabled = self.client_supports_notifications
         return True
 
-
-    def get_caps(self) -> dict[str,Any]:
+    def get_caps(self) -> dict[str, Any]:
         enabled = self.client_supports_notifications
         return {
-            "notifications" : {
-                "enabled" : enabled,
-                },
-            }
-
+            "notifications": {
+                "enabled": enabled,
+            },
+        }
 
     def init_authenticated_packet_handlers(self):
         self.add_packet_handler("notification-show", self._process_notify_show)
@@ -103,9 +99,9 @@ class NotificationClient(StubClientMixin):
             self.send("notification-action", nid, action_id)
 
     def get_notifier_classes(self):
-        #subclasses will generally add their toolkit specific variants
-        #by overriding this method
-        #use the native ones first:
+        # subclasses will generally add their toolkit specific variants
+        # by overriding this method
+        # use the native ones first:
         if not NATIVE_NOTIFIER:
             return []
         return get_native_notifier_classes()
@@ -125,6 +121,7 @@ class NotificationClient(StubClientMixin):
                 for x in body.splitlines():
                     log.info(" %s", x)
             return
+
         def show_notification():
             try:
                 from xpra.notifications.common import parse_image_path

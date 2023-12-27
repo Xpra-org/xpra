@@ -16,6 +16,7 @@ from xpra.net.common import PacketHandlerType
 class StubClientMixin:
 
     __signals__ : list[str] = []
+
     def __init__(self):
         self.exit_code = None
         self.start_time = int(time.time())
@@ -32,7 +33,7 @@ class StubClientMixin:
         run the main loop.
         """
 
-    def quit(self, exit_code:int|ExitCode) -> None:  # pragma: no cover
+    def quit(self, exit_code: int | ExitCode) -> None:      # pragma: no cover
         """
         Terminate the client with the given exit code.
         (the exit code is ignored if we already have one)
@@ -98,7 +99,7 @@ class StubClientMixin:
         based on the client and server capabilities (ie: lz4, brotli).
         subclasses should override this method.
         """
-        assert level>=0
+        assert level >= 0
         return Compressed("raw %s" % datatype, data, can_inline=True)
 
     def init_authenticated_packet_handlers(self) -> None:
@@ -106,7 +107,8 @@ class StubClientMixin:
         Register the packet types that this mixin can handle.
         """
 
-    def add_packet_handler(self, packet_type : str, handler : PacketHandlerType, main_thread=True) -> None:  # pragma: no cover
+    def add_packet_handler(self, packet_type: str, handler: PacketHandlerType,
+                           main_thread=True) -> None:   # pragma: no cover
         raise NotImplementedError()
 
     def add_packet_handlers(self, defs : dict[str,PacketHandlerType], main_thread=True) -> None:  # pragma: no cover

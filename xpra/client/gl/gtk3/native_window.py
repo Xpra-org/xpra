@@ -12,6 +12,7 @@ from xpra.platform.gl_context import GLContext
 if not GLContext:
     raise ImportError("no OpenGL context implementation for %s" % sys.platform)
 
+
 def check_support(force_enable=False):
     import warnings  #pylint: disable=import-outside-toplevel
     with warnings.catch_warnings():

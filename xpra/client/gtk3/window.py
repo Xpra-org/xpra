@@ -90,8 +90,8 @@ class ClientWindow(GTKClientWindowBase):
         hb.set_show_close_button(True)
         hb.props.title = self.get_title()
         if WINDOW_MENU:
-            #the icon 'open-menu-symbolic' will be replaced with the window icon
-            #when we receive it
+            # the icon 'open-menu-symbolic' will be replaced with the window icon
+            # when we receive it
             icon = Gio.ThemedIcon(name="preferences-system-windows")
             self.header_bar_image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
             button = Gtk.Button()
@@ -99,7 +99,7 @@ class ClientWindow(GTKClientWindowBase):
             button.connect("clicked", self.show_window_menu)
             hb.pack_start(button)
         elif WINDOW_ICON:
-            #just the icon, no menu:
+            # just the icon, no menu:
             pixbuf = get_icon_pixbuf("transparent.png")
             self.header_bar_image = scaled_image(pixbuf, self._icon_size())
             hb.pack_start(self.header_bar_image)
@@ -111,7 +111,6 @@ class ClientWindow(GTKClientWindowBase):
             button.connect("clicked", self.show_xpra_menu)
             hb.pack_end(button)
         self.set_titlebar(hb)
-
 
     def show_xpra_menu(self, *_args) -> None:
         mh = getattr(self._client, "menu_helper", None)
@@ -128,17 +127,16 @@ class ClientWindow(GTKClientWindowBase):
         from xpra.client.gtk3.cairo_backing import CairoBacking
         return CairoBacking
 
-
     def xget_u32_property(self, target, name:str):
         if HAS_X11_BINDINGS:
             return GTKClientWindowBase.xget_u32_property(self, target, name)
-        #pure Gdk lookup:
+        # pure Gdk lookup:
         try:
             name_atom = Gdk.Atom.intern(name, False)
             type_atom = Gdk.Atom.intern("CARDINAL", False)
             prop = Gdk.property_get(target, name_atom, type_atom, 0, 9999, False)
             if not prop or len(prop)!=3 or len(prop[2])!=1:
-                return  None
+                return None
             metalog("xget_u32_property(%s, %s)=%s", target, name, prop[2][0])
             return prop[2][0]
         except Exception as e:
@@ -157,30 +155,32 @@ class ClientWindow(GTKClientWindowBase):
         """ we convert the hints as a dict into a gdk.Geometry + gdk.WindowHints """
         wh = Gdk.WindowHints
         name_to_hint = {
-                        "max_width"     : wh.MAX_SIZE,
-                        "max_height"    : wh.MAX_SIZE,
-                        "min_width"     : wh.MIN_SIZE,
-                        "min_height"    : wh.MIN_SIZE,
-                        "base_width"    : wh.BASE_SIZE,
-                        "base_height"   : wh.BASE_SIZE,
-                        "width_inc"     : wh.RESIZE_INC,
-                        "height_inc"    : wh.RESIZE_INC,
-                        "min_aspect_ratio"  : wh.ASPECT,
-                        "max_aspect_ratio"  : wh.ASPECT,
-                        }
-        #these fields can be copied directly to the gdk.Geometry as ints:
-        INT_FIELDS= ["min_width",    "min_height",
-                        "max_width",    "max_height",
-                        "base_width",   "base_height",
-                        "width_inc",    "height_inc"]
+            "max_width"     : wh.MAX_SIZE,
+            "max_height"    : wh.MAX_SIZE,
+            "min_width"     : wh.MIN_SIZE,
+            "min_height"    : wh.MIN_SIZE,
+            "base_width"    : wh.BASE_SIZE,
+            "base_height"   : wh.BASE_SIZE,
+            "width_inc"     : wh.RESIZE_INC,
+            "height_inc"    : wh.RESIZE_INC,
+            "min_aspect_ratio"  : wh.ASPECT,
+            "max_aspect_ratio"  : wh.ASPECT,
+        }
+        # these fields can be copied directly to the gdk.Geometry as ints:
+        INT_FIELDS = [
+            "min_width", "min_height",
+            "max_width", "max_height",
+            "base_width", "base_height",
+            "width_inc", "height_inc",
+        ]
         ASPECT_FIELDS = {
-                        "min_aspect_ratio"  : "min_aspect",
-                        "max_aspect_ratio"  : "max_aspect",
-                         }
+            "min_aspect_ratio"  : "min_aspect",
+            "max_aspect_ratio"  : "max_aspect",
+        }
         thints = typedict(hints)
         if self.drawing_area:
-            #apply min size to the drawing_area:
-            #(for CSD mode, ie: headerbar)
+            # apply min size to the drawing_area:
+            # (for CSD mode, ie: headerbar)
             minw = thints.intget("min_width", 0)
             minh = thints.intget("min_height", 0)
             self.drawing_area.set_size_request(minw, minh)

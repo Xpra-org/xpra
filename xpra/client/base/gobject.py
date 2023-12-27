@@ -37,11 +37,9 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
     def get_scheduler(self):
         return GLib
 
-
     def install_signal_handlers(self) -> None:
         from xpra.gtk.signals import install_signal_handlers
         install_signal_handlers("%s Client" % self.client_type(), self.handle_app_signal)
-
 
     def setup_connection(self, conn):
         protocol = super().setup_connection(conn)
@@ -49,18 +47,17 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
         GLib.idle_add(self.send_hello)
         return protocol
 
-
     def client_type(self) -> str:
-        #overridden in subclasses!
+        # overridden in subclasses!
         return "Python3/GObject"
-
 
     def init_packet_handlers(self) -> None:
         XpraClientBase.init_packet_handlers(self)
+
         def noop_handler(packet : PacketType) -> None:    # pragma: no cover
             log("ignoring packet: %s", packet)
-        #ignore the following packet types without error:
-        #(newer servers should avoid sending us any of those)
+        # ignore the following packet types without error:
+        # (newer servers should avoid sending us any of those)
         for t in (
             "new-window", "new-override-redirect",
             "draw", "cursor", "bell",
@@ -68,7 +65,7 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
             "ping", "ping_echo",
             "window-metadata", "configure-override-redirect",
             "lost-window",
-            ):
+        ):
             self.add_packet_handler(t, noop_handler, False)
 
     def run(self) -> ExitValue:
@@ -85,7 +82,7 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
         capabilities["keyboard"] = False
         return capabilities
 
-    def quit(self, exit_code:int|ExitCode=0) -> None:
+    def quit(self, exit_code: int | ExitCode=0) -> None:
         log("quit(%s) current exit_code=%s", exit_code, self.exit_code)
         if self.exit_code is None:
             self.exit_code = exit_code

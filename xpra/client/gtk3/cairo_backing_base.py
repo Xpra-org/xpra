@@ -11,14 +11,16 @@ from cairo import (  #pylint: disable=no-name-in-module
     Context, ImageSurface,  # @UnresolvedImport
     FORMAT_ARGB32, FORMAT_RGB30, FORMAT_RGB24, FORMAT_RGB16_565,  # @UnresolvedImport
     OPERATOR_SOURCE, OPERATOR_CLEAR, OPERATOR_OVER,  # @UnresolvedImport
-    )
-from gi.repository import GLib, Gdk  # @UnresolvedImport
-
+)
 from xpra.client.gui.paint_colors import get_paint_box_color
 from xpra.client.gui.window_backing_base import WindowBackingBase, fire_paint_callbacks
 from xpra.util.str_fn import memoryview_to_bytes
 from xpra.util.env import envbool
+from xpra.os_util import gi_import
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
+Gdk = gi_import("Gdk")
 
 log = Logger("paint", "cairo")
 
@@ -85,14 +87,13 @@ class CairoBackingBase(WindowBackingBase):
         }
         return info
 
-
     def create_surface(self):
         bw, bh = self.size
         old_backing = self._backing
-        #should we honour self.depth here?
+        # should we honour self.depth here?
         self._backing = None
-        if bw==0 or bh==0:
-            #this can happen during cleanup
+        if bw == 0 or bh == 0:
+            # this can happen during cleanup
             return None
         backing = ImageSurface(FORMAT_ARGB32, bw, bh)
         self._backing = backing
@@ -124,23 +125,23 @@ class CairoBackingBase(WindowBackingBase):
             self._backing = None
         super().close()
 
-
-    def cairo_paint_pixbuf(self, pixbuf, x : int, y : int, options) -> None:
+    def cairo_paint_pixbuf(self, pixbuf, x: int, y: int, options) -> None:
         """ must be called from UI thread """
         log("source pixbuf: %s", pixbuf)
         w, h = pixbuf.get_width(), pixbuf.get_height()
         self.cairo_paint_from_source(Gdk.cairo_set_source_pixbuf, pixbuf, x, y, w, h, w, h, options)
 
-    def cairo_paint_surface(self, img_surface, x : int, y : int, width : int, height : int, options) -> None:
+    def cairo_paint_surface(self, img_surface, x: int, y: int, width: int, height: int, options) -> None:
         iw, ih = img_surface.get_width(), img_surface.get_height()
         log("source image surface: %s",
             (img_surface.get_format(), iw, ih, img_surface.get_stride(), img_surface.get_content(), ))
+
         def set_source_surface(gc, surface, sx, sy):
             gc.set_source_surface(surface, sx, sy)
         self.cairo_paint_from_source(set_source_surface, img_surface, x, y, iw, ih, width, height, options)
 
     def cairo_paint_from_source(self, set_source_fn, source,
-                                x : int, y : int, iw : int, ih : int, width : int, height : int, options) -> None:
+                                x: int, y: int, iw: int, ih: int, width: int, height: int, options) -> None:
         """ must be called from UI thread """
         backing = self._backing
         log("cairo_paint_surface%s backing=%s, paint box line width=%i",
@@ -210,7 +211,6 @@ class CairoBackingBase(WindowBackingBase):
     def _do_paint_rgb(self, *args) -> bool:
         raise NotImplementedError()
 
-
     def paint_scroll(self, img_data, options, callbacks) -> None:
         self.idle_add(self.do_paint_scroll, img_data, callbacks)
 
@@ -236,25 +236,24 @@ class CairoBackingBase(WindowBackingBase):
         self._backing.flush()
         fire_paint_callbacks(callbacks)
 
-
     def cairo_draw(self, context) -> None:
         backing = self._backing
         log("cairo_draw: backing=%s, size=%s, render-size=%s, offsets=%s, pointer_overlay=%s",
             backing, self.size, self.render_size, self.offsets, self.pointer_overlay)
         if backing is None:
             return
-        #try:
+        # try:
         #    log("clip rectangles=%s", context.copy_clip_rectangle_list())
-        #except:
+        # except:
         #    log.error("clip:", exc_info=True)
         ww, wh = self.render_size
         w, h = self.size
-        if ww==0 or w==0 or wh==0 or h==0:
+        if ww == 0 or w == 0 or wh == 0 or h == 0:
             return
-        if w!=ww or h!=wh:
+        if w != ww or h != wh:
             context.scale(ww/w, wh/h)
         x, y = self.offsets[:2]
-        if x!=0 or y!=0:
+        if x != 0 or y != 0:
             context.translate(x, y)
         context.set_operator(OPERATOR_SOURCE)
         context.set_source_surface(backing, 0, 0)
@@ -271,7 +270,8 @@ class CairoBackingBase(WindowBackingBase):
             context.set_source_surface(self.fps_image, 0, 0)
             context.paint()
             self.cancel_fps_refresh()
-            #width, height = self.fps_buffer_size
+            # width, height = self.fps_buffer_size
+
             def refresh_screen():
                 self.fps_refresh_timer = 0
                 b = self._backing

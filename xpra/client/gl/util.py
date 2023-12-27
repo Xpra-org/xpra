@@ -113,7 +113,7 @@ def save_fbo(wid: int, fbo, texture, width: int, height: int, alpha=False) -> No
         }
     t = time.time()
     tstr = time.strftime("%H-%M-%S", time.localtime(t))
-    filename = "./W%i-FBO-%s.%03i.%s" % (wid, tstr, (t*1000)%1000, SAVE_BUFFERS)
+    filename = "./W%i-FBO-%s.%03i.%s" % (wid, tstr, (t*1000) % 1000, SAVE_BUFFERS)
     log("do_present_fbo: saving %4ix%-4i pixels, %7i bytes to %s", width, height, size, filename)
     img.save(filename, SAVE_BUFFERS, **kwargs)
     GL.glBindFramebuffer(GL.GL_READ_FRAMEBUFFER, 0)

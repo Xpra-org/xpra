@@ -33,7 +33,7 @@ class Handler:
             log("%s is not a u2f challenge", digest)
             return None
         try:
-            #pylint: disable=import-outside-toplevel
+            # pylint: disable=import-outside-toplevel
             from pyu2f import model
             from pyu2f.u2f import GetLocalU2FInterface
         except ImportError as e:
@@ -48,7 +48,7 @@ class Handler:
         if not key_handle:
             return None
         key = model.RegisteredKey(key_handle)
-        #use server salt as challenge directly
+        # use server salt as challenge directly
         log.info("activate your U2F device for authentication")
         response = dev.Authenticate(self.app_id, challenge, [key])
         sig = response.signature_data
@@ -60,8 +60,8 @@ class Handler:
         key_handle_str = os.environ.get("XPRA_U2F_KEY_HANDLE")
         log("process_challenge_u2f XPRA_U2F_KEY_HANDLE=%s", key_handle_str)
         if not key_handle_str:
-            #try to load the key handle from the user conf dir(s):
-            from xpra.platform.paths import get_user_conf_dirs  #pylint: disable=import-outside-toplevel
+            # try to load the key handle from the user conf dir(s):
+            from xpra.platform.paths import get_user_conf_dirs    # pylint: disable=import-outside-toplevel
             info = self.client._protocol.get_info(False)
             key_handle_filenames = []
             for hostinfo in ("-%s" % info.get("host", ""), ""):

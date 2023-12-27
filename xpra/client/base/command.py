@@ -166,7 +166,7 @@ class ScreenshotXpraClient(CommandConnectClient):
         assert encoding=="png", "expected png screenshot data but got %s" % encoding
         if not img_data:
             self.warn_and_quit(ExitCode.OK,
-                               "screenshot is empty and has not been saved"+
+                               "screenshot is empty and has not been saved"
                                " (maybe there are no windows or they are not currently shown)")
             return
         if self.screenshot_filename=="-":
@@ -199,8 +199,10 @@ class InfoXpraClient(CommandConnectClient):
         if not caps:
             self.quit(ExitCode.NO_DATA)
             return
+
         def print_fn(s):
             sys.stdout.write(f"{s}\n")
+
         def prettify(k, v) -> str:
             ks = str(k)
             if ks.endswith("xid"):
@@ -220,6 +222,7 @@ class InfoXpraClient(CommandConnectClient):
                     return str(v)
                 return str(type(v)(prettify(k, x) for x in v))
             return str(v)
+
         def print_dict(d:dict, path=""):
             for k in sorted_nicely(d.keys()):
                 v = d.get(k)
@@ -266,7 +269,7 @@ class ConnectTestXpraClient(CommandConnectClient):
         self.hello_extra |= {
             "connect_test_request"      : self.value,
             "request"                   : "connect_test",
-            #tells proxy servers we don't want to connect to the real / new instance:
+            # tells proxy servers we don't want to connect to the real / new instance:
             "connect"                   : False,
         }
         self.hello_extra.update(kwargs)
@@ -512,7 +515,7 @@ class VersionXpraClient(HelloRequestClient):
         return {
             "request"               : "version",
             "full-version-request"  : True,
-            }
+        }
 
     def parse_network_capabilities(self, *_args) -> bool:
         #don't bother checking anything - this could generate warnings
@@ -567,7 +570,8 @@ class PrintClient(SendCommandConnectClient):
         #print command arguments:
         #filename, file_data, mimetype, source_uuid, title, printer, no_copies, print_options_str = packet[1:9]
         self.command = command[1:]
-        #TODO: load as needed...
+        # TODO: load as needed...
+
         def sizeerr(size):
             self.warn_and_quit(ExitCode.FILE_TOO_BIG,
                                "the file is too large: %sB (the file size limit is %sB)" % (
@@ -628,7 +632,7 @@ class ExitXpraClient(HelloRequestClient):
     def hello_request(self) -> dict[str,Any]:
         return {
             "request"       : "exit",
-            }
+        }
 
     def do_command(self, caps : typedict) -> None:
         self.idle_add(self.send, "exit-server", os.environ.get("XPRA_EXIT_MESSAGE", ConnectionMessage.SERVER_EXIT))
@@ -640,7 +644,7 @@ class StopXpraClient(HelloRequestClient):
     def hello_request(self) -> dict[str,Any]:
         return {
             "request"       : "stop",
-            }
+        }
 
     def do_command(self, caps : typedict) -> None:
         if not self.server_client_shutdown:
@@ -648,27 +652,27 @@ class StopXpraClient(HelloRequestClient):
             log.error(" the feature is disabled on the server")
             self.quit(ExitCode.UNSUPPORTED)
             return
-        #with newer (v5) servers, the "stop" request should have done it,
-        #but let's try harder for older servers:
+        # with newer (v5) servers, the "stop" request should have done it,
+        # but let's try harder for older servers:
         self.timeout_add(1000, self.send_shutdown_server)
-        #self.idle_add(self.send_shutdown_server)
-        #not exiting the client here,
-        #the server should send us the shutdown disconnection message anyway
-        #and if not, we will then hit the timeout to tell us something went wrong
+        # self.idle_add(self.send_shutdown_server)
+        # not exiting the client here,
+        # the server should send us the shutdown disconnection message anyway
+        # and if not, we will then hit the timeout to tell us something went wrong
 
 
 class DetachXpraClient(HelloRequestClient):
-    """ run the detach subcommand """
+    """ run the `detach` subcommand """
 
     def hello_request(self) -> dict[str,Any]:
         return {
             "request"           : "detach",
-            }
+        }
 
     def do_command(self, caps : typedict) -> None:
         self.idle_add(self.send, "disconnect", ConnectionMessage.DONE, "detaching")
-        #not exiting the client here,
-        #the server should disconnect us with the response
+        # not exiting the client here,
+        # the server should disconnect us with the response
 
 
 class WaitForDisconnectXpraClient(DetachXpraClient):
@@ -680,7 +684,7 @@ class WaitForDisconnectXpraClient(DetachXpraClient):
 
 class RequestStartClient(HelloRequestClient):
     """ request the system proxy server to start a new session for us """
-    #wait longer for this command to return:
+    # wait longer for this command to return:
     from xpra.scripts.main import WAIT_SERVER_TIMEOUT
     COMMAND_TIMEOUT = EXTRA_TIMEOUT+WAIT_SERVER_TIMEOUT
 
@@ -694,18 +698,18 @@ class RequestStartClient(HelloRequestClient):
 
     def hello_request(self) -> dict[str,Any]:
         if first_time("hello-request"):
-            #this can be called again if we receive a challenge,
-            #but only print this message once:
+            # this can be called again if we receive a challenge,
+            # but only print this message once:
             errwrite("requesting new session, please wait")
         self.timeout_add(1*1000, self.dots)
         return {
             "start-new-session" : self.start_new_session,
-            #tells proxy servers we don't want to connect to the real / new instance:
+            # tells proxy servers we don't want to connect to the real / new instance:
             "connect"                   : False,
-            }
+        }
 
     def server_connection_established(self, caps : typedict) -> bool:
-        #the server should respond with the display chosen
+        # the server should respond with the display chosen
         log("server_connection_established() exit_code=%s", self.exit_code)
         display = caps.strget("display")
         if display:
@@ -714,7 +718,7 @@ class RequestStartClient(HelloRequestClient):
                 "start"         : "seamless ",
                 "start-desktop" : "desktop ",
                 "shadow"        : "shadow ",
-                }.get(mode, "")
+            }.get(mode, "")
             try:
                 errwrite("\n%ssession now available on display %s\n" % (session_type, display))
                 if POSIX and not OSX and self.displayfd>0 and display and display.startswith(":"):

@@ -39,7 +39,6 @@ class RemoteLogging(StubClientMixin):
         self.remote_logging = opts.remote_logging
         self.log_both = (opts.remote_logging or "").lower()=="both"
 
-
     def cleanup(self):
         ll = self.local_logging
         log("cleanup() local_logging=%s", ll)
@@ -47,8 +46,7 @@ class RemoteLogging(StubClientMixin):
             self.local_logging = None
             set_global_logging_handler(ll)
 
-
-    def parse_server_capabilities(self, c : typedict) -> bool:
+    def parse_server_capabilities(self, c: typedict) -> bool:
         receive = c.boolget("remote-logging.receive")
         send = c.boolget("remote-logging.send")
         v = c.get("remote-logging")
@@ -81,9 +79,6 @@ class RemoteLogging(StubClientMixin):
         self.add_packet_handler("logging", self._process_logging, False)
         self.send("logging-control", "start")
 
-    #def stop_receiving_logging(self):
-    #    self.send("logging-control", "stop")
-
     def _process_logging(self, packet : PacketType) -> None:
         assert not self.local_logging, "cannot receive logging packets when forwarding logging!"
         level = int(packet[1])
@@ -91,7 +86,7 @@ class RemoteLogging(StubClientMixin):
         prefix = "server: "
         if len(packet)>=4:
             dtime = packet[3]
-            prefix += "@%02i.%03i " % ((dtime//1000)%60, dtime%1000)
+            prefix += "@%02i.%03i " % ((dtime//1000) % 60, dtime % 1000)
         try:
             if isinstance(msg, (tuple, list)):
                 dmsg = " ".join(str(x) for x in msg)
@@ -109,13 +104,13 @@ class RemoteLogging(StubClientMixin):
         with self.logging_lock:
             log.log(level, line)
 
-
     def remote_logging_handler(self, logger_log, level:int, msg:str, *args, **kwargs) -> None:
-        #prevent loops (if our send call ends up firing another logging call):
+        # prevent loops (if our send call ends up firing another logging call):
         if self.in_remote_logging:
             return
         self.in_remote_logging = True
         ll = self.local_logging
+
         def local_warn(*args):
             if ll:
                 ll(logger_log, logging.WARNING, *args)

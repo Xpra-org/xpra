@@ -4,16 +4,16 @@
 # later version. See the file COPYING for details.
 #  pylint: disable-msg=E1101
 
-from gi.repository import GLib
-
 from xpra.platform.gui import get_native_tray_classes, get_native_tray_menu_helper_class
-from xpra.os_util import WIN32, OSX
+from xpra.os_util import gi_import, WIN32, OSX
 from xpra.util.str_fn import bytestostr
 from xpra.util.types import make_instance
 from xpra.util.env import envint
 from xpra.common import XPRA_APP_ID, ConnectionMessage
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("tray")
 
@@ -57,13 +57,14 @@ class TrayClient(StubClientMixin):
         if tray:
             tray.show()
             icon_timestamp = tray.icon_timestamp
+
             def reset_icon():
                 if not self.tray:
                     return
-                #re-set the icon after a short delay,
-                #seems to help with buggy tray geometries,
-                #but don't do it if we have already changed the icon
-                #(ie: the dynamic window icon code may have set a new one)
+                # re-set the icon after a short delay,
+                # seems to help with buggy tray geometries,
+                # but don't do it if we have already changed the icon
+                # (ie: the dynamic window icon code may have set a new one)
                 if icon_timestamp==tray.icon_timestamp:
                     tray.set_icon()
             GLib.timeout_add(1000, reset_icon)
@@ -75,11 +76,10 @@ class TrayClient(StubClientMixin):
             with log.trap_error("Error during tray cleanup"):
                 t.cleanup()
 
-
     def get_tray_classes(self) -> list[type]:
-        #subclasses may add their toolkit specific variants, if any
-        #by overriding this method
-        #use the native ones first:
+        # subclasses may add their toolkit specific variants, if any
+        # by overriding this method
+        # use the native ones first:
         return get_native_tray_classes()
 
     def make_tray_menu_helper(self):
@@ -94,18 +94,22 @@ class TrayClient(StubClientMixin):
 
     def create_xpra_tray(self, tray_icon_filename:str):
         tray = None
-        #this is our own tray
+        # this is our own tray
+
         def xpra_tray_click(button, pressed, time=0):
             log("xpra_tray_click(%s, %s, %s)", button, pressed, time)
-            if button==1 and pressed:
+            if button == 1 and pressed:
                 self.idle_add(self.menu_helper.activate, button, time)
             elif button in (2, 3) and not pressed:
                 self.idle_add(self.menu_helper.popup, button, time)
+
         def xpra_tray_mouseover(*args):
             log("xpra_tray_mouseover%s", args)
+
         def xpra_tray_exit(*args):
             log("xpra_tray_exit%s", args)
             self.disconnect_and_quit(0, ConnectionMessage.CLIENT_EXIT)
+
         def xpra_tray_geometry(*args):
             if tray:
                 log("xpra_tray_geometry%s geometry=%s", args, tray.get_geometry())

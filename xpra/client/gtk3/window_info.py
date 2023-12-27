@@ -17,7 +17,7 @@ from xpra.log import Logger
 log = Logger("info")
 
 
-def slabel(text:str="", tooltip:str="", font:str=""):
+def slabel(text: str = "", tooltip: str = "", font: str = ""):
     l = label(text, tooltip, font)
     l.set_selectable(True)
     return l
@@ -28,17 +28,21 @@ def x(self):
     self.geometry_hints = typedict()
     self.pending_refresh = []
 
+
 def dict_str(d):
     return "\n".join("%s : %s" % (k,v) for k,v in d.items())
 
+
 def geom_str(geom) -> str:
     return "%ix%i at %i,%i" % (geom[2], geom[3], geom[0], geom[1])
+
 
 def hsc(sc) -> str:
     #make the dict more human-readable
     ssc = dict((bytestostr(k),v) for k,v in sc.items())
     ssc.pop("gravity", None)
     return dict_str(ssc)
+
 
 def get_window_state(w) -> str:
     state = []
@@ -47,8 +51,8 @@ def get_window_state(w) -> str:
         "above", "below", "shaded", "sticky",
         "skip-pager", "skip-taskbar",
         "iconified",
-        ):
-        #ie: "skip-pager" -> self.window._skip_pager
+    ):
+        # ie: "skip-pager" -> self.window._skip_pager
         if getattr(w, "_%s" % s.replace("-", "_"), False):
             state.append(s)
     for s in ("modal", ):
@@ -56,6 +60,7 @@ def get_window_state(w) -> str:
         if fn and fn():
             state.append(s)
     return csv(state) or "none"
+
 
 def get_window_attributes(w) -> str:
     attr = {}
@@ -69,7 +74,7 @@ def get_window_attributes(w) -> str:
     role = w.get_role()
     if role:
         attr["role"] = role
-    #get_type_hint
+    # get_type_hint
     return dict_str(attr)
 
 
@@ -88,6 +93,7 @@ class WindowInfo(Gtk.Window):
         self.set_transient_for(window)
         self.set_icon(get_icon_pixbuf("information.png"))
         self.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
+
         def window_deleted(*_args):
             self.is_closed = True
         self.connect('delete_event', window_deleted)
@@ -96,6 +102,7 @@ class WindowInfo(Gtk.Window):
         grid.set_row_homogeneous(False)
         grid.set_column_homogeneous(True)
         row = AtomicInteger()
+
         def new_row(text="", widget=None) -> None:
             l = label(text)
             l.set_xalign(1)
@@ -104,6 +111,7 @@ class WindowInfo(Gtk.Window):
             if widget:
                 grid.attach(widget, 2, int(row), 1, 1)
             row.increase()
+
         def lrow(text:str) -> Gtk.Label:
             l = label()
             l.set_margin_start(10)
@@ -111,12 +119,14 @@ class WindowInfo(Gtk.Window):
             l.set_line_wrap(True)
             new_row(text, l)
             return l
+
         def irow(text) -> Gtk.Image:
             i = Gtk.Image()
             i.set_margin_start(10)
             i.set_halign(0)
             new_row(text, i)
             return i
+
         def sep() -> None:
             s = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
             s.set_margin_top(3)
@@ -149,7 +159,7 @@ class WindowInfo(Gtk.Window):
         self.max_size_label = lrow("Maximum Size")
         self.size_constraints_label = lrow("Size Constraints")
         sep()
-        #backing:
+        # backing:
         self.video_properties = lrow("Video Decoder")
         sep()
         self.backing_properties = lrow("Backing Properties")
@@ -202,8 +212,8 @@ class WindowInfo(Gtk.Window):
             "frame-extents"     : csv(w._current_frame_extents or []) or "none",
             "max-size"          : csv(w.max_window_size),
             "size-constraints"  : hsc(w.size_constraints),
-            }
-        #backing:
+        }
+        # backing:
         b = w._backing
         if b:
             info |= {
@@ -237,14 +247,14 @@ class WindowInfo(Gtk.Window):
         self.bool_icon(self.focus_image, w._focused)
         self.button_state_label.set_text(csv(b for b,s in w.button_state.items() if s) or "none")
         self.fps_label.set_text(fps)
-        #self.group_leader_label.set_text(str(w.group_leader))
+        # self.group_leader_label.set_text(str(w.group_leader))
         self.gravity_label.set_text(GravityStr(w.window_gravity))
         self.content_type_label.set_text(w.content_type or "unknown")
-        #geometry:
+        # geometry:
         self.pixel_depth_label.set_text(str(w.pixel_depth or 24))
         self.bool_icon(self.alpha_image, w._window_alpha)
         self.bool_icon(self.opengl_image, w.is_GL())
-        #tells us if this window instance can paint with alpha
+        # tells us if this window instance can paint with alpha
         geom = list(w._pos)+list(w._size)
         self.geometry_label.set_text(geom_str(geom))
         geom = list(w.get_position()) + list(w.get_size())
@@ -254,30 +264,31 @@ class WindowInfo(Gtk.Window):
         self.frame_extents_label.set_text(csv(w._current_frame_extents or []) or "none")
         self.max_size_label.set_text(csv(w.max_window_size))
         self.size_constraints_label.set_text(hsc(w.size_constraints))
-        #backing:
+        # backing:
         if b:
             self.backing_properties.show()
+
             def pv(value):
                 if isinstance(value, (tuple, list)):
                     return csv(value)
                 if isinstance(value, dict):
                     return dict_to_str(value, ", ", ":")
                 return str(value)
+
             def dict_to_str(d, sep="\n", eq="=", exclude=()):
                 strdict = {k:pv(v) for k,v in d.items() if k not in exclude}
                 return sep.join("%s%s%s" % (k, eq, v) for k,v in strdict.items() if v)
             self.backing_properties.set_text(dict_to_str(binfo, exclude=(
-                                                             "transparency",
-                                                             "size",
-                                                             "render-size",
-                                                             "offsets",
-                                                             "fps",
-                                                             "mmap",
-                                                             "type",
-                                                             "bit-depth",
-                                                             "video-decoder",
-                                                             )
-                                                         ))
+                "transparency",
+                "size",
+                "render-size",
+                "offsets",
+                "fps",
+                "mmap",
+                "type",
+                "bit-depth",
+                "video-decoder",
+            )))
             vdinfo = binfo.get("video-decoder")
             if vdinfo:
                 self.video_properties.show()
@@ -287,7 +298,6 @@ class WindowInfo(Gtk.Window):
         else:
             self.backing_properties.hide()
             self.backing_properties.set_text("")
-
 
     def bool_icon(self, image, on_off:bool) -> None:
         c = self._client

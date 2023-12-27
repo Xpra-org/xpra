@@ -68,7 +68,6 @@ def test_window_module(module_name="glarea", force_enable=False) -> tuple[dict,A
     return {}, None
 
 
-
 def get_test_gl_icon():
     data = b""
     encoding = "png"
@@ -103,11 +102,13 @@ def get_test_gl_icon():
         encoding  = "rgb32"
     return encoding, w, h, stride, data
 
+
 def no_idle_add(fn, *args, **kwargs):
     fn(*args, **kwargs)
 
+
 def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(1024, 1024), pixel_depth=24, show=False):
-    #try to render using a temporary window:
+    # try to render using a temporary window:
     draw_result = {}
     window = None
     try:
@@ -124,9 +125,12 @@ def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(10
         #test with alpha, but not on win32
         #because we can't do alpha on win32 with opengl
         metadata = typedict({"has-alpha" : not WIN32})
+
         class NoHeaderGLClientWindow(gl_client_window_class):
+
             def add_header_bar(self):
                 """ pretend to add the header bar """
+
             def schedule_recheck_focus(self):
                 """ pretend to handle focus checks """
         window = NoHeaderGLClientWindow(noclient, None, 0, 2**32-1, x, y, ww, wh, ww, wh,
@@ -142,6 +146,7 @@ def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(10
         options = typedict({"pixel_format" : pixel_format})
         widget = window_backing._backing
         widget.realize()
+
         def paint_callback(success, message=""):
             log("paint_callback(%s, %s)", success, message)
             draw_result["success"] = success
@@ -152,6 +157,7 @@ def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(10
 
         coding, w, h, stride, icon_data = get_test_gl_icon()
         log("OpenGL: testing draw on %s widget %s with %s : %s", window, widget, coding, pixel_format)
+
         def draw():
             v = pix.increase()
             img_data = bytes([v % 256]*w*4*h)
@@ -165,8 +171,8 @@ def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(10
             log("calling draw_region for test gl icon")
             window.draw_region(draw_x, draw_y, w, h, coding, icon_data, stride, v, options, [paint_callback])
             return REPAINT_DELAY>0
-        #the paint code is actually synchronous here,
-        #so we can check the present_fbo() result:
+        # the paint code is actually synchronous here,
+        # so we can check the present_fbo() result:
         if show:
             widget.show()
             window.show()
@@ -191,7 +197,7 @@ def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(10
             return {
                 "success" : False,
                 "message" : "failed to present FBO on screen: %s" % window_backing.last_present_fbo_error
-                }
+            }
     except Exception as e:
         log(f"test_gl_client_window({gl_client_window_class}, {max_window_size}, {pixel_depth}, {show})", exc_info=True)
         msg = str(e)

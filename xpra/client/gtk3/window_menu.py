@@ -19,11 +19,11 @@ class WindowMenuHelper(MenuHelper):
 
     def setup_menu(self):
         menu = Gtk.Menu()
-        #menu.append(self.make_closemenuitem())
+        # menu.append(self.make_closemenuitem())
         menu.connect("deactivate", self.menu_deactivated)
-        #menu.append(self.make_aboutmenuitem())
+        # menu.append(self.make_aboutmenuitem())
         menu.append(self.make_infomenuitem())
-        #if self.client.client_supports_opengl:
+        # if self.client.client_supports_opengl:
         #    menu.append(self.make_openglmenuitem())
         menu.append(self.make_minimizemenuitem())
         menu.append(self.make_maximizemenuitem())
@@ -62,16 +62,18 @@ class WindowMenuHelper(MenuHelper):
                 self.window.unmaximize()
             else:
                 self.window.maximize()
+
         def get_label(maximized):
             return "Unmaximize" if maximized else "Maximize"
         label = get_label(self.window.is_maximized())
         self.maximize_menuitem = self.menuitem(label, "maximize.png", None, maximize)
+
         def window_state_updated(widget, event):
             maximized_changed = event.changed_mask & Gdk.WindowState.MAXIMIZED
             log("state_changed%s maximized_changed=%s", (widget, event), maximized_changed)
             if maximized_changed:
-                label = get_label(event.new_window_state & Gdk.WindowState.MAXIMIZED)
-                self.maximize_menuitem.set_label(label)
+                lbl = get_label(event.new_window_state & Gdk.WindowState.MAXIMIZED)
+                self.maximize_menuitem.set_label(lbl)
             self.maximize_menuitem.set_sensitive(self.window.can_maximize())
         self.window.connect("window-state-event", window_state_updated)
         return self.maximize_menuitem
@@ -87,6 +89,7 @@ class WindowMenuHelper(MenuHelper):
             if self.window._above:
                 return "ticked.png"
             return "unticked.png"
+
         def toggle_above(*args):
             above = not self.window._above
             log("toggle_above%s above=%s", args, above)
@@ -98,7 +101,6 @@ class WindowMenuHelper(MenuHelper):
             self.above_menuitem.set_image(image)
         self.above_menuitem = self.menuitem("Always on top", icon_name(), None, toggle_above)
         return self.above_menuitem
-
 
     def make_refreshmenuitem(self):
         def force_refresh(*args):

@@ -56,7 +56,6 @@ class ClipboardClient(StubClientMixin):
         self.remote_clipboard = opts.remote_clipboard
         self.local_clipboard = opts.local_clipboard
 
-
     def cleanup(self):
         ch = self.clipboard_helper
         log("ClipboardClient.cleanup() clipboard_helper=%s", ch)
@@ -65,42 +64,43 @@ class ClipboardClient(StubClientMixin):
             with log.trap_error(f"Error on clipboard helper {ch} cleanup"):
                 ch.cleanup()
 
-
-    def get_info(self) -> dict[str,dict[str,Any]]:
-        return {
-            "clipboard": {
-                "client" : {
-                    "enabled"   : self.clipboard_enabled,
-                    "type"      : self.client_clipboard_type,
-                    "direction" : self.client_clipboard_direction,
-                },
-                "server" : {
-                    "enabled"   : self.server_clipboard,
-                    "direction" : self.server_clipboard_direction,
-                    "selections": self.server_clipboards,
-                },
-                "requests" : {
-                    "local"     : self.local_clipboard_requests,
-                    "remote"    : self.remote_clipboard_requests,
-                    },
-                },
-            }
+    def get_info(self) -> dict[str, dict[str,Any]]:
+        info: dict[str, Any] = {
+            "client":
+            {
+                "enabled"   : self.clipboard_enabled,
+                "type"      : self.client_clipboard_type,
+                "direction" : self.client_clipboard_direction,
+            },
+            "server":
+            {
+                "enabled"   : self.server_clipboard,
+                "direction" : self.server_clipboard_direction,
+                "selections": self.server_clipboards,
+            },
+            "requests":
+            {
+                "local"     : self.local_clipboard_requests,
+                "remote"    : self.remote_clipboard_requests,
+            },
+        }
+        return {"clipboard": info}
 
     def get_caps(self) -> dict[str, Any]:
         if not self.client_supports_clipboard:
             return {}
-        caps : dict[str, Any] = {
+        caps: dict[str, Any] = {
             ""                          : True,
             "enabled"                   : True,
             "notifications"             : True,
             "selections"                : CLIPBOARDS,
-            #buggy osx clipboards:
+            # buggy osx clipboards:
             "want_targets"              : CLIPBOARD_WANT_TARGETS,
-            #buggy osx and win32 clipboards:
+            # buggy osx and win32 clipboards:
             "greedy"                    : CLIPBOARD_GREEDY,
             "preferred-targets"         : CLIPBOARD_PREFERRED_TARGETS,
-            }
-        return {"clipboard" : caps}
+        }
+        return {"clipboard": caps}
 
     def parse_server_capabilities(self, c : typedict) -> bool:
         try:
@@ -133,9 +133,9 @@ class ClipboardClient(StubClientMixin):
             log("no clipboard core!")
         self.server_clipboards = c.strtupleget("clipboards", clipboards)
         log("server clipboard: supported=%s, direction=%s",
-                     self.server_clipboard, self.server_clipboard_direction)
+            self.server_clipboard, self.server_clipboard_direction)
         log("client clipboard: supported=%s, direction=%s",
-                     self.client_supports_clipboard, self.client_clipboard_direction)
+            self.client_supports_clipboard, self.client_clipboard_direction)
         self.clipboard_enabled = self.client_supports_clipboard and self.server_clipboard
         self.server_clipboard_greedy = c.boolget("clipboard.greedy")
         self.server_clipboard_want_targets = c.boolget("clipboard.want_targets")
@@ -166,7 +166,6 @@ class ClipboardClient(StubClientMixin):
         #ui may want to know this is now set:
         self.emit("clipboard-toggled")
 
-
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packet_handler("set-clipboard-enabled", self._process_clipboard_status)
         for x in (
@@ -174,21 +173,21 @@ class ClipboardClient(StubClientMixin):
             "contents", "contents-none",
             "pending-requests", "enable-selections",
             "status",
-            ):
+        ):
             self.add_packet_handler("clipboard-%s" % x, self._process_clipboard_packet)
 
     def get_clipboard_helper_classes(self):
         ct = self.client_clipboard_type
         if ct and ct.lower() in FALSE_OPTIONS:
             return []
-        #first add the platform specific one, (may be None):
+        # first add the platform specific one, (may be None):
         clipboard_options = [
             CLIPBOARD_CLASS,
             get_clipboard_native_class(),
-            ]
+        ]
         log("get_clipboard_helper_classes() unfiltered list=%s", clipboard_options)
         if ct and ct.lower()!="auto" and ct.lower() not in TRUE_OPTIONS:
-            #try to match the string specified:
+            # try to match the string specified:
             filtered = [x for x in clipboard_options if x and x.lower().find(self.client_clipboard_type)>=0]
             if not filtered:
                 log.warn("Warning: no clipboard types matching '%s'", self.client_clipboard_type)
@@ -196,7 +195,7 @@ class ClipboardClient(StubClientMixin):
                 return []
             log(" found %i clipboard types matching '%s'", len(filtered), self.client_clipboard_type)
             clipboard_options = filtered
-        #now try to load them:
+        # now try to load them:
         log("get_clipboard_helper_classes() options=%s", clipboard_options)
         loadable = []
         for co in clipboard_options:
@@ -233,8 +232,7 @@ class ClipboardClient(StubClientMixin):
                 log.error("Error: cannot instantiate %s", helperclass, exc_info=True)
         return None
 
-
-    def _process_clipboard_packet(self, packet : PacketType) -> None:
+    def _process_clipboard_packet(self, packet: PacketType) -> None:
         ch = self.clipboard_helper
         log("process_clipboard_packet: %s, helper=%s", bytestostr(packet[0]), ch)
         packet_type = packet[0]
@@ -270,31 +268,33 @@ class ClipboardClient(StubClientMixin):
         log("setup_clipboard_helper(%s)", helperClass)
         #first add the platform specific one, (may be None):
         kwargs= {
-                #all the local clipboards supported:
-                 "clipboards.local"     : CLIPBOARDS,
-                 #all the remote clipboards supported:
-                 "clipboards.remote"    : self.server_clipboards,
-                 "can-send"             : self.client_clipboard_direction in ("to-server", "both"),
-                 "can-receive"          : self.client_clipboard_direction in ("to-client", "both"),
-                 #the local clipboard we want to sync to (with the translated clipboard only):
-                 "clipboard.local"      : self.local_clipboard,
-                 #the remote clipboard we want to we sync to (with the translated clipboard only):
-                 "clipboard.remote"     : self.remote_clipboard
-                 }
+            #all the local clipboards supported:
+            "clipboards.local": CLIPBOARDS,
+            #all the remote clipboards supported:
+            "clipboards.remote"    : self.server_clipboards,
+            "can-send"             : self.client_clipboard_direction in ("to-server", "both"),
+            "can-receive"          : self.client_clipboard_direction in ("to-client", "both"),
+            #the local clipboard we want to sync to (with the translated clipboard only):
+            "clipboard.local"      : self.local_clipboard,
+            #the remote clipboard we want to we sync to (with the translated clipboard only):
+            "clipboard.remote"     : self.remote_clipboard
+        }
         log("setup_clipboard_helper() kwargs=%s", kwargs)
+
         def clipboard_send(*parts):
             log("clipboard_send: %s", parts[0])
             if not self.clipboard_enabled:
                 log("clipboard is disabled, not sending clipboard packet")
                 return
-            #replaces 'Compressible' items in a packet
-            #with a subclass that calls self.compressed_wrapper
-            #and which can therefore enable the brotli compressor:
+            # replaces 'Compressible' items in a packet
+            # with a subclass that calls self.compressed_wrapper
+            # and which can therefore enable the brotli compressor:
             packet = list(parts)
             for i, v in enumerate(packet):
                 if isinstance(v, compression.Compressible):
                     packet[i] = self.compressible_item(v)
             self.send_now(*packet)
+
         def clipboard_progress(local_requests, remote_requests):
             log("clipboard_progress(%s, %s)", local_requests, remote_requests)
             if local_requests is not None:
@@ -317,8 +317,10 @@ class ClipboardClient(StubClientMixin):
             by the network encode thread.
         """
         client = self
+
         class ProtocolCompressible(compression.Compressible):
             __slots__ = ()
+
             def compress(self):
                 return client.compressed_wrapper(self.datatype, self.data,
                                                  level=9, can_inline=False, brotli=True)

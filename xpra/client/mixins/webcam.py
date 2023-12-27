@@ -56,7 +56,6 @@ class WebcamForwarder(StubClientMixin):
     def cleanup(self):
         self.stop_sending_webcam()
 
-
     def init(self, opts):
         self.webcam_option = opts.webcam
         self.webcam_forwarding = self.webcam_option.lower() not in FALSE_OPTIONS
@@ -77,12 +76,10 @@ class WebcamForwarder(StubClientMixin):
                     self.webcam_forwarding = False
         log("webcam forwarding: %s", self.webcam_forwarding)
 
-
     def get_caps(self) -> dict[str,Any]:
         if not self.webcam_forwarding:
             return {}
-        return {"webcam" : True}
-
+        return {"webcam": True}
 
     def parse_server_capabilities(self, c : typedict) -> bool:
         v = c.get("webcam")
@@ -92,7 +89,7 @@ class WebcamForwarder(StubClientMixin):
             self.server_webcam_encodings = cdict.strtupleget("encodings", ("png", "jpeg"))
             self.server_virtual_video_devices = cdict.intget("devices")
         else:
-            #pre v6 / 5.0.2
+            # pre v6 / 5.0.2
             self.server_webcam = c.boolget("webcam")
             self.server_webcam_encodings = c.strtupleget("webcam.encodings", ("png", "jpeg"))
             self.server_virtual_video_devices = c.intget("virtual-video-devices")
@@ -103,10 +100,8 @@ class WebcamForwarder(StubClientMixin):
                 self.start_sending_webcam()
         return True
 
-
     def webcam_state_changed(self):
         self.idle_add(self.emit, "webcam-changed")
-
 
     ######################################################################
     def start_sending_webcam(self):
@@ -301,12 +296,11 @@ class WebcamForwarder(StubClientMixin):
         finally:
             self.webcam_lock.release()
 
-
     ######################################################################
     #packet handlers
     def _process_webcam_stop(self, packet : PacketType):
         device_no = packet[1]
-        if device_no!=self.webcam_device_no:
+        if device_no != self.webcam_device_no:
             return
         self.stop_sending_webcam()
 
@@ -321,7 +315,6 @@ class WebcamForwarder(StubClientMixin):
                     delay = 1000//WEBCAM_TARGET_FPS
                     log("new webcam timer with delay=%ims for %i fps target)", delay, WEBCAM_TARGET_FPS)
                     self.webcam_send_timer = self.timeout_add(delay, self.may_send_webcam_frame)
-
 
     def init_authenticated_packet_handlers(self):
         log("init_authenticated_packet_handlers()")

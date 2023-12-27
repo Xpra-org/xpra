@@ -9,7 +9,7 @@ from OpenGL.GL import (
     glBegin, glEnd,
     glVertex2i, glColor4f,
     GL_POLYGON,
-    )
+)
 from xpra.client.gui.spinner import cv
 
 
@@ -19,8 +19,8 @@ def draw_spinner(bw, bh):
     count = int(t*4.0)
     bx = bw//2
     by = bh//2
-    for i in range(8):      #8 lines
-        c = cv.trs[count%8][i]
+    for i in range(8):      # 8 lines
+        c = cv.trs[count % 8][i]
         mi1 = math.pi*i/4-math.pi/16
         mi2 = math.pi*i/4+math.pi/16
         si1 = math.sin(mi1)

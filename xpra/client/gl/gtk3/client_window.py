@@ -64,7 +64,6 @@ class GLClientWindowBase(ClientWindow):
             w, h = self.get_size()
             self.new_backing(w, h)
 
-
     def remove_backing(self) -> None:
         b = self._backing
         log("remove_backing() backing=%s", b)
@@ -91,7 +90,6 @@ class GLClientWindowBase(ClientWindow):
                 self.repaint(0, 0, *self._size)
         log("gl magic_key%s border=%s, backing=%s", args, self.border, b)
 
-
     def set_alpha(self) -> None:
         super().set_alpha()
         rgb_formats = self._client_properties.setdefault("encodings.rgb_formats", [])
@@ -100,8 +98,8 @@ class GLClientWindowBase(ClientWindow):
             rgb_formats.append("BGRA")
         if "RGB" in rgb_formats:
             rgb_formats.append("BGR")
-        #TODO: we could handle BGRX as BGRA too...
-        #rgb_formats.append("BGRX")
+        # TODO: we could handle BGRX as BGRA too...
+        # rgb_formats.append("BGRX")
 
     def do_configure_event(self, event) -> None:
         log("GL do_configure_event(%s)", event)
@@ -123,13 +121,13 @@ class GLClientWindowBase(ClientWindow):
         widget.show()
         self.init_widget_events(widget)
         if self.drawing_area and self.size_constraints:
-            #apply min size to the drawing_area:
+            # apply min size to the drawing_area:
             thints = typedict(self.size_constraints)
             minsize = thints.intpair("minimum-size", (0, 0))
             self.drawing_area.set_size_request(*minsize)
         self.add(widget)
         self.drawing_area = widget
-        #maybe redundant?:
+        # maybe redundant?:
         self.apply_geometry_hints(self.geometry_hints)
 
     def draw_widget(self, widget, context) -> bool:

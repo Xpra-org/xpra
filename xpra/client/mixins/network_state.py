@@ -10,13 +10,12 @@ from time import monotonic
 from collections import deque
 from typing import Any
 from collections.abc import Callable
-from gi.repository import GLib
 
 from xpra.net.device_info import (
     get_NM_adapter_type, get_device_value, guess_adapter_type,
     jitter_for_adapter_type, guess_bandwidth_limit,
 )
-from xpra.os_util import POSIX
+from xpra.os_util import gi_import, POSIX
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
@@ -26,6 +25,8 @@ from xpra.net.packet_encoding import ALL_ENCODERS
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.scripts.config import parse_with_unit
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("network")
 bandwidthlog = Logger("bandwidth")
@@ -101,13 +102,13 @@ class NetworkState(StubClientMixin):
                 "bandwidth-limit"       : self.bandwidth_limit,
                 "bandwidth-detection"   : self.bandwidth_detection,
                 "server-ok"             : self._server_ok,
-                }
             }
+        }
 
     def get_caps(self) -> dict[str,Any]:
-        caps : dict[str, Any] = {
+        caps: dict[str, Any] = {
             "network-state" : True,
-            }
+        }
         ssh_auth_sock = os.environ.get("SSH_AUTH_SOCK")
         if SSH_AGENT and ssh_auth_sock and os.path.isabs(ssh_auth_sock):
             # ensure agent forwarding is actually requested?
@@ -210,7 +211,6 @@ class NetworkState(StubClientMixin):
             window_ids = ()  # no longer used or supported by servers
             self.send("info-request", [self.uuid], window_ids, categories)
 
-
     ######################################################################
     # network and status:
     def server_ok(self) -> bool:
@@ -224,7 +224,8 @@ class NetworkState(StubClientMixin):
         last = self._server_ok
         self._server_ok = self.last_ping_echoed_time >= ping_sent_time
         if FAKE_BROKEN_CONNECTION>0:
-            self._server_ok = self._server_ok and (int(monotonic()) % FAKE_BROKEN_CONNECTION) <= (FAKE_BROKEN_CONNECTION//2)
+            fakeit = (int(monotonic()) % FAKE_BROKEN_CONNECTION) <= FAKE_BROKEN_CONNECTION//2
+            self._server_ok = self._server_ok and fakeit
         if not self._server_ok:
             if not self.ping_echo_timeout_timer:
                 self.ping_echo_timeout_timer = GLib.timeout_add(PING_TIMEOUT*1000,

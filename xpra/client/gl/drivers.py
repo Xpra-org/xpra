@@ -21,20 +21,22 @@ GREYLIST : GL_MATCH_LIST = {
 
 #These chipsets will be disabled by default:
 BLACKLIST : GL_MATCH_LIST = {
-    "renderer" :
+    "renderer":
         (
             "SVGA3D",
             "Software Rasterizer",
         ),
-    "vendor"    : (
-        #"VMware, Inc.",
-        #"Humper",
-        #to disable nvidia, uncomment this:
-        #"NVIDIA Corporation",
-    ),
-    "platform"  : (
-        #"darwin",
-    ),
+    "vendor":
+        (
+            # "VMware, Inc.",
+            # "Humper",
+            # to disable nvidia, uncomment this:
+            # "NVIDIA Corporation",
+        ),
+    "platform":
+        (
+            # "darwin",
+        ),
 }
 
 

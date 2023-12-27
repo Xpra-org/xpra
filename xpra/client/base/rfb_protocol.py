@@ -8,10 +8,7 @@ from threading import RLock
 from collections.abc import Callable
 
 from xpra.net.rfb.protocol import RFBProtocol
-from xpra.net.rfb.const import (
-    RFBEncoding, RFBClientMessage, RFBAuth,
-    CLIENT_INIT, AUTH_STR, RFB_KEYS,
-    )
+from xpra.net.rfb.const import RFBEncoding, RFBClientMessage, RFBAuth, CLIENT_INIT, AUTH_STR, RFB_KEYS
 from xpra.util.str_fn import csv, repr_ellipsized, bytestostr, hexstr
 from xpra.log import Logger
 
@@ -26,13 +23,13 @@ class RFBClientProtocol(RFBProtocol):
         self.next_packet = next_packet
         self.rectangles = 0
         self.position = 0, 0
-        #translate xpra packets into rfb packets:
+        # translate xpra packets into rfb packets:
         self._rfb_converters : dict[str,Callable] = {
             "pointer-position"  : self.send_pointer_position,
             "button-action"     : self.send_button_action,
             "key-action"        : self.send_key_action,
             "configure-window"  : self.track_window,
-            }
+        }
         self.send_lock = RLock()
         super().__init__(scheduler, conn, process_packet_cb)
 
@@ -61,18 +58,18 @@ class RFBClientProtocol(RFBProtocol):
             self.send_lock.release()
 
     def check_wid(self, wid):
-        if wid!=WID:
+        if wid != WID:
             log("ignoring pointer movement outside the VNC window")
             return False
         return True
 
     def send_pointer_position(self, packet):
         log("send_pointer_position(%s)", packet)
-        #['pointer-position', 1, (3348, 582), ['mod2'], []]
+        # ['pointer-position', 1, (3348, 582), ['mod2'], []]
         if not self.check_wid(packet[1]):
             return
         x, y = packet[2]
-        #modifiers = packet[3]
+        # modifiers = packet[3]
         buttons = packet[4]
         button_mask = 0
         for i in range(8):
@@ -84,8 +81,8 @@ class RFBClientProtocol(RFBProtocol):
         log("send_button_action(%s)", packet)
         if not self.check_wid(packet[1]):
             return
-        #["button-action", wid, button, pressed, (x, y), modifiers, buttons]
-        #['button-action', 1, 1, False, (2768, 257), ['mod2'], [1]]
+        # ["button-action", wid, button, pressed, (x, y), modifiers, buttons]
+        # ['button-action', 1, 1, False, (2768, 257), ['mod2'], [1]]
         button = packet[2]
         pressed = packet[3]
         x, y = packet[4]
@@ -100,7 +97,7 @@ class RFBClientProtocol(RFBProtocol):
         self.do_send_pointer_event(button_mask, x, y)
 
     def do_send_pointer_event(self, button_mask, x, y):
-        #adjust for window position:
+        # adjust for window position:
         wx, wy = self.position
         self.send_struct(b"!BBHH", RFBClientMessage.PointerEvent, button_mask, x-wx, y-wy)
 
@@ -108,7 +105,7 @@ class RFBClientProtocol(RFBProtocol):
         log("send_key_action(%s)", packet)
         if not self.check_wid(packet[1]):
             return
-        #["key-action", "wid", "keyname", "pressed", "modifiers", "keyval", "string", "keycode", "group"]
+        # ["key-action", "wid", "keyname", "pressed", "modifiers", "keyval", "string", "keycode", "group"]
         keyname = packet[2]
         if len(keyname)==1:
             keysym = ord(keyname[0])
@@ -126,16 +123,25 @@ class RFBClientProtocol(RFBProtocol):
             return
         self.position = packet[2], packet[3]
         log("window offset: %s", self.position)
-        #["configure-window", self.wid, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
-        #['configure-window', 1, 0, 37, 1280, 1024,
+        # ["configure-window", self.wid, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
+        # ['configure-window', 1, 0, 37, 1280, 1024,
         #    {'encodings.rgb_formats': ['BGRA', 'BGRX', 'RGBA', 'RGBX', 'BGR', 'RGB', 'r210', 'BGR565'],
         #     'encoding.transparency': False,
-        #     'encoding.full_csc_modes': {'h264': ['ARGB', 'BGRA', 'BGRX', 'GBRP', 'GBRP10', 'GBRP9LE', 'RGB', 'XRGB', 'YUV420P', 'YUV422P', 'YUV444P', 'YUV444P10', 'r210'], 'vp8': ['YUV420P'], 'h265': ['BGRX', 'GBRP', 'GBRP10', 'GBRP9LE', 'RGB', 'XRGB', 'YUV420P', 'YUV422P', 'YUV444P', 'YUV444P10', 'r210'], 'mpeg4': ['YUV420P'], 'mpeg1': ['YUV420P'], 'mpeg2': ['YUV420P'], 'vp9': ['YUV420P', 'YUV444P', 'YUV444P10'], 'webp': ['BGRA', 'BGRX', 'RGBA', 'RGBX']},
+        #     'encoding.full_csc_modes': {
+        #         'h264': ['ARGB', 'BGRA', 'BGRX', 'GBRP', 'GBRP10', 'GBRP9LE',
+        #                  'RGB', 'XRGB', 'YUV420P', 'YUV422P', 'YUV444P', 'YUV444P10', 'r210'],
+        #         'vp8': ['YUV420P'], 'h265': ['BGRX', 'GBRP', 'GBRP10', 'GBRP9LE',
+        #                  'RGB', 'XRGB', 'YUV420P', 'YUV422P', 'YUV444P', 'YUV444P10', 'r210'],
+        #         'mpeg4': ['YUV420P'],
+        #         'mpeg1': ['YUV420P'],
+        #         'mpeg2': ['YUV420P'],
+        #         'vp9': ['YUV420P', 'YUV444P', 'YUV444P10'],
+        #         'webp': ['BGRA', 'BGRX', 'RGBA', 'RGBX']
+        #     },
         #     'encoding.send-window-size': True,
         #     'encoding.render-size': (1280, 1024),
         #     'encoding.scrolling': True},
         #     0, {}, False, 1, (4582, 1055), ['mod2']))
-
 
     def handshake_complete(self):
         log.info("RFB connected to %s", self._conn.target)
@@ -159,7 +165,7 @@ class RFBClientProtocol(RFBProtocol):
         log("parse_security_handshake(%s) security_types=%s", hexstr(packet), [AUTH_STR.get(v, v) for v in st])
         if not st or RFBAuth.NONE in st:
             auth_type = RFBAuth.NONE
-            #go straight to the result:
+            # go straight to the result:
             self._packet_parser = self._parse_security_result
         elif RFBAuth.VNC in st:
             auth_type = RFBAuth.VNC
@@ -176,17 +182,17 @@ class RFBClientProtocol(RFBProtocol):
         challenge = packet[:16]
         log("parse_vnc_security_challenge(%s)", packet)
         auth_caps = {}
-        #this will end up calling send_challenge_reply() with the response,
-        #the password will be obtained from the client's challenge handlers,
-        #which may prompt the user.
-        #(see client base for details)
+        # this will end up calling send_challenge_reply() with the response,
+        # the password will be obtained from the client's challenge handlers,
+        # which may prompt the user.
+        # (see client base for details)
         self._process_packet_cb(self, ["challenge", challenge, auth_caps, "des", "none"])
         return 16
 
     def send_challenge_reply(self, challenge_response):
         log("send_challenge_reply(%s)", challenge_response)
         self._packet_parser = self._parse_security_result
-        import binascii #pylint: disable=import-outside-toplevel
+        import binascii     # pylint: disable=import-outside-toplevel
         self.send(binascii.unhexlify(challenge_response))
 
     def _parse_security_result(self, packet):
@@ -207,13 +213,13 @@ class RFBClientProtocol(RFBProtocol):
         ci_size = struct.calcsize(CLIENT_INIT)
         if len(packet)<ci_size:
             return 0
-        #the last item in client init is the length of the session name:
+        # the last item in client init is the length of the session name:
         client_init = struct.unpack(CLIENT_INIT, packet[:ci_size])
-        name_size =  client_init[-1]
-        #do we have enough to parse that too?
+        name_size = client_init[-1]
+        # do we have enough to parse that too?
         if len(packet)<ci_size+name_size:
             return 0
-        #w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift = client_init[:12]
+        # w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift = client_init[:12]
         w, h, bpp, depth, bigendian, truecolor = client_init[:6]
         sn = packet[ci_size:ci_size+name_size]
         try:
@@ -225,30 +231,31 @@ class RFBClientProtocol(RFBProtocol):
         if not truecolor:
             self.invalid("server is not true color", packet)
             return 0
-        #simulate hello:
+        # simulate hello:
         self._process_packet_cb(self, ["hello", {
             "session-name"  : session_name,
             "desktop_size"  : (w, h),
             "protocol"      : "rfb",
-            }])
+        }])
         # simulate an xpra window packet:
         metadata = {
             "title" : session_name,
             "size-constraints" : {
                 "maximum-size" : (w, h),
                 "minimum-size" : (w, h),
-                },
+            },
             #"set-initial-position" : False,
             "window-type" : ("NORMAL",),
             "has-alpha" : False,
             #"decorations" : True,
             "content-type" : "desktop",
-            }
+        }
         client_properties = {}
         self._process_packet_cb(self, ["new-window", WID, 0, 0, w, h, metadata, client_properties])
         self._packet_parser = self._parse_rfb_packet
         self.send_set_encodings()
-        #self.send_refresh_request(0, 0, 0, w, h)
+        # self.send_refresh_request(0, 0, 0, w, h)
+
         def request_refresh():
             self.send_refresh_request(0, 0, 0, w, h)
             return True

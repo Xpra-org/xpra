@@ -25,11 +25,13 @@ def log_kerberos_exception(e):
     except Exception:
         log.estr(e)
 
+
 class Handler:
 
     def __init__(self, client, **kwargs):
         self.client = client
-        self.services = (kwargs.pop("kerberos-services", "") or os.environ.get("XPRA_KERBEROS_SERVICES", "") or "*").split(",")
+        services_str = kwargs.pop("kerberos-services", "") or os.environ.get("XPRA_KERBEROS_SERVICES", "") or "*"
+        self.services = services_str.split(",")
 
     def __repr__(self):
         return "kerberos"
@@ -40,7 +42,7 @@ class Handler:
     def handle(self, challenge, digest:str, prompt:str):  # pylint: disable=unused-argument
         if not digest.startswith("kerberos:"):
             log("%s is not a kerberos challenge", digest)
-            #not a kerberos challenge
+            # not a kerberos challenge
             return None
         try:
             # pylint: disable=import-outside-toplevel

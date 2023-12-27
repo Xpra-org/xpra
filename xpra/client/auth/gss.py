@@ -27,11 +27,11 @@ class Handler:
 
     def handle(self, challenge:str, digest, prompt:str):  # pylint: disable=unused-argument
         if not digest.startswith("gss:"):
-            #not a gss challenge
+            # not a gss challenge
             log("%s is not a gss challenge", digest)
             return None
         try:
-            #pylint: disable=import-outside-toplevel
+            # pylint: disable=import-outside-toplevel
             import gssapi
             self.gssapi = gssapi
             if OSX:

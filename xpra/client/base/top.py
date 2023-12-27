@@ -15,9 +15,7 @@ from xpra.util.version import caps_to_version, full_version_str
 from xpra.util.types import typedict
 from xpra.util.str_fn import std, csv, bytestostr
 from xpra.util.env import envint
-from xpra.os_util import (
-    get_machine_id,
-    POSIX, )
+from xpra.os_util import get_machine_id, POSIX
 from xpra.util.system import platform_name, SIGNAMES
 from xpra.exit_codes import ExitCode
 from xpra.util.thread import start_thread
@@ -43,11 +41,12 @@ PAUSE_KEYS = (ord("p"), ord("P"))
 SIGNAL_KEYS = {
     3 : signal.SIGINT,
     26 : signal.SIGSTOP,
-    }
+}
 
 
 def get_title():
     return f"Xpra top {full_version_str()}"
+
 
 def curses_init():
     stdscr = curses.initscr()
@@ -58,13 +57,14 @@ def curses_init():
     curses.raw()
     curses.start_color()
     curses.use_default_colors()
-    #for i in range(0, curses.COLORS):
+    # for i in range(0, curses.COLORS):
     #    curses.init_pair(i+1, i, -1)
     curses.init_pair(WHITE, curses.COLOR_WHITE, curses.COLOR_BLACK)
     curses.init_pair(GREEN, curses.COLOR_GREEN, curses.COLOR_BLACK)
     curses.init_pair(YELLOW, curses.COLOR_YELLOW, curses.COLOR_BLACK)
     curses.init_pair(RED, curses.COLOR_RED, curses.COLOR_BLACK)
     return stdscr
+
 
 def curses_clean(stdscr):
     if not stdscr:
@@ -73,6 +73,7 @@ def curses_clean(stdscr):
     curses.nocbreak()
     curses.echo()
     curses.endwin()
+
 
 def curses_err(stdscr, e):
     if CURSES_LOG:
@@ -87,17 +88,19 @@ def curses_err(stdscr, e):
         except Exception:
             pass
 
-def box(stdscr, x, y, w, h, ul, ur, ll, lr):
-    stdscr.hline(y, x, curses.ACS_HLINE, w-1)               #@UndefinedVariable
-    stdscr.hline(y + h - 1, x, curses.ACS_HLINE, w - 1)     #@UndefinedVariable
-    stdscr.vline(y, x, curses.ACS_VLINE, h)                 #@UndefinedVariable
-    stdscr.vline(y, x + w -1, curses.ACS_VLINE, h)          #@UndefinedVariable
+
+def box(stdscr, x: int, y: int, w: int, h: int, ul, ur, ll, lr):
+    stdscr.hline(y, x, curses.ACS_HLINE, w-1)               # @UndefinedVariable
+    stdscr.hline(y + h - 1, x, curses.ACS_HLINE, w - 1)     # @UndefinedVariable
+    stdscr.vline(y, x, curses.ACS_VLINE, h)                 # @UndefinedVariable
+    stdscr.vline(y, x + w -1, curses.ACS_VLINE, h)          # @UndefinedVariable
     stdscr.addch(y, x, ul)
     stdscr.addch(y, x + w - 1, ur)
     stdscr.addch(y + h - 1, x, ll)
     stdscr.addch(y + h - 1, x + w - 1, lr)
 
-def get_display_id_info(path:str) -> dict[str,str]:
+
+def get_display_id_info(path:str) -> dict[str, str]:
     d = {}
     try:
         cmd = get_nodock_command()+["id", f"socket://{path}"]
@@ -114,8 +117,9 @@ def get_display_id_info(path:str) -> dict[str,str]:
         d["error"] = str(e)
     return d
 
-def get_window_info(wi : typedict) -> tuple[tuple[str,int],...]:
-    #version info:
+
+def get_window_info(wi : typedict) -> tuple[tuple[str, int], ...]:
+    # version info:
     geom = wi.inttupleget("geometry")
     g_str = "%ix%i at %i,%i" % (geom[2], geom[3], geom[0], geom[1])
     sc = wi.dictget("size-constraints")
@@ -139,8 +143,9 @@ def get_window_info(wi : typedict) -> tuple[tuple[str,int],...]:
             "grabbed", "iconic", "maximized", "modal",
             "override-redirect", "shaded", "skip-pager",
             "skip-taskbar", "sticky", "tray",
-            ) if wi.boolget(x)
-        ]
+        )
+        if wi.boolget(x)
+    ]
     if not wi.boolget("shown"):
         attrs.insert(0, "hidden")
     wtype = wi.strtupleget("window-type", ("NORMAL",))
@@ -204,11 +209,11 @@ class TopClient:
                 self.exit_code = 0
             if v in SIGNAL_KEYS:
                 self.exit_code = 128+SIGNAL_KEYS[v]
-            if v==258:    #down arrow
+            if v == 258:      # down arrow
                 self.position += 1
-            elif v==259:    #up arrow
+            elif v == 259:    # up arrow
                 self.position = max(self.position-1, 0)
-            elif v==10 and self.selected_session:
+            elif v == 10 and self.selected_session:
                 self.show_selected_session()
             elif v in (ord("s"), ord("S")):
                 self.run_subcommand("stop")
@@ -218,11 +223,11 @@ class TopClient:
                 self.run_subcommand("detach")
 
     def show_selected_session(self):
-        #show this session:
+        # show this session:
         try:
             self.cleanup()
             env = os.environ.copy()
-            #we only deal with local sessions, should be fast:
+            # we only deal with local sessions, should be fast:
             env["XPRA_CONNECT_TIMEOUT"] = "3"
             proc = self.do_run_subcommand("top", env=env)
             if not proc:
@@ -238,7 +243,7 @@ class TopClient:
                     estr = ExitCode(exit_code).name
                     txt += f" ({estr})"
                 except ValueError:
-                    if (exit_code-128) in SIGNAMES:   #pylint: disable=superfluous-parens
+                    if (exit_code-128) in SIGNAMES:   # pylint: disable=superfluous-parens
                         txt += f" ({SIGNAMES[exit_code-128]})"
             self.message = monotonic(), txt, attr
         finally:
@@ -254,7 +259,6 @@ class TopClient:
         except Exception:
             return None
 
-
     def update_screen(self):
         self.stdscr.erase()
         try:
@@ -267,7 +271,7 @@ class TopClient:
         #c = self.stdscr.getch()
         #if c==curses.KEY_RESIZE:
         height, width = self.stdscr.getmaxyx()
-        #log.info("update_screen() %ix%i", height, width)
+        # log.info("update_screen() %ix%i", height, width)
         title = get_title()
         x = max(0, width//2-len(title)//2)
         try:
@@ -277,7 +281,7 @@ class TopClient:
             if height<=hpos:
                 return
             sd = self.dotxpra.socket_details()
-            #group them by display instead of socket dir:
+            # group them by display instead of socket dir:
             displays = {}
             for sessions in sd.values():
                 for state, display, path in sessions:
@@ -362,7 +366,7 @@ class TopClient:
                     try:
                         process = self.psprocess.get(pid)
                         if not process:
-                            import psutil # pylint: disable=import-outside-toplevel
+                            import psutil     # pylint: disable=import-outside-toplevel
                             process = psutil.Process(pid)
                             self.psprocess[pid] = process
                         else:
@@ -372,20 +376,19 @@ class TopClient:
                         pass
         return info
 
-
-    def box(self, x, y, w, h, open_top=False, open_bottom=False):
+    def box(self, x: int, y: int, w: int, h: int, open_top=False, open_bottom=False):
         if open_top:
-            ul = curses.ACS_LTEE        #@UndefinedVariable
-            ur = curses.ACS_RTEE        #@UndefinedVariable
+            ul = curses.ACS_LTEE
+            ur = curses.ACS_RTEE
         else:
-            ul = curses.ACS_ULCORNER    #@UndefinedVariable
-            ur = curses.ACS_URCORNER    #@UndefinedVariable
+            ul = curses.ACS_ULCORNER
+            ur = curses.ACS_URCORNER
         if open_bottom:
-            ll = curses.ACS_LTEE        #@UndefinedVariable
-            lr = curses.ACS_RTEE        #@UndefinedVariable
+            ll = curses.ACS_LTEE
+            lr = curses.ACS_RTEE
         else:
-            ll = curses.ACS_LLCORNER    #@UndefinedVariable
-            lr = curses.ACS_LRCORNER    #@UndefinedVariable
+            ll = curses.ACS_LLCORNER
+            lr = curses.ACS_LRCORNER
         box(self.stdscr, x, y, w, h, ul, ur, ll, lr)
 
 
@@ -452,12 +455,12 @@ class TopSessionClient(InfoTimerClient):
         else:
             curses_err(self.stdscr, e)
 
-
-    def dictwarn(self, msg, *args):
+    def dictwarn(self, msg: str, *args):
         try:
             self.log(msg % (args,))
         except Exception as e:
             self.log(f"error logging message: {e}")
+
     def td(self, d):
         d = typedict(d)
         # override warning method so that we don't corrupt the curses output
@@ -486,7 +489,7 @@ class TopSessionClient(InfoTimerClient):
                 self.log(f"getch() {e}")
                 v = -1
             self.log(f"getch()={v}")
-            if v==-1:
+            if v == -1:
                 continue
             if v in EXIT_KEYS:
                 self.log(f"exit on key {v!r}")
@@ -501,24 +504,26 @@ class TopSessionClient(InfoTimerClient):
 
     def do_update_screen(self):
         self.log("do_update_screen()")
-        #c = self.stdscr.getch()
-        #if c==curses.KEY_RESIZE:
+        # c = self.stdscr.getch()
+        # if c==curses.KEY_RESIZE:
         height, width = self.stdscr.getmaxyx()
-        #log.info("update_screen() %ix%i", height, width)
         title = get_title()
         sli = self.server_last_info
+
         def _addstr(pad, y, x, s, *args):
             if len(s)+x>=width-pad:
                 s = s[:max(0, width-x-2-pad)]+".."
             self.stdscr.addstr(y, x, s, *args)
+
         def addstr_main(y, x, s, *args):
             _addstr(0, y, x, s, *args)
+
         def addstr_box(y, x, s, *args):
             _addstr(2, y, x, s, *args)
         try:
             x = max(0, width//2-len(title)//2)
             addstr_main(0, x, title, curses.A_BOLD)
-            if height<=1:
+            if height <= 1:
                 return
             server_info = self.slidictget("server")
             build = self.slidictget("server", "build")
@@ -539,11 +544,11 @@ class TopSessionClient(InfoTimerClient):
                 server_str += " via: %s proxy version %s" % (
                     platform_name(proxy_platform, proxy_distro or proxy_release),
                     std(proxy_version or "unknown")
-                    )
+                )
             addstr_main(1, 0, server_str)
-            if height<=2:
+            if height <= 2:
                 return
-            #load and uptime:
+            # load and uptime:
             now = datetime.now()
             uptime = ""
             elapsed_time = server_info.intget("elapsed_time")
@@ -558,8 +563,8 @@ class TopSessionClient(InfoTimerClient):
                 float_load = tuple(v/1000.0 for v in load)
                 load_average = ", load average: %1.2f, %1.2f, %1.2f" % float_load
             addstr_main(2, 0, "xpra top - %s%s, %2i users%s" % (
-                               now.strftime("%H:%M:%S"), uptime, nclients, load_average))
-            if height<=3:
+                now.strftime("%H:%M:%S"), uptime, nclients, load_average))
+            if height <= 3:
                 return
             thread_info = self.slidictget("threads")
             thread_count = thread_info.intget("count")
@@ -699,6 +704,7 @@ class TopSessionClient(InfoTimerClient):
 
     def slidictget(self, *parts) -> typedict:
         return self.dictget(self.server_last_info, *parts)
+
     def dictget(self, dictinstance, *parts) -> typedict:
         d = dictinstance
         for part in parts:
@@ -706,7 +712,7 @@ class TopSessionClient(InfoTimerClient):
         return d
 
     def get_client_info(self, ci : typedict) -> tuple:
-        #version info:
+        # version info:
         ctype = ci.strget("type", "unknown")
         title = f"{ctype} client version "
         title += caps_to_version(ci)
@@ -777,11 +783,8 @@ class TopSessionClient(InfoTimerClient):
         if not minfo:
             return f"{mode} off"
         minfo = self.td(minfo)
-        audio_info = f"{mode}: %s" % (
-                minfo.strget("codec_description") or
-                minfo.strget("codec") or
-                minfo.strget("state", "unknown")
-        )
+        descr = minfo.strget("codec_description") or minfo.strget("codec") or minfo.strget("state", "unknown")
+        audio_info = f"{mode}: {descr}"
         bitrate = minfo.intget("bitrate")
         if bitrate:
             audio_info += f" {std_unit(bitrate)}bps"
@@ -799,16 +802,16 @@ class TopSessionClient(InfoTimerClient):
             return "av-sync: disabled by client"
         return "av-sync: enabled - video delay: %ims" % (avsi.intget("total", 0))
 
-
     def get_gl_info(self, gli):
         if not gli:
             return None
         gli = self.td(gli)
+
         def strget(key, sep="."):
-            #fugly warning:
-            #depending on where we get the gl info from,
-            #the value might be a list of strings,
-            #or a byte string...
+            # fugly warning:
+            # depending on where we get the gl info from,
+            # the value might be a list of strings,
+            # or a byte string...
             v = gli.get(key)
             if isinstance(v, (tuple, list)):
                 return sep.join(str(x) for x in v)

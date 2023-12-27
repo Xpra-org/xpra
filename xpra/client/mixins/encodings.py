@@ -40,7 +40,7 @@ def get_core_encodings():
         where extra encodings can be added (generally just 'rgb32' for transparency),
         or removed if the toolkit implementation class is more limited.
     """
-    #we always support rgb:
+    # we always support rgb:
     core_encodings = ["rgb24", "rgb32"]
     for codec in ("dec_pillow", "dec_webp", "dec_jpeg", "dec_nvjpeg", "dec_avif"):
         if has_codec(codec):
@@ -86,9 +86,8 @@ class Encodings(StubClientMixin):
         self.server_encodings_with_quality : tuple[str,...] = ()
         self.server_encodings_with_lossless_mode : tuple[str,...] = ()
 
-        #what we told the server about our encoding defaults:
+        # what we told the server about our encoding defaults:
         self.encoding_defaults = {}
-
 
     def init(self, opts) -> None:
         self.allowed_encodings = opts.encodings
@@ -104,15 +103,15 @@ class Encodings(StubClientMixin):
         load_codec("dec_pillow")
         ae = self.allowed_encodings
         if "png" in ae:
-            #try to load the fast png decoder:
+            # try to load the fast png decoder:
             load_codec("dec_spng")
         if "jpeg" in ae:
-            #try to load the fast jpeg decoders:
+            # try to load the fast jpeg decoders:
             load_codec("dec_jpeg")
             load_codec("dec_nvjpeg")
             load_codec("nvdec")
         if "webp" in ae:
-            #try to load the fast webp decoder:
+            # try to load the fast webp decoder:
             load_codec("dec_webp")
         if "avif" in ae:
             load_codec("dec_avif")
@@ -120,20 +119,16 @@ class Encodings(StubClientMixin):
         vh.set_modules(video_decoders=opts.video_decoders, csc_modules=opts.csc_modules)
         vh.init()
 
-
     def cleanup(self) -> None:
         with log.trap_error("Error during video helper cleanup"):
             getVideoHelper().cleanup()
 
-
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packet_handler("encodings", self._process_encodings, False)
-
 
     def _process_encodings(self, packet : PacketType) -> None:
         caps = typedict(packet[1])
         self._parse_server_capabilities(caps)
-
 
     def get_info(self) -> dict[str,Any]:
         return {
@@ -147,14 +142,13 @@ class Encodings(StubClientMixin):
                 "min-speed"     : self.min_speed,
                 "encoding"      : self.encoding or "auto",
                 "video-scaling" : self.video_scaling if self.video_scaling is not None else "auto",
-                },
+            },
             "server-encodings"  : self.server_core_encodings,
-            }
-
+        }
 
     def get_caps(self) -> dict[str,Any]:
         caps = {
-            "encodings" : {
+            "encodings": {
                 ""                : self.get_encodings(),
                 "all"             : self.get_encodings(),
                 "core"            : self.get_core_encodings(),
@@ -162,8 +156,8 @@ class Encodings(StubClientMixin):
                 "cursor"          : self.get_cursor_encodings(),
                 "packet"          : True,
             },
-            "batch" : self.get_batch_caps(),
-            "encoding" : self.get_encodings_caps(),
+            "batch": self.get_batch_caps(),
+            "encoding": self.get_encodings_caps(),
         }
         return caps
 
@@ -174,7 +168,7 @@ class Encodings(StubClientMixin):
     def _parse_server_capabilities(self, c) -> None:
         self.server_encodings = c.strtupleget("encodings", DEFAULT_ENCODINGS)
         self.server_core_encodings = c.strtupleget("encodings.core", self.server_encodings)
-        #old servers only supported x264:
+        # old servers only supported x264:
         self.server_encodings_with_speed = c.strtupleget("encodings.with_speed", ("h264",))
         self.server_encodings_with_quality = c.strtupleget("encodings.with_quality", ("jpeg", "webp", "h264"))
         self.server_encodings_with_lossless_mode = c.strtupleget("encodings.with_lossless_mode", ())
@@ -187,9 +181,8 @@ class Encodings(StubClientMixin):
                     log.info("server is using %s encoding instead of %s", e, self.encoding)
             self.encoding = e
 
-
     def get_batch_caps(self) -> dict[str,Any]:
-        #batch options:
+        # batch options:
         caps = {}
         for bprop in ("always", "min_delay", "max_delay", "delay", "max_events", "max_pixels", "time_unit"):
             evalue = os.environ.get(f"XPRA_BATCH_{bprop.upper()}")
@@ -203,7 +196,7 @@ class Encodings(StubClientMixin):
 
     def get_encodings_caps(self) -> dict[str,Any]:
         if B_FRAMES:
-            video_b_frames = ("h264", ) #only tested with dec_avcodec2
+            video_b_frames = ("h264", )   # only tested with dec_avcodec2
         else:
             video_b_frames = ()
         caps = {
@@ -211,7 +204,7 @@ class Encodings(StubClientMixin):
             "video_max_size"            : self.video_max_size,
             "max-soft-expired"          : MAX_SOFT_EXPIRED,
             "send-timestamps"           : SEND_TIMESTAMPS,
-            }
+        }
         if self.video_scaling is not None:
             caps["scaling.control"] = self.video_scaling
         if self.encoding:
@@ -228,15 +221,15 @@ class Encodings(StubClientMixin):
         if self.min_speed>=0:
             caps["min-speed"] = self.min_speed
 
-        #generic rgb compression flags:
+        # generic rgb compression flags:
         if "lz4" in compression.get_enabled_compressors():
             caps["rgb_lz4"] = True
-        #these are the defaults - when we instantiate a window,
-        #we can send different values as part of the map event
-        #these are the RGB modes we want (the ones we are expected to be able to paint with):
+        # these are the defaults - when we instantiate a window,
+        # we can send different values as part of the map event
+        # these are the RGB modes we want (the ones we are expected to be able to paint with):
         rgb_formats = ["RGB", "RGBX", "RGBA"]
         caps["rgb_formats"] = rgb_formats
-        #figure out which CSC modes (usually YUV) can give us those RGB modes:
+        # figure out which CSC modes (usually YUV) can give us those RGB modes:
         full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*rgb_formats)
         if has_codec("dec_webp"):
             if self.opengl_enabled:
@@ -260,9 +253,10 @@ class Encodings(StubClientMixin):
             # so we don't bother specifying anything for those two.
             h264_caps = {}
             for csc_name, default_profile in (
-                        ("YUV420P", "high"),
-                        ("YUV422P", ""),
-                        ("YUV444P", "")):
+                ("YUV420P", "high"),
+                ("YUV422P", ""),
+                ("YUV444P", ""),
+            ):
                 profile = os.environ.get(f"XPRA_H264_{csc_name}_PROFILE", default_profile)
                 if profile:
                     h264_caps[f"{csc_name}.profile"] = profile
