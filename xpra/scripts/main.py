@@ -126,6 +126,7 @@ def main(script_file:str, cmdline) -> ExitValue:
             raise InitExit(-1, "xpra: need a mode")
         mode = args.pop(0)
         mode = MODE_ALIAS.get(mode, mode)
+
         def err(*args):
             raise InitException(*args)
         return run_mode(script_file, cmdline, err, options, args, mode, defaults)
@@ -156,11 +157,12 @@ def main(script_file:str, cmdline) -> ExitValue:
         return 1
     finally:
         platform_clean()
+
         def closestd(std):
             if std:
                 try:
                     std.close()
-                except OSError: # pragma: no cover
+                except OSError:     # pragma: no cover
                     pass
         closestd(sys.stdout)
         closestd(sys.stderr)
@@ -188,7 +190,7 @@ def configure_logging(options, mode) -> None:
         setloghandler, enable_color, enable_format,
         LOG_FORMAT, NOPREFIX_FORMAT,
         SIGPIPEStreamHandler,
-        )
+    )
     setloghandler(SIGPIPEStreamHandler(to))
     if mode in (
         "seamless", "desktop", "monitor", "expand",
@@ -272,6 +274,7 @@ def systemd_run_command(mode, systemd_run_args=None, user:bool=True) -> list[str
         cmd += shlex.split(systemd_run_args)
     return cmd
 
+
 def systemd_run_wrap(mode:str, args, systemd_run_args=None, user:bool=True, **kwargs) -> int:
     cmd = systemd_run_command(mode, systemd_run_args, user)
     cmd += args
@@ -318,7 +321,7 @@ def set_pyopengl_platform() -> None:
     if gdk_backend == "x11":
         os.environ["PYOPENGL_PLATFORM"] = "x11"
     elif gdk_backend == "wayland":
-            os.environ["PYOPENGL_PLATFORM"] = "egl"
+        os.environ["PYOPENGL_PLATFORM"] = "egl"
 
 
 def check_gtk_client() -> None:
@@ -361,13 +364,13 @@ def use_systemd_run(s) -> bool:
     systemd_run = parse_bool("systemd-run", s)
     if systemd_run in (True, False):
         return systemd_run
-    #detect if we should use it:
-    if is_Ubuntu() and (os.environ.get("SSH_TTY") or os.environ.get("SSH_CLIENT")): # pragma: no cover
-        #would fail
+    # detect if we should use it:
+    if is_Ubuntu() and (os.environ.get("SSH_TTY") or os.environ.get("SSH_CLIENT")):   # pragma: no cover
+        # would fail
         return False
     if not is_systemd_pid1():
         return False    # pragma: no cover
-    #test it:
+    # test it:
     cmd = ["systemd-run", "--quiet"]
     if getuid()!=0:
         cmd += ["--user"]
@@ -423,9 +426,9 @@ def run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, defaul
     if mode in (
         "seamless", "desktop", "shadow", "shadow-screen", "expand",
         "upgrade", "upgrade-seamless", "upgrade-desktop",
-        ) and not display_is_remote and use_systemd_run(options.systemd_run):
-        #make sure we run via the same interpreter,
-        #inject it into the command line if we have to:
+    ) and not display_is_remote and use_systemd_run(options.systemd_run):
+        # make sure we run via the same interpreter,
+        # inject it into the command line if we have to:
         argv = list(cmdline)
         if argv[0].find("python")<0:
             argv.insert(0, "python%i.%i" % (sys.version_info.major, sys.version_info.minor))
@@ -452,11 +455,12 @@ def run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, defaul
         "auth", "showconfig", "showsetting",
         "applications-menu", "sessions-menu",
         "_proxy",
-        ):
+    ):
         configure_network(options)
         verify_gir()
 
-    if mode not in ("showconfig", "splash") and POSIX and not OSX and os.environ.get("XDG_RUNTIME_DIR") is None and getuid()>0:
+    xrd = os.environ.get("XDG_RUNTIME_DIR", "")
+    if mode not in ("showconfig", "splash") and POSIX and not OSX and not xrd and getuid() > 0:
         xrd = "/run/user/%i" % getuid()
         if os.path.exists(xrd):
             warn(f"Warning: using {xrd!r} as XDG_RUNTIME_DIR")
@@ -477,14 +481,14 @@ def run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, defaul
             "attach", "listen",
             "seamless", "desktop", "shadow", "shadow-screen", "expand",
             "proxy",
-            ) and not mode.startswith("upgrade"):
+        ) and not mode.startswith("upgrade"):
             from xpra.platform import set_name
             set_name("Xpra", "Xpra %s" % mode.strip("_"))
 
     if mode in (
         "seamless", "desktop", "shadow", "shadow-screen", "expand",
         "recover",
-        ) or mode.startswith("upgrade") or mode.startswith("request-"):
+    ) or mode.startswith("upgrade") or mode.startswith("request-"):
         options.encodings = validated_encodings(options.encodings)
     try:
         return do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults)
@@ -536,14 +540,15 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
             # but not if attach was specified on the command line
             # and not if we have html=open
             html_open = (options.html or "").lower() not in (list(ALL_BOOLEAN_OPTIONS)+["auto", "none", None])
-            if not html_open and not any(x.startswith("--attach") or x=="--no-attach" for x in cmdline):
-                options.attach = OSX or WIN32 or bool(
-                    (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")) and not os.environ.get("SSH_CONNECTION"))
+            if not html_open and not any(x.startswith("--attach") or x == "--no-attach" for x in cmdline):
+                options.attach = OSX or WIN32 or any(os.environ.get(x) for x in (
+                    "DISPLAY", "WAYLAND_DISPLAY", "SSH_CONNECTION",
+                ))
             for command in commands:
                 options.start_child.append(command)
     if mode in ("seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen"):
         if display_is_remote:
-            #ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
+            # ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
             return run_remote_server(script_file, cmdline, error_cb, options, args, mode, defaults)
         elif args and parse_bool("attach", options.attach) is True:
             # maybe the server is already running,
@@ -568,7 +573,7 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
         "seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen",
         "upgrade", "upgrade-seamless", "upgrade-desktop",
         "proxy",
-        ):
+    ):
         return run_server(script_file, cmdline, error_cb, options, args, mode, defaults)
     if mode in (
         "attach", "listen", "detach",
@@ -577,7 +582,7 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
         "qrcode",
         "show-menu", "show-about", "show-session-info",
         "connect-test",
-        ) or mode.startswith("request-"):
+    ) or mode.startswith("request-"):
         return run_client(script_file, cmdline, error_cb, options, args, mode)
     if mode in ("stop", "exit"):
         no_gtk()
@@ -842,7 +847,7 @@ def display_desc_to_uri(display_desc:dict[str,Any]) -> str:
         port = display_desc.get("port")
         if port and port!=DEFAULT_PORTS.get(dtype):
             uri += f":{port:d}"
-    elif dtype=="vsock":
+    elif dtype == "vsock":
         cid, iport = display_desc["vsock"]
         uri += f"{cid}:{iport}"
     else:
@@ -850,7 +855,8 @@ def display_desc_to_uri(display_desc:dict[str,Any]) -> str:
     uri += "/" + display_desc_to_display_path(display_desc)
     return uri
 
-def display_desc_to_display_path(display_desc:dict[str,Any]) -> str:
+
+def display_desc_to_display_path(display_desc: dict[str, Any]) -> str:
     uri = ""
     display = display_desc.get("display")
     if display:
@@ -876,7 +882,7 @@ def pick_vnc_display(error_cb, opts, extra_args) -> dict[str,Any]:
                 "port"      : 5900+display_no,
                 "local"     : True,
                 "type"      : "tcp",
-                }
+            }
     error_cb("cannot find vnc displays yet")
     return {}
 
@@ -902,10 +908,11 @@ def pick_display(error_cb, opts, extra_args, cmdline=()):
                     "port"          : port,
                     "display"       : f":{i}",
                     "display_name"  : f":{i}",
-                    }
+                }
         #if not, then fall through and hope that the xpra server supports vnc:
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
     return do_pick_display(dotxpra, error_cb, opts, extra_args, cmdline)
+
 
 def do_pick_display(dotxpra, error_cb, opts, extra_args, cmdline=()):
     if not extra_args:
@@ -924,23 +931,28 @@ def do_pick_display(dotxpra, error_cb, opts, extra_args, cmdline=()):
             "local"             : True,
             "display"           : display,
             "display_name"      : display,
-            }
+        }
         if WIN32:   # pragma: no cover
-            desc.update({
-                "type"              : "named-pipe",
-                "named-pipe"        : sockpath,
-                })
+            desc.update(
+                {
+                    "type"              : "named-pipe",
+                    "named-pipe"        : sockpath,
+                }
+            )
         else:
-            desc.update({
-                "type"          : "socket",
-                "socket_dir"    : sockdir,
-                "socket_path"   : sockpath,
-                })
+            desc.update(
+                {
+                    "type"          : "socket",
+                    "socket_dir"    : sockdir,
+                    "socket_path"   : sockpath,
+                }
+            )
         return desc
     if len(extra_args) == 1:
         return parse_display_name(error_cb, opts, extra_args[0], cmdline, find_session_by_name=find_session_by_name)
     error_cb(f"too many arguments to choose a display ({len(extra_args)}): {extra_args}")
     assert False
+
 
 def single_display_match(dir_servers, error_cb, nomatch="cannot find any live servers to connect to"):
     #ie: {"/tmp" : [LIVE, "desktop-10", "/tmp/desktop-10"]}
@@ -992,6 +1004,7 @@ def connect_or_fail(display_desc, opts):
         einfo = str(e) or type(e)
         raise InitExit(ExitCode.CONNECTION_FAILED, f"connection failed: {einfo}") from None
 
+
 def proxy_connect(options):
     #if is_debug_enabled("proxy"):
     #log = logging.getLogger(__name__)
@@ -1005,7 +1018,7 @@ def proxy_connect(options):
         "SOCKS5"    : socks.SOCKS5,
         "SOCKS4"    : socks.SOCKS4,
         "HTTP"      : socks.HTTP,
-        }.get(ptype, socks.SOCKS5)
+    }.get(ptype, socks.SOCKS5)
     if not proxy_type:
         raise InitExit(ExitCode.UNSUPPORTED, f"unsupported proxy type {ptype!r}")
     host = to.strget("proxy-host")
@@ -1019,6 +1032,7 @@ def proxy_connect(options):
     sock.settimeout(timeout)
     sock.connect((options["host"], options["port"]))
     return sock
+
 
 def retry_socket_connect(options):
     host = options["host"]
@@ -1042,6 +1056,7 @@ def retry_socket_connect(options):
     dtype = options["type"]
     raise InitExit(ExitCode.CONNECTION_FAILED, f"failed to connect to {dtype} socket {host}:{port}")
 
+
 def get_host_target_string(display_desc, port_key="port", prefix="") -> str:
     dtype = display_desc["type"]
     username = display_desc.get(prefix+"username")
@@ -1054,6 +1069,7 @@ def get_host_target_string(display_desc, port_key="port", prefix="") -> str:
         port = 0
     display = display_desc.get(prefix+"display", "")
     return host_target_string(dtype, username, host, port, display)
+
 
 def host_target_string(dtype, username, host, port, display) -> str:
     target = f"{dtype}://"
@@ -1088,6 +1104,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
     if dtype == "socket":
         if not hasattr(socket, "AF_UNIX"):  # pragma: no cover
             raise InitExit(ExitCode.UNSUPPORTED, "unix domain sockets are not available on this operating system")
+
         def sockpathfail_cb(msg):
             raise InitException(msg)
         sockpath = get_sockpath(display_desc, sockpathfail_cb)
@@ -1142,7 +1159,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         from xpra.net.vsock.vsock import (        #pylint: disable=no-name-in-module
             connect_vsocket,
             CID_TYPES, CID_ANY, PORT_ANY,
-            )
+        )
         sock = connect_vsocket(cid=cid, port=iport)
         sock.timeout = VSOCK_TIMEOUT
         sock.settimeout(None)
@@ -1150,7 +1167,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         conn.target = "vsock://%s:%s" % (
             "any" if cid==CID_ANY else cid,
             "any" if iport==PORT_ANY else iport,
-            )
+        )
         return conn
 
     if dtype=="quic":
@@ -1169,11 +1186,10 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             import aioquic
             assert aioquic
         except ImportError as e:
-            raise InitExit(ExitCode.SOCKET_CREATION_ERROR,
-                       f"cannot use quic sockets: {e}") from None
+            raise InitExit(ExitCode.SOCKET_CREATION_ERROR, f"cannot use quic sockets: {e}") from None
         conn = quic_connect(host, port, path,
-                     ssl_cert, ssl_key, ssl_key_password,
-                     ssl_ca_certs, ssl_server_verify_mode, ssl_server_name)
+                            ssl_cert, ssl_key, ssl_key_password,
+                            ssl_ca_certs, ssl_server_verify_mode, ssl_server_name)
         return conn
 
     if dtype in ("tcp", "ssl", "ws", "wss", "vnc"):
@@ -1210,14 +1226,15 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
     raise InitException(f"unsupported display type: {dtype}")
 
 
-
 def run_dialog(extra_args) -> ExitValue:
     from xpra.gtk.dialogs.confirm_dialog import show_confirm_dialog
     return show_confirm_dialog(extra_args)
 
+
 def run_pass(extra_args) -> ExitValue:
     from xpra.gtk.dialogs.pass_dialog import show_pass_dialog
     return show_pass_dialog(extra_args)
+
 
 def run_send_file(extra_args) -> ExitValue:
     sockpath = os.environ.get("XPRA_SERVER_SOCKET")
@@ -1244,13 +1261,14 @@ def run_send_file(extra_args) -> ExitValue:
         filelog(f"run_send_file({extra_args}) sending {f!r}")
         if not os.path.isabs(f):
             f = os.path.abspath(f)
-        #xpra control :10 send-file /path/to/the-file-to-send open CLIENT_UUID
+        # xpra control :10 send-file /path/to/the-file-to-send open CLIENT_UUID
         cmd = xpra_cmd + ["control", uri, "send-file", f]
         filelog(f"cmd={cmd}")
         proc = Popen(cmd, stdin=None, stdout=PIPE, stderr=PIPE)
         stdout, stderr = proc.communicate()
         if proc.returncode:
             filelog.error(f"Error: failed to send file {f!r}")
+
             def logfdoutput(v):
                 if v:
                     try:
@@ -1267,7 +1285,8 @@ def run_send_file(extra_args) -> ExitValue:
         return ExitCode.FAILURE
     return 0
 
-def get_sockpath(display_desc:dict[str,Any], error_cb, timeout=CONNECT_TIMEOUT) -> str:
+
+def get_sockpath(display_desc: dict[str, Any], error_cb, timeout=CONNECT_TIMEOUT) -> str:
     #if the path was specified, use that:
     sockpath = display_desc.get("socket_path")
     if not sockpath:
@@ -1287,8 +1306,9 @@ def get_sockpath(display_desc:dict[str,Any], error_cb, timeout=CONNECT_TIMEOUT) 
             username,
             uid,
             gid,
-            )
+        )
         display = display_desc["display"]
+
         def socket_details(state=SocketState.LIVE):
             return dotxpra.socket_details(matching_state=state, matching_display=display)
         dir_servers = socket_details()
@@ -1317,6 +1337,7 @@ def get_sockpath(display_desc:dict[str,Any], error_cb, timeout=CONNECT_TIMEOUT) 
         sockpath = single_display_match(dir_servers, error_cb,
                                         nomatch=f"cannot find live server for display {display}")[-1]
     return sockpath
+
 
 def run_client(script_file, cmdline, error_cb, opts, extra_args, mode:str) -> ExitValue:
     if mode=="attach":
@@ -1381,19 +1402,20 @@ def run_client(script_file, cmdline, error_cb, opts, extra_args, mode:str) -> Ex
 
 
 def connect_to_server(app, display_desc:dict[str,Any], opts) -> None:
-    #on win32, we must run the main loop
-    #before we can call connect()
-    #because connect() may run a subprocess,
-    #and Gdk locks up the system if the main loop is not running by then!
+    # on win32, we must run the main loop
+    # before we can call connect()
+    # because connect() may run a subprocess,
+    # and Gdk locks up the system if the main loop is not running by then!
     GLib = gi_import("GLib")
     log = Logger("network")
+
     def do_setup_connection():
         try:
             log("do_setup_connection() display_desc=%s", display_desc)
             conn = connect_or_fail(display_desc, opts)
             log("do_setup_connection() conn=%s", conn)
-            #UGLY warning: connect_or_fail() will parse the display string,
-            #which may change the username and password..
+            # UGLY warning: connect_or_fail() will parse the display string,
+            # which may change the username and password..
             app.username = opts.username
             app.password = opts.password
             app.display = opts.display
@@ -1424,6 +1446,7 @@ def connect_to_server(app, display_desc:dict[str,Any], opts) -> None:
             log.error("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
             werr("Error: failed to connect:", f" {e}")
             GLib.idle_add(app.quit, ExitCode.CONNECTION_FAILED)
+
     def setup_connection():
         log("setup_connection() starting setup-connection thread")
         from xpra.util.thread import start_thread
@@ -1446,14 +1469,14 @@ def get_client_app(cmdline, error_cb, opts, extra_args, mode:str):
 
     if opts.compression_level < 0 or opts.compression_level > 9:
         error_cb("Compression level must be between 0 and 9 inclusive.")
-    if opts.quality!=-1 and (opts.quality < 0 or opts.quality > 100):
+    if opts.quality != -1 and (opts.quality < 0 or opts.quality > 100):
         error_cb("Quality must be between 0 and 100 inclusive. (or -1 to disable)")
 
     socket_dirs = opts.socket_dirs
     if mode in (
         "info", "id", "connect-test", "control", "version", "detach",
         "show-menu", "show-about", "show-session-info",
-        ) and extra_args:
+    ) and extra_args:
         socket_dirs += opts.client_socket_dirs or []
     dotxpra = DotXpra(opts.socket_dir, socket_dirs)
     if mode=="screenshot":
@@ -1571,6 +1594,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode:str):
                 from xpra.codecs.loader import encodings_help
                 raise InitInfo(einfo+"%s xpra client supports the following encodings:\n * %s" %
                                (app.client_toolkit(), "\n * ".join(encodings_help(encodings))))
+
         def handshake_complete(*_args):
             app.show_progress(100, "connection established")
             log = get_logger()
@@ -1592,7 +1616,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode:str):
             app.hello_extra = {
                 "start-new-session" : sns,
                 "connect"           : True,
-                }
+            }
             #we have consumed the start[-child] options
             app.start_child_new_commands = []
             app.start_new_commands = []
@@ -1605,10 +1629,10 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode:str):
             from xpra.net.socket_util import (
                 get_network_logger, setup_local_sockets, peek_connection,
                 create_sockets, add_listen_socket, accept_connection,
-                )
+            )
             sockets = create_sockets(opts, error_cb)
-            #we don't have a display,
-            #so we can't automatically create sockets:
+            # we don't have a display,
+            # so we can't automatically create sockets:
             if "auto" in opts.bind:
                 opts.bind.remove("auto")
             local_sockets = setup_local_sockets(opts.bind,
@@ -1619,6 +1643,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode:str):
             sockets.update(local_sockets)
             listen_cleanup : list[Callable] = []
             socket_cleanup : list[Callable] = []
+
             def new_connection(socktype, sock, handle=0):
                 from xpra.util.thread import start_thread
                 netlog = get_network_logger()
@@ -1627,6 +1652,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode:str):
                 # start a new thread so that we can sleep doing IO in `peek_connection`:
                 start_thread(handle_new_connection, f"handle new connection: {conn}", daemon=True, args=(conn, ))
                 return True
+
             def handle_new_connection(conn):
                 #see if this is a redirection:
                 netlog = get_network_logger()
@@ -1645,16 +1671,18 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode:str):
                             #app._protocol.start()
                             return
                 app.idle_add(do_handle_connection, conn)
+
             def do_handle_connection(conn):
                 protocol = app.setup_connection(conn)
                 protocol.start()
-                #stop listening for new connections:
+                # stop listening for new connections:
                 run_socket_cleanups()
+
             def run_socket_cleanups():
                 for cleanup in listen_cleanup:
                     cleanup()
                 listen_cleanup[:] = []
-                #close the sockets:
+                # close the sockets:
                 for cleanup in socket_cleanup:
                     cleanup()
                 socket_cleanup[:] = []
@@ -1663,8 +1691,8 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode:str):
                 cleanup = add_listen_socket(socktype, sock, sinfo, None, new_connection)
                 if cleanup is not None:
                     listen_cleanup.append(cleanup)
-            #listen mode is special,
-            #don't fall through to connect_to_server!
+            # listen mode is special,
+            # don't fall through to connect_to_server!
             app.show_progress(90, "ready")
             return app
     except Exception as e:
@@ -1685,8 +1713,8 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode:str):
     return app
 
 
-def make_progress_process(title="Xpra") -> Popen|None:
-    #start the splash subprocess
+def make_progress_process(title="Xpra") -> Popen | None:
+    # start the splash subprocess
     env = os.environ.copy()
     env["XPRA_LOG_PREFIX"] = "splash: "
     from xpra.platform.paths import get_nodock_command
@@ -1696,14 +1724,16 @@ def make_progress_process(title="Xpra") -> Popen|None:
     except OSError as e:
         werr("Error launching 'splash' subprocess", " %s" % e)
         return None
-    #always close stdin when terminating the splash screen process:
+    # always close stdin when terminating the splash screen process:
     saved_terminate = progress_process.terminate
+
     def terminate(*_args):
         noerr(progress_process.stdin.close)
         progress_process.stdin = None
         saved_terminate()
-    #override Popen.terminate()
+    # override Popen.terminate()
     setattr(progress_process, "terminate", terminate)
+
     def progress(pct, text):
         if progress_process.poll():
             return
@@ -1758,28 +1788,30 @@ def run_opengl_probe():
         if len(parts)==2:
             props[parts[0]] = parts[1]
     log("parsed OpenGL properties=%s", props)
+
     def probe_message() -> str:
         err = props.get("error", "")
         msg = props.get("message", "")
         if err:
             return f"error:{err}"
-        if r==1:
+        if r == 1:
             return "crash"
         if r is None:
             return "timeout"
-        if r>128:
+        if r > 128:
             return "failed:%s" % SIGNAMES.get(r-128)
-        if r!=0:
+        if r != 0:
             return "failed:%s" % SIGNAMES.get(0-r, 0-r)
         if props.get("success", "False").lower() in FALSE_OPTIONS:
             return "error:%s" % (err or msg)
         if props.get("safe", "False").lower() in FALSE_OPTIONS:
             return "warning:%s" % (err or msg)
         return "success"
-    #log.warn("Warning: OpenGL probe failed: %s", msg)
+    # log.warn("Warning: OpenGL probe failed: %s", msg)
     return probe_message(), props
 
-def make_client(error_cb:Callable, opts):
+
+def make_client(error_cb: Callable, opts):
     progress_process = None
     if opts.splash is not False:
         from xpra import __version__
@@ -1791,9 +1823,11 @@ def make_client(error_cb:Callable, opts):
 
         def b(v):
             return str(v).lower() not in FALSE_OPTIONS
+
         def bo(v):
             return str(v).lower() not in FALSE_OPTIONS or str(v).lower() in OFF_OPTIONS
         impwarned = []
+
         def impcheck(*modules):
             for mod in modules:
                 try:
@@ -1828,16 +1862,16 @@ def make_client(error_cb:Callable, opts):
             app.show_progress(20, "validating OpenGL configuration")
             probe, glinfo = run_opengl_probe()
             if opts.opengl=="nowarn":
-                #just on or off from here on:
+                # just on or off from here on:
                 safe = glinfo.get("safe", "False").lower() in TRUE_OPTIONS
                 opts.opengl = ["off", "on"][safe]
             else:
                 opts.opengl = f"probe-{probe}"
-            r = probe   #ie: "success"
+            r = probe       # ie: "success"
             if glinfo:
                 renderer = glinfo.get("renderer")
                 if renderer:
-                    #ie: "AMD Radeon RX 570 Series (polaris10, LLVM 14.0.0, DRM 3.47, 5.19.10-200.fc36.x86_64)"
+                    # ie: "AMD Radeon RX 570 Series (polaris10, LLVM 14.0.0, DRM 3.47, 5.19.10-200.fc36.x86_64)"
                     parts = renderer.split("(")
                     if len(parts)>1 and len(parts[0])>10:
                         renderer = parts[0].strip()
@@ -1870,8 +1904,8 @@ def do_run_client(app) -> ExitValue:
 
 def get_start_new_session_dict(opts, mode, extra_args) -> dict[str,Any]:
     sns = {
-           "mode"           : mode,     #ie: "start-desktop"
-           }
+        "mode": mode,     # ie: "start-desktop"
+    }
     if len(extra_args)==1:
         sns["display"] = extra_args[0]
     from xpra.scripts.config import dict_to_config
@@ -1883,21 +1917,23 @@ def get_start_new_session_dict(opts, mode, extra_args) -> dict[str,Any]:
         dv = getattr(defaults, fn, None)
         if v and v!=dv:
             sns[x] = v
-    #make sure the server will start in the same path we were called from:
-    #(despite being started by a root owned process from a different directory)
+    # make sure the server will start in the same path we were called from:
+    # (despite being started by a root owned process from a different directory)
     if not opts.chdir:
         sns["chdir"] = os.getcwd()
     return sns
 
+
 def shellquote(s : str) -> str:
     return '"' + s.replace('"', '\\"') + '"'
 
+
 def strip_defaults_start_child(start_child, defaults_start_child):
     if start_child and defaults_start_child:
-        #ensure we don't pass start / start-child commands
-        #which came from defaults (the configuration files)
-        #only the ones specified on the command line:
-        #(and only remove them once so the command line can re-add the same ones!)
+        # ensure we don't pass start / start-child commands
+        # which came from defaults (the configuration files)
+        # only the ones specified on the command line:
+        # (and only remove them once so the command line can re-add the same ones!)
         for x in defaults_start_child:
             if x in start_child:
                 start_child.remove(x)
@@ -1909,10 +1945,10 @@ def run_server(script_file, cmdline, error_cb, options, args, mode:str, defaults
     if mode in (
         "seamless", "desktop", "monitor", "expand",
         "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
-        ):
+    ):
         if OSX or WIN32:
             raise InitException(f"{mode} is not supported on this platform")
-        if mode!="expand":
+        if mode != "expand":
             try:
                 from xpra import x11
                 assert x11
@@ -1925,10 +1961,10 @@ def run_server(script_file, cmdline, error_cb, options, args, mode:str, defaults
         "desktop",
         "monitor",
         "expand",
-        ) and parse_bool("attach", options.attach) is True:
+    ) and parse_bool("attach", options.attach) is True:
         if args and not display_is_remote:
-            #maybe the server is already running for the display specified
-            #then we don't even need to bother trying to start it:
+            # maybe the server is already running for the display specified
+            # then we don't even need to bother trying to start it:
             try:
                 display = pick_display(error_cb, options, args, cmdline)
             except Exception:
@@ -1940,21 +1976,21 @@ def run_server(script_file, cmdline, error_cb, options, args, mode:str, defaults
                     state = dotxpra.get_display_state(display_name)
                     if state==SocketState.LIVE:
                         get_logger().info(f"existing live display found on {display_name}, attaching")
-                        #we're connecting locally, so no need for these:
+                        # we're connecting locally, so no need for these:
                         options.csc_modules = ["none"]
                         options.video_decoders = ["none"]
                         return do_run_mode(script_file, cmdline, error_cb, options, args, "attach", defaults)
-        #we can't load gtk on posix if the server is local,
-        #(as we would need to unload the initial display to attach to the new one)
+        # we can't load gtk on posix if the server is local,
+        # (as we would need to unload the initial display to attach to the new one)
         if options.resize_display.lower() in TRUE_OPTIONS and (display_is_remote or OSX or not POSIX):
             check_gtk_client()
             bypass_no_gtk()
-            #we can tell the server what size to resize to:
+            # we can tell the server what size to resize to:
             from xpra.gtk.util import get_root_size
             root_w, root_h = get_root_size()
             from xpra.util.parsing import parse_scaling
             scaling = parse_scaling(options.desktop_scaling, root_w, root_h)
-            #but don't bother if scaling is involved:
+            # but don't bother if scaling is involved:
             if scaling==(1, 1):
                 options.resize_display = f"{root_w}x{root_h}"
 
@@ -1970,6 +2006,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode:str, defaults
         error_cb("`xpra-server` is not installed")
         sys.exit(1)
     return do_run_server(script_file, cmdline, error_cb, options, args, mode, str(display or ""), defaults)
+
 
 def start_server_via_proxy(script_file:str, cmdline, error_cb, options, args, mode:str) -> int | ExitCode | None:
     start_via_proxy = parse_bool("start-via-proxy", options.start_via_proxy)
@@ -1991,19 +2028,19 @@ def start_server_via_proxy(script_file:str, cmdline, error_cb, options, args, mo
         return None
     ################################################################################
     try:
-        #this will use the client "start-new-session" feature,
-        #to start a new session and connect to it at the same time:
+        # this will use the client "start-new-session" feature,
+        # to start a new session and connect to it at the same time:
         if not args:
             from xpra.platform.features import SYSTEM_PROXY_SOCKET
             args = [SYSTEM_PROXY_SOCKET]
         app = get_client_app(cmdline, error_cb, options, args, "request-%s" % mode)
         r = do_run_client(app)
-        #OK or got a signal:
+        # OK or got a signal:
         NO_RETRY : list[int] = [int(ExitCode.OK)] + list(range(128, 128+16))
-        #TODO: honour "--attach=yes"
+        # TODO: honour "--attach=yes"
         if app.completed_startup:
-            #if we had connected to the session,
-            #we can ignore more error codes:
+            # if we had connected to the session,
+            # we can ignore more error codes:
             NO_RETRY += [int(x) for x in (
                 ExitCode.CONNECTION_LOST,
                 ExitCode.REMOTE_ERROR,
@@ -2023,18 +2060,19 @@ def start_server_via_proxy(script_file:str, cmdline, error_cb, options, args, mo
     if start_via_proxy is True:
         error_cb(f"failed to start-via-proxy: {err}")
         return None
-    #warn and fall through to regular server start:
+    # warn and fall through to regular server start:
     warn(f"Warning: cannot use the system proxy for {mode!r} subcommand,")
     warn(f" {err}")
     warn(" more information may be available in your system log")
     return None
 
+
 def find_mode_pos(args, mode:str):
     rmode = REVERSE_MODE_ALIAS.get(mode, str(mode))
     mode_strs = [rmode]
     if rmode.find("-") > 0:
-        mode_strs.append(rmode.split("-", 1)[1])        #ie: "start-desktop" -> "desktop"
-    if mode == "seamless":                              #ie: "seamless" -> "start"
+        mode_strs.append(rmode.split("-", 1)[1])        # ie: "start-desktop" -> "desktop"
+    if mode == "seamless":                              # ie: "seamless" -> "start"
         mode_strs.append("start")
     for mstr in mode_strs:
         try:
@@ -2060,13 +2098,13 @@ def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, 
     display_name = args[0]
     params = parse_display_name(error_cb, opts, display_name, cmdline)
     hello_extra = {}
-    #strip defaults, only keep extra ones:
+    # strip defaults, only keep extra ones:
     for x in START_COMMAND_OPTIONS:     # ["start", "start-child", etc]
         fn = x.replace("-", "_")
         v = strip_defaults_start_child(getattr(opts, fn), getattr(defaults, fn))
         setattr(opts, fn, v)
     if isdisplaytype(args, "ssh"):
-        #add special flags to "display_as_args"
+        # add special flags to "display_as_args"
         proxy_args = params.get("display_as_args", [])
         if params.get("display") is not None:
             geometry = params.get("geometry")
@@ -2076,7 +2114,7 @@ def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, 
             except ValueError:
                 pos = -1
             if display.replace(".", "").isnumeric():
-                #numeric displays are X11 display names:
+                # numeric displays are X11 display names:
                 display = f":{display}"
             if mode.startswith("shadow") and geometry:
                 display += f",{geometry}"
@@ -2086,7 +2124,7 @@ def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, 
                 proxy_args.append(display)
         for x in get_start_server_args(opts, compat=True, cmdline=cmdline):
             proxy_args.append(x)
-        #we have consumed the start[-child] options
+        # we have consumed the start[-child] options
         for x in (
                 "start", "start-child",
                 "start-late", "start-child-late",
@@ -2096,24 +2134,24 @@ def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, 
         ):
             setattr(opts, x.replace("-", "_"), [])
         params["display_as_args"] = proxy_args
-        #and use a proxy subcommand to start the server:
+        # and use a proxy subcommand to start the server:
         if mode=="seamless":
-            #this should also be switched to the generic syntax below in v6:
+            # this should also be switched to the generic syntax below in v6:
             proxy_command = "_proxy_start"
         elif mode=="shadow":
-            #this should also be switched to the generic syntax below in v6:
+            # this should also be switched to the generic syntax below in v6:
             proxy_command = "_proxy_shadow_start"
         else:
-            #ie: "_proxy_start_desktop"
+            # ie: "_proxy_start_desktop"
             proxy_command = f"_proxy_start_{mode.replace('-', '_')}"
         params["proxy_command"] = [proxy_command]
-        sns = {}    #will be unused, but this silences a warning
+        sns = {}    # will be unused, but this silences a warning
     else:
-        #tcp, ssl or vsock:
+        # tcp, ssl or vsock:
         sns = {
-               "mode"           : mode,
-               "display"        : params.get("display", ""),
-               }
+            "mode"           : mode,
+            "display"        : params.get("display", ""),
+        }
         for x in START_COMMAND_OPTIONS:
             fn = x.replace("-", "_")
             v = getattr(opts, fn)
@@ -2141,6 +2179,7 @@ def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, 
             app.show_progress(40, "loading user interface")
             app.init_ui(opts)
             app.hello_extra = hello_extra
+
             def handshake_complete(*_args):
                 app.show_progress(100, "connection established")
             app.after_handshake(handshake_complete)
@@ -2218,6 +2257,7 @@ def find_wayland_display_sockets(uid:int=getuid(), gid:int=getgid()) -> dict[str
     if WIN32 or OSX:
         return {}
     displays = {}
+
     def addwaylandsock(d:str, p:str):
         if os.path.isabs(p) and is_socket(p) and os.path.exists(p) and d not in displays:
             displays[d] = p
@@ -2236,6 +2276,8 @@ def find_wayland_display_sockets(uid:int=getuid(), gid:int=getgid()) -> dict[str
 
 
 X11_SOCKET_DIR = "/tmp/.X11-unix"
+
+
 def find_x11_display_sockets(max_display_no:int=0) -> dict[str,str]:
     displays : dict[str,str] = {}
     if not os.path.exists(X11_SOCKET_DIR):
@@ -2261,27 +2303,27 @@ def find_x11_display_sockets(max_display_no:int=0) -> dict[str,str]:
 
 def stat_display_socket(socket_path:str, timeout=VERIFY_SOCKET_TIMEOUT) -> dict[str,Any]:
     try:
-        #check that this is a socket
+        # check that this is a socket
         sstat = os.stat(socket_path)
         if not stat.S_ISSOCK(sstat.st_mode):
             warn(f"display path {socket_path!r} is not a socket!")
             return {}
         if timeout>0:
-            sock : socket.socket|None = None
+            sock: socket.socket | None = None
             try:
                 sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                 sock.settimeout(timeout)
                 sock.connect(socket_path)
             except OSError:
-                #warn(f"Error trying to connect to {socket_path!r}: {e}")
+                # warn(f"Error trying to connect to {socket_path!r}: {e}")
                 return {}
             finally:
                 if sock:
                     sock.close()
         return {
-            "uid"   : sstat.st_uid,
-            "gid"   : sstat.st_gid,
-            }
+            "uid": sstat.st_uid,
+            "gid": sstat.st_gid,
+        }
     except FileNotFoundError:
         warn(f"Socket path {socket_path!r} not found")
     except Exception as e:
@@ -2298,6 +2340,7 @@ def guess_display(dotxpra, current_display, uid:int=getuid(), gid:int=getgid(), 
     args = tuple(x for x in (uid, gid) if x is not None)
     all_displays : list[str] = []
     info_cache : dict[str,dict] = {}
+
     def dinfo(display):
         info = info_cache.get(display)
         if info is None:
@@ -2310,13 +2353,13 @@ def guess_display(dotxpra, current_display, uid:int=getuid(), gid:int=getgid(), 
             displays.append(current_display)
         all_displays = all_displays or displays
         if len(displays)>1:
-            #remove xpra's own X11 displays to narrow things down:
+            # remove xpra's own X11 displays to narrow things down:
             results = dotxpra.sockets()
             xpra_x11_displays = [display for _, display in results if display.startswith(":")]
             displays = list(set(displays)-set(xpra_x11_displays))
         if len(displays)>1:
-            #keep only LIVE ones (assume that they are),
-            #and skip XWayland displays:
+            # keep only LIVE ones (assume that they are),
+            # and skip XWayland displays:
             displays = [display for display in displays if
                         dinfo(display).get("state", "LIVE")=="LIVE" and not dinfo(display).get("xwayland", False)]
         if len(displays)==1:
@@ -2369,9 +2412,13 @@ def find_displays(max_display_no=0, uid:int=getuid(), gid:int=getgid()) -> dict[
 
 
 no_gtk_bypass = False
+
+
 def bypass_no_gtk(v=True) -> None:
     global no_gtk_bypass
     no_gtk_bypass = v
+
+
 def no_gtk() -> None:
     if no_gtk_bypass:
         return
@@ -2404,15 +2451,16 @@ def run_example(args) -> ExitValue:
         "window-opacity", "window-overrideredirect",
         "window-states", "window-title",
         "window-transient",
-        )
+    )
     if not args or args[0] not in all_examples:
         raise InitInfo(f"usage: xpra example testname\nvalid names: {csv(all_examples)}")
     classname = args[0].replace("-", "_")
     try:
-        ic =  __import__(f"xpra.gtk.examples.{classname}", {}, {}, "main")
+        ic = __import__(f"xpra.gtk.examples.{classname}", {}, {}, "main")
     except ImportError as e:
         raise InitException(f"failed to import example {classname}: {e}") from None
     return ic.main()
+
 
 def run_autostart(script_file, args) -> ExitValue:
     def err(msg):
@@ -2435,13 +2483,16 @@ def run_autostart(script_file, args) -> ExitValue:
         set_autostart(arg=="enable")
     return 0
 
+
 def run_qrcode(args) -> ExitValue:
     from xpra.gtk.dialogs import qrcode_client
     return qrcode_client.main(args)
 
+
 def run_splash(args) -> ExitValue:
     from xpra.gtk.dialogs import splash
     return splash.main(args)
+
 
 def run_glprobe(opts, show=False) -> ExitValue:
     if show:
@@ -2463,6 +2514,7 @@ def run_glprobe(opts, show=False) -> ExitValue:
     if not props.get("safe", False):
         return 2
     return 0
+
 
 def do_run_glcheck(opts, show=False) -> dict[str,Any]:
     #suspend all logging:
@@ -2498,10 +2550,11 @@ def do_run_glcheck(opts, show=False) -> dict[str,Any]:
         return {
             "success"   : False,
             "message"   : str(e).replace("\n", " "),
-            }
+        }
     finally:
         if saved_level is not None:
             logging.root.setLevel(saved_level)
+
 
 def run_glcheck(opts) -> ExitValue:
     log = Logger("opengl")
@@ -2521,11 +2574,11 @@ def run_glcheck(opts) -> ExitValue:
         props = {
             "error"     : str(e).replace("\n", " "),
             "success"   : False,
-            }
+        }
     log("run_glcheck(..) props=%s", props)
     for k in sorted(props.keys()):
         v = props[k]
-        #skip not human readable:
+        # skip not human readable:
         if k not in ("extensions", "glconfig", "GLU.extensions", ):
             vstr = str(v)
             try:
@@ -2565,7 +2618,7 @@ def start_macos_shadow(cmd, env, cwd) -> None:
         import errno
         if e.args[0]!=errno.EACCES:
             warn("Error: shadow may not start,\n"
-                 +f" the launch agent file {LAUNCH_AGENT_FILE!r} seems to be missing:{e}.\n")
+                 f" the launch agent file {LAUNCH_AGENT_FILE!r} seems to be missing:{e}.\n")
     argfile = os.path.expanduser("~/.xpra/shadow-args")
     with open(argfile, "w", encoding="utf8") as f:
         f.write('["Xpra", "--no-daemon"')
@@ -2573,14 +2626,15 @@ def start_macos_shadow(cmd, env, cwd) -> None:
             f.write(f', "{x}"')
         f.write(']')
     launch_commands = [
-                       ["launchctl", "unload", LAUNCH_AGENT_FILE],
-                       ["launchctl", "load", "-S", "Aqua", LAUNCH_AGENT_FILE],
-                       ["launchctl", "start", LAUNCH_AGENT],
-                       ]
+        ["launchctl", "unload", LAUNCH_AGENT_FILE],
+        ["launchctl", "load", "-S", "Aqua", LAUNCH_AGENT_FILE],
+        ["launchctl", "start", LAUNCH_AGENT],
+    ]
     log = get_logger()
     log("start_macos_shadow: launch_commands=%s", launch_commands)
     for x in launch_commands:
         Popen(x, env=env, cwd=cwd).wait()
+
 
 def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
     log = Logger("server")
@@ -2602,9 +2656,9 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
                 cmd = [
                     "paexec.exe",
                     "-i", str(info["SessionID"]), "-s",
-                    ]
+                ]
                 exe = paexec
-                #don't show a cmd window:
+                # don't show a cmd window:
                 script_file = script_file.replace("Xpra_cmd.exe", "Xpra.exe")
             else:
                 log("session not found for user '%s', not using paexec", username)
@@ -2634,6 +2688,7 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
         elapsed = monotonic()-start
     proc.terminate()
     raise RuntimeError(f"timeout: failed to identify the new shadow server {display_name!r}")
+
 
 def start_server_subprocess(script_file, args, mode, opts,
                             username="", uid=getuid(), gid=getgid(), env=None, cwd=None):
@@ -2728,10 +2783,11 @@ def start_server_subprocess(script_file, args, mode, opts,
         log(f"proc={proc}")
         add_process(proc, "server", cmd, ignore=True, forget=True)
         if r_pipe:
-            from xpra.platform.displayfd import read_displayfd, parse_displayfd  #pylint: disable=import-outside-toplevel
-            buf = read_displayfd(r_pipe, proc=None) #proc daemonizes!
+            from xpra.platform.displayfd import read_displayfd, parse_displayfd
+            buf = read_displayfd(r_pipe, proc=None)  # proc daemonizes!
             noerr(os.close, r_pipe)
             noerr(os.close, w_pipe)
+
             def displayfd_err(msg):
                 log.error("Error: displayfd failed")
                 log.error(f" {msg}")
@@ -2746,6 +2802,7 @@ def start_server_subprocess(script_file, args, mode, opts,
                                                uid)
     return proc, socket_path, display
 
+
 def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False, cmdline=()) -> list[str]:
     option_types = {}
     for x, ftype in OPTION_TYPES.items():
@@ -2753,7 +2810,9 @@ def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False, cmdlin
             option_types[x] = ftype
     return get_command_args(opts, uid, gid, option_types, compat, cmdline)
 
-def get_command_args(opts, uid=getuid(), gid=getgid(), option_types=OPTION_TYPES, compat=False, cmdline=()) -> list[str]:
+
+def get_command_args(opts, uid=getuid(), gid=getgid(), option_types=OPTION_TYPES,
+                     compat=False, cmdline=()) -> list[str]:
     defaults = make_defaults_struct(uid=uid, gid=gid)
     fdefaults = defaults.clone()
     fixup_options(fdefaults)
@@ -2767,10 +2826,7 @@ def get_command_args(opts, uid=getuid(), gid=getgid(), option_types=OPTION_TYPES
         ov = getattr(opts, fn)
         dv = getattr(defaults, fn)
         fv = getattr(fdefaults, fn)
-        incmdline = (
-            f"--{x}" in cmdline or f"--no-{x}" in cmdline or
-            any(c.startswith(f"--{x}=") for c in cmdline)
-            )
+        incmdline = (f"--{x}" in cmdline or f"--no-{x}" in cmdline or any(c.startswith(f"--{x}=") for c in cmdline))
         if not incmdline:
             #we may skip this option if the value is the same as the default:
             if ftype==list:
@@ -2786,11 +2842,11 @@ def get_command_args(opts, uid=getuid(), gid=getgid(), option_types=OPTION_TYPES
         if ftype==list:
             #warn("%s: %s vs %s\n" % (x, ov, dv))
             if x in START_COMMAND_OPTIONS+BIND_OPTIONS+[
-                     "pulseaudio-configure-commands",
-                     "speaker-codec", "microphone-codec",
-                     "key-shortcut", "start-env", "env",
-                     "socket-dirs",
-                     ]:
+                "pulseaudio-configure-commands",
+                "speaker-codec", "microphone-codec",
+                "key-shortcut", "start-env", "env",
+                "socket-dirs",
+            ]:
                 #individual arguments (ie: "--start=xterm" "--start=gedit" ..)
                 for e in ov:
                     args.append(f"{argname}{e}")
@@ -2806,11 +2862,12 @@ def get_command_args(opts, uid=getuid(), gid=getgid(), option_types=OPTION_TYPES
     return args
 
 
-def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, matching_uid=0):
+def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid: str,
+                        display_name: str, matching_uid: int = 0):
     log = Logger("server", "network")
     log("identify_new_socket%s",
         (proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, matching_uid))
-    #wait until the new socket appears:
+    # wait until the new socket appears:
     start = monotonic()
     UUID_PREFIX = "uuid="
     DISPLAY_PREFIX = "display="
@@ -2867,7 +2924,7 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults) -> Exi
     server_mode = {
         "_proxy"                : "seamless",
         "_proxy_shadow_start"   : "shadow",
-        }.get(mode, mode.replace("_proxy_", "").replace("_", "-"))
+    }.get(mode, mode.replace("_proxy_", "").replace("_", "-"))
     server_mode = MODE_ALIAS.get(server_mode, server_mode)
     if mode!="_proxy" and server_mode in ("seamless", "desktop", "monitor", "shadow", "shadow-screen", "expand"):
         attach = parse_bool("attach", opts.attach)
@@ -2945,6 +3002,7 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults) -> Exi
     app.run()
     return 0
 
+
 def run_stopexit(mode:str, error_cb, opts, extra_args, cmdline) -> ExitValue:
     assert mode in ("stop", "exit")
     no_gtk()
@@ -2958,16 +3016,16 @@ def run_stopexit(mode:str, error_cb, opts, extra_args, cmdline) -> ExitValue:
         try:
             sockfile = get_sockpath(display_desc, error_cb, 0)
         except InitException:
-            #on win32, we can't find the path when it is gone
+            # on win32, we can't find the path when it is gone
             final_state = SocketState.DEAD
         else:
-            #first 5 seconds: just check if the socket still exists:
-            #without connecting (avoid warnings and log messages on server)
+            # first 5 seconds: just check if the socket still exists:
+            # without connecting (avoid warnings and log messages on server)
             for _ in range(25):
                 if not os.path.exists(sockfile):
                     break
                 time.sleep(0.2)
-            #next 5 seconds: actually try to connect
+            # next 5 seconds: actually try to connect
             final_state = SocketState.UNKNOWN
             for _ in range(5):
                 final_state = sockdir.get_server_state(sockfile, 1)
@@ -2989,13 +3047,13 @@ def run_stopexit(mode:str, error_cb, opts, extra_args, cmdline) -> ExitValue:
         sys.stdout.write(f"Trying to {mode} {len(displays)} displays:\n")
         sys.stdout.write(" %s\n" % csv(displays))
         procs = []
-        #["xpra", "stop", ..]
+        # ["xpra", "stop", ..]
         from xpra.platform.paths import get_nodock_command
         cmd = get_nodock_command()+[mode, f"--socket-dir={opts.socket_dir}"]
         for x in opts.socket_dirs:
             if x:
                 cmd.append(f"--socket-dirs={x}")
-        #use a subprocess per display:
+        # use a subprocess per display:
         for display in displays:
             dcmd = cmd + [display]
             proc = Popen(dcmd)
@@ -3007,14 +3065,14 @@ def run_stopexit(mode:str, error_cb, opts, extra_args, cmdline) -> ExitValue:
         return 0
 
     if len(extra_args)==1 and extra_args[0]=="all":
-        #stop or exit all
+        # stop or exit all
         dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
         displays = dotxpra.displays(check_uid=getuid(), matching_state=SocketState.LIVE)
         if not displays:
             sys.stdout.write("No xpra sessions found\n")
             return 1
         if len(displays)==1:
-            #fall through, but use the display we found:
+            # fall through, but use the display we found:
             extra_args = displays
         else:
             assert len(displays)>1
@@ -3038,7 +3096,7 @@ def run_stopexit(mode:str, error_cb, opts, extra_args, cmdline) -> ExitValue:
     finally:
         if app:
             app.cleanup()
-    if e==0:
+    if e == 0:
         if display_desc["local"] and display_desc.get("display"):
             show_final_state(display_desc)
         else:
@@ -3062,13 +3120,13 @@ def may_cleanup_socket(state, display, sockpath, clean_states=(SocketState.DEAD,
 def run_top(error_cb, options, args, cmdline) -> ExitValue:
     from xpra.client.base.top import TopClient, TopSessionClient
     if args:
-        #try to show a specific session
+        # try to show a specific session
         try:
             display_desc = pick_display(error_cb, options, args, cmdline)
         except Exception:
             pass
         else:
-            #show the display we picked automatically:
+            # show the display we picked automatically:
             top_session = TopSessionClient(options)
             try:
                 connect_to_server(top_session, display_desc, options)
@@ -3077,6 +3135,7 @@ def run_top(error_cb, options, args, cmdline) -> ExitValue:
                 pass
     return TopClient(options).run()
 
+
 def run_session_info(error_cb, options, args, cmdline) -> ExitValue:
     check_gtk_client()
     display_desc = pick_display(error_cb, options, args, cmdline)
@@ -3084,6 +3143,7 @@ def run_session_info(error_cb, options, args, cmdline) -> ExitValue:
     app = SessionInfoClient(options)
     connect_to_server(app, display_desc, options)
     return app.run()
+
 
 def run_docs() -> ExitValue:
     from xpra.platform.paths import get_resources_dir, get_app_dir
@@ -3098,9 +3158,10 @@ def run_docs() -> ExitValue:
             ("xpra", "doc", "index.html"),
             ("doc", "index.html"),
             ("doc", "index.html"),
-            ):
+        ):
             paths.append(os.path.join(prefix, *parts))
     return _browser_open("documentation", *paths)
+
 
 def run_html5(url_options=None) -> ExitValue:
     from xpra.platform.paths import get_resources_dir, get_app_dir
@@ -3113,7 +3174,8 @@ def run_html5(url_options=None) -> ExitValue:
         os.path.join(get_resources_dir(), "html5", page),
         os.path.join(get_resources_dir(), "www", page),
         os.path.join(get_app_dir(), "www", page),
-        )
+    )
+
 
 def _browser_open(what, *path_options) -> ExitValue:
     for f in path_options:
@@ -3129,6 +3191,7 @@ def _browser_open(what, *path_options) -> ExitValue:
 def run_desktop_greeter() -> ExitValue:
     from xpra.gtk.dialogs import desktop_greeter
     return desktop_greeter.main()
+
 
 def run_sessions_gui(options) -> ExitValue:
     mdns = options.mdns
@@ -3150,6 +3213,7 @@ def run_sessions_gui(options) -> ExitValue:
     from xpra.gtk.dialogs import sessions_gui
     return sessions_gui.do_main(options)
 
+
 def run_mdns_gui(options) -> ExitValue:
     from xpra.net.mdns import get_listener_class
     listener = get_listener_class()
@@ -3157,6 +3221,7 @@ def run_mdns_gui(options) -> ExitValue:
         raise InitException("sorry, 'mdns-gui' is not supported on this platform yet")
     from xpra.gtk.dialogs import mdns_gui
     return mdns_gui.do_main(options)
+
 
 def run_list_mdns(error_cb, extra_args) -> ExitValue:
     no_gtk()
@@ -3183,6 +3248,7 @@ def run_list_mdns(error_cb, extra_args) -> ExitValue:
     loop_init()
     found : dict[tuple[str,str,str],list] = {}
     shown = set()
+
     def show_new_found():
         new_found = [x for x in found.keys() if x not in shown]
         for uq in new_found:
@@ -3211,6 +3277,7 @@ def run_list_mdns(error_cb, extra_args) -> ExitValue:
                 uri = f"{mode}://{username}@{address}:{port}/{dstr}"
                 print("   \"%s\"" % uri)
             shown.add(uq)
+
     def mdns_add(interface, _protocol, name, _stype, domain, host, address, port, text):
         text = typedict(text or {})
         iface = interface
@@ -3224,9 +3291,11 @@ def run_list_mdns(error_cb, extra_args) -> ExitValue:
         found.setdefault(uq, []).append((iface or "", name, domain, host, address, port, text))
         GLib.timeout_add(1000, show_new_found)
     listeners = []
+
     def add(service_type):
         listener = listener_class(service_type, mdns_add=mdns_add)
         listeners.append(listener)
+
         def start():
             listener.start()
         GLib.idle_add(start)
@@ -3262,14 +3331,14 @@ def run_clean(opts, args:Iterable[str]) -> ExitValue:
                 print(f"session {display} not found")
             else:
                 clean[display] = session_dir
-        #the user specified the sessions to clean,
-        #so we can also kill the display:
+        # the user specified the sessions to clean,
+        # so we can also kill the display:
         kill_displays = True
     else:
         session_dir = osexpand(opts.sessions_dir)
         if not os.path.exists(session_dir):
             raise ValueError(f"cannot find sessions directory {opts.sessions_dir}")
-        #try to find all the session directories:
+        # try to find all the session directories:
         for x in os.listdir(session_dir):
             d = os.path.join(session_dir, x)
             if not os.path.isdir(d):
@@ -3281,15 +3350,17 @@ def run_clean(opts, args:Iterable[str]) -> ExitValue:
             else:
                 clean[x] = d
         kill_displays = False
-    def kill_pid(pid):
+
+    def kill_pid(pid: int):
         if pid:
             try:
                 if pid and pid>1 and pid!=os.getpid():
                     os.kill(pid, signal.SIGTERM)
             except OSError as e:
                 error("Error sending SIGTERM signal to %r %i %s" % (pid_filename, pid, e))
-    def load_pid(session_dir, pid_filename):
-        pid_file = os.path.join(session_dir, pid_filename)  #ie: "/run/user/1000/xpra/7/dbus.pid"
+
+    def load_pid(session_dir: str, pid_filename: str):
+        pid_file = os.path.join(session_dir, pid_filename)  # ie: "/run/user/1000/xpra/7/dbus.pid"
         if not os.path.exists(pid_file):
             return 0
         try:
@@ -3299,7 +3370,7 @@ def run_clean(opts, args:Iterable[str]) -> ExitValue:
             error(f"failed to read {pid_file!r}: {e}")
             return 0
 
-    #also clean client sockets?
+    # also clean client sockets?
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
     for display, session_dir in clean.items():
         if not os.path.exists(session_dir):
@@ -3308,8 +3379,8 @@ def run_clean(opts, args:Iterable[str]) -> ExitValue:
         sockpath = os.path.join(session_dir, "socket")
         state = dotxpra.is_socket_match(sockpath, check_uid=uid)
         if state in (SocketState.LIVE, SocketState.INACCESSIBLE):
-            #this session is still active
-            #do not try to clean it!
+            # this session is still active
+            # do not try to clean it!
             if args:
                 print(f"session {display} is {state}")
                 print(f" the session directory {session_dir} has not been removed")
@@ -3327,7 +3398,7 @@ def run_clean(opts, args:Iterable[str]) -> ExitValue:
             x11_socket_path = os.path.join(X11_SOCKET_DIR, f"X{dno}")
             r = stat_display_socket(x11_socket_path)
             if r:
-                #so the X11 server may still be running
+                # so the X11 server may still be running
                 xvfb_pid = load_pid(session_dir, "xvfb.pid")
                 if xvfb_pid and kill_displays:
                     kill_pid(xvfb_pid)
@@ -3354,11 +3425,11 @@ def run_clean(opts, args:Iterable[str]) -> ExitValue:
             "server.env", "server.pid", "server.log",
             "socket", "xauthority", "Xorg.log", "xvfb.pid",
             "pulseaudio.pid",
-            ]
+        ]
         KNOWN_SERVER_DIRS = [
             "pulse",
             "ssh",
-            ]
+        ]
         ALL_KNOWN = KNOWN_SERVER_FILES + KNOWN_SERVER_DIRS
         unknown_files = [x for x in session_files if x not in ALL_KNOWN]
         if unknown_files:
@@ -3382,7 +3453,7 @@ def run_clean(opts, args:Iterable[str]) -> ExitValue:
         except OSError as rme:
             error(f"Error session directory {session_dir!r}: {rme}")
             continue
-        #remove the other sockets:
+        # remove the other sockets:
         socket_paths = dotxpra.socket_paths(check_uid=uid, matching_display=display)
         for filename in socket_paths:
             try:
@@ -3429,13 +3500,14 @@ def run_recover(script_file, cmdline, error_cb, options, args, defaults) -> Exit
         # get the `display_info` so that we know the mode to use:
         descr = get_display_info(display, options.sessions_dir)
     else:
+
         def recover_many(displays):
             from xpra.platform.paths import get_xpra_command  #pylint: disable=import-outside-toplevel
             for display in displays:
                 cmd = get_xpra_command()+["recover", display]
                 Popen(cmd)
             return 0
-        if len(args)>1:
+        if len(args) > 1:
             return recover_many(args)
         displays = get_displays_info(sessions_dir=options.sessions_dir)
         #find the 'DEAD' ones:
@@ -3453,20 +3525,21 @@ def run_recover(script_file, cmdline, error_cb, options, args, defaults) -> Exit
         display = dead_displays[0]
         descr = displays[display]
     args = [display]
-    #figure out what mode was used:
+    # figure out what mode was used:
     mode = descr.get("xpra-server-mode", "seamless")
     for m in ("seamless", "desktop", "proxy", "shadow", "shadow-screen"):
         if mode.find(m)>=0:
             mode = m
             break
     print(f"Recovering display {display!r} as a {mode} server")
-    #use the existing display:
+    # use the existing display:
     options.use_display = "yes"
     no_gtk()
     return run_server(script_file, cmdline, error_cb, options, args, mode, defaults)
 
+
 def run_displays(options, args) -> ExitValue:
-    #dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
+    # dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
     displays = get_displays_info(display_names=args if args else None, sessions_dir=options.sessions_dir)
     print(f"Found {len(displays)} displays:")
     if args:
@@ -3476,13 +3549,14 @@ def run_displays(options, args) -> ExitValue:
         "xpra-server-mode"  : "mode",
         "uid"               : "uid",
         "gid"               : "gid",
-        }
+    }
     for display, descr in displays.items():
         state = descr.pop("state", "LIVE")
         info_str = ""
         wmname = descr.get("wmname")
         if wmname:
             info_str += f"{wmname}: "
+
         def show(name, value):
             if value is True:
                 return name
@@ -3490,6 +3564,7 @@ def run_displays(options, args) -> ExitValue:
         info_str += csv(show(v, descr.get(k)) for k,v in SHOW.items() if k in descr)
         print("%10s    %-8s    %s" % (display, state, info_str))
     return 0
+
 
 def run_clean_displays(options, args) -> ExitValue:
     if not POSIX or OSX:
@@ -3503,7 +3578,7 @@ def run_clean_displays(options, args) -> ExitValue:
         return 0
     inodes_display = {}
     for display in sorted_nicely(dead_displays):
-        #find the X11 server PID
+        # find the X11 server PID
         inodes = []
         sockpath = os.path.join(X11_SOCKET_DIR, "X%s" % display.lstrip(":"))
         PROC_NET_UNIX = "/proc/net/unix"
@@ -3520,7 +3595,7 @@ def run_clean_displays(options, args) -> ExitValue:
                     else:
                         inodes.append(inode)
                         inodes_display[inode] = display
-    #now find the processes that own these inodes
+    # now find the processes that own these inodes
     display_pids = {}
     if inodes_display:
         for f in os.listdir("/proc"):
@@ -3528,8 +3603,8 @@ def run_clean_displays(options, args) -> ExitValue:
                 pid = int(f)
             except ValueError:
                 continue
-            if pid==1:
-                #pid 1 is our friend, don't try to kill it
+            if pid == 1:
+                # pid 1 is our friend, don't try to kill it
                 continue
             procpath = os.path.join("/proc", f)
             if not os.path.isdir(procpath):
@@ -3588,31 +3663,34 @@ def run_clean_displays(options, args) -> ExitValue:
     print("Done")
     return 0
 
-def get_displays_info(dotxpra=None, display_names=None, sessions_dir=None) -> dict[str,Any]:
+
+def get_displays_info(dotxpra=None, display_names=None, sessions_dir=None) -> dict[str, Any]:
     displays = get_displays(dotxpra, display_names)
-    displays_info : dict[str,Any] = {}
+    displays_info : dict[str, Any] = {}
     for display, descr in displays.items():
-        #descr already contains the uid, gid
+        # descr already contains the uid, gid
         displays_info[display] = descr
-        #add wminfo:
+        # add wminfo:
         descr.update(get_display_info(display, sessions_dir))
     sn = sorted_nicely(displays_info.keys())
     return {k:displays_info[k] for k in sn}
 
-def get_display_info(display, sessions_dir=None) -> dict[str,Any]:
-    display_info = {"state" : "LIVE"}
+
+def get_display_info(display, sessions_dir=None) -> dict[str, Any]:
+    display_info = {"state": "LIVE"}
     if OSX or not POSIX:
         return display_info
     if not display.startswith(":"):
         return {}
     return get_x11_display_info(display, sessions_dir)
 
-def get_x11_display_info(display, sessions_dir=None) -> dict[str,Any]:
+
+def get_x11_display_info(display, sessions_dir=None) -> dict[str, Any]:
     log = Logger("util")
     log(f"get_x11_display_info({display}, {sessions_dir})")
-    #assume live:
-    display_info : dict[str,Any] = {"state" : "LIVE"}
-    #try to load the sessions files:
+    # assume live:
+    display_info : dict[str,Any] = {"state": "LIVE"}
+    # try to load the sessions files:
     xauthority : str = ""
     if sessions_dir:
         try:
@@ -3634,8 +3712,10 @@ def get_x11_display_info(display, sessions_dir=None) -> dict[str,Any]:
                         xvfb_pid = 0
                     xauthority = (load_session_file("xauthority") or b"").decode()
                     log(f"xauthority({display})={xauthority}")
-                    if not os.path.exists(session_file_path("server.pid")) and not os.path.exists(session_file_path("socket")):
-                        #looks like the server has exited
+                    pidfile = session_file_path("server.pid")
+                    sockfile = session_file_path("socket")
+                    if not os.path.exists(pidfile) and not os.path.exists(sockfile):
+                        # looks like the server has exited
                         display_info["state"] = "DEAD"
                     if xvfb_pid:
                         display_info["pid"] = xvfb_pid
@@ -3658,13 +3738,13 @@ def get_x11_display_info(display, sessions_dir=None) -> dict[str,Any]:
             log(f"wminfo({display})={wminfo}")
             display_info.update(wminfo)
             mode = wminfo.get("xpra-server-mode", "")
-            #seamless servers and non-xpra servers should have a window manager:
+            # seamless servers and non-xpra servers should have a window manager:
             if mode.find("seamless")>=0 and not wminfo.get("_NET_SUPPORTING_WM_CHECK"):
                 display_info["state"] = "DEAD"
             else:
                 wmname = wminfo.get("wmname")
                 if wmname and wmname.lower().find("xpra")>=0:
-                    #check if the xpra server process still exists:
+                    # check if the xpra server process still exists:
                     pid = wminfo.get("xpra-server-pid")
                     if not pid or (os.path.exists("/proc") and not os.path.exists("/proc/%s" % pid)):
                         display_info["state"] = "DEAD"
@@ -3672,24 +3752,26 @@ def get_x11_display_info(display, sessions_dir=None) -> dict[str,Any]:
             display_info.update({"state" : "UNKNOWN"})
     return display_info
 
-def get_displays(dotxpra=None, display_names=None) -> dict[str,Any]:
+
+def get_displays(dotxpra=None, display_names=None) -> dict[str, Any]:
     if OSX or WIN32:
         return {"Main" : {}}
     log = get_logger()
-    #add ":" prefix to display name,
-    #and remove xpra sessions
+    # add ":" prefix to display name,
+    # and remove xpra sessions
     xpra_sessions = {}
     if dotxpra:
         xpra_sessions = get_xpra_sessions(dotxpra)
     displays = find_displays()
     log(f"find_displays()={displays}")
-    #filter out:
+    # filter out:
     displays = {
         d:i for d,i in tuple(displays.items()) if
         (d not in xpra_sessions) and (display_names is None or d in display_names)
-        }
+    }
     log(f"get_displays({dotxpra}, {display_names})={displays} (xpra_sessions={xpra_sessions})")
     return displays
+
 
 def run_list_sessions(args, options) -> ExitValue:
     dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
@@ -3706,13 +3788,14 @@ def run_list_sessions(args, options) -> ExitValue:
             attrs.get("session-name", "")))
     return 0
 
-def display_wm_info(args) -> dict[str,Any]:
+
+def display_wm_info(args) -> dict[str, Any]:
     assert POSIX and not OSX, "wminfo is not supported on this platform"
     no_gtk()
-    if len(args)==1:
+    if len(args) == 1:
         os.environ["DISPLAY"] = args[0]
     elif not args and os.environ.get("DISPLAY"):
-        #just use the current one
+        # just use the current one
         pass
     else:
         raise InitExit(ExitCode.NO_DISPLAY, "you must specify a display")
@@ -3726,15 +3809,18 @@ def display_wm_info(args) -> dict[str,Any]:
         info["display"] = display.get_name(),
         return info
 
+
 def run_xwait(args) -> ExitValue:
-    from xpra.x11.bindings.xwait import main as xwait_main  # pylint: disable=no-name-in-module
+    from xpra.x11.bindings.xwait import main as xwait_main      # pylint: disable=no-name-in-module
     xwait_main(args)
     return 0
 
+
 def run_wminfo(args) -> ExitValue:
-    for k,v in display_wm_info(args).items():
+    for k, v in display_wm_info(args).items():
         print(f"{k}={v}")
     return 0
+
 
 def run_wmname(args) -> ExitValue:
     name = display_wm_info(args).get("wmname", "")
@@ -3742,9 +3828,10 @@ def run_wmname(args) -> ExitValue:
         print(name)
     return 0
 
+
 def exec_wminfo(display) -> dict[str,str]:
     log = Logger("util")
-    #get the window manager info by executing the "wminfo" subcommand:
+    # get the window manager info by executing the "wminfo" subcommand:
     try:
         from xpra.platform.paths import get_xpra_command  #pylint: disable=import-outside-toplevel
         cmd = get_xpra_command() + ["wminfo"]
@@ -3756,7 +3843,7 @@ def exec_wminfo(display) -> dict[str,str]:
         log(f"exec_wminfo({display})", exc_info=True)
         log.error(f"Error querying wminfo for display {display!r}: {e}")
         return {}
-    #parse wminfo output:
+    # parse wminfo output:
     if proc.returncode!=0 or not out:
         return {}
     wminfo = {}
@@ -3766,7 +3853,9 @@ def exec_wminfo(display) -> dict[str,str]:
             wminfo[parts[0]] = parts[1]
     return wminfo
 
-def get_xpra_sessions(dotxpra:DotXpra, ignore_state=(SocketState.UNKNOWN,), matching_display=None, query:bool=True) -> dict[str,Any]:
+
+def get_xpra_sessions(dotxpra:DotXpra, ignore_state=(SocketState.UNKNOWN,), matching_display=None,
+                      query: bool = True) -> dict[str, Any]:
     results = dotxpra.socket_details(matching_display=matching_display)
     log = get_logger()
     log("get_xpra_sessions%s socket_details=%s", (dotxpra, ignore_state, matching_display), results)
@@ -3779,16 +3868,18 @@ def get_xpra_sessions(dotxpra:DotXpra, ignore_state=(SocketState.UNKNOWN,), matc
                 "state"         : state,
                 "socket-dir"    : socket_dir,
                 "socket-path"   : sockpath,
-                }
+            }
             try:
                 s = os.stat(sockpath)
             except OSError as e:
                 log("'%s' path cannot be accessed: %s", sockpath, e)
             else:
-                session.update({
-                    "uid"   : s.st_uid,
-                    "gid"   : s.st_gid,
-                    })
+                session.update(
+                    {
+                        "uid"   : s.st_uid,
+                        "gid"   : s.st_gid,
+                    }
+                )
                 username = get_username_for_uid(s.st_uid)
                 if username:
                     session["username"] = username
@@ -3828,12 +3919,13 @@ def run_list(error_cb:Callable, opts, extra_args, clean:bool=True) -> ExitValue:
             if state is SocketState.UNKNOWN:
                 unknown.append((socket_dir, display, sockpath))
     if clean:
-        #now, re-probe the "unknown" ones:
+        # now, re-probe the "unknown" ones:
         clean_sockets(dotxpra, unknown)
     return 0
 
+
 def clean_sockets(dotxpra, sockets, timeout=LIST_REPROBE_TIMEOUT) -> None:
-    #only clean the ones we own:
+    # only clean the ones we own:
     reprobe = []
     for x in sockets:
         try:
@@ -3861,7 +3953,7 @@ def clean_sockets(dotxpra, sockets, timeout=LIST_REPROBE_TIMEOUT) -> None:
                 unknown.append(v)
             else:
                 sys.stdout.write(f"\t{state} session at {display} ({socket_dir})\n")
-    #now cleanup those still unknown:
+    # now cleanup those still unknown:
     clean_states = [SocketState.DEAD, SocketState.UNKNOWN]
     for state, display, sockpath in unknown:
         state = dotxpra.get_server_state(sockpath)
@@ -3886,13 +3978,17 @@ def run_list_windows(error_cb, opts, extra_args) -> ExitValue:
         sys.stdout.write("No xpra sessions found\n")
         return 0
     import re
+
     def convert(text):
         return float(text) if text.isdigit() else text
+
     def alphanum(key):
         return [convert(c) for c in re.split(r'([-+]?\d+\.?\d*)', key)]
+
     def sort_human(l):
         l.sort(key=alphanum)
         return l
+
     def exec_and_parse(subcommand="id", display=""):
         from xpra.platform.paths import get_nodock_command
         cmd = get_nodock_command()+[subcommand, display]
@@ -3951,13 +4047,14 @@ def run_list_windows(error_cb, opts, extra_args) -> ExitValue:
         sys.stdout.flush()
     return 0
 
+
 def run_auth(_options, args) -> ExitValue:
     if not args:
         raise InitException("missing module argument")
     auth_str = args[0]
     from xpra.server.auth.auth_helper import get_auth_module
     auth, auth_module = get_auth_module(auth_str)[:2]
-    #see if the module has a "main" entry point:
+    # see if the module has a "main" entry point:
     main_fn = getattr(auth_module, "main", None)
     if not main_fn:
         raise InitExit(ExitCode.UNSUPPORTED, f"no command line utility for {auth!r} authentication module")
@@ -4033,6 +4130,7 @@ def run_showconfig(options, args) -> ExitValue:
         else:
             i("%-20s           = %s", opt, vstr(otype, cv))
     return 0
+
 
 def vstr(otype:type, v) -> str:
     #just used to quote all string values

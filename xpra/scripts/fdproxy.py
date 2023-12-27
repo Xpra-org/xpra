@@ -23,6 +23,7 @@ PROXY_BUFFER_SIZE = envint("XPRA_PROXY_BUFFER_SIZE", 65536)
 def noretry(_e):
     return False
 
+
 class XpraProxy:
     """
         This is the proxy command that runs
@@ -35,7 +36,7 @@ class XpraProxy:
     def __repr__(self):
         return f"XpraProxy({self._name}: {self._client_conn} - {self._server_conn})"
 
-    def __init__(self, name, client_conn, server_conn, quit_cb:Callable|None=None):
+    def __init__(self, name, client_conn, server_conn, quit_cb: Callable | None=None):
         self._name = name
         self._client_conn = client_conn
         self._server_conn = server_conn
@@ -102,7 +103,7 @@ class XpraProxy:
         self.quit()
 
     def quit(self, *args) -> None:
-        log("XpraProxy.quit(%s) %s: closing connections", args,  self._name)
+        log("XpraProxy.quit(%s) %s: closing connections", args, self._name)
         self._closed = True
         try:
             self._client_conn.close()

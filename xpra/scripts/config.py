@@ -14,10 +14,7 @@ from collections.abc import Callable, Iterable
 
 from xpra.common import noop
 from xpra.util.str_fn import csv
-from xpra.os_util import (
-    WIN32, OSX, POSIX,
-    getuid, getgid, get_username_for_uid,
-)
+from xpra.os_util import WIN32, OSX, POSIX, getuid, getgid, get_username_for_uid
 from xpra.util.env import osexpand
 from xpra.util.io import stderr_print, which
 from xpra.util.system import is_Ubuntu, is_Debian
@@ -63,7 +60,7 @@ DEFAULT_POSTSCRIPT_PRINTER : str = ""
 if POSIX:
     DEFAULT_POSTSCRIPT_PRINTER = os.environ.get("XPRA_POSTSCRIPT_PRINTER", "drv:///sample.drv/generic.ppd")
 DEFAULT_PULSEAUDIO = None   # auto
-if OSX or WIN32: # pragma: no cover
+if OSX or WIN32:   # pragma: no cover
     DEFAULT_PULSEAUDIO = False
 
 # pylint: disable=import-outside-toplevel
@@ -76,6 +73,8 @@ def remove_dupes(seq:Iterable[Any]) -> list[Any]:
 
 
 _has_audio_support = None
+
+
 def has_audio_support():
     global _has_audio_support
     if _has_audio_support is None:
@@ -93,19 +92,19 @@ def get_xorg_bin() -> str:
         return xorg
     # Detect Xorg Binary
     if is_arm() and is_Debian() and os.path.exists("/usr/bin/Xorg"):
-        #Raspbian breaks if we use a different binary..
+        # Raspbian breaks if we use a different binary..
         return "/usr/bin/Xorg"
     for p in (
-              "/usr/libexec/Xorg",              #fedora 22+
-              "/usr/lib/xorg/Xorg",             #ubuntu 16.10
-              "/usr/lib/xorg-server/Xorg",      #arch linux
-              "/usr/lib/Xorg",                  #arch linux (new 2019)
-              "/usr/X11/bin/X",                 #OSX
-              ):
+        "/usr/libexec/Xorg",              # fedora 22+
+        "/usr/lib/xorg/Xorg",             # ubuntu 16.10
+        "/usr/lib/xorg-server/Xorg",      # arch linux
+        "/usr/lib/Xorg",                  # arch linux (new 2019)
+        "/usr/X11/bin/X",                 # OSX
+    ):
         if os.path.exists(p):
             return p
     # look for it in $PATH:
-    for x in os.environ.get("PATH", "").split(os.pathsep): # pragma: no cover
+    for x in os.environ.get("PATH", "").split(os.pathsep):   # pragma: no cover
         xorg = os.path.join(x, "Xorg")
         if os.path.isfile(xorg):
             return xorg
@@ -139,10 +138,10 @@ def get_Xdummy_command(xorg_cmd="Xorg",
         # this directory can store xorg config files, it does not need to be created:
         "-configdir", f'"{get_Xdummy_confdir()}"',
         "-config", f'"{xorg_conf}"',
-        ]
+    ]
 
 
-def get_Xvfb_command(width = 8192, height = 4096, dpi = 96) -> list[str]:
+def get_Xvfb_command(width=8192, height=4096, dpi=96) -> list[str]:
     cmd = [
         "Xvfb",
         "+extension", "GLX",
@@ -158,8 +157,9 @@ def get_Xvfb_command(width = 8192, height = 4096, dpi = 96) -> list[str]:
     return cmd
 
 
-def detect_xvfb_command(conf_dir = "/etc/xpra/", bin_dir = "",
-                        Xdummy_ENABLED = None, Xdummy_wrapper_ENABLED = None, warn_fn:Callable = warn) -> list[str]:
+def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir="",
+                        Xdummy_ENABLED: bool | None = None, Xdummy_wrapper_ENABLED: bool | None=None,
+                        warn_fn:Callable = warn) -> list[str]:
     """
     This function returns the xvfb command to use.
     It can either be an `Xvfb` command or one that uses `Xdummy`,
@@ -190,8 +190,9 @@ def detect_xvfb_command(conf_dir = "/etc/xpra/", bin_dir = "",
     return detect_xdummy_command(conf_dir, bin_dir, Xdummy_wrapper_ENABLED, warn_fn)
 
 
-def detect_xdummy_command(conf_dir = "/etc/xpra/", bin_dir = "",
-                          Xdummy_wrapper_ENABLED: bool|None = None, warn_fn: Callable = warn) -> list[str]:
+def detect_xdummy_command(conf_dir="/etc/xpra/", bin_dir="",
+                          Xdummy_wrapper_ENABLED: bool | None = None,
+                          warn_fn: Callable = warn) -> list[str]:
     if not POSIX or OSX:
         return get_Xvfb_command()
     xorg_bin = get_xorg_bin()
@@ -266,7 +267,7 @@ def get_build_info() -> list[str]:
         from xpra.build_info import (
             BUILD_DATE, BUILD_TIME, BUILD_BIT,
             CYTHON_VERSION, COMPILER_VERSION,
-            )
+        )
         info.insert(0, "")
         einfo = "Python " + ".".join(str(v) for v in sys.version_info[:2])
         if BUILD_BIT:
@@ -422,7 +423,7 @@ def read_xpra_conf(conf_dir: str) -> dict[str, Any]:
     return d
 
 
-def read_xpra_defaults(username:str|None = None, uid=None, gid=None):
+def read_xpra_defaults(username: str | None = None, uid=None, gid=None):
     """
         Reads the global <xpra_conf_filename> from the <conf_dir>
         and then the user-specific one.
@@ -440,7 +441,7 @@ def read_xpra_defaults(username:str|None = None, uid=None, gid=None):
     return defaults
 
 
-def get_xpra_defaults_dirs(username: str|None = None, uid=None, gid=None):
+def get_xpra_defaults_dirs(username: str | None = None, uid=None, gid=None):
     from xpra.platform.paths import get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs
     # load config files in this order (the later ones override earlier ones):
     # * application defaults   (ie: "/Volumes/Xpra/Xpra.app/Contents/Resources/" on OSX)
@@ -722,7 +723,7 @@ NON_COMMAND_LINE_OPTIONS : list[str] = [
     "pdf-printer",
     "postscript-printer",
     "add-printer-options",
-    ]
+]
 
 START_COMMAND_OPTIONS : list[str] = [
     "start", "start-child",
@@ -730,7 +731,7 @@ START_COMMAND_OPTIONS : list[str] = [
     "start-after-connect", "start-child-after-connect",
     "start-on-connect", "start-child-on-connect",
     "start-on-last-client-exit", "start-child-on-last-client-exit",
-    ]
+]
 BIND_OPTIONS : list[str] = [
     "bind", "bind-tcp", "bind-ssl", "bind-ws", "bind-wss", "bind-vsock", "bind-rfb", "bind-quic",
 ]
@@ -739,10 +740,10 @@ BIND_OPTIONS : list[str] = [
 # so we can generate command lines that work with older supported versions:
 OPTIONS_ADDED_SINCE_V5 : list[str] = [
     "minimal",
-    ]
+]
 OPTIONS_COMPAT_NAMES : dict[str, str] = {
     "--compression_level=" : "-z"
-    }
+}
 
 CLIENT_OPTIONS : list[str] = [
     "title", "username", "password", "session-name",
@@ -825,7 +826,7 @@ PROXY_START_OVERRIDABLE_OPTIONS : list[str] = [
     "start-on-connect", "start-child-on-connect",
     "start-on-last-client-exit", "start-child-on-last-client-exit",
     "sessions-dir",
-    ]
+]
 tmp: str = os.environ.get("XPRA_PROXY_START_OVERRIDABLE_OPTIONS", "")
 if tmp:
     PROXY_START_OVERRIDABLE_OPTIONS = tmp.split(",")
@@ -834,37 +835,37 @@ del tmp
 
 def get_default_key_shortcuts() -> list[str]:
     return [shortcut for e, shortcut in (
-               (True,   "Control+Menu:toggle_keyboard_grab"),
-               (True,   "Shift+Menu:toggle_pointer_grab"),
-               (not OSX, "Shift+F11:toggle_fullscreen"),
-               (OSX,    "Control+F11:toggle_fullscreen"),
-               (True,   "#+F1:show_menu"),
-               (True,   "#+F2:show_start_new_command"),
-               (True,   "#+F3:show_bug_report"),
-               (True,   "#+F4:quit"),
-               (True,   "#+F5:show_window_info"),
-               (True,   "#+F6:show_shortcuts"),
-               (True,   "#+F7:show_docs"),
-               (True,   "#+F8:toggle_keyboard_grab"),
-               (True,   "#+F9:toggle_pointer_grab"),
-               (True,   "#+F10:magic_key"),
-               (True,   "#+F11:show_session_info"),
-               (True,   "#+F12:toggle_debug"),
-               (True,   "#+plus:scaleup"),
-               (OSX,    "#+plusminus:scaleup"),
-               (True,   "#+minus:scaledown"),
-               (True,   "#+underscore:scaledown"),
-               (OSX,    "#+emdash:scaledown"),
-               (True,   "#+KP_Add:scaleup"),
-               (True,   "#+KP_Subtract:scaledown"),
-               (True,   "#+KP_Multiply:scalereset"),
-               (True,   "#+bar:scalereset"),
-               (True,   "#+question:scalingoff"),
-               (OSX,    "#+degree:scalereset"),
-               (OSX,    "meta+grave:void"),
-               (OSX,    "meta+shift+asciitilde:void"),
-               )
-            if e]
+        (True,   "Control+Menu:toggle_keyboard_grab"),
+        (True,   "Shift+Menu:toggle_pointer_grab"),
+        (not OSX, "Shift+F11:toggle_fullscreen"),
+        (OSX,    "Control+F11:toggle_fullscreen"),
+        (True,   "#+F1:show_menu"),
+        (True,   "#+F2:show_start_new_command"),
+        (True,   "#+F3:show_bug_report"),
+        (True,   "#+F4:quit"),
+        (True,   "#+F5:show_window_info"),
+        (True,   "#+F6:show_shortcuts"),
+        (True,   "#+F7:show_docs"),
+        (True,   "#+F8:toggle_keyboard_grab"),
+        (True,   "#+F9:toggle_pointer_grab"),
+        (True,   "#+F10:magic_key"),
+        (True,   "#+F11:show_session_info"),
+        (True,   "#+F12:toggle_debug"),
+        (True,   "#+plus:scaleup"),
+        (OSX,    "#+plusminus:scaleup"),
+        (True,   "#+minus:scaledown"),
+        (True,   "#+underscore:scaledown"),
+        (OSX,    "#+emdash:scaledown"),
+        (True,   "#+KP_Add:scaleup"),
+        (True,   "#+KP_Subtract:scaledown"),
+        (True,   "#+KP_Multiply:scalereset"),
+        (True,   "#+bar:scalereset"),
+        (True,   "#+question:scalingoff"),
+        (OSX,    "#+degree:scalereset"),
+        (OSX,    "meta+grave:void"),
+        (OSX,    "meta+shift+asciitilde:void"),
+    )
+        if e]
 
 
 def get_default_systemd_run() -> str:
@@ -907,7 +908,7 @@ def get_default_pulseaudio_command() -> list[str]:
         load_opt("module-dbus-protocol"),
         load_opt("module-x11-publish"),
         "--log-level=2", "--log-target=stderr",
-        ]
+    ]
     from xpra.util.env import envbool
     if not envbool("XPRA_PULSEAUDIO_MEMFD", False):
         cmd.append("--enable-memfd=no")
@@ -921,6 +922,8 @@ def get_default_pulseaudio_command() -> list[str]:
 GLOBAL_DEFAULTS = None
 # lowest common denominator here
 # (the xpra.conf file shipped is generally better tuned than this - especially for 'xvfb')
+
+
 def get_defaults() -> dict[str, Any]:
     global GLOBAL_DEFAULTS
     if GLOBAL_DEFAULTS is not None:
@@ -928,11 +931,11 @@ def get_defaults() -> dict[str, Any]:
     from xpra.platform.features import (
         OPEN_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS,
         SOURCE, DEFAULT_ENV, DEFAULT_START_ENV, CAN_DAEMONIZE, SYSTEM_PROXY_SOCKET,
-        )
+    )
     from xpra.platform.paths import (
         get_download_dir, get_remote_run_xpra_scripts,
         get_sessions_dir, get_socket_dirs, get_client_socket_dirs,
-        )
+    )
     conf_dirs = [os.environ.get("XPRA_CONF_DIR", "")]
     build_root = os.environ.get("RPM_BUILD_ROOT")
     if build_root:
@@ -965,206 +968,207 @@ def get_defaults() -> dict[str, Any]:
     ssl_protocol = "TLS"
 
     GLOBAL_DEFAULTS = {
-                    "encoding"          : "auto",
-                    "title"             : "@title@ on @hostinfo@",
-                    "username"          : "",
-                    "password"          : "",
-                    "wm-name"           : DEFAULT_NET_WM_NAME,
-                    "session-name"      : "",
-                    "dock-icon"         : "",
-                    "tray-icon"         : "",
-                    "window-icon"       : "",
-                    "keyboard-raw"      : False,
-                    "keyboard-layout"   : "",
-                    "keyboard-layouts"  : [],
-                    "keyboard-variant"  : "",
-                    "keyboard-variants" : [],
-                    "keyboard-options"  : "",
-                    "clipboard"         : "yes",
-                    "clipboard-direction" : "both",
-                    "clipboard-filter-file" : "",
-                    "remote-clipboard"  : "CLIPBOARD",
-                    "local-clipboard"   : "CLIPBOARD",
-                    "pulseaudio-command": " ".join(get_default_pulseaudio_command()),
-                    "bandwidth-limit"   : "auto",
-                    "encryption"        : "",
-                    "tcp-encryption"    : "",
-                    "encryption-keyfile": "",
-                    "tcp-encryption-keyfile": "",
-                    "pidfile"           : "${XPRA_SESSION_DIR}/server.pid",
-                    "ssh"               : "auto",
-                    "systemd-run"       : get_default_systemd_run(),
-                    "systemd-run-args"  : "",
-                    "system-proxy-socket" : SYSTEM_PROXY_SOCKET,
-                    "xvfb"              : " ".join(xvfb),
-                    "xdummy"            : " ".join(xdummy),
-                    "chdir"             : "",
-                    "socket-dir"        : "",
-                    "sessions-dir"      : get_sessions_dir(),
-                    "log-dir"           : "auto",
-                    "log-file"          : "server.log",
-                    "border"            : "auto,5:off",
-                    "window-close"      : "auto",
-                    "min-size"          : "",
-                    "max-size"          : "",
-                    "desktop-scaling"   : "on",
-                    "refresh-rate"      : "auto",
-                    "display"           : "",
-                    "download-path"     : get_download_dir(),
-                    "open-command"      : " ".join(OPEN_COMMAND),
-                    "remote-logging"    : "both",
-                    "lpadmin"           : "/usr/sbin/lpadmin",
-                    "lpinfo"            : "/usr/sbin/lpinfo",
-                    "add-printer-options" : ["-u allow:$USER", "-E", "-o printer-is-shared=false"],
-                    "pdf-printer"       : "",
-                    "postscript-printer": DEFAULT_POSTSCRIPT_PRINTER,
-                    "debug"             : "",
-                    "input-method"      : "auto",
-                    "audio-source"      : "",
-                    "html"              : "auto",
-                    "http-scripts"      : "all",
-                    "socket-permissions": "600",
-                    "exec-wrapper"      : "",
-                    "dbus-launch"       : "dbus-launch --sh-syntax --close-stderr",
-                    "webcam"            : ["auto", "no"][OSX or WIN32],
-                    "mousewheel"        : ["on", "invert-x"][OSX],
-                    "input-devices"     : "auto",
-                    "shortcut-modifiers": "auto",
-                    "open-files"        : "auto",
-                    "open-url"          : "auto",
-                    "file-transfer"     : "auto",
-                    "printing"          : "yes",
-                    "headerbar"         : ["auto", "no"][OSX or WIN32],
-                    "challenge-handlers": ["all"],
-                    # ssl options:
-                    "ssl"               : "auto",
-                    "ssl-key"           : "",
-                    "ssl-key-password"  : "",
-                    "ssl-cert"          : "",
-                    "ssl-protocol"      : ssl_protocol,
-                    "ssl-ca-certs"      : "default",
-                    "ssl-ca-data"       : "",
-                    "ssl-ciphers"       : "DEFAULT",
-                    "ssl-client-verify-mode"   : "optional",
-                    "ssl-server-verify-mode"   : "required",
-                    "ssl-verify-flags"  : "X509_STRICT",
-                    "ssl-check-hostname": True,
-                    "ssl-server-hostname": "",
-                    "ssl-options"       : "ALL,NO_COMPRESSION",
-                    "quality"           : 0,
-                    "min-quality"       : 1,
-                    "speed"             : 0,
-                    "min-speed"         : 1,
-                    "compression_level" : 1,
-                    "dpi"               : 0,
-                    "file-size-limit"   : "1G",
-                    "idle-timeout"      : 0,
-                    "server-idle-timeout" : 0,
-                    "sync-xvfb"         : None,
-                    "pixel-depth"       : 0,
-                    "uid"               : getuid(),
-                    "gid"               : getgid(),
-                    "min-port"          : 1024,
-                    "rfb-upgrade"       : 5,
-                    "auto-refresh-delay": 0.15,
-                    "minimal"           : False,
-                    "daemon"            : CAN_DAEMONIZE,
-                    "start-via-proxy"   : False,
-                    "attach"            : None,
-                    "use-display"       : "auto",
-                    "resize-display"    : ["no", "yes"][not OSX and not WIN32],
-                    "reconnect"         : True,
-                    "tray"              : True,
-                    "pulseaudio"        : DEFAULT_PULSEAUDIO,
-                    "mmap"              : "yes",
-                    "mmap-group"        : "auto",
-                    "video"             : True,
-                    "audio"             : True,
-                    "speaker"           : ["disabled", "on"][has_audio_support() and not is_arm()],
-                    "microphone"        : ["disabled", "off"][has_audio_support()],
-                    "video-scaling"     : "auto",
-                    "readonly"          : False,
-                    "keyboard-sync"     : True,
-                    "displayfd"         : 0,
-                    "pings"             : 5,
-                    "cursors"           : True,
-                    "bell"              : True,
-                    "notifications"     : True,
-                    "xsettings"         : ["auto", "no"][int(OSX or WIN32)],
-                    "system-tray"       : True,
-                    "sharing"           : None,
-                    "lock"              : None,
-                    "delay-tray"        : False,
-                    "windows"           : True,
-                    "terminate-children": False,
-                    "exit-with-children": False,
-                    "exit-with-client"  : False,
-                    "exit-with-windows" : False,
-                    "start-new-commands": True,
-                    "proxy-start-sessions": True,
-                    "av-sync"           : True,
-                    "exit-ssh"          : True,
-                    "dbus-control"      : not WIN32 and not OSX,
-                    "opengl"            : "no" if OSX else "probe",
-                    "mdns"              : not WIN32,
-                    "swap-keys"         : OSX,  # only used on osx
-                    "desktop-fullscreen": False,
-                    "forward-xdg-open"  : None,
-                    "modal-windows"     : False,
-                    "bandwidth-detection" : False,
-                    "ssl-upgrade"       : True,
-                    "websocket-upgrade" : True,
-                    "ssh-upgrade"       : True,
-                    "splash"            : None,
-                    "pulseaudio-configure-commands"  : [" ".join(x) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS],
-                    "socket-dirs"       : get_socket_dirs(),
-                    "client-socket-dirs" : get_client_socket_dirs(),
-                    "remote-xpra"       : get_remote_run_xpra_scripts(),
-                    "encodings"         : ["all"],
-                    "proxy-video-encoders" : ["none"],
-                    "video-encoders"    : ["all", "-gstreamer", "-ffmpeg"],
-                    "csc-modules"       : ["all"],
-                    "video-decoders"    : ["all"],
-                    "speaker-codec"     : [],
-                    "microphone-codec"  : [],
-                    "compressors"       : ["all"],
-                    "packet-encoders"   : ["all"],
-                    "key-shortcut"      : get_default_key_shortcuts(),
-                    "bind"              : ["auto"],
-                    "bind-vsock"        : [],
-                    "bind-tcp"          : [],
-                    "bind-ws"           : [],
-                    "bind-wss"          : [],
-                    "bind-ssl"          : [],
-                    "bind-ssh"          : [],
-                    "bind-rfb"          : [],
-                    "bind-quic"         : [],
-                    "auth"              : [],
-                    "vsock-auth"        : [],
-                    "tcp-auth"          : [],
-                    "ws-auth"           : [],
-                    "wss-auth"          : [],
-                    "ssl-auth"          : [],
-                    "ssh-auth"          : [],
-                    "rfb-auth"          : [],
-                    "quic-auth"         : [],
-                    "password-file"     : [],
-                    "source"            : SOURCE,
-                    "source-start"      : [],
-                    "start"             : [],
-                    "start-late"        : [],
-                    "start-child"       : [],
-                    "start-child-late"  : [],
-                    "start-after-connect"       : [],
-                    "start-child-after-connect" : [],
-                    "start-on-connect"          : [],
-                    "start-child-on-connect"    : [],
-                    "start-on-last-client-exit" : [],
-                    "start-child-on-last-client-exit"   : [],
-                    "start-env"         : list(DEFAULT_ENV),
-                    "env"               : list(DEFAULT_START_ENV),
-                    }
+        "encoding"          : "auto",
+        "title"             : "@title@ on @hostinfo@",
+        "username"          : "",
+        "password"          : "",
+        "wm-name"           : DEFAULT_NET_WM_NAME,
+        "session-name"      : "",
+        "dock-icon"         : "",
+        "tray-icon"         : "",
+        "window-icon"       : "",
+        "keyboard-raw"      : False,
+        "keyboard-layout"   : "",
+        "keyboard-layouts"  : [],
+        "keyboard-variant"  : "",
+        "keyboard-variants" : [],
+        "keyboard-options"  : "",
+        "clipboard"         : "yes",
+        "clipboard-direction" : "both",
+        "clipboard-filter-file" : "",
+        "remote-clipboard"  : "CLIPBOARD",
+        "local-clipboard"   : "CLIPBOARD",
+        "pulseaudio-command": " ".join(get_default_pulseaudio_command()),
+        "bandwidth-limit"   : "auto",
+        "encryption"        : "",
+        "tcp-encryption"    : "",
+        "encryption-keyfile": "",
+        "tcp-encryption-keyfile": "",
+        "pidfile"           : "${XPRA_SESSION_DIR}/server.pid",
+        "ssh"               : "auto",
+        "systemd-run"       : get_default_systemd_run(),
+        "systemd-run-args"  : "",
+        "system-proxy-socket" : SYSTEM_PROXY_SOCKET,
+        "xvfb"              : " ".join(xvfb),
+        "xdummy"            : " ".join(xdummy),
+        "chdir"             : "",
+        "socket-dir"        : "",
+        "sessions-dir"      : get_sessions_dir(),
+        "log-dir"           : "auto",
+        "log-file"          : "server.log",
+        "border"            : "auto,5:off",
+        "window-close"      : "auto",
+        "min-size"          : "",
+        "max-size"          : "",
+        "desktop-scaling"   : "on",
+        "refresh-rate"      : "auto",
+        "display"           : "",
+        "download-path"     : get_download_dir(),
+        "open-command"      : " ".join(OPEN_COMMAND),
+        "remote-logging"    : "both",
+        "lpadmin"           : "/usr/sbin/lpadmin",
+        "lpinfo"            : "/usr/sbin/lpinfo",
+        "add-printer-options" : ["-u allow:$USER", "-E", "-o printer-is-shared=false"],
+        "pdf-printer"       : "",
+        "postscript-printer": DEFAULT_POSTSCRIPT_PRINTER,
+        "debug"             : "",
+        "input-method"      : "auto",
+        "audio-source"      : "",
+        "html"              : "auto",
+        "http-scripts"      : "all",
+        "socket-permissions": "600",
+        "exec-wrapper"      : "",
+        "dbus-launch"       : "dbus-launch --sh-syntax --close-stderr",
+        "webcam"            : ["auto", "no"][OSX or WIN32],
+        "mousewheel"        : ["on", "invert-x"][OSX],
+        "input-devices"     : "auto",
+        "shortcut-modifiers": "auto",
+        "open-files"        : "auto",
+        "open-url"          : "auto",
+        "file-transfer"     : "auto",
+        "printing"          : "yes",
+        "headerbar"         : ["auto", "no"][OSX or WIN32],
+        "challenge-handlers": ["all"],
+        # ssl options:
+        "ssl"               : "auto",
+        "ssl-key"           : "",
+        "ssl-key-password"  : "",
+        "ssl-cert"          : "",
+        "ssl-protocol"      : ssl_protocol,
+        "ssl-ca-certs"      : "default",
+        "ssl-ca-data"       : "",
+        "ssl-ciphers"       : "DEFAULT",
+        "ssl-client-verify-mode"   : "optional",
+        "ssl-server-verify-mode"   : "required",
+        "ssl-verify-flags"  : "X509_STRICT",
+        "ssl-check-hostname": True,
+        "ssl-server-hostname": "",
+        "ssl-options"       : "ALL,NO_COMPRESSION",
+        "quality"           : 0,
+        "min-quality"       : 1,
+        "speed"             : 0,
+        "min-speed"         : 1,
+        "compression_level" : 1,
+        "dpi"               : 0,
+        "file-size-limit"   : "1G",
+        "idle-timeout"      : 0,
+        "server-idle-timeout" : 0,
+        "sync-xvfb"         : None,
+        "pixel-depth"       : 0,
+        "uid"               : getuid(),
+        "gid"               : getgid(),
+        "min-port"          : 1024,
+        "rfb-upgrade"       : 5,
+        "auto-refresh-delay": 0.15,
+        "minimal"           : False,
+        "daemon"            : CAN_DAEMONIZE,
+        "start-via-proxy"   : False,
+        "attach"            : None,
+        "use-display"       : "auto",
+        "resize-display"    : ["no", "yes"][not OSX and not WIN32],
+        "reconnect"         : True,
+        "tray"              : True,
+        "pulseaudio"        : DEFAULT_PULSEAUDIO,
+        "mmap"              : "yes",
+        "mmap-group"        : "auto",
+        "video"             : True,
+        "audio"             : True,
+        "speaker"           : ["disabled", "on"][has_audio_support() and not is_arm()],
+        "microphone"        : ["disabled", "off"][has_audio_support()],
+        "video-scaling"     : "auto",
+        "readonly"          : False,
+        "keyboard-sync"     : True,
+        "displayfd"         : 0,
+        "pings"             : 5,
+        "cursors"           : True,
+        "bell"              : True,
+        "notifications"     : True,
+        "xsettings"         : ["auto", "no"][int(OSX or WIN32)],
+        "system-tray"       : True,
+        "sharing"           : None,
+        "lock"              : None,
+        "delay-tray"        : False,
+        "windows"           : True,
+        "terminate-children": False,
+        "exit-with-children": False,
+        "exit-with-client"  : False,
+        "exit-with-windows" : False,
+        "start-new-commands": True,
+        "proxy-start-sessions": True,
+        "av-sync"           : True,
+        "exit-ssh"          : True,
+        "dbus-control"      : not WIN32 and not OSX,
+        "opengl"            : "no" if OSX else "probe",
+        "mdns"              : not WIN32,
+        "swap-keys"         : OSX,  # only used on osx
+        "desktop-fullscreen": False,
+        "forward-xdg-open"  : None,
+        "modal-windows"     : False,
+        "bandwidth-detection" : False,
+        "ssl-upgrade"       : True,
+        "websocket-upgrade" : True,
+        "ssh-upgrade"       : True,
+        "splash"            : None,
+        "pulseaudio-configure-commands"  : [" ".join(x) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS],
+        "socket-dirs"       : get_socket_dirs(),
+        "client-socket-dirs" : get_client_socket_dirs(),
+        "remote-xpra"       : get_remote_run_xpra_scripts(),
+        "encodings"         : ["all"],
+        "proxy-video-encoders" : ["none"],
+        "video-encoders"    : ["all", "-gstreamer", "-ffmpeg"],
+        "csc-modules"       : ["all"],
+        "video-decoders"    : ["all"],
+        "speaker-codec"     : [],
+        "microphone-codec"  : [],
+        "compressors"       : ["all"],
+        "packet-encoders"   : ["all"],
+        "key-shortcut"      : get_default_key_shortcuts(),
+        "bind"              : ["auto"],
+        "bind-vsock"        : [],
+        "bind-tcp"          : [],
+        "bind-ws"           : [],
+        "bind-wss"          : [],
+        "bind-ssl"          : [],
+        "bind-ssh"          : [],
+        "bind-rfb"          : [],
+        "bind-quic"         : [],
+        "auth"              : [],
+        "vsock-auth"        : [],
+        "tcp-auth"          : [],
+        "ws-auth"           : [],
+        "wss-auth"          : [],
+        "ssl-auth"          : [],
+        "ssh-auth"          : [],
+        "rfb-auth"          : [],
+        "quic-auth"         : [],
+        "password-file"     : [],
+        "source"            : SOURCE,
+        "source-start"      : [],
+        "start"             : [],
+        "start-late"        : [],
+        "start-child"       : [],
+        "start-child-late"  : [],
+        "start-after-connect"       : [],
+        "start-child-after-connect" : [],
+        "start-on-connect"          : [],
+        "start-child-on-connect"    : [],
+        "start-on-last-client-exit" : [],
+        "start-child-on-last-client-exit"   : [],
+        "start-env"         : list(DEFAULT_ENV),
+        "env"               : list(DEFAULT_START_ENV),
+    }
     return GLOBAL_DEFAULTS
+
 
 # fields that got renamed:
 CLONES: dict[str, str] = {}
@@ -1173,13 +1177,13 @@ CLONES: dict[str, str] = {}
 NO_FILE_OPTIONS = ("daemon", )
 
 
-TRUE_OPTIONS : tuple[Any, ...] = ("yes", "true", "1", "on", True)
-FALSE_OPTIONS : tuple[Any, ...] = ("no", "false", "0", "off", False)
-ALL_BOOLEAN_OPTIONS : tuple[Any, ...] = tuple(list(TRUE_OPTIONS)+list(FALSE_OPTIONS))
-OFF_OPTIONS : tuple[str, ...] = ("off", )
+TRUE_OPTIONS: tuple[Any, ...] = ("yes", "true", "1", "on", True)
+FALSE_OPTIONS: tuple[Any, ...] = ("no", "false", "0", "off", False)
+ALL_BOOLEAN_OPTIONS: tuple[Any, ...] = tuple(list(TRUE_OPTIONS)+list(FALSE_OPTIONS))
+OFF_OPTIONS: tuple[str, ...] = ("off", )
 
 
-def parse_bool(k:str, v, auto=None) -> bool|None:
+def parse_bool(k: str, v, auto=None) -> bool | None:
     if isinstance(v, str):
         v = v.lower().strip()
     if v in TRUE_OPTIONS:
@@ -1371,6 +1375,7 @@ def dict_to_validated_config(d:dict, extras_defaults=None, extras_types=None, ex
             options[v] = options[k]
     return dict_to_config(options)
 
+
 def dict_to_config(options) -> XpraConfig:
     config = XpraConfig()
     for k,v in options.items():
@@ -1417,8 +1422,9 @@ def fixup_socketdirs(options) -> None:
             value = [v for x in value for v in x.split(os.path.pathsep)]
         setattr(options, option_name, value)
 
+
 def fixup_pings(options) -> None:
-    #pings used to be a boolean, True mapped to "5"
+    # pings used to be a boolean, True mapped to "5"
     if isinstance(options.pings, int):
         return
     try:
@@ -1442,7 +1448,7 @@ def fixup_encodings(options) -> None:
         "pngl"  : "png/L",
         "png/p" : "png/P",
         "pngp"  : "png/P",
-        }
+    }
     options.encoding = RENAME.get(options.encoding, options.encoding)
     encodings = [RENAME.get(x, x) for x in nodupes(estr)]
     while True:
@@ -1602,6 +1608,7 @@ def fixup_options(options) -> None:
 
 def main():
     from xpra.util.str_fn import nonl
+
     def print_options(o):
         for k,ot in sorted(OPTION_TYPES.items()):
             v = getattr(o, name_to_field(k), "")
@@ -1617,6 +1624,7 @@ def main():
         args = list(sys.argv[1:])
         if "-v" in args or "--verbose" in sys.argv:
             global debug
+
             def print_debug(*args):
                 print(args[0] % args[1:])
             debug = print_debug

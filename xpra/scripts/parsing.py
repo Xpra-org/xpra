@@ -16,8 +16,8 @@ from urllib import parse
 from typing import Any
 from collections.abc import Callable
 
-from xpra.util.version import full_version_str
 from xpra.util.str_fn import csv
+from xpra.util.version import full_version_str
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.env import envbool
 from xpra.net.common import DEFAULT_PORT, DEFAULT_PORTS
@@ -30,7 +30,7 @@ from xpra.scripts.config import (
     fixup_debug_option, fixup_options,
     make_defaults_struct, parse_bool, parse_number, print_number,
     validate_config, name_to_field,
-    )
+)
 
 
 MODE_ALIAS : dict[str,str] = {
@@ -41,16 +41,19 @@ MODE_ALIAS : dict[str,str] = {
     "start-expand"      : "expand",
     "start-shadow"      : "shadow",
     "start-shadow-screen" : "shadow-screen",
-    }
+}
 REVERSE_MODE_ALIAS : dict[str,str] = {v:k for k,v in MODE_ALIAS.items()}
+
 
 def enabled_str(v, true_str:str="yes", false_str:str="no") -> str:
     if v:
         return true_str
     return false_str
 
+
 def enabled_or_auto(v):
     return bool_or(v, None, true_str="yes", false_str="no", other_str="auto")
+
 
 def bool_or(v, other_value, true_str, false_str, other_str):
     vs = str(v).lower()
@@ -58,6 +61,7 @@ def bool_or(v, other_value, true_str, false_str, other_str):
         return other_str
     bv = parse_bool("", v)
     return enabled_str(bv, true_str, false_str)
+
 
 def audio_option(v):
     vl = v.lower()
@@ -72,10 +76,12 @@ def info(msg:str):
         import syslog
         syslog.syslog(syslog.LOG_INFO, msg)
 
+
 def warn(msg:str):
     if not stderr_print(msg) and POSIX:
         import syslog
         syslog.syslog(syslog.LOG_WARNING, msg)
+
 
 def error(msg:str):
     if not stderr_print(msg) and POSIX:
@@ -83,11 +89,12 @@ def error(msg:str):
         syslog.syslog(syslog.LOG_ERR, msg)
 
 
-#this parse doesn't exit when it encounters an error,
-#allowing us to deal with it better and show a UI message if needed.
+# this parse doesn't exit when it encounters an error,
+# allowing us to deal with it better and show a UI message if needed.
 class ModifiedOptionParser(optparse.OptionParser):
     def error(self, msg):
         raise InitException(msg)
+
     def exit(self, status=0, msg=None):
         raise InitExit(status, msg)
 
@@ -98,13 +105,14 @@ def fixup_defaults(defaults:XpraConfig) -> None:
         v = getattr(defaults, fn)
         if "help" in v:
             if not envbool("XPRA_SKIP_UI", False):
-                #skip-ui: we're running in subprocess, don't bother spamming stderr
-                warn(f"Warning: invalid 'help' option found in {k!r} configuration\n" +
-                             " this should only be used as a command line argument\n")
+                # skip-ui: we're running in subprocess, don't bother spamming stderr
+                warn(f"Warning: invalid 'help' option found in {k!r} configuration\n")
+                warn(" this should only be used as a command line argument\n")
             if k in ("encoding", "debug", "audio-source"):
                 setattr(defaults, fn, "")
             else:
                 v.remove("help")
+
 
 def do_replace_option(cmdline, oldoption:str, newoption:str) -> None:
     for i, x in enumerate(cmdline):
@@ -113,26 +121,28 @@ def do_replace_option(cmdline, oldoption:str, newoption:str) -> None:
         elif newoption.find("=")<0 and x.startswith(f"{oldoption}="):
             cmdline[i] = f"{newoption}=" + x.split("=", 1)[1]
 
+
 def do_legacy_bool_parse(cmdline, optionname:str, newoptionname:str="") -> None:
-    #find --no-XYZ or --XYZ
-    #and replace it with --XYZ=yes|no
+    # find --no-XYZ or --XYZ
+    # and replace it with --XYZ=yes|no
     if not newoptionname:
         newoptionname = optionname
     do_replace_option(cmdline, f"--no-{optionname}", f"--{newoptionname}=no")
     do_replace_option(cmdline, f"--{optionname}", f"--{newoptionname}=yes")
 
+
 def ignore_options(args, options) -> None:
     for x in options:
-        o = f"--{x}"      #ie: --use-display
+        o = f"--{x}"      # ie: --use-display
         while o in args:
             args.remove(o)
-        o = f"--{x}="     #ie: --bind-tcp=....
+        o = f"--{x}="     # ie: --bind-tcp=....
         remove = []
-        #find all command line arguments starting with this option:
+        # find all command line arguments starting with this option:
         for v in args:
             if v.startswith(o):
                 remove.append(v)
-        #and remove them all:
+        # and remove them all:
         for r in remove:
             while r in args:
                 args.remove(r)
@@ -155,16 +165,16 @@ def parse_env(env) -> dict[str, str]:
     return d
 
 
-def parse_URL(url:str) -> tuple[str,dict]:
+def parse_URL(url: str) -> tuple[str, dict]:
     from urllib.parse import urlparse, parse_qs
     up = urlparse(url)
     address = up.netloc
     qpos = url.find("?")
     options = {}
-    if qpos>0:
+    if qpos > 0:
         params_str = url[qpos+1:]
         params = parse_qs(params_str, keep_blank_values=True)
-        f_params : dict[str,Any] = {}
+        f_params : dict[str, Any] = {}
         for k,v in params.items():
             t = OPTION_TYPES.get(k)
             if t is not None and t not in (list, tuple):
@@ -181,7 +191,7 @@ def parse_URL(url:str) -> tuple[str,dict]:
 
 
 def _sep_pos(display_name):
-    #split the display name on ":" or "/"
+    # split the display name on ":" or "/"
     scpos = display_name.find(":")
     slpos = display_name.find("/")
     if scpos<0:
@@ -191,7 +201,7 @@ def _sep_pos(display_name):
     return min(scpos, slpos)
 
 
-def auto_proxy(scheme, host:str) -> dict[str,Any]:
+def auto_proxy(scheme, host:str) -> dict[str, Any]:
     try:
         from xpra.net.libproxy import ProxyFactory
     except ImportError as e:
@@ -202,7 +212,7 @@ def auto_proxy(scheme, host:str) -> dict[str,Any]:
     proxies = p.getProxies(f"{scheme}://{host}")
     if not proxies or proxies[0]=="direct://":
         return {}
-    #for the time being, just try the first one:
+    # for the time being, just try the first one:
     from urllib.parse import urlparse
     url = urlparse(proxies[0])
     if not url.scheme or not url.netloc:
@@ -216,7 +226,8 @@ def auto_proxy(scheme, host:str) -> dict[str,Any]:
         options["proxy-password"] = url.password
     return options
 
-def parse_remote_display(s:str) -> dict[str,Any]:
+
+def parse_remote_display(s: str) -> dict[str, Any]:
     if not s:
         return {}
     qpos = s.find("?")
@@ -224,27 +235,27 @@ def parse_remote_display(s:str) -> dict[str,Any]:
     display = None
     options_str = None
     if qpos>=0 and (qpos<cpos or cpos<0):
-        #query string format, ie: "DISPLAY?key1=value1&key2=value2#extra_stuff
+        # query string format, ie: "DISPLAY?key1=value1&key2=value2#extra_stuff
         attr_sep = "&"
         parts = s.split("?", 1)
         s = parts[0].split("#")[0]
         options_str = parts[1]
     elif cpos>0 and (cpos<qpos or qpos<0):
-        #csv string format,
+        # csv string format,
         # ie: DISPLAY,key1=value1,key2=value2
         # or: key1=value1,key2=value2
         attr_sep = ","
         parts = s.split(",", 1)
         if parts[0].find("=")>0:
-            #if the first part is a key=value,
-            #assume it is part of the parameters
+            # if the first part is a key=value,
+            # assume it is part of the parameters
             parts = ["", s]
             display = ""
         if len(parts)==2:
             options_str = parts[1]
     elif s.find("=")>0:
-        #ie: just one key=value
-        #(so this is not a display)
+        # ie: just one key=value
+        # (so this is not a display)
         display = ""
         attr_sep = ","
         options_str = s
@@ -252,20 +263,20 @@ def parse_remote_display(s:str) -> dict[str,Any]:
         attr_sep = ","
     if display is None:
         try:
-            assert [int(x) for x in s.split(".")]   #ie: ":10.0" -> [10, 0]
-            display = ":" + s       #ie: ":10.0"
+            assert [int(x) for x in s.split(".")]   # ie: ":10.0" -> [10, 0]
+            display = ":" + s       # ie: ":10.0"
         except ValueError:
-            display = s             #ie: "tcp://somehost:10000/"
+            display = s             # ie: "tcp://somehost:10000/"
     if display:
         desc = {
             "display"   : display,
             "display_as_args"   : [display],
-            }
+        }
     else:
         desc = {}
     if options_str:
         desc["options_str"] = options_str
-        #parse extra attributes
+        # parse extra attributes
         d = parse_simple_dict(options_str, attr_sep)
         for k,v in d.items():
             if k in desc:
@@ -274,7 +285,8 @@ def parse_remote_display(s:str) -> dict[str,Any]:
                 desc[k] = v
     return desc
 
-def parse_username_and_password(s:str) -> dict[str,str]:
+
+def parse_username_and_password(s: str) -> dict[str, str]:
     ppos = s.find(":")
     if ppos>=0:
         password = s[ppos+1:]
@@ -282,13 +294,14 @@ def parse_username_and_password(s:str) -> dict[str,str]:
     else:
         username = s
         password = ""
-    #fugly: we override the command line option after parsing the string:
+    # fugly: we override the command line option after parsing the string:
     desc = {}
     if username:
         desc["username"] = username
     if password:
         desc["password"] = password
     return desc
+
 
 def load_password_file(password_file:str) -> str:
     if not password_file:
@@ -305,12 +318,12 @@ def load_password_file(password_file:str) -> str:
     return ""
 
 
-def normalize_display_name(display_name:str) -> str:
+def normalize_display_name(display_name: str) -> str:
     if not display_name:
         raise ValueError("no display name specified")
     if display_name.startswith("/") and POSIX:
         return "socket://"+display_name
-    #URL mode aliases (ie: "xpra+tcp://host:port")
+    # URL mode aliases (ie: "xpra+tcp://host:port")
     from xpra.net.common import URL_MODES
     for alias, prefix in URL_MODES.items():
         falias = f"{alias}:"
@@ -326,17 +339,17 @@ def normalize_display_name(display_name:str) -> str:
         # then the username and password aren't parsed properly!
         pass
 
-    #fixup the legacy format "tcp:host:port"
+    # fixup the legacy format "tcp:host:port"
     pos = display_name.find(":")
     legacy_ssh = re.search(r"^ssh:(\w([\w-]{0,61}\w)?):(\d{1,5})$", display_name)
     if legacy_ssh:
-        #ie: "ssh:host:display" -> "ssh://host/display"
+        # ie: "ssh:host:display" -> "ssh://host/display"
         host = legacy_ssh.group(1)
         display = legacy_ssh.group(3)
         display_name = f"ssh://{host}/{display}"
     elif pos>0 and len(display_name)>pos+2 and display_name[pos+1]!="/":
-        #replace the first ":" with "://"
-        #so we end up with parsable URL, ie: "tcp://host:port"
+        # replace the first ":" with "://"
+        # so we end up with parsable URL, ie: "tcp://host:port"
         display_name = display_name[:pos]+"://"+display_name[pos+1:]
     #workaround missing [] around IPv6 addresses:
     try:
@@ -351,21 +364,21 @@ def normalize_display_name(display_name:str) -> str:
                 display_name = display_name[:pos]+newnetloc+display_name[pos+len(netloc):]
     except Exception:
         pass
-    #workaround for vsock 'VMADDR_PORT_ANY':
+    # workaround for vsock 'VMADDR_PORT_ANY':
     # "any" or "auto" is not a valid port number
     if POSIX and not OSX and display_name.startswith("vsock://") and len(display_name)>len("vsock://"):
-        #hackish pre-parsing:
-        #extract location: "vsock://10:any/foo?arg=20" -> "10:any"
+        # hackish pre-parsing:
+        # extract location: "vsock://10:any/foo?arg=20" -> "10:any"
         parts = display_name[len("vsock://"):].split("/", 1)
         netloc = parts[0]
         extra = parts[1] if len(parts)>1 else ""
         for s in ("any", "auto"):
             if netloc.lower().endswith(s):
-                #use "0" for auto
-                #ie: "vsock://10:0/foo?arg=20"
+                # use "0" for auto
+                # ie: "vsock://10:0/foo?arg=20"
                 return "vsock://"+netloc[:-len(s)]+"0/"+extra
         return display_name
-    #maybe this is just the display number without the ":" prefix?
+    # maybe this is just the display number without the ":" prefix?
     if display_name and display_name[0] in "0123456789" and POSIX:
         return ":"+display_name
     if WIN32 and display_name[0].isalpha() and display_name.find(":")<0:
@@ -375,9 +388,10 @@ def normalize_display_name(display_name:str) -> str:
     return display_name
 
 
-def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_session_by_name:Callable|None=None) -> dict[str,Any]:
+def parse_display_name(error_cb, opts, display_name:str, cmdline=(),
+                       find_session_by_name: Callable | None = None) -> dict[str, Any]:
     display_name = normalize_display_name(display_name)
-    #last chance to find it by name:
+    # last chance to find it by name:
     if display_name.find(":")<0 and display_name.find("wayland-")<0:
         if not find_session_by_name:
             raise ValueError(f"invalid display name {display_name!r}")
@@ -386,9 +400,10 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
             raise ValueError(f"no session found matching name {display_name!r}")
         display_name = r
 
-    #add our URL schemes once:
-    #(should we remove them afterwards?)
+    # add our URL schemes once:
+    # (should we remove them afterwards?)
     from xpra.net.common import SOCKET_TYPES
+
     def addschemes(array):
         for x in SOCKET_TYPES:
             if x not in array:
@@ -397,7 +412,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
     addschemes(parse.uses_netloc)
     addschemes(parse.uses_query)
     addschemes(parse.uses_relative)
-    #now we're ready to parse:
+    # now we're ready to parse:
     parsed = parse.urlparse(display_name)
     protocol = parsed.scheme
 
@@ -405,7 +420,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
         "display_name"  : display_name,
         "cmdline"       : cmdline,
         "type"          : protocol,
-        }
+    }
 
     def add_credentials() -> None:
         username = parsed.username or opts.username
@@ -431,11 +446,11 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
         if parsed.path:
             path = parsed.path.lstrip("/")
             if path.find(",")>0:
-                #ie: path="100,foo=bar
+                # ie: path="100,foo=bar
                 path, extra = path.split(",", 1)
                 process_query_string(extra)
             elif path.find("=")>0:
-                #ie: path="foo=bar"
+                # ie: path="foo=bar"
                 process_query_string(path)
                 return
             desc["display"] = path
@@ -462,12 +477,14 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
             raise RuntimeError("X11 / Wayland display names are not supported on this platform")
         add_query()
         display = parsed.path.lstrip(":")
-        desc.update({
+        desc.update(
+            {
                 "type"          : "socket",
                 "local"         : True,
                 "display"       : display,
                 "socket_dirs"   : opts.socket_dirs,
-                })
+            }
+        )
         opts.display = display
         if opts.socket_dir:
             desc["socket_dir"] = opts.socket_dir
@@ -479,19 +496,23 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
         cid = parse_vsock_cid(parsed.hostname or "")
         from xpra.net.vsock.vsock import PORT_ANY  # pylint: disable=no-name-in-module
         port = parsed.port or PORT_ANY
-        desc.update({
+        desc.update(
+            {
                 "local"         : False,
                 "display"       : display_name,
                 "vsock"         : (cid, port),
-                })
+            }
+        )
         opts.display = display_name
         return desc
 
     if protocol in ("ssh", "vnc+ssh"):
-        desc.update({
+        desc.update(
+            {
                 "proxy_command"    : ["_proxy"],
                 "exit_ssh"         : opts.exit_ssh,
-                 })
+            }
+        )
         if opts.socket_dir:
             desc["socket_dir"] = opts.socket_dir
         if opts.remote_xpra:
@@ -506,9 +527,9 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
         else:
             args = desc.setdefault("display_as_args", [])
         if protocol=="vnc+ssh" and display:
-            #ie: "vnc+ssh://host/10" -> path="/10"
-            #use a vnc display string with the proxy command
-            #and specify the vnc port if we know the display number:
+            # ie: "vnc+ssh://host/10" -> path="/10"
+            # use a vnc display string with the proxy command
+            # and specify the vnc port if we know the display number:
             vnc_uri = "vnc://localhost"
             try:
                 vnc_port = 5900+int(display)
@@ -526,20 +547,22 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
         desc["full_ssh"] = full_ssh
         return desc
 
-    if protocol=="socket":
+    if protocol == "socket":
         if WIN32:
             raise RuntimeError("unix-domain sockets are not supported on MS Windows")
         if not parsed.path:
             raise ValueError("missing socket path")
         add_credentials()
         add_query()
-        desc.update({
+        desc.update(
+            {
                 "type"          : "socket",
                 "local"         : True,
                 "socket_dir"    : os.path.basename(parsed.path),
                 "socket_dirs"   : opts.socket_dirs,
                 "socket_path"   : parsed.path,
-                })
+            }
+        )
         opts.display = None
         return desc
 
@@ -563,7 +586,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
                     break
         return desc
 
-    if protocol=="named-pipe":   # pragma: no cover
+    if protocol == "named-pipe":   # pragma: no cover
         if not WIN32:
             raise RuntimeError(f"{protocol} is not supported on this platform")
         add_credentials()
@@ -572,11 +595,13 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
         from xpra.platform.win32.dotxpra import PIPE_PREFIX
         if not pipe_name.startswith(PIPE_PREFIX):
             pipe_name = f"{PIPE_PREFIX}{pipe_name}"
-        desc.update({
-                     "local"            : True,
-                     "display"          : "DISPLAY",
-                     "named-pipe"       : pipe_name,
-                     })
+        desc.update(
+            {
+                "local"            : True,
+                "display"          : "DISPLAY",
+                "named-pipe"       : pipe_name,
+            }
+        )
         opts.display = display_name
         return desc
 
@@ -584,32 +609,30 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
     assert False
 
 
-def get_ssl_options(desc, opts, cmdline) -> dict[str,Any]:
+def get_ssl_options(desc, opts, cmdline) -> dict[str, Any]:
     port = desc["port"]
     ssl_host = opts.ssl_server_hostname or desc["host"]
     from xpra.net.socket_util import get_ssl_attributes, load_ssl_options
-    #load the host+port specific options from file:
+    # load the host+port specific options from file:
     ssl_options = load_ssl_options(ssl_host, port)
-    #only override these options via the command line and not configuration files:
+    # only override these options via the command line and not configuration files:
     for k, v in get_ssl_attributes(opts, server_side=False, overrides=desc).items():
         x = f"ssl-{k}"
-        incmdline = (
-            f"--{x}" in cmdline or f"--no-{x}" in cmdline or
-            any(c.startswith(f"--{x}=") for c in cmdline)
-        )
+        incmdline = (f"--{x}" in cmdline or f"--no-{x}" in cmdline or any(c.startswith(f"--{x}=") for c in cmdline))
         if incmdline or k not in ssl_options:
             ssl_options[k] = v
-    #ensure the hostname is always defined and use `host` if `server_hostname` is not set:
+    # ensure the hostname is always defined and use `host` if `server_hostname` is not set:
     ssl_options["server-hostname"] = ssl_host
-    #this is used by the launcher to disable strict host key checking:
+    # this is used by the launcher to disable strict host key checking:
     if desc.get("strict-host-check") is False:
         ssl_options["server-verify-mode"] = "none"
     return ssl_options
 
-def parse_ssh_option(ssh_setting:str) -> list[str]:
+
+def parse_ssh_option(ssh_setting: str) -> list[str]:
     ssh_cmd = shlex.split(ssh_setting, posix=not WIN32)
     if ssh_cmd[0]=="auto":
-        #try paramiko:
+        # try paramiko:
         from xpra.log import is_debug_enabled, Logger
         try:
             import paramiko
@@ -626,8 +649,9 @@ def parse_ssh_option(ssh_setting:str) -> list[str]:
             ssh_cmd = shlex.split(DEFAULT_SSH_COMMAND)
     return ssh_cmd
 
+
 def get_ssh_display_attributes(args, ssh_option="auto") -> dict[str,Any]:
-    #ie: ssh=["/usr/bin/ssh", "-v"]
+    # ie: ssh=["/usr/bin/ssh", "-v"]
     ssh = parse_ssh_option(ssh_option)
     ssh_cmd = ssh[0].lower()
     is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
@@ -647,16 +671,16 @@ def get_ssh_display_attributes(args, ssh_option="auto") -> dict[str,Any]:
         desc["is_putty"] = True
     desc["agent"] = agent_forwarding
     if agent_forwarding:
-        #tell the remote proxy command which user uuid we're going to use,
-        #so it can set up the ssh agent symlink at a location
-        #that the server can find with just the uuid:
+        # tell the remote proxy command which user uuid we're going to use,
+        # so it can set up the ssh agent symlink at a location
+        # that the server can find with just the uuid:
         uuid = get_user_uuid()
         args.append(f"--env=SSH_AGENT_UUID={uuid}")
         desc["ssh-agent-uuid"] = uuid
     return desc
 
 
-def get_ssh_args(desc, ssh=("paramiko",), prefix:str="") -> list[str]:
+def get_ssh_args(desc, ssh=("paramiko",), prefix: str="") -> list[str]:
     ssh_cmd = ssh[0]
     ssh_port = desc.get(f"{prefix}port", 22)
     username = desc.get(f"{prefix}username")
@@ -673,7 +697,7 @@ def get_ssh_args(desc, ssh=("paramiko",), prefix:str="") -> list[str]:
     if username and not is_paramiko:
         args += ["-l", username]
     if ssh_port and ssh_port!=22:
-        #grr, why bother doing it different?
+        # grr, why bother doing it different?
         if is_putty:
             args += ["-P", str(ssh_port)]
         elif not is_paramiko:
@@ -688,6 +712,7 @@ def get_ssh_args(desc, ssh=("paramiko",), prefix:str="") -> list[str]:
                 key_path = "\"" + key.replace("\\", "/") + "\""     # pragma: no cover
             args += ["-i", key_path]
     return args
+
 
 def get_ssh_proxy_args(desc, ssh) -> list[str]:
     is_putty = ssh[0].endswith("plink") or ssh[0].endswith("plink.exe")
@@ -730,84 +755,86 @@ def get_usage() -> list[str]:
         f"start-monitor [{RDISPLAY}]",
         "shadow [DISPLAY]",
         "shadow-screen [DISPLAY]",
-        ]
+    ]
     if supports_x11_server():
         command_options += [
             "upgrade [DISPLAY]",
             "upgrade-desktop [DISPLAY]",
             "upgrade-monitor [DISPLAY]",
-            ]
+        ]
     command_options += [
         "upgrade-shadow [DISPLAY]",
-        ]
+    ]
 
     command_options += [
-                        "attach [DISPLAY]",
-                        "detach [DISPLAY]",
-                        "info [DISPLAY]",
-                        "id [DISPLAY]",
-                        "version [DISPLAY]",
-                        "stop [DISPLAY]",
-                        "exit [DISPLAY]",
-                        "clean [DISPLAY1] [DISPLAY2]..",
-                        "clean-sockets [DISPLAY]",
-                        "clean-displays [DISPLAY]",
-                        "screenshot filename [DISPLAY]",
-                        "control DISPLAY command [arg1] [arg2]..",
-                        "print DISPLAY filename",
-                        "shell [DISPLAY]",
-                        "configure",
-                        "showconfig",
-                        "list",
-                        "list-sessions",
-                        "list-windows",
-                        "sessions",
-                        "launcher",
-                        "gui",
-                        "start-gui",
-                        "bug-report",
-                        "toolbox",
-                        "displays",
-                        "about",
-                        "docs",
-                        "html5",
-                        "autostart",
-                        "encoding",
-                        "example",
-                        "path-info",
-                      ]
+        "attach [DISPLAY]",
+        "detach [DISPLAY]",
+        "info [DISPLAY]",
+        "id [DISPLAY]",
+        "version [DISPLAY]",
+        "stop [DISPLAY]",
+        "exit [DISPLAY]",
+        "clean [DISPLAY1] [DISPLAY2]..",
+        "clean-sockets [DISPLAY]",
+        "clean-displays [DISPLAY]",
+        "screenshot filename [DISPLAY]",
+        "control DISPLAY command [arg1] [arg2]..",
+        "print DISPLAY filename",
+        "shell [DISPLAY]",
+        "configure",
+        "showconfig",
+        "list",
+        "list-sessions",
+        "list-windows",
+        "sessions",
+        "launcher",
+        "gui",
+        "start-gui",
+        "bug-report",
+        "toolbox",
+        "displays",
+        "about",
+        "docs",
+        "html5",
+        "autostart",
+        "encoding",
+        "example",
+        "path-info",
+    ]
     try:
         from xpra.net import mdns
         assert mdns
         command_options += [
             "list-mdns",
             "mdns-gui",
-            ]
+        ]
     except ImportError:
         pass
     return command_options
+
 
 def parse_cmdline(cmdline):
     defaults = make_defaults_struct()
     return do_parse_cmdline(cmdline, defaults)
 
+
 def do_parse_cmdline(cmdline, defaults):
     # pylint: disable=consider-using-f-string
     #################################################################
-    ## NOTE NOTE NOTE
-    ##
-    ## If you modify anything here, then remember to update the man page
-    ## (xpra.1) as well!
-    ##
-    ## NOTE NOTE NOTE
+    # NOTE NOTE NOTE
+    #
+    # If you modify anything here, then remember to update the man page
+    # (xpra.1) as well!
+    #
+    # NOTE NOTE NOTE
     #################################################################
 
     options, args = parse_command_line(cmdline[1:], defaults)
     if options.minimal:
-        #change the defaults and parse again:
+        # change the defaults and parse again:
         # network:
         defaults.pings = 0
-        #defaults.compressors = ["none", "lz4"]
+        # defaults.compressors = ["none", "lz4"]
         defaults.compression_level = 0
         defaults.forward_xdg_open = False
         defaults.file_transfer = defaults.open_files = defaults.open_url = defaults.printing = "no"
@@ -856,7 +883,7 @@ def do_parse_cmdline(cmdline, defaults):
         defaults.sync_xvfb = False
         options, args = parse_command_line(cmdline[1:], defaults)
 
-    #process "help" arguments early:
+    # process "help" arguments early:
     options.debug = fixup_debug_option(options.debug)
     if options.debug:
         categories = options.debug.split(",")
@@ -878,15 +905,15 @@ def do_parse_cmdline(cmdline, defaults):
         except Exception as e:
             raise InitInfo(e) from None
         if source_plugins:
-            raise InitInfo(f"The following audio capture plugins may be used (default: {source_default}):\n"+
+            raise InitInfo(f"The following audio capture plugins may be used (default: {source_default}):\n"
                            "\n".join([" * "+p.ljust(16)+NAME_TO_INFO_PLUGIN.get(p, "") for p in source_plugins]))
         raise InitInfo("No audio capture plugins found!")
 
-    #special handling for URL mode:
-    #xpra attach xpra://[mode:]host:port/?param1=value1&param2=value2
+    # special handling for URL mode:
+    # xpra attach xpra://[mode:]host:port/?param1=value1&param2=value2
     if len(args)==2 and args[0]=="attach":
         from xpra.net.common import URL_MODES
-        #ie: "xpra+tcp" -> "tcp"
+        # ie: "xpra+tcp" -> "tcp"
         for prefix, mode in URL_MODES.items():
             url = args[1]
             fullprefix = f"{prefix}://"
@@ -895,8 +922,8 @@ def do_parse_cmdline(cmdline, defaults):
                 address, params = parse_URL(url)
                 for k,v in validate_config(params).items():
                     setattr(options, k.replace("-", "_"), v)
-                #replace with our standard URL format,
-                #ie: tcp://host:port
+                # replace with our standard URL format,
+                # ie: tcp://host:port
                 args[1] = address
                 break
 
@@ -922,7 +949,7 @@ def parse_window_size(v, attribute="max-size"):
     def pws_fail():
         raise InitException(f"invalid {attribute}: {v}")
     try:
-        #split on "," or "x":
+        # split on "," or "x":
         pv = tuple(int(x.strip()) for x in v.replace(",", "x").split("x", 1))
     except ValueError:
         pv = ()
@@ -930,9 +957,10 @@ def parse_window_size(v, attribute="max-size"):
     if len(pv)!=2:
         pws_fail()
     w, h = pv
-    if w<0 or h<0 or w>=32768 or h>=32768:
+    if w < 0 or h < 0 or w >= 32768 or h >= 32768:
         pws_fail()
     return w, h
+
 
 def parse_command_line(cmdline, defaults):
     usage_strs = ["\t%%prog %s\n" % x for x in get_usage()]
@@ -976,49 +1004,49 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--start-late", action="append",
                      dest="start_late", metavar="CMD", default=list(defaults.start_late or []),
                      help="program to spawn in server once initialization is complete (may be repeated)."
-                          + " Default: %s." % dcsv(defaults.start_late))
+                          " Default: %s." % dcsv(defaults.start_late))
     group.add_option("--start-child", action="append",
                      dest="start_child", metavar="CMD", default=list(defaults.start_child or []),
                      help="program to spawn in server,"
-                          + " taken into account by the exit-with-children option"
-                          + " (may be repeated to run multiple commands)."
-                          + " Default: %s." % dcsv(defaults.start_child))
+                          " taken into account by the exit-with-children option"
+                          " (may be repeated to run multiple commands)."
+                          " Default: %s." % dcsv(defaults.start_child))
     group.add_option("--start-child-late", action="append",
                      dest="start_child_late", metavar="CMD", default=list(defaults.start_child_late or []),
                      help="program to spawn in server once initialization is complete"
-                          + " taken into account by the exit-with-children option"
-                          + " (may be repeated to run multiple commands)."
-                          + " Default: %s." % dcsv(defaults.start_child_late))
+                          " taken into account by the exit-with-children option"
+                          " (may be repeated to run multiple commands)."
+                          " Default: %s." % dcsv(defaults.start_child_late))
     group.add_option("--start-after-connect", action="append",
                      dest="start_after_connect", default=defaults.start_after_connect,
                      help="program to spawn in server after the first client has connected (may be repeated)."
-                          + " Default: %s." % dcsv(defaults.start_after_connect))
+                          " Default: %s." % dcsv(defaults.start_after_connect))
     group.add_option("--start-child-after-connect", action="append",
                      dest="start_child_after_connect", default=defaults.start_child_after_connect,
                      help="program to spawn in server after the first client has connected,"
-                          + " taken into account by the exit-with-children option"
-                          + " (may be repeated to run multiple commands)."
-                          + " Default: %s." % dcsv(defaults.start_child_after_connect))
+                          " taken into account by the exit-with-children option"
+                          " (may be repeated to run multiple commands)."
+                          " Default: %s." % dcsv(defaults.start_child_after_connect))
     group.add_option("--start-on-connect", action="append",
                      dest="start_on_connect", default=defaults.start_on_connect,
                      help="program to spawn in server every time a client connects (may be repeated)."
-                          + " Default: %s." % dcsv(defaults.start_on_connect))
+                          " Default: %s." % dcsv(defaults.start_on_connect))
     group.add_option("--start-child-on-connect", action="append",
                      dest="start_child_on_connect", default=defaults.start_child_on_connect,
                      help="program to spawn in server every time a client connects,"
-                          + " taken into account by the exit-with-children option (may be repeated)."
-                          + " Default: %s." % dcsv(defaults.start_child_on_connect))
+                          " taken into account by the exit-with-children option (may be repeated)."
+                          " Default: %s." % dcsv(defaults.start_child_on_connect))
     group.add_option("--start-on-last-client-exit", action="append",
                      dest="start_on_last_client_exit", default=defaults.start_on_last_client_exit,
                      help="program to spawn in server every time a client disconnects"
-                          + " and there are no other clients left (may be repeated)."
-                          + " Default: %s." % dcsv(defaults.start_on_last_client_exit))
+                          " and there are no other clients left (may be repeated)."
+                          " Default: %s." % dcsv(defaults.start_on_last_client_exit))
     group.add_option("--start-child-on-last-client-exit", action="append",
                      dest="start_child_on_last_client_exit", default=defaults.start_child_on_last_client_exit,
                      help="program to spawn in server every time a client disconnects"
-                          + " and there are no other clients left,"
-                          + " taken into account by the exit-with-children option (may be repeated)."
-                          + " Default: %s." % dcsv(defaults.start_child_on_last_client_exit))
+                          " and there are no other clients left,"
+                          " taken into account by the exit-with-children option (may be repeated)."
+                          " Default: %s." % dcsv(defaults.start_child_on_last_client_exit))
     group.add_option("--exec-wrapper", action="store",
                      dest="exec_wrapper", metavar="CMD", default=defaults.exec_wrapper,
                      help="Wrapper for executing commands. Default: %s." % nonedefault(defaults.exec_wrapper))
@@ -1038,7 +1066,7 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--start-new-commands", action="store", metavar="yes|no",
                      dest="start_new_commands", default=defaults.start_new_commands,
                      help="Allows clients to execute new commands on the server."
-                          + " Default: %s." % enabled_str(defaults.start_new_commands))
+                          " Default: %s." % enabled_str(defaults.start_new_commands))
     legacy_bool_parse("start-via-proxy")
     group.add_option("--start-via-proxy", action="store", metavar="yes|no|auto",
                      dest="start_via_proxy", default=defaults.start_via_proxy,
@@ -1047,11 +1075,11 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--proxy-start-sessions", action="store", metavar="yes|no",
                      dest="proxy_start_sessions", default=defaults.proxy_start_sessions,
                      help="Allows proxy servers to start new sessions on demand."
-                          + " Default: %s." % enabled_str(defaults.proxy_start_sessions))
+                          " Default: %s." % enabled_str(defaults.proxy_start_sessions))
     group.add_option("--dbus-launch", action="store",
                      dest="dbus_launch", metavar="CMD", default=defaults.dbus_launch,
                      help="Start the session within a dbus-launch context,"
-                          + " leave empty to turn off. Default: %s." % nonedefault(defaults.dbus_launch))
+                          " leave empty to turn off. Default: %s." % nonedefault(defaults.dbus_launch))
     group.add_option("--source", action="append",
                      dest="source", default=[],
                      help="Script to source into the server environment. Default: %s." % csv(
@@ -1063,7 +1091,7 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--start-env", action="append",
                      dest="start_env", default=list(defaults.start_env or []),
                      help="Define environment variables used with 'start-child' and 'start',"
-                          + " can be specified multiple times. Default: %s." % csv(
+                          " can be specified multiple times. Default: %s." % csv(
                          ("'%s'" % x) for x in (defaults.start_env or []) if not x.startswith("#")))
     legacy_bool_parse("systemd-run")
     group.add_option("--systemd-run", action="store", metavar="yes|no|auto",
@@ -1086,11 +1114,11 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--uid", action="store",
                      dest="uid", default=defaults.uid,
                      help="The user id to change to when the server is started by root."
-                          + " Default: %s." % defaults.uid)
+                          " Default: %s." % defaults.uid)
     group.add_option("--gid", action="store",
                      dest="gid", default=defaults.gid,
                      help="The group id to change to when the server is started by root."
-                          + " Default: %s." % defaults.gid)
+                          " Default: %s." % defaults.gid)
     group.add_option("--daemon", action="store", metavar="yes|no",
                      dest="daemon", default=defaults.daemon,
                      help="Daemonize when running as a server (default: %s)" % enabled_str(defaults.daemon))
@@ -1107,13 +1135,13 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--log-file", action="store",
                      dest="log_file", default=defaults.log_file,
                      help="When daemonizing, this is where the log messages will go. Default: '%default'."
-                          + " If a relative filename is specified the it is relative to --log-dir,"
-                          + " the value of '$DISPLAY' will be substituted with the actual display used"
+                          " If a relative filename is specified the it is relative to --log-dir,"
+                          " the value of '$DISPLAY' will be substituted with the actual display used"
                      )
     group.add_option("--attach", action="store", metavar="yes|no|auto",
                      dest="attach", default=defaults.attach,
                      help="Attach a client as soon as the server has started"
-                          + " (default: %s)" % enabled_or_auto(defaults.attach))
+                          " (default: %s)" % enabled_or_auto(defaults.attach))
     legacy_bool_parse("printing")
     legacy_bool_parse("file-transfer")
     legacy_bool_parse("open-files")
@@ -1150,20 +1178,20 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--exit-with-client", action="store", metavar="yes|no",
                      dest="exit_with_client", default=defaults.exit_with_client,
                      help="Terminate the server when the last client disconnects."
-                          + " Default: %s" % enabled_str(defaults.exit_with_client))
+                          " Default: %s" % enabled_str(defaults.exit_with_client))
     group.add_option("--idle-timeout", action="store",
                      dest="idle_timeout", type="int", default=defaults.idle_timeout,
                      help="Disconnects the client when idle (0 to disable)."
-                          + " Default: %s seconds" % defaults.idle_timeout)
+                          " Default: %s seconds" % defaults.idle_timeout)
     group.add_option("--server-idle-timeout", action="store",
                      dest="server_idle_timeout", type="int", default=defaults.server_idle_timeout,
                      help="Exits the server when idle (0 to disable)."
-                          + " Default: %s seconds" % defaults.server_idle_timeout)
+                          " Default: %s seconds" % defaults.server_idle_timeout)
     legacy_bool_parse("use-display")
     group.add_option("--use-display", action="store", metavar="yes|no|auto",
                      dest="use_display", default=defaults.use_display,
                      help="Use an existing display rather than starting one with the xvfb command."
-                          + " Default: %s" % enabled_str(defaults.use_display))
+                          " Default: %s" % enabled_str(defaults.use_display))
     group.add_option("--xvfb", action="store",
                      dest="xvfb",
                      default=defaults.xvfb,
@@ -1172,65 +1200,65 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--displayfd", action="store", metavar="FD",
                      dest="displayfd", default=defaults.displayfd,
                      help="The xpra server will write the display number back on this file descriptor"
-                          + " as a newline-terminated string.")
+                          " as a newline-terminated string.")
     group.add_option("--resize-display", action="store",
                      dest="resize_display", default=defaults.resize_display, metavar="yes|no|widthxheight[@HZ]",
                      help="Whether the server display should be resized to match the client resolution."
-                          + " Default: %s." % enabled_str(defaults.resize_display))
+                          " Default: %s." % enabled_str(defaults.resize_display))
     defaults_bind = defaults.bind
     group.add_option("--bind", action="append",
                      dest="bind", default=[],
                      metavar="SOCKET",
-                     help="listen for connections over %s." % ("named pipes" if WIN32 else "unix domain sockets")
-                          + " You may specify this option multiple times to listen on different locations."
-                          + " Default: %s" % dcsv(defaults_bind))
+                     help="listen for connections over %s." % ("named pipes" if WIN32 else "unix domain sockets")+ # noqa W504
+                          " You may specify this option multiple times to listen on different locations."
+                          " Default: %s" % dcsv(defaults_bind))
     group.add_option("--bind-tcp", action="append",
                      dest="bind_tcp", default=list(defaults.bind_tcp or []),
                      metavar="[HOST]:[PORT]",
                      help="listen for connections over TCP."
-                          + " Use --tcp-auth to secure it."
-                          + " You may specify this option multiple times with different host and port combinations")
+                          " Use --tcp-auth to secure it."
+                          " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-ws", action="append",
                      dest="bind_ws", default=list(defaults.bind_ws or []),
                      metavar="[HOST]:[PORT]",
                      help="listen for connections over Websocket."
-                          + " Use --ws-auth to secure it."
-                          + " You may specify this option multiple times with different host and port combinations")
+                          " Use --ws-auth to secure it."
+                          " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-wss", action="append",
                      dest="bind_wss", default=list(defaults.bind_wss or []),
                      metavar="[HOST]:[PORT]",
                      help="listen for connections over HTTPS / wss (secure Websocket)."
-                          + " Use --wss-auth to secure it."
-                          + " You may specify this option multiple times with different host and port combinations")
+                          " Use --wss-auth to secure it."
+                          " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-ssl", action="append",
                      dest="bind_ssl", default=list(defaults.bind_ssl or []),
                      metavar="[HOST]:PORT",
                      help="listen for connections over SSL."
-                          + " Use --ssl-auth to secure it."
-                          + " You may specify this option multiple times with different host and port combinations")
+                          " Use --ssl-auth to secure it."
+                          " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-ssh", action="append",
                      dest="bind_ssh", default=list(defaults.bind_ssh or []),
                      metavar="[HOST]:PORT",
                      help="listen for connections using SSH transport."
-                          + " Use --ssh-auth to secure it."
-                          + " You may specify this option multiple times with different host and port combinations")
+                          " Use --ssh-auth to secure it."
+                          " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-rfb", action="append",
                      dest="bind_rfb", default=list(defaults.bind_rfb or []),
                      metavar="[HOST]:PORT",
                      help="listen for RFB connections."
-                          + " Use --rfb-auth to secure it."
-                          + " You may specify this option multiple times with different host and port combinations")
+                          " Use --rfb-auth to secure it."
+                          " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-quic", action="append",
                      dest="bind_quic", default=list(defaults.bind_quic or []),
                      metavar="[HOST]:PORT",
                      help="listen for QUIC HTTP/3 or WebTransport connections."
-                          + " Use --quic-auth to secure it."
-                          + " You may specify this option multiple times with different host and port combinations")
+                          " Use --quic-auth to secure it."
+                          " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-vsock", action="append",
                      dest="bind_vsock", default=list(defaults.bind_vsock or []),
                      metavar="[CID]:[PORT]",
                      help="listen for connections over VSOCK."
-                          + " You may specify this option multiple times with different CID and port combinations")
+                          " You may specify this option multiple times with different CID and port combinations")
     legacy_bool_parse("mdns")
     group.add_option("--mdns", action="store", metavar="yes|no",
                      dest="mdns", default=defaults.mdns,
@@ -1239,7 +1267,7 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--dbus-control", action="store", metavar="yes|no",
                      dest="dbus_control", default=defaults.dbus_control,
                      help="Allows the server to be controlled via its dbus interface."
-                          + " Default: %s." % enabled_str(defaults.dbus_control))
+                          " Default: %s." % enabled_str(defaults.dbus_control))
     group = optparse.OptionGroup(parser, "Server Controlled Features",
                                  "These options be specified on the client or on the server, "
                                  "but the server's settings will have precedence over the client's.")
@@ -1248,7 +1276,7 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--bandwidth-limit", action="store",
                      dest="bandwidth_limit", default=defaults.bandwidth_limit,
                      help="Limit the bandwidth used. The value is specified in bits per second,"
-                          + " use the value '0' to disable restrictions. Default: '%default'.")
+                          " use the value '0' to disable restrictions. Default: '%default'.")
     legacy_bool_parse("bandwidth-detection")
     group.add_option("--bandwidth-detection", action="store",
                      dest="bandwidth_detection", default=defaults.bandwidth_detection,
@@ -1258,7 +1286,7 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--readonly", action="store", metavar="yes|no",
                      dest="readonly", default=defaults.readonly,
                      help="Disable keyboard input and mouse events from the clients. "
-                          + " Default: %s." % enabled_str(defaults.readonly))
+                          " Default: %s." % enabled_str(defaults.readonly))
     legacy_bool_parse("clipboard")
     group.add_option("--clipboard", action="store", metavar="yes|no|clipboard-type",
                      dest="clipboard", default=defaults.clipboard,
@@ -1291,7 +1319,7 @@ def parse_command_line(cmdline, defaults):
                      dest="mousewheel", default=defaults.mousewheel,
                      help="Mouse wheel forwarding, can be used to disable the device ('no') or invert some axes "
                           "('invert-all', 'invert-x', invert-y', 'invert-z')."
-                          + " Default: %s." % defaults.mousewheel)
+                          " Default: %s." % defaults.mousewheel)
     group.add_option("--input-devices", action="store", metavar="APINAME",
                      dest="input_devices", default=defaults.input_devices,
                      help="Which API to use for input devices. Default: %s." % defaults.input_devices)
@@ -1308,17 +1336,17 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--sharing", action="store", metavar="yes|no",
                      dest="sharing", default=defaults.sharing,
                      help="Allow more than one client to connect to the same session. "
-                          + " Default: %s." % enabled_or_auto(defaults.sharing))
+                          " Default: %s." % enabled_or_auto(defaults.sharing))
     legacy_bool_parse("lock")
     group.add_option("--lock", action="store", metavar="yes|no",
                      dest="lock", default=defaults.lock,
                      help="Prevent sessions from being taken over by new clients. "
-                          + " Default: %s." % enabled_or_auto(defaults.lock))
+                          " Default: %s." % enabled_or_auto(defaults.lock))
     legacy_bool_parse("remote-logging")
     group.add_option("--remote-logging", action="store", metavar="no|send|receive|both",
                      dest="remote_logging", default=defaults.remote_logging,
                      help="Forward all the client's log output to the server. "
-                          + " Default: %s." % enabled_str(defaults.remote_logging))
+                          " Default: %s." % enabled_str(defaults.remote_logging))
 
     group = optparse.OptionGroup(parser, "Audio Options",
                                  "These options be specified on the client or on the server, "
@@ -1332,11 +1360,11 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--audio", action="store", metavar="yes|no",
                      dest="audio", default=defaults.audio,
                      help="Enable or disable all audio support."
-                          + " Default: %s." % enabled_str(defaults.audio))
+                          " Default: %s." % enabled_str(defaults.audio))
     group.add_option("--pulseaudio", action="store", metavar="yes|no|auto",
                      dest="pulseaudio", default=defaults.pulseaudio,
                      help="Start a pulseaudio server for the session."
-                          + " Default: %s." % enabled_or_auto(defaults.pulseaudio))
+                          " Default: %s." % enabled_or_auto(defaults.pulseaudio))
     group.add_option("--pulseaudio-command", action="store",
                      dest="pulseaudio_command", default=defaults.pulseaudio_command,
                      help="The command used to start the pulseaudio server. Default: '%default'.")
@@ -1364,13 +1392,13 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--audio-source", action="store",
                      dest="audio_source", default=defaults.audio_source,
                      help="Specifies which audio system to use to capture the audio stream "
-                          + " (use 'help' for options)")
+                          " (use 'help' for options)")
     group.add_option("--av-sync", action="store",
                      dest="av_sync", default=defaults.av_sync,
                      help="Try to synchronize audio and video. Default: %s." % enabled_str(defaults.av_sync))
 
     group = optparse.OptionGroup(parser, "Encoding and Compression Options",
-                                 "These options are used by the client to specify the desired picture and network data compression."
+                                 "These options are used by the client to specify picture and network data compression."
                                  "They may also be specified on the server as default settings.")
     parser.add_option_group(group)
     group.add_option("--encodings", action="store",
@@ -1386,41 +1414,41 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--video", action="store", metavar="yes|no",
                      dest="video", default=defaults.video,
                      help="Enable or disable all video encoding support."
-                          + " Default: %s." % enabled_str(defaults.video))
+                          " Default: %s." % enabled_str(defaults.video))
     group.add_option("--video-encoders", action="append",
                      dest="video_encoders", default=[],
                      help="Specify which video encoders to enable, to get a list of all the options specify 'help'")
     group.add_option("--proxy-video-encoders", action="append",
                      dest="proxy_video_encoders", default=[],
                      help="Specify which video encoders to enable when running a proxy server,"
-                          + " to get a list of all the options specify 'help'")
+                          " to get a list of all the options specify 'help'")
     group.add_option("--csc-modules", action="append",
                      dest="csc_modules", default=[],
                      help="Specify which colourspace conversion modules to enable,"
-                          + " to get a list of all the options specify 'help'. Default: %s." % dcsv(
+                          " to get a list of all the options specify 'help'. Default: %s." % dcsv(
                          defaults.csc_modules))
     group.add_option("--video-decoders", action="append",
                      dest="video_decoders", default=[],
                      help="Specify which video decoders to enable,"
-                          + " to get a list of all the options specify 'help'")
+                          " to get a list of all the options specify 'help'")
     group.add_option("--video-scaling", action="store",
                      metavar="SCALING",
                      dest="video_scaling", type="str", default=defaults.video_scaling,
                      help="How much automatic video downscaling should be used,"
-                          + " from 1 (rarely) to 100 (aggressively), 0 to disable."
-                          + " Default: %default.")
+                          " from 1 (rarely) to 100 (aggressively), 0 to disable."
+                          " Default: %default.")
     group.add_option("--min-quality", action="store",
                      metavar="MIN-LEVEL",
                      dest="min_quality", type="int", default=defaults.min_quality,
                      help="Sets the minimum encoding quality allowed in automatic quality setting,"
-                          + " from 1 to 100, 0 to leave unset."
-                          + " Default: %default.")
+                          " from 1 to 100, 0 to leave unset."
+                          " Default: %default.")
     group.add_option("--quality", action="store",
                      metavar="LEVEL",
                      dest="quality", type="int", default=defaults.quality,
                      help="Use a fixed image compression quality - only relevant for lossy encodings,"
-                          + " from 1 to 100, 0 to use automatic setting."
-                          + " Default: %default.")
+                          " from 1 to 100, 0 to use automatic setting."
+                          " Default: %default.")
     group.add_option("--min-speed", action="store",
                      metavar="SPEED",
                      dest="min_speed", type="int", default=defaults.min_speed,
@@ -1430,14 +1458,14 @@ def parse_command_line(cmdline, defaults):
                      metavar="SPEED",
                      dest="speed", type="int", default=defaults.speed,
                      help="Use image compression with the given encoding speed,"
-                          + " from 1 to 100, 0 to use automatic setting."
-                          + " Default: %default.")
+                          " from 1 to 100, 0 to use automatic setting."
+                          " Default: %default.")
     group.add_option("--auto-refresh-delay", action="store",
                      dest="auto_refresh_delay", type="float", default=defaults.auto_refresh_delay,
                      metavar="DELAY",
                      help="Idle delay in seconds before doing an automatic lossless refresh."
-                          + " 0.0 to disable."
-                          + " Default: %default.")
+                          " 0.0 to disable."
+                          " Default: %default.")
     group.add_option("--compressors", action="store",
                      dest="compressors", default=csv(defaults.compressors),
                      help="The packet compressors to enable. Default: %s." % dcsv(defaults.compressors))
@@ -1450,11 +1478,11 @@ def parse_command_line(cmdline, defaults):
                      dest="compression_level", type="int", default=defaults.compression_level,
                      metavar="LEVEL",
                      help="How hard to work on compressing packet data."
-                          + " You generally do not need to use this option,"
-                          + " the default value should be adequate,"
-                          + " picture data is compressed separately (see --encoding)."
-                          + " 0 to disable compression,"
-                          + " 9 for maximal (slowest) compression. Default: %default.")
+                          " You generally do not need to use this option,"
+                          " the default value should be adequate,"
+                          " picture data is compressed separately (see --encoding)."
+                          " 0 to disable compression,"
+                          " 9 for maximal (slowest) compression. Default: %default.")
 
     group = optparse.OptionGroup(parser, "Client Features Options",
                                  "These options control client features that affect the appearance or the keyboard.")
@@ -1471,12 +1499,12 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--splash", action="store", metavar="yes|no|auto",
                      dest="splash", default=defaults.splash,
                      help="Show a splash screen whilst loading the client."
-                          + " Default: %s." % enabled_or_auto(defaults.splash))
+                          " Default: %s." % enabled_or_auto(defaults.splash))
     legacy_bool_parse("headerbar")
     group.add_option("--headerbar", action="store", metavar="auto|no|force",
                      dest="headerbar", default=defaults.headerbar,
                      help="Add a headerbar with menu to decorated windows."
-                          + " Default: %s." % defaults.headerbar)
+                          " Default: %s." % defaults.headerbar)
     legacy_bool_parse("windows")
     group.add_option("--windows", action="store", metavar="yes|no",
                      dest="windows", default=defaults.windows,
@@ -1493,7 +1521,7 @@ def parse_command_line(cmdline, defaults):
                      dest="max_size", default=defaults.max_size,
                      metavar="MAX_SIZE",
                      help="The maximum size for normal windows, ie: 800x600."
-                          + " Default: %s." % nonedefault(defaults.max_size))
+                          " Default: %s." % nonedefault(defaults.max_size))
     group.add_option("--refresh-rate", action="store",
                      dest="refresh_rate", default=defaults.refresh_rate,
                      metavar="VREFRESH",
@@ -1513,8 +1541,8 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--desktop-fullscreen", action="store",
                      dest="desktop_fullscreen", default=defaults.desktop_fullscreen,
                      help="Make the window fullscreen if it is from a desktop or shadow server,"
-                          + " scaling it to fit the screen."
-                          + " Default: '%default'.")
+                          " scaling it to fit the screen."
+                          " Default: '%default'.")
     group.add_option("--border", action="store",
                      dest="border", default=defaults.border,
                      help="The border to draw inside xpra windows to distinguish them from local windows."
@@ -1522,16 +1550,16 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--title", action="store",
                      dest="title", default=defaults.title,
                      help="Text which is shown as window title, may use remote metadata variables."
-                          + " Default: '%default'.")
+                          " Default: '%default'.")
     group.add_option("--window-close", action="store",
                      dest="window_close", default=defaults.window_close,
                      help="The action to take when a window is closed by the client."
-                          + " Valid options are: 'forward', 'ignore', 'disconnect'."
-                          + " Default: '%default'.")
+                          " Valid options are: 'forward', 'ignore', 'disconnect'."
+                          " Default: '%default'.")
     group.add_option("--window-icon", action="store",
                      dest="window_icon", default=defaults.window_icon,
                      help="Path to the default image which will be used for all windows"
-                          + " (the application may override this)")
+                          " (the application may override this)")
     if OSX:
         group.add_option("--dock-icon", action="store",
                          dest="dock_icon", default=defaults.dock_icon,
@@ -1552,13 +1580,13 @@ def parse_command_line(cmdline, defaults):
             extra_text = ""
         parser.add_option("--tray", action="store", metavar="yes|no",
                           dest="tray", default=defaults.tray,
-                          help="Enable Xpra's own system tray menu%s." % extra_text
-                               + " Default: %s" % enabled_str(defaults.tray))
+                          help=f"Enable Xpra's own system tray menu{extra_text}."
+                               " Default: %s" % enabled_str(defaults.tray))
         do_legacy_bool_parse(cmdline, "delay-tray")
         parser.add_option("--delay-tray", action="store", metavar="yes|no",
                           dest="delay_tray", default=defaults.delay_tray,
-                          help="Waits for the first events before showing the system tray%s." % extra_text
-                               + " Default: %s" % enabled_str(defaults.delay_tray))
+                          help="Waits for the first events before showing the system tray{extra_text}."
+                               " Default: %s" % enabled_str(defaults.delay_tray))
     group.add_option("--tray-icon", action="store",
                      dest="tray_icon", default=defaults.tray_icon,
                      help="Path to the image which will be used as icon for the system-tray or dock")
@@ -1568,7 +1596,7 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--key-shortcut", action="append",
                      dest="key_shortcut", default=defaults.key_shortcut or [],
                      help="Define key shortcuts that will trigger specific actions."
-                          + "If no shortcuts are defined, it defaults to: \n%s" % (
+                          "If no shortcuts are defined, it defaults to: \n%s" % (
                               "\n ".join(defaults.key_shortcut or ())))
     legacy_bool_parse("keyboard-sync")
     group.add_option("--keyboard-sync", action="store", metavar="yes|no",
@@ -1594,71 +1622,72 @@ def parse_command_line(cmdline, defaults):
                      help="The keyboard layout options to use. Default: %s." % nonedefault(defaults.keyboard_options))
 
     group = optparse.OptionGroup(parser, "SSL Options",
-                                 "These options apply to both client and server. Please refer to the man page for details.")
+                                 "These options apply to both client and server. "
+                                 "Please refer to the ssl man page for details.")
     parser.add_option_group(group)
     group.add_option("--ssl", action="store",
                      dest="ssl", default=defaults.ssl,
                      help="Whether to enable SSL on TCP sockets and for what purpose (requires 'ssl-cert')."
-                          + " Default: '%s'." % enabled_str(defaults.ssl))
+                          " Default: '%s'." % enabled_str(defaults.ssl))
     group.add_option("--ssl-key", action="store",
                      dest="ssl_key", default=defaults.ssl_key,
                      help="Key file to use."
-                          + " Default: '%default'.")
+                          " Default: '%default'.")
     group.add_option("--ssl-key-password", action="store",
                      dest="ssl_key_password", default=defaults.ssl_key_password,
                      help="Password to use for decrypting the key file."
-                          + " Default: '%default'.")
+                          " Default: '%default'.")
     group.add_option("--ssl-cert", action="store",
                      dest="ssl_cert", default=defaults.ssl_cert,
                      help="Certificate file to use."
-                          + " Default: '%default'.")
+                          " Default: '%default'.")
     group.add_option("--ssl-protocol", action="store",
                      dest="ssl_protocol", default=defaults.ssl_protocol,
-                     help="Specifies which version of the SSL protocol to use." +
+                     help="Specifies which version of the SSL protocol to use."
                           " Default: '%default'.")
     group.add_option("--ssl-ca-certs", action="store",
                      dest="ssl_ca_certs", default=defaults.ssl_ca_certs,
                      help="The ca_certs file contains a set of concatenated 'certification authority' certificates,"
-                          + " or you can set this to a directory containing CAs files." +
+                          " or you can set this to a directory containing CAs files."
                           " Default: '%default'.")
     group.add_option("--ssl-ca-data", action="store",
                      dest="ssl_ca_data", default=defaults.ssl_ca_data,
                      help="PEM or DER encoded certificate data, optionally converted to hex."
-                          + " Default: '%default'.")
+                          " Default: '%default'.")
     group.add_option("--ssl-ciphers", action="store",
                      dest="ssl_ciphers", default=defaults.ssl_ciphers,
                      help="Sets the available ciphers, "
-                          + " it should be a string in the OpenSSL cipher list format."
-                          + " Default: '%default'.")
+                          " it should be a string in the OpenSSL cipher list format."
+                          " Default: '%default'.")
     group.add_option("--ssl-client-verify-mode", action="store",
                      dest="ssl_client_verify_mode", default=defaults.ssl_client_verify_mode,
                      help="Whether to try to verify the client's certificates"
-                          + " and how to behave if verification fails."
-                          + " Default: '%default'.")
+                          " and how to behave if verification fails."
+                          " Default: '%default'.")
     group.add_option("--ssl-server-verify-mode", action="store",
                      dest="ssl_server_verify_mode", default=defaults.ssl_server_verify_mode,
                      help="Whether to try to verify the server's certificates"
-                          + " and how to behave if verification fails. "
-                          + " Default: '%default'.")
+                          " and how to behave if verification fails. "
+                          " Default: '%default'.")
     group.add_option("--ssl-verify-flags", action="store",
                      dest="ssl_verify_flags", default=defaults.ssl_verify_flags,
                      help="The flags for certificate verification operations."
-                          + " Default: '%default'.")
+                          " Default: '%default'.")
     group.add_option("--ssl-check-hostname", action="store", metavar="yes|no",
                      dest="ssl_check_hostname", default=defaults.ssl_check_hostname,
                      help="Whether to match the peer cert's hostname or accept any host, dangerous."
-                          + " Default: '%s'." % enabled_str(defaults.ssl_check_hostname))
+                          " Default: '%s'." % enabled_str(defaults.ssl_check_hostname))
     group.add_option("--ssl-server-hostname", action="store", metavar="hostname",
                      dest="ssl_server_hostname", default=defaults.ssl_server_hostname,
                      help="The server hostname to match."
-                          + " Default: '%default'.")
+                          " Default: '%default'.")
     group.add_option("--ssl-options", action="store", metavar="options",
                      dest="ssl_options", default=defaults.ssl_options,
                      help="Set of SSL options enabled on this context."
-                          + " Default: '%default'.")
+                          " Default: '%default'.")
 
     group = optparse.OptionGroup(parser, "Advanced Options",
-                                 "These options apply to both client and server. Please refer to the man page for details.")
+                                 "These options apply to both client and server.")
     parser.add_option_group(group)
     # minimal is actually handled earlier,
     # so that it can modify the 'defaults' before parsing command line options
@@ -1667,62 +1696,62 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--minimal", action="store",
                      dest="minimal", default=defaults.minimal,
                      help="Disable most non-essential subsystems."
-                          + " Default: '%default'.")
+                          " Default: '%default'.")
     group.add_option("--env", action="append",
                      dest="env", default=list(defaults.env or []),
                      help="Define environment variables which will apply to this process and all subprocesses,"
-                          + " can be specified multiple times."
-                          + " Default: %s." % dcsv(
+                          " can be specified multiple times."
+                          " Default: %s." % dcsv(
                          list(("'%s'" % x) for x in (defaults.env or []) if not x.startswith("#"))))
     group.add_option("--challenge-handlers", action="append",
                      dest="challenge_handlers", default=[],
                      help="Which handlers to use for processing server authentication challenges."
-                          + " Default: %s." % dcsv(defaults.challenge_handlers))
+                          " Default: %s." % dcsv(defaults.challenge_handlers))
     group.add_option("--password-file", action="append",
                      dest="password_file", default=defaults.password_file,
                      help="The file containing the password required to connect"
-                          + " (useful to secure TCP mode)."
-                          + " Default: %s." % dcsv(defaults.password_file))
+                          " (useful to secure TCP mode)."
+                          " Default: %s." % dcsv(defaults.password_file))
     group.add_option("--forward-xdg-open", action="store",
                      dest="forward_xdg_open", default=defaults.forward_xdg_open,
                      help="Intercept calls to xdg-open and forward them to the client."
-                          + " Default: '%default'.")
+                          " Default: '%default'.")
     group.add_option("--open-command", action="store",
                      dest="open_command", default=defaults.open_command,
                      help="Command to use to open files and URLs."
-                          + " Default: '%default'.")
+                          " Default: '%default'.")
     legacy_bool_parse("modal-windows")
     group.add_option("--modal-windows", action="store",
                      dest="modal_windows", default=defaults.modal_windows,
                      help="Honour modal windows."
-                          + " Default: '%default'.")
+                          " Default: '%default'.")
     group.add_option("--input-method", action="store",
                      dest="input_method", default=defaults.input_method,
                      help="Which X11 input method to configure for client applications started with start or"
-                          + "start-child (Default: '%default', options: auto, none, keep, xim, IBus, SCIM, uim)")
+                          "start-child (Default: '%default', options: auto, none, keep, xim, IBus, SCIM, uim)")
     group.add_option("--dpi", action="store",
                      dest="dpi", default=defaults.dpi,
                      help="The 'dots per inch' value that client applications should try to honour,"
-                          + " from 10 to 1000 or 0 for automatic setting."
-                          + " Default: %s." % print_number(defaults.dpi))
+                          " from 10 to 1000 or 0 for automatic setting."
+                          " Default: %s." % print_number(defaults.dpi))
     group.add_option("--pixel-depth", action="store",
                      dest="pixel_depth", default=defaults.pixel_depth,
                      help="The bits per pixel of the virtual framebuffer when starting a server"
-                          + " (8, 16, 24 or 30), or for rendering when starting a client. "
-                          + " Default: %s." % (defaults.pixel_depth or "0 (auto)"))
+                          " (8, 16, 24 or 30), or for rendering when starting a client. "
+                          " Default: %s." % (defaults.pixel_depth or "0 (auto)"))
     group.add_option("--sync-xvfb", action="store",
                      dest="sync_xvfb", default=defaults.sync_xvfb,
                      help="How often to synchronize the virtual framebuffer used for X11 seamless servers "
-                          + "(0 to disable)."
-                          + " Default: %s." % autodefault(defaults.sync_xvfb))
+                          "(0 to disable)."
+                          " Default: %s." % autodefault(defaults.sync_xvfb))
     group.add_option("--client-socket-dirs", action="store",
                      dest="client_socket_dirs", default=defaults.client_socket_dirs,
                      help="Directories where the clients create their control socket."
-                          + " Default: %s." % os.path.pathsep.join("'%s'" % x for x in defaults.client_socket_dirs))
+                          " Default: %s." % os.path.pathsep.join("'%s'" % x for x in defaults.client_socket_dirs))
     group.add_option("--socket-dirs", action="store",
                      dest="socket_dirs", default=defaults.socket_dirs,
                      help="Directories to look for the socket files in."
-                          + " Default: %s." % os.path.pathsep.join("'%s'" % x for x in defaults.socket_dirs))
+                          " Default: %s." % os.path.pathsep.join("'%s'" % x for x in defaults.socket_dirs))
     default_socket_dir_str = defaults.socket_dir or "$XPRA_SOCKET_DIR or the first valid directory in socket-dirs"
     group.add_option("--socket-dir", action="store",
                      dest="socket_dir", default=defaults.socket_dir,
@@ -1745,11 +1774,11 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--rfb-upgrade", action="store",
                      dest="rfb_upgrade", default=defaults.rfb_upgrade,
                      help="Upgrade TCP sockets to send a RFB handshake after this delay"
-                          + " (in seconds). Default: %default.")
+                          " (in seconds). Default: %default.")
     group.add_option("-d", "--debug", action="store",
                      dest="debug", default=defaults.debug, metavar="FILTER1,FILTER2,...",
                      help="list of categories to enable debugging for"
-                          + " (you can also use \"all\" or \"help\", default: '%default')")
+                          " (you can also use \"all\" or \"help\", default: '%default')")
     group.add_option("--ssh", action="store",
                      dest="ssh", default=defaults.ssh, metavar="CMD",
                      help="How to run ssh. Default: '%default'.")
@@ -1757,47 +1786,47 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--exit-ssh", action="store", metavar="yes|no|auto",
                      dest="exit_ssh", default=defaults.exit_ssh,
                      help="Terminate SSH when disconnecting."
-                          + " Default: %default.")
+                          " Default: %default.")
     group.add_option("--username", action="store",
                      dest="username", default=defaults.username,
                      help="The username supplied by the client for authentication."
-                          + " Default: '%default'.")
+                          " Default: '%default'.")
     group.add_option("--auth", action="append",
                      dest="auth", default=list(defaults.auth or []),
                      help="The authentication module to use"
-                          + " (default: %s)" % dcsv(defaults.auth))
+                          " (default: %s)" % dcsv(defaults.auth))
     group.add_option("--tcp-auth", action="append",
                      dest="tcp_auth", default=list(defaults.tcp_auth or []),
                      help="The authentication module to use for TCP sockets - deprecated, use per socket syntax"
-                          + " (default: %s)" % dcsv(defaults.tcp_auth))
+                          " (default: %s)" % dcsv(defaults.tcp_auth))
     group.add_option("--ws-auth", action="append",
                      dest="ws_auth", default=list(defaults.ws_auth or []),
                      help="The authentication module to use for Websockets - deprecated, use per socket syntax"
-                          + " (default: %s)" % dcsv(defaults.ws_auth))
+                          " (default: %s)" % dcsv(defaults.ws_auth))
     group.add_option("--wss-auth", action="append",
                      dest="wss_auth", default=list(defaults.wss_auth or []),
                      help="The authentication module to use for Secure Websockets - deprecated, use per socket syntax"
-                          + " (default: %s)" % dcsv(defaults.wss_auth))
+                          " (default: %s)" % dcsv(defaults.wss_auth))
     group.add_option("--ssl-auth", action="append",
                      dest="ssl_auth", default=list(defaults.ssl_auth or []),
                      help="The authentication module to use for SSL sockets - deprecated, use per socket syntax"
-                          + " (default: %s)" % dcsv(defaults.ssl_auth))
+                          " (default: %s)" % dcsv(defaults.ssl_auth))
     group.add_option("--ssh-auth", action="append",
                      dest="ssh_auth", default=list(defaults.ssh_auth or []),
                      help="The authentication module to use for SSH sockets - deprecated, use per socket syntax"
-                          + " (default: %s)" % dcsv(defaults.ssh_auth))
+                          " (default: %s)" % dcsv(defaults.ssh_auth))
     group.add_option("--rfb-auth", action="append",
                      dest="rfb_auth", default=list(defaults.rfb_auth or []),
                      help="The authentication module to use for RFB sockets - deprecated, use per socket syntax"
-                          + " (default: %s)" % dcsv(defaults.rfb_auth))
+                          " (default: %s)" % dcsv(defaults.rfb_auth))
     group.add_option("--quic-auth", action="append",
                      dest="quic_auth", default=list(defaults.quic_auth or []),
                      help="The authentication module to use for QUIC sockets - deprecated, use per socket syntax"
-                          + " (default: %s)" % dcsv(defaults.quic_auth))
+                          " (default: %s)" % dcsv(defaults.quic_auth))
     group.add_option("--vsock-auth", action="append",
                      dest="vsock_auth", default=list(defaults.vsock_auth or []),
                      help="The authentication module to use for vsock sockets - deprecated, use per socket syntax"
-                          + " (default: '%s')" % dcsv(defaults.vsock_auth))
+                          " (default: '%s')" % dcsv(defaults.vsock_auth))
     group.add_option("--min-port", action="store",
                      dest="min_port", default=defaults.min_port,
                      help="The minimum port number allowed when creating TCP sockets (default: '%default')")
@@ -1805,57 +1834,57 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--mmap-group", action="store",
                      dest="mmap_group", default=defaults.mmap_group,
                      help="When creating the mmap file with the client,"
-                          + " set the group permission on the mmap file to this group,"
-                          + " use the special value 'auto' to use the same value as the owner"
-                          + " of the server socket file we connect to (default: '%default')")
+                          " set the group permission on the mmap file to this group,"
+                          " use the special value 'auto' to use the same value as the owner"
+                          " of the server socket file we connect to (default: '%default')")
     group.add_option("--socket-permissions", action="store",
                      dest="socket_permissions", default=defaults.socket_permissions,
                      help="When creating the server unix domain socket,"
-                          + " what file access mode to use (default: '%default')")
+                          " what file access mode to use (default: '%default')")
     replace_option("--enable-pings", "--pings=5")
     group.add_option("--pings", action="store", metavar="yes|no",
                      dest="pings", default=defaults.pings,
                      help="How often to send ping packets (in seconds, use zero to disable)."
-                          + " Default: %s." % defaults.pings)
+                          " Default: %s." % defaults.pings)
     group.add_option("--clipboard-filter-file", action="store",
                      dest="clipboard_filter_file", default=defaults.clipboard_filter_file,
                      help="Name of a file containing regular expressions of clipboard contents "
-                          + " that must be filtered out")
+                          " that must be filtered out")
     group.add_option("--local-clipboard", action="store",
                      dest="local_clipboard", default=defaults.local_clipboard,
                      metavar="SELECTION",
                      help="Name of the local clipboard selection to be synchronized"
-                          + " when using the translated clipboard (default: %default)")
+                          " when using the translated clipboard (default: %default)")
     group.add_option("--remote-clipboard", action="store",
                      dest="remote_clipboard", default=defaults.remote_clipboard,
                      metavar="SELECTION",
                      help="Name of the remote clipboard selection to be synchronized"
-                          + " when using the translated clipboard (default: %default)")
+                          " when using the translated clipboard (default: %default)")
     group.add_option("--remote-xpra", action="store",
                      dest="remote_xpra", default=defaults.remote_xpra,
                      metavar="CMD",
                      help="How to run xpra on the remote host."
-                          + " (Default: %s)" % (" or ".join(defaults.remote_xpra)))
+                          " (Default: %s)" % (" or ".join(defaults.remote_xpra)))
     group.add_option("--encryption", action="store",
                      dest="encryption", default=defaults.encryption,
                      metavar="ALGO",
                      help="Specifies the encryption cipher to use,"
-                          + " specify 'help' to get a list of options. (default: None)")
+                          " specify 'help' to get a list of options. (default: None)")
     group.add_option("--encryption-keyfile", action="store",
                      dest="encryption_keyfile", default=defaults.encryption_keyfile,
                      metavar="FILE",
                      help="Specifies the file containing the encryption key."
-                          + " (Default: '%default')")
+                          " (Default: '%default')")
     group.add_option("--tcp-encryption", action="store",
                      dest="tcp_encryption", default=defaults.tcp_encryption,
                      metavar="ALGO",
                      help="Specifies the encryption cipher to use for TCP sockets,"
-                          + " specify 'help' to get a list of options. (default: None)")
+                          " specify 'help' to get a list of options. (default: None)")
     group.add_option("--tcp-encryption-keyfile", action="store",
                      dest="tcp_encryption_keyfile", default=defaults.tcp_encryption_keyfile,
                      metavar="FILE",
                      help="Specifies the file containing the encryption key to use for TCP sockets."
-                          + " (default: '%default')")
+                          " (default: '%default')")
 
     options, args = parser.parse_args(cmdline)
 
@@ -1877,12 +1906,12 @@ def parse_command_line(cmdline, defaults):
             if bv != v:
                 setattr(options, fieldname, bv)
 
-    #only use the defaults if no value is specified:
+    # only use the defaults if no value is specified:
     for setting in (
         "bind", "challenge_handlers", "key_shortcut",
         "source", "source_start",
         "video_encoders", "video_decoders", "csc_modules", "proxy_video_encoders",
-        ):
+    ):
         if not getattr(options, setting):
             setattr(options, setting, getattr(defaults, setting, []))
 
@@ -1900,9 +1929,11 @@ def validated_encodings(encodings) -> tuple[str, ...]:
         raise InitException("no valid encodings specified")
     return validated
 
+
 def validate_encryption(opts) -> None:
     do_validate_encryption(opts.auth, opts.tcp_auth,
                            opts.encryption, opts.tcp_encryption, opts.encryption_keyfile, opts.tcp_encryption_keyfile)
+
 
 def do_validate_encryption(auth, tcp_auth,
                            encryption, tcp_encryption, encryption_keyfile, tcp_encryption_keyfile):
@@ -1916,7 +1947,7 @@ def do_validate_encryption(auth, tcp_auth,
     from xpra.net.crypto import get_ciphers, get_modes, DEFAULT_MODE
     ciphers = get_ciphers()
     if not ciphers:
-        raise InitException("cannot use encryption: no ciphers available"+
+        raise InitException("cannot use encryption: no ciphers available"
                             " (the python-cryptography library must be installed)")
     if encryption=="help" or tcp_encryption=="help":
         raise InitInfo(f"the following encryption ciphers are available: {csv(ciphers)}")
@@ -1931,11 +1962,11 @@ def do_validate_encryption(auth, tcp_auth,
             raise InitException(f"encryption mode {mode} is not supported, try: " + csv(modes))
         if encryption and not encryption_keyfile and not env_key and not auth:
             raise InitException(f"encryption {encryption} cannot be used without an authentication module or keyfile"
-                                +" (see --encryption-keyfile option)")
+                                " (see --encryption-keyfile option)")
         if tcp_encryption and not tcp_encryption_keyfile and not env_key and not tcp_auth:
-            raise InitException(f"tcp-encryption {tcp_encryption} cannot be used "+
+            raise InitException(f"tcp-encryption {tcp_encryption} cannot be used "
                                 "without a tcp authentication module or keyfile "
-                                +" (see --tcp-encryption-keyfile option)")
+                                " (see --tcp-encryption-keyfile option)")
     if pass_key and env_key and pass_key==env_key:
         raise InitException("encryption and authentication should not use the same value")
     #discouraged but not illegal:
@@ -1946,6 +1977,7 @@ def do_validate_encryption(auth, tcp_auth,
     #    elif tcp_encryption:
     #        raise InitException("tcp-encryption %s should not use the same file"
     #                            +" as the password authentication file" % tcp_encryption)
+
 
 def show_audio_codec_help(is_server, speaker_codecs, microphone_codecs) -> list[str]:
     from xpra.audio.wrapper import query_audio
@@ -1967,12 +1999,12 @@ def show_audio_codec_help(is_server, speaker_codecs, microphone_codecs) -> list[
     if hm:
         codec_help.append("microphone codecs available: "+csv(all_microphone_codecs))
     elif invalid_mc:
-        codec_help.append("WARNING: some of the specified microphone codecs are not available:"
-                          +" "+csv(invalid_mc))
+        codec_help.append("WARNING: some of the specified microphone codecs are not available:"+" "+csv(invalid_mc))
     return codec_help
 
+
 def parse_vsock_cid(cid_str:str) -> int:
-    from xpra.net.vsock.vsock import STR_TO_CID, CID_ANY # pylint: disable=import-outside-toplevel
+    from xpra.net.vsock.vsock import STR_TO_CID, CID_ANY    # pylint: disable=import-outside-toplevel
     if cid_str.lower() in ("auto", "any"):
         return CID_ANY
     try:
@@ -1982,6 +2014,7 @@ def parse_vsock_cid(cid_str:str) -> int:
         if cid is None:
             raise InitException(f"invalid vsock cid {cid_str!r}") from None
         return cid
+
 
 def is_local(host:str) -> bool:
     return host.lower() in ("localhost", "127.0.0.1", "::1")
