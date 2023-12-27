@@ -38,5 +38,5 @@ class FakeBacking:
 
     def get_encoding_properties(self):
         return {
-                "encodings.rgb_formats"    : ["RGBA", "RGB"],
-               }
+            "encodings.rgb_formats"    : ["RGBA", "RGB"],
+        }

@@ -8,6 +8,7 @@
 import os
 import re
 from typing import Any
+from collections.abc import Callable, Iterable
 
 from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window_backing_base import fire_paint_callbacks
@@ -43,10 +44,10 @@ FORCE_FLUSH = envbool("XPRA_FORCE_FLUSH", False)
 
 class ClientWindowBase(ClientWidgetBase):
 
-    def __init__(self, client, group_leader, watcher_pid:int, wid:int,
-                 wx:int, wy:int, ww:int, wh:int, bw:int, bh:int,
+    def __init__(self, client, group_leader, watcher_pid: int, wid: int,
+                 wx: int, wy: int, ww: int, wh: int, bw: int, bh: int,
                  metadata, override_redirect:bool, client_properties,
-                 border, max_window_size, default_cursor_data, pixel_depth:int,
+                 border, max_window_size, default_cursor_data, pixel_depth: int,
                  headerbar="no"):
         log("%s%s", type(self),
             (client, group_leader, watcher_pid, wid,
@@ -105,29 +106,29 @@ class ClientWindowBase(ClientWidgetBase):
         self._metadata = typedict()
         # used for only sending focus events *after* the window is mapped:
         self._been_mapped = False
+
         def wn(w):
             return WORKSPACE_NAMES.get(w, w)
         workspace = typedict(self._client_properties).intget("workspace", -1)
         workspacelog("init_window(..) workspace from client properties %s: %s", self._client_properties, wn(workspace))
         if workspace>=0:
-            #client properties override application specified workspace value on init only:
+            # client properties override application specified workspace value on init only:
             metadata["workspace"] = workspace
         self._window_workspace = WORKSPACE_UNSET        #will get set in set_metadata if present
         self._desktop_workspace = self.get_desktop_workspace()  #pylint: disable=assignment-from-none
         workspacelog("init_window(..) workspace=%s, current workspace=%s",
                      wn(self._window_workspace), wn(self._desktop_workspace))
         if self.max_window_size and "size-constraints" not in metadata:
-            #this ensures that we will set size-constraints and honour max_window_size:
+            # this ensures that we will set size-constraints and honour max_window_size:
             metadata.pop("workspace", None)
             metadata["size-constraints"] = {}
-        #initialize gravity early:
+        # initialize gravity early:
         sc = typedict(metadata.dictget("size-constraints", {}))
         self.window_gravity = OVERRIDE_GRAVITY or sc.intget("gravity", DEFAULT_GRAVITY)
         self.set_decorated(metadata.boolget("decorations", True))
 
     def finalize_window(self) -> None:
         """ subclasses override this method """
-
 
     def get_info(self) -> dict[str,Any]:
         attributes = []
@@ -137,13 +138,13 @@ class ClientWindowBase(ClientWidgetBase):
             "shaded", "sticky",
             "skip-pager", "skip-taskbar",
             "iconified", "focused",
-            ):
+        ):
             if getattr(self, "_%s" % attr.replace("-", "_"), False):
                 attributes.append(attr)
         info = super().get_info()
         info |= {
             "override-redirect"     : self._override_redirect,
-            #"group-leader"          : self.group_leader,
+            # "group-leader"          : self.group_leader,
             "position"              : self._pos,
             "size"                  : self._size,
             "client-properties"     : self._client_properties,
@@ -153,8 +154,8 @@ class ClientWindowBase(ClientWidgetBase):
             "content-type"          : self.content_type,
             "attributes"            : attributes,
             "gravity"               : GravityStr(self.window_gravity),
-            #"border"                : self.border or "",
-            #cursor_data
+            # "border"                : self.border or "",
+            # cursor_data
             "max-size"              : self.max_window_size,
             "button-state"          : self.button_state,
             "offset"                : self.window_offset or (0, 0),
@@ -167,24 +168,28 @@ class ClientWindowBase(ClientWidgetBase):
     def get_window_workspace(self):
         return None
 
-
     ######################################################################
     # screen scaling:
     def fsx(self, v) -> float:
         """ convert X coordinate from server to client """
         return v*self._xscale
+
     def fsy(self, v) -> float:
         """ convert Y coordinate from server to client """
         return v*self._yscale
+
     def sx(self, v) -> int:
         """ convert X coordinate from server to client """
         return round(self.fsx(v))
+
     def sy(self, v) -> int:
         """ convert Y coordinate from server to client """
         return round(self.fsy(v))
+
     def srect(self, x, y, w, h) -> tuple[int,int,int,int]:
         """ convert rectangle coordinates from server to client """
         return self.sx(x), self.sy(y), self.sx(w), self.sy(h)
+
     def sp(self, x, y) -> tuple[int,int]:
         """ convert X,Y coordinates from server to client """
         return self.sx(x), self.sy(y)
@@ -192,18 +197,20 @@ class ClientWindowBase(ClientWidgetBase):
     def cx(self, v) -> int:
         """ convert X coordinate from client to server """
         return round(v/self._xscale)
+
     def cy(self, v) -> int:
         """ convert Y coordinate from client to server """
         return round(v/self._yscale)
+
     def crect(self, x, y, w, h) -> tuple[int,int,int,int]:
         """ convert rectangle coordinates from client to server """
         return self.cx(x), self.cy(y), self.cx(w), self.cy(h)
+
     def cp(self, x, y) -> tuple[int,int]:
         """ convert X,Y coordinates from client to server """
         return self.cx(x), self.cy(y)
 
-
-    def new_backing(self, bw:int, bh:int):
+    def new_backing(self, bw: int, bh: int):
         backing_class = self.get_backing_class()
         log("new_backing(%s, %s) backing_class=%s", bw, bh, backing_class)
         assert backing_class is not None
@@ -212,32 +219,30 @@ class ClientWindowBase(ClientWidgetBase):
         self._backing.border = self.border
         self._backing.default_cursor_data = self.default_cursor_data
         self._backing.gravity = self.window_gravity
-        #this is only used by cairo to request a repaint for the fps counter:
+        # this is only used by cairo to request a repaint for the fps counter:
         self._backing.repaint = self.repaint
         return self._backing._backing
 
-
     def destroy(self) -> None:
-        #ensure we clear reference to other windows:
+        # ensure we clear reference to other windows:
         self.group_leader = None
         self._metadata = {}
         if self._backing:
             self._backing.close()
             self._backing = None
 
-
-    def setup_window(self, bw:int, bh:int) -> None:
+    def setup_window(self, bw: int, bh: int) -> None:
         self.new_backing(bw, bh)
-        #tell the server about the encoding capabilities of this backing instance:
-        #but don't bother if they're the same as what we sent as defaults
-        #(with a bit of magic to collapse the missing namespace from encoding_defaults)
+        # tell the server about the encoding capabilities of this backing instance:
+        # but don't bother if they're the same as what we sent as defaults
+        # (with a bit of magic to collapse the missing namespace from encoding_defaults)
         backing_props = self._backing.get_encoding_properties()
         encoding_defaults = self._client.encoding_defaults
         for k in tuple(backing_props.keys()):
             v = backing_props[k]
             try:
-                #ie: "encodings.rgb_formats" -> "rgb_formats"
-                #ie: "encoding.full_csc_modes" -> "full_csc_modes"
+                # ie: "encodings.rgb_formats" -> "rgb_formats"
+                # ie: "encoding.full_csc_modes" -> "full_csc_modes"
                 ek = k.split(".", 1)[1]
             except IndexError:
                 ek = k
@@ -245,7 +250,6 @@ class ClientWindowBase(ClientWidgetBase):
             if dv is not None and dv==v:
                 del backing_props[k]
         self._client_properties.update(backing_props)
-
 
     def send(self, *args) -> None:
         self._client.send(*args)
@@ -259,7 +263,7 @@ class ClientWindowBase(ClientWidgetBase):
     def update_icon(self, img) -> None:
         raise NotImplementedError
 
-    def apply_transient_for(self, wid:int) -> None:
+    def apply_transient_for(self, wid: int) -> None:
         raise NotImplementedError
 
     def paint_spinner(self, context, area) -> None:
@@ -268,14 +272,11 @@ class ClientWindowBase(ClientWidgetBase):
     def _pointer_modifiers(self, event):
         raise NotImplementedError
 
-
     def xget_u32_property(self, target, name):
         raise NotImplementedError
 
-
     def is_OR(self) -> bool:
         return self._override_redirect
-
 
     def update_metadata(self, metadata:typedict) -> None:
         metalog("update_metadata(%s)", metadata)
@@ -289,25 +290,25 @@ class ClientWindowBase(ClientWidgetBase):
 
     def _force_size_constraint(self, *size) -> dict[str,dict[str,Any]]:
         return {
-            "size-constraints" : {
-                "maximum-size" : size,
-                "minimum-size" : size,
-                "base-size" : size,
-                }
-            }
+            "size-constraints": {
+                "maximum-size": size,
+                "minimum-size": size,
+                "base-size": size,
+            },
+        }
 
     def _get_window_title(self, metadata) -> str:
         try:
             title = bytestostr(self._client.title).replace("\0", "")
             if title.find("@")<0:
                 return title
-            #perform metadata variable substitutions:
-            #full of Python 3 unicode headaches that don't need to be
+            # perform metadata variable substitutions:
+            # full of Python 3 unicode headaches that don't need to be
             UNKNOWN_MACHINE = "<unknown machine>"
             remote_hostname = getattr(self._client, "_remote_hostname", None)
             remote_display = getattr(self._client, "_remote_display", None)
             if remote_display:
-                #ie: "1\\WinSta0\\Default" -> 1-WinSta0-Default
+                # ie: "1\\WinSta0\\Default" -> 1-WinSta0-Default
                 remote_display = remote_display.replace("\\", "-")
             default_values = {
                 "title"           : "<untitled window>",
@@ -315,8 +316,9 @@ class ClientWindowBase(ClientWidgetBase):
                 "windowid"        : str(self.wid),
                 "server-machine"  : std(remote_hostname) or UNKNOWN_MACHINE,
                 "server-display"  : std(remote_display) or "<unknown display>",
-                }
+            }
             metalog(f"default values: {default_values}")
+
             def validhostname(value):
                 if value in (
                     "localhost",
@@ -326,6 +328,7 @@ class ClientWindowBase(ClientWidgetBase):
                 ):
                     return None
                 return value
+
             def getvar(var):
                 #"hostname" is magic:
                 #we try harder to find a useful value to show:
@@ -336,7 +339,7 @@ class ClientWindowBase(ClientWidgetBase):
                         return server_display
                     import socket
                     local_hostname = validhostname(socket.gethostname())
-                    #try to find the hostname:
+                    # try to find the hostname:
                     proto = getattr(self._client, "_protocol", None)
                     target = None
                     if proto:
@@ -361,11 +364,12 @@ class ClientWindowBase(ClientWidgetBase):
                 if value is None:
                     return default_values.get(var, "<unknown %s>" % var)
                 return str(value)
+
             def metadata_replace(match):
-                atvar = match.group(0)          #ie: '@title@'
-                var = atvar[1:len(atvar)-1]     #ie: 'title'
+                atvar = match.group(0)          # ie: '@title@'
+                var = atvar[1:len(atvar)-1]     # ie: 'title'
                 if not var:
-                    #atvar = "@@"
+                    # atvar = "@@"
                     return "@"
                 return getvar(var)
             sub = r"@[\w\-]*@"
@@ -382,8 +386,8 @@ class ClientWindowBase(ClientWidgetBase):
         debug_props = [x for x in PROPERTIES_DEBUG if x in metadata.keys()]
         for x in debug_props:
             metalog.info("set_metadata: %s=%s", x, metadata.get(x))
-        #WARNING: "class-instance" needs to go first because others may realize the window
-        #(and GTK doesn't set the "class-instance" once the window is realized)
+        # WARNING: "class-instance" needs to go first because others may realize the window
+        # (and GTK doesn't set the "class-instance" once the window is realized)
         if "class-instance" in metadata:
             self.set_class_instance(*metadata.strtupleget("class-instance", ("xpra", "Xpra"), 2, 2))
             self.reset_icon()
@@ -395,8 +399,8 @@ class ClientWindowBase(ClientWidgetBase):
         if "icon-title" in metadata:
             icon_title = metadata.strget("icon-title", "")
             self.set_icon_name(icon_title)
-            #the DE may have reset the icon now,
-            #force it to use the one we really want:
+            # the DE may have reset the icon now,
+            # force it to use the one we really want:
             self.reset_icon()
 
         if "size-constraints" in metadata:
@@ -406,7 +410,7 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_size_constraints(sc, self.max_window_size)
 
         if "set-initial-position" in metadata:
-            #this should be redundant - but we keep it here for consistency
+            # this should be redundant - but we keep it here for consistency
             self._set_initial_position = metadata.boolget("set-initial-position")
 
         if "transient-for" in metadata:
@@ -417,7 +421,7 @@ class ClientWindowBase(ClientWidgetBase):
             modal = metadata.boolget("modal")
             self.set_modal(modal)
 
-        #apply window-type hint if window has not been mapped yet:
+        # apply window-type hint if window has not been mapped yet:
         if "window-type" in metadata and not self.get_mapped():
             window_types = metadata.strtupleget("window-type")
             self.set_window_type(window_types)
@@ -440,11 +444,11 @@ class ClientWindowBase(ClientWidgetBase):
 
         if "has-alpha" in metadata:
             new_alpha = metadata.boolget("has-alpha")
-            if new_alpha!=self._has_alpha:
+            if new_alpha != self._has_alpha:
                 l = alphalog
                 if not WIN32:
-                    #win32 without opengl can't do transparency,
-                    #so it triggers too many warnings
+                    # win32 without opengl can't do transparency,
+                    # so it triggers too many warnings
                     l = log.warn
                 l("Warning: window %#x changed its transparency attribute", self.wid)
                 l(" from %s to %s, behaviour is undefined", self._has_alpha, new_alpha)
@@ -556,31 +560,29 @@ class ClientWindowBase(ClientWidgetBase):
         if "content-type" in metadata:
             self.content_type = metadata.strget("content-type")
 
-
     def set_x11_property(self, *x11_property) -> None:
-        pass        #see gtk client window base
+        pass        # see gtk client window base
 
     def set_command(self, command) -> None:
-        pass        #see gtk client window base
+        pass        # see gtk client window base
 
     def set_class_instance(self, wmclass_name, wmclass_class) -> None:
-        pass        #see gtk client window base
+        pass        # see gtk client window base
 
     def set_shape(self, shape) -> None:
         log("set_shape(%s) not implemented by %s", shape, type(self))
 
     def set_bypass_compositor(self, v) -> None:
-        pass        #see gtk client window base
+        pass        # see gtk client window base
 
     def set_strut(self, strut) -> None:
-        pass        #see gtk client window base
+        pass        # see gtk client window base
 
     def set_fullscreen_monitors(self, fsm) -> None:
-        pass        #see gtk client window base
+        pass        # see gtk client window base
 
     def set_shaded(self, shaded) -> None:
-        pass        #see gtk client window base
-
+        pass        # see gtk client window base
 
     def reset_size_constraints(self) -> None:
         self.set_size_constraints(self.size_constraints, self.max_window_size)
@@ -596,27 +598,28 @@ class ClientWindowBase(ClientWidgetBase):
             ("minimum-size", "min_width", "min_height"),
             ("base-size", "base_width", "base_height"),
             ("increment", "width_inc", "height_inc"),
-            ):
+        ):
             v = size_constraints.intpair(a)
             geomlog("intpair(%s)=%s", a, v)
             if v:
                 v1, v2 = v
-                if a=="maximum-size" and v1>=16384 and v2>=16384 and WIN32:
-                    #causes problems, see #2714, #3533
+                if a == "maximum-size" and v1 >= 16384 and v2 >= 16384 and WIN32:
+                    # causes problems, see #2714, #3533
                     continue
                 sv1 = client.sx(v1)
                 sv2 = client.sy(v2)
                 if a in ("base-size", "increment"):
-                    #rounding is not allowed for these values
+                    # rounding is not allowed for these values
                     fsv1 = client.fsx(v1)
                     fsv2 = client.fsy(v2)
+
                     def closetoint(value):
-                        #tolerate some rounding error:
-                        #(ie: 2:3 scaling may not give an integer without a tiny bit of rounding)
+                        # tolerate some rounding error:
+                        # (ie: 2:3 scaling may not give an integer without a tiny bit of rounding)
                         return abs(round(value)-value)<0.00001
                     if not closetoint(fsv1) or not closetoint(fsv2):
-                        #the scaled value is not close to an int,
-                        #so we can't honour it:
+                        # the scaled value is not close to an int,
+                        # so we can't honour it:
                         geomlog("cannot honour '%s' due to scaling, scaled values are not both integers: %s, %s",
                                 a, fsv1, fsv2)
                         continue
@@ -625,24 +628,24 @@ class ClientWindowBase(ClientWidgetBase):
             for (a, h) in (
                 ("minimum-aspect-ratio", "min_aspect"),
                 ("maximum-aspect-ratio", "max_aspect"),
-                ):
+            ):
                 v = size_constraints.intpair(a)
                 if v:
                     v1, v2 = v
                     hints[h] = (v1*self._xscale)/(v2*self._yscale)
-        #apply max-size override if needed:
-        w,h = max_window_size
-        if w>0 and h>0 and not self._fullscreen:
-            #get the min size, if there is one:
+        # apply max-size override if needed:
+        w, h = max_window_size
+        if w > 0 and h > 0 and not self._fullscreen:
+            # get the min size, if there is one:
             minw = max(1, hints.intget("min_width", 1))
             minh = max(1, hints.intget("min_height", 1))
-            #the actual max size is:
+            # the actual max size is:
             # * greater than the min-size
             # * the lowest of the max-size set by the application and the one we have
             # * ensure we honour the other hints, and round the max-size down if needed:
-            #according to the GTK docs:
-            #allowed window widths are base_width + width_inc * N where N is any integer
-            #allowed window heights are base_height + width_inc * N where N is any integer
+            # according to the GTK docs:
+            # allowed window widths are base_width + width_inc * N where N is any integer
+            # allowed window heights are base_height + width_inc * N where N is any integer
             maxw = hints.intget("max_width", 32768)
             maxh = hints.intget("max_height", 32768)
             maxw = max(minw, min(w, maxw))
@@ -651,16 +654,16 @@ class ClientWindowBase(ClientWidgetBase):
             rh = (maxh - hints.intget("base_height", 0)) % max(hints.intget("height_inc", 1), 1)
             maxw -= rw
             maxh -= rh
-            #if the hints combination is invalid, it's possible that we'll end up
-            #not honouring "base" + "inc", but honouring just "min" instead:
+            # if the hints combination is invalid, it's possible that we'll end up
+            # not honouring "base" + "inc", but honouring just "min" instead:
             maxw = max(minw, maxw)
             maxh = max(minh, maxh)
             scaling_info = self._xscale, self._yscale
             geomlog("modified hints for max window size %s and scaling %s: %s (rw=%s, rh=%s) -> max=%sx%s",
                     max_window_size, scaling_info, hints, rw, rh, maxw, maxh)
-            #ensure we don't have duplicates with bytes / strings,
-            #and that keys are always "bytes":
-            #(in practice this code should never fire, just here as a reminder)
+            # ensure we don't have duplicates with bytes / strings,
+            # and that keys are always "bytes":
+            # (in practice this code should never fire, just here as a reminder)
             for x in ("max_width", "max_height"):
                 hints.pop(x, None)
             # bug 2214: GTK3 on win32 gets confused if we specify a large max-size,
@@ -670,7 +673,7 @@ class ClientWindowBase(ClientWidgetBase):
                 hints["max_height"] = maxh
         try:
             geomlog("calling: %s(%s)", self.apply_geometry_hints, hints)
-            #save them so the window hooks can use the last value used:
+            # save them so the window hooks can use the last value used:
             self.geometry_hints = hints
             self.apply_geometry_hints(hints)
         except Exception as e:
@@ -687,19 +690,17 @@ class ClientWindowBase(ClientWidgetBase):
         if b:
             b.gravity = self.window_gravity
 
-
     def set_window_type(self, window_types) -> None:
-        pass        #see gtk client window base
+        pass        # see gtk client window base
 
     def set_workspace(self, workspace) -> None:
-        pass        #see gtk client window base
+        pass        # see gtk client window base
 
     def set_fullscreen(self, fullscreen) -> None:
-        pass        #see gtk client window base
+        pass        # see gtk client window base
 
     def set_xid(self, xid) -> None:
-        pass        #see gtk client window base
-
+        pass        # see gtk client window base
 
     def toggle_debug(self, *_args) -> None:
         b = self._backing
@@ -713,7 +714,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def increase_quality(self, *_args) -> None:
         if self._client.quality>0:
-            #change fixed quality:
+            # change fixed quality:
             self._client.quality = min(100, self._client.quality + 10)
             self._client.send_quality()
             log("new quality=%s", self._client.quality)
@@ -724,7 +725,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def decrease_quality(self, *_args) -> None:
         if self._client.quality>0:
-            #change fixed quality:
+            # change fixed quality:
             self._client.quality = max(1, self._client.quality - 10)
             self._client.send_quality()
             log("new quality=%s", self._client.quality)
@@ -735,7 +736,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def increase_speed(self, *_args) -> None:
         if self._client.speed>0:
-            #change fixed speed:
+            # change fixed speed:
             self._client.speed = min(100, self._client.speed + 10)
             self._client.send_speed()
             log("new speed=%s", self._client.speed)
@@ -746,7 +747,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def decrease_speed(self, *_args) -> None:
         if self._client.speed>0:
-            #change fixed speed:
+            # change fixed speed:
             self._client.speed = max(1, self._client.speed - 10)
             self._client.send_speed()
             log("new speed=%s", self._client.speed)
@@ -754,7 +755,6 @@ class ClientWindowBase(ClientWidgetBase):
             self._client.min_speed = max(0, self._client.min_speed - 10)
             self._client.send_min_speed()
             log("new min-speed=%s", self._client.min_speed)
-
 
     def scaleup(self, *_args) -> None:
         self._client.scaleup()
@@ -795,7 +795,6 @@ class ClientWindowBase(ClientWidgetBase):
     def scalereset(self, *_args) -> None:
         self._client.scalereset()
 
-
     def magic_key(self, *args) -> None:
         b = self.border
         if b:
@@ -803,8 +802,8 @@ class ClientWindowBase(ClientWidgetBase):
             log("magic_key%s border=%s", args, b)
             self.repaint(0, 0, *self._size)
 
-    def repaint(self, x:int, y:int, w:int, h:int):
-        #self.queue_draw_area(0, 0, *self._size)
+    def repaint(self, x: int, y: int, w: int, h: int):
+        # self.queue_draw_area(0, 0, *self._size)
         raise NotImplementedError("no repaint on %s" % type(self))
 
     def refresh_window(self, *args) -> None:
@@ -812,19 +811,21 @@ class ClientWindowBase(ClientWidgetBase):
         self._client.send_refresh(self.wid)
 
     def refresh_all_windows(self, *_args) -> None:
-        #this method is only here because we may want to fire it
-        #from a --key-shortcut action and the event is delivered to
-        #the "ClientWindow"
+        # this method is only here because we may want to fire it
+        # from a --key-shortcut action and the event is delivered to
+        # the "ClientWindow"
         self._client.send_refresh_all()
 
-    def draw_region(self, x:int, y:int, width:int, height:int, coding:str, img_data, rowstride:int, _packet_sequence:int, options, callbacks):
+    def draw_region(self, x: int, y: int, width: int, height: int,
+                    coding: str, img_data, rowstride: int, _packet_sequence: int,
+                    options, callbacks: Iterable[Callable]):
         """ Note: this runs from the draw thread (not UI thread) """
         backing = self._backing
         if not backing:
             log("draw_region: window %s has no backing, gone?", self.wid)
             fire_paint_callbacks(callbacks, -1, "no backing")
             return
-        #only register this callback if we actually need it:
+        # only register this callback if we actually need it:
         if backing.draw_needs_refresh:
             if not backing.repaint_all:
                 self.pending_refresh.append((x, y, width, height))
@@ -841,7 +842,7 @@ class ClientWindowBase(ClientWidgetBase):
         if not backing:
             return
         if backing.repaint_all or self._xscale!=1 or self._yscale!=1 or is_Wayland():
-            #easy: just repaint the whole window:
+            # easy: just repaint the whole window:
             rw, rh = self.get_size()
             self.idle_add(self.repaint, 0, 0, rw, rh)
             return
@@ -864,8 +865,8 @@ class ClientWindowBase(ClientWidgetBase):
         if not self.can_have_spinner():
             return
         log("spinner(%s) queueing redraw")
-        #with normal windows, we just queue a draw request
-        #and let the expose event paint the spinner
+        # with normal windows, we just queue a draw request
+        # and let the expose event paint the spinner
         w, h = self.get_size()
         self.repaint(0, 0, w, h)
 
@@ -875,10 +876,7 @@ class ClientWindowBase(ClientWidgetBase):
         window_types = self._metadata.strtupleget("window-type")
         if not window_types:
             return False
-        return ("NORMAL" in window_types) or \
-               ("DIALOG" in window_types) or \
-               ("SPLASH" in window_types)
-
+        return ("NORMAL" in window_types) or ("DIALOG" in window_types) or ("SPLASH" in window_types)
 
     def _focus(self) -> bool:
         return self._client.update_focus(self.wid, True)
@@ -921,7 +919,6 @@ class ClientWindowBase(ClientWidgetBase):
     def show_docs(self, *args) -> None:
         self._client.show_docs(*args)
 
-
     def log(self, message="") -> None:
         log.info(message)
 
@@ -929,13 +926,12 @@ class ClientWindowBase(ClientWidgetBase):
         self._client.next_keyboard_layout(update_platform_layout)
 
     def keyboard_layout_changed(self, *args) -> None:
-        #used by win32 hooks to tell us about keyboard layout changes for this window
+        # used by win32 hooks to tell us about keyboard layout changes for this window
         keylog("keyboard_layout_changed%s", args)
         self._client.window_keyboard_layout_changed(self)
 
-
     def get_mouse_event_wid(self, *_args) -> int:
-        #used to be overridden in GTKClientWindowBase
+        # used to be overridden in GTKClientWindowBase
         return self.wid
 
     def _do_motion_notify_event(self, event) -> None:
@@ -943,8 +939,10 @@ class ClientWindowBase(ClientWidgetBase):
             return
         pointer_data, modifiers, buttons = self._pointer_modifiers(event)
         wid = self.get_mouse_event_wid(*pointer_data)
-        mouselog("do_motion_notify_event(%s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s",
-                 event, wid, self._client._focused, self.wid, self._device_info(event), pointer_data, modifiers, buttons)
+        mouselog("do_motion_notify_event(%s) wid=%s / focus=%s / window wid=%i",
+                 event, wid, self._client._focused, self.wid)
+        mouselog(" device=%s, pointer=%s, modifiers=%s, buttons=%s",
+                 self._device_info(event), pointer_data, modifiers, buttons)
         device_id = 0
         self._client.send_mouse_position(device_id, wid, pointer_data, modifiers, buttons)
 
@@ -954,14 +952,17 @@ class ClientWindowBase(ClientWidgetBase):
         except AttributeError:
             return ""
 
-    def _button_action(self, button:int, event, depressed:bool, props=None) -> None:
+    def _button_action(self, button: int, event, depressed:bool, props=None) -> None:
         if self._client.readonly or self._client.server_readonly or not self._client.server_pointer:
             return
         pointer_data, modifiers, buttons = self._pointer_modifiers(event)
         wid = self.get_mouse_event_wid(*pointer_data)
-        mouselog("_button_action(%s, %s, %s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s",
-                 button, event, depressed, wid, self._client._focused, self.wid, self._device_info(event), pointer_data, modifiers, buttons)
+        mouselog("_button_action(%s, %s, %s) wid=%s / focus=%s / window wid=%i",
+                 button, event, depressed, wid, self._client._focused, self.wid)
+        mouselog(" device=%s, pointer=%s, modifiers=%s, buttons=%s",
+                 self._device_info(event), pointer_data, modifiers, buttons)
         device_id = 0
+
         def send_button(pressed, **kwargs):
             sprops = props or {}
             sprops.update(kwargs)
@@ -969,7 +970,7 @@ class ClientWindowBase(ClientWidgetBase):
         pressed_state = self.button_state.get(button, False)
         if SIMULATE_MOUSE_DOWN and pressed_state is False and depressed is False:
             mouselog("button action: simulating missing mouse-down event for window %s before mouse-up", wid)
-            #(needed for some dialogs on win32):
+            # (needed for some dialogs on win32):
             send_button(True, synthetic=True)
         self.button_state[button] = depressed
         send_button(depressed)

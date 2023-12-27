@@ -18,7 +18,7 @@ from xpra.util.version import full_version_str
 from xpra.net import compression, packet_encoding
 from xpra.net.common import PacketType
 from xpra.util.child_reaper import reaper_cleanup
-from xpra.os_util import POSIX, WIN32, OSX
+from xpra.os_util import POSIX, WIN32, OSX, gi_import
 from xpra.util.system import is_Wayland, platform_name
 from xpra.util.types import typedict, merge_dicts
 from xpra.util.screen import log_screen_sizes
@@ -81,15 +81,15 @@ MOUSE_DELAY_AUTO = envbool("XPRA_MOUSE_DELAY_AUTO", True)
 DELAY_KEYBOARD_DATA = envbool("XPRA_DELAY_KEYBOARD_DATA", True)
 
 
-"""
-Utility superclass for client classes which have a UI.
-See gtk_client_base and its subclasses.
-"""
 class UIXpraClient(ClientBaseClass):
-    #NOTE: these signals aren't registered here because this class
-    #does not extend GObject,
-    #the gtk client subclasses will take care of it.
-    #these are all "no-arg" signals
+    """
+    Utility superclass for client classes which have a UI.
+    See gtk_client_base and its subclasses.
+    """
+    # NOTE: these signals aren't registered here because this class
+    # does not extend GObject,
+    # the gtk client subclasses will take care of it.
+    # these are all "no-arg" signals
     __signals__ = ["first-ui-received",]
     for c in CLIENT_BASES:
         if c!=XpraClientBase:
@@ -198,7 +198,7 @@ class UIXpraClient(ClientBaseClass):
             return v
         overrides = [noauto(getattr(opts, "keyboard_%s" % x)) for x in (
             "layout", "layouts", "variant", "variants", "options",
-            )]
+        )]
         send_keyboard = noop
         if not self.readonly:
             def do_send_keyboard(*parts):
@@ -226,14 +226,14 @@ class UIXpraClient(ClientBaseClass):
             from xpra.scripts.main import strip_defaults_start_child
             from xpra.scripts.config import make_defaults_struct
             defaults = make_defaults_struct()
-            self.request_start = strip_defaults_start_child(opts.start, defaults.start)   #pylint: disable=no-member
-            self.request_start_child = strip_defaults_start_child(opts.start_child, defaults.start_child) #pylint: disable=no-member
+            self.request_start = strip_defaults_start_child(opts.start, defaults.start)
+            self.request_start_child = strip_defaults_start_child(opts.start_child, defaults.start_child)
 
         if MOUSE_DELAY_AUTO:
             try:
-                #some platforms don't detect the vrefresh correctly
-                #(ie: macos in virtualbox?), so use a sane default minimum
-                #discount by 5ms to ensure we have time to hit the target
+                # some platforms don't detect the vrefresh correctly
+                # (ie: macos in virtualbox?), so use a sane default minimum
+                # discount by 5ms to ensure we have time to hit the target
                 v = max(60, self.get_vrefresh())
                 self._mouse_position_delay = max(5, 1000//v//2 - 5)
                 log(f"mouse position delay: {self._mouse_position_delay}")
@@ -245,7 +245,6 @@ class UIXpraClient(ClientBaseClass):
         from xpra.platform.gui import get_vrefresh  #pylint: disable=import-outside-toplevel
         return get_vrefresh()
 
-
     def run(self) -> ExitValue:
         if self.client_extras:
             self.idle_add(self.client_extras.ready)
@@ -253,8 +252,7 @@ class UIXpraClient(ClientBaseClass):
             c.run(self)
         return self.exit_code or 0
 
-
-    def quit(self, exit_code:int|ExitCode=0) -> None:
+    def quit(self, exit_code: ExitValue=0) -> None:
         raise NotImplementedError()
 
     def cleanup(self) -> None:
@@ -272,13 +270,11 @@ class UIXpraClient(ClientBaseClass):
         reaper_cleanup()
         log("UIXpraClient.cleanup() done")
 
-
     def signal_cleanup(self) -> None:
         log("UIXpraClient.signal_cleanup()")
         XpraClientBase.signal_cleanup(self)
         reaper_cleanup()
         log("UIXpraClient.signal_cleanup() done")
-
 
     def get_info(self) -> dict[str, Any]:
         info : dict[str, Any] = super().get_info()
@@ -290,7 +286,6 @@ class UIXpraClient(ClientBaseClass):
                 info = merge_dicts(info, i)
         return info
 
-
     def show_about(self, *_args) -> None:
         log.warn(f"show_about() is not implemented in {self!r}")
 
@@ -300,18 +295,15 @@ class UIXpraClient(ClientBaseClass):
     def show_bug_report(self, *_args) -> None:
         log.warn(f"show_bug_report() is not implemented in {self!r}")
 
-
     def init_opengl(self, _enable_opengl) -> None:
         self.opengl_enabled = False
         self.client_supports_opengl = False
         self.opengl_props = {"info" : "not supported"}
 
-
     def _ui_event(self) -> None:
         if self._ui_events==0:
             self.emit("first-ui-received")
         self._ui_events += 1
-
 
     def get_mouse_position(self):
         raise NotImplementedError()
@@ -319,9 +311,8 @@ class UIXpraClient(ClientBaseClass):
     def get_current_modifiers(self):
         raise NotImplementedError()
 
-
     def send_start_new_commands(self) -> None:
-        log(f"send_start_new_commands() request_start={self.request_start}, request_start_child={self.request_start_child}")
+        log(f"send_start_new_commands() {self.request_start=}, {self.request_start_child=}")
         import shlex
         for cmd in self.request_start:
             cmd_parts = shlex.split(cmd)
@@ -334,7 +325,6 @@ class UIXpraClient(ClientBaseClass):
         log("send_start_command%s", (name, command, ignore, sharing))
         assert name is not None and command is not None and ignore is not None
         self.send("start-command", name, command, ignore, sharing)
-
 
     ######################################################################
     # trigger notifications on disconnection,
@@ -364,13 +354,13 @@ class UIXpraClient(ClientBaseClass):
 
     def server_disconnect(self, reason:str, *info) -> None:
         body = "\n".join(info)
-        self.may_notify(NotificationID.DISCONNECT, f"Xpra Session Disconnected: {reason}", body, icon_name="disconnected")
+        self.may_notify(NotificationID.DISCONNECT,
+                        f"Xpra Session Disconnected: {reason}", body, icon_name="disconnected")
         delay = NOTIFICATION_EXIT_DELAY*features.notifications
         if self.exit_code is None:
             self.exit_code = self.server_disconnect_exit_code(reason, *info)
         self.timeout_add(delay*1000, XpraClientBase.server_disconnect, self, reason, *info)
         self.cleanup()
-
 
     ######################################################################
     # hello:
@@ -388,17 +378,17 @@ class UIXpraClient(ClientBaseClass):
                         caps["server_uuid"] = uuid
             except (ImportError, RuntimeError):
                 log("skipped server uuid lookup", exc_info=True)
-        for x in (#generic feature flags:
+        for x in (   # generic feature flags:
             "xdg-menu-update",
             "setting-change", "mouse",
-            ):
+        ):
             caps[x] = True
         caps.setdefault("wants", []).append("events")
         caps |= {
-            #generic server flags:
-            "share"                     : self.client_supports_sharing,
-            "lock"                      : self.client_lock,
-            "xdg-menu"                  : self.start_new_commands,
+            # generic server flags:
+            "share": self.client_supports_sharing,
+            "lock": self.client_lock,
+            "xdg-menu": self.start_new_commands,
         }
         caps.update(self.get_keyboard_caps())
         for c in CLIENT_BASES:
@@ -419,8 +409,6 @@ class UIXpraClient(ClientBaseClass):
             caps["desktop-fullscreen"] = True
         return caps
 
-
-
     ######################################################################
     # connection setup:
     def setup_connection(self, conn):
@@ -433,10 +421,9 @@ class UIXpraClient(ClientBaseClass):
     def server_connection_established(self, caps : typedict):
         if not XpraClientBase.server_connection_established(self, caps):
             return False
-        #process the rest from the UI thread:
+        # process the rest from the UI thread:
         self.idle_add(self.process_ui_capabilities, caps)
         return True
-
 
     def parse_server_capabilities(self, c : typedict) -> bool:
         for cb in CLIENT_BASES:
@@ -509,7 +496,7 @@ class UIXpraClient(ClientBaseClass):
             msg = "via: %s proxy version %s" % (
                 platform_name(proxy_platform, proxy_distro or proxy_release),
                 std(proxy_version or "unknown")
-                )
+            )
             if proxy_hostname:
                 msg += " on '%s'" % std(proxy_hostname)
             log.info(msg)
@@ -519,14 +506,13 @@ class UIXpraClient(ClientBaseClass):
         for c in CLIENT_BASES:
             if c!=XpraClientBase:
                 c.process_ui_capabilities(self, caps)
-        #keyboard:
+        # keyboard:
         if self.keyboard_helper:
             modifier_keycodes = caps.dictget("modifier_keycodes", {})
             if modifier_keycodes:
                 self.keyboard_helper.set_modifier_mappings(modifier_keycodes)
         self.key_repeat_delay, self.key_repeat_interval = caps.intpair("key_repeat", (-1,-1))
         self.handshake_complete()
-
 
     def _process_startup_complete(self, packet : PacketType):
         log("all the existing windows and system trays have been received")
@@ -551,15 +537,15 @@ class UIXpraClient(ClientBaseClass):
 
     def _process_new_window(self, packet : PacketType):
         window = super()._process_new_window(packet)
-        if self.desktop_fullscreen and any(self._remote_server_mode.find(x)>=0 for x in ("desktop", "monitor", "shadow")):
-            from gi.repository import Gdk  # @UnresolvedImport
+        screen_mode = any(self._remote_server_mode.find(x)>=0 for x in ("desktop", "monitor", "shadow"))
+        if self.desktop_fullscreen and screen_mode:
+            Gdk = gi_import("Gdk")
             screen = Gdk.Screen.get_default()
             n = screen.get_n_monitors()
             monitor = (len(self._id_to_window)-1) % n
             window.fullscreen_on_monitor(screen, monitor)
             log("fullscreen_on_monitor: %i", monitor)
         return window
-
 
     def handshake_complete(self):
         oh = self._on_handshake
@@ -576,7 +562,6 @@ class UIXpraClient(ClientBaseClass):
         else:
             self._on_handshake.append((cb, args))
 
-
     ######################################################################
     # server messages:
     def _process_server_event(self, packet : PacketType):
@@ -588,10 +573,10 @@ class UIXpraClient(ClientBaseClass):
     def _process_setting_change(self, packet : PacketType):
         setting, value = packet[1:3]
         setting = bytestostr(setting)
-        #convert "hello" / "setting" variable names to client variables:
+        # convert "hello" / "setting" variable names to client variables:
         if setting in (
             "clipboard-limits",
-            ):
+        ):
             #FIXME: this should update the limits?
             pass
         elif setting in (
@@ -601,13 +586,13 @@ class UIXpraClient(ClientBaseClass):
             "start-new-commands", "client-shutdown", "webcam",
             "bandwidth-limit", "clipboard-limits",
             "xdg-menu", "monitors",
-            ):
+        ):
             setattr(self, "server_%s" % setting.replace("-", "_"), value)
         else:
             log.info("unknown server setting changed: %s=%s", setting, repr_ellipsized(bytestostr(value)))
             return
         log("_process_setting_change: %s=%s", setting, value)
-        #these are too big to log
+        # these are too big to log
         if setting not in ("xdg-menu", "monitors"):
             log.info("server setting changed: %s=%s", setting, repr_ellipsized(value))
         self.server_setting_changed(setting, value)
@@ -619,7 +604,6 @@ class UIXpraClient(ClientBaseClass):
             for cb in cbs:
                 log("setting_changed(%s, %s) calling %s", setting, ellipsizer(value, limit=200), cb)
                 cb(setting, value)
-
 
     def get_control_commands(self) -> list[str]:
         commands = ["show_session_info", "show_bug_report", "show_menu", "name", "debug"]
@@ -634,12 +618,12 @@ class UIXpraClient(ClientBaseClass):
         command = bytestostr(packet[1])
         args = packet[2:]
         log("_process_control(%s)", packet)
-        if command=="show_session_info":
+        if command == "show_session_info":
             log("calling %s%s on server request", self.show_session_info, args)
             self.show_session_info(*args)
-        elif command=="show_bug_report":
+        elif command == "show_bug_report":
             self.show_bug_report()
-        elif command=="show_menu":
+        elif command == "show_menu":
             self.show_menu()
         elif command in ("enable_%s" % x for x in compression.get_enabled_compressors()):
             compressor = command.split("_")[1]
@@ -649,12 +633,12 @@ class UIXpraClient(ClientBaseClass):
             pe = command.split("_")[1]
             log.info("switching to %s on server request", pe)
             self._protocol.enable_encoder(pe)
-        elif command=="name":
+        elif command == "name":
             assert len(args)>=1
             self.server_session_name = bytestostr(args[0])
             log.info("session name updated from server: %s", self.server_session_name)
-            #TODO: reset tray tooltip, session info title, etc..
-        elif command=="debug":
+            # TODO: reset tray tooltip, session info title, etc..
+        elif command == "debug":
             if not args:
                 log.warn("not enough arguments for debug control command")
                 return
@@ -662,7 +646,7 @@ class UIXpraClient(ClientBaseClass):
                 add_debug_category, add_disabled_category,
                 enable_debug_for, disable_debug_for,
                 get_all_loggers,
-                )
+            )
             log_cmd = bytestostr(args[0])
             if log_cmd=="status":
                 dloggers = [x for x in get_all_loggers() if x.is_debug_enabled()]
@@ -681,12 +665,12 @@ class UIXpraClient(ClientBaseClass):
                 log.warn("not enough arguments for '%s' debug control command" % log_cmd)
                 return
             loggers = []
-            #each argument is a group
+            # each argument is a group
             groups = [bytestostr(x) for x in args[1:]]
             for group in groups:
-                #and each group is a list of categories
-                #preferably separated by "+",
-                #but we support "," for backwards compatibility:
+                # and each group is a list of categories
+                # preferably separated by "+",
+                # but we support "," for backwards compatibility:
                 categories = [v.strip() for v in group.replace("+", ",").split(",")]
                 if log_cmd=="enable":
                     add_debug_category(*categories)
@@ -704,10 +688,8 @@ class UIXpraClient(ClientBaseClass):
         else:
             log.warn("received invalid control command from server: %s", command)
 
-
     def may_notify_audio(self, summary, body):
         self.may_notify(NotificationID.AUDIO, summary, body, icon_name="audio")
-
 
     ######################################################################
     # features:
@@ -738,7 +720,6 @@ class UIXpraClient(ClientBaseClass):
 
     def send_keyboard_sync_enabled_status(self, *_args):
         self.send("set-keyboard-sync-enabled", self.keyboard_sync)
-
 
     ######################################################################
     # keyboard:
@@ -771,7 +752,7 @@ class UIXpraClient(ClientBaseClass):
             self.keyboard_helper.next_layout(update_platform_layout)
 
     def window_keyboard_layout_changed(self, window=None):
-        #win32 can change the keyboard mapping per window...
+        # win32 can change the keyboard mapping per window...
         keylog("window_keyboard_layout_changed(%s)", window)
         if self.keyboard_helper:
             self.keyboard_helper.keymap_changed()
@@ -794,18 +775,17 @@ class UIXpraClient(ClientBaseClass):
             return []
         return self.keyboard_helper.mask_to_names(mask)
 
-
     ######################################################################
     # windows overrides
     def cook_metadata(self, _new_window, metadata:dict) -> typedict:
         #convert to a typedict and apply client-side overrides:
         tdmeta = typedict(metadata)
         if self.server_is_desktop and self.desktop_fullscreen:
-            #force it fullscreen:
+            # force it fullscreen:
             metadata.pop("size-constraints", None)
             metadata["fullscreen"] = True
-            #FIXME: try to figure out the monitors we go fullscreen on for X11:
-            #if POSIX:
+            # FIXME: try to figure out the monitors we go fullscreen on for X11:
+            # if POSIX:
             #    metadata["fullscreen-monitors"] = [0, 1, 0, 1]
         return tdmeta
 
@@ -814,6 +794,7 @@ class UIXpraClient(ClientBaseClass):
     def server_connection_state_change(self) -> None:
         if not self._server_ok:
             log.info("server is not responding, drawing spinners over the windows")
+
             def timer_redraw():
                 if self._protocol is None:
                     #no longer connected!
@@ -835,22 +816,22 @@ class UIXpraClient(ClientBaseClass):
             if not w.is_tray():
                 w.spinner(ok)
 
-
     ######################################################################
     # packets:
     def init_authenticated_packet_handlers(self) -> None:
         log("init_authenticated_packet_handlers()")
         for c in CLIENT_BASES:
             c.init_authenticated_packet_handlers(self)
-        #run from the UI thread:
-        self.add_packet_handlers({
-            "startup-complete":     self._process_startup_complete,
-            "setting-change":       self._process_setting_change,
-            "control" :             self._process_control,
-            })
-        #run directly from the network thread:
+        # run from the UI thread:
+        self.add_packet_handlers(
+            {
+                "startup-complete": self._process_startup_complete,
+                "setting-change": self._process_setting_change,
+                "control": self._process_control,
+            }
+        )
+        # run directly from the network thread:
         self.add_packet_handler("server-event", self._process_server_event, False)
-
 
     def process_packet(self, proto, packet) -> None:
         self.check_server_echo(0)

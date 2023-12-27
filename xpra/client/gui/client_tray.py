@@ -44,7 +44,7 @@ class ClientTray(ClientWidgetBase):
         self._backing = None
         self.new_backing(w, h)
         self.idle_add(self.reconfigure)
-        #things may have settled by now
+        # things may have settled by now
         self.timeout_add(1000, self.send_configure)
 
     def reset_size_constraints(self) -> None:
@@ -86,7 +86,6 @@ class ClientTray(ClientWidgetBase):
             return None
         return tw.get_size()
 
-
     def freeze(self) -> bool:
         """
         System trays are small, no point in freezing anything
@@ -105,12 +104,12 @@ class ClientTray(ClientWidgetBase):
             if self._geometry or not tw:
                 geometry = self.get_geometry()
             else:
-                #make one up as best we can - maybe we have the size at least?
+                # make one up as best we can - maybe we have the size at least?
                 size = tw.get_size()
                 log("%s.reconfigure() guessing location using size=%s", self, size)
                 geometry = ClientTray.DEFAULT_LOCATION + list(size or ClientTray.DEFAULT_SIZE)
         x, y, w, h = geometry
-        if w<=1 or h<=1:
+        if w <= 1 or h <= 1:
             w, h = ClientTray.DEFAULT_SIZE
             geometry = x, y, w, h
         if force_send_configure or self._geometry is None or geometry!=self._geometry:
@@ -118,12 +117,12 @@ class ClientTray(ClientWidgetBase):
             client_properties = {
                 "encoding.transparency" : True,
                 "encodings.rgb_formats" : ["RGBA", "RGB", "RGBX"],
-                }
+            }
             if tw:
                 orientation = tw.get_orientation()
                 if orientation:
                     client_properties["orientation"] = orientation
-            #scale to server coordinates
+            # scale to server coordinates
             sx, sy, sw, sh = self._client.crect(x, y, w, h)
             log("%s.reconfigure(%s) sending configure for geometry=%s : %s",
                 self, force_send_configure, geometry, (sx, sy, sw, sh, client_properties))
@@ -131,14 +130,14 @@ class ClientTray(ClientWidgetBase):
         if self._size!=(w, h):
             self.new_backing(w, h)
 
-    def move_resize(self, x:int, y:int, w:int, h:int) -> None:
+    def move_resize(self, x: int, y: int, w: int, h: int) -> None:
         log("%s.move_resize(%s, %s, %s, %s)", self, x, y, w, h)
         w = max(1, w)
         h = max(1, h)
         self._geometry = x, y, w, h
         self.reconfigure(True)
 
-    def new_backing(self, w:int, h:int) -> None:
+    def new_backing(self, w: int, h: int) -> None:
         self._size = w, h
         data = None
         if self._backing:
@@ -156,15 +155,15 @@ class ClientTray(ClientWidgetBase):
         ignore it as it is never shown anywhere
         """
 
-
-    def draw_region(self, x:int, y:int, width:int, height:int,
-                    coding:str, img_data, rowstride:int, packet_sequence:int, options, callbacks):
+    def draw_region(self, x: int, y: int, width: int, height: int,
+                    coding:str, img_data, rowstride: int, packet_sequence: int, options, callbacks):
         log("%s.draw_region%s", self,
             (x, y, width, height, coding, "%s bytes" % len(img_data), rowstride, packet_sequence, options, callbacks))
 
-        #note: a new backing may be assigned between the time we call draw_region
+        # note: a new backing may be assigned between the time we call draw_region
         # and the time we get the callback (as the draw may use idle_add)
         backing = self._backing
+
         def after_draw_update_tray(success, message=None):
             log("%s.after_draw_update_tray(%s, %s)", self, success, message)
             if not success:
@@ -191,7 +190,6 @@ class ClientTray(ClientWidgetBase):
                 pixels = memoryview_to_bytes(pixels)
             tw.set_icon_from_data(pixels, has_alpha, w, h, rowstride, options)
 
-
     def destroy(self) -> None:
         tw = self.tray_widget
         if tw:
@@ -208,22 +206,22 @@ class TrayBacking(WindowBackingBase):
         so that we can use them with the real widget.
     """
 
-    #keep it simple: only accept 32-bit RGB(X),
-    #all tray implementations support alpha
+    # keep it simple: only accept 32-bit RGB(X),
+    # all tray implementations support alpha
     RGB_MODES = ("RGBA", "RGBX")
     HAS_ALPHA = True
 
-    def __init__(self, wid:int, _w:int, _h:int, _has_alpha:bool, data=None):
+    def __init__(self, wid: int, _w: int, _h: int, _has_alpha:bool, data=None):
         self.data = data
         super().__init__(wid, True)
         self._backing = object()    #pretend we have a backing structure
 
     def get_encoding_properties(self) -> dict[str,Any]:
-        #override so we skip all csc caps:
+        # override so we skip all csc caps:
         return {
             "encodings.rgb_formats" : self.get_rgb_formats(),
             "encoding.transparency" : True,
-            }
+        }
 
     def idle_add(self, *args, **kwargs) -> int:
         return GLib.idle_add(*args, **kwargs)
@@ -231,16 +229,16 @@ class TrayBacking(WindowBackingBase):
     def paint_scroll(self, img_data, options, callbacks) -> None:
         raise RuntimeError("scroll should not be used with tray icons")
 
-    def _do_paint_rgb24(self, img_data, x:int, y:int, width:int, height:int,
-                        render_width:int, render_height:int, rowstride:int, options) -> bool:
+    def _do_paint_rgb24(self, img_data, x: int, y: int, width: int, height: int,
+                        render_width: int, render_height: int, rowstride: int, options) -> bool:
         assert width==render_width and height==render_height, "tray rgb must not use scaling"
         self.data = ("rgb24", width, height, rowstride, img_data[:], options)
         if SAVE:
             self.save_tray_png()
         return True
 
-    def _do_paint_rgb32(self, img_data, x:int, y:int, width:int, height:int,
-                        render_width:int, render_height:int, rowstride:int, options) -> bool:
+    def _do_paint_rgb32(self, img_data, x: int, y: int, width: int, height: int,
+                        render_width: int, render_height: int, rowstride: int, options) -> bool:
         assert width==render_width and height==render_height, "tray rgb must not use scaling"
         self.data = ("rgb32", width, height, rowstride, img_data[:], options)
         if SAVE:
@@ -256,7 +254,7 @@ class TrayBacking(WindowBackingBase):
             mode += "A"
             data_mode += "A"
         try:
-            from PIL import Image # pylint: disable=import-outside-toplevel
+            from PIL import Image       # pylint: disable=import-outside-toplevel
         except ImportError as e:
             log(f"cannot save tray: {e}")
             return

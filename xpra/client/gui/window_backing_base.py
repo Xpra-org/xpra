@@ -10,10 +10,10 @@ from threading import Lock
 from collections import deque
 from typing import Any
 from collections.abc import Callable, Iterable
-from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.net.mmap import mmap_read
 from xpra.net import compression
+from xpra.os_util import gi_import
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint, envbool, first_time
@@ -21,6 +21,8 @@ from xpra.codecs.loader import get_codec
 from xpra.codecs.video import getVideoHelper
 from xpra.common import Gravity
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("paint")
 videolog = Logger("video", "paint")
@@ -32,15 +34,17 @@ SHOW_FPS = envbool("XPRA_SHOW_FPS", False)
 
 
 _PIL_font = None
+
+
 def load_PIL_font():
     global _PIL_font
     if _PIL_font:
         return _PIL_font
-    from PIL import ImageFont # pylint: disable=import-outside-toplevel
+    from PIL import ImageFont   # pylint: disable=import-outside-toplevel
     for font_file in (
         "/usr/share/fonts/gnu-free/FreeMono.ttf",
         "/usr/share/fonts/liberation-mono/LiberationMono-Regular.ttf",
-        ):
+    ):
         if os.path.exists(font_file):
             try:
                 _PIL_font = ImageFont.load_path(font_file)
@@ -51,9 +55,11 @@ def load_PIL_font():
     return _PIL_font
 
 
-#ie:
-#CSC_OPTIONS = { "YUV420P" : {"RGBX" : [swscale.spec], "BGRX" : ...} }
+# ie:
+# CSC_OPTIONS = { "YUV420P" : {"RGBX" : [swscale.spec], "BGRX" : ...} }
 CSC_OPTIONS = None
+
+
 def load_csc_options():
     global CSC_OPTIONS
     if CSC_OPTIONS is None:
@@ -63,8 +69,11 @@ def load_csc_options():
             CSC_OPTIONS[csc_in] = vh.get_csc_specs(csc_in)
     return CSC_OPTIONS
 
-#get the list of video encodings (and the module for each one):
+
+# get the list of video encodings (and the module for each one):
 VIDEO_DECODERS = None
+
+
 def load_video_decoders():
     global VIDEO_DECODERS
     if VIDEO_DECODERS is None:
@@ -75,22 +84,22 @@ def load_video_decoders():
             for colorspace, decoders in specs.items():
                 log("%-5s decoders for %7s: %s", encoding, colorspace, csv([d.get_type() for _,d in decoders]))
                 assert decoders
-                #use the first one:
+                # use the first one:
                 _, decoder_module = decoders[0]
                 VIDEO_DECODERS[encoding] = decoder_module
         log("video decoders: %s", {e:d.get_type() for e,d in VIDEO_DECODERS.items()})
     return VIDEO_DECODERS
 
 
-def fire_paint_callbacks(callbacks:Iterable[Callable], success:int|bool=True, message=""):
+def fire_paint_callbacks(callbacks: Iterable[Callable], success: int | bool=True, message=""):
     for x in callbacks:
         with log.trap_error("Error calling %s with %s", x, (success, message)):
             x(success, message)
 
 
-def rgba_text(text:str, width:int=64, height:int=32, x:int=20, y:int=10, bg=(128, 128, 128, 32)):
+def rgba_text(text: str, width: int = 64, height: int = 32, x: int = 20, y: int = 10, bg=(128, 128, 128, 32)):
     try:
-        from PIL import Image, ImageDraw # pylint: disable=import-outside-toplevel
+        from PIL import Image, ImageDraw   # pylint: disable=import-outside-toplevel
     except ImportError:
         log("rgba_text(..)", exc_info=True)
         if first_time("pillow-text-overlay"):
@@ -165,9 +174,8 @@ class WindowBackingBase:
     def get_rgb_formats(self) -> tuple[str,...]:
         if self._alpha_enabled:
             return tuple(self.RGB_MODES)
-        #remove modes with alpha:
+        # remove modes with alpha:
         return tuple(x for x in self.RGB_MODES if x.find("A")<0)
-
 
     def get_info(self) -> dict[str,Any]:
         info = {
@@ -179,7 +187,7 @@ class WindowBackingBase:
             "offsets"       : self.offsets,
             "fps"           : self.fps_value,
             "paint"         : self.paint_stats,
-            }
+        }
         vd = self._video_decoder
         if vd:
             info["video-decoder"] = vd.get_info()
@@ -206,7 +214,7 @@ class WindowBackingBase:
             if pixels:
                 self.update_fps_buffer(width, height, pixels)
 
-    def update_fps_buffer(self, width:int, height:int, pixels) -> None:
+    def update_fps_buffer(self, width: int, height: int, pixels) -> None:
         raise NotImplementedError
 
     def calculate_fps(self) -> int:
@@ -244,65 +252,71 @@ class WindowBackingBase:
             self.fps_refresh_timer = 0
             GLib.source_remove(frt)
 
-
     def enable_mmap(self, mmap_area) -> None:
         self.mmap = mmap_area
         self.mmap_enabled = True
 
-    def gravity_copy_coords(self, oldw:int, oldh:int, bw:int, bh:int):
+    def gravity_copy_coords(self, oldw: int, oldh: int, bw: int, bh: int):
         sx = sy = dx = dy = 0
+
         def center_y():
             if bh>=oldh:
-                #take the whole source, paste it in the middle
+                # take the whole source, paste it in the middle
                 return 0, (bh-oldh)//2
-            #skip the edges of the source, paste all of it
+            # skip the edges of the source, paste all of it
             return (oldh-bh)//2, 0
+
         def center_x():
             if bw>=oldw:
                 return 0, (bw-oldw)//2
             return (oldw-bw)//2, 0
+
         def east_x():
             if bw>=oldw:
                 return 0, bw-oldw
             return oldw-bw, 0
+
         def west_x():
             return 0, 0
+
         def north_y():
             return 0, 0
+
         def south_y():
             if bh>=oldh:
                 return 0, bh-oldh
             return oldh-bh, 0
+
         g = self.gravity
-        if not g or g==Gravity.NorthWest:
-            #undefined (or 0), use NW
+        if not g or g == Gravity.NorthWest:
+            # undefined (or 0), use NW
             sx, dx = west_x()
             sy, dy = north_y()
-        elif g==Gravity.North:
+        elif g == Gravity.North:
             sx, dx = center_x()
             sy, dy = north_y()
-        elif g==Gravity.NorthEast:
+        elif g == Gravity.NorthEast:
             sx, dx = east_x()
             sy, dy = north_y()
-        elif g==Gravity.West:
+        elif g == Gravity.West:
             sx, dx = west_x()
             sy, dy = center_y()
-        elif g==Gravity.Center:
+        elif g == Gravity.Center:
             sx, dx = center_x()
             sy, dy = center_y()
-        elif g==Gravity.East:
+        elif g == Gravity.East:
             sx, dx = east_x()
             sy, dy = center_y()
-        elif g==Gravity.SouthWest:
+        elif g == Gravity.SouthWest:
             sx, dx = west_x()
             sy, dy = south_y()
-        elif g==Gravity.South:
+        elif g == Gravity.South:
             sx, dx = center_x()
             sy, dy = south_y()
-        elif g==Gravity.SouthEast:
+        elif g == Gravity.SouthEast:
             sx, dx = east_x()
             sy, dy = south_y()
-        elif g==Gravity.Static and first_time(f"Gravity.Static-{self.wid}"):
+        elif g == Gravity.Static and first_time(f"Gravity.Static-{self.wid}"):
             log.warn(f"Warning: window {self.wid} requested static gravity")
             log.warn(" this is not implemented yet")
         w = min(bw, oldw)
@@ -310,8 +324,8 @@ class WindowBackingBase:
         return sx, sy, dx, dy, w, h
 
     def gravity_adjust(self, x, y, options):
-        #if the window size has changed,
-        #adjust the coordinates honouring the window gravity:
+        # if the window size has changed,
+        # adjust the coordinates honouring the window gravity:
         window_size = options.inttupleget("window-size", None)
         g = self.gravity
         log("gravity_adjust%s window_size=%s, size=%s, gravity=%s",
@@ -321,64 +335,69 @@ class WindowBackingBase:
         window_size = tuple(window_size)
         if window_size==self.size:
             return x, y
-        if g==0 or self.gravity==Gravity.NorthWest:
+        if g == 0 or self.gravity==Gravity.NorthWest:
             return x, y
         oldw, oldh = window_size
         bw, bh = self.size
+
         def center_y():
             if bh>=oldh:
                 return y + (bh-oldh)//2
             return y - (oldh-bh)//2
+
         def center_x():
             if bw>=oldw:
                 return x + (bw-oldw)//2
             return x - (oldw-bw)//2
+
         def east_x():
             if bw>=oldw:
                 return x + (bw-oldw)
             return x - (oldw-bw)
+
         def west_x():
             return x
+
         def north_y():
             return y
+
         def south_y():
             if bh>=oldh:
                 return y + (bh-oldh)
             return y - (oldh-bh)
-        if g==Gravity.North:
+        if g == Gravity.North:
             return center_x(), north_y()
-        if g==Gravity.NorthEast:
+        if g == Gravity.NorthEast:
             return east_x(), north_y()
-        if g==Gravity.West:
+        if g == Gravity.West:
             return west_x(), center_y()
-        if g==Gravity.Center:
+        if g == Gravity.Center:
             return center_x(), center_y()
-        if g==Gravity.East:
+        if g == Gravity.East:
             return east_x(), center_y()
-        if g==Gravity.SouthWest:
+        if g == Gravity.SouthWest:
             return west_x(), south_y()
-        if g==Gravity.South:
+        if g == Gravity.South:
             return center_x(), south_y()
-        if g==Gravity.SouthEast:
+        if g == Gravity.SouthEast:
             return east_x(), south_y()
-        #if self.gravity==Gravity.Static:
+        # if self.gravity==Gravity.Static:
         #    pass
         return x, y
 
     def assign_cuda_context(self, opengl=False):
         if self.cuda_context is None:
             from xpra.codecs.nvidia.cuda.context import (
-                get_default_device_context, # @NoMove pylint: disable=no-name-in-module, import-outside-toplevel
+                get_default_device_context,    # @NoMove pylint: disable=no-name-in-module, import-outside-toplevel
                 cuda_device_context,
-                )
+            )
             dev = get_default_device_context()
             assert dev, "no cuda device context"
             # pylint: disable=import-outside-toplevel
             self.cuda_context = cuda_device_context(dev.device_id, dev.device, opengl)
-            #create the context now as this is the part that takes time:
+            # create the context now as this is the part that takes time:
             self.cuda_context.make_context()
         return self.cuda_context
-
 
     def free_cuda_context(self) -> None:
         cc = self.cuda_context
@@ -391,10 +410,10 @@ class WindowBackingBase:
         self.cancel_fps_refresh()
         self._backing = None
         log("%s.close() video_decoder=%s", self, self._video_decoder)
-        #try without blocking, if that fails then
-        #the lock is held by the decoding thread,
-        #and it will run the cleanup after releasing the lock
-        #(it checks for self._backing None)
+        # try without blocking, if that fails then
+        # the lock is held by the decoding thread,
+        # and it will run the cleanup after releasing the lock
+        # (it checks for self._backing None)
         self.close_decoder(False)
 
     def close_decoder(self, blocking=False) -> bool:
@@ -420,20 +439,19 @@ class WindowBackingBase:
             self._csc_decoder.clean()
             self._csc_decoder = None
 
-
     def get_encoding_properties(self) -> dict[str,Any]:
         return {
-                 "encodings.rgb_formats"    : self.get_rgb_formats(),
-                 "encoding.transparency"    : self._alpha_enabled,
-                 "encoding.full_csc_modes"  : self._get_full_csc_modes(self.get_rgb_formats()),
-                 "encoding.send-window-size" : True,
-                 "encoding.render-size"     : self.render_size,
-                 }
+            "encodings.rgb_formats"    : self.get_rgb_formats(),
+            "encoding.transparency"    : self._alpha_enabled,
+            "encoding.full_csc_modes"  : self._get_full_csc_modes(self.get_rgb_formats()),
+            "encoding.send-window-size" : True,
+            "encoding.render-size"     : self.render_size,
+        }
 
     def _get_full_csc_modes(self, rgb_modes) -> dict[str,Any]:
-        #calculate the server CSC modes the server is allowed to use
-        #based on the client CSC modes we can convert to in the backing class we use
-        #and trim the transparency if we cannot handle it
+        # calculate the server CSC modes the server is allowed to use
+        # based on the client CSC modes we can convert to in the backing class we use
+        # and trim the transparency if we cannot handle it
         target_rgb_modes = tuple(rgb_modes)
         if not self._alpha_enabled:
             target_rgb_modes = tuple(x for x in target_rgb_modes if x.find("A")<0)
@@ -447,18 +465,19 @@ class WindowBackingBase:
             videolog(" * %s : %s", e, modes)
         return full_csc_modes
 
-
     def set_cursor_data(self, cursor_data) -> None:
         self.cursor_data = cursor_data
 
-
-    def paint_jpeg(self, img_data, x:int, y:int, width:int, height:int, options, callbacks) -> None:
+    def paint_jpeg(self, img_data, x: int, y: int, width: int, height: int,
+                   options, callbacks: Iterable[Callable]) -> None:
         self.do_paint_jpeg("jpeg", img_data, x, y, width, height, options, callbacks)
 
-    def paint_jpega(self, img_data, x:int, y:int, width:int, height:int, options, callbacks) -> None:
+    def paint_jpega(self, img_data, x: int, y: int, width: int, height: int,
+                    options, callbacks: Iterable[Callable]) -> None:
         self.do_paint_jpeg("jpega", img_data, x, y, width, height, options, callbacks)
 
-    def nvdec_decode(self, encoding:str, img_data, x:int, y:int, width:int, height:int, options, callbacks):
+    def nvdec_decode(self, encoding: str, img_data, x: int, y: int, width: int, height: int,
+                     options, callbacks: Iterable[Callable]):
         if not self.nvdec_decoder or width<16 or height<16:
             return None
         if encoding not in self.nvdec_decoder.get_encodings():
@@ -473,7 +492,8 @@ class WindowBackingBase:
                 log(f"cuda context error, again: {e}")
         return None
 
-    def nvjpeg_decode(self, encoding:str, img_data, x:int, y:int, width:int, height:int, options, callbacks):
+    def nvjpeg_decode(self, encoding: str, img_data, x: int, y: int, width: int, height: int,
+                      options, callbacks: Iterable[Callable]):
         if not self.nvjpeg_decoder or width<16 or height<16:
             return None
         if encoding not in self.nvjpeg_decoder.get_encodings():
@@ -488,18 +508,19 @@ class WindowBackingBase:
                 log(f"cuda context error, again: {e}")
         return None
 
-    def nv_decode(self, encoding:str, img_data, x:int, y:int, width:int, height:int, options, callbacks):
-        #log(f"nv_decode {encoding}: nvjpeg={self.nvjpeg_decoder}, nvdec={self.nvdec_decoder}")
+    def nv_decode(self, encoding: str, img_data, x: int, y: int, width: int, height: int,
+                  options, callbacks: Iterable[Callable]):
         return self.nvjpeg_decode(encoding, img_data, x, y, width, height, options, callbacks) or \
             self.nvdec_decode(encoding, img_data, x, y, width, height, options, callbacks)
 
-    def do_paint_jpeg(self, encoding:str, img_data, x:int, y:int, width:int, height:int, options, callbacks):
+    def do_paint_jpeg(self, encoding: str, img_data, x: int, y: int, width: int, height: int,
+                      options, callbacks: Iterable[Callable]):
         alpha_offset = options.intget("alpha-offset", 0)
         img = self.nv_decode(encoding, img_data, x, y, width, height, options, callbacks)
         if img is None:
-            if encoding=="jpeg":
+            if encoding == "jpeg":
                 rgb_format = "RGBX"
-            elif encoding=="jpega":
+            elif encoding == "jpega":
                 rgb_format = "BGRA"
             else:
                 raise ValueError(f"invalid encoding {encoding!r}")
@@ -515,9 +536,10 @@ class WindowBackingBase:
             self.do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
             return
         self.idle_add(self.do_paint_rgb, rgb_format, img_data,
-                  x, y, w, h, width, height, rowstride, options, callbacks)
+                      x, y, w, h, width, height, rowstride, options, callbacks)
 
-    def paint_avif(self, img_data, x:int, y:int, width:int, height:int, options, callbacks):
+    def paint_avif(self, img_data, x: int, y: int, width: int, height: int,
+                   options, callbacks: Iterable[Callable]):
         img = self.avif_decoder.decompress(img_data, options)
         rgb_format = img.get_pixel_format()
         img_data = img.get_pixels()
@@ -527,20 +549,20 @@ class WindowBackingBase:
         self.idle_add(self.do_paint_rgb, rgb_format, img_data,
                       x, y, w, h, width, height, rowstride, options, callbacks)
 
-    def paint_image(self, coding:str, img_data, x:int, y:int, width:int, height:int, options, callbacks):
+    def paint_image(self, coding: str, img_data, x: int, y: int, width: int, height: int,
+                    options, callbacks: Iterable[Callable]):
         # can be called from any thread
         rgb_format, img_data, iwidth, iheight, rowstride = self.pil_decoder.decompress(coding, img_data, options)
         self.idle_add(self.do_paint_rgb, rgb_format, img_data,
                       x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
-    def paint_spng(self, img_data, x:int, y:int, width:int, height:int, options, callbacks):
+    def paint_spng(self, img_data, x: int, y: int, width: int, height: int, options, callbacks: Iterable[Callable]):
         rgba, rgb_format, iwidth, iheight = self.spng_decoder.decompress(img_data)
         rowstride = iwidth*len(rgb_format)
         self.idle_add(self.do_paint_rgb, rgb_format, rgba,
                       x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
-
-    def paint_webp(self, img_data, x:int, y:int, width:int, height:int, options, callbacks):
+    def paint_webp(self, img_data, x: int, y: int, width: int, height: int, options, callbacks: Iterable[Callable]):
         if not self.webp_decoder or WEBP_PILLOW:
             #if webp is enabled, then Pillow should be able to take care of it:
             self.paint_image("webp", img_data, x, y, width, height, options, callbacks)
@@ -551,13 +573,14 @@ class WindowBackingBase:
             buffer_wrapper,
             iwidth, iheight, stride, has_alpha,
             rgb_format,
-            ) = self.webp_decoder.decompress(img_data, has_alpha, rgb_format, self.get_rgb_formats())
+        ) = self.webp_decoder.decompress(img_data, has_alpha, rgb_format, self.get_rgb_formats())
+
         def free_buffer(*_args):
             buffer_wrapper.free()
         callbacks.append(free_buffer)
         data = buffer_wrapper.get_pixels()
-        #if the backing can't handle this format,
-        #ie: tray only supports RGBA
+        # if the backing can't handle this format,
+        # ie: tray only supports RGBA
         if rgb_format not in self.get_rgb_formats():
             # pylint: disable=import-outside-toplevel
             from xpra.codecs.rgb_transform import rgb_reformat
@@ -568,15 +591,16 @@ class WindowBackingBase:
             rgb_format = img.get_pixel_format()
             data = img.get_pixels()
             stride = img.get_rowstride()
-        #replace with the actual rgb format we get from the decoder:
+        # replace with the actual rgb format we get from the decoder:
         options["rgb_format"] = rgb_format
         self.idle_add(self.do_paint_rgb, rgb_format, data,
-                                 x, y, iwidth, iheight, width, height, stride, options, callbacks)
+                      x, y, iwidth, iheight, width, height, stride, options, callbacks)
 
-    def paint_rgb(self, rgb_format:str, raw_data, x:int, y:int, width:int, height:int, rowstride:int, options, callbacks):
+    def paint_rgb(self, rgb_format: str, raw_data, x: int, y: int, width: int, height: int, rowstride: int,
+                  options, callbacks: Iterable[Callable]):
         """ can be called from a non-UI thread """
         iwidth, iheight = options.intpair("scaled-size", (width, height))
-        #was a compressor used?
+        # was a compressor used?
         comp = tuple(x for x in compression.ALL_COMPRESSORS if options.intget(x, 0))
         if comp:
             if len(comp)!=1:
@@ -587,9 +611,9 @@ class WindowBackingBase:
         self.idle_add(self.do_paint_rgb, rgb_format, rgb_data,
                       x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
-    def do_paint_rgb(self, rgb_format:str, img_data,
-                     x:int, y:int, width:int, height:int, render_width:int, render_height:int, rowstride:int,
-                     options, callbacks):
+    def do_paint_rgb(self, rgb_format: str, img_data,
+                     x: int, y: int, width: int, height: int, render_width: int, render_height: int, rowstride: int,
+                     options, callbacks: Iterable[Callable]):
         """ must be called from the UI thread
             this method is only here to ensure that we always fire the callbacks,
             the actual paint code is in _do_paint_rgb[24|32]
@@ -629,18 +653,21 @@ class WindowBackingBase:
                 message = f"paint rgb{bpp} error: {e}"
                 fire_paint_callbacks(callbacks, False, message)
 
-    def _do_paint_rgb16(self, img_data, x:int, y:int, width:int, height:int, render_width:int, render_height:int, rowstride:int, options):
+    def _do_paint_rgb16(self, img_data, x: int, y: int, width: int, height: int,
+                        render_width: int, render_height: int, rowstride: int, options):
         raise NotImplementedError
 
-    def _do_paint_rgb24(self, img_data, x:int, y:int, width:int, height:int, render_width:int, render_height:int, rowstride:int, options):
+    def _do_paint_rgb24(self, img_data, x: int, y: int, width: int, height: int,
+                        render_width: int, render_height: int, rowstride: int, options):
         raise NotImplementedError
 
-    def _do_paint_rgb30(self, img_data, x:int, y:int, width:int, height:int, render_width:int, render_height:int, rowstride:int, options):
+    def _do_paint_rgb30(self, img_data, x: int, y: int, width: int, height: int,
+                        render_width: int, render_height: int, rowstride: int, options):
         raise NotImplementedError
 
-    def _do_paint_rgb32(self, img_data, x:int, y:int, width:int, height:int, render_width:int, render_height:int, rowstride:int, options):
+    def _do_paint_rgb32(self, img_data, x: int, y: int, width: int, height: int,
+                        render_width: int, render_height: int, rowstride: int, options):
         raise NotImplementedError
-
 
     def eos(self) -> None:
         dl = self._decoder_lock
@@ -648,9 +675,8 @@ class WindowBackingBase:
             self.do_clean_csc_decoder()
             self.do_clean_video_decoder()
 
-
-    def make_csc(self, src_width:int, src_height:int, src_format:str,
-                       dst_width:int, dst_height:int, dst_format_options, speed:int=50):
+    def make_csc(self, src_width: int, src_height: int, src_format: str,
+                 dst_width: int, dst_height: int, dst_format_options, speed: int = 50):
         in_options = CSC_OPTIONS.get(src_format, {})
         if not in_options:
             log.error(f"Error: no csc options for {src_format!r} input, only found:")
@@ -658,7 +684,7 @@ class WindowBackingBase:
                 log.error(" * %-8s : %s", k, csv(v))
             raise ValueError(f"no csc options for {src_format!r} input in "+csv(CSC_OPTIONS.keys()))
         videolog("make_csc%s",
-            (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed))
+                 (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed))
         for dst_format in dst_format_options:
             specs = in_options.get(dst_format)
             videolog("make_csc specs(%s)=%s", dst_format, specs)
@@ -676,8 +702,8 @@ class WindowBackingBase:
                     return csc
                 except Exception as e:
                     videolog("make_csc%s",
-                        (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, options),
-                        exc_info=True)
+                             (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, options),
+                             exc_info=True)
                     videolog.error("Error: failed to create csc instance %s", spec.codec_class)
                     videolog.error(" for %s to %s: %s", src_format, dst_format, e)
         videolog.error("Error: no matching CSC module found")
@@ -696,11 +722,13 @@ class WindowBackingBase:
                 if v:
                     videolog.error("       "+v[0], *v[1:])
         raise ValueError("no csc module found for wid %i %s(%sx%s) to %s(%sx%s) in %s" %
-                        (self.wid, src_format, src_width, src_height, " or ".join(dst_format_options),
-                         dst_width, dst_height, CSC_OPTIONS))
+                         (
+                             self.wid, src_format, src_width, src_height, " or ".join(dst_format_options),
+                             dst_width, dst_height, CSC_OPTIONS)
+                         )
 
     @staticmethod
-    def validate_csc_size(spec, src_width:int, src_height:int, dst_width:int, dst_height:int):
+    def validate_csc_size(spec, src_width: int, src_height: int, dst_width: int, dst_height: int):
         if not spec.can_scale and (src_width!=dst_width or src_height!=dst_height):
             return "scaling not supported"
         if src_width<spec.min_w:
@@ -721,13 +749,15 @@ class WindowBackingBase:
             return "target height %i is out of range: maximum is %i", dst_height, spec.max_h
         return None
 
-    def paint_with_video_decoder(self, decoder_module, coding, img_data, x, y, width, height, options, callbacks):
+    def paint_with_video_decoder(self, decoder_module, coding: str, img_data, x: int, y: int, width: int, height: int,
+                                 options, callbacks: Iterable[Callable]):
         if not decoder_module:
             raise RuntimeError(f"decoder module not found for {coding}")
         dl = self._decoder_lock
         if dl is None:
             fire_paint_callbacks(callbacks, False, "no lock - retry")
             return
+        dectype = decoder_module.get_type()
         with dl:
             if self._backing is None:
                 message = f"window {self.wid} is already gone!"
@@ -738,8 +768,7 @@ class WindowBackingBase:
             input_colorspace = options.strget("csc", "YUV420P")
             decoder_colorspaces = decoder_module.get_input_colorspaces(coding)
             if input_colorspace not in decoder_colorspaces:
-                raise RuntimeError(f"decoder {decoder_module.get_type()}"+
-                                   f" does not support {input_colorspace} for {coding}")
+                raise RuntimeError(f"decoder {dectype} does not support {input_colorspace} for {coding}")
 
             vd = self._video_decoder
             if vd:
@@ -747,25 +776,26 @@ class WindowBackingBase:
                     videolog("paint_with_video_decoder: first frame of new stream")
                     self.do_clean_video_decoder()
                 elif vd.get_encoding()!=coding:
-                    videolog("paint_with_video_decoder: encoding changed from %s to %s", vd.get_encoding(), coding)
+                    videolog("paint_with_video_decoder: encoding changed from %s to %s",
+                             vd.get_encoding(), coding)
                     self.do_clean_video_decoder()
                 elif vd.get_width()!=enc_width or vd.get_height()!=enc_height:
                     videolog("paint_with_video_decoder: video dimensions have changed from %s to %s",
-                        (vd.get_width(), vd.get_height()), (enc_width, enc_height))
+                             (vd.get_width(), vd.get_height()), (enc_width, enc_height))
                     self.do_clean_video_decoder()
                 elif vd.get_colorspace()!=input_colorspace:
-                    #this should only happen on encoder restart, which means this should be the first frame:
+                    # this should only happen on encoder restart, which means this should be the first frame:
                     videolog.warn("Warning: colorspace unexpectedly changed from %s to %s",
-                             vd.get_colorspace(), input_colorspace)
+                                  vd.get_colorspace(), input_colorspace)
                     self.do_clean_video_decoder()
             if self._video_decoder is None:
                 videolog("paint_with_video_decoder: new %s%s",
-                    decoder_module.Decoder, (coding, enc_width, enc_height, input_colorspace))
+                         decoder_module.Decoder, (coding, enc_width, enc_height, input_colorspace))
                 try:
                     vd = decoder_module.Decoder()
                     vd.init_context(coding, enc_width, enc_height, input_colorspace)
                 except Exception as e:
-                    log(f"failed to initialize decoder {decoder_module.get_type()}: {e}")
+                    log(f"failed to initialize decoder {dectype}: {e}")
                     raise
                 self._video_decoder = vd
                 videolog("paint_with_video_decoder: info=%s", vd.get_info())
@@ -773,8 +803,8 @@ class WindowBackingBase:
             img = vd.decompress_image(img_data, options)
             if not img:
                 if options.intget("delayed", 0)>0:
-                    #there are further frames queued up,
-                    #and this frame references those, so assume all is well:
+                    # there are further frames queued up,
+                    # and this frame references those, so assume all is well:
                     fire_paint_callbacks(callbacks)
                 else:
                     fire_paint_callbacks(callbacks, False,
@@ -794,19 +824,21 @@ class WindowBackingBase:
         if self._backing is None:
             self.close_decoder(True)
 
-    def do_video_paint(self, img, x:int, y:int, enc_width:int, enc_height:int, width:int, height:int,
-                       options, callbacks):
+    def do_video_paint(self, img, x: int, y: int, enc_width: int, enc_height: int, width: int, height: int,
+                       options, callbacks: Iterable[Callable]):
         target_rgb_formats = self.get_rgb_formats()
-        #as some video formats like vpx can forward transparency
-        #also we could skip the csc step in some cases:
+        # as some video formats like vpx can forward transparency
+        # also we could skip the csc step in some cases:
         pixel_format = img.get_pixel_format()
         cd = self._csc_decoder
         if cd is not None:
             if cd.get_src_format()!=pixel_format:
-                videolog("do_video_paint csc: switching src format from %s to %s", cd.get_src_format(), pixel_format)
+                videolog("do_video_paint csc: switching src format from %s to %s",
+                         cd.get_src_format(), pixel_format)
                 self.do_clean_csc_decoder()
             elif cd.get_dst_format() not in target_rgb_formats:
-                videolog("do_video_paint csc: switching dst format from %s to %s", cd.get_dst_format(), target_rgb_formats)
+                videolog("do_video_paint csc: switching dst format from %s to %s",
+                         cd.get_dst_format(), target_rgb_formats)
                 self.do_clean_csc_decoder()
             elif cd.get_src_width()!=enc_width or cd.get_src_height()!=enc_height:
                 videolog("do_video_paint csc: switching src size from %sx%s to %sx%s",
@@ -817,13 +849,13 @@ class WindowBackingBase:
                          width, height, cd.get_dst_width(), cd.get_dst_height())
                 self.do_clean_csc_decoder()
         if self._csc_decoder is None:
-            #use higher quality csc to compensate for lower quality source
-            #(which generally means that we downscaled via YUV422P or lower)
-            #or when upscaling the video:
+            # use higher quality csc to compensate for lower quality source
+            # (which generally means that we downscaled via YUV422P or lower)
+            # or when upscaling the video:
             q = options.intget("quality", 50)
             csc_speed = min(100, 100-q, round(100.0 * (enc_width*enc_height) / (width*height)))
             cd = self.make_csc(enc_width, enc_height, pixel_format,
-                                           width, height, target_rgb_formats, csc_speed)
+                               width, height, target_rgb_formats, csc_speed)
             videolog("do_video_paint new csc decoder: %s", cd)
             self._csc_decoder = cd
         rgb_format = cd.get_dst_format()
@@ -832,9 +864,10 @@ class WindowBackingBase:
         img.free()
         if rgb.get_planes()!=0:
             raise RuntimeError(f"invalid number of planes for {rgb_format}: {rgb.get_planes()}")
-        #make a new options dict and set the rgb format:
+        # make a new options dict and set the rgb format:
         paint_options = typedict(options)
-        #this will also take care of firing callbacks (from the UI thread):
+        # this will also take care of firing callbacks (from the UI thread):
+
         def paint():
             data = rgb.get_pixels()
             rowstride = rgb.get_rowstride()
@@ -845,22 +878,23 @@ class WindowBackingBase:
                 rgb.free()
         self.idle_add(paint)
 
-    def paint_mmap(self, img_data, x:int, y:int, width:int, height:int, rowstride:int, options, callbacks):
+    def paint_mmap(self, img_data, x: int, y: int, width: int, height: int, rowstride: int,
+                   options, callbacks: Iterable[Callable]):
         """ must be called from UI thread
             see _mmap_send() in seamless.py for details """
         assert self.mmap_enabled
         data = mmap_read(self.mmap, *img_data)
         rgb_format = options.strget("rgb_format", "RGB")
-        #Note: BGR(A) is only handled by gl.backing
+        # Note: BGR(A) is only handled by gl.backing
         x, y = self.gravity_adjust(x, y, options)
         self.do_paint_rgb(rgb_format, data, x, y, width, height, width, height, rowstride, options, callbacks)
 
-    def paint_scroll(self, img_data, options, callbacks):
+    def paint_scroll(self, img_data, options, callbacks: Iterable[Callable]):
         log("paint_scroll%s", (img_data, options, callbacks))
         raise NotImplementedError(f"no paint scroll on {type(self)}")
 
-
-    def draw_region(self, x:int, y:int, width:int, height:int, coding:str, img_data, rowstride:int, options, callbacks):
+    def draw_region(self, x: int, y: int, width: int, height: int, coding: str, img_data, rowstride: int,
+                    options, callbacks: Iterable[Callable]):
         """ dispatches the paint to one of the paint_XXXX methods """
         self.recpaint(coding)
         try:
@@ -878,7 +912,7 @@ class WindowBackingBase:
                     rgb_format = {
                         "rgb24" : "RGB",
                         "rgb32" : "RGBX",
-                        }.get(coding, "RGB")
+                    }.get(coding, "RGB")
                 if rowstride==0:
                     rowstride = width * len(rgb_format)
                 self.paint_rgb(rgb_format, img_data, x, y, width, height, rowstride, options, callbacks)
@@ -886,15 +920,15 @@ class WindowBackingBase:
                 self.paint_with_video_decoder(VIDEO_DECODERS.get(coding),
                                               coding,
                                               img_data, x, y, width, height, options, callbacks)
-            elif self.jpeg_decoder and coding=="jpeg":
+            elif self.jpeg_decoder and coding == "jpeg":
                 self.paint_jpeg(img_data, x, y, width, height, options, callbacks)
-            elif self.jpeg_decoder and coding=="jpega":
+            elif self.jpeg_decoder and coding == "jpega":
                 self.paint_jpega(img_data, x, y, width, height, options, callbacks)
-            elif self.avif_decoder and coding=="avif":
+            elif self.avif_decoder and coding == "avif":
                 self.paint_avif(img_data, x, y, width, height, options, callbacks)
             elif coding == "webp":
                 self.paint_webp(img_data, x, y, width, height, options, callbacks)
-            elif self.spng_decoder and coding=="png":
+            elif self.spng_decoder and coding == "png":
                 self.paint_spng(img_data, x, y, width, height, options, callbacks)
             elif coding in self._PIL_encodings:
                 self.paint_image(coding, img_data, x, y, width, height, options, callbacks)
@@ -909,7 +943,9 @@ class WindowBackingBase:
                 raise
 
     # noinspection PyMethodMayBeStatic
-    def do_draw_region(self, _x:int, _y:int, _width:int, _height:int, coding:str, _img_data, _rowstride:int, _options, callbacks):
+    def do_draw_region(self, _x: int, _y: int, _width: int, _height: int, coding: str,
+                       _img_data, _rowstride: int,
+                       _options, callbacks: Iterable[Callable]):
         msg = f"invalid encoding: {coding!r}"
         log.error("Error: %s", msg)
         fire_paint_callbacks(callbacks, False, msg)

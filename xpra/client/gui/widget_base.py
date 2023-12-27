@@ -12,7 +12,7 @@ from xpra.util.env import envbool
 from xpra.log import Logger
 
 log = Logger("window")
-#pretend to draw the windows, but don't actually do anything:
+# pretend to draw the windows, but don't actually do anything:
 USE_FAKE_BACKING = envbool("XPRA_USE_FAKE_BACKING", False)
 
 
@@ -21,14 +21,14 @@ class ClientWidgetBase:
     def __init__(self, client, watcher_pid:int, wid:int, has_alpha:bool):
         self.wid = wid
         self.watcher_pid = watcher_pid
-        #gobject-like scheduler:
+        # gobject-like scheduler:
         self.source_remove = client.source_remove
         self.idle_add = client.idle_add
         self.timeout_add = client.timeout_add
-        #tells us if the server-side window has an alpha channel
-        #(whether we are capable of rendering it is down the backing)
+        # tells us if the server-side window has an alpha channel
+        # (whether we are capable of rendering it is down the backing)
         self._has_alpha = has_alpha
-        #tells us if this window instance can paint with alpha
+        # tells us if this window instance can paint with alpha
         self._window_alpha = False
         self._client = client
         self._current_icon = None
@@ -40,20 +40,20 @@ class ClientWidgetBase:
             "has-alpha"     : self._has_alpha,
             "window-alpha"  : self._window_alpha,
             "pixel-depth"   : self.pixel_depth,
-            }
+        }
         b = self._backing
         if b:
             info["backing"] = b.get_info()
         return info
 
-    def make_new_backing(self, backing_class:Callable, ww:int, wh:int, bw:int, bh:int):
+    def make_new_backing(self, backing_class:Callable, ww: int, wh: int, bw: int, bh: int):
         # size of the backing, which should be the same as the server's window source:
         bw = max(1, bw)
         bh = max(1, bh)
         # actual size of window, which may be different when scaling:
         ww = max(1, ww)
         wh = max(1, wh)
-        if ww>=32768 or wh>=32768:
+        if ww >= 32768 or wh >= 32768:
             log.warn("Warning: invalid window dimensions %ix%i", ww, wh)
         backing = self._backing
         if backing is None:
@@ -78,7 +78,6 @@ class ClientWidgetBase:
         """
         Subclasses may resume normal operation that were suspended by freeze()
         """
-
 
     def workspace_changed(self) -> None:            # pragma: no cover
         pass

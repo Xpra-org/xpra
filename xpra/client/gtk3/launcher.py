@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pylint: disable=no-member
+# pylint: disable=no-member
 
 """ launcher.py
 
@@ -31,7 +31,8 @@ from xpra.gtk.dialogs.about import about
 from xpra.scripts.main import (
     connect_to, make_client,
     configure_network, configure_env, configure_logging,
-    )
+)
+from xpra.common import noop
 from xpra.scripts.parsing import is_local, get_ssh_args, parse_ssh_option, get_ssh_proxy_args
 from xpra.exit_codes import RETRY_EXIT_CODES, ExitCode, exit_str
 from xpra.platform.info import get_username
@@ -51,51 +52,49 @@ MODE_WS = "ws"
 MODE_WSS = "wss"
 
 
-#what we save in the config file:
+# what we save in the config file:
 SAVED_FIELDS = [
     "username", "password", "host", "port", "mode", "ssh_port",
     "encoding", "quality", "min-quality", "speed", "min-speed",
     "proxy_port", "proxy_username", "proxy_key", "proxy_password",
     "proxy_host",
     "autoconnect",
-    ]
+]
 
-#options not normally found in xpra config file
-#but which can be present in a launcher config:
-LAUNCHER_OPTION_TYPES ={
-                        "host"              : str,
-                        "port"              : int,
-                        "username"          : str,
-                        "password"          : str,
-                        "mode"              : str,
-                        "autoconnect"       : bool,
-                        "ssh_port"          : int,
-                        "proxy_host"        : str,
-                        "proxy_port"        : int,
-                        "proxy_username"    : str,
-                        "proxy_password"    : str,
-                        "proxy_key"         : str,
-                        }
+# options not normally found in xpra config file
+# but which can be present in a launcher config:
+LAUNCHER_OPTION_TYPES = {
+    "host"              : str,
+    "port"              : int,
+    "username"          : str,
+    "password"          : str,
+    "mode"              : str,
+    "autoconnect"       : bool,
+    "ssh_port"          : int,
+    "proxy_host"        : str,
+    "proxy_port"        : int,
+    "proxy_username"    : str,
+    "proxy_password"    : str,
+    "proxy_key"         : str,
+}
 LAUNCHER_DEFAULTS = {
-                        "host"              : "",
-                        "port"              : -1,
-                        "username"          : get_username(),
-                        "password"          : "",
-                        "mode"              : MODE_TCP,    #tcp,ssh,..
-                        "autoconnect"       : False,
-                        "ssh_port"          : 22,
-                        "proxy_host"        : "",
-                        "proxy_port"        : 22,
-                        "proxy_username"    : get_username(),
-                        "proxy_password"    : "",
-                        "proxy_key"   : "",
-                    }
-
+    "host"              : "",
+    "port"              : -1,
+    "username"          : get_username(),
+    "password"          : "",
+    "mode"              : MODE_TCP,    # tcp,ssh,..
+    "autoconnect"       : False,
+    "ssh_port"          : 22,
+    "proxy_host"        : "",
+    "proxy_port"        : 22,
+    "proxy_username"    : get_username(),
+    "proxy_password"    : "",
+    "proxy_key"   : "",
+}
 
 black   = color_parse("black")
 red     = color_parse("red")
 white   = color_parse("white")
-
 
 
 def get_active_item_index(optionmenu):
@@ -104,6 +103,7 @@ def get_active_item_index(optionmenu):
         if hasattr(x, "get_active") and x.get_active():
             return i
     return -1
+
 
 def set_history_from_active(optionmenu):
     #Used for MenuButton combo:
@@ -125,12 +125,6 @@ def has_mdns():
         log("no mdns support: %s", e)
     return False
 
-def noop(*args):
-    log("noop%s", args)
-
-
-# pylint: disable=import-outside-toplevel
-
 
 def get_connection_modes():
     modes = [MODE_SSH, MODE_NESTED_SSH]
@@ -140,7 +134,7 @@ def get_connection_modes():
         modes.append(MODE_SSL)
     except ImportError:
         pass
-    #assume crypto is available
+    # assume crypto is available
     try:
         from xpra.net.crypto import get_modes
         for mode in get_modes():
@@ -160,7 +154,7 @@ def image_button(text="", tooltip="", icon_pixbuf=None, clicked_cb=None):
 
 
 def button(tooltip, icon_name, callback):
-    button = Gtk.Button()
+    btn = Gtk.Button()
     theme = Gtk.IconTheme.get_default()
     try:
         pixbuf = theme.load_icon(icon_name, Gtk.IconSize.BUTTON, Gtk.IconLookupFlags.USE_BUILTIN)
@@ -183,12 +177,13 @@ def button(tooltip, icon_name, callback):
                 pixbuf = builtin_reload
     if pixbuf:
         image = Gtk.Image.new_from_pixbuf(pixbuf)
-        button.add(image)
-    button.set_tooltip_text(tooltip)
+        btn.add(image)
+    btn.set_tooltip_text(tooltip)
+
     def clicked(*_args):
         callback()
-    button.connect("clicked", clicked)
-    return button
+    btn.connect("clicked", clicked)
+    return btn
 
 
 class ApplicationWindow:
@@ -246,10 +241,12 @@ class ApplicationWindow:
         hb.set_show_close_button(True)
         hb.props.title = "Session Launcher"
         self.window.set_titlebar(hb)
+
         def show_about(*args):
             about(parent=self.window)
         hb.add(button("About", "help-about", show_about))
         self.bug_tool = None
+
         def bug(*_args):
             if self.bug_tool is None:
                 from xpra.client.gtk3.bug_report import BugReport
@@ -259,10 +256,12 @@ class ApplicationWindow:
         hb.add(button("Bug Report", "bugs", bug))
         if has_mdns():
             self.mdns_gui = None
+
             def mdns(*_args):
                 if self.mdns_gui is None:
                     from xpra.client.gtk3.mdns_gui import mdns_sessions
                     self.mdns_gui = mdns_sessions(self.config)
+
                     def close_mdns():
                         self.mdns_gui.close()
                         self.mdns_gui = None
@@ -286,7 +285,7 @@ class ApplicationWindow:
         self.mode_combo.connect("changed", self.mode_changed)
         hbox.pack_start(label("Mode: "), False, False)
         hbox.pack_start(self.mode_combo, False, False)
-        align_hbox = Gtk.Alignment(xalign = .5)
+        align_hbox = Gtk.Alignment(xalign=0.5)
         align_hbox.add(hbox)
         vbox.pack_start(align_hbox)
 
@@ -353,13 +352,13 @@ class ApplicationWindow:
         self.password_scb.set_mode(True)
         self.password_scb.set_active(True)
         self.password_scb.connect("toggled", self.validate)
-        align_password_scb = Gtk.Alignment(xalign = 1.0)
+        align_password_scb = Gtk.Alignment(xalign=1.0)
         align_password_scb.add(self.password_scb)
         self.username_scb = Gtk.CheckButton(label="Server username same as proxy")
         self.username_scb.set_mode(True)
         self.username_scb.set_active(True)
         self.username_scb.connect("toggled", self.validate)
-        align_username_scb = Gtk.Alignment(xalign = 0.0)
+        align_username_scb = Gtk.Alignment(xalign=0.0)
         align_username_scb.add(self.username_scb)
         hbox.pack_start(align_username_scb, True, True)
         hbox.pack_start(align_password_scb, True, True)
@@ -550,7 +549,6 @@ class ApplicationWindow:
     def run(self):
         Gtk.main()
 
-
     def mode_changed(self, *_args):
         mode = self.mode_combo.get_active_text().lower()
         ssh = mode==MODE_SSH
@@ -634,7 +632,7 @@ class ApplicationWindow:
             self.info, self.password_entry, self.username_entry, self.host_entry,
             self.port_entry, self.proxy_password_entry, self.proxy_username_entry,
             self.proxy_host_entry, self.proxy_port_entry, self.ssh_port_entry,
-            ):
+        ):
             self.set_widget_fg_color(self.info, False)
             self.set_widget_bg_color(widget, False)
 
@@ -657,8 +655,9 @@ class ApplicationWindow:
 
     def proxy_key_browse_clicked(self, *args):
         log("proxy_key_browse_clicked%s", args)
+
         def do_choose(filename):
-            #make sure the file extension is .ppk
+            # make sure the file extension is .ppk
             if os.path.splitext(filename)[-1]!=".ppk":
                 filename += ".ppk"
             self.proxy_key_entry.set_text(filename)
@@ -669,7 +668,6 @@ class ApplicationWindow:
         self.update_options_from_gui()
         self.do_connect()
 
-
     def clean_client(self):
         c = self.client
         if c:
@@ -679,14 +677,14 @@ class ApplicationWindow:
             c.exit = noop
             c.cleanup()
 
-
     def handle_exception(self, e):
         log(f"handle_exception({e})")
         t = str(e)
         log("handle_exception: %s", traceback.format_exc())
         if self.config.debug:
-            #in debug mode, include the full stacktrace:
+            # in debug mode, include the full stacktrace:
             t = traceback.format_exc()
+
         def ui_handle_exception():
             self.clean_client()
             self.set_sensitive(True)
@@ -710,7 +708,7 @@ class ApplicationWindow:
         params = {
             "type"      : self.config.mode,
             "username"  : username,
-            }
+        }
         if self.config.mode in (MODE_SSH, MODE_NESTED_SSH):
             if self.config.socket_dir:
                 params["socket_dir"] = self.config.socket_dir
@@ -778,11 +776,11 @@ class ApplicationWindow:
             if self.config.mode in (MODE_SSL, MODE_WSS) and self.nostrict_host_check.get_active():
                 params["strict-host-check"] = False
 
-        #print("connect_to(%s)" % params)
-        #UGLY warning: the username may have been updated during display parsing,
-        #or the config file may contain a username which is different from the default one
-        #which is used for initializing the client during init,
-        #so update the client now:
+        # print("connect_to(%s)" % params)
+        # UGLY warning: the username may have been updated during display parsing,
+        # or the config file may contain a username which is different from the default one
+        # which is used for initializing the client during init,
+        # so update the client now:
         configure_env(self.config.env)
         configure_logging(self.config, "attach")
         configure_network(self.config)
@@ -797,6 +795,7 @@ class ApplicationWindow:
         self.client.show_progress(40, "loading user interface")
         self.client.init_ui(self.config)
         self.client.username = display_desc.get("username")
+
         def handshake_complete(*_args):
             self.client.show_progress(100, "Session connected")
         self.client.after_handshake(handshake_complete)
@@ -870,7 +869,7 @@ class ApplicationWindow:
             if not self.config.reconnect or exit_code not in RETRY_EXIT_CODES:
                 return False
             self.clean_client()
-            #give time for the main loop to run once after calling cleanup
+            # give time for the main loop to run once after calling cleanup
             GLib.timeout_add(100, self.start_client, display_desc)
             return True
 
@@ -901,15 +900,17 @@ class ApplicationWindow:
 
         self.client.warn_and_quit = warn_and_quit_override
         self.client.quit = quit_override
+
         def after_handshake():
             self.set_info_text("Handshake complete")
         self.client.after_handshake(after_handshake)
+
         def first_ui_received(*_args):
             self.set_info_text("Running")
             self.window.hide()
         self.client.connect("first-ui-received", first_ui_received)
         if Gtk.main_level()>0:
-            #no need to start a new main loop:
+            # no need to start a new main loop:
             self.client.gtk_main = noop
         try:
             r = self.client.run()
@@ -920,12 +921,11 @@ class ApplicationWindow:
         if self.client.gtk_main==noop:
             return
         log("exit_launcher=%s", self.exit_launcher)
-        #if we're using "autoconnect",
-        #the main loop was running from here,
-        #so we have to force exit if the launcher window had been closed:
+        # if we're using "autoconnect",
+        # the main loop was running from here,
+        # so we have to force exit if the launcher window had been closed:
         if self.exit_launcher:
             sys.exit(0)
-
 
     def password_ok(self, *_args):
         self.password_entry.modify_text(Gtk.StateType.NORMAL, black)
@@ -940,7 +940,6 @@ class ApplicationWindow:
 
     def set_widget_fg_color(self, widget, is_error=False):
         modify_fg(widget, red if is_error else black)
-
 
     def update_options_from_gui(self):
         def pint(vstr):
@@ -975,7 +974,6 @@ class ApplicationWindow:
              self.config.host, self.config.port, self.config.ssh_port))
 
     def update_gui_from_config(self):
-        #mode:
         mode = (self.config.mode or "").lower()
         active = 0
         for i,e in enumerate(get_connection_modes()):
@@ -983,6 +981,7 @@ class ApplicationWindow:
                 active = i
                 break
         self.mode_combo.set_active(active)
+
         def get_port(vstr, default_port=""):
             try:
                 iport = int(vstr)
@@ -1053,12 +1052,12 @@ class ApplicationWindow:
         self._apply_props(props)
 
     def _apply_props(self, props):
-        #we rely on "ssh_port" being defined on the config object
-        #so try to load it from file, and define it if not present:
+        # we rely on "ssh_port" being defined on the config object
+        # so try to load it from file, and define it if not present:
         options = validate_config(props,
                                   extras_types=LAUNCHER_OPTION_TYPES,
                                   extras_validation=self.get_launcher_validation())
-        for k,v in options.items():
+        for k, v in options.items():
             fn = k.replace("-", "_")
             setattr(self.config, fn, v)
         self.config_keys = self.config_keys.union(set(props.keys()))
@@ -1073,6 +1072,7 @@ class ApplicationWindow:
 
     def save_clicked(self, *_args):
         self.update_options_from_gui()
+
         def do_save(filename):
             #make sure the file extension is .xpra
             if os.path.splitext(filename)[-1]!=".xpra":
@@ -1087,13 +1087,14 @@ class ApplicationWindow:
         self.choose_session_file("Load session settings from file", Gtk.FileChooserAction.OPEN, Gtk.STOCK_OPEN, do_load)
 
 
-#on some platforms like win32, we don't have stdout
-#and this is a GUI application, so show a dialog with the error instead
+# on some platforms like win32, we don't have stdout
+# and this is a GUI application, so show a dialog with the error instead
 def exception_dialog(title):
     md = Gtk.MessageDialog(None, Gtk.DialogFlags.DESTROY_WITH_PARENT,
                            Gtk.MessageType.INFO, Gtk.ButtonsType.CLOSE, title)
     md.format_secondary_text(traceback.format_exc())
     md.show_all()
+
     def close_dialog(*_args):
         md.destroy()
         Gtk.main_quit()
@@ -1108,6 +1109,7 @@ def main(argv):
     with program_context("Xpra-Launcher", "Xpra Connection Launcher"):
         enable_color()
         return do_main(argv)
+
 
 def do_main(argv):
     from xpra.util.system import SIGNAMES
@@ -1134,12 +1136,13 @@ def do_main(argv):
         exception_dialog("Error parsing command line")
         return 1
 
-    #allow config to be debugged:
+    # allow config to be debugged:
     from xpra.scripts import config
     config.debug = log.debug
 
     try:
         app = ApplicationWindow()
+
         def handle_signal(signum):
             app.show()
             client = app.client
@@ -1167,8 +1170,8 @@ def do_main(argv):
         return 1
     try:
         if app.config.autoconnect:
-            #file says we should connect,
-            #do that only (not showing UI unless something goes wrong):
+            # file says we should connect,
+            # do that only (not showing UI unless something goes wrong):
             GLib.idle_add(app.do_connect)
         if not has_file:
             app.reset_errors()
@@ -1182,8 +1185,8 @@ def do_main(argv):
                     def open_file(filename):
                         log("open_file(%s)", filename)
                         app.update_options_from_file(filename)
-                        #the compressors and packet encoders cannot be changed from the UI
-                        #so apply them now:
+                        # the compressors and packet encoders cannot be changed from the UI
+                        # so apply them now:
                         configure_network(app.config)
                         app.update_gui_from_config()
                         if app.config.autoconnect:
@@ -1192,12 +1195,13 @@ def do_main(argv):
                         else:
                             force_focus()
                             app.show()
+
                     def open_URL(url):
                         log("open_URL(%s)", url)
                         app.__osx_open_signal = True
                         app.update_options_from_URL(url)
-                        #the compressors and packet encoders cannot be changed from the UI
-                        #so apply them now:
+                        # the compressors and packet encoders cannot be changed from the UI
+                        # so apply them now:
                         configure_network(app.config)
                         app.update_gui_from_config()
                         GLib.idle_add(app.do_connect)

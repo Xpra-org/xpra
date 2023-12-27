@@ -34,6 +34,7 @@ class FakeClient(AdHocStruct):
         self.server_pointer = False
         self.update_focus = noop
         self.has_focus = noop
+
         def not_handled(*args):
             return False
         self.handle_key_action = not_handled
@@ -63,17 +64,21 @@ class FakeClient(AdHocStruct):
 
     def send(self, *args):
         log("send%s", args)
+
     def get_current_modifiers(self):
         return ()
+
     def get_raw_mouse_position(self):
         return 0, 0
+
     def get_mouse_position(self):
         return 0, 0
+
     def server_ok(self):
         return True
+
     def mask_to_names(self, *_args):
         return ()
-
 
     def window_close_event(self, *_args):
         log("window_close_event ignored")

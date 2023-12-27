@@ -88,6 +88,7 @@ class KeyboardHelper:
 
     def cleanup(self) -> None:
         self.reset_state()
+
         def nosend(*_args):
             """ make sure we don't send keyboard updates during cleanup """
         self.send = nosend
@@ -95,9 +96,7 @@ class KeyboardHelper:
     def keymap_changed(self, *args) -> None:
         """ This method is overridden in the GTK Keyboard Helper """
 
-
     def parse_shortcuts(self) -> dict[str,list]:
-        #parse shortcuts:
         modifier_names = self.get_modifier_names()
         self.shortcut_modifiers = parse_shortcut_modifiers(self.shortcut_modifiers_str, modifier_names)
         self.key_shortcuts = parse_shortcuts(self.key_shortcuts_strs, self.shortcut_modifiers, modifier_names)
@@ -107,7 +106,7 @@ class KeyboardHelper:
         return get_modifier_names(self.mod_meanings)
 
     def key_handled_as_shortcut(self, window, key_name:str, modifiers:list[str], depressed:bool):
-        #find the shortcuts that may match this key:
+        # find the shortcuts that may match this key:
         shortcuts = self.key_shortcuts.get(key_name)
         log("key_handled_as_shortcut%s shortcuts_enabled=%s, shortcuts=%s",
             (window, key_name, modifiers, depressed),
@@ -117,11 +116,11 @@ class KeyboardHelper:
         if not shortcuts:
             return False
         if len(shortcuts)>1:
-            #sort shortcuts based on how many modifiers are required,
-            #so that if multiple shortcuts use the same key,
-            #we will try to match the one with the most modifiers first.
-            #ie: Num_Lock+Menu will be tested before Menu
-            #(this is needed because Num_Lock is then discarded when comparing the list of required modifiers!)
+            # sort shortcuts based on how many modifiers are required,
+            # so that if multiple shortcuts use the same key,
+            # we will try to match the one with the most modifiers first.
+            # ie: Num_Lock+Menu will be tested before Menu
+            # (this is needed because Num_Lock is then discarded when comparing the list of required modifiers!)
             shortcuts = sorted(shortcuts, key=lambda x : len(x[0]), reverse=True)
         for shortcut in shortcuts:
             if self._check_shortcut(window, key_name, modifiers, depressed, shortcut):
@@ -140,12 +139,12 @@ class KeyboardHelper:
             try:
                 extra_modifiers.remove(rm)
             except ValueError:
-                pass        #same modifier listed twice?
+                pass        # same modifier listed twice?
         kmod, _, ignored = self.keyboard.get_keymap_modifiers()
         if not kmod and self.keyboard.modifier_keys:
-            #fallback to server supplied map:
+            # fallback to server supplied map:
             kmod = self.keyboard.modifier_keys
-        #ie: {'ISO_Level3_Shift': 'mod5', 'Meta_L': 'mod1', ...}
+        # ie: {'ISO_Level3_Shift': 'mod5', 'Meta_L': 'mod1', ...}
         log("keymap modifiers: %s", kmod)
         ignoremod = ("Caps_Lock", "Num_Lock")
         for x in ignoremod:
@@ -160,7 +159,7 @@ class KeyboardHelper:
             return False
         log("matched shortcut %s", shortcut)
         if not depressed:
-            #when the key is released, just ignore it - do NOT send it to the server!
+            # when the key is released, just ignore it - do NOT send it to the server!
             return True
         if action=="pass":
             return False
@@ -179,10 +178,9 @@ class KeyboardHelper:
             log.error("Error: key_handled_as_shortcut(%s,%s,%s,%s)", window, key_name, modifiers, depressed)
             log.error(" failed to execute shortcut=%s", shortcut)
             log.error("", exc_info=True)
-        return  True
+        return True
 
-
-    def process_key_event(self, wid:int, key_event:KeyEvent):
+    def process_key_event(self, wid: int, key_event: KeyEvent):
         """
             This method gives the Keyboard class
             a chance to fire more than one send_key_action.
@@ -191,21 +189,22 @@ class KeyboardHelper:
         self.keyboard.process_key_event(self.send_key_action, wid, key_event)
         return False
 
-
-    def debug_key_event(self, wid:int, key_event:KeyEvent) -> None:
+    def debug_key_event(self, wid: int, key_event:KeyEvent) -> None:
         if not DEBUG_KEY_EVENTS:
             return
+
         def keyname(v:str) -> str:
             if v.endswith("_L") or v.endswith("_R"):
                 return v[:-2].lower()
             return v.lower()
+
         def dbg(v) -> bool:
             return v and keyname(v) in DEBUG_KEY_EVENTS
         debug = ("all" in DEBUG_KEY_EVENTS) or dbg(key_event.keyname) or dbg(key_event.string)
         modifiers = key_event.modifiers
         if not debug and modifiers:
-            #see if one of the modifier matches:
-            #either the raw name (ie: "mod2") or its actual meaning (ie: "NumLock")
+            # see if one of the modifier matches:
+            # either the raw name (ie: "mod2") or its actual meaning (ie: "NumLock")
             for m in modifiers:
                 if m in DEBUG_KEY_EVENTS:
                     debug = True
@@ -217,7 +216,7 @@ class KeyboardHelper:
         if debug:
             log.info("key event %s on window %i", key_event, wid)
 
-    def send_key_action(self, wid:int, key_event:KeyEvent) -> None:
+    def send_key_action(self, wid: int, key_event: KeyEvent) -> None:
         log("send_key_action(%s, %s)", wid, key_event)
         packet = ["key-action", wid]
         for x in ("keyname", "pressed", "modifiers", "keyval", "string", "keycode", "group"):
@@ -225,11 +224,11 @@ class KeyboardHelper:
         self.debug_key_event(wid, key_event)
         self.send(*packet)
 
-
     def get_layout_spec(self) -> tuple[str,list[str],str,list[str],str]:
         """ add / honour overrides """
         layout, layouts, variant, variants, options = self.keyboard.get_layout_spec()
         log("%s.get_layout_spec()=%s", self.keyboard, (layout, layouts, variant, variants, options))
+
         def inl(v, l):
             try:
                 if v in l or v is None:
@@ -243,7 +242,13 @@ class KeyboardHelper:
         layouts  = inl(layout, self.layouts_option or layouts)
         variant  = self.variant_option or variant
         variants = inl(variant, self.variants_option or variants)
-        val = (layout, layouts, self.variant_option or variant, self.variants_option or variants, self.options or options)
+        val = (
+            layout,
+            layouts,
+            self.variant_option or variant,
+            self.variants_option or variants,
+            self.options or options,
+        )
         log("get_layout_spec()=%s", val)
         return val
 
@@ -296,7 +301,6 @@ class KeyboardHelper:
         return " / ".join([bytestostr(x) for x in (
             self.layout_option or self.layout, self.variant_option or self.variant) if bool(x)])
 
-
     def send_layout(self):
         log("send_layout() layout_option=%s, layout=%s, variant_option=%s, variant=%s, options=%s",
             self.layout_option, self.layout, self.variant_option, self.variant, self.options)
@@ -310,23 +314,22 @@ class KeyboardHelper:
         props = {"keymap" : self.get_keymap_properties()}
         self.send("keymap-changed", props)
 
-
     def update_hash(self):
         import hashlib
         h = hashlib.sha256()
+
         def hashadd(v):
             h.update(("/%s" % str(v)).encode("utf8"))
         for x in (self.mod_meanings, self.mod_pointermissing, self.keycodes, self.x11_keycodes):
             hashadd(x)
         if self.query_struct:
-            #flatten the dict in a predicatable order:
+            # flatten the dict in a predicatable order:
             for k in sorted(self.query_struct.keys()):
                 hashadd(self.query_struct.get(k))
         self.hash = "/".join([str(x) for x in (self.layout, self.variant, h.hexdigest()) if bool(x)])
 
     def get_full_keymap(self) -> tuple[tuple[int,str,int,int,int],...]:
         return ()
-
 
     def get_keymap_properties(self, skip=()):
         props = {}
@@ -335,7 +338,7 @@ class KeyboardHelper:
             "raw", "layout_groups",
             "query_struct", "mod_meanings",
             "mod_managed", "mod_pointermissing", "keycodes", "x11_keycodes",
-            ):
+        ):
             if x in skip:
                 continue
             v = getattr(self, x)
@@ -343,9 +346,8 @@ class KeyboardHelper:
                 props[x] = v
         return props
 
-
     def log_keyboard_info(self):
-        #show the user a summary of what we have detected:
+        # show the user a summary of what we have detected:
         kb_info = {}
         if self.query_struct:
             for x in ("rules", "model", "layout"):

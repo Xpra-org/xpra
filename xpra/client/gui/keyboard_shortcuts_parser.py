@@ -14,40 +14,41 @@ from xpra.log import Logger
 log = Logger("keyboard")
 
 
-def get_modifier_names(mod_meanings) -> dict[str,str]:
-    #modifier names contains the internal modifiers list, ie: "mod1", "control", ...
-    #but the user expects the name of the key to be used, ie: "alt" or "super"
-    #whereas at best, we keep "Alt_L" : "mod1" mappings... (posix)
-    #so generate a map from one to the other:
+def get_modifier_names(mod_meanings) -> dict[str, str]:
+    # modifier names contains the internal modifiers list, ie: "mod1", "control", ...
+    # but the user expects the name of the key to be used, ie: "alt" or "super"
+    # whereas at best, we keep "Alt_L" : "mod1" mappings... (posix)
+    # so generate a map from one to the other:
     modifier_names : dict[str,str] = {}
     meanings = mod_meanings or DEFAULT_MODIFIER_MEANINGS
     DEFAULT_MODIFIER_IGNORE_KEYNAMES = ["Caps_Lock", "Num_Lock", "Scroll_Lock"]
     for pub_name,mod_name in meanings.items():
         if mod_name in DEFAULT_MODIFIER_NUISANCE or pub_name in DEFAULT_MODIFIER_IGNORE_KEYNAMES:
             continue
-        #just hope that xxx_L is mapped to the same modifier as xxx_R!
+        # just hope that xxx_L is mapped to the same modifier as xxx_R!
         if pub_name.endswith("_L") or pub_name.endswith("_R"):
             pub_name = pub_name[:-2]
-        elif pub_name=="ISO_Level3_Shift":
+        elif pub_name == "ISO_Level3_Shift":
             pub_name = "AltGr"
         if pub_name not in modifier_names:
             modifier_names[pub_name.lower()] = mod_name
-        if pub_name.lower()=="control":
-            #alias "control" to "ctrl" as it is often used:
+        if pub_name.lower() == "control":
+            # alias "control" to "ctrl" as it is often used:
             modifier_names["ctrl"] = mod_name
     log("parse_shortcuts: modifier names=%s", modifier_names)
     return modifier_names
 
 
 def parse_shortcut_modifiers(s, modifier_names=()) -> list[str]:
-    #figure out the default shortcut modifiers
-    #accept "," or "+" as delimiter:
+    # figure out the default shortcut modifiers
+    # accept "," or "+" as delimiter:
     shortcut_modifiers = s.lower().replace(",", "+").split("+")
+
     def mod_defaults():
         mods = ["meta", "shift"]
         if POSIX:
-            #gnome intercepts too many of the Alt+Shift shortcuts,
-            #so use control with gnome:
+            # gnome intercepts too many of the Alt+Shift shortcuts,
+            # so use control with gnome:
             if os.environ.get("XDG_CURRENT_DESKTOP")=="GNOME":
                 mods = ["control", "shift"]
         return mods
@@ -71,6 +72,7 @@ def parse_shortcut_modifiers(s, modifier_names=()) -> list[str]:
     log("shortcut modifiers=%s", shortcut_modifiers)
     return shortcut_modifiers
 
+
 def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> dict[str,list]:
     """
     if none are defined, add this as default
@@ -82,15 +84,15 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> dict[s
         strs = ["meta+shift+F4:quit"]
     log("parse_shortcuts(%s)", strs)
     shortcuts : dict[str,list] = {}
-    #figure out the default shortcut modifiers
-    #accept "," or "+" as delimiter:
+    # figure out the default shortcut modifiers
+    # accept "," or "+" as delimiter:
     for s in strs:
         if s=="none":
             continue
         if s=="clear":
             shortcuts = {}
             continue
-        #example for s: Control+F8:some_action()
+        # example for s: Control+F8:some_action()
         if s.find("=")>s.find(":"):
             parts = s.split("=", 1)
         else:

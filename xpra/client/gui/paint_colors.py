@@ -21,10 +21,10 @@ DEFAULT_BOX_COLORS = {
     "mpeg4"     : "black",
     "scroll"    : "brown",
     "avif"      : "cyan",
-    }
+}
 
 ALPHA = 0.6
-#converted from gtk lookups:
+# converted from gtk lookups:
 BOX_COLORS = {
     "h264"      : (0.0,                 0.0,                    0.9999847412109375, ALPHA),
     "h265"      : (0.941162109375,      0.901947021484375,      0.54901123046875,   ALPHA),
@@ -44,8 +44,11 @@ BOX_COLORS = {
 }
 
 BLACK = 0, 0, 0, 0
+
+
 def get_default_paint_box_color():
     return BLACK
+
 
 def get_paint_box_color(encoding):
     return BOX_COLORS.get(encoding, BLACK)

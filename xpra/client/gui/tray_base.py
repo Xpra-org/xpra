@@ -83,7 +83,7 @@ class TrayBase:
     def set_blinking(self, on: bool) -> None:
         raise NotImplementedError
 
-    def set_icon_from_data(self, pixels, has_alpha: bool, w: int, h: int, rowstride: int, options= None):
+    def set_icon_from_data(self, pixels, has_alpha: bool, w: int, h: int, rowstride: int, options=None):
         raise NotImplementedError
 
     def get_icon_filename(self, basename="") -> str:
