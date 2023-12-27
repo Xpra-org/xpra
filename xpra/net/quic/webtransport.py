@@ -44,7 +44,7 @@ class WebTransportHandler(XpraQuicConnection):
             "server"    : SERVER_NAME,
             "date"      : http_date(),
             "sec-webtransport-http3-draft" : "draft02",
-            }
+        }
         self.send_headers(0, headers)
         self.transmit()
 

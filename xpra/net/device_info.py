@@ -15,13 +15,13 @@ from xpra.log import Logger
 log = Logger("network")
 
 
-ETHERNET_JITTER : int = envint("XPRA_LOCAL_JITTER", 0)
-WAN_JITTER : int = envint("XPRA_WAN_JITTER", 20)
-ADSL_JITTER : int = envint("XPRA_WAN_JITTER", 20)
-WIRELESS_JITTER : int = envint("XPRA_WIRELESS_JITTER", 1000)
+ETHERNET_JITTER: int = envint("XPRA_LOCAL_JITTER", 0)
+WAN_JITTER: int = envint("XPRA_WAN_JITTER", 20)
+ADSL_JITTER: int = envint("XPRA_WAN_JITTER", 20)
+WIRELESS_JITTER: int = envint("XPRA_WIRELESS_JITTER", 1000)
 
-WIFI_LIMIT : int = envint("XPRA_WIFI_LIMIT", 10*1000*1000)
-ADSL_LIMIT : int = envint("XPRA_WIFI_LIMIT", 1000*1000)
+WIFI_LIMIT: int = envint("XPRA_WIFI_LIMIT", 10*1000*1000)
+ADSL_LIMIT: int = envint("XPRA_WIFI_LIMIT", 1000*1000)
 
 
 def get_NM_adapter_type(device_name) -> str:
@@ -78,7 +78,9 @@ def get_device_value(coptions : dict, device_info : dict, attr: str, conv: Calla
 
 def guess_adapter_type(name:str) -> str:
     dnl = name.lower()
-    if dnl.startswith("wlan") or dnl.startswith("wlp") or any(dnl.find(x) >= 0 for x in("wireless", "wlan", "80211", "modem")):
+    if dnl.startswith("wlan") or dnl.startswith("wlp") or any(dnl.find(x) >= 0 for x in (
+        "wireless", "wlan", "80211", "modem"
+    )):
         return "wireless"
     if dnl == "lo" or dnl.find("loopback") >= 0 or dnl.startswith("local"):
         return "loopback"

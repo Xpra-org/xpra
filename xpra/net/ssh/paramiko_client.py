@@ -10,10 +10,7 @@ import sys
 from time import sleep, monotonic
 from typing import Any
 
-from xpra.scripts.main import (
-    InitException, InitExit,
-    shellquote, host_target_string,
-    )
+from xpra.scripts.main import InitException, InitExit, shellquote, host_target_string
 from xpra.platform.paths import get_ssh_known_hosts_files
 from xpra.platform.info import get_username
 from xpra.scripts.config import parse_bool, TRUE_OPTIONS
@@ -113,7 +110,7 @@ class SSHSocketConnection(SocketConnection):
             i["ssh-channel"] = {
                 "id"    : s.get_id(),
                 "name"  : s.get_name(),
-                }
+            }
         return i
 
 
@@ -141,8 +138,8 @@ class SSHProxyCommandConnection(SSHSocketConnection):
                 "pid"       : proc.pid,
                 "returncode": proc.returncode,
                 "command"   : cmd,
-                }
             }
+        }
 
     def close(self) -> None:
         try:
@@ -187,9 +184,9 @@ def connect_to(display_desc):
     paramiko_config = display_desc.copy()
     paramiko_config.update(display_desc.get("paramiko-config", {}))
     socket_info = {
-            "host"  : host,
-            "port"  : port,
-            }
+        "host"  : host,
+        "port"  : port,
+    }
 
     def fail(msg: str) -> None:
         log("connect_to(%s)", display_desc, exc_info=True)
@@ -404,6 +401,7 @@ class iauthhandler:
     def __init__(self, password):
         self.authcount = 0
         self.password = password
+
     def handle_request(self, title:str, instructions, prompt_list) -> list:
         log("handle_request%s counter=%i", (title, instructions, prompt_list), self.authcount)
         p = []
@@ -516,7 +514,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
                     "It is also possible that a host key has just been changed.",
                     f"The fingerprint for the {keyname()} key sent by the remote host is",
                     keymd5(host_key),
-                    ]
+                ]
                 adddnscheckinfo(qinfo)
                 if configbool("stricthostkeychecking", VERIFY_STRICT):
                     log.warn("Host key verification failed.")
@@ -526,7 +524,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
                         "Add correct host key in %s to get rid of this message.",
                         f"Offending {keyname()} key in {host_keys_filename}",
                         f"ECDSA host key for {keyname()} has changed and you have requested strict checking.",
-                        ]
+                    ]
                     stderr_print(os.linesep.join(qinfo))
                     transport.close()
                     raise InitExit(ExitCode.SSH_KEY_FAILURE, "SSH Host key has changed")
@@ -544,7 +542,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
                     f"The authenticity of host {host!r} can't be established.",
                     f"{keyname()} key fingerprint is",
                     keymd5(host_key),
-                    ]
+                ]
                 adddnscheckinfo(qinfo)
                 if not confirm(qinfo):
                     transport.close()
@@ -581,7 +579,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
     else:
         log("ssh host key verification skipped")
 
-    auth_errors : dict[str, list[str]] = {}
+    auth_errors: dict[str, list[str]] = {}
 
     def auth_agent() -> None:
         agent = Agent()

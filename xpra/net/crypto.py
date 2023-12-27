@@ -49,13 +49,17 @@ if PREFERRED_PADDING not in ALL_PADDING_OPTIONS:
     raise ValueError(f"invalid preferred padding: {PREFERRED_PADDING}")
 if INITIAL_PADDING not in ALL_PADDING_OPTIONS:
     raise ValueError(f"invalid padding: {INITIAL_PADDING}")
-#make sure the preferred one is first in the list:
-def get_padding_options() -> tuple[str,...]:
+# make sure the preferred one is first in the list:
+
+
+def get_padding_options() -> tuple[str, ...]:
     options = [PREFERRED_PADDING]
     for x in ALL_PADDING_OPTIONS:
         if x not in options:
             options.append(x)
     return tuple(options)
+
+
 PADDING_OPTIONS : tuple[str,...] = get_padding_options()
 
 
@@ -64,6 +68,8 @@ CIPHERS : tuple[str,...] = ()
 MODES : tuple[str,...] = ()
 KEY_HASHES : tuple[str,...] = ()
 KEY_STRETCHING : tuple[str,...] = ()
+
+
 def crypto_backend_init():
     global cryptography, CIPHERS, MODES, KEY_HASHES, KEY_STRETCHING
     log("crypto_backend_init() pycryptography=%s", cryptography)
@@ -74,8 +80,9 @@ def crypto_backend_init():
             patch_crypto_be_discovery()
         import cryptography as pc
         cryptography = pc
-        MODES = tuple(x for x in os.environ.get("XPRA_CRYPTO_MODES", "CBC,GCM,CFB,CTR").split(",")
-              if x in ("CBC", "GCM", "CFB", "CTR"))
+        MODES = tuple(x for x in os.environ.get(
+            "XPRA_CRYPTO_MODES",
+            "CBC,GCM,CFB,CTR").split(",") if x in ("CBC", "GCM", "CFB", "CTR"))
         KEY_HASHES = ("SHA1", "SHA224", "SHA256", "SHA384", "SHA512")
         KEY_STRETCHING = ("PBKDF2", )
         CIPHERS = ("AES", )
@@ -96,6 +103,7 @@ def crypto_backend_init():
     cryptography = None
     CIPHERS = MODES = KEY_HASHES = KEY_STRETCHING = ()
     return None
+
 
 def patch_crypto_be_discovery() -> None:
     """
@@ -123,14 +131,18 @@ def patch_crypto_be_discovery() -> None:
         be for be in available if be is not None
     ])
 
+
 def get_ciphers() -> tuple[str, ...]:
     return CIPHERS
+
 
 def get_modes() -> tuple[str, ...]:
     return MODES
 
+
 def get_key_hashes() -> tuple[str, ...]:
     return KEY_HASHES
+
 
 def validate_backend() -> None:
     log("validate_backend() will validate AES modes: "+csv(MODES))
@@ -176,6 +188,7 @@ def pad(padding:str, size:int) -> bytes:
         return pack("B", size)*size
     raise ValueError(f"invalid padding: {padding}")
 
+
 def choose_padding(options:Iterable[str]) -> str:
     if PREFERRED_PADDING in options:
         return PREFERRED_PADDING
@@ -187,6 +200,7 @@ def choose_padding(options:Iterable[str]) -> str:
 
 def get_iv() -> str:
     return secrets.token_urlsafe(16)[:16]
+
 
 def get_iterations() -> int:
     return DEFAULT_ITERATIONS
@@ -215,22 +229,23 @@ def new_cipher_caps(proto, cipher:str, cipher_mode:str, encryption_key, padding_
         "key_stretch_iterations": iterations,
         "padding"               : padding,
         "padding.options"       : PADDING_OPTIONS,
-        }
+    }
     #v5 onwards with namespace:
     return {"encryption" : attrs}
+
 
 def get_crypto_caps(full=True) -> dict[str,Any]:
     crypto_backend_init()
     caps : dict[str,Any] = {
-            "padding"       : {"options"    : PADDING_OPTIONS},
-            "modes"         : {"options"    : MODES},
-            "stretch"       : {"options"    : KEY_STRETCHING},
-            }
+        "padding"       : {"options"    : PADDING_OPTIONS},
+        "modes"         : {"options"    : MODES},
+        "stretch"       : {"options"    : KEY_STRETCHING},
+    }
     if full and cryptography:
         caps["python-cryptography"] = {
-                ""          : True,
-                "version"   : parse_version(cryptography.__version__),
-                }
+            ""          : True,
+            "version"   : parse_version(cryptography.__version__),
+        }
     return caps
 
 
@@ -247,10 +262,12 @@ def get_encryptor(ciphername : str, iv:str, password, key_salt, key_hash : str, 
     key = get_key(password, key_salt, key_hash, key_size, iterations)
     return get_cipher_encryptor(key, iv, mode), get_block_size(mode)
 
+
 def get_cipher_encryptor(key, iv:str, mode:str):
     encryptor = _get_cipher(key, iv, mode).encryptor()
     encryptor.encrypt = encryptor.update
     return encryptor
+
 
 def get_decryptor(ciphername : str, iv:str, password, key_salt, key_hash : str, key_size : int, iterations : int):
     log("get_decryptor%s", (ciphername, iv, password, hexstr(key_salt), key_hash, key_size, iterations))
@@ -265,11 +282,13 @@ def get_decryptor(ciphername : str, iv:str, password, key_salt, key_hash : str, 
     key = get_key(password, key_salt, key_hash, key_size, iterations)
     return get_cipher_decryptor(key, iv, mode), get_block_size(mode)
 
+
 def get_cipher_decryptor(key, iv:str, mode:str):
     decryptor = _get_cipher(key, iv, mode).decryptor()
     #the function we expect to call is named 'decrypt':
     decryptor.decrypt = decryptor.update
     return decryptor
+
 
 def get_block_size(mode:str) -> int:
     if mode=="CBC":
@@ -277,6 +296,7 @@ def get_block_size(mode:str) -> int:
         #but older versions require 32
         return 32
     return 0
+
 
 def get_key(password, key_salt, key_hash, block_size:int, iterations:int):
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -293,6 +313,7 @@ def get_key(password, key_salt, key_hash, block_size:int, iterations:int):
                      backend=default_backend())
     key = kdf.derive(strtobytes(password))
     return key
+
 
 def _get_cipher(key, iv:str, mode:str=DEFAULT_MODE):
     assert mode in MODES
@@ -311,6 +332,7 @@ def main():
     with program_context("Encryption Properties"):
         crypto_backend_init()
         print_nested_dict(get_crypto_caps())
+
 
 if __name__ == "__main__":
     main()

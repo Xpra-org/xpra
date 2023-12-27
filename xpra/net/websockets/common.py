@@ -37,15 +37,16 @@ OPCODES : dict[int,str] = {
     OPCODE_CLOSE        : "CLOSE",
     OPCODE_PING         : "PING",
     OPCODE_PONG         : "PONG",
-    }
+}
 
 
-def make_websocket_accept_hash(key:str) -> bytes:
+def make_websocket_accept_hash(key: str) -> bytes:
     GUID = b"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
     accept = sha1(strtobytes(key) + GUID).digest()
     return b64encode(accept)
 
-def get_headers(host:str, port:int) -> dict:
+
+def get_headers(host: str, port: int) -> dict:
     headers = {}
     for mod_name in HEADERS_MODULES:
         try:
@@ -72,6 +73,7 @@ def client_upgrade(read:Callable, write:Callable, host:str, port:int, path="") -
     verify_response_headers(headers, key)
     log("client_upgrade: done")
 
+
 def get_client_upgrade_request(host:str, port:int, path:str, key:bytes):
     url_path = quote(path)
     request = f"GET /{url_path} HTTP/1.1"
@@ -85,6 +87,7 @@ def get_client_upgrade_request(host:str, port:int, path:str, key:bytes):
     lines.append(b"")
     return b"\r\n".join(lines)
 
+
 def write_request(write:Callable, http_request):
     now = monotonic()
     while http_request:
@@ -94,27 +97,30 @@ def write_request(write:Callable, http_request):
         w = write(http_request)
         http_request = http_request[w:]
 
+
 def read_server_upgrade(read:Callable):
     now = monotonic()
     response = b""
+
     def hasheader(k):
         return k in parse_response_header(response)
     while monotonic()-now<MAX_READ_TIME and not (hasheader("sec-websocket-protocol") or hasheader("www-authenticate")):
         response += read(READ_CHUNK_SIZE)
     return parse_response_header(response)
 
+
 def parse_response_header(response:bytes):
-    #parse response:
     head = response.split(b"\r\n\r\n", 1)[0]
     lines = head.split(b"\r\n")
     headers = {}
     for line in lines:
         parts = bytestostr(line).split(": ", 1)
-        if len(parts)==2:
+        if len(parts) == 2:
             headers[parts[0].lower()] = parts[1]
     return headers
 
-def verify_response_headers(headers:dict[str,Any], key):
+
+def verify_response_headers(headers: dict[str, Any], key):
     log(f"verify_response_headers({headers!r}, {key!r})")
     if not headers:
         raise ValueError("no http headers found in response")

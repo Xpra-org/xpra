@@ -25,6 +25,7 @@ A library for proxy configuration and autodetection.
 from ctypes import POINTER, cast, c_void_p, c_char_p
 import ctypes.util
 
+
 def _load(name, *versions):
     for ver in versions:
         try:
@@ -36,12 +37,14 @@ def _load(name, *versions):
         return ctypes.cdll.LoadLibrary(name_ver)
     raise ImportError(f"Unable to find {name} library")
 
+
 # Load libproxy
 _libproxy = _load("proxy", 1)
 _libproxy.px_proxy_factory_new.restype = POINTER(c_void_p)
 _libproxy.px_proxy_factory_free.argtypes = [c_void_p]
 _libproxy.px_proxy_factory_get_proxies.restype = POINTER(c_void_p)
 _libproxy.px_proxy_factory_free_proxies.argtypes = [POINTER(c_void_p)]
+
 
 class ProxyFactory:
     """A ProxyFactory object is used to provide potential proxies to use
@@ -74,7 +77,7 @@ class ProxyFactory:
     def __init__(self):
         self._pf = _libproxy.px_proxy_factory_new()
 
-    def getProxies(self, url:str):
+    def getProxies(self, url: str):
         """Given a URL, returns a list of proxies in priority order to be used
         to reach that URL.
 
@@ -119,7 +122,7 @@ class ProxyFactory:
         if not bool(array):
             raise ProxyFactory.ProxyResolutionError(f"Can't resolve proxy for {url!r}")
 
-        i=0
+        i = 0
         while array[i]:
             proxy_bytes = cast(array[i], c_char_p).value
             if proxy_bytes:

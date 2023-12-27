@@ -34,16 +34,16 @@ EXTENSION_TO_MIMETYPE = {
     ".wasm" : "application/wasm",
     ".js"   : "text/javascript",
     ".css"  : "text/css",
-    }
+}
 
 
-#should be converted to use standard library
+# should be converted to use standard library
 def parse_url(handler) -> dict[str,str]:
     try:
         args_str = handler.path.split("?", 1)[1]
     except IndexError:
         return {}
-    #parse args:
+    # parse args:
     args = {}
     for x in args_str.split("&"):
         v = x.split("=", 1)
@@ -53,13 +53,16 @@ def parse_url(handler) -> dict[str,str]:
             args[v[0]] = v[1]
     return args
 
+
 http_headers_cache : dict[str,str] = {}
 http_headers_time : dict[str,float] = {}
+
+
 def may_reload_headers(http_headers_dirs):
     mtimes : dict[str,float] = {}
     global http_headers_cache
     if http_headers_cache:
-        #do we need to refresh the cache?
+        # do we need to refresh the cache?
         for d in http_headers_dirs:
             if os.path.exists(d) and os.path.isdir(d):
                 mtime = os.path.getmtime(d)
@@ -98,8 +101,8 @@ def may_reload_headers(http_headers_dirs):
     return headers.copy()
 
 
-def translate_path(path:str, web_root:str="/usr/share/xpra/www") -> str:
-    #code duplicated from superclass since we can't easily inject the web_root..
+def translate_path(path:str, web_root: str = "/usr/share/xpra/www") -> str:
+    # code duplicated from superclass since we can't easily inject the web_root..
     s = path
     # abandon query parameters
     path = path.split('?',1)[0]
@@ -124,7 +127,7 @@ def translate_path(path:str, web_root:str="/usr/share/xpra/www") -> str:
         path = os.path.join(path, word)
     if trailing_slash:
         path += '/'
-    #hack for locating the default desktop background at runtime:
+    # hack for locating the default desktop background at runtime:
     if not os.path.exists(path) and s.endswith("/background.png"):
         paths = get_desktop_background_paths()
         for p in paths:
@@ -133,13 +136,14 @@ def translate_path(path:str, web_root:str="/usr/share/xpra/www") -> str:
                 path = matches[0]
                 break
         if not os.path.exists(path):
-            #better send something than a 404,
-            #use a transparent 1x1 image:
+            # better send something than a 404,
+            # use a transparent 1x1 image:
             path = os.path.join(web_root, "icons", "empty.png")
     log("translate_path(%s)=%s", s, path)
     return path
 
-def load_path(accept_encoding:list[str], path:str) -> tuple[int,dict[str,Any],bytes]:
+
+def load_path(accept_encoding: list[str], path: str) -> tuple[int, dict[str, Any], bytes]:
     ext = os.path.splitext(path)[1]
     extra_headers : dict[str,Any] = {}
     with open(path, "rb") as f:
@@ -189,12 +193,13 @@ def load_path(accept_encoding:list[str], path:str) -> tuple[int,dict[str,Any],by
         if not content:
             content = f.read()
             if len(content)!=content_length:
-                raise RuntimeError(f"expected {path!r} to contain {content_length} bytes"+
-                                   f" but read {len(content)} bytes")
-            if content_length>128 and \
-            ("gzip" in accept) and \
-            ("gzip" in HTTP_ACCEPT_ENCODING) \
-            and (ext not in (".png", )):
+                raise RuntimeError(f"expected {path!r} to contain {content_length} bytes but read {len(content)} bytes")
+            if all((
+                content_length>128,
+                "gzip" in accept,
+                "gzip" in HTTP_ACCEPT_ENCODING,
+                ext not in (".png", ),
+            )):
                 #gzip it on the fly:
                 import zlib  # pylint: disable=import-outside-toplevel
                 gzip_compress = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
@@ -240,15 +245,14 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self.extra_headers : dict[str,Any] = {}
         super().__init__(sock, addr, server)
 
-
-    def log_error(self, fmt, *args) -> None:  #pylint: disable=arguments-differ
-        #don't log 404s at error level:
+    def log_error(self, fmt, *args) -> None:  # pylint: disable=arguments-differ
+        # don't log 404s at error level:
         if len(args)==2 and args[0]==404:
             log(fmt, *args)
         else:
             log.error(fmt, *args)
 
-    def log_message(self, fmt, *args) -> None:  #pylint: disable=arguments-differ
+    def log_message(self, fmt, *args) -> None:  # pylint: disable=arguments-differ
         if args and len(args)==3 and fmt=='"%s" %s %s' and args[1]=="400":
             fmt = '"%r" %s %s'
             largs = list(args)
@@ -256,12 +260,11 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             args = tuple(largs)
         log(fmt, *args)
 
-
     def end_headers(self) -> None:
-        #magic for querying request header values:
+        # magic for querying request header values:
         path = getattr(self, "path", "")
         if path.endswith("?echo-headers"):
-            #ie: "en-GB,en-US;q=0.8,en;q=0.6"
+            # ie: "en-GB,en-US;q=0.8,en;q=0.6"
             accept = self.headers.get("Accept-Language")
             if accept:
                 self.extra_headers["Echo-Accept-Language"] = std(accept, extras="-,./:;=")
@@ -286,11 +289,11 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         self.handle_request()
 
-
     def handle_authentication(self) -> bool:
         if not self.password:
             return True
         authlog = Logger("auth", "http")
+
         def auth_err(msg):
             self.do_AUTHHEAD()
             self.wfile.write(msg.encode("latin1"))
@@ -305,7 +308,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         authlog("handle_request() auth header=%s", auth)
         if not auth:
             return auth_err("missing authentication header")
-        #ie: auth = 'Basic dGVzdDp0ZXN0'
+        # ie: auth = 'Basic dGVzdDp0ZXN0'
         if not auth.startswith("Basic "):
             return auth_err("invalid authentication header")
         b64str = auth.split("Basic ", 1)[1]
@@ -319,7 +322,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         username, password = s.split(":", 1)
         if (self.username and username!=self.username) or password!=self.password:
             authlog("http authentication: expected %s:%s but received %s:%s",
-                self.username or "", self.password, username, password)
+                    self.username or "", self.password, username, password)
             return auth_err("invalid credentials")
         authlog("http authentication passed")
         return True
@@ -354,14 +357,13 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/html")
         self.end_headers()
 
-
     def send_error(self, code, message=None, explain=None) -> None:
         try:
             super().send_error(code, message, explain)
         except OSError:
             log(f"failed to send {code} error - maybe some of the headers were already sent?", exc_info=True)
 
-    #code taken from MIT licensed code in GzipSimpleHTTPServer.py
+    # code taken from MIT licensed code in GzipSimpleHTTPServer.py
     def send_head(self):
         path = self.path.split("?",1)[0].split("#",1)[0]
         #strip path after second slash:

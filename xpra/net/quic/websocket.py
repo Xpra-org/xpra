@@ -18,9 +18,12 @@ from xpra.util.str_fn import ellipsizer
 from xpra.log import Logger
 log = Logger("quic")
 
-#can be used to use substreams based on packet prefix: sound,webcam,draw
-SUBSTREAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get("XPRA_QUIC_SUBSTREAM_PACKET_TYPES", "").split(",") if x.strip())
-#SUBSTREAM_PACKET_LOSS_PCT = envint("XPRA_QUIC_SUBSTREAM_PACKET_LOSS_PCT", 0)
+# can be used to use substreams based on packet prefix: sound,webcam,draw
+SUBSTREAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get(
+    "XPRA_QUIC_SUBSTREAM_PACKET_TYPES",
+    ""
+).split(",") if x.strip())
+# SUBSTREAM_PACKET_LOSS_PCT = envint("XPRA_QUIC_SUBSTREAM_PACKET_LOSS_PCT", 0)
 
 
 class ServerWebSocketConnection(XpraQuicConnection):
@@ -65,7 +68,7 @@ class ServerWebSocketConnection(XpraQuicConnection):
             "server"    : SERVER_NAME,
             "date"      : http_date(),
             "sec-websocket-protocol" : "xpra",
-            })
+        })
 
     def get_packet_stream_id(self, packet_type) -> int:
         if self.closed or not self._use_substreams or not packet_type:
@@ -94,7 +97,7 @@ class ServerWebSocketConnection(XpraQuicConnection):
             ":scheme" : self.scope.get("scheme", "wss"),
             ":authority" : self.scope.get("transport-info", {}).get("sockname", ("localhost", ))[0],
             ":path" : self.scope.get("path", "/"),
-            })
+        })
         try:
             stream_id = self.connection.send_push_promise(self.stream_id, headers)
         except NoAvailablePushIDError:
@@ -110,5 +113,5 @@ class ServerWebSocketConnection(XpraQuicConnection):
             ":status" : 200,
             "substream" : self.stream_id,
             "stream-type" : stream_type,
-            })
+        })
         return stream_id

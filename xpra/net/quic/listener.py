@@ -138,8 +138,8 @@ class HttpServerProtocol(QuicConnectionProtocol):
                 "scheme"        : "wss",
             }
             wsc = ServerWebSocketConnection(connection=self._http, scope=scope,
-                                    stream_id=event.stream_id,
-                                    transmit=self.transmit)
+                                            stream_id=event.stream_id,
+                                            transmit=self.transmit)
             socket_options = {}
             self._xpra_server.make_protocol("quic", wsc, socket_options, protocol_class=WebSocketProtocol)
             return wsc
@@ -170,6 +170,7 @@ class HttpServerProtocol(QuicConnectionProtocol):
 
 async def do_listen(sock, xpra_server, cert, key, retry):
     log(f"do_listen({sock}, {xpra_server}, {cert}, {key}, {retry})")
+
     def create_protocol(*args, **kwargs):
         return HttpServerProtocol(*args, xpra_server=xpra_server, **kwargs)
     configuration = QuicConfiguration(
@@ -196,7 +197,7 @@ async def do_listen(sock, xpra_server, cert, key, retry):
                 session_ticket_fetcher=session_ticket_store.pop,
                 session_ticket_handler=session_ticket_store.add,
                 retry=retry,
-                )
+            )
         loop = asyncio.get_event_loop()
         r = await loop.create_datagram_endpoint(create_server, sock=sock)
         log(f"create_datagram_endpoint({create_server}, {sock})={r}")
@@ -204,6 +205,7 @@ async def do_listen(sock, xpra_server, cert, key, retry):
     except Exception:
         log.error(f"Error: listening on {sock}", exc_info=True)
         raise
+
 
 def listen_quic(sock, xpra_server, socket_options : dict):
     log(f"listen_quic({sock}, {xpra_server}, {socket_options})")

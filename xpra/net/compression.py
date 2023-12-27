@@ -22,6 +22,7 @@ PERFORMANCE_ORDER : tuple[str, ...] = ("none", "lz4", "brotli")
 # require compression (disallow 'none'):
 PERFORMANCE_COMPRESSION : tuple[str, ...] = ("lz4", "brotli")
 
+
 @dataclass
 class Compression:
     name : str
@@ -29,30 +30,35 @@ class Compression:
     compress : Callable[[ByteString,int], ByteString]
     decompress : Callable[[ByteString], ByteString]
 
-COMPRESSION : dict[str,Compression] = {}
+
+COMPRESSION : dict[str, Compression] = {}
 
 
 def init_lz4() -> Compression:
-    #pylint: disable=import-outside-toplevel
-    #pylint: disable=redefined-outer-name
+    # pylint: disable=import-outside-toplevel
+    # pylint: disable=redefined-outer-name
     from xpra.net.lz4.lz4 import compress, decompress, get_version  # @UnresolvedImport
     from xpra.net.protocol.header import LZ4_FLAG
+
     def lz4_compress(packet, level):
         flag = min(15, level) | LZ4_FLAG
         return flag, compress(packet, acceleration=max(0, 5-level//3))
+
     def lz4_decompress(data):
         return decompress(data, max_size=MAX_DECOMPRESSED_SIZE)
     return Compression("lz4", get_version(), lz4_compress, lz4_decompress)
 
+
 def init_brotli() -> Compression:
-    #pylint: disable=import-outside-toplevel
-    #pylint: disable=redefined-outer-name
+    # pylint: disable=import-outside-toplevel
+    # pylint: disable=redefined-outer-name
     from xpra.net.protocol.header import BROTLI_FLAG
     from xpra.net.brotli.compressor import compress, get_version  # @UnresolvedImport
     from xpra.net.brotli.decompressor import decompress  # @UnresolvedImport
     brotli_decompress = decompress
     brotli_compress = compress
     brotli_version = get_version()
+
     def brotli_compress_shim(packet, level):
         if len(packet)>1024*1024:
             level = min(9, level)
@@ -63,11 +69,13 @@ def init_brotli() -> Compression:
         return level | BROTLI_FLAG, brotli_compress(packet, quality=level)
     return Compression("brotli", brotli_version, brotli_compress_shim, brotli_decompress)
 
+
 def init_none() -> Compression:
     def nocompress(packet, _level):
         if not isinstance(packet, bytes):
             packet = bytes(str(packet), 'UTF-8')
         return 0, packet
+
     def nodecompress(v):
         return v
     return Compression("none", None, nocompress, nodecompress)
@@ -97,6 +105,7 @@ def init_compressors(*names) -> None:
             logger = Logger("network", "protocol")
             logger(f"no {x}", exc_info=True)
 
+
 def init_all() -> None:
     init_compressors(*(list(TRY_COMPRESSORS)+["none"]))
 
@@ -117,8 +126,10 @@ def get_compression_caps(full_info : int=1) -> dict[str,Any]:
         ccaps[""] = True
     return caps
 
+
 def get_enabled_compressors(order=TRY_COMPRESSORS) -> tuple[str,...]:
     return tuple(x for x in order if x in COMPRESSION)
+
 
 def get_compressor(name) -> Callable:
     c = COMPRESSION.get(name)
@@ -129,53 +140,65 @@ def get_compressor(name) -> Callable:
 
 class Compressed:
     __slots__ = ("datatype", "data", "can_inline")
+
     def __init__(self, datatype, data, can_inline=False):
         assert data is not None, "compressed data cannot be set to None"
         self.datatype = datatype
         self.data = data
         self.can_inline = can_inline
+
     def __len__(self):
         return len(self.data)
+
     def __repr__(self):
         return f"Compressed({self.datatype}: {len(self.data)} bytes)"
 
 
 class LevelCompressed(Compressed):
     __slots__ = ("level", "algorithm")
+
     def __init__(self, datatype, data, level, algo, can_inline):
         super().__init__(datatype, data, can_inline)
         self.level = level
         self.algorithm = algo
+
     def __repr__(self):
         return f"LevelCompressed({self.datatype}: {len(self.data)} bytes as {self.algorithm}/{self.level}"
 
 
 class LargeStructure:
     __slots__ = ("datatype", "data")
+
     def __init__(self, datatype, data):
         self.datatype = datatype
         self.data = data
+
     def __len__(self):
         return len(self.data)
+
     def __repr__(self):
         return f"LargeStructure({self.datatype}: {len(self.data)} bytes)"
 
+
 class Compressible(LargeStructure):
     __slots__ = ()
-    #wrapper for data that should be compressed at some point,
-    #to use this class, you must override compress()
+    # wrapper for data that should be compressed at some point,
+    # to use this class, you must override compress()
+
     def __repr__(self):
         return f"Compressible({self.datatype}: {len(self.data)} bytes)"
+
     def compress(self):
         raise NotImplementedError(f"compress() function is not defined on {self} ({type(self)})")
 
 
 def compressed_wrapper(datatype, data, level=5, can_inline=True, **kwargs) -> Compressed:
     size = len(data)
+
     def no():
         return Compressed(f"raw {datatype}", data, can_inline=can_inline)
     if size<=MIN_COMPRESS_SIZE:
-        #don't bother
+        # don't bother
         return no()
     if size>MAX_DECOMPRESSED_SIZE:
         sizemb = size//1024//1024
@@ -185,9 +208,9 @@ def compressed_wrapper(datatype, data, level=5, can_inline=True, **kwargs) -> Co
         algo = next(x for x in PERFORMANCE_COMPRESSION if kwargs.get(x) and x in COMPRESSION)
     except StopIteration:
         return no()
-        #raise InvalidCompressionException("no compressors available")
-    #should use a smarter selection of algo based on datatype
-    #ie: 'text' -> brotli
+        # raise InvalidCompressionException("no compressors available")
+    # should use a smarter selection of algo based on datatype
+    # ie: 'text' -> brotli
     c = COMPRESSION[algo]
     cl, cdata = c.compress(data, level)
     min_saving = int(kwargs.get("min_saving", 0))
@@ -219,15 +242,16 @@ def decompress(data:bytes, level:int):
         algo = "zlib"
     return decompress_by_name(data, algo)
 
-def decompress_by_name(data:bytes, algo:str):
+
+def decompress_by_name(data: bytes, algo: str):
     c = COMPRESSION.get(algo)
     if c is None:
         raise InvalidCompressionException(f"{algo} is not available")
     return c.decompress(data)
 
 
-def main(): # pragma: no cover
-    #pylint: disable=import-outside-toplevel
+def main():         # pragma: no cover
+    # pylint: disable=import-outside-toplevel
     from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context
     with program_context("Compression", "Compression Info"):

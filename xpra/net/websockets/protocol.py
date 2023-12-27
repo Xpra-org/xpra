@@ -12,7 +12,7 @@ from xpra.net.websockets.header import encode_hybi_header, decode_hybi, close_pa
 from xpra.net.websockets.common import (
     OPCODES,
     OPCODE_BINARY, OPCODE_CONTINUE, OPCODE_TEXT, OPCODE_CLOSE, OPCODE_PING, OPCODE_PONG,
-    )
+)
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.util.env import envbool, first_time
 from xpra.util.str_fn import hexstr, memoryview_to_bytes
@@ -48,10 +48,9 @@ class WebSocketProtocol(SocketProtocol):
         self.ws_data = b""
         self.ws_payload = []
 
-    def send_ws_close(self, code:int=1000, reason:str="closing") -> None:
+    def send_ws_close(self, code: int = 1000, reason:str="closing") -> None:
         data = close_packet(code, reason)
         self.flush_then_close(None, data)
-
 
     def make_wsframe_header(self, packet_type, items) -> ByteString:
         payload_len = sum(len(item) for item in items)
@@ -60,13 +59,13 @@ class WebSocketProtocol(SocketProtocol):
             packet_type, len(items), payload_len, self.ws_mask, hexstr(header), len(header))
         if self.ws_mask:
             mask = os.urandom(4)
-            #now mask all the items:
+            # now mask all the items:
             for i, item in enumerate(items):
                 items[i] = hybi_mask(mask, item)
             return header+mask
         return header
 
-    def parse_ws_frame(self, buf:ByteString) -> None:
+    def parse_ws_frame(self, buf: ByteString) -> None:
         if not buf:
             self._read_queue_put(buf)
             return
@@ -82,8 +81,8 @@ class WebSocketProtocol(SocketProtocol):
             parsed = decode_hybi(ws_data)
             if parsed is None:
                 log("parse_ws_frame(%i bytes) not enough data: %r", len(ws_data), ws_data)
-                #not enough data to get a full websocket frame,
-                #save it for later:
+                # not enough data to get a full websocket frame,
+                # save it for later:
                 self.ws_data = ws_data
                 return
             opcode, payload, processed, fin = parsed
@@ -96,7 +95,7 @@ class WebSocketProtocol(SocketProtocol):
                 if not fin:
                     #wait for more
                     continue
-                #join all the frames and process the payload:
+                # join all the frames and process the payload:
                 full_payload = b"".join(memoryview_to_bytes(v) for v in self.ws_payload)
                 self.ws_payload = []
                 opcode = self.ws_payload_opcode
@@ -112,7 +111,7 @@ class WebSocketProtocol(SocketProtocol):
                         log(f"invalid opcode {opcode} from {buf}")
                         log(f"parsed as {parsed}")
                         raise RuntimeError(f"cannot handle fragmented {op} frames")
-                    #fragmented, keep this payload for later
+                    # fragmented, keep this payload for later
                     self.ws_payload_opcode = opcode
                     self.ws_payload.append(payload)
                     continue
@@ -132,17 +131,17 @@ class WebSocketProtocol(SocketProtocol):
                 log.warn("Warning unhandled websocket opcode '%s'", OPCODES.get(opcode, f"{opcode:x}"))
                 log("payload=%r", payload)
 
-    def _process_ws_ping(self, payload:ByteString) -> None:
+    def _process_ws_ping(self, payload: ByteString) -> None:
         log("_process_ws_ping(%r)", payload)
         item = encode_hybi_header(OPCODE_PONG, len(payload)) + memoryview_to_bytes(payload)
         items = (item, )
         with self._write_lock:
             self.raw_write("ws-ping", items)
 
-    def _process_ws_pong(self, payload:ByteString) -> None:
+    def _process_ws_pong(self, payload: ByteString) -> None:
         log("_process_ws_pong(%r)", payload)
 
-    def _process_ws_close(self, payload:ByteString) -> None:
+    def _process_ws_close(self, payload: ByteString) -> None:
         log("_process_ws_close(%r)", payload)
         if len(payload)<2:
             self._connection_lost("unknown reason")

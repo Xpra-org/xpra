@@ -52,11 +52,16 @@ FLUSH = envbool("XPRA_SUBPROCESS_FLUSH", False)
 
 
 FAULT_RATE = envint("XPRA_WRAPPER_FAULT_INJECTION_RATE")
+
+
 def nofault(_p):
     """ by default, don't inject any errors """
+
+
 INJECT_FAULT = nofault
 if FAULT_RATE>0:
     _counter = 0
+
     def DO_INJECT_FAULT(p):
         global _counter
         _counter += 1
@@ -77,7 +82,7 @@ def setup_fastencoder_nocompression(protocol):
             break
         except Exception as e:
             log("failed to enable %s: %s", encoder, e)
-    #we assume this is local, so no compression:
+    # we assume this is local, so no compression:
     protocol.enable_compressor("none")
 
 
@@ -98,7 +103,7 @@ class subprocess_callee:
         self.output_filename = output_filename
         self.method_whitelist = method_whitelist
         self.large_packets = []
-        #the gobject instance which is wrapped:
+        # the gobject instance which is wrapped:
         self.wrapped_object = wrapped_object
         self.send_queue = SimpleQueue()
         self.protocol = None
@@ -111,7 +116,6 @@ class subprocess_callee:
         self.idle_add = GLib.idle_add
         self.timeout_add = GLib.timeout_add
         self.source_remove = GLib.source_remove
-
 
     def connect_export(self, signal_name:str, *user_data) -> None:
         """ gobject style signal registration for the wrapped object,
@@ -127,7 +131,6 @@ class subprocess_callee:
         log("export(%s, ...)", signal_name)
         data = args[1:-1]
         self.send(signal_name, *tuple(data))
-
 
     def start(self) -> int:
         self.protocol = self.make_protocol()
@@ -165,20 +168,20 @@ class subprocess_callee:
                     log("%s.close()", o, exc_info=True)
 
     def make_protocol(self) -> SocketProtocol:
-        #figure out where we read from and write to:
+        # figure out where we read from and write to:
         if self.input_filename=="-":
-            #disable stdin buffering:
+            # disable stdin buffering:
             self._input = os.fdopen(sys.stdin.fileno(), "rb", 0)
             setbinarymode(self._input.fileno())
         else:
             self._input = open(self.input_filename, "rb")
         if self.output_filename=="-":
-            #disable stdout buffering:
+            # disable stdout buffering:
             self._output = os.fdopen(sys.stdout.fileno(), "wb", 0)
             setbinarymode(self._output.fileno())
         else:
             self._output = open(self.output_filename, "wb")
-        #stdin and stdout wrapper:
+        # stdin and stdout wrapper:
         conn = TwoFileConnection(self._output, self._input,
                                  abort_test=None, target=self.name,
                                  socktype=self.name, close_cb=self.net_stop)
@@ -191,17 +194,14 @@ class subprocess_callee:
         protocol.large_packets = self.large_packets
         return protocol
 
-
     def run(self) -> None:
         self.mainloop.run()
 
-
     def net_stop(self) -> None:
-        #this is called from the network thread,
-        #we use idle add to ensure we clean things up from the main thread
+        # this is called from the network thread,
+        # we use idle add to ensure we clean things up from the main thread
         log("net_stop() will call stop from main thread")
         self.idle_add(self.stop)
-
 
     def cleanup(self) -> None:
         """ subclasses may override this method """
@@ -221,13 +221,13 @@ class subprocess_callee:
 
     def handle_signal(self, sig) -> None:
         """ This is for OS signals SIGINT and SIGTERM """
-        #next time, just stop:
+        # next time, just stop:
         register_os_signals(self.signal_stop, self.name)
         signame = SIGNAMES.get(sig, sig)
         log("handle_signal(%s) calling stop from main thread", signame)
         self.send("signal", signame)
         self.timeout_add(0, self.cleanup)
-        #give time for the network layer to send the signal message
+        # give time for the network layer to send the signal message
         self.timeout_add(150, self.stop)
 
     def signal_stop(self, sig) -> None:
@@ -235,7 +235,6 @@ class subprocess_callee:
         signame = SIGNAMES.get(sig, sig)
         log("signal_stop(%s) calling stop", signame)
         self.stop()
-
 
     def send(self, *args) -> None:
         if HEXLIFY_PACKETS:
@@ -273,7 +272,7 @@ class subprocess_callee:
         if command=="exit":
             log("received exit message")
             sys.exit(0)
-        #make it easier to hookup signals to methods:
+        # make it easier to hookup signals to methods:
         attr = command.replace("-", "_")
         if self.method_whitelist is not None and attr not in self.method_whitelist:
             log.warn("invalid command %r, not in whitelist: %s", attr, csv(self.method_whitelist))
@@ -299,23 +298,24 @@ def exec_kwargs() -> dict[str,Any]:
     if WIN32:
         from xpra.platform.win32 import REDIRECT_OUTPUT
         if REDIRECT_OUTPUT:
-            #stderr is not valid and would give us this error:
+            # stderr is not valid and would give us this error:
             # WindowsError: [Errno 6] The handle is invalid
             stderr = open(os.devnull, 'w')
         if not WIN32_SHOWWINDOW:
             startupinfo = subprocess.STARTUPINFO()  # @UndefinedVariable
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW  # @UndefinedVariable
-            startupinfo.wShowWindow = 0     #aka win32.con.SW_HIDE
+            startupinfo.wShowWindow = 0     # aka win32.con.SW_HIDE
             kwargs["startupinfo"] = startupinfo
     kwargs["stderr"] = stderr
     return kwargs
 
-def exec_env(blacklist=("LS_COLORS", )) -> dict[str,str]:
+
+def exec_env(blacklist=("LS_COLORS", )) -> dict[str, str]:
     env = os.environ.copy()
     env["XPRA_SKIP_UI"] = "1"
     env["XPRA_FORCE_COLOR_LOG"] = "1"
-    #let's make things more complicated than they should be:
-    #on win32, the environment can end up containing unicode, and subprocess chokes on it
+    # let's make things more complicated than they should be:
+    # on win32, the environment can end up containing unicode, and subprocess chokes on it
     for k,v in env.items():
         if k in blacklist:
             continue
@@ -344,7 +344,7 @@ class subprocess_caller:
         self.send_queue = SimpleQueue()
         self.signal_callbacks = {}
         self.large_packets = []
-        #hook a default packet handlers:
+        # hook a default packet handlers:
         self.connect(CONNECTION_LOST, self.connection_lost)
         self.connect(GIBBERISH, self.gibberish)
         GLib = gi_import("GLib")
@@ -352,11 +352,9 @@ class subprocess_caller:
         self.timeout_add = GLib.timeout_add
         self.source_remove = GLib.source_remove
 
-
     def connect(self, signal:str, cb, *args) -> None:
         """ gobject style signal registration """
         self.signal_callbacks.setdefault(signal, []).append((cb, list(args)))
-
 
     def subprocess_exit(self, *args) -> None:
         #beware: this may fire more than once!
@@ -375,7 +373,7 @@ class subprocess_caller:
             raise ConnectionClosedException("cannot %s: subprocess has terminated" % action) from None
 
     def make_protocol(self) -> SocketProtocol:
-        #make a connection using the process stdin / stdout
+        # make a connection using the process stdin / stdout
         conn = TwoFileConnection(self.process.stdin, self.process.stdout,
                                  abort_test=self.abort_test, target=self.description,
                                  socktype=self.description, close_cb=self.subprocess_exit)
@@ -387,7 +385,6 @@ class subprocess_caller:
         setup_fastencoder_nocompression(protocol)
         protocol.large_packets = self.large_packets
         return protocol
-
 
     def exec_subprocess(self) -> subprocess.Popen:
         kwargs = exec_kwargs()
@@ -433,7 +430,6 @@ class subprocess_caller:
                 log("stop_protocol() protocol=%s", p, exc_info=True)
                 log.warn("Warning: failed to close the subprocess connection %s: %s", p, e)
 
-
     def connection_lost(self, *args) -> None:
         log("connection_lost%s", args)
         self.stop()
@@ -442,7 +438,6 @@ class subprocess_caller:
         log.warn("%s stopping on gibberish:", self.description)
         log.warn(" %s", repr_ellipsized(args[1], limit=80))
         self.stop()
-
 
     def get_packet(self):
         try:

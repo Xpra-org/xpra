@@ -19,7 +19,8 @@ log = Logger("network", "mdns")
 
 class Avahilistener:
 
-    def __init__(self, service_type=XPRA_TCP_MDNS_TYPE, mdns_found=None, mdns_add=None, mdns_remove=None, mdns_update=None):
+    def __init__(self, service_type=XPRA_TCP_MDNS_TYPE,
+                 mdns_found=None, mdns_add=None, mdns_remove=None, mdns_update=None):
         log("Avahilistener%s", (service_type, mdns_found, mdns_add, mdns_remove, mdns_update))
         try:
             self.bus = init_system_bus()
@@ -36,7 +37,7 @@ class Avahilistener:
         self.mdns_found = mdns_found
         self.mdns_add = mdns_add
         self.mdns_remove = mdns_remove
-        #self.mdns_update = mdns_update
+        # self.mdns_update = mdns_update
         self.server : Any = None
         self.sbrowser : Any = None
 
@@ -47,9 +48,9 @@ class Avahilistener:
     def service_resolved(self, interface, protocol, name:str, stype:str,
                          domain:str, host:str, x, address, port:int, text_array, v) -> None:
         log("Avahilistener.service_resolved%s",
-        (interface, protocol, name, stype, domain, host, x, address, port, "..", v))
+            (interface, protocol, name, stype, domain, host, x, address, port, "..", v))
         if self.mdns_add:
-            #parse text data:
+            # parse text data:
             text = {}
             with log.trap_error("Error parsing text record"):
                 for text_line in text_array:
@@ -71,8 +72,8 @@ class Avahilistener:
         if self.mdns_found:
             self.mdns_found(dbus_to_native(interface), dbus_to_native(name))
         self.server.ResolveService(interface, protocol, name, stype,
-                domain, avahi.PROTO_UNSPEC, dbus.UInt32(0),
-                reply_handler=self.service_resolved, error_handler=self.resolve_error)
+                                   domain, avahi.PROTO_UNSPEC, dbus.UInt32(0),
+                                   reply_handler=self.service_resolved, error_handler=self.resolve_error)
 
     def service_removed(self, interface, protocol, name:str, stype:str, domain, flags:int) -> None:
         log("service_removed%s", (interface, protocol, name, stype, domain, flags))
@@ -80,15 +81,17 @@ class Avahilistener:
             nargs = (dbus_to_native(x) for x in (interface, protocol, name, stype, domain, flags))
             self.mdns_remove(*nargs)
 
-
     def start(self) -> None:
         self.server = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME, '/'), 'org.freedesktop.Avahi.Server')
         log("Avahilistener.start() server=%s", self.server)
 
-        self.sbrowser = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME,
-                                self.server.ServiceBrowserNew(avahi.IF_UNSPEC,
-                                avahi.PROTO_UNSPEC, self.service_type, 'local', dbus.UInt32(0))),
-                                avahi.DBUS_INTERFACE_SERVICE_BROWSER)
+        self.sbrowser = dbus.Interface(
+            self.bus.get_object(avahi.DBUS_NAME,
+                                self.server.ServiceBrowserNew(avahi.IF_UNSPEC, avahi.PROTO_UNSPEC,
+                                                              self.service_type, 'local', dbus.UInt32(0)
+                                                              )
+                                ),
+            avahi.DBUS_INTERFACE_SERVICE_BROWSER)
         log("Avahilistener.start() service browser=%s", self.sbrowser)
         s = self.sbrowser.connect_to_signal("ItemNew", self.service_found)
         self.signal_match.append(s)
@@ -106,10 +109,13 @@ class Avahilistener:
 
 
 def main():
+
     def mdns_found(*args):
         print(f"mdns_found: {args}")
+
     def mdns_add(*args):
         print(f"mdns_add: {args}")
+
     def mdns_remove(*args):
         print(f"mdns_remove: {args}")
 
@@ -117,6 +123,7 @@ def main():
     loop_init()
     from gi.repository import GLib  # @UnresolvedImport
     listeners = []
+
     def add(service_type):
         listener = Avahilistener(service_type, mdns_found, mdns_add, mdns_remove)
         listeners.append(listener)

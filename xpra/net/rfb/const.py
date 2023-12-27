@@ -6,9 +6,9 @@
 from struct import Struct
 from enum import IntEnum
 
-#merge header and packet if packet is smaller than:
-PIXEL_FORMAT : bytes = b"BBBBHHHBBBBBB"
-CLIENT_INIT : bytes = b"!HH"+PIXEL_FORMAT+b"I"
+# merge header and packet if packet is smaller than:
+PIXEL_FORMAT: bytes = b"BBBBHHHBBBBBB"
+CLIENT_INIT: bytes = b"!HH"+PIXEL_FORMAT+b"I"
 
 
 class RFBClientMessage(IntEnum):
@@ -43,6 +43,7 @@ class RFBClientMessage(IntEnum):
     #VMWARE = 254
     QEMUClientMessage = 255
 
+
 CLIENT_PACKET_TYPE_STR : dict[int, str] = {}
 for cm in RFBClientMessage:
     CLIENT_PACKET_TYPE_STR[cm.value] = cm.name
@@ -56,17 +57,17 @@ for msg, fmt in {
     RFBClientMessage.KeyEvent                   : b"!BBBBi",
     RFBClientMessage.PointerEvent               : b"!BBHH",
     RFBClientMessage.ClientCutText              : b"!BBBBi",
-    }.items():
+}.items():
     PACKET_STRUCT[msg] = Struct(fmt)
 
 
 class RFBServerMessage(IntEnum):
-    #server to client messages:
+    # server to client messages:
     FRAMEBUFFERUPDATE = 0
     SETCOLORMAPENTRIES = 1
     BELL = 2
     SERVERCUTTEXT = 3
-    #optional:
+    # optional:
     RESIZEFRAMEBUFFER1 = 4
     KEYFRAMEUPDATE = 4
     FILETRANSFER = 7
@@ -85,9 +86,11 @@ class RFBServerMessage(IntEnum):
     VMWARE2 = 254
     QEMUSERVERMESSAGE = 255
 
+
 SERVER_PACKET_TYPE_STR : dict[int, str] = {}
 for sm in RFBServerMessage:
     SERVER_PACKET_TYPE_STR[sm.value] = sm.name
+
 
 class RFBEncoding(IntEnum):
     RAW = 0
@@ -123,10 +126,11 @@ class RFBEncoding(IntEnum):
     CURSORWITHALPHA = -314
     VA_H264 = 0x48323634
 
-    #-23 to -32    JPEG Quality Level Pseudo-encoding
-    #-247 to -256    Compression Level Pseudo-encoding
-    #-412 to -512    JPEG Fine-Grained Quality Level Pseudo-encoding
-    #-763 to -768    JPEG Subsampling Level Pseudo-encoding
+    # -23 to -32    JPEG Quality Level Pseudo-encoding
+    # -247 to -256    Compression Level Pseudo-encoding
+    # -412 to -512    JPEG Fine-Grained Quality Level Pseudo-encoding
+    # -763 to -768    JPEG Subsampling Level Pseudo-encoding
+
 
 ENCODING_STR : dict[int, str] = {}
 for e in RFBEncoding:
@@ -140,7 +144,8 @@ class RFBAuth(IntEnum):
     TIGHT = 16
     VeNCrypt = 19
 
-AUTH_STR : dict[int,str] = {
+
+AUTH_STR : dict[int, str] = {
     RFBAuth.INVALID     : "Invalid",
     RFBAuth.NONE        : "None",
     RFBAuth.VNC         : "VNC",
@@ -153,7 +158,7 @@ AUTH_STR : dict[int,str] = {
     20                  : "SASL",
     21                  : "MD5",
     22                  : "xvp",
-    }
+}
 for i in (3, 4):
     AUTH_STR[i] = "RealVNC"
 for i in range(7, 16):
@@ -164,7 +169,7 @@ for i in range(30, 35):
     AUTH_STR[i] = "Apple"
 
 
-RFB_KEYNAMES : dict[int, str] = {
+RFB_KEYNAMES: dict[int, str] = {
     0xff08      : "BackSpace",
     0xff09      : "Tab",
     0xff0d      : "Return",
@@ -253,7 +258,7 @@ RFB_KEYNAMES : dict[int, str] = {
     0x1008ff26  : "XF86Back",
     0x1008ff27  : "XF86Forward",
     0x1008ff18  : "XF86HomePage",
-    }
+}
 
 for i in range(1, 13):
     RFB_KEYNAMES[0xffbe+(i-1)] = "F%i" % i

@@ -23,23 +23,24 @@ IPV6_LO = envbool("XPRA_ZEROCONF_IPV6_LOOPBACK", False)
 LOOPBACK_AFAM = {
     "0.0.0.0"   : socket.AF_INET,
     "::"        : socket.AF_INET6,
-    }
+}
 
 
 def get_interface_index(host):
-    #we don't use interface numbers with zeroconf,
-    #so just return the interface name,
-    #which is also unique
+    # we don't use interface numbers with zeroconf,
+    # so just return the interface name,
+    # which is also unique
     return get_iface(host)
+
 
 def inet_ton(af, addr):
     if af==socket.AF_INET:
         return socket.inet_aton(addr)
-    return socket.inet_pton(af, addr)   #@UndefinedVariable
+    return socket.inet_pton(af, addr)   # @UndefinedVariable
 
 
 def txt_rec(text_dict) -> dict:
-    #prevent zeroconf from mangling our ints into booleans:
+    # prevent zeroconf from mangling our ints into booleans:
     new_dict = {}
     for k,v in text_dict.items():
         if isinstance(v, int):
@@ -57,6 +58,7 @@ class ZeroconfPublishers:
         log("ZeroconfPublishers%s", (listen_on, service_name, service_type, text_dict))
         self.services = []
         self.ports = {}
+
         def add_address(host, port, af=socket.AF_INET):
             try:
                 if af==socket.AF_INET6 and host.find("%"):
@@ -94,11 +96,11 @@ class ZeroconfPublishers:
                     if first_time(f"zeroconf-{host}"):
                         log.info(f"python-zeroconf: {host!r} IPv6 loopback address is not supported")
                         log("try XPRA_ZEROCONF_IPV6_LOOPBACK=1 to enable it at your own risk")
-                    #means that IPV6 is False and "::" is not supported
-                    #at time of writing, https://pypi.org/project/zeroconf/ says:
-                    #_listening on localhost (::1) does not work. Help with understanding why is appreciated._
+                    # means that IPV6 is False and "::" is not supported
+                    # at time of writing, https://pypi.org/project/zeroconf/ says:
+                    # _listening on localhost (::1) does not work. Help with understanding why is appreciated._
                     continue
-                #annoying: we have to enumerate all interfaces
+                # annoying: we have to enumerate all interfaces
                 for iface, addresses in get_interfaces_addresses().items():
                     log("%s %s: %s", iface, af, addresses.get(af, {}))
                     for defs in addresses.get(af, ()):
@@ -143,7 +145,7 @@ class ZeroconfPublisher:
         self.kwargs = {}
         self.registered = False
         try:
-            #ie: service_name = localhost.localdomain :2 (ssl)
+            # ie: service_name = localhost.localdomain :2 (ssl)
             parts = service_name.split(" ", 1)
             regname = parts[0].split(".")[0]
             if len(parts)==2:
@@ -152,18 +154,18 @@ class ZeroconfPublisher:
             regname = regname.replace(" ", "-")
             regname = regname.replace("(", "")
             regname = regname.replace(")", "")
-            #ie: regname = localhost-2-ssl
+            # ie: regname = localhost-2-ssl
             st = service_type+"local."
             regname += "."+st
             td = txt_rec(text_dict or {})
             self.kwargs = {
-                "type_"         : st,       #_xpra._tcp.local.
+                "type_"         : st,       # "_xpra._tcp.local."
                 "name"          : regname,
                 "server"        : regname,
                 "port"          : port,
                 "properties"    : td,
                 "addresses"     : [self.address],
-                }
+            }
             service = ServiceInfo(**self.kwargs)
             log("ServiceInfo(%s)=%s", self.kwargs, service)
             self.service = service
@@ -203,7 +205,7 @@ class ZeroconfPublisher:
             self.zeroconf.update_service(si)
             self.service = si
         except KeyError as e:
-            #probably a race condition with cleanup
+            # probably a race condition with cleanup
             log("update_txt(%s)", txt, exc_info=True)
             log.warn("Warning: failed to update service")
             log.warn(" %s", e)
@@ -220,10 +222,12 @@ def main():
     service_name = "test %s" % int(random.random()*100000)
     from gi.repository import GLib  # @UnresolvedImport
     publishers = []
+
     def add(service_type):
         publisher = ZeroconfPublishers(host_ports, service_name, service_type, {"somename":"somevalue"})
         GLib.idle_add(publisher.start)
         publishers.append(publisher)
+
         def update_rec():
             publisher.update_txt({"somename": "someothervalue"})
         GLib.timeout_add(10*1000, update_rec)

@@ -12,19 +12,17 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from xpra.log import Logger
-from xpra.net.protocol.header import (
-    FLAGS_RENCODE, FLAGS_RENCODEPLUS, FLAGS_YAML, FLAGS_NOHEADER,
-    pack_header,
-    )
+from xpra.net.protocol.header import FLAGS_RENCODE, FLAGS_RENCODEPLUS, FLAGS_YAML, FLAGS_NOHEADER, pack_header
 from xpra.util.str_fn import strtobytes
 from xpra.util.env import envbool
 
-#all the encoders we know about:
+# all the encoders we know about:
 ALL_ENCODERS : tuple[str, ...] = ("rencodeplus", "none")
-#the encoders we may have, in the best compatibility order
+# the encoders we may have, in the best compatibility order
 TRY_ENCODERS : tuple[str, ...] = ("rencodeplus", "none")
-#order for performance:
+# order for performance:
 PERFORMANCE_ORDER : tuple[str, ...] = ("rencodeplus", )
+
 
 @dataclass
 class Encoding:
@@ -34,26 +32,30 @@ class Encoding:
     encode : Callable[[Any], ByteString]
     decode : Callable[[ByteString], Any]
 
+
 ENCODERS : dict[str,Encoding] = {}
 
 
 def init_rencodeplus() -> Encoding:
     from xpra.net.rencodeplus import rencodeplus    # type: ignore[attr-defined]
     rencodeplus_dumps = rencodeplus.dumps  # @UndefinedVariable
+
     def do_rencodeplus(v):
         return rencodeplus_dumps(v), FLAGS_RENCODEPLUS
-    return Encoding("rencodeplus", FLAGS_RENCODEPLUS, rencodeplus.__version__, do_rencodeplus, rencodeplus.loads)  # @UndefinedVariable
+    return Encoding("rencodeplus", FLAGS_RENCODEPLUS, rencodeplus.__version__, do_rencodeplus, rencodeplus.loads)
 
 
 def init_none() -> Encoding:
     def encode(data):
-        #just send data as a string for clients that don't understand xpra packet format:
+        # just send data as a string for clients that don't understand xpra packet format:
         import codecs
+
         def b(x):
             if isinstance(x, bytes):
                 return x
             return codecs.latin_1_encode(x)[0]
         return b(": ".join(str(x) for x in data)+"\n"), FLAGS_NOHEADER
+
     def decode(data):
         return data
     return Encoding("none", FLAGS_NOHEADER, "0", encode, decode)
@@ -77,6 +79,7 @@ def init_encoders(*names) -> None:
             logger = Logger("network", "protocol")
             logger.debug("no %s", x, exc_info=True)
 
+
 def init_all() -> None:
     init_encoders(*(list(TRY_ENCODERS)+["none"]))
 
@@ -93,7 +96,8 @@ def get_packet_encoding_caps(full_info : int=1) -> dict[str,Any]:
             d["version"] = e.version
     return caps
 
-def get_enabled_encoders(order: tuple[str, ...]=TRY_ENCODERS) -> tuple[str, ...]:
+
+def get_enabled_encoders(order: tuple[str, ...] = TRY_ENCODERS) -> tuple[str, ...]:
     return tuple(x for x in order if x in ENCODERS)
 
 
@@ -104,7 +108,8 @@ def get_encoder(e) -> Callable:
         raise ValueError(f"{e!r} is not available")
     return ENCODERS[e].encode
 
-def get_packet_encoding_type(protocol_flags:int) -> str:
+
+def get_packet_encoding_type(protocol_flags: int) -> str:
     if protocol_flags & FLAGS_RENCODEPLUS:
         return "rencodeplus"
     if protocol_flags & FLAGS_RENCODE:
@@ -118,7 +123,7 @@ class InvalidPacketEncodingException(Exception):
     pass
 
 
-def pack_one_packet(packet:tuple) -> bytes:
+def pack_one_packet(packet: tuple) -> bytes:
     ee = get_enabled_encoders()
     if ee:
         e = get_encoder(ee[0])
@@ -127,7 +132,7 @@ def pack_one_packet(packet:tuple) -> bytes:
     return strtobytes(packet)
 
 
-def decode(data, protocol_flags:int):
+def decode(data, protocol_flags: int):
     if isinstance(data, memoryview):
         data = data.tobytes()
     ptype = get_packet_encoding_type(protocol_flags)
@@ -137,7 +142,7 @@ def decode(data, protocol_flags:int):
     raise InvalidPacketEncodingException(f"{ptype!r} decoder is not available")
 
 
-def main(): # pragma: no cover
+def main():     # pragma: no cover
     from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context
     with program_context("Packet Encoding", "Packet Encoding Info"):

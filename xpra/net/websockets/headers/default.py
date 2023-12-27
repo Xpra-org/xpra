@@ -10,7 +10,7 @@ HEADERS = {
     b"Upgrade"                  : b"websocket",
     b"Sec-WebSocket-Version"    : b"13",
     b"Sec-WebSocket-Protocol"   : b"binary",
-    }
+}
 
 
 def get_headers(host:str, port:int) -> dict[bytes,bytes]:    #pylint: disable=unused-argument

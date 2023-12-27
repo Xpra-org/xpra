@@ -12,7 +12,7 @@ from socket import if_nametoindex, if_indextoname
 try:
     from dbus.exceptions import DBusException
 except ImportError:
-    #not available in all versions of the bindings?
+    # not available in all versions of the bindings?
     DBusException = Exception
 
 from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE, SHOW_INTERFACE
@@ -121,13 +121,14 @@ class AvahiPublishers:
 
 class AvahiPublisher:
 
-    def __init__(self, bus, name, port, stype=XPRA_TCP_MDNS_TYPE, domain="", host="", text=(), interface=avahi.IF_UNSPEC):
+    def __init__(self, bus, name, port, stype=XPRA_TCP_MDNS_TYPE,
+                 domain="", host="", text=(), interface=avahi.IF_UNSPEC):
         log("AvahiPublisher%s", (bus, name, port, stype, domain, host, text, interface))
         self.bus = bus
         self.name = name
         self.stype = stype
         self.domain = domain
-        if host=="::":
+        if host == "::":
             host = ""
         self.host = host
         self.port = port
@@ -187,16 +188,18 @@ class AvahiPublisher:
         if not self.group:
             return
         try:
-            args = (self.interface, avahi.PROTO_UNSPEC, dbus.UInt32(0),
-                         self.name, self.stype, self.domain, self.host,
-                         dbus.UInt16(self.port), self.text)
+            args = (
+                self.interface, avahi.PROTO_UNSPEC, dbus.UInt32(0),
+                self.name, self.stype, self.domain, self.host,
+                dbus.UInt16(self.port), self.text,
+            )
             log("calling %s%s", self.group, args)
             self.group.AddService(*args)
             self.group.Commit()
             log("dbus service added")
         except DBusException as e:
             log("cannot add service", exc_info=True)
-            #use try+except as older versions may not have those modules?
+            # use try+except as older versions may not have those modules?
             message = e.get_dbus_message()
             dbus_error_name = e.get_dbus_name()
             log.error("Error starting publisher %s", self.host_str())
@@ -223,7 +226,6 @@ class AvahiPublisher:
                 log.estr(e)
         self.server = None
 
-
     def update_txt(self, txt) -> None:
         if not self.server:
             log("update_txt(%s) ignored, already stopped", txt)
@@ -234,9 +236,11 @@ class AvahiPublisher:
             return
         #prevent avahi from choking on ints:
         txt_strs = {k:str(v) for k,v in txt.items()}
+
         def reply_handler(*args):
             log("reply_handler%s", args)
             log("update_txt(%s) done", txt)
+
         def error_handler(*args):
             log("error_handler%s", args)
             log.warn("Warning: failed to update mDNS TXT record")
@@ -247,9 +251,9 @@ class AvahiPublisher:
                 log.warn(" * %s=%s", k, v)
         txt_array = avahi.dict_to_txt_array(txt_strs)
         self.group.UpdateServiceTxt(self.interface,
-            avahi.PROTO_UNSPEC, dbus.UInt32(0), self.name, self.stype, self.domain,
-            txt_array, reply_handler=reply_handler,
-            error_handler=error_handler)
+                                    avahi.PROTO_UNSPEC, dbus.UInt32(0), self.name, self.stype, self.domain,
+                                    txt_array, reply_handler=reply_handler,
+                                    error_handler=error_handler)
 
 
 def main():
@@ -261,11 +265,14 @@ def main():
     name = "test service"
     bus = init_system_bus()
     publishers = []
+
     def add(service_type:str=XPRA_TCP_MDNS_TYPE):
         publisher = AvahiPublisher(bus, name, port, stype=service_type, host=host, text=("somename=somevalue",))
         publishers.append(publisher)
+
         def start():
             publisher.start()
+
         def update_rec():
             publisher.update_txt({b"hello" : b"world"})
         GLib.idle_add(start)

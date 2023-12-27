@@ -44,13 +44,13 @@ PREFER_IPV6 = IPV6 and envbool("XPRA_PREFER_IPV6", POSIX)
 
 
 WS_HEADERS = {
-        ":method"   : "CONNECT",
-        ":scheme"   : "https",
-        ":protocol" : "websocket",
-        "sec-websocket-version" : 13,
-        "sec-websocket-protocol" : "xpra",
-        "user-agent" : USER_AGENT,
-        }
+    ":method"   : "CONNECT",
+    ":scheme"   : "https",
+    ":protocol" : "websocket",
+    "sec-websocket-version" : 13,
+    "sec-websocket-protocol" : "xpra",
+    "user-agent" : USER_AGENT,
+}
 
 
 class ClientWebSocketConnection(XpraQuicConnection):
@@ -61,7 +61,7 @@ class ClientWebSocketConnection(XpraQuicConnection):
         self.write_buffer = SimpleQueue()
 
     def flush_writes(self):
-        #flush the buffered writes:
+        # flush the buffered writes:
         try:
             while self.write_buffer.qsize():
                 self.stream_write(*self.write_buffer.get())
@@ -71,7 +71,7 @@ class ClientWebSocketConnection(XpraQuicConnection):
     def write(self, buf, packet_type=None):
         log(f"write(%s, %s) {len(buf)} bytes", ellipsizer(buf), packet_type)
         if self.write_buffer is not None:
-            #buffer it until we are connected and call flush_writes()
+            # buffer it until we are connected and call flush_writes()
             self.write_buffer.put((buf, packet_type))
             return len(buf)
         return super().write(buf, packet_type)
@@ -116,7 +116,7 @@ class WebSocketClient(QuicConnectionProtocol):
         headers = {
             ":authority" : host,
             ":path" : path,
-            }
+        }
         headers.update(WS_HEADERS)
         log("open: sending http headers for websocket upgrade")
         self._http.send_headers(stream_id=stream_id, headers=binary_headers(headers))
@@ -134,7 +134,7 @@ class WebSocketClient(QuicConnectionProtocol):
         stream_id = event.stream_id
         websocket : ClientWebSocketConnection | None = self._websockets.get(stream_id)
         if not websocket:
-            #perhaps this is a new substream?
+            # perhaps this is a new substream?
             sub = -1
             hdict = {}
             if isinstance(event, HeadersReceived):
@@ -164,7 +164,8 @@ def create_local_socket(family=socket.AF_INET):
     log(f"create_udp_socket({pretty_socket(addr)}, {family})={sock}")
     return sock, addr
 
-async def get_address_options(host:str, port:int) -> tuple:
+
+async def get_address_options(host: str, port: int) -> tuple:
     if IPV6:
         family = socket.AF_UNSPEC
         family_options = (socket.AF_INET, socket.AF_INET6)
@@ -179,18 +180,18 @@ async def get_address_options(host:str, port:int) -> tuple:
         log(f"getaddrinfo({host}, {port}, {family}, SOCK_DGRAM)", exc_info=True)
         raise RuntimeError(f"cannot get address information for {pretty_socket((host, port))}: {e}") from None
     if PREFER_IPV6 and not any(addr_info[0]==socket.AF_INET6 for addr_info in infos):
-        #no ipv6 returned, cook one up:
+        # no ipv6 returned, cook one up:
         ipv4_infos = tuple(addr_info for addr_info in infos if addr_info[0]==socket.AF_INET)
-        #ie:( (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_DGRAM: 2>, 17, '', ('192.168.0.114', 10000)), )
+        # ie:( (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_DGRAM: 2>, 17, '', ('192.168.0.114', 10000)), )
         if ipv4_infos:
             ipv4 = ipv4_infos[0]
-            addr = ipv4[4]          #ie: ('192.168.0.114', 10000)
+            addr = ipv4[4]          # ie: ('192.168.0.114', 10000)
             if len(addr)==2:
                 addr = ("::ffff:" + addr[0], addr[1], 0, 0)
                 infos.insert(0, (socket.AF_INET6, socket.SOCK_DGRAM, ipv4[2], ipv4[3], addr))
                 log(f"added IPv6 option: {infos[0]}")
-    #ensure only the family_options we want are included,
-    #(only really needed for AF_UNSPEC)
+    # ensure only the family_options we want are included,
+    # (only really needed for AF_UNSPEC)
     return tuple(addr_info for addr_info in infos if addr_info[0] in family_options)
 
 
@@ -201,7 +202,7 @@ def quic_connect(host : str, port : int, path : str,
         alpn_protocols=H3_ALPN,
         is_client=True,
         max_datagram_frame_size=MAX_DATAGRAM_FRAME_SIZE,
-        )
+    )
     configuration.verify_mode = get_ssl_verify_mode(ssl_server_verify_mode)
     if ssl_ca_certs:
         configuration.load_verify_locations(ssl_ca_certs)
@@ -215,10 +216,10 @@ def quic_connect(host : str, port : int, path : str,
             ipaddress.ip_address(host)
         except ValueError:
             configuration.server_name = host
-    #configuration.max_data = args.max_data
-    #configuration.max_stream_data = args.max_stream_data
-    #configuration.quic_logger = QuicFileLogger(args.quic_log)
-    #configuration.secrets_log_file = open(args.secrets_log, "a")
+    # configuration.max_data = args.max_data
+    # configuration.max_stream_data = args.max_stream_data
+    # configuration.quic_logger = QuicFileLogger(args.quic_log)
+    # configuration.secrets_log_file = open(args.secrets_log, "a")
 
     def create_protocol():
         connection = QuicConnection(configuration=configuration)
@@ -228,14 +229,14 @@ def quic_connect(host : str, port : int, path : str,
     addresses = tl.sync(get_address_options, host, port)
 
     async def connect(addr_info):
-        #ie:(AF_INET, SOCK_DGRAM, 0, '', ('192.168.0.10', 10000)
+        # ie:(AF_INET, SOCK_DGRAM, 0, '', ('192.168.0.10', 10000)
         log(f"connect({addr_info})")
         af = addr_info[0]
         sock, local_addr = create_local_socket(af)
         transport, protocol = await tl.loop.create_datagram_endpoint(create_protocol, sock=sock)
         log(f"{transport=}, {protocol=}")
         protocol = cast(QuicConnectionProtocol, protocol)
-        addr = addr_info[4]     #ie: ('192.168.0.10', 10000)
+        addr = addr_info[4]     # ie: ('192.168.0.10', 10000)
         log(f"connecting from {pretty_socket(local_addr)} to {pretty_socket(addr)}")
         protocol.connect(addr)
         try:
@@ -245,7 +246,7 @@ def quic_connect(host : str, port : int, path : str,
             return conn
         except Exception as e:
             log("connect()", exc_info=True)
-            #try to get a more meaningful exception message:
+            # try to get a more meaningful exception message:
             einfo = str(e)
             if not einfo:
                 quic_conn = getattr(protocol, "_quic", None)
@@ -257,13 +258,13 @@ def quic_connect(host : str, port : int, path : str,
                         msg = close_event.reason_phrase
                         if err & QuicErrorCode.CRYPTO_ERROR:
                             raise InitExit(ExitCode.CONNECTION_FAILED, msg)
-                        #if (err & 0xFF)==QuicErrorCode.CONNECTION_REFUSED:
+                        # if (err & 0xFF)==QuicErrorCode.CONNECTION_REFUSED:
                         #    raise InitExit(ExitCode.CONNECTION_FAILED, msg)
                         raise RuntimeError(close_event.reason_phrase) from None
             raise RuntimeError(str(e)) from None
-    #protocol.close()
-    #await protocol.wait_closed()
-    #transport.close()
+    # protocol.close()
+    # await protocol.wait_closed()
+    # transport.close()
     if len(addresses)==1:
         return tl.sync(connect, addresses[0])
 

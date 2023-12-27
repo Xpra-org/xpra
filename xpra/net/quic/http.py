@@ -14,12 +14,10 @@ from aioquic.h3.events import H3Event
 
 from xpra.net.quic.common import SERVER_NAME, http_date
 from xpra.net.http.directory_listing import list_directory
-from xpra.net.http.handler import (
-    DIRECTORY_LISTING,
-    translate_path, load_path, may_reload_headers,
-    )
+from xpra.net.http.handler import DIRECTORY_LISTING, translate_path, load_path, may_reload_headers
 from xpra.util.str_fn import ellipsizer, strtobytes
 from xpra.log import Logger
+
 log = Logger("quic")
 
 HttpConnection = Union[H0Connection, H3Connection]
@@ -33,7 +31,7 @@ class HttpRequestHandler:
                  scope: dict,
                  stream_id: int,
                  transmit: Callable[[], None],
-    ) -> None:
+                 ) -> None:
         self.xpra_server = xpra_server
         self.authority = authority
         self.connection = connection
@@ -41,7 +39,6 @@ class HttpRequestHandler:
         self.scope = scope
         self.stream_id = stream_id
         self.transmit = transmit
-
 
     def send_http3_response(self, code, headers : dict = None, body : bytes = b""):
         self.send_response_header(code, headers)
@@ -51,15 +48,14 @@ class HttpRequestHandler:
 
     def send_response_header(self, status : int = 200, headers : dict = None) -> None:
         headers = [
-                (b":status", str(status).encode()),
-                (b"server", SERVER_NAME.encode()),
-                (b"date", http_date().encode()),
-                ] + list((strtobytes(k).lower(), strtobytes(v)) for k,v in (headers or {}).items())
+            (b":status", str(status).encode()),
+            (b"server", SERVER_NAME.encode()),
+            (b"date", http_date().encode()),
+        ] + list((strtobytes(k).lower(), strtobytes(v)) for k,v in (headers or {}).items())
         self.connection.send_headers(stream_id=self.stream_id, headers=headers)
 
     def send_response_body(self, body : bytes = b"", more_body : bool = False) -> None:
         self.connection.send_data(stream_id=self.stream_id, data=body, end_stream=not more_body)
-
 
     def http_event_received(self, event: H3Event) -> None:
         log(f"http_event_received(%s) scope={self.scope}", ellipsizer(event))

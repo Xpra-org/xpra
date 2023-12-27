@@ -83,12 +83,16 @@ class Zeroconflistener:
 
 
 def main():
+
     def mdns_found(*args):
         print(f"mdns_found: {args}")
+
     def mdns_add(*args):
         print(f"mdns_add: {args}")
+
     def mdns_remove(*args):
         print(f"mdns_remove: {args}")
+
     def mdns_update(*args):
         print(f"mdns_update: {args}")
 
@@ -99,6 +103,7 @@ def main():
     with program_context("zeroconf-listener", "zeroconf-listener"):
         listeners : list[Zeroconflistener] = []
         from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
+
         def add(service_type):
             listener = Zeroconflistener(service_type+"local.", mdns_found, mdns_add, mdns_remove, mdns_update)
             log(f"{listener=}")

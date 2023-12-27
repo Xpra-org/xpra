@@ -3,9 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel
 
-def get_client_protocol_class(socktype:str):
+
+def get_client_protocol_class(socktype: str):
     if socktype in ("ws", "wss", "quic"):
         from xpra.net.websockets.protocol import WebSocketProtocol
         return WebSocketProtocol
@@ -15,7 +16,8 @@ def get_client_protocol_class(socktype:str):
     from xpra.net.protocol.socket_handler import SocketProtocol
     return SocketProtocol
 
-def get_server_protocol_class(socktype:str):
+
+def get_server_protocol_class(socktype: str):
     if socktype in ("ws", "wss"):
         from xpra.net.websockets.protocol import WebSocketProtocol
         return WebSocketProtocol

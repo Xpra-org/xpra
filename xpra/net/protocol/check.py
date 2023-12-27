@@ -18,9 +18,11 @@ def verify_packet(packet) -> bool:
     tree = [f"{packet[0]!r} packet"]
     return do_verify_packet(tree, packet)
 
+
 def do_verify_packet(tree, packet) -> bool:
     def err(msg):
         verify_error("%s in %s", msg, "->".join(tree))
+
     def new_tree(append):
         nt = tree[:]
         nt.append(append)

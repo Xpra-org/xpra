@@ -24,14 +24,14 @@ DEFAULT_PORT : int = 14500
 DEFAULT_PORTS : dict[str,int] = {
     "ws"    : 80,
     "wss"   : 443,
-    "ssl"   : DEFAULT_PORT, #could also default to 443?
+    "ssl"   : DEFAULT_PORT,   # could also default to 443?
     "ssh"   : 22,
     "tcp"   : DEFAULT_PORT,
     "vnc"   : 5900,
     "quic"  : 20000,
-    }
+}
 
-PacketElement : TypeAlias = Union[tuple,list,dict,int,bool,str,bytes,memoryview,Compressible,Compressed,LargeStructure]
+PacketElement: TypeAlias = Union[tuple,list,dict,int,bool,str,bytes,memoryview,Compressible,Compressed,LargeStructure]
 
 # packet type followed by attributes:
 # in 3.11: tuple[str, *tuple[int, ...]]
@@ -40,7 +40,7 @@ PacketElement : TypeAlias = Union[tuple,list,dict,int,bool,str,bytes,memoryview,
 try:
     from typing import Unpack
     PacketType : TypeAlias = tuple[str, Unpack[tuple[PacketElement, ...]]]
-except ImportError: # pragma: no cover
+except ImportError:   # pragma: no cover
     PacketType: TypeAlias = tuple
 
 # client packet handler:
@@ -49,6 +49,7 @@ PacketHandlerType = Callable[[PacketType], None]
 ServerPacketHandlerType = Callable[[Any, PacketType], None]
 
 NetPacketType : TypeAlias = tuple[int, int, int, ByteString]
+
 
 class ConnectionClosedException(Exception):
     pass
@@ -79,53 +80,54 @@ URL_MODES : dict[str,str] = {
     "xpra+wss"  : "wss",
     "xprawss"   : "wss",
     "rfb"       : "vnc",
-    }
+}
 
 
-#this is used for generating aliases:
+# this is used for generating aliases:
 PACKET_TYPES : list[str] = [
-    #generic:
+    # generic:
     "hello",
     "challenge",
     "ssl-upgrade",
     "info", "info-response",
-    #server state:
+    # server state:
     "server-event", "startup-complete",
     "setting-change", "control",
-    #network layer:
+    # network layer:
     "disconnect", "connection-lost", "gibberish", "invalid",
-    #pings:
+    # pings:
     "ping", "ping_echo",
-    #file transfers:
+    # file transfers:
     "open-url", "send-file", "send-data-request", "send-data-response", "ack-file-chunk", "send-file-chunk",
-    #audio:
+    # audio:
     "sound-data", "new-stream", "state-changed", "new-buffer", "cleanup", "add_data", "stop",
-    #display:
+    # display:
     "show-desktop",
-    #windows and trays:
+    # windows and trays:
     "new-window", "new-override-redirect", "new-tray",
     "raise-window", "initiate-moveresize", "window-move-resize", "window-resized", "window-metadata",
     "configure-override-redirect", "lost-window", "window-icon",
     "draw",
     "encodings",
     "eos", "cursor", "bell",
-    #pointer motion and events:
+    # pointer motion and events:
     "pointer-position", "pointer",
     "button-action", "pointer-button",
     "pointer-grab", "pointer-ungrab",
     "input-devices",
-    #keyboard:
+    # keyboard:
     "set-keyboard-sync-enabled",
     "key-action", "key-repeat",
     "layout-changed", "keymap-changed",
-    #webcam:
+    # webcam:
     "webcam-stop", "webcam-ack",
-    #clipboard:
+    # clipboard:
     "set-clipboard-enabled", "clipboard-token", "clipboard-request",
     "clipboard-contents", "clipboard-contents-none", "clipboard-pending-requests", "clipboard-enable-selections",
-    #notifications:
+    # notifications:
     "notify_show", "notify_close",
-    ]
+]
+
 
 def get_log_packets(exclude=False) -> tuple[str, ...]:
     lp = os.environ.get("XPRA_LOG_PACKETS")
@@ -136,6 +138,7 @@ def get_log_packets(exclude=False) -> tuple[str, ...]:
         if x.startswith("-")==exclude:
             pt.append(x[int(exclude):])
     return tuple(pt)
+
 
 def _may_log_packet(sending, packet_type, packet) -> None:
     if LOG_PACKET_TYPE:
@@ -158,6 +161,8 @@ PACKET_LOG_MAX_SIZE : int = 500
 
 def noop(*_args) -> None:
     """ the default implementation is to do nothing """
+
+
 may_log_packet : Callable = noop
 
 
@@ -170,14 +175,14 @@ def get_peercred(sock) -> tuple[int, int, int] | None:
             pid, uid, gid = struct.unpack(b'3i',creds)
             log("peer: %s", (pid, uid, gid))
             return pid, uid, gid
-        except OSError as  e:
+        except OSError as e:
             log("getsockopt", exc_info=True)
             log.error(f"Error getting peer credentials: {e}")
             return None
     elif FREEBSD:
         log.warn("Warning: peercred is not yet implemented for FreeBSD")
-        #use getpeereid
-        #then pwd to get the gid?
+        # use getpeereid
+        # then pwd to get the gid?
     return None
 
 
@@ -193,5 +198,6 @@ def init() -> None:
         may_log_packet = _may_log_packet
     else:
         may_log_packet = noop
+
 
 init()

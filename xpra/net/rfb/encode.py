@@ -15,13 +15,16 @@ log = Logger("rfb")
 
 PILLOW_OPTIONS = {"alpha" : False}
 
+
 def pillow_encode(encoding, img):
     return encode(encoding, img, PILLOW_OPTIONS)[1].data
+
 
 def make_header(encoding, x, y, w, h):
     fbupdate = struct.pack(b"!BBH", 0, 0, 1)
     rect = struct.pack(b"!HHHHi", x, y, w, h, encoding)
     return fbupdate+rect
+
 
 def rgb222_encode(window, x, y, w, h):
     img = window.get_image(x, y, w, h)
@@ -35,11 +38,13 @@ def rgb222_encode(window, x, y, w, h):
     data = bgra_to_rgb222(pixels)
     return [header, data]
 
+
 def raw_encode(window, x, y, w, h):
     img = window.get_image(x, y, w, h)
     window.acknowledge_changes()
     header = make_header(RFBEncoding.RAW, x, y, w, h)
     return [header, raw_pixels(img)]
+
 
 def raw_pixels(img):
     if not img:
@@ -54,6 +59,7 @@ def raw_pixels(img):
         Bpp*w*h, w, h, Bpp, len(pixels))
     return pixels[:Bpp*w*h]
 
+
 def zlib_encode(window, x, y, w, h):
     img = window.get_image(x, y, w, h)
     window.acknowledge_changes()
@@ -67,6 +73,7 @@ def zlib_encode(window, x, y, w, h):
     log("zlib compressed %i down to %i", len(pixels), len(data))
     header = make_header(RFBEncoding.ZLIB, x, y, w, h) + struct.pack(b"!I", len(data))
     return [header, data]
+
 
 def tight_encode(window, x, y, w, h, quality=0):
     img = window.get_image(x, y, w, h)
@@ -87,19 +94,21 @@ def tight_encode(window, x, y, w, h, quality=0):
     header = tight_header(RFBEncoding.TIGHT, x, y, w, h, 0x90, len(data))
     return [header, data]
 
+
 def tight_header(encoding, x, y, w, h, control, length):
     header = make_header(encoding, x, y, w, h)
     header += struct.pack(b"!B", control)
-    #the length header is in a weird format:
+    # the length header is in a weird format:
     if length<128:
         header += struct.pack(b"!B", length)
     elif length<16383:
-        header += struct.pack(b"!BB", 0x80+(length&0x7F), length>>7)
+        header += struct.pack(b"!BB", 0x80+(length & 0x7F), length >> 7)
     else:
         assert length<4194303
-        header += struct.pack(b"!BBB", 0x80+(length&0x7F), 0x80+((length>>7)&0x7F), length>>14)
+        header += struct.pack(b"!BBB", 0x80+(length & 0x7F), 0x80+((length >> 7) & 0x7F), length >> 14)
     log("tight header for %i bytes %s", length, hexstr(header))
     return header
+
 
 def tight_png(window, x, y, w, h):
     img = window.get_image(x, y, w, h)

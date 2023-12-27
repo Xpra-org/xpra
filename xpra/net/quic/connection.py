@@ -23,8 +23,11 @@ log = Logger("quic")
 
 HttpConnection = Union[H0Connection, H3Connection]
 
-#DATAGRAM_PACKET_TYPES = os.environ.get("XPRA_QUIC_DATAGRAM_PACKET_TYPES", "pointer,pointer-button").split(",")
-DATAGRAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get("XPRA_QUIC_DATAGRAM_PACKET_TYPES", "").split(",") if x.strip())
+# DATAGRAM_PACKET_TYPES = os.environ.get("XPRA_QUIC_DATAGRAM_PACKET_TYPES", "pointer,pointer-button").split(",")
+DATAGRAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get(
+    "XPRA_QUIC_DATAGRAM_PACKET_TYPES",
+    ""
+).split(",") if x.strip())
 
 if envbool("XPRA_QUIC_LOGGER", True):
     override_aioquic_logger()
@@ -114,6 +117,7 @@ class XpraQuicConnection(Connection):
         stream_id = self.get_packet_stream_id(packet_type)
         log("quic.stream_write(%s, %s) using stream id %s",
             ellipsizer(buf), packet_type, stream_id)
+
         def do_write():
             try:
                 self.connection.send_data(stream_id=stream_id, data=data, end_stream=self.closed)
@@ -128,7 +132,6 @@ class XpraQuicConnection(Connection):
 
     def get_packet_stream_id(self, packet_type):
         return self.stream_id
-
 
     def read(self, n):
         log("quic.read(%s)", n)

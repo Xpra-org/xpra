@@ -68,17 +68,16 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             b"Sec-WebSocket-Protocol: %s" % b"binary",
             b"",
             b"",
-            )
+        )
         self.new_websocket_client(self)
-        #don't use our finish method that closes the socket,
-        #but do call the superclass's finish() method:
+        # don't use our finish method that closes the socket,
+        # but do call the superclass's finish() method:
         self.finish = super().finish
 
     def write_byte_strings(self, *bstrings):
         bdata = b"\r\n".join(bstrings)
         self.wfile.write(bdata)
         self.wfile.flush()
-
 
     def do_GET(self) -> None:
         log(f"do_GET() path={self.path!r}, headers={self.headers!r}")
@@ -120,7 +119,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             b"Location: https://%s%s" % (bytes(server_address, "utf-8"), bytes(self.path, "utf-8")),
             b"",
             b"",
-            )
+        )
 
     def handle_request(self) -> None:
         if self.only_upgrade:

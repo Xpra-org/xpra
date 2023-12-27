@@ -56,4 +56,4 @@ def list_directory(path:str):
     return 200, {
         "Content-type", f"text/html; charset={enc}",
         "Content-Length", str(len(encoded)),
-        }, f
+    }, f

@@ -42,7 +42,7 @@ class RFBProtocol:
         self._buffer = data
         self._challenge = None
         self.share = False
-        #counters:
+        # counters:
         self.input_packetcount = 0
         self.input_raw_packetcount = 0
         self.output_packetcount = 0
@@ -56,13 +56,11 @@ class RFBProtocol:
             # pylint: disable=consider-using-with
             self.log = open(RFB_LOG, "w", encoding="utf8")
 
-
     def is_closed(self):
         return self._closed
 
     def is_sending_encrypted(self):
         return False
-
 
     def send_protocol_handshake(self):
         self.send(b"RFB 003.008\n")
@@ -77,7 +75,7 @@ class RFBProtocol:
         if not packet.startswith(b'RFB '):
             self.invalid_header(self, packet, "invalid RFB protocol handshake packet header")
             return 0
-        #ie: packet==b'RFB 003.008\n'
+        # ie: packet==b'RFB 003.008\n'
         protocol_version = tuple(int(x) for x in packet[4:11].split(b"."))
         if protocol_version!=PROTOCOL_VERSION:
             msg = b"unsupported protocol version"
@@ -109,7 +107,7 @@ class RFBProtocol:
         if not packet_type:
             self.invalid(f"unknown RFB packet type: {ptype:x}", packet)
             return 0
-        s = PACKET_STRUCT.get(ptype)     #ie: Struct("!BBBB")
+        s = PACKET_STRUCT.get(ptype)     # ie: Struct("!BBBB")
         if not s:
             self.invalid(f"RFB packet type {packet_type!r} is not supported", packet)
             return 0
@@ -118,7 +116,7 @@ class RFBProtocol:
         size = s.size
         values = list(s.unpack(packet[:size]))
         values[0] = packet_type
-        #some packets require parsing extra data:
+        # some packets require parsing extra data:
         if ptype==RFBClientMessage.SetEncodings:
             N = values[2]
             estruct = struct.Struct(b"!"+b"i"*N)
@@ -136,21 +134,16 @@ class RFBProtocol:
             values.append(text)
         self.input_packetcount += 1
         log(f"RFB packet: {packet_type}: {values[1:]}")
-        #now trigger the callback:
+        # now trigger the callback:
         self._process_packet_cb(self, values)
-        #return part of packet not consumed:
+        # return part of packet not consumed:
         return size
-
 
     def __repr__(self):
         return f"RFBProtocol({self._conn})"
 
     def get_threads(self):
-        return tuple(x for x in (
-            self._write_thread,
-            self._read_thread,
-            ) if x is not None)
-
+        return tuple(x for x in (self._write_thread, self._read_thread) if x is not None)
 
     def get_info(self, *_args):
         info = {"protocol" : PROTOCOL_VERSION}
@@ -158,18 +151,15 @@ class RFBProtocol:
             info.setdefault("thread", {})[t.name] = t.is_alive()
         return info
 
-
     def start(self):
         def start_network_read_thread():
             if not self._closed:
                 self._read_thread.start()
         self.idle_add(start_network_read_thread)
 
-
     def send_disconnect(self, *_args, **_kwargs):
         #no such packet in RFB, just close
         self.close()
-
 
     def queue_size(self):
         return self._write_queue.qsize()
@@ -214,6 +204,7 @@ class RFBProtocol:
 
     def _write_thread_loop(self):
         self._io_thread_loop("write", self._write)
+
     def _write(self):
         buf = self._write_queue.get()
         # Used to signal that we should exit:
@@ -234,6 +225,7 @@ class RFBProtocol:
 
     def _read_thread_loop(self):
         self._io_thread_loop("read", self._read)
+
     def _read(self):
         c = self._conn
         if not c:
@@ -259,7 +251,7 @@ class RFBProtocol:
         return True
 
     def _internal_error(self, message="", exc=None, exc_info=False):
-        #log exception info with last log message
+        # log exception info with last log message
         if self._closed:
             return
         ei = exc_info
@@ -275,7 +267,6 @@ class RFBProtocol:
         self.close()
         return False
 
-
     def invalid(self, msg, data):
         log("invalid(%s, %r)", msg, data)
         self._packet_parser = self._parse_invalid
@@ -283,8 +274,7 @@ class RFBProtocol:
         # Then hang up:
         self.timeout_add(1000, self._connection_lost, msg)
 
-
-    #delegates to invalid_header()
+    # delegates to invalid_header()
     def invalid_header(self, proto, data, msg=""):
         log("invalid_header%s", (proto, data, msg))
         self._invalid_header(proto, data, msg)
@@ -296,11 +286,9 @@ class RFBProtocol:
             err += f" read buffer={repr_ellipsized(data)} ({len(data)} bytes)"
         self.invalid(err, data)
 
-
     def gibberish(self, msg, data):
         log(f"gibberish({msg}, {data!r})")
         self.close()
-
 
     def close(self):
         c = self._conn
@@ -317,7 +305,6 @@ class RFBProtocol:
                 log.error(f"Error closing {c}", exc_info=True)
             self._conn = None
         self.terminate_queue_threads()
-        #log.error("sending connection-lost")
         self._process_packet_cb(self, [CONNECTION_LOST])
         self.idle_add(self.clean)
         l = self.log
@@ -327,14 +314,14 @@ class RFBProtocol:
         log("RFBProtocol.close() done")
 
     def clean(self):
-        #clear all references to ensure we can get garbage collected quickly:
+        # clear all references to ensure we can get garbage collected quickly:
         self._write_thread = None
         self._read_thread = None
         self._process_packet_cb = None
 
     def terminate_queue_threads(self):
         log("terminate_queue_threads()")
-        #make all the queue based threads exit by adding the empty marker:
+        # make all the queue based threads exit by adding the empty marker:
         owq = self._write_queue
         self._write_queue = exit_queue()
         force_flush_queue(owq)

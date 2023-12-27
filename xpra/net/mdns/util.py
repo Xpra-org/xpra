@@ -71,7 +71,7 @@ def mdns_publish(display_name, listen_on, text_dict=None):
     service_type = {
         "rfb"   : RFB_MDNS_TYPE,
         "quic"  : XPRA_UDP_MDNS_TYPE,
-        }.get(mode, XPRA_TCP_MDNS_TYPE)
+    }.get(mode, XPRA_TCP_MDNS_TYPE)
     index = 0
     aps = []
     for host, port in listen_on:
@@ -81,7 +81,7 @@ def mdns_publish(display_name, listen_on, text_dict=None):
             mode_str = f"{mode}-{index+1}"
         if mode not in ("tcp", "rfb"):
             sn += f" ({mode_str})"
-        listen = ( (host, port), )
+        listen = ((host, port), )
         index += 1
         aps.append(MDNSPublishers(listen, sn, service_type=service_type, text_dict=d))
     return aps

@@ -28,7 +28,7 @@ UVLOOP = envbool("XPRA_UVLOOP", not WIN32)
 ExceptionWrapper = namedtuple("ExceptionWrapper", "exception,args")
 
 
-class threaded_asyncio_loop:
+class ThreadedAsyncioLoop:
     """
     shim for quic asyncio sockets,
     this runs the asyncio main loop in a thread
@@ -45,7 +45,7 @@ class threaded_asyncio_loop:
     def run_forever(self) -> None:
         if UVLOOP:
             try:
-                import uvloop  # pylint: disable=import-outside-toplevel
+                import uvloop   # pylint: disable=import-outside-toplevel
             except ImportError:
                 log.warn("Warning: uvloop not found")
             else:
@@ -79,8 +79,7 @@ class threaded_asyncio_loop:
         else:
             self.loop.call_soon_threadsafe(f)
 
-
-    def sync(self, async_fn:Callable[..., Awaitable[Any]], *args) -> Any:
+    def sync(self, async_fn: Callable[..., Awaitable[Any]], *args) -> Any:
         response : SimpleQueue[Any] = SimpleQueue()
 
         async def awaitable():
@@ -119,9 +118,11 @@ class threaded_asyncio_loop:
         return r
 
 
-singleton : threaded_asyncio_loop | None = None
-def get_threaded_loop() -> threaded_asyncio_loop:
+singleton : ThreadedAsyncioLoop | None = None
+
+
+def get_threaded_loop() -> ThreadedAsyncioLoop:
     global singleton
     if not singleton:
-        singleton = threaded_asyncio_loop()
+        singleton = ThreadedAsyncioLoop()
     return singleton

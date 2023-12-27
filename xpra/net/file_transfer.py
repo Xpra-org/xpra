@@ -38,14 +38,15 @@ SEND_REQUEST_TIMEOUT = max(300, envint("XPRA_SEND_REQUEST_TIMEOUT", 3600))
 CHUNK_TIMEOUT = 10*1000
 
 MIMETYPE_EXTS = {
-                 "application/postscript"   : "ps",
-                 "application/pdf"          : "pdf",
-                 "raw"                      : "raw",
-                 }
+    "application/postscript"   : "ps",
+    "application/pdf"          : "pdf",
+    "raw"                      : "raw",
+}
 
 DENY = 0
-ACCEPT = 1      #the file / URL will be sent
-OPEN = 2        #don't send, open on sender
+ACCEPT = 1      # the file / URL will be sent
+OPEN = 2        # don't send, open on sender
+
 
 def osclose(fd:int) -> None:
     try:
@@ -55,17 +56,18 @@ def osclose(fd:int) -> None:
         filelog.error("Error closing file download:")
         filelog.estr(e)
 
+
 def basename(filename:str) -> str:
-    #we can't use os.path.basename,
-    #because the remote end may have sent us a filename
-    #which is using a different pathsep
+    # we can't use os.path.basename,
+    # because the remote end may have sent us a filename
+    # which is using a different pathsep
     tmp = filename
     for sep in ("\\", "/", os.sep):
         i = tmp.rfind(sep) + 1
         tmp = tmp[i:]
     filename = tmp
     if WIN32:   # pragma: no cover
-        #many characters aren't allowed at all on win32:
+        # many characters aren't allowed at all on win32:
         tmp = ""
         for char in filename:
             if ord(char)<32 or char in ("<", ">", ":", "\"", "|", "?", "*"):
@@ -73,17 +75,18 @@ def basename(filename:str) -> str:
             tmp += char
     return tmp
 
+
 def safe_open_download_file(basefilename:str, mimetype:str) -> tuple[str,int]:
     from xpra.platform.paths import get_download_dir  # pylint: disable=import-outside-toplevel
     dd = os.path.expanduser(get_download_dir())
     filename = os.path.abspath(os.path.join(dd, basename(basefilename)))
     ext = MIMETYPE_EXTS.get(mimetype)
     if ext and not filename.endswith("."+ext):
-        #on some platforms (win32),
-        #we want to force an extension
-        #so that the file manager can display them properly when you double-click on them
+        # on some platforms (win32),
+        # we want to force an extension
+        # so that the file manager can display them properly when you double-click on them
         filename += "."+ext
-    #make sure we use a filename that does not exist already:
+    # make sure we use a filename that does not exist already:
     root, ext = os.path.splitext(filename)
     base = 0
     while os.path.exists(filename):
@@ -93,13 +96,14 @@ def safe_open_download_file(basefilename:str, mimetype:str) -> tuple[str,int]:
     filelog("safe_open_download_file(%s, %s) will use %r", basefilename, mimetype, filename)
     flags = os.O_CREAT | os.O_RDWR | os.O_EXCL
     try:
-        flags |= os.O_BINARY                #@UndefinedVariable (win32 only)
+        flags |= os.O_BINARY                # @UndefinedVariable (win32 only)
     except AttributeError:
         pass
     with umask_context(0o133):
         fd = os.open(filename, flags)
     filelog(f"using {filename=!r}, {fd=}")
     return filename, fd
+
 
 @dataclass
 class ReceiveChunkState:
@@ -117,6 +121,8 @@ class ReceiveChunkState:
     send_id: str
     timer: int
     chunk: int
+
+
 @dataclass
 class SendChunkState:
     start: float
@@ -137,13 +143,14 @@ class SendPendingData:
     openit : bool
     options : dict
 
+
 class FileTransferAttributes:
 
     def __init__(self):
         self.init_attributes()
 
     def init_opts(self, opts, can_ask=True) -> None:
-        #get the settings from a config object
+        # get the settings from a config object
         self.init_attributes(opts.file_transfer, opts.file_size_limit,
                              opts.printing, opts.open_files, opts.open_url, opts.open_command, can_ask)
 
@@ -151,8 +158,10 @@ class FileTransferAttributes:
                         open_files="no", open_url="no", open_command=None, can_ask=True) -> None:
         filelog("file transfer: init_attributes%s",
                 (file_transfer, file_size_limit, printing, open_files, open_url, open_command, can_ask))
+
         def pbool(name, v):
             return parse_bool(name, v, True)
+
         def pask(v):
             return v.lower() in ("ask", "auto")
         fta = pask(file_transfer)
@@ -166,7 +175,7 @@ class FileTransferAttributes:
         ofa = pask(open_files)
         self.open_files_ask = ofa and can_ask
         self.open_files = ofa or pbool("open-files", open_files)
-        #FIXME: command line options needed here:
+        # FIXME: command line options needed here:
         oua = pask(open_url)
         self.open_url_ask = oua and can_ask
         self.open_url = oua or pbool("open-url", open_url)
@@ -177,44 +186,44 @@ class FileTransferAttributes:
         self.file_request_callback : dict[str,Callable] = {}
         filelog("file transfer attributes=%s", self.get_file_transfer_features())
 
-    def get_file_transfer_features(self) -> dict[str,Any]:
-        #used in hello packets,
-        #duplicated with namespace (old caps to be removed in v6)
+    def get_file_transfer_features(self) -> dict[str, Any]:
+        # used in hello packets,
+        # duplicated with namespace (old caps to be removed in v6)
         return {
-                "file-transfer"     : self.file_transfer,
-                "file-transfer-ask" : self.file_transfer_ask,
-                "max-file-size"     : self.file_size_limit,
-                "file-chunks"       : self.file_chunks,
-                "open-files"        : self.open_files,
-                "open-files-ask"    : self.open_files_ask,
-                "printing"          : self.printing,
-                "printing-ask"      : self.printing_ask,
-                "open-url"          : self.open_url,
-                "open-url-ask"      : self.open_url_ask,
-                "file-ask-timeout"  : self.file_ask_timeout,
-                #v5 onwards can use a proper namespace:
-                "file" : self.get_file_transfer_info(),
-                }
+            "file-transfer"     : self.file_transfer,
+            "file-transfer-ask" : self.file_transfer_ask,
+            "max-file-size"     : self.file_size_limit,
+            "file-chunks"       : self.file_chunks,
+            "open-files"        : self.open_files,
+            "open-files-ask"    : self.open_files_ask,
+            "printing"          : self.printing,
+            "printing-ask"      : self.printing_ask,
+            "open-url"          : self.open_url,
+            "open-url-ask"      : self.open_url_ask,
+            "file-ask-timeout"  : self.file_ask_timeout,
+            # v5 onwards can use a proper namespace:
+            "file" : self.get_file_transfer_info(),
+        }
 
     def get_info(self) -> dict[str,Any]:
         return self.get_file_transfer_info()
 
     def get_file_transfer_info(self) -> dict[str,Any]:
-        #slightly different from above... for legacy reasons
-        #this one is used for get_info() in a proper "file." namespace from base.py
+        # slightly different from above... for legacy reasons
+        # this one is used for get_info() in a proper "file." namespace from base.py
         return {
-                "enabled"           : self.file_transfer,
-                "ask"               : self.file_transfer_ask,
-                "size-limit"        : self.file_size_limit,
-                "chunks"            : self.file_chunks,
-                "open"              : self.open_files,
-                "open-ask"          : self.open_files_ask,
-                "open-url"          : self.open_url,
-                "open-url-ask"      : self.open_url_ask,
-                "printing"          : self.printing,
-                "printing-ask"      : self.printing_ask,
-                "ask-timeout"       : self.file_ask_timeout,
-                }
+            "enabled"           : self.file_transfer,
+            "ask"               : self.file_transfer_ask,
+            "size-limit"        : self.file_size_limit,
+            "chunks"            : self.file_chunks,
+            "open"              : self.open_files,
+            "open-ask"          : self.open_files_ask,
+            "open-url"          : self.open_url,
+            "open-url-ask"      : self.open_url_ask,
+            "printing"          : self.printing,
+            "printing-ask"      : self.printing_ask,
+            "ask-timeout"       : self.file_ask_timeout,
+        }
 
 
 class FileTransferHandler(FileTransferAttributes):
@@ -262,7 +271,6 @@ class FileTransferHandler(FileTransferAttributes):
         self.file_descriptors = set()
         self.init_attributes()
 
-
     def parse_file_transfer_caps(self, c) -> None:
         fc = typedict(c.dictget("file") or {})
         filelog("parse_file_transfer_caps: %s", fc)
@@ -302,9 +310,8 @@ class FileTransferHandler(FileTransferAttributes):
             "printing"          : self.remote_printing,
             "printing-ask"      : self.remote_printing_ask,
             "file-ask-timeout"  : self.remote_file_ask_timeout,
-            }
+        }
         return info
-
 
     def digest_mismatch(self, filename:str, digest, expected_digest) -> None:
         filelog.error(f"Error: data does not match, invalid {digest.name} file digest")
@@ -316,7 +323,6 @@ class FileTransferHandler(FileTransferAttributes):
                 os.unlink(filename)
         except OSError:
             filelog.error(f"Error: failed to delete uploaded file {filename}")
-
 
     def _check_chunk_receiving(self, chunk_id:str, chunk_no:int) -> None:
         chunk_state = self.receive_chunks_in_progress.get(chunk_id)
@@ -351,8 +357,9 @@ class FileTransferHandler(FileTransferAttributes):
                 chunk_state.timer = 0
                 self.source_remove(timer)
             osclose(chunk_state.fd)
-            #remove this transfer after a little while,
-            #so in-flight packets won't cause errors
+            # remove this transfer after a little while,
+            # so in-flight packets won't cause errors
+
             def clean_receive_state():
                 self.receive_chunks_in_progress.pop(chunk_id, None)
                 return False
@@ -385,6 +392,7 @@ class FileTransferHandler(FileTransferAttributes):
         if chunk_state.cancelled:
             filelog("got chunk for a cancelled file transfer, ignoring it")
             return
+
         def progress(position, error=None):
             elapsed = monotonic()-chunk_state.start
             self.transfer_progress_update(False, chunk_state.send_id, elapsed, position, chunk_state.filesize, error)
@@ -514,8 +522,7 @@ class FileTransferHandler(FileTransferAttributes):
             (basefilename, mimetype, printit, openit, filesize, f"{len(file_data)} bytes", options))
         if filesize>self.file_size_limit:
             log.error("Error: file '%s' is too large:", basefilename)
-            log.error(" %sB, the file size limit is %sB",
-                    std_unit(filesize), std_unit(self.file_size_limit))
+            log.error(" %sB, the file size limit is %sB", std_unit(filesize), std_unit(self.file_size_limit))
             return
         chunk_id = options.strget("file-chunk-id")
         try:
@@ -542,10 +549,10 @@ class FileTransferHandler(FileTransferAttributes):
                 return
             timer = self.timeout_add(CHUNK_TIMEOUT, self._check_chunk_receiving, chunk_id, chunk)
             self.receive_chunks_in_progress[chunk_id] = ReceiveChunkState(monotonic(),
-                                                                   fd, filename, mimetype,
-                                                                   printit, openit, filesize,
-                                                                   options, digest, 0, False, send_id,
-                                                                   timer, chunk)
+                                                                          fd, filename, mimetype,
+                                                                          printit, openit, filesize,
+                                                                          options, digest, 0, False, send_id,
+                                                                          timer, chunk)
             self.send("ack-file-chunk", chunk_id, True, b"", chunk)
             return
         #not chunked, full file:
@@ -570,8 +577,8 @@ class FileTransferHandler(FileTransferAttributes):
         self.transfer_progress_update(False, send_id, monotonic()-start, filesize, filesize, None)
         self.process_downloaded_file(filename, mimetype, printit, openit, filesize, options)
 
-
-    def process_downloaded_file(self, filename:str, mimetype:str, printit:bool, openit:bool, filesize:int, options) -> None:
+    def process_downloaded_file(self, filename: str, mimetype: str,
+                                printit: bool, openit: bool, filesize: int, options) -> None:
         filelog.info("downloaded %s bytes to %s file%s:",
                      filesize, (mimetype or "temporary"), ["", " for printing"][int(printit)])
         filelog.info(" '%s'", filename)
@@ -611,8 +618,9 @@ class FileTransferHandler(FileTransferAttributes):
             printlog.info(" sending '%s' to printer '%s'", title, printer)
         else:
             printlog.info(" sending to printer '%s'", printer)
-        from xpra.platform.printing import print_files, printing_finished, get_printers  # pylint: disable=import-outside-toplevel
+        from xpra.platform.printing import print_files, printing_finished, get_printers
         printers = get_printers()
+
         def delfile():
             if DELETE_PRINTER_FILE:
                 try:
@@ -645,6 +653,7 @@ class FileTransferHandler(FileTransferAttributes):
             delfile()
             return
         start = monotonic()
+
         def check_printing_finished():
             done = printing_finished(job)
             printlog("printing_finished(%s)=%s", job, done)
@@ -655,11 +664,10 @@ class FileTransferHandler(FileTransferAttributes):
                 printlog.warn("Warning: print job %s timed out", job)
                 delfile()
                 return False
-            return True #try again..
+            return True     # try again..
         if check_printing_finished():
-            #check every 10 seconds:
+            # check every 10 seconds:
             self.timeout_add(10000, check_printing_finished)
-
 
     def get_open_env(self) -> dict[str,str]:
         env = os.environ.copy()
@@ -674,30 +682,32 @@ class FileTransferHandler(FileTransferAttributes):
     def _open_url(self, url:str) -> None:
         filelog("_open_url(%s)", url)
         if POSIX:
-            #we can't use webbrowser,
-            #because this will use "xdg-open" from the $PATH
-            #which may point back to us!
+            # we can't use webbrowser,
+            # because this will use "xdg-open" from the $PATH
+            # which may point back to us!
             self.exec_open_command(url)
         else:
-            import webbrowser  #pylint: disable=import-outside-toplevel
+            import webbrowser  # pylint: disable=import-outside-toplevel
             webbrowser.open_new_tab(url)
 
     def exec_open_command(self, url:str) -> None:
         filelog("exec_open_command(%s)", url)
         try:
-            import shlex  #pylint: disable=import-outside-toplevel
+            import shlex    # pylint: disable=import-outside-toplevel
             command = shlex.split(self.open_command)+[url]
         except ImportError as e:
             filelog("exec_open_command(%s) no shlex: %s", url, e)
             command = self.open_command.split(" ")
         filelog("exec_open_command(%s) command=%s", url, command)
         try:
-            proc = subprocess.Popen(command, env=self.get_open_env(), shell=WIN32)  # pylint: disable=consider-using-with
+            # pylint: disable=consider-using-with
+            proc = subprocess.Popen(command, env=self.get_open_env(), shell=WIN32)
         except Exception as e:
             filelog("exec_open_command(%s)", url, exc_info=True)
             filelog.error("Error: cannot open '%s': %s", url, e)
             return
         filelog("exec_open_command(%s) Popen(%s)=%s", url, command, proc)
+
         def open_done(*_args):
             returncode = proc.poll()
             filelog("open_file: command %s has ended, returncode=%s", command, returncode)
@@ -722,11 +732,9 @@ class FileTransferHandler(FileTransferAttributes):
             return False
         return True
 
-
     def send_request_file(self, filename:str, openit:bool=True):
         self.send("request-file", filename, openit)
         self.files_requested[filename] = openit
-
 
     def _process_open_url(self, packet : PacketType):
         send_id = str(packet[2])
@@ -739,7 +747,6 @@ class FileTransferHandler(FileTransferAttributes):
             self._open_url(url)
         else:
             filelog("url '%s' not accepted", url)
-
 
     def send_open_url(self, url:str) -> bool:
         if not self.remote_open_url:
@@ -813,7 +820,6 @@ class FileTransferHandler(FileTransferAttributes):
         self.send("send-data-request", dtype, send_id, url, mimetype, filesize, printit, openit, options or {})
         return send_id
 
-
     def _process_send_data_request(self, packet : PacketType) -> None:
         dtype, send_id, url, _, filesize, printit, openit = packet[1:8]
         options = {}
@@ -822,14 +828,14 @@ class FileTransferHandler(FileTransferAttributes):
         #filenames and url are always sent encoded as utf8:
         self.do_process_send_data_request(dtype, send_id, url, _, filesize, printit, openit, typedict(options))
 
-
     def do_process_send_data_request(self, dtype, send_id, url, _, filesize, printit, openit, options) -> None:
         filelog(f"do_process_send_data_request: {send_id=}, {url=}, {printit=}, {openit=}, {options=}")
+
         def cb_answer(accept):
             filelog("accept%s=%s", (url, printit, openit), accept)
             self.send("send-data-response", send_id, accept)
-        #could be a request we made:
-        #(in which case we can just accept it without prompt)
+        # could be a request we made:
+        # (in which case we can just accept it without prompt)
         rf = options.tupleget("request-file")
         if rf and len(rf)>=2:
             argf, openit = rf[:2]
@@ -861,15 +867,15 @@ class FileTransferHandler(FileTransferAttributes):
         if not ask:
             filelog.warn("Warning: received a send-data request for a %s,", dtype)
             filelog.warn(" but authorization is not required by the client")
-            #fail it because if we responded with True,
-            #it would fail later when we don't find this send_id in our accepted list
+            # fail it because if we responded with True,
+            # it would fail later when we don't find this send_id in our accepted list
             cb_answer(False)
         else:
             self.ask_data_request(cb_answer, send_id, dtype, url, filesize, printit, openit)
 
     def ask_data_request(self, cb_answer:Callable, send_id:str, dtype:str, url:str, filesize:int,
                          printit:bool, openit:bool) -> None:
-        #subclasses may prompt the user here instead
+        # subclasses may prompt the user here instead
         filelog("ask_data_request%s", (send_id, dtype, url, filesize, printit, openit))
         v = self.accept_data(send_id, dtype, url, printit, openit)
         cb_answer(v)
@@ -886,24 +892,25 @@ class FileTransferHandler(FileTransferAttributes):
         except KeyError:
             filelog.warn(f"Warning: cannot find send-file entry for {send_id!r}")
             return
-        if accept==DENY:
+        if accept == DENY:
             filelog.info("the request to send %s '%s' has been denied", spd.datatype, spd.url)
             return
         if accept not in (ACCEPT, OPEN):
             raise ValueError(f"unknown value for send-data response: {accept!r}")
-        if spd.datatype=="file":
+        if spd.datatype == "file":
             if accept==ACCEPT:
-                self.do_send_file(spd.url, spd.mimetype, spd.data, spd.filesize, spd.printit, spd.openit, spd.options, send_id)
+                self.do_send_file(spd.url, spd.mimetype, spd.data, spd.filesize,
+                                  spd.printit, spd.openit, spd.options, send_id)
             else:
                 assert spd.openit and accept==OPEN
-                #try to open at this end:
+                # try to open at this end:
                 self._open_file(spd.url)
-        elif spd.datatype=="url":
+        elif spd.datatype == "url":
             if accept==ACCEPT:
                 self.do_send_open_url(spd.url, send_id)
             else:
-                assert accept==OPEN
-                #open it at this end:
+                assert accept == OPEN
+                # open it at this end:
                 self._open_url(spd.url)
         else:
             filelog.error("Error: unknown datatype '%s'", spd.datatype)
@@ -981,9 +988,9 @@ class FileTransferHandler(FileTransferAttributes):
             chunk_state.timer = 0
             self.source_remove(timer)
 
-    def _process_ack_file_chunk(self, packet : PacketType) -> None:
-        #the other end received our send-file or send-file-chunk,
-        #send some more file data
+    def _process_ack_file_chunk(self, packet: PacketType) -> None:
+        # the other end received our send-file or send-file-chunk,
+        # send some more file data
         filelog("ack-file-chunk: %s", packet[1:])
         chunk_id = str(packet[1])
         state = bool(packet[2])
@@ -1027,6 +1034,7 @@ class FileTransferHandler(FileTransferAttributes):
     def compressed_wrapper(self, datatype, data, level=5):
         raise NotImplementedError()
 
-    def transfer_progress_update(self, send=True, transfer_id:str="", elapsed=0.0, position=0, total=0, error=None) -> None:
-        #this method is overridden in the gtk client:
+    def transfer_progress_update(self, send=True, transfer_id: str = "", elapsed=0.0, position=0, total=0,
+                                 error=None) -> None:
+        # this method is overridden in the gtk client:
         filelog("transfer_progress_update%s", (send, transfer_id, elapsed, position, total, error))

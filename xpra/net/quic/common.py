@@ -14,9 +14,11 @@ USER_AGENT = "xpra/aioquic"
 
 MAX_DATAGRAM_FRAME_SIZE = envint("XPRA_MAX_DATAGRAM_FRAME_SIZE", 65536)
 
+
 def http_date():
     """ GMT date in a format suitable for http headers """
     return formatdate(time(), usegmt=True)
+
 
 def binary_headers(headers : dict):
     """ aioquic expects the headers as a list of binary pairs """

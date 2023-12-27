@@ -23,8 +23,8 @@ _key_algorithms : dict[str,str] = {
 }
 
 _hash_funcs : dict[str, Callable] = {
-    '1' : hashlib.sha1,
-    '2' : hashlib.sha256,
+    '1': hashlib.sha1,
+    '2': hashlib.sha256,
 }
 if os.environ.get("XPRA_SSHFP_NOSHA1"):
     _hash_funcs.pop('1')
@@ -36,6 +36,7 @@ def check_host_key(hostname:str, key):
     except Exception as e:
         log("check_host_key(%r, %r)", hostname, key, exc_info=True)
         return f"error checking sshfp record: {e}"
+
 
 def do_check_host_key(hostname:str, keytype, keydata):
     resolver = Resolver()

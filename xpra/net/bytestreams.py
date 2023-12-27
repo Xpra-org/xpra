@@ -25,7 +25,7 @@ log = Logger("network", "protocol")
 SOCKET_CORK : bool = envbool("XPRA_SOCKET_CORK", LINUX)
 if SOCKET_CORK:
     try:
-        assert socket.TCP_CORK>0  #@UndefinedVariable
+        assert socket.TCP_CORK > 0      # @UndefinedVariable
     except (AttributeError, AssertionError) as cork_e:
         log.warn("Warning: unable to use TCP_CORK on %s", sys.platform)
         log.warn(" %s", cork_e)
@@ -36,15 +36,15 @@ if hasenv("XPRA_SOCKET_NODELAY"):
 SOCKET_KEEPALIVE : bool = envbool("XPRA_SOCKET_KEEPALIVE", True)
 VSOCK_TIMEOUT : int = envint("XPRA_VSOCK_TIMEOUT", 5)
 SOCKET_TIMEOUT : int = envint("XPRA_SOCKET_TIMEOUT", 20)
-#this is more proper but would break the proxy server:
+# this is more proper but would break the proxy server:
 SOCKET_SHUTDOWN : bool = envbool("XPRA_SOCKET_SHUTDOWN", False)
 LOG_TIMEOUTS : int = envint("XPRA_LOG_TIMEOUTS", 1)
 
 ABORT : dict[int, str] = {
-         errno.ENXIO            : "ENXIO",
-         errno.ECONNRESET       : "ECONNRESET",
-         errno.EPIPE            : "EPIPE",
-         }
+    errno.ENXIO            : "ENXIO",
+    errno.ECONNRESET       : "ECONNRESET",
+    errno.EPIPE            : "EPIPE",
+}
 
 
 PROTOCOL_STR = {}
@@ -58,6 +58,7 @@ del x
 
 CAN_RETRY_EXCEPTIONS = ()
 CLOSED_EXCEPTIONS = ()
+
 
 def can_retry(e) -> bool | str:
     if isinstance(e, socket.timeout):
@@ -79,6 +80,7 @@ def can_retry(e) -> bool | str:
         raise ConnectionClosedException(e) from None
     return False
 
+
 def untilConcludes(is_active_cb:Callable, can_retry_cb:Callable, f:Callable, *a, **kw):
     while is_active_cb():
         try:
@@ -96,9 +98,9 @@ def pretty_socket(s) -> str:
     try:
         if isinstance(s, str):
             return s
-        if len(s)==2:
+        if len(s) == 2:
             if str(s[0]).find(":")>=0:
-                #IPv6
+                # IPv6
                 return "[%s]:%s" % (s[0], s[1])
             return "%s:%s" % (s[0], s[1])
         if len(s)==4:
@@ -125,7 +127,7 @@ class Connection:
         self.input_readcount = 0
         self.output_bytecount = 0
         self.output_writecount = 0
-        self.filename = None            #only used for unix domain sockets!
+        self.filename = None            # only used for unix domain sockets!
         self.active = True
         self.timeout = 0
 
@@ -151,7 +153,7 @@ class Connection:
         return untilConcludes(self.is_active, self.can_retry, *args)
 
     def peek(self, _n : int) -> bytes:
-        #not implemented
+        # not implemented
         return b""
 
     def _write(self, *args) -> int:
@@ -233,6 +235,7 @@ class TwoFileConnection(Connection):
             log("%s.close() calling %s", self, cc)
             with log.trap_error(f"{self}.close() error on callback {cc}"):
                 cc()
+
         def close_files_thread() -> None:
             log("close_files_thread() _readable=%s", self._readable)
             log("close_files_thread() calling %s", self._readable.close)
@@ -262,7 +265,6 @@ class TwoFileConnection(Connection):
             },
         }
         return d
-
 
 
 class SocketConnection(Connection):
@@ -297,7 +299,7 @@ class SocketConnection(Connection):
                     if WIN32:
                         sock = self.get_raw_socket()
                         if sock:
-                            #@UndefinedVariable pylint: disable=no-member
+                            # @UndefinedVariable pylint: disable=no-member
                             sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idletime*1000, interval*1000))
                     elif OSX:
                         TCP_KEEPALIVE = 0x10
@@ -336,7 +338,7 @@ class SocketConnection(Connection):
 
     def set_cork(self, cork : bool) -> None:
         if self.cork and self.cork_value!=cork:
-            self._setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, cork)  #@UndefinedVariable
+            self._setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, cork)     # @UndefinedVariable
             self.cork_value = cork
             log("changed %s socket to cork=%s", self.socktype, cork)
 
@@ -382,7 +384,7 @@ class SocketConnection(Connection):
             return "%s %s: %s <- %s" % (
                 self.socktype, self.protocol_type,
                 pretty_socket(self.local), pretty_socket(self.remote),
-                )
+            )
         return f"{self.socktype} {self.protocol_type}:{pretty_socket(self.local)}"
 
     def get_info(self) -> dict[str,Any]:
@@ -451,8 +453,8 @@ class SocketConnection(Connection):
             log.estr(e)
         else:
             opts = {
-                    "SOCKET" : get_socket_options(s, socket.SOL_SOCKET, SOCKET_OPTIONS),
-                    }
+                "SOCKET" : get_socket_options(s, socket.SOL_SOCKET, SOCKET_OPTIONS),
+            }
             if self.socktype_wrapped in IP_SOCKTYPES:
                 opts["IP"] = get_socket_options(s, socket.SOL_IP, IP_OPTIONS)
             if self.socktype_wrapped in TCP_SOCKTYPES:
@@ -604,11 +606,11 @@ class SSLSocketConnection(PeekableSocketConnection):
         i = super().get_info()
         i["ssl"] = True
         for k,fn in {
-                     "compression"      : "compression",
-                     "alpn-protocol"    : "selected_alpn_protocol",
-                     "npn-protocol"     : "selected_npn_protocol",
-                     "version"          : "version",
-                     }.items():
+            "compression"      : "compression",
+            "alpn-protocol"    : "selected_alpn_protocol",
+            "npn-protocol"     : "selected_npn_protocol",
+            "version"          : "version",
+        }.items():
             sfn = getattr(self._socket, fn, None)
             if sfn:
                 v = sfn()
@@ -619,10 +621,10 @@ class SSLSocketConnection(PeekableSocketConnection):
             cipher = cipher_fn()
             if cipher:
                 i["cipher"] = {
-                               "name"       : cipher[0],
-                               "protocol"   : cipher[1],
-                               "bits"       : cipher[2],
-                               }
+                    "name"       : cipher[0],
+                    "protocol"   : cipher[1],
+                    "bits"       : cipher[2],
+                }
         return i
 
 
@@ -669,11 +671,12 @@ def log_new_connection(conn, socket_info="") -> None:
 def get_socket_config() -> dict[str,Any]:
     config = {}
     try:
-        from xpra.net.bytestreams import VSOCK_TIMEOUT, SOCKET_TIMEOUT, SOCKET_NODELAY  # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        from xpra.net.bytestreams import VSOCK_TIMEOUT, SOCKET_TIMEOUT, SOCKET_NODELAY
         config = {
-                "vsocket.timeout"    : VSOCK_TIMEOUT,
-                "socket.timeout"     : SOCKET_TIMEOUT,
-                }
+            "vsocket.timeout"    : VSOCK_TIMEOUT,
+            "socket.timeout"     : SOCKET_TIMEOUT,
+        }
         if SOCKET_NODELAY is not None:
             config["socket.nodelay"] = SOCKET_NODELAY
     except Exception:   # pragma: no cover

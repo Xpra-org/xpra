@@ -16,6 +16,7 @@ def ssh_dir_path() -> str:
     session_dir = os.environ["XPRA_SESSION_DIR"]
     return os.path.join(session_dir, "ssh")
 
+
 def setup_ssh_auth_sock() -> str:
     # the 'ssh' dir contains agent socket symlinks to the real agent socket,
     # so we can just update the "agent" symlink
@@ -38,13 +39,15 @@ def setup_ssh_auth_sock() -> str:
     set_ssh_agent()
     return agent_sockpath
 
-def get_ssh_agent_path(filename:str) -> str:
+
+def get_ssh_agent_path(filename: str) -> str:
     ssh_dir = ssh_dir_path()
     if "/" in filename or ".." in filename:
         raise ValueError(f"illegal characters found in ssh agent filename {filename!r}")
     return os.path.join(ssh_dir, filename or "agent.default")
 
-def set_ssh_agent(filename:str="") -> None:
+
+def set_ssh_agent(filename: str="") -> None:
     ssh_dir = ssh_dir_path()
     if filename and os.path.isabs(filename):
         sockpath = filename
@@ -132,25 +135,25 @@ def setup_client_ssh_agent_socket(uuid:str, ssh_auth_sock:str) -> str:
     if not uuid:
         log("cannot setup ssh agent without client uuid")
         return ""
-    #perhaps the agent sock path for this uuid already exists:
-    #ie: /run/user/1000/xpra/10/$UUID
+    # perhaps the agent sock path for this uuid already exists:
+    # ie: /run/user/1000/xpra/10/$UUID
     sockpath = get_ssh_agent_path(uuid)
     log(f"get_ssh_agent_path({uuid})={sockpath}")
     if not os.path.exists(sockpath) or not is_socket(sockpath):
         if os.path.islink(sockpath):
-            #dead symlink
+            # dead symlink
             try:
                 os.unlink(sockpath)
             except OSError as e:
                 log(f"os.unlink({sockpath!r})", exc_info=True)
                 log.error("Error: removing the broken ssh agent symlink")
                 log.estr(e)
-        #perhaps this is a local client,
-        #and we can find its agent socket and create the symlink now:
+        # perhaps this is a local client,
+        # and we can find its agent socket and create the symlink now:
         log(f"client supplied ssh-auth-sock={ssh_auth_sock}")
-        if ssh_auth_sock and os.path.isabs(ssh_auth_sock) and os.path.exists(ssh_auth_sock) and is_socket(ssh_auth_sock):
+        if ssh_auth_sock and os.path.isabs(ssh_auth_sock) and os.path.exists(ssh_auth_sock) and is_socket(ssh_auth_sock):  # noqa: E501
             try:
-                #ie: /run/user/1000/xpra/10/$UUID -> /tmp/ssh-XXXXvjt4hN/agent.766599
+                # ie: /run/user/1000/xpra/10/$UUID -> /tmp/ssh-XXXXvjt4hN/agent.766599
                 os.link(ssh_auth_sock, sockpath, follow_symlinks=False)
             except OSError as e:
                 log(f"os.link({ssh_auth_sock}, {sockpath})", exc_info=True)
