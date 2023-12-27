@@ -1265,20 +1265,20 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 lim = self.gl_texture_size_limit
                 if lim >= 16 * 1024:
                     return True
-                if mww>0 and mww > lim:
+                if mww > 0 and mww > lim:
                     return False
-                if mwh>0 and mwh > lim:
+                if mwh > 0 and mwh > lim:
                     return False
                 return True
 
-            if self.opengl_enabled and validate_texture_size():
+            if self.opengl_enabled and not validate_texture_size():
                 # log at warn level if the limit is low:
                 # (if we're likely to hit it - if the screen is as big or bigger)
                 w, h = self.get_root_size()
                 l = opengllog.info
-                if w*2<=self.gl_texture_size_limit and h*2<=self.gl_texture_size_limit:
+                if w*2 <= self.gl_texture_size_limit and h*2 <= self.gl_texture_size_limit:
                     l = opengllog
-                if w>=self.gl_texture_size_limit or h>=self.gl_texture_size_limit:
+                if w >= self.gl_texture_size_limit or h >= self.gl_texture_size_limit:
                     l = opengllog.warn
                 l("Warning: OpenGL windows will be clamped to the maximum texture size %ix%i",
                   self.gl_texture_size_limit, self.gl_texture_size_limit)
