@@ -10,7 +10,7 @@ from xpra.util.types import AdHocStruct
 from xpra.server.window.video_scoring import (
     get_quality_score, get_speed_score,
     get_pipeline_score, get_encoder_dimensions,
-    )
+)
 
 
 class TestVideoScoring(unittest.TestCase):
@@ -78,6 +78,7 @@ class TestVideoScoring(unittest.TestCase):
         current_csc.get_dst_format = lambda : "BGRA"
         current_csc.get_src_height = lambda : 1080
         current_csc.get_src_width = lambda : 1920
+        current_csc.get_type = lambda : "test csc"
         for rgb_format in ("BGRA", "RGB"):
             for csc_spec in (None, test_csc_spec):
                 for can_scale in (True, False):
@@ -89,38 +90,38 @@ class TestVideoScoring(unittest.TestCase):
                             #too small:
                             for w, h in ((MINW-1, MINH+1), (MINW+1, MINH-1)):
                                 s = get_pipeline_score(rgb_format, csc_spec, encoder_spec,
-                                               w, h, scaling,
-                                               100, 10,
-                                               100, 10,
-                                               None, None,
-                                               0, 10, True)
+                                                       w, h, scaling,
+                                                       100, 10,
+                                                       100, 10,
+                                                       None, None,
+                                                       0, 10, True)
                                 assert s is None
 
                             s = get_pipeline_score(rgb_format, csc_spec, encoder_spec,
-                                           1920, 1080, scaling,
-                                           100, 10,
-                                           100, 10,
-                                           current_csc, None,
-                                           0, 10, True)
+                                                   1920, 1080, scaling,
+                                                   100, 10,
+                                                   100, 10,
+                                                   current_csc, None,
+                                                   0, 10, True)
                             if can_scale is False and scaling!=(1, 1):
                                 assert s is None
                                 continue
                             #mask will round down, so this should be OK:
                             s = get_pipeline_score(rgb_format, csc_spec, encoder_spec,
-                                           MAXW+1, MAXH+1, scaling,
-                                           100, 10,
-                                           100, 10,
-                                           None, None,
-                                           0, 10, True)
+                                                   MAXW+1, MAXH+1, scaling,
+                                                   100, 10,
+                                                   100, 10,
+                                                   None, None,
+                                                   0, 10, True)
                             assert s
                             if scaling==(1, 1):
                                 #but this is not:
                                 s = get_pipeline_score(rgb_format, csc_spec, encoder_spec,
-                                               MAXW+2, MAXH+2, scaling,
-                                               100, 10,
-                                               100, 10,
-                                               None, None,
-                                               0, 10, True)
+                                                       MAXW+2, MAXH+2, scaling,
+                                                       100, 10,
+                                                       100, 10,
+                                                       None, None,
+                                                       0, 10, True)
                                 assert s is None
 
     def test_encoder_dimensions(self):
@@ -138,6 +139,7 @@ class TestVideoScoring(unittest.TestCase):
 
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()
