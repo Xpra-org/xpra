@@ -45,7 +45,7 @@ class Keyboard(KeyboardBase):
         self.__input_sources : dict[str,int] = {}
         try:
             self.__dbus_helper = DBusHelper()
-        except ImportError as  e:
+        except ImportError as e:
             self.__dbus_helper = None
             log.info(f"gnome input sources requires dbus: {e}")
         else:
@@ -123,10 +123,10 @@ class Keyboard(KeyboardBase):
                 numlock_mod = meanings.get("Num_Lock", [])
                 if numlock_mod:
                     mod_missing.append(numlock_mod)
-                return  meanings, [], mod_missing
+                return meanings, [], mod_missing
         return {}, [], []
 
-    def get_x11_keymap(self) -> dict[int,list[str]]:
+    def get_x11_keymap(self) -> dict[int, list[str]]:
         if not self.keyboard_bindings:
             return {}
         from xpra.gtk.error import xlog
@@ -134,7 +134,7 @@ class Keyboard(KeyboardBase):
             return self.keyboard_bindings.get_keycode_mappings()
         return {}
 
-    def get_locale_status(self) -> dict[str,str]:
+    def get_locale_status(self) -> dict[str, str]:
         #parse the output into a dictionary:
         # $ localectl status
         # System Locale: LANG=en_GB.UTF-8
@@ -168,7 +168,6 @@ class Keyboard(KeyboardBase):
         log("get_keymap_spec()=%r", query_struct)
         return query_struct
 
-
     def get_xkb_rules_names_property(self) -> tuple[str,...]:
         #parses the "_XKB_RULES_NAMES" X11 property
         if not is_X11():
@@ -186,7 +185,6 @@ class Keyboard(KeyboardBase):
             #ie: ['evdev', 'pc104', 'gb,us', ',', '', '']
         log("get_xkb_rules_names_property()=%s", xkb_rules_names)
         return tuple(xkb_rules_names)
-
 
     def get_all_x11_layouts(self) -> dict[str,str]:
         repository = "/usr/share/X11/xkb/rules/base.xml"
@@ -226,7 +224,6 @@ class Keyboard(KeyboardBase):
             log("get_all_x11_layouts()", exc_info=True)
         return {"us" : "English"}
 
-
     def get_layout_spec(self):
         def s(v) -> str:
             try:
@@ -256,7 +253,6 @@ class Keyboard(KeyboardBase):
             layouts = v.split(",")
             layout = v
         return layout, [x for x in layouts], variant, [], options
-
 
     def get_keyboard_repeat(self) -> tuple[int,int] | None:
         if self.keyboard_bindings:

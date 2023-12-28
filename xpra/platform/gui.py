@@ -16,6 +16,8 @@ from xpra.log import Logger
 
 
 _init_done = False
+
+
 def init() -> None:
     #warning: we currently call init() from multiple places to try
     #to ensure we run it as early as possible..
@@ -24,24 +26,32 @@ def init() -> None:
         _init_done = True
         do_init()
 
+
 def do_init() -> None:
     """ some platforms override this """
 
+
 _ready_done = False
+
+
 def ready() -> None:
     global _ready_done
     if not _ready_done:
         _ready_done = True
         do_ready()
 
+
 def do_ready() -> None:
     """ some platforms override this """
 
 
 _default_icon = "xpra.png"
+
+
 def set_default_icon(icon_filename:str) -> None:
     global _default_icon
     _default_icon = icon_filename
+
 
 def get_default_icon():
     global _default_icon
@@ -49,7 +59,7 @@ def get_default_icon():
 
 
 def force_focus(duration=2000) -> None:
-    #only implemented on macos
+    # only implemented on macos
     assert isinstance(duration, int)
 
 
@@ -57,25 +67,35 @@ def use_stdin() -> bool:
     stdin = sys.stdin
     return bool(stdin) and stdin.isatty()
 
+
 def get_clipboard_native_class() -> str:
     return ""
+
 
 #defaults:
 def get_native_tray_menu_helper_class() -> type | None:
     #classes that generate menus for xpra's system tray
     #let the toolkit classes use their own
     return None
+
+
 def get_native_tray_classes(*_args) -> list[type]:
     #the classes we can use for our system tray:
     #let the toolkit classes use their own
     return []
+
+
 def get_native_system_tray_classes(*_args) -> list[type]:
     #the classes we can use for application system tray forwarding:
     #let the toolkit classes use their own
     return []
+
+
 def system_bell(*_args) -> bool:
     #let the toolkit classes use their own
     return False
+
+
 def get_native_notifier_classes() -> list[type]:
     return []
 
@@ -86,6 +106,7 @@ def get_session_type() -> str:
 
 def get_xdpi() -> int:
     return -1
+
 
 def get_ydpi() -> int:
     return -1
@@ -111,15 +132,19 @@ def get_icon_size() -> int:
         return 24
     return 16
 
+
 def get_antialias_info() -> dict[str,Any]:
     return {}
+
 
 def get_display_icc_info() -> dict[str,Any]:
     #per display info
     return {}
 
+
 def get_icc_info() -> dict[str,Any]:
     return default_get_icc_info()
+
 
 def default_get_icc_info() -> dict[str,Any]:
     ENV_ICC_DATA = os.environ.get("XPRA_ICC_DATA")
@@ -127,8 +152,9 @@ def default_get_icc_info() -> dict[str,Any]:
         return {
             "source"    : "environment-override",
             "data"      : binascii.unhexlify(ENV_ICC_DATA),
-            }
+        }
     return get_pillow_icc_info()
+
 
 def get_pillow_icc_info() -> dict[str,Any]:
     screenlog = Logger("screen")
@@ -146,13 +172,16 @@ def get_pillow_icc_info() -> dict[str,Any]:
             if v:
                 INTENT_STR[v] = x.lower().replace("_", "-")
         screenlog("get_icc_info() intents=%s", INTENT_STR)
-        p = get_display_profile() #NOSONAR @SuppressWarnings("python:S5727")
+        p = get_display_profile()  # NOSONAR @SuppressWarnings("python:S5727")
         screenlog("get_icc_info() display_profile=%s", p)
         if p:
+
             def getDefaultIntentStr(v) -> str:
                 return INTENT_STR.get(v, "unknown")
+
             def getData(v) -> bytes:
                 return v.tobytes()
+
             for (k, fn, conv) in (
                 ("name",            "getProfileName",           None),
                 ("info",            "getProfileInfo",           None),
@@ -162,7 +191,7 @@ def get_pillow_icc_info() -> dict[str,Any]:
                 ("description",     "getProfileDescription",    None),
                 ("default-intent",  "getDefaultIntent",         getDefaultIntentStr),
                 ("data",            "getData",                  getData),
-                ):
+            ):
                 m = getattr(ImageCms, fn, None)
                 if m is None:
                     screenlog("%s lacks %s", ImageCms, fn)
@@ -186,42 +215,55 @@ def get_pillow_icc_info() -> dict[str,Any]:
 def get_workarea():
     return None
 
+
 #per monitor workareas (assuming a single screen)
 def get_workareas():
     return ()
 
+
 def get_number_of_desktops() -> int:
     return 1
+
 
 def get_desktop_names()  -> tuple[str,...]:
     return ()
 
+
 def get_vrefresh() -> int:
     return -1
+
 
 def get_mouse_config():
     return {}
 
+
 def get_double_click_time() -> int:
     return -1
+
 
 def get_double_click_distance() -> tuple[int,int]:
     return -1, -1
 
+
 def get_fixed_cursor_size() -> tuple[int,int]:
     return -1, -1
+
 
 def get_cursor_size() -> int:
     return -1
 
+
 def get_window_min_size() -> tuple[int,int]:
     return 0, 0
+
 
 def get_window_max_size() -> tuple[int,int]:
     return 2**15-1, 2**15-1
 
+
 def get_window_frame_size(_x, _y, _w, _h):
     return None
+
 
 def get_window_frame_sizes():
     return {}
@@ -233,6 +275,7 @@ def add_window_hooks(_window) -> None:
     called when the window is created.
     """
 
+
 def remove_window_hooks(_window) -> None:
     """
     Remove the hooks,
@@ -243,8 +286,10 @@ def remove_window_hooks(_window) -> None:
 def show_desktop(_show) -> None:
     """ If possible, show the desktop """
 
+
 def set_fullscreen_monitors(_window, _fsm, _source_indication:int=0) -> None:
     """ Only overridden by posix """
+
 
 def set_shaded(_window, _shaded:bool) -> None:
     """
@@ -252,11 +297,13 @@ def set_shaded(_window, _shaded:bool) -> None:
     posix clients will hook it up here.
     """
 
+
 def pointer_grab(_window):
     """
     Pointer grabs require platform specific code
     """
     return False
+
 
 def pointer_ungrab(_window):
     """
@@ -267,6 +314,7 @@ def pointer_ungrab(_window):
 
 def gl_check() -> str:
     return ""     #no problem
+
 
 def get_wm_name() -> str:
     return ""
@@ -290,41 +338,43 @@ def get_info_base() -> dict[str,Any]:
             return v.__name__
         except AttributeError:
             return str(v)
+
     def fnames(l):
         return [fname(x) for x in l]
     return {
-            "native-clipboard"              : get_clipboard_native_class(),
-            "native_tray_menu_helper"       : fname(get_native_tray_menu_helper_class()),
-            "native_trays"                  : fnames(get_native_tray_classes()),
-            "native_system_trays"           : fnames(get_native_system_tray_classes()),
-            "system_bell"                   : fname(system_bell),
-            "native_notifiers"              : fnames(get_native_notifier_classes()),
-            "wm_name"                       : get_wm_name() or "",
-            "workarea"                      : get_workarea() or "",
-            "workareas"                     : get_workareas(),
-            "monitors"                      : get_monitors_info(),
-            "desktops"                      : get_number_of_desktops(),
-            "desktop_names"                 : get_desktop_names(),
-            "session-type"                  : get_session_type(),
-            "vertical-refresh"              : get_vrefresh(),
-            "fixed_cursor_size"             : get_fixed_cursor_size(),
-            "cursor_size"                   : get_cursor_size(),
-            "icon_size"                     : get_icon_size(),
-            "mouse"                         : get_mouse_config(),
-            "double_click"                  : {
-                                               "time"       : get_double_click_time(),
-                                               "distance"   : get_double_click_distance(),
-                                               },
-            "dpi"                           : {
-                                               "x"          : get_xdpi(),
-                                               "y"          : get_ydpi(),
-                                               },
-            "antialias"                     : get_antialias_info(),
-            "icc"                           : get_icc_info(),
-            "display-icc"                   : get_display_icc_info(),
-            "window_frame"                  : get_window_frame_sizes(),
-            "can_access_display"            : can_access_display(),
-            }
+        "native-clipboard"              : get_clipboard_native_class(),
+        "native_tray_menu_helper"       : fname(get_native_tray_menu_helper_class()),
+        "native_trays"                  : fnames(get_native_tray_classes()),
+        "native_system_trays"           : fnames(get_native_system_tray_classes()),
+        "system_bell"                   : fname(system_bell),
+        "native_notifiers"              : fnames(get_native_notifier_classes()),
+        "wm_name"                       : get_wm_name() or "",
+        "workarea"                      : get_workarea() or "",
+        "workareas"                     : get_workareas(),
+        "monitors"                      : get_monitors_info(),
+        "desktops"                      : get_number_of_desktops(),
+        "desktop_names"                 : get_desktop_names(),
+        "session-type"                  : get_session_type(),
+        "vertical-refresh"              : get_vrefresh(),
+        "fixed_cursor_size"             : get_fixed_cursor_size(),
+        "cursor_size"                   : get_cursor_size(),
+        "icon_size"                     : get_icon_size(),
+        "mouse"                         : get_mouse_config(),
+        "double_click"                  : {
+            "time"       : get_double_click_time(),
+            "distance"   : get_double_click_distance(),
+        },
+        "dpi"                           : {
+            "x"          : get_xdpi(),
+            "y"          : get_ydpi(),
+        },
+        "antialias"                     : get_antialias_info(),
+        "icc"                           : get_icc_info(),
+        "display-icc"                   : get_display_icc_info(),
+        "window_frame"                  : get_window_frame_sizes(),
+        "can_access_display"            : can_access_display(),
+    }
+
 
 get_info = get_info_base
 
@@ -348,7 +398,8 @@ platform_import(globals(), "gui", False,
                 "get_session_type",
                 "get_vrefresh", "get_workarea", "get_workareas",
                 "get_number_of_desktops", "get_desktop_names",
-                "get_antialias_info", "get_icc_info", "get_display_icc_info", "get_xdpi", "get_ydpi", "get_monitors_info",
+                "get_antialias_info", "get_icc_info", "get_display_icc_info", "get_xdpi", "get_ydpi",
+                "get_monitors_info",
                 "get_icon_size",
                 "get_window_min_size", "get_window_max_size",
                 "get_mouse_config",

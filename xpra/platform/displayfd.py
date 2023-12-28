@@ -47,6 +47,7 @@ def write_displayfd(w_pipe, display, timeout=10):
                 log("os.close(%i)", w_pipe, exc_info=True)
     return len(buf)==0
 
+
 def read_displayfd(r_pipe, timeout=DISPLAY_FD_TIMEOUT, proc=None):
     import select
     import errno
@@ -74,6 +75,7 @@ def read_displayfd(r_pipe, timeout=DISPLAY_FD_TIMEOUT, proc=None):
             if e.errno!=errno.EINTR:
                 raise
     return buf
+
 
 def parse_displayfd(buf, err):
     if not buf:

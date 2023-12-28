@@ -26,7 +26,7 @@ from xpra.platform.posix.fd_portal import (
     get_portal_interface, get_session_interface,
     screenscast_dbus_call, remotedesktop_dbus_call,
     AvailableSourceTypes, AvailableDeviceTypes,
-    )
+)
 from xpra.log import Logger
 
 log = Logger("shadow")
@@ -135,13 +135,12 @@ class PortalShadow(GTKShadowServerBase):
         self.session_path = f"/org/freedesktop/portal/desktop/session/{dbus_sender_name}/{token}"
         options : dict[str, Any] = {
             "session_handle_token"  : token,
-            }
+        }
         log(f"create_session() session_counter={session_counter}")
         remotedesktop_dbus_call(
             self.portal_interface.CreateSession,
             self.on_create_session_response,
-            options=options,
-            )
+            options=options)
 
     def on_create_session_response(self, response, results) -> None:
         r = int(response)
@@ -169,7 +168,7 @@ class PortalShadow(GTKShadowServerBase):
         log("select_devices()")
         options = {
             "types" : UInt32(AvailableDeviceTypes.KEYBOARD + AvailableDeviceTypes.POINTER),
-            }
+        }
         remotedesktop_dbus_call(
             self.portal_interface.SelectDevices,
             self.on_select_devices_response,
@@ -191,7 +190,7 @@ class PortalShadow(GTKShadowServerBase):
         options = {
             "multiple"  : self.multi_window,
             "types"     : UInt32(AvailableSourceTypes.WINDOW | AvailableSourceTypes.MONITOR),
-            }
+        }
         log(f"calling SelectSources with options={options}")
         screenscast_dbus_call(
             self.portal_interface.SelectSources,
@@ -247,7 +246,7 @@ class PortalShadow(GTKShadowServerBase):
             "fd" : fd,
             "path" : str(node_id),
             "do-timestamp" : True,
-            })
+        })
         c = self.authenticating_client
         if VIDEO_MODE:
             encs = getattr(c, "core_encodings", ())
@@ -273,8 +272,7 @@ class PortalShadow(GTKShadowServerBase):
         fd_object = self.portal_interface.OpenPipeWireRemote(
             self.session_handle,
             empty_dict,
-            dbus_interface=SCREENCAST_IFACE,
-            )
+            dbus_interface=SCREENCAST_IFACE)
         fd = fd_object.take()
         self.capture = self.create_capture_pipeline(fd, node_id, w, h)
         self.capture.node_id = node_id

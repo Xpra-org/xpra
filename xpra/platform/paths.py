@@ -189,6 +189,7 @@ def default_get_app_dir() -> str:
             if valid_dir(adir):
                 return adir
     adir = os.path.dirname(inspect.getfile(sys._getframe(1)))  #pylint: disable=protected-access
+
     def root_module(d):
         for psep in (os.path.sep, "/", "\\"):
             pos = d.find(f"xpra{psep}platform")
@@ -379,7 +380,7 @@ def get_info():
         "sshpass_command"   : get_sshpass_command(),
         "python-exec"       : get_python_exec_command(),
         "python-execfile"   : get_python_execfile_command(),
-        }
+    }
 
 
 def main():

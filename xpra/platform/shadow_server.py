@@ -5,7 +5,9 @@
 
 from xpra.platform import platform_import
 
-def ShadowServer(*_args): # pragma: no cover
+
+def ShadowServer(*_args):  # pragma: no cover
     raise NotImplementedError()
+
 
 platform_import(globals(), "shadow_server", True, "ShadowServer")

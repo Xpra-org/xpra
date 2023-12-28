@@ -14,19 +14,26 @@ log = Logger("webcam")
 def get_virtual_video_devices() -> dict:
     return {}
 
+
 def get_all_video_devices():
-    #None means we can't enumerate,
-    #this is different from an empty dict!
+    # None means we can't enumerate,
+    # this is different from an empty dict!
     return None
 
-def add_video_device_change_callback(_callback:Callable):
-    #not implemented here
-    pass
-def remove_video_device_change_callback(_callback:Callable):
-    #not implemented here
+
+def add_video_device_change_callback(_callback: Callable):
+    # not implemented here
     pass
 
+
+def remove_video_device_change_callback(_callback: Callable):
+    # not implemented here
+    pass
+
+
 _video_device_change_callbacks : list[Callable] = []
+
+
 def _fire_video_device_change(create=None, pathname=None):
     for x in _video_device_change_callbacks:
         try:
@@ -63,6 +70,7 @@ def main(argv):
 
         if run:
             log.info("add watch for video device changes")
+
             def callback(added=None, device=None):
                 if added is not None or device:
                     log.info("video device %s: %s", ["removed", "added"][added], device)
@@ -79,6 +87,7 @@ def main(argv):
             log.info("terminating, removing callback")
             remove_video_device_change_callback(callback)
     return 0
+
 
 if __name__ == "__main__":
     import sys

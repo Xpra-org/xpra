@@ -39,6 +39,7 @@ def main():
                 sys.argv.remove(x)
                 add_debug_category("menu")
                 log.enable_debug()
+
         def icon_fmt(icondata):
             return "%i bytes" % len(icondata)
         if len(sys.argv)>1:

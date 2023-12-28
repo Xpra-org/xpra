@@ -13,4 +13,4 @@ from xpra.platform.pycups_printing import (
     get_info,
 )
 
-assert get_printers and print_files and printing_finished and init_printing and cleanup_printing and get_info # type: ignore[truthy-function]
+assert get_printers and print_files and printing_finished and init_printing and cleanup_printing and get_info   # noqa: E501 type: ignore[truthy-function]

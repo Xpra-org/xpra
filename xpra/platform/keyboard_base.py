@@ -25,9 +25,9 @@ class KeyboardBase:
         self.modifier_names : dict[str,str] = {}
         self.modifier_keycodes : dict[str,list[int]] = {}
         self.modifier_mappings = {}
-        #FIXME: this only allows a single modifier per mask
-        #and in some cases we want to allow other modifier names
-        #to use the same mask... (ie: META on OSX)
+        # FIXME: this only allows a single modifier per mask
+        # and in some cases we want to allow other modifier names
+        # to use the same mask... (ie: META on OSX)
         self.modifier_map = MODIFIER_MAP
 
     def cleanup(self) -> None:
@@ -82,12 +82,12 @@ class KeyboardBase:
     def mask_to_names(self, mask) -> list[str]:
         return mask_to_names(mask, self.modifier_map)
 
-    def get_keymap_modifiers(self) -> tuple[dict,list,list[str]]:
+    def get_keymap_modifiers(self) -> tuple[dict, list, list[str]]:
         """
             ask the server to manage capslock ('lock') which can be missing from mouse events
             (or maybe this is virtualbox causing it?)
         """
-        return  {}, [], ["lock"]
+        return {}, [], ["lock"]
 
     def get_keymap_spec(self) -> dict[str,Any]:
         return {}
@@ -95,16 +95,15 @@ class KeyboardBase:
     def get_x11_keymap(self) -> dict[int,list[str]]:
         return {}
 
-    def get_layout_spec(self) -> tuple[str,list[str],str,list[str],str]:
+    def get_layout_spec(self) -> tuple[str, list[str], str, list[str], str]:
         return "", [], "", [], ""
 
-    def get_keyboard_repeat(self) -> tuple[int,int] | None:
+    def get_keyboard_repeat(self) -> tuple[int, int] | None:
         return None
 
     def update_modifier_map(self, display, mod_meanings) -> None:
         log(f"update_modifier_map({display}, {mod_meanings})")
         self.modifier_map = MODIFIER_MAP
-
 
     def process_key_event(self, send_key_action_cb:Callable, wid:int, key_event:KeyEvent):
         #default is to just send it as-is:

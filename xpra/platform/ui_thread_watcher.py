@@ -159,6 +159,8 @@ class UI_thread_watcher:
 
 
 UI_watcher : UI_thread_watcher | None = None
+
+
 def get_UI_watcher(timeout_add: Callable = None, source_remove: Callable = None) -> UI_thread_watcher | None:
     global UI_watcher
     if UI_watcher is None and timeout_add:

@@ -30,7 +30,7 @@ def print_address(iface, addr, defs):
             stype = {
                 socket.AF_INET  : "IPv4",
                 socket.AF_INET6 : "IPv6",
-                }[addr]
+            }[addr]
             print(f" * {stype}:     {ip}")
             if POSIX:
                 from xpra.net.socket_util import create_tcp_socket
@@ -58,6 +58,7 @@ def print_iface(iface):
         info = get_interface_info(0, iface)
         if info:
             print(f"  {info}")
+
 
 def main():
     # pylint: disable=import-outside-toplevel

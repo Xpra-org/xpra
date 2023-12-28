@@ -8,11 +8,13 @@ import os
 from xpra.util.env import envbool
 from xpra.log import Logger
 
+
 def warn(*messages) -> None:
     log = Logger("server")
     log("warning loading backend", exc_info=True)
     for m in messages:
         log.warn(m)
+
 
 def load_screencast() -> type | None:
     if envbool("XPRA_SHADOW_SCREENCAST", True):
@@ -24,6 +26,7 @@ def load_screencast() -> type | None:
                  f" {e}")
     return None
 
+
 def load_remotedesktop() -> type | None:
     if envbool("XPRA_SHADOW_REMOTEDESKTOP", True):
         try:
@@ -34,6 +37,7 @@ def load_remotedesktop() -> type | None:
                  f" {e}")
     return None
 
+
 def load_shadow_wayland(display_name=None) -> type | None:
     c = load_remotedesktop() or load_screencast()
     if c:
@@ -43,6 +47,7 @@ def load_shadow_wayland(display_name=None) -> type | None:
         if os.environ.get("XPRA_NOX11") is None:
             os.environ["XPRA_NOX11"] = "1"
     return c
+
 
 def load_shadow_x11() -> type | None:
     if envbool("XPRA_SHADOW_X11", True):
@@ -56,7 +61,7 @@ def load_shadow_x11() -> type | None:
     return None
 
 
-def ShadowServer(display_name:str="", multi_window:bool=True):
+def ShadowServer(display_name: str = "", multi_window: bool = True):
     c  : type | None = None
     if display_name.startswith("wayland-") or os.path.isabs(display_name):
         c = load_shadow_wayland(display_name)

@@ -32,10 +32,8 @@ class RemoteDesktop(PortalShadow):
     def get_server_mode(self) -> str:
         return "pipewire shadow"
 
-
     def set_keymap(self, server_source, force=False) -> None:
         keylog.info("key mapping not implemented - YMMV")
-
 
     def do_process_mouse_common(self, proto, device_id:int, wid:int, pointer, props) -> bool:
         if self.readonly or not self.input_devices:
@@ -59,10 +57,10 @@ class RemoteDesktop(PortalShadow):
         options = native_to_dbus([], "{sv}")
         mouselog(f"button-action: button={button}, pressed={pressed}")
         evdev_button = {
-            1   : 0x110,    #BTN_LEFT
-            2   : 0x111,    #BTN_RIGHT
-            3   : 0x112,    #BTN_MIDDLE
-            }.get(button, -1)
+            1   : 0x110,    # BTN_LEFT
+            2   : 0x111,    # BTN_RIGHT
+            3   : 0x112,    # BTN_MIDDLE
+        }.get(button, -1)
         if evdev_button<0:
             mouselog.warn(f"Warning: button {button} not recognized")
             return
@@ -72,7 +70,6 @@ class RemoteDesktop(PortalShadow):
             Int32(evdev_button),
             UInt32(pressed),
             dbus_interface=REMOTEDESKTOP_IFACE)
-
 
     def _process_key_action(self, proto, packet : PacketType) -> None:
         if self.readonly or not self.input_devices or not self.keymap:

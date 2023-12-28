@@ -22,20 +22,26 @@ RAW_MODE = envbool("XPRA_PRINTER_RAW", False)
 def get_printers() -> dict[str,Any]:
     return {}
 
+
 def get_printer_attributes(_name:str) -> list:
     return []
+
 
 def get_default_printer() -> str:
     return ""
 
+
 def print_files(printer:dict, filenames, title:str, options):
     raise RuntimeError("no print implementation available")
+
 
 def printing_finished(_printpid) -> bool:
     return True
 
+
 def init_printing(printers_modified_callback=None) -> None:     #pylint: disable=unused-argument
     """ overridden in platform code """
+
 
 def cleanup_printing() -> None:
     """ overridden in platform code """
@@ -43,7 +49,9 @@ def cleanup_printing() -> None:
 
 DEFAULT_MIMETYPES = ["application/pdf", "application/postscript"]
 
-MIMETYPES : list[str]|None = None
+MIMETYPES: list[str] | None = None
+
+
 def get_mimetypes():
     global MIMETYPES
     if MIMETYPES is None:
@@ -70,13 +78,14 @@ def get_mimetypes():
 def get_info() -> dict[str,Any]:
     return default_get_info()
 
-def default_get_info() -> dict[str,Any]:
+
+def default_get_info() -> dict[str, Any]:
     return {
-            "mimetypes" :   {
-                ""         : get_mimetypes(),
-                "default"  : DEFAULT_MIMETYPES,
-                }
-            }
+        "mimetypes": {
+            ""         : get_mimetypes(),
+            "default"  : DEFAULT_MIMETYPES,
+        }
+    }
 
 
 platform_import(globals(), "printing", False,
@@ -106,6 +115,7 @@ def main(argv) -> int:
             pass
 
     from xpra.util.str_fn import nonl
+
     def dump_dict(d):
         pk = None
         try:
@@ -121,9 +131,11 @@ def main(argv) -> int:
         except Exception as e:
             print(f"        error on {pk}: {e}")
             print(f"        raw attributes: {d}")
+
     def dump_info(d):
         print("System Configuration:")
         print_nested_dict(d)
+
     def dump_printers(d):
         for k in sorted(d.keys()):
             v = d[k]

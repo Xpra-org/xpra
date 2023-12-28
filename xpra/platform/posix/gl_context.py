@@ -46,7 +46,7 @@ GLX_ATTRIBUTES : dict[Any,str] = {
     GLX.GLX_LEVEL               : "level",
     GLX.GLX_STEREO              : "stereo",
     GLX.GLX_RGBA                : "rgba",
-    }
+}
 
 
 def c_attrs(props:dict):
@@ -193,7 +193,7 @@ class GLXContext:
             GLX.GLX_BLUE_SIZE       : bpc,
             GLX.GLX_DEPTH_SIZE      : 24,
             GLX.GLX_STENCIL_SIZE    : 8,
-            }
+        }
         if alpha:
             pyattrs[GLX.GLX_ALPHA_SIZE] = int(alpha)*bpc
         if DOUBLE_BUFFERED:
@@ -265,12 +265,15 @@ class GLXContext:
                 GLX_CONTEXT_PROFILE_MASK_ARB,
                 GLX_CONTEXT_CORE_PROFILE_BIT_ARB, GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
             )
-            profile_mask = GLX_CONTEXT_CORE_PROFILE_BIT_ARB if CORE_PROFILE else GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB
+            if CORE_PROFILE:
+                profile_mask = GLX_CONTEXT_CORE_PROFILE_BIT_ARB
+            else:
+                profile_mask = GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB
             context_attrs = c_attrs({
-                GLX_CONTEXT_MAJOR_VERSION_ARB : 3,
-                GLX_CONTEXT_MINOR_VERSION_ARB : 2,
-                GLX_CONTEXT_PROFILE_MASK_ARB : profile_mask,
-                GLX_CONTEXT_FLAGS_ARB : 0,
+                GLX_CONTEXT_MAJOR_VERSION_ARB: 3,
+                GLX_CONTEXT_MINOR_VERSION_ARB: 2,
+                GLX_CONTEXT_PROFILE_MASK_ARB: profile_mask,
+                GLX_CONTEXT_FLAGS_ARB: 0,
             })
             glXCreateContextAttribsARB = GLX.glXGetProcAddress("glXCreateContextAttribsARB")
             log(f"{glXCreateContextAttribsARB=} {context_attrs=}")
@@ -305,7 +308,7 @@ class GLXContext:
                 "safe"      : False,
                 "enabled"   : False,
                 "message"   : "cannot access X11 display",
-                }
+            }
         Gtk = gi_import("Gtk")
         tmp = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         tmp.resize(1, 1)

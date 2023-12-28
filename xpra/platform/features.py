@@ -40,7 +40,7 @@ DEFAULT_SSH_COMMAND : str = "ssh -x"
 DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS : tuple[tuple[str, str, str], ...] = (
     ("pactl", "set-default-sink", "Xpra-Speaker"),
     ("pactl", "set-default-source", "Xpra-Mic-Source"),
-    )
+)
 
 SOCKET_OPTIONS : tuple[str, ...] = (
     "SO_BROADCAST", "SO_RCVLOWAT",
@@ -48,37 +48,38 @@ SOCKET_OPTIONS : tuple[str, ...] = (
     "SO_KEEPALIVE", "SO_LINGER", "SO_OOBINLINE", "SO_RCVBUF",
     "SO_RCVTIMEO", "SO_REUSEADDR", "SO_REUSEPORT",
     "SO_SNDBUF", "SO_SNDTIMEO", "SO_TIMEOUT", "SO_TYPE",
-    )
+)
 IP_OPTIONS : tuple[str, ...] = (
     #"IP_MULTICAST_IF", "IP_MULTICAST_LOOP", "IP_MULTICAST_TTL",
     "IP_DONTFRAG", "IP_OPTIONS", "IP_RECVLCLIFADDR",
     "IP_RECVPKTINFO", "IP_TOS", "IP_TTL",
-    )
+)
 TCP_OPTIONS : tuple[str, ...] = ("TCP_NODELAY", "TCP_MAXSEG", "TCP_KEEPALIVE")
 
 
 _features_list_ : tuple[str, ...] = (
-                   "AUTOSTART",
-                   "CAN_DAEMONIZE",
-                   "REINIT_WINDOWS",
-                   "COMMAND_SIGNALS",
-                   "SOURCE",
-                   "DEFAULT_ENV",
-                   "DEFAULT_START_ENV",
-                   "DEFAULT_SSH_COMMAND",
-                   "DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS",
-                   "CLIPBOARDS",
-                   "CLIPBOARD_WANT_TARGETS",
-                   "CLIPBOARD_GREEDY",
-                   "CLIPBOARD_PREFERRED_TARGETS",
-                   "EXECUTABLE_EXTENSION",
-                   "INPUT_DEVICES",
-                   "SYSTEM_PROXY_SOCKET",
-                   "OPEN_COMMAND",
-                   "SOCKET_OPTIONS",
-                   "IP_OPTIONS",
-                   "TCP_OPTIONS",
-                   )
+    "AUTOSTART",
+    "CAN_DAEMONIZE",
+    "REINIT_WINDOWS",
+    "COMMAND_SIGNALS",
+    "SOURCE",
+    "DEFAULT_ENV",
+    "DEFAULT_START_ENV",
+    "DEFAULT_SSH_COMMAND",
+    "DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS",
+    "CLIPBOARDS",
+    "CLIPBOARD_WANT_TARGETS",
+    "CLIPBOARD_GREEDY",
+    "CLIPBOARD_PREFERRED_TARGETS",
+    "EXECUTABLE_EXTENSION",
+    "INPUT_DEVICES",
+    "SYSTEM_PROXY_SOCKET",
+    "OPEN_COMMAND",
+    "SOCKET_OPTIONS",
+    "IP_OPTIONS",
+    "TCP_OPTIONS",
+)
+
 
 platform_import(globals(), "features", False,
                 *_features_list_)
@@ -94,5 +95,5 @@ def main():
         print_nested_dict(d)
 
 
-if __name__ == "__main__": # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     main()

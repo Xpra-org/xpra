@@ -29,6 +29,7 @@ def strip_display_prefix(s:str) -> str:
         return s[len(DISPLAY_PREFIX):]
     return s
 
+
 def debug(msg: str, *args, **kwargs) -> None:
     log = get_util_logger()
     log(msg, *args, **kwargs)

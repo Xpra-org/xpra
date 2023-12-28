@@ -2,7 +2,8 @@
 # Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-#pylint: disable-msg=E1101
+
+# pylint: disable-msg=E1101
 
 import os
 from typing import Any
@@ -14,9 +15,9 @@ from xpra.log import Logger
 
 log = Logger("webcam")
 
-#on Debian and Ubuntu, the v4l2loopback device is created with exclusive_caps=1,
-#so we cannot check the devices caps for the "VIDEO_CAPTURE" flag.
-#https://github.com/Xpra-org/xpra/issues/1596
+# on Debian and Ubuntu, the v4l2loopback device is created with exclusive_caps=1,
+# so we cannot check the devices caps for the "VIDEO_CAPTURE" flag.
+# https://github.com/Xpra-org/xpra/issues/1596
 CHECK_VIRTUAL_CAPTURE = envbool("XPRA_CHECK_VIRTUAL_CAPTURE", not (is_Ubuntu() or is_Debian()))
 
 
@@ -31,7 +32,10 @@ def _can_capture_video(dev_file, dev_info) -> bool:
         return False
     return True
 
+
 v4l2_virtual_dir = "/sys/devices/virtual/video4linux"
+
+
 def check_virtual_dir(warn=True) -> bool:
     if not os.path.exists(v4l2_virtual_dir) or not os.path.isdir(v4l2_virtual_dir):
         if warn:
@@ -42,7 +46,8 @@ def check_virtual_dir(warn=True) -> bool:
         return False
     return True
 
-def query_video_device(device) -> dict[str,Any]:
+
+def query_video_device(device) -> dict[str, Any]:
     try:
         # pylint: disable=import-outside-toplevel
         from xpra.codecs.v4l2.virtual import query_video_device as v4l_query_video_device
@@ -64,7 +69,7 @@ def get_virtual_video_devices(capture_only=True) -> dict[int, dict]:
         try:
             no_str = f[len("video"):]
             no = int(no_str)
-            assert no>=0
+            assert no >= 0
         except (TypeError, ValueError, AssertionError):
             continue
         dev_file = f"/dev/{f}"
@@ -89,6 +94,7 @@ def get_virtual_video_devices(capture_only=True) -> dict[int, dict]:
     log(f"devices: {devices}")
     log(f"found {len(devices)} virtual video devices")
     return devices
+
 
 def get_all_video_devices(capture_only=True) -> dict[int,dict[str,Any]]:
     contents = os.listdir("/dev")
@@ -122,6 +128,7 @@ def get_all_video_devices(capture_only=True) -> dict[int,dict[str,Any]]:
 
 _watch_manager = None
 _notifier = None
+
 
 def _video_device_file_filter(event) -> bool:
     # return True to stop processing of event (to "stop chaining")
@@ -158,8 +165,9 @@ def add_video_device_change_callback(callback:Callable) -> None:
         log(f"notifier={_notifier}, watch={wdd}")
         _notifier.start()
     _video_device_change_callbacks.append(callback)
-    #for running standalone:
-    #notifier.loop()
+    # for running standalone:
+    # notifier.loop()
+
 
 def remove_video_device_change_callback(callback:Callable) -> None:
     # pylint: disable=import-outside-toplevel
@@ -175,7 +183,7 @@ def remove_video_device_change_callback(callback:Callable) -> None:
     _video_device_change_callbacks.remove(callback)
     if not _video_device_change_callbacks:
         log("last video device change callback removed, closing the watch manager")
-        #we can close it:
+        # we can close it:
         if _notifier:
             try:
                 _notifier.stop()

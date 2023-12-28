@@ -79,17 +79,22 @@ class program_context:
     def __init__(self, prgname=None, appname=None):
         self.prgname = prgname
         self.appname = appname
+
     def __enter__(self):
         init(self.prgname, self.appname)
         return self
+
     def __exit__(self, *_args):
         clean()
+
     def __repr__(self):
         return f"gui_context({self.prgname}, {self.appname})"
 
 
 _prgname = None
 _appname = None
+
+
 def set_default_name(prgname=None, appname=None):
     # sets the default prg and app names
     global _prgname, _appname
@@ -111,6 +116,8 @@ def command_info(message):
 
 
 _clean_done = False
+
+
 def clean():
     global _clean_done
     if not _clean_done:
@@ -118,17 +125,20 @@ def clean():
         do_clean()
 
 
-def do_clean(): # pragma: no cover
+def do_clean():  # pragma: no cover
     """ some platforms override this """
 
 
 _name_set = False
+
+
 def set_name(prgname=None, appname=None):
     global _name_set
     if not _name_set:
         _name_set = True
         set_prgname(prgname or _prgname)
         set_application_name(appname or _appname)
+
 
 # platforms can override this
 def set_prgname(name):
@@ -166,13 +176,13 @@ def get_application_name():
 
 def platform_import(where, pm, required, *imports):
     from xpra.os_util import OSX, POSIX
-    if os.name == "nt": # pragma: no cover
+    if os.name == "nt":     # pragma: no cover
         p = "win32"
-    elif OSX:           # pragma: no cover
+    elif OSX:               # pragma: no cover
         p = "darwin"
-    elif POSIX:         # pragma: no cover
+    elif POSIX:             # pragma: no cover
         p = "posix"
-    else:               # pragma: no cover
+    else:                   # pragma: no cover
         raise OSError(f"Unknown OS {os.name}")
 
     module = "xpra.platform.%s" % p
@@ -197,9 +207,10 @@ def platform_import(where, pm, required, *imports):
         else:
             where[x] = getattr(platform_module, x)
 
+
 platform_import(globals(), None, False,
                 "do_init", "do_clean", "do_init_env",
                 "threaded_server_init",
                 "set_prgname", "set_application_name", "program_context",
-                "command_error", "command_info"
+                "command_error", "command_info",
                 )

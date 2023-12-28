@@ -12,7 +12,7 @@ from xpra.platform.posix.paths import do_get_resources_dir
 
 
 def get_autostart_file():
-    #find the 'xdg autostart' directory:
+    # find the 'xdg autostart' directory:
     if os.getuid()==0:
         adir = None
         for cdir in (os.environ.get("XDG_CONFIG_DIRS", "") or "/etc/xdg").split(":"):
@@ -30,6 +30,7 @@ def get_autostart_file():
         os.mkdir(adir, mode=0o755)
     return os.path.join(adir, "xpra.desktop")
 
+
 def set_autostart(enabled):
     target = get_autostart_file()
     if enabled:
@@ -40,6 +41,7 @@ def set_autostart(enabled):
         copy2(autostart, target)
     else:
         os.unlink(target)
+
 
 def get_status():
     return ["disabled", "enabled"][os.path.exists(get_autostart_file())]

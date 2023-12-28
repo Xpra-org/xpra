@@ -37,6 +37,7 @@ def x11_bindings():
             log.warn(f" {e}")
         return None
 
+
 def X11WindowBindings():
     xb = x11_bindings()
     if not xb:
@@ -44,12 +45,14 @@ def X11WindowBindings():
     from xpra.x11.bindings.window import X11WindowBindings  # @UnresolvedImport
     return X11WindowBindings()
 
+
 def X11RandRBindings():
     xb = x11_bindings()
     if not xb:
         return None
     from xpra.x11.bindings.randr import RandRBindings  # @UnresolvedImport
     return RandRBindings()
+
 
 def X11XI2Bindings():
     xb = x11_bindings()
@@ -74,6 +77,7 @@ def gl_check() -> str:
 
 def get_wm_name() -> str:
     return do_get_wm_name(get_saved_env())
+
 
 def do_get_wm_name(env) -> str:
     wm_name = env.get("XDG_CURRENT_DESKTOP", "") or env.get("XDG_SESSION_DESKTOP") or env.get("DESKTOP_SESSION")
@@ -101,15 +105,18 @@ def get_clipboard_native_class() -> str:
         return gtk_clipboard_class
     return "xpra.x11.gtk_x11.clipboard.X11Clipboard"
 
+
 def get_native_system_tray_classes() -> list[type]:
     c = _try_load_appindicator()
     traylog("get_native_system_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
     return c
 
+
 def get_native_tray_classes() -> list[type]:
     c = _try_load_appindicator()
     traylog("get_native_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
     return c
+
 
 def _try_load_appindicator() -> list[type]:
     if not USE_NATIVE_TRAY:
@@ -152,7 +159,6 @@ def get_session_type() -> str:
     return os.environ.get("XDG_SESSION_TYPE", "")
 
 
-
 def _get_xsettings():
     if x11_bindings():
         from xpra.gtk.error import xlog
@@ -160,6 +166,7 @@ def _get_xsettings():
         with xlog:
             return get_xsettings()
     return None
+
 
 def _get_xsettings_dict():
     from xpra.x11.common import xsettings_to_dict
@@ -178,7 +185,7 @@ def _get_xsettings_dpi() -> int:
             "Xft/DPI"         : 1024,
             "gnome.Xft/DPI"   : 1024,
             #"Gdk/UnscaledDPI" : 1024, ??
-            }.items():
+        }.items():
             if k in d:
                 value_type, value = d.get(k)
                 if value_type==XSettingsType.Integer:
@@ -186,6 +193,7 @@ def _get_xsettings_dpi() -> int:
                     screenlog("_get_xsettings_dpi() found %s=%s, div=%i, actual value=%i", k, value, div, actual_value)
                     return actual_value
     return -1
+
 
 def _get_randr_dpi() -> tuple[int,int]:
     if RANDR_DPI and x11_bindings():
@@ -195,11 +203,13 @@ def _get_randr_dpi() -> tuple[int,int]:
             return get_randr_dpi()
     return -1, -1
 
+
 def get_xdpi() -> int:
     dpi = _get_xsettings_dpi()
     if dpi>0:
         return dpi
     return _get_randr_dpi()[0]
+
 
 def get_ydpi() -> int:
     dpi = _get_xsettings_dpi()
@@ -208,7 +218,7 @@ def get_ydpi() -> int:
     return _get_randr_dpi()[1]
 
 
-def get_icc_info() -> dict[str,Any]:
+def get_icc_info() -> dict[str, Any]:
     if x11_bindings():
         from xpra.x11.common import get_icc_data as get_x11_icc_data
         from xpra.gtk.error import xsync
@@ -218,31 +228,36 @@ def get_icc_info() -> dict[str,Any]:
     return default_get_icc_info()
 
 
-def get_antialias_info() -> dict[str,Any]:
+def get_antialias_info() -> dict[str, Any]:
     info : dict[str,Any] = {}
     if not x11_bindings():
         return info
     try:
         from xpra.x11.xsettings_prop import XSettingsType
         d = _get_xsettings_dict()
-        for prop_name, name in {"Xft/Antialias"    : "enabled",
-                                "Xft/Hinting"      : "hinting"}.items():
+        for prop_name, name in {
+            "Xft/Antialias"    : "enabled",
+            "Xft/Hinting"      : "hinting",
+        }.items():
             if prop_name in d:
                 value_type, value = d.get(prop_name)
                 if value_type==XSettingsType.Integer and value>0:
                     info[name] = bool(value)
+
         def get_contrast(value):
             #win32 API uses numerical values:
             #(this is my best guess at translating the X11 names)
-            return {"hintnone"      : 0,
-                    "hintslight"    : 1000,
-                    "hintmedium"    : 1600,
-                    "hintfull"      : 2200}.get(bytestostr(value))
+            return {
+                "hintnone"      : 0,
+                "hintslight"    : 1000,
+                "hintmedium"    : 1600,
+                "hintfull"      : 2200,
+            }.get(bytestostr(value))
         for prop_name, name, convert in (
-                                         ("Xft/HintStyle",  "hintstyle",    bytestostr),
-                                         ("Xft/HintStyle",  "contrast",     get_contrast),
-                                         ("Xft/RGBA",       "orientation",  lambda x : bytestostr(x).upper())
-                                         ):
+            ("Xft/HintStyle",  "hintstyle",   bytestostr),
+            ("Xft/HintStyle",  "contrast",    get_contrast),
+            ("Xft/RGBA",       "orientation", lambda x: bytestostr(x).upper())
+        ):
             if prop_name in d:
                 value_type, value = d.get(prop_name)
                 if value_type==XSettingsType.String:
@@ -263,6 +278,7 @@ def get_current_desktop() -> int:
             return get_x11_current_desktop()
     return -1
 
+
 def get_workarea():
     if x11_bindings():
         from xpra.x11.common import get_workarea as get_x11_workarea
@@ -271,6 +287,7 @@ def get_workarea():
             return get_x11_workarea()
     return None
 
+
 def get_number_of_desktops() -> int:
     if x11_bindings():
         from xpra.x11.common import get_number_of_desktops as get_x11_number_of_desktops
@@ -278,6 +295,7 @@ def get_number_of_desktops() -> int:
         with xsync:
             return get_x11_number_of_desktops()
     return 0
+
 
 def get_desktop_names() -> tuple[str,...]:
     if x11_bindings():
@@ -316,12 +334,15 @@ def _get_xsettings_int(name:str, default_value:int) -> int:
         return default_value
     return value
 
+
 def get_double_click_time() -> int:
     return _get_xsettings_int("Net/DoubleClickTime", -1)
+
 
 def get_double_click_distance() -> tuple[int,int]:
     v = _get_xsettings_int("Net/DoubleClickDistance", -1)
     return v, v
+
 
 def get_window_frame_sizes() -> dict:
     #for X11, have to create a window and then check the
@@ -338,6 +359,7 @@ def system_bell(*args) -> bool:
         #failed already
         return False
     from xpra.gtk.error import XError
+
     def x11_bell():
         from xpra.x11.common import system_bell as x11_system_bell
         if not x11_system_bell(*args):
@@ -347,7 +369,7 @@ def system_bell(*args) -> bool:
         from xpra.gtk.error import xlog
         with xlog:
             x11_bell()
-        return  True
+        return True
     except XError as e:
         log("x11_bell()", exc_info=True)
         log.error("Error using device_bell: %s", e)
@@ -362,6 +384,7 @@ def pointer_grab(gdk_window) -> bool:
         with xlog:
             return X11WindowBindings().pointer_grab(gdk_window.get_xid())
     return False
+
 
 def pointer_ungrab(_window) -> bool:
     if x11_bindings():
@@ -382,6 +405,7 @@ def _send_client_message(window, message_type, *values) -> None:
 def show_desktop(b) -> None:
     _send_client_message(None, "_NET_SHOWING_DESKTOP", int(bool(b)))
 
+
 def set_fullscreen_monitors(window, fsm, source_indication:int=0) -> None:
     if not isinstance(fsm, (tuple, list)):
         log.warn("invalid type for fullscreen-monitors: %s", type(fsm))
@@ -392,6 +416,7 @@ def set_fullscreen_monitors(window, fsm, source_indication:int=0) -> None:
     values = list(fsm)+[source_indication]
     _send_client_message(window, "_NET_WM_FULLSCREEN_MONITORS", *values)
 
+
 def _toggle_wm_state(window, state, enabled:bool) -> None:
     if enabled:
         action = 1  #"_NET_WM_STATE_ADD"
@@ -399,18 +424,23 @@ def _toggle_wm_state(window, state, enabled:bool) -> None:
         action = 0  #"_NET_WM_STATE_REMOVE"
     _send_client_message(window, "_NET_WM_STATE", action, state)
 
+
 def set_shaded(window, shaded:bool) -> None:
     _toggle_wm_state(window, "_NET_WM_STATE_SHADED", shaded)
 
 
-
 WINDOW_ADD_HOOKS : list[Callable] = []
+
+
 def add_window_hooks(window) -> None:
     for x in WINDOW_ADD_HOOKS:
         x(window)
     log("add_window_hooks(%s) added %s", window, WINDOW_ADD_HOOKS)
 
+
 WINDOW_REMOVE_HOOKS : list[Callable] = []
+
+
 def remove_window_hooks(window):
     for x in WINDOW_REMOVE_HOOKS:
         x(window)
@@ -428,14 +458,15 @@ def get_info() -> dict[str,Any]:
             xi[bytestostr(name)] = value
         i["xsettings"] = xi
     i.setdefault("dpi", {
-                         "xsettings"    : _get_xsettings_dpi(),
-                         "randr"        : _get_randr_dpi()
-                         })
+        "xsettings"    : _get_xsettings_dpi(),
+        "randr"        : _get_randr_dpi()
+    })
     return i
 
 
 def suppress_event(*_args) -> None:
     """ we'll use XI2 to receive events """
+
 
 class XI2_Window:
     def __init__(self, window):
@@ -479,7 +510,6 @@ class XI2_Window:
     def do_xi_hierarchy_changed(self, *_args) -> None:
         self.motion_valuators = {}
 
-
     def get_parent_windows(self, oxid:int) -> tuple[int,...]:
         windows = [oxid]
         root = self.X11Window.get_root_xid()
@@ -491,7 +521,6 @@ class XI2_Window:
             windows.append(xid)
         xinputlog("get_parent_windows(%#x)=%s", oxid, csv(hex(x) for x in windows))
         return tuple(windows)
-
 
     def do_xi_button(self, event, device) -> None:
         window = self.window
@@ -529,8 +558,11 @@ class XI2_Window:
         valuators = event.valuators
         unused_valuators = valuators.copy()
         dx, dy = 0, 0
-        if (valuators and device and device.get("enabled") and
-            client.server_input_devices=="uinput" and client.server_precise_wheel):
+        if (
+            valuators and device and device.get("enabled")
+            and client.server_input_devices == "uinput"         # noqa W503
+            and client.server_precise_wheel                     # noqa W503
+        ):
             XIModeRelative = 0
             classes = device.get("classes")
             val_classes = {}
@@ -569,8 +601,10 @@ class XI2_Window:
         #send plain motion first, if any:
         props = self.get_pointer_extra_args(event)
         if unused_valuators:
-            xinputlog("do_xi_motion(%s, %s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s",
-                      event, device, wid, window._client._focused, window.wid, event.device, pointer_data, modifiers, buttons)
+            xinputlog("do_xi_motion(%s, %s) wid=%s / focus=%s / window wid=%i",
+                      event, device, wid, window._client._focused, window.wid)
+            xinputlog(" device=%s, pointer=%s, modifiers=%s, buttons=%s",
+                      event.device, pointer_data, modifiers, buttons)
             device_id = 0
             client.send_mouse_position(device_id, wid, pointer_data, modifiers, buttons, props)
         #now see if we have anything to send as a wheel event:
@@ -582,11 +616,12 @@ class XI2_Window:
     def get_pointer_extra_args(self, event) -> dict[str,Any]:
         def intscaled(f):
             return int(f*1000000), 1000000
+
         def dictscaled(d):
             return {k:intscaled(v) for k,v in d.items()}
         props = {
             "device" : event.device,
-            }
+        }
         for k in ("x", "y", "x_root", "y_root"):
             props[k] = intscaled(getattr(event, k))
         props["valuators"] = dictscaled(event.valuators or {})
@@ -672,7 +707,6 @@ class ClientExtras:
         eventlog("sleeping_callback%s", args)
         self.client.suspend()
 
-
     def setup_dbus_signals(self) -> None:
         try:
             import xpra.dbus
@@ -710,21 +744,24 @@ class ClientExtras:
             dbuslog.estr(e)
             return
 
-        #the UPower signals:
+        # the UPower signals:
         try:
             bus_name    = 'org.freedesktop.UPower'
             dbuslog("bus has owner(%s)=%s", bus_name, bus.name_has_owner(bus_name))
             iface_name  = 'org.freedesktop.UPower'
-            self.upower_resuming_match = bus.add_signal_receiver(self.resuming_callback, 'Resuming', iface_name, bus_name)
-            self.upower_sleeping_match = bus.add_signal_receiver(self.sleeping_callback, 'Sleeping', iface_name, bus_name)
+            self.upower_resuming_match = bus.add_signal_receiver(self.resuming_callback,
+                                                                 "Resuming", iface_name, bus_name)
+            self.upower_sleeping_match = bus.add_signal_receiver(self.sleeping_callback,
+                                                                 "Sleeping", iface_name, bus_name)
             dbuslog("listening for 'Resuming' and 'Sleeping' signals on %s", iface_name)
         except Exception as e:
             dbuslog("failed to setup UPower event listener: %s", e)
 
-        #the "logind" signals:
+        # the "logind" signals:
         try:
             bus_name    = 'org.freedesktop.login1'
             dbuslog("bus has owner(%s)=%s", bus_name, bus.name_has_owner(bus_name))
+
             def sleep_event_handler(suspend):
                 if suspend:
                     self.sleeping_callback()
@@ -750,7 +787,8 @@ class ClientExtras:
                 try:
                     bus_name = "org.gnome.ScreenSaver"
                     iface_name = bus_name
-                    self.screensaver_match = bus.add_signal_receiver(self.ActiveChanged, "ActiveChanged", iface_name, bus_name)
+                    self.screensaver_match = bus.add_signal_receiver(self.ActiveChanged,
+                                                                     "ActiveChanged", iface_name, bus_name)
                     dbuslog("listening for 'ActiveChanged' signal on %s", iface_name)
                 except Exception as e:
                     dbuslog.warn("Warning: failed to setup screensaver event listener: %s", e)
@@ -761,7 +799,6 @@ class ClientExtras:
             self.client.suspend()
         else:
             self.client.resume()
-
 
     def setup_xprops(self) -> None:
         #wait for handshake to complete:
@@ -793,8 +830,6 @@ class ClientExtras:
             log.estr(e)
             log.error(" root window properties will not be propagated")
 
-
-
     def do_xi_devices_changed(self, event) -> None:
         log("do_xi_devices_changed(%s)", event)
         XI2 = X11XI2Bindings()
@@ -812,7 +847,7 @@ class ClientExtras:
                 log(" server uses: %s", self.client.server_input_devices)
             return False
         try:
-            from xpra.gtk.error import xsync, XError # pylint: disable=import-outside-toplevel
+            from xpra.gtk.error import xsync, XError   # pylint: disable=import-outside-toplevel
             assert X11WindowBindings(), "no X11 window bindings"
             XI2 = X11XI2Bindings()
             assert XI2, "no XI2 window bindings"
@@ -839,14 +874,13 @@ class ClientExtras:
             xinputlog.error("Error: cannot enable XI2 events")
             xinputlog.estr(e)
         else:
-            #register our enhanced event handlers:
+            # register our enhanced event handlers:
             self.add_xi2_method_overrides()
         return False
 
     def add_xi2_method_overrides(self) -> None:
         global WINDOW_ADD_HOOKS
         WINDOW_ADD_HOOKS = [XI2_Window]
-
 
     def _get_xsettings(self):
         xw = self._xsettings_watcher

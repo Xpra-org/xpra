@@ -4,26 +4,27 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+# pylint: disable=import-outside-toplevel
+
 import os.path
 import sys
 import site
 import tempfile
 
-# pylint: disable=import-outside-toplevel
 
 def do_get_desktop_background_paths():
     return [
         "/usr/share/backgrounds/images/default.png",
         "/usr/share/backgrounds/images/*default*.png",
         "/usr/share/backgrounds/*default*png",
-        "/usr/share/backgrounds/gnome/adwaita*.jpg",    #Debian Stretch
-        "/usr/share/backgrounds/images/*jpg",           #CentOS 7
-        ]
+        "/usr/share/backgrounds/gnome/adwaita*.jpg",    # Debian Stretch
+        "/usr/share/backgrounds/images/*jpg",           # CentOS 7
+    ]
 
 
 def do_get_install_prefix():
-    #special case for "user" installations, ie:
-    #$HOME/.local/lib/python3.8/site-packages/xpra/platform/paths.py
+    # special case for "user" installations, ie:
+    # $HOME/.local/lib/python3.8/site-packages/xpra/platform/paths.py
     try:
         base = site.getuserbase()
     except Exception:
@@ -36,12 +37,15 @@ def do_get_install_prefix():
             return sys.argv[0][:p]
     return sys.prefix
 
+
 def do_get_resources_dir():
-    #is there a better/cleaner way?
+    # is there a better/cleaner way?
     from xpra.common import DEFAULT_XDG_DATA_DIRS
     from xpra.platform.paths import get_install_prefix
-    options = [get_install_prefix(), sys.exec_prefix] + \
-               os.environ.get("XDG_DATA_DIRS", DEFAULT_XDG_DATA_DIRS).split(":")
+    options = [
+        get_install_prefix(),
+        sys.exec_prefix,
+    ] + os.environ.get("XDG_DATA_DIRS", DEFAULT_XDG_DATA_DIRS).split(":")
     for x in options:
         p = os.path.join(x, "share", "xpra")
         if os.path.exists(p) and os.path.isdir(p):
@@ -55,20 +59,25 @@ def do_get_resources_dir():
         pass
     return os.getcwd()
 
+
 def do_get_app_dir():
     from xpra.platform.paths import get_resources_dir
     return get_resources_dir()
+
 
 def do_get_image_dir():
     from xpra.platform.paths import get_app_dir
     return os.path.join(get_app_dir(), "images")
 
+
 def do_get_icon_dir():
     from xpra.platform.paths import get_app_dir
     return os.path.join(get_app_dir(), "icons")
 
+
 def do_get_mmap_dir():
     return _get_xpra_runtime_dir() or tempfile.gettempdir()
+
 
 def do_get_xpra_tmp_dir():
     xrd = os.environ.get("XPRA_SESSION_DIR", _get_xpra_runtime_dir())
@@ -138,11 +147,13 @@ def get_runtime_dir():
             return "$XDG_RUNTIME_DIR"
     return runtime_dir
 
+
 def _get_xpra_runtime_dir():
     runtime_dir = get_runtime_dir()
     if not runtime_dir:
         return None
     return os.path.join(runtime_dir, "xpra")
+
 
 def do_get_socket_dirs():
     SOCKET_DIRS = []
@@ -178,9 +189,11 @@ def do_get_default_log_dirs():
     log_dirs.append(tempfile.gettempdir())
     return log_dirs
 
+
 def do_get_audio_command():
     from xpra.platform.paths import get_xpra_command
     return get_xpra_command()
+
 
 def do_get_xpra_command():
     #try to use the same "xpra" executable that launched this server,

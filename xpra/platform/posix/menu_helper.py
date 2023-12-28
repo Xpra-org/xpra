@@ -33,7 +33,10 @@ EXPORT_ICONS : bool = envbool("XPRA_XDG_EXPORT_ICONS", True)
 DEBUG_COMMANDS : list[str] = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
 EXPORT_TERMINAL_APPLICATIONS : bool = envbool("XPRA_XDG_EXPORT_TERMINAL_APPLICATIONS", False)
 EXPORT_SELF : bool = envbool("XPRA_XDG_EXPORT_SELF", False)
-LOAD_APPLICATIONS : list[str] = os.environ.get("XPRA_MENU_LOAD_APPLICATIONS", f"{sys.prefix}/share/applications").split(":")
+LOAD_APPLICATIONS : list[str] = os.environ.get(
+    "XPRA_MENU_LOAD_APPLICATIONS",
+    f"{sys.prefix}/share/applications"
+).split(":")
 
 
 def isvalidtype(v) -> bool:
@@ -88,15 +91,20 @@ if LOAD_FROM_THEME:
     else:
         class KeepCacheLoadingContext:
             __slots__ = ("cache_time", )
+
             def __enter__(self):
                 self.cache_time : int = Config.cache_time
                 Config.cache_time = 9999
+
             def __exit__(self, *_args):
                 if self.cache_time!=9999:
                     Config.cache_time = self.cache_time
+
             def __repr__(self):
                 return "KeepCacheLoadingContext"
+
         IconLoadingContext = KeepCacheLoadingContext
+
         def init_themes() -> None:
             get_themes = getattr(IconTheme, "__get_themes", None)
             if not callable(get_themes):
@@ -123,7 +131,7 @@ if LOAD_FROM_THEME:
             log(f"icon themes={themes}")
         init_themes()
 
-EXTENSIONS : tuple[str, ...] = ("png", "svg", "xpm")
+EXTENSIONS: tuple[str, ...] = ("png", "svg", "xpm")
 
 
 def check_xdg() -> bool:
@@ -241,7 +249,7 @@ def find_glob_icon(*names, category: str = "categories"):
                     pathnames += [
                         os.path.join(d, "*", "*", dn, f"{name}.{ext}"),
                         os.path.join(d, "*", dn, "*", f"{name}.{ext}"),
-                        ]
+                    ]
     for pathname in pathnames:
         filenames = glob.glob(pathname)
         log("glob(%s) matches %i filenames", pathname, len(filenames))
@@ -267,7 +275,7 @@ def load_xdg_entry(de) -> dict[str,Any]:
         "Comment", "Icon", "Hidden", "OnlyShowIn", "NotShowIn",
         "Exec", "TryExec", "Path", "Terminal", "MimeTypes",
         "Categories", "StartupNotify", "StartupWMClass", "URL",
-        ))
+    ))
     if props.get("NoDisplay", False) or props.get("Hidden", False):
         return {}
     if de.getTryExec():
@@ -300,7 +308,7 @@ def load_xdg_menu(submenu) -> dict[str,Any]:
     submenu_data : dict[str,Any] = export(submenu, (
         "Name", "GenericName", "Comment",
         "Path", "Icon",
-        ))
+    ))
     icondata = submenu_data.get("IconData")
     if not icondata:
         # try harder:
@@ -361,8 +369,7 @@ def load_menu():
         l = sum(len(x) for x in xdg_menu_data.values())
         submenus = len(xdg_menu_data)
         elapsed = end-start
-        log.info(f"loaded {l} start menu entries from " +
-                 f"{submenus} sub-menus in {elapsed:.1f} seconds")
+        log.info(f"loaded {l} start menu entries from {submenus} sub-menus in {elapsed:.1f} seconds")
     n_large = len(icon_util.large_icons)
     if n_large:
         log.warn(f"Warning: found {n_large} large icons:")
@@ -479,7 +486,7 @@ def load_xdg_menu_data():
             menu_data["Applications"] = {
                 "Name" : "Applications",
                 "Entries" : entries,
-                }
+            }
     return menu_data
 
 
@@ -554,7 +561,7 @@ def get_icon_names_for_session(name:str) -> list[str]:
     aliases = {
         "deepin"    : ["deepin-launcher", "deepin-show-desktop"],
         "xfce"      : ["org.xfce.xfdesktop", ]
-        }
+    }
     names = [name]+aliases.get(name, [])
     for split in (" on ", " session", "-session", " classic"):
         if name.find(split) > 0:     # ie: "gnome on xorg"
@@ -563,5 +570,5 @@ def get_icon_names_for_session(name:str) -> list[str]:
                 short_name,
                 f"{short_name}-session",
                 f"{short_name}-desktop",
-                ] + aliases.get(short_name, [])   # -> "gnome"
+            ] + aliases.get(short_name, [])   # -> "gnome"
     return names

@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#default implementation using pycups
+# default implementation using pycups
 import sys
 import os
 import time
@@ -30,8 +30,8 @@ SIMULATE_PRINT_FAILURE = envint("XPRA_SIMULATE_PRINT_FAILURE")
 RAW_MODE = envbool("XPRA_PRINTER_RAW", False)
 GENERIC = envbool("XPRA_PRINTERS_GENERIC", True)
 FORWARDER_TMPDIR = os.environ.get("XPRA_FORWARDER_TMPDIR", tempfile.gettempdir())
-#the mimetype to use for clients that do not specify one
-#(older clients just assumed postscript)
+# the mimetype to use for clients that do not specify one
+# (older clients just assumed postscript)
 DEFAULT_MIMETYPE = os.environ.get("XPRA_PRINTER_DEFAULT_MIMETYPE", "application/pdf")
 
 LPADMIN = "lpadmin"
@@ -47,7 +47,7 @@ CUPS_OPTIONS_WHITELIST = os.environ.get("XPRA_CUPS_OPTIONS_WHITELIST", "Resoluti
 ADD_LOCAL_PRINTERS = envbool("XPRA_ADD_LOCAL_PRINTERS", False)
 PRINTER_PREFIX = ""
 if ADD_LOCAL_PRINTERS:
-    #this prevents problems where we end up deleting local printers!
+    # this prevents problems where we end up deleting local printers!
     PRINTER_PREFIX = "Xpra:"
 PRINTER_PREFIX = os.environ.get("XPRA_PRINTER_PREFIX", PRINTER_PREFIX)
 
@@ -64,11 +64,11 @@ log("pycups settings: SKIPPED_PRINTERS=%s", SKIPPED_PRINTERS)
 MIMETYPE_TO_PRINTER = {
     "application/postscript"    : "Generic PostScript Printer",
     "application/pdf"           : "Generic PDF Printer",
-    }
+}
 MIMETYPE_TO_PPD = {
     "application/postscript"    : "CUPS-PDF.ppd",
     "application/pdf"           : "Generic-PDF_Printer-PDF.ppd",
-    }
+}
 
 
 dco = os.environ.get("XPRA_DEFAULT_CUPS_OPTIONS", "fit-to-page=True")
@@ -76,14 +76,16 @@ DEFAULT_CUPS_OPTIONS = parse_simple_dict(dco)
 log("DEFAULT_CUPS_OPTIONS=%s", DEFAULT_CUPS_OPTIONS)
 
 
-#allows us to inject the lpadmin and lpinfo commands from the config file
+# allows us to inject the lpadmin and lpinfo commands from the config file
 def set_lpadmin_command(lpadmin):
     global LPADMIN
     LPADMIN = lpadmin
 
+
 def set_add_printer_options(options):
     global ADD_OPTIONS
     ADD_OPTIONS = options
+
 
 def set_lpinfo_command(lpinfo):
     global LPINFO
@@ -129,6 +131,7 @@ def get_lpinfo_drv(make_and_model) -> str:
     cr = getChildReaper()
     cr.add_process(proc, "lpinfo", command, ignore=True, forget=True)
     from xpra.util.thread import start_thread
+
     def watch_lpinfo():
         #give it 15 seconds to run:
         for _ in range(15):
@@ -167,6 +170,8 @@ def get_lpinfo_drv(make_and_model) -> str:
 
 
 UNPROBED_PRINTER_DEFS = {}
+
+
 def add_printer_def(mimetype:str, definition:str) -> None:
     if definition.startswith("drv://"):
         UNPROBED_PRINTER_DEFS[mimetype] = ["-m", definition]
@@ -182,6 +187,8 @@ def add_printer_def(mimetype:str, definition:str) -> None:
 
 PRINTER_DEF = None
 PRINTER_DEF_LOCK = Lock()
+
+
 def get_printer_definitions():
     global PRINTER_DEF
     with PRINTER_DEF_LOCK:
@@ -223,6 +230,7 @@ def get_printer_definitions():
         log("pycups settings: PRINTER_DEF=%s", PRINTER_DEF)
     return PRINTER_DEF
 
+
 def get_printer_definition(mimetype:str) -> str:
     v = get_printer_definitions().get("application/%s" % mimetype)
     if not v:
@@ -250,6 +258,7 @@ def exec_lpadmin(args, success_cb:Callable=None):
     #use the global child reaper to make sure this doesn't end up as a zombie
     from xpra.util.child_reaper import getChildReaper
     cr = getChildReaper()
+
     def check_returncode(_proc_cb):
         returncode = proc.poll()
         log("returncode(%s)=%s", command, returncode)
@@ -271,6 +280,7 @@ def sanitize_name(name):
     valid_chars = f"-_.:{string.ascii_letters}{string.digits}"
     return ''.join(c for c in name if c in valid_chars)
 
+
 def add_printer(name, options, info, location, attributes, success_cb=None):
     log("add_printer%s", (name, options, info, location, attributes, success_cb))
     mimetypes = options.strtupleget("mimetypes", (DEFAULT_MIMETYPE,))
@@ -288,7 +298,7 @@ def add_printer(name, options, info, location, attributes, success_cb=None):
         printer_def = defs.get(mt)
         if printer_def:
             log("using printer definition '%s' for %s", printer_def, mt)
-            #ie: printer_def = ["-P", "/path/to/CUPS-PDF.ppd"]
+            # ie: printer_def = ["-P", "/path/to/CUPS-PDF.ppd"]
             mimetype = mt
             attributes["mimetype"] = mimetype
             break
@@ -296,23 +306,24 @@ def add_printer(name, options, info, location, attributes, success_cb=None):
         log.error("Error: cannot add printer '%s':", name)
         log.error(" the printing system does not support %s", " or ".join(mimetypes))
         return
-    from urllib.parse import urlencode # pylint: disable=import-outside-toplevel
+    from urllib.parse import urlencode  # pylint: disable=import-outside-toplevel
     command = [
-               "-p", xpra_printer_name,
-               "-v", FORWARDER_BACKEND+":"+FORWARDER_TMPDIR+"?"+urlencode(attributes),
-               "-D", info,
-               "-L", location,
-               ]
+        "-p", xpra_printer_name,
+        "-v", FORWARDER_BACKEND+":"+FORWARDER_TMPDIR+"?"+urlencode(attributes),
+        "-D", info,
+        "-L", location,
+    ]
     if ADD_OPTIONS:
-        #ie: ["-E", "-o printer-is-shared=false", "-u allow:$USER"]
+        # ie: ["-E", "-o printer-is-shared=false", "-u allow:$USER"]
         for opt in ADD_OPTIONS:
-            parts = shlex.split(opt)    #ie: "-u allow:$USER" -> ["-u", "allow:$USER"]
-            for part in parts:          #ie: "allow:$USER"
+            parts = shlex.split(opt)    # ie: "-u allow:$USER" -> ["-u", "allow:$USER"]
+            for part in parts:          # ie: "allow:$USER"
                 command.append(os.path.expandvars(part))
     command += printer_def
-    #add attributes:
+    # add attributes:
     log("pycups_printing adding printer: %s", command)
     exec_lpadmin(command, success_cb=success_cb)
+
 
 def remove_printer(name):
     log("remove_printer(%s)", name)
@@ -323,10 +334,13 @@ dbus_init = None
 printers_modified_callback : Callable | None = None
 DBUS_PATH="/com/redhat/PrinterSpooler"
 DBUS_IFACE="com.redhat.PrinterSpooler"
+
+
 def handle_dbus_signal(*args):
     log("handle_dbus_signal(%s) printers_modified_callback=%s", args, printers_modified_callback)
     if printers_modified_callback:
         printers_modified_callback()
+
 
 def init_dbus_listener():
     if not CUPS_DBUS:
@@ -354,6 +368,7 @@ def init_dbus_listener():
             dbus_init = False
     return dbus_init
 
+
 def check_printers():
     #we don't actually check anything here and just
     #fire the callback every time, relying in client_base
@@ -363,15 +378,19 @@ def check_printers():
         printers_modified_callback()
     schedule_polling_timer()
 
+
 _polling_timer = 0
+
+
 def schedule_polling_timer():
-    #fallback to polling:
+    # fallback to polling:
     cancel_polling_timer()
     from threading import Timer
     global _polling_timer
     _polling_timer = Timer(POLLING_DELAY, check_printers)
     _polling_timer.start()
     log("schedule_polling_timer() timer=%s", _polling_timer)
+
 
 def cancel_polling_timer():
     global _polling_timer
@@ -384,6 +403,7 @@ def cancel_polling_timer():
         except Exception:
             log("error cancelling polling timer %s", pt, exc_info=True)
 
+
 def init_printing(callback=None):
     global printers_modified_callback
     log("init_printing(%s) printers_modified_callback=%s", callback, printers_modified_callback)
@@ -391,6 +411,7 @@ def init_printing(callback=None):
     if not init_dbus_listener():
         log("init_printing(%s) will use polling", callback)
         schedule_polling_timer()
+
 
 def cleanup_printing():
     cancel_polling_timer()
@@ -400,15 +421,18 @@ def get_printers():
     all_printers = get_all_printers()
     return {k:v for k,v in all_printers.items() if k not in SKIPPED_PRINTERS}
 
+
 def get_all_printers():
     conn = Connection()
     printers = conn.getPrinters()
     log("pycups.get_all_printers()=%s", printers)
     return printers
 
+
 def get_default_printer():
     conn = Connection()
     return conn.getDefault()
+
 
 def get_printer_attributes(name):
     conn = Connection()
@@ -447,6 +471,7 @@ def print_files(printer, filenames, title, options):
         log("pycups %s.printFiles%s=%s", conn, (printer, filenames, title, actual_options), printpid)
     return printpid
 
+
 def printing_finished(printpid):
     conn = Connection()
     f = conn.getJobs().get(printpid, None) is None
@@ -455,36 +480,45 @@ def printing_finished(printpid):
 
 
 PRINTER_STATE = {
-                3   : "idle",
-                4   : "printing",
-                5   : "stopped",
-                 }
+    3: "idle",
+    4: "printing",
+    5: "stopped",
+}
 
 
 def get_info():
     from xpra.platform.printing import get_mimetypes, DEFAULT_MIMETYPES
-    return {"mimetypes"         : {""           : get_mimetypes(),
-                                   "default"    : DEFAULT_MIMETYPES,
-                                   "printers"   : MIMETYPE_TO_PRINTER,
-                                   "ppd"        : MIMETYPE_TO_PPD},
-            "mimetype"          : {"default"    : DEFAULT_MIMETYPE},
-            "simulate-failure"  : SIMULATE_PRINT_FAILURE,
-            "raw-mode"          : RAW_MODE,
-            "generic"           : GENERIC,
-            "tmpdir"            : FORWARDER_TMPDIR,
-            "lpadmin"           : LPADMIN,
-            "lpinfo"            : LPINFO,
-            "forwarder"         : FORWARDER_BACKEND,
-            "skipped-printers"  : SKIPPED_PRINTERS,
-            "add-local-printers": ADD_LOCAL_PRINTERS,
-            "printer-prefix"    : PRINTER_PREFIX,
-            "cups-dbus"         : {""           : CUPS_DBUS,
-                                   "default"    : DEFAULT_CUPS_DBUS,
-                                   "poll-delay" : POLLING_DELAY},
-            "cups.default-options"  : DEFAULT_CUPS_OPTIONS,
-            "printers"          : {""           : get_printer_definitions(),
-                                   "predefined" : UNPROBED_PRINTER_DEFS},
-            }
+    return {
+        "mimetypes": {
+            ""           : get_mimetypes(),
+            "default"    : DEFAULT_MIMETYPES,
+            "printers"   : MIMETYPE_TO_PRINTER,
+            "ppd"        : MIMETYPE_TO_PPD,
+        },
+        "mimetype"          : {
+            "default"    : DEFAULT_MIMETYPE,
+        },
+        "simulate-failure"  : SIMULATE_PRINT_FAILURE,
+        "raw-mode"          : RAW_MODE,
+        "generic"           : GENERIC,
+        "tmpdir"            : FORWARDER_TMPDIR,
+        "lpadmin"           : LPADMIN,
+        "lpinfo"            : LPINFO,
+        "forwarder"         : FORWARDER_BACKEND,
+        "skipped-printers"  : SKIPPED_PRINTERS,
+        "add-local-printers": ADD_LOCAL_PRINTERS,
+        "printer-prefix"    : PRINTER_PREFIX,
+        "cups-dbus"         : {
+            ""           : CUPS_DBUS,
+            "default"    : DEFAULT_CUPS_DBUS,
+            "poll-delay" : POLLING_DELAY,
+        },
+        "cups.default-options"  : DEFAULT_CUPS_OPTIONS,
+        "printers"          : {
+            ""           : get_printer_definitions(),
+            "predefined" : UNPROBED_PRINTER_DEFS,
+        },
+    }
 
 
 def main():

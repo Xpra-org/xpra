@@ -7,11 +7,12 @@
 
 from xpra.platform import platform_import
 
-#default:
+# default:
 Keyboard : type | None = None
 
 platform_import(globals(), "keyboard", True,
                 "Keyboard")
+
 
 def main():
     import sys

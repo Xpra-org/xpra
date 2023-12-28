@@ -89,9 +89,9 @@ def get_name() -> str:
 
 def get_user_info() -> dict[str, str]:
     return {
-            "username"  : get_username(),
-            "name"      : get_name(),
-            }
+        "username"  : get_username(),
+        "name"      : get_name(),
+    }
 
 
 platform_import(globals(), "info", False,
