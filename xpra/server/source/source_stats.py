@@ -13,7 +13,7 @@ from collections import deque
 from xpra.server.cystats import (
     logp, calculate_time_weighted_average, calculate_size_weighted_average,
     calculate_for_target, time_weighted_average, queue_inspect,
-    )
+)
 from xpra.util.stats import get_list_stats
 from xpra.log import Logger
 
@@ -27,6 +27,7 @@ def safeint(v, default : int=0) -> int:
         return int(v)
     except ValueError:
         return default
+
 
 class GlobalPerformanceStatistics:
     """
@@ -102,11 +103,8 @@ class GlobalPerformanceStatistics:
         dt = decode_time/1000.0/1000.0          #decode_time is given in microseconds, convert to seconds
         net_diff = max(0, total-send_time-dt)
         log("latency: %6.1fms for %9i pixels :      %6.1f send     + %6.1f network     + %6.1f decoding            %6iKB,  sequence %5i",
-                total*1000, pixels,
-                send_time*1000, net_diff*1000, dt*1000,
-                bytecount//1024,
-                damage_packet_sequence,
-                )
+            total*1000, pixels, send_time*1000, net_diff*1000, dt*1000,
+            bytecount//1024, damage_packet_sequence)
         net_total_latency = max(0, total-dt)
         if self.min_client_latency is None or self.min_client_latency>net_total_latency:
             self.min_client_latency = net_total_latency
@@ -169,6 +167,7 @@ class GlobalPerformanceStatistics:
 
     def get_factors(self, pixel_count:int) -> list[tuple[str,dict,float,float]]:
         factors = []
+
         def mayaddfac(metric:str, info:dict, factor:float, weight:float):
             if weight>0.01:
                 factors.append((metric, info, factor, weight))
@@ -217,42 +216,41 @@ class GlobalPerformanceStatistics:
             "latency"           : get_list_stats(latencies),
             "server"            : {
                 "ping_latency"   : get_list_stats(int(1000*x[1]) for x in tuple(self.server_ping_latency)),
-                },
+            },
             "client"            : {
                 "ping_latency"   : get_list_stats(int(1000*x[1]) for x in tuple(self.client_ping_latency)),
-                },
+            },
             "congestion" : {
                 "avg-send-speed"        : self.avg_congestion_send_speed,
                 "elapsed-time"          : int(now-self.last_congestion_time),
-                },
-            }
+            },
+        }
         if self.min_client_latency is not None:
             info["latency"] = {"absmin" : int(self.min_client_latency*1000)}
         return info
-
 
     def get_info(self) -> dict[str,Any]:
         cwqsizes = tuple(x[1] for x in tuple(self.compression_work_qsizes))
         pqsizes = tuple(x[1] for x in tuple(self.packet_qsizes))
         now = monotonic()
-        time_limit = now-60             #ignore old records (60s)
-        client_latency = max(0, self.avg_frame_total_latency-
-                             int((self.avg_client_ping_latency+self.avg_server_ping_latency)//2))
+        time_limit = now-60             # ignore old records (60s)
+        avg_ping = round((self.avg_client_ping_latency+self.avg_server_ping_latency)/2)
+        client_latency = max(0, self.avg_frame_total_latency-avg_ping)
         info : dict[str,Any] = {
             "damage" : {
                 "events"        : self.damage_events_count,
                 "packets_sent"  : self.packet_count,
                 "data_queue"    : {
                     "size"   : get_list_stats(cwqsizes),
-                    },
+                },
                 "packet_queue"  : {
                     "size"   : get_list_stats(pqsizes),
-                    },
+                },
                 "frame-total-latency" : self.avg_frame_total_latency,
                 "client-latency"    : client_latency,
-                },
+            },
             "connection" : self.get_connection_info(),
-            }
+        }
         einfo : dict[str,Any] = {
             "decode_errors" : self.decode_errors,
         }

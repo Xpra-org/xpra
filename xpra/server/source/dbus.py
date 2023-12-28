@@ -20,7 +20,6 @@ class DBUS_Mixin(StubSourceMixin):
         #supports one of the mixins it exposes:
         return caps.boolget("windows", False) or caps.boolget("sound", False) or caps.get("audio", False)
 
-
     def __init__(self):
         self.dbus_control = False
         self.dbus_server = None
@@ -32,6 +31,7 @@ class DBUS_Mixin(StubSourceMixin):
         if self.dbus_control:
             # pylint: disable=import-outside-toplevel
             from xpra.server.dbus.common import dbus_exception_wrap
+
             def make_dbus_server():
                 import os
                 from xpra.server.dbus.source import DBUS_Source

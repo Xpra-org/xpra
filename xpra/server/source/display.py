@@ -51,7 +51,7 @@ class ClientDisplayMixin(StubSourceMixin):
             "monitors"      : self.monitors,
             "screens"       : len(self.screen_sizes),
             "screen"        : get_screen_info(self.screen_sizes),
-            }
+        }
         if self.desktop_mode_size:
             info["desktop_mode_size"] = self.desktop_mode_size
         if self.desktop_size_unscaled:
@@ -96,7 +96,7 @@ class ClientDisplayMixin(StubSourceMixin):
                     "subpixel-layout" : td.strget,
                     "workarea"      : td.inttupleget,
                     "name"          : td.strget,
-                    }
+                }
                 for attr, conv in aconv.items():
                     v = conv(attr)
                     if v is not None:
@@ -122,6 +122,7 @@ class ClientDisplayMixin(StubSourceMixin):
         self.screen_sizes = list(screen_sizes)
         #validate dpi / screen size in mm
         #(ticket 2480: GTK3 on macos can return bogus values)
+
         def dpi(size_pixels, size_mm) -> int:
             if size_mm==0:
                 return 0
@@ -175,7 +176,6 @@ class ClientDisplayMixin(StubSourceMixin):
         if self.show_desktop_allowed and self.hello_sent:
             self.send_async("show-desktop", show)
 
-
     def get_monitor_definitions(self) -> dict[int,Any] | None:
         if self.monitors:
             return self.monitors
@@ -194,5 +194,5 @@ class ClientDisplayMixin(StubSourceMixin):
                 "geometry"  : (round(m[1]), round(m[2]), round(m[3]), round(m[4])),
                 "width-mm"  : round(m[5]),
                 "height-mm" : round(m[6]),
-                }
+            }
         return mdef

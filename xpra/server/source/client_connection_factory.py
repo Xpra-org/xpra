@@ -145,7 +145,7 @@ def get_client_connection_class(caps):
                 return name.replace("Mixin", "").replace("Connection", "").rstrip("_")
             info = {
                 "modules"   : tuple(module_name(x) for x in CC_BASES),
-                }
+            }
             for bc in CC_BASES:
                 log("%s.get_info()", bc)
                 try:

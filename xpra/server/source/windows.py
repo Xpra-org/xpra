@@ -54,7 +54,6 @@ class WindowsMixin(StubSourceMixin):
     def is_needed(cls, caps : typedict) -> bool:
         return caps.boolget("windows")
 
-
     def __init__(self):
         self.get_focus : Callable | None = None
         self.get_cursor_data_cb : Callable | None = None
@@ -100,7 +99,6 @@ class WindowsMixin(StubSourceMixin):
     def all_window_sources(self) -> tuple:
         return tuple(self.window_sources.values())
 
-
     def suspend(self, ui:bool, wd:dict[int,Any]) -> None:
         eventslog("suspend(%s, %s) suspended=%s", ui, wd, self.suspended)
         if ui:
@@ -120,7 +118,6 @@ class WindowsMixin(StubSourceMixin):
                 ws.resume()
         self.send_cursor()
 
-
     def go_idle(self) -> None:
         #usually fires from the server's idle_grace_timeout_cb
         if self.idle:
@@ -136,7 +133,6 @@ class WindowsMixin(StubSourceMixin):
         self.idle = False
         for window_source in self.all_window_sources():
             window_source.no_idle()
-
 
     def parse_client_caps(self, c:typedict) -> None:
         self.send_windows = c.boolget("ui_client", True) and c.boolget("windows", True)
@@ -159,10 +155,8 @@ class WindowsMixin(StubSourceMixin):
         except Exception as e:
             filterslog.error("Error parsing window-filters: %s", e)
 
-
     def get_caps(self) -> dict[str,Any]:
         return {}
-
 
     ######################################################################
     # info:
@@ -174,11 +168,11 @@ class WindowsMixin(StubSourceMixin):
             "system-tray"   : self.system_tray,
             "suspended"     : self.suspended,
             "restack"       : self.window_restack,
-            }
+        }
         wsize : dict[str,Any] = {
             "min"   : self.window_min_size,
             "max"   : self.window_max_size,
-            }
+        }
         if self.window_frame_sizes:
             wsize["frame-sizes"] = self.window_frame_sizes
         info["window-size"] = wsize
@@ -187,7 +181,7 @@ class WindowsMixin(StubSourceMixin):
 
     def get_window_info(self) -> dict[str,Any]:
         """
-            Adds encoding and window specific information
+        Adds encoding and window specific information
         """
         # pylint: disable=import-outside-toplevel
         from xpra.util.stats import get_list_stats
@@ -195,12 +189,13 @@ class WindowsMixin(StubSourceMixin):
         pqpi = get_list_stats(pqpixels)
         if pqpixels:
             pqpi["current"] = pqpixels[-1]
-        info = {"damage"    : {
-                               "compression_queue"      : {"size" : {"current" : self.encode_queue_size()}},
-                               "packet_queue"           : {"size" : {"current" : len(self.packet_queue)}},
-                               "packet_queue_pixels"    : pqpi,
-                               },
-            }
+        info = {
+            "damage"    : {
+                "compression_queue"      : {"size" : {"current" : self.encode_queue_size()}},
+                "packet_queue"           : {"size" : {"current" : len(self.packet_queue)}},
+                "packet_queue_pixels"    : pqpi,
+            },
+        }
         gbc = self.global_batch_config
         if gbc:
             info["batch"] = self.global_batch_config.get_info()
@@ -231,7 +226,6 @@ class WindowsMixin(StubSourceMixin):
             dinfo["out_latency"] = get_list_stats(out_latencies, show_percentile=(9, ))
         return info
 
-
     ######################################################################
     # grabs:
     def pointer_grab(self, wid) -> None:
@@ -242,7 +236,6 @@ class WindowsMixin(StubSourceMixin):
         if self.pointer_grabs and self.hello_sent:
             self.send("pointer-ungrab", wid)
 
-
     ######################################################################
     # cursors:
     def send_cursor(self) -> None:
@@ -252,6 +245,7 @@ class WindowsMixin(StubSourceMixin):
         gbc = self.global_batch_config
         if not self.cursor_timer and gbc:
             delay = max(10, int(gbc.delay/4))
+
             def do_send_cursor():
                 self.cursor_timer = 0
                 cd = self.get_cursor_data_cb()
@@ -314,12 +308,11 @@ class WindowsMixin(StubSourceMixin):
         self.last_cursor_sent = ()
         self.send_more("cursor", "")
 
-
-    def bell(self, wid:int, device, percent:int, pitch:int, duration:int, bell_class, bell_id:int, bell_name:str) -> None:
+    def bell(self, wid: int, device, percent: int, pitch: int, duration: int,
+             bell_class, bell_id: int, bell_name: str) -> None:
         if not self.send_bell or self.suspended or not self.hello_sent:
             return
         self.send_async("bell", wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
-
 
     ######################################################################
     # window filters:
@@ -360,7 +353,6 @@ class WindowsMixin(StubSourceMixin):
         filterslog("can_send_window(%s)=%s", window, v)
         return v
 
-
     ######################################################################
     # windows:
     def initiate_moveresize(self, wid:int, window, x_root:int, y_root:int,
@@ -389,7 +381,6 @@ class WindowsMixin(StubSourceMixin):
             if metadata:
                 self.send("window-metadata", wid, metadata)
 
-
     # Takes the name of a WindowModel property, and returns a dictionary of
     # xpra window metadata values that depend on that property
     def _make_metadata(self, window, propname:str, skip_defaults=False) -> dict[str,Any]:
@@ -406,7 +397,7 @@ class WindowsMixin(StubSourceMixin):
                 "maximum-size"  : size,
                 "minimum-size"  : size,
                 "base-size" : size,
-                }
+            }
         return metadata
 
     def new_tray(self, wid:int, window, w:int, h:int) -> None:
@@ -447,7 +438,6 @@ class WindowsMixin(StubSourceMixin):
         if ws:
             ws.send_window_icon()
 
-
     def lost_window(self, wid:int, _window) -> None:
         self.send("lost-window", wid)
 
@@ -465,8 +455,7 @@ class WindowsMixin(StubSourceMixin):
             return
         self.send("window-resized", wid, ww, wh, resize_counter)
 
-
-    def cancel_damage(self, wid:int) -> None:
+    def cancel_damage(self, wid: int) -> None:
         """
         Use this method to cancel all currently pending and ongoing
         damage requests for a window.
@@ -475,17 +464,14 @@ class WindowsMixin(StubSourceMixin):
         if ws:
             ws.cancel_damage()
 
-
     def record_scroll_event(self, wid:int) -> None:
         ws = self.window_sources.get(wid)
         if ws:
             ws.record_scroll_event()
 
-
     def reinit_encoders(self) -> None:
         for ws in tuple(self.window_sources.values()):
             ws.init_encoders()
-
 
     def map_window(self, wid, window, coords=None) -> None:
         ws = self.make_window_source(wid, window)
@@ -525,7 +511,6 @@ class WindowsMixin(StubSourceMixin):
             ws.cleanup()
         self.calculate_window_pixels.pop(wid, None)
 
-
     def refresh(self, wid:int, window, opts) -> None:
         if not self.can_send_window(window):
             return
@@ -551,7 +536,6 @@ class WindowsMixin(StubSourceMixin):
         ws = self.make_window_source(wid, window)
         ws.set_client_properties(new_client_properties)
 
-
     def get_window_source(self, wid:int):
         return self.window_sources.get(wid)
 
@@ -570,28 +554,27 @@ class WindowsMixin(StubSourceMixin):
             # pylint: disable=import-outside-toplevel
             from xpra.server.window.video_compress import WindowVideoSource
             ws = WindowVideoSource(
-                              self.idle_add, self.timeout_add, self.source_remove,
-                              ww, wh,
-                              self.record_congestion_event, self.encode_queue_size,
-                              self.call_in_encode_thread, self.queue_packet,
-                              self.statistics,
-                              wid, window, batch_config, self.auto_refresh_delay,
-                              av_sync, av_sync_delay,
-                              self.video_helper,
-                              self.cuda_device_context,
-                              self.server_core_encodings, self.server_encodings,
-                              self.encoding, self.encodings, self.core_encodings,
-                              self.window_icon_encodings, self.encoding_options, self.icons_encoding_options,
-                              self.rgb_formats,
-                              self.default_encoding_options,
-                              mmap, mmap_size, bandwidth_limit, self.jitter)
+                self.idle_add, self.timeout_add, self.source_remove,
+                ww, wh,
+                self.record_congestion_event, self.encode_queue_size,
+                self.call_in_encode_thread, self.queue_packet,
+                self.statistics,
+                wid, window, batch_config, self.auto_refresh_delay,
+                av_sync, av_sync_delay,
+                self.video_helper,
+                self.cuda_device_context,
+                self.server_core_encodings, self.server_encodings,
+                self.encoding, self.encodings, self.core_encodings,
+                self.window_icon_encodings, self.encoding_options, self.icons_encoding_options,
+                self.rgb_formats,
+                self.default_encoding_options,
+                mmap, mmap_size, bandwidth_limit, self.jitter)
             ws.init_encoders()
             self.window_sources[wid] = ws
             if len(self.window_sources)>1:
                 #re-distribute bandwidth:
                 self.update_bandwidth_limits()
         return ws
-
 
     def damage(self, wid:int, window, x:int, y:int, w:int, h:int, options=None) -> None:
         """
@@ -657,15 +640,17 @@ class WindowsMixin(StubSourceMixin):
                 self.bandwidth_warning_time = now
                 nid = NotificationID.BANDWIDTH
                 summary = "Network Performance Issue"
-                body = "Your network connection is struggling to keep up,\n" + \
-                        "consider lowering the bandwidth limit,\n" + \
-                        "or turning off automatic network congestion management.\n" + \
-                        "Choosing 'ignore' will silence all further warnings."
+                body = "\n".join((
+                    "Your network connection is struggling to keep up,",
+                    "consider lowering the bandwidth limit,",
+                    "or turning off automatic network congestion management.",
+                    "Choosing 'ignore' will silence all further warnings.",
+                ))
                 actions = []
                 if self.bandwidth_limit==0 or self.bandwidth_limit>MIN_BANDWIDTH:
                     actions += ["lower-bandwidth", "Lower bandwidth limit"]
                 actions += ["bandwidth-off", "Turn off"]
-                #if self.default_min_quality>10:
+                # if self.default_min_quality>10:
                 #    actions += ["lower-quality", "Lower quality"]
                 actions += ["ignore", "Ignore"]
                 hints = {}

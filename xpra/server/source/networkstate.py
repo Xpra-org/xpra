@@ -24,12 +24,12 @@ PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
 class NetworkStateMixin(StubSourceMixin):
 
     @classmethod
-    def is_needed(cls, caps : typedict) -> bool:
-        return (
-                caps.boolget("network-state") or
-                typedict(caps.dictget("network") or {}).intget("pings") > 0 or
-                caps.boolget("ping-echo-sourceid")      # legacy clients
-        )
+    def is_needed(cls, caps: typedict) -> bool:
+        return any((
+            caps.boolget("network-state"),
+            typedict(caps.dictget("network") or {}).intget("pings") > 0,
+            caps.boolget("ping-echo-sourceid"),      # legacy clients
+        ))
 
     def init_state(self) -> None:
         self.last_ping_echoed_time = 0
@@ -51,11 +51,11 @@ class NetworkStateMixin(StubSourceMixin):
         if self.last_ping_echoed_time > 0:
             lpe = int(monotonic()*1000-self.last_ping_echoed_time)
         info = {
-                "bandwidth-limit"   : {
-                    "setting"       : self.bandwidth_limit or 0,
-                    },
-                "last-ping-echo"    : lpe,
-                }
+            "bandwidth-limit"   : {
+                "setting"       : self.bandwidth_limit or 0,
+            },
+            "last-ping-echo"    : lpe,
+        }
         return info
 
     ######################################################################
@@ -119,7 +119,6 @@ class NetworkStateMixin(StubSourceMixin):
         if 0<=server_ping_latency<60000 and stats:
             stats.server_ping_latency.append((monotonic(), server_ping_latency/1000.0))
         log("ping echo client load=%s, measured server latency=%s", self.client_load, server_ping_latency)
-
 
     def update_connection_data(self, data) -> None:
         log("update_connection_data(%s)", data)

@@ -268,7 +268,7 @@ class ClientConnection(StubSourceMixin):
         if wid > 0:
             self.statistics.damage_packet_qpixels.append(
                 (now, wid, sum(x[2] for x in tuple(self.packet_queue) if x[1] == wid))
-                )
+            )
         self.packet_queue.append((packet, wid, pixels, start_send_cb, end_send_cb, fail_cb, wait_for_more))
         p = self.protocol
         if p:
@@ -342,20 +342,20 @@ class ClientConnection(StubSourceMixin):
         if not FULL_INFO:
             return {"protocol" : "xpra"}
         info = {
-                "protocol"          : "xpra",
-                "connection_time"   : int(self.connection_time),
-                "elapsed_time"      : int(monotonic()-self.connection_time),
-                "counter"           : self.counter,
-                "hello-sent"        : self.hello_sent,
-                "jitter"            : self.jitter,
-                "adapter-type"      : self.adapter_type,
-                "ssh-auth-sock"     : self.ssh_auth_sock,
-                "packet-types"      : self.client_packet_types,
-                "bandwidth-limit"   : {
-                    "detection"     : self.bandwidth_detection,
-                    "actual"        : self.soft_bandwidth_limit or 0,
-                    }
-                }
+            "protocol"          : "xpra",
+            "connection_time"   : int(self.connection_time),
+            "elapsed_time"      : int(monotonic()-self.connection_time),
+            "counter"           : self.counter,
+            "hello-sent"        : self.hello_sent,
+            "jitter"            : self.jitter,
+            "adapter-type"      : self.adapter_type,
+            "ssh-auth-sock"     : self.ssh_auth_sock,
+            "packet-types"      : self.client_packet_types,
+            "bandwidth-limit"   : {
+                "detection"     : self.bandwidth_detection,
+                "actual"        : self.soft_bandwidth_limit or 0,
+            }
+        }
         p = self.protocol
         if p:
             info["connection"] = p.get_info()
@@ -367,7 +367,7 @@ class ClientConnection(StubSourceMixin):
             "lock"  : bool(self.lock),
             "share" : bool(self.share),
             "xdg-menu" : bool(self.xdg_menu),
-            }
+        }
         return info
 
     def send_info_response(self, info):

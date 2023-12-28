@@ -68,15 +68,13 @@ class WebcamMixin(StubSourceMixin):
     def cleanup(self) -> None:
         self.stop_all_virtual_webcams()
 
-
     def get_info(self) -> dict[str,Any]:
         return {
             "webcam" : {
                 "encodings"         : self.webcam_encodings,
                 "active-devices"    : len(self.webcam_forwarding_devices),
-                }
             }
-
+        }
 
     def get_device_options(self, device_id : int) -> dict[Any,Any]:  #pylint: disable=unused-argument
         if not POSIX or OSX or not self.webcam_enabled:
@@ -86,18 +84,16 @@ class WebcamMixin(StubSourceMixin):
             return {
                 0 : {
                     "device" : self.webcam_device,
-                    },
-                   }
+                },
+            }
         from xpra.platform.posix.webcam import get_virtual_video_devices  # pylint: disable=import-outside-toplevel
         return get_virtual_video_devices()
-
 
     def send_webcam_ack(self, device, frame:int, *args) -> None:
         self.send_async("webcam-ack", device, frame, *args)
 
     def send_webcam_stop(self, device, message) -> None:
         self.send_async("webcam-stop", device, message)
-
 
     def start_virtual_webcam(self, device_id, w:int, h:int) -> bool:
         log("start_virtual_webcam%s", (device_id, w, h))
@@ -107,6 +103,7 @@ class WebcamMixin(StubSourceMixin):
             log.warn("Warning: virtual webcam device %s already in use,", device_id)
             log.warn(" stopping it first")
             self.stop_virtual_webcam(device_id)
+
         def fail(msg):
             log.error("Error: cannot start webcam forwarding")
             log.error(" %s", msg)
@@ -127,14 +124,15 @@ class WebcamMixin(StubSourceMixin):
             log("trying device %s: %s", vid, device_info)
             device_str = device_info.get("device")
             try:
-                from xpra.codecs.v4l2.virtual import VirtualWebcam, get_input_colorspaces # pylint: disable=import-outside-toplevel
+                # pylint: disable=import-outside-toplevel
+                from xpra.codecs.v4l2.virtual import VirtualWebcam, get_input_colorspaces
                 in_cs = get_input_colorspaces()
                 p = VirtualWebcam()
                 src_format = in_cs[0]
                 p.init_context(w, h, w, src_format, device_str)
                 self.webcam_forwarding_devices[device_id] = p
                 log.info("webcam forwarding using %s", device_str)
-                #this tell the client to start sending, and the size to use - which may have changed:
+                # this tell the client to start sending, and the size to use - which may have changed:
                 self.send_webcam_ack(device_id, 0, p.get_width(), p.get_height())
                 return True
             except Exception as e:
@@ -196,7 +194,7 @@ class WebcamMixin(StubSourceMixin):
                     get_input_colorspaces,
                     get_output_colorspaces,
                     Converter,
-                    )
+                )
             except ImportError:
                 self.send_webcam_stop(device_id, "no csc module")
                 return False

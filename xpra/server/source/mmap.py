@@ -33,7 +33,7 @@ class MMAP_Connection(StubSourceMixin):
     def init_state(self) -> None:
         self.mmap = None
         self.mmap_size = 0
-        self.mmap_client_token = 0                   #the token we write that the client may check
+        self.mmap_client_token = 0                   # the token we write that the client may check
         self.mmap_client_token_index = 512
         self.mmap_client_token_bytes = 0
 
@@ -44,8 +44,7 @@ class MMAP_Connection(StubSourceMixin):
             self.mmap_size = 0
             mmap.close()
 
-
-    def parse_client_caps(self, c : typedict) -> None:
+    def parse_client_caps(self, c: typedict) -> None:
         # pylint: disable=import-outside-toplevel
         import os
         from xpra.os_util import WIN32
@@ -60,7 +59,7 @@ class MMAP_Connection(StubSourceMixin):
         log(f"mmap supported={self.supports_mmap}, token={mmap_token:x}")
         if self.mmap_filename:
             if os.path.isdir(self.mmap_filename):
-                #use the client's filename, but at the server path:
+                # use the client's filename, but at the server path:
                 mmap_filename = os.path.join(self.mmap_filename, os.path.basename(mmap_filename))
                 log(f"using global server specified mmap directory: {self.mmap_filename!r}")
             else:
@@ -73,12 +72,7 @@ class MMAP_Connection(StubSourceMixin):
         elif not os.path.exists(mmap_filename):
             log(f"mmap_file {mmap_filename!r} cannot be found!")
         else:
-            from xpra.net.mmap import (
-                init_server_mmap,
-                read_mmap_token,
-                write_mmap_token,
-                DEFAULT_TOKEN_BYTES,
-                )
+            from xpra.net.mmap import init_server_mmap, read_mmap_token, write_mmap_token, DEFAULT_TOKEN_BYTES
             self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_size)
             log("found client mmap area: %s, %i bytes - min mmap size=%i in '%s'",
                 self.mmap, self.mmap_size, self.min_mmap_size, mmap_filename)
@@ -131,5 +125,5 @@ class MMAP_Connection(StubSourceMixin):
                 "enabled"       : self.mmap is not None,
                 "size"          : self.mmap_size,
                 "filename"      : self.mmap_filename or "",
-                },
-            }
+            },
+        }

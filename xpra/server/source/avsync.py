@@ -43,7 +43,6 @@ class AVSyncMixin(StubSourceMixin):
         self.av_sync_delay_total = 0
         self.av_sync_delta = AV_SYNC_DELTA
 
-
     def get_info(self) -> dict[str,Any]:
         return {
             "av-sync" : {
@@ -52,8 +51,8 @@ class AVSyncMixin(StubSourceMixin):
                 "client"    : self.av_sync_delay,
                 "total"     : self.av_sync_delay_total,
                 "delta"     : self.av_sync_delta,
-                },
-            }
+            },
+        }
 
     def parse_client_caps(self, c : typedict) -> None:
         av_sync = c.get("av-sync")
@@ -69,7 +68,6 @@ class AVSyncMixin(StubSourceMixin):
         self.set_av_sync_delay(int(self.av_sync_enabled) * delay)
         log("av-sync: server=%s, client=%s, enabled=%s, total=%s",
             self.av_sync, enabled, self.av_sync_enabled, self.av_sync_delay_total)
-
 
     def set_av_sync_delta(self, delta:int) -> None:
         log("set_av_sync_delta(%i)", delta)
@@ -95,7 +93,6 @@ class AVSyncMixin(StubSourceMixin):
             ws.set_av_sync(enabled)
             ws.set_av_sync_delay(self.av_sync_delay_total)
             ws.may_update_av_sync_delay()
-
 
     ##########################################################################
     # audio control commands:

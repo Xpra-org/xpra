@@ -48,10 +48,9 @@ class IdleMixin(StubSourceMixin):
 
     def get_info(self) -> dict[str,Any]:
         return {
-                "idle_time"         : int(monotonic()-self.last_user_event),
-                "idle"              : self.idle,
-                }
-
+            "idle_time"         : int(monotonic()-self.last_user_event),
+            "idle"              : self.idle,
+        }
 
     def parse_client_caps(self, _c : typedict) -> None:
         # start the timer

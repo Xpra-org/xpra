@@ -139,13 +139,13 @@ class ClientInfoMixin(StubSourceMixin):
                 cinfo.append(msg)
         return cinfo
 
-
     def get_info(self) -> dict[str,Any]:
         info : dict[str,Any] = {
-                "sharing"           : bool(self.sharing),
-                }
+            "sharing"           : bool(self.sharing),
+        }
         if self.client_version:
             info["version"] = vparts(self.client_version, FULL_INFO+1)
+
         def addattr(key, name=None):
             v = getattr(self, (name or key).replace("-", "_"))
             #skip empty values:
@@ -159,7 +159,8 @@ class ClientInfoMixin(StubSourceMixin):
             for x in (
                 "revision",
                 "type", "platform", "release", "machine", "processor", "proxy",
-                "wm_name", "session_type", "session_type_full"):
+                "wm_name", "session_type", "session_type_full",
+            ):
                 addattr(x, "client_"+x)
             info["platform_name"] = platform_name(self.client_platform, self.client_release)
         return info

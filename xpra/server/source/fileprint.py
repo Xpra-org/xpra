@@ -25,11 +25,10 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
     def is_needed(cls, caps : typedict) -> bool:
         return bool(caps.boolget("file-transfer") or caps.boolget("printing"))
 
-
     def init_state(self) -> None:
-        self.printers : dict[str,dict] = {}
+        self.printers : dict[str, dict] = {}
         self.printers_added : set[str] = set()
-        #duplicated from clientinfo mixin
+        # duplicated from clientinfo mixin
         self.machine_id = ""
 
     def cleanup(self) -> None:
@@ -43,15 +42,17 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
         return {
             "printers"          : self.printers,
             "file-transfers"    : FileTransferHandler.get_info(self),
-            }
+        }
 
     def init_from(self, _protocol, server) -> None:
         self.init_attributes()
         #copy attributes
-        for x in ("file_transfer", "file_transfer_ask", "file_size_limit", "file_chunks",
-                  "printing", "printing_ask", "open_files", "open_files_ask",
-                  "open_url", "open_url_ask",
-                  "file_ask_timeout", "open_command"):
+        for x in (
+                "file_transfer", "file_transfer_ask", "file_size_limit", "file_chunks",
+                "printing", "printing_ask", "open_files", "open_files_ask",
+                "open_url", "open_url_ask",
+                "file_ask_timeout", "open_command",
+        ):
             setattr(self, x, getattr(server.file_transfer, x))
 
     ######################################################################
@@ -87,8 +88,11 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             self.printers.pop(k, None)
             self.remove_printer(k)
         #expand it here so the xpraforwarder doesn't need to import anything xpra:
-        attributes = {"display"         : os.environ.get("DISPLAY"),
-                      "source"          : self.uuid}
+        attributes = {
+            "display"         : os.environ.get("DISPLAY"),
+            "source"          : self.uuid,
+        }
+
         def makeabs(filename):
             #convert to an absolute path since the backend may run as a different user:
             return os.path.abspath(os.path.expanduser(filename))
@@ -125,7 +129,6 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
                 if x.startswith("/"+d):
                     return x
         return self.unix_socket_paths[0]
-
 
     def setup_printer(self, printer, props:typedict, attributes:dict) -> None:
         from xpra.platform.pycups_printing import add_printer  # pylint: disable=import-outside-toplevel

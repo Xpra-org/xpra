@@ -64,7 +64,7 @@ class ShellMixin(StubSourceMixin):
                 "connection" : self,
                 "server"    : self._server,
                 "log"       : log,
-                }
+            }
             stdout = io.StringIO()
             stderr = io.StringIO()
             with redirect_stdout(stdout), redirect_stderr(stderr):

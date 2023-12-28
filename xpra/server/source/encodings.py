@@ -65,7 +65,6 @@ class EncodingsMixin(StubSourceMixin):
         self.video_helper = getVideoHelper()
         self.cuda_device_context = None
 
-
     def init_from(self, _protocol, server) -> None:
         self.server_core_encodings  = server.core_encodings
         self.server_encodings       = server.encodings
@@ -100,8 +99,7 @@ class EncodingsMixin(StubSourceMixin):
         window_sources = getattr(self, "window_sources", {})
         return tuple(window_sources.values())
 
-
-    def get_caps(self) -> dict[str,Any]:
+    def get_caps(self) -> dict[str, Any]:
         caps = {}
         if "encodings" in self.wants and self.encoding:
             caps["encoding"] = self.encoding
@@ -123,8 +121,6 @@ class EncodingsMixin(StubSourceMixin):
         #only print encoding info when not using mmap:
         if getattr(self, "mmap_size", 0)==0:
             self.print_encoding_info()
-
-
 
     def recalculate_delays(self) -> None:
         """ calls update_averages() on ServerSource.statistics (GlobalStatistics)
@@ -225,11 +221,12 @@ class EncodingsMixin(StubSourceMixin):
             self.calculate_timer = 0
             self.source_remove(ct)
 
-
     def parse_client_caps(self, c : typedict) -> None:
         #batch options:
+
         def batch_value(prop, default, minv=None, maxv=None):
             assert default is not None
+
             def parse_batch_int(value, varname):
                 if value is not None:
                     try:
@@ -299,14 +296,15 @@ class EncodingsMixin(StubSourceMixin):
         #1: these properties are special cased here because we
         #defined their name before the "encoding." prefix convention,
         #or because we want to pass default values (ie: lz4):
-        for k,ek in {"initial_quality"          : "initial_quality",
-                     "quality"                  : "quality",
-                     }.items():
+        for k,ek in {
+            "initial_quality"          : "initial_quality",
+            "quality"                  : "quality",
+        }.items():
             if k in c:
                 self.encoding_options[ek] = c.intget(k)
         for k,ek in {
-                 "lz4"                      : "rgb_lz4",
-            }.items():
+            "lz4"                      : "rgb_lz4",
+        }.items():
             if k in c:
                 self.encoding_options[ek] = c.boolget(k)
         #2: standardized encoding options:
@@ -320,9 +318,11 @@ class EncodingsMixin(StubSourceMixin):
                                   "rgb_lz4",
                                   ):
                     v = c.boolget(k)
-                elif stripped_k in ("initial_quality", "initial_speed",
-                                    "min-quality", "quality",
-                                    "min-speed", "speed"):
+                elif stripped_k in (
+                        "initial_quality", "initial_speed",
+                        "min-quality", "quality",
+                        "min-speed", "speed",
+                ):
                     v = c.intget(k)
                 else:
                     v = c.get(k)
@@ -362,16 +362,20 @@ class EncodingsMixin(StubSourceMixin):
             return
         common_encodings = tuple(x for x in self.encodings if x in self.server_encodings)
         from xpra.codecs.loader import has_codec
-        if (has_codec("nvenc") and ("h264" in self.core_encodings or "h265" in self.core_encodings)) \
-        or ("jpeg" in common_encodings and has_codec("enc_nvjpeg")):
+        want_cuda_device = any((
+            has_codec("nvenc") and ("h264" in self.core_encodings or "h265" in self.core_encodings),
+            "jpeg" in common_encodings and has_codec("enc_nvjpeg"),
+        ))
+        if want_cuda_device:
             cudalog = Logger("cuda")
             try:
-                from xpra.codecs.nvidia.cuda.context import get_device_context  # pylint: disable=import-outside-toplevel
+                # pylint: disable=import-outside-toplevel
+                from xpra.codecs.nvidia.cuda.context import get_device_context
                 self.cuda_device_context = get_device_context(self.encoding_options)
                 cudalog("cuda_device_context=%s", self.cuda_device_context)
             except Exception as e:
                 cudalog("failed to get a cuda device context using encoding options %s",
-                    self.encoding_options, exc_info=True)
+                        self.encoding_options, exc_info=True)
                 cudalog.error("Error: failed to allocate a CUDA context:")
                 cudalog.estr(e)
                 cudalog.error(" NVJPEG and NVENC will not be available")
@@ -433,7 +437,6 @@ class EncodingsMixin(StubSourceMixin):
                         cloned = True
                     self.video_helper.add_encoder_spec(encoding, colorspace, spec)
 
-
     ######################################################################
     # Functions used by the server to request something
     # (window events, stats, user requests, etc)
@@ -483,31 +486,29 @@ class EncodingsMixin(StubSourceMixin):
         if not window_ids:
             self.encoding = encoding
 
-
     def get_info(self) -> dict[str,Any]:
         info = {
-                "auto_refresh"      : self.auto_refresh_delay,
-                "lz4"               : self.lz4,
-                }
+            "auto_refresh"      : self.auto_refresh_delay,
+            "lz4"               : self.lz4,
+        }
         ieo = dict(self.icons_encoding_options)
         ieo.pop("default.icons", None)
         #encoding:
         info.update({
-                     "encodings"        : {
-                                           ""      : self.encodings,
-                                           "core"  : self.core_encodings,
-                                           "window-icon"    : self.window_icon_encodings,
-                                           },
-                     "icons"            : ieo,
-                     })
+            "encodings"        : {
+                ""      : self.encodings,
+                "core"  : self.core_encodings,
+                "window-icon"    : self.window_icon_encodings,
+            },
+            "icons"            : ieo,
+        })
         einfo = {
             "default"      : self.default_encoding or "",
             "defaults"     : dict(self.default_encoding_options),
             "client-defaults" : dict(self.encoding_options),
-            }
+        }
         info.setdefault("encoding", {}).update(einfo)
         return info
-
 
     def set_min_quality(self, min_quality : int) -> None:
         for ws in tuple(self.all_window_sources()):
@@ -533,7 +534,6 @@ class EncodingsMixin(StubSourceMixin):
         for ws in tuple(self.all_window_sources()):
             ws.set_speed(speed)
 
-
     def make_batch_config(self, wid : int, window):
         config = self.default_batch_config.clone()
         config.wid = wid
@@ -548,5 +548,5 @@ class EncodingsMixin(StubSourceMixin):
             ratio = sqrt(1000000.0 / (w*h))
             config.delay = max(config.min_delay, min(config.max_delay, int(dpm * sqrt(ratio))))
         log("make_batch_config(%i, %s) global delay per megapixel=%i, new window delay for %ix%i=%s",
-                 wid, window, dpm, w, h, config.delay)
+            wid, window, dpm, w, h, config.delay)
         return config

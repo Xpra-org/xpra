@@ -25,7 +25,6 @@ class NotificationMixin(StubSourceMixin):
             return typedict(v).boolget("enabled", False)
         return False
 
-
     def init_state(self) -> None:
         self.send_notifications : bool = False
         self.notification_callbacks : dict[int,Callable] = {}
@@ -39,14 +38,14 @@ class NotificationMixin(StubSourceMixin):
     def get_info(self) -> dict[str,Any]:
         return {
             "notifications" : self.send_notifications,
-            }
+        }
 
     ######################################################################
     # notifications:
     # Utility functions for mixins (makes notifications optional)
-    def may_notify(self, nid:int|NotificationID=0, summary:str="", body:str="",    #pylint: disable=arguments-differ
+    def may_notify(self, nid: int | NotificationID=0, summary: str = "", body: str = "",
                    actions=(), hints=None, expire_timeout=10*1000,
-                   icon_name:str="", user_callback:Callable|None=None) -> None:
+                   icon_name: str = "", user_callback: Callable | None=None) -> None:
         try:
             from xpra.platform.paths import get_icon_filename
             from xpra.notifications.common import parse_image_path
@@ -59,26 +58,27 @@ class NotificationMixin(StubSourceMixin):
                         summary, body, actions, hints or {},
                         expire_timeout, icon, user_callback)
 
-    def notify(self, dbus_id, nid:int, app_name:str, replaces_nid:int, app_icon,
-               summary:str, body:str, actions, hints, expire_timeout:int, icon, user_callback:Callable|None=None) -> bool:
+    def notify(self, dbus_id, nid: int, app_name: str, replaces_nid: int, app_icon,
+               summary: str, body: str, actions, hints, expire_timeout: int,
+               icon, user_callback: Callable | None = None) -> bool:
         args = (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
         log("notify%s types=%s", args, tuple(type(x) for x in args))
         if not self.send_notifications:
             log("client %s does not support notifications", self)
             return False
-        #"suspended" belongs in the WindowsMixin:
+        # "suspended" belongs in the WindowsMixin:
         if getattr(self, "suspended", False):
             log("client %s is suspended, notification not sent", self)
             return False
         if user_callback:
             self.notification_callbacks[nid] = user_callback
         if self.hello_sent:
-            #Warning: actions and hints are send last because they were added later (in version 2.3)
+            # Warning: actions and hints are send last because they were added later (in version 2.3)
             self.send_async("notify_show", dbus_id, nid, app_name, replaces_nid, app_icon,
                             summary, body, expire_timeout, icon or b"", actions, hints)
         return True
 
     def notify_close(self, nid : int) -> None:
-        if not self.send_notifications or self.suspended  or not self.hello_sent:
+        if not self.send_notifications or self.suspended or not self.hello_sent:
             return
         self.send_more("notify_close", nid)

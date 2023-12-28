@@ -67,9 +67,8 @@ class ClipboardConnection(StubSourceMixin):
                 "want-targets"          : self.clipboard_want_targets,
                 "preferred-targets"     : self.clipboard_preferred_targets,
                 "selections"            : self.clipboard_selections,
-                },
-            }
-
+            },
+        }
 
     def send_clipboard_enabled(self, reason:str="") -> None:
         if not self.hello_sent:
@@ -88,6 +87,7 @@ class ClipboardConnection(StubSourceMixin):
         #always set "pending" to the latest value:
         self.clipboard_notifications_pending = count
         #but send the latest value via a timer to tame toggle storms:
+
         def may_send_progress_update() -> None:
             self.clipboard_progress_timer = 0
             if self.clipboard_notifications_current!=self.clipboard_notifications_pending:

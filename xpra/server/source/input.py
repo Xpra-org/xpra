@@ -21,11 +21,11 @@ class InputMixin(StubSourceMixin):
 
     @classmethod
     def is_needed(cls, caps : typedict) -> bool:
-        return (
-                caps.boolget("keyboard") or
-                caps.boolget("mouse") or
-                bool(caps.get("xkbmap_keycodes"))      #legacy clients
-        )
+        return any((
+            caps.boolget("keyboard"),
+            caps.boolget("mouse"),
+            bool(caps.get("xkbmap_keycodes")),      # legacy clients
+        ))
 
     def init_state(self) -> None:
         self.keyboard_config = None
@@ -49,8 +49,7 @@ class InputMixin(StubSourceMixin):
             self.double_click_distance = c.intpair("double_click.distance")
         self.mouse_last_position = c.intpair("mouse.initial-position")
 
-
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         dc_info : dict[str,Any] = {}
         dct = self.double_click_time
         if dct:
@@ -66,7 +65,7 @@ class InputMixin(StubSourceMixin):
             info["keyboard"] = kc.get_info()
         return info
 
-    def get_caps(self) -> dict[str,Any]:
+    def get_caps(self) -> dict[str, Any]:
         #expose the "modifier_client_keycodes" defined in the X11 server keyboard config object,
         #so clients can figure out which modifiers map to which keys:
         kc = self.keyboard_config
@@ -76,8 +75,7 @@ class InputMixin(StubSourceMixin):
                 return {"modifier_keycodes" : mck}
         return {}
 
-
-    def set_layout(self, layout:str, variant:str, options):
+    def set_layout(self, layout: str, variant: str, options):
         if not self.keyboard_config:
             return
         return self.keyboard_config.set_layout(layout, variant, options)
@@ -101,18 +99,17 @@ class InputMixin(StubSourceMixin):
             kc.set_default_keymap()
         return kc
 
-
-    def is_modifier(self, keyname:str, keycode:int) -> bool:
+    def is_modifier(self, keyname: str, keycode: int) -> bool:
         if keyname in DEFAULT_MODIFIER_MEANINGS:
             return True
-        #keyboard config should always exist if we are here?
+        # keyboard config should always exist if we are here?
         kc = self.keyboard_config
         if kc:
             return kc.is_modifier(keycode)
         return False
 
-
-    def set_keymap(self, current_keyboard_config, keys_pressed, force:bool=False, translate_only:bool=False) -> None:
+    def set_keymap(self, current_keyboard_config, keys_pressed, force: bool = False,
+                   translate_only: bool = False) -> None:
         kc = self.keyboard_config
         log("set_keymap%s keyboard_config=%s", (current_keyboard_config, keys_pressed, force, translate_only), kc)
         if kc and kc.enabled:
@@ -129,17 +126,15 @@ class InputMixin(StubSourceMixin):
                 log.info("keyboard mapping already configured (skipped)")
                 self.keyboard_config = current_keyboard_config
 
-
-    def get_keycode(self, client_keycode:int, keyname:str, pressed:bool,
-                    modifiers, keyval, keystr:str, group:int) -> tuple[int, int]:
+    def get_keycode(self, client_keycode: int, keyname: str, pressed: bool,
+                    modifiers, keyval, keystr: str, group: int) -> tuple[int, int]:
         kc = self.keyboard_config
         if kc is None:
             log.info("ignoring client key %s / %s since keyboard is not configured", client_keycode, keyname)
             return -1, 0
         return kc.get_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
 
-
-    def update_mouse(self, wid:int, x:int, y:int, rx:int, ry:int) -> None:
+    def update_mouse(self, wid: int, x: int, y: int, rx: int, ry: int) -> None:
         log("update_mouse(%s, %i, %i, %i, %i) current=%s, client=%i",
             wid, x, y, rx, ry, self.mouse_last_position, self.counter)
         if self.mouse_last_position!=(x, y) or self.mouse_last_relative_position!=(rx, ry):
