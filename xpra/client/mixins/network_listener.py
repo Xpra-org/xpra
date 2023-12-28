@@ -17,6 +17,7 @@ from xpra.os_util import get_machine_id, gi_import, WIN32
 from xpra.net.bytestreams import log_new_connection
 from xpra.net.socket_util import create_sockets, add_listen_socket, accept_connection, setup_local_sockets
 from xpra.net.net_util import get_network_caps
+from xpra.net.common import is_request_allowed
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH
 from xpra.exit_codes import ExitCode
@@ -162,7 +163,7 @@ class Networklistener(StubClientMixin):
 
     def process_network_packet(self, proto, packet) -> None:
         log("process_network_packet: %s", packet)
-        packet_type = bytestostr(packet[0])
+        packet_type = str(packet[0])
 
         def close():
             t = self._close_timers.pop(proto, None)
@@ -173,76 +174,83 @@ class Networklistener(StubClientMixin):
             except ValueError:
                 pass
 
-        def hello_reply(data):
-            proto.send_now(["hello", data])
-        if packet_type=="hello":
+        if packet_type == "hello":
             caps = typedict(packet[1])
             proto.parse_remote_caps(caps)
             proto.enable_compressor_from_caps(caps)
             proto.enable_encoder_from_caps(caps)
             request = caps.strget("request")
-            if request=="info":
-                def send_info():
-                    info = self.get_info()
-                    info["network"] = get_network_caps()
-                    hello_reply(info)
-                #run in UI thread:
-                self.idle_add(send_info)
-            elif request=="id":
-                hello_reply(self.get_id_info())
-            elif request=="detach":
-                def protocol_closed():
-                    self.disconnect_and_quit(ExitCode.OK, "network request")
-                proto.send_disconnect([ConnectionMessage.DETACH_REQUEST], done_callback=protocol_closed)
-                return
-            elif request=="version":
-                hello_reply({"version" : version_str()})
-            elif request in ("show-menu", "show-about", "show-session-info"):
-                fn = getattr(self, request.replace("-", "_"), None)
-                log.info("fn=%s", fn)
-                if not fn:
-                    hello_reply({"error" : "%s not found" % request})
-                else:
-                    glib = gi_import("GLib")
-                    glib.idle_add(fn)
-                    hello_reply({})
-            elif request=="show-session-info":
-                self.show_session_info()
-                hello_reply({})
-            elif request=="connect_test":
-                hello_reply({})
-            elif request=="command":
-                command = caps.strtupleget("command_request")
-                log("command request: %s", command)
-
-                def process_control():
-                    try:
-                        self._process_control(["control"]+list(command))
-                        code = ExitCode.OK
-                        response = "done"
-                    except Exception as e:
-                        code = ExitCode.FAILURE
-                        response = str(e)
-                    hello_reply({"command_response"  : (code, response)})
-                self.idle_add(process_control)
-            elif request:
-                log.info("request '%s' is not handled by this client", request)
-                proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])
-            else:
-                log.info("the client connection only handles generic requests")
-                proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])
+            if request:
+                self.handle_hello_request(proto, request, caps)
         elif packet_type in (CONNECTION_LOST, GIBBERISH):
             close()
             return
         else:
             log.info("packet '%s' is not handled by this client", packet_type)
             proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])
-        #make sure the connection is closed:
+        # make sure the connection is closed:
         tid = self.timeout_add(REQUEST_TIMEOUT*1000, close)
         self._close_timers[proto] = tid
 
-    def get_id_info(self) -> dict[str,Any]:
-        #minimal information for identifying the session
+    def handle_hello_request(self, proto, request: str, caps: typedict) -> None:
+        def hello_reply(data) -> None:
+            proto.send_now(["hello", data])
+
+        if not is_request_allowed(proto, request):
+            log.info("request '%s' is not handled by this client", request)
+            proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])
+            return
+
+        if request == "info":
+            def send_info() -> None:
+                info = self.get_info()
+                info["network"] = get_network_caps()
+                hello_reply(info)
+
+            # run in UI thread:
+            self.idle_add(send_info)
+        elif request == "id":
+            hello_reply(self.get_id_info())
+        elif request == "detach":
+            def protocol_closed() -> None:
+                self.disconnect_and_quit(ExitCode.OK, "network request")
+
+            proto.send_disconnect([ConnectionMessage.DETACH_REQUEST], done_callback=protocol_closed)
+            return
+        elif request == "version":
+            hello_reply({"version": version_str()})
+        elif request in ("show-menu", "show-about", "show-session-info"):
+            fn = getattr(self, request.replace("-", "_"), None)
+            if not fn:
+                hello_reply({"error": "%s not found" % request})
+            else:
+                log.info(f"calling {fn}")
+                glib = gi_import("GLib")
+                glib.idle_add(fn)
+                hello_reply({})
+        elif request == "connect_test":
+            hello_reply({})
+        elif request == "command":
+            command = caps.strtupleget("command_request")
+            log("command request: %s", command)
+
+            def process_control():
+                try:
+                    self._process_control(["control"] + list(command))
+                    code = ExitCode.OK
+                    response = "done"
+                except Exception as e:
+                    code = ExitCode.FAILURE
+                    response = str(e)
+                hello_reply({"command_response": (code, response)})
+
+            self.idle_add(process_control)
+        else:
+            log.info(f"`{request}` requests are not handled by this client")
+            proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])
+
+    def get_id_info(self) -> dict[str, Any]:
+        # minimal information for identifying the session
         return {
             "session-type"  : "client",
             "session-name"  : self.session_name,

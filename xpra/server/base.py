@@ -13,7 +13,8 @@ from collections.abc import Callable
 from xpra.server.core import ServerCore
 from xpra.server.background_worker import add_work_item
 from xpra.common import SSH_AGENT_DISPATCH, FULL_INFO, noop, ConnectionMessage
-from xpra.net.common import may_log_packet, ServerPacketHandlerType, PacketType
+from xpra.net.common import may_log_packet, ServerPacketHandlerType, PacketType, is_request_allowed
+from xpra.scripts.config import parse_bool
 from xpra.os_util import WIN32
 from xpra.util.io import is_socket
 from xpra.util.types import typedict, merge_dicts
@@ -334,16 +335,21 @@ class ServerBase(ServerBaseClass):
         if not accepted:
             return
 
-        if request=="detach":
-            self.disconnect_client(proto, ConnectionMessage.DONE,
-                                   f"{disconnected} other clients have been disconnected")
-            return
-        if request=="exit":
-            self._process_exit_server(proto)
-            return
-        if request=="stop":
-            self._process_shutdown_server(proto)
-            return
+        if request:
+            if not is_request_allowed(request):
+                msg = f"`{request}` requests are not enabled for this connection"
+                log.warn(f"Warning: {msg}")
+                self.send_disconnect(proto, ConnectionMessage.PERMISSION_ERROR, msg)
+                return
+            if request=="detach":
+                self.disconnect_client(proto, ConnectionMessage.DONE,
+                                       f"{disconnected} other clients have been disconnected")
+            if request == "exit":
+                self._process_exit_server(proto)
+                return
+            if request == "stop":
+                self._process_shutdown_server(proto)
+                return
 
         send_ui = ui_client and not request
         if send_ui:
@@ -378,7 +384,7 @@ class ServerBase(ServerBaseClass):
                 self.double_click_distance = c.intpair("double_click.distance", (-1, -1))
                 self.antialias = c.dictget("antialias", {})
                 self.cursor_size = c.intget("cursor.size", 0)
-            #FIXME: this belongs in DisplayManager!
+            # FIXME: this belongs in DisplayManager!
             screenlog("dpi=%s, dpi.x=%s, dpi.y=%s, antialias=%s, cursor_size=%s",
                       self.dpi, self.xdpi, self.ydpi, self.antialias, self.cursor_size)
             log("double-click time=%s, distance=%s", self.double_click_time, self.double_click_distance)
@@ -568,6 +574,18 @@ class ServerBase(ServerBaseClass):
         ss = self.get_server_source(proto)
         if not ss:
             return
+
+        try:
+            options = proto._conn.options
+            info_option = options.get("info", "yes")
+        except AttributeError:
+            info_option = "yes"
+        if not parse_bool("info", info_option):
+            err = "`info` commands are not enabled on this connection"
+            log.warn(f"Warning: {err}")
+            ss.send_info_response({"error": err})
+            return
+
         categories = None
         #if len(packet>=2):
         #    uuid = packet[1]

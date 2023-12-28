@@ -12,6 +12,7 @@ from collections.abc import Callable, ByteString
 
 from xpra.net.compression import Compressed, Compressible, LargeStructure
 from xpra.os_util import LINUX, FREEBSD
+from xpra.scripts.config import parse_bool
 from xpra.util.io import get_util_logger
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool
@@ -184,6 +185,17 @@ def get_peercred(sock) -> tuple[int, int, int] | None:
         # use getpeereid
         # then pwd to get the gid?
     return None
+
+
+def is_request_allowed(proto, request="info", default=True) -> bool:
+    try:
+        options = proto._conn.options
+        req_option = options.get(request, default)
+    except AttributeError:
+        return default
+    r = parse_bool(request, req_option, default)
+    log(f"is_request_allowed%s={r}", (proto, request, default))
+    return r
 
 
 def init() -> None:

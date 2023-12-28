@@ -15,10 +15,9 @@ from xpra.net.protocol.factory import get_client_protocol_class, get_server_prot
 from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.socket_util import SOCKET_DIR_MODE
-from xpra.os_util import (
-    POSIX,
-    getuid, getgid, get_username_for_uid, )
+from xpra.os_util import POSIX, getuid, getgid, get_username_for_uid
 from xpra.util.env import osexpand
+from xpra.scripts.config import parse_bool
 from xpra.server.util import setuidgid
 from xpra.util.system import SIGNAMES, register_SIGUSR_signals, set_proc_title
 from xpra.util.types import typedict
@@ -40,8 +39,8 @@ MAX_CONCURRENT_CONNECTIONS = 20
 
 
 def set_blocking(conn):
-    #Note: importing set_socket_timeout from xpra.net.bytestreams
-    #fails in mysterious ways, so we duplicate the code here instead
+    # Note: importing set_socket_timeout from xpra.net.bytestreams
+    # fails in mysterious ways, so we duplicate the code here instead
     log("set_blocking(%s)", conn)
     try:
         sock = conn._socket
@@ -75,7 +74,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                                cipher, cipher_mode, encryption_key, server_conn,
                                "%s: %s.." % (type(caps), ellipsizer(caps)), message_queue))
         self.message_queue = message_queue
-        #for handling the local unix domain socket:
+        # for handling the local unix domain socket:
         self.control_socket_cleanup = None
         self.control_socket = None
         self.control_socket_thread = None
@@ -83,10 +82,8 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         self.potential_protocols = []
         self.max_connections = MAX_CONCURRENT_CONNECTIONS
 
-
     def __repr__(self):
         return f"proxy instance pid {os.getpid()}"
-
 
     def server_message_queue(self) -> None:
         while not self.exit and self.message_queue:
@@ -95,12 +92,12 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             log("received proxy server message: %s", m)
             if m is None:
                 break
-            if m=="stop":
+            if m == "stop":
                 self.stop(None, "proxy server request")
                 return
-            if m=="socket-handover-complete":
+            if m == "socket-handover-complete":
                 log("setting sockets to blocking mode: %s", (self.client_conn, self.server_conn))
-                #set sockets to blocking mode:
+                # set sockets to blocking mode:
                 set_blocking(self.client_conn)
                 set_blocking(self.server_conn)
             else:
@@ -114,12 +111,11 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
         self.stop(None, SIGNAMES.get(signum, signum))
-        #from now on, we can't rely on the main loop:
+        # from now on, we can't rely on the main loop:
         register_SIGUSR_signals()
-        #log.info("instance frames:")
-        #from xpra.util import dump_all_frames
-        #dump_all_frames(log.info)
-
+        # log.info("instance frames:")
+        # from xpra.util import dump_all_frames
+        # dump_all_frames(log.info)
 
     ################################################################################
 
@@ -149,10 +145,10 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                         log("creating XDG_RUNTIME_DIR=%s for uid=%i, gid=%i", xrd, self.uid, self.gid)
                         create_runtime_dir(xrd, self.uid, self.gid)
                         break
-            #change uid or gid:
+            # change uid or gid:
             setuidgid(self.uid, self.gid)
         if self.env_options:
-            #TODO: whitelist env update?
+            # TODO: whitelist env update?
             os.environ.update(self.env_options)
 
         signal.signal(signal.SIGTERM, self.signal_quit)
@@ -181,9 +177,9 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         self.server_protocol.start()
         self.client_protocol.start()
 
-
     ################################################################################
     # control socket:
+
     def create_control_socket(self) -> bool:
         assert self.socket_dir
         def stop(msg):
@@ -298,16 +294,32 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 self.send_disconnect(proto, ConnectionMessage.AUTHENTICATION_ERROR, "this socket does not use authentication")
                 return
             generic_request = caps.strget("request")
+
+            def is_req_allowed(mode):
+                try:
+                    options = proto._conn.options
+                    req_option = options.get(mode, "yes")
+                except AttributeError:
+                    req_option = "yes"
+                return parse_bool(mode, req_option)
+
             def is_req(mode):
                 return generic_request==mode or caps.boolget(f"{mode}_request")
+
             if is_req("info"):
-                info = self.get_proxy_info(proto)
-                info.setdefault("connection", {}).update(self.get_connection_info())
+                if is_req_allowed("info"):
+                    info = self.get_proxy_info(proto)
+                    info.setdefault("connection", {}).update(self.get_connection_info())
+                else:
+                    info = {"error": "`info` requests are not enabled for this connection"}
                 proto.send_now(("hello", info))
                 self.timeout_add(5*1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT, "info sent")
                 return
             if is_req("stop"):
-                self.stop(None, "socket request")
+                if is_req_allowed("stop"):
+                    self.stop(None, "socket request")
+                else:
+                    log.warn("Warning: `stop` requests are not allowed for this connection")
                 return
             if is_req("version"):
                 version = XPRA_VERSION
@@ -323,7 +335,6 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             log.warn(" '%s' is not supported, only 'hello' is", packet_type)
         self.send_disconnect(proto, ConnectionMessage.CONTROL_COMMAND_ERROR,
                              "this socket only handles 'info', 'version' and 'stop' requests")
-
 
     ################################################################################
 

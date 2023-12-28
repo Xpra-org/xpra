@@ -16,12 +16,11 @@ from xpra.util.str_fn import csv, repr_ellipsized, print_nested_dict, bytestostr
 from xpra.util.env import envint, envbool, envfloat
 from xpra.common import ConnectionMessage
 from xpra.os_util import (
-    get_username_for_uid, get_groups, get_home_for_uid, getuid, getgid, get_group_id,
+    get_username_for_uid, get_groups, get_home_for_uid, getuid, getgid, get_group_id, gi_import,
     WIN32, POSIX, OSX,
-    gi_import,
-    )
+)
 from xpra.util.io import umask_context
-from xpra.net.common import PacketType
+from xpra.net.common import PacketType, is_request_allowed
 from xpra.net.socket_util import SOCKET_DIR_MODE, SOCKET_DIR_GROUP
 from xpra.server.core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -265,78 +264,69 @@ class ProxyServer(ServerCore):
         from xpra.util.pysystem import dump_all_frames
         dump_all_frames(log)
 
-
     def do_quit(self) -> None:
         self.main_loop.quit()
-        #from now on, we can't rely on the main loop:
+        # from now on, we can't rely on the main loop:
         from xpra.util.system import register_SIGUSR_signals
         register_SIGUSR_signals()
 
     def log_closing_message(self) -> None:
         log.info("Proxy Server process ended")
 
-
     def verify_connection_accepted(self, protocol) -> None:
-        #if we start a proxy, the protocol will be closed
-        #(a new one is created in the proxy process)
+        # if we start a proxy, the protocol will be closed
+        # (a new one is created in the proxy process)
         if not protocol.is_closed():
             self.send_disconnect(protocol, ConnectionMessage.LOGIN_TIMEOUT)
 
     def hello_oked(self, proto, c, auth_caps) -> None:
         if super().hello_oked(proto, c, auth_caps):
-            #already handled in superclass
+            # already handled in superclass
             return
         self.accept_client(proto, c)
-        generic_request = c.strget("request")
-        def is_req(mode):
-            return generic_request==mode or c.boolget("%s_request" % mode)
-        for x in ("screenshot", "event", "print", "exit"):
-            if is_req(x):
-                self.send_disconnect(proto, f"error: invalid request, {x!r} is not supported by the proxy server")
-                return
-        if is_req("stop"):
-            #global kill switch:
-            if not CAN_STOP_PROXY:
-                msg = "cannot stop proxy server"
-                log.warn("Warning: %s", msg)
-                self.send_disconnect(proto, msg)
-                return
-            #verify socket type (only local connections by default):
-            socktype = get_socktype(proto)
-            if socktype not in STOP_PROXY_SOCKET_TYPES:
-                msg = f"cannot stop proxy server from a {socktype!r} connection"
-                log.warn("Warning: %s", msg)
-                log.warn(" only from: %s", csv(STOP_PROXY_SOCKET_TYPES))
-                self.send_disconnect(proto, msg)
-                return
-            #connection must be authenticated:
-            if socktype in STOP_PROXY_AUTH_SOCKET_TYPES and not proto.authenticators:
-                msg = "cannot stop proxy server from unauthenticated connections"
-                log.warn("Warning: %s", msg)
-                self.send_disconnect(proto, msg)
-                return
-            self._requests.add(proto)
-            #send a hello back and the client should then send its "shutdown-server" packet
-            capabilities = self.make_hello(None)
-            proto.send_now(("hello", capabilities))
-            def force_exit_request_client():
-                try:
-                    self._requests.remove(proto)
-                except KeyError:
-                    pass
-                if not proto.is_closed():
-                    self.send_disconnect(proto, "timeout")
-            self.timeout_add(10*1000, force_exit_request_client)
+        request = c.strget("request")
+
+        if request:
+            self.handle_hello_request(proto, request)
             return
         self.proxy_auth(proto, c, auth_caps)
+
+    def handle_hello_request(self, proto, request):
+        if request == "stop":
+            self.handle_stop_request(proto)
+        else:
+            self.send_disconnect(proto, f"error: invalid request, {request!r} is not supported by the proxy server")
+
+    def handle_stop_request(self, proto):
+        default_can_stop = CAN_STOP_PROXY and get_socktype(proto) in STOP_PROXY_SOCKET_TYPES and proto.authenticators
+        if not is_request_allowed(proto, "stop", default_can_stop):
+            msg = "`stop` requests are not enabled for this proxy server connection"
+            log.warn(f"Warning: {msg}")
+            self.send_disconnect(proto, msg)
+            return
+
+        self._requests.add(proto)
+        # send a hello back and the client should then send its "shutdown-server" packet
+        capabilities = self.make_hello(None)
+        proto.send_now(("hello", capabilities))
+
+        def force_exit_request_client():
+            try:
+                self._requests.remove(proto)
+            except KeyError:
+                pass
+            if not proto.is_closed():
+                self.send_disconnect(proto, "timeout")
+        self.timeout_add(10*1000, force_exit_request_client)
 
     def proxy_auth(self, client_proto, c, auth_caps) -> None:
         def disconnect(reason, *extras) -> None:
             log("disconnect(%s, %s)", reason, extras)
             self.send_disconnect(client_proto, reason, *extras)
+
         def nosession(*extras) -> None:
             disconnect(ConnectionMessage.SESSION_NOT_FOUND, *extras)
-        #find the target server session:
+        # find the target server session:
         if not client_proto.authenticators:
             log.error("Error: the proxy server requires an authentication mode,")
             try:
@@ -370,6 +360,7 @@ class ProxyServer(ServerCore):
         def disconnect(reason, *extras) -> None:
             log("disconnect(%s, %s)", reason, extras)
             self.send_disconnect(client_proto, reason, *extras)
+
         def nosession(*extras) -> None:
             disconnect(ConnectionMessage.SESSION_NOT_FOUND, *extras)
         uid, gid, displays, env_options, session_options = sessions
@@ -388,7 +379,7 @@ class ProxyServer(ServerCore):
             groups = get_groups(username)
             log("username(%i)=%s, groups=%s", uid, username, groups)
         else:
-            #the auth module recorded the username we authenticate against
+            # the auth module recorded the username we authenticate against
             assert client_proto.authenticators
             username = password = ""
             for authenticator in client_proto.authenticators:
@@ -396,13 +387,13 @@ class ProxyServer(ServerCore):
                 password = authenticator.get_password()
                 if username:
                     break
-        #ensure we don't loop back to the proxy:
+        # ensure we don't loop back to the proxy:
         proxy_virtual_display = os.environ.get("DISPLAY")
         if proxy_virtual_display in displays:
             displays.remove(proxy_virtual_display)
-        #remove proxy instance virtual displays:
+        # remove proxy instance virtual displays:
         displays = [x for x in displays if not x.startswith(":proxy-")]
-        #log("unused options: %s, %s", env_options, session_options)
+        # log("unused options: %s, %s", env_options, session_options)
         proc = None
         socket_path = None
         display = None
@@ -451,7 +442,7 @@ class ProxyServer(ServerCore):
             hello = {"display" : display}
             if socket_path:
                 hello["socket-path"] = socket_path
-            #echo mode if present:
+            # echo mode if present:
             mode = sns.strget("mode")
             if mode:
                 hello["mode"] = mode
@@ -464,6 +455,7 @@ class ProxyServer(ServerCore):
                 proc.terminate()
 
         log("start_proxy(%s, {..}, %s) using server display at: %s", client_proto, auth_caps, display)
+
         def parse_error(*args) -> None:
             stop_server_subprocess()
             nosession("invalid display string")
@@ -523,13 +515,13 @@ class ProxyServer(ServerCore):
             self.instances[pit] = (False, display, None)
             return
 
-        #this may block, so run it in a thread:
+        # this may block, so run it in a thread:
         def start_proxy_process() -> None:
             log("start_proxy_process()")
             message_queue = MQueue()
             client_conn = None
             try:
-                #no other packets should be arriving until the proxy instance responds to the initial hello packet
+                # no other packets should be arriving until the proxy instance responds to the initial hello packet
                 def unexpected_packet(packet):
                     if packet:
                         log.warn("Warning: received an unexpected packet")
@@ -558,7 +550,7 @@ class ProxyServer(ServerCore):
                 log("ProxyInstanceProcess started")
                 popen = process._popen
                 assert popen
-                #when this process dies, run reap to update our list of proxy instances:
+                # when this process dies, run reap to update our list of proxy instances:
                 self.child_reaper.add_process(popen, f"xpra-proxy-{display}",
                                               "xpra-proxy-instance", True, True, self.reap)
             except Exception as e:
@@ -568,7 +560,7 @@ class ProxyServer(ServerCore):
                 message_queue.put(f"error: {e}")
                 message_queue.put("stop")
             finally:
-                #now we can close our handle on the connection:
+                # now we can close our handle on the connection:
                 log("handover complete: closing connection from proxy server")
                 if client_conn:
                     client_conn.close()
@@ -592,7 +584,7 @@ class ProxyServer(ServerCore):
         args = []
         if display:
             args = [display]
-        #allow the client to override some options:
+        # allow the client to override some options:
         opts = make_defaults_struct(username=username, uid=uid, gid=gid)
         for k,v in sns.items():
             k = bytestostr(k)

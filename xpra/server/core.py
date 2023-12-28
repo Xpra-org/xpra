@@ -22,26 +22,27 @@ from collections.abc import Callable
 from xpra.util.version import (
     XPRA_VERSION, vparts, version_str, full_version_str, version_compat_check, get_version_info,
     get_platform_info, get_host_info, parse_version,
-    )
+)
 from xpra.scripts.server import deadly_signal, clean_session_files, rm_session_dir
 from xpra.exit_codes import ExitValue
 from xpra.server.util import write_pidfile, rm_pidfile
 from xpra.scripts.config import parse_bool, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.net.common import may_log_packet, SOCKET_TYPES, MAX_PACKET_SIZE, DEFAULT_PORTS, SSL_UPGRADE, PacketType
+from xpra.net.common import may_log_packet, SOCKET_TYPES, MAX_PACKET_SIZE, DEFAULT_PORTS, SSL_UPGRADE, PacketType, \
+    is_request_allowed
 from xpra.net.socket_util import (
     hosts, peek_connection,
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
     add_listen_socket, accept_connection, guess_packet_type,
     ssl_wrap_socket,
-    )
+)
 from xpra.net.bytestreams import (
     SSLSocketConnection,
     log_new_connection, pretty_socket, SOCKET_TIMEOUT,
-    )
+)
 from xpra.net.net_util import (
     get_network_caps, get_info as get_net_info,
     import_netifaces, get_interfaces_addresses,
-    )
+)
 from xpra.net.protocol.factory import get_server_protocol_class
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
@@ -51,7 +52,7 @@ from xpra.platform.info import get_username
 from xpra.platform.paths import (
     get_app_dir, get_system_conf_dirs, get_user_conf_dirs,
     get_icon_filename,
-    )
+)
 from xpra.platform.dotxpra import DotXpra
 from xpra.os_util import (
     force_quit,
@@ -69,12 +70,14 @@ from xpra.util.thread import start_thread
 from xpra.common import LOG_HELLO, FULL_INFO, ConnectionMessage, noerr
 from xpra.util.pysystem import dump_all_frames
 from xpra.util.types import typedict, notypedict, merge_dicts
-from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized, print_nested_dict, nicestr, strtobytes, bytestostr, \
+from xpra.util.str_fn import (
+    csv, ellipsizer, repr_ellipsized, print_nested_dict, nicestr, strtobytes, bytestostr,
     hexstr
+)
 from xpra.util.env import envint, envbool, envfloat, osexpand, first_time, get_saved_env
 from xpra.log import Logger, get_info as get_log_info
 
-#pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel
 
 log = Logger("server")
 netlog = Logger("network")
@@ -117,9 +120,9 @@ HTTP_UNSUPORTED = b"""HTTP/1.1 400 Bad request syntax or unsupported method
 """
 
 
-#class used to distinguish internal errors
-#which should not be shown to the client,
-#from useful messages we do want to pass on
+# class used to distinguish internal errors
+# which should not be shown to the client,
+# from useful messages we do want to pass on
 class ClientException(Exception):
     pass
 
@@ -133,15 +136,16 @@ def get_ssh_port() -> int:
 
 
 def get_server_info() -> dict[str,Any]:
-    #this function is for non UI thread info
+    # this function is for non UI thread info
     info = {
             "platform"  : get_platform_info(),
             "build"     : get_version_info(),
             }
     return info
 
+
 def get_thread_info(proto=None)-> dict[Any,Any]:
-    #threads:
+    # threads:
     if proto:
         info_threads = proto.get_threads()
     else:
@@ -152,7 +156,7 @@ def get_thread_info(proto=None)-> dict[Any,Any]:
 def proto_crypto_caps(proto)-> dict[str,Any]:
     if not proto:
         return {}
-    if FULL_INFO>1 or proto.encryption:
+    if FULL_INFO > 1 or proto.encryption:
         from xpra.net.crypto import get_crypto_caps
         return get_crypto_caps(FULL_INFO)
     return {}
@@ -1849,7 +1853,7 @@ class ServerCore:
         if t:
             self.source_remove(t)
 
-    def send_disconnect(self, proto:SocketProtocol, *reasons) -> None:
+    def send_disconnect(self, proto: SocketProtocol, *reasons) -> None:
         netlog("send_disconnect(%s, %s)", proto, reasons)
         self.cancel_verify_connection_accepted(proto)
         self.cancel_upgrade_to_rfb_timer(proto)
@@ -1959,7 +1963,7 @@ class ServerCore:
             return
 
         log("process_hello: capabilities=%s", capabilities)
-        if c.strget("request")=="version" or c.boolget("version_request"):
+        if c.strget("request") == "version" or c.boolget("version_request"):
             self.send_version_info(proto, c.boolget("full-version-request"))
             return
         #verify version:
@@ -2290,28 +2294,31 @@ class ServerCore:
             log.estr(e)
             self.disconnect_client(proto, ConnectionMessage.CONNECTION_ERROR, str(e))
         except Exception as e:
-            #log exception but don't disclose internal details to the client
+            # log exception but don't disclose internal details to the client
             log.error("server error processing new connection from %s: %s", proto, e, exc_info=True)
             self.disconnect_client(proto, ConnectionMessage.CONNECTION_ERROR, "error accepting new connection")
 
-    def hello_oked(self, proto:SocketProtocol, c:typedict, _auth_caps:dict) -> bool:
-        generic_request = c.strget("request")
-        def is_req(mode):
-            return generic_request==mode or c.boolget("%s_request" % mode)
-        if is_req("connect_test"):
-            ctr = c.strget("connect_test_request")
-            response = {"connect_test_response" : ctr}
-            proto.send_now(("hello", response))
-            return True
-        if is_req("id"):
-            self.send_id_info(proto)
-            return True
-        if self._closing:
-            self.disconnect_client(proto, ConnectionMessage.SERVER_EXIT, "server is shutting down")
-            return True
-        if is_req("info"):
-            self.send_hello_info(proto)
-            return True
+    def hello_oked(self, proto: SocketProtocol, c: typedict, _auth_caps: dict) -> bool:
+        request = c.strget("request")
+        if request:
+            if not is_request_allowed(proto, request):
+                msg = f"`{request}` requests are not enabled for this connection"
+                self.send_disconnect(proto, ConnectionMessage.PERMISSION_ERROR, msg)
+                return True
+            if request == "connect_test":
+                ctr = c.strget("connect_test_request")
+                response = {"connect_test_response" : ctr}
+                proto.send_now(("hello", response))
+                return True
+            if request == "id":
+                self.send_id_info(proto)
+                return True
+            if self._closing:
+                self.disconnect_client(proto, ConnectionMessage.SERVER_EXIT, "server is shutting down")
+                return True
+            if request == "info":
+                self.send_hello_info(proto)
+                return True
         return False
 
 
@@ -2393,21 +2400,24 @@ class ServerCore:
             "platform"      : sys.platform,
             "pid"           : os.getpid(),
             "machine-id"    : get_machine_id(),
-            }
+        }
         display = os.environ.get("DISPLAY")
         if display:
             id_info["display"] = display
         return id_info
 
     def send_hello_info(self, proto:SocketProtocol) -> None:
-        #Note: this can be overridden in subclasses to pass arguments to get_ui_info()
-        #(ie: see server_base)
-        log.info("processing info request from %s", proto._conn)
+        # Note: this can be overridden in subclasses to pass arguments to get_ui_info()
+        # (ie: see server_base)
+        if not is_request_allowed(proto, "info"):
+            self.do_send_info(proto, {"error": "`info` requests are not enabled for this connection"})
+            return
+
         def cb(proto, info):
             self.do_send_info(proto, info)
         self.get_all_info(cb, proto)
 
-    def do_send_info(self, proto:SocketProtocol, info:dict[str,Any]) -> None:
+    def do_send_info(self, proto: SocketProtocol, info: dict[str, Any]) -> None:
         proto.send_now(("hello", notypedict(info)))
 
     def get_all_info(self, callback:Callable, proto:SocketProtocol=None, *args):
