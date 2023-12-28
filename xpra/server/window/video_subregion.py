@@ -91,10 +91,8 @@ class VideoSubregion:
     def cleanup(self) -> None:
         self.reset()
 
-
     def __repr__(self):
         return f"VideoSubregion({self.rectangle})"
-
 
     def set_enabled(self, enabled:bool) -> None:
         self.enabled = enabled
@@ -139,32 +137,32 @@ class VideoSubregion:
     def get_info(self) -> dict[str,Any]:
         r = self.rectangle
         info = {
-                "supported" : self.supported,
-                "enabled"   : self.enabled,
-                "detection" : self.detection,
-                "counter"   : self.counter,
-                "auto-refresh-delay" : self.auto_refresh_delay,
-                }
+            "supported" : self.supported,
+            "enabled"   : self.enabled,
+            "detection" : self.detection,
+            "counter"   : self.counter,
+            "auto-refresh-delay" : self.auto_refresh_delay,
+        }
         if r is None:
             return info
         info.update({
-                     "x"            : r.x,
-                     "y"            : r.y,
-                     "width"        : r.width,
-                     "height"       : r.height,
-                     "rectangle"    : (r.x, r.y, r.width, r.height),
-                     "set-at"       : self.set_at,
-                     "time"         : int(self.time),
-                     "min-time"     : int(self.min_time),
-                     "non-max-wait" : self.non_max_wait,
-                     "timer"        : self.refresh_timer,
-                     "nonvideo-timer" : self.nonvideo_refresh_timer,
-                     "in-out"       : self.inout,
-                     "score"        : self.score,
-                     "fps"          : self.fps,
-                     "damaged"      : self.damaged,
-                     "exclusion-zones" : [(r.x, r.y, r.width, r.height) for r in self.exclusion_zones]
-                     })
+            "x"            : r.x,
+            "y"            : r.y,
+            "width"        : r.width,
+            "height"       : r.height,
+            "rectangle"    : (r.x, r.y, r.width, r.height),
+            "set-at"       : self.set_at,
+            "time"         : int(self.time),
+            "min-time"     : int(self.min_time),
+            "non-max-wait" : self.non_max_wait,
+            "timer"        : self.refresh_timer,
+            "nonvideo-timer" : self.nonvideo_refresh_timer,
+            "in-out"       : self.inout,
+            "score"        : self.score,
+            "fps"          : self.fps,
+            "damaged"      : self.damaged,
+            "exclusion-zones" : [(r.x, r.y, r.width, r.height) for r in self.exclusion_zones]
+        })
         ls = self.last_scores
         if ls:
             #convert rectangles into tuples:
@@ -179,13 +177,11 @@ class VideoSubregion:
                 info[f"nonvideo_refresh_region[{i}]"] = (r.x, r.y, r.width, r.height)
         return info
 
-
     def remove_refresh_region(self, region) -> None:
         remove_rectangle(self.refresh_regions, region)
         remove_rectangle(self.nonvideo_regions, region)
         refreshlog("remove_refresh_region(%s) updated refresh regions=%s, nonvideo regions=%s",
                    region, self.refresh_regions, self.nonvideo_regions)
-
 
     def add_video_refresh(self, region) -> None:
         #called by add_refresh_region if the video region got painted on
@@ -259,7 +255,6 @@ class VideoSubregion:
             #retry later
             self.refresh_timer = GLib.timeout_add(1000, self.refresh)
 
-
     def novideoregion(self, msg, *args) -> None:
         sslog("novideoregion: "+msg, *args)
         self.rectangle = None
@@ -288,7 +283,8 @@ class VideoSubregion:
                 rects = new_rects
         return rects
 
-    def identify_video_subregion(self, ww:int, wh:int, damage_events_count, last_damage_events, starting_at=0, children=None):
+    def identify_video_subregion(self, ww: int, wh: int, damage_events_count, last_damage_events,
+                                 starting_at=0, children=None):
         if not self.enabled or not self.supported:
             self.novideoregion("disabled")
             return
@@ -413,11 +409,13 @@ class VideoSubregion:
             #     rects, not_damaged_pixels, rect, rect_pixels)
             return max(0, min(1, 1.0-not_damaged_pixels/rect_pixels))
 
-        scores = {None : 0}
+        scores = {None: 0}
+
         def score_region(info:str, region:rectangle, ignore_size=0, d_ratio=0.0) -> int:
             score = scores.get(region)
             if score is not None:
                 return score
+
             def rec(score:int):
                 scores[region] = score
                 return score

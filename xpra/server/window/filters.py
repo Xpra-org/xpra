@@ -9,6 +9,7 @@ log = Logger("filters")
 
 class WindowPropertyFilter:
     __slots__ = ("property_name", "value", "recurse")
+
     def __init__(self, property_name, value, recurse=False):
         self.property_name = property_name
         self.value = value
@@ -39,6 +40,7 @@ class WindowPropertyFilter:
 
 class WindowPropertyIn(WindowPropertyFilter):
     __slots__ = ()
+
     def evaluate(self, window_value):
         vtypes = set([type(x) for x in self.value])
         if len(vtypes)==1 and list(vtypes)[0]==str:
@@ -52,6 +54,7 @@ class WindowPropertyIn(WindowPropertyFilter):
 
 class WindowPropertyNotIn(WindowPropertyIn):
     __slots__ = ()
+
     def evaluate(self, window_value):
         return not super().evaluate(window_value)
 

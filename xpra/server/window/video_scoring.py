@@ -12,14 +12,16 @@ scorelog = Logger("score")
 GPU_BIAS = envint("XPRA_GPU_BIAS", 100)
 MIN_FPS_COST = envint("XPRA_MIN_FPS_COST", 4)
 
-#any colourspace conversion will lose at least some quality (due to rounding)
-#(so add 0.2 to the value we get from calculating the degradation using get_subsampling_divs)
+# any colourspace conversion will lose at least some quality (due to rounding)
+# (so add 0.2 to the value we get from calculating the degradation using get_subsampling_divs)
 SUBSAMPLING_QUALITY_LOSS = {
     "NV12"      : 186,
     "YUV420P"   : 186,      #1.66 + 0.2
     "YUV422P"   : 153,      #1.33 + 0.2
     "YUV444P"   : 120,      #1.00 + 0.2
-    }
+}
+
+LOSSY_CSC = ("NV12", "YUV420P", "YUV422P")
 
 
 def get_quality_score(csc_format, csc_spec, encoder_spec, scaling,
@@ -33,7 +35,7 @@ def get_quality_score(csc_format, csc_spec, encoder_spec, scaling,
         quality += csc_spec.quality
         quality /= 2.0
 
-    if scaling==(1, 1) and csc_format not in ("NV12", "YUV420P", "YUV422P") and target_quality==100 and encoder_spec.has_lossless_mode:
+    if scaling==(1, 1) and csc_format not in LOSSY_CSC and target_quality==100 and encoder_spec.has_lossless_mode:
         #we want lossless!
         qscore = quality + 80
     else:
@@ -49,6 +51,7 @@ def get_quality_score(csc_format, csc_spec, encoder_spec, scaling,
             qscore *= 2.0
     return int(qscore)
 
+
 def get_speed_score(csc_format, csc_spec, encoder_spec, scaling,
                     target_speed : int=100, min_speed : int=0) -> int:
     #when subsampling, add the speed gains to the video encoder
@@ -57,7 +60,7 @@ def get_speed_score(csc_format, csc_spec, encoder_spec, scaling,
         "NV12"      : 100,
         "YUV420P"   : 100,
         "YUV422P"   : 80,
-        }.get(csc_format, 60)
+    }.get(csc_format, 60)
     #score based on speed:
     speed = int(encoder_spec.speed*mult//100)
     #the encoder speed matters less
@@ -78,6 +81,7 @@ def get_speed_score(csc_format, csc_spec, encoder_spec, scaling,
         mss = (min_speed - speed) // 2
         sscore = max(0, sscore - mss)
     return max(0, min(100, sscore))
+
 
 def get_pipeline_score(enc_in_format, csc_spec, encoder_spec,
                        width : int, height : int, scaling,
@@ -132,18 +136,28 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec,
         height_mask = csc_spec.height_mask & encoder_spec.height_mask
         csc_width = width & width_mask
         csc_height = height & height_mask
-        if enc_in_format=="RGB":
-            #converting to "RGB" is often a waste of CPU
-            #(can only get selected because the csc step will do scaling,
+        if enc_in_format == "RGB":
+            # converting to "RGB" is often a waste of CPU
+            # (can only get selected because the csc step will do scaling,
             # but even then, the YUV subsampling are better options)
             ecsc_score = 1
-        elif current_csce is None or current_csce.get_dst_format()!=enc_in_format or \
-           type(current_csce)!=csc_spec.codec_class or \
-           current_csce.get_src_width()!=csc_width or current_csce.get_src_height()!=csc_height:
-            #if we have to change csc, account for new csc setup cost:
-            ecsc_score = max(0, 80 - int(csc_spec.setup_cost*setup_cost_mult*80//100))
         else:
             ecsc_score = 80
+            # if anything is different, account for setup cost:
+
+            def is_csc_changed() -> bool:
+                if current_csce is None:
+                    return True
+                if current_csce.get_dst_format() != enc_in_format:
+                    return True
+                if type(current_csce) != csc_spec.codec_class:
+                    return True
+                if current_csce.get_src_width() != csc_width or current_csce.get_src_height() != csc_height:
+                    return True
+                return False
+            if is_csc_changed():
+                # if we have to change csc, account for new csc setup cost:
+                ecsc_score = max(0, 80 - int(csc_spec.setup_cost * setup_cost_mult * 80 // 100))
         ecsc_score += csc_spec.score_boost
         runtime_score *= csc_spec.get_runtime_factor()
 
@@ -174,10 +188,12 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec,
         return None
 
     if enc_width<encoder_spec.min_w or enc_height<encoder_spec.min_h:
-        scorelog("video size %ix%i out of range for %s, min %ix%i", enc_width, enc_height, encoder_spec.codec_type, encoder_spec.min_w, encoder_spec.min_h)
+        scorelog("video size %ix%i out of range for %s, min %ix%i",
+                 enc_width, enc_height, encoder_spec.codec_type, encoder_spec.min_w, encoder_spec.min_h)
         return None
     elif enc_width>encoder_spec.max_w or enc_height>encoder_spec.max_h:
-        scorelog("video size %ix%i out of range for %s, max %ix%i", enc_width, enc_height, encoder_spec.codec_type, encoder_spec.max_w, encoder_spec.max_h)
+        scorelog("video size %ix%i out of range for %s, max %ix%i",
+                 enc_width, enc_height, encoder_spec.codec_type, encoder_spec.max_w, encoder_spec.max_h)
         return None
 
     ee_score = 100
@@ -193,11 +209,16 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec,
     gpu_score = max(0, GPU_BIAS-50)*encoder_spec.gpu_cost//50
     cpu_score = max(0, 50-GPU_BIAS)*encoder_spec.cpu_cost//50
     score = int((qscore+sscore+er_score+sizescore+score_delta+gpu_score+cpu_score)*runtime_score//100//5)
-    scorelog("get_pipeline_score(%-7s, %-24r, %-28r, %5i, %5i) quality: %3i, speed: %3i, setup: %4i - %4i runtime: %3i scaling: %s / %s, encoder dimensions=%sx%s, sizescore=%3i, client score delta=%3i, cpu score=%3i, gpu score=%3i, score=%3i",
+    scorelog("get_pipeline_score(%-7s, %-24r, %-28r, %5i, %5i) quality: %3i, speed: %3i, setup: %4i - %4i runtime: %3i scaling: %s / %s, encoder dimensions=%sx%s, sizescore=%3i, client score delta=%3i, cpu score=%3i, gpu score=%3i, score=%3i",  # noqa: E501
              enc_in_format, csc_spec, encoder_spec, width, height,
-             qscore, sscore, ecsc_score, ee_score, runtime_score, scaling, encoder_scaling, enc_width, enc_height, sizescore, score_delta,
+             qscore, sscore, ecsc_score, ee_score, runtime_score, scaling,
+             encoder_scaling, enc_width, enc_height, sizescore, score_delta,
              cpu_score, gpu_score, score)
-    return score, scaling, csc_scaling, csc_width, csc_height, csc_spec, enc_in_format, encoder_scaling, enc_width, enc_height, encoder_spec
+    return (
+        score, scaling, csc_scaling, csc_width, csc_height, csc_spec, enc_in_format,
+        encoder_scaling, enc_width, enc_height, encoder_spec,
+    )
+
 
 def get_encoder_dimensions(encoder_spec, width : int, height : int, scaling=(1,1)):
     """

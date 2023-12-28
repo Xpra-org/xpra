@@ -13,12 +13,13 @@ from collections import deque
 from xpra.util.stats import get_list_stats, get_weighted_list_stats
 from xpra.util.str_fn import csv
 from xpra.util.env import envint
-from xpra.server.cystats import (logp,
+from xpra.server.cystats import (
+    logp,
     calculate_time_weighted_average,
     calculate_size_weighted_average,
     calculate_timesize_weighted_average,
     calculate_for_average,
-    )
+)
 
 from xpra.log import Logger
 log = Logger("stats")
@@ -38,7 +39,7 @@ class WindowPerformanceStatistics:
     def __init__(self):
         self.reset()
 
-    #assume 100ms until we get some data to compute the real values
+    # assume 100ms until we get some data to compute the real values
     DEFAULT_DAMAGE_LATENCY : float = 0.1
     DEFAULT_NETWORK_LATENCY : float = 0.1
     DEFAULT_TARGET_LATENCY : float = 0.1
@@ -56,12 +57,15 @@ class WindowPerformanceStatistics:
         #records how long it took for a damage request to be processed
         #last NRECS: (processed_time, no of pixels, actual batch delay, damage_latency)
         self.damage_out_latency : Deque[tuple[float,int,float,float]] = deque(maxlen=NRECS)
-        self.damage_ack_pending : dict[int,list] = {}       #records when damage packets are sent
-                                                            #so we can calculate the "client_latency" when the client sends
-                                                            #the corresponding ack ("damage-sequence" packet - see "client_ack_damage")
-        self.encoding_totals : dict[str,list[int]] = {}     #for each encoding, how many frames we sent and how many pixels in total
-        self.encoding_pending : dict = {}                   #damage regions waiting to be picked up by the encoding thread:
-                                                            #for each sequence no: (damage_time, w, h)
+        #records when damage packets are sent
+        #so we can calculate the "client_latency" when the client sends
+        #the corresponding ack ("damage-sequence" packet - see "client_ack_damage")
+        self.damage_ack_pending : dict[int,list] = {}
+        #for each encoding, how many frames we sent and how many pixels in total
+        self.encoding_totals : dict[str,list[int]] = {}
+        #damage regions waiting to be picked up by the encoding thread:
+        #for each sequence no: (damage_time, w, h)
+        self.encoding_pending : dict = {}
         #every time we get a damage event, we record: time,x,y,w,h
         self.last_damage_events : Deque[tuple[float,int,int,int,int]] = deque(maxlen=4*NRECS)
         self.last_damage_event_time = 0
@@ -87,13 +91,12 @@ class WindowPerformanceStatistics:
         #this should be a last resort..
         self.damage_ack_pending = {}
 
-
     def update_averages(self) -> None:
         #damage "in" latency: (the time it takes for damage requests to be processed only)
         dil = tuple(self.damage_in_latency)
         if dil:
             data = tuple((when, latency) for when, _, _, latency in dil)
-            self.avg_damage_in_latency, self.recent_damage_in_latency =  calculate_time_weighted_average(data)
+            self.avg_damage_in_latency, self.recent_damage_in_latency = calculate_time_weighted_average(data)
         #damage "out" latency: (the time it takes for damage requests to be processed and sent out)
         dol = tuple(self.damage_out_latency)
         if dol:
@@ -115,6 +118,7 @@ class WindowPerformanceStatistics:
 
     def get_factors(self, bandwidth_limit=0) -> list[tuple[str,str,float,float]]:
         factors = []
+
         def mayaddfac(metric, info, factor, weight):
             if weight>0.01:
                 factors.append((metric, info, factor, weight))
@@ -161,7 +165,7 @@ class WindowPerformanceStatistics:
             info = {
                 "budget"  : bandwidth_limit,
                 "used"    : used,
-                }
+            }
             #aim for 10% below the limit:
             target = used*110.0/100.0/bandwidth_limit
             #if we are getting close to or above the limit,
@@ -170,14 +174,15 @@ class WindowPerformanceStatistics:
             mayaddfac("bandwidth-limit", info, target, weight)
         return factors
 
-
     def get_info(self) -> dict[str,Any]:
-        info = {"damage"    : {"events"         : self.damage_events_count,
-                               "packets_sent"   : self.packet_count,
-                               "target-latency" : int(1000*self.target_latency),
-                               }
-                }
-        #encoding stats:
+        info = {
+            "damage": {
+                "events": self.damage_events_count,
+                "packets_sent"   : self.packet_count,
+                "target-latency" : int(1000*self.target_latency),
+            }
+        }
+        # encoding stats:
         estats = tuple(self.encoding_stats)
         if estats:
             def add_compression_stats(enc_stats, encoding=None):
@@ -216,7 +221,6 @@ class WindowPerformanceStatistics:
                 tf[encoding] = totals[0]
                 tp[encoding] = totals[1]
         return info
-
 
     def get_target_client_latency(self, min_client_latency, avg_client_latency, abs_min=0.010, jitter=0) -> float:
         """ geometric mean of the minimum (+20%) and average latency

@@ -14,7 +14,7 @@ from xpra.common import WORKSPACE_UNSET
 SKIP_METADATA = os.environ.get("XPRA_SKIP_METADATA", "").split(",")
 
 
-def make_window_metadata(window, propname, get_window_id=None, skip_defaults=False) -> dict[str,Any]:
+def make_window_metadata(window, propname, get_window_id=None, skip_defaults=False) -> dict[str, Any]:
     try:
         return do_make_window_metadata(window, propname, get_window_id, skip_defaults)
     except (ValueError, TypeError) as e:
@@ -28,11 +28,12 @@ def make_window_metadata(window, propname, get_window_id=None, skip_defaults=Fal
         return {}
 
 
-def do_make_window_metadata(window, propname, get_window_id=None, skip_defaults=False) -> dict[str,Any]:
+def do_make_window_metadata(window, propname, get_window_id=None, skip_defaults=False) -> dict[str, Any]:
     if propname in SKIP_METADATA:
         return {}
     #note: some of the properties handled here aren't exported to the clients,
     #but we do expose them via xpra info
+
     def raw():
         return window.get_property(propname)
     if propname in ("title", "icon-title", "command", "content-type"):
@@ -47,7 +48,7 @@ def do_make_window_metadata(window, propname, get_window_id=None, skip_defaults=
         "workspace",
         "bypass-compositor", "depth", "opacity",
         "quality", "speed",
-        ):
+    ):
         v = raw()
         assert v is not None, "%s is None!" % propname
         default_value = {
@@ -58,10 +59,10 @@ def do_make_window_metadata(window, propname, get_window_id=None, skip_defaults=
             "bypass-compositor" : 0,
             "depth"             : 24,
             "opacity"           : 100,
-            }.get(propname, -1)
+        }.get(propname, -1)
         if (v<0 or v==default_value) and skip_defaults:
-            #unset or default value,
-            #so don't bother sending anything:
+            # unset or default value,
+            # so don't bother sending anything:
             return {}
         return {propname : v}
     if propname == "size-hints":
@@ -102,12 +103,13 @@ def do_make_window_metadata(window, propname, get_window_id=None, skip_defaults=
         if v<0:
             return {}
         return {propname : v}
-    if propname in ("iconic", "fullscreen", "maximized",
-                      "above", "below",
-                      "shaded", "sticky",
-                      "skip-taskbar", "skip-pager",
-                      "modal", "focused",
-                      ):
+    if propname in (
+            "iconic", "fullscreen", "maximized",
+            "above", "below",
+            "shaded", "sticky",
+            "skip-taskbar", "skip-pager",
+            "modal", "focused",
+    ):
         v = raw()
         if v is False and skip_defaults:
             #we can skip those when the window is first created,
@@ -131,7 +133,7 @@ def do_make_window_metadata(window, propname, get_window_id=None, skip_defaults=
     if propname in ("group-leader", "transient-for", "parent"):
         ref_window = raw()
         if not ref_window:
-            return  {}
+            return {}
         p = {}
         if hasattr(ref_window, "get_xid"):
             #for Gdk X11 windows:

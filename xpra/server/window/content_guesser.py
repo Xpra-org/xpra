@@ -89,6 +89,8 @@ def _load_dict_dirs(dirname:str, parser:Callable) -> dict:
 ################################################################
 
 content_type_defs : dict | None = None
+
+
 def load_content_type_defs() -> dict:
     global content_type_defs
     if content_type_defs is None:
@@ -193,6 +195,8 @@ def load_categories_to_type() -> dict:
 ################################################################
 
 command_to_type : dict[str, str] | None = None
+
+
 def load_command_to_type() -> dict[str, str]:
     global command_to_type
     if command_to_type is None:
@@ -265,6 +269,8 @@ def parse_content_parent(lines) -> dict[str, str]:
 
 
 parent_to_type = None
+
+
 def get_parent_to_type():
     global parent_to_type
     if parent_to_type is None:

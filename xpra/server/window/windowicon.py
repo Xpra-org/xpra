@@ -32,12 +32,12 @@ SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 MAX_ARGB_PIXELS = envint("XPRA_MAX_ARGB_PIXELS", 1024)
 
 
-"""
-Mixin for handling the sending of window icon pixels.
-"""
 class WindowIconSource:
+    """
+    Mixin for handling the sending of window icon pixels.
+    """
 
-    fallback_window_icon : bool |tuple[int,int,str,bytes] = False
+    fallback_window_icon : bool | tuple[int, int, str, bytes] = False
 
     def __init__(self, window_icon_encodings, icons_encoding_options):
         self.window_icon_encodings = window_icon_encodings
@@ -57,15 +57,15 @@ class WindowIconSource:
         self.window_icon_max_size = (
             max(self.window_icon_max_size[0], 16),
             max(self.window_icon_max_size[1], 16),
-            )
+        )
         self.window_icon_size = (
             min(self.window_icon_size[0], self.window_icon_max_size[0]),
             min(self.window_icon_size[1], self.window_icon_max_size[1]),
-            )
+        )
         self.window_icon_size = (
             max(self.window_icon_size[0], 16),
             max(self.window_icon_size[1], 16),
-            )
+        )
         log("client icon settings: size=%s, max_size=%s", self.window_icon_size, self.window_icon_max_size)
         if LOG_THEME_DEFAULT_ICONS:
             log("theme_default_icons=%s", self.theme_default_icons)
@@ -90,8 +90,8 @@ class WindowIconSource:
                 "height"        : h,
                 "format"        : fmt,
                 "bytes"         : len(data),
-                }
             }
+        }
 
     @staticmethod
     def get_fallback_window_icon():
@@ -125,7 +125,7 @@ class WindowIconSource:
             f"application-x-{wmclass_name}",
             f"{wmclass_name}-symbolic",
             f"{wmclass_name}.symbolic",
-            ):
+        ):
             i = it.lookup_icon(icon_name, size, 0)
             log("lookup_icon(%s)=%s", icon_name, i)
             if not i:
@@ -153,7 +153,6 @@ class WindowIconSource:
     def client_has_theme_icon(self):
         wm_class = self.get_window_wm_class_name()
         return wm_class and wm_class in self.theme_default_icons
-
 
     def send_window_icon(self):
         #some of this code could be moved to the work queue half, meh
@@ -235,9 +234,9 @@ class WindowIconSource:
         if pixel_format not in ("BGRA", "RGBA", "png"):
             raise RuntimeError(f"invalid window icon format {pixel_format}")
         if pixel_format=="BGRA":
-            #BGRA data is always unpremultiplied
-            #(that's what we get from NetWMIcons)
-            from xpra.codecs.argb.argb import premultiply_argb # pylint: disable=import-outside-toplevel
+            # BGRA data is always unpremultiplied
+            # (that's what we get from NetWMIcons)
+            from xpra.codecs.argb.argb import premultiply_argb  # pylint: disable=import-outside-toplevel
             pixel_data = premultiply_argb(pixel_data)
 
         max_w, max_h = self.window_icon_max_size
@@ -288,7 +287,6 @@ class WindowIconSource:
         packet = ("window-icon", self.wid, w, h, wrapper.datatype, wrapper)
         log("queuing window icon update: %s", packet)
         self.queue_packet(packet, wait_for_more=True)
-
 
     @staticmethod
     def choose_icon(icons, max_w=1024, max_h=1024):

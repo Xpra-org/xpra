@@ -10,21 +10,21 @@ from typing import Any
 from xpra.server.cystats import (
     queue_inspect, logp, time_weighted_average,
     calculate_timesize_weighted_average_score,
-    )
+)
 from xpra.log import Logger
 
 log = Logger("server", "stats")
 
 
 def get_low_limit(mmap_enabled, window_dimensions):
-    #the number of pixels which can be considered 'low' in terms of backlog.
-    #Generally, just one full frame, (more with mmap because it is so fast)
+    # the number of pixels which can be considered 'low' in terms of backlog.
+    # Generally, just one full frame, (more with mmap because it is so fast)
     low_limit = 1024*1024
     ww, wh = window_dimensions
     if ww>0 and wh>0:
         low_limit = max(8*8, ww*wh)
     if mmap_enabled:
-        #mmap can accumulate much more as it is much faster
+        # mmap can accumulate much more as it is much faster
         low_limit *= 4
     return low_limit
 
@@ -48,6 +48,7 @@ def calculate_batch_delay(wid, window_dimensions,
     factors += global_statistics.get_factors(low_limit)
     #damage pixels waiting in the packet queue: (extract data for our window id only)
     time_values = global_statistics.get_damage_pixels(wid)
+
     def mayaddfac(metric, info, factor, weight):
         if weight>0.01:
             factors.append((metric, info, factor, weight))
@@ -121,6 +122,7 @@ def update_batch_delay(batch, factors, min_delay=0):
     log("update_batch_delay: delay=%i (last actual delay: %s)", batch.delay, last_actual_delay)
     batch.last_updated = now
     batch.factors = valid_factors
+
 
 def get_target_speed(window_dimensions, batch, global_statistics, statistics, bandwidth_limit, min_speed, speed_data):
     low_limit = get_low_limit(global_statistics.mmap_size>0, window_dimensions)
@@ -222,23 +224,23 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
 
     #expose data we used:
     info = {
-            "low-limit"                 : int(low_limit),
-            "max-speed"                 : int(max_speed),
-            "min-speed"                 : int(min_speed),
-            "factors"                   : {
-                "damage-latency-abs"    : int(dam_lat_abs*100),
-                "damage-latency-rel"    : int(dam_lat_rel*100),
-                "decoding-latency"      : int(dec_lat*100),
-                "pixel-rate"            : int(pps*100),
-                },
-            "limits"                    : {
-                "backlog"               : pixels_bl_s,
-                "damage-latency"        : dam_lat_s,
-                "pixel-rate"            : pixel_rate_s,
-                "bandwidth-limit"       : bandwidth_s,
-                "congestion"            : congestion_s,
-                },
-            }
+        "low-limit"                 : int(low_limit),
+        "max-speed"                 : int(max_speed),
+        "min-speed"                 : int(min_speed),
+        "factors"                   : {
+            "damage-latency-abs"    : int(dam_lat_abs*100),
+            "damage-latency-rel"    : int(dam_lat_rel*100),
+            "decoding-latency"      : int(dec_lat*100),
+            "pixel-rate"            : int(pps*100),
+        },
+        "limits"                    : {
+            "backlog"               : pixels_bl_s,
+            "damage-latency"        : dam_lat_s,
+            "pixel-rate"            : pixel_rate_s,
+            "bandwidth-limit"       : bandwidth_s,
+            "congestion"            : congestion_s,
+        },
+    }
     return info, int(speed), max_speed
 
 
@@ -361,6 +363,6 @@ def get_target_quality(window_dimensions, batch,
             "batch"         : int(batch_q*100),
             "latency"       : int(latency_q*100),
             "boost"         : int(comp_boost*100),
-            },
-        })
+        },
+    })
     return info, int(quality)
