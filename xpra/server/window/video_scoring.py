@@ -150,7 +150,7 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec,
                     return True
                 if current_csce.get_dst_format() != enc_in_format:
                     return True
-                if type(current_csce) != csc_spec.codec_class:
+                if current_csce.get_type() != csc_spec.codec_type:
                     return True
                 if current_csce.get_src_width() != csc_width or current_csce.get_src_height() != csc_height:
                     return True
