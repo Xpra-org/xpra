@@ -277,13 +277,12 @@ class UIXpraClient(ClientBaseClass):
         log("UIXpraClient.signal_cleanup() done")
 
     def get_info(self) -> dict[str, Any]:
-        info : dict[str, Any] = super().get_info()
+        info : dict[str, Any] = {}
         if FULL_INFO>0:
             info["session-name"] = self.session_name
         for c in CLIENT_BASES:
             with log.trap_error("Error collection information from %s", c):
-                i = c.get_info(self)
-                info = merge_dicts(info, i)
+                info.update(c.get_info(self))
         return info
 
     def show_about(self, *_args) -> None:
