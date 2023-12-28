@@ -10,7 +10,7 @@ from typing import Any
 
 from xpra.util.version import version_str
 from xpra.util.types import typedict
-from xpra.util.str_fn import csv, bytestostr
+from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, envfloat
 from xpra.common import ConnectionMessage
 from xpra.os_util import get_machine_id, gi_import, WIN32, POSIX, OSX
