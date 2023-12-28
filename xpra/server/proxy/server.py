@@ -122,9 +122,9 @@ class ProxyServer(ServerCore):
             return
         xpra_group_id = get_group_id(SOCKET_DIR_GROUP)
         if sps.startswith("/run/xpra") or sps.startswith("/var/run/xpra"):
-            #create the directory and verify its permissions
-            #which should have been set correctly by tmpfiles.d,
-            #but may have been set wrong if created by systemd's socket activation instead
+            # create the directory and verify its permissions
+            # which should have been set correctly by tmpfiles.d,
+            # but may have been set wrong if created by systemd's socket activation instead
             d = sps.split("/xpra")[0]+"/xpra"
             try:
                 if os.path.exists(d):
@@ -162,18 +162,15 @@ class ProxyServer(ServerCore):
         self.control_commands["stop"] = ArgsControlCommand("stop", "stops the proxy instance on the given display",
                                                            self.handle_stop_command, min_args=1, max_args=1)
 
-
     def install_signal_handlers(self, callback) -> None:
         from xpra.gtk.signals import register_SIGUSR_signals
         from xpra.gtk.signals import register_os_signals
         register_os_signals(callback, "Proxy Server")
         register_SIGUSR_signals("Proxy Server")
 
-
     def make_dbus_server(self):
         from xpra.server.proxy.proxy_dbus_server import Proxy_DBUS_Server  # pylint: disable=import-outside-toplevel
         return Proxy_DBUS_Server(self)
-
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
@@ -183,7 +180,6 @@ class ProxyServer(ServerCore):
     def _process_proxy_shutdown_server(self, proto, _packet : PacketType) -> None:
         assert proto in self._requests
         self.clean_quit(False)
-
 
     def print_screen_info(self) -> None:
         #no screen, we just use a virtual display number
@@ -231,9 +227,9 @@ class ProxyServer(ServerCore):
             return
         isprocess, _, mq = v
         log("stop_proxy(%s) %s", instance, v)
-        #different ways of stopping for process vs threaded implementations:
+        # different ways of stopping for process vs threaded implementations:
         if isprocess:
-            #send message:
+            # send message:
             if force:
                 instance.terminate()
             else:
@@ -243,9 +239,8 @@ class ProxyServer(ServerCore):
                 except Exception as e:
                     log("%s() %s", mq.close, e)
         else:
-            #direct method call:
+            # direct method call:
             instance.stop(None, "proxy server request")
-
 
     def cleanup(self) -> None:
         self.stop_all_proxies()
@@ -652,7 +647,6 @@ class ProxyServer(ServerCore):
             env.update(extra_env)
         return env
 
-
     def reap(self, *args) -> None:
         log("reap%s", args)
         dead = []
@@ -664,8 +658,7 @@ class ProxyServer(ServerCore):
         for p in dead:
             del self.instances[p]
 
-
-    def get_info(self, proto, *_args) -> dict[str,Any]:
+    def get_info(self, proto, *_args) -> dict[str, Any]:
         authenticated = proto and proto.authenticators
         if not authenticated:
             info = self.get_minimal_server_info()
@@ -691,11 +684,11 @@ class ProxyServer(ServerCore):
                         iinfo = {
                             "display"    : d,
                             "live"       : proxy_instance.is_alive(),
-                            }
+                        }
                         if isprocess:
                             iinfo.update({
                                 "pid"        : proxy_instance.pid,
-                                })
+                            })
                         else:
                             iinfo.update(proxy_instance.get_info())
                         instances_info[i] = iinfo

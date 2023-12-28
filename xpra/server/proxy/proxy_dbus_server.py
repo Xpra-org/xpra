@@ -19,7 +19,7 @@ log = Logger("dbus", "server")
 class Proxy_DBUS_Server(DBUS_Server_Base):
 
     def __init__(self, server=None):
-        if os.getuid()==0:
+        if os.getuid() == 0:
             bus = init_system_bus()
         else:
             bus = init_session_bus()
@@ -27,11 +27,11 @@ class Proxy_DBUS_Server(DBUS_Server_Base):
 
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{sv}')
     def GetInfo(self):
-        #full info is available by calling get_info()
+        # full info is available by calling get_info()
         i = self.server.get_minimal_server_info()
         self.log(".GetInfo()=%s", i)
         try:
-            v =  dbus.types.Dictionary((str(k), native_to_dbus(v)) for k,v in i.items())
+            v = dbus.types.Dictionary((str(k), native_to_dbus(v)) for k,v in i.items())
             log("native_to_dbus(..)=%s", v)
         except Exception:
             log("GetInfo:gotinfo", exc_info=True)

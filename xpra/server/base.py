@@ -75,6 +75,7 @@ def get_server_base_classes() -> tuple[type,...]:
         classes.append(ChildCommandServer)
     return tuple(classes)
 
+
 SERVER_BASES = get_server_base_classes()
 ServerBaseClass = type('ServerBaseClass', SERVER_BASES, {})
 
@@ -91,13 +92,13 @@ CLIENT_CAN_SHUTDOWN = envbool("XPRA_CLIENT_CAN_SHUTDOWN", True)
 MDNS_CLIENT_COUNT = envbool("XPRA_MDNS_CLIENT_COUNT", True)
 
 
-"""
-This is the base class for seamless and desktop servers. (not proxy servers)
-It provides all the generic functions but is not tied
-to a specific backend (X11 or otherwise).
-See GTKServerBase/X11ServerBase and other platform specific subclasses.
-"""
 class ServerBase(ServerBaseClass):
+    """
+    This is the base class for seamless and desktop servers. (not proxy servers)
+    It provides all the generic functions but is not tied
+    to a specific backend (X11 or otherwise).
+    See GTKServerBase/X11ServerBase and other platform specific subclasses.
+    """
 
     # noinspection PyMissingConstructor
     def __init__(self):
@@ -136,7 +137,6 @@ class ServerBase(ServerBaseClass):
         self.init_packet_handlers()
         self.init_aliases()
 
-
     def idle_add(self, *args, **kwargs) -> int:
         raise NotImplementedError()
 
@@ -146,7 +146,6 @@ class ServerBase(ServerBaseClass):
     def source_remove(self, timer) -> None:
         raise NotImplementedError()
 
-
     def server_event(self, *args) -> None:
         for s in self._server_sources.values():
             s.send_server_event(*args)
@@ -155,7 +154,6 @@ class ServerBase(ServerBaseClass):
 
     def get_server_source(self, proto):
         return self._server_sources.get(proto)
-
 
     def init(self, opts) -> None:
         #from now on, use the logger for parsing errors:
@@ -189,30 +187,27 @@ class ServerBase(ServerBaseClass):
         log("threaded_init() serverbase end")
         super().call_init_thread_callbacks()
 
-
     def server_is_ready(self) -> None:
         ServerCore.server_is_ready(self)
         self.server_event("ready")
-
 
     def do_cleanup(self) -> None:
         self.server_event("exit")
         self.wait_for_threaded_init()
         log("do_cleanup() calling on %s", SERVER_BASES)
         for c in SERVER_BASES:
-            if c!=ServerCore:
+            if c != ServerCore:
                 log("%s", c.cleanup)
                 c.cleanup(self)
-
 
     ######################################################################
     # override http scripts to expose just the current session / display
     def get_displays(self) -> dict[str,Any]:
-        from xpra.scripts.main import get_displays  #pylint: disable=import-outside-toplevel
+        from xpra.scripts.main import get_displays   # pylint: disable=import-outside-toplevel
         return get_displays(self.dotxpra, display_names=(os.environ.get("DISPLAY"), ))
 
     def get_xpra_sessions(self) -> dict[str,Any]:
-        from xpra.scripts.main import get_xpra_sessions #pylint: disable=import-outside-toplevel
+        from xpra.scripts.main import get_xpra_sessions  # pylint: disable=import-outside-toplevel
         return get_xpra_sessions(self.dotxpra, matching_display=os.environ.get("DISPLAY"))
 
     ######################################################################
@@ -227,7 +222,7 @@ class ServerBase(ServerBaseClass):
         self.cleanup_all_protocols(reason=reason)
         self.timeout_add(500, self.clean_quit, EXITING_CODE)
 
-    def _process_shutdown_server(self, _proto, _packet:PacketType=()) -> None:
+    def _process_shutdown_server(self, _proto, _packet: PacketType=()) -> None:
         if not self.client_shutdown:
             log.warn("Warning: ignoring shutdown request")
             return
@@ -235,24 +230,23 @@ class ServerBase(ServerBaseClass):
         self.cleanup_all_protocols(reason=ConnectionMessage.SERVER_SHUTDOWN)
         self.timeout_add(500, self.clean_quit)
 
-
-    def get_mdns_info(self) -> dict[str,Any]:
+    def get_mdns_info(self) -> dict[str, Any]:
         mdns_info = ServerCore.get_mdns_info(self)
         if MDNS_CLIENT_COUNT:
             mdns_info["clients"] = len(self._server_sources)
         return mdns_info
 
-
     ######################################################################
     # handle new connections:
-    def handle_sharing(self, proto, ui_client:bool=True, detach_request:bool=False, share:bool=False, uuid=None) -> tuple[bool,int,int]:
+    def handle_sharing(self, proto, ui_client: bool = True, detach_request: bool = False, share: bool = False,
+                       uuid=None) -> tuple[bool, int, int]:
         share_count = 0
         disconnected = 0
         existing_sources = set(ss for p,ss in self._server_sources.items() if p!=proto)
         is_existing_client = uuid and any(ss.uuid==uuid for ss in existing_sources)
         authlog("handle_sharing%s lock=%s, sharing=%s, existing sources=%s, is existing client=%s",
-            (proto, ui_client, detach_request, share, uuid),
-            self.lock, self.sharing, existing_sources, is_existing_client)
+                (proto, ui_client, detach_request, share, uuid),
+                self.lock, self.sharing, existing_sources, is_existing_client)
         # if other clients are connected, verify we can steal or share:
         if existing_sources and not is_existing_client:
             if self.sharing is True or (self.sharing is None and share and all(ss.share for ss in existing_sources)):
@@ -262,7 +256,8 @@ class ServerBase(ServerBaseClass):
                 self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is locked")
                 return False, 0, 0
             elif self.lock is not False and any(ss.lock for ss in existing_sources):
-                authlog("handle_sharing: another client has locked the session: " + csv(ss for ss in existing_sources if ss.lock))
+                authlog("handle_sharing: another client has locked the session: " + csv(
+                    ss for ss in existing_sources if ss.lock))
                 self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "a client has locked this session")
                 return False, 0, 0
         for p,ss in tuple(self._server_sources.items()):
@@ -491,24 +486,22 @@ class ServerBase(ServerBaseClass):
     def sanity_checks(self, proto, c:typedict) -> bool:
         server_uuid = c.strget("server_uuid")
         if server_uuid:
-            if server_uuid==self.uuid:
+            if server_uuid == self.uuid:
                 self.send_disconnect(proto, "cannot connect a client running on the same display"
-                                     +" that the server it connects to is managing - this would create a loop!")
-                return  False
+                                     " that the server it connects to is managing - this would create a loop!")
+                return False
             log.warn("Warning: this client is running nested")
             log.warn(f" in the Xpra server session {server_uuid!r}")
         return True
 
-
-    def update_all_server_settings(self, reset:bool=False) -> None:
-        pass        #may be overridden in subclasses (ie: x11 server)
-
+    def update_all_server_settings(self, reset: bool = False) -> None:
+        pass        # may be overridden in subclasses (ie: x11 server)
 
     ######################################################################
     # hello:
-    def get_server_features(self, server_source=None) -> dict[str,Any]:
-        #these are flags that have been added over time with new versions
-        #to expose new server features:
+    def get_server_features(self, server_source=None) -> dict[str, Any]:
+        # these are flags that have been added over time with new versions
+        # to expose new server features:
         f = {}
         for c in SERVER_BASES:
             if c!=ServerCore:
@@ -517,7 +510,7 @@ class ServerBase(ServerBaseClass):
                 merge_dicts(f, bf)
         return f
 
-    def make_hello(self, source) -> dict[str,Any]:
+    def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)
         for c in SERVER_BASES:
             if c!=ServerCore:
@@ -532,19 +525,19 @@ class ServerBase(ServerBaseClass):
                 capabilities["display"] = display
         if "features" in source.wants:
             capabilities |= {
-                 "client-shutdown"              : self.client_shutdown,
-                 "sharing"                      : self.sharing is not False,
-                 "sharing-toggle"               : self.sharing is None,
-                 "lock"                         : self.lock is not False,
-                 "lock-toggle"                  : self.lock is None,
-                 "windows"                      : features.windows,
-                 "keyboard"                     : features.input_devices,
+                "client-shutdown"              : self.client_shutdown,
+                "sharing"                      : self.sharing is not False,
+                "sharing-toggle"               : self.sharing is None,
+                "lock"                         : self.lock is not False,
+                "lock-toggle"                  : self.lock is None,
+                "windows"                      : features.windows,
+                "keyboard"                     : features.input_devices,
             }
             sf = self.get_server_features(source)
             capabilities.update(sf)
         return capabilities
 
-    def send_hello(self, server_source, root_size, server_cipher:dict) -> None:
+    def send_hello(self, server_source, root_size, server_cipher: dict) -> None:
         capabilities = self.make_hello(server_source)
         if "display" in server_source.wants and root_size:
             capabilities |= {
@@ -558,17 +551,15 @@ class ServerBase(ServerBaseClass):
         server_source.send_hello(capabilities)
         self.after_threaded_init(server_source.threaded_init_complete, self)
 
-
     ######################################################################
     # utility method:
     def window_sources(self) -> tuple:
         from xpra.server.source.windows import WindowsMixin  #pylint: disable=import-outside-toplevel
         return tuple(x for x in self._server_sources.values() if isinstance(x, WindowsMixin))
 
-
     ######################################################################
     # info:
-    def _process_info_request(self, proto, packet:PacketType) -> None:
+    def _process_info_request(self, proto, packet: PacketType) -> None:
         log("process_info_request(%s, %s)", proto, packet)
         #ignoring the list of client uuids supplied in packet[1]
         ss = self.get_server_source(proto)
@@ -591,6 +582,7 @@ class ServerBase(ServerBaseClass):
         #    uuid = packet[1]
         if len(packet)>=4:
             categories = tuple(bytestostr(x) for x in packet[3])
+
         def info_callback(_proto, info):
             assert proto==_proto
             if categories:
@@ -601,6 +593,7 @@ class ServerBase(ServerBaseClass):
     def send_hello_info(self, proto) -> None:
         self.wait_for_threaded_init()
         start = monotonic()
+
         def cb(proto, info):
             self.do_send_info(proto, info)
             end = monotonic()
@@ -622,7 +615,6 @@ class ServerBase(ServerBaseClass):
                 merge_dicts(info, c.get_ui_info(self, proto, client_uuids, *args))
         return info
 
-
     def get_info(self, proto=None, client_uuids=None) -> dict[str,Any]:
         log("ServerBase.get_info%s", (proto, client_uuids))
         start = monotonic()
@@ -643,12 +635,11 @@ class ServerBase(ServerBaseClass):
         }
         return info
 
-
     def get_features_info(self) -> dict[str,Any]:
         i = {
-             "sharing"          : self.sharing is not False,
-             "idle_timeout"     : self.idle_timeout,
-             }
+            "sharing"          : self.sharing is not False,
+            "idle_timeout"     : self.idle_timeout,
+        }
         i.update(self.get_server_features())
         return i
 
@@ -656,6 +647,7 @@ class ServerBase(ServerBaseClass):
         log("ServerBase.do_get_info%s", (proto, server_sources))
         start = monotonic()
         info = {}
+
         def up(prefix, d):
             merge_dicts(info, {prefix : d})
 
@@ -666,20 +658,20 @@ class ServerBase(ServerBaseClass):
                 cend = monotonic()
                 log("%s.get_info(%s) took %ims", c, proto, int(1000*(cend-cstart)))
 
-        up("features",  self.get_features_info())
+        up("features", self.get_features_info())
         up("network", {
             "sharing"                      : self.sharing is not False,
             "sharing-toggle"               : self.sharing is None,
             "lock"                         : self.lock is not False,
             "lock-toggle"                  : self.lock is None,
-            })
+        })
 
         # other clients:
         info["clients"] = {
             ""                   : sum(1 for p in self._server_sources if p!=proto),
             "unauthenticated"    : sum(1 for p in self._potential_protocols
                                        if ((p is not proto) and (p not in self._server_sources))),
-           }
+        }
         #find the server source to report on:
         n = len(server_sources or [])
         if n==1:
@@ -695,13 +687,11 @@ class ServerBase(ServerBaseClass):
         log("ServerBase.do_get_info took %ims", (monotonic()-start)*1000)
         return info
 
-
-    def _process_server_settings(self, proto, packet:PacketType) -> None:
-        #only used by x11 servers
+    def _process_server_settings(self, proto, packet: PacketType) -> None:
+        # only used by x11 servers
         pass
 
-
-    def _set_client_properties(self, proto, wid:int, window, new_client_properties:dict) -> None:
+    def _set_client_properties(self, proto, wid: int, window, new_client_properties: dict) -> None:
         """
         Allows us to keep window properties for a client after disconnection.
         (we keep it in a map with the client's uuid as key)
@@ -727,15 +717,14 @@ class ServerBase(ServerBaseClass):
                 client_properties = self.client_properties.setdefault(wid, {}).setdefault(ss.uuid, {})
                 client_properties.update(ncp)
 
-
     ######################################################################
     # settings toggle:
-    def setting_changed(self, setting:str, value) -> None:
-        #tell all the clients (that can) about the new value for this setting
+    def setting_changed(self, setting: str, value) -> None:
+        # tell all the clients (that can) about the new value for this setting
         for ss in tuple(self._server_sources.values()):
             ss.send_setting_change(setting, value)
 
-    def _process_sharing_toggle(self, proto, packet:PacketType) -> None:
+    def _process_sharing_toggle(self, proto, packet: PacketType) -> None:
         assert self.sharing is None
         ss = self.get_server_source(proto)
         if not ss:
@@ -743,36 +732,32 @@ class ServerBase(ServerBaseClass):
         sharing = bool(packet[1])
         ss.share = sharing
         if not sharing:
-            #disconnect other users:
+            # disconnect other users:
             for p,ss in tuple(self._server_sources.items()):
                 if p!=proto:
                     self.disconnect_client(p, ConnectionMessage.DETACH_REQUEST,
                                            f"client {ss.counter} no longer wishes to share the session")
 
-    def _process_lock_toggle(self, proto, packet:PacketType) -> None:
+    def _process_lock_toggle(self, proto, packet: PacketType) -> None:
         assert self.lock is None
         ss = self.get_server_source(proto)
         if ss:
             ss.lock = bool(packet[1])
             log("lock set to %s for client %i", ss.lock, ss.counter)
 
-
-
-
     ######################################################################
     # http server and http audio stream:
-    def get_http_info(self) -> dict[str,Any]:
+    def get_http_info(self) -> dict[str, Any]:
         info = ServerCore.get_http_info(self)
         info["clients"] = len(self._server_sources)
         return info
 
-    def get_http_scripts(self) -> dict[str,Any]:
+    def get_http_scripts(self) -> dict[str, Any]:
         scripts = {}
         for c in SERVER_BASES:
             scripts.update(c.get_http_scripts(self))
         httplog("scripts=%s", scripts)
         return scripts
-
 
     ######################################################################
     # client connections:
@@ -782,8 +767,8 @@ class ServerBase(ServerBaseClass):
 
     def cleanup_protocol(self, protocol):
         netlog("cleanup_protocol(%s)", protocol)
-        #this ensures that from now on we ignore any incoming packets coming
-        #from this connection as these could potentially set some keys pressed, etc
+        # this ensures that from now on we ignore any incoming packets coming
+        # from this connection as these could potentially set some keys pressed, etc
         try:
             self._potential_protocols.remove(protocol)
         except ValueError:
@@ -830,11 +815,11 @@ class ServerBase(ServerBaseClass):
             self.idle_add(self.last_client_exited)
 
     def last_client_exited(self) -> None:
-        #must run from the UI thread (modifies focus and keys)
+        # must run from the UI thread (modifies focus and keys)
         netlog("last_client_exited() exit_with_client=%s", self.exit_with_client)
         self.reset_server_timeout(True)
         for c in SERVER_BASES:
-            if c!=ServerCore:
+            if c != ServerCore:
                 try:
                     c.last_client_exited(self)
                 except Exception:
@@ -842,7 +827,6 @@ class ServerBase(ServerBaseClass):
         if self.exit_with_client and not self._closing:
             netlog.info("Last client has disconnected, terminating")
             self.clean_quit(False)
-
 
     def set_ui_driver(self, source) -> None:
         if source and self.ui_driver==source.uuid:
@@ -861,29 +845,25 @@ class ServerBase(ServerBaseClass):
                 ssh_auth_sock = getattr(source, "ssh_auth_sock", "")
                 set_ssh_agent(ssh_auth_sock)
         for c in SERVER_BASES:
-            if c!=ServerCore:
+            if c != ServerCore:
                 c.set_session_driver(self, source)
-
 
     def reset_focus(self) -> None:
         for c in SERVER_BASES:
             if c!=ServerCore:
                 c.reset_focus(self)
 
-
     def get_all_protocols(self) -> list:
         return list(self._potential_protocols) + list(self._server_sources.keys())
-
 
     def is_timedout(self, protocol) -> bool:
         v = ServerCore.is_timedout(self, protocol) and protocol not in self._server_sources
         netlog("is_timedout(%s)=%s", protocol, v)
         return v
 
-
     def _log_disconnect(self, proto, *args) -> None:
-        #skip logging of disconnection events for server sources
-        #we have tagged during hello ("info_request", "exit_request", etc..)
+        # skip logging of disconnection events for server sources
+        # we have tagged during hello ("info_request", "exit_request", etc..)
         ss = self.get_server_source(proto)
         if ss and not ss.log_disconnect:
             #log at debug level only:
@@ -892,7 +872,7 @@ class ServerBase(ServerBaseClass):
         ServerCore._log_disconnect(self, proto, *args)
 
     def _disconnect_proto_info(self, proto) -> str:
-        #only log protocol info if there is more than one client:
+        # only log protocol info if there is more than one client:
         if len(self._server_sources)>1:
             return " %s" % proto
         return ""
@@ -914,19 +894,19 @@ class ServerBase(ServerBaseClass):
     def init_packet_handlers(self) -> None:
         for c in SERVER_BASES:
             c.init_packet_handlers(self)
-        #no need for main thread:
+        # no need for main thread:
         self.add_packet_handlers({
             "sharing-toggle"    : self._process_sharing_toggle,
             "lock-toggle"       : self._process_lock_toggle,
             "set_deflate"       : noop,     #removed in v6
-            }, False)
+        }, False)
         #attributes / settings:
         self.add_packet_handlers({
             "server-settings"   : self._process_server_settings,
             "shutdown-server"   : self._process_shutdown_server,
             "exit-server"       : self._process_exit_server,
             "info-request"      : self._process_info_request,
-            })
+        })
 
     def init_aliases(self) -> None:
         packet_types = list(self._default_packet_handlers.keys())
@@ -939,6 +919,7 @@ class ServerBase(ServerBaseClass):
         handler : Callable | None = None
         try:
             packet_type = bytestostr(packet[0])
+
             def call_handler():
                 may_log_packet(False, packet_type, packet)
                 handler(proto, packet)
@@ -958,6 +939,7 @@ class ServerBase(ServerBaseClass):
                 netlog("process default packet %s", packet_type)
                 call_handler()
                 return
+
             def invalid_packet():
                 ss = self.get_server_source(proto)
                 if not self._closing and not proto.is_closed() and (ss is None or not ss.is_closed()):

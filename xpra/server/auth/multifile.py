@@ -15,12 +15,13 @@ from xpra.net.digest import verify_digest
 
 AuthLine = tuple[str,str,int,int,list[str],dict[str,str],dict[str,str]]
 
+
 def parse_auth_line(line:str) -> AuthLine:
     ldata = line.split("|")
     if len(ldata)<2:
         raise ValueError(f"not enough fields: {len(ldata)}, minimum is 2")
     log(f"found {len(ldata)} fields")
-    #parse fields:
+    # parse fields:
     username = ldata[0]
     password = ldata[1]
     if len(ldata)>=5:
@@ -46,7 +47,7 @@ class Authenticator(FileAuthenticatorBase):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.sessions : SessionData | None = None
+        self.sessions: SessionData | None = None
 
     def parse_filedata(self, data:str) -> dict[str,AuthLine]:
         if not data:
@@ -97,7 +98,7 @@ class Authenticator(FileAuthenticatorBase):
         if not self.salt:
             log.error("Error: illegal challenge response received - salt cleared or unset")
             return False
-        #ensure this salt does not get re-used:
+        # ensure this salt does not get re-used:
         salt = self.get_response_salt(client_salt)
         entry = self.get_auth_info()
         if entry is None:

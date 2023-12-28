@@ -22,7 +22,7 @@ class Authenticator(SQLAuthenticator):
         self.filename = filename
         self.password_query = kwargs.pop("password_query", "SELECT password FROM users WHERE username=(?)")
         self.sessions_query = kwargs.pop("sessions_query",
-                                         "SELECT uid, gid, displays, env_options, session_options "+
+                                         "SELECT uid, gid, displays, env_options, session_options "
                                          "FROM users WHERE username=(?) AND password=(?)")
         self.authenticate_check = self.authenticate_hmac
 
@@ -87,6 +87,7 @@ class SqliteDatabaseUtil(DatabaseUtilBase):
 
 def main(argv) -> int:
     return run_dbutil(SqliteDatabaseUtil, "filename", argv)
+
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

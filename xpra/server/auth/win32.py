@@ -12,7 +12,7 @@ class Authenticator(SysAuthenticator):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        #fugly: keep hold of the password so the win32 proxy can use it
+        # fugly: keep hold of the password so the win32 proxy can use it
         self.password = ""
 
     def get_uid(self) -> int:
@@ -28,8 +28,8 @@ class Authenticator(SysAuthenticator):
         self.req_xor(digests)
         return super().do_get_challenge(["xor"])
 
-    def check(self, password:bytes) -> bool:
-        domain = '' #os.environ.get('COMPUTERNAME')
+    def check(self, password: bytes) -> bool:
+        domain = ""  # os.environ.get('COMPUTERNAME')
         if check(domain, self.username, password):
             self.password = password
             return True
@@ -40,7 +40,7 @@ class Authenticator(SysAuthenticator):
 
 
 def main(argv) -> int:
-    #pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.log import enable_color
     with program_context("Auth-Test", "Auth-Test"):
@@ -60,6 +60,7 @@ def main(argv) -> int:
             return 0
         log.error("authentication failed")
         return 1
+
 
 if __name__ == "__main__":
     import sys

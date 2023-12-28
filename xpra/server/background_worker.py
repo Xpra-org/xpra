@@ -23,7 +23,7 @@ class Worker_Thread(Thread):
 
     def __init__(self):
         super().__init__(name="Worker_Thread", daemon=True)
-        self.items : Queue[Callable|None] = Queue()
+        self.items: Queue[Callable | None] = Queue()
         self.exit = False
         self.daemon_work_items : WeakSet[Callable] = WeakSet()
 
@@ -77,6 +77,7 @@ singleton : Worker_Thread | None= None
 # locking to ensure multithreaded code doesn't create more than one
 lock = Lock()
 
+
 def get_worker(create:bool=True) -> Worker_Thread | None:
     global singleton
     #fast path (no lock):
@@ -88,11 +89,13 @@ def get_worker(create:bool=True) -> Worker_Thread | None:
             singleton.start()
     return singleton
 
+
 def add_work_item(item, allow_duplicates:bool=False, daemon:bool=True) -> None:
     w = get_worker(True)
     log("add_work_item(%s, %s, %s) worker=%s", item, allow_duplicates, daemon, w)
     assert w is not None
     w.add(item, allow_duplicates, daemon)
+
 
 def stop_worker(force:bool=False) -> None:
     w = get_worker(False)

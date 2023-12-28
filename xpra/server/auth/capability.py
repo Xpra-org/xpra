@@ -15,7 +15,7 @@ class Authenticator(SysAuthenticator):
         self.gid = -1
         self.property = kwargs.pop("property", "display")
         self.value = kwargs.pop("value", "")
-        #connection = kwargs.get("connection", None)
+        # connection = kwargs.get("connection", None)
         super().__init__(**kwargs)
 
     def get_uid(self) -> int:
@@ -23,7 +23,6 @@ class Authenticator(SysAuthenticator):
 
     def get_gid(self) -> int:
         return self.gid
-
 
     def requires_challenge(self) -> bool:
         return False

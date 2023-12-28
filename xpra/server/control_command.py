@@ -8,9 +8,8 @@ from collections.abc import Callable
 
 from xpra.log import (
     Logger,
-    add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for,
-    get_all_loggers,
-    )
+    add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for, get_all_loggers,
+)
 from xpra.util.str_fn import csv
 from xpra.common import noop
 
@@ -27,7 +26,8 @@ class ControlError(Exception):
 class ControlCommand:
     """ Utility superclass for control commands """
     __slots__ = ("name", "help", "do_run")
-    def __init__(self, name:str, help_text:str="", run:Callable=noop):
+
+    def __init__(self, name: str, help_text: str="", run: Callable = noop):
         self.name = name
         self.help = help_text
         self.do_run = run
@@ -48,6 +48,7 @@ class ControlCommand:
 class ArgsControlCommand(ControlCommand):
     """ Adds very basic argument validation """
     __slots__ = ("validation", "min_args", "max_args")
+
     def __init__(self, name:str, help_text:str="", run:Callable=noop, validation=(), min_args=None, max_args=None):
         super().__init__(name, help_text, run)
         self.validation = validation
@@ -82,6 +83,7 @@ class ArgsControlCommand(ControlCommand):
 class FixedMessageCommand(ControlCommand):
     """ A control command that returns a fixed message """
     __slots__ = ("message", )
+
     def __init__(self, name:str, message:str, help_text:str=""):
         super().__init__(name, help_text)
         self.message = message
@@ -92,6 +94,7 @@ class FixedMessageCommand(ControlCommand):
 
 class DisabledCommand(FixedMessageCommand):
     __slots__ = ()
+
     def __init__(self):
         super().__init__("*", "the control channel is disabled")
 
@@ -99,6 +102,7 @@ class DisabledCommand(FixedMessageCommand):
 class HelloCommand(FixedMessageCommand):
     """ Just says hello """
     __slots__ = ()
+
     def __init__(self):
         super().__init__("hello", "hello", "just says hello back")
 
@@ -106,6 +110,7 @@ class HelloCommand(FixedMessageCommand):
 class HelpCommand(ArgsControlCommand):
     """ The help command looks at the 'help' definition of other commands """
     __slots__ = ("control_commands", )
+
     def __init__(self, control_commands):
         super().__init__("help", max_args=1)
         self.control_commands = control_commands

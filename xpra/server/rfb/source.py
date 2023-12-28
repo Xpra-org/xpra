@@ -8,9 +8,7 @@ from threading import Event
 from typing import Any
 
 from xpra.net.rfb.const import RFBEncoding
-from xpra.net.rfb.encode import (
-    raw_encode, tight_encode, tight_png, rgb222_encode, #zlib_encode,
-    )
+from xpra.net.rfb.encode import raw_encode, tight_encode, tight_png, rgb222_encode
 from xpra.net.protocol.socket_handler import PACKET_JOIN_SIZE
 from xpra.util.types import AtomicInteger
 from xpra.util.str_fn import csv, strtobytes, memoryview_to_bytes
@@ -27,6 +25,7 @@ class RFBSource:
         "ui_client", "counter", "share", "uuid", "lock", "keyboard_config",
         "encodings", "quality", "pixel_format"
     )
+
     def __init__(self, protocol, share=False):
         self.protocol = protocol
         self.close_event = Event()
@@ -46,7 +45,7 @@ class RFBSource:
             "protocol"  : "rfb",
             "uuid"      : self.uuid,
             "share"     : self.share,
-            }
+        }
 
     def set_encodings(self, encodings):
         known_encodings = []
@@ -62,14 +61,13 @@ class RFBSource:
             log("RFB %i unknown encodings: %s", len(unknown_encodings), csv(unknown_encodings))
 
     def set_pixel_format(self, pixel_format):
-        #bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift
+        # bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift
         self.pixel_format = tuple(pixel_format)
         bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift = pixel_format
         log(" pixel depth %i, %i bits per pixel", depth, bpp)
         log(" bigendian=%s, truecolor=%s", bool(bigendian), bool(truecolor))
         if truecolor:
             log(" RGB max: %s, shift: %s", (rmax, gmax, bmax), (rshift, bshift, gshift))
-
 
     def get_window_info(self, _wids):
         return {}
@@ -104,7 +102,6 @@ class RFBSource:
     def send_cursor(self):
         """ not implemented yet """
 
-
     def update_mouse(self, *args):
         log("update_mouse%s", args)
 
@@ -112,9 +109,9 @@ class RFBSource:
         polling = options and options.get("polling", False)
         p = self.protocol
         if polling and p is None or p.queue_size()>=2:
-            #very basic RFB update rate control,
-            #if there are packets waiting already
-            #we'll just process the next polling update instead:
+            # very basic RFB update rate control,
+            # if there are packets waiting already
+            # we'll just process the next polling update instead:
             return
         if self.is_closed():
             return
@@ -122,7 +119,7 @@ class RFBSource:
         kwargs = {}
         if self.pixel_format[:2]!=(32, 24):
             if self.pixel_format[:3]==(8, 6, 0):
-                #crappy initial format chosen by realvnc
+                # crappy initial format chosen by realvnc
                 encode = rgb222_encode
             else:
                 log("damage: unsupported client pixel format: %s", self.pixel_format)
@@ -132,8 +129,8 @@ class RFBSource:
         elif RFBEncoding.TIGHT in self.encodings:
             encode = tight_encode
             kwargs = {"quality" : self.quality}
-        #doesn't work
-        #elif RFBEncoding.ZLIB in self.encodings:
+        # doesn't work
+        # elif RFBEncoding.ZLIB in self.encodings:
         #    encode = zlib_encode
         packets = encode(window, x, y, w, h, **kwargs)
         if not packets:
@@ -141,8 +138,9 @@ class RFBSource:
         self.send_many(*packets)
 
     def send_many(self, *packets):
-        #merge small packets together:
+        # merge small packets together:
         joined = []
+
         def send_joined():
             if joined:
                 self.send(b"".join(memoryview_to_bytes(p) for p in joined))
@@ -150,7 +148,7 @@ class RFBSource:
         for packet in packets:
             joined.append(packet)
             if sum(len(p) for p in joined) > PACKET_JOIN_SIZE:
-                #too much, can't be joined
+                # too much, can't be joined
                 joined.pop()
                 send_joined()
                 self.send(packet)

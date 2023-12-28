@@ -61,21 +61,22 @@ class Authenticator(SysAuthenticatorBase):
 
     def check_password(self, password:str) -> bool:
         log("check_password(%s)", obsc(password))
+
         def emsg(e):
             try:
                 log.warn(" LDAP Error: %s", e.message["desc"])
                 if "info" in e.message:
                     log.warn("  %s", e.message["info"])
             except Exception:
-                #python3: no way to get to the message dict?
+                # python3: no way to get to the message dict?
                 log.warn(" %s", e)
         try:
-            from ldap import (  #pylint: disable=import-outside-toplevel
+            from ldap import (  # pylint: disable=import-outside-toplevel
                 initialize, LDAPError,
                 INVALID_CREDENTIALS, SERVER_DOWN,
                 OPT_REFERRALS,
                 OPT_X_TLS_CACERTFILE,
-                )
+            )
         except ImportError as e:
             log("check(..)", exc_info=True)
             log.warn("Warning: cannot use ldap authentication:")
@@ -156,7 +157,7 @@ def main(argv) -> int:
         caps = typedict({
             "challenge_response"    : response,
             "challenge_client_salt" : client_salt,
-            })
+        })
         r = a.authenticate(caps)
         print("success: %s" % bool(r))
         return int(not r)

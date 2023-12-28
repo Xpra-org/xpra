@@ -42,9 +42,12 @@ def get_os_icons() -> tuple[tuple[int,int,str,bytes],...]:
 
 
 class RootWindowModel:
-    __slots__ = ("window", "title", "geometry", "capture",
-                 "property_names", "dynamic_property_names", "internal_property_names",
-                 "signal_listeners")
+    __slots__ = (
+        "window", "title", "geometry", "capture",
+        "property_names", "dynamic_property_names", "internal_property_names",
+        "signal_listeners",
+    )
+
     def __init__(self, root_window, capture=None, title:str="", geometry=None):
         self.window = root_window
         self.title : str= title
@@ -55,7 +58,7 @@ class RootWindowModel:
             "client-machine", "window-type",
             "size-hints", "icons", "shadow",
             "depth",
-            ]
+        ]
         self.dynamic_property_names : list[str] = []
         self.internal_property_names : list[str] = ["content-type"]
         self.signal_listeners : dict[str,list[tuple]] = {}
@@ -120,7 +123,6 @@ class RootWindowModel:
     def get_geometry(self):
         return self.geometry
 
-
     def get_property_names(self) -> list[str]:
         return self.property_names
 
@@ -130,46 +132,46 @@ class RootWindowModel:
     def get_internal_property_names(self) -> list[str]:
         return self.internal_property_names
 
-    def get_property(self, prop:str):
-        #subclasses can define properties as attributes:
+    def get_property(self, prop: str):
+        # subclasses can define properties as attributes:
         attr_name = prop.replace("-", "_")
         if hasattr(self, attr_name):
             return getattr(self, attr_name)
-        #otherwise fallback to default behaviour:
-        if prop=="title":
+        # otherwise fallback to default behaviour:
+        if prop == "title":
             return self.title
-        if prop=="client-machine":
+        if prop == "client-machine":
             return socket.gethostname()
-        if prop=="window-type":
+        if prop == "window-type":
             return ["NORMAL"]
-        if prop=="fullscreen":
+        if prop == "fullscreen":
             return False
-        if prop=="shadow":
+        if prop == "shadow":
             return True
-        if prop=="depth":
+        if prop == "depth":
             return 24
-        if prop=="scaling":
+        if prop == "scaling":
             return None
-        if prop=="opacity":
+        if prop == "opacity":
             return None
-        if prop=="size-hints":
+        if prop == "size-hints":
             size = self.get_dimensions()
             return {
                 "maximum-size"  : size,
                 "minimum-size"  : size,
                 "base-size" : size,
-                }
-        if prop=="class-instance":
+            }
+        if prop == "class-instance":
             osn = do_get_generic_os_name()
-            if osn=="Linux":
+            if osn == "Linux":
                 try:
                     osn += "-"+get_linux_distribution()[0].replace(" ", "-")
                 except Exception:   # pragma: no cover
                     pass
             return f"xpra-{osn.lower()}", f"Xpra {osn.replace('-', ' ')}"
-        if prop=="icons":
+        if prop == "icons":
             return get_os_icons()
-        if prop=="content-type":
+        if prop == "content-type":
             return "desktop"
         raise ValueError(f"invalid property {prop!r}")
 

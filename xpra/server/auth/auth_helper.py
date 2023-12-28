@@ -15,10 +15,10 @@ from xpra.log import Logger
 log = Logger("auth")
 
 
-def get_auth_module(auth_str, cwd=os.getcwd(), **auth_options) -> tuple[str,Any,type,dict]:
+def get_auth_module(auth_str, cwd=os.getcwd(), **auth_options) -> tuple[str, Any, type, dict]:
     log("get_auth_module(%s, {..})", auth_str)
-    #separate options from the auth module name
-    #either with ":" or "," as separator
+    # separate options from the auth module name
+    # either with ":" or "," as separator
     scpos = auth_str.find(":")
     cpos = auth_str.find(",")
     if cpos<0 or scpos<cpos:
@@ -55,4 +55,3 @@ def get_auth_module(auth_str, cwd=os.getcwd(), **auth_options) -> tuple[str,Any,
     except Exception as e:
         log("cannot access authenticator class", exc_info=True)
         raise InitException(f"authentication setup error in {auth_module}: {e}") from None
-

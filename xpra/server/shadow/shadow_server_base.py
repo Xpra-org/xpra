@@ -91,7 +91,6 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             self.capture = None
             capture.clean()
 
-
     def guess_session_name(self, procs=None) -> None:
         log("guess_session_name(%s)", procs)
         self.session_name = get_wm_name()       # pylint: disable=assignment-from-none
@@ -140,7 +139,6 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             #adjust refresh delay to try to match:
             self.set_refresh_delay(max(10, 1000//rrate))
 
-
     def make_hello(self, _source) -> dict[str,Any]:
         return {"shadow" : True}
 
@@ -148,11 +146,10 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         info = {
             "sharing"       : self.sharing is not False,
             "refresh-delay" : self.refresh_delay,
-            }
+        }
         if self.pointer_last_position:
             info["pointer-last-position"] = self.pointer_last_position
         return info
-
 
     def get_window_position(self, _window) -> tuple[int,int]:
         #we export the whole desktop as a window:
@@ -165,7 +162,6 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             from xpra.platform.keyboard import Keyboard
             log.info("the keymap has been changed: %s", Keyboard().get_layout_spec()[0])
 
-
     def timeout_add(self, *args) -> int:
         #usually done via gobject
         raise NotImplementedError("subclasses should define this method!")
@@ -173,7 +169,6 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     def source_remove(self, *args) -> None:
         #usually done via gobject
         raise NotImplementedError("subclasses should define this method!")
-
 
     ############################################################################
     # notifications
@@ -229,7 +224,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     def notify_startup_complete(self) -> None:
         self.do_notify_startup("Xpra shadow server is ready", replaces_nid=NotificationID.STARTUP)
 
-    def do_notify_startup(self, title:str, body:str="", replaces_nid:int|NotificationID=0) -> None:
+    def do_notify_startup(self, title: str, body: str = "", replaces_nid: int | NotificationID = 0) -> None:
         # this is overridden here so that we can show the notification
         # directly on the screen we shadow
         notifylog("do_notify_startup%s", (title, body, replaces_nid))
@@ -241,7 +236,6 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             icon = parse_image_path(icon_filename)
             self.notifier.show_notify("", tray, NotificationID.STARTUP, "Xpra", replaces_nid, "",
                                       title, body, actions, hints, 10*1000, icon)
-
 
     ############################################################################
     # refresh
@@ -265,7 +259,6 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             for wid in self.mapped:
                 self.start_refresh(wid)
 
-
     def stop_refresh(self, wid:int) -> None:
         log("stop_refresh(%i) mapped=%s", wid, self.mapped)
         try:
@@ -288,7 +281,6 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def refresh(self) -> bool:
         raise NotImplementedError()
-
 
     ############################################################################
     # pointer polling
@@ -317,7 +309,6 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             self.poll_cursor()
         return True
 
-
     def poll_pointer_position(self) -> None:
         x, y = self.get_pointer_position()
         if self.pointer_last_position==(x, y):
@@ -344,11 +335,11 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             if um:
                 um(wid, x, y, rx, ry)
 
-
     def poll_cursor(self) -> None:
         prev = self.last_cursor_data
-        curr = self.do_get_cursor_data()        #pylint: disable=assignment-from-none
+        curr = self.do_get_cursor_data()        # pylint: disable=assignment-from-none
         self.last_cursor_data = curr
+
         def cmpv(lcd):
             if not lcd:
                 return None
@@ -386,7 +377,6 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         #return cached value we get from polling:
         return self.last_cursor_data
 
-
     ############################################################################
 
     def sanity_checks(self, _proto, c) -> bool:
@@ -411,12 +401,11 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         self.apply_refresh_rate(ss)
         return self.get_root_window_size()
 
-    def _process_desktop_size(self, proto, packet : PacketType) -> None:
-        #just record the screen size info in the source
+    def _process_desktop_size(self, proto, packet: PacketType) -> None:
+        # just record the screen size info in the source
         ss = self.get_server_source(proto)
         if ss and len(packet)>=4:
             ss.set_screen_sizes(packet[3])
-
 
     def set_keyboard_repeat(self, key_repeat) -> None:
         """ don't override the existing desktop """
@@ -447,7 +436,6 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             client_props = self.client_properties.get(wid, {}).get(ss.uuid, {})
             ss.new_window("new-window", wid, window, 0, 0, w, h, client_props)
 
-
     def _add_new_window(self, window) -> None:
         self._add_new_window_common(window)
         if window.get("override-redirect", False):
@@ -466,7 +454,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     def process_window_common(self, wid:int):
         return self._id_to_window.get(wid)
 
-    def _process_map_window(self, proto, packet : PacketType) -> None:
+    def _process_map_window(self, proto, packet: PacketType) -> None:
         wid, x, y, width, height = packet[1:6]
         window = self.process_window_common(wid)
         if not window:
@@ -478,19 +466,19 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             self._set_client_properties(proto, wid, window, packet[6])
         self.start_refresh(wid)
 
-    def _process_unmap_window(self, proto, packet : PacketType) -> None:
+    def _process_unmap_window(self, proto, packet: PacketType) -> None:
         wid = packet[1]
         window = self.process_window_common(wid)
         if not window:
             #already gone
             return
         self._window_mapped_at(proto, wid, window)
-        #TODO: deal with more than one window / more than one client
-        #and stop refresh if all the windows are unmapped everywhere
+        # TODO: deal with more than one window / more than one client
+        # and stop refresh if all the windows are unmapped everywhere
         if len(self._server_sources)<=1 and len(self._id_to_window)<=1:
             self.stop_refresh(wid)
 
-    def _process_configure_window(self, proto, packet : PacketType) -> None:
+    def _process_configure_window(self, proto, packet: PacketType) -> None:
         wid, x, y, w, h = packet[1:6]
         window = self.process_window_common(wid)
         if not window:
@@ -501,21 +489,19 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
 
-    def _process_close_window(self, proto, packet : PacketType) -> None:
+    def _process_close_window(self, proto, packet: PacketType) -> None:
         wid = packet[1]
         window = self.process_window_common(wid)
         if not window:
             #already gone
             return
-        #FIXME: with multiple windows / clients,
-        #we have to keep track of mappings!
+        # FIXME: with multiple windows / clients,
+        # we have to keep track of mappings!
         if len(self._window_to_id)==1:
             self.disconnect_client(proto, ConnectionMessage.DONE, "closed the only window")
 
-
     def do_make_screenshot_packet(self):
         raise NotImplementedError()
-
 
     def make_dbus_server(self):
         from xpra.server.shadow.shadow_dbus_server import Shadow_DBUS_Server

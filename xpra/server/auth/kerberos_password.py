@@ -45,7 +45,7 @@ class Authenticator(SysAuthenticatorBase):
             if WIN32:
                 import winkerberos as kerberos
             else:
-                import kerberos # @Reimport
+                import kerberos  # @Reimport
         except ImportError as e:
             log("check(..)", exc_info=True)
             log.warn("Warning: cannot use kerberos password authentication:")
@@ -86,7 +86,7 @@ def main(argv) -> int:
         caps = typedict({
             "challenge_response"    : response,
             "challenge_client_salt" : client_salt,
-            })
+        })
         a.authenticate(caps)
     return 0
 

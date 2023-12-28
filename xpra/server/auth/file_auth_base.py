@@ -35,8 +35,8 @@ class FileAuthenticatorBase(SysAuthenticator):
             password_file = os.path.join(exec_cwd, password_file)
         log("FileAuthenticatorBase filename=%s", password_file)
         super().__init__(**kwargs)
-        self.salt : bytes | bool | None = None
-        self.digest : str = ""
+        self.salt: bytes | bool | None = None
+        self.digest: str = ""
         self.challenge_sent = False
         self.password_filename = password_file
         self.password_filedata = None
@@ -46,7 +46,7 @@ class FileAuthenticatorBase(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return True
 
-    def get_challenge(self, digests) -> tuple[bytes,str] | None:
+    def get_challenge(self, digests) -> tuple[bytes, str] | None:
         if self.salt is not None:
             log.error("challenge already sent!")
             if self.salt is not False:
@@ -63,7 +63,7 @@ class FileAuthenticatorBase(SysAuthenticator):
             return ""
         return file_data
 
-    def parse_filedata(self, data:str): # pragma: no cover
+    def parse_filedata(self, data:str):  # pragma: no cover
         raise NotImplementedError()
 
     def load_password_file(self):

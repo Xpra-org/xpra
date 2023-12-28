@@ -74,7 +74,7 @@ class RFBServerProtocol(RFBProtocol):
             #log("padded password=%s", password)
             caps = typedict({
                 "challenge_response" : hex_response,
-                })
+            })
             if self._authenticator.authenticate(caps):
                 authlog("challenge authentication succeeded")
                 self.send(struct.pack(b"!I", 0))
@@ -97,17 +97,17 @@ class RFBServerProtocol(RFBProtocol):
         self.share  = packet != b"\0"
         authlog("parse_security_result: sharing=%s, sending ClientInit with session-name=%s",
                 self.share, self.session_name)
-        #send ServerInit
+        # send ServerInit
         self._packet_parser = self._parse_rfb
         try:
             sn = self.session_name.encode("utf8")
         except UnicodeEncodeError:
             sn = strtobytes(self.session_name)
         w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift = self._get_rfb_pixelformat()
-        packet =  struct.pack(CLIENT_INIT,
-                              w, h, bpp, depth, bigendian, truecolor,
-                              rmax, gmax, bmax, rshift, bshift, gshift,
-                              0, 0, 0, len(sn))+sn
+        packet = struct.pack(CLIENT_INIT,
+                             w, h, bpp, depth, bigendian, truecolor,
+                             rmax, gmax, bmax, rshift, bshift, gshift,
+                             0, 0, 0, len(sn))+sn
         self.send(packet)
         self._process_packet_cb(self, [b"authenticated"])
         return 1

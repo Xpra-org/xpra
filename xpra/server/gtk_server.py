@@ -56,17 +56,19 @@ class GTKServerBase(ServerBase):
         super().__init__()
 
     def watch_keymap_changes(self) -> None:
-        ### Set up keymap change notification:
+        # Set up keymap change notification:
         display = Gdk.Display.get_default()
         if not display:
             log.warn("Warning: no default Gdk Display!")
             return
         keymap = Gdk.Keymap.get_for_display(display)
-        #this event can fire many times in succession
-        #throttle how many times we call self._keys_changed()
+        # this event can fire many times in succession
+        # throttle how many times we call self._keys_changed()
+
         def keys_changed(*_args):
             if self.keymap_changing_timer:
                 return
+
             def do_keys_changed():
                 self._keys_changed()
                 self.keymap_changing_timer = 0
@@ -122,7 +124,6 @@ class GTKServerBase(ServerBase):
                 log("close_gtk_display() closing %s", d)
                 d.close()
 
-
     def do_run(self) -> None:
         if UI_THREAD_WATCHER:
             from xpra.platform.ui_thread_watcher import get_UI_watcher  # pylint: disable=import-outside-toplevel
@@ -131,15 +132,14 @@ class GTKServerBase(ServerBase):
         if features.windows:
             display = Gdk.Display.get_default()
             if display:
-                #n = display.get_n_screens()
-                #assert n==1, "unsupported number of screens: %i" % n
+                # n = display.get_n_screens()
+                # assert n==1, "unsupported number of screens: %i" % n
                 screen = display.get_default_screen()
                 screen.connect("size-changed", self._screen_size_changed)
                 screen.connect("monitors-changed", self._monitors_changed)
         log("do_run() calling %s", Gtk.main)
         Gtk.main()
         log("do_run() end of gtk.main()")
-
 
     def make_hello(self, source) -> dict[str,Any]:
         capabilities = super().make_hello(source)
@@ -160,19 +160,20 @@ class GTKServerBase(ServerBase):
         info = super().get_ui_info(proto, *args)
         display = Gdk.Display.get_default()
         if display:
-            info.setdefault("server", {}).update({
-                "display"             : display.get_name(),
-                "root_window_size"    : self.get_root_window_size(),
-                })
+            info.setdefault("server", {}).update(
+                {
+                    "display": display.get_name(),
+                    "root_window_size": self.get_root_window_size(),
+                }
+            )
             info.setdefault("cursor", {}).update(self.get_ui_cursor_info())
         return info
 
-
     def suspend_cursor(self, proto) -> None:
-        #this is called by shadow and desktop servers
-        #when we're receiving pointer events but the pointer
-        #is no longer over the active window area,
-        #so we have to tell the client to switch back to the default cursor
+        # this is called by shadow and desktop servers
+        # when we're receiving pointer events but the pointer
+        # is no longer over the active window area,
+        # so we have to tell the client to switch back to the default cursor
         if self.cursor_suspended:
             return
         self.cursor_suspended = True
@@ -190,22 +191,20 @@ class GTKServerBase(ServerBase):
         if ss:
             ss.send_cursor()
 
-
     def get_cursor_sizes(self) -> tuple[int,int]:
         display = Gdk.Display.get_default()
         if not display:
             return 0, 0
         return int(display.get_default_cursor_size()), display.get_maximal_cursor_size()
 
-
     def send_initial_cursors(self, ss, _sharing=False) -> None:
-        #cursors: get sizes and send:
+        # cursors: get sizes and send:
         cursorlog("send_initial_cursors() cursor_sizes=%s", self.cursor_sizes)
         ss.send_cursor()
 
     def get_ui_cursor_info(self) -> dict[str,Any]:
-        #(from UI thread)
-        #now cursor size info:
+        # (from UI thread)
+        # now cursor size info:
         display = Gdk.Display.get_default()
         if not display:
             return {}
@@ -213,9 +212,9 @@ class GTKServerBase(ServerBase):
             pos = display.get_default_screen().get_root_window().get_pointer()
         cinfo = {"position" : (pos.x, pos.y)}
         for prop, size in {
-            "default" : display.get_default_cursor_size(),
-            "max"     : tuple(display.get_maximal_cursor_size()),
-            }.items():
+            "default": display.get_default_cursor_size(),
+            "max": tuple(display.get_maximal_cursor_size()),
+        }.items():
             if size is None:
                 continue
             cinfo[f"{prop}_size"] = size
@@ -250,10 +249,10 @@ class GTKServerBase(ServerBase):
             if not screen_sizes:
                 continue
             for display in screen_sizes:
-                #avoid error with old/broken clients:
+                # avoid error with old/broken clients:
                 if not display or not isinstance(display, (list, tuple)):
                     continue
-                #display: [':0.0', 2560, 1600, 677, 423, [['DFP2', 0, 0, 2560, 1600, 646, 406]], 0, 0, 2560, 1574]
+                # display: [':0.0', 2560, 1600, 677, 423, [['DFP2', 0, 0, 2560, 1600, 646, 406]], 0, 0, 2560, 1574]
                 if len(display)>=10:
                     work_x, work_y, work_w, work_h = display[6:10]
                     display_workarea = Gdk.Rectangle()
@@ -266,7 +265,7 @@ class GTKServerBase(ServerBase):
                     if not success:
                         log.warn("Warning: failed to calculate workarea")
                         log.warn(" as intersection of %s and %s", (maxw, maxh), (work_x, work_y, work_w, work_h))
-        #sanity checks:
+        # sanity checks:
         screenlog("calculate_workarea(%s, %s) workarea=%s", maxw, maxh, workarea)
         if workarea.width==0 or workarea.height==0 or workarea.width>=32768-8192 or workarea.height>=32768-8192:
             screenlog.warn("Warning: failed to calculate a common workarea")
@@ -279,11 +278,10 @@ class GTKServerBase(ServerBase):
     def set_workarea(self, workarea):
         """ overridden by seamless servers """
 
-    def set_desktop_geometry(self, width:int, height:int) -> None:
+    def set_desktop_geometry(self, width: int, height: int) -> None:
         """ overridden by X11 seamless and desktop servers """
 
-
-    def _move_pointer(self, device_id:int, wid:int, pos, props=None) -> None:
+    def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
         x, y = pos
         display = Gdk.Display.get_default()
         display.warp_pointer(display.get_default_screen(), x, y)
@@ -291,21 +289,19 @@ class GTKServerBase(ServerBase):
     def do_process_button_action(self, *args):
         raise NotImplementedError
 
-
-    def _process_map_window(self, proto, packet : PacketType) -> None:
+    def _process_map_window(self, proto, packet: PacketType) -> None:
         log.info("_process_map_window(%s, %s)", proto, packet)
 
-    def _process_unmap_window(self, proto, packet : PacketType) -> None:
+    def _process_unmap_window(self, proto, packet: PacketType) -> None:
         log.info("_process_unmap_window(%s, %s)", proto, packet)
 
-    def _process_close_window(self, proto, packet : PacketType) -> None:
+    def _process_close_window(self, proto, packet: PacketType) -> None:
         log.info("_process_close_window(%s, %s)", proto, packet)
 
-    def _process_configure_window(self, proto, packet : PacketType) -> None:
+    def _process_configure_window(self, proto, packet: PacketType) -> None:
         log.info("_process_configure_window(%s, %s)", proto, packet)
 
-
-    def get_notification_icon(self, icon_string:str) -> tuple[str,int,int,bytes] | None:
+    def get_notification_icon(self, icon_string: str) -> tuple[str, int, int, bytes] | None:
         try:
             from xpra.notifications.common import get_notification_icon
         except ImportError:

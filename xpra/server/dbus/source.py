@@ -20,17 +20,25 @@ BUS_NAME = "org.xpra.Server"
 INTERFACE = "org.xpra.Client"
 PATH = "/org/xpra/Client"
 
+
 def n(*args):
     return dbus_to_native(*args)
+
+
 def ni(*args):
     return int(n(*args))
+
+
 def nb(*args):
     return bool(n(*args))
+
+
 def ns(*args):
     return str(n(*args))
 
 
 sequence = AtomicInteger()
+
 
 class DBUS_Source(dbus.service.Object):
     SUPPORTS_MULTIPLE_OBJECT_PATHS = True
@@ -45,14 +53,14 @@ class DBUS_Source(dbus.service.Object):
         bus_name = dbus.service.BusName(name, session_bus)
         super().__init__(bus_name, self.path)
         self.log("(%s)", source)
-        self._properties = {"bell"              : ("send_bell",             ni),
-                            "cursors"           : ("send_cursors",          ni),
-                            "notifications"     : ("send_notifications",    ni),
-                            }
+        self._properties = {
+            "bell": ("send_bell", ni),
+            "cursors": ("send_cursors", ni),
+            "notifications": ("send_notifications", ni),
+        }
 
     def __str__(self):
         return f"DBUS_Source({BUS_NAME}:{self.path})"
-
 
     def cleanup(self):
         try:
@@ -62,10 +70,8 @@ class DBUS_Source(dbus.service.Object):
             log.error("Error removing the source's DBUS server:")
             log.estr(e)
 
-
     def log(self, fmt, *args):
         log("%s"+fmt, INTERFACE, *args)
-
 
     @dbus.service.method(PROPERTIES_IFACE, in_signature='s', out_signature='v')
     def Get(self, property_name):
@@ -100,7 +106,6 @@ class DBUS_Source(dbus.service.Object):
     def PropertiesChanged(self, interface_name, changed_properties, invalidated_properties):
         self.log(f"PropertiesChanged({interface_name}, {n(changed_properties)}, {n(invalidated_properties)})")
 
-
     @dbus.service.method(INTERFACE, in_signature='b')
     def ShowDesktop(self, show):
         show = nb(show)
@@ -129,12 +134,10 @@ class DBUS_Source(dbus.service.Object):
         self.log(".GetAllWindowFilters()=%s", v)
         return v
 
-
     @dbus.service.method(INTERFACE, in_signature='')
     def SetDefaultKeymap(self):
         self.log(".SetDefaultKeymap()")
         self.source.set_default_keymap()
-
 
     @dbus.service.method(INTERFACE, in_signature='')
     def Suspend(self):
@@ -145,7 +148,6 @@ class DBUS_Source(dbus.service.Object):
     def Resume(self):
         self.log(".Resume()")
         self.source.no_idle()
-
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def StartSpeaker(self, codec):
@@ -158,20 +160,17 @@ class DBUS_Source(dbus.service.Object):
         self.log(".StopSpeaker()")
         self.source.stop_sending_audio()
 
-
     @dbus.service.method(INTERFACE, in_signature='i')
     def SetAVSyncDelay(self, delay):
         d = ni(delay)
         self.log(".SetAVSyncDelay(%i)", d)
         self.source.set_av_sync_delay(d)
 
-
     @dbus.service.method(INTERFACE, in_signature='as')
     def SendClientCommand(self, args):
         cmd = n(args)
         self.log(".SendClientCommand(%s)", cmd)
         self.source.send_client_command(*cmd)
-
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def Detach(self, reason):

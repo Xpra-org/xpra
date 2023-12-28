@@ -32,13 +32,13 @@ def start_dbus(dbus_launch) -> tuple[int,dict]:
             "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE", "XDG_RUNTIME_DIR",
             "SHELL", "LANG", "USER", "LOGNAME", "HOME",
             "DISPLAY", "XAUTHORITY", "CKCON_X11_DISPLAY",
-            )}
+        )}
         cmd = shlex.split(dbus_launch)
         log("start_dbus(%s) env=%s", dbus_launch, env)
         proc = Popen(cmd, stdin=PIPE, stdout=PIPE, env=env, start_new_session=True, universal_newlines=True)
         out = proc.communicate()[0]
         assert proc.poll()==0, "exit code is %s" % proc.poll()
-        #parse and add to global env:
+        # parse and add to global env:
         dbus_env : dict[str,str] = {}
         log("out(%s)=%r", cmd, out)
         for l in out.splitlines():

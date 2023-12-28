@@ -182,6 +182,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
     def create_control_socket(self) -> bool:
         assert self.socket_dir
+
         def stop(msg):
             self.stop(None, f"cannot create the proxy control socket: {msg}")
         username = get_username_for_uid(self.uid)
@@ -283,15 +284,16 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
     def do_process_control_packet(self, proto, packet) -> None:
         log("process_control_packet(%s, %s)", proto, packet)
         packet_type = bytestostr(packet[0])
-        if packet_type==CONNECTION_LOST:
+        if packet_type == CONNECTION_LOST:
             log.info("Connection lost")
             if proto in self.potential_protocols:
                 self.potential_protocols.remove(proto)
             return
-        if packet_type=="hello":
+        if packet_type == "hello":
             caps = typedict(packet[1])
             if caps.boolget("challenge"):
-                self.send_disconnect(proto, ConnectionMessage.AUTHENTICATION_ERROR, "this socket does not use authentication")
+                self.send_disconnect(proto, ConnectionMessage.AUTHENTICATION_ERROR,
+                                     "this socket does not use authentication")
                 return
             generic_request = caps.strget("request")
 
@@ -313,7 +315,8 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 else:
                     info = {"error": "`info` requests are not enabled for this connection"}
                 proto.send_now(("hello", info))
-                self.timeout_add(5*1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT, "info sent")
+                self.timeout_add(5*1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
+                                 "info sent")
                 return
             if is_req("stop"):
                 if is_req_allowed("stop"):
@@ -326,7 +329,8 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 if caps.boolget("full-version-request"):
                     version = full_version_str()
                 proto.send_now(("hello", {"version" : version}))
-                self.timeout_add(5*1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT, "version sent")
+                self.timeout_add(5*1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
+                                 "version sent")
                 return
             log.warn("Warning: invalid hello packet,")
             log.warn(" not a supported control channel request")

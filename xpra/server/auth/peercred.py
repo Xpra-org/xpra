@@ -102,7 +102,6 @@ class Authenticator(SysAuthenticator):
     def get_gid(self) -> int:
         return self.gid
 
-
     def requires_challenge(self) -> bool:
         return False
 

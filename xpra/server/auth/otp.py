@@ -15,6 +15,7 @@ from xpra.log import enable_color
 SHOW = envbool("XPRA_OTP_SHOW", False)
 SHOW_URI = envbool("XPRA_OTP_SHOW_URI", False)
 
+
 def b32(s):
     try:
         assert base64.b32decode(s, casefold=True)
@@ -25,7 +26,7 @@ def b32(s):
 
 class Authenticator(SysAuthenticator):
 
-    #DEFAULT_PROMPT = "OTP for '{username}'"
+    # DEFAULT_PROMPT = "OTP for '{username}'"
     DEFAULT_PROMPT = "OTP"
 
     def __init__(self, **kwargs):
@@ -49,7 +50,6 @@ class Authenticator(SysAuthenticator):
 
     def get_gid(self) -> int:
         return self.gid
-
 
     def requires_challenge(self) -> bool:
         return True
@@ -110,6 +110,7 @@ def main(argv) -> int:
     else:
         show_qr(totp_uri)
     return 0
+
 
 if __name__ == "__main__":
     import sys

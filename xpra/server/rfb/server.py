@@ -2,7 +2,7 @@
 # Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-#pylint: disable-msg=E1101
+# pylint: disable-msg=E1101
 
 from xpra.util.str_fn import repr_ellipsized, bytestostr
 from xpra.util.system import is_X11
@@ -19,10 +19,11 @@ mouselog = Logger("rfb", "mouse")
 keylog = Logger("rfb", "keyboard")
 
 
-"""
-    Adds RFB packet handler to a server.
-"""
 class RFBServer:
+    """
+        Adds RFB packet handler to a server.
+    """
+
     def __init__(self):
         self._window_to_id = {}
         self._rfb_upgrade = 0
@@ -46,7 +47,6 @@ class RFBServer:
             self._rfb_upgrade = parse_number(int, "rfb-upgrade", opts.rfb_upgrade, 0)
         log("init(..) rfb-upgrade=%i", self._rfb_upgrade)
 
-
     def _get_rfb_desktop_model(self):
         models = tuple(self._window_to_id.keys())
         if not models:
@@ -64,7 +64,6 @@ class RFBServer:
             return None
         return ids[0]
 
-
     def handle_rfb_connection(self, conn, data=b""):
         model = self._get_rfb_desktop_model()
         log("handle_rfb_connection(%s) model=%s", conn, model)
@@ -72,6 +71,7 @@ class RFBServer:
             log("no desktop model, closing RFB connection")
             conn.close()
             return
+
         def rfb_protocol_class(conn):
             auths = self.make_authenticators("rfb", "rfb", conn)
             assert len(auths)<=1, "rfb does not support multiple authentication modules"
@@ -80,9 +80,9 @@ class RFBServer:
                 auth = auths[0]
             log("creating RFB protocol with authentication=%s", auth)
             return RFBServerProtocol(self, conn, auth,
-                               self.process_rfb_packet, self.get_rfb_pixelformat,
-                               self.session_name or "Xpra Server",
-                               data)
+                                     self.process_rfb_packet, self.get_rfb_pixelformat,
+                                     self.session_name or "Xpra Server",
+                                     data)
         p = self.do_make_protocol("rfb", conn, {}, rfb_protocol_class)
         log("handle_rfb_connection(%s) protocol=%s", conn, p)
         p.send_protocol_handshake()
@@ -96,11 +96,10 @@ class RFBServer:
             return
         fn(proto, packet)
 
-
     def get_rfb_pixelformat(self):
         model = self._get_rfb_desktop_model()
         w, h = model.get_dimensions()
-        #w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift
+        # w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift
         return w, h, 32, 24, False, True, 255, 255, 255, 16, 8, 0
 
     def _process_rfb_invalid(self, proto, packet):
@@ -115,7 +114,7 @@ class RFBServer:
             proto.close()
             return
         self.accept_protocol(proto)
-        #use blocking sockets from now on:
+        # use blocking sockets from now on:
         set_socket_timeout(proto._conn, None)
         accepted, share_count, disconnected = self.handle_sharing(proto, share=proto.share)
         log("RFB handle sharing: accepted=%s, share count=%s, disconnected=%s", accepted, share_count, disconnected)
@@ -123,7 +122,7 @@ class RFBServer:
             return
         source = RFBSource(proto, proto.share)
         self._server_sources[proto] = source
-        #continue in the UI thread:
+        # continue in the UI thread:
         self.idle_add(self._accept_rfb_source, source)
 
     def _accept_rfb_source(self, source):
@@ -133,8 +132,8 @@ class RFBServer:
         model = self._get_rfb_desktop_model()
         w, h = model.get_dimensions()
         source.damage(self._window_to_id[model], model, 0, 0, w, h)
-        #ugly weak dependency,
-        #shadow servers need to be told to start the refresh timer:
+        # ugly weak dependency,
+        # shadow servers need to be told to start the refresh timer:
         start_refresh = getattr(self, "start_refresh", None)
         if start_refresh:
             for wid in tuple(self._window_to_id.values()):
@@ -145,6 +144,7 @@ class RFBServer:
             return
         buttons, x, y = packet[1:4]
         wid = self._get_rfb_desktop_wid()
+
         def process_pointer_event():
             mouselog("RFB PointerEvent(%#x, %s, %s) desktop wid=%s", buttons, x, y, wid)
             device_id = -1

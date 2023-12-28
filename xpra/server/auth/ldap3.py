@@ -12,7 +12,7 @@ from xpra.util.types import typedict
 from xpra.util.str_fn import obsc
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
 from xpra.log import enable_debug_for, is_debug_enabled
-assert log #tests will disable logging from here
+assert log  # tests will disable logging from here
 
 LDAP_CACERTFILE = os.environ.get("XPRA_LDAP_CACERTFILE")
 
@@ -72,7 +72,7 @@ class Authenticator(SysAuthenticatorBase):
                 "SIMPLE"    : SIMPLE,
                 "SASL"      : SASL,
                 "NTLM"      : NTLM,
-                }
+            }
             authentication = MECHANISM[self.authentication]
             tls = None
             if self.tls:
@@ -134,7 +134,7 @@ def main(argv) -> int:
         caps = typedict({
             "challenge_response"    : response,
             "challenge_client_salt" : client_salt,
-            })
+        })
         r = a.authenticate(caps)
         print("success: %s" % r)
         return int(not r)

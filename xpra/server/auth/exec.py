@@ -19,14 +19,15 @@ from xpra.platform.features import EXECUTABLE_EXTENSION
 
 TIMEOUT = envint("XPRA_EXEC_AUTH_TIMEOUT", 600)
 
+
 def get_default_auth_dialog() -> str:
     if os.name == "posix":
         auth_dialog = "/usr/libexec/xpra/auth_dialog"
     else:
-        from xpra.platform.paths import get_app_dir  #pylint: disable=import-outside-toplevel
+        from xpra.platform.paths import get_app_dir   # pylint: disable=import-outside-toplevel
         auth_dialog = os.path.join(get_app_dir(), "auth_dialog")
     if EXECUTABLE_EXTENSION:
-        #ie: add ".exe" on MS Windows
+        # ie: add ".exe" on MS Windows
         auth_dialog += "."+EXECUTABLE_EXTENSION
     log(f"auth_dialog={auth_dialog!r}")
     if not os.path.exists(auth_dialog) and first_time("auth-dialog-not-found"):
@@ -76,7 +77,7 @@ class Authenticator(SysAuthenticator):
             "timeout"       : self.timeout,
             "username"      : alnum(self.username),
             "prompt"        : std(self.prompt),
-            }
+        }
         if self.require_challenge:
             subs["password"] = bytestostr(self.unxor_response(caps))
         cmd = tuple(shellsub(v, subs) for v in self.command)

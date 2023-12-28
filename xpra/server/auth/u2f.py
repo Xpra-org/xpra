@@ -6,10 +6,10 @@
 
 import json
 import glob
-import struct
 import os.path
 import binascii
 import base64
+from struct import pack, unpack
 from hashlib import sha256
 
 from xpra.util.types import typedict
@@ -37,15 +37,15 @@ class Authenticator(SysAuthenticator):
         if key_hexstring:
             log("u2f_auth: public key from configuration="+key_hexstring)
             key_strs["command-option"] = key_hexstring
-        #try to load public keys from the user conf dir(s):
+        # try to load public keys from the user conf dir(s):
         if getuid()==0 and POSIX:
-            #root: use the uid of the username specified:
+            # root: use the uid of the username specified:
             uid = self.get_uid()
         else:
             uid = getuid()
         conf_dirs = get_user_conf_dirs(uid)
         log("u2f: will try to load public keys from "+csv(conf_dirs))
-        #load public keys:
+        # load public keys:
         for d in conf_dirs:
             ed = osexpand(d)
             if os.path.exists(ed) and os.path.isdir(ed):
@@ -57,8 +57,8 @@ class Authenticator(SysAuthenticator):
                         key_hexstring = key_hexstring.rstrip(b" \n\r")
                         key_strs[f] = key_hexstring
                         log(f"u2f_auth: loaded public key from file {f!r}: {key_hexstring}")
-        #parse public key data:
-        #pylint: disable=import-outside-toplevel
+        # parse public key data:
+        # pylint: disable=import-outside-toplevel
         from cryptography.hazmat.primitives.serialization import load_der_public_key
         from cryptography.hazmat.backends import default_backend
         for origin, key_hexstring in key_strs.items():
@@ -100,7 +100,7 @@ class Authenticator(SysAuthenticator):
         challenge_response = caps.strget("challenge_response")
         client_salt = caps.strget("challenge_client_salt")
         log(f"authenticate_check: response={challenge_response}, client-salt={client_salt}")
-        user_presence, counter = struct.unpack(b">BI", strtobytes(challenge_response)[:5])
+        user_presence, counter = unpack(b">BI", strtobytes(challenge_response)[:5])
         sig = strtobytes(challenge_response[5:])
         log(f"u2f user_presence={user_presence}, counter={counter}, signature={hexstr(sig)}")
         app_param = sha256(self.app_id.encode('utf8')).digest()
@@ -111,12 +111,9 @@ class Authenticator(SysAuthenticator):
             "challenge" : server_challenge_b64,
             "origin"    : client_salt,
             "typ"       : "navigator.id.getAssertion",
-            }
+        }
         client_param = sha256(json.dumps(client_data, sort_keys=True).encode('utf8')).digest()
-        param = app_param + \
-                struct.pack(b'>B', user_presence) + \
-                struct.pack(b'>I', counter) + \
-                client_param
+        param = app_param + pack(b'>B', user_presence) + pack(b'>I', counter) + client_param
         #check all the public keys:
         #pylint: disable=import-outside-toplevel
         from cryptography.hazmat.primitives import hashes

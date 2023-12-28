@@ -11,30 +11,32 @@ from xpra.server.auth.sys_auth_base import log
 from xpra.server.auth.sqlauthbase import SQLAuthenticator, DatabaseUtilBase, run_dbutil
 
 
-def url_path_to_dict(path:str) -> dict[str,str]:
-    pattern = (r'^'
-               r'((?P<schema>.+?)://)?'
-               r'((?P<user>.+?)(:(?P<password>.*?))?@)?'
-               r'(?P<host>.*?)'
-               r'(:(?P<port>\d+?))?'
-               r'(?P<path>/.*?)?'
-               r'(?P<query>[?].*?)?'
-               r'$'
-               )
+def url_path_to_dict(path: str) -> dict[str, str]:
+    pattern = (
+        r'^'
+        r'((?P<schema>.+?)://)?'
+        r'((?P<user>.+?)(:(?P<password>.*?))?@)?'
+        r'(?P<host>.*?)'
+        r'(:(?P<port>\d+?))?'
+        r'(?P<path>/.*?)?'
+        r'(?P<query>[?].*?)?'
+        r'$'
+    )
     regex = re.compile(pattern)
     m = regex.match(path)
     return m.groupdict() if m is not None else None
 
+
 def db_from_uri(uri:str):
     d = url_path_to_dict(uri)
     log("settings for uri=%s : %s", uri, d)
-    import mysql.connector as mysql # pylint: disable=import-outside-toplevel
+    import mysql.connector as mysql   # pylint: disable=import-outside-toplevel
     db = mysql.connect(
-        host = d.get("host", "localhost"),
-        #port = int(d.get("port", 3306)),
-        user = d.get("user", ""),
-        passwd = d.get("password", ""),
-        database = (d.get("path") or "").lstrip("/") or "xpra",
+        host=d.get("host", "localhost"),
+        # port = int(d.get("port", 3306)),
+        user=d.get("user", ""),
+        passwd=d.get("password", ""),
+        database=(d.get("path") or "").lstrip("/") or "xpra",
     )
     return db
 
@@ -85,6 +87,7 @@ class MySQLDatabaseUtil(DatabaseUtilBase):
 
 def main(argv) -> int:
     return run_dbutil(MySQLDatabaseUtil, "databaseURI", argv)
+
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

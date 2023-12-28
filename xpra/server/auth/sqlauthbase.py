@@ -16,8 +16,7 @@ class SQLAuthenticator(SysAuthenticator):
     def __init__(self, **kwargs):
         self.password_query : str = kwargs.pop("password_query", "SELECT password FROM users WHERE username=(%s)")
         self.sessions_query : str = kwargs.pop("sessions_query",
-                                         "SELECT uid, gid, displays, env_options, session_options "+
-                                         "FROM users WHERE username=(%s) AND password=(%s)")
+                                               "SELECT uid, gid, displays, env_options, session_options FROM users WHERE username=(%s) AND password=(%s)")  # noqa: E501
         super().__init__(**kwargs)
         self.authenticate_check = self.authenticate_hmac
 
@@ -83,14 +82,14 @@ class DatabaseUtilBase:
 
     def add_user(self, username:str, password:str, uid:int=getuid(), gid:int=getgid(),
                  displays="", env_options="", session_options="") -> None:
-        sql = "INSERT INTO users(username, password, uid, gid, displays, env_options, session_options) "+\
+        sql = "INSERT INTO users(username, password, uid, gid, displays, env_options, session_options) "\
               "VALUES(%s, %s, %s, %s, %s, %s, %s)" % ((self.param,)*7)
         self.exec_database_sql_script(None, sql,
-                                        (username, password, uid, gid, displays, env_options, session_options))
+                                      (username, password, uid, gid, displays, env_options, session_options))
 
     def remove_user(self, username:str, password:str="") -> None:
         sql = "DELETE FROM users WHERE username=%s" % self.param
-        sqlargs : tuple[str,...] = (username, )
+        sqlargs: tuple[str,...] = (username, )
         if password:
             sql += " AND password=%s" % self.param
             sqlargs = (username, password)
@@ -98,6 +97,7 @@ class DatabaseUtilBase:
 
     def list_users(self) -> None:
         fields = ("username", "password", "uid", "gid", "displays", "env_options", "session_options")
+
         def fmt(values, sizes):
             s = ""
             for i, field in enumerate(values):
@@ -105,6 +105,7 @@ class DatabaseUtilBase:
                     s += "|"
                 s += ("%s" % field).rjust(sizes[i])+"|"
             return s
+
         def cursor_callback(cursor):
             rows = cursor.fetchall()
             if not rows:
@@ -143,7 +144,7 @@ class DatabaseUtilBase:
         raise NotImplementedError()
 
 
-def run_dbutil(DatabaseUtilClass=DatabaseUtilBase, conn_str="databaseURI", argv=()) -> int:
+def run_dbutil(database_util_class=DatabaseUtilBase, conn_str="databaseURI", argv=()) -> int:
     def usage(msg="invalid number of arguments"):
         print(msg)
         print("usage:")
@@ -153,21 +154,21 @@ def run_dbutil(DatabaseUtilClass=DatabaseUtilBase, conn_str="databaseURI", argv=
         print(" %s %s remove username [password]" % (argv[0], conn_str))
         print(" %s %s authenticate username password" % (argv[0], conn_str))
         return 1
-    #pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("SQL Auth", "SQL Auth"):
         l = len(argv)
-        if l<3:
+        if l < 3:
             return usage()
         uri = argv[1]
-        dbutil = DatabaseUtilClass(uri)
+        dbutil = database_util_class(uri)
         cmd = argv[2]
         if cmd=="create":
-            if l!=3:
+            if l != 3:
                 return usage()
             dbutil.create()
         elif cmd=="add":
-            if l<5 or l>10:
+            if l < 5 or l > 10:
                 return usage()
             dbutil.add_user(*argv[3:])
         elif cmd=="remove":
@@ -175,11 +176,11 @@ def run_dbutil(DatabaseUtilClass=DatabaseUtilBase, conn_str="databaseURI", argv=
                 return usage()
             dbutil.remove_user(*argv[3:])
         elif cmd=="list":
-            if l!=3:
+            if l != 3:
                 return usage()
             dbutil.list_users()
         elif cmd=="authenticate":
-            if l!=5:
+            if l != 5:
                 return usage()
             dbutil.authenticate(*argv[3:])
         else:

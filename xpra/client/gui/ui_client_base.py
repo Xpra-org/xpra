@@ -20,7 +20,7 @@ from xpra.net.common import PacketType
 from xpra.util.child_reaper import reaper_cleanup
 from xpra.os_util import POSIX, WIN32, OSX, gi_import
 from xpra.util.system import is_Wayland, platform_name
-from xpra.util.types import typedict, merge_dicts
+from xpra.util.types import typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.util.str_fn import std, csv, ellipsizer, repr_ellipsized, bytestostr
 from xpra.util.env import envint, envbool

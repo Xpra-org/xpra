@@ -34,15 +34,12 @@ class DBUS_Server_Base(dbus.service.Object):
             log.error("Error removing the DBUS server:")
             log.estr(e)
 
-
     def log(self, fmt, *args):
         log("%s"+fmt, INTERFACE, *args)
-
 
     @dbus.service.signal(INTERFACE, signature='sas')
     def Event(self, event, args):
         self.log(".Event(%s, %s)", event, args)
-
 
     @dbus.service.method(PROPERTIES_IFACE, in_signature='ss', out_signature='v')
     def Get(self, interface_name, property_name):

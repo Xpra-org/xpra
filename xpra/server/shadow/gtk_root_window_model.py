@@ -39,6 +39,7 @@ def get_rgb_rawdata(window, x:int, y:int, width:int, height:int) -> tuple[int,in
     rowstride = pixbuf.get_rowstride()
     return x, y, width, height, raw_data, "RGB", 24, rowstride, 3
 
+
 def take_png_screenshot(window) -> ScreenshotData | None:
     log("grabbing screenshot")
     w,h = window.get_geometry()[2:4]
@@ -52,6 +53,7 @@ def take_png_screenshot(window) -> ScreenshotData | None:
 
 class GTKImageCapture:
     __slots__ = "window",
+
     def __init__(self, window):
         self.window = window
 
@@ -84,6 +86,7 @@ def main(filename) -> int:
     with open(filename, "wb") as f:
         f.write(data[-1])
     return 0
+
 
 if __name__ == "__main__":
     import sys

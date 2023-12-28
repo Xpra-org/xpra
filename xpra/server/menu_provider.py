@@ -8,16 +8,14 @@ from threading import Lock
 from typing import Any
 from collections.abc import Callable
 
-from gi.repository import GLib  # @UnresolvedImport
-
 from xpra.common import DEFAULT_XDG_DATA_DIRS
-from xpra.os_util import (
-    OSX, POSIX, WIN32,
-)
+from xpra.os_util import OSX, POSIX, WIN32, gi_import
 from xpra.util.env import envint, envbool, osexpand
 from xpra.util.thread import start_thread
 from xpra.server.background_worker import add_work_item
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("menu")
 
@@ -39,6 +37,8 @@ def noicondata(menu_data:dict) -> dict:
 
 
 singleton = None
+
+
 def get_menu_provider():
     global singleton
     if singleton is None:
@@ -50,7 +50,7 @@ class MenuProvider:
     __slots__ = (
         "watch_manager", "watch_notifier", "xdg_menu_reload_timer",
         "on_reload", "menu_data", "desktop_sessions", "load_lock",
-        )
+    )
 
     def __init__(self):
         self.watch_manager = None
@@ -138,7 +138,6 @@ class MenuProvider:
                 wm.close()
             except OSError:
                 log("error closing watch manager %s", wm, exc_info=True)
-
 
     def load_menu_data(self, force_reload:bool=False) -> None:
         # start loading in a thread,

@@ -17,7 +17,7 @@ from xpra.log import (
     Logger,
     add_debug_category, remove_debug_category,
     disable_debug_for, enable_debug_for,
-    )
+)
 log = Logger("dbus", "server")
 
 
@@ -26,10 +26,16 @@ Rectangle = namedtuple("Rectangle", "x,y,width,height")
 
 def n(*args):
     return dbus_to_native(*args)
+
+
 def ni(*args):
     return int(n(*args))
+
+
 def ns(*args):
     return str(n(*args))
+
+
 def nb(*args):
     return bool(n(*args))
 
@@ -43,11 +49,10 @@ class DBUS_Server(DBUS_Server_Base):
             name += extra.replace(".", "_").replace(":", "_")
         super().__init__(bus, server, name)
         self._properties |= {
-            "idle-timeout"          : ("idle_timeout",          ni),
-            "server-idle-timeout"   : ("server_idle_timeout",   ni),
-            "name"                  : ("session_name",          ns),
+            "idle-timeout": ("idle_timeout", ni),
+            "server-idle-timeout": ("server_idle_timeout", ni),
+            "name": ("session_name", ns),
         }
-
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def Focus(self, wid):
@@ -70,7 +75,6 @@ class DBUS_Server(DBUS_Server_Base):
         self.log(".Ungrab()")
         self.server.control_command_resume()
 
-
     @dbus.service.method(INTERFACE, in_signature='s')
     def Start(self, command):
         c = ns(command)
@@ -88,7 +92,6 @@ class DBUS_Server(DBUS_Server_Base):
         f, s = ns(feature), ns(state)
         self.log(".ToggleFeature(%s, %s)", f, s)
         self.server.control_command_toggle_feature(f, s)
-
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def KeyPress(self, keycode):
@@ -113,7 +116,6 @@ class DBUS_Server(DBUS_Server_Base):
         self.log(".SetKeyboardRepeat(%i, %i)", d, i)
         self.server.set_keyboard_repeat(d, i)
 
-
     @dbus.service.method(INTERFACE, in_signature='iii')
     def MovePointer(self, wid, x, y):
         wid, x, y = ni(wid), ni(x), ni(y)
@@ -128,14 +130,12 @@ class DBUS_Server(DBUS_Server_Base):
         device_id = -1
         self.server.button_action(device_id, 0, None, button, pressed)
 
-
     @dbus.service.method(INTERFACE, in_signature='iiii')
     def SetWorkarea(self, x, y, w, h):
         x, y, w, h = ni(x), ni(y), ni(w), ni(h)
         self.log(".SetWorkarea%s", (x, y, w, h))
         workarea = Rectangle(x=x, y=y, width=w, height=h)
         self.server.set_workarea(workarea)
-
 
     @dbus.service.method(INTERFACE, in_signature='iiiii')
     def SetVideoRegion(self, wid, x, y, w, h):
@@ -170,8 +170,6 @@ class DBUS_Server(DBUS_Server_Base):
         self.log(".ResetVideoRegion(%i)", wid)
         self.server.control_command_reset_video_region(wid)
 
-
-
     @dbus.service.method(INTERFACE, in_signature='ii')
     def LockBatchDelay(self, wid, delay):
         wid, delay = ni(wid), ni(delay)
@@ -184,7 +182,6 @@ class DBUS_Server(DBUS_Server_Base):
         self.log(".UnlockBatchDelay(%i)", wid)
         self.server.control_command_unlock_batch_delay(wid)
 
-
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{is}')
     def ListWindows(self):
         d = {}
@@ -195,7 +192,6 @@ class DBUS_Server(DBUS_Server_Base):
                 d[wid] = str(window)
         self.log(".ListWindows()=%s", d)
         return d
-
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def SetLock(self, lock):
@@ -209,20 +205,17 @@ class DBUS_Server(DBUS_Server_Base):
         self.log(".SetSharing(%s)", s)
         self.server.control_command_set_sharing(s)
 
-
     @dbus.service.method(INTERFACE, in_signature='s')
     def SetUIDriver(self, uuid):
         s = ns(uuid)
         self.log(".SetUIDriver(%s)", s)
         self.server.control_command_set_ui_driver(s)
 
-
     @dbus.service.method(INTERFACE, in_signature='i')
     def SetIdleTimeout(self, value):
         nvalue = ni(value)
         self.log(".SetIdleTimeout(%s)", nvalue)
         self.server.control_command_idle_timeout(nvalue)
-
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def MoveWindowToWorkspace(self, wid, workspace):
@@ -259,7 +252,6 @@ class DBUS_Server(DBUS_Server_Base):
         self.log(".RefreshWindow(%i)", wid)
         self.server.control_command_refresh(wid)
 
-
     @dbus.service.method(INTERFACE, in_signature='ai')
     def RefreshWindows(self, window_ids):
         wids = [ni(x) for x in window_ids]
@@ -271,12 +263,10 @@ class DBUS_Server(DBUS_Server_Base):
         self.log(".RefreshAllWindows()")
         self.server.control_command_refresh(*self.server._id_to_window.keys())
 
-
     @dbus.service.method(INTERFACE, in_signature='')
     def ResetWindowFilters(self):
         self.log(".ResetWindowFilters()")
         self.server.reset_window_filters()
-
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def EnableDebug(self, category):
@@ -292,7 +282,6 @@ class DBUS_Server(DBUS_Server_Base):
         remove_debug_category(c)
         disable_debug_for(c)
 
-
     @dbus.service.method(INTERFACE, in_signature='isss')
     def SendNotification(self, nid, title, message, uuids):
         nid, title, message, uuids = ni(nid), ns(title), ns(message), ns(uuids)
@@ -305,7 +294,6 @@ class DBUS_Server(DBUS_Server_Base):
         self.log(".CloseNotification%s", (nid, uuids))
         self.server.control_command_close_notification(nid, uuids)
 
-
     @dbus.service.method(INTERFACE, in_signature='sii')
     def SetClipboardProperties(self, direction, max_copyin, max_copyout):
         #keep direction unchanged if not specified
@@ -313,7 +301,6 @@ class DBUS_Server(DBUS_Server_Base):
         direction = ns(direction) or self.server.clipboard_direction
         self.log(".SetClipboardProperties%s", (direction, max_copyin, max_copyout))
         self.server.control_command_clipboard_direction(direction, max_copyin, max_copyout)
-
 
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{ss}')
     def ListClients(self):
@@ -341,7 +328,6 @@ class DBUS_Server(DBUS_Server_Base):
         for p in self.server._server_sources.keys():
             self.server.disconnect_client(p, ConnectionMessage.DETACH_REQUEST)
 
-
     @dbus.service.method(INTERFACE, in_signature='as')
     def SendUIClientCommand(self, args):
         nargs = n(args)
@@ -350,10 +336,10 @@ class DBUS_Server(DBUS_Server_Base):
             if src.ui_client:
                 src.send_client_command(*nargs)
 
-
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{sv}', async_callbacks=("callback", "errback"))
     def GetAllInfo(self, callback, errback):
         self.log(".GetAllInfo()")
+
         def gotinfo(_proto, info):
             try:
                 v = dbus.types.Dictionary((str(k), native_to_dbus(v)) for k,v in info.items())
@@ -370,10 +356,11 @@ class DBUS_Server(DBUS_Server_Base):
     @dbus.service.method(INTERFACE, in_signature='s', out_signature='a{sv}', async_callbacks=("callback", "errback"))
     def GetInfo(self, subsystem, callback, errback):
         self.log(".GetInfo(%s)", subsystem)
+
         def gotinfo(_proto, info):
             sub = info.get(subsystem)
             try:
-                v =  dbus.types.Dictionary((str(k), native_to_dbus(v)) for k,v in sub.items())
+                v = dbus.types.Dictionary((str(k), native_to_dbus(v)) for k, v in sub.items())
                 log("native_to_dbus(..)=%s", v)
                 callback(v)
             except Exception as e:  # pragma: no cover

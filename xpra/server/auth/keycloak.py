@@ -45,11 +45,10 @@ class Authenticator(SysAuthenticator):
             # Get authorization code
             client = WebApplicationClient(self.client_id)
             authorization_url = self.server_url + 'realms/' + self.realm_name + '/protocol/openid-connect/auth'
-            self.salt = client.prepare_request_uri(
-                authorization_url,
-                redirect_uri = self.redirect_uri,
-                scope = [self.scope],
-            )
+            self.salt = client.prepare_request_uri(authorization_url,
+                                                   redirect_uri=self.redirect_uri,
+                                                   scope=[self.scope],
+                                                   )
         except ImportError as e:    # pragma: no cover
             log("check(..)", exc_info=True)
             log.warn("Warning: cannot use keycloak authentication:")
@@ -119,14 +118,14 @@ class Authenticator(SysAuthenticator):
         try:
             # Configure client
             keycloak_openid = KeycloakOpenID(server_url=self.server_url,
-                              client_id=self.client_id,
-                              realm_name=self.realm_name,
-                              client_secret_key=self.client_secret_key)
+                                             client_id=self.client_id,
+                                             realm_name=self.realm_name,
+                                             client_secret_key=self.client_secret_key)
 
             # Get well_known
             if hasattr(keycloak_openid, "well_known"):
-                #version 1.8 and later:
-                #https://github.com/marcospereirampj/python-keycloak/commit/6bfbd0d15fa5981f35e5a6866b3efd62ef0dc968
+                # version 1.8 and later:
+                # https://github.com/marcospereirampj/python-keycloak/commit/6bfbd0d15fa5981f35e5a6866b3efd62ef0dc968
                 config_well_known = keycloak_openid.well_known()
             else:
                 config_well_known = keycloak_openid.well_know()
@@ -169,8 +168,8 @@ class Authenticator(SysAuthenticator):
             return False
 
 
-def main(args) -> int: # pragma: no cover
-    if len(args)!=2:
+def main(args) -> int:   # pragma: no cover
+    if len(args) != 2:
         print("invalid number of arguments")
         print("usage:")
         print(f"{args[0]} response_json")
@@ -185,6 +184,7 @@ def main(args) -> int: # pragma: no cover
         return -1
     print("success")
     return 0
+
 
 if __name__ == "__main__":  # pragma: no cover
     sys.exit(main(sys.argv))

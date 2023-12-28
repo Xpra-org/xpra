@@ -15,22 +15,18 @@ log = Logger("proxy")
 
 class ProxyInstanceThread(ProxyInstance):
 
-    def __init__(self, session_options,
-                 video_encoders, pings,
-                 client_proto, server_conn,
+    def __init__(self, session_options, video_encoders, pings, client_proto, server_conn,
                  disp_desc, cipher, cipher_mode, encryption_key, caps):
-        super().__init__(session_options,
-                         video_encoders, pings,
+        super().__init__(session_options, video_encoders, pings,
                          disp_desc, cipher, cipher_mode, encryption_key, caps)
         self.client_protocol = client_proto
         self.server_conn = server_conn
 
-
     def video_helper_init(self) -> None:
-        #all threads will use just use the same settings anyway,
-        #so don't re-initialize the video helper:
+        # all threads will use just use the same settings anyway,
+        # so don't re-initialize the video helper:
         self.video_helper = getVideoHelper()
-        #only use video encoders (no CSC supported in proxy)
+        # only use video encoders (no CSC supported in proxy)
         try:
             self.video_helper.set_modules(video_encoders=self.video_encoder_modules)
         except RuntimeError as e:
@@ -38,10 +34,8 @@ class ProxyInstanceThread(ProxyInstance):
         else:
             self.video_helper.init()
 
-
     def __repr__(self):
         return "threaded proxy instance"
-
 
     def idle_add(self, fn, *args, **kwargs) -> int:
         return GLib.idle_add(fn, *args, **kwargs)
@@ -51,7 +45,6 @@ class ProxyInstanceThread(ProxyInstance):
 
     def source_remove(self, tid) -> None:
         GLib.source_remove(tid)
-
 
     def run(self) -> None:
         log("ProxyInstanceThread.run()")
@@ -66,6 +59,6 @@ class ProxyInstanceThread(ProxyInstance):
         self.server_protocol.start()
         self.client_protocol._process_packet_cb = self.process_client_packet
         self.client_protocol.set_packet_source(self.get_client_packet)
-        #no need to start the client protocol,
-        #it was started when we processed authentication in the proxy server
-        #self.client_protocol.start()
+        # no need to start the client protocol,
+        # it was started when we processed authentication in the proxy server
+        # self.client_protocol.start()

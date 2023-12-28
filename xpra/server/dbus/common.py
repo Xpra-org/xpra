@@ -7,6 +7,7 @@
 from xpra.log import Logger
 log = Logger("dbus")
 
+
 def dbus_exception_wrap(fn, info="cannot setup dbus instance"):
     try:
         v = fn()

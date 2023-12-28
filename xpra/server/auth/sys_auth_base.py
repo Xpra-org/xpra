@@ -30,8 +30,9 @@ DEFAULT_GID = os.environ.get("XPRA_AUTHENTICATION_DEFAULT_GID", "nobody")
 SessionData = tuple[int,int,list[str],dict[str,str],dict[str,str]]
 
 
-def xor(s1,s2):
+def xor(s1, s2) -> bytes:
     return b"".join(b"%c" % (a ^ b) for a,b in zip(s1,s2))
+
 
 def parse_uid(v) -> int:
     if v:
@@ -41,13 +42,14 @@ def parse_uid(v) -> int:
             log(f"uid {v!r} is not an integer")
     if POSIX:
         try:
-            import pwd  #pylint: disable=import-outside-toplevel
+            import pwd  # pylint: disable=import-outside-toplevel
             return pwd.getpwnam(v or DEFAULT_UID).pw_uid
         except Exception as e:
             log(f"parse_uid({v})", exc_info=True)
             log.error(f"Error: cannot find uid of {v!r}: {e}")
         return os.getuid()
     return -1
+
 
 def parse_gid(v) -> int:
     if v:
@@ -57,7 +59,7 @@ def parse_gid(v) -> int:
             log(f"gid {v!r} is not an integer")
     if POSIX:
         try:
-            import grp # pylint: disable=import-outside-toplevel
+            import grp      # pylint: disable=import-outside-toplevel
             return grp.getgrnam(v or DEFAULT_GID).gr_gid
         except Exception as e:
             log(f"parse_gid({v})", exc_info=True)
@@ -74,7 +76,7 @@ class SysAuthenticatorBase:
     def __init__(self, **kwargs):
         self.username = kwargs.get("username", get_username())
         if str(kwargs.get("client-username", self.CLIENT_USERNAME)).lower() in TRUE_OPTIONS:
-            #allow the client to specify the username to authenticate with:
+            # allow the client to specify the username to authenticate with:
             self.username = kwargs.get("remote", {}).get("username", self.username)
         self.salt = None
         self.digest = None
@@ -86,10 +88,10 @@ class SysAuthenticatorBase:
         self.passed = False
         self.password_used = None
         self.authenticate_check : Callable[[typedict],bool] = self.default_authenticate_check
-        #we can't warn about unused options
-        #because the options are shared with other socket options (nodelay, cork, etc)
-        #unused = dict((k,v) for k,v in kwargs.items() if k not in ("connection", "exec_cwd", "username"))
-        #if unused:
+        # we can't warn about unused options
+        # because the options are shared with other socket options (nodelay, cork, etc)
+        # unused = dict((k,v) for k,v in kwargs.items() if k not in ("connection", "exec_cwd", "username"))
+        # if unused:
         #    log.warn("Warning: unused keyword arguments for %s authentication:", self)
         #    log.warn(" %s", unused)
         log("auth prompt=%s, socket_dirs=%s", self.prompt, self.socket_dirs)
@@ -125,7 +127,7 @@ class SysAuthenticatorBase:
     def get_passwords(self) -> tuple[str,...]:
         """ this default implementation just returns a tuple
             with the password from `get_password` if there is one """
-        p = self.get_password()     #pylint: disable=assignment-from-none
+        p = self.get_password()     # pylint: disable=assignment-from-none
         if p:
             if not isinstance(p, str):
                 raise ValueError(f"password value is not a string: {type(p)}")
@@ -163,7 +165,7 @@ class SysAuthenticatorBase:
             log("invalid state: challenge has not been sent yet!")
             return False
         challenge_response = caps.bytesget("challenge_response")
-        #challenge has been sent already for this module
+        # challenge has been sent already for this module
         if not challenge_response:
             log("invalid state: challenge already sent but no response found!")
             return False
@@ -180,7 +182,7 @@ class SysAuthenticatorBase:
 
     def get_response_salt(self, client_salt=None) -> bytes:
         server_salt = self.salt
-        #make sure it does not get re-used:
+        # make sure it does not get re-used:
         self.salt = None
         if client_salt is None:
             return server_salt
@@ -205,10 +207,10 @@ class SysAuthenticatorBase:
 
     def default_authenticate_check(self, caps : typedict) -> bool:
         value : bytes = self.unxor_response(caps)
-        #warning: enabling logging here would log the actual system password!
-        #log.info("authenticate(%s, %s) password=%s (%s)",
+        # warning: enabling logging here would log the actual system password!
+        # log.info("authenticate(%s, %s) password=%s (%s)",
         #    hexstr(challenge_response), hexstr(client_salt), password, hexstr(password))
-        #verify login:
+        # verify login:
         try :
             ret = self.check(value)
             log(f"authenticate_check(..)={ret}")
@@ -271,7 +273,7 @@ class SysAuthenticator(SysAuthenticatorBase):
         self.pw = None
         if POSIX:
             try:
-                import pwd  #pylint: disable=import-outside-toplevel
+                import pwd  # pylint: disable=import-outside-toplevel
                 self.pw = pwd.getpwnam(self.username)
             except Exception:
                 log(f"cannot load password database entry for {self.username!r}", exc_info=True)

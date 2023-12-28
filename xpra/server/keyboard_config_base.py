@@ -10,6 +10,7 @@ class KeyboardConfigBase:
     """ Base class representing the keyboard configuration for a server.
     """
     __slots__ = ("enabled", "owner", "sync", "pressed_translation")
+
     def __init__(self):
         self.enabled = True
         self.owner = None
@@ -19,12 +20,12 @@ class KeyboardConfigBase:
     def __repr__(self):
         return "KeyboardConfigBase"
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         return {
-                "enabled"   : self.enabled,
-                "owner"     : self.owner or "",
-                "sync"      : self.sync,
-                }
+            "enabled": self.enabled,
+            "owner": self.owner or "",
+            "sync": self.sync,
+        }
 
     def parse_options(self, props) -> int:
         oldsync = self.sync
@@ -46,18 +47,18 @@ class KeyboardConfigBase:
     def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None) -> None:
         """ should be overridden to match the modifier state specified """
 
-    def get_keycode(self, client_keycode:int, keyname:str, pressed:bool,
-                    modifiers, keyval:int, keystr:str, group:int) -> tuple[int,int]:
+    def get_keycode(self, client_keycode: int, keyname: str, pressed: bool,
+                    modifiers, keyval: int, keystr: str, group: int) -> tuple[int,int]:
         if not keyname and client_keycode<0:
             return -1, group
         if not pressed:
             r = self.pressed_translation.get(client_keycode)
             if r:
-                #del self.pressed_translation[client_keycode]
+                # del self.pressed_translation[client_keycode]
                 return r
         keycode, group = self.do_get_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
         if pressed and keycode not in (None, -1):
-            #keep track of it, so we can unpress the same key:
+            # keep track of it, so we can unpress the same key:
             self.pressed_translation[client_keycode] = keycode, group
         return keycode, group
 
@@ -70,5 +71,5 @@ class KeyboardConfigBase:
         return -1, 0
 
     def is_modifier(self, _keycode:int) -> bool:
-        #should be overridden in subclasses
+        # should be overridden in subclasses
         return False

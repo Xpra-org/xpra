@@ -78,7 +78,7 @@ class Authenticator(SysAuthenticator):
 
 
 def main(argv) -> int:
-    #pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Host Check", "Host Check"):
         for x in ("-v", "--verbose"):
@@ -95,6 +95,7 @@ def main(argv) -> int:
             print(f"host check for {peername!r}, {host!r}: {check}")
             argv = argv[2:]
     return 0
+
 
 if __name__ == "__main__":
     r = main(sys.argv)
