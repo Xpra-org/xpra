@@ -266,12 +266,13 @@ def get_session_type() -> str:
         b = c_bool()
         retcode = dwmapi.DwmIsCompositionEnabled(byref(b))
         log("get_session_type() DwmIsCompositionEnabled()=%s (retcode=%s)", b.value, retcode)
-        if retcode==0 and b.value:
+        if retcode == 0 and b.value:
             return "aero"
-    except (AttributeError, OSError):      #@UndefinedVariable
+    except (AttributeError, OSError):      # @UndefinedVariable
         # No windll, no dwmapi or no DwmIsCompositionEnabled function.
         log("get_session_type() failed to query DwmIsCompositionEnabled", exc_info=True)
     return ""
+
 #alternative code:
 #    try:
 #        # Vista & 7 stuff

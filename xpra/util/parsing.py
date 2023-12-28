@@ -36,7 +36,7 @@ def scaledown_value(scaling) -> tuple[float, ...]:
     return tuple(v for v in SCALING_OPTIONS if r4cmp(v, 10) < r4cmp(scaling, 10))
 
 
-def parse_scaling(desktop_scaling, root_w: int, root_h: int,
+def parse_scaling(desktop_scaling: str, root_w: int, root_h: int,
                   min_scaling=MIN_SCALING, max_scaling=MAX_SCALING) -> tuple[float, float]:
     log = Logger("util", "scaling")
     log("parse_scaling(%s)", (desktop_scaling, root_w, root_h, min_scaling, max_scaling))
