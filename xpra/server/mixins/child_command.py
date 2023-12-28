@@ -11,13 +11,11 @@ from time import monotonic
 from subprocess import Popen
 from typing import Any
 from collections.abc import Callable
-from gi.repository import GLib
 
 from xpra.platform.features import COMMAND_SIGNALS
 from xpra.util.child_reaper import getChildReaper, ProcInfo, reaper_cleanup
-from xpra.os_util import (
-    OSX, WIN32,
-    )
+from xpra.common import noop
+from xpra.os_util import OSX, WIN32, gi_import
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv, ellipsizer, bytestostr
 from xpra.util.env import envint, restore_script_env
@@ -29,6 +27,8 @@ from xpra.server.menu_provider import get_menu_provider
 from xpra.server import EXITING_CODE
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("exec")
 
@@ -85,7 +85,6 @@ class ChildCommandServer(StubServerMixin):
             self.exec_start_late_commands()
         start_thread(do_late_start, "command-late-start", daemon=True)
 
-
     def init(self, opts) -> None:
         self.exit_with_children = opts.exit_with_children
         self.terminate_children = opts.terminate_children
@@ -112,6 +111,7 @@ class ChildCommandServer(StubServerMixin):
 
     def threaded_setup(self) -> None:
         self.exec_start_commands()
+
         def set_reaper_callback():
             self.child_reaper.set_quit_callback(self.reaper_exit)
             self.child_reaper.check()
@@ -120,13 +120,11 @@ class ChildCommandServer(StubServerMixin):
     def cleanup(self) -> None:
         if self.terminate_children and self._upgrading!=EXITING_CODE:
             self.terminate_children_processes()
-        def ignore():
-            """ during cleanup, just ignore the reaper exit callback """
-        self.reaper_exit = ignore
+        # during cleanup, just ignore the reaper exit callback:
+        self.reaper_exit = noop
         if self.menu_provider:
             self.menu_provider.cleanup()
         reaper_cleanup()
-
 
     def get_server_features(self, _source) -> dict[str,Any]:
         return {
@@ -134,15 +132,13 @@ class ChildCommandServer(StubServerMixin):
             "exit-with-children"        : self.exit_with_children,
             "server-commands-signals"   : COMMAND_SIGNALS,
             "server-commands-info"      : not WIN32 and not OSX,
-            }
-
+        }
 
     def _get_xdg_menu_data(self) -> dict[str,Any] | None:
         if not self.start_new_commands:
             return None
         assert self.menu_provider
         return self.menu_provider.get_menu_data()
-
 
     def get_caps(self, source) -> dict[str,Any]:
         caps : dict[str,Any] = {}
@@ -154,7 +150,6 @@ class ChildCommandServer(StubServerMixin):
             caps["xdg-menu"] = {}
             caps["subcommands"] = get_subcommands()
         return caps
-
 
     def send_initial_data(self, ss, caps:typedict, send_ui:bool, share_count:int) -> None:
         xdg_menu = getattr(ss, "xdg_menu", False)
@@ -179,7 +174,6 @@ class ChildCommandServer(StubServerMixin):
             if getattr(source, "send_setting_change", False):
                 source.send_setting_change("xdg-menu", xdg_menu or {})
 
-
     def get_info(self, _proto) -> dict[str,Any]:
         info : dict[Any,Any] = {
             "start"                     : self.start_commands,
@@ -195,24 +189,24 @@ class ChildCommandServer(StubServerMixin):
             "start-new"                 : self.start_new_commands,
             "source-env"                : self.source_env,
             "start-env"                 : self.start_env,
-            }
+        }
         mp = self.menu_provider
         if mp:
-            info.update({
-            "start-menu"                : mp.get_menu_data(remove_icons=True, wait=False) or {},
-            "start-desktop-menu"        : mp.get_desktop_sessions(remove_icons=True) or {},
-            })
+            info.update(
+                {
+                    "start-menu"                : mp.get_menu_data(remove_icons=True, wait=False) or {},
+                    "start-desktop-menu"        : mp.get_desktop_sessions(remove_icons=True) or {},
+                }
+            )
         for i,procinfo in enumerate(self.children_started):
             info[i] = procinfo.get_info()
         cinfo : dict[str,Any] = {"commands": info}
         return cinfo
 
-
     def last_client_exited(self) -> None:
         self._exec_commands(self.start_on_last_client_exit, self.start_child_on_last_client_exit)
 
-
-    def get_child_env(self) -> dict[str,str]:
+    def get_child_env(self) -> dict[str, str]:
         #subclasses may add more
         env = restore_script_env(super().get_child_env())
         env.update(self.source_env)
@@ -230,7 +224,7 @@ class ChildCommandServer(StubServerMixin):
 
     def exec_start_late_commands(self) -> None:
         log("exec_start_late_commands() start-late=%s, start_child=%s",
-                  self.start_late_commands, self.start_child_late_commands)
+            self.start_late_commands, self.start_child_late_commands)
         self._exec_commands(self.start_late_commands, self.start_child_late_commands)
 
     def exec_start_commands(self) -> None:
@@ -264,8 +258,8 @@ class ChildCommandServer(StubServerMixin):
         if not self.session_name:
             GLib.idle_add(self.guess_session_name, procs)
 
-    def start_command(self, name:str, child_cmd, ignore:bool=False, callback:Callable|None=None,
-                      use_wrapper:bool=True, shell:bool=False, **kwargs):
+    def start_command(self, name: str, child_cmd, ignore: bool = False, callback: Callable | None = None,
+                      use_wrapper: bool = True, shell: bool = False, **kwargs):
         env = self.get_child_env()
         log("start_command%s exec_wrapper=%s, exec_cwd=%s",
             (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs), self.exec_wrapper, self.exec_cwd)
@@ -293,8 +287,8 @@ class ChildCommandServer(StubServerMixin):
             log.error(f" {e}")
             return None
 
-
-    def add_process(self, process, name:str, command, ignore:bool=False, callback:Callable|None=None) -> ProcInfo:
+    def add_process(self, process, name: str, command, ignore: bool = False,
+                    callback: Callable | None = None) -> ProcInfo:
         return self.child_reaper.add_process(process, name, command, ignore, callback=callback)
 
     @staticmethod
@@ -370,7 +364,6 @@ class ChildCommandServer(StubServerMixin):
                 self.session_name = new_name
                 self.mdns_update()
 
-
     def _process_start_command(self, proto, packet : PacketType) -> None:
         log(f"start new command: {packet}")
         if not self.start_new_commands:
@@ -418,7 +411,6 @@ class ChildCommandServer(StubServerMixin):
         except Exception as e:
             log.error(f"Error sending signal {signame!r} to pid {pid}")
             log.estr(e)
-
 
     def init_packet_handlers(self) -> None:
         log("init_packet_handlers() COMMANDS_SIGNALS=%s, start new commands=%s",

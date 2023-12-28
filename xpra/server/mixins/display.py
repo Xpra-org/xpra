@@ -53,7 +53,6 @@ class DisplayManager(StubServerMixin):
     def get_display_bit_depth(self) -> int:
         return 0
 
-
     def get_refresh_rate_for_value(self, invalue) -> int:
         return get_refresh_rate_for_value(self.refresh_rate, invalue)
 
@@ -61,14 +60,11 @@ class DisplayManager(StubServerMixin):
         if send_ui:
             self.parse_screen_info(ss)
 
-
     def last_client_exited(self) -> None:
         self.reset_icc_profile()
 
-
     def threaded_setup(self) -> None:
         self.opengl_props = self.query_opengl()
-
 
     def query_opengl(self) -> dict[str,Any]:
         props : dict[str,Any] = {}
@@ -143,12 +139,11 @@ class DisplayManager(StubServerMixin):
         gllog("OpenGL: %s", props)
         return props
 
-
-    def get_caps(self, source)  -> dict[str,Any]:
-        caps : dict[str,Any] = {
+    def get_caps(self, source)  -> dict[str, Any]:
+        caps : dict[str, Any] = {
             "bell"          : self.bell,
             "cursors"       : self.cursors,
-            }
+        }
         root_size = self.get_root_window_size()
         if root_size:
             caps["desktop_size"] = self._get_desktop_size_capability(source, *root_size)
@@ -158,32 +153,31 @@ class DisplayManager(StubServerMixin):
 
     def get_info(self, _proto) -> dict[str,Any]:
         i = {
-                "randr" : self.randr,
-                "bell"  : self.bell,
-                "cursors" : {
-                    ""      : self.cursors,
-                    "size"  : self.cursor_size,
-                    },
-                "double-click"  : {
-                    "time"      : self.double_click_time,
-                    "distance"  : self.double_click_distance,
-                    },
-                "dpi" : {
-                    "default"   : self.default_dpi,
-                    "value"     : self.dpi,
-                    "x"         : self.xdpi,
-                    "y"         : self.ydpi,
-                    },
-                "antialias" : self.antialias,
-                "depth" : self.bit_depth,
-                "refresh-rate"  : self.refresh_rate,
-                }
+            "randr" : self.randr,
+            "bell"  : self.bell,
+            "cursors" : {
+                ""      : self.cursors,
+                "size"  : self.cursor_size,
+            },
+            "double-click"  : {
+                "time"      : self.double_click_time,
+                "distance"  : self.double_click_distance,
+            },
+            "dpi" : {
+                "default"   : self.default_dpi,
+                "value"     : self.dpi,
+                "x"         : self.xdpi,
+                "y"         : self.ydpi,
+            },
+            "antialias" : self.antialias,
+            "depth" : self.bit_depth,
+            "refresh-rate"  : self.refresh_rate,
+        }
         if self.opengl_props:
             i["opengl"] = self.opengl_props
         return {
             "display": i,
-            }
-
+        }
 
     def _process_set_cursors(self, proto, packet : PacketType) -> None:
         assert self.cursors, "cannot toggle send_cursors: the feature is disabled"
@@ -197,7 +191,6 @@ class DisplayManager(StubServerMixin):
         if ss:
             ss.send_bell = bool(packet[1])
 
-
     ######################################################################
     # display / screen / root window:
     def set_screen_geometry_attributes(self, w:int, h:int) -> None:
@@ -208,7 +201,6 @@ class DisplayManager(StubServerMixin):
         self.calculate_desktops()
         self.calculate_workarea(w, h)
         self.set_desktop_geometry(w, h)
-
 
     def parse_screen_info(self, ss) -> tuple[int,int]:
         return self.do_parse_screen_info(ss, ss.desktop_size)
@@ -246,13 +238,11 @@ class DisplayManager(StubServerMixin):
         log("configure_best_screen_size()=%s", (w, h))
         return w, h
 
-
     def set_icc_profile(self) -> None:
         log("set_icc_profile() not implemented")
 
     def reset_icc_profile(self) -> None:
         log("reset_icc_profile() not implemented")
-
 
     def _monitors_changed(self, screen) -> None:
         self.do_screen_changed(screen)
@@ -306,7 +296,6 @@ class DisplayManager(StubServerMixin):
 
     def configure_best_screen_size(self) -> tuple[int,int]:
         return self.get_root_window_size()
-
 
     def apply_refresh_rate(self, ss) -> int:
         rrate = self.get_client_refresh_rate(ss)
@@ -443,7 +432,6 @@ class DisplayManager(StubServerMixin):
         #ensures that DPI and antialias information gets reset:
         self.update_all_server_settings()
 
-
     def dpi_changed(self) -> None:
         """
         The x11 servers override this method
@@ -458,7 +446,6 @@ class DisplayManager(StubServerMixin):
 
     def set_workarea(self, workarea) -> None:
         pass
-
 
     ######################################################################
     # screenshots:
@@ -488,7 +475,6 @@ class DisplayManager(StubServerMixin):
             log.error("failed to capture screenshot", exc_info=True)
             self.send_disconnect(proto, "screenshot failed: %s" % e)
 
-
     def init_packet_handlers(self) -> None:
         self.add_packet_handlers({
             "set-cursors"           : self._process_set_cursors,
@@ -496,4 +482,4 @@ class DisplayManager(StubServerMixin):
             "desktop_size"          : self._process_desktop_size,
             "configure-display"     : self._process_configure_display,
             "screenshot"            : self._process_screenshot,
-            })
+        })

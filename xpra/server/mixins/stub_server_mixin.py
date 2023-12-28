@@ -37,7 +37,6 @@ class StubServerMixin:
         after the init thread has completed.
         """
 
-
     def reset_focus(self) -> None:
         """
         Called when we reset the focus.
@@ -131,10 +130,8 @@ class StubServerMixin:
         (to clean up / free up resources associated with a specific client or connection)
         """
 
-
     def get_child_env(self) -> dict[str,str]:
         return os.environ.copy()
-
 
     def get_full_child_command(self, cmd, _use_wrapper : bool=True) -> list[str]:
         #make sure we have it as a list:
@@ -144,10 +141,8 @@ class StubServerMixin:
             return [cmd]
         return shlex.split(str(cmd))
 
-
     def get_http_scripts(self) -> dict[str,Callable]:
         return {}
-
 
     def add_packet_handler(self, packet_type : str, handler : ServerPacketHandlerType, main_thread=True) -> None:
         """ register a packet handler """

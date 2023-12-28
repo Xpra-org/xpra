@@ -45,15 +45,13 @@ class LoggingServer(StubServerMixin):
     def cleanup(self) -> None:
         self.stop_capturing_logging()
 
-
     def get_server_features(self, _source=None) -> dict[str,Any]:
         return {
             "remote-logging"            : {
                 "receive"       : self.remote_logging_receive,
                 "send"          : self.remote_logging_send,
-                },
-            }
-
+            },
+        }
 
     def cleanup_protocol(self, protocol) -> None:
         if protocol in self.logging_clients:
@@ -75,7 +73,6 @@ class LoggingServer(StubServerMixin):
         if n==0:
             self.start_capturing_logging()
 
-
     def start_capturing_logging(self) -> None:
         if not self.local_logging:
             self.local_logging = set_global_logging_handler(self.remote_logging_handler)
@@ -86,15 +83,16 @@ class LoggingServer(StubServerMixin):
             self.local_logging = None
             set_global_logging_handler(ll)
 
-
     def remote_logging_handler(self, log, level:int, msg, *args, **kwargs) -> None:
         #prevent loops (if our send call ends up firing another logging call):
         if self.in_remote_logging:
             return
         ll = self.local_logging
+
         def local_warn(*args):
             if ll:
                 ll(log, logging.WARNING, *args)
+
         def local_err(message, e=None):
             if self._closing:
                 return
@@ -163,7 +161,6 @@ class LoggingServer(StubServerMixin):
         finally:
             self.in_remote_logging = False
 
-
     def _process_logging_control(self, proto, packet : PacketType) -> None:
         action = bytestostr(packet[1])
         if action=="start":
@@ -185,7 +182,8 @@ class LoggingServer(StubServerMixin):
             prefix += "%3i " % counter
         if len(packet)>=4:
             dtime = packet[3]
-            prefix += "@%02i.%03i " % ((dtime//1000)%60, dtime%1000)
+            prefix += "@%02i.%03i " % ((dtime//1000) % 60, dtime % 1000)
+
         def decode(v) -> str:
             if isinstance(v, str):
                 return v

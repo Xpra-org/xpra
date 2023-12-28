@@ -42,7 +42,6 @@ class WebcamServer(StubServerMixin):
     def threaded_setup(self) -> None:
         self.init_webcam()
 
-
     def get_server_features(self, _source) -> dict[str,Any]:
         return {
             "webcam" : {
@@ -55,20 +54,18 @@ class WebcamServer(StubServerMixin):
             "virtual-video-devices": self.webcam_virtual_video_devices,
         }
 
-
     def get_info(self, _proto) -> dict[str,Any]:
         info : dict[str,Any] = {
-                "enabled" : self.webcam_enabled,
-                }
+            "enabled": self.webcam_enabled,
+        }
         if self.webcam_enabled:
             info.update({
-                "encodings" : self.webcam_encodings,
-                "devices" : self.webcam_virtual_video_devices,
-                })
+                "encodings": self.webcam_encodings,
+                "devices": self.webcam_virtual_video_devices,
+            })
         if self.webcam_device:
             info["device"] = self.webcam_device
-        return {"webcam" : info}
-
+        return {"webcam": info}
 
     def init_webcam(self) -> None:
         if not self.webcam_enabled:
@@ -156,4 +153,4 @@ class WebcamServer(StubServerMixin):
                 "webcam-start"  : self._process_webcam_start,
                 "webcam-stop"   : self._process_webcam_stop,
                 "webcam-frame"  : self._process_webcam_frame,
-              }, False)
+            }, False)

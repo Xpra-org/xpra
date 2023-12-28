@@ -48,9 +48,8 @@ class NotificationForwarder(StubServerMixin):
         return {
             "notifications" : {
                 "enabled" : self.notifications,
-                },
-            }
-
+            },
+        }
 
     def init_notification_forwarder(self) -> None:
         log("init_notification_forwarder() enabled=%s", self.notifications)
@@ -76,7 +75,6 @@ class NotificationForwarder(StubServerMixin):
         log.warn(" if you do not have a dedicated dbus session for this xpra instance,")
         log.warn(" use the 'notifications=no' option")
 
-
     def notify_new_user(self, ss) -> None:
         #tell other users:
         log("notify_new_user(%s) sources=%s", ss, self._server_sources)
@@ -98,7 +96,6 @@ class NotificationForwarder(StubServerMixin):
             log("%s(%s)", self.notify_new_user, ss, exc_info=True)
             log.error("Error: failed to show notification of user login:")
             log.estr(e)
-
 
     def notify_callback(self, dbus_id, nid:int, app_name:str, replaces_nid:int, app_icon,
                         summary:str, body:str, actions, hints, expire_timeout:int) -> None:
@@ -136,7 +133,6 @@ class NotificationForwarder(StubServerMixin):
         log("notify_close_callback(%s)", nid)
         for ss in self._server_sources.values():
             ss.notify_close(int(nid))
-
 
     def _process_notification_status(self, proto, packet : PacketType) -> None:
         assert self.notifications, "cannot toggle notifications: the feature is disabled"
@@ -184,7 +180,6 @@ class NotificationForwarder(StubServerMixin):
             log("notification callback for %s: %s", (nid, action_key), client_callback)
             client_callback(nid, action_key)
 
-
     def init_packet_handlers(self) -> None:
         if self.notifications:
             self.add_packet_handlers({
@@ -192,4 +187,4 @@ class NotificationForwarder(StubServerMixin):
                 "notification-action"   : self._process_notification_action,
                 "notification-status"   : self._process_notification_status,
                 "set-notify"            : self._process_notification_status,
-                })
+            })

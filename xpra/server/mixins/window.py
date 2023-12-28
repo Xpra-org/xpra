@@ -2,7 +2,7 @@
 # Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-#pylint: disable-msg=E1101
+# pylint: disable-msg=E1101
 
 from typing import Any
 
@@ -62,7 +62,6 @@ class WindowServer(StubServerMixin):
         #self._window_to_id = {}
         #self._id_to_window = {}
 
-
     def reinit_window_encoders(self) -> None:
         #any window mapped before the threaded init completed
         #may need to re-initialize its list of encoders:
@@ -71,28 +70,25 @@ class WindowServer(StubServerMixin):
             if isinstance(ss, WindowsMixin):
                 ss.reinit_encoders()
 
-
     def last_client_exited(self) -> None:
         self._focus(None, 0, [])
-
 
     def get_server_features(self, _source) -> dict[str,Any]:
         return {}
 
     def get_info(self, _proto) -> dict[str,Any]:
         return {
-            "state" : {
-                "windows" : sum(int(window.is_managed()) for window in tuple(self._id_to_window.values())),
-                },
-            "filters" : tuple((uuid,repr(f)) for uuid, f in self.window_filters),
-            }
+            "state": {
+                "windows": sum(int(window.is_managed()) for window in tuple(self._id_to_window.values())),
+            },
+            "filters": tuple((uuid,repr(f)) for uuid, f in self.window_filters),
+        }
 
     def get_ui_info(self, _proto, _client_uuids=None, wids=None, *_args) -> dict[str,Any]:
         """ info that must be collected from the UI thread
             (ie: things that query the display)
         """
-        return {"windows" : self.get_windows_info(wids)}
-
+        return {"windows": self.get_windows_info(wids)}
 
     def parse_hello(self, ss, caps:typedict, send_ui) -> None:
         if send_ui:
@@ -100,7 +96,6 @@ class WindowServer(StubServerMixin):
 
     def parse_hello_ui_window_settings(self, ss, c:typedict) -> None:
         pass
-
 
     def add_new_client(self, *_args) -> None:
         minw, minh = self.window_min_size
@@ -128,7 +123,6 @@ class WindowServer(StubServerMixin):
         #subclasses may update the window models
         pass
 
-
     def send_initial_data(self, ss, caps, send_ui:bool, share_count:int) -> None:
         if not send_ui:
             return
@@ -137,19 +131,15 @@ class WindowServer(StubServerMixin):
         self.send_initial_windows(ss, share_count>0)
         self.send_initial_cursors(ss, share_count>0)
 
-
     def is_shown(self, _window) -> bool:
         return True
-
 
     def get_window_id(self, _gdkwindow) -> int:
         #the X11 server can find the model from the window's xid
         return 0
 
-
     def reset_window_filters(self) -> None:
         self.window_filters = []
-
 
     def get_windows_info(self, window_ids) -> dict[int,dict[str,Any]]:
         info = {}
@@ -171,10 +161,10 @@ class WindowServer(StubServerMixin):
             metadata = make_window_metadata(window, prop)
             info.update(metadata)
         info.update({
-             "override-redirect"    : window.is_OR(),
-             "tray"                 : window.is_tray(),
-             "size"                 : window.get_dimensions(),
-             })
+            "override-redirect"    : window.is_OR(),
+            "tray"                 : window.is_tray(),
+            "size"                 : window.get_dimensions(),
+        })
         wid = self._window_to_id.get(window)
         if wid:
             wprops = self.client_properties.get(wid)
@@ -190,7 +180,6 @@ class WindowServer(StubServerMixin):
         for ss in self._server_sources.values():
             if isinstance(ss, WindowsMixin):
                 ss.window_metadata(wid, window, pspec.name)
-
 
     def _remove_window(self, window) -> int:
         wid = self._window_to_id[window]
@@ -299,7 +288,6 @@ class WindowServer(StubServerMixin):
                             "override_options"  : True}
             self._refresh_windows(proto, wid_windows, refresh_opts)
 
-
     def update_batch_config(self, proto, wid_windows, batch_props, client_properties) -> None:
         ss = self.get_server_source(proto)
         if ss is None:
@@ -347,7 +335,6 @@ class WindowServer(StubServerMixin):
         else:
             ss.unmap_window(wid, window)
 
-
     def _process_map_window(self, proto, packet : PacketType) -> None:
         log.info("_process_map_window(%s, %s)", proto, packet)
 
@@ -384,14 +371,11 @@ class WindowServer(StubServerMixin):
         if ss:
             ss.resume(ui, wd)
 
-
     def send_initial_windows(self, ss, sharing=False) -> None:
         raise NotImplementedError()
 
-
     def send_initial_cursors(self, ss, sharing=False) -> None:
         pass
-
 
     ######################################################################
     # focus:
@@ -420,16 +404,15 @@ class WindowServer(StubServerMixin):
         #default: no focus
         return -1
 
-
     def init_packet_handlers(self) -> None:
         self.add_packet_handlers({
-            "map-window" :          self._process_map_window,
-            "unmap-window" :        self._process_unmap_window,
-            "configure-window" :    self._process_configure_window,
-            "close-window" :        self._process_close_window,
-            "focus" :               self._process_focus,
-            "damage-sequence" :     self._process_damage_sequence,
-            "buffer-refresh" :      self._process_buffer_refresh,
-            "suspend" :             self._process_suspend,
-            "resume" :              self._process_resume,
-            })
+            "map-window": self._process_map_window,
+            "unmap-window": self._process_unmap_window,
+            "configure-window": self._process_configure_window,
+            "close-window": self._process_close_window,
+            "focus": self._process_focus,
+            "damage-sequence": self._process_damage_sequence,
+            "buffer-refresh": self._process_buffer_refresh,
+            "suspend": self._process_suspend,
+            "resume": self._process_resume,
+        })

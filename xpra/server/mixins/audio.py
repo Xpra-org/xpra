@@ -74,13 +74,13 @@ class AudioServer(StubServerMixin):
         log("AudioServer.init(..) av-sync=%s", self.av_sync)
 
     def setup(self) -> None:
-        #the setup code will mostly be waiting for subprocesses to run,
-        #so do it in a separate thread
-        #and just wait for the results where needed:
+        # the setup code will mostly be waiting for subprocesses to run,
+        # so do it in a separate thread
+        # and just wait for the results where needed:
         self.audio_init_done.clear()
         start_thread(self.do_audio_setup, "audio-setup", True)
-        #we don't use threaded_setup() here because it would delay
-        #all the other mixins that use it, for no good reason.
+        # we don't use threaded_setup() here because it would delay
+        # all the other mixins that use it, for no good reason.
 
     def do_audio_setup(self) -> None:
         self.init_pulseaudio()
@@ -89,7 +89,6 @@ class AudioServer(StubServerMixin):
     def cleanup(self) -> None:
         self.audio_init_done.wait(5)
         self.cleanup_pulseaudio()
-
 
     def get_info(self, _proto) -> dict[str,Any]:
         self.audio_init_done.wait(5)
@@ -100,21 +99,18 @@ class AudioServer(StubServerMixin):
             info["audio"] = self.audio_properties
         return {}
 
-
     def get_server_features(self, source) -> dict[str,Any]:
         d = {
             "av-sync" : {
                 ""          : self.av_sync,
                 "enabled"   : self.av_sync,
-                },
-            }
+            },
+        }
         log("get_server_features(%s)=%s", source, d)
         return d
 
-
     def get_http_scripts(self) -> dict[str,Callable]:
         return {}
-
 
     def init_pulseaudio(self) -> None:
         audiolog("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%s", self.pulseaudio, self.pulseaudio_command)
@@ -123,7 +119,7 @@ class AudioServer(StubServerMixin):
         if not self.pulseaudio_command:
             audiolog.warn("Warning: pulseaudio command is not defined")
             return
-        #environment initialization:
+        # environment initialization:
         # 1) make sure that the audio subprocess will use the devices
         #    we define in the pulseaudio command
         #    (it is too difficult to parse the pulseaudio_command,
@@ -131,22 +127,24 @@ class AudioServer(StubServerMixin):
         #    Note: speaker is the source and microphone the sink,
         #    because things are reversed on the server.
         os.environ.update({
-            "XPRA_PULSE_SOURCE_DEVICE_NAME" : "Xpra-Speaker",
-            "XPRA_PULSE_SINK_DEVICE_NAME"   : "Xpra-Microphone",
-            })
+            "XPRA_PULSE_SOURCE_DEVICE_NAME": "Xpra-Speaker",
+            "XPRA_PULSE_SINK_DEVICE_NAME": "Xpra-Microphone",
+        })
         # 2) whitelist the env vars that pulseaudio may use:
-        PA_ENV_WHITELIST = ("DBUS_SESSION_BUS_ADDRESS", "DBUS_SESSION_BUS_PID", "DBUS_SESSION_BUS_WINDOWID",
-                            "DISPLAY", "HOME", "HOSTNAME", "LANG", "PATH",
-                            "PWD", "SHELL", "XAUTHORITY",
-                            "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE",
-                            "XPRA_PULSE_SOURCE_DEVICE_NAME", "XPRA_PULSE_SINK_DEVICE_NAME",
-                            )
+        PA_ENV_WHITELIST = (
+            "DBUS_SESSION_BUS_ADDRESS", "DBUS_SESSION_BUS_PID", "DBUS_SESSION_BUS_WINDOWID",
+            "DISPLAY", "HOME", "HOSTNAME", "LANG", "PATH",
+            "PWD", "SHELL", "XAUTHORITY",
+            "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE",
+            "XPRA_PULSE_SOURCE_DEVICE_NAME", "XPRA_PULSE_SINK_DEVICE_NAME",
+        )
         env = {k:v for k,v in self.get_child_env().items() if k in PA_ENV_WHITELIST}
         # 3) use a private pulseaudio server, so each xpra
         #    session can have its own server,
         #    create a directory for each display:
         if PRIVATE_PULSEAUDIO and POSIX and not OSX:
-            from xpra.platform.posix.paths import _get_xpra_runtime_dir, get_runtime_dir  # pylint: disable=import-outside-toplevel
+            # pylint: disable=import-outside-toplevel
+            from xpra.platform.posix.paths import _get_xpra_runtime_dir, get_runtime_dir
             rd = osexpand(get_runtime_dir())
             if not rd or not os.path.exists(rd) or not os.path.isdir(rd):
                 log.warn("Warning: the runtime directory '%s' does not exist,", rd)
@@ -169,7 +167,7 @@ class AudioServer(StubServerMixin):
                 os.environ["XPRA_PULSE_SERVER"] = self.pulseaudio_private_socket
         cmd = shlex.split(self.pulseaudio_command)
         cmd = list(osexpand(x) for x in cmd)
-        #find the absolute path to the command:
+        # find the absolute path to the command:
         pa_cmd = cmd[0]
         if not os.path.isabs(pa_cmd):
             pa_path = None
@@ -188,12 +186,14 @@ class AudioServer(StubServerMixin):
                 return
             cmd[0] = pa_cmd
         started_at = monotonic()
+
         def pulseaudio_warning():
             audiolog.warn("Warning: pulseaudio has terminated shortly after startup.")
             audiolog.warn(" pulseaudio is limited to a single instance per user account,")
             audiolog.warn(" and one may be running already for user '%s'.", get_username())
             audiolog.warn(" To avoid this warning, either fix the pulseaudio command line")
             audiolog.warn(" or use the 'pulseaudio=no' option.")
+
         def pulseaudio_ended(proc):
             audiolog("pulseaudio_ended(%s) pulseaudio_proc=%s, returncode=%s, closing=%s",
                      proc, self.pulseaudio_proc, proc.returncode, self._closing)
@@ -224,6 +224,7 @@ class AudioServer(StubServerMixin):
                 audiolog.info(" private server socket path:")
                 audiolog.info(" '%s'", self.pulseaudio_private_socket)
                 os.environ["PULSE_SERVER"] = "unix:%s" % self.pulseaudio_private_socket
+
             def configure_pulse():
                 p = self.pulseaudio_proc
                 if p is None or p.poll() is not None:
@@ -314,7 +315,6 @@ class AudioServer(StubServerMixin):
                     except OSError:
                         audiolog.error("cleanup_pulseaudio() error accessing '%s'", path, exc_info=True)
 
-
     def init_audio_options(self) -> None:
         def audio_missing(*_args):
             return []
@@ -371,19 +371,17 @@ class AudioServer(StubServerMixin):
                  self.supports_microphone, csv(self.microphone_codecs))
         audiolog("init_audio_options audio properties=%s", self.audio_properties)
 
-
     def get_pulseaudio_info(self) -> dict[str,Any]:
         info = {
             "command"               : self.pulseaudio_command,
             "configure-commands"    : self.pulseaudio_configure_commands,
-            }
+        }
         if self.pulseaudio_proc and self.pulseaudio_proc.poll() is None:
             info["pid"] = self.pulseaudio_proc.pid
         if self.pulseaudio_private_dir and self.pulseaudio_private_socket:
             info["private-directory"] = self.pulseaudio_private_dir
             info["private-socket"] = self.pulseaudio_private_socket
         return info
-
 
     def _process_sound_control(self, proto, packet : PacketType) -> None:
         ss = self.get_server_source(proto)
@@ -400,10 +398,9 @@ class AudioServer(StubServerMixin):
         if ss:
             ss.audio_data(*packet[1:])
 
-
     def init_packet_handlers(self) -> None:
         if self.supports_speaker or self.supports_microphone:
             self.add_packet_handlers({
                 "sound-control" : self._process_sound_control,
                 "sound-data"    : self._process_sound_data,
-                })
+            })

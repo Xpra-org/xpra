@@ -2,7 +2,8 @@
 # Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-#pylint: disable-msg=E1101
+
+# pylint: disable-msg=E1101
 
 import os.path
 from time import monotonic
@@ -24,7 +25,7 @@ log = Logger("command")
 TOGGLE_FEATURES = (
     "bell", "randr", "cursors", "notifications", "clipboard",
     "start-new-commands", "client-shutdown", "webcam",
-    )
+)
 
 
 class ServerBaseControlCommands(StubServerMixin):
@@ -35,7 +36,6 @@ class ServerBaseControlCommands(StubServerMixin):
     def setup(self) -> None:
         self.add_control_commands()
 
-
     def add_control_commands(self) -> None:
         def parse_boolean_value(v):
             if str(v).lower() in TRUE_OPTIONS:
@@ -43,6 +43,7 @@ class ServerBaseControlCommands(StubServerMixin):
             if str(v).lower() in FALSE_OPTIONS:
                 return False
             raise ControlError(f"a boolean is required, not {v!r}")
+
         def parse_4intlist(v):
             if not v:
                 return []
@@ -117,22 +118,21 @@ class ServerBaseControlCommands(StubServerMixin):
             ArgsControlCommand("unlock-batch-delay",    "let the heuristics calculate the batch delay again for a window (following a 'lock-batch-delay')",  min_args=1, max_args=1, validation=[int]),
             ArgsControlCommand("remove-window-filters", "remove all window filters",        min_args=0, max_args=0),
             ArgsControlCommand("add-window-filter",     "add a window filter",              min_args=4, max_args=5),
-            ):
+        ):
             cmd.do_run = getattr(self, "control_command_%s" % cmd.name.replace("-", "_"))
             self.control_commands[cmd.name] = cmd
         #encoding bits:
         for name in (
             "quality", "min-quality", "max-quality",
             "speed", "min-speed", "max-speed",
-            ):
+        ):
             fn = getattr(self, "control_command_%s" % name.replace("-", "_"))
             self.control_commands[name] = ArgsControlCommand(name, "set encoding %s (from 0 to 100)" % name, run=fn, min_args=1, validation=[from0to100])
-
 
     #########################################
     # Control Commands
     #########################################
-    def control_command_focus(self, wid:int) -> str:
+    def control_command_focus(self, wid: int) -> str:
         if self.readonly:
             return "focus request denied by readonly mode"
         if not isinstance(wid, int):
@@ -214,7 +214,6 @@ class ServerBaseControlCommands(StubServerMixin):
         self.reset_server_timeout(reschedule)
         return f"server-idle-timeout set to {t}"
 
-
     def control_command_start_env(self, action:str="set", var_name:str="", value=None) -> str:
         assert var_name, "the environment variable name must be specified"
         if action=="unset":
@@ -228,11 +227,12 @@ class ServerBaseControlCommands(StubServerMixin):
             return f"{var_name}={value}"
         return f"invalid start-env subcommand {action!r}"
 
-
     def control_command_start(self, *args) -> str:
         return self.do_control_command_start(True, *args)
+
     def control_command_start_child(self, *args) -> str:
         return self.do_control_command_start(False, *args)
+
     def do_control_command_start(self, ignore, *args) -> str:
         if not self.start_new_commands:
             raise ControlError("this feature is currently disabled")
@@ -304,7 +304,6 @@ class ServerBaseControlCommands(StubServerMixin):
         log(msg)
         return msg
 
-
     def control_command_open_url(self, url:str, client_uuids="*") -> str:
         #find the clients:
         sources = self._control_get_sources(client_uuids)
@@ -339,6 +338,7 @@ class ServerBaseControlCommands(StubServerMixin):
         sources = self._control_get_sources(client_uuids)
         if not sources:
             raise ControlError(f"no clients found matching: {client_uuids!r}")
+
         def checksize(file_size):
             if file_size>self.file_transfer.file_size_limit:
                 raise ControlError("file '%s' is too large: %sB (limit is %sB)" % (
@@ -382,7 +382,6 @@ class ServerBaseControlCommands(StubServerMixin):
                 ss.send_file(filename, "", data, file_size, *send_file_args)
         return f"{command_type} of {filename!r} to {client_uuids} initiated"
 
-
     def control_command_remove_window_filters(self) -> str:
         #modify the existing list object,
         #which is referenced by all the sources
@@ -401,7 +400,6 @@ class ServerBaseControlCommands(StubServerMixin):
             for client_uuid in client_uuids.split(","):
                 self.window_filters.append((client_uuid, window_filter))
         return f"added window-filter: {window_filter} for client uuids={client_uuids}"
-
 
     def control_command_compression(self, compress:str) -> str:
         c = compress.lower()
@@ -425,7 +423,6 @@ class ServerBaseControlCommands(StubServerMixin):
         self.all_send_client_command(f"enable_{e}")
         return f"encoders set to {encoder}"
 
-
     def all_send_client_command(self, *client_command) -> None:
         """ forwards the command to all clients """
         for source in tuple(self._server_sources.values()):
@@ -445,7 +442,7 @@ class ServerBaseControlCommands(StubServerMixin):
             "int"   : int,
             "float" : float,
             ""      : str,
-            }.get(conv)
+        }.get(conv)
         assert conv_fn
         typeinfo = "%s " % (conv or "string")
         value = conv_fn(value)
@@ -486,7 +483,6 @@ class ServerBaseControlCommands(StubServerMixin):
                     wss.append(ws)
         return wss
 
-
     def _set_encoding_property(self, name:str, value, *wids) -> str:
         for ws in self._ws_from_args(*wids):
             fn = getattr(ws, "set_" + name.replace("-", "_"))   #ie: "set_quality"
@@ -498,14 +494,19 @@ class ServerBaseControlCommands(StubServerMixin):
 
     def control_command_quality(self, quality:int, *wids) -> str:
         return self._set_encoding_property("quality", quality, *wids)
+
     def control_command_min_quality(self, min_quality:int, *wids) -> str:
         return self._set_encoding_property("min-quality", min_quality, *wids)
+
     def control_command_max_quality(self, max_quality:int, *wids) -> str:
         return self._set_encoding_property("max-quality", max_quality, *wids)
+
     def control_command_speed(self, speed:int, *wids) -> str:
         return self._set_encoding_property("speed", speed, *wids)
+
     def control_command_min_speed(self, min_speed:int, *wids) -> str:
         return self._set_encoding_property("min-speed", min_speed, *wids)
+
     def control_command_max_speed(self, max_speed:int, *wids) -> str:
         return self._set_encoding_property("max-speed", max_speed, *wids)
 
@@ -578,9 +579,8 @@ class ServerBaseControlCommands(StubServerMixin):
         options = {
             "auto_refresh" : True,
             "av-delay" : 0,
-            }
-        log("request-update using %r, geometry=%s, windows(%s)=%s",
-                 encoding, geom, wids, self._ws_from_args(*wids))
+        }
+        log("request-update using %r, geometry=%s, windows(%s)=%s", encoding, geom, wids, self._ws_from_args(*wids))
         for ws in tuple(self._ws_from_args(*wids)):
             if geom=="all":
                 x = y = 0
@@ -654,7 +654,6 @@ class ServerBaseControlCommands(StubServerMixin):
             vs.reset()
         return f"reset video region heuristics for window {wid}"
 
-
     def control_command_lock_batch_delay(self, wid:int, delay:int) -> None:
         for ws in self._ws_from_args(wid):
             ws.lock_batch_delay(delay)
@@ -681,11 +680,12 @@ class ServerBaseControlCommands(StubServerMixin):
             #there can only be one ui client now,
             #disconnect all but the first ui_client:
             #(using the 'counter' value to figure out who was first connected)
-            ui_clients = {getattr(ss, "counter", 0): proto
-                              for proto, ss in tuple(self._server_sources.items())
-                              if getattr(ss, "ui_client", False)}
+            ui_clients = {
+                getattr(ss, "counter", 0): proto
+                for proto, ss in tuple(self._server_sources.items()) if getattr(ss, "ui_client", False)
+            }
             n = len(ui_clients)
-            if n>1:
+            if n > 1:
                 for c in sorted(ui_clients)[1:]:
                     proto = ui_clients[c]
                     self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is no longer shared")
@@ -719,8 +719,8 @@ class ServerBaseControlCommands(StubServerMixin):
             elif press in ("0", "unpress"):
                 press = False
             else:
-                raise ControlError("if present, the press argument must be one of: " +
-                                   csv(("1", "press", "0", "unpress")))
+                raise ControlError("if present, the press argument must be one of: " + csv(
+                    ("1", "press", "0", "unpress")))
         self.fake_key(keycode, press)
         return ("pressed" if press else "unpressed") + f" {keycode}"
 
@@ -740,7 +740,6 @@ class ServerBaseControlCommands(StubServerMixin):
             raise ControlError(f"invalid workspace value: {workspace}")
         window.set_property("workspace", workspace)
         return f"window {wid} moved to workspace {workspace}"
-
 
     def control_command_close(self, wid:int) -> str:
         window = self._id_to_window.get(wid)
@@ -793,7 +792,6 @@ class ServerBaseControlCommands(StubServerMixin):
                 count += 1
         return f"window {wid} moved to {x},{y} and resized to {w}x{h} for {count} clients"
 
-
     def _process_command_request(self, protocol, packet : PacketType) -> None:
         """ client sent a command request through its normal channel """
         assert len(packet)>=2, "invalid command request packet (too small!)"
@@ -805,4 +803,4 @@ class ServerBaseControlCommands(StubServerMixin):
     def init_packet_handlers(self) -> None:
         self._authenticated_packet_handlers.update({
             "command_request" : self._process_command_request,
-          })
+        })

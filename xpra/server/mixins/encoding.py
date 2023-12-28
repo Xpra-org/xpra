@@ -36,6 +36,7 @@ ENCODINGS_WITH_QUALITY = (
     "scroll",
 )
 
+
 class EncodingServer(StubServerMixin):
     """
     Mixin for adding encodings to a server
@@ -73,18 +74,18 @@ class EncodingServer(StubServerMixin):
             getVideoHelper().set_modules(video_encoders=self.video_encoders, csc_modules=self.csc_modules)
 
     def setup(self) -> None:
-        #essential codecs, load them early:
+        # essential codecs, load them early:
         load_codec("enc_rgb")
         load_codec("enc_pillow")
         ae = self.allowed_encodings
         if "webp" in ae:
-            #try to load the fast webp encoder:
+            # try to load the fast webp encoder:
             load_codec("enc_webp")
         if "png" in ae or "png/L" in ae:
-            #try to load the fast png encoder:
+            # try to load the fast png encoder:
             load_codec("enc_spng")
         if "jpeg" in ae or "jpega" in ae:
-            #try to load the fast jpeg encoders:
+            # try to load the fast jpeg encoders:
             load_codec("enc_jpeg")
         if "avif" in ae:
             load_codec("enc_avif")
@@ -93,8 +94,8 @@ class EncodingServer(StubServerMixin):
 
     def reinit_encodings(self) -> None:
         self.init_encodings()
-        #any window mapped before the threaded init completed
-        #may need to re-initialize its list of encodings:
+        # any window mapped before the threaded init completed
+        # may need to re-initialize its list of encodings:
         log("reinit_encodings()")
         for ss in self._server_sources.values():
             if isinstance(ss, WindowsMixin):
@@ -104,25 +105,24 @@ class EncodingServer(StubServerMixin):
         if INIT_DELAY>0:
             from time import sleep
             sleep(INIT_DELAY)
-        #load the slower codecs
+        # load the slower codecs
         if "jpeg" in self.allowed_encodings and not OSX:
             load_codec("enc_nvjpeg")
         if self.video:
-            #load video codecs:
+            # load video codecs:
             getVideoHelper().init()
         self.init_encodings()
 
     def cleanup(self) -> None:
         getVideoHelper().cleanup()
 
-
-    def get_server_features(self, _source=None) -> dict[str,Any]:
+    def get_server_features(self, _source=None) -> dict[str, Any]:
         return {}
 
-    def get_info(self, _proto)  -> dict[str,Any]:
+    def get_info(self, _proto)  -> dict[str, Any]:
         info = {
             "encodings" : self.get_encoding_info(),
-            }
+        }
         if self.video:
             info["video"] = getVideoHelper().get_info()
         if FULL_INFO>0:
@@ -131,20 +131,21 @@ class EncodingServer(StubServerMixin):
         return info
 
     def get_encoding_info(self)  -> dict[str,Any]:
-        return  {
-             ""                     : self.encodings,       #redundant since v6
-             "core"                 : self.core_encodings,
-             "allowed"              : self.allowed_encodings,
-             "lossless"             : self.lossless_encodings,
-             "with_speed"           : tuple(set({"rgb32" : "rgb", "rgb24" : "rgb"}.get(x, x)
-                                                for x in self.core_encodings if x in ENCODINGS_WITH_SPEED)),
-             "with_quality"         : tuple(x for x in self.core_encodings if x in ENCODINGS_WITH_QUALITY),
-             "with_lossless_mode"   : self.lossless_mode_encodings,
-             }
+        return {
+            ""                     : self.encodings,       # redundant since v6
+            "core"                 : self.core_encodings,
+            "allowed"              : self.allowed_encodings,
+            "lossless"             : self.lossless_encodings,
+            "with_speed"           : tuple(set({"rgb32": "rgb", "rgb24": "rgb"}.get(x, x)
+                                               for x in self.core_encodings if x in ENCODINGS_WITH_SPEED)),
+            "with_quality"         : tuple(x for x in self.core_encodings if x in ENCODINGS_WITH_QUALITY),
+            "with_lossless_mode"   : self.lossless_mode_encodings,
+        }
 
     def init_encodings(self) -> None:
         encs, core_encs = [], []
         log("init_encodings() allowed_encodings=%s", self.allowed_encodings)
+
         def add_encoding(encoding):
             log("add_encoding(%s)", encoding)
             enc = {"rgb32" : "rgb", "rgb24" : "rgb"}.get(encoding, encoding)
@@ -156,6 +157,7 @@ class EncodingServer(StubServerMixin):
                 encs.append(enc)
             if encoding not in core_encs:
                 core_encs.append(encoding)
+
         def add_encodings(*encodings):
             log("add_encodings%s", encodings)
             for enc in encodings:
@@ -214,7 +216,7 @@ class EncodingServer(StubServerMixin):
         self.core_encodings = preforder(core_encs)
         self.lossless_mode_encodings = preforder(lossless)
         self.lossless_encodings = preforder(enc for enc in self.core_encodings
-                                   if (enc.startswith("png") or enc.startswith("rgb") or enc=="webp"))
+                                            if (enc.startswith("png") or enc.startswith("rgb") or enc=="webp"))
         log("allowed encodings=%s, encodings=%s, core encodings=%s, lossless encodings=%s",
             self.allowed_encodings, encs, core_encs, self.lossless_encodings)
         self.default_encoding = self.encodings[0]
@@ -224,7 +226,6 @@ class EncodingServer(StubServerMixin):
         elif self.encoding in self.encodings:
             log.warn("ignored invalid default encoding option: %s", self.encoding)
             self.default_encoding = self.encoding
-
 
     def _process_encoding(self, proto, packet : PacketType) -> None:
         encoding = bytestostr(packet[1])
@@ -257,7 +258,7 @@ class EncodingServer(StubServerMixin):
         assert ptype in (
             "quality", "min-quality", "max-quality",
             "speed", "min-speed", "max-speed",
-            ), f"invalid packet type {ptype}"
+        ), f"invalid packet type {ptype}"
         value = int(packet[1])
         log("Setting %s to %s", ptype, value)
         fn = getattr(ss, "set_%s" % ptype.replace("-", "_"))
@@ -270,11 +271,10 @@ class EncodingServer(StubServerMixin):
         if refresh:
             refresh(proto)  # pylint: disable=not-callable
 
-
     def init_packet_handlers(self) -> None:
         self.add_packet_handler("encoding", self._process_encoding)
         for ptype in (
             "quality", "min-quality", "max-quality",
             "speed", "min-speed", "max-speed",
-            ):
+        ):
             self.add_packet_handler(ptype, self._modify_sq)

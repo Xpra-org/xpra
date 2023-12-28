@@ -76,7 +76,7 @@ class NetworkStateServer(StubServerMixin):
         info = {
             "pings"             : self.pings,
             "bandwidth-limit"   : self.bandwidth_limit or 0,
-            }
+        }
         if POSIX:
             info["load"] = tuple(int(x*1000) for x in os.getloadavg())
         if self.mem_bytes:
@@ -87,11 +87,10 @@ class NetworkStateServer(StubServerMixin):
 
     def get_server_features(self, _source) -> dict[str,Any]:
         return {
-            "network" : {
-                "bandwidth-limit"              : self.bandwidth_limit or 0,
-                }
+            "network": {
+                "bandwidth-limit": self.bandwidth_limit or 0,
             }
-
+        }
 
     def init_leak_detection(self) -> None:
         if DETECT_MEMLEAKS:
@@ -106,6 +105,7 @@ class NetworkStateServer(StubServerMixin):
                 start_thread(leak_thread, "leak thread", daemon=True)
         if DETECT_FDLEAKS:
             self.fds = livefds()
+
             def print_fds():
                 fds = livefds()
                 newfds = fds-self.fds
@@ -144,7 +144,6 @@ class NetworkStateServer(StubServerMixin):
             brand = c.strget("brand")
             if count>0 and brand:
                 log.info("%ix %s", count, brand)
-
 
     def _process_connection_data(self, proto, packet : PacketType) -> None:
         ss = self.get_server_source(proto)
@@ -194,17 +193,16 @@ class NetworkStateServer(StubServerMixin):
     def _process_ping(self, proto, packet : PacketType) -> None:
         time_to_echo = packet[1]
         sid = ""
-        if len(packet)>=4:
+        if len(packet) >= 4:
             sid = packet[3]
         ss = self.get_server_source(proto)
         if ss:
             ss.process_ping(time_to_echo, sid)
 
-
     def init_packet_handlers(self) -> None:
         self.add_packet_handlers({
-            "ping":                                 self._process_ping,
-            "ping_echo":                            self._process_ping_echo,
-            "connection-data":                      self._process_connection_data,
-            "bandwidth-limit":                      self._process_bandwidth_limit,
-          }, False)
+            "ping": self._process_ping,
+            "ping_echo": self._process_ping_echo,
+            "connection-data": self._process_connection_data,
+            "bandwidth-limit": self._process_bandwidth_limit,
+        }, False)

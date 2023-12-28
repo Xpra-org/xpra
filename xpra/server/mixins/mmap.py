@@ -27,11 +27,10 @@ class MMAP_Server(StubServerMixin):
         else:
             self.supports_mmap = bool(parse_bool("mmap", opts.mmap.lower()))
 
-
     def get_info(self, _proto=None) -> dict[str,Any]:
         return {
-            "mmap" : {
+            "mmap": {
                 "supported"     : self.supports_mmap,
                 "filename"      : self.mmap_filename or "",
-                },
-            }
+            },
+        }

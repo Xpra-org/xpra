@@ -21,16 +21,16 @@ class ShellServer(StubServerMixin):
 
     def get_info(self, _source=None) -> dict[str,Any]:
         return {
-            "shell" : {
-                "counter" : self.counter,
-                "last-commands" : list(self.commands),
-                },
-            }
+            "shell": {
+                "counter": self.counter,
+                "last-commands": list(self.commands),
+            },
+        }
 
     def get_server_features(self, _source) -> dict[str,Any]:
         return {
-            "shell" : True,
-            }
+            "shell": True,
+        }
 
     def _process_shell_exec(self, proto, packet : PacketType) -> None:
         code = str(packet[1])
@@ -40,8 +40,7 @@ class ShellServer(StubServerMixin):
             self.commands.append(code)
             ss.shell_exec(code)
 
-
     def init_packet_handlers(self) -> None:
         self.add_packet_handlers({
             "shell-exec" : self._process_shell_exec,
-          }, False)
+        }, False)

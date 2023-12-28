@@ -44,7 +44,7 @@ class FilePrintServer(StubServerMixin):
         self.lpadmin = opts.lpadmin
         self.lpinfo = opts.lpinfo
         self.add_printer_options = opts.add_printer_options
-        #server-side printer handling is only for posix via pycups for now:
+        # server-side printer handling is only for posix via pycups for now:
         self.postscript_printer = opts.postscript_printer
         self.pdf_printer = opts.pdf_printer
 
@@ -52,7 +52,7 @@ class FilePrintServer(StubServerMixin):
         self.init_printing()
 
     def init_sockets(self, sockets) -> None:
-        #verify we have a local socket for printing:
+        # verify we have a local socket for printing:
         unixsockets = [info for socktype, _, info, _ in sockets if socktype=="socket"]
         printlog("local unix domain sockets we can use for printing: %s", unixsockets)
         if not unixsockets and self.file_transfer.printing:
@@ -61,7 +61,6 @@ class FilePrintServer(StubServerMixin):
                 printlog.warn(" disabling printer forwarding")
             printlog("printer forwarding disabled")
             self.file_transfer.printing = False
-
 
     def get_server_features(self, _source) -> dict[str,Any]:
         f = self.file_transfer.get_file_transfer_features()
@@ -79,7 +78,7 @@ class FilePrintServer(StubServerMixin):
                 "lpadmin"              : self.lpadmin,
                 "lpinfo"               : self.lpinfo,
                 "add-printer-options"  : self.add_printer_options,
-                })
+            })
         if self.file_transfer.printing:
             from xpra.platform.printing import get_info
             d.update(get_info())
@@ -90,7 +89,6 @@ class FilePrintServer(StubServerMixin):
                 fti["request-file"] = True
             info["file"] = fti
         return info
-
 
     def init_printing(self) -> None:
         printing = self.file_transfer.printing
@@ -123,7 +121,7 @@ class FilePrintServer(StubServerMixin):
         auth_class = self.auth_classes.get("socket")
         if printing and auth_class:
             try:
-                #this should be the name of the auth module:
+                # this should be the name of the auth module:
                 auth_name = auth_class[0]
             except Exception:
                 auth_name = str(auth_class)
@@ -131,16 +129,16 @@ class FilePrintServer(StubServerMixin):
                 printlog.warn("Warning: printer forwarding cannot be used,")
                 printlog.warn(" it conflicts with socket authentication module '%r'", auth_name)
                 printing = False
-        #update file transfer attributes since printing nay have been disabled here
+        # update file transfer attributes since printing nay have been disabled here
         self.file_transfer.printing = printing
         printlog("init_printing() printing=%s", printing)
 
     def _process_print(self, _proto, packet : PacketType) -> None:
-        #ie: from the xpraforwarder we call this command:
-        #command = ["xpra", "print", "socket:/path/tosocket",
+        # ie: from the xpraforwarder we call this command:
+        # command = ["xpra", "print", "socket:/path/tosocket",
         #           filename, mimetype, source, title, printer, no_copies, print_options]
         assert self.file_transfer.printing
-        #printlog("_process_print(%s, %s)", proto, packet)
+        # printlog("_process_print(%s, %s)", proto, packet)
         if len(packet)<3:
             printlog.error("Error: invalid print packet, only %i arguments", len(packet))
             printlog.error(" %s", [repr_ellipsized(x) for x in packet])
@@ -160,7 +158,7 @@ class FilePrintServer(StubServerMixin):
             no_copies = int(packet[7])
         if len(packet)>=9:
             print_options = packet[8]
-        #parse and validate:
+        # parse and validate:
         if len(mimetype)>=128:
             printlog.error("Error: invalid mimetype in print packet:")
             printlog.error(" %s", repr_ellipsized(mimetype))
@@ -175,7 +173,7 @@ class FilePrintServer(StubServerMixin):
         printlog("process_print: %s", (filename, mimetype, "%s bytes" % len(file_data),
                                        source_uuid, title, printer, no_copies, print_options))
         printlog("process_print: got %s bytes for file %s", len(file_data), filename)
-        #parse the print options:
+        # parse the print options:
         hu = hashlib.sha256()
         hu.update(file_data)
         printlog("sha1 digest: %s", hu.hexdigest())
@@ -185,7 +183,7 @@ class FilePrintServer(StubServerMixin):
             "copies"     : no_copies,
             "options"    : print_options,
             "sha256"     : hu.hexdigest(),
-            }
+        }
         printlog("parsed printer options: %s", options)
         if SAVE_PRINT_JOBS:
             self._save_print_job(filename, file_data)
@@ -213,7 +211,7 @@ class FilePrintServer(StubServerMixin):
             printlog("'%s' sent to %s for printing on '%s'", bytestostr(title or filename), ss, printer)
             if ss.send_file(filename, mimetype, file_data, len(file_data), True, True, options):
                 sent += 1
-        #warn if not sent:
+        # warn if not sent:
         if sent==0:
             l = printlog.warn
         else:
@@ -242,7 +240,6 @@ class FilePrintServer(StubServerMixin):
         printers = packet[1]
         auth_class = self.auth_classes.get("socket")
         ss.set_printers(printers, self.password_file, auth_class, self.encryption, self.encryption_keyfile)
-
 
     ######################################################################
     # file transfers:
@@ -294,7 +291,7 @@ class FilePrintServer(StubServerMixin):
             filelog.warn(f" {filename!r}")
             ss.may_notify(NotificationID.FILETRANSFER,
                           "File not found", "The file requested does not exist:\n%s" % filename,
-                           icon_name="file")
+                          icon_name="file")
             return
         try:
             stat = os.stat(filename)
@@ -307,18 +304,18 @@ class FilePrintServer(StubServerMixin):
                 ss.may_notify(NotificationID.FILETRANSFER,
                               "File too large",
                               "The file requested is too large to send:\n%s\nis %s" % (argf, std_unit(file_size)),
-                               icon_name="file")
+                              icon_name="file")
                 return
         data = load_binary_file(filename)
         ss.send_file(filename, "", data, len(data), openit=openit, options={"request-file" : (argf, openit)})
 
-
     def init_packet_handlers(self) -> None:
+        # noqa: E241
         if self.file_transfer.printing:
             self.add_packet_handlers({
                 "printers":                             self._process_printers,
                 "print":                                self._process_print,
-              }, False)
+            }, False)
         if self.file_transfer.printing or self.file_transfer.file_transfer:
             self.add_packet_handlers({
                 "send-file":                            self._process_send_file,
@@ -326,6 +323,6 @@ class FilePrintServer(StubServerMixin):
                 "send-file-chunk":                      self._process_send_file_chunk,
                 "send-data-request":                    self._process_send_data_request,
                 "send-data-response":                   self._process_send_data_response,
-              }, False)
+            }, False)
         if self.file_transfer.file_transfer:
             self.add_packet_handler("request-file",     self._process_request_file, False)

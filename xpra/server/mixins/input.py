@@ -78,7 +78,7 @@ class InputServer(StubServerMixin):
         return {
             "input-devices"         : self.input_devices,
             "pointer.relative"      : True,         #assumed available in 5.0.3
-            }
+        }
 
     def get_caps(self, _source) -> dict[str,Any]:
         if not self.key_repeat:
@@ -86,7 +86,7 @@ class InputServer(StubServerMixin):
         return {
             "key_repeat"           : self.key_repeat,
             "key_repeat_modifiers" : True,
-            }
+        }
 
     def parse_hello(self, ss, caps:typedict, send_ui:bool) -> None:
         if send_ui:
@@ -117,19 +117,18 @@ class InputServer(StubServerMixin):
     def get_keyboard_info(self) -> dict[str,Any]:
         start = monotonic()
         info = {
-             "repeat"           : {
-                                   "delay"      : self.key_repeat_delay,
-                                   "interval"   : self.key_repeat_interval,
-                                   },
-             "keys_pressed"     : tuple(self.keys_pressed.values()),
-             "modifiers"        : self.mod_meanings,
-             }
+            "repeat": {
+                "delay"      : self.key_repeat_delay,
+                "interval"   : self.key_repeat_interval,
+            },
+            "keys_pressed"     : tuple(self.keys_pressed.values()),
+            "modifiers"        : self.mod_meanings,
+        }
         kc = self.keyboard_config
         if kc:
             info.update(kc.get_info())
         keylog("get_keyboard_info took %ims", (monotonic()-start)*1000)
         return info
-
 
     def _process_layout(self, proto, packet : PacketType) -> None:
         if self.readonly:
@@ -166,7 +165,7 @@ class InputServer(StubServerMixin):
         #only actually implemented in X11ServerBase
         pass
 
-    def _process_key_action(self, proto, packet : PacketType) -> None:
+    def _process_key_action(self, proto, packet: PacketType) -> None:
         if self.readonly:
             return
         wid, keyname, pressed, modifiers, keyval, keystr, client_keycode, group = packet[1:9]
@@ -197,14 +196,15 @@ class InputServer(StubServerMixin):
                 keylog.error(" for keyname=%s, keyval=%i, keycode=%i", keyname, keyval, keycode)
         ss.user_event()
 
-    def get_keycode(self, ss, client_keycode:int, keyname:str,
-                    pressed:bool, modifiers:list, keyval:int, keystr:str, group:int):
+    def get_keycode(self, ss, client_keycode: int, keyname: str,
+                    pressed: bool, modifiers: list, keyval: int, keystr: str, group: int):
         return ss.get_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
 
     def fake_key(self, keycode, press):
         keylog("fake_key%s is not implemented", (keycode, press))
 
-    def _handle_key(self, wid:int, pressed:bool, name:str, keyval:int, keycode:int, modifiers:list, is_mod:bool=False, sync:bool=True):
+    def _handle_key(self, wid: int, pressed: bool, name: str, keyval: int, keycode: int,
+                    modifiers: list, is_mod: bool = False, sync: bool = True):
         """
             Does the actual press/unpress for keys
             Either from a packet (_process_key_action) or timeout (_key_repeat_timeout)
@@ -218,10 +218,12 @@ class InputServer(StubServerMixin):
             return
         if keycode in self.keys_timedout:
             del self.keys_timedout[keycode]
+
         def press():
             keylog("handle keycode pressing   %3i: key '%s'", keycode, name)
             self.keys_pressed[keycode] = name
             self.fake_key(keycode, True)
+
         def unpress():
             keylog("handle keycode unpressing %3i: key '%s'", keycode, name)
             if keycode in self.keys_pressed:
@@ -339,7 +341,6 @@ class InputServer(StubServerMixin):
     def set_keymap(self, ss, force:bool=False) -> None:
         keylog("set_keymap(%s, %s)", ss, force)
 
-
     ######################################################################
     # pointer:
     def _move_pointer(self, device_id, wid, pos, *args) -> None:
@@ -364,7 +365,7 @@ class InputServer(StubServerMixin):
                         if dx!=0 or dy!=0:
                             px, py = pointer[:2]
                             ax, ay = px+dx, py+dy
-                            mouselog("client %2i: server window position: %12s, client window position: %24s, pointer=%s, adjusted: %s",
+                            mouselog("client %2i: server window position: %12s, client window position: %24s, pointer=%s, adjusted: %s",    # noqa: E501
                                      ss.counter, pos, mapped_at, pointer, (ax, ay))
                             return [ax, ay]+list(pointer[2:])
         return pointer
@@ -413,14 +414,13 @@ class InputServer(StubServerMixin):
         device_id = 0
         props = {
             "modifiers" : modifiers,
-            }
+        }
         if len(packet)>=7:
             props["buttons"] = 6
         self.do_process_button_action(proto, device_id, wid, button, pressed, pointer, props)
 
     def do_process_button_action(self, proto, device_id, wid, button, pressed, pointer, props) -> None:
         """ all servers should implement this method """
-
 
     def _update_modifiers(self, proto, wid, modifiers) -> None:
         """ servers subclasses may change the modifiers state """
@@ -454,7 +454,6 @@ class InputServer(StubServerMixin):
             if modifiers is not None:
                 self._update_modifiers(proto, wid, modifiers)
 
-
     def _process_pointer_position(self, proto, packet : PacketType) -> None:
         mouselog("_process_pointer_position(%s, %s) readonly=%s, ui_driver=%s",
                  proto, packet, self.readonly, self.ui_driver)
@@ -479,7 +478,6 @@ class InputServer(StubServerMixin):
         if self.process_mouse_common(proto, device_id, wid, pdata, props):
             self._update_modifiers(proto, wid, modifiers)
 
-
     ######################################################################
     # input devices:
     def _process_input_devices(self, _proto, packet : PacketType) -> None:
@@ -496,20 +494,19 @@ class InputServer(StubServerMixin):
         the x11 servers use this to map devices
         """
 
-
     def init_packet_handlers(self) -> None:
         self.add_packet_handlers({
-            #keyboard:
+            # keyboard:
             "set-keyboard-sync-enabled" : self._process_keyboard_sync_enabled_status,
             "key-action"                : self._process_key_action,
             "key-repeat"                : self._process_key_repeat,
             "layout-changed"            : self._process_layout,
             "keymap-changed"            : self._process_keymap,
-            #mouse:
+            # mouse:
             "pointer-button"            : self._process_pointer_button,     #v5
             "button-action"             : self._process_button_action,      #pre v5
             "pointer"                   : self._process_pointer,            #v5
             "pointer-position"          : self._process_pointer_position,   #pre v5
-            #setup:
+            # setup:
             "input-devices"             : self._process_input_devices,
-            })
+        })
