@@ -438,6 +438,7 @@ def run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, defaul
     if mode not in (
         "showconfig", "splash",
         "list", "list-windows", "list-mdns", "mdns-gui",
+        "list-clients",
         "list-sessions", "sessions", "displays",
         "clean-displays", "clean-sockets", "clean",
         "xwait", "wminfo", "wmname",
@@ -596,6 +597,9 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
     if mode == "list-windows":
         no_gtk()
         return run_list_windows(error_cb, options, args)
+    if mode == "list-clients":
+        no_gtk()
+        return run_list_clients(error_cb, options, args)
     if mode == "list-mdns":
         no_gtk()
         return run_list_mdns(error_cb, args)
@@ -3968,6 +3972,26 @@ def clean_sockets(dotxpra, sockets, timeout=LIST_REPROBE_TIMEOUT) -> None:
         may_cleanup_socket(state, display, sockpath, clean_states=clean_states)
 
 
+def exec_and_parse(subcommand="id", display="") -> dict[str, str]:
+    from xpra.platform.paths import get_nodock_command
+    cmd = get_nodock_command()+[subcommand, display]
+    d: dict[str, str] = {}
+    try:
+        env = os.environ.copy()
+        env["XPRA_SKIP_UI"] = "1"
+        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env, universal_newlines=True)
+        out, err = proc.communicate()
+        for line in (out or err).splitlines():
+            try:
+                k, v = line.split("=", 1)
+                d[k] = v
+            except ValueError:
+                continue
+    except Exception:
+        pass
+    return d
+
+
 def run_list_windows(error_cb, opts, extra_args) -> ExitValue:
     no_gtk()
     if extra_args:
@@ -3989,25 +4013,6 @@ def run_list_windows(error_cb, opts, extra_args) -> ExitValue:
         l.sort(key=alphanum)
         return l
 
-    def exec_and_parse(subcommand="id", display=""):
-        from xpra.platform.paths import get_nodock_command
-        cmd = get_nodock_command()+[subcommand, display]
-        d = {}
-        try:
-            env = os.environ.copy()
-            env["XPRA_SKIP_UI"] = "1"
-            proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env)
-            out, err = proc.communicate()
-            for line in bytestostr(out or err).splitlines():
-                try:
-                    k,v = line.split("=", 1)
-                    d[k] = v
-                except ValueError:
-                    continue
-        except Exception:
-            pass
-        return d
-
     sys.stdout.write("Display   Status    Name           Windows\n")
     for display in sort_human(displays):
         state = dotxpra.get_display_state(display)
@@ -4024,15 +4029,15 @@ def run_list_windows(error_cb, opts, extra_args) -> ExitValue:
         if state==SocketState.LIVE:
             dinfo = exec_and_parse("info", display)
             if dinfo:
-                #first, find all the window properties:
+                # first, find all the window properties:
                 winfo : dict[str,dict[str,Any]] = {}
                 for k,v in dinfo.items():
-                    #ie: "windows.1.size-constraints.base-size" -> ["windows", "1", "size-constraints.base-size"]
+                    # ie: "windows.1.size-constraints.base-size" -> ["windows", "1", "size-constraints.base-size"]
                     parts = k.split(".", 2)
                     if parts[0]=="windows" and len(parts)==3:
                         winfo.setdefault(parts[1], {})[parts[2]] = v
-                #print("winfo=%s" % (winfo,))
-                #then find a property we can show for each:
+                # print("winfo=%s" % (winfo,))
+                # then find a property we can show for each:
                 wstrs = []
                 for props in winfo.values():
                     for prop in ("command", "class-instance", "title"):
@@ -4046,6 +4051,35 @@ def run_list_windows(error_cb, opts, extra_args) -> ExitValue:
         sys.stdout.write(f"{windows}\n")
         sys.stdout.flush()
     return 0
+
+
+def run_list_clients(error_cb, opts, extra_args) -> ExitValue:
+    no_gtk()
+    if extra_args:
+        error_cb("too many arguments for `list-windows` mode")
+    dotxpra = DotXpra(sockdirs=opts.client_socket_dirs)
+    results = dotxpra.socket_details()
+    if not results:
+        sys.stdout.write("No xpra client sessions found\n")
+        return 0
+    sys.stdout.write(f"Found the following {len(results)} xpra client sessions:\n")
+    for socket_dir, values in results.items():
+        for state, display, sockpath in values:
+            sys.stdout.write(f"{sockpath}:\n")
+            sys.stdout.write(f"\t{state} ")
+            sys.stdout.flush()
+            connpath = f"named-pipe://{sockpath}" if WIN32 else f"socket://{sockpath}"
+            sinfo = exec_and_parse("info", connpath)
+            stype = sinfo.get("session-type", "")
+            disp = sinfo.get("display", "")
+            endpoint = sinfo.get("endpoint", "")
+            istr = stype
+            if disp:
+                istr += f" on {disp!r}"
+            if endpoint:
+                istr += f" connected to {endpoint!r}"
+            sys.stdout.write(f"{istr}\n")
+            sys.stdout.flush()
 
 
 def run_auth(_options, args) -> ExitValue:
