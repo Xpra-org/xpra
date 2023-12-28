@@ -200,7 +200,7 @@ def do_get_generic_os_name() -> str:
     for k,v in {
             "linux"     : "Linux",
             "darwin"    : "MacOS",
-            "win"       : "Win32",
+            "win"       : "MS Windows",
             "freebsd"   : "FreeBSD",
     }.items():
         if sys.platform.startswith(k):

@@ -13,7 +13,7 @@ from xpra.util.types import typedict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint, envbool, envfloat
 from xpra.common import ConnectionMessage
-from xpra.os_util import get_machine_id, gi_import, WIN32
+from xpra.os_util import get_machine_id, gi_import, WIN32, POSIX, OSX
 from xpra.net.bytestreams import log_new_connection
 from xpra.net.socket_util import create_sockets, add_listen_socket, accept_connection, setup_local_sockets
 from xpra.net.net_util import get_network_caps
@@ -208,6 +208,9 @@ class Networklistener(StubClientMixin):
                 info = self.get_info()
                 info["network"] = get_network_caps()
                 info["session-type"] = (get_session_type() or get_generic_os_name()) + " client"
+                display = os.environ.get("WAYLAND_DISPLAY") or os.environ.get("DISPLAY")
+                if display and POSIX and not OSX:
+                    info["display"] = display
                 hello_reply(info)
 
             # run in UI thread:
