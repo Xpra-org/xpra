@@ -30,4 +30,24 @@ ignore = ["E741"]
 max-line-length = 120
 exclude = ["xpra/gtk/examples/*.py", "xpra/platform/win32/*", "xpra/platform/darwin/*"]
 ignore = ["E203", "E231", "E225", "E226", "E252", "E221", "E741", "E262", "E265"]
-per-file-ignores = "xpra/audio/gstreamer_util.py:E241 xpra/keyboard/layouts.py:E241,E501 xpra/x11/gtk_x11/wm_check.py:E241 xpra/x11/server/seamless.py:E241 xpra/codecs/nvidia/util.py:E241 xpra/codecs/loader.py:E241 xpra/codecs/checks.py:E501 xpra/gtk/versions.py:E241 xpra/client/mixins/windows.py:E241 xpra/client/gui/paint_colors.py:E241 xpra/scripts/config.py:E241 xpra/net/rfb/d3des.py:E241 xpra/server/source/source_stats.py:E116,E501 xpra/server/window/compress.py:E501 xpra/server/mixins/fileprint.py:E241 xpra/server/mixins/controlcommands.py:E501,E241 xpra/platform/gui.py:E241 xpra/platform/paths.py:E302 xpra/platform/posix/gui.py:E241"
+per-file-ignores = """
+    xpra/audio/gstreamer_util.py:E241
+    xpra/keyboard/layouts.py:E241,E501
+    xpra/x11/gtk_x11/wm_check.py:E241
+    xpra/x11/server/seamless.py:E241
+    xpra/codecs/nvidia/util.py:E241
+    xpra/codecs/loader.py:E241
+    xpra/codecs/checks.py:E501
+    xpra/gtk/versions.py:E241
+    xpra/client/mixins/windows.py:E241
+    xpra/client/gui/paint_colors.py:E241
+    xpra/scripts/config.py:E241
+    xpra/net/rfb/d3des.py:E241
+    xpra/server/source/source_stats.py:E116,E501
+    xpra/server/window/compress.py:E501
+    xpra/server/mixins/fileprint.py:E241
+    xpra/server/mixins/controlcommands.py:E501,E241
+    xpra/platform/gui.py:E241
+    xpra/platform/paths.py:E302
+    xpra/platform/posix/gui.py:E241
+"""
