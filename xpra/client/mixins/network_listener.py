@@ -203,8 +203,11 @@ class Networklistener(StubClientMixin):
 
         if request == "info":
             def send_info() -> None:
+                from xpra.platform.gui import get_session_type
+                from xpra.util.system import get_generic_os_name
                 info = self.get_info()
                 info["network"] = get_network_caps()
+                info["session-type"] = (get_session_type() or get_generic_os_name()) + " client"
                 hello_reply(info)
 
             # run in UI thread:
