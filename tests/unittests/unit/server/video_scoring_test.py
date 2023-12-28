@@ -73,6 +73,7 @@ class TestVideoScoring(unittest.TestCase):
         test_csc_spec.setup_cost = 10
         test_csc_spec.get_runtime_factor = lambda : 10
         test_csc_spec.codec_class = AdHocStruct
+        test_csc_spec.codec_type = "test csc"
         current_csc = AdHocStruct()
         current_csc.get_dst_format = lambda : "BGRA"
         current_csc.get_src_height = lambda : 1080
