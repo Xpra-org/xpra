@@ -204,10 +204,10 @@ class Networklistener(StubClientMixin):
         if request == "info":
             def send_info() -> None:
                 from xpra.platform.gui import get_session_type
-                from xpra.util.system import get_generic_os_name
+                from xpra.util.system import platform_name
                 info = self.get_info()
                 info["network"] = get_network_caps()
-                info["session-type"] = (get_session_type() or get_generic_os_name()) + " client"
+                info["session-type"] = (get_session_type() or platform_name()) + " client"
                 display = os.environ.get("WAYLAND_DISPLAY") or os.environ.get("DISPLAY")
                 if display and POSIX and not OSX:
                     info["display"] = display

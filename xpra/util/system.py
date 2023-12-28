@@ -234,9 +234,9 @@ def nn(x) -> str:
 
 
 def get_frame_info(ignore_threads: tuple[Thread, ...] = ()) -> dict[str | int, Any]:
-    info : dict[str | int, Any] = {
-        "count"         : threading.active_count() - len(ignore_threads),
-        "native-id"     : threading.get_native_id(),
+    info: dict[str | int, Any] = {
+        "count": threading.active_count() - len(ignore_threads),
+        "native-id": threading.get_native_id(),
     }
     try:
         import traceback
@@ -247,8 +247,8 @@ def get_frame_info(ignore_threads: tuple[Thread, ...] = ()) -> dict[str | int, A
             else:
                 thread_ident[t.ident] = None
         thread_ident |= {
-            threading.current_thread().ident  : "info",
-            main_thread.ident                 : "main",
+            threading.current_thread().ident: "info",
+            main_thread.ident: "main",
         }
         frames = sys._current_frames()  # pylint: disable=protected-access
         stack = None
@@ -262,8 +262,8 @@ def get_frame_info(ignore_threads: tuple[Thread, ...] = ()) -> dict[str | int, A
             for entry in stack:
                 sanestack.append(tuple(nn(x) for x in entry))
             info[i] = {
-                ""          : tident,
-                "stack"     : sanestack,
+                "": tident,
+                "stack": sanestack,
             }
         del frames, stack
     except Exception as e:
@@ -325,12 +325,12 @@ def platform_name(sys_platform=sys.platform, release=None) -> str:
     if not sys_platform:
         return "unknown"
     platforms = {
-        "win32"    : "Microsoft Windows",
-        "cygwin"   : "Windows/Cygwin",
-        "linux.*"  : "Linux",
-        "darwin"   : "Mac OS X",
+        "win32": "Microsoft Windows",
+        "cygwin": "Windows/Cygwin",
+        "linux.*": "Linux",
+        "darwin": "Mac OS X",
         "freebsd.*": "FreeBSD",
-        "os2"      : "OS/2",
+        "os2": "OS/2",
     }
 
     def rel(v):

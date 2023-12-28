@@ -295,11 +295,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         pass
 
     def disconnect_and_quit(self, exit_code: ExitValue, reason: str | ConnectionMessage) -> None:
-        #make sure that we set the exit code early,
-        #so the protocol shutdown won't set a different one:
+        # make sure that we set the exit code early,
+        # so the protocol shutdown won't set a different one:
         if self.exit_code is None:
             self.exit_code = exit_code
-        #try to tell the server we're going, then quit
+        # try to tell the server we're going, then quit
         log("disconnect_and_quit(%s, %s)", exit_code, reason)
         p = self._protocol
         if p is None or p.is_closed():
@@ -322,7 +322,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         return "Python"
 
     def get_info(self) -> dict[str, Any]:
-        info : dict[str, Any] = {}
+        info: dict[str, Any] = {}
         if FULL_INFO > 0:
             info |= {
                 "pid"       : os.getpid(),
@@ -345,8 +345,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         netlog("setup_connection(%s) timeout=%s, socktype=%s, protocol-class=%s",
                conn, conn.timeout, conn.socktype, protocol_class)
         protocol = protocol_class(self.get_scheduler(), conn, self.process_packet, self.next_packet)
-        #ssh channel may contain garbage initially,
-        #tell the protocol to wait for a valid header:
+        # ssh channel may contain garbage initially,
+        # tell the protocol to wait for a valid header:
         protocol.wait_for_header = conn.socktype=="ssh"
         self._protocol = protocol
         if protocol.TYPE!="rfb":
