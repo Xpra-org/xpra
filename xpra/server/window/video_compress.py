@@ -165,7 +165,6 @@ class WindowVideoSource(WindowSource):
         self.supports_scrolling : bool = False
         # this will call init_vars():
         super().__init__(*args)
-        self.video_subregion = VideoSubregion(self.refresh_subregion, self.auto_refresh_delay, VIDEO_SUBREGION)
         self.supports_scrolling : bool = False
         self.scroll_min_percent: int = self.encoding_options.intget("scrolling.min-percent", SCROLL_MIN_PERCENT)
         self.scroll_preference: int = self.encoding_options.intget("scrolling.preference", 100)
@@ -192,6 +191,7 @@ class WindowVideoSource(WindowSource):
         self.last_pipeline_scores : tuple = ()
         self.last_pipeline_time: int = 0
 
+        self.video_subregion = VideoSubregion(self.refresh_subregion, self.auto_refresh_delay, VIDEO_SUBREGION)
         self.video_subregion.supported = VIDEO_SUBREGION
         self.video_encodings : tuple[str,...] = ()
         self.common_video_encodings : tuple[str,...] = ()
