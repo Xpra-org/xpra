@@ -11,11 +11,11 @@
 
 import re
 import sys
-import glob
 import shlex
 import shutil
 import os.path
 import subprocess
+from glob import glob
 from time import sleep
 
 if sys.version_info<(3, 10):
@@ -79,14 +79,16 @@ print(" ".join(sys.argv))
 #
 data_files = []
 modules = []
-packages = []       #used by py2app
-excludes = []       #only used by cx_freeze on win32
+packages = []       # used by py2app
+excludes = []       # only used by cx_freeze on win32
 ext_modules = []
 cmdclass = {}
 scripts = []
 description = "multi-platform screen and application forwarding system"
-long_description = "Xpra is a multi platform persistent remote display server and client for " + \
-            "forwarding applications and desktop screens. Also known as 'screen for X11'."
+long_description = "".join(
+    "Xpra is a multi platform persistent remote display server and client for "
+    "forwarding applications and desktop screens. Also known as 'screen for X11'."
+)
 url = "https://xpra.org/"
 
 
@@ -107,8 +109,8 @@ setup_options = {
         "Documentation" : "https://github.com/Xpra-org/xpra/tree/master/docs",
         "Funding"       : "https://github.com/sponsors/totaam",
         "Source"        : "https://github.com/Xpra-org/xpra",
-        },
-    }
+    },
+}
 
 
 if "pkg-info" in sys.argv:
@@ -119,7 +121,7 @@ if "pkg-info" in sys.argv:
                 "metadata_version"  : "1.1",
                 "summary"           :  description,
                 "home_page"         : url,
-                }
+            }
             for k in (
                 "Metadata-Version", "Name", "Version", "Summary", "Home-page",
                 "Author", "Author-email", "License", "Download-URL", "Description"
@@ -137,6 +139,7 @@ print("Xpra version %s" % XPRA_VERSION)
 # only the default values are specified here:
 #*******************************************************************************
 
+
 def check_cython3():
     try:
         import cython
@@ -152,10 +155,14 @@ def check_cython3():
             print(f" version {version} is not supported")
             print("*******************************************")
             sys.exit(1)
+
+
 check_cython3()
 
 
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
+
+
 def check_pkgconfig():
     v = get_status_output([PKG_CONFIG, "--version"])
     has_pkg_config = v[0]==0 and v[1]
@@ -163,6 +170,8 @@ def check_pkgconfig():
         print("found pkg-config version: %s" % v[1].strip("\n\r"))
     else:
         print("WARNING: pkg-config not found!")
+
+
 check_pkgconfig()
 
 for arg in list(sys.argv):
@@ -173,19 +182,22 @@ for arg in list(sys.argv):
         print("using PKG_CONFIG_PATH="+os.environ["PKG_CONFIG_PATH"])
         sys.argv.remove(arg)
 
+
 def no_pkgconfig(*_pkgs_options, **_ekw):
     return {}
 
+
 def pkg_config_ok(*args):
     return get_status_output([PKG_CONFIG] + [str(x) for x in args])[0]==0
+
 
 def pkg_config_version(req_version, pkgname):
     r, out, _ = get_status_output([PKG_CONFIG, "--modversion", pkgname])
     if r!=0 or not out:
         return False
-    out = out.rstrip("\n\r").split(" ")[0]  #ie: "0.155.2917 0a84d98" -> "0.155.2917"
-    #workaround for libx264 invalid version numbers:
-    #ie: "0.163.x" or "0.164.3094M"
+    out = out.rstrip("\n\r").split(" ")[0]  # ie: "0.155.2917 0a84d98" -> "0.155.2917"
+    # workaround for libx264 invalid version numbers:
+    # ie: "0.163.x" or "0.164.3094M"
     while out[-1].isalpha() or out[-1]==".":
         out = out[:-1]
     # pylint: disable=import-outside-toplevel
@@ -241,6 +253,7 @@ cython_tracing_ENABLED = False
 modules_ENABLED = DEFAULT
 data_ENABLED = DEFAULT
 
+
 def find_header_file(name, isdir=False):
     matches = [v for v in
                [d+name for d in INCLUDE_DIRS]
@@ -248,8 +261,11 @@ def find_header_file(name, isdir=False):
     if not matches:
         return None
     return matches[0]
+
+
 def has_header_file(name, isdir=False):
     return bool(find_header_file(name, isdir))
+
 
 x11_ENABLED = DEFAULT and not WIN32 and not OSX
 xinput_ENABLED = x11_ENABLED
@@ -258,7 +274,8 @@ dbus_ENABLED = DEFAULT and x11_ENABLED and not (OSX or WIN32)
 gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk3_ENABLED = DEFAULT and client_ENABLED
 opengl_ENABLED = DEFAULT and client_ENABLED
-pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and LINUX and (find_header_file("/security", isdir=True) or pkg_config_ok("--exists", "pam", "pam_misc"))
+has_pam_headers = find_header_file("/security", isdir=True) or pkg_config_ok("--exists", "pam", "pam_misc")
+pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and LINUX and has_pam_headers
 
 proc_use_procps         = LINUX and has_header_file("/proc/procps.h")
 proc_use_libproc        = LINUX and has_header_file("/libproc2/pids.h")
@@ -272,8 +289,8 @@ rencodeplus_ENABLED     = DEFAULT
 brotli_ENABLED          = DEFAULT and has_header_file("/brotli/decode.h") and has_header_file("/brotli/encode.h")
 qrencode_ENABLED        = DEFAULT and has_header_file("/qrencode.h")
 clipboard_ENABLED       = DEFAULT
-Xdummy_ENABLED          = None if POSIX else False  #None means auto-detect
-Xdummy_wrapper_ENABLED  = None if POSIX else False  #None means auto-detect
+Xdummy_ENABLED          = None if POSIX else False  # None means auto-detect
+Xdummy_wrapper_ENABLED  = None if POSIX else False  # None means auto-detect
 audio_ENABLED           = DEFAULT
 printing_ENABLED        = DEFAULT
 crypto_ENABLED          = DEFAULT
@@ -286,7 +303,7 @@ enc_x264_ENABLED        = DEFAULT and pkg_config_version("0.155", "x264")
 openh264_ENABLED        = DEFAULT and pkg_config_version("2.0", "openh264")
 openh264_decoder_ENABLED = openh264_ENABLED
 openh264_encoder_ENABLED = openh264_ENABLED
-#crashes on 32-bit windows:
+# crashes on 32-bit windows:
 pillow_ENABLED          = DEFAULT
 argb_ENABLED            = DEFAULT
 spng_decoder_ENABLED    = DEFAULT and pkg_config_version("0.6", "spng")
@@ -296,7 +313,7 @@ jpeg_encoder_ENABLED    = DEFAULT and pkg_config_version("1.2", "libturbojpeg")
 jpeg_decoder_ENABLED    = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
 avif_ENABLED            = DEFAULT and pkg_config_version("0.9", "libavif") and not OSX
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.7", "vpx") and BITS==64
-#opencv currently broken on 32-bit windows (crashes on load):
+# opencv currently broken on 32-bit windows (crashes on load):
 webcam_ENABLED          = DEFAULT and not OSX and not WIN32
 notifications_ENABLED   = DEFAULT
 keyboard_ENABLED        = DEFAULT
@@ -316,13 +333,13 @@ csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
 gstreamer_ENABLED       = DEFAULT
 example_ENABLED         = DEFAULT
 
-#Cython / gcc / packaging build options:
+# Cython / gcc / packaging build options:
 docs_ENABLED            = DEFAULT and shutil.which("pandoc")
 pandoc_lua_ENABLED      = DEFAULT
 annotate_ENABLED        = DEFAULT
 warn_ENABLED            = True
 strict_ENABLED          = False
-PIC_ENABLED             = not WIN32     #ming32 moans that it is always enabled already
+PIC_ENABLED             = not WIN32     # ming32 moans that it is always enabled already
 debug_ENABLED           = False
 verbose_ENABLED         = False
 bundle_tests_ENABLED    = False
@@ -330,7 +347,7 @@ tests_ENABLED           = False
 rebuild_ENABLED         = not skip_build
 
 
-#allow some of these flags to be modified on the command line:
+# allow some of these flags to be modified on the command line:
 CODEC_SWITCHES = [
     "enc_x264",
     "enc_proxy",
@@ -343,12 +360,12 @@ CODEC_SWITCHES = [
     "avif", "argb",
     "v4l2", "evdi", "drm",
     "csc_cython", "csc_libyuv", "gstreamer",
-    ]
+]
 SWITCHES = [
     "cython", "cython_tracing", "cythonize_more",
     "modules", "data",
     "codecs",
-    ] + CODEC_SWITCHES + [
+] + CODEC_SWITCHES + [
     "brotli", "qrencode",
     "vsock", "netdev", "proc", "mdns", "lz4",
     "clipboard",
@@ -364,20 +381,22 @@ SWITCHES = [
     "shadow", "proxy", "rfb", "quic", "http", "ssh",
     "debug", "PIC",
     "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests",
-    ]
-#some switches can control multiple switches:
+]
+# some switches can control multiple switches:
 SWITCH_ALIAS = {
-    "codecs"    : ["codecs"] + CODEC_SWITCHES,
-    "openh264"  : ("openh264", "openh264_decoder", "openh264_encoder"),
-    "nvidia"    : ("nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder", "cuda_kernels", "cuda_rebuild"),
-    "cython"    : ("cython", "codecs",
-                   "server", "client", "shadow",
-                   "rencodeplus", "brotli", "qrencode", "websockets", "netdev", "vsock",
-                   "lz4",
-                   "bindings", "x11", "gtk_x11",
-                   "pam", "sd_listen", "proc",
-                   ),
-    }
+    "codecs": ["codecs"] + CODEC_SWITCHES,
+    "openh264": ("openh264", "openh264_decoder", "openh264_encoder"),
+    "nvidia": ("nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder", "cuda_kernels", "cuda_rebuild"),
+    "cython": (
+        "cython", "codecs",
+        "server", "client", "shadow",
+        "rencodeplus", "brotli", "qrencode", "websockets", "netdev", "vsock",
+        "lz4",
+        "bindings", "x11", "gtk_x11",
+        "pam", "sd_listen", "proc",
+    ),
+}
+
 
 def show_help():
     setup()
@@ -393,6 +412,8 @@ def show_help():
         print("%s or %s (default: %s)" % (with_str.ljust(25), without_str.ljust(30), default_str))
     print("  --pkg-config-path=PATH")
     print("  --rpath=PATH")
+
+
 HELP = "-h" in sys.argv or "--help" in sys.argv
 if HELP:
     show_help()
@@ -406,6 +427,8 @@ minifier = None
 share_xpra = None
 dummy_driver_version = None
 filtered_args = []
+
+
 def filter_argv():
     for arg in sys.argv:
         matched = False
@@ -414,8 +437,8 @@ def filter_argv():
             if arg.startswith(varg):
                 value = arg[len(varg):]
                 globals()[x.replace("-", "_")] = value
-                #remove these arguments from sys.argv,
-                #except for --install=PATH
+                # remove these arguments from sys.argv,
+                # except for --install=PATH
                 matched = x!="install"
                 break
         if matched:
@@ -424,7 +447,7 @@ def filter_argv():
             with_str = f"--with-{x}"
             without_str = f"--without-{x}"
             var_names = list(SWITCH_ALIAS.get(x, [x]))
-            #recurse once, so an alias can container aliases:
+            # recurse once, so an alias can container aliases:
             for v in tuple(var_names):
                 var_names += list(SWITCH_ALIAS.get(v, []))
             if arg.startswith(with_str+"="):
@@ -444,12 +467,14 @@ def filter_argv():
                 break
         if not matched:
             filtered_args.append(arg)
+
+
 filter_argv()
-#enable any codec groups with at least one codec enabled:
-#ie: enable "nvidia" if "nvenc" is enabled
+# enable any codec groups with at least one codec enabled:
+# ie: enable "nvidia" if "nvenc" is enabled
 for group, items in SWITCH_ALIAS.items():
     if globals()[f"{group}_ENABLED"]:
-        #already enabled
+        # already enabled
         continue
     for item in items:
         if globals()[f"{item}_ENABLED"]:
@@ -468,7 +493,7 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
             print("* %s : %s" % (str(k).ljust(20), {None : "Auto", True : "Yes", False : "No"}.get(v, v)))
     show_switch_info()
 
-    #sanity check the flags:
+    # sanity check the flags:
     if clipboard_ENABLED and not server_ENABLED and not gtk3_ENABLED:
         print("Warning: clipboard can only be used with the server or one of the gtk clients!")
         clipboard_ENABLED = False
@@ -538,6 +563,7 @@ def convert_doc_dir(src, dst, fmt="html", force=False):
         else:
             print(f"ignoring {fsrc!r}")
 
+
 def convert_docs(fmt="html"):
     paths = [x for x in sys.argv[2:] if not x.startswith("--")]
     if len(paths)==1 and os.path.isdir(paths[0]):
@@ -573,20 +599,20 @@ if gtk3_ENABLED or audio_ENABLED:
     external_includes += ["gi"]
 
 external_excludes = [
-                    #Tcl/Tk
-                    "Tkconstants", "tkinter", "tcl",
-                    #PIL bits that import TK:
-                    "PIL._tkinter_finder", "_imagingtk", "PIL._imagingtk", "ImageTk", "PIL.ImageTk", "FixTk",
-                    #formats we don't use:
-                    "GimpGradientFile", "GimpPaletteFile", "BmpImagePlugin", "TiffImagePlugin",
-                    #not used:
-                    "curses", "pdb",
-                    "tty",
-                    "setuptools", "doctest",
-                    "nose", "pytest", "_pytest", "pluggy", "more_itertools", "apipkg", "py", "funcsigs",
-                    "Cython", "cython", "pyximport",
-                    "pydoc_data",
-                    ]
+    # Tcl/Tk
+    "Tkconstants", "tkinter", "tcl",
+    # PIL bits that import TK:
+    "PIL._tkinter_finder", "_imagingtk", "PIL._imagingtk", "ImageTk", "PIL.ImageTk", "FixTk",
+    # formats we don't use:
+    "GimpGradientFile", "GimpPaletteFile", "BmpImagePlugin", "TiffImagePlugin",
+    # not used:
+    "curses", "pdb",
+    "tty",
+    "setuptools", "doctest",
+    "nose", "pytest", "_pytest", "pluggy", "more_itertools", "apipkg", "py", "funcsigs",
+    "Cython", "cython", "pyximport",
+    "pydoc_data",
+]
 if not crypto_ENABLED:
     external_excludes += ["ssl", "_ssl", "uvloop"]
 if not client_ENABLED:
@@ -598,10 +624,11 @@ if not dbus_ENABLED:
     excludes += ["dbus"]
 
 
-#because of differences in how we specify packages and modules
-#for distutils / py2app and cx_freeze
-#use the following functions, which should get the right
-#data in the global variables "packages", "modules" and "excludes"
+# because of differences in how we specify packages and modules
+# for distutils / py2app and cx_freeze
+# use the following functions, which should get the right
+# data in the global variables "packages", "modules" and "excludes"
+
 
 def remove_packages(*mods):
     """ ensures that the given packages are not included:
@@ -618,6 +645,7 @@ def remove_packages(*mods):
         if x not in excludes:
             excludes.append(x)
 
+
 def add_packages(*pkgs):
     """ adds the given packages to the packages list,
         and adds all the modules found in this package (including the package itself)
@@ -627,43 +655,47 @@ def add_packages(*pkgs):
             packages.append(x)
     add_modules(*pkgs)
 
+
 def add_modules(*mods):
     def add(v):
         if v not in modules:
             modules.append(v)
     do_add_modules(add, *mods)
 
+
 def do_add_modules(op, *mods):
     """ adds the packages and any .py module found in the packages to the "modules" list
     """
     for x in mods:
-        #ugly path stripping:
+        # ugly path stripping:
         if x.startswith("./"):
             x = x[2:]
         if x.endswith(".py"):
             x = x[:-3]
-            x = x.replace("/", ".") #.replace("\\", ".")
+            x = x.replace("/", ".")    #.replace("\\", ".")
         pathname = os.path.sep.join(x.split("."))
-        #is this a file module?
+        # is this a file module?
         f = f"{pathname}.py"
         if os.path.exists(f) and os.path.isfile(f):
             op(x)
         if os.path.exists(pathname) and os.path.isdir(pathname):
-            #add all file modules found in this directory
+            # add all file modules found in this directory
             for f in os.listdir(pathname):
-                #make sure we only include python files,
-                #and ignore eclipse copies
+                # make sure we only include python files,
+                # and ignore eclipse copies
                 if f.endswith(".py") and not f.startswith("Copy "):
                     fname = os.path.join(pathname, f)
                     if os.path.isfile(fname):
                         modname = f"{x}."+f.replace(".py", "")
                         op(modname)
 
+
 def toggle_packages(enabled, *module_names):
     if enabled:
         add_packages(*module_names)
     else:
         remove_packages(*module_names)
+
 
 def toggle_modules(enabled, *module_names):
     if enabled:
@@ -675,7 +707,7 @@ def toggle_modules(enabled, *module_names):
         remove_packages(*module_names)
 
 
-#always included:
+# always included:
 if modules_ENABLED:
     add_modules("xpra", "xpra.platform", "xpra.net", "xpra.scripts.main", "xpra.util")
 
@@ -692,12 +724,13 @@ def do_add_cython_ext(*args, **kwargs):
         kwargs["define_macros"] = [
             ('CYTHON_TRACE', 1),
             ('CYTHON_TRACE_NOGIL', 1),
-            ]
+        ]
         kwargs.setdefault("extra_compile_args", []).append("-Wno-error")
     # pylint: disable=import-outside-toplevel
     from Cython.Distutils import build_ext, Extension
     ext_modules.append(Extension(*args, **kwargs))
     cmdclass['build_ext'] = build_ext
+
 
 add_cython_ext = do_add_cython_ext
 
@@ -721,22 +754,23 @@ def ace(modnames="xpra.x11.bindings.xxx", pkgconfig_names="", optimize=None, **k
             add_to_keywords(pkgc, addto, *value)
             for v in value:
                 if v.startswith("-Wno-error="):
-                    #make sure to remove the corresponding switch that may enable it:
+                    # make sure to remove the corresponding switch that may enable it:
                     warning = v.split("-Wno-error=", 1)[1]
                     if remove_from_keywords(pkgc, addto, f"-W{warning}"):
                         print(f"removed -W{warning} for {modname}")
     pkgc.update(kwargs)
     CPP = kwargs.get("language", "")=="c++"
     if CPP:
-        #default to "-std=c++11" for c++
+        # default to "-std=c++11" for c++
         if not any(v.startswith("-std=") for v in pkgc.get("extra_compile_args", ())):
             add_to_keywords(pkgc, "extra_compile_args", "-std=c++11")
-        #all C++ modules trigger an address warning in the module initialization code:
+        # all C++ modules trigger an address warning in the module initialization code:
         if WIN32:
             add_to_keywords(pkgc, "extra_compile_args", "-Wno-error=address")
     if get_clang_version()>=(14, ):
         add_to_keywords(pkgc, "extra_compile_args", "-Wno-error=unreachable-code-fallthrough")
     add_cython_ext(modname, src, **pkgc)
+
 
 def tace(toggle, *args, **kwargs):
     if toggle:
@@ -748,10 +782,13 @@ def insert_into_keywords(kw, key, *args):
     for arg in args:
         values.insert(0, arg)
 
+
 def add_to_keywords(kw, key, *args):
     values = kw.setdefault(key, [])
     for arg in args:
         values.append(arg)
+
+
 def remove_from_keywords(kw, key, value):
     values = kw.get(key)
     i = 0
@@ -766,12 +803,16 @@ def checkdirs(*dirs):
         if not os.path.exists(d) or not os.path.isdir(d):
             raise RuntimeError(f"cannot find a directory which is required for building: {d!r}")
 
+
 def CC_is_clang():
     if CC.find("clang")>=0:
         return True
     return get_clang_version()>(0, )
 
+
 clang_version = None
+
+
 def get_clang_version():
     global clang_version
     if clang_version is not None:
@@ -779,7 +820,7 @@ def get_clang_version():
     r, _, err = get_status_output([CC, "-v"])
     clang_version = (0, )
     if r!=0:
-        #not sure!
+        # not sure!
         return clang_version
     for line in err.splitlines():
         for v_line in ("Apple clang version", "clang version"):
@@ -794,10 +835,13 @@ def get_clang_version():
                 print(f"found {v_line}: %s" % ".".join(str(x) for x in tmp_version))
                 clang_version = tuple(tmp_version)
                 return clang_version
-    #not found!
+    # not found!
     return clang_version
 
+
 _gcc_version = None
+
+
 def get_gcc_version():
     global _gcc_version
     if _gcc_version is not None:
@@ -827,6 +871,7 @@ def get_gcc_version():
 def vernum(s):
     return tuple(int(v) for v in s.split("-", 1)[0].split("."))
 
+
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def exec_pkgconfig(*pkgs_options, **ekw):
     kw = dict(ekw)
@@ -841,9 +886,9 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     ignored_flags = kw.pop("ignored_flags", [])
     ignored_tokens = kw.pop("ignored_tokens", [])
 
-    #for distros that don't patch distutils,
-    #we have to add the python cflags:
-    if not (is_Fedora() or is_Debian() or is_CentOS() or is_RedHat() or is_AlmaLinux() or is_RockyLinux() or is_OracleLinux() or is_openSUSE()):
+    # for distros that don't patch distutils,
+    # we have to add the python cflags:
+    if not (is_Fedora() or is_Debian() or is_CentOS() or is_RedHat() or is_AlmaLinux() or is_RockyLinux() or is_OracleLinux() or is_openSUSE()):    # noqa: E501
         # pylint: disable=import-outside-toplevel
         import sysconfig
         for cflag in shlex.split(sysconfig.get_config_var('CFLAGS') or ''):
@@ -856,14 +901,14 @@ def exec_pkgconfig(*pkgs_options, **ekw):
             '-I': 'include_dirs',
             '-L': 'library_dirs',
             '-l': 'libraries',
-            }
+        }
         for token in shlex.split(s):
             if token in ignored_tokens:
                 continue
             if token[:2] in ignored_flags:
                 continue
             if token[:2] in flag_map:
-                #this overrules 'add_to' - is this still needed?
+                # this overrules 'add_to' - is this still needed?
                 if len(token)>2:
                     add_to_keywords(kw, flag_map[token[:2]], token[2:])
                 else:
@@ -873,8 +918,10 @@ def exec_pkgconfig(*pkgs_options, **ekw):
 
     def hascflag(s):
         return s in kw.get("extra_compile_args", [])
+
     def addcflags(*s):
         add_to_keywords(kw, "extra_compile_args", *s)
+
     def addldflags(*s):
         add_to_keywords(kw, "extra_link_args", *s)
 
@@ -882,7 +929,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         for pc_arg, add_to in {
             "--libs" : "extra_link_args",
             "--cflags" : "extra_compile_args",
-            }.items():
+        }.items():
             pkg_config_cmd = ["pkg-config", pc_arg] + list(pkgs_options)
             if verbose_ENABLED:
                 print(f"{pkg_config_cmd=}")
@@ -899,10 +946,10 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         addldflags("-Wall")
     if strict_ENABLED:
         if CC.find("clang")>=0:
-            #clang emits too many warnings with cython code,
-            #so we can't enable Werror without turning off some warnings:
-            #this list of flags should allow clang to build the whole source tree,
-            #as of Cython 0.26 + clang 4.0. Other version combinations may require
+            # clang emits too many warnings with cython code,
+            # so we can't enable Werror without turning off some warnings:
+            # this list of flags should allow clang to build the whole source tree,
+            # as of Cython 0.26 + clang 4.0. Other version combinations may require
             #(un)commenting other switches.
             if not hascflag("-Wno-error"):
                 addcflags("-Werror")
@@ -914,14 +961,14 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 #"-Wno-unused-function",
                 #"-Wno-self-assign",
                 #"-Wno-sometimes-uninitialized",
-                #cython adds rpath to the compilation command??
-                #and the "-specs=/usr/lib/rpm/redhat/redhat-hardened-cc1" is also ignored by clang:
-                )
+                # cython adds rpath to the compilation command??
+                # and the "-specs=/usr/lib/rpm/redhat/redhat-hardened-cc1" is also ignored by clang:
+            )
         else:
             if not hascflag("-Wno-error"):
                 addcflags("-Werror")
             if NETBSD:
-                #see: http://trac.cython.org/ticket/395
+                # see: http://trac.cython.org/ticket/395
                 addcflags("-fno-strict-aliasing")
             elif FREEBSD:
                 addcflags("-Wno-error=unused-function")
@@ -938,18 +985,20 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         insert_into_keywords(kw, "extra_link_args", f"-Wl,-rpath={rpath}")
     CFLAGS = os.environ.get("CFLAGS")
     LDFLAGS = os.environ.get("LDFLAGS")
-    #win32 remove double "-march=x86-64 -mtune=generic -O2 -pipe -O3"?
+    # win32 remove double "-march=x86-64 -mtune=generic -O2 -pipe -O3"?
     if verbose_ENABLED:
         print(f"adding {CFLAGS=}")
         print(f"adding {LDFLAGS=}")
     add_tokens(CFLAGS, "extra_compile_args")
     add_tokens(LDFLAGS, "extra_link_args")
-    #add_to_keywords(kw, 'include_dirs', '.')
+    # add_to_keywords(kw, 'include_dirs', '.')
     if debug_ENABLED and WIN32 and MINGW_PREFIX:
         extra_compile_args.append("-DDEBUG")
     if verbose_ENABLED:
         print(f"exec_pkgconfig({pkgs_options}, {ekw})={kw}")
     return kw
+
+
 pkgconfig = exec_pkgconfig
 
 
@@ -957,59 +1006,60 @@ pkgconfig = exec_pkgconfig
 
 
 def get_base_conf_dir(install_dir, stripbuildroot=True):
-    #in some cases we want to strip the buildroot (to generate paths in the config file)
-    #but in other cases we want the buildroot path (when writing out the config files)
-    #and in some cases, we don't have the install_dir specified (called from detect_xorg_setup, and that's fine too)
-    #this is a bit hackish, but I can't think of a better way of detecting it
+    # in some cases we want to strip the buildroot (to generate paths in the config file)
+    # but in other cases we want the buildroot path (when writing out the config files)
+    # and in some cases, we don't have the install_dir specified (called from detect_xorg_setup, and that's fine too)
+    # this is a bit hackish, but I can't think of a better way of detecting it
     #(ie: "$HOME/rpmbuild/BUILDROOT/xpra-0.15.0-0.fc21.x86_64/usr")
     dirs = (install_dir or sys.prefix).split(os.path.sep)
     if install_dir and stripbuildroot:
         pkgdir = os.environ.get("pkgdir")
         if "debian" in dirs and "tmp" in dirs:
-            #ugly fix for stripping the debian tmp dir:
-            #ie: "???/tmp/???/tags/v0.15.x/src/debian/tmp/" -> ""
+            # ugly fix for stripping the debian tmp dir:
+            # ie: "???/tmp/???/tags/v0.15.x/src/debian/tmp/" -> ""
             while "tmp" in dirs:
                 dirs = dirs[dirs.index("tmp")+1:]
         elif "debian" in dirs:
-            #same for recent debian versions:
-            #ie: "xpra-2.0.2/debian/xpra/usr" -> "usr"
+            # same for recent debian versions:
+            # ie: "xpra-2.0.2/debian/xpra/usr" -> "usr"
             i = dirs.index("debian")
             while i>=0 and len(dirs)>i+1:
                 if dirs[i+1] == "xpra":
                     dirs = dirs[i+2:]
                 i = dirs.index("debian")
         elif "BUILDROOT" in dirs:
-            #strip rpm style build root:
+            # strip rpm style build root:
             #[$HOME, "rpmbuild", "BUILDROOT", "xpra-$VERSION"] -> []
             dirs = dirs[dirs.index("BUILDROOT")+2:]
         elif "pkg" in dirs:
-            #archlinux
-            #ie: "/build/xpra/pkg/xpra/etc" -> "etc"
-            #find the last 'pkg' from the list of directories:
+            # archlinux
+            # ie: "/build/xpra/pkg/xpra/etc" -> "etc"
+            # find the last 'pkg' from the list of directories:
             i = max(loc for loc, val in enumerate(dirs) if val == "pkg")
             if len(dirs)>i+1 and dirs[i+1] in ("xpra", "xpra-git"):
                 dirs = dirs[i+2:]
         elif pkgdir and install_dir.startswith(pkgdir):
-            #arch build dir:
+            # arch build dir:
             dirs = install_dir[len(pkgdir):].split(os.path.sep)
         elif "usr" in dirs:
-            #ie: ["some", "path", "to", "usr"] -> ["usr"]
-            #assume "/usr" or "/usr/local" is the build root
+            # ie: ["some", "path", "to", "usr"] -> ["usr"]
+            # assume "/usr" or "/usr/local" is the build root
             while "usr" in dirs[1:]:
                 dirs = dirs[dirs[1:].index("usr")+1:]
         elif "image" in dirs:
             # Gentoo's "${PORTAGE_TMPDIR}/portage/${CATEGORY}/${PF}/image/_python2.7" -> ""
             while "image" in dirs:
                 dirs = dirs[dirs.index("image")+2:]
-    #now deal with the fact that "/etc" is used for the "/usr" prefix
-    #but "/usr/local/etc" is used for the "/usr/local" prefix..
+    # now deal with the fact that "/etc" is used for the "/usr" prefix
+    # but "/usr/local/etc" is used for the "/usr/local" prefix..
     if dirs and dirs[-1]=="usr":
         dirs = dirs[:-1]
-    #is this an absolute path?
+    # is this an absolute path?
     if not dirs or dirs[0]=="usr" or (install_dir or sys.prefix).startswith(os.path.sep):
-        #ie: ["/", "usr"] or ["/", "usr", "local"]
+        # ie: ["/", "usr"] or ["/", "usr", "local"]
         dirs.insert(0, os.path.sep)
     return dirs
+
 
 def get_conf_dir(install_dir, stripbuildroot=True):
     dirs = get_base_conf_dir(install_dir, stripbuildroot)
@@ -1017,6 +1067,7 @@ def get_conf_dir(install_dir, stripbuildroot=True):
         dirs.append("etc")
     dirs.append("xpra")
     return os.path.join(*dirs)
+
 
 def detect_xorg_setup(install_dir=None):
     # pylint: disable=import-outside-toplevel
@@ -1028,6 +1079,7 @@ def detect_xorg_setup(install_dir=None):
         dummy = True
     return config.detect_xvfb_command(conf_dir, None, dummy, Xdummy_wrapper_ENABLED)
 
+
 def detect_xdummy_setup(install_dir=None):
     # pylint: disable=import-outside-toplevel
     from xpra.scripts import config
@@ -1035,12 +1087,14 @@ def detect_xdummy_setup(install_dir=None):
     conf_dir = get_conf_dir(install_dir)
     return config.detect_xdummy_command(conf_dir, None, Xdummy_wrapper_ENABLED)
 
+
 def build_xpra_conf(install_dir):
     # pylint: disable=import-outside-toplevel
-    #generates an actual config file from the template
+    # generates an actual config file from the template
     xvfb_command = detect_xorg_setup(install_dir)
     xdummy_command = detect_xdummy_setup(install_dir)
     from xpra.platform.features import DEFAULT_START_ENV, DEFAULT_ENV, SOURCE
+
     def bstr(b):
         if b is None:
             return "auto"
@@ -1056,16 +1110,16 @@ def build_xpra_conf(install_dir):
         wrap_cmd_str,
         get_default_key_shortcuts, get_default_systemd_run, get_default_pulseaudio_command,
         DEFAULT_POSTSCRIPT_PRINTER, DEFAULT_PULSEAUDIO,
-        )
-    #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
+    )
+    # remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
     socket_dirs = get_socket_dirs()
     if POSIX and getuid()>0:
-        #remove any paths containing the uid,
-        #osx uses /var/tmp/$UID-Xpra,
-        #but this should not be included in the default config for all users!
-        #(the buildbot's uid!)
+        # remove any paths containing the uid,
+        # osx uses /var/tmp/$UID-Xpra,
+        # but this should not be included in the default config for all users!
+        # (the buildbot's uid!)
         socket_dirs = [x for x in socket_dirs if x.find(str(getuid()))<0]
-    #FIXME: we should probably get these values from the default config instead
+    # FIXME: we should probably get these values from the default config instead
     pdf, postscript = "", ""
     if POSIX and printing_ENABLED:
         try:
@@ -1078,11 +1132,12 @@ def build_xpra_conf(install_dir):
             print(f"{pdf=}, {postscript=}")
         except Exception as e:
             print(f"could not probe for pdf/postscript printers: {e}")
+
     def pretty_cmd(cmd):
         return " ".join(cmd)
-    #OSX doesn't have webcam support yet (no opencv builds on 10.5.x)
+    # OSX doesn't have webcam support yet (no opencv builds on 10.5.x)
     webcam = webcam_ENABLED and not (OSX or WIN32)
-    #no python-avahi on RH / CentOS, need dbus module on *nix:
+    # no python-avahi on RH / CentOS, need dbus module on *nix:
     is_RH = is_RedHat() or is_CentOS() or is_OracleLinux() or is_AlmaLinux() or is_RockyLinux()
     mdns = mdns_ENABLED and (OSX or WIN32 or (not is_RH and dbus_ENABLED))
     SUBS = {
@@ -1095,7 +1150,7 @@ def build_xpra_conf(install_dir):
         'env'                   : default_env,
         'pulseaudio'            : bstr(DEFAULT_PULSEAUDIO),
         'pulseaudio_command'    : pretty_cmd(get_default_pulseaudio_command()),
-        'pulseaudio_configure_commands' : "\n".join(("pulseaudio-configure-commands = %s" % pretty_cmd(x)) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS),
+        'pulseaudio_configure_commands' : "\n".join(("pulseaudio-configure-commands = %s" % pretty_cmd(x)) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS),     # noqa: E501
         'conf_dir'              : conf_dir,
         'bind'                  : "auto",
         'ssl_cert'              : ssl_cert or "",
@@ -1115,10 +1170,11 @@ def build_xpra_conf(install_dir):
         'mmap'                  : bstr(True),
         'opengl'                : "no" if OSX else "probe",
         'headerbar'             : ["auto", "no"][OSX or WIN32],
-        }
+    }
+
     def convert_templates(subdirs):
         dirname = os.path.join(*(["fs", "etc", "xpra"] + subdirs))
-        #get conf dir for install, without stripping the build root
+        # get conf dir for install, without stripping the build root
         target_dir = os.path.join(get_conf_dir(install_dir, stripbuildroot=False), *subdirs)
         print(f"convert_templates({subdirs}) {dirname=}, {target_dir=}")
         if not os.path.exists(target_dir):
@@ -1147,99 +1203,100 @@ def build_xpra_conf(install_dir):
 
 #*******************************************************************************
 def clean():
-    #clean and sdist don't actually use cython,
-    #so skip this (and avoid errors)
+    # clean and sdist don't actually use cython,
+    # so skip this (and avoid errors)
     global pkgconfig
     pkgconfig = no_pkgconfig
-    #always include everything in this case:
+    # always include everything in this case:
     add_packages("xpra")
-    #ensure we remove the files we generate:
+    # ensure we remove the files we generate:
     CLEAN_FILES = [
-                   "xpra/build_info.py",
-                   "xpra/gtk/bindings/atoms.c",
-                   "xpra/gtk/bindings/gobject.c",
-                   "xpra/x11/bindings/display_source.c",
-                   "xpra/x11/bindings/xwait.c",
-                   "xpra/x11/bindings/wait_for_x_server.c",
-                   "xpra/x11/bindings/keyboard.c",
-                   "xpra/x11/bindings/events.c",
-                   "xpra/x11/bindings/window.c",
-                   "xpra/x11/bindings/randr.c",
-                   "xpra/x11/bindings/res.c",
-                   "xpra/x11/bindings/core.c",
-                   "xpra/x11/bindings/posix_display_source.c",
-                   "xpra/x11/bindings/xwayland.c",
-                   "xpra/x11/bindings/ximage.c",
-                   "xpra/x11/bindings/xi2.c",
-                   "xpra/x11/gtk3/bindings.c",
-                   "xpra/x11/gtk3/display_source.c",
-                   "xpra/platform/win32/propsys.cpp",
-                   "xpra/platform/darwin/gdk3_bindings.c",
-                   "xpra/platform/posix/sd_listen.c",
-                   "xpra/platform/posix/netdev_query.c",
-                   "xpra/platform/posix/proc_libproc.c",
-                   "xpra/platform/posix/proc_procps.c",
-                   "xpra/net/rencodeplus/rencodeplus.c",
-                   "xpra/net/brotli/compressor.c",
-                   "xpra/net/brotli/decompressor.c",
-                   "xpra/net/qrcode/qrencode.c",
-                   "xpra/net/websockets/mask.c",
-                   "xpra/net/vsock/vsock.c",
-                   "xpra/net/lz4/lz4.c",
-                   "xpra/buffers/membuf.c",
-                   "xpra/buffers/xxh.c",
-                   "xpra/buffers/cyxor.c",
-                   "xpra/codecs/vpx/encoder.c",
-                   "xpra/codecs/vpx/decoder.c",
-                   "xpra/codecs/nvidia/nvenc/encoder.c",
-                   "xpra/codecs/nvidia/nvdec/decoder.c",
-                   "xpra/codecs/nvidia/nvfbc/capture_linux.cpp",
-                   "xpra/codecs/nvidia/nvfbc/capture_win.cpp",
-                   "xpra/codecs/nvidia/nvjpeg/common.c",
-                   "xpra/codecs/nvidia/nvjpeg/encoder.c",
-                   "xpra/codecs/nvidia/nvjpeg/decoder.c",
-                   "xpra/codecs/avif/encoder.c",
-                   "xpra/codecs/avif/decoder.c",
-                   "xpra/codecs/x264/encoder.c",
-                   "xpra/codecs/spng/encoder.c",
-                   "xpra/codecs/spng/decoder.c",
-                   "xpra/codecs/jpeg/encoder.c",
-                   "xpra/codecs/jpeg/decoder.c",
-                   "xpra/codecs/openh264/encoder.c",
-                   "xpra/codecs/openh264/decoder.c",
-                   "xpra/codecs/v4l2/virtual.c",
-                   "xpra/codecs/v4l2/constants.pxi",
-                   "xpra/codecs/evdi/capture.cpp",
-                   "xpra/codecs/drm/drm.c",
-                   "xpra/codecs/webp/encoder.c",
-                   "xpra/codecs/webp/decoder.c",
-                   "xpra/codecs/libyuv/converter.cpp",
-                   "xpra/codecs/csc_cython/converter.c",
-                   "xpra/codecs/argb/argb.c",
-                   "xpra/codecs/nvapi_version.c",
-                   "xpra/gtk/bindings/atoms.c",
-                   "xpra/client/gtk3/cairo_workaround.c",
-                   "xpra/server/cystats.c",
-                   "xpra/util/rectangle.c",
-                   "xpra/server/window/motion.c",
-                   "xpra/server/pam.c",
-                   "fs/etc/xpra/xpra.conf",
-                   #special case for the generated xpra conf files in build (see #891):
-                   "build/etc/xpra/xpra.conf"] + glob.glob("build/etc/xpra/conf.d/*.conf")
+        "xpra/build_info.py",
+        "xpra/gtk/bindings/atoms.c",
+        "xpra/gtk/bindings/gobject.c",
+        "xpra/x11/bindings/display_source.c",
+        "xpra/x11/bindings/xwait.c",
+        "xpra/x11/bindings/wait_for_x_server.c",
+        "xpra/x11/bindings/keyboard.c",
+        "xpra/x11/bindings/events.c",
+        "xpra/x11/bindings/window.c",
+        "xpra/x11/bindings/randr.c",
+        "xpra/x11/bindings/res.c",
+        "xpra/x11/bindings/core.c",
+        "xpra/x11/bindings/posix_display_source.c",
+        "xpra/x11/bindings/xwayland.c",
+        "xpra/x11/bindings/ximage.c",
+        "xpra/x11/bindings/xi2.c",
+        "xpra/x11/gtk3/bindings.c",
+        "xpra/x11/gtk3/display_source.c",
+        "xpra/platform/win32/propsys.cpp",
+        "xpra/platform/darwin/gdk3_bindings.c",
+        "xpra/platform/posix/sd_listen.c",
+        "xpra/platform/posix/netdev_query.c",
+        "xpra/platform/posix/proc_libproc.c",
+        "xpra/platform/posix/proc_procps.c",
+        "xpra/net/rencodeplus/rencodeplus.c",
+        "xpra/net/brotli/compressor.c",
+        "xpra/net/brotli/decompressor.c",
+        "xpra/net/qrcode/qrencode.c",
+        "xpra/net/websockets/mask.c",
+        "xpra/net/vsock/vsock.c",
+        "xpra/net/lz4/lz4.c",
+        "xpra/buffers/membuf.c",
+        "xpra/buffers/xxh.c",
+        "xpra/buffers/cyxor.c",
+        "xpra/codecs/vpx/encoder.c",
+        "xpra/codecs/vpx/decoder.c",
+        "xpra/codecs/nvidia/nvenc/encoder.c",
+        "xpra/codecs/nvidia/nvdec/decoder.c",
+        "xpra/codecs/nvidia/nvfbc/capture_linux.cpp",
+        "xpra/codecs/nvidia/nvfbc/capture_win.cpp",
+        "xpra/codecs/nvidia/nvjpeg/common.c",
+        "xpra/codecs/nvidia/nvjpeg/encoder.c",
+        "xpra/codecs/nvidia/nvjpeg/decoder.c",
+        "xpra/codecs/avif/encoder.c",
+        "xpra/codecs/avif/decoder.c",
+        "xpra/codecs/x264/encoder.c",
+        "xpra/codecs/spng/encoder.c",
+        "xpra/codecs/spng/decoder.c",
+        "xpra/codecs/jpeg/encoder.c",
+        "xpra/codecs/jpeg/decoder.c",
+        "xpra/codecs/openh264/encoder.c",
+        "xpra/codecs/openh264/decoder.c",
+        "xpra/codecs/v4l2/virtual.c",
+        "xpra/codecs/v4l2/constants.pxi",
+        "xpra/codecs/evdi/capture.cpp",
+        "xpra/codecs/drm/drm.c",
+        "xpra/codecs/webp/encoder.c",
+        "xpra/codecs/webp/decoder.c",
+        "xpra/codecs/libyuv/converter.cpp",
+        "xpra/codecs/csc_cython/converter.c",
+        "xpra/codecs/argb/argb.c",
+        "xpra/codecs/nvapi_version.c",
+        "xpra/gtk/bindings/atoms.c",
+        "xpra/client/gtk3/cairo_workaround.c",
+        "xpra/server/cystats.c",
+        "xpra/util/rectangle.c",
+        "xpra/server/window/motion.c",
+        "xpra/server/pam.c",
+        "fs/etc/xpra/xpra.conf",
+        # special case for the generated xpra conf files in build (see # 891):
+        "build/etc/xpra/xpra.conf",
+    ] + glob("build/etc/xpra/conf.d/*.conf")
     if cuda_rebuild_ENABLED:
-        CLEAN_FILES += glob.glob("fs/share/xpra/cuda/*.fatbin")
+        CLEAN_FILES += glob("fs/share/xpra/cuda/*.fatbin")
     for x in CLEAN_FILES:
         p, ext = os.path.splitext(x)
         if ext in (".c", ".cpp", ".pxi"):
-            #clean the Cython annotated html files:
+            # clean the Cython annotated html files:
             CLEAN_FILES.append(p+".html")
             if WIN32:
-                #on win32, the build creates ".pyd" files, clean those too:
+                # on win32, the build creates ".pyd" files, clean those too:
                 CLEAN_FILES.append(p+".pyd")
-                #when building with python3, we need to clean files named like:
+                # when building with python3, we need to clean files named like:
                 #"xpra/codecs/csc_libyuv/converter-cpython-36m.dll"
                 filename = os.path.join(os.getcwd(), p.replace("/", os.path.sep)+"*.dll")
-                CLEAN_FILES += glob.glob(filename)
+                CLEAN_FILES += glob(filename)
     if 'clean' in sys.argv:
         CLEAN_FILES.append("xpra/build_info.py")
     for x in CLEAN_FILES:
@@ -1249,6 +1306,7 @@ def clean():
                 print(f"removing Cython/build generated file: {x}")
             os.unlink(filename)
 
+
 def add_build_info(*args):
     cmd = [sys.executable, "./fs/bin/add_build_info.py"]+list(args)
     r = subprocess.Popen(cmd).wait(30)
@@ -1256,9 +1314,9 @@ def add_build_info(*args):
 
 
 if "install" in sys.argv or "build" in sys.argv:
-    #if installing from source tree rather than
-    #from a source snapshot, we may not have a "src_info" file
-    #so create one:
+    # if installing from source tree rather than
+    # from a source snapshot, we may not have a "src_info" file
+    # so create one:
     add_build_info()
     if modules_ENABLED:
         # ensure it is now included in the module list
@@ -1269,7 +1327,7 @@ if "clean" in sys.argv or "sdist" in sys.argv:
     clean()
     if "sdist" in sys.argv:
         add_build_info("src")
-    #take shortcut to skip cython/pkgconfig steps:
+    # take shortcut to skip cython/pkgconfig steps:
     setup(**setup_options)
     sys.exit(0)
 
@@ -1298,14 +1356,15 @@ if WIN32:
         add_packages("xpra.platform.win32", "xpra.platform.win32.namedpipes")
     remove_packages("xpra.platform.darwin", "xpra.platform.posix")
 
-    #this is where the win32 gi installer will put things:
+    # this is where the win32 gi installer will put things:
     gnome_include_path = os.environ.get("MINGW_PREFIX")
 
-    #cx_freeze doesn't use "data_files"...
+    # cx_freeze doesn't use "data_files"...
     del setup_options["data_files"]
-    #it wants source files first, then where they are placed...
-    #one item at a time (no lists)
-    #all in its own structure called "include_files" instead of "data_files"...
+    # it wants source files first, then where they are placed...
+    # one item at a time (no lists)
+    # all in its own structure called "include_files" instead of "data_files"...
+
     def add_data_files(target_dir, files):
         if verbose_ENABLED:
             print(f"add_data_files({target_dir}, {files})")
@@ -1315,19 +1374,19 @@ if WIN32:
             target_file = os.path.join(target_dir, os.path.basename(f))
             data_files.append((f, target_file))
 
-    #only add the cx_freeze specific options
-    #only if we are packaging:
+    # only add the cx_freeze specific options
+    # only if we are packaging:
     if "install_exe" in sys.argv:
-        #with cx_freeze, we don't use py_modules
+        # with cx_freeze, we don't use py_modules
         del setup_options["py_modules"]
         from cx_Freeze import setup, Executable     #@UnresolvedImport @Reimport
         if not hasattr(sys, "base_prefix"):
-            #workaround for broken sqlite hook with python 2.7, see:
-            #https://github.com/anthony-tuininga/cx_Freeze/pull/272
+            # workaround for broken sqlite hook with python 2.7, see:
+            # https://github.com/anthony-tuininga/cx_Freeze/pull/272
             sys.base_prefix = sys.prefix
 
-        #pass a potentially nested dictionary representing the tree
-        #of files and directories we do want to include
+        # pass a potentially nested dictionary representing the tree
+        # of files and directories we do want to include
         def add_dir(base, defs):
             if verbose_ENABLED:
                 print(f"add_dir({base}, {defs})")
@@ -1346,18 +1405,20 @@ if WIN32:
                 assert isinstance(defs, dict)
                 for d, sub in defs.items():
                     assert isinstance(sub, (dict, list, tuple))
-                    #recurse down:
+                    # recurse down:
                     add_dir(os.path.join(base, d), sub)
 
         def add_gi_typelib(*libs):
             if verbose_ENABLED:
                 print(f"add_gi_typelib({libs})")
             add_dir('lib',      {"girepository-1.0":    [f"{x}.typelib" for x in libs]})
+
         def add_gi_gir(*libs):
             if verbose_ENABLED:
                 print(f"add_gi_gir({libs})")
             add_dir('share',    {"gir-1.0" :            [f"{x}.gir" for x in libs]})
-        #convenience method for adding GI libs and "typelib" and "gir":
+        # convenience method for adding GI libs and "typelib" and "gir":
+
         def add_gi(*libs):
             add_gi_typelib(*libs)
             add_gi_gir(*libs)
@@ -1391,21 +1452,21 @@ if WIN32:
                         continue
                     if not x.endswith(".dll"):
                         continue
-                    #strip prefix (ie: "lib") and ".dll":
-                    #ie: "libatk-1.0-0.dll" -> "atk-1.0-0"
+                    # strip prefix (ie: "lib") and ".dll":
+                    # ie: "libatk-1.0-0.dll" -> "atk-1.0-0"
                     nameversion = x[len(prefix):-4]
                     if verbose_ENABLED:
                         print(f"checking {x}: {nameversion}")
-                    m = version_re.search(nameversion)          #look for version part of filename
+                    m = version_re.search(nameversion)          # look for version part of filename
                     if m:
-                        dll_version = m.group(0)                #found it, ie: "-1.0-0"
-                        dll_name = nameversion[:-len(dll_version)]  #ie: "atk"
-                        dll_version = dll_version.lstrip("-")   #ie: "1.0-0"
+                        dll_version = m.group(0)                # found it, ie: "-1.0-0"
+                        dll_name = nameversion[:-len(dll_version)]  # ie: "atk"
+                        dll_version = dll_version.lstrip("-")   # ie: "1.0-0"
                     else:
-                        dll_version = ""                        #no version
-                        dll_name = nameversion                  #ie: "libzzz.dll" -> "zzz"
+                        dll_version = ""                        # no version
+                        dll_name = nameversion                  # ie: "libzzz.dll" -> "zzz"
                     if dll_name in dll_names:
-                        #this DLL is on our list
+                        # this DLL is on our list
                         print("%s %s %s" % (dll_name.ljust(22), dll_version.ljust(10), x))
                         dll_files.append(dll_path)
                         dll_names.remove(dll_name)
@@ -1415,68 +1476,71 @@ if WIN32:
                     print(f" - {prefix}{x}*.dll")
             add_data_files("", dll_files)
 
-        #list of DLLs we want to include, without the "lib" prefix, or the version and extension
+        # list of DLLs we want to include, without the "lib" prefix, or the version and extension
         #(ie: "libatk-1.0-0.dll" -> "atk")
         if audio_ENABLED or gtk3_ENABLED:
-            add_DLLs('gio', 'girepository', 'glib',
-                     'gnutls', 'gobject', 'gthread',
-                     'orc', 'stdc++',
-                     'winpthread',
-                     )
+            add_DLLs(
+                'gio', 'girepository', 'glib',
+                'gnutls', 'gobject', 'gthread',
+                'orc', 'stdc++',
+                'winpthread',
+            )
         if gtk3_ENABLED:
-            add_DLLs('atk',
-                     #'dbus', 'dbus-glib',
-                     'gdk', 'gdk_pixbuf', 'gtk',
-                     'cairo-gobject', 'cairo', 'pango', 'pangocairo', 'pangoft2', 'pangowin32',
-                     'harfbuzz', 'harfbuzz-gobject',
-                     'jasper', 'epoxy',
-                     'intl',
-                     'p11-kit',
-                     'jpeg', 'png16', 'rsvg',
-                     'webp', "webpdecoder",
-                     'tiff',
-                     )
-
+            add_DLLs(
+                'atk',
+                #'dbus', 'dbus-glib',
+                'gdk', 'gdk_pixbuf', 'gtk',
+                'cairo-gobject', 'cairo', 'pango', 'pangocairo', 'pangoft2', 'pangowin32',
+                'harfbuzz', 'harfbuzz-gobject',
+                'jasper', 'epoxy',
+                'intl',
+                'p11-kit',
+                'jpeg', 'png16', 'rsvg',
+                'webp', "webpdecoder",
+                'tiff',
+            )
         if gtk3_ENABLED:
-            add_dir('etc', ["fonts", "gtk-3.0", "pkcs11"])     #add "dbus-1"?
+            add_dir('etc', ["fonts", "gtk-3.0", "pkcs11"])     # add "dbus-1"?
             add_dir('lib', ["gdk-pixbuf-2.0", "gtk-3.0",
                             "p11-kit", "pkcs11"])
-            add_dir('share', ["fontconfig", "fonts", "glib-2.0",        #add "dbus-1"?
-                              "p11-kit", "xml",
-                              {"locale" : ["en"]},
-                              {"themes" : ["Default"]}
-                             ])
+            add_dir('share',
+                    [
+                        "fontconfig", "fonts", "glib-2.0",        # add "dbus-1"?
+                        "p11-kit", "xml",
+                        {"locale" : ["en"]},
+                        {"themes" : ["Default"]}
+                    ])
             ICONS = ["24x24", "48x48", "scalable", "cursors", "index.theme"]
-            for theme in ("Adwaita", ): #"hicolor"
+            for theme in ("Adwaita", ):   # "hicolor"
                 add_dir("share/icons/"+theme, ICONS)
             add_dir("share/themes/Windows-10", [
                 "CREDITS", "LICENSE.md", "README.md",
                 "gtk-3.20", "index.theme"])
         if gtk3_ENABLED or audio_ENABLED:
-            #causes warnings:
-            #add_dir('lib', ["gio"])
+            # causes warnings:
+            # add_dir('lib', ["gio"])
             packages.append("gi")
-            add_gi_typelib("Gio-2.0", "GIRepository-2.0", "Glib-2.0", "GModule-2.0",
-                   "GObject-2.0")
+            add_gi_typelib("Gio-2.0", "GIRepository-2.0", "Glib-2.0", "GModule-2.0", "GObject-2.0")
         if gtk3_ENABLED:
-            add_gi("Atk-1.0",
-                   "Notify-0.7",
-                   "GDesktopEnums-3.0", "Soup-2.4",
-                   "GdkPixbuf-2.0", "Gdk-3.0", "Gtk-3.0",
-                   "HarfBuzz-0.0",
-                   "Pango-1.0", "PangoCairo-1.0", "PangoFT2-1.0",
-                   "Rsvg-2.0",
-                   )
+            add_gi(
+                "Atk-1.0",
+                "Notify-0.7",
+                "GDesktopEnums-3.0", "Soup-2.4",
+                "GdkPixbuf-2.0", "Gdk-3.0", "Gtk-3.0",
+                "HarfBuzz-0.0",
+                "Pango-1.0", "PangoCairo-1.0", "PangoFT2-1.0",
+                "Rsvg-2.0",
+            )
             add_gi_typelib("cairo-1.0",
                            "fontconfig-2.0", "freetype2-2.0",
                            "libproxy-1.0", "libxml2-2.0")
-            #we no longer support GtkGL:
-            #if opengl_ENABLED:
+            # we no longer support GtkGL:
+            # if opengl_ENABLED:
             #    add_gi("GdkGLExt-3.0", "GtkGLExt-3.0", "GL-1.0")
             add_DLLs('curl', 'soup')
 
         if client_ENABLED:
-            #svg pixbuf loader:
+            # svg pixbuf loader:
             add_DLLs("rsvg", "croco")
 
         if client_ENABLED or server_ENABLED:
@@ -1484,71 +1548,78 @@ if WIN32:
 
         if audio_ENABLED:
             add_dir("share", ["gst-plugins-base", "gstreamer-1.0"])
-            add_gi("Gst-1.0", "GstAllocators-1.0", "GstAudio-1.0", "GstBase-1.0",
-                   "GstTag-1.0")
+            add_gi(
+                "Gst-1.0",
+                "GstAllocators-1.0",
+                "GstAudio-1.0",
+                "GstBase-1.0",
+                "GstTag-1.0"
+            )
             add_DLLs('gstreamer', 'orc-test')
-            for p in ("app", "audio", "base", "codecparsers", "fft", "net", "video",
-                      "pbutils", "riff", "sdp", "rtp", "rtsp", "tag", "uridownloader",
-                      #I think 'coreelements' needs those (otherwise we would exclude them):
-                      "basecamerabinsrc", "mpegts", "photography",
-                      ):
+            for p in (
+                    "app", "audio", "base", "codecparsers", "fft", "net", "video",
+                    "pbutils", "riff", "sdp", "rtp", "rtsp", "tag", "uridownloader",
+                    # I think 'coreelements' needs those (otherwise we would exclude them):
+                    "basecamerabinsrc", "mpegts", "photography",
+            ):
                 add_DLLs(f"gst{p}")
-            #DLLs needed by the plugins:
+            # DLLs needed by the plugins:
             add_DLLs("faac", "faad", "flac", "mpg123")      #"mad" is no longer included?
-            #add the gstreamer plugins we need:
-            GST_PLUGINS = ("app",
-                           "cutter", "removesilence",
-                           #muxers:
-                           "gdp", "matroska", "ogg", "isomp4",
-                           "audioparsers", "audiorate", "audioconvert", "audioresample", "audiotestsrc",
-                           "coreelements", "directsound", "directsoundsrc", "wasapi",
-                           #codecs:
-                           "opus", "opusparse", "flac", "lame", "mpg123", "speex", "faac", "faad",
-                           "volume", "vorbis", "wavenc", "wavpack", "wavparse",
-                           "autodetect",
-                           #decodebin used for playing "new-client" sound:
-                           "playback", "typefindfunctions",
-                           #video codecs:
-                           "vpx", "x264", "aom", "openh264", "d3d11", "winscreencap",
-                           "videoconvertscale", "videorate",
-                           )
+            # add the gstreamer plugins we need:
+            GST_PLUGINS = (
+                "app",
+                "cutter", "removesilence",
+                # muxers:
+                "gdp", "matroska", "ogg", "isomp4",
+                "audioparsers", "audiorate", "audioconvert", "audioresample", "audiotestsrc",
+                "coreelements", "directsound", "directsoundsrc", "wasapi",
+                # codecs:
+                "opus", "opusparse", "flac", "lame", "mpg123", "speex", "faac", "faad",
+                "volume", "vorbis", "wavenc", "wavpack", "wavparse",
+                "autodetect",
+                # decodebin used for playing "new-client" sound:
+                "playback", "typefindfunctions",
+                # video codecs:
+                "vpx", "x264", "aom", "openh264", "d3d11", "winscreencap",
+                "videoconvertscale", "videorate",
+            )
             add_dir(os.path.join("lib", "gstreamer-1.0"), [("libgst%s.dll" % x) for x in GST_PLUGINS])
-            #END OF SOUND
+            # END OF SOUND
 
         if server_ENABLED:
-            #used by proxy server:
+            # used by proxy server:
             external_includes += ["multiprocessing", "setproctitle"]
 
         external_includes += ["encodings", "mimetypes"]
         if client_ENABLED:
             external_includes += [
-                "shlex",                #for parsing "open-command"
-                "ftplib", "fileinput",  #for version check
+                "shlex",                # for parsing "open-command"
+                "ftplib", "fileinput",  # for version check
                 "urllib", "http.cookiejar", "http.client",
-                #for websocket browser cookie:
+                # for websocket browser cookie:
                 "browser_cookie3", "pyaes", "pbkdf2", "keyring",
-                ]
+            ]
 
-        #hopefully, cx_Freeze will fix this horror:
+        # hopefully, cx_Freeze will fix this horror:
         #(we shouldn't have to deal with DLL dependencies)
         import site
         lib_python = os.path.dirname(site.getsitepackages()[0])
         lib_dynload_dir = os.path.join(lib_python, "lib-dynload")
-        add_data_files('', glob.glob(f"{lib_dynload_dir}/zlib*dll"))
+        add_data_files('', glob(f"{lib_dynload_dir}/zlib*dll"))
         for x in ("io", "codecs", "abc", "_weakrefset", "encodings"):
-            add_data_files("lib/", glob.glob(f"{lib_python}/{x}*"))
-        #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
+            add_data_files("lib/", glob(f"{lib_python}/{x}*"))
+        # ensure that cx_freeze won't automatically grab other versions that may lay on our path:
         os.environ["PATH"] = gnome_include_path+";"+os.environ.get("PATH", "")
         bin_excludes = ["MSVCR90.DLL", "MFC100U.DLL"]
         cx_freeze_options = {
-                            "includes"          : external_includes,
-                            "packages"          : packages,
-                            "include_files"     : data_files,
-                            "excludes"          : excludes,
-                            "include_msvcr"     : True,
-                            "bin_excludes"      : bin_excludes,
-                            }
-        #cx_Freeze v5 workarounds:
+            "includes"          : external_includes,
+            "packages"          : packages,
+            "include_files"     : data_files,
+            "excludes"          : excludes,
+            "include_msvcr"     : True,
+            "bin_excludes"      : bin_excludes,
+        }
+        # cx_Freeze v5 workarounds:
         if nvenc_ENABLED or nvdec_ENABLED or nvfbc_ENABLED:
             external_includes.append("numpy")
             external_includes.append("pycuda")
@@ -1568,22 +1639,23 @@ if WIN32:
 
         def add_exe(script, icon, base_name, base="Console"):
             executables.append(Executable(
-                        script                  = script,
-                        init_script             = None,
-                        #targetDir               = "dist",
-                        icon                    = f"fs/share/xpra/icons/{icon}",
-                        target_name             = f"{base_name}.exe",
-                        base                    = base,
-                        ))
+                script=script, init_script=None,
+                # targetDir               = "dist",
+                icon=f"fs/share/xpra/icons/{icon}",
+                target_name=f"{base_name}.exe",
+                base=base,
+            ))
 
         def add_console_exe(script, icon, base_name):
             add_exe(script, icon, base_name)
+
         def add_gui_exe(script, icon, base_name):
             add_exe(script, icon, base_name, base="Win32GUI")
+
         def add_service_exe(script, icon, base_name):
             add_exe(script, icon, base_name, base="Win32Service")
 
-        #UI applications (detached from shell: no text output if ran from cmd.exe)
+        # UI applications (detached from shell: no text output if ran from cmd.exe)
         if (client_ENABLED or server_ENABLED) and gtk3_ENABLED:
             add_gui_exe("fs/bin/xpra",                         "xpra.ico",         "Xpra")
             add_gui_exe("xpra/platform/win32/scripts/shadow_server.py",       "server-notconnected.ico", "Xpra-Shadow")
@@ -1595,7 +1667,7 @@ if WIN32:
             add_gui_exe("xpra/platform/win32/gdi_screen_capture.py", "screenshot.ico", "Screenshot")
         if server_ENABLED:
             add_gui_exe("fs/libexec/xpra/auth_dialog",          "authentication.ico", "Auth_Dialog")
-        #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
+        # Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
         add_console_exe("fs/bin/xpra",                     "xpra_txt.ico",     "Xpra_cmd")
         add_console_exe("xpra/scripts/version.py",          "information.ico",  "Version_info")
         add_console_exe("xpra/net/net_util.py",             "network.ico",      "Network_info")
@@ -1632,8 +1704,8 @@ if WIN32:
             add_console_exe("xpra/audio/gstreamer_util.py",     "gstreamer.ico",    "GStreamer_info")
             add_console_exe("fs/bin/xpra",                     "speaker.ico",      "Xpra_Audio")
             add_console_exe("xpra/platform/win32/directsound.py", "speaker.ico",      "Audio_Devices")
-            #add_console_exe("xpra/audio/src.py",                "microphone.ico",   "Audio_Record")
-            #add_console_exe("xpra/audio/sink.py",               "speaker.ico",      "Audio_Play")
+            # add_console_exe("xpra/audio/src.py",                "microphone.ico",   "Audio_Record")
+            # add_console_exe("xpra/audio/sink.py",               "speaker.ico",      "Audio_Play")
             add_data_files("", (shutil.which("gst-launch-1.0.exe"), ))
         if opengl_ENABLED:
             add_console_exe("xpra/client/gl/check.py",   "opengl.ico",       "OpenGL_check")
@@ -1652,39 +1724,41 @@ if WIN32:
             add_console_exe("xpra/codecs/nvidia/cuda/context.py",  "cuda.ico",     "CUDA_info")
 
     if ("install_exe" in sys.argv) or ("install" in sys.argv):
-        #FIXME: how do we figure out what target directory to use?
+        # FIXME: how do we figure out what target directory to use?
         print("calling build_xpra_conf in-place")
-        #building etc files in-place:
+        # building etc files in-place:
         if data_ENABLED:
             build_xpra_conf("./fs")
-            add_data_files('etc/xpra',
-                           glob.glob("fs/etc/xpra/*conf")+
-                           glob.glob("fs/etc/xpra/nvenc*.keys")+
-                           glob.glob("fs/etc/xpra/nvfbc*.keys")
-                           )
-            add_data_files('etc/xpra/conf.d', glob.glob("fs/etc/xpra/conf.d/*conf"))
+            add_data_files(
+                "etc/xpra",
+                glob("fs/etc/xpra/*conf") + glob("fs/etc/xpra/nvenc*.keys") + glob("fs/etc/xpra/nvfbc*.keys")
+            )
+            add_data_files('etc/xpra/conf.d', glob("fs/etc/xpra/conf.d/*conf"))
 
     if data_ENABLED:
         add_data_files("", [
             "packaging/MSWindows/website.url",
             "packaging/MSWindows/DirectShow.tlb",
             "packaging/MSWindows/TaskbarLib.tlb",
-            ])
+        ])
 
     remove_packages(*external_excludes)
     external_includes += [
         "pyu2f",
         "mmap",
-        "comtypes"      #used by webcam and netdev_query
-        ]
-    remove_packages("comtypes.gen")         #this is generated at runtime
-                                            #but we still have to remove the empty directory by hand
-                                            #afterwards because cx_freeze does weird things (..)
-    remove_packages(#not used on win32:
-                    #we handle GL separately below:
-                    "OpenGL", "OpenGL_accelerate",
-                    #this is a mac osx thing:
-                    "ctypes.macholib")
+        "comtypes"      # used by webcam and netdev_query
+    ]
+    # this is generated at runtime
+    # but we still have to remove the empty directory by hand
+    # afterwards because cx_freeze does weird things (..)
+    remove_packages("comtypes.gen")
+    # not used on win32:
+    # we handle GL separately below:
+    remove_packages(
+        "OpenGL", "OpenGL_accelerate",
+        # this is a mac osx thing:
+        "ctypes.macholib",
+    )
 
     if webcam_ENABLED:
         external_includes.append("cv2")
@@ -1694,17 +1768,17 @@ if WIN32:
     external_includes.append("cairo")
     external_includes.append("certifi")
 
-    #add subset of PyOpenGL modules (only when installing):
+    # add subset of PyOpenGL modules (only when installing):
     if opengl_ENABLED and "install_exe" in sys.argv:
-        #for this hack to work, you must add "." to the sys.path
-        #so python can load OpenGL from the install directory
+        # for this hack to work, you must add "." to the sys.path
+        # so python can load OpenGL from the install directory
         #(further complicated by the fact that "." is the "frozen" path...)
-        #but we re-add those two directories to the library.zip as part of the build script
+        # but we re-add those two directories to the library.zip as part of the build script
         import OpenGL
         print(f"*** copying PyOpenGL modules to {install} ***")
         glmodules = {
             "OpenGL" : OpenGL,
-            }
+        }
         try:
             import OpenGL_accelerate        #@UnresolvedImport
         except ImportError as e:
@@ -1713,30 +1787,30 @@ if WIN32:
         else:
             glmodules["OpenGL_accelerate"] = OpenGL_accelerate
         for module_name, module in glmodules.items():
-            module_dir = os.path.dirname(module.__file__ )
+            module_dir = os.path.dirname(module.__file__)
             try:
                 shutil.copytree(
                     module_dir, os.path.join(install, "lib", module_name),
-                    ignore = shutil.ignore_patterns(
+                    ignore=shutil.ignore_patterns(
                         "Tk", "AGL", "EGL",
                         "GLX", "GLX.*", "_GLX.*",
                         "GLE", "GLES1", "GLES2", "GLES3",
-                        )
+                    )
                 )
                 print(f"copied {module_dir} to {install}/{module_name}")
             except Exception as e:
-                if not isinstance(e, WindowsError) or ("already exists" not in str(e)): #@UndefinedVariable
+                if not isinstance(e, WindowsError) or ("already exists" not in str(e)):  # @UndefinedVariable
                     raise
 
     if data_ENABLED:
         add_data_files("share/metainfo",      ["fs/share/metainfo/xpra.appdata.xml"])
         for d in ("http-headers", "content-type", "content-categories", "content-parent"):
-            add_data_files(f"etc/xpra/{d}", glob.glob(f"fs/etc/xpra/{d}/*"))
+            add_data_files(f"etc/xpra/{d}", glob(f"fs/etc/xpra/{d}/*"))
 
-    #END OF win32
+    # END OF win32
 #*******************************************************************************
 else:
-    #OSX and *nix:
+    # OSX and *nix:
     libexec_scripts = []
     if scripts_ENABLED:
         libexec_scripts += ["xpra_signal_listener"]
@@ -1747,6 +1821,7 @@ else:
             libexec_scripts += ["xdg-open", "gnome-open", "gvfs-open"]
         if server_ENABLED:
             libexec_scripts.append("auth_dialog")
+
     def add_data_files(target_dir, files):
         assert isinstance(target_dir, str)
         assert isinstance(files, (list, tuple))
@@ -1768,13 +1843,13 @@ else:
         if not OSX:
             man_pages.append("fs/share/man/man1/run_scaled.1")
         add_data_files(f"{man_path}/man1",  man_pages)
-        add_data_files("share/applications",  glob.glob("fs/share/applications/*.desktop"))
+        add_data_files("share/applications",  glob("fs/share/applications/*.desktop"))
         add_data_files("share/mime/packages", ["fs/share/mime/packages/application-x-xpraconfig.xml"])
-        add_data_files(f"share/{icons_dir}", glob.glob("fs/share/icons/*.png"))
+        add_data_files(f"share/{icons_dir}", glob("fs/share/icons/*.png"))
         add_data_files("share/metainfo",      ["fs/share/metainfo/xpra.appdata.xml"])
 
-    #here, we override build and install so we can
-    #generate our /etc/xpra/xpra.conf
+    # here, we override build and install so we can
+    # generate our /etc/xpra/xpra.conf
     class build_override(build):
         def run(self):
             build.run(self)
@@ -1808,7 +1883,7 @@ else:
             if not root_prefix:
                 root_prefix = install_dir.rstrip("/")
             if root_prefix.endswith("/usr"):
-                #ie: "/" or "/usr/src/rpmbuild/BUILDROOT/xpra-0.18.0-0.20160513r12573.fc23.x86_64/"
+                # ie: "/" or "/usr/src/rpmbuild/BUILDROOT/xpra-0.18.0-0.20160513r12573.fc23.x86_64/"
                 root_prefix = root_prefix[:-4]
             for x in sys.argv:
                 if x.startswith("--root="):
@@ -1817,18 +1892,18 @@ else:
             build_xpra_conf(root_prefix)
 
             def copytodir(src, dst_dir, dst_name=None, chmod=0o644, subs=None):
-                #print("copytodir%s" % (src, dst_dir, dst_name, chmod, subs))
-                #convert absolute paths:
+                # print("copytodir%s" % (src, dst_dir, dst_name, chmod, subs))
+                # convert absolute paths:
                 if dst_dir.startswith("/"):
                     dst_dir = root_prefix+dst_dir
                 else:
                     dst_dir = install_dir.rstrip("/")+"/"+dst_dir
-                #make sure the target directory exists:
+                # make sure the target directory exists:
                 self.mkpath(dst_dir)
-                #generate the target filename:
+                # generate the target filename:
                 filename = os.path.basename(src)
                 dst_file = os.path.join(dst_dir, dst_name or filename)
-                #copy it
+                # copy it
                 print(f"  {src:<30} -> {dst_dir} (%s)" % oct(chmod))
                 data = load_binary_file(src)
                 if subs:
@@ -1846,19 +1921,20 @@ else:
                     copytodir(os.path.join(src_dir, f), dst_dir)
 
             if printing_ENABLED and POSIX:
-                #install "/usr/lib/cups/backend" with 0700 permissions:
+                # install "/usr/lib/cups/backend" with 0700 permissions:
                 lib_cups = "lib/cups"
                 if FREEBSD:
                     lib_cups = "libexec/cups"
                 copytodir("fs/lib/cups/backend/xpraforwarder", f"{lib_cups}/backend", chmod=0o700)
 
             if x11_ENABLED:
-                #install xpra_Xdummy if we need it:
+                # install xpra_Xdummy if we need it:
                 xvfb_command = detect_xorg_setup()
                 if any(x.find("xpra_Xdummy")>=0 for x in (xvfb_command or [])) or Xdummy_wrapper_ENABLED is True:
                     copytodir("fs/bin/xpra_Xdummy", "bin", chmod=0o755)
-                #install xorg*.conf, cuda.conf and nvenc.keys:
+                # install xorg*.conf, cuda.conf and nvenc.keys:
                 etc_xpra_files = {}
+
                 def addconf(name, dst_name=None):
                     etc_xpra_files[name] = dst_name
                 if uinput_ENABLED:
@@ -1881,7 +1957,7 @@ else:
             if is_openSUSE():
                 systemd_dir = "__UNITDIR__"
             if service_ENABLED:
-                #Linux init service:
+                # Linux init service:
                 subs = {}
                 if is_RedHat() or is_CentOS() or is_AlmaLinux() or is_RockyLinux() or is_OracleLinux() or is_Fedora():
                     cdir = "/etc/sysconfig"
@@ -1892,7 +1968,7 @@ else:
                 else:
                     cdir = "/etc/default"
                 if is_openSUSE():
-                    #openSUSE does things differently:
+                    # openSUSE does things differently:
                     cdir = "__FILLUPDIR__"
                     shutil.copy("fs/etc/sysconfig/xpra", "fs/etc/sysconfig/sysconfig.xpra")
                     os.chmod("fs/etc/sysconfig/sysconfig.xpra", 0o644)
@@ -1900,7 +1976,7 @@ else:
                 else:
                     copytodir("fs/etc/sysconfig/xpra", cdir)
                 if cdir!="/etc/sysconfig":
-                    #also replace the reference to it in the service file below
+                    # also replace the reference to it in the service file below
                     subs[b"/etc/sysconfig"] = cdir.encode()
                 if os.path.exists("/bin/systemctl") or os.path.exists("/usr/bin/systemctl") or sd_listen_ENABLED:
                     if sd_listen_ENABLED:
@@ -1932,41 +2008,42 @@ else:
     }
 
     if OSX:
-        #pyobjc needs email.parser
+        # pyobjc needs email.parser
         external_includes += ["email", "uu", "urllib", "objc", "cups", "six"]
         external_includes += ["kerberos", "future", "pyu2f", "paramiko", "nacl"]
-        #OSX package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
+        # OSX package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
         add_packages("xpra.platform.darwin")
         remove_packages("xpra.platform.win32", "xpra.platform.posix")
-        #to support GStreamer 1.x we need this:
+        # to support GStreamer 1.x we need this:
         modules += ["importlib", "mimetypes"]
         remove_packages("numpy")
     else:
         add_packages("xpra.platform.posix")
         remove_packages("xpra.platform.win32", "xpra.platform.darwin")
         if data_ENABLED:
-            #not supported by all distros, but doesn't hurt to install them anyway:
+            # not supported by all distros, but doesn't hurt to install them anyway:
             if not FREEBSD:
                 for x in ("tmpfiles.d", "sysusers.d"):
                     add_data_files(f"lib/{x}", [f"fs/lib/{x}/xpra.conf"])
             if uinput_ENABLED:
                 add_data_files("lib/udev/rules.d/", ["fs/lib/udev/rules.d/71-xpra-virtual-pointer.rules"])
 
-    #gentoo does weird things, calls --no-compile with build *and* install
-    #then expects to find the cython modules!? ie:
+    # gentoo does weird things, calls --no-compile with build *and* install
+    # then expects to find the cython modules!? ie:
     #> python2.7 setup.py build -b build-2.7 install --no-compile \
     # --root=/var/tmp/portage/x11-wm/xpra-0.7.0/temp/images/2.7
-    #otherwise we use the flags to skip pkgconfig
-    if ("--no-compile" in sys.argv or "--skip-build" in sys.argv) and not ("build" in sys.argv and "install" in sys.argv):
+    # otherwise we use the flags to skip pkgconfig
+    if ("--no-compile" in sys.argv or "--skip-build" in sys.argv) and not ("build" in sys.argv and "install" in sys.argv):  # noqa: E501
         pkgconfig = no_pkgconfig
 
     if OSX and "py2app" in sys.argv:
         import py2app    #@UnresolvedImport
         assert py2app is not None
 
-        #don't use py_modules or scripts with py2app, and no cython:
+        # don't use py_modules or scripts with py2app, and no cython:
         del setup_options["py_modules"]
         scripts = []
+
         def noop(*_args, **_kwargs):  # pylint: disable=function-redefined
             pass
         add_cython_ext = noop
@@ -1985,12 +2062,12 @@ else:
                 "CFBundleTypeName"          : "Xpra Session Config File",
                 "CFBundleName"              : "Xpra",
                 "CFBundleTypeRole"          : "Viewer",
-                },
+            },
             "CFBundleGetInfoString" : f"{XPRA_VERSION}-{REVISION} (c) 2012-2022 https://xpra.org/",
             "CFBundleIdentifier"            : "org.xpra.xpra",
-            }
-        #Note: despite our best efforts, py2app will not copy all the modules we need
-        #so the make-app.sh script still has to hack around this problem.
+        }
+        # Note: despite our best efforts, py2app will not copy all the modules we need
+        # so the make-app.sh script still has to hack around this problem.
         add_modules(*external_includes)
         py2app_options = {
             'iconfile'          : './fs/share/icons/xpra.icns',
@@ -2001,14 +2078,14 @@ else:
             'includes'          : modules,
             'excludes'          : excludes,
             'frameworks'        : ['CoreFoundation', 'Foundation', 'AppKit'],
-            }
+        }
         setup_options["options"] = {"py2app": py2app_options}
         setup_options["app"]     = ["xpra/scripts/main.py"]
 
 
 if WIN32 or OSX:
     external_includes += ["ssl", "_ssl"]
-    #socks proxy support:
+    # socks proxy support:
     add_packages("socks")
     if pillow_ENABLED:
         external_includes += ["PIL", "PIL.Image", "PIL.WebPImagePlugin"]
@@ -2016,12 +2093,12 @@ if WIN32 or OSX:
         external_includes += ["cffi", "_cffi_backend"]
     if crypto_ENABLED:
         if OSX:
-            #quic:
+            # quic:
             add_packages("uvloop")
-        #python-cryptography needs workarounds for bundling:
+        # python-cryptography needs workarounds for bundling:
         external_includes += [
             "cryptography", "idna", "idna.idnadata", "appdirs",
-            ]
+        ]
         add_modules(
             "cryptography",
             "cryptography.hazmat",
@@ -2051,24 +2128,26 @@ if data_ENABLED:
     add_data_files(share_xpra,                      ["fs/share/xpra/bell.wav"])
     if LINUX or FREEBSD:
         add_data_files(share_xpra,                  ["fs/share/xpra/autostart.desktop"])
-    ICONS = glob.glob("fs/share/xpra/icons/*.png")
+    ICONS = glob("fs/share/xpra/icons/*.png")
     if OSX:
-        ICONS += glob.glob("fs/share/xpra/icons/*.icns")
+        ICONS += glob("fs/share/xpra/icons/*.icns")
     if WIN32:
-        ICONS += glob.glob("fs/share/xpra/icons/*.ico")
+        ICONS += glob("fs/share/xpra/icons/*.ico")
     add_data_files(f"{share_xpra}/icons",         ICONS)
-    add_data_files(f"{share_xpra}/images",        glob.glob("fs/share/xpra/images/*"))
-    add_data_files(f"{share_xpra}/css",           glob.glob("fs/share/xpra/css/*"))
+    add_data_files(f"{share_xpra}/images",        glob("fs/share/xpra/images/*"))
+    add_data_files(f"{share_xpra}/css",           glob("fs/share/xpra/css/*"))
 
 #*******************************************************************************
 if cython_ENABLED:
     add_packages("xpra.buffers")
     buffers_pkgconfig = pkgconfig(optimize=3)
     import platform
-    #this may well be sub-optimal:
-    extra_compile_args = "-mfpmath=387" if platform.machine()=="i386" else None
-    tace(cython_ENABLED, "xpra.buffers.membuf,xpra/buffers/memalign.c", optimize=3, extra_compile_args=extra_compile_args)
-    tace(cython_ENABLED, "xpra.buffers.xxh", "libxxhash", optimize=3, extra_compile_args=extra_compile_args)
+    # this may well be sub-optimal:
+    extra_compile_args = "-mfpmath=387" if platform.machine() == "i386" else None
+    tace(cython_ENABLED, "xpra.buffers.membuf,xpra/buffers/memalign.c", optimize=3,
+         extra_compile_args=extra_compile_args)
+    tace(cython_ENABLED, "xpra.buffers.xxh", "libxxhash", optimize=3,
+         extra_compile_args=extra_compile_args)
 
 toggle_packages(dbus_ENABLED, "xpra.dbus")
 toggle_packages(server_ENABLED or proxy_ENABLED, "xpra.server", "xpra.server.auth")
@@ -2081,16 +2160,17 @@ toggle_packages(server_ENABLED or client_ENABLED, "xpra.clipboard")
 toggle_packages(x11_ENABLED and dbus_ENABLED and server_ENABLED, "xpra.x11.dbus")
 toggle_packages(notifications_ENABLED, "xpra.notifications")
 
-#cannot use toggle here as cx_Freeze will complain if we try to exclude this module:
+# cannot use toggle here as cx_Freeze will complain if we try to exclude this module:
 if dbus_ENABLED and server_ENABLED:
     add_packages("xpra.server.dbus")
 
 tace(OSX, "xpra.platform.darwin.gdk3_bindings,xpra/platform/darwin/transparency_glue.m",
-     ("gtk+-3.0", "pygobject-3.0"), language="objc", extra_compile_args=(
-                "-ObjC",
-                "-I/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers/",
-                "-I/System/Library/Frameworks/AppKit.framework/Versions/C/Headers/")
-     )
+     ("gtk+-3.0", "pygobject-3.0"),
+     language="objc",
+     extra_compile_args=(
+         "-ObjC",
+         "-I/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers/",
+         "-I/System/Library/Frameworks/AppKit.framework/Versions/C/Headers/"))
 
 toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.bindings")
 if x11_ENABLED:
@@ -2119,13 +2199,13 @@ tace(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3.cairo_workaround", "py3c
      extra_compile_args=["-Wno-error=parentheses-equality"] if CC_is_clang() else [])
 
 
-#build tests, but don't install them:
+# build tests, but don't install them:
 toggle_packages(tests_ENABLED, "unit")
 
 
 if bundle_tests_ENABLED:
     def bundle_tests():
-        #bundle the tests directly (not in library.zip):
+        # bundle the tests directly (not in library.zip):
         for k,v in glob_recurse("unit").items():
             if k!="":
                 k = os.sep+k
@@ -2133,7 +2213,7 @@ if bundle_tests_ENABLED:
     bundle_tests()
 
 
-#special case for client: cannot use toggle_packages which would include bindings, etc:
+# special case for client: cannot use toggle_packages which would include bindings, etc:
 if client_ENABLED:
     add_modules("xpra.client")
     add_packages("xpra.client.base")
@@ -2145,8 +2225,7 @@ toggle_packages((client_ENABLED and gtk3_ENABLED) or (audio_ENABLED and WIN32 an
 if client_ENABLED and WIN32 and MINGW_PREFIX:
     ace("xpra.platform.win32.propsys,xpra/platform/win32/setappid.cpp",
         language="c++",
-        extra_link_args = ("-luuid", "-lshlwapi", "-lole32", "-static-libgcc")
-        )
+        extra_link_args=("-luuid", "-lshlwapi", "-lole32", "-static-libgcc"))
 
 if client_ENABLED or server_ENABLED:
     add_modules("xpra.codecs")
@@ -2158,7 +2237,7 @@ if client_ENABLED or server_ENABLED:
         "xpra.scripts.exec_util",
         "xpra.scripts.fdproxy",
         "xpra.scripts.version",
-        )
+    )
 if server_ENABLED or proxy_ENABLED:
     add_modules("xpra.scripts.server")
 
@@ -2185,15 +2264,17 @@ if pam_ENABLED:
         pam_kwargs = {
             "extra_compile_args" : "-I" + find_header_file("/security", isdir=True),
             "extra_link_args"    : ("-lpam", "-lpam_misc"),
-            }
+        }
     ace("xpra.server.pam", **pam_kwargs)
 
-#platform:
+# platform:
 tace(sd_listen_ENABLED, "xpra.platform.posix.sd_listen", "libsystemd")
-tace(proc_ENABLED and proc_use_procps, "xpra.platform.posix.proc_procps", "libprocps", extra_compile_args = "-Wno-error")
-tace(proc_ENABLED and proc_use_libproc, "xpra.platform.posix.proc_libproc", "libproc2", extra_compile_args = "-Wno-error")
+tace(proc_ENABLED and proc_use_procps, "xpra.platform.posix.proc_procps", "libprocps",
+     extra_compile_args="-Wno-error")
+tace(proc_ENABLED and proc_use_libproc, "xpra.platform.posix.proc_libproc", "libproc2",
+     extra_compile_args="-Wno-error")
 
-#codecs:
+# codecs:
 toggle_packages(enc_proxy_ENABLED, "xpra.codecs.proxy")
 
 toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia")
@@ -2216,7 +2297,7 @@ if nvidia_ENABLED:
                 print(f"* rebuilding {kernel}: {reason}")
                 rebuild.append(kernel)
     if rebuild:
-        #add cwd to PYTHONPATH:
+        # add cwd to PYTHONPATH:
         env = os.environ.copy()
         paths = env.pop("PYTHONPATH", "").split(os.pathsep)+[os.getcwd()]
         env["PYTHONPATH"] = os.pathsep.join(paths)
@@ -2228,16 +2309,16 @@ if nvidia_ENABLED:
         add_data_files(CUDA_BIN, [f"fs/share/xpra/cuda/{x}.fatbin" for x in kernels])
     if WIN32 and (nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED or nvenc_ENABLED or nvdec_ENABLED):
         CUDA_BIN_DIR = os.path.abspath("./cuda/")
-        add_data_files("", glob.glob(f"{CUDA_BIN_DIR}/cudart64*dll"))
-        #if pycuda is built with curand, add this:
-        #add_data_files("", glob.glob(f"{CUDA_BIN_DIR}/curand64*dll"))
+        add_data_files("", glob(f"{CUDA_BIN_DIR}/cudart64*dll"))
+        # if pycuda is built with curand, add this:
+        # add_data_files("", glob(f"{CUDA_BIN_DIR}/curand64*dll"))
         if nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED:
-            add_data_files("", glob.glob(f"{CUDA_BIN_DIR}/nvjpeg64*dll"))
+            add_data_files("", glob(f"{CUDA_BIN_DIR}/nvjpeg64*dll"))
 if cuda_kernels_ENABLED or is_Debian() or is_Ubuntu():
     add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
 toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvidia.nvfbc")
-#platform: ie: `linux2` -> `linux`, `win32` -> `win`
+# platform: ie: `linux2` -> `linux`, `win32` -> `win`
 fbcplatform = sys.platform.rstrip("0123456789")
 tace(nvfbc_ENABLED, f"xpra.codecs.nvidia.nvfbc.capture_{fbcplatform}", "nvfbc", language="c++")
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc")
@@ -2284,10 +2365,11 @@ toggle_packages(gstreamer_ENABLED, "xpra.codecs.gstreamer", "xpra.gstreamer")
 toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
 tace(v4l2_ENABLED, "xpra.codecs.v4l2.virtual")
 
-#network:
-#workaround this warning on MS Windows with Cython 3.0.0b1:
-# "warning: comparison of integer expressions of different signedness: 'long unsigned int' and 'long int' [-Wsign-compare]"
-#simply adding -Wno-error=sign-compare is not enough:
+# network:
+# workaround this warning on MS Windows with Cython 3.0.0b1:
+# "warning: comparison of integer expressions of different signedness:
+#   'long unsigned int' and 'long int' [-Wsign-compare]"
+# simply adding -Wno-error=sign-compare is not enough:
 ECA_WIN32SIGN = ["-Wno-error"] if WIN32 else []
 toggle_packages(client_ENABLED or server_ENABLED, "xpra.net.protocol")
 toggle_packages(websockets_ENABLED, "xpra.net.websockets", "xpra.net.websockets.headers")
@@ -2313,7 +2395,7 @@ tace(lz4_ENABLED, "xpra.net.lz4.lz4", "liblz4")
 if cythonize_more_ENABLED:
     def ax(base):
         dirname = base.replace(".", os.path.sep)
-        for x in glob.glob(f"{dirname}/*.py"):
+        for x in glob(f"{dirname}/*.py"):
             if not x.endswith("__init__.py"):
                 mod = x[:-3].replace(os.path.sep, ".")
                 ace(mod)
@@ -2408,7 +2490,7 @@ if ext_modules:
         "cdivision"             : True,
         "always_allow_keywords" : False,
         "unraisable_tracebacks" : True,
-        }
+    }
     if annotate_ENABLED:
         from Cython.Compiler import Options
         Options.annotate = True
