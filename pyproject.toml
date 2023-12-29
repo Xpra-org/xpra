@@ -89,12 +89,11 @@ cli = [
 ]
 
 
-[project.scripts]
-xpra-cli = "xpra.scripts.main:main"
-
-
-[project.gui-scripts]
-xpra-gui = "xpra.gtk.dialogs.gui:main"
+# these scripts are mangled, don't use them
+# [project.scripts]
+# xpra = "xpra.scripts.main:main"
+# [project.gui-scripts]
+# xpra_launcher = "xpra.client.gtk3.launcher:main"
 
 
 [tool.ruff]
