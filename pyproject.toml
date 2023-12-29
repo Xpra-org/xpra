@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "cython", ]
+requires = ["setuptools", "cython"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,18 +7,94 @@ name = "xpra"
 version = "6.0"
 authors = [
     {name = "Antoine Martin", email = "antoine@xpra.org"},
+    {name = "Nathaniel Smith", email = "njs@pobox.com"},
+    {name = "Arthur Huillet"},
+]
+maintainers = [
+    {name = "Antoine Martin", email = "antoine@xpra.org"},
 ]
 description = "multi-platform screen and application forwarding system"
 readme = "README.md"
 requires-python = ">=3.10"
-keywords = []
-license = {text = "GPL2+"}
+keywords = ["remote"]
 classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Environment :: X11 Applications :: GTK",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Operating System :: MacOS :: MacOS X",
+    "Programming Language :: Python",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
     "gobject-introspection",
+    "pillow",
 ]
+
+
+[project.license]
+name = "GPL-2.0-or-later"
+file = "COPYING"
+
+
+[project.urls]
+"Homepage" = "https://xpra.org/"
+"Source" = "https://github.com/Xpra-org/xpra"
+"Funding" = "https://github.com/sponsors/totaam"
+"Documentation" = "https://github.com/Xpra-org/xpra/docs"
+
+
+[project.optional-dependencies]
+gui = [
+    "pyopengl",
+    "pyopengl_accelerate",
+]
+cli = [
+    # network features:
+    "paramiko",
+    "pyopenssl",
+    "cryptography",
+    "aioquic",
+    "dbus",
+    "socks",
+    "pysocks",
+    "netifaces",
+    "dns",
+    "avahi",
+    "zeroconf",
+    # printing, etc:
+    "cups",
+    "psutil",
+    "inotify",
+    "cpuinfo",
+    "setproctitle",
+    "pyxdg",
+    # libraries used by codecs:
+    "numpy",
+    "pycuda",
+    "pynvml",
+    # authentication modules:
+    "kerberos",
+    "gssapi",
+    "ldap3",
+    "ldap",
+    "oauthlib",
+    "pyu2f",
+]
+
+
+[project.scripts]
+xpra-cli = "xpra.scripts.main:main"
+
+
+[project.gui-scripts]
+xpra-gui = "xpra.gtk.dialogs.gui:main"
 
 
 [tool.ruff]
@@ -31,6 +107,7 @@ max-line-length = 120
 exclude = ["xpra/gtk/examples/*.py", "xpra/platform/win32/*", "xpra/platform/darwin/*"]
 ignore = ["E203", "E231", "E225", "E226", "E252", "E221", "E741", "E262", "E265"]
 per-file-ignores = """
+    setup.py:E241
     xpra/audio/gstreamer_util.py:E241
     xpra/keyboard/layouts.py:E241,E501
     xpra/x11/gtk_x11/wm_check.py:E241
