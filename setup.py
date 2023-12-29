@@ -2182,6 +2182,7 @@ if x11_ENABLED:
     ace("xpra.x11.bindings.xwayland", "x11")
     ace("xpra.x11.bindings.posix_display_source", "x11")
     ace("xpra.x11.bindings.randr", "x11,xrandr")
+    ace("xpra.x11.bindings.record", "x11,xtst")
     ace("xpra.x11.bindings.keyboard", "x11,xtst,xfixes,xkbfile")
     ace("xpra.x11.bindings.window", "x11,xtst,xfixes,xcomposite,xdamage,xext")
     ace("xpra.x11.bindings.ximage", "x11,xext,xcomposite")
