@@ -11,13 +11,13 @@ Autoreq: 0
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))")
 
 Name:           %{python3}-aioquic
-Version:        0.9.22
+Version:        0.9.24
 Release:        1%{?dist}
 Summary:        aioquic is a library for the QUIC network protocol in Python
 Group:          Development/Languages
 License:        MIT
 URL:            https://github.com/aiortc/aioquic
-Source0:        https://files.pythonhosted.org/packages/37/c8/bac80ecdc006fc54d1519684015b1f1a685b9d0157f325c1a841a1becd26/aioquic-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/ee/4b/bc0b057f9b81d30a7828ea52e4778a76add7103613b9d5b3b19d3dec8c34/aioquic-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-setuptools
@@ -42,7 +42,7 @@ to read or write HTTP/3 headers compressed with QPACK.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "4015f60d865e101f3ddde86702cb11f9c5d889f5566020242c2a3d6706999c7a" ]; then
+if [ "${sha256}" != "64ae15718fe663f8184a4662cc7fed660e7277447ec70b49ce25ffce3060b94f" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -71,6 +71,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Fri Dec 29 2023 Antoine Martin <antoine@xpra.org> - 0.9.24-1
+- new upstream release
+
 * Sun Nov 12 2023 Antoine Martin <antoine@xpra.org> - 0.9.22-1
 - new upstream release
 
