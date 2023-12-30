@@ -104,7 +104,7 @@ class X11ServerCore(GTKServerBase):
         (see XpraServer or XpraX11ShadowServer for actual implementations)
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.root_window = get_default_root_window()
         self.pointer_device = XTestPointerDevice()
         self.touchpad_device = None
