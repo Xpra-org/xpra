@@ -7,8 +7,11 @@
     * [tools and examples hang on SIGINT](https://github.com/Xpra-org/xpra/commit/6b83eab06d691adcfcf6f7d9d0618aded1d0b774)
     * [workaround missing icon size config](https://github.com/Xpra-org/xpra/commit/efcb254105600987b06539b9929c66911f9713b5)
     * [broken about dialog](https://github.com/Xpra-org/xpra/commit/356dda7aa3fcba9a1ca23e2875dc6ee1c6f13009)
+    * [workaround paramiko error with agent keys](https://github.com/Xpra-org/xpra/commit/55f2cc6787bfc6f57e1577a803a4cd33a1addbe1)
+    * [incomplete desktop server startup with `Xvfb` backend](https://github.com/Xpra-org/xpra/commit/c2dfebc63caa9d85517a2b8f8e6158d1ffeb32f8)
 * Platforms and packaging:
     * (Free)BSD compatibility: [don't build pam](https://github.com/Xpra-org/xpra/commit/dd80ab2f02fbd2f4e72165c99012d072a5373952), [do build drm](https://github.com/Xpra-org/xpra/commit/4753b487a56b16d065b868ababc8a27e99e025d0)
+    * [Cython 3.0.7](https://github.com/Xpra-org/xpra/commit/143e8a0a38b7567293ed9cf62ee9940aa94defec)
 * Minor:
     * [make iconify delay configurable](https://github.com/Xpra-org/xpra/commit/a9441fb82745fb6cd8e0c2f2d085a1c1a7e3fe4c)
     * [update trixie and sid libavif dependency](https://github.com/Xpra-org/xpra/commit/4ba44484eb9d8a3225d11d823f4ea57794dd08b7)
