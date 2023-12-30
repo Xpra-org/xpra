@@ -10,12 +10,12 @@ from xpra.util.env import envbool
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
 
-from cairo import (  #pylint: disable=no-name-in-module
+from cairo import (   # pylint: disable=no-name-in-module
     OPERATOR_SOURCE,
     ImageSurface, Context, FontOptions,
     ANTIALIAS_NONE, ANTIALIAS_DEFAULT, ANTIALIAS_GRAY, ANTIALIAS_SUBPIXEL,
     FORMAT_RGB24,
-    )
+)
 
 Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
@@ -78,8 +78,8 @@ class FontWindow(Gtk.Window):
                 cr.save()
                 antialias = tuple(ANTIALIAS.keys())[y*2+x]
                 label = ANTIALIAS[antialias]
-                self.paint_pattern(cr, x, y,     antialias, label, BLACK, WHITE)
-                self.paint_pattern(cr, x, y+2,   antialias, label, WHITE, BLACK)
+                self.paint_pattern(cr, x, y, antialias, label, BLACK, WHITE)
+                self.paint_pattern(cr, x, y+2, antialias, label, WHITE, BLACK)
                 cr.restore()
 
         alloc = widget.get_allocated_size()[0]

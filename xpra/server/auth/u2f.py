@@ -114,8 +114,8 @@ class Authenticator(SysAuthenticator):
         }
         client_param = sha256(json.dumps(client_data, sort_keys=True).encode('utf8')).digest()
         param = app_param + pack(b'>B', user_presence) + pack(b'>I', counter) + client_param
-        #check all the public keys:
-        #pylint: disable=import-outside-toplevel
+        # check all the public keys:
+        # pylint: disable=import-outside-toplevel
         from cryptography.hazmat.primitives import hashes
         from cryptography.hazmat.primitives.asymmetric import ec
         errors = {}

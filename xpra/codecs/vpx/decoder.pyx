@@ -32,7 +32,7 @@ from xpra.codecs.vpx.vpx cimport (
     vpx_image_t, vpx_color_space_t, vpx_color_range_t,
     VPX_CR_STUDIO_RANGE, VPX_CR_FULL_RANGE,
     )
-from xpra.buffers.membuf cimport padbuf, MemBuf, buffer_context #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport padbuf, MemBuf, buffer_context  # pylint: disable=syntax-error
 
 
 SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")

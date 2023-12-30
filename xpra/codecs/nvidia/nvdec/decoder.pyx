@@ -7,7 +7,7 @@ from time import monotonic
 from libc.string cimport memset
 from libc.stdint cimport uintptr_t
 from libc.stdio cimport printf
-from xpra.buffers.membuf cimport getbuf, buffer_context, MemBuf #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport getbuf, buffer_context, MemBuf  # pylint: disable=syntax-error
 
 from weakref import WeakValueDictionary
 from typing import Any, Dict

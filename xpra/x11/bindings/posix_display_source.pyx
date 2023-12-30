@@ -9,7 +9,7 @@
 import os
 from xpra.util.str_fn import strtobytes
 from xpra.x11.bindings.xlib cimport Display, XOpenDisplay, XCloseDisplay
-from xpra.x11.bindings.display_source cimport set_display, get_display  #pylint: disable=syntax-error
+from xpra.x11.bindings.display_source cimport set_display, get_display   # pylint: disable=syntax-error
 from xpra.x11.bindings.display_source import set_display_name  # @UnresolvedImport
 from libc.stdint cimport uintptr_t
 
@@ -20,6 +20,7 @@ def init_posix_display_source():
         raise ValueError("cannot open display, the environment variable DISPLAY is not set!")
     return do_init_posix_display_source(display_name)
 
+
 cdef do_init_posix_display_source(display_name):
     if not display_name:
         raise ValueError("display name not provided")
@@ -29,6 +30,7 @@ cdef do_init_posix_display_source(display_name):
     set_display(display)
     set_display_name(display_name)
     return <uintptr_t> display
+
 
 def close_display_source(uintptr_t ptr):
     assert ptr!=0, "invalid NULL display pointer"

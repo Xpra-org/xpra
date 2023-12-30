@@ -7,7 +7,7 @@ import sys
 import gi
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
 gi.require_version("Gdk", "3.0")  # @UndefinedVariable
-from gi.repository import Gtk, Gdk, GdkPixbuf #pylint: disable=wrong-import-position @UnresolvedImport
+from gi.repository import Gtk, Gdk, GdkPixbuf  # pylint: disable=wrong-import-position @UnresolvedImport
 
 count = 0
 def handle_owner_change(clipboard, event):

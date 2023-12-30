@@ -13,7 +13,7 @@ from xpra.util.str_fn import repr_ellipsized, csv
 from xpra.log import Logger
 log = Logger("encoding", "scroll")
 
-from xpra.buffers.membuf cimport memalign, buffer_context #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport memalign, buffer_context  # pylint: disable=syntax-error
 from xpra.buffers.xxh cimport xxh3
 from xpra.util.rectangle import rectangle
 

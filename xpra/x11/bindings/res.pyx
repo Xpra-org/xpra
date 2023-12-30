@@ -6,7 +6,7 @@
 from xpra.x11.bindings.xlib cimport (
     Display, XID, Atom, Bool, Status, Window, CARD32,
     Success,
-    )
+)
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
 from xpra.log import Logger
@@ -82,11 +82,14 @@ cdef get_pid(Display *display, Window xid):
 
 
 cdef ResBindingsInstance singleton = None
+
+
 def ResBindings():
     global singleton
     if singleton is None:
         singleton = ResBindingsInstance()
     return singleton
+
 
 cdef class ResBindingsInstance(X11CoreBindingsInstance):
 

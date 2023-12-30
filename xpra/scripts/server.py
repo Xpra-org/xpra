@@ -14,7 +14,7 @@ import sys
 import glob
 import os.path
 import datetime
-from subprocess import Popen  #pylint: disable=import-outside-toplevel
+from subprocess import Popen   # pylint: disable=import-outside-toplevel
 from typing import Any
 
 from xpra import __version__

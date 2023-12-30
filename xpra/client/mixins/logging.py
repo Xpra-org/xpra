@@ -72,7 +72,7 @@ class RemoteLogging(StubClientMixin):
                 log.warn("Warning: cannot receive log output from the server")
                 log.warn(" the feature is not enabled or not supported by the server")
             else:
-                self.after_handshake(self.start_receiving_logging)  #pylint: disable=no-member
+                self.after_handshake(self.start_receiving_logging)   # pylint: disable=no-member
         return True
 
     def start_receiving_logging(self) -> None:

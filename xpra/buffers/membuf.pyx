@@ -15,7 +15,7 @@
 
 #cython: wraparound=False
 
-from cpython.buffer cimport PyBuffer_FillInfo   #pylint: disable=syntax-error
+from cpython.buffer cimport PyBuffer_FillInfo    # pylint: disable=syntax-error
 from libc.stdlib cimport free
 from libc.string cimport memset, memcpy
 from libc.stdint cimport uintptr_t

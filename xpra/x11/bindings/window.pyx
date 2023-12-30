@@ -28,8 +28,8 @@ from xpra.x11.bindings.xlib cimport (
     XAllocIconSize, XIconSize, XSetIconSizes,
     XQueryTree,
     XKillClient,
-    )
-from libc.stdlib cimport free, malloc       #pylint: disable=syntax-error
+)
+from libc.stdlib cimport free, malloc        # pylint: disable=syntax-error
 from libc.string cimport memset
 
 from xpra.log import Logger
@@ -136,7 +136,6 @@ cdef extern from "X11/Xlib.h":
     int NotifyDetailNone
 
 
-
 constants = {
     "CWX"               : CWX,
     "CWY"               : CWY,
@@ -198,7 +197,7 @@ constants = {
     "NotifyPointer"     : NotifyPointer,
     "NotifyPointerRoot" : NotifyPointerRoot,
     "NotifyDetailNone"  : NotifyDetailNone,
-    }
+}
 
 
 ###################################
@@ -228,15 +227,14 @@ cdef extern from "X11/extensions/shape.h":
 
     void XShapeCombineRectangles(Display *display, Window dest, int dest_kind, int x_off, int y_off, XRectangle *rectangles, int n_rects, int op, int ordering)
 
-
     cdef int ShapeBounding
     cdef int ShapeClip
     cdef int ShapeInput
 SHAPE_KIND = {
-                ShapeBounding   : "Bounding",
-                ShapeClip       : "Clip",
-                ShapeInput      : "ShapeInput",
-              }
+    ShapeBounding   : "Bounding",
+    ShapeClip       : "Clip",
+    ShapeInput      : "ShapeInput",
+}
 
 ###################################
 # Xfixes: cursor events
@@ -295,7 +293,6 @@ cdef extern from "X11/extensions/Xfixes.h":
 # Xdamage
 ###################################
 
-
 cdef extern from "X11/extensions/Xdamage.h":
     ctypedef XID Damage
     unsigned int XDamageReportDeltaRectangles
@@ -324,6 +321,8 @@ class PropertyError(Exception):
     pass
 class BadPropertyType(PropertyError):
     pass
+
+
 class PropertyOverflow(PropertyError):
     pass
 
@@ -333,11 +332,14 @@ from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 cdef int CONFIGURE_GEOMETRY_MASK = CWX | CWY | CWWidth | CWHeight
 
 cdef X11WindowBindingsInstance singleton = None
+
+
 def X11WindowBindings():
     global singleton
     if singleton is None:
         singleton = X11WindowBindingsInstance()
     return singleton
+
 
 cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
 
@@ -401,7 +403,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             windows += self.get_all_children(window)
         return windows
 
-
     def get_absolute_position(self, Window xid):
         self.context_check("get_absolute_position")
         cdef Window root = XDefaultRootWindow(self.display)
@@ -413,7 +414,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
                                      &dest_x, &dest_y, &child):
             return None
         return dest_x, dest_y
-
 
     def MapWindow(self, Window xwindow):
         self.context_check("MapWindow")
@@ -444,7 +444,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XUnmapWindow(self.display, xwindow)
         return serial
 
-
     def getWindowAttributes(self, Window xwindow):
         self.context_check("getWindowAttributes")
         cdef XWindowAttributes attrs
@@ -462,7 +461,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
                 "blue-mask"     : attrs.visual.blue_mask,
                 "bits-per-rgb"  : attrs.visual.bits_per_rgb,
                 "map_entries"   : attrs.visual.map_entries,
-                },
+            },
             "bit-gravity" : attrs.bit_gravity,
             "win-gravity" : attrs.win_gravity,
             "backing-store" : attrs.backing_store,
@@ -476,7 +475,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             "your_event_mask"   : attrs.your_event_mask,
             "do-not-propagate-mask" : attrs.do_not_propagate_mask,
             "override-redirect"     : attrs.override_redirect,
-            }
+        }
 
     def getEventMask(self, Window xwindow):
         self.context_check("getEventMask")
@@ -489,7 +488,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     def setEventMask(self, Window xwindow, int mask):
         self.context_check("setEventMask")
         XSelectInput(self.display, xwindow, mask)
-
 
     # Mapped status
     def is_mapped(self, Window xwindow):
@@ -533,7 +531,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         cdef int x, y
         cdef unsigned int width, height, border_width, depth
         if not XGetGeometry(self.display, d, &root,
-                        &x, &y, &width, &height, &border_width, &depth):
+                            &x, &y, &width, &height, &border_width, &depth):
             return 0
         return depth
 
@@ -560,7 +558,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     def XKillClient(self, Window xwindow):
         self.context_check("XKillClient")
         return XKillClient(self.display, xwindow)
-
 
     ###################################
     # Shape
@@ -599,9 +596,9 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
                                   &clip_shaped, &x_clip, &y_clip, &w_clip, &h_clip):
             return None
         return (
-                (bounding_shaped, x_bounding, y_bounding, w_bounding, h_bounding),
-                (clip_shaped, x_clip, y_clip, w_clip, h_clip)
-                )
+            (bounding_shaped, x_bounding, y_bounding, w_bounding, h_bounding),
+            (clip_shaped, x_clip, y_clip, w_clip, h_clip)
+        )
 
     def XShapeGetRectangles(self, Window window, int kind):
         self.context_check("XShapeGetRectangles")
@@ -685,7 +682,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XFixesSetWindowShapeRegion(self.display, window, ShapeInput, 0, 0, region)
         XFixesDestroyRegion(self.display, region)
 
-
     ###################################
     # Xdamage
     ###################################
@@ -726,7 +722,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         # draws to the same location, and with RawRectangles mode xpra can lag by
         # seconds just trying to keep track of the damage.
         XDamageSubtract(self.display, handle, XNone, XNone)
-
 
     ###################################
     # Smarter convenience wrappers
@@ -961,7 +956,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         self.context_check("MoveResizeWindow")
         return bool(XMoveResizeWindow(self.display, xwindow, x, y, width, height))
 
-
     def addDefaultEvents(self, Window xwindow):
         self.context_check("addDefaultEvents")
         ADDMASK = StructureNotifyMask | PropertyChangeMask | FocusChangeMask | PointerMotionMask | PointerMotionHintMask | ButtonMotionMask
@@ -992,7 +986,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     def selectFocusChange(self, Window xwindow):
         self.context_check("selectFocusChange")
         self.addXSelectInput(xwindow, FocusChangeMask)
-
 
     def XGetWindowProperty(self, Window xwindow, property, req_type=None, int buffer_size=64*1024, delete=False, incr=False):
         # NB: Accepts req_type == 0 for AnyPropertyType
@@ -1048,7 +1041,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XFree(prop)
         return data
 
-
     def GetWindowPropertyType(self, Window xwindow, property, incr=False):
         #as above, but for any property type
         #and returns the type found
@@ -1082,7 +1074,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XFree(prop)
         return self.XGetAtomName(xactual_type), actual_format
 
-
     def XDeleteProperty(self, Window xwindow, property):
         self.context_check("XDeleteProperty")
         XDeleteProperty(self.display, xwindow, self.xatom(property))
@@ -1105,7 +1096,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
                         <unsigned char *>data_str,
                         nitems)
 
-
     # Save set handling
     def XAddToSaveSet(self, Window xwindow):
         self.context_check("XAddToSaveSet")
@@ -1114,7 +1104,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     def XRemoveFromSaveSet(self, Window xwindow):
         self.context_check("XRemoveFromSaveSet")
         XRemoveFromSaveSet(self.display, xwindow)
-
 
     def setRootIconSizes(self, int w, int h):
         cdef Window root = XDefaultRootWindow(self.display);
@@ -1128,7 +1117,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         icon_size.height_inc = 0
         XSetIconSizes(self.display, root, icon_size, 1)
         XFree(icon_size)
-
 
     def setClassHint(self, Window xwindow, wmclass, wmname):
         self.context_check("setClassHint")
@@ -1195,7 +1183,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         if nchildren > 0 and children != NULL:
             XFree(children)
         return pychildren
-
 
     def getSizeHints(self, Window xwindow) -> Dict[str,Any]:
         self.context_check("getSizeHints")
@@ -1306,7 +1293,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
                 i += 1
         return protocols
 
-
     def pointer_grab(self, Window xwindow) -> bool:
         self.context_check("pointer_grab")
         cdef Cursor cursor = 0
@@ -1314,8 +1300,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         cdef int r = XGrabPointer(self.display, xwindow, True,
                                   event_mask, GrabModeAsync, GrabModeAsync,
                                   xwindow, cursor, CurrentTime)
-        return r==0
-
+        return r == 0
 
     def get_server_time(self, Window xwindow) -> int:
         cdef unsigned char c = b"a"
@@ -1334,6 +1319,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
 ctypedef struct xifevent_timestamp:
     Window window
     Atom atom
+
 
 cdef Bool timestamp_predicate(Display *display, XEvent  *xevent, XPointer arg) nogil:
     cdef xifevent_timestamp *et = <xifevent_timestamp*> arg

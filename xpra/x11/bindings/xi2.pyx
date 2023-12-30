@@ -13,7 +13,7 @@ from xpra.gtk.error import xlog
 from xpra.x11.common import X11Event
 from xpra.os_util import hexstr
 
-from libc.string cimport memset #pylint: disable=syntax-error
+from libc.string cimport memset  # pylint: disable=syntax-error
 from xpra.x11.bindings.xlib cimport (
     Display, Bool, Time, Window, Atom, Status,
     XGenericEventCookie,
@@ -22,8 +22,8 @@ from xpra.x11.bindings.xlib cimport (
     XFlush,
     XInternAtom, XFree,
     BadRequest, Success, XIAnyPropertyType,
-    )
-from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
+)
+from libc.stdint cimport uintptr_t   # pylint: disable=syntax-error
 
 
 ######
@@ -254,7 +254,7 @@ XI_EVENT_NAMES = {
     XI_RawTouchBegin    : "XI_RawTouchBegin",
     XI_RawTouchUpdate   : "XI_RawTouchUpdate",
     XI_RawTouchEnd      : "XI_RawTouchEnd",
-    }
+}
 
 XI_USE = {
     XIMasterPointer     : "master pointer",
@@ -262,7 +262,7 @@ XI_USE = {
     XISlavePointer      : "slave pointer",
     XISlaveKeyboard     : "slave keyboard",
     XIFloatingSlave     : "floating slave",
-    }
+}
 
 CLASS_INFO = {
     XIButtonClass       : "button",
@@ -270,12 +270,14 @@ CLASS_INFO = {
     XIValuatorClass     : "valuator",
     XIScrollClass       : "scroll",
     XITouchClass        : "touch",
-    }
+}
 
 
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
 cdef X11CoreBindingsInstance singleton = None
+
+
 def X11XI2Bindings():
     global singleton
     if singleton is None:
@@ -306,7 +308,6 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
             del self.event_handlers[window]
         except:
             pass
-
 
     def reset_events(self):
         self.events = deque(maxlen=100)
@@ -406,7 +407,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
             XI_RawTouchBegin    : "raw-touch-begin",
             XI_RawTouchUpdate   : "raw-touch-update",
             XI_RawTouchEnd      : "raw-touch-end",
-            }.items():
+        }.items():
             event = self.opcode+e
             add_x_event_signal(event, ("xi-%s" % xi_event_name, None))
             name = XI_EVENT_NAMES[e]
@@ -513,7 +514,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
                 "latched"   : device.mods.latched,
                 "locked"    : device.mods.locked,
                 "effective" : device.mods.effective,
-                }
+            }
             #make it compatible with gdk events:
             pyev.state = device.mods.effective
         elif xi_type in (XI_RawKeyPress, XI_RawKeyRelease,
@@ -643,13 +644,13 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
                 8   : b"b",
                 16  : b"h",
                 32  : b"i",
-                }.get(actual_format)
+            }.get(actual_format)
         elif prop_type=="CARDINAL":
             fmt = {
                 8   : b"B",
                 16  : b"H",
                 32  : b"I",
-                }.get(actual_format)
+            }.get(actual_format)
         elif prop_type=="FLOAT":
             fmt = b"f"
         if fmt:
@@ -669,7 +670,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         info = {
             "type"      : CLASS_INFO.get(class_info.type, "unknown type: %i" % class_info.type),
             "sourceid"  : class_info.sourceid,
-            }
+        }
         if class_info.type==XIButtonClass:
             button = <XIButtonClassInfo*> class_info
             buttons = []
@@ -710,7 +711,6 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
                 "num-touches"   : touch.num_touches,
             }
         return info
-
 
     def gdk_inject(self):
         self.get_xi_opcode()

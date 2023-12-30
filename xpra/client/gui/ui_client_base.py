@@ -116,7 +116,7 @@ class UIXpraClient(ClientBaseClass):
             log.info(f" {sys.implementation.name} {vinfo}")
         except Exception:
             log("platform name error:", exc_info=True)
-        wm = get_wm_name()      #pylint: disable=assignment-from-none
+        wm = get_wm_name()       # pylint: disable=assignment-from-none
         if wm:
             log.info(f" window manager is {wm!r}")
 
@@ -219,7 +219,7 @@ class UIXpraClient(ClientBaseClass):
             self.init_opengl(opts.opengl)
 
         if ClientExtras is not None:
-            self.client_extras = ClientExtras(self, opts)   #pylint: disable=not-callable
+            self.client_extras = ClientExtras(self, opts)    # pylint: disable=not-callable
 
         self.start_new_commands = parse_bool("start-new-commands", opts.start_new_commands, True)
         if self.start_new_commands and (opts.start or opts.start_child):
@@ -242,7 +242,7 @@ class UIXpraClient(ClientBaseClass):
 
     def get_vrefresh(self) -> int:
         #this method is overridden in the GTK client
-        from xpra.platform.gui import get_vrefresh  #pylint: disable=import-outside-toplevel
+        from xpra.platform.gui import get_vrefresh   # pylint: disable=import-outside-toplevel
         return get_vrefresh()
 
     def run(self) -> ExitValue:
@@ -370,7 +370,7 @@ class UIXpraClient(ClientBaseClass):
         if POSIX and not is_Wayland():
             #we may be running inside another server!
             try:
-                from xpra.x11.server.server_uuid import get_uuid, get_mode  #pylint: disable=import-outside-toplevel
+                from xpra.x11.server.server_uuid import get_uuid, get_mode   # pylint: disable=import-outside-toplevel
                 if get_mode()!="shadow":
                     uuid = get_uuid()
                     if uuid:

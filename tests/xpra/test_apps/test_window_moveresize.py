@@ -4,7 +4,7 @@ import gi
 
 gi.require_version("Gtk", "3.0")  # @UndefinedVariable
 gi.require_version('GdkX11', '3.0')  # @UndefinedVariable
-from gi.repository import Gtk, GdkX11, GLib   #pylint: disable=wrong-import-position @UnresolvedImport
+from gi.repository import Gtk, GdkX11, GLib    # pylint: disable=wrong-import-position @UnresolvedImport
 assert GdkX11	#this import has side-effects
 
 width = 400

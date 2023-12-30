@@ -125,7 +125,7 @@ class DamageBatchConfig:
                 ls = get_list_stats(lad, show_percentile=(9,))
                 ladv = self.last_actual_delay
                 if ladv:
-                    ls["last"] = ladv[1]  #pylint: disable=unsubscriptable-object
+                    ls["last"] = ladv[1]   # pylint: disable=unsubscriptable-object
                 info["actual_delays"] = ls
             for name, details, factor, weight in self.factors:
                 fdetails = details.copy()

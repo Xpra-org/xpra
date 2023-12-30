@@ -20,7 +20,7 @@ from xpra.x11.bindings.xlib cimport (
     XFree, XWindowAttributes,
     MSBFirst, LSBFirst, ZPixmap,
     DoRed, DoGreen, DoBlue, AllPlanes,
-    )
+)
 from libc.stdlib cimport free
 from libc.string cimport memcpy
 from libc.stdint cimport uint64_t, uintptr_t
@@ -34,6 +34,7 @@ ximagedebug = Logger("x11", "bindings", "ximage", "verbose")
 cdef inline unsigned int roundup(unsigned int n, unsigned int m):
     return (n + m - 1) & ~(m - 1)
 
+
 cdef inline unsigned char BYTESPERPIXEL(unsigned int depth):
     if depth>=24 and depth<=32:
         return 4
@@ -43,6 +44,7 @@ cdef inline unsigned char BYTESPERPIXEL(unsigned int depth):
         return 1
     #shouldn't happen!
     return roundup(depth, 8)//8
+
 
 cdef inline unsigned int MIN(unsigned int a, unsigned int b):
     if a<=b:
@@ -149,9 +151,9 @@ cdef extern from "X11/extensions/XShm.h":
 
 
 SBFirst = {
-           MSBFirst : "MSBFirst",
-           LSBFirst : "LSBFirst"
-           }
+    MSBFirst : "MSBFirst",
+    LSBFirst : "LSBFirst"
+}
 
 RLE8    = "RLE8"
 RGB565  = "RGB565"
@@ -361,7 +363,6 @@ cdef class XImageWrapper:
         """ time in millis """
         return self.timestamp
 
-
     def set_palette(self, palette):
         self.palette = palette
 
@@ -405,7 +406,6 @@ cdef class XImageWrapper:
             #which is safe from any thread
         memcpy(self.pixels, py_buf.buf, py_buf.len)
         PyBuffer_Release(&py_buf)
-
 
     def free(self):
         ximagedebug("%s.free()", self)
@@ -736,6 +736,7 @@ cdef class XShmImageWrapper(XImageWrapper):
 
 cdef int xpixmap_counter = 0
 
+
 cdef class PixmapWrapper:
     cdef Display *display
     cdef Pixmap pixmap
@@ -825,6 +826,7 @@ cdef xcomposite_name_window_pixmap(Display * xdisplay, Window xwindow):
     pw.init(xdisplay, xpixmap, width, height)
     return pw
 
+
 cdef window_pixmap_wrapper(Display *xdisplay, Window xwindow):
     cdef Window root_window
     cdef int x, y
@@ -840,11 +842,14 @@ cdef window_pixmap_wrapper(Display *xdisplay, Window xwindow):
 
 
 cdef XImageBindingsInstance singleton = None
+
+
 def XImageBindings():
     global singleton
     if singleton is None:
         singleton = XImageBindingsInstance()
     return singleton
+
 
 cdef class XImageBindingsInstance(X11CoreBindingsInstance):
     cdef int has_xshm

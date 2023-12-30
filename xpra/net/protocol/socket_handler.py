@@ -339,7 +339,7 @@ class SocketProtocol:
         self._get_packet_cb = packet_cb
         self.source_has_more()
 
-    def source_has_more_start(self) -> None:      #pylint: disable=method-hidden
+    def source_has_more_start(self) -> None:       # pylint: disable=method-hidden
         shm = self._source_has_more
         if not shm or self._closed:
             return
@@ -444,7 +444,7 @@ class SocketProtocol:
                     items.append(header)
                     items.append(data)
         # WebSocket header may be added here:
-        frame_header = self.make_frame_header(packet_type, items)       #pylint: disable=assignment-from-none
+        frame_header = self.make_frame_header(packet_type, items)        # pylint: disable=assignment-from-none
         if frame_header:
             item0 = items[0]
             if len(item0)<PACKET_JOIN_SIZE:

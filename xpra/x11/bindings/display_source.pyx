@@ -9,18 +9,20 @@
 # somewhere else, so we need this file to hide that...
 # (we can't just pass pointers around easily with Python/Cython)
 
-from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
+from libc.stdint cimport uintptr_t   # pylint: disable=syntax-error
 from xpra.x11.bindings.xlib cimport Display
 
-cdef Display *display
-display = NULL
+cdef Display *display = NULL
 display_name = ""
+
 
 cdef Display* get_display():
     return display
 
+
 def get_display_ptr():
     return int(<uintptr_t> display)
+
 
 cdef int set_display(Display *d) except 1:
     global display
@@ -34,8 +36,10 @@ def clear_display():
     global display
     display = NULL
 
+
 def get_display_name():
     return display_name
+
 
 def set_display_name(name):
     global display_name

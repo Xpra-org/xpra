@@ -21,7 +21,7 @@ from xpra.codecs.spng.spng cimport (
     spng_decode_image, spng_set_png_buffer, spng_decoded_image_size,
     )
 from libc.stdint cimport uintptr_t, uint32_t, uint8_t
-from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport getbuf, MemBuf  # pylint: disable=syntax-error
 from xpra.util.env import envint
 
 MAX_SIZE = envint("XPRA_SPNG_MAX_SIZE", 8192*8192)
@@ -135,7 +135,7 @@ def decompress(data):
 
 def selftest(full=False):
     log("spng version %s selftest" % (get_version(),))
-    from xpra.codecs.checks import TEST_PICTURES  #pylint: disable=import-outside-toplevel
+    from xpra.codecs.checks import TEST_PICTURES   # pylint: disable=import-outside-toplevel
     for size, samples in TEST_PICTURES["png"].items():
         for cdata in samples:
             assert decompress(cdata), f"failed to decompress {size} png"

@@ -76,7 +76,7 @@ class ServerMixinTest(unittest.TestCase):
 
     def _test_mixin_class(self, mclass, opts, caps=None, source_mixin_class=StubSourceMixin):
         x = self.mixin = mclass()
-        x._server_sources = {}  #pylint: disable=protected-access
+        x._server_sources = {}   # pylint: disable=protected-access
         x.wait_for_threaded_init = self.wait_for_threaded_init
         x.add_packet_handlers = self.add_packet_handlers
         x.add_packet_handler = self.add_packet_handler

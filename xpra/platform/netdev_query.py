@@ -11,7 +11,7 @@ def get_interface_info(*_args):
     return {}
 
 
-def get_tcp_info(_sock):  #pylint: disable=unused-argument
+def get_tcp_info(_sock):   # pylint: disable=unused-argument
     return {}
 
 

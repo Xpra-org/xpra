@@ -4,7 +4,7 @@ import sys
 import gi
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
-from gi.repository import Gtk    #pylint: disable=wrong-import-position @UnresolvedImport
+from gi.repository import Gtk     # pylint: disable=wrong-import-position @UnresolvedImport
 
 width = 400
 height = 200

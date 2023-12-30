@@ -583,7 +583,7 @@ class WindowClient(StubClientMixin):
                     serial = new_cursor[7]
                     with open(f"raw-cursor-{serial:x}.png", "wb") as f:
                         f.write(pixels)
-                from xpra.codecs.pillow.decoder import open_only  #pylint: disable=import-outside-toplevel
+                from xpra.codecs.pillow.decoder import open_only   # pylint: disable=import-outside-toplevel
                 img = open_only(pixels, ("png",))
                 new_cursor[8] = img.tobytes("raw", "BGRA")
                 cursorlog("used PIL to convert png cursor to raw")

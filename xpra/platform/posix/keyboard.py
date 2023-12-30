@@ -27,7 +27,7 @@ class Keyboard(KeyboardBase):
         super().__init__()
         if is_X11():
             try:
-                #pylint: disable=import-outside-toplevel
+                # pylint: disable=import-outside-toplevel
                 from xpra.x11.bindings.keyboard import X11KeyboardBindings
                 self.keyboard_bindings = X11KeyboardBindings()
             except Exception as e:
@@ -190,13 +190,13 @@ class Keyboard(KeyboardBase):
         repository = "/usr/share/X11/xkb/rules/base.xml"
         if os.path.exists(repository):
             try:
-                import lxml.etree  #pylint: disable=import-outside-toplevel
+                import lxml.etree   # pylint: disable=import-outside-toplevel
             except ImportError:
                 log("cannot parse xml", exc_info=True)
             else:
                 try:
                     with open(repository, encoding="latin1") as f:
-                        tree = lxml.etree.parse(f)  #pylint: disable=c-extension-no-member @UndefinedVariable
+                        tree = lxml.etree.parse(f)   # pylint: disable=c-extension-no-member @UndefinedVariable
                 except Exception:
                     log.error(f"Error parsing {repository}", exc_info=True)
                 else:
@@ -207,7 +207,7 @@ class Keyboard(KeyboardBase):
                         #for variant in layout.xpath("./variantlist/variant/configItem/name"):
                         #    variant_name = variant.text
                     return x11_layouts
-        from subprocess import Popen, PIPE  #pylint: disable=import-outside-toplevel
+        from subprocess import Popen, PIPE   # pylint: disable=import-outside-toplevel
         try:
             proc = Popen(["localectl", "list-x11-keymap-layouts"], stdout=PIPE, stderr=PIPE)
             out = proc.communicate()[0]

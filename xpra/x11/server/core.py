@@ -294,7 +294,7 @@ class X11ServerCore(GTKServerBase):
             try:
                 prop_del(root.get_xid(), prop)
             except Exception as e:
-                log("prop_del(%s, %s) %s", root, prop, e)
+                log.warn("prop_del(%s, %s) %s", root, prop, e)
 
     def get_uuid(self) -> str:
         return get_uuid()

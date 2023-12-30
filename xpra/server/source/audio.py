@@ -387,7 +387,7 @@ class AudioMixin(StubSourceMixin):
             if first_time(f"unknown-{method}"):
                 log.error("Error: %s", msg)
             return msg
-        return method(*args)  #pylint: disable=not-callable
+        return method(*args)   # pylint: disable=not-callable
 
     def audio_control_stop(self, sequence_str="") -> str:
         if sequence_str:

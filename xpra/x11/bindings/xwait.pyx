@@ -13,11 +13,12 @@ from xpra.x11.bindings.xlib cimport (
     Display, XOpenDisplay,
     XNextEvent, XEvent, XErrorEvent,
     XSetIOErrorHandler, XSetErrorHandler,
-    )
+)
 
 
 cdef int exit_code = -1
 exit_event = threading.Event()
+
 
 def err(s):
     try:
@@ -25,6 +26,7 @@ def err(s):
         sys.stderr.flush()
     except IOError:
         pass
+
 
 cdef end(msg, int code = exit_code):
     global exit_code, exit_event
@@ -38,6 +40,7 @@ cdef int x11_io_error_handler(Display *display) except 0:
     message = b"X11 fatal IO error"
     exit_code = 0
     return 0
+
 
 cdef int x11_error_handler(Display *display, XErrorEvent *event) except 0:
     #X11 error handler called (ignored)

@@ -6,7 +6,7 @@
 #cython: boundscheck=False, wraparound=False
 
 import socket as pysocket
-from libc.string cimport memset  #pylint: disable=syntax-error
+from libc.string cimport memset   # pylint: disable=syntax-error
 
 
 cdef extern from "unistd.h":

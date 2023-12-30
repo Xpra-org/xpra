@@ -7,9 +7,9 @@ import os
 from time import monotonic
 from typing import Any, Dict
 
-from libc.stdint cimport uint8_t, uint32_t, uintptr_t   #pylint: disable=syntax-error
-from libc.stdlib cimport free   #pylint: disable=syntax-error
-from libc.string cimport memset #pylint: disable=syntax-error
+from libc.stdint cimport uint8_t, uint32_t, uintptr_t    # pylint: disable=syntax-error
+from libc.stdlib cimport free    # pylint: disable=syntax-error
+from libc.string cimport memset  # pylint: disable=syntax-error
 from xpra.buffers.membuf cimport buffer_context
 
 from xpra.net.compression import Compressed

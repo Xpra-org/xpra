@@ -8,7 +8,7 @@ from math import ceil
 from typing import Any, Dict
 
 from libc.stdint cimport uintptr_t
-from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport getbuf, MemBuf  # pylint: disable=syntax-error
 from xpra.codecs.nvidia.nvjpeg.nvjpeg cimport (
     NV_ENC_INPUT_PTR, NV_ENC_OUTPUT_PTR, NV_ENC_REGISTERED_PTR,
     nvjpegStatus_t, nvjpegChromaSubsampling_t, nvjpegOutputFormat_t,

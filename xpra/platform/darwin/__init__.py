@@ -7,14 +7,16 @@ import os
 import sys
 from collections.abc import Callable
 
+
 def do_init():
     for x in list(sys.argv):
         if x.startswith("-psn_"):
             sys.argv.remove(x)
     if os.environ.get("XPRA_HIDE_DOCK", "")=="1":
         from AppKit import NSApp
-        #NSApplicationActivationPolicyAccessory = 1
+        # NSApplicationActivationPolicyAccessory = 1
         NSApp.setActivationPolicy_(1)
+
 
 def do_init_env():
     from xpra.platform import init_env_common
@@ -36,16 +38,22 @@ def default_gtk_main_exit():
 
 
 exit_cb : Callable = default_gtk_main_exit
+
+
 def quit_handler(*_args):
     exit_cb()
     return True
+
 
 def set_exit_cb(ecb : Callable):
     global exit_cb
     assert ecb is not None
     exit_cb = ecb
 
+
 macapp = None
+
+
 def get_OSXApplication():
     global macapp
     if macapp is None:
@@ -57,16 +65,18 @@ def get_OSXApplication():
     return macapp
 
 
-#workaround for Big Sur dylib cache mess:
-#https://stackoverflow.com/a/65599706/428751
+# workaround for Big Sur dylib cache mess:
+# https://stackoverflow.com/a/65599706/428751
 def patch_find_library():
-    from ctypes import util  #pylint: disable=import-outside-toplevel
+    from ctypes import util   # pylint: disable=import-outside-toplevel
     orig_util_find_library = util.find_library
+
     def new_util_find_library(name):
         res = orig_util_find_library(name)
         if res:
             return res
         return '/System/Library/Frameworks/'+name+'.framework/'+name
     util.find_library = new_util_find_library
-if os.environ.get("XPRA_OSX_PATCH_FIND_LIBRARY", "1")=="1":
+
+if os.environ.get("XPRA_OSX_PATCH_FIND_LIBRARY", "1") == "1":
     patch_find_library()

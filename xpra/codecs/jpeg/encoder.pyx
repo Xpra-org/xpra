@@ -9,7 +9,7 @@ from typing import Any, Dict
 from time import monotonic
 
 from libc.stdint cimport uintptr_t
-from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context    #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context     # pylint: disable=syntax-error
 from xpra.codecs.constants import get_subsampling_divs
 from xpra.codecs.debug import may_save_image
 from xpra.net.compression import Compressed

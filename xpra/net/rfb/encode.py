@@ -34,7 +34,7 @@ def rgb222_encode(window, x, y, w, h):
         log.warn("Warning: cannot convert %s to rgb222", img.get_pixel_format())
         return []
     pixels = img.get_pixels()
-    from xpra.codecs.argb.argb import bgra_to_rgb222  #pylint: disable=no-name-in-module
+    from xpra.codecs.argb.argb import bgra_to_rgb222   # pylint: disable=no-name-in-module
     data = bgra_to_rgb222(pixels)
     return [header, data]
 
@@ -66,7 +66,7 @@ def zlib_encode(window, x, y, w, h):
     if not img:
         return []
     pixels = raw_pixels(img)
-    import zlib  #pylint: disable=import-outside-toplevel
+    import zlib   # pylint: disable=import-outside-toplevel
     if isinstance(pixels, memoryview):
         pixels = pixels.tobytes()
     data = zlib.compress(pixels, 1)

@@ -6,9 +6,7 @@
 # later version. See the file COPYING for details.
 
 from collections.abc import Callable
-from ctypes import (
-    Structure, cast, POINTER,
-    )
+from ctypes import Structure, cast, POINTER
 from ctypes.wintypes import POINT
 
 from xpra.util.env import envbool
@@ -27,20 +25,20 @@ vlog = Logger("verbose")
 
 class MINMAXINFO(Structure):
     _fields_ = [
-                ("ptReserved",      POINT),
-                ("ptMaxSize",       POINT),
-                ("ptMaxPosition",   POINT),
-                ("ptMinTrackSize",  POINT),
-                ("ptMaxTrackSize",  POINT),
-               ]
+        ("ptReserved",      POINT),
+        ("ptMaxSize",       POINT),
+        ("ptMaxPosition",   POINT),
+        ("ptMinTrackSize",  POINT),
+        ("ptMaxTrackSize",  POINT),
+    ]
 
 
-#loosely based on this recipe:
-#http://code.activestate.com/recipes/334779-pygtk-win32-extension-empower-gtk-with-win32-windo/
-#and this WM_GETMINMAXINFO ctypes code:
-#https://github.com/Mozillion/SublimeSpeech/blob/master/lib/dragonfly/windows/dialog_base.py
-#only hardcoded for handling WM_GETMINMAXINFO,
-#but should be pretty easy to tweak if needed.
+# loosely based on this recipe:
+# http://code.activestate.com/recipes/334779-pygtk-win32-extension-empower-gtk-with-win32-windo/
+# and this WM_GETMINMAXINFO ctypes code:
+# https://github.com/Mozillion/SublimeSpeech/blob/master/lib/dragonfly/windows/dialog_base.py
+# only hardcoded for handling WM_GETMINMAXINFO,
+# but should be pretty easy to tweak if needed.
 
 HOOK_MINMAXINFO = envbool("XPRA_WIN32_MINMAXINFO", True)
 HOOK_MINMAXINFO_OVERRIDE = envbool("XPRA_WIN32_MINMAXINFO_OVERRIDE", True)
@@ -61,7 +59,7 @@ class Win32Hooks:
         if HOOK_MINMAXINFO:
             self.add_window_event_handler(win32con.WM_GETMINMAXINFO, self.on_getminmaxinfo)
         try:
-            #we only use this code for resizable windows, so use SM_C?SIZEFRAME:
+            # we only use this code for resizable windows, so use SM_C?SIZEFRAME:
             self.frame_width = GetSystemMetrics(win32con.SM_CXSIZEFRAME)
             self.frame_height = GetSystemMetrics(win32con.SM_CYSIZEFRAME)
             self.caption_height = GetSystemMetrics(win32con.SM_CYCAPTION)
@@ -93,7 +91,7 @@ class Win32Hooks:
                 log("on_getminmaxinfo window=%#x min_size=%s, max_size=%s, frame=%sx%s",
                     hwnd, self.min_size, self.max_size, fw, fh)
             if self.min_size:
-                minw, minh = self.min_size  #pylint: disable=unpacking-non-sequence
+                minw, minh = self.min_size   # pylint: disable=unpacking-non-sequence
                 minw += dw
                 minh += dh
                 if not HOOK_MINMAXINFO_OVERRIDE:
@@ -102,23 +100,23 @@ class Win32Hooks:
                     y = int(v.y)
                     if v:
                         log("on_getminmaxinfo ptMinTrackSize=%ix%i", v.x, v.y)
-                        if x>0:
+                        if x > 0:
                             minw = max(minw, x)
-                        if  y>0:
+                        if y > 0:
                             minh = max(minh, y)
                 point  = POINT(minw, minh)
                 info.ptMinSize       = point
                 info.ptMinTrackSize  = point
                 log("on_getminmaxinfo actual min_size=%ix%i", minw, minh)
             if self.max_size:
-                maxw, maxh = self.max_size  #pylint: disable=unpacking-non-sequence
+                maxw, maxh = self.max_size   # pylint: disable=unpacking-non-sequence
                 maxw += dw
                 maxh += dh
                 if not HOOK_MINMAXINFO_OVERRIDE:
                     for name, v in {
                         "ptMaxSize"         : info.ptMaxSize,
                         "ptMaxTrackSize"    : info.ptMaxTrackSize,
-                        }.items():
+                    }.items():
                         if v:
                             x = int(v.x)
                             y = int(v.y)
@@ -139,7 +137,7 @@ class Win32Hooks:
     def cleanup(self, *args):
         log("cleanup%s", args)
         self._message_map = {}
-        #since we assume the window is closed, restoring the wnd proc may be redundant here:
+        # since we assume the window is closed, restoring the wnd proc may be redundant here:
         if not self._oldwndproc or not self._hwnd:
             return
         with log.trap_error("Error: window hooks cleanup failure"):
@@ -153,14 +151,14 @@ class Win32Hooks:
         vlog("_wndproc%s event name=%s, callback=%s", (hwnd, msg, wparam, lparam), event_name, callback)
         v = None
         if callback:
-            #run our callback
+            # run our callback
             try:
                 v = callback(hwnd, msg, wparam, lparam)
                 vlog("%s%s=%s", callback, (hwnd, msg, wparam, lparam), v)
             except Exception as e:
                 log.error("Error: callback %s failed:", callback)
                 log.estr(e)
-        #if our callback doesn't define the return value, use the default handler:
+        # if our callback doesn't define the return value, use the default handler:
         if v is None:
             v = CallWindowProcW(self._oldwndproc, hwnd, msg, wparam, lparam)
             vlog("_wndproc%s return value=%s", (hwnd, msg, wparam, lparam), v)

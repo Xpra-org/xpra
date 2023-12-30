@@ -10,7 +10,7 @@
 #cython: boundscheck=False, wraparound=False, overflowcheck=False
 
 #what I want is a real macro!
-cdef inline int MIN(int a, int b):  #pylint: disable=syntax-error
+cdef inline int MIN(int a, int b):   # pylint: disable=syntax-error
     if a<=b:
         return a
     return b

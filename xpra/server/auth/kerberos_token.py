@@ -74,7 +74,7 @@ class Authenticator(SysAuthenticatorBase):
 
 
 def main(argv) -> int:
-    #pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Kerberos-Token-Auth", "Kerberos Token Authentication"):
         if len(argv)!=3:

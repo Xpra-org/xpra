@@ -208,7 +208,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         # directly on the screen we shadow
         notifylog("notify_new_user(%s) notifier=%s", ss, self.notifier)
         if self.notifier:
-            tray = self.get_notification_tray()     #pylint: disable=assignment-from-none
+            tray = self.get_notification_tray()      # pylint: disable=assignment-from-none
             nid = NotificationID.NEW_USER
             title = "User '%s' connected to the session" % (ss.name or ss.username or ss.uuid)
             body = "\n".join(ss.get_connect_info())
@@ -229,7 +229,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         # directly on the screen we shadow
         notifylog("do_notify_startup%s", (title, body, replaces_nid))
         if self.notifier:
-            tray = self.get_notification_tray()     #pylint: disable=assignment-from-none
+            tray = self.get_notification_tray()      # pylint: disable=assignment-from-none
             actions = []
             hints = {}
             icon_filename = os.path.join(get_icon_dir(), "server-connected.png")
@@ -409,7 +409,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def set_keyboard_repeat(self, key_repeat) -> None:
         """ don't override the existing desktop """
-        pass    #pylint: disable=unnecessary-pass
+        pass     # pylint: disable=unnecessary-pass
 
     def set_keymap(self, server_source, force=False) -> None:
         log("set_keymap%s", (server_source, force))

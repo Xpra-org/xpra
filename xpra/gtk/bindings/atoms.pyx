@@ -8,7 +8,7 @@
 from gi.repository import Gdk
 
 from xpra.util.str_fn import bytestostr
-from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
+from libc.stdint cimport uintptr_t   # pylint: disable=syntax-error
 
 
 cdef extern from "Python.h":

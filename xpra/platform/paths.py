@@ -188,7 +188,7 @@ def default_get_app_dir() -> str:
             adir = os.path.join(prefix, "share", "xpra")
             if valid_dir(adir):
                 return adir
-    adir = os.path.dirname(inspect.getfile(sys._getframe(1)))  #pylint: disable=protected-access
+    adir = os.path.dirname(inspect.getfile(sys._getframe(1)))   # pylint: disable=protected-access
 
     def root_module(d):
         for psep in (os.path.sep, "/", "\\"):

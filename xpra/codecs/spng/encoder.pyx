@@ -31,7 +31,7 @@ from xpra.codecs.spng.spng cimport (
     spng_format,
     )
 from libc.stdint cimport uintptr_t, uint32_t, uint8_t
-from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context  # pylint: disable=syntax-error
 
 
 cdef extern from "zconf.h":

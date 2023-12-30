@@ -5,9 +5,9 @@
 
 from time import monotonic
 
-from libc.string cimport memset #pylint: disable=syntax-error
+from libc.string cimport memset  # pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t
-from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport getbuf, MemBuf  # pylint: disable=syntax-error
 from xpra.buffers.membuf cimport buffer_context
 from xpra.codecs.nvidia.nvjpeg.nvjpeg cimport (
     NVJPEG_OUTPUT_RGBI, NVJPEG_OUTPUT_BGRI, NVJPEG_OUTPUT_Y,

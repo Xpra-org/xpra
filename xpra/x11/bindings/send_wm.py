@@ -16,22 +16,22 @@ SubstructureNotifyMask = constants["SubstructureNotifyMask"]
 SubstructureRedirectMask = constants["SubstructureRedirectMask"]
 
 
-def send_wm_take_focus(xid:int, timestamp : int=CurrentTime):
+def send_wm_take_focus(xid: int, timestamp : int = CurrentTime):
     log("sending WM_TAKE_FOCUS: %#x, X11 timestamp=%r", xid, int(timestamp or 0))
-    if timestamp<0:
+    if timestamp < 0:
         timestamp = 0
-    elif timestamp>0xFFFFFFFF:
+    elif timestamp > 0xFFFFFFFF:
         raise OverflowError(f"invalid time: {timestamp:x}")
-    elif timestamp>0x7FFFFFFF:
+    elif timestamp > 0x7FFFFFFF:
         timestamp = int(0x100000000-timestamp)
-        if timestamp>=0x80000000:
+        if timestamp >= 0x80000000:
             timestamp -= 0x80000000
     X11Window.sendClientMessage(xid, xid, False, 0,
                                 "WM_PROTOCOLS",
                                 "WM_TAKE_FOCUS", timestamp)
 
 
-def send_wm_delete_window(xid:int, timestamp : int=CurrentTime):
+def send_wm_delete_window(xid: int, timestamp: int = CurrentTime):
     log("sending WM_DELETE_WINDOW to %#x", xid)
     X11Window.sendClientMessage(xid, xid, False, 0,
                                 "WM_PROTOCOLS",
@@ -39,7 +39,7 @@ def send_wm_delete_window(xid:int, timestamp : int=CurrentTime):
                                 timestamp)
 
 
-def send_wm_workspace(root_xid:int, xid:int, workspace:int=0, timestamp : int=CurrentTime):
+def send_wm_workspace(root_xid: int, xid: int, workspace: int=0, timestamp: int = CurrentTime):
     event_mask = SubstructureNotifyMask | SubstructureRedirectMask
     X11Window.sendClientMessage(root_xid, xid, False, event_mask,
                                 "_NET_WM_DESKTOP",
@@ -47,7 +47,7 @@ def send_wm_workspace(root_xid:int, xid:int, workspace:int=0, timestamp : int=Cu
                                 timestamp)
 
 
-def send_wm_request_frame_extents(root_xid:int, xid:int, timestamp : int=CurrentTime):
+def send_wm_request_frame_extents(root_xid: int, xid: int, timestamp: int = CurrentTime):
     event_mask = SubstructureNotifyMask | SubstructureRedirectMask
     X11Window.sendClientMessage(root_xid, xid, False, event_mask,
                                 "_NET_REQUEST_FRAME_EXTENTS",

@@ -14,7 +14,7 @@ log = Logger("encoder", "openh264")
 
 from libc.string cimport memset
 from libc.stdint cimport uint8_t, uintptr_t
-from xpra.buffers.membuf cimport buffer_context #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport buffer_context  # pylint: disable=syntax-error
 
 cdef extern from "wels/codec_app_def.h":
     int VIDEO_BITSTREAM_AVC

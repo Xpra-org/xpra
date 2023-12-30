@@ -15,7 +15,7 @@ class StubSourceMixin:
     """
 
     @classmethod
-    def is_needed(cls, caps : typedict) -> bool:  #pylint: disable=unused-argument
+    def is_needed(cls, caps : typedict) -> bool:   # pylint: disable=unused-argument
         """
         Is this mixin needed for the caps given?
         """

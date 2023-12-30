@@ -16,7 +16,7 @@ from xpra.util.str_fn import csv
 from xpra.util.types import typedict
 from xpra.codecs.constants import get_subsampling_divs, csc_spec
 from xpra.codecs.image import ImageWrapper
-from xpra.buffers.membuf cimport getbuf, MemBuf, memalign, buffer_context   #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport getbuf, MemBuf, memalign, buffer_context    # pylint: disable=syntax-error
 
 from libc.stdint cimport uint8_t, uintptr_t
 from libc.stdlib cimport free

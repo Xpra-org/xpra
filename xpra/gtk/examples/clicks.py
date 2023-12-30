@@ -18,7 +18,7 @@ GLib = gi_import("GLib")
 
 class TestForm:
 
-    def    __init__(self):
+    def __init__(self):
         self.window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         self.window.connect("destroy", Gtk.main_quit)
         self.window.set_title("Test Button Events")
@@ -67,9 +67,9 @@ class TestForm:
     def button_press_event(self, _obj, event):
         # nothing we can do about the "_" prefixed names that Gdk uses
         # noinspection PyProtectedMember
-        if event.type == Gdk.EventType._3BUTTON_PRESS:  #pylint: disable=protected-access
+        if event.type == Gdk.EventType._3BUTTON_PRESS:   # pylint: disable=protected-access
             self.label.set_text("Triple Click!")
-        elif event.type == Gdk.EventType._2BUTTON_PRESS:  #pylint: disable=protected-access
+        elif event.type == Gdk.EventType._2BUTTON_PRESS:   # pylint: disable=protected-access
             self.label.set_text("Double Click!")
         elif event.type == Gdk.EventType.BUTTON_PRESS:
             self.label.set_text("Click")

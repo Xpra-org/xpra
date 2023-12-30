@@ -43,7 +43,7 @@ def main():
         if not Keyboard:
             print("no keyboard implementation")
             return 1
-        keyboard = Keyboard()  #pylint: disable=not-callable
+        keyboard = Keyboard()   # pylint: disable=not-callable
         mod_meanings, mod_managed, mod_pointermissing = keyboard.get_keymap_modifiers()
         print("Modifiers:")
         print_nested_dict(mod_meanings)

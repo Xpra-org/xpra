@@ -106,7 +106,7 @@ class MmapClient(StubClientMixin):
 
     def init_mmap(self, mmap_filename, mmap_group, socket_filename) -> None:
         log("init_mmap(%s, %s, %s)", mmap_filename, mmap_group, socket_filename)
-        from xpra.net.mmap import (  #pylint: disable=import-outside-toplevel
+        from xpra.net.mmap import (   # pylint: disable=import-outside-toplevel
             init_client_mmap, write_mmap_token,
             DEFAULT_TOKEN_BYTES,
         )

@@ -39,7 +39,7 @@ def printing_finished(_printpid) -> bool:
     return True
 
 
-def init_printing(printers_modified_callback=None) -> None:     #pylint: disable=unused-argument
+def init_printing(printers_modified_callback=None) -> None:      # pylint: disable=unused-argument
     """ overridden in platform code """
 
 
@@ -171,7 +171,7 @@ def main(argv) -> int:
             if not os.path.exists(filename):
                 print(f"Cannot print file {filename!r}: file does not exist")
                 return 1
-            printer = get_default_printer()     #pylint: disable=assignment-from-none
+            printer = get_default_printer()      # pylint: disable=assignment-from-none
             if not printer:
                 printer = list(printers.keys())[0]
                 if len(printers)>1:

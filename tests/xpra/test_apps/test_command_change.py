@@ -3,7 +3,7 @@
 import gi
 gi.require_version('Gtk', '3.0')  # @UndefinedVariable
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
-from gi.repository import Gtk, GLib  #pylint: disable=wrong-import-position @UnresolvedImport
+from gi.repository import Gtk, GLib   # pylint: disable=wrong-import-position @UnresolvedImport
 
 from xpra.x11.gtk3.display_source import init_gdk_display_source
 from xpra.x11.gtk_x11.prop import prop_set

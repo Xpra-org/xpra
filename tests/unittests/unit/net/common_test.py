@@ -41,7 +41,7 @@ class TestLogPackets(unittest.TestCase):
                 for sending in (True, False):
                     self.setup_log_intercept()
                     def t(packet_type, *args):
-                        return self.t(sending, packet_type, *args)  #pylint: disable=cell-var-from-loop
+                        return self.t(sending, packet_type, *args)   # pylint: disable=cell-var-from-loop
                     self.lm()
                     t("hello", {})
                     self.lm(inc)

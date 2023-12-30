@@ -46,7 +46,7 @@ class Authenticator(SysAuthenticator):
             return
         connection = kwargs.get("connection", None)
         try:
-            from xpra.net.bytestreams import SocketConnection  #pylint: disable=import-outside-toplevel
+            from xpra.net.bytestreams import SocketConnection   # pylint: disable=import-outside-toplevel
             if not connection and isinstance(connection, SocketConnection):
                 raise ValueError(f"hosts: invalid connection {connection!r} (not a socket connection)")
             info = connection.get_info()

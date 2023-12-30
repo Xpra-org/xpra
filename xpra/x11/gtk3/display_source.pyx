@@ -10,7 +10,7 @@ from xpra.util.system import is_X11
 from xpra.os_util import gi_import
 from xpra.scripts.config import InitException
 from xpra.x11.bindings.xlib cimport Display
-from xpra.x11.bindings.display_source cimport set_display  #pylint: disable=syntax-error
+from xpra.x11.bindings.display_source cimport set_display   # pylint: disable=syntax-error
 from xpra.x11.bindings.display_source import set_display_name  # @UnresolvedImport
 
 

@@ -39,7 +39,7 @@ log = Logger("encoder", "nvenc")
 from pycuda import driver  # @UnresolvedImport
 import numpy
 
-from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t, int32_t, uint64_t  #pylint: disable=syntax-error
+from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t, int32_t, uint64_t   # pylint: disable=syntax-error
 from libc.stdlib cimport free, malloc
 from libc.string cimport memset, memcpy
 

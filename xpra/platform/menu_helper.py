@@ -32,7 +32,7 @@ def main():
     from xpra.util.str_fn import print_nested_dict
     from xpra.log import Logger, add_debug_category
     log = Logger("exec", "menu")
-    from xpra.platform import program_context  #pylint: disable=import-outside-toplevel
+    from xpra.platform import program_context   # pylint: disable=import-outside-toplevel
     with program_context("Menu-Helper", "Menu Helper"):
         for x in list(sys.argv):
             if x in ("-v", "--verbose"):

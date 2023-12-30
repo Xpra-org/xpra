@@ -478,7 +478,7 @@ class ServerBase(ServerBaseClass):
     def client_startup_complete(self, ss) -> None:
         ss.startup_complete()
         self.server_event("startup-complete", ss.uuid)
-        if not self.start_after_connect_done:   #pylint: disable=access-member-before-definition
+        if not self.start_after_connect_done:    # pylint: disable=access-member-before-definition
             self.start_after_connect_done = True
             self.exec_after_connect_commands()
         self.exec_on_connect_commands()
@@ -554,7 +554,7 @@ class ServerBase(ServerBaseClass):
     ######################################################################
     # utility method:
     def window_sources(self) -> tuple:
-        from xpra.server.source.windows import WindowsMixin  #pylint: disable=import-outside-toplevel
+        from xpra.server.source.windows import WindowsMixin   # pylint: disable=import-outside-toplevel
         return tuple(x for x in self._server_sources.values() if isinstance(x, WindowsMixin))
 
     ######################################################################

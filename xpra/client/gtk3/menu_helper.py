@@ -133,7 +133,7 @@ def get_appimage(app_name, icondata=None, menu_icon_size=24) -> Gtk.Image | None
     if not pixbuf and icondata:
         # let's try pillow:
         try:
-            from xpra.codecs.pillow.decoder import open_only  #pylint: disable=import-outside-toplevel
+            from xpra.codecs.pillow.decoder import open_only   # pylint: disable=import-outside-toplevel
             img = open_only(icondata)
             has_alpha = img.mode=="RGBA"
             width, height = img.size

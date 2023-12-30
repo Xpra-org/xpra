@@ -115,7 +115,7 @@ class ClientWindowBase(ClientWidgetBase):
             # client properties override application specified workspace value on init only:
             metadata["workspace"] = workspace
         self._window_workspace = WORKSPACE_UNSET        #will get set in set_metadata if present
-        self._desktop_workspace = self.get_desktop_workspace()  #pylint: disable=assignment-from-none
+        self._desktop_workspace = self.get_desktop_workspace()   # pylint: disable=assignment-from-none
         workspacelog("init_window(..) workspace=%s, current workspace=%s",
                      wn(self._window_workspace), wn(self._desktop_workspace))
         if self.max_window_size and "size-constraints" not in metadata:

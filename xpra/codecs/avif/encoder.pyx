@@ -5,8 +5,8 @@
 
 import os
 
-from libc.stdint cimport uint8_t, uint32_t, uint64_t, uintptr_t   #pylint: disable=syntax-error
-from libc.string cimport memset #pylint: disable=syntax-error
+from libc.stdint cimport uint8_t, uint32_t, uint64_t, uintptr_t    # pylint: disable=syntax-error
+from libc.string cimport memset  # pylint: disable=syntax-error
 from xpra.buffers.membuf cimport buffer_context
 from xpra.codecs.avif.avif cimport (
     AVIF_RESULT_OK, AVIF_RESULT,

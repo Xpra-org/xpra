@@ -610,7 +610,7 @@ class PrintClient(SendCommandConnectClient):
             return
         #we don't compress file data
         #(this should run locally most of the time anyway)
-        from xpra.net.compression import Compressed  #pylint: disable=import-outside-toplevel
+        from xpra.net.compression import Compressed   # pylint: disable=import-outside-toplevel
         blob = Compressed("print", self.file_data)
         self.send("print", self.filename, blob, *self.command)
         log("print: sending %s as %s for printing", self.filename, blob)

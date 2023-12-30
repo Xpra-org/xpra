@@ -30,7 +30,7 @@ MAX_NEW_MODES = envint("XPRA_RANDR_MAX_NEW_MODES", 32)
 assert MAX_NEW_MODES>=2
 
 
-from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
+from libc.stdint cimport uintptr_t   # pylint: disable=syntax-error
 ctypedef unsigned long CARD32
 
 
@@ -294,22 +294,23 @@ cdef get_mode_info(XRRModeInfo *mi, with_sync : bool):
         "id"            : mi.id,
         "width"         : mi.width,
         "height"        : mi.height,
-        }
+    }
     if mi.name and mi.nameLength:
         info["name"] = bytestostr(mi.name[:mi.nameLength])
     if with_sync:
         info |= {
-        "dot-clock"     : mi.dotClock,
-        "h-sync-start"  : mi.hSyncStart,
-        "h-sync-end"    : mi.hSyncEnd,
-        "h-total"       : mi.hTotal,
-        "h-skew"        : mi.hSkew,
-        "v-sync-start"  : mi.vSyncStart,
-        "v-sync-end"    : mi.vSyncEnd,
-        "v-total"       : mi.vTotal,
-        "mode-flags"    : tuple(name for v,name in MODE_FLAGS_STR.items() if mi.modeFlags & v),
+            "dot-clock"     : mi.dotClock,
+            "h-sync-start"  : mi.hSyncStart,
+            "h-sync-end"    : mi.hSyncEnd,
+            "h-total"       : mi.hTotal,
+            "h-skew"        : mi.hSkew,
+            "v-sync-start"  : mi.vSyncStart,
+            "v-sync-end"    : mi.vSyncEnd,
+            "v-total"       : mi.vTotal,
+            "mode-flags"    : tuple(name for v,name in MODE_FLAGS_STR.items() if mi.modeFlags & v),
         }
     return info
+
 
 cdef get_output_info(Display *display, XRRScreenResources *rsc, RROutput output):
     cdef XRROutputInfo *oi = XRRGetOutputInfo(display, rsc, output)
@@ -337,6 +338,7 @@ cdef get_output_info(Display *display, XRRScreenResources *rsc, RROutput output)
         info["name"] = bytestostr(oi.name[:oi.nameLen])
     XRRFreeOutputInfo(oi)
     return info
+
 
 cdef get_XAtom(Display *display, Atom atom):
     cdef char *v = XGetAtomName(display, atom)
@@ -427,6 +429,7 @@ cdef get_output_properties(Display *display, RROutput output):
     XFree(atoms)
     return properties
 
+
 cdef get_all_screen_properties(Display *display):
     cdef Window window = XDefaultRootWindow(display)
     cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(display, window)
@@ -457,14 +460,15 @@ cdef get_all_screen_properties(Display *display):
     props["monitors"] = get_monitor_properties(display)
     return props
 
+
 cdef get_crtc_info(Display *display, XRRScreenResources *rsc, RRCrtc crtc):
     cdef XRRCrtcInfo *ci = XRRGetCrtcInfo(display, rsc, crtc)
     if ci==NULL:
         return {}
     info = {
-            "noutput"   : ci.noutput,
-            "npossible" : ci.npossible,
-            }
+        "noutput"   : ci.noutput,
+        "npossible" : ci.npossible,
+    }
     if ci.noutput:
         info["outputs"] = tuple(int(ci.outputs[i]) for i in range(ci.noutput))
     if TIMESTAMPS:
@@ -485,7 +489,7 @@ cdef get_crtc_info(Display *display, XRRScreenResources *rsc, RRCrtc crtc):
                     "red"   : tuple(gamma.red[i] for i in range(gamma.size)),
                     "green" : tuple(gamma.green[i] for i in range(gamma.size)),
                     "blue"  : tuple(gamma.blue[i] for i in range(gamma.size)),
-                    }
+                }
                 XRRFreeGamma(gamma)
     if ci.rotation!=RR_Rotate_0:
         info["rotation"] = get_rotation(ci.rotation)
@@ -515,7 +519,7 @@ cdef get_monitor_properties(Display *display):
             "height-mm" : m.mheight,
             #"outputs"   : tuple(rroutput_map.get(m.outputs[j], 0) for j in range(m.noutput)),
             "outputs"   : tuple(m.outputs[j] for j in range(m.noutput)),
-            }
+        }
     XRRFreeMonitors(monitors)
     return props
 
@@ -526,6 +530,7 @@ def RandRBindings():
     if singleton is None:
         singleton = RandRBindingsInstance()
     return singleton
+
 
 cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
@@ -554,7 +559,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         if not XRRQueryVersion(self.display, &cmajor, &cminor):
             return (0, )
         log(f"found XRandR extension version {cmajor}.{cminor}")
-        return (cmajor, cminor)
+        return cmajor, cminor
 
     def check_randr_sizes(self):
         #check for wayland, which has no sizes:
@@ -662,7 +667,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             return True
         finally:
             XRRFreeScreenConfigInfo(config)
-
 
     def get_screen_count(self):
         return XScreenCount(self.display)
@@ -785,7 +789,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         finally:
             XRRFreeScreenResources(rsc)
         return rates
-
 
     def set_screen_size(self, width, height):
         return self._set_screen_size(width, height)
@@ -930,7 +933,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         XRRSetScreenSize(self.display, window, w, h, wmm, hmm)
         self.XSync()
 
-
 ################################################################
 #Below is for handling fully virtualized monitors with
 #RandR 1.6 and the dummy version 0.4.0 or later
@@ -974,7 +976,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             XRRFreeMonitors(monitors)
         return True
 
-
     def get_monitor_properties(self):
         self.context_check("get_monitor_properties")
         return get_monitor_properties(self.display)
@@ -982,7 +983,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
     def get_all_screen_properties(self):
         self.context_check("get_all_screen_properties")
         return get_all_screen_properties(self.display)
-
 
     def set_output_int_property(self, int output, prop_name, int value):
         self.context_check("set_output_int_property")

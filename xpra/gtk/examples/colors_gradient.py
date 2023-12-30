@@ -9,7 +9,7 @@ from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.os_util import gi_import
 
-from cairo import OPERATOR_CLEAR, OPERATOR_SOURCE  #pylint: disable=no-name-in-module
+from cairo import OPERATOR_CLEAR, OPERATOR_SOURCE   # pylint: disable=no-name-in-module
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")

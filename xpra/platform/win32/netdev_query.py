@@ -26,7 +26,7 @@ def get_interface_info(_fd, iface):
                         ("Name",        "name",         str),
                         ("ProductName", "product-name", str),
                         ("Speed",       "speed",        int),
-                        ):
+                    ):
                         try:
                             v = conv(r.Properties_[k].Value)
                         except Exception as e:
@@ -45,7 +45,7 @@ def get_interface_info(_fd, iface):
     return {}
 
 
-def get_tcp_info(_sock):  #pylint: disable=unused-argument
+def get_tcp_info(_sock):   # pylint: disable=unused-argument
     """
     #not implemented yet!
     #the functions below would require administrator privileges:
@@ -87,6 +87,7 @@ def main():
                 print("%s : %s" % (iface, s))
             except ValueError:
                 log.error("Error: parsing speed value '%s'", speed, exc_info=True)
+
 
 if __name__ == "__main__":
     main()

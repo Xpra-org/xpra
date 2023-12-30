@@ -1173,7 +1173,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
 
     if dtype == "vsock":
         cid, iport = display_desc["vsock"]
-        from xpra.net.vsock.vsock import (        #pylint: disable=no-name-in-module
+        from xpra.net.vsock.vsock import (         # pylint: disable=no-name-in-module
             connect_vsocket,
             CID_TYPES, CID_ANY, PORT_ANY,
         )
@@ -1724,7 +1724,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode:str):
                 body = "\n".join(lines[1:])
             else:
                 summary = "Xpra client failed to connect"
-            may_notify(NotificationID.FAILURE, summary, body, icon_name="disconnected")  #pylint: disable=not-callable
+            may_notify(NotificationID.FAILURE, summary, body, icon_name="disconnected")   # pylint: disable=not-callable
         app.cleanup()
         raise
     return app
@@ -2037,7 +2037,7 @@ def start_server_via_proxy(script_file:str, cmdline, error_cb, options, args, mo
         error_cb("cannot start via proxy for root")
         return None
     try:
-        from xpra import client  #pylint: disable=import-outside-toplevel
+        from xpra import client   # pylint: disable=import-outside-toplevel
         assert client
     except ImportError:
         if start_via_proxy is True:
@@ -3519,7 +3519,7 @@ def run_recover(script_file, cmdline, error_cb, options, args, defaults) -> Exit
     else:
 
         def recover_many(displays):
-            from xpra.platform.paths import get_xpra_command  #pylint: disable=import-outside-toplevel
+            from xpra.platform.paths import get_xpra_command   # pylint: disable=import-outside-toplevel
             for display in displays:
                 cmd = get_xpra_command()+["recover", display]
                 Popen(cmd)
@@ -3850,7 +3850,7 @@ def exec_wminfo(display) -> dict[str,str]:
     log = Logger("util")
     # get the window manager info by executing the "wminfo" subcommand:
     try:
-        from xpra.platform.paths import get_xpra_command  #pylint: disable=import-outside-toplevel
+        from xpra.platform.paths import get_xpra_command   # pylint: disable=import-outside-toplevel
         cmd = get_xpra_command() + ["wminfo"]
         env = os.environ.copy()
         env["DISPLAY"] = display

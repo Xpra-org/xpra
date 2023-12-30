@@ -100,7 +100,7 @@ class InputServer(StubServerMixin):
         kb_client = hasattr(ss, "keyboard_config")
         if not kb_client:
             return
-        ss.keyboard_config = self.get_keyboard_config(c)    #pylint: disable=assignment-from-none
+        ss.keyboard_config = self.get_keyboard_config(c)     # pylint: disable=assignment-from-none
 
         if not other_ui_clients:
             #so only activate this feature afterwards:

@@ -863,7 +863,7 @@ def find_ssl_cert(filename:str="ssl-cert.pem"):
     from xpra.log import Logger
     ssllog = Logger("ssl")
     #try to locate the cert file from known locations
-    from xpra.platform.paths import get_ssl_cert_dirs  #pylint: disable=import-outside-toplevel
+    from xpra.platform.paths import get_ssl_cert_dirs   # pylint: disable=import-outside-toplevel
     dirs = get_ssl_cert_dirs()
     ssllog(f"find_ssl_cert({filename}) get_ssl_cert_dirs()={dirs}")
     for d in dirs:

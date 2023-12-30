@@ -62,7 +62,7 @@ class Authenticator(SysAuthenticatorBase):
 
 
 def main(argv) -> int:
-    #pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Kerberos-Password-Auth", "Kerberos-Password-Authentication"):
         if len(argv) not in (3,4,5):

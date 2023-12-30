@@ -447,7 +447,7 @@ class Popen(subprocess.Popen):
             if errwrite != -1:
                 errwrite.Close()
             if hasattr(self, '_devnull'):
-                os.close(self._devnull)  #pylint: disable=no-member
+                os.close(self._devnull)   # pylint: disable=no-member
 
         if not ci.dwCreationFlags & CREATE_SUSPENDED:
             self._child_started = True
@@ -484,4 +484,4 @@ class Popen(subprocess.Popen):
             finally:
                 if hasattr(self, '_handle'):
                     self.terminate()
-        super().__del__()        #pylint: disable=no-member
+        super().__del__()         # pylint: disable=no-member

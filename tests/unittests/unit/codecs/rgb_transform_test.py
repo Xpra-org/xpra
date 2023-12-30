@@ -26,7 +26,7 @@ class RGBTransformTest(unittest.TestCase):
 
     def test_rgb_reformat(self):
         from unit.test_util import LoggerSilencer
-        from xpra.codecs.argb import argb #pylint: disable=no-name-in-module
+        from xpra.codecs.argb import argb  # pylint: disable=no-name-in-module
         with LoggerSilencer(rgb_transform):
             with LoggerSilencer(argb):
                 self.do_test_rgb_reformat()

@@ -103,7 +103,7 @@ class Authenticator(SysAuthenticatorBase):
 
 
 def main(argv) -> int:
-    #pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     from xpra.net.digest import get_salt, get_digests, gendigest
     from xpra.platform import program_context
     with program_context("LDAP3-Password-Auth", "LDAP3-Password-Authentication"):

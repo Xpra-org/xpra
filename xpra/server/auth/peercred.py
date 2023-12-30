@@ -45,7 +45,7 @@ class Authenticator(SysAuthenticator):
                 try:
                     allow_uids.append(int(x))
                 except ValueError:
-                    import pwd  #pylint: disable=import-outside-toplevel
+                    import pwd   # pylint: disable=import-outside-toplevel
                     try:
                         pw = pwd.getpwnam(x)
                         allow_uids.append(pw.pw_uid)
@@ -105,7 +105,7 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return False
 
-    def authenticate(self, _caps : typedict) -> bool:    #pylint: disable=arguments-differ
+    def authenticate(self, _caps : typedict) -> bool:     # pylint: disable=arguments-differ
         return self.peercred_check
 
     def __repr__(self):

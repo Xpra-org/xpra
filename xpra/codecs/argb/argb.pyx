@@ -9,7 +9,7 @@
 from typing import ByteString, List, Tuple
 
 from xpra.util.env import first_time
-from xpra.buffers.membuf cimport getbuf, MemBuf, buffer_context #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport getbuf, MemBuf, buffer_context  # pylint: disable=syntax-error
 
 from libc.stdint cimport uintptr_t, uint32_t, uint16_t, uint8_t
 

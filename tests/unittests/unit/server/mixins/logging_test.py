@@ -51,7 +51,7 @@ class InputMixinTest(ServerMixinTest):
         opts = AdHocStruct()
         opts.remote_logging = "on"
         l.init(opts)
-        l._process_logging(None, None)  #pylint: disable=protected-access
+        l._process_logging(None, None)   # pylint: disable=protected-access
 
 
 def main():

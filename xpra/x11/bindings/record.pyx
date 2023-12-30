@@ -21,7 +21,7 @@ from xpra.util.env import envint, envbool, first_time
 from xpra.util.str_fn import csv, decode_str, strtobytes, bytestostr
 
 
-from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
+from libc.stdint cimport uintptr_t   # pylint: disable=syntax-error
 
 ctypedef unsigned long   XRecordClientSpec
 ctypedef unsigned long   XRecordContext
@@ -181,7 +181,7 @@ cdef class RecordBindingsInstance(X11CoreBindingsInstance):
         cdef int event_base = 0, ignored = 0, cmajor = 0, cminor = 0
         cdef int r = XRecordQueryVersion(self.display, &cmajor, &cminor)
         log(f"found XRecord extension version {cmajor}.{cminor}")
-        return (cmajor, cminor)
+        return cmajor, cminor
 
     def get_info(self) -> dict:
         return {

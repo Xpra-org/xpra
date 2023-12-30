@@ -17,7 +17,7 @@ COMTYPES_NOGENDIR = envbool("XPRA_COMTYPES_NOGENDIR", False)
 
 
 def comtypes_init() -> None:
-    #pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     from comtypes import client
     if COMTYPES_NOGENDIR:
         client.gen_dir = None
@@ -36,7 +36,7 @@ def find_tlb_file(filename:str="DirectShow.tlb") -> str:
         os.path.join(app_dir, "win32"),
         os.path.join(app_dir, "share", "xpra"),
         os.path.join(os.environ.get("MINGW_PREFIX", ""), "share", "xpra"),
-        ]
+    ]
     #ie: "DirectShow.tlb" -> "XPRA_DIRECTSHOW_TLB"
     env_name = "XPRA_" + filename.replace(".", "_").upper()
     filenames = [os.environ.get(env_name)] + [os.path.join(d, filename) for d in dirs]
@@ -59,7 +59,7 @@ class QuietenLogging:
         for logger in self.loggers:
             logger.setLevel(logging.WARNING)
         self.verbose = None
-        from comtypes import client # pylint: disable=import-outside-toplevel
+        from comtypes import client   # pylint: disable=import-outside-toplevel
         gen = getattr(client, "_generate", None)
         self._generate = gen
         if gen:
@@ -85,7 +85,7 @@ class CIMV2_Query(QuietenLogging):
 
     def __enter__(self):
         super().__enter__()
-        from comtypes.client import CreateObject # pylint: disable=import-outside-toplevel
+        from comtypes.client import CreateObject   # pylint: disable=import-outside-toplevel
         o = CreateObject("WbemScripting.SWbemLocator")
         s = o.ConnectServer(".", "root\\cimv2")
         return s.ExecQuery(self.query)

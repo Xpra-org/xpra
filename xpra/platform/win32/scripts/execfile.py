@@ -13,13 +13,16 @@ import sys
 from xpra.platform import init, clean
 init("Xpra-Python-Exec")
 
+
 def ret(v):
     clean()
     sys.exit(v)
 
+
 if len(sys.argv)<2:
     print("you must specify a python script file to run!")
     ret(1)
+
 filename = sys.argv[1]
 if not os.path.exists(filename):
     print(f"script file {filename!r} not found")
@@ -34,7 +37,7 @@ if filename.endswith(".pyc"):
     from importlib.util import MAGIC_NUMBER
     assert fdata.startswith(MAGIC_NUMBER), "not a python compiled file, or version mismatch"
     import marshal
-    #16 is the magic value for python 3.8:
+    # 16 is the magic value for python 3.8:
     fdata = marshal.loads(fdata[16:])
-exec(fdata)  #pylint: disable=exec-used
+exec(fdata)   # pylint: disable=exec-used
 ret(0)

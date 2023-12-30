@@ -390,7 +390,7 @@ class ServerBaseControlCommands(StubServerMixin):
         return f"removed {l} window-filters"
 
     def control_command_add_window_filter(self, object_name:str, property_name:str, operator:str, value, client_uuids="") -> str:
-        from xpra.server.window import filters  #pylint: disable=import-outside-toplevel
+        from xpra.server.window import filters   # pylint: disable=import-outside-toplevel
         window_filter = filters.get_window_filter(object_name, property_name, operator, value)
         #log("%s%s=%s", filters.get_window_filter, (object_name, property_name, operator, value), window_filter)
         if client_uuids=="*":
@@ -403,7 +403,7 @@ class ServerBaseControlCommands(StubServerMixin):
 
     def control_command_compression(self, compress:str) -> str:
         c = compress.lower()
-        from xpra.net import compression    #pylint: disable=import-outside-toplevel
+        from xpra.net import compression     # pylint: disable=import-outside-toplevel
         opts = compression.get_enabled_compressors()    #ie: [lz4, zlib]
         if c not in opts:
             raise ControlError("compressor argument must be one of: " + csv(opts))
@@ -414,7 +414,7 @@ class ServerBaseControlCommands(StubServerMixin):
 
     def control_command_encoder(self, encoder:str) -> str:
         e = encoder.lower()
-        from xpra.net import packet_encoding  #pylint: disable=import-outside-toplevel
+        from xpra.net import packet_encoding   # pylint: disable=import-outside-toplevel
         opts = packet_encoding.get_enabled_encoders()   #ie: [rencodeplus, ]
         if e not in opts:
             raise ControlError("encoder argument must be one of: " + csv(opts))

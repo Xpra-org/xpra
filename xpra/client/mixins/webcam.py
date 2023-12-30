@@ -116,7 +116,7 @@ class WebcamForwarder(StubClientMixin):
         try:
             from xpra.platform.webcam import get_virtual_video_devices, get_all_video_devices
             virt_devices = get_virtual_video_devices()
-            all_video_devices = get_all_video_devices()     #pylint: disable=assignment-from-none
+            all_video_devices = get_all_video_devices()      # pylint: disable=assignment-from-none
             non_virtual = {k:v for k,v in all_video_devices.items() if k not in virt_devices}
             log("virtual video devices=%s", virt_devices)
             log("all_video_devices=%s", all_video_devices)

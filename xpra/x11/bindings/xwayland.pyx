@@ -13,7 +13,7 @@ from xpra.x11.bindings.xlib cimport (
     XOpenDisplay, XCloseDisplay,
     XQueryExtension, XFree,
     XGetWindowProperty, XDefaultRootWindow,
-    )
+)
 from xpra.x11.bindings.randr cimport get_monitor_properties
 from xpra.log import Logger
 
@@ -70,9 +70,11 @@ def isxwayland(display_name : str=os.environ.get("DISPLAY", "")):
     finally:
         XCloseDisplay(d)
 
+
 cdef Atom get_XAtom(Display *display, name : str):
     b = name.encode()
     return XInternAtom(display, b, True)
+
 
 cdef get_xstring(Display *display, name="XPRA_SERVER_UUID", prop_type="STRING"):
     cdef Atom xactual_type = <Atom> 0

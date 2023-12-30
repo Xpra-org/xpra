@@ -15,7 +15,7 @@ log = Logger("util", "auth")
 from xpra.util.str_fn import strtobytes, bytestostr
 from ctypes import addressof, create_string_buffer, sizeof
 
-from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
+from libc.stdint cimport uintptr_t   # pylint: disable=syntax-error
 from libc.string cimport memset
 
 ctypedef void* void_p  # @UndefinedVariable

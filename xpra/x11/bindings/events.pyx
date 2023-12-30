@@ -28,7 +28,7 @@ from xpra.x11.bindings.xlib cimport (
     XQueryTree,
     XDefaultRootWindow,
     XGetAtomName,
-    )
+)
 from libc.stdint cimport uintptr_t
 
 
@@ -77,6 +77,7 @@ cdef extern from "X11/extensions/xfixeswire.h":
     unsigned long XFixesDisplayCursorNotifyMask
     unsigned int XFixesSelectionNotify
 
+
 cdef extern from "X11/extensions/shape.h":
     Bool XShapeQueryExtension(Display *display, int *event_base, int *error_base)
     ctypedef struct XShapeEvent:
@@ -85,6 +86,7 @@ cdef extern from "X11/extensions/shape.h":
         int x, y            #extents of new region
         unsigned width, height
         Bool shaped         #true if the region exists
+
 
 cdef extern from "X11/extensions/Xdamage.h":
     ctypedef XID Damage
@@ -95,6 +97,7 @@ cdef extern from "X11/extensions/Xdamage.h":
         Bool more
         XRectangle area
     Bool XDamageQueryExtension(Display *, int * event_base, int * error_base)
+
 
 cdef extern from "X11/extensions/Xfixes.h":
     Bool XFixesQueryExtension(Display *, int *event_base, int *error_base)
@@ -137,8 +140,10 @@ cdef extern from "X11/extensions/XKB.h":
         int             xkb_type
         unsigned int    device
 
+
 cdef extern from "X11/XKBlib.h":
     Bool XkbQueryExtension(Display *, int *opcodeReturn, int *eventBaseReturn, int *errorBaseReturn, int *majorRtrn, int *minorRtrn)
+
 
 cdef extern from "X11/extensions/XKBproto.h":
     ctypedef struct XkbBellNotifyEvent:
@@ -159,11 +164,11 @@ cdef extern from "X11/extensions/XKBproto.h":
         Bool        event_only
 
 
-
 cdef int CursorNotify = -1
 cdef int XKBNotify = -1
 cdef int ShapeNotify = -1
 cdef int XFSelectionNotify = -1
+
 
 cdef int get_XKB_event_base(Display *xdisplay):
     cdef int opcode = 0
@@ -177,6 +182,7 @@ cdef int get_XKB_event_base(Display *xdisplay):
     verbose(f"get_XKB_event_base(%#x)=%i", <uintptr_t> xdisplay, event_base)
     return event_base
 
+
 cdef int get_XFixes_event_base(Display *xdisplay):
     cdef int event_base = 0
     cdef int error_base = 0
@@ -187,6 +193,7 @@ cdef int get_XFixes_event_base(Display *xdisplay):
     assert event_base>0, "invalid event base for XFixes"
     return event_base
 
+
 cdef int get_XDamage_event_base(Display *xdisplay):
     cdef int event_base = 0
     cdef int error_base = 0
@@ -196,6 +203,7 @@ cdef int get_XDamage_event_base(Display *xdisplay):
     verbose("get_XDamage_event_base(%#x)=%i", <uintptr_t> xdisplay, event_base)
     assert event_base>0, "invalid event base for XDamage"
     return event_base
+
 
 cdef int get_XShape_event_base(Display *xdisplay):
     cdef int event_base = 0, ignored = 0
@@ -225,7 +233,7 @@ cdef init_x11_events(Display *display):
         EnterNotify         : ("xpra-enter-event", None),
         LeaveNotify         : ("xpra-leave-event", None),
         MotionNotify        : ("xpra-motion-event", None)       #currently unused, just defined for debugging purposes
-        })
+    })
     add_x_event_type_names({
         KeyPress            : "KeyPress",
         KeyRelease          : "KeyRelease",
@@ -261,7 +269,7 @@ cdef init_x11_events(Display *display):
         ClientMessage       : "ClientMessage",
         MappingNotify       : "MappingNotify",
         GenericEvent        : "GenericEvent",
-        })
+    })
     cdef int event_base = get_XShape_event_base(display)
     if event_base>=0:
         global ShapeNotify
@@ -295,11 +303,15 @@ cdef init_x11_events(Display *display):
 
 
 x_event_signals : Dict[int,tuple] = {}
+
+
 def add_x_event_signal(event, mapping):
     x_event_signals[event] = mapping
 
+
 def add_x_event_signals(event_signals:Dict[int,tuple]):
     x_event_signals.update(event_signals)
+
 
 def get_x_event_signals(event) -> tuple:
     return x_event_signals.get(event)
@@ -307,9 +319,12 @@ def get_x_event_signals(event) -> tuple:
 
 x_event_type_names : Dict[int,str] = {}
 names_to_event_type : Dict[str,int] = {}
+
+
 def add_x_event_type_name(event, name):
     x_event_type_names[event] = name
     names_to_event_type[name] = event
+
 
 def add_x_event_type_names(event_type_names):
     x_event_type_names.update(event_type_names)
@@ -318,6 +333,7 @@ def add_x_event_type_names(event_type_names):
     verbose("x_event_signals=%s", x_event_signals)
     verbose("event_type_names=%s", x_event_type_names)
     verbose("names_to_event_type=%s", names_to_event_type)
+
 
 def get_x_event_type_name(event):
     return x_event_type_names.get(event)
@@ -356,6 +372,8 @@ def set_debug_events():
 
 
 x_event_parsers : Dict[int,Callable] = {}
+
+
 def add_x_event_parser(extension_opcode : int, parser : Callable):
     x_event_parsers[extension_opcode] = parser
 

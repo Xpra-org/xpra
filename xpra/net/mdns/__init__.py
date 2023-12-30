@@ -24,7 +24,7 @@ def get_listener_class():
         #workaround for macOS Big Sur which broke ctypes,
         #ctypes is used in the ifaddr module which is imported by zeroconf:
         if sys.platform.startswith("darwin"):
-            import xpra.platform    #pylint: disable=import-outside-toplevel
+            import xpra.platform     # pylint: disable=import-outside-toplevel
             #on macOS, an import side effect is to patch the ctypes loader
             assert xpra.platform
         try:

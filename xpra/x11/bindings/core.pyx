@@ -12,11 +12,10 @@ from xpra.x11.bindings.xlib cimport (
     XGetErrorText,
     XUngrabKeyboard, XUngrabPointer,
     XSynchronize, XSync, XFlush,
-    CurrentTime, MappingBusy, GrabModeAsync, AnyModifier,
-    PropModeReplace,
+    CurrentTime,
     XDefaultRootWindow,
-    )
-from libc.stdlib cimport malloc, free       #pylint: disable=syntax-error
+)
+from libc.stdlib cimport malloc, free        # pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t
 
 from xpra.util.env import envbool
@@ -35,13 +34,19 @@ def X11CoreBindings():
         singleton = X11CoreBindingsInstance()
     return singleton
 
+
 def noop(*args):
     pass
 
+
 cdef object context_check = noop
+
+
 def set_context_check(fn):
     global context_check
     context_check = fn
+
+
 def call_context_check(*args):
     context_check(*args)
 
@@ -52,7 +57,7 @@ cdef class X11CoreBindingsInstance:
         if not is_X11():
             raise RuntimeError("cannot load X11 bindings with wayland")
         self.display = get_display()
-        if self.display==NULL:
+        if self.display == NULL:
             raise RuntimeError("X11 display is not set")
         dn = get_display_name()
         bstr = strtobytes(dn)
@@ -78,11 +83,9 @@ cdef class X11CoreBindingsInstance:
     def __repr__(self):
         return "X11CoreBindings(%s)" % self.display_name
 
-
     def get_root_xid(self):
         assert self.display
         return XDefaultRootWindow(self.display)
-
 
     cdef Atom xatom(self, str_or_int):
         """Returns the X atom corresponding to the given Python string or Python
@@ -118,15 +121,16 @@ cdef class X11CoreBindingsInstance:
     def XGetAtomName(self, Atom atom):
         self.context_check("XGetAtomName")
         cdef char *v = XGetAtomName(self.display, atom)
-        if v==NULL:
+        if v == NULL:
             return None
         r = v[:]
         XFree(v)
         return r
 
     def get_error_text(self, code) -> str:
-        assert self.display!=NULL, "display is closed"
-        if type(code)!=int:
+        if self.display == NULL:
+            raise RuntimeError("display is closed")
+        if not isinstance(code, int):
             return str(code)
         cdef char[128] buffer
         XGetErrorText(self.display, code, buffer, 128)
@@ -134,10 +138,12 @@ cdef class X11CoreBindingsInstance:
 
     def UngrabKeyboard(self, Time time=CurrentTime):
         self.context_check("UngrabKeyboard")
-        assert self.display!=NULL, "display is closed"
+        if self.display == NULL:
+            raise RuntimeError("display is closed")
         return XUngrabKeyboard(self.display, time)
 
     def UngrabPointer(self, Time time=CurrentTime):
         self.context_check("UngrabPointer")
-        assert self.display!=NULL, "display is closed"
+        if self.display == NULL:
+            raise RuntimeError("display is closed")
         return XUngrabPointer(self.display, time)

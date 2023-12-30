@@ -7,8 +7,8 @@ from xpra.codecs.image import ImageWrapper
 from xpra.codecs.constants import get_subsampling_divs
 from xpra.codecs.debug import may_save_image
 
-from libc.string cimport memset #pylint: disable=syntax-error
-from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
+from libc.string cimport memset  # pylint: disable=syntax-error
+from xpra.buffers.membuf cimport getbuf, MemBuf  # pylint: disable=syntax-error
 from xpra.codecs.avif.avif cimport (
     avifDecoder, avifResult, avifRGBImage, avifImage,
     avifResultToString,

@@ -137,7 +137,7 @@ class RFBServer:
         start_refresh = getattr(self, "start_refresh", None)
         if start_refresh:
             for wid in tuple(self._window_to_id.values()):
-                start_refresh(wid)      #pylint: disable=not-callable
+                start_refresh(wid)       # pylint: disable=not-callable
 
     def _process_rfb_PointerEvent(self, _proto, packet):
         if not features.input_devices or self.readonly:

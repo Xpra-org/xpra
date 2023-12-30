@@ -7,7 +7,7 @@
 from time import monotonic
 from typing import Any
 import cairo
-from cairo import (  #pylint: disable=no-name-in-module
+from cairo import (   # pylint: disable=no-name-in-module
     Context, ImageSurface,  # @UnresolvedImport
     FORMAT_ARGB32, FORMAT_RGB30, FORMAT_RGB24, FORMAT_RGB16_565,  # @UnresolvedImport
     OPERATOR_SOURCE, OPERATOR_CLEAR, OPERATOR_OVER,  # @UnresolvedImport

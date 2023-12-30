@@ -7,7 +7,7 @@
 #new recommended way of using the glib main loop:
 from dbus.mainloop.glib import DBusGMainLoop
 DBusGMainLoop(set_as_default=True)
-import dbus  #pylint: disable=wrong-import-position
+import dbus   # pylint: disable=wrong-import-position
 
 
 #NAME = "org.freedesktop.ScreenSaver"

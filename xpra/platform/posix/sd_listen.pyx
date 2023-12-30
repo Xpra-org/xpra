@@ -11,7 +11,7 @@ import socket
 
 from xpra.log import Logger
 
-from libc.stdint cimport uint64_t, uint16_t  #pylint: disable=syntax-error
+from libc.stdint cimport uint64_t, uint16_t   # pylint: disable=syntax-error
 
 log = Logger("util", "network")
 
