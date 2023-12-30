@@ -104,7 +104,7 @@ class X11ServerCore(GTKServerBase):
         (see XpraServer or XpraX11ShadowServer for actual implementations)
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.root_window = get_default_root_window()
         self.pointer_device = XTestPointerDevice()
         self.touchpad_device = None
@@ -188,7 +188,7 @@ class X11ServerCore(GTKServerBase):
             sizes = RandR.get_xrr_screen_sizes()
             if len(sizes)==1:
                 self.randr_exact_size = True
-                prop_set(self.root_window, "_XPRA_RANDR_EXACT_SIZE", "u32", 1)
+                prop_set(xid, "_XPRA_RANDR_EXACT_SIZE", "u32", 1)
             elif not sizes:
                 # xwayland?
                 self.randr = False
@@ -292,7 +292,7 @@ class X11ServerCore(GTKServerBase):
         root = get_default_root_window()
         for prop in properties:
             try:
-                prop_del(root, prop)
+                prop_del(root.get_xid(), prop)
             except Exception as e:
                 log("prop_del(%s, %s) %s", root, prop, e)
 
