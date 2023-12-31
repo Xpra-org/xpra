@@ -6,7 +6,11 @@
 
 # @ReservedAssignment
 
+ctypedef unsigned char BYTE
+ctypedef unsigned char CARD8
+ctypedef unsigned short CARD16
 ctypedef unsigned long CARD32
+ctypedef int BOOL
 ctypedef int Bool
 ctypedef int Status
 ctypedef CARD32 Atom
@@ -220,6 +224,10 @@ cdef extern from "X11/Xlib.h":
                        int *win_x_return, int *win_y_return, unsigned int *mask_return)
     int XFlush(Display *dpy)
     int XSync(Display *dpy, Bool discard)
+
+    int XConnectionNumber(Display *display)
+
+    int XPending(Display *display)
 
     # Icon sizes
     ctypedef struct XIconSize:

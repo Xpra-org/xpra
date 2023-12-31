@@ -28,6 +28,8 @@ from xpra.x11.bindings.display_source cimport get_display
 from xpra.x11.bindings.display_source import get_display_name
 
 cdef X11CoreBindingsInstance singleton = None
+
+
 def X11CoreBindings():
     global singleton
     if singleton is None:
@@ -59,8 +61,7 @@ cdef class X11CoreBindingsInstance:
         self.display = get_display()
         if self.display == NULL:
             raise RuntimeError("X11 display is not set")
-        dn = get_display_name()
-        bstr = strtobytes(dn)
+        bstr = strtobytes(get_display_name())
         self.display_name = bstr
         self.XSynchronize(envbool("XPRA_X_SYNC", False))
 
@@ -76,9 +77,6 @@ cdef class X11CoreBindingsInstance:
     def context_check(self, *args):
         global context_check
         context_check(*args)
-
-    def get_display_name(self):
-        return self.display_name
 
     def __repr__(self):
         return "X11CoreBindings(%s)" % self.display_name

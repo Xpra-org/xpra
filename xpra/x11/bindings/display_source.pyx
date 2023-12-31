@@ -16,7 +16,7 @@ cdef Display *display = NULL
 display_name = ""
 
 
-cdef Display* get_display():
+cdef Display* get_display() noexcept:
     return display
 
 

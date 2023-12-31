@@ -7,5 +7,5 @@ cdef extern from "X11/Xlib.h":
     ctypedef struct Display:
         pass
 
-cdef Display* get_display()
+cdef Display* get_display() noexcept
 cdef int set_display(Display *d) except 1
