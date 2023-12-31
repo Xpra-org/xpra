@@ -9,22 +9,16 @@ from select import select
 from time import monotonic
 
 from xpra.log import Logger
-log = Logger("x11", "bindings", "randr")
+log = Logger("x11", "bindings", "record")
 
-from libc.stdio cimport printf
 from xpra.x11.bindings.xlib cimport (
     Display, XID, Window, Status, Time, Cursor,
     BOOL, BYTE, CARD8, CARD16, CARD32,
     XOpenDisplay,
     XFree, XFlush, XSync, XConnectionNumber, XPending,
-    Success,
 )
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance
-from xpra.util.env import envint, envbool, first_time
-from xpra.util.str_fn import csv, decode_str, strtobytes, bytestostr
 
-
-from libc.stdint cimport uintptr_t   # pylint: disable=syntax-error
 
 ctypedef unsigned long   XRecordClientSpec
 ctypedef unsigned long   XRecordContext
@@ -324,12 +318,12 @@ cdef extern from "X11/extensions/record.h":
 
 
 CATEGORIES: dict[int, str] = {
-    XRecordFromServer: "XRecordFromServer",
-    XRecordFromClient: "XRecordFromClient",
-    XRecordClientStarted: "XRecordClientStarted",
-    XRecordClientDied: "XRecordClientDied",
-    XRecordStartOfData: "XRecordStartOfData",
-    XRecordEndOfData: "XRecordEndOfData",
+    XRecordFromServer: "from-server",
+    XRecordFromClient: "from-client",
+    XRecordClientStarted: "cient-started",
+    XRecordClientDied: "client-died",
+    XRecordStartOfData: "start-of-data",
+    XRecordEndOfData: "end-of-data",
 }
 
 EVENT_TYPES: dict[int, str] = {
@@ -455,6 +449,7 @@ EVENT_TYPES: dict[int, str] = {
     X_NoOperation: "NoOperation",
 }
 
+
 cdef dict parse_GrabPointer(xGrabPointerReq *rec):
     return {
         "window": rec.grabWindow,
@@ -493,6 +488,7 @@ cdef dict parse_ChangeActivePointerGrab(xChangeActivePointerGrabReq *rec):
 
 cdef dict parse_GrabKeyboard(xGrabKeyboardReq *rec):
     return {
+        "window": rec.grabWindow,
         "owner-events": rec.ownerEvents,
         "time": rec.time,
         "pointer-mode": rec.pointerMode,
@@ -508,12 +504,14 @@ cdef parse_GrabKey(xGrabKeyReq *rec):
         "keyboard-mode": rec.keyboardMode,
     }
 
+
 cdef parse_UngrabKey(xUngrabKeyReq *rec):
     return {
         "window": rec.grabWindow,
         "key": rec.key,
         "modifiers": rec.modifiers,
     }
+
 
 cdef void event_callback(XPointer closure, XRecordInterceptData *rec) noexcept:
     cdef xReq * req = < xReq * > rec.data
@@ -535,29 +533,29 @@ cdef void event_callback(XPointer closure, XRecordInterceptData *rec) noexcept:
             log.warn(f"unexpected event category {category}")
             return
 
-        event = EVENT_TYPES.get(req.reqType, "") or "unknown"
-        event_data = {}
+        event_type = EVENT_TYPES.get(req.reqType, f"unknown: {req.reqType}")
+        event = {}
         if req.reqType == X_GrabPointer:
-            event_data = parse_GrabPointer(< xGrabPointerReq * > rec.data)
+            event = parse_GrabPointer(< xGrabPointerReq * > rec.data)
         elif req.reqType == X_UngrabPointer:
             # no data associated with it
             pass
         elif req.reqType == X_GrabButton:
-            event_data = parse_GrabButton(< xGrabButtonReq * > rec.data)
+            event = parse_GrabButton(< xGrabButtonReq * > rec.data)
         elif req.reqType == X_UngrabButton:
-            event_data = parse_UngrabButton(< xUngrabButtonReq * > rec.data)
+            event = parse_UngrabButton(< xUngrabButtonReq * > rec.data)
         elif req.reqType == X_ChangeActivePointerGrab:
-            event_data = parse_ChangeActivePointerGrab(< xChangeActivePointerGrabReq * > rec.data)
+            event = parse_ChangeActivePointerGrab(< xChangeActivePointerGrabReq * > rec.data)
         elif req.reqType == X_GrabKeyboard:
-            event_data = parse_GrabKeyboard(< xGrabKeyboardReq *> rec.data)
+            event = parse_GrabKeyboard(< xGrabKeyboardReq *> rec.data)
         elif req.reqType == X_UngrabKeyboard:
             # no data?
             pass
         elif req.reqType == X_GrabKey:
-            event_data = parse_GrabKey(< xGrabKeyReq * > rec.data)
+            event = parse_GrabKey(< xGrabKeyReq * > rec.data)
         elif req.reqType == X_UngrabKey:
-            event_data = parse_UngrabKey(<xUngrabKeyReq*> rec.data)
-        log.info(f"{category} event type={event} {event_data}")
+            event = parse_UngrabKey(<xUngrabKeyReq*> rec.data)
+        log.info(f"{category} event type={event_type} {event}")
     except KeyboardInterrupt:
         log.info(f"KeyboardInterrupt")
         RecordBindings().stop()
@@ -630,11 +628,15 @@ cdef class RecordBindingsInstance(X11CoreBindingsInstance):
         rr.client_started = True
         rr.client_died = True
         if self.all:
-            rr.core_requests.first = X_CreateWindow;
-            rr.core_requests.last = X_NoOperation
+            first = X_CreateWindow
+            last = X_NoOperation
         else:
-            rr.core_requests.first = X_GrabPointer;
-            rr.core_requests.last = X_UngrabKey
+            first = X_GrabPointer
+            last = X_UngrabKey
+        rr.core_requests.first = first
+        rr.core_requests.last = last
+        #rr.delivered_events.first = first
+        #rr.delivered_events.last = last
         rcs = XRecordAllClients
 
         cdef int record_fd = XConnectionNumber(self.display)
