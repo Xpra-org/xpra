@@ -145,7 +145,7 @@ Warning: tuning is very often misused and ends up being counterproductive.
   <summary>Preventing blurry screen updates</summary>
 
 Rather than selecting a lossless picture encoding, which may use far too much bandwidth and cause performance issues:
-* make sure that the applications are correctly detected: either using the application's command [content-type](https://github.com/Xpra-org/xpra/tree/master/fs/share/xpra/content-type) and [content-categories](https://github.com/Xpra-org/xpra/tree/master/fs/share/xpra/content-categories/10_default.conf) mapping
+* make sure that the applications are correctly detected: either using the application's command [content-type](https://github.com/Xpra-org/xpra/tree/master/fs/etc/xpra/content-type) and [content-categories](https://github.com/Xpra-org/xpra/tree/master/fs/etc/xpra/content-categories/10_default.conf) mapping
 * raise the `min-quality` and / or lower the `min-speed`
 * maybe lower the `auto-refresh` delay - just be aware that the lossless auto-refresh can be costly (as all lossless frames are)
 </details>
