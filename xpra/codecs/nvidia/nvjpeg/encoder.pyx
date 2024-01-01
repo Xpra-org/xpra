@@ -149,9 +149,9 @@ def get_output_colorspaces(encoding, input_colorspace):
 def get_specs(encoding, colorspace):
     assert encoding in ("jpeg", "jpega")
     assert colorspace in get_input_colorspaces(encoding)
-    from xpra.codecs.constants import video_spec
+    from xpra.codecs.constants import VideoSpec
     return (
-        video_spec(
+        VideoSpec(
             encoding="jpeg", input_colorspace=colorspace, output_colorspaces=(colorspace, ),
             has_lossless_mode=False,
             codec_class=Encoder, codec_type="nvjpeg",

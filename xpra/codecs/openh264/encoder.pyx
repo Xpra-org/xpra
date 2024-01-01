@@ -14,7 +14,7 @@ log = Logger("encoder", "openh264")
 
 from xpra.util.str_fn import csv, bytestostr, strtobytes
 from xpra.util.types import typedict, AtomicInteger
-from xpra.codecs.constants import video_spec
+from xpra.codecs.constants import VideoSpec
 from collections import deque
 
 from libc.string cimport memset
@@ -273,7 +273,7 @@ def get_specs(encoding, colorspace):
     #we can handle high quality and any speed
     #setup cost is moderate (about 10ms)
     return (
-        video_spec(
+        VideoSpec(
             encoding=encoding, input_colorspace=colorspace, output_colorspaces=(COLORSPACES[colorspace],),
             has_lossless_mode=False,
             codec_class=Encoder, codec_type=get_type(),

@@ -12,7 +12,7 @@ from typing import Any, Dict
 from xpra.log import Logger
 log = Logger("encoder", "vpx")
 
-from xpra.codecs.constants import video_spec, get_subsampling_divs
+from xpra.codecs.constants import VideoSpec, get_subsampling_divs
 from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util.env import envint, envbool
 from xpra.util.types import AtomicInteger, typedict
@@ -283,7 +283,7 @@ def get_specs(encoding, colorspace):
         speed = 40
         quality = 50 + 50*int(has_lossless_mode)
     return (
-        video_spec(
+        VideoSpec(
             encoding=encoding, input_colorspace=colorspace, output_colorspaces=[colorspace],
             has_lossless_mode=has_lossless_mode,
             codec_class=Encoder, codec_type=get_type(),

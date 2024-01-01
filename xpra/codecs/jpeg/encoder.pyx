@@ -134,7 +134,7 @@ def get_output_colorspaces(encoding, input_colorspace):
 def get_specs(encoding, colorspace):
     assert encoding in ("jpeg", "jpega")
     assert colorspace in get_input_colorspaces(encoding)
-    from xpra.codecs.constants import video_spec
+    from xpra.codecs.constants import VideoSpec
     width_mask=0xFFFF
     height_mask=0xFFFF
     if colorspace in ("YUV420P", "YUV422P"):
@@ -142,7 +142,7 @@ def get_specs(encoding, colorspace):
     if colorspace in ("YUV420P", ):
         height_mask=0xFFFE
     return (
-        video_spec(
+        VideoSpec(
             encoding=encoding, input_colorspace=colorspace, output_colorspaces=(colorspace, ),
             has_lossless_mode=False,
             codec_class=Encoder, codec_type="jpeg",

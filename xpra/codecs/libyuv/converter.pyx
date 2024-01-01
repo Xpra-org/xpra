@@ -14,7 +14,7 @@ log = Logger("csc", "libyuv")
 
 from xpra.util.str_fn import csv
 from xpra.util.types import typedict
-from xpra.codecs.constants import get_subsampling_divs, csc_spec
+from xpra.codecs.constants import get_subsampling_divs, CSCSpec
 from xpra.codecs.image import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf, memalign, buffer_context    # pylint: disable=syntax-error
 
@@ -158,7 +158,7 @@ def get_output_colorspaces(input_colorspace):
 def get_spec(in_colorspace, out_colorspace):
     assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, COLORSPACES)
     assert out_colorspace in COLORSPACES[in_colorspace], "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, COLORSPACES[in_colorspace])
-    return csc_spec(input_colorspace=in_colorspace, output_colorspace=out_colorspace,
+    return CSCSpec(input_colorspace=in_colorspace, output_colorspace=out_colorspace,
                     codec_class=Converter, codec_type=get_type(),
                     quality=100, speed=100,
                     setup_cost=0, min_w=8, min_h=2, can_scale=in_colorspace!="NV12",

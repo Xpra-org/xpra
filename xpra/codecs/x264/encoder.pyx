@@ -15,7 +15,7 @@ log = Logger("encoder", "x264")
 from xpra.util.env import envint, envbool
 from xpra.util.str_fn import csv, bytestostr, strtobytes
 from xpra.util.types import typedict, AtomicInteger
-from xpra.codecs.constants import video_spec, get_profile, get_x264_quality, get_x264_preset
+from xpra.codecs.constants import VideoSpec, get_profile, get_x264_quality, get_x264_preset
 from collections import deque
 
 from libc.string cimport memset
@@ -415,7 +415,7 @@ def get_specs(encoding:str, colorspace:str):
         if colorspace=="YUV420P":
             height_mask = 0xFFFE
     return (
-        video_spec(
+        VideoSpec(
             encoding=encoding, input_colorspace=colorspace, output_colorspaces=(COLORSPACES[colorspace],),
             has_lossless_mode=has_lossless_mode,
             codec_class=Encoder, codec_type=get_type(),
