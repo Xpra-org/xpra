@@ -31,7 +31,10 @@ def override_aioquic_logger():
     logger = logging.getLogger("quic")
     logger.propagate = False
     logger.handlers.clear()
-    aioquic_logger = Logger("quic", "verbose")
+    # warning: don't use 'quic' as first argument to Logger
+    # as this would create a logging loop
+    aioquic_logger = Logger("network", "quic", "verbose")
+    assert aioquic_logger._logger != logger
     if is_debug_enabled("quic"):
         aioquic_logger.setLevel(logging.DEBUG)
     else:
