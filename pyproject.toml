@@ -60,6 +60,7 @@ cli = [
     "paramiko",
     "pyopenssl",
     "cryptography",
+    "uvloop",
     "aioquic",
     "dbus",
     "socks",

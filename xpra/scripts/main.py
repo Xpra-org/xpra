@@ -33,13 +33,12 @@ from xpra.os_util import (
     gi_import,
     WIN32, OSX, POSIX
 )
-from xpra.util.io import is_socket, stderr_print, use_tty
+from xpra.util.io import is_socket, stderr_print, use_tty, info, warn, error
 from xpra.util.system import (
     is_Wayland, is_Ubuntu, SIGNAMES,
     set_proc_title, is_systemd_pid1, get_distribution_version_id,
 )
 from xpra.scripts.parsing import (
-    info, warn, error,
     get_usage,
     parse_display_name, parse_env,
     fixup_defaults,

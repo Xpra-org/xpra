@@ -20,7 +20,7 @@ from xpra.util.io import stderr_print, which
 from xpra.util.system import is_Ubuntu, is_Debian
 
 
-def warn(msg:str) -> None:
+def warn(msg: str) -> None:
     stderr_print(msg)
 
 
@@ -66,7 +66,7 @@ if OSX or WIN32:   # pragma: no cover
 # pylint: disable=import-outside-toplevel
 
 
-def remove_dupes(seq:Iterable[Any]) -> list[Any]:
+def remove_dupes(seq: Iterable[Any]) -> list[Any]:
     seen : set[Any] = set()
     seen_add : Callable = seen.add
     return [x for x in seq if not (x in seen or seen_add(x))]
