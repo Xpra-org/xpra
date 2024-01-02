@@ -540,9 +540,9 @@ class SocketPeekFile:
 
 
 class SocketPeekWrapper:
-    def __init__(self, sock):
+    def __init__(self, sock, peeked=b""):
         self.socket = sock
-        self.peeked = b""
+        self.peeked = peeked
 
     def __getattr__(self, attr):
         if attr == "makefile":
@@ -581,9 +581,9 @@ class SocketPeekWrapper:
 
 class PeekableSocketConnection(SocketConnection):
 
-    def enable_peek(self):
+    def enable_peek(self, peeked=b""):
         assert not isinstance(self._socket, SocketPeekWrapper)
-        self._socket = SocketPeekWrapper(self._socket)
+        self._socket = SocketPeekWrapper(self._socket, peeked)
 
 
 class SSLSocketConnection(PeekableSocketConnection):

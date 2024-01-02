@@ -1538,8 +1538,25 @@ class ServerCore:
             netlog("RFB header, trying to upgrade protocol")
             self.cancel_upgrade_to_rfb_timer(proto)
             self.upgrade_protocol_to_rfb(proto, data)
-        else:
-            proto._invalid_header(proto, data, msg)
+            return
+        if data:
+            # try again to wrap this socket:
+            bufs = [data]
+
+            def addbuf(data):
+                bufs.append(data)
+            conn = proto.steal_connection(addbuf)
+            # not yet wrapped:
+            netlog(f"stole connection: {type(conn)}, wrapped={conn.socktype_wrapped}, socktype={conn.socktype}")
+            from xpra.net.bytestreams import PeekableSocketConnection, SocketConnection
+            if conn.socktype_wrapped == conn.socktype and isinstance(conn, SocketConnection):
+                pconn = PeekableSocketConnection(conn._socket, conn.local, conn.remote, conn.target, conn.socktype, conn.info, conn.options)
+                pconn.enable_peek(b"".join(bufs))
+                cont, conn, peek_data = self.may_wrap_socket(pconn, pconn.socktype, pconn.info, pconn.options, b"".join(bufs))
+                netlog("wrap : may_wrap_socket(..)=(%s, %s, %r)", cont, conn, ellipsizer(peek_data))
+                if not cont:
+                    return
+        proto._invalid_header(proto, data, msg)
 
     # #####################################################################
     # http / websockets:
