@@ -809,10 +809,10 @@ class SocketProtocol:
 
     # delegates to invalid_header()
     # (so this can more easily be intercepted and overridden)
-    def invalid_header(self, proto, data:ByteString, msg="invalid packet header") -> None:
+    def invalid_header(self, proto, data: ByteString, msg="invalid packet header") -> None:
         self._invalid_header(proto, data, msg)
 
-    def _invalid_header(self, proto, data:ByteString, msg="invalid packet header") -> None:
+    def _invalid_header(self, proto, data: ByteString, msg="invalid packet header") -> None:
         log("invalid_header(%s, %s bytes: '%s', %s)",
             proto, len(data or ""), msg, ellipsizer(data))
         guess = guess_packet_type(data)

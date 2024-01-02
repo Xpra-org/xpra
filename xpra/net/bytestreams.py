@@ -22,7 +22,7 @@ from xpra.log import Logger
 
 log = Logger("network", "protocol")
 
-SOCKET_CORK : bool = envbool("XPRA_SOCKET_CORK", LINUX)
+SOCKET_CORK: bool = envbool("XPRA_SOCKET_CORK", LINUX)
 if SOCKET_CORK:
     try:
         assert socket.TCP_CORK > 0      # @UndefinedVariable
@@ -30,17 +30,17 @@ if SOCKET_CORK:
         log.warn("Warning: unable to use TCP_CORK on %s", sys.platform)
         log.warn(" %s", cork_e)
         SOCKET_CORK = False
-SOCKET_NODELAY : bool | None = None
+SOCKET_NODELAY: bool | None = None
 if hasenv("XPRA_SOCKET_NODELAY"):
     SOCKET_NODELAY = envbool("XPRA_SOCKET_NODELAY")
-SOCKET_KEEPALIVE : bool = envbool("XPRA_SOCKET_KEEPALIVE", True)
-VSOCK_TIMEOUT : int = envint("XPRA_VSOCK_TIMEOUT", 5)
-SOCKET_TIMEOUT : int = envint("XPRA_SOCKET_TIMEOUT", 20)
+SOCKET_KEEPALIVE: bool = envbool("XPRA_SOCKET_KEEPALIVE", True)
+VSOCK_TIMEOUT: int = envint("XPRA_VSOCK_TIMEOUT", 5)
+SOCKET_TIMEOUT: int = envint("XPRA_SOCKET_TIMEOUT", 20)
 # this is more proper but would break the proxy server:
-SOCKET_SHUTDOWN : bool = envbool("XPRA_SOCKET_SHUTDOWN", False)
-LOG_TIMEOUTS : int = envint("XPRA_LOG_TIMEOUTS", 1)
+SOCKET_SHUTDOWN: bool = envbool("XPRA_SOCKET_SHUTDOWN", False)
+LOG_TIMEOUTS: int = envint("XPRA_LOG_TIMEOUTS", 1)
 
-ABORT : dict[int, str] = {
+ABORT: dict[int, str] = {
     errno.ENXIO            : "ENXIO",
     errno.ECONNRESET       : "ECONNRESET",
     errno.EPIPE            : "EPIPE",
@@ -131,16 +131,16 @@ class Connection:
         self.active = True
         self.timeout = 0
 
-    def set_nodelay(self, nodelay : bool) -> None:
+    def set_nodelay(self, nodelay: bool) -> None:
         """ TCP sockets override this method  """
 
-    def set_cork(self, cork : bool) -> None:
+    def set_cork(self, cork: bool) -> None:
         """ TCP sockets override this method  """
 
     def is_active(self) -> bool:
         return self.active
 
-    def set_active(self, active : bool) -> None:
+    def set_active(self, active: bool) -> None:
         self.active = active
 
     def close(self) -> None:
@@ -152,7 +152,7 @@ class Connection:
     def untilConcludes(self, *args):
         return untilConcludes(self.is_active, self.can_retry, *args)
 
-    def peek(self, _n : int) -> bytes:
+    def peek(self, _n: int) -> bytes:
         # not implemented
         return b""
 
@@ -170,7 +170,7 @@ class Connection:
         self.input_readcount += 1
         return r
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         info = self.info.copy()
         if self.socktype_wrapped!=self.socktype:
             info["wrapped"] = self.socktype_wrapped
@@ -255,7 +255,7 @@ class TwoFileConnection(Connection):
     def __repr__(self):
         return f"Pipe({self.target})"
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         d = super().get_info()
         d |= {
             "type"  : "pipe",
@@ -327,26 +327,26 @@ class SocketConnection(Connection):
             if sock:
                 sock.setsockopt(*args)
 
-    def set_nodelay(self, nodelay : bool) -> None:
+    def set_nodelay(self, nodelay: bool) -> None:
         if self.nodelay is None and self.nodelay_value!=nodelay:
             self.do_set_nodelay(nodelay)
 
-    def do_set_nodelay(self, nodelay : bool) -> None:
+    def do_set_nodelay(self, nodelay: bool) -> None:
         self._setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, nodelay)
         self.nodelay_value = nodelay
         log("changed %s socket to nodelay=%s", self.socktype, nodelay)
 
-    def set_cork(self, cork : bool) -> None:
+    def set_cork(self, cork: bool) -> None:
         if self.cork and self.cork_value!=cork:
             self._setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, cork)     # @UndefinedVariable
             self.cork_value = cork
             log("changed %s socket to cork=%s", self.socktype, cork)
 
-    def peek(self, n : int) -> bytes:
+    def peek(self, n: int) -> bytes:
         log("%s(%s, MSG_PEEK)", self._socket.recv, n)
         return self._socket.recv(n, socket.MSG_PEEK)
 
-    def read(self, n : int) -> bytes:
+    def read(self, n: int) -> bytes:
         return self._read(self._socket.recv, n)
 
     def write(self, buf, _packet_type:str=""):
@@ -387,7 +387,7 @@ class SocketConnection(Connection):
             )
         return f"{self.socktype} {self.protocol_type}:{pretty_socket(self.local)}"
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         d = super().get_info()
         try:
             d["remote"] = self.remote or ""
@@ -400,13 +400,13 @@ class SocketConnection(Connection):
             log.error("Error accessing socket information", exc_info=True)
         return d
 
-    def get_socket_info(self) -> dict[str,Any]:
+    def get_socket_info(self) -> dict[str, Any]:
         return self.do_get_socket_info(self._socket)
 
-    def do_get_socket_info(self, s) -> dict[str,Any]:
+    def do_get_socket_info(self, s) -> dict[str, Any]:
         if not s:
             return {}
-        info : dict[str,Any] = {}
+        info: dict[str, Any] = {}
         try:
             info |= {
                 "proto"         : s.proto,
@@ -429,12 +429,12 @@ class SocketConnection(Connection):
                 fd = 0
             if fd:
                 info["fileno"] = fd
-            #ie: self.local = ("192.168.1.7", "14500")
+            # ie: self.local = ("192.168.1.7", "14500")
             log("do_get_socket_info(%s) fd=%s, local=%s", s, fd, self.local)
             if self.local and len(self.local)==2:
                 from xpra.net.net_util import get_interface
                 iface = get_interface(self.local[0])
-                #ie: iface = "eth0"
+                # ie: iface = "eth0"
                 device_info = {}
                 if iface:
                     device_info["name"] = iface
@@ -453,7 +453,7 @@ class SocketConnection(Connection):
             log.estr(e)
         else:
             opts = {
-                "SOCKET" : get_socket_options(s, socket.SOL_SOCKET, SOCKET_OPTIONS),
+                "SOCKET": get_socket_options(s, socket.SOL_SOCKET, SOCKET_OPTIONS),
             }
             if self.socktype_wrapped in IP_SOCKTYPES:
                 opts["IP"] = get_socket_options(s, socket.SOL_IP, IP_OPTIONS)
@@ -467,11 +467,11 @@ class SocketConnection(Connection):
                     if self.is_active() and not self.error_is_closed(e):
                         log.warn("Warning: failed to get tcp information")
                         log.warn(f" from {self.socktype} socket {self}")
-            #ipv6:  IPV6_ADDR_PREFERENCES, IPV6_CHECKSUM, IPV6_DONTFRAG, IPV6_DSTOPTS, IPV6_HOPOPTS,
-            # IPV6_MULTICAST_HOPS, IPV6_MULTICAST_IF, IPV6_MULTICAST_LOOP, IPV6_NEXTHOP, IPV6_PATHMTU,
-            # IPV6_PKTINFO, IPV6_PREFER_TEMPADDR, IPV6_RECVDSTOPTS, IPV6_RECVHOPLIMIT, IPV6_RECVHOPOPTS,
-            # IPV6_RECVPATHMTU, IPV6_RECVPKTINFO, IPV6_RECVRTHDR, IPV6_RECVTCLASS, IPV6_RTHDR,
-            # IPV6_RTHDRDSTOPTS, IPV6_TCLASS, IPV6_UNICAST_HOPS, IPV6_USE_MIN_MTU, IPV6_V6ONLY
+            # ipv6:  IPV6_ADDR_PREFERENCES, IPV6_CHECKSUM, IPV6_DONTFRAG, IPV6_DSTOPTS, IPV6_HOPOPTS,
+            #        IPV6_MULTICAST_HOPS, IPV6_MULTICAST_IF, IPV6_MULTICAST_LOOP, IPV6_NEXTHOP, IPV6_PATHMTU,
+            #        IPV6_PKTINFO, IPV6_PREFER_TEMPADDR, IPV6_RECVDSTOPTS, IPV6_RECVHOPLIMIT, IPV6_RECVHOPOPTS,
+            #        IPV6_RECVPATHMTU, IPV6_RECVPKTINFO, IPV6_RECVRTHDR, IPV6_RECVTCLASS, IPV6_RTHDR,
+            #        IPV6_RTHDRDSTOPTS, IPV6_TCLASS, IPV6_UNICAST_HOPS, IPV6_USE_MIN_MTU, IPV6_V6ONLY
             info["options"] = opts
         return info
 
@@ -504,7 +504,7 @@ def get_socket_options(sock, level, options) -> dict:
 class SocketPeekFile:
     def __init__(self, fileobj, peeked, update_peek):
         self.fileobj = fileobj
-        self.peeked : bytes = peeked
+        self.peeked: bytes = peeked
         self.update_peek = update_peek
 
     def __getattr__(self, attr):
@@ -517,10 +517,10 @@ class SocketPeekFile:
             newline = self.peeked.find(b"\n")
             peeked = self.peeked
             l = len(peeked)
-            if newline==-1:
-                if limit==-1 or limit>l:
-                    #we need to read more until we hit a newline:
-                    if limit==-1:
+            if newline == -1:
+                if limit == -1 or limit > l:
+                    # we need to read more until we hit a newline:
+                    if limit == -1:
                         more = self.fileobj.readline(limit)
                     else:
                         more = self.fileobj.readline(limit-len(self.peeked))
@@ -529,7 +529,7 @@ class SocketPeekFile:
                     return peeked+more
                 read = limit
             else:
-                if limit<0 or limit>=newline:
+                if limit < 0 or limit >= newline:
                     read = newline+1
                 else:
                     read = limit
@@ -545,9 +545,9 @@ class SocketPeekWrapper:
         self.peeked = b""
 
     def __getattr__(self, attr):
-        if attr=="makefile":
+        if attr == "makefile":
             return self.makefile
-        if attr=="recv":
+        if attr == "recv":
             return self.recv
         return getattr(self.socket, attr)
 
@@ -557,13 +557,13 @@ class SocketPeekWrapper:
             return SocketPeekFile(fileobj, self.peeked, self._update_peek)
         return fileobj
 
-    def _update_peek(self, peeked):
+    def _update_peek(self, peeked: bytes):
         self.peeked = peeked
 
     def recv(self, bufsize, flags=0) -> bytes:
         if flags & socket.MSG_PEEK:
             l = len(self.peeked)
-            if l>=bufsize:
+            if l >= bufsize:
                 log("patched_recv() peeking using existing data: %i bytes", bufsize)
                 return self.peeked[:bufsize]
             v = self.socket.recv(bufsize-l)
@@ -602,10 +602,10 @@ class SSLSocketConnection(PeekableSocketConnection):
             return True
         return super().can_retry(e)
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         i = super().get_info()
         i["ssl"] = True
-        for k,fn in {
+        for k, fn in {
             "compression"      : "compression",
             "alpn-protocol"    : "selected_alpn_protocol",
             "npn-protocol"     : "selected_npn_protocol",
@@ -668,7 +668,7 @@ def log_new_connection(conn, socket_info="") -> None:
             log.info(" on %s", pretty_socket(socket_info))
 
 
-def get_socket_config() -> dict[str,Any]:
+def get_socket_config() -> dict[str, Any]:
     config = {}
     try:
         # pylint: disable=import-outside-toplevel
