@@ -22,7 +22,7 @@ from xpra.util.parsing import parse_simple_dict
 from xpra.util.env import envbool
 from xpra.net.common import DEFAULT_PORT, DEFAULT_PORTS
 from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid
-from xpra.util.io import stderr_print
+from xpra.util.io import warn
 from xpra.scripts.config import (
     XpraConfig,
     OPTION_TYPES, TRUE_OPTIONS,
@@ -65,28 +65,10 @@ def bool_or(v, other_value, true_str, false_str, other_str):
 
 def audio_option(v):
     vl = v.lower()
-    #ensures we return only: "on", "off" or "disabled" given any value
-    if vl=="no":
+    # ensures we return only: "on", "off" or "disabled" given any value
+    if vl == "no":
         vl = "disabled"
     return bool_or(vl, "disabled", "on", "off", "disabled")
-
-
-def info(msg:str):
-    if not stderr_print(msg) and POSIX:
-        import syslog
-        syslog.syslog(syslog.LOG_INFO, msg)
-
-
-def warn(msg:str):
-    if not stderr_print(msg) and POSIX:
-        import syslog
-        syslog.syslog(syslog.LOG_WARNING, msg)
-
-
-def error(msg:str):
-    if not stderr_print(msg) and POSIX:
-        import syslog
-        syslog.syslog(syslog.LOG_ERR, msg)
 
 
 # this parse doesn't exit when it encounters an error,

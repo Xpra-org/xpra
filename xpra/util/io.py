@@ -13,6 +13,7 @@ from tempfile import NamedTemporaryFile
 from typing import Callable, Any
 
 from xpra.common import noerr
+from xpra.os_util import POSIX
 from xpra.util.str_fn import bytestostr
 
 util_logger = None
@@ -84,7 +85,7 @@ def is_writable(path : str, uid:int, gid:int) -> bool:
     return False
 
 
-def stderr_print(msg:str= "") -> bool:
+def stderr_print(msg: str = "") -> bool:
     stderr = sys.stderr
     if stderr:
         try:
@@ -94,6 +95,24 @@ def stderr_print(msg:str= "") -> bool:
         except (OSError, AttributeError):
             pass
     return False
+
+
+def info(msg: str):
+    if not stderr_print(msg) and POSIX:
+        import syslog
+        syslog.syslog(syslog.LOG_INFO, msg)
+
+
+def warn(msg: str):
+    if not stderr_print(msg) and POSIX:
+        import syslog
+        syslog.syslog(syslog.LOG_WARNING, msg)
+
+
+def error(msg: str):
+    if not stderr_print(msg) and POSIX:
+        import syslog
+        syslog.syslog(syslog.LOG_ERR, msg)
 
 
 class CaptureStdErr:

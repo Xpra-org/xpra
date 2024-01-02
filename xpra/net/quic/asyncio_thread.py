@@ -38,7 +38,7 @@ class ThreadedAsyncioLoop:
      (for calling async functions from regular threads)
     """
     def __init__(self):
-        self.loop : asyncio.AbstractEventLoop | None = None
+        self.loop: asyncio.AbstractEventLoop | None = None
         start_thread(self.run_forever, "asyncio-thread", True)
         self.wait_for_loop()
 
@@ -66,10 +66,10 @@ class ThreadedAsyncioLoop:
         if self.loop is None:
             raise RuntimeError("no asyncio main loop")
 
-    def call(self, f:Callable) -> None:
+    def call(self, f: Callable) -> None:
         log(f"call({f})")
-        log("call_soon_threadsafe")
-        assert self.loop
+        if not self.loop:
+            raise RuntimeError("no main loop")
         if isinstance(f, (Coroutine, Generator)):
             def tsafe():
                 log(f"creating task for {f}")
@@ -118,7 +118,7 @@ class ThreadedAsyncioLoop:
         return r
 
 
-singleton : ThreadedAsyncioLoop | None = None
+singleton: ThreadedAsyncioLoop | None = None
 
 
 def get_threaded_loop() -> ThreadedAsyncioLoop:

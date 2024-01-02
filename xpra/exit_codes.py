@@ -40,7 +40,7 @@ class ExitCode(IntEnum):
     DEVICE_NOT_FOUND = 29
 
 
-ExitValue : TypeAlias = ExitCode | int
+ExitValue: TypeAlias = ExitCode | int
 
 
 def exit_str(code) -> str:
@@ -50,7 +50,7 @@ def exit_str(code) -> str:
         return f"unknown error {code}"
 
 
-RETRY_EXIT_CODES : list[ExitCode] = [
+RETRY_EXIT_CODES: list[ExitCode] = [
     ExitCode.CONNECTION_LOST,
     ExitCode.PACKET_FAILURE,
     ExitCode.UPGRADE,

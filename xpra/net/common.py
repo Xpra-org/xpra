@@ -11,18 +11,20 @@ from typing import Any, Union, TypeAlias
 from collections.abc import Callable, ByteString
 
 from xpra.net.compression import Compressed, Compressible, LargeStructure
-from xpra.os_util import LINUX, FREEBSD
+from xpra.common import noop
+from xpra.os_util import LINUX, FREEBSD, WIN32
 from xpra.scripts.config import parse_bool
 from xpra.util.io import get_util_logger
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool
 from xpra.log import Logger
+
 log = Logger("network")
 
 
-DEFAULT_PORT : int = 14500
+DEFAULT_PORT: int = 14500
 
-DEFAULT_PORTS : dict[str,int] = {
+DEFAULT_PORTS: dict[str,int] = {
     "ws"    : 80,
     "wss"   : 443,
     "ssl"   : DEFAULT_PORT,   # could also default to 443?
@@ -40,7 +42,7 @@ PacketElement: TypeAlias = Union[tuple,list,dict,int,bool,str,bytes,memoryview,C
 
 try:
     from typing import Unpack
-    PacketType : TypeAlias = tuple[str, Unpack[tuple[PacketElement, ...]]]
+    PacketType: TypeAlias = tuple[str, Unpack[tuple[PacketElement, ...]]]
 except ImportError:   # pragma: no cover
     PacketType: TypeAlias = tuple
 
@@ -49,23 +51,23 @@ PacketHandlerType = Callable[[PacketType], None]
 # server packet handler:
 ServerPacketHandlerType = Callable[[Any, PacketType], None]
 
-NetPacketType : TypeAlias = tuple[int, int, int, ByteString]
+NetPacketType: TypeAlias = tuple[int, int, int, ByteString]
 
 
 class ConnectionClosedException(Exception):
     pass
 
 
-MAX_PACKET_SIZE : int = envint("XPRA_MAX_PACKET_SIZE", 16*1024*1024)
-FLUSH_HEADER : bool = envbool("XPRA_FLUSH_HEADER", True)
-SSL_UPGRADE : bool = envbool("XPRA_SSL_UPGRADE", False)
+MAX_PACKET_SIZE: int = envint("XPRA_MAX_PACKET_SIZE", 16*1024*1024)
+FLUSH_HEADER: bool = envbool("XPRA_FLUSH_HEADER", True)
+SSL_UPGRADE: bool = envbool("XPRA_SSL_UPGRADE", False)
 
-SOCKET_TYPES : tuple[str, ...] = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "socket", "named-pipe", "quic")
+SOCKET_TYPES: tuple[str, ...] = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "socket", "named-pipe", "quic")
 
-IP_SOCKTYPES : tuple[str, ...] = ("tcp", "ssl", "ws", "wss", "ssh", "quic")
-TCP_SOCKTYPES : tuple[str, ...] = ("tcp", "ssl", "ws", "wss", "ssh")
+IP_SOCKTYPES: tuple[str, ...] = ("tcp", "ssl", "ws", "wss", "ssh", "quic")
+TCP_SOCKTYPES: tuple[str, ...] = ("tcp", "ssl", "ws", "wss", "ssh")
 
-URL_MODES : dict[str,str] = {
+URL_MODES: dict[str,str] = {
     "xpra"      : "tcp",
     "xpras"     : "ssl",
     "xpra+tcp"  : "tcp",
@@ -85,7 +87,7 @@ URL_MODES : dict[str,str] = {
 
 
 # this is used for generating aliases:
-PACKET_TYPES : list[str] = [
+PACKET_TYPES: list[str] = [
     # generic:
     "hello",
     "challenge",
@@ -154,17 +156,13 @@ def _may_log_packet(sending, packet_type, packet) -> None:
             log.info(s)
 
 
-LOG_PACKETS : tuple[str, ...] = ()
-NOLOG_PACKETS : tuple[str, ...] = ()
-LOG_PACKET_TYPE : bool = False
-PACKET_LOG_MAX_SIZE : int = 500
+LOG_PACKETS: tuple[str, ...] = ()
+NOLOG_PACKETS: tuple[str, ...] = ()
+LOG_PACKET_TYPE: bool = False
+PACKET_LOG_MAX_SIZE: int = 500
 
 
-def noop(*_args) -> None:
-    """ the default implementation is to do nothing """
-
-
-may_log_packet : Callable = noop
+may_log_packet: Callable = noop
 
 
 def get_peercred(sock) -> tuple[int, int, int] | None:
@@ -213,3 +211,21 @@ def init() -> None:
 
 
 init()
+
+
+def get_ssh_port() -> int:
+    # on Linux, we can run "ssh -T | grep port"
+    # but this usually requires root permissions to access /etc/ssh/sshd_config
+    if WIN32:
+        return 0
+    return 22
+
+
+def has_websocket_handler():
+    try:
+        from xpra.net.websockets.handler import WebSocketRequestHandler
+        assert WebSocketRequestHandler
+        return True
+    except ImportError:
+        log("importing WebSocketRequestHandler", exc_info=True)
+    return False

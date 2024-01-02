@@ -16,7 +16,7 @@ except ImportError:     # pragma: no cover
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 
-RESOLUTION_ALIASES : dict[str,tuple[int,int]] = {
+RESOLUTION_ALIASES: dict[str, tuple[int, int]] = {
     "QVGA"  : (320, 240),
     "VGA"   : (640, 480),
     "SVGA"  : (800, 600),
@@ -30,9 +30,9 @@ RESOLUTION_ALIASES : dict[str,tuple[int,int]] = {
 }
 
 
-def get_default_video_max_size() -> tuple[int,int]:
+def get_default_video_max_size() -> tuple[int, int]:
     svalues = os.environ.get("XPRA_VIDEO_MAX_SIZE", "").replace("x", ",").split(",")
-    if len(svalues)==2:
+    if len(svalues) == 2:
         try:
             return int(svalues[0]), int(svalues[0])
         except (TypeError, ValueError):
@@ -93,7 +93,7 @@ class ConnectionMessage(StrEnum):
 
 # convenience method based on the strings above:
 def disconnect_is_an_error(reason) -> bool:
-    return reason.find("error")>=0 or (reason.find("timeout") >= 0 and reason != ConnectionMessage.IDLE_TIMEOUT)
+    return reason.find("error") >= 0 or (reason.find("timeout") >= 0 and reason != ConnectionMessage.IDLE_TIMEOUT)
 
 
 class NotificationID(IntEnum):
@@ -184,37 +184,37 @@ WORKSPACE_NAMES = {
 }
 
 
-CLOBBER_UPGRADE : int = 0x1
-CLOBBER_USE_DISPLAY : int = 0x2
+CLOBBER_UPGRADE: int = 0x1
+CLOBBER_USE_DISPLAY: int = 0x2
 
 # if you want to use a virtual screen bigger than this
 # you will need to change those values, but some broken toolkits
 # will then misbehave (they use signed shorts instead of signed ints..)
-MAX_WINDOW_SIZE : int = 2**15-2**13
+MAX_WINDOW_SIZE: int = 2**15-2**13
 
 
-GROUP : str = os.environ.get("XPRA_GROUP", "xpra")
+GROUP: str = os.environ.get("XPRA_GROUP", "xpra")
 
-FULL_INFO : int = envint("XPRA_FULL_INFO", 1)
-assert FULL_INFO>=0
-LOG_HELLO : bool = envbool("XPRA_LOG_HELLO", False)
+FULL_INFO: int = envint("XPRA_FULL_INFO", 1)
+assert FULL_INFO >= 0
+LOG_HELLO: bool = envbool("XPRA_LOG_HELLO", False)
 
-SSH_AGENT_DISPATCH : bool = envbool("XPRA_SSH_AGENT_DISPATCH", os.name=="posix")
+SSH_AGENT_DISPATCH: bool = envbool("XPRA_SSH_AGENT_DISPATCH", os.name=="posix")
 
-MIN_COMPRESS_SIZE : int = envint("XPRA_MIN_DECOMPRESSED_SIZE", -1)
-MAX_DECOMPRESSED_SIZE : int = envint("XPRA_MAX_DECOMPRESSED_SIZE", 256*1024*1024)
+MIN_COMPRESS_SIZE: int = envint("XPRA_MIN_DECOMPRESSED_SIZE", -1)
+MAX_DECOMPRESSED_SIZE: int = envint("XPRA_MAX_DECOMPRESSED_SIZE", 256*1024*1024)
 
 
-MIN_DPI : int = envint("XPRA_MIN_DPI", 10)
-MAX_DPI : int = envint("XPRA_MIN_DPI", 500)
+MIN_DPI: int = envint("XPRA_MIN_DPI", 10)
+MAX_DPI: int = envint("XPRA_MIN_DPI", 500)
 
-SYNC_ICC : bool = envbool("XPRA_SYNC_ICC", True)
+SYNC_ICC: bool = envbool("XPRA_SYNC_ICC", True)
 
-DEFAULT_REFRESH_RATE : int = envint("XPRA_DEFAULT_REFRESH_RATE", 50*1000)
+DEFAULT_REFRESH_RATE: int = envint("XPRA_DEFAULT_REFRESH_RATE", 50*1000)
 
-SPLASH_EXIT_DELAY : int = envint("XPRA_SPLASH_EXIT_DELAY", 4)
+SPLASH_EXIT_DELAY: int = envint("XPRA_SPLASH_EXIT_DELAY", 4)
 
-DEFAULT_XDG_DATA_DIRS : str = ":".join(
+DEFAULT_XDG_DATA_DIRS: str = ":".join(
     (
         "/usr/share",
         "/usr/local/share",
@@ -229,9 +229,9 @@ def noop(*_args, **_kwargs) -> None:
     """ do nothing """
 
 
-WINDOW_DECODE_SKIPPED : int = 0
-WINDOW_DECODE_ERROR : int = -1
-WINDOW_NOT_FOUND : int = -2
+WINDOW_DECODE_SKIPPED: int = 0
+WINDOW_DECODE_ERROR: int = -1
+WINDOW_NOT_FOUND: int = -2
 
 
 ScreenshotData = tuple[int,int,str,int,bytes]
@@ -241,13 +241,13 @@ class KeyEvent:
     __slots__ = ("modifiers", "keyname", "keyval", "keycode", "group", "string", "pressed")
 
     def __init__(self):
-        self.modifiers : list[str] = []
-        self.keyname : str = ""
-        self.keyval : int = 0
-        self.keycode : int = 0
-        self.group : int = 0
-        self.string : str = ""
-        self.pressed : bool = True
+        self.modifiers: list[str] = []
+        self.keyname: str = ""
+        self.keyval: int = 0
+        self.keycode: int = 0
+        self.group: int = 0
+        self.string: str = ""
+        self.pressed: bool = True
 
     def __repr__(self):
         strattrs = csv(f"{k}="+str(getattr(self, k)) for k in KeyEvent.__slots__)
@@ -320,5 +320,5 @@ def noerr(fn, *args):
         return None
 
 
-def roundup(n : int, m : int) -> int:
+def roundup(n: int, m: int) -> int:
     return (n + m - 1) & ~(m - 1)

@@ -13,6 +13,7 @@ from typing import Any
 from collections.abc import Iterable
 
 from xpra.common import DEFAULT_XDG_DATA_DIRS
+from xpra.net.http.common import EXTENSION_TO_MIMETYPE
 from xpra.net.http.directory_listing import list_directory
 from xpra.net.bytestreams import pretty_socket
 from xpra.util.types import AdHocStruct
@@ -29,12 +30,6 @@ DIRECTORY_LISTING = envbool("XPRA_HTTP_DIRECTORY_LISTING", False)
 AUTH_REALM = os.environ.get("XPRA_HTTP_AUTH_REALM", "Xpra")
 AUTH_USERNAME = os.environ.get("XPRA_HTTP_AUTH_USERNAME", "")
 AUTH_PASSWORD = os.environ.get("XPRA_HTTP_AUTH_PASSWORD", "")
-
-EXTENSION_TO_MIMETYPE = {
-    ".wasm" : "application/wasm",
-    ".js"   : "text/javascript",
-    ".css"  : "text/css",
-}
 
 
 # should be converted to use standard library

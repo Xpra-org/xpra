@@ -107,15 +107,15 @@ class ServerBase(ServerBaseClass):
         log("ServerBase.__init__()")
         self.init_uuid()
 
-        self._authenticated_packet_handlers : dict[str,Callable] = {}
-        self._authenticated_ui_packet_handlers : dict[str,Callable] = {}
+        self._authenticated_packet_handlers: dict[str, Callable] = {}
+        self._authenticated_ui_packet_handlers: dict[str, Callable] = {}
 
-        self.display_pid : int = 0
-        self._server_sources : dict = {}
-        self.client_properties : dict[int,dict] = {}
+        self.display_pid: int = 0
+        self._server_sources: dict = {}
+        self.client_properties: dict[int,dict] = {}
         self.ui_driver = None
-        self.sharing : bool | None = None
-        self.lock : bool | None = None
+        self.sharing: bool | None = None
+        self.lock: bool | None = None
 
         self.start_after_connect_done = False
         self.bandwidth_detection = False
@@ -125,9 +125,9 @@ class ServerBase(ServerBaseClass):
         self.antialias = {}
         self.cursor_size = 0
 
-        self.idle_timeout : int = 0
-        #duplicated from Server Source...
-        self.client_shutdown : bool = CLIENT_CAN_SHUTDOWN
+        self.idle_timeout: int = 0
+        # duplicated from Server Source...
+        self.client_shutdown: bool = CLIENT_CAN_SHUTDOWN
 
         if SSH_AGENT_DISPATCH and "ssh" not in self.session_files:
             self.session_files.append("ssh/agent")
@@ -156,7 +156,7 @@ class ServerBase(ServerBaseClass):
         return self._server_sources.get(proto)
 
     def init(self, opts) -> None:
-        #from now on, use the logger for parsing errors:
+        # from now on, use the logger for parsing errors:
         from xpra.scripts import config  # pylint: disable=import-outside-toplevel
         config.warn = log.warn
         for c in SERVER_BASES:
@@ -181,7 +181,7 @@ class ServerBase(ServerBaseClass):
         super().do_threaded_init()
         log("threaded_init() serverbase start")
         for c in SERVER_BASES:
-            if c!=ServerCore:
+            if c != ServerCore:
                 with log.trap_error("Error during threaded setup of %s", c):
                     c.threaded_setup(self)
         log("threaded_init() serverbase end")
@@ -212,7 +212,7 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # shutdown / exit commands:
-    def _process_exit_server(self, _proto, packet : PacketType=()) -> None:
+    def _process_exit_server(self, _proto, packet: PacketType=()) -> None:
         reason = ConnectionMessage.SERVER_EXIT
         message = "Exiting in response to client request"
         if len(packet)>1:
@@ -242,8 +242,8 @@ class ServerBase(ServerBaseClass):
                        uuid=None) -> tuple[bool, int, int]:
         share_count = 0
         disconnected = 0
-        existing_sources = set(ss for p,ss in self._server_sources.items() if p!=proto)
-        is_existing_client = uuid and any(ss.uuid==uuid for ss in existing_sources)
+        existing_sources = set(ss for p,ss in self._server_sources.items() if p != proto)
+        is_existing_client = uuid and any(ss.uuid == uuid for ss in existing_sources)
         authlog("handle_sharing%s lock=%s, sharing=%s, existing sources=%s, is existing client=%s",
                 (proto, ui_client, detach_request, share, uuid),
                 self.lock, self.sharing, existing_sources, is_existing_client)
@@ -261,11 +261,11 @@ class ServerBase(ServerBaseClass):
                 self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "a client has locked this session")
                 return False, 0, 0
         for p,ss in tuple(self._server_sources.items()):
-            if detach_request and p!=proto:
+            if detach_request and p != proto:
                 authlog("handle_sharing: detaching %s", ss)
                 self.disconnect_client(p, ConnectionMessage.DETACH_REQUEST)
                 disconnected += 1
-            elif uuid and ss.uuid==uuid and ui_client and ss.ui_client:
+            elif uuid and ss.uuid == uuid and ui_client and ss.ui_client:
                 authlog("uuid %s is the same as %s", uuid, ss)
                 authlog("existing sources: %s", existing_sources)
                 self.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "new connection from the same uuid")
@@ -290,7 +290,7 @@ class ServerBase(ServerBaseClass):
 
         # don't accept this connection if we're going to exit-with-client:
         accepted = True
-        if disconnected>0 and share_count==0 and self.exit_with_client:
+        if disconnected>0 and share_count == 0 and self.exit_with_client:
             self.disconnect_client(proto, ConnectionMessage.SERVER_SHUTDOWN, "last client has exited")
             accepted = False
         return accepted, share_count, disconnected
@@ -384,7 +384,7 @@ class ServerBase(ServerBaseClass):
                       self.dpi, self.xdpi, self.ydpi, self.antialias, self.cursor_size)
             log("double-click time=%s, distance=%s", self.double_click_time, self.double_click_distance)
             # if we're not sharing, reset all the settings:
-            reset = share_count==0
+            reset = share_count == 0
             self.update_all_server_settings(reset)
         self.accept_client(proto, c)
         # use blocking sockets from now on:
@@ -430,12 +430,12 @@ class ServerBase(ServerBaseClass):
         if sockpath and os.path.exists(sockpath) and is_socket(sockpath):
             set_ssh_agent(uuid)
 
-    def process_hello_ui(self, ss, c, auth_caps, send_ui : bool, share_count : int) -> None:
+    def process_hello_ui(self, ss, c, auth_caps, send_ui: bool, share_count: int) -> None:
         def reject(message="server is shutting down") -> None:
             p = ss.protocol
             if p:
                 self.disconnect_client(p, ConnectionMessage.CONNECTION_ERROR, message)
-        #adds try:except around parse hello ui code:
+        # adds try:except around parse hello ui code:
         try:
             if self._closing:
                 reject()
@@ -444,7 +444,7 @@ class ServerBase(ServerBaseClass):
             self.notify_new_user(ss)
 
             self.parse_hello(ss, c, send_ui)
-            #send_hello will take care of sending the current and max screen resolutions
+            # send_hello will take care of sending the current and max screen resolutions
             root_size = self.get_root_window_size()
             self.send_hello(ss, root_size, auth_caps)
             self.add_new_client(ss, c, send_ui, share_count)
@@ -455,24 +455,24 @@ class ServerBase(ServerBaseClass):
                 reject()
                 return
         except Exception:
-            #log exception but don't disclose internal details to the client
+            # log exception but don't disclose internal details to the client
             log("process_hello_ui%s", (ss, c, auth_caps, send_ui, share_count))
             log.error("Error: processing new connection from %s:", ss.protocol or ss, exc_info=True)
             reject("error accepting new connection")
 
     def parse_hello(self, ss, c:typedict, send_ui:bool) -> None:
         for bc in SERVER_BASES:
-            if bc!=ServerCore:
+            if bc != ServerCore:
                 bc.parse_hello(self, ss, c, send_ui)
 
     def add_new_client(self, ss, c:typedict, send_ui:bool, share_count:int) -> None:
         for bc in SERVER_BASES:
-            if bc!=ServerCore:
+            if bc != ServerCore:
                 bc.add_new_client(self, ss, c, send_ui, share_count)
 
     def send_initial_data(self, ss, c:typedict, send_ui:bool, share_count:int) -> None:
         for bc in SERVER_BASES:
-            if bc!=ServerCore:
+            if bc != ServerCore:
                 bc.send_initial_data(self, ss, c, send_ui, share_count)
 
     def client_startup_complete(self, ss) -> None:
@@ -504,7 +504,7 @@ class ServerBase(ServerBaseClass):
         # to expose new server features:
         f = {}
         for c in SERVER_BASES:
-            if c!=ServerCore:
+            if c != ServerCore:
                 bf = c.get_server_features(self, server_source)
                 log(f"get_server_features({c})={bf}")
                 merge_dicts(f, bf)
@@ -513,7 +513,7 @@ class ServerBase(ServerBaseClass):
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)
         for c in SERVER_BASES:
-            if c!=ServerCore:
+            if c != ServerCore:
                 merge_dicts(capabilities, c.get_caps(self, source))
         capabilities["server_type"] = "base"
         if "display" in source.wants:
@@ -561,7 +561,7 @@ class ServerBase(ServerBaseClass):
     # info:
     def _process_info_request(self, proto, packet: PacketType) -> None:
         log("process_info_request(%s, %s)", proto, packet)
-        #ignoring the list of client uuids supplied in packet[1]
+        # ignoring the list of client uuids supplied in packet[1]
         ss = self.get_server_source(proto)
         if not ss:
             return
@@ -578,7 +578,7 @@ class ServerBase(ServerBaseClass):
             return
 
         categories = None
-        #if len(packet>=2):
+        # if len(packet>=2):
         #    uuid = packet[1]
         if len(packet)>=4:
             categories = tuple(bytestostr(x) for x in packet[3])
@@ -649,7 +649,7 @@ class ServerBase(ServerBaseClass):
         info = {}
 
         def up(prefix, d):
-            merge_dicts(info, {prefix : d})
+            merge_dicts(info, {prefix: d})
 
         for c in SERVER_BASES:
             with log.trap_error(f"Error collecting information from {c}"):
@@ -674,14 +674,14 @@ class ServerBase(ServerBaseClass):
         }
         #find the server source to report on:
         n = len(server_sources or [])
-        if n==1:
+        if n == 1:
             ss = server_sources[0]
             up("client", ss.get_info())
-        elif n>1:
+        elif n > 1:
             cinfo = {}
             for i, ss in enumerate(server_sources):
                 sinfo = ss.get_info()
-                sinfo["ui-driver"] = self.ui_driver==ss.uuid
+                sinfo["ui-driver"] = self.ui_driver == ss.uuid
                 cinfo[i] = sinfo
             up("client", cinfo)
         log("ServerBase.do_get_info took %ims", (monotonic()-start)*1000)
@@ -699,16 +699,16 @@ class ServerBase(ServerBaseClass):
         ss = self.get_server_source(proto)
         if ss:
             ss.set_client_properties(wid, window, typedict(new_client_properties))
-            #filter out encoding properties, which are expected to be set every time:
+            # filter out encoding properties, which are expected to be set every time:
             ncp = {}
             for k,v in new_client_properties.items():
                 if v is None:
                     log.warn("removing invalid None property for %s", k)
                     continue
                 k = bytestostr(k)
-                if k=="event":
-                    #event is used as a workaround in _process_map_window,
-                    #it isn't a real client property and should not be stored:
+                if k == "event":
+                    # event is used as a workaround in _process_map_window,
+                    # it isn't a real client property and should not be stored:
                     continue
                 if not k.startswith("encoding"):
                     ncp[k] = v
@@ -734,7 +734,7 @@ class ServerBase(ServerBaseClass):
         if not sharing:
             # disconnect other users:
             for p,ss in tuple(self._server_sources.items()):
-                if p!=proto:
+                if p != proto:
                     self.disconnect_client(p, ConnectionMessage.DETACH_REQUEST,
                                            f"client {ss.counter} no longer wishes to share the session")
 
@@ -783,12 +783,12 @@ class ServerBase(ServerBaseClass):
 
     def cleanup_source(self, source) -> None:
         ptype = "xpra"
-        if FULL_INFO>0:
+        if FULL_INFO > 0:
             ptype = getattr(source, "client_type", "xpra")
         self.server_event("connection-lost", source.uuid)
         remaining_sources = tuple(self._server_sources.values())
-        if self.ui_driver==source.uuid:
-            if len(remaining_sources)==1:
+        if self.ui_driver == source.uuid:
+            if len(remaining_sources) == 1:
                 self.set_ui_driver(remaining_sources[0])
             else:
                 self.set_ui_driver(None)
@@ -879,11 +879,11 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # packets:
-    def add_packet_handlers(self, defs : dict[str,ServerPacketHandlerType], main_thread=True) -> None:
+    def add_packet_handlers(self, defs: dict[str,ServerPacketHandlerType], main_thread=True) -> None:
         for packet_type, handler in defs.items():
             self.add_packet_handler(packet_type, handler, main_thread)
 
-    def add_packet_handler(self, packet_type : str, handler : ServerPacketHandlerType, main_thread=True) -> None:
+    def add_packet_handler(self, packet_type: str, handler: ServerPacketHandlerType, main_thread=True) -> None:
         netlog("add_packet_handler%s", (packet_type, handler, main_thread))
         if main_thread:
             handlers = self._authenticated_ui_packet_handlers
@@ -900,7 +900,7 @@ class ServerBase(ServerBaseClass):
             "lock-toggle"       : self._process_lock_toggle,
             "set_deflate"       : noop,     #removed in v6
         }, False)
-        #attributes / settings:
+        # attributes / settings:
         self.add_packet_handlers({
             "server-settings"   : self._process_server_settings,
             "shutdown-server"   : self._process_shutdown_server,
@@ -916,7 +916,7 @@ class ServerBase(ServerBaseClass):
 
     def process_packet(self, proto, packet) -> None:
         packet_type = ""
-        handler : Callable | None = None
+        handler: Callable | None = None
         try:
             packet_type = bytestostr(packet[0])
 

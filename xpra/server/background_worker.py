@@ -9,6 +9,7 @@ from threading import Thread, Lock
 from queue import Queue
 from collections.abc import Callable
 
+from xpra.os_util import gi_import
 from xpra.log import Logger
 log = Logger("util")
 
@@ -78,9 +79,9 @@ singleton : Worker_Thread | None= None
 lock = Lock()
 
 
-def get_worker(create:bool=True) -> Worker_Thread | None:
+def get_worker(create: bool = True) -> Worker_Thread | None:
     global singleton
-    #fast path (no lock):
+    # fast path (no lock):
     if singleton is not None or not create:
         return singleton
     with lock:
@@ -102,3 +103,39 @@ def stop_worker(force:bool=False) -> None:
     log("stop_worker(%s) worker=%s", force, w)
     if w:
         w.stop(force)
+
+
+def quit_worker(callback: Callable) -> None:
+    w = get_worker()
+    log("clean_quit: worker=%s", w)
+    if not w:
+        callback()
+        return
+    stop_worker()
+    try:
+        w.join(0.05)
+    except Exception:
+        pass
+    if not w.is_alive():
+        callback()
+        return
+
+    def quit_timer():
+        log("quit_timer() worker=%s", w)
+        if w and w.is_alive():
+            # wait up to 1 second for the worker thread to exit
+            try:
+                w.join(1)
+            except Exception:
+                pass
+            if w.is_alive():
+                # still alive, force stop:
+                stop_worker(True)
+                try:
+                    w.wait(1)
+                except Exception:
+                    pass
+        callback()
+    GLib = gi_import("GLib")
+    GLib.timeout_add(250, quit_timer)
+    log("clean_quit(..) quit timer scheduled, worker=%s", w)

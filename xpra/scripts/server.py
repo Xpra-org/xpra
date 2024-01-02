@@ -18,8 +18,8 @@ from subprocess import Popen   # pylint: disable=import-outside-toplevel
 from typing import Any
 
 from xpra import __version__
+from xpra.util.io import info, warn
 from xpra.scripts.main import (
-    info, warn,
     no_gtk, bypass_no_gtk, nox,
     validate_encryption, parse_env, configure_env,
     stat_display_socket, get_xpra_sessions,
@@ -648,22 +648,22 @@ def reload_dbus_attributes(display_name:str) -> tuple[int,dict[str,str]]:
     return dbus_pid, dbus_env
 
 
-def is_splash_enabled(mode:str, daemon:bool, splash:bool, display:str):
+def is_splash_enabled(mode: str, daemon: bool, splash: bool, display: str):
     if daemon:
-        #daemon mode would have problems with the pipes
+        # daemon mode would have problems with the pipes
         return False
     if splash in (True, False):
         return splash
-    #auto mode, figure out if we should show it:
+    # auto mode, figure out if we should show it:
     if not POSIX:
         return True
     if os.environ.get("SSH_CONNECTION") or os.environ.get("SSH_CLIENT"):
-        #don't show the splash screen over SSH forwarding
+        # don't show the splash screen over SSH forwarding
         return False
     xdisplay = os.environ.get("DISPLAY")
     if xdisplay:
-        #make sure that the display isn't the one we're running against,
-        #unless we're shadowing it
+        # make sure that the display isn't the one we're running against,
+        # unless we're shadowing it
         return xdisplay!=display or mode.startswith("shadow")
     if mode=="proxy":
         return False
@@ -691,9 +691,9 @@ def request_exit(uri:str) -> bool:
     from xpra.platform.paths import get_xpra_command
     cmd = get_xpra_command()+["exit", uri]
     env = os.environ.copy()
-    #don't wait too long:
+    # don't wait too long:
     env["XPRA_CONNECT_TIMEOUT"] = "5"
-    #don't log disconnect message
+    # don't log disconnect message
     env["XPRA_LOG_DISCONNECT"] = "0"
     env["XPRA_EXIT_MESSAGE"] = str(ConnectionMessage.SERVER_UPGRADE)
     try:
@@ -797,7 +797,7 @@ def _do_run_server(script_file:str, cmdline,
         opts.start_child_on_last_client_exit,
     ))
     if proxying or upgrading:
-        #when proxying or upgrading, don't exec any plain start commands:
+        # when proxying or upgrading, don't exec any plain start commands:
         opts.start = []
         opts.start_child = []
         opts.start_late = []
@@ -810,15 +810,15 @@ def _do_run_server(script_file:str, cmdline,
         warn(" you should just use 'start' instead")
 
     if (upgrading or shadowing) and opts.pulseaudio is None:
-        #there should already be one running
-        #so change None ('auto') to False
+        # there should already be one running
+        # so change None ('auto') to False
         opts.pulseaudio = False
 
     display_options = ""
-    #get the display name:
+    # get the display name:
     if (shadowing or expanding) and not extra_args:
         if WIN32 or OSX:
-            #just a virtual name for the only display available:
+            # just a virtual name for the only display available:
             display_name = "Main"
         else:
             from xpra.scripts.main import guess_display
