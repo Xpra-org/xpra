@@ -37,7 +37,10 @@ from xpra.net.socket_util import (
     add_listen_socket, accept_connection, guess_packet_type,
     hosts, peek_connection, ssl_wrap_socket,
 )
-from xpra.net.bytestreams import SSLSocketConnection, log_new_connection, pretty_socket, SOCKET_TIMEOUT
+from xpra.net.bytestreams import (
+    SSLSocketConnection, SocketConnection,
+    log_new_connection, pretty_socket, SOCKET_TIMEOUT
+)
 from xpra.net.net_util import (
     get_network_caps, get_info as get_net_info,
     import_netifaces, get_interfaces_addresses,
@@ -1539,20 +1542,22 @@ class ServerCore:
             self.cancel_upgrade_to_rfb_timer(proto)
             self.upgrade_protocol_to_rfb(proto, data)
             return
-        if data:
+        packet_type = guess_packet_type(data)
+        if packet_type == "http":
             # try again to wrap this socket:
             bufs = [data]
 
-            def addbuf(data):
-                bufs.append(data)
+            def addbuf(buf):
+                bufs.append(buf)
             conn = proto.steal_connection(addbuf)
-            # not yet wrapped:
-            netlog(f"stole connection: {type(conn)}, wrapped={conn.socktype_wrapped}, socktype={conn.socktype}")
-            from xpra.net.bytestreams import PeekableSocketConnection, SocketConnection
-            if conn.socktype_wrapped == conn.socktype and isinstance(conn, SocketConnection):
-                pconn = PeekableSocketConnection(conn._socket, conn.local, conn.remote, conn.target, conn.socktype, conn.info, conn.options)
-                pconn.enable_peek(b"".join(bufs))
-                cont, conn, peek_data = self.may_wrap_socket(pconn, pconn.socktype, pconn.info, pconn.options, b"".join(bufs))
+            self.cancel_verify_connection_accepted(proto)
+            self.cancel_upgrade_to_rfb_timer(proto)
+            netlog(f"stole connection: {type(conn)}")
+            # verify that it is not wrapped yet:
+            if isinstance(conn, SocketConnection) and conn.socktype_wrapped == conn.socktype:
+                conn.enable_peek(b"".join(bufs))
+                conn.set_active(True)
+                cont, conn, peek_data = self.may_wrap_socket(conn, conn.socktype, conn.info, conn.options, b"".join(bufs))
                 netlog("wrap : may_wrap_socket(..)=(%s, %s, %r)", cont, conn, ellipsizer(peek_data))
                 if not cont:
                     return

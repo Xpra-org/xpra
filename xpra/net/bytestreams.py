@@ -318,6 +318,11 @@ class SocketConnection(Connection):
         if isinstance(remote, str):
             self.filename = remote
 
+    def enable_peek(self, peeked=b""):
+        if isinstance(self._socket, SocketPeekWrapper):
+            raise RuntimeError("`peek` has already been enabled")
+        self._socket = SocketPeekWrapper(self._socket, peeked)
+
     def get_raw_socket(self):
         return self._socket
 
@@ -579,14 +584,7 @@ class SocketPeekWrapper:
         return self.socket.recv(bufsize, flags)
 
 
-class PeekableSocketConnection(SocketConnection):
-
-    def enable_peek(self, peeked=b""):
-        assert not isinstance(self._socket, SocketPeekWrapper)
-        self._socket = SocketPeekWrapper(self._socket, peeked)
-
-
-class SSLSocketConnection(PeekableSocketConnection):
+class SSLSocketConnection(SocketConnection):
     SSL_TIMEOUT_MESSAGES = ("The read operation timed out", "The write operation timed out")
 
     def can_retry(self, e) -> bool | str:
