@@ -291,16 +291,16 @@ def looks_like_xpra_packet(data:ByteString) -> bool:
     return True
 
 
-def guess_packet_type(data:ByteString) -> str:
+def guess_packet_type(data: ByteString) -> str:
     if not data:
         return ""
     if looks_like_xpra_packet(data):
         return "xpra"
-    if data[:4]==b"SSH-":
+    if data[:4] == b"SSH-":
         return "ssh"
-    if data[0]==0x16:
+    if data[0] == 0x16:
         return "ssl"
-    if data[:4]==b"RFB ":
+    if data[:4] == b"RFB ":
         return "vnc"
     line1 = data.splitlines()[0]
     if line1.find(b"HTTP/")>0 or line1.split(b" ")[0] in (b"GET", b"POST"):
