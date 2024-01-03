@@ -25,13 +25,13 @@
 %endif
 
 Name:           %{python3}-pycuda
-Version:        2023.1
+Version:        2024.1
 Release:        1
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
-Source0:        https://files.pythonhosted.org/packages/dd/b2/e30282f3286ddad05ef44548fa5c306a179ed3baceefa699af078e49ce6e/pycuda-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/3f/50/dd356c8afe228baecaf0259b9579121dd869c5ace07a296158c39ac5065a/pycuda-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       %{python3}-pycuda
 
@@ -57,7 +57,7 @@ Suggests:       nvidia-driver-cuda-libs
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "175ff675f0cf10e38e9adc03ed5df3ed8d8abf7da5134c8dccec752e8a0a3e91" ]; then
+if [ "${sha256}" != "d50d23ff6371482cff7d4b953ef40ab81c9df038ecb614484f9fd5347327327e" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -92,6 +92,9 @@ rm -rf %{buildroot}
 %{python3_sitearch}/pycuda*
 
 %changelog
+* Wed Jan 03 2024 Antoine Martin <antoine@xpra.org> - 2024.1-1
+- new upstream release
+
 * Sat Nov 11 2023 Antoine Martin <antoine@xpra.org> - 2023.1-1
 - new upstream release
 
