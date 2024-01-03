@@ -63,7 +63,7 @@ CFLAGS="$RPM_OPT_FLAGS" %{python3} setup.py build
 %doc README.md CHANGES.rst
 %license docs/COPYING
 %{python3_sitearch}/PIL/
-%{python3_sitearch}/Pillow-%{version}-py*.egg-info
+%{python3_sitearch}/pillow-%{version}-py*.egg-info
 # simplified build does not shi these:
 %exclude %{python3_sitearch}/PIL/_imagingtk*
 %exclude %{python3_sitearch}/PIL/ImageTk*
