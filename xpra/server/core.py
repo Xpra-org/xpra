@@ -1561,6 +1561,10 @@ class ServerCore:
                 netlog("wrap : may_wrap_socket(..)=(%s, %s, %r)", cont, conn, ellipsizer(peek_data))
                 if not cont:
                     return
+            if conn:
+                # the connection object is now removed from the protocol object,
+                # so we have to close it explicitly if we have not wrapped it successfully:
+                conn.close()
         proto._invalid_header(proto, data, msg)
 
     # #####################################################################
