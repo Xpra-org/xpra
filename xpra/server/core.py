@@ -142,6 +142,13 @@ def _filter_display_dict(display_dict, *whitelist):
     return displays_info
 
 
+def force_close_connection(conn) -> None:
+    try:
+        conn.close()
+    except OSError:
+        log("close_connection()", exc_info=True)
+
+
 class ServerCore:
     """
         This is the simplest base class for servers.
@@ -1104,7 +1111,7 @@ class ServerCore:
         if socktype != "socket" and len(self._potential_protocols) >= self._max_connections:
             netlog.error("Error: too many connections (%i)", len(self._potential_protocols))
             netlog.error(" ignoring new one: %s", conn.endpoint)
-            conn.close()
+            force_close_connection(conn)
             return True
         # from here on, we run in a thread, so we can poll (peek does)
         start_thread(self.handle_new_connection, f"new-{socktype}-connection", True,
@@ -1138,15 +1145,9 @@ class ServerCore:
                 # HTTP 400 error:
                 packet_data = HTTP_UNSUPORTED
             conn.write(packet_data)
-            self.timeout_add(500, self.force_close_connection, conn)
+            self.timeout_add(500, force_close_connection, conn)
         except Exception as e:
             netlog("error sending %r: %s", packet_data, e)
-
-    def force_close_connection(self, conn) -> None:
-        try:
-            conn.close()
-        except OSError:
-            log("close_connection()", exc_info=True)
 
     def handle_new_connection(self, conn, socket_info, socket_options) -> None:
         """
@@ -1286,7 +1287,7 @@ class ServerCore:
                 data = conn.read(1)
                 if not data:
                     netlog("%s connection already closed", socktype)
-                    noerr(conn.close)
+                    force_close_connection(conn)
                     return
                 pre_read = [data, ]
                 netlog("pre_read data=%r", data)
@@ -1564,7 +1565,7 @@ class ServerCore:
             if conn:
                 # the connection object is now removed from the protocol object,
                 # so we have to close it explicitly if we have not wrapped it successfully:
-                conn.close()
+                force_close_connection(conn)
         proto._invalid_header(proto, data, msg)
 
     # #####################################################################
@@ -1635,10 +1636,7 @@ class ServerCore:
         except Exception:
             wslog.error("Error: %s request failure for client %s:",
                         req_info, pretty_socket(frominfo), exc_info=True)
-        try:
-            conn.close()
-        except Exception as ce:
-            wslog("error closing connection following error: %s", ce)
+        force_close_connection(conn)
 
     def get_http_scripts(self) -> dict[str, Any]:
         return self._http_scripts
@@ -2121,14 +2119,14 @@ class ServerCore:
         ioe = proto.wait_for_io_threads_exit(1)
         if not ioe:
             self.disconnect_protocol(proto, "failed to terminate network threads for ssl upgrade")
-            conn.close()
+            force_close_connection(conn)
             return
         options = conn.options
         socktype = conn.socktype
         ssl_sock = self._ssl_wrap_socket(socktype, conn._socket, options)
         if not ssl_sock:
             self.disconnect_protocol(proto, "failed to upgrade socket to ssl")
-            conn.close()
+            force_close_connection(conn)
             return
         ssl_conn = SSLSocketConnection(ssl_sock, conn.local, conn.remote, conn.endpoint, "ssl", socket_options=options)
         ssl_conn.socktype_wrapped = socktype
@@ -2590,4 +2588,4 @@ class ServerCore:
     def handle_rfb_connection(self, conn, data: bytes = b"") -> None:
         log.error("Error: RFB protocol is not supported by this server")
         log("handle_rfb_connection%s", (conn, data))
-        conn.close()
+        force_close_connection(conn)
