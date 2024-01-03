@@ -15,14 +15,14 @@
 
 
 Name:           %{package_prefix}%{srcname}
-Version:        10.1.0
+Version:        10.2.0
 Release:        1%{?dist}
 Summary:        Python image processing library
 
 # License: see http://www.pythonware.com/products/pil/license.htm
 License:        MIT
 URL:            http://python-pillow.github.io/
-Source0:        https://github.com/python-pillow/Pillow/archive/%{version}/Pillow-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/f8/3e/32cbd0129a28686621434cbf17bb64bf1458bfb838f1f668262fefce145c/pillow-%{version}.tar.gz
 
 BuildRequires:  freetype-devel
 BuildRequires:  gcc
@@ -47,11 +47,11 @@ internal representation, and powerful image processing capabilities.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "39ca46877a38414abd0c7ab15ee885b72efd884c4a43f5a82697685917b7704c" ]; then
+if [ "${sha256}" != "e87f0b2c78157e12d7686b27d63c070fd65d994e8ddae6f328e0dcf4a0cd007e" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
-%autosetup -n Pillow-%{version}
+%autosetup -n pillow-%{version}
 
 %build
 CFLAGS="$RPM_OPT_FLAGS" %{python3} setup.py build
@@ -74,6 +74,9 @@ CFLAGS="$RPM_OPT_FLAGS" %{python3} setup.py build
 %exclude %{python3_sitearch}/PIL/__pycache__/ImageQt*
 
 %changelog
+* Wed Jan 03 2024 Antoine Martin <antoine@xpra.org> - 10.2.0-1
+- new upstream release
+
 * Tue Oct 17 2023 Antoine Martin <antoine@xpra.org> - 10.1.0-1
 - new upstream release
 
