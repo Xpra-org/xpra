@@ -185,7 +185,7 @@ class ConfigureGUI(BaseGUIWindow):
         self.populate_form(
             (
                 glinfo,
-                ""
+                "",
                 "This tool will now present two windows which will be painted using various picture encodings.",
                 "You will be asked to confirm that the rendering was correct and identical in both windows.",
                 "",
@@ -246,7 +246,7 @@ class ConfigureGUI(BaseGUIWindow):
         self.populate_form(
             (
                 "OpenGL can be enabled safely using this GPU.",
-                ""
+                "",
                 "You can revert this change by running this tool again, or by resetting your user configuration."
             ),
             ("Enable OpenGL", self.enable_opengl),
