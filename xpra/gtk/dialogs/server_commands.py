@@ -106,7 +106,7 @@ class ServerCommandsWindow:
                 pi = typedict(procinfo)
                 command = pi.strtupleget("command")
                 pid = pi.intget("pid", 0)
-                returncode = pi.intget("returncode", None)
+                returncode: int | None = pi.intget("returncode") if "returncode" in pi else None
                 if pid>0 and command:
                     cmd_str = " ".join(command)
                     rstr = ""
