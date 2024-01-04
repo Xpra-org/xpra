@@ -24,17 +24,13 @@ def warn(msg: str) -> None:
     stderr_print(msg)
 
 
-def nodebug(*_args) -> None:
-    pass
-
-
 def is_arm() -> bool:
     import platform
     return platform.uname()[4].startswith("arm")
 
 
 # can be overridden
-debug = nodebug
+debug = noop
 
 
 class InitException(Exception):

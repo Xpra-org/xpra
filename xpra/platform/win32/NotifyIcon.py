@@ -9,9 +9,9 @@
 
 import os
 from ctypes import (
-    Structure, byref, c_void_p, sizeof, POINTER,
+    Structure, byref, addressof, c_void_p, sizeof, POINTER,
     get_last_error, WinError, WinDLL, HRESULT,  # @UnresolvedImport
-    )
+)
 from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, CHAR, WCHAR, DWORD, HMODULE, RECT
 from typing import Any
 from collections.abc import Callable
@@ -36,7 +36,7 @@ from xpra.platform.win32.common import (
     PostQuitMessage,
     GetModuleHandleExA,
     GetStockObject,
-    )
+)
 from xpra.log import Logger
 
 log = Logger("tray", "win32")
@@ -56,8 +56,10 @@ def GetProductInfo(dwOSMajorVersion=5, dwOSMinorVersion=0, dwSpMajorVersion=0, d
         dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion, v, hex(product_type.value))
     return bool(v)
 
-#MAX_TIP_SIZE = 128
+
+# MAX_TIP_SIZE = 128
 MAX_TIP_SIZE = 64
+
 
 def getNOTIFYICONDATAClass(char_type=CHAR, tip_size:int=MAX_TIP_SIZE):
     class _NOTIFYICONDATA(Structure):
@@ -80,6 +82,7 @@ def getNOTIFYICONDATAClass(char_type=CHAR, tip_size:int=MAX_TIP_SIZE):
         )
     return _NOTIFYICONDATA
 
+
 NOTIFYICONDATAA = getNOTIFYICONDATAClass()
 NOTIFYICONDATAW = getNOTIFYICONDATAClass(WCHAR)
 
@@ -92,13 +95,17 @@ Shell_NotifyIconW.restype = BOOL
 Shell_NotifyIconW.argtypes = [DWORD, c_void_p]
 Shell_NotifyIconGetRect = shell32.Shell_NotifyIconGetRect
 SHSTDAPI = HRESULT
+
+
 class NOTIFYICONIDENTIFIER(Structure):
     _fields_ = (
         ("cbSize",              DWORD),
         ("hWnd",                HWND),
         ("uID",                 UINT),
         ("guidItem",            GUID),
-        )
+    )
+
+
 PNOTIFYICONIDENTIFIER = POINTER(NOTIFYICONIDENTIFIER)
 Shell_NotifyIconGetRect.restype = SHSTDAPI
 Shell_NotifyIconGetRect.argtypes = [PNOTIFYICONIDENTIFIER, POINTER(RECT)]
@@ -114,7 +121,7 @@ XPRA_GUID.Data4 = XPRA_GUID4
 
 FALLBACK_ICON = LoadIconA(0, win32con.IDI_APPLICATION)
 
-#constants found in win32gui:
+# constants found in win32gui:
 NIM_ADD         = 0
 NIM_MODIFY      = 1
 NIM_DELETE      = 2
@@ -139,10 +146,10 @@ NIF_FLAGS = {
     NIF_GUID        : "GUID",
     NIF_REALTIME    : "REALTIME",
     NIF_SHOWTIP     : "SHOWTIP",
-    }
+}
 
-#found here:
-#http://msdn.microsoft.com/en-us/library/windows/desktop/ff468877(v=vs.85).aspx
+# found here:
+# http://msdn.microsoft.com/en-us/library/windows/desktop/ff468877(v=vs.85).aspx
 WM_XBUTTONDOWN  = 0x020B
 WM_XBUTTONUP    = 0x020C
 WM_XBUTTONDBLCLK= 0x020D
@@ -165,16 +172,16 @@ BUTTON_MAP : dict[int, list] = {
 
 class win32NotifyIcon:
 
-    #we register the windows event handler on the class,
-    #this allows us to know which hwnd refers to which instance:
-    instances : dict[int,Any] = {}
+    # we register the windows event handler on the class,
+    # this allows us to know which hwnd refers to which instance:
+    instances : dict[int, Any] = {}
 
-    def __init__(self, app_id:int=0, title:str="",
-                 move_callbacks:Callable=noop,
-                 click_callback:Callable=noop,
-                 exit_callback:Callable=noop,
-                 command_callback:Callable=noop,
-                 iconPathName:str=""):
+    def __init__(self, app_id: int = 0, title: str = "",
+                 move_callbacks: Callable = noop,
+                 click_callback: Callable = noop,
+                 exit_callback: Callable = noop,
+                 command_callback: Callable = noop,
+                 iconPathName: str=""):
         log("win32NotifyIcon: app_id=%i, title=%r", app_id, title)
         self.app_id = app_id
         self.title = title
@@ -184,8 +191,8 @@ class win32NotifyIcon:
         self.click_callback = click_callback
         self.exit_callback = exit_callback
         self.command_callback = command_callback
-        self.reset_function : tuple[Callable,tuple[Any,...]] | None = None
-        self.image_cache : dict[str,Any] = {}
+        self.reset_function : tuple[Callable, tuple[Any, ...]] | None = None
+        self.image_cache : dict[str, Any] = {}
         # Create the Window.
         if iconPathName:
             self.current_icon = self.LoadImage(iconPathName) or FALLBACK_ICON
@@ -204,8 +211,8 @@ class win32NotifyIcon:
         window_name = "%s StatusIcon Window" % bytestostr(self.title)
         niwc = get_notifyicon_wnd_class()
         args = (0, niwc.NIclassAtom, window_name, style,
-            win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, 0, 0,
-            0, 0, niwc.hInstance, 0)
+                win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, 0, 0,
+                0, 0, niwc.hInstance, 0)
         log("CreateWindowExA%s", args)
         self.hwnd = CreateWindowExA(*args)
         log("create_window() hwnd=%#x", self.hwnd or 0)
@@ -215,7 +222,7 @@ class win32NotifyIcon:
         log(f"{TASKBAR_CREATED=}")
         message_map[TASKBAR_CREATED] = win32NotifyIcon.OnTrayRestart
         UpdateWindow(self.hwnd)
-        #register callbacks:
+        # register callbacks:
         win32NotifyIcon.instances[self.hwnd] = self
 
     def register_tray(self) -> None:
@@ -232,7 +239,7 @@ class win32NotifyIcon:
         nid.hWnd = self.hwnd
         nid.uCallbackMessage = win32con.WM_MENUCOMMAND
         nid.hIcon = self.current_icon
-        #don't ask why we have to use sprintf to get what we want:
+        # don't ask why we have to use sprintf to get what we want:
         title = bytestostr(self.title[:MAX_TIP_SIZE-1])
         try:
             nid.szTip = title
@@ -243,17 +250,17 @@ class win32NotifyIcon:
         nid.guidItem = XPRA_GUID
         nid.uID = self.app_id
         flags |= NIF_GUID
-        #balloon notification bits:
-        #szInfo
-        #uTimeout
-        #szInfoTitle
-        #dwInfoFlags
-        #hBalloonIcon
-        #flags |= NIF_SHOWTIP
+        # balloon notification bits:
+        # szInfo
+        # uTimeout
+        # szInfoTitle
+        # dwInfoFlags
+        # hBalloonIcon
+        # flags |= NIF_SHOWTIP
         nid.uVersion = 4
         nid.uFlags = flags
         log("make_nid(..)=%s tooltip=%r, app_id=%i, actual flags=%s",
-            nid, title, self.app_id, csv([v for k,v in NIF_FLAGS.items() if k&flags]))
+            nid, title, self.app_id, csv([v for k, v in NIF_FLAGS.items() if k & flags]))
         return nid
 
     def delete_tray_window(self) -> None:
@@ -281,16 +288,16 @@ class win32NotifyIcon:
             log.estr(e)
 
     def get_geometry(self):
-        #we can only use this if there is a single monitor
-        #because multi-monitor coordinates may have offsets
-        #we don't know about (done inside GTK)
+        # we can only use this if there is a single monitor
+        # because multi-monitor coordinates may have offsets
+        # we don't know about (done inside GTK)
         n = len(EnumDisplayMonitors())
         if n==1:
             nii = NOTIFYICONIDENTIFIER()
             nii.cbSize = sizeof(NOTIFYICONIDENTIFIER)
             nii.hWnd = self.hwnd
             nii.uID = self.app_id
-            #nii.guidItem = XPRA_GUID
+            # nii.guidItem = XPRA_GUID
             rect = RECT()
             if Shell_NotifyIconGetRect(byref(nii), byref(rect))==0:
                 geom = (rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top)
@@ -298,9 +305,8 @@ class win32NotifyIcon:
                 return geom
         return None
 
-
     def set_blinking(self, on) -> None:
-        #implement blinking on win32 using a timer?
+        # implement blinking on win32 using a timer?
         pass
 
     def set_tooltip(self, tooltip:str) -> None:
@@ -308,7 +314,6 @@ class win32NotifyIcon:
         self.title = tooltip
         nid = self.make_nid(NIF_ICON | NIF_MESSAGE | NIF_TIP)
         Shell_NotifyIcon(NIM_MODIFY, byref(nid))
-
 
     def set_icon(self, iconPathName:str) -> None:
         log("set_icon(%s)", iconPathName)
@@ -329,7 +334,7 @@ class win32NotifyIcon:
         nid = self.make_nid(NIF_ICON)
         Shell_NotifyIcon(NIM_MODIFY, byref(nid))
 
-    def set_icon_from_data(self, pixels, has_alpha:bool, w:int, h:int, rowstride:int, options=None) -> None:
+    def set_icon_from_data(self, pixels, has_alpha: bool, w: int, h: int, rowstride: int, options=None) -> None:
         #this is convoluted but it works..
         log("set_icon_from_data%s", ("%s pixels" % len(pixels), has_alpha, w, h, rowstride, options))
         from PIL import Image
@@ -352,7 +357,7 @@ class win32NotifyIcon:
         UpdateWindow(self.hwnd)
         self.reset_function = self.set_icon_from_data, (pixels, has_alpha, w, h, rowstride, options)
 
-    def LoadImage(self, iconPathName:str):
+    def LoadImage(self, iconPathName: str):
         if not iconPathName:
             return None
         image = self.image_cache.get(iconPathName)
@@ -361,7 +366,7 @@ class win32NotifyIcon:
             self.image_cache[iconPathName] = image
         return image
 
-    def doLoadImage(self, iconPathName:str):
+    def doLoadImage(self, iconPathName: str):
         mingw_prefix = os.environ.get("MINGW_PREFIX")
         if mingw_prefix and iconPathName.find(mingw_prefix)>=0:
             #python can deal with mixed win32 and unix paths,
@@ -376,10 +381,10 @@ class win32NotifyIcon:
                 img_type = win32con.IMAGE_BITMAP
                 icon_flags |= win32con.LR_CREATEDIBSECTION | win32con.LR_LOADTRANSPARENT
             log("LoadImage(%s) using image type=%s", iconPathName,
-                                        {
-                                            win32con.IMAGE_ICON    : "ICON",
-                                            win32con.IMAGE_BITMAP  : "BITMAP",
-                                         }.get(img_type))
+                {
+                    win32con.IMAGE_ICON    : "ICON",
+                    win32con.IMAGE_BITMAP  : "BITMAP",
+                }.get(img_type))
             niwc = get_notifyicon_wnd_class()
             v = LoadImageW(niwc.hInstance, iconPathName, img_type, 0, 0, icon_flags)
             assert v is not None
@@ -390,14 +395,13 @@ class win32NotifyIcon:
             log("LoadImage(%s)=%#x", iconPathName, v)
             return v
 
-
     def OnTrayRestart(self, hwnd=0, msg=0, wparam=0, lparam=0) -> None:
         rfn = self.reset_function
         try:
-            #re-create the tray window:
+            # re-create the tray window:
             self.delete_tray_window()
             self.register_tray()
-            #now try to repaint the tray:
+            # now try to repaint the tray:
             log("OnTrayRestart%s reset function: %s", (hwnd, msg, wparam, lparam), rfn)
             if rfn:
                 rfn[0](*rfn[1])
@@ -447,29 +451,36 @@ class win32NotifyIcon:
             win32NotifyIcon.instances.pop(hwnd, None)
 
 
-WM_TRAY_EVENT = win32con.WM_MENUCOMMAND     #a message id we choose
+WM_TRAY_EVENT = win32con.WM_MENUCOMMAND     # a message id we choose
 log(f"{WM_TRAY_EVENT=}")
-message_map : dict[int,Callable] = {
+
+
+message_map: dict[int, Callable] = {
     win32con.WM_DESTROY                 : win32NotifyIcon.OnDestroy,
     win32con.WM_COMMAND                 : win32NotifyIcon.OnCommand,
     WM_TRAY_EVENT                       : win32NotifyIcon.OnTaskbarNotify,
 }
+
+
 def NotifyIconWndProc(hwnd, msg, wParam, lParam):
     instance = win32NotifyIcon.instances.get(hwnd)
     fn = message_map.get(msg)
+
     def i(v):
         try:
             return int(v)
         except (ValueError, TypeError):
             return v
     log("NotifyIconWndProc%s instance=%s, message(%i)=%s", (i(hwnd), i(msg), i(wParam), i(lParam)), instance, msg, fn)
-    #log("potential matching win32 constants for message: %s", [x for x in dir(win32con) if getattr(win32con, x)==msg])
+    # log("potential matching win32 constants for message: %s", [x for x in dir(win32con) if getattr(win32con, x)==msg])
     if instance and fn:
         return fn(instance, hwnd, msg, wParam, lParam) or 0
     return DefWindowProcA(hwnd, msg, wParam, lParam)
 
 
 _notifyicon_wnd_class = None
+
+
 def get_notifyicon_wnd_class():
     global _notifyicon_wnd_class
     if _notifyicon_wnd_class is None:
@@ -496,7 +507,6 @@ def get_notifyicon_wnd_class():
 
 def main(args):
     from xpra.platform.win32.common import user32
-    from ctypes import pointer
     from ctypes.wintypes import MSG
 
     if "-v" in args:
@@ -504,6 +514,7 @@ def main(args):
         enable_debug_for("all")
 
     log.warn("main")
+
     def click_callback(_button, _pressed):
         menu = CreatePopupMenu()
         AppendMenu(menu, win32con.MF_STRING, 1024, "Generate balloon")
@@ -538,7 +549,7 @@ def main(args):
             print("OnCommand for ID=%s" % cid)
 
     def win32_quit(*_args):
-        PostQuitMessage(0) # Terminate the app.
+        PostQuitMessage(0)  # Terminate the app.
 
     from xpra.platform.paths import get_icon_dir, get_app_dir
     for idir in (get_icon_dir(), get_app_dir(), "fs/share/xpra/icons"):
@@ -551,12 +562,12 @@ def main(args):
     signal.signal(signal.SIGINT, win32_quit)
     signal.signal(signal.SIGTERM, win32_quit)
 
-    #pump messages:
+    # pump messages:
     msg = MSG()
-    pMsg = pointer(msg)
-    while user32.GetMessageA(pMsg, win32con.NULL, 0, 0) != 0:
-        user32.TranslateMessage(pMsg)
-        user32.DispatchMessageA(pMsg)
+    p_msg = addressof(msg)
+    while user32.GetMessageA(p_msg, win32con.NULL, 0, 0) != 0:
+        user32.TranslateMessage(p_msg)
+        user32.DispatchMessageA(p_msg)
 
 
 if __name__=='__main__':

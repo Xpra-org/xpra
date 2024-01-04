@@ -5,9 +5,9 @@
 # later version. See the file COPYING for details.
 
 from ctypes import (
-    WinError, get_last_error,  # @UnresolvedImport
+    WinError, get_last_error,
     byref, c_void_p, sizeof, create_string_buffer, memmove,
-    )
+)
 
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import (
@@ -16,7 +16,7 @@ from xpra.platform.win32.common import (
     GetDC, ReleaseDC,
     CreateBitmap, CreateDIBSection,
     DeleteObject,
-    )
+)
 from xpra.log import Logger
 log = Logger("win32")
 
@@ -32,6 +32,7 @@ def image_to_ICONINFO(img, alpha=True):
         rgb_format = "BGR"
     rgb_data = img.tobytes("raw", rgb_format)
     return make_ICONINFO(w, h, rgb_data, rgb_format=rgb_format)
+
 
 def make_ICONINFO(w, h, rgb_data, rgb_format="BGRA"):
     log("make_ICONINFO(%i, %i, %i bytes, %s)", w, h, len(rgb_data), rgb_format)
@@ -63,9 +64,10 @@ def make_ICONINFO(w, h, rgb_data, rgb_format="BGRA"):
         if bitmap:
             DeleteObject(bitmap)
 
+
 def rgb_to_bitmap(rgb_data, bytes_per_pixel : int, w : int, h : int):
     log("rgb_to_bitmap%s", (rgb_data, bytes_per_pixel, w, h))
-    assert bytes_per_pixel in (3, 4)        #only BGRA or BGR are supported
+    assert bytes_per_pixel in (3, 4)        # only BGRA or BGR are supported
     assert w>0 and h>0
     header = BITMAPV5HEADER()
     header.bV5Size = sizeof(BITMAPV5HEADER)
@@ -73,11 +75,11 @@ def rgb_to_bitmap(rgb_data, bytes_per_pixel : int, w : int, h : int):
     header.bV5Height = -h
     header.bV5Planes = 1
     header.bV5BitCount = bytes_per_pixel*8
-    header.bV5Compression = BI_RGB      #BI_BITFIELDS
-    #header.bV5RedMask = 0x000000ff
-    #header.bV5GreenMask = 0x0000ff00
-    #header.bV5BlueMask = 0x00ff0000
-    #header.bV5AlphaMask = 0xff000000
+    header.bV5Compression = BI_RGB      # BI_BITFIELDS
+    # header.bV5RedMask = 0x000000ff
+    # header.bV5GreenMask = 0x0000ff00
+    # header.bV5BlueMask = 0x00ff0000
+    # header.bV5AlphaMask = 0xff000000
     hdc = 0
     try:
         hdc = GetDC(None)

@@ -40,7 +40,14 @@ class GLAreaBacking(GLWindowBackingBase):
         GLib.idle_add(*args, **kwargs)
 
     def init_gl_config(self) -> None:
-        pass
+        """
+        this implementation does not need to initialize a config object
+        """
+
+    def close_gl_config(self) -> None:
+        """
+        there is no config object to close in this implementation
+        """
 
     def is_double_buffered(self) -> bool:
         return True
@@ -87,9 +94,6 @@ class GLAreaBacking(GLWindowBackingBase):
     def do_gl_show(self, rect_count) -> None:
         log(f"do_gl_show({rect_count})")
         self._backing.queue_render()
-
-    def close_gl_config(self) -> None:
-        pass
 
     def draw_fbo(self, context) -> bool:
         log(f"draw_fbo({context})")

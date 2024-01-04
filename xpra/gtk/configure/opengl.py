@@ -6,6 +6,7 @@
 import os.path
 import struct
 
+from xpra.common import noop
 from xpra.os_util import gi_import, WIN32
 from xpra.codecs.loader import load_codec
 from xpra.util.types import typedict
@@ -133,10 +134,8 @@ def create_twin_test_windows():
         window.set_title(title)
         windows.append(window)
 
-        def window_close_event(*_args):
-            pass
-
-        add_close_accel(window, window_close_event)
+        # make sure these windows stay open:
+        add_close_accel(window, noop)
     return opengl_props, windows
 
 

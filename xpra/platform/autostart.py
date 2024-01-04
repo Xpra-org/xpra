@@ -7,7 +7,9 @@ from xpra.platform import platform_import
 
 
 def set_autostart(_enabled):
-    pass
+    """
+    win32 and posix platforms will override this function
+    """
 
 
 def get_status():

@@ -90,12 +90,14 @@ class WindowServer(StubServerMixin):
         """
         return {"windows": self.get_windows_info(wids)}
 
-    def parse_hello(self, ss, caps:typedict, send_ui) -> None:
+    def parse_hello(self, ss, caps: typedict, send_ui) -> None:
         if send_ui:
             self.parse_hello_ui_window_settings(ss, caps)
 
-    def parse_hello_ui_window_settings(self, ss, c:typedict) -> None:
-        pass
+    def parse_hello_ui_window_settings(self, ss, c: typedict) -> None:
+        """
+        this method is overriden by the `seamless` server to set frame extents
+        """
 
     def add_new_client(self, *_args) -> None:
         minw, minh = self.window_min_size
