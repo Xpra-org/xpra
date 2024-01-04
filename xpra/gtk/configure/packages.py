@@ -90,7 +90,6 @@ class ConfigureGUI(BaseGUIWindow):
                 ""))
             return
 
-        pkgcmd = ["sudo"] if getuid() !=0 else []
         if not any(is_distribution_variant(x) for x in SUPPORTED_DISTROS):
             url = "https://github.com/Xpra-org/xpra/wiki/Platforms"
             fail((
