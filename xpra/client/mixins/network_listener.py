@@ -215,17 +215,19 @@ class Networklistener(StubClientMixin):
 
             # run in UI thread:
             self.idle_add(send_info)
-        elif request == "id":
+            return
+        if request == "id":
             hello_reply(self.get_id_info())
-        elif request == "detach":
+            return
+        if request == "detach":
             def protocol_closed() -> None:
                 self.disconnect_and_quit(ExitCode.OK, "network request")
-
             proto.send_disconnect([ConnectionMessage.DETACH_REQUEST], done_callback=protocol_closed)
             return
-        elif request == "version":
+        if request == "version":
             hello_reply({"version": version_str()})
-        elif request in ("show-menu", "show-about", "show-session-info"):
+            return
+        if request in ("show-menu", "show-about", "show-session-info"):
             fn = getattr(self, request.replace("-", "_"), None)
             if not fn:
                 hello_reply({"error": "%s not found" % request})
@@ -234,9 +236,11 @@ class Networklistener(StubClientMixin):
                 glib = gi_import("GLib")
                 glib.idle_add(fn)
                 hello_reply({})
-        elif request == "connect_test":
+            return
+        if request == "connect_test":
             hello_reply({})
-        elif request == "command":
+            return
+        if request == "command":
             command = caps.strtupleget("command_request")
             log("command request: %s", command)
 
@@ -251,9 +255,9 @@ class Networklistener(StubClientMixin):
                 hello_reply({"command_response": (code, response)})
 
             self.idle_add(process_control)
-        else:
-            log.info(f"`{request}` requests are not handled by this client")
-            proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])
+            return
+        log.info(f"`{request}` requests are not handled by this client")
+        proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])
 
     def get_id_info(self) -> dict[str, Any]:
         # minimal information for identifying the session
