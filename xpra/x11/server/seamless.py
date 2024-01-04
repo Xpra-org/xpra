@@ -814,12 +814,12 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             frame = nws.inttupleget("frame", (0, 0, 0, 0))
             window.set_property("frame", frame)
         # boolean: but not a wm_state and renamed in the model... (iconic vs inconified!)
-        iconified = nws.boolget("iconified", None)
-        if iconified is not None:
+        if "iconified" in new_window_state:
+            iconified = nws.boolget("iconified")
             if window.is_OR():
                 log("ignoring iconified=%s on OR window %s", iconified, window)
             else:
-                if window.get_property("iconic")!=bool(iconified):
+                if window.get_property("iconic") != bool(iconified):
                     window.set_property("iconic", iconified)
                     changes["iconified"] = bool(iconified)
         # handle wm_state virtual booleans:
