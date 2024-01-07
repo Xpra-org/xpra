@@ -34,7 +34,7 @@ from xpra.net.socket_util import (
     ssl_wrap_socket,
     )
 from xpra.net.bytestreams import (
-    SSLSocketConnection,
+    SocketConnection, SSLSocketConnection,
     log_new_connection, pretty_socket, SOCKET_TIMEOUT,
     )
 from xpra.net.net_util import (
@@ -1561,8 +1561,34 @@ class ServerCore:
             netlog("RFB header, trying to upgrade protocol")
             self.cancel_upgrade_to_rfb_timer(proto)
             self.upgrade_protocol_to_rfb(proto, data)
-        else:
-            proto._invalid_header(proto, data, msg)
+            return
+        packet_type = guess_packet_type(data)
+        netlog("packet-type=%s", packet_type)
+        if packet_type == "http":
+            # try again to wrap this socket:
+            bufs = [data]
+
+            def addbuf(buf):
+                bufs.append(buf)
+            conn = proto.steal_connection(addbuf)
+            self.cancel_verify_connection_accepted(proto)
+            self.cancel_upgrade_to_rfb_timer(proto)
+            netlog("stole connection: %s", type(conn))
+            # verify that it is not wrapped yet:
+            if isinstance(conn, SocketConnection) and conn.socktype_wrapped == conn.socktype:
+                conn.enable_peek(b"".join(bufs))
+                conn.set_active(True)
+                cont, conn, peek_data = self.may_wrap_socket(conn, conn.socktype, conn.info, conn.options, b"".join(bufs))
+                netlog("wrap : may_wrap_socket(..)=(%s, %s, %r)", cont, conn, ellipsizer(peek_data))
+                if not cont:
+                    return
+            if conn:
+                # the connection object is now removed from the protocol object,
+                # so we have to close it explicitly if we have not wrapped it successfully:
+                self.force_close_connection(conn)
+        proto._invalid_header(proto, data, msg)
+
+
 
 
     ######################################################################

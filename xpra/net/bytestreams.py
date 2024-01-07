@@ -340,6 +340,10 @@ class SocketConnection(Connection):
             self.cork_value = cork
             log("changed %s socket to cork=%s", self.socktype, cork)
 
+    def enable_peek(self, peeked=b""):
+        assert not isinstance(self._socket, SocketPeekWrapper)
+        self._socket = SocketPeekWrapper(self._socket, peeked)
+
     def peek(self, n : int) -> bytes:
         log("%s(%s, MSG_PEEK)", self._socket.recv, n)
         return self._socket.recv(n, socket.MSG_PEEK)
@@ -538,9 +542,9 @@ class SocketPeekFile:
 
 
 class SocketPeekWrapper:
-    def __init__(self, sock):
+    def __init__(self, sock, peeked=b""):
         self.socket = sock
-        self.peeked = b""
+        self.peeked = peeked
 
     def __getattr__(self, attr):
         if attr=="makefile":
@@ -577,14 +581,7 @@ class SocketPeekWrapper:
         return self.socket.recv(bufsize, flags)
 
 
-class PeekableSocketConnection(SocketConnection):
-
-    def enable_peek(self):
-        assert not isinstance(self._socket, SocketPeekWrapper)
-        self._socket = SocketPeekWrapper(self._socket)
-
-
-class SSLSocketConnection(PeekableSocketConnection):
+class SSLSocketConnection(SocketConnection):
     SSL_TIMEOUT_MESSAGES = ("The read operation timed out", "The write operation timed out")
 
     def can_retry(self, e) -> Union[bool,str]:
