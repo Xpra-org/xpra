@@ -552,10 +552,10 @@ keymd5(host_key),
                         log("authenticated using agent and key '%s'", keymd5(agent_key))
                         break
                 except AttributeError as e:
-                    log(f"auth_publickey(%s, %s)", username, agent_key)
+                    log("auth_publickey(%s, %s)", username, agent_key)
                     log.warn("Warning: paramiko bug during public key agent authentication")
-                    log.warn(f" %s: %s", type(e), e)
-                    log.warn(f" using key %s: %s", type(agent_key), agent_key)
+                    log.warn(" %s: %s", type(e), e)
+                    log.warn(" using key %s: %s", type(agent_key), agent_key)
                 except SSHException:
                     log("agent key '%s' rejected", keymd5(agent_key), exc_info=True)
             if not transport.is_authenticated():
