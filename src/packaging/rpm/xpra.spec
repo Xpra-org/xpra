@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 3.1.6
+%define version 3.1.7
 
 %{!?with_python2: %define with_python2 1}
 %{!?with_python3: %define with_python3 1}
@@ -917,6 +917,20 @@ fi
 
 
 %changelog
+* Mon Jan 08 2024 Antoine Martin <antoine@xpra.org> 3.1.7-10.1xpra1
+- major fixes:
+    http socket upgrades for slow requests
+    size constraint calculation for max size
+    workaround paramiko error with some agent keys
+- build, packaging and platforms:
+    make it easier to build DEBs
+    pycuda 2020.1 patch for compatibility between RHEL 8 and newer CUDA SDKs
+    always build python rencode and python lz4 for RHEL 9
+    newer libyuv snapshot
+    Cython 0.29.37.1 / 3.0.7
+- cosmetic:
+    Python 3.12 SyntaxWarning
+
 * Mon Nov 27 2023 Antoine Martin <antoine@xpra.org> 3.1.6-10.1xpra1
 - major fixes:
     some `scroll` screen updates not flushed

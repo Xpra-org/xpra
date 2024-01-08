@@ -1,3 +1,17 @@
+v3.1.7 (2023-01-08)
+	-- major fixes:
+		- http socket upgrades for slow requests
+		- size constraint calculation for max size
+		- workaround paramiko error with some agent keys
+	-- build, packaging and platforms:
+		- make it easier to build DEBs
+		- pycuda 2020.1 patch for compatibility between RHEL 8 and newer CUDA SDKs
+		- always build python rencode and python lz4 for RHEL 9
+		- newer libyuv snapshot
+		- Cython 0.29.37.1 / 3.0.7
+	-- cosmetic:
+		- Python 3.12 SyntaxWarning
+
 v3.1.6 (2023-11-27)
 	-- major fixes:
 		- some `scroll` screen updates not flushed

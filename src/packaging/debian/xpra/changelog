@@ -1,3 +1,19 @@
+xpra (3.1.7-1) UNRELEASED; urgency=low
+  * major fixes:
+   - http socket upgrades for slow requests
+   - size constraint calculation for max size
+   - workaround paramiko error with some agent keys
+  * build, packaging and platforms:
+   - make it easier to build DEBs
+   - pycuda 2020.1 patch for compatibility between RHEL 8 and newer CUDA SDKs
+   - always build python rencode and python lz4 for RHEL 9
+   - newer libyuv snapshot
+   - Cython 0.29.37.1 / 3.0.7
+  * cosmetic:
+   - Python 3.12 SyntaxWarning
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 08 Jan 2024 16:15:29 +0700
+
 xpra (3.1.6-1) UNRELEASED; urgency=low
   * major fixes:
    - some `scroll` screen updates not flushed
