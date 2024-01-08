@@ -1,16 +1,16 @@
---- a/CMakeLists.txt	2021-05-25 14:41:29.619248512 +0700
-+++ b/CMakeLists.txt	2021-05-25 14:41:40.425178886 +0700
-@@ -28,13 +28,6 @@
- 
- SET_TARGET_PROPERTIES	( ${ly_lib_shared} PROPERTIES VERSION "0.0.0" SOVERSION 0 )
- 
--INCLUDE ( FindJPEG )
+--- a/CMakeLists.txt	2023-10-17 18:49:43.056681747 +0700
++++ b/CMakeLists.txt	2023-10-17 18:50:04.992558799 +0700
+@@ -45,13 +45,6 @@
+ ADD_EXECUTABLE      ( yuvconstants ${ly_base_dir}/util/yuvconstants.c )
+ TARGET_LINK_LIBRARIES  ( yuvconstants ${ly_lib_static} )
+
+-find_package ( JPEG )
 -if (JPEG_FOUND)
 -  include_directories( ${JPEG_INCLUDE_DIR} )
 -  target_link_libraries( ${ly_lib_shared} ${JPEG_LIBRARY} )
 -  add_definitions( -DHAVE_JPEG )
 -endif()
 -
- if(TEST)
+ if(UNIT_TEST)
    find_library(GTEST_LIBRARY gtest)
    if(GTEST_LIBRARY STREQUAL "GTEST_LIBRARY-NOTFOUND")
