@@ -1319,7 +1319,31 @@ class ServerCore(object):
                proto, len(data or ""), msg, ellipsizer(data))
         netlog(" input_packetcount=%s, tcp_proxy=%s, html=%s, ssl=%s",
                proto.input_packetcount, self._tcp_proxy, self._html, bool(self._ssl_wrap_socket))
-        info = self.guess_header_protocol(data)[1]
+        packet_type, info = self.guess_header_protocol(data)
+        if packet_type == "HTTP":
+           # try again to wrap this socket:
+            bufs = [data]
+
+            def addbuf(buf):
+                bufs.append(buf)
+            conn = proto.steal_connection(addbuf)
+            self.cancel_verify_connection_accepted(proto)
+            self.cancel_upgrade_to_rfb_timer(proto)
+            netlog("stole connection: %s", type(conn))
+            # verify that it is not wrapped yet:
+            if isinstance(conn, SocketConnection) and conn.socktype_wrapped == conn.socktype:
+                data = b"".join(bufs)
+                conn.enable_peek(data)
+                conn.set_active(True)
+                line1 = data.split(b"\n", 1)[0]
+                cont, conn, peek_data = self.may_wrap_socket(conn, conn.socktype, data, line1)
+                netlog("wrap : may_wrap_socket(..)=(%s, %s, %r)", cont, conn, ellipsizer(peek_data))
+                if not cont:
+                    return
+            if conn:
+                # the connection object is now removed from the protocol object,
+                # so we have to close it explicitly if we have not wrapped it successfully:
+                self.force_close_connection(conn)
         err = "invalid packet format, %s" % info
         proto.gibberish(err, data)
 

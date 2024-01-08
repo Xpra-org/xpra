@@ -329,6 +329,10 @@ class SocketConnection(Connection):
             self.cork = cork
             log("changed %s socket to cork=%s", self.socktype, cork)
 
+    def enable_peek(self, peeked=b""):
+        assert not isinstance(self._socket, SocketPeekWrapper)
+        self._socket = SocketPeekWrapper(self._socket, peeked)
+
     def peek(self, n):
         return self._socket.recv(n, socket.MSG_PEEK)
 
@@ -469,7 +473,7 @@ def get_socket_options(sock, level, options):
     return opts
 
 
-class SSLPeekFile(object):
+class SocketPeekFile(object):
     def __init__(self, fileobj, peeked, update_peek):
         self.fileobj = fileobj
         self.peeked = peeked
@@ -506,10 +510,10 @@ class SSLPeekFile(object):
             return peeked[:read]
         return self.fileobj.readline(limit)
 
-class SSLSocketWrapper(object):
-    def __init__(self, sock):
+class SocketPeekWrapper(object):
+    def __init__(self, sock, peeked=b""):
         self.socket = sock
-        self.peeked = b""
+        self.peeked = peeked
 
     def __getattr__(self, attr):
         if attr=="makefile":
@@ -521,7 +525,7 @@ class SSLSocketWrapper(object):
     def makefile(self, mode, bufsize=None):
         fileobj = self.socket.makefile(mode, bufsize)
         if self.peeked and mode and mode.startswith("r"):
-            return SSLPeekFile(fileobj, self.peeked, self._update_peek)
+            return SocketPeekFile(fileobj, self.peeked, self._update_peek)
         return fileobj
 
     def _update_peek(self, peeked):
@@ -561,10 +565,6 @@ class SSLSocketConnection(SocketConnection):
         if code in SSLSocketConnection.SSL_TIMEOUT_MESSAGES:
             return True
         return SocketConnection.can_retry(self, e)
-
-    def enable_peek(self):
-        assert not isinstance(self._socket, SSLSocketWrapper)
-        self._socket = SSLSocketWrapper(self._socket)
 
     def get_info(self):
         i = SocketConnection.get_info(self)
