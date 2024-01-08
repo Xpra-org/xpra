@@ -2,6 +2,7 @@
 
 ## [5.0.5] 2023-12-17
 * Major:
+    * [http socket upgrades for slow requests](https://github.com/Xpra-org/xpra/commit/c2935630d505b11752c2851dc0f1b1590c2788eb)
     * [fixup DPI backport for Xvfb users](https://github.com/Xpra-org/xpra/commit/30c7cfa5a9f119aac300b5652d3d545f9ca799cf)
     * [window max-height nor honoured](https://github.com/Xpra-org/xpra/commit/824d488b11d78df580657181fcb10d8021c6c78d)
     * [tools and examples hang on SIGINT](https://github.com/Xpra-org/xpra/commit/6b83eab06d691adcfcf6f7d9d0618aded1d0b774)
@@ -12,10 +13,13 @@
 * Platforms and packaging:
     * (Free)BSD compatibility: [don't build pam](https://github.com/Xpra-org/xpra/commit/dd80ab2f02fbd2f4e72165c99012d072a5373952), [do build drm](https://github.com/Xpra-org/xpra/commit/4753b487a56b16d065b868ababc8a27e99e025d0)
     * [Cython 3.0.7](https://github.com/Xpra-org/xpra/commit/143e8a0a38b7567293ed9cf62ee9940aa94defec)
+    * [pycuda 2024.1](https://github.com/Xpra-org/xpra/commit/513d3292bd0181714d9e5778bb857ffb0a0621b2)
+    * [aioquic 0.9.24](https://github.com/Xpra-org/xpra/commit/76571a2b62aa0372260f885c3156a0270b7c0a8f)
 * Minor:
     * [make iconify delay configurable](https://github.com/Xpra-org/xpra/commit/a9441fb82745fb6cd8e0c2f2d085a1c1a7e3fe4c)
     * [update trixie and sid libavif dependency](https://github.com/Xpra-org/xpra/commit/4ba44484eb9d8a3225d11d823f4ea57794dd08b7)
     * [simplify regex syntax](https://github.com/Xpra-org/xpra/commit/8cf8494340a26a1149ee7f273eaa27c1e62a0aab)
+    * [documentation dead links](https://github.com/Xpra-org/xpra/commit/c322b77f1c3d7d2d95c9ff94362ee1c16cc3e022)
 
 ## [5.0.4] 2023-11-28
 * Major:
