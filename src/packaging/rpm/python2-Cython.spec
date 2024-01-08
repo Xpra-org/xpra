@@ -24,11 +24,11 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "41c0cfd2d754e383c9eeb95effc9aa4ab847d0c9747077ddd7c0dcb68c3bc01f" ]; then
+if [ "${sha256}" != "cbd3949bec315ef1cc974c2907b69af3d36ec35dacc9b1ab258e3e9cf800b157" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
-%setup -q -n Cython-%{version}
+%setup -q -n cython-%{version}
 find -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python2}|'
 
 %build
