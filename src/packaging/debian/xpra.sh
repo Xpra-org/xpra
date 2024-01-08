@@ -40,7 +40,13 @@ rm -f xpra-build-deps*
 
 #install latest cython since the one Debian / Ubuntu tends to be out of date:
 DEBIAN_FRONTEND=noninteractive apt-get -y install python3-pip
+DEBIAN_FRONTEND=noninteractive apt-get -y remove cython3
 PIP_BREAK_SYSTEM_PACKAGES=1 pip3 install cython
+DEBIAN_FRONTEND=noninteractive apt-get -y remove cython
+DEBIAN_FRONTEND=noninteractive apt-get -y install python2
+wget https://bootstrap.pypa.io/pip/2.7/get-pip.py
+python2 get-pip.py
+PIP_BREAK_SYSTEM_PACKAGES=1 python2 -m pip install cython
 
 #add revision to version number to changelog
 REVISION=`PYTHONPATH=. python3 -c 'from xpra.src_info import REVISION;print(REVISION)'`
