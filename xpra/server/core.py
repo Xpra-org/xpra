@@ -2496,7 +2496,7 @@ class ServerCore:
     def get_socket_info(self) -> dict[str, Any]:
         si = {}
 
-        def add_listener(socktype: str, info: dict):
+        def add_listener(socktype: str, info):
             si.setdefault(socktype, {}).setdefault("listeners", []).append(info)
 
         def add_address(socktype: str, address, port: int):
