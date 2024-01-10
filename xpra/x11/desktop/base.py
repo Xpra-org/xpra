@@ -159,7 +159,11 @@ class DesktopServerBase(DesktopServerBaseClass):
         return self.do_parse_screen_info(ss, ss.desktop_mode_size)
 
     def do_screen_changed(self, screen) -> None:
-        pass
+        """
+        Screen changes are normally managed by requests or user actions,
+        we do not need to send any messages to the client here,
+        the monitor window model(s) will take care of it.
+        """
 
     def set_desktop_geometry_attributes(self, w: int, h: int):
         # geometry is not synced with the client's for desktop servers
@@ -314,10 +318,15 @@ class DesktopServerBase(DesktopServerBaseClass):
         pass
 
     def _process_desktop_size(self, proto, packet : PacketType) -> None:
-        pass
+        """
+        Usually, desktop servers don't need to do anything when the client's geometry changes.
+        """
 
-    def calculate_workarea(self, w:int, h:int):
-        pass
+    def calculate_workarea(self, w: int, h: int):
+        """
+        The workarea is managed server side by the window manager,
+        so we don't need to apply any changes here
+        """
 
     def make_dbus_server(self) -> None:
         from xpra.x11.dbus.x11_dbus_server import X11_DBUS_Server
