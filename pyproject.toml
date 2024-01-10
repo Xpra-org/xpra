@@ -33,7 +33,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "gobject-introspection",
+    "PyGObject",
     "pillow",
 ]
 
