@@ -1091,7 +1091,7 @@ def _do_run_server(script_file:str, cmdline,
                     noerr(stderr.write, f" {e!r}\n")
                     noerr(stderr.flush)
         stdout, stderr = redirect_std_to_log(logfd)
-        noerr(stderr.write, "Entering daemon mode; any further errors will be reported to:\n  {log_filename0!r}\n")
+        noerr(stderr.write, f"Entering daemon mode; any further errors will be reported to:\n  {log_filename0!r}\n")
         noerr(stderr.flush)
         os.environ["XPRA_SERVER_LOG"] = log_filename0
     else:
