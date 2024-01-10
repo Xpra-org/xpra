@@ -16,24 +16,24 @@ import re
 import sys
 
 
-def bytestostr(x):
+SRC_INFO_FILE = "./xpra/src_info.py"
+BUILD_INFO_FILE = "./xpra/build_info.py"
+
+
+def bytestostr(x) -> str:
     if isinstance(x, bytes):
         return x.decode("latin1")
     return str(x)
 
 
-def update_properties(props, filename):
+def update_properties(props, filename: str):
     eprops = get_properties(filename)
     for key,value in props.items():
         set_prop(eprops, key, value)
     save_properties(eprops, filename)
 
-def save_properties(props, filename):
-    if os.path.exists(filename):
-        try:
-            os.unlink(filename)
-        except OSError:
-            print("WARNING: failed to delete %s" % filename)
+
+def write_props(f, props: dict, prefix="") -> None:
     def u(v):
         try:
             v = v.decode()
@@ -43,26 +43,39 @@ def save_properties(props, filename):
             return v.encode("utf-8")
         except UnicodeDecodeError:
             return v
-    with open(filename, mode='wb') as f:
-        def w(v):
-            f.write(u(v))
-        for name in sorted(props.keys()):
-            value = props[name]
-            s = bytestostr(value).replace("'", "\\'")
+
+    def w(v) -> None:
+        f.write(u(v))
+
+    def fmt(value) -> str:
+        if isinstance(value, (bool, tuple, int)):
+            return str(value)
+        s = bytestostr(value).replace("'", "\\'")
+        return f"'{s}'"
+
+    for name in sorted(props.keys()):
+        if prefix:
+            w(f"{prefix}{fmt(name)}")
+        else:
             w(name)
-            w("=")
-            quote_it = not isinstance(value, (bool, tuple, int))
-            if quote_it:
-                w("'")
-            w(s)
-            if quote_it:
-                w("'")
-            w("\n")
-    print("updated %s with:" % filename)
+        value = props[name]
+        w(f"={fmt(value)}\n")
+
+
+def save_properties(props: dict, filename: str) -> None:
+    if os.path.exists(filename):
+        try:
+            os.unlink(filename)
+        except OSError:
+            print(f"WARNING: failed to delete {filename!r}")
+    with open(filename, mode='wb') as f:
+        write_props(f, props)
+    print(f"updated {filename!r} with:")
     for k in sorted(props.keys()):
         print("* %s = %s" % (str(k).ljust(20), bytestostr(props[k])))
 
-def get_properties(filename):
+
+def get_properties(filename: str) -> dict:
     props = dict()
     if not os.path.exists(filename):
         return props
@@ -80,7 +93,7 @@ def get_properties(filename):
                 continue
             parts = s.split("=", 1)
             if len(parts)<2:
-                print("missing equal sign: %s" % s)
+                print(f"missing equal sign in {s!r}")
                 continue
             name = parts[0]
             value = parts[1]
@@ -97,6 +110,7 @@ def get_machineinfo():
         return platform.uname()[4]
     return "unknown"
 
+
 def get_cpuinfo():
     if platform.uname()[5]:
         return platform.uname()[5]
@@ -106,6 +120,7 @@ def get_cpuinfo():
                 if line.startswith("model name"):
                     return line.split(": ")[1].replace("\n", "").replace("\r", "")
     return "unknown"
+
 
 def get_status_output(*args, **kwargs):
     kwargs["stdout"] = PIPE
@@ -117,6 +132,7 @@ def get_status_output(*args, **kwargs):
         return -1, "", ""
     stdout, stderr = p.communicate()
     return p.returncode, stdout, stderr
+
 
 def get_output_lines(cmd, valid_exit_code=0):
     try:
@@ -132,13 +148,15 @@ def get_output_lines(cmd, valid_exit_code=0):
         return out.splitlines()
     except Exception as e:
         print("error running '%s': %s" % (cmd, e))
-    return  ()
+    return ()
 
-def get_first_line_output(cmd, valid_exit_code=0):
+
+def get_first_line_output(cmd, valid_exit_code=0) -> str:
     lines = get_output_lines(cmd, valid_exit_code)
     if lines:
         return lines[0]
-    return  ""
+    return ""
+
 
 def get_nvcc_version():
     for p in ("/usr/local/cuda/bin", "/opt/cuda/bin", ""):
@@ -153,6 +171,7 @@ def get_nvcc_version():
                     return vline[vpos+3:]
     return None
 
+
 def get_compiler_version():
     cc_version = "%s --version" % os.environ.get("CC", "gcc")
     if sys.platform=="darwin":
@@ -162,6 +181,7 @@ def get_compiler_version():
                 return line
         return None
     return get_first_line_output(cc_version)
+
 
 def get_linker_version():
     if sys.platform=="darwin":
@@ -180,6 +200,7 @@ def set_prop(props, key, value):
         return
     if value!="unknown" or props.get(key) is None:
         props[key] = value
+
 
 def get_platform_name():
     #better version info than standard python platform:
@@ -221,7 +242,6 @@ def get_platform_name():
     return sys.platform
 
 
-BUILD_INFO_FILE = "./xpra/build_info.py"
 def record_build_info():
     props = get_properties(BUILD_INFO_FILE)
     source_epoch = os.environ.get("SOURCE_DATE_EPOCH")
@@ -257,22 +277,34 @@ def record_build_info():
     set_prop(props, "LINKER_VERSION", get_linker_version())
     #record pkg-config versions:
     PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
-    for pkg in ("libc",
-                "vpx", "x264", "webp", "yuv", "nvenc", "nvfbc",
-                "nvenc",
-                "x11", "xrandr", "xtst", "xfixes", "xkbfile", "xcomposite", "xdamage", "xext",
-                "gobject-introspection-1.0",
-                "gtk+-3.0", "py3cairo", "pygobject-3.0", "gtk+-x11-3.0",
-                "python3",
-                ):
-        #fugly magic for turning the package atom into a legal variable name:
-        pkg_name = pkg.lstrip("lib").replace("+", "").replace("-", "_")
-        if pkg_name.rsplit("_", 1)[-1].rstrip("0123456789.")=="":
-            pkg_name = "_".join(pkg_name.split("_")[:-1])
-        cmd = [PKG_CONFIG, "--modversion", pkg]
-        returncode, out, _ = get_status_output(cmd)
+    if os.name=="nt":
+        returncode, out, _ = get_status_output(["pacman", "-Q"])
         if returncode==0:
-            set_prop(props, "lib_"+pkg_name, out.decode().replace("\n", "").replace("\r", ""))
+            for line in out.decode().splitlines():
+                parts = line.split(" ")
+                if len(parts) != 2:
+                    continue
+                pkg_name, version = parts
+                pkg_name = pkg_name.replace("-", "_")
+                set_prop(props, f"lib_{pkg_name}", version)
+    else:
+        for pkg in (
+            "libc",
+            "vpx", "x264", "webp", "yuv", "nvenc", "nvfbc",
+            "nvenc",
+            "x11", "xrandr", "xtst", "xfixes", "xkbfile", "xcomposite", "xdamage", "xext",
+            "gobject-introspection-1.0",
+            "gtk+-3.0", "py3cairo", "pygobject-3.0", "gtk+-x11-3.0",
+            "python3",
+        ):
+            #fugly magic for turning the package atom into a legal variable name:
+            pkg_name = pkg.lstrip("lib").replace("+", "").replace("-", "_")
+            if pkg_name.rsplit("_", 1)[-1].rstrip("0123456789.")=="":
+                pkg_name = "_".join(pkg_name.split("_")[:-1])
+            cmd = [PKG_CONFIG, "--modversion", pkg]
+            returncode, out, _ = get_status_output(cmd)
+            if returncode==0:
+                set_prop(props, "lib_"+pkg_name, out.decode().replace("\n", "").replace("\r", ""))
     save_properties(props, BUILD_INFO_FILE)
 
 
@@ -282,7 +314,7 @@ def get_vcs_props():
         "LOCAL_MODIFICATIONS" : "unknown",
         "BRANCH" : "unknown",
         "COMMIT" : "unknown"
-        }
+    }
     branch = None
     for cmd in (
         r"git branch --show-current",
@@ -310,10 +342,10 @@ def get_vcs_props():
     out, _ = proc.communicate()
     if proc.returncode!=0:
         print("'git describe --long --always --tags' failed with return code %s" % proc.returncode)
-        return  props
+        return props
     if not out:
         print("could not get version information")
-        return  props
+        return props
     out = out.decode('utf-8').splitlines()[0]
     #ie: out=v4.0.6-58-g6e6614571
     parts = out.split("-")
@@ -326,7 +358,7 @@ def get_vcs_props():
         commit = parts[2]
     else:
         print("could not parse version information from string: %s" % out)
-        return  props
+        return props
     props["COMMIT"] = commit
     try:
         rev = int(rev_str)
@@ -337,8 +369,7 @@ def get_vcs_props():
     if branch=="master":
         #fake a sequential revision number that continues where svn left off,
         #by counting the commits and adding a magic value (5014)
-        proc = Popen("git rev-list --count HEAD --first-parent",
-                                stdout=PIPE, stderr=PIPE, shell=True)
+        proc = Popen("git rev-list --count HEAD --first-parent", stdout=PIPE, stderr=PIPE, shell=True)
         out, _ = proc.communicate()
         if proc.returncode!=0:
             print("failed to get commit count using 'git rev-list --count HEAD'")
@@ -351,7 +382,7 @@ def get_vcs_props():
     (out, _) = proc.communicate()
     if proc.poll()!=0:
         print("could not get status of local files")
-        return  props
+        return props
 
     lines = out.decode('utf-8').splitlines()
     for line in lines:
@@ -361,12 +392,14 @@ def get_vcs_props():
     props["LOCAL_MODIFICATIONS"] = changes
     return props
 
-SRC_INFO_FILE = "./xpra/src_info.py"
+
 def record_src_info():
     update_properties(get_vcs_props(), SRC_INFO_FILE)
 
+
 def has_src_info():
     return os.path.exists(SRC_INFO_FILE) and os.path.isfile(SRC_INFO_FILE)
+
 
 def has_build_info():
     return os.path.exists(BUILD_INFO_FILE) and os.path.isfile(BUILD_INFO_FILE)
@@ -389,8 +422,9 @@ def main(args):
             props.get("REVISION"),
             "M" if mods>0 else "",
             " (%s)" % commit if commit else "",
-            )
-            )
+        )
+        )
+
 
 if __name__ == "__main__":
     main(sys.argv)
