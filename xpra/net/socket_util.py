@@ -677,7 +677,7 @@ def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
                 ppath = sockpath
                 if ppath.startswith(PIPE_PATH):
                     ppath = ppath[len(PIPE_PATH):]
-                log.info(f"created named pipe {ppath!r}")
+                log.info(f"created named pipe '{ppath}'")
                 defs[("named-pipe", npl, sockpath, npl.stop)] = options
         else:
             def checkstate(sockpath, state):
