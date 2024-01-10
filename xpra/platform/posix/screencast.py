@@ -20,8 +20,11 @@ class ScreenCast(PortalShadow):
         self.select_sources()
 
     def set_keymap(self, server_source, force=False) -> None:
-        # no input devices
-        pass
+        """
+        no input devices
+        """
 
     def do_process_button_action(self, *args) -> None:
-        pass
+        """
+        no input devices
+        """

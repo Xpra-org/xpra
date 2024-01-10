@@ -16,4 +16,8 @@ from xpra.platform.pycups_printing import (
 # so we use PS instead:
 DEFAULT_MIMETYPES = ["application/postscript"]
 
-assert get_printers and print_files and printing_finished and init_printing and cleanup_printing and get_info # type: ignore[truthy-function]
+for x in (
+    get_printers, print_files, printing_finished, init_printing, cleanup_printing, get_info,
+):
+    if not callable(x):
+        raise RuntimeError(f"{x} is not callable")
