@@ -1,4 +1,4 @@
-v3.1.7 (2023-01-08)
+v3.1.7 (2024-01-08)
 	-- major fixes:
 		- http socket upgrades for slow requests
 		- size constraint calculation for max size
