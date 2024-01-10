@@ -113,7 +113,6 @@ global_logging_handler: Callable = standard_logging
 
 
 def set_global_logging_handler(h: Callable) -> Callable:
-    print(f"set_global_logging_handler({h}")
     assert callable(h)
     global global_logging_handler
     saved = global_logging_handler
