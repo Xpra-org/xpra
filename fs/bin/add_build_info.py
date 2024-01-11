@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pylint: disable=bare-except
+# pylint: disable=bare-except
 
 import datetime
 from subprocess import Popen, PIPE, STDOUT
@@ -26,7 +26,7 @@ def bytestostr(x) -> str:
     return str(x)
 
 
-def update_properties(props, filename: str):
+def update_properties(props: dict, filename: str) -> None:
     eprops = get_properties(filename)
     for key,value in props.items():
         set_prop(eprops, key, value)
@@ -84,7 +84,7 @@ def get_properties(filename: str) -> dict:
             try:
                 s = line.decode("utf-8")
             except UnicodeDecodeError:
-                #str cannot be decoded!
+                # str cannot be decoded!
                 s = str(line)
             s = s.strip()
             if not s:
@@ -99,19 +99,19 @@ def get_properties(filename: str) -> dict:
             value = parts[1]
             if not value:
                 continue
-            if value[0]!="'" or value[-1]!="'":
+            if value[0] != "'" or value[-1] != "'":
                 continue
-            props[name]= value[1:-1]
+            props[name] = value[1:-1]
     return props
 
 
-def get_machineinfo():
+def get_machineinfo() -> str:
     if platform.uname()[4]:
         return platform.uname()[4]
     return "unknown"
 
 
-def get_cpuinfo():
+def get_cpuinfo() -> str:
     if platform.uname()[5]:
         return platform.uname()[5]
     if os.path.exists("/proc/cpuinfo"):
@@ -122,7 +122,7 @@ def get_cpuinfo():
     return "unknown"
 
 
-def get_status_output(*args, **kwargs):
+def get_status_output(*args, **kwargs) -> tuple[int, str | bytes, str | bytes]:
     kwargs["stdout"] = PIPE
     kwargs["stderr"] = STDOUT
     try:
@@ -137,7 +137,7 @@ def get_status_output(*args, **kwargs):
 def get_output_lines(cmd, valid_exit_code=0):
     try:
         returncode, stdout, stderr = get_status_output(cmd, shell=True)
-        if returncode!=valid_exit_code:
+        if returncode != valid_exit_code:
             print("'%s' failed with return code %s" % (cmd, returncode))
             print("stderr: %s" % stderr)
             return ()
@@ -158,23 +158,25 @@ def get_first_line_output(cmd, valid_exit_code=0) -> str:
     return ""
 
 
-def get_nvcc_version():
+def get_nvcc_version() -> str:
+    if sys.platform == "darwin":
+        return ""
     for p in ("/usr/local/cuda/bin", "/opt/cuda/bin", ""):
         nvcc = os.path.join(p, "nvcc")
-        if p=="" or os.path.exists(nvcc):
-            cmd = "%s --version" % (nvcc)
+        if p == "" or os.path.exists(nvcc):
+            cmd = f"{nvcc} --version"
             lines = get_output_lines(cmd)
             if lines:
                 vline = lines[-1]
                 vpos = vline.rfind(", V")
                 if vpos>0:
                     return vline[vpos+3:]
-    return None
+    return ""
 
 
 def get_compiler_version():
     cc_version = "%s --version" % os.environ.get("CC", "gcc")
-    if sys.platform=="darwin":
+    if sys.platform == "darwin":
         lines = get_output_lines(cc_version)
         for line in lines:
             if line.startswith("Apple"):
@@ -184,7 +186,7 @@ def get_compiler_version():
 
 
 def get_linker_version():
-    if sys.platform=="darwin":
+    if sys.platform == "darwin":
         ld_version = "%s -v" % os.environ.get("LD", "ld")
         lines = get_output_lines(ld_version)
         for line in lines:
@@ -195,25 +197,25 @@ def get_linker_version():
     return get_first_line_output(ld_version)
 
 
-def set_prop(props, key, value):
-    if value is None:
+def set_prop(props, key, value) -> None:
+    if not value:
         return
-    if value!="unknown" or props.get(key) is None:
+    if value != "unknown" or props.get(key) is None:
         props[key] = value
 
 
-def get_platform_name():
-    #better version info than standard python platform:
+def get_platform_name() -> str:
+    # better version info than standard python platform:
     if sys.platform.startswith("sun"):
-        #couldn't find a better way to distinguish opensolaris from solaris...
+        # couldn't find a better way to distinguish opensolaris from solaris...
         with open("/etc/release", "r", encoding="latin1") as f:
             data = f.read()
         if data and str(data).lower().find("opensolaris"):
             return "OpenSolaris"
         return "Solaris"
-    if sys.platform.find("darwin")>=0:
+    if sys.platform == "darwin":
         try:
-            #ie: MacOS 10.14.6
+            # ie: MacOS 10.14.6
             return "MacOS %s" % platform.mac_ver()[0]
         except (AttributeError, TypeError, IndexError):
             return "MacOS"
@@ -230,7 +232,7 @@ def get_platform_name():
         except OSError:
             pass
         return "Microsoft Windows"
-    if sys.platform.find("bsd")>=0:
+    if sys.platform.find("bsd") >= 0:
         return "BSD"
     try:
         from xpra.util.system import get_linux_distribution
@@ -242,18 +244,18 @@ def get_platform_name():
     return sys.platform
 
 
-def record_build_info():
+def record_build_info() -> None:
     props = get_properties(BUILD_INFO_FILE)
     source_epoch = os.environ.get("SOURCE_DATE_EPOCH")
     if source_epoch:
-        #reproducible builds:
+        # reproducible builds:
         build_time = datetime.datetime.utcfromtimestamp(int(source_epoch))
         build_date = build_time.date()
     else:
-        #win32, macos and older build environments:
+        # win32, macos and older build environments:
         build_time = datetime.datetime.now()
         build_date = datetime.date.today()
-        #also record username and hostname:
+        # also record username and hostname:
         try:
             import getpass
             set_prop(props, "BUILT_BY", getpass.getuser())
@@ -275,11 +277,11 @@ def record_build_info():
     set_prop(props, "COMPILER_VERSION", get_compiler_version())
     set_prop(props, "NVCC_VERSION", get_nvcc_version())
     set_prop(props, "LINKER_VERSION", get_linker_version())
-    #record pkg-config versions:
+    # record pkg-config versions:
     PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
-    if os.name=="nt":
+    if os.name == "nt":
         returncode, out, _ = get_status_output(["pacman", "-Q"])
-        if returncode==0:
+        if returncode == 0:
             for line in out.decode().splitlines():
                 parts = line.split(" ")
                 if len(parts) != 2:
@@ -297,35 +299,35 @@ def record_build_info():
             "gtk+-3.0", "py3cairo", "pygobject-3.0", "gtk+-x11-3.0",
             "python3",
         ):
-            #fugly magic for turning the package atom into a legal variable name:
+            # fugly magic for turning the package atom into a legal variable name:
             pkg_name = pkg.lstrip("lib").replace("+", "").replace("-", "_")
             if pkg_name.rsplit("_", 1)[-1].rstrip("0123456789.")=="":
                 pkg_name = "_".join(pkg_name.split("_")[:-1])
             cmd = [PKG_CONFIG, "--modversion", pkg]
             returncode, out, _ = get_status_output(cmd)
-            if returncode==0:
+            if returncode == 0:
                 set_prop(props, "lib_"+pkg_name, out.decode().replace("\n", "").replace("\r", ""))
     save_properties(props, BUILD_INFO_FILE)
 
 
 def get_vcs_props():
     props = {
-        "REVISION" : "unknown",
-        "LOCAL_MODIFICATIONS" : "unknown",
-        "BRANCH" : "unknown",
-        "COMMIT" : "unknown"
+        "REVISION": "unknown",
+        "LOCAL_MODIFICATIONS": "unknown",
+        "BRANCH": "unknown",
+        "COMMIT": "unknown"
     }
     branch = None
     for cmd in (
         r"git branch --show-current",
-        #when in detached state, the one above does not work, but this one does:
+        # when in detached state, the one above does not work, but this one does:
         r"git branch --remote --verbose --no-abbrev --contains | sed -rne 's/^[^\/]*\/([^\ ]+).*$/\1/p'",
-        #if all else fails:
+        # if all else fails:
         r"git branch | grep '* '",
     ):
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
         out, _ = proc.communicate()
-        if proc.returncode==0:
+        if proc.returncode == 0:
             branch_out = out.decode("utf-8").splitlines()
             if branch_out:
                 branch = branch_out[0]
@@ -337,23 +339,23 @@ def get_vcs_props():
     else:
         props["BRANCH"] = branch
 
-    #use the number of changes since the last tag:
+    # use the number of changes since the last tag:
     proc = Popen("git describe --long --always --tags", stdout=PIPE, stderr=PIPE, shell=True)
     out, _ = proc.communicate()
-    if proc.returncode!=0:
+    if proc.returncode != 0:
         print("'git describe --long --always --tags' failed with return code %s" % proc.returncode)
         return props
     if not out:
         print("could not get version information")
         return props
     out = out.decode('utf-8').splitlines()[0]
-    #ie: out=v4.0.6-58-g6e6614571
+    # ie: out=v4.0.6-58-g6e6614571
     parts = out.split("-")
-    if len(parts)==1:
+    if len(parts) == 1:
         commit = parts[0]
         print("could not get revision number - no tags?")
         rev_str = "0"
-    elif len(parts)==3:
+    elif len(parts) == 3:
         rev_str = parts[1]
         commit = parts[2]
     else:
@@ -366,21 +368,21 @@ def get_vcs_props():
         print("could not parse revision counter from string: %s (original version string: %s)" % (rev_str, out))
         return props
 
-    if branch=="master":
-        #fake a sequential revision number that continues where svn left off,
-        #by counting the commits and adding a magic value (5014)
+    if branch == "master":
+        # fake a sequential revision number that continues where svn left off,
+        # by counting the commits and adding a magic value (5014)
         proc = Popen("git rev-list --count HEAD --first-parent", stdout=PIPE, stderr=PIPE, shell=True)
         out, _ = proc.communicate()
-        if proc.returncode!=0:
+        if proc.returncode != 0:
             print("failed to get commit count using 'git rev-list --count HEAD'")
             sys.exit(1)
         rev = int(out.decode("utf-8").splitlines()[0]) + 5014
     props["REVISION"] = rev
-    #find number of local files modified:
+    # find number of local files modified:
     changes = 0
     proc = Popen("git status", stdout=PIPE, stderr=PIPE, shell=True)
     (out, _) = proc.communicate()
-    if proc.poll()!=0:
+    if proc.poll() != 0:
         print("could not get status of local files")
         return props
 
@@ -393,15 +395,15 @@ def get_vcs_props():
     return props
 
 
-def record_src_info():
+def record_src_info() -> None:
     update_properties(get_vcs_props(), SRC_INFO_FILE)
 
 
-def has_src_info():
+def has_src_info() -> bool:
     return os.path.exists(SRC_INFO_FILE) and os.path.isfile(SRC_INFO_FILE)
 
 
-def has_build_info():
+def has_build_info() -> bool:
     return os.path.exists(BUILD_INFO_FILE) and os.path.isfile(BUILD_INFO_FILE)
 
 
