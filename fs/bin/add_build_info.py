@@ -319,6 +319,17 @@ def record_build_info() -> None:
             returncode, out, _ = get_status_output(cmd)
             if returncode == 0:
                 set_prop(props, "lib_"+pkg_name, out.decode().replace("\n", "").replace("\r", ""))
+    # we could potentially limit this data collection to win32 and macos?
+    returncode, out, _ = get_status_output(["pip3", "freeze"])
+    if returncode == 0:
+        for line in out.decode().splitlines():
+            parts = line.split("==")
+            if len(parts) != 2:
+                continue
+            pkg_name, version = parts
+            pkg_name = pkg_name.replace("-", "_")
+            set_prop(props, f"lib_python_{pkg_name}", version)
+
     save_properties(props, BUILD_INFO_FILE)
 
 
