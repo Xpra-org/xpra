@@ -298,7 +298,7 @@ def record_build_info() -> None:
                     continue
                 pkg_name, version = parts
                 if pkg_name == "Modules":
-                    return
+                    continue
                 pkg_name = pkg_name.replace("-", "_")
                 set_prop(props, f"lib_{pkg_name}", version.lstrip("(").rstrip(")"))
     else:
