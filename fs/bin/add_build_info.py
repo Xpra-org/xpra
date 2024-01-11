@@ -197,10 +197,10 @@ def get_linker_version():
     return get_first_line_output(ld_version)
 
 
-def set_prop(props, key, value) -> None:
-    if not value:
+def set_prop(props, key: str, value) -> None:
+    if value is None:
         return
-    if value != "unknown" or props.get(key) is None:
+    if value not in ("unknown", "") or props.get(key) is None:
         props[key] = value
 
 
