@@ -170,7 +170,7 @@ def get_workarea() -> tuple[int, int, int, int] | None:
 
 
 def get_desktop_names() -> tuple[str, ...]:
-    v : tuple[str, ...] = ("Main", )
+    v: tuple[str, ...] = ("Main", )
     d = None
     try:
         d = get_X11_root_property("_NET_DESKTOP_NAMES", "UTF8_STRING")
@@ -221,7 +221,7 @@ def send_client_message(window, message_type, *values) -> None:
 device_bell = None
 
 
-def system_bell(window, device, percent:int, _pitch, _duration:int, bell_class, bell_id, bell_name:str) -> bool:
+def system_bell(window, device, percent: int, _pitch, _duration: int, bell_class, bell_id, bell_name:str) -> bool:
     global device_bell
     if device_bell is False:
         # failed already

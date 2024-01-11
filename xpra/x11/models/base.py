@@ -41,7 +41,7 @@ ICONIC_STATE_STRING : dict[int, str] = {
     NormalState: "Normal",
 }
 
-# add user friendly workspace logging:
+# add user-friendly workspace logging:
 WORKSPACE_STR : dict[int, str] = {
     WORKSPACE_UNSET: "UNSET",
     WORKSPACE_ALL: "ALL",
@@ -259,7 +259,7 @@ class BaseWindowModel(CoreX11WindowModel):
         "_XPRA_SPEED",
         "_XPRA_ENCODING",
     ]
-    _DEFAULT_NET_WM_ALLOWED_ACTIONS : list[str] = [
+    _DEFAULT_NET_WM_ALLOWED_ACTIONS: list[str] = [
         f"_NET_WM_ACTION_{x}" for x in (
             "CLOSE", "MOVE", "RESIZE", "FULLSCREEN",
             "MINIMIZE", "SHADE", "STICK",
@@ -311,7 +311,7 @@ class BaseWindowModel(CoreX11WindowModel):
     # Actions
     ################################
 
-    def move_to_workspace(self, workspace : int) -> None:
+    def move_to_workspace(self, workspace: int) -> None:
         # we send a message to ourselves, we could also just update the property
         current = self.get_property("workspace")
         if current == workspace:
@@ -362,7 +362,7 @@ class BaseWindowModel(CoreX11WindowModel):
     def _handle_transient_for_change(self) -> None:
         transient_for = self.prop_get("WM_TRANSIENT_FOR", "window")
         metalog("WM_TRANSIENT_FOR=%s", transient_for)
-        # May be None
+        # `transient-for` may be None
         window = get_pywindow(transient_for) if transient_for else None
         self._updateprop("transient-for", window)
 
@@ -682,7 +682,7 @@ class BaseWindowModel(CoreX11WindowModel):
         if event.message_type == "_NET_WM_DESKTOP":
             workspace = int(event.data[0])
             # query the workspace count on the root window
-            # since we cannot access Wm from here..
+            # since we cannot access Wm from here…
             ndesktops = int(self.root_prop_get("_NET_NUMBER_OF_DESKTOPS", "u32") or 0)
             workspacelog("received _NET_WM_DESKTOP: workspace=%s, number of desktops=%s",
                          workspacestr(workspace), ndesktops)

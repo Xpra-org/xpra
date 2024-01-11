@@ -105,7 +105,7 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return False
 
-    def authenticate(self, _caps : typedict) -> bool:     # pylint: disable=arguments-differ
+    def authenticate(self, _caps: typedict) -> bool:     # pylint: disable=arguments-differ
         return self.peercred_check
 
     def __repr__(self):

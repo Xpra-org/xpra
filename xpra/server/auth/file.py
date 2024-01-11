@@ -13,7 +13,7 @@ from xpra.util.str_fn import obsc
 
 class Authenticator(FileAuthenticatorBase):
 
-    def authenticate_hmac(self, caps : typedict) -> bool:
+    def authenticate_hmac(self, caps: typedict) -> bool:
         challenge_response = caps.bytesget("challenge_response")
         client_salt = caps.strget("challenge_client_salt")
         log(f"file_auth.authenticate_hmac challenge-response={challenge_response!r}, client-salt={client_salt!r}")

@@ -66,7 +66,7 @@ def l(text):    # noqa: E743
     return sf(widget)
 
 
-def link_btn(link:str, text="", icon_name="question.png"):
+def link_btn(link: str, text="", icon_name="question.png"):
     def open_link():
         import webbrowser
         webbrowser.open(link)
@@ -721,7 +721,7 @@ class SessionOptions(Gtk.Window):
         self.grid.attach(al, 0, self.row.get(), 2, 1)
         self.row.increase()
 
-    def _save_widget(self, fn:str, widget, widget_type:str, **kwargs) -> None:
+    def _save_widget(self, fn: str, widget, widget_type: str, **kwargs) -> None:
         setattr(self, "%s_widget" % fn, widget)
         setattr(self, "%s_widget_type" % fn, widget_type)
         for k, v in kwargs.items():
@@ -747,14 +747,14 @@ class SessionOptions(Gtk.Window):
         self.row.increase()
         return cb
 
-    def radio_cb_auto(self, text:str, option_name:str, tooltip_text="", link="") -> Gtk.RadioButton:
+    def radio_cb_auto(self, text: str, option_name: str, tooltip_text="", link="") -> Gtk.RadioButton:
         return self.radio_cb(text, option_name, tooltip_text, link, {
             "yes"   : TRUE_OPTIONS,
             "no"    : FALSE_OPTIONS,
             "auto"  : ("auto", "", None),
         })
 
-    def radio_cb(self, text:str, option_name:str, tooltip_text="", link="", options=None) -> Gtk.RadioButton:
+    def radio_cb(self, text: str, option_name: str, tooltip_text="", link="", options=None) -> Gtk.RadioButton:
         self.attach_label(text, tooltip_text, link)
         fn = option_name.replace("-", "_")
         widget_base_name = "%s_widget" % fn
@@ -786,7 +786,7 @@ class SessionOptions(Gtk.Window):
         self.row.increase()
         return btns
 
-    def combo(self, text:str, option_name:str, options, link="") -> Gtk.ComboBoxText:
+    def combo(self, text: str, option_name: str, options, link="") -> Gtk.ComboBoxText:
         self.attach_label(text, "", link)
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
@@ -806,7 +806,7 @@ class SessionOptions(Gtk.Window):
         self.row.increase()
         return c
 
-    def scale(self, text:str, option_name:str, minv=0, maxv=100, marks=None) -> Gtk.Scale:
+    def scale(self, text: str, option_name: str, minv=0, maxv=100, marks=None) -> Gtk.Scale:
         self.attach_label(text)
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
@@ -830,7 +830,7 @@ class SessionOptions(Gtk.Window):
         for option_name in self.widgets:
             self.set_value_from_widget(option_name)
 
-    def set_value_from_widget(self, option_name:str) -> None:
+    def set_value_from_widget(self, option_name: str) -> None:
         fn = option_name.replace("-", "_")
         widget_type = getattr(self, "%s_widget_type" % fn)
         if widget_type == "bool":
@@ -855,14 +855,14 @@ class SessionOptions(Gtk.Window):
             log.info("changed: %s=%r (%s) - was %r (%s)", fn, value, type(value), current_value, type(current_value))
             setattr(self.options, fn, value)
 
-    def valuesfromswitch(self, option_name:str) -> tuple:
+    def valuesfromswitch(self, option_name: str) -> tuple:
         fn = option_name.replace("-", "_")
         widget = self.get_widget(fn)
         values = getattr(self, "%s_values" % fn)
         value = values[int(widget.get_active())]
         return (value, )
 
-    def valuesfromradio(self, option_name:str) -> tuple:
+    def valuesfromradio(self, option_name: str) -> tuple:
         fn = option_name.replace("-", "_")
         options = self.get_widget_options(fn)
         widget_base_name = "%s_widget" % fn
@@ -872,7 +872,7 @@ class SessionOptions(Gtk.Window):
                 return tuple(match)
         return (UNSET, )
 
-    def valuesfromcombo(self, option_name:str) -> tuple:
+    def valuesfromcombo(self, option_name: str) -> tuple:
         fn = option_name.replace("-", "_")
         widget = self.get_widget(fn)
         options = self.get_widget_options(fn)
@@ -882,12 +882,12 @@ class SessionOptions(Gtk.Window):
                 return (k, )
         return (UNSET, )
 
-    def valuesfromscale(self, option_name:str) -> tuple[int]:
+    def valuesfromscale(self, option_name: str) -> tuple[int]:
         fn = option_name.replace("-", "_")
         widget = self.get_widget(fn)
         return (int(widget.get_value()), )
 
-    def attach_label(self, text:str, tooltip_text="", link="") -> None:
+    def attach_label(self, text: str, tooltip_text="", link="") -> None:
         lbl = label(text, tooltip=tooltip_text)
         lbl.set_margin_start(5)
         lbl.set_margin_top(5)

@@ -31,7 +31,7 @@ from xpra.client.gui import features
 from xpra.log import Logger
 
 
-CLIENT_BASES : list[type] = [XpraClientBase]
+CLIENT_BASES: list[type] = [XpraClientBase]
 if features.display:
     from xpra.client.mixins.display import DisplayClient
     CLIENT_BASES.append(DisplayClient)
@@ -69,7 +69,7 @@ if features.tray:
     from xpra.client.mixins.tray import TrayClient
     CLIENT_BASES.append(TrayClient)
 
-CLIENT_BASES : tuple[type,...] = tuple(CLIENT_BASES)
+CLIENT_BASES: tuple[type,...] = tuple(CLIENT_BASES)
 ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
 
 log = Logger("client")
@@ -102,7 +102,7 @@ class UIXpraClient(ClientBaseClass):
         log.info(f"Xpra {self.client_toolkit()} client version {full_version_str()}")
         #mmap_enabled belongs in the MmapClient mixin,
         #but it is used outside it, so make sure we define it:
-        self.mmap_enabled : bool = False
+        self.mmap_enabled: bool = False
         #same for tray:
         self.tray = None
         for c in CLIENT_BASES:
@@ -120,55 +120,55 @@ class UIXpraClient(ClientBaseClass):
         if wm:
             log.info(f" window manager is {wm!r}")
 
-        self._ui_events : int = 0
-        self.title : str = ""
-        self.session_name : str = ""
+        self._ui_events: int = 0
+        self.title: str = ""
+        self.session_name: str = ""
 
-        self.server_platform : str = ""
-        self.server_session_name : str = ""
+        self.server_platform: str = ""
+        self.server_session_name: str = ""
 
         #features:
-        self.opengl_enabled : bool = False
+        self.opengl_enabled: bool = False
         self.opengl_props : dict[str,Any] = {}
-        self.readonly : bool = False
-        self.xsettings_enabled : bool = False
-        self.server_start_new_commands : bool = False
+        self.readonly: bool = False
+        self.xsettings_enabled: bool = False
+        self.server_start_new_commands: bool = False
         self.server_xdg_menu = None
-        self.start_new_commands : bool = False
+        self.start_new_commands: bool = False
         self.request_start = []
         self.request_start_child = []
         self.headerbar = None
 
         #in WindowClient - should it be?
         #self.server_is_desktop = False
-        self.server_sharing : bool = False
-        self.server_sharing_toggle : bool = False
-        self.server_lock : bool = False
-        self.server_lock_toggle : bool = False
-        self.server_keyboard : bool = True
-        self.server_pointer : bool = True
+        self.server_sharing: bool = False
+        self.server_sharing_toggle: bool = False
+        self.server_lock: bool = False
+        self.server_lock_toggle: bool = False
+        self.server_keyboard: bool = True
+        self.server_pointer: bool = True
         self.server_commands_info = False
-        self.server_commands_signals : tuple[str,...] = ()
+        self.server_commands_signals: tuple[str,...] = ()
         self.server_readonly = False
 
-        self.client_supports_opengl : bool = False
-        self.client_supports_sharing : bool = False
-        self.client_lock : bool = False
+        self.client_supports_opengl: bool = False
+        self.client_supports_sharing: bool = False
+        self.client_lock: bool = False
 
         #helpers and associated flags:
         self.client_extras = None
         self._mouse_position_delay = 5
         self.keyboard_helper_class : type = KeyboardHelper
         self.keyboard_helper = None
-        self.keyboard_grabbed : bool = False
-        self.keyboard_sync : bool = False
+        self.keyboard_grabbed: bool = False
+        self.keyboard_sync: bool = False
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
-        self.kh_warning : bool = False
+        self.kh_warning: bool = False
         self.menu_helper = None
 
         #state:
-        self._on_handshake : list[Callable] = []
+        self._on_handshake: list[Callable] = []
         self._on_server_setting_changed : dict[str,list[Callable]] = {}
 
     def init(self, opts) -> None:
@@ -417,14 +417,14 @@ class UIXpraClient(ClientBaseClass):
                 c.setup_connection(self, conn)
         return protocol
 
-    def server_connection_established(self, caps : typedict):
+    def server_connection_established(self, caps: typedict):
         if not XpraClientBase.server_connection_established(self, caps):
             return False
         # process the rest from the UI thread:
         self.idle_add(self.process_ui_capabilities, caps)
         return True
 
-    def parse_server_capabilities(self, c : typedict) -> bool:
+    def parse_server_capabilities(self, c: typedict) -> bool:
         for cb in CLIENT_BASES:
             if not cb.parse_server_capabilities(self, c):
                 log.info(f"failed to parse server capabilities in {cb}")
@@ -501,7 +501,7 @@ class UIXpraClient(ClientBaseClass):
             log.info(msg)
         return True
 
-    def process_ui_capabilities(self, caps : typedict):
+    def process_ui_capabilities(self, caps: typedict):
         for c in CLIENT_BASES:
             if c!=XpraClientBase:
                 c.process_ui_capabilities(self, caps)
@@ -513,7 +513,7 @@ class UIXpraClient(ClientBaseClass):
         self.key_repeat_delay, self.key_repeat_interval = caps.intpair("key_repeat", (-1,-1))
         self.handshake_complete()
 
-    def _process_startup_complete(self, packet : PacketType):
+    def _process_startup_complete(self, packet: PacketType):
         log("all the existing windows and system trays have been received")
         super()._process_startup_complete(packet)
         gui_ready()
@@ -534,7 +534,7 @@ class UIXpraClient(ClientBaseClass):
                 msg += f", {trays} tray"
         log.info(msg)
 
-    def _process_new_window(self, packet : PacketType):
+    def _process_new_window(self, packet: PacketType):
         window = super()._process_new_window(packet)
         screen_mode = any(self._remote_server_mode.find(x)>=0 for x in ("desktop", "monitor", "shadow"))
         if self.desktop_fullscreen and screen_mode:
@@ -563,13 +563,13 @@ class UIXpraClient(ClientBaseClass):
 
     ######################################################################
     # server messages:
-    def _process_server_event(self, packet : PacketType):
+    def _process_server_event(self, packet: PacketType):
         log(": ".join(str(x) for x in packet[1:]))
 
     def on_server_setting_changed(self, setting:str, cb:Callable):
         self._on_server_setting_changed.setdefault(setting, []).append(cb)
 
-    def _process_setting_change(self, packet : PacketType):
+    def _process_setting_change(self, packet: PacketType):
         setting, value = packet[1:3]
         setting = bytestostr(setting)
         # convert "hello" / "setting" variable names to client variables:
@@ -613,7 +613,7 @@ class UIXpraClient(ClientBaseClass):
         log("get_control_commands()=%s", commands)
         return commands
 
-    def _process_control(self, packet : PacketType):
+    def _process_control(self, packet: PacketType):
         command = bytestostr(packet[1])
         args = packet[2:]
         log("_process_control(%s)", packet)

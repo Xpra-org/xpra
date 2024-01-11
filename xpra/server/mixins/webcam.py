@@ -26,7 +26,7 @@ class WebcamServer(StubServerMixin):
 
     def __init__(self):
         self.webcam_device = ""
-        self.webcam_encodings : tuple[str, ...] = ()
+        self.webcam_encodings: tuple[str, ...] = ()
         self.webcam_enabled : bool = False
         self.webcam_virtual_video_devices : int = 0
 
@@ -116,7 +116,7 @@ class WebcamServer(StubServerMixin):
         log.info("found %i virtual video devices for webcam forwarding", len(devices))
         return len(devices)
 
-    def _process_webcam_start(self, proto, packet : PacketType) -> None:
+    def _process_webcam_start(self, proto, packet: PacketType) -> None:
         if self.readonly:
             return
         assert self.webcam_enabled
@@ -127,7 +127,7 @@ class WebcamServer(StubServerMixin):
         device_id, w, h = packet[1:4]
         ss.start_virtual_webcam(device_id, w, h)
 
-    def _process_webcam_stop(self, proto, packet : PacketType) -> None:
+    def _process_webcam_stop(self, proto, packet: PacketType) -> None:
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -137,7 +137,7 @@ class WebcamServer(StubServerMixin):
         device_id, message = (list(packet)+[""])[1:3]
         ss.stop_virtual_webcam(device_id, message)
 
-    def _process_webcam_frame(self, proto, packet : PacketType) -> None:
+    def _process_webcam_frame(self, proto, packet: PacketType) -> None:
         if self.readonly:
             return
         ss = self.get_server_source(proto)

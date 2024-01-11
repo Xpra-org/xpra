@@ -35,9 +35,7 @@ class FakeClient(AdHocStruct):
         self.update_focus = noop
         self.has_focus = noop
 
-        def not_handled(*args):
-            return False
-        self.handle_key_action = not_handled
+        self.handle_key_action = noop
         self.window_ungrab = noop
         self.keyboard_grabbed = False
         self.window_with_grab = None
@@ -47,13 +45,13 @@ class FakeClient(AdHocStruct):
         self.timeout_add = glib.timeout_add
         self.source_remove = glib.source_remove
 
-    def get_window_frame_sizes(self, *args):
+    def get_window_frame_sizes(self, *_args):
         return None
 
     def no_scaling(self, *args):
         return args
 
-    def signal_disconnect_and_quit(self, *args):
+    def signal_disconnect_and_quit(self, *_args):
         log.info("signal_disconnect_and_quit")
 
     def suspend(self):

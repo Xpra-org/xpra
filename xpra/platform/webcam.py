@@ -31,7 +31,7 @@ def remove_video_device_change_callback(_callback: Callable):
     pass
 
 
-_video_device_change_callbacks : list[Callable] = []
+_video_device_change_callbacks: list[Callable] = []
 
 
 def _fire_video_device_change(create=None, pathname=None):

@@ -62,7 +62,7 @@ class VideoSubregion:
         self.supported = supported
         self.enabled = True
         self.detection = True
-        self.exclusion_zones : list[rectangle] = []
+        self.exclusion_zones: list[rectangle] = []
         self.init_vars()
 
     def init_vars(self) -> None:
@@ -73,11 +73,11 @@ class VideoSubregion:
         self.damaged = 0        #proportion of the rectangle that got damaged (percentage)
         self.set_at = 0         #value of the "damage event count" when the region was set
         self.counter = 0        #value of the "damage event count" recorded at "time"
-        self.time : float = 0           #see above
+        self.time: float = 0           #see above
         self.refresh_timer = 0
-        self.refresh_regions : list[rectangle] = []
+        self.refresh_regions: list[rectangle] = []
         self.last_scores : dict[rectangle | None,int] = {}
-        self.nonvideo_regions : list[rectangle] = []
+        self.nonvideo_regions: list[rectangle] = []
         self.nonvideo_refresh_timer = 0
         #keep track of how much extra we batch non-video regions (milliseconds):
         self.non_max_wait = 150
@@ -292,7 +292,7 @@ class VideoSubregion:
             if not self.rectangle:
                 return
             #just update the fps:
-            from_time = max(starting_at, monotonic()-MAX_TIME, self.min_time)
+            from_time: float = max(starting_at, monotonic()-MAX_TIME, self.min_time)
             self.time = monotonic()
             lde = tuple(x for x in tuple(last_damage_events) if x[0]>=from_time)
             incount = 0
@@ -351,7 +351,7 @@ class VideoSubregion:
                   event_count, self.counter, damage_events_count)
             return
 
-        from_time = max(starting_at, monotonic()-MAX_TIME, self.min_time)
+        from_time: float = max(starting_at, monotonic()-MAX_TIME, self.min_time)
         #create a list (copy) to work on:
         lde = tuple(x for x in tuple(last_damage_events) if x[0]>=from_time)
         dc = len(lde)
@@ -393,7 +393,7 @@ class VideoSubregion:
         def damaged_ratio(rect:rectangle):
             if all_damaged:
                 return 1
-            rects : list[rectangle] = [rect, ]
+            rects: list[rectangle] = [rect, ]
             for _,x,y,w,h in lde:
                 r = rectangle(x,y,w,h)
                 new_rects = []

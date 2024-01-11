@@ -35,15 +35,15 @@ if envbool("XPRA_QUIC_LOGGER", True):
 
 class XpraQuicConnection(Connection):
     def __init__(self, connection: HttpConnection, stream_id: int, transmit: Callable[[], None],
-                 host : str, port : int, info=None, options=None) -> None:
+                 host: str, port: int, info=None, options=None) -> None:
         Connection.__init__(self, (host, port), "wss", info=info, options=options)
         self.socktype_wrapped = "quic"
         self.connection: HttpConnection = connection
         self.read_queue: SimpleQueue[bytes] = SimpleQueue()
         self.stream_id: int = stream_id
         self.transmit: Callable[[], None] = transmit
-        self.accepted : bool = False
-        self.closed : bool = False
+        self.accepted: bool = False
+        self.closed: bool = False
 
     def __repr__(self):
         return f"XpraQuicConnection<{self.stream_id}>"
@@ -88,7 +88,7 @@ class XpraQuicConnection(Connection):
                 self.closed = True
         Connection.close(self)
 
-    def send_close(self, code : int = 1000, reason : str = ""):
+    def send_close(self, code: int = 1000, reason: str = ""):
         if self.accepted:
             data = close_packet(code, reason)
             self.write(data, "close")
@@ -96,7 +96,7 @@ class XpraQuicConnection(Connection):
             self.send_headers(self.stream_id, headers={":status" : code})
             self.transmit()
 
-    def send_headers(self, stream_id : int, headers : dict):
+    def send_headers(self, stream_id: int, headers : dict):
         self.connection.send_headers(
             stream_id=stream_id,
             headers=binary_headers(headers),

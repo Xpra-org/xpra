@@ -792,7 +792,7 @@ class ServerBaseControlCommands(StubServerMixin):
                 count += 1
         return f"window {wid} moved to {x},{y} and resized to {w}x{h} for {count} clients"
 
-    def _process_command_request(self, protocol, packet : PacketType) -> None:
+    def _process_command_request(self, protocol, packet: PacketType) -> None:
         """ client sent a command request through its normal channel """
         assert len(packet)>=2, "invalid command request packet (too small!)"
         #packet[0] = "control"

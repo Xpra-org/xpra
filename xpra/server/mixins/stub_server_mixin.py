@@ -109,7 +109,7 @@ class StubServerMixin:
         Register the packet types that this mixin can handle.
         """
 
-    def parse_hello(self, ss, caps : typedict, send_ui : bool) -> None:
+    def parse_hello(self, ss, caps: typedict, send_ui : bool) -> None:
         """
         Parse capabilities from a new connection.
         """

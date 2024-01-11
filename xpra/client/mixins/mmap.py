@@ -28,14 +28,14 @@ class MmapClient(StubClientMixin):
 
     def __init__(self):
         super().__init__()
-        self.mmap_enabled : bool = False
+        self.mmap_enabled: bool = False
         self.mmap = None
-        self.mmap_token : int = 0
-        self.mmap_token_index : int = 0
-        self.mmap_token_bytes : int = 0
-        self.mmap_filename : str = ""
-        self.mmap_size : int = 0
-        self.mmap_group : str = ""
+        self.mmap_token: int = 0
+        self.mmap_token_index: int = 0
+        self.mmap_token_bytes: int = 0
+        self.mmap_filename: str = ""
+        self.mmap_size: int = 0
+        self.mmap_group: str = ""
         self.mmap_tempfile = None
         self.mmap_delete : bool = False
         self.mmap_supported : bool = True
@@ -59,7 +59,7 @@ class MmapClient(StubClientMixin):
         # subclasses should provide real values
         return 1024, 1024
 
-    def parse_server_capabilities(self, c : typedict) -> bool:
+    def parse_server_capabilities(self, c: typedict) -> bool:
         mmap_caps = c.dictget("mmap")
         # new format with namespace
         c = typedict(mmap_caps or {})

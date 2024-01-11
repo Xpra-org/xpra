@@ -12,7 +12,7 @@ from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.exit_codes import ExitCode
 
 
-def get_remote_lib_versions(c : typedict,
+def get_remote_lib_versions(c: typedict,
                             libs=("glib", "gobject", "gtk", "gdk", "cairo", "pango",
                                   "sound.gst", "audio.gst",
                                   "python",
@@ -69,11 +69,11 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_platform_linux_distribution = None
         self._remote_python_version = ""
         self._remote_lib_versions = {}
-        self._remote_subcommands : tuple[str,...] = ()
+        self._remote_subcommands: tuple[str,...] = ()
         self._remote_server_log = None
         self._remote_server_mode = ""
 
-    def parse_server_capabilities(self, c : typedict) -> bool:
+    def parse_server_capabilities(self, c: typedict) -> bool:
         p = self._protocol
         if p.TYPE=="rfb":
             #only the xpra protocol provides the server info

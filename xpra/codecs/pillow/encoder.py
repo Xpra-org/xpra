@@ -46,7 +46,7 @@ def get_type() -> str:
 
 def do_get_encodings() -> tuple[str, ...]:
     log("PIL.Image.SAVE=%s", Image.SAVE)
-    encodings : list[str] = []
+    encodings: list[str] = []
     for encoding in ENCODE_FORMATS:
         # strip suffix (so "png/L" -> "png")
         stripped = encoding.split("/")[0].upper()
@@ -60,7 +60,7 @@ def get_encodings() -> tuple[str, ...]:
     return ENCODINGS
 
 
-ENCODINGS : tuple[str, ...] = do_get_encodings()
+ENCODINGS: tuple[str, ...] = do_get_encodings()
 
 
 def get_info() -> dict[str,Any]:
@@ -70,7 +70,7 @@ def get_info() -> dict[str,Any]:
     }
 
 
-def encode(coding : str, image, options=None) -> tuple[str, Compressed, dict[str, Any], int, int, int, int]:
+def encode(coding: str, image, options=None) -> tuple[str, Compressed, dict[str, Any], int, int, int, int]:
     if coding not in ("jpeg", "webp", "png", "png/P", "png/L"):
         raise ValueError(f"unsupported encoding: {coding}")
     log("pillow.encode%s", (coding, image, options))
@@ -79,7 +79,7 @@ def encode(coding : str, image, options=None) -> tuple[str, Compressed, dict[str
     speed = options.intget("speed", 50)
     supports_transparency = options.boolget("alpha", True)
     grayscale = options.boolget("grayscale", False)
-    pixel_format : str = image.get_pixel_format()
+    pixel_format: str = image.get_pixel_format()
     palette = None
     w: int = image.get_width()
     h: int = image.get_height()
@@ -275,7 +275,7 @@ def selftest(full=False) -> None:
     # pylint: disable=import-outside-toplevel
     from xpra.codecs.checks import make_test_image
     img = make_test_image("BGRA", 128, 128)
-    vrange : tuple[int, ...] = (50, )
+    vrange: tuple[int, ...] = (50, )
     if full:
         vrange = (0, 50, 100)
     for encoding in tuple(ENCODINGS):

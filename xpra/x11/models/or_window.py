@@ -27,7 +27,7 @@ class OverrideRedirectWindowModel(BaseWindowModel):
     _property_names = BaseWindowModel._property_names + ["override-redirect"]
     _MODELTYPE = "OR-Window"
 
-    def __init__(self, xid:int):
+    def __init__(self, xid: int):
         super().__init__(xid)
         self._updateprop("override-redirect", True)
 

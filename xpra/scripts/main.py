@@ -1657,7 +1657,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode:str):
                                                 opts.mmap_group, opts.socket_permissions,
                                                 get_username(), getuid(), getgid())
             sockets.update(local_sockets)
-            listen_cleanup : list[Callable] = []
+            listen_cleanup: list[Callable] = []
             socket_cleanup : list[Callable] = []
 
             def new_connection(socktype, sock, handle=0):

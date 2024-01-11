@@ -65,7 +65,7 @@ SAVED_FIELDS = [
 # but which can be present in a launcher config:
 LAUNCHER_OPTION_TYPES = {
     "host"              : str,
-    "port"              : int,
+    "port"             : int,
     "username"          : str,
     "password"          : str,
     "mode"              : str,

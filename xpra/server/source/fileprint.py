@@ -22,7 +22,7 @@ PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xp
 class FilePrintMixin(FileTransferHandler, StubSourceMixin):
 
     @classmethod
-    def is_needed(cls, caps : typedict) -> bool:
+    def is_needed(cls, caps: typedict) -> bool:
         return bool(caps.boolget("file-transfer") or caps.boolget("printing"))
 
     def init_state(self) -> None:
@@ -34,7 +34,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
     def cleanup(self) -> None:
         self.remove_printers()
 
-    def parse_client_caps(self, c : typedict) -> None:
+    def parse_client_caps(self, c: typedict) -> None:
         FileTransferHandler.parse_file_transfer_caps(self, c)
         self.machine_id = c.strget("machine_id")
 

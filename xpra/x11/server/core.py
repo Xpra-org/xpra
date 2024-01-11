@@ -112,7 +112,7 @@ class X11ServerCore(GTKServerBase):
         self.keys_pressed : dict[int,Any] = {}
         self.initial_resolution = None
         self.x11_filter = False
-        self.randr_sizes_added : list[tuple[int,int]] = []
+        self.randr_sizes_added: list[tuple[int,int]] = []
 
         self.initial_resolutions = ()
         self.randr = False
@@ -763,7 +763,7 @@ class X11ServerCore(GTKServerBase):
     def set_dpi(self, xdpi:int, ydpi:int) -> None:
         """ overridden in the seamless server """
 
-    def _process_server_settings(self, _proto, packet : PacketType) -> None:
+    def _process_server_settings(self, _proto, packet: PacketType) -> None:
         settings = packet[1]
         log("process_server_settings: %s", settings)
         self.update_server_settings(settings)
@@ -773,7 +773,7 @@ class X11ServerCore(GTKServerBase):
         # (does not make sense to update a shadow server)
         log("ignoring server settings update in %s", self)
 
-    def _process_force_ungrab(self, proto, _packet : PacketType) -> None:
+    def _process_force_ungrab(self, proto, _packet: PacketType) -> None:
         # ignore the window id: wid = packet[1]
         grablog("force ungrab from %s", proto)
         self.X11_ungrab()
@@ -886,7 +886,7 @@ class X11ServerCore(GTKServerBase):
                 xinputlog("axes: %s", touchpad_axes)
                 self.pointer_device_map[deviceid] = self.touchpad_device
 
-    def _process_wheel_motion(self, proto, packet : PacketType) -> None:
+    def _process_wheel_motion(self, proto, packet: PacketType) -> None:
         assert self.pointer_device.has_precise_wheel()
         ss = self.get_server_source(proto)
         if not ss:

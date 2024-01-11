@@ -112,7 +112,7 @@ class GTKNotifier(NotifierBase):
                     summary: str, body: str, actions, hints, timeout, icon):
         GLib.idle_add(self.new_popup, nid, summary, body, actions, icon, timeout, 0 < timeout <= 600)
 
-    def new_popup(self, nid:int, summary:str, body:str, actions:tuple, icon, timeout=10*1000, show_timeout=False):
+    def new_popup(self, nid: int, summary: str, body: str, actions:tuple, icon, timeout=10*1000, show_timeout=False):
         """Create a new Popup instance, or update an existing one """
         existing = [p for p in self._notify_stack if p.nid==nid]
         if existing:
@@ -354,7 +354,7 @@ def main():
     # example usage
     import random
     color_combos = (("red", "white"), ("white", "blue"), ("green", "black"))
-    messages : list[tuple[int,str,str,tuple]] = [
+    messages: list[tuple[int,str,str,tuple]] = [
         (1, "Hello", "This is a popup", ()),
         (2, "Actions", "This notification has 3 actions", (1, "Action 1", 2, "Action 2", 3, "Action 3")),
         (3, "Some Latin", "Quidquid latine dictum sit, altum sonatur.", ()),

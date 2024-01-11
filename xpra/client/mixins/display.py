@@ -197,7 +197,7 @@ class DisplayClient(StubClientMixin):
             caps["antialias"] = aa
         return caps
 
-    def parse_server_capabilities(self, c : typedict) -> bool:
+    def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_display = c.strget("display")
         self.server_desktop_size = c.intpair("desktop_size")
         log("server desktop size=%s", self.server_desktop_size)
@@ -299,12 +299,12 @@ class DisplayClient(StubClientMixin):
     def get_monitors_info(self):
         return {}
 
-    def _process_show_desktop(self, packet : PacketType) -> None:
+    def _process_show_desktop(self, packet: PacketType) -> None:
         show = packet[1]
         log("calling %s(%s)", show_desktop, show)
         show_desktop(show)
 
-    def _process_desktop_size(self, packet : PacketType) -> None:
+    def _process_desktop_size(self, packet: PacketType) -> None:
         root_w, root_h, max_w, max_h = packet[1:5]
         log("server has resized the desktop to: %sx%s (max %sx%s)", root_w, root_h, max_w, max_h)
         self.server_max_desktop_size = max_w, max_h

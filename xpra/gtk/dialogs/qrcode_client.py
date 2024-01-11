@@ -34,7 +34,7 @@ IPV6 = envbool("XPRA_IPV6", False)
 inject_css_overrides()
 
 
-def dpath(caps : typedict, *path):
+def dpath(caps: typedict, *path):
     d = caps
     for x in path:
         d = d.dictget(x)
@@ -46,7 +46,7 @@ def dpath(caps : typedict, *path):
 
 class QRCodeClient(InfoXpraClient):
 
-    def do_command(self, caps : typedict):
+    def do_command(self, caps: typedict):
         sockets = dpath(caps, "network", "sockets")
         if not sockets:
             log.error("Error: network.sockets path not found in server info response")

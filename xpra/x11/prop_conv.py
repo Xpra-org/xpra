@@ -265,7 +265,7 @@ def _from_utf8(v:bytes) -> str:
     return v.decode("UTF-8")
 
 
-def _to_long(v:int) -> bytes:
+def _to_long(v: int) -> bytes:
     return struct.pack(b"@L", v)
 
 

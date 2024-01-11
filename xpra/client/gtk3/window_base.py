@@ -273,7 +273,7 @@ WINDOW_NAME_TO_HINT : dict[str,Gdk.WindowTypeHint] = {
 
 
 def get_follow_window_types() -> tuple[Gdk.WindowTypeHint,...]:
-    types_strs : list[str] = os.environ.get(
+    types_strs: list[str] = os.environ.get(
         "XPRA_FOLLOW_WINDOW_TYPES",
         "DIALOG,MENU,TOOLBAR,DROPDOWN_MENU,POPUP_MENU,TOOLTIP,COMBO,DND"
     ).upper().split(",")
@@ -326,19 +326,19 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._can_set_workspace = CAN_SET_WORKSPACE
         self._current_frame_extents = None
         self._monitor = None
-        self._frozen : bool = False
+        self._frozen: bool = False
         self._focus_latest = None
-        self._ondeiconify : list[Callable] = []
+        self._ondeiconify: list[Callable] = []
         self._follow = None
         self._follow_handler = 0
         self._follow_position = None
         self._follow_configure = None
-        self.recheck_focus_timer : int = 0
-        self.window_state_timer : int = 0
-        self.send_iconify_timer : int = 0
-        self.remove_pointer_overlay_timer : int = 0
-        self.show_pointer_overlay_timer : int = 0
-        self.moveresize_timer : int = 0
+        self.recheck_focus_timer: int = 0
+        self.window_state_timer: int = 0
+        self.send_iconify_timer: int = 0
+        self.remove_pointer_overlay_timer: int = 0
+        self.show_pointer_overlay_timer: int = 0
+        self.moveresize_timer: int = 0
         self.moveresize_event = None
         self.workspace_timer = 0
         #add platform hooks
@@ -731,7 +731,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return False
         return metadata.boolget("decorations", True)
 
-    def set_decorated(self, decorated : bool):
+    def set_decorated(self, decorated: bool):
         was_decorated = self.get_decorated()
         if self._fullscreen and was_decorated and not decorated:
             # fullscreen windows aren't decorated anyway!

@@ -63,7 +63,7 @@ def decode_json(out):
 # returns a dictionary of the environment variables resulting from sourcing a file
 def env_from_sourcing(file_to_source_path:str, include_unexported_variables:bool=False) -> dict[str, str]:
     log = Logger("exec")
-    cmd : list[str] = shlex.split(file_to_source_path)
+    cmd: list[str] = shlex.split(file_to_source_path)
 
     def abscmd(s:str):
         if os.path.isabs(s):

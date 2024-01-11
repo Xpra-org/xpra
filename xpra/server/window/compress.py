@@ -129,10 +129,10 @@ if POSIX and not OSX:
 
 @dataclass
 class DelayedRegions:
-    damage_time : float
+    damage_time: float
     encoding : str
     options : dict
-    regions : list[rectangle]
+    regions: list[rectangle]
     expired : bool = False
 
     def __repr__(self):
@@ -210,9 +210,9 @@ class WindowSource(WindowIconSource):
         self.av_sync_delay_base = av_sync_delay         # the total av-sync delay we are trying to achieve (including video encoder delay)
         self.av_sync_frame_delay : int = 0              # how long frames spend in the video encoder
         self.av_sync_timer : int = 0
-        self.encode_queue : list[tuple] = []
+        self.encode_queue: list[tuple] = []
         self.encode_queue_max_size : int = 10
-        self.last_scroll_event : float = 0
+        self.last_scroll_event: float = 0
 
         self.server_core_encodings = server_core_encodings
         self.server_encodings = server_encodings
@@ -448,10 +448,10 @@ class WindowSource(WindowIconSource):
         self.video_helper = None
         self.refresh_quality = AUTO_REFRESH_QUALITY
         self.refresh_speed = AUTO_REFRESH_SPEED
-        self.refresh_event_time : float = 0.0
-        self.refresh_target_time : float = 0.0
+        self.refresh_event_time: float = 0.0
+        self.refresh_target_time: float = 0.0
         self.refresh_timer : int = 0
-        self.refresh_regions : list[rectangle] = []
+        self.refresh_regions: list[rectangle] = []
         self.timeout_timer : int = 0
         self.expire_timer : int = 0
         self.soft_timer : int = 0
@@ -770,7 +770,7 @@ class WindowSource(WindowIconSource):
         self.update_encoding_options()
         return True
 
-    def set_client_properties(self, properties : typedict) -> None:
+    def set_client_properties(self, properties: typedict) -> None:
         # filter out stuff we don't care about
         # to see if there is anything to set at all,
         # and if not, don't bother doing the potentially expensive update_encoding_selection()
@@ -779,7 +779,7 @@ class WindowSource(WindowIconSource):
         if properties:
             self.do_set_client_properties(properties)
 
-    def do_set_client_properties(self, properties : typedict) -> None:
+    def do_set_client_properties(self, properties: typedict) -> None:
         self.maximized = properties.boolget("maximized", False)
         self.client_render_size = properties.intpair("encoding.render-size")
         self.client_bit_depth = properties.intget("bit-depth", self.client_bit_depth)

@@ -80,11 +80,11 @@ class Encodings(StubClientMixin):
         self.video_scaling = None
         self.video_max_size = VIDEO_MAX_SIZE
 
-        self.server_encodings : tuple[str,...] = ()
-        self.server_core_encodings : tuple[str,...] = ()
-        self.server_encodings_with_speed : tuple[str,...] = ()
-        self.server_encodings_with_quality : tuple[str,...] = ()
-        self.server_encodings_with_lossless_mode : tuple[str,...] = ()
+        self.server_encodings: tuple[str,...] = ()
+        self.server_core_encodings: tuple[str,...] = ()
+        self.server_encodings_with_speed: tuple[str,...] = ()
+        self.server_encodings_with_quality: tuple[str,...] = ()
+        self.server_encodings_with_lossless_mode: tuple[str,...] = ()
 
         # what we told the server about our encoding defaults:
         self.encoding_defaults = {}
@@ -126,7 +126,7 @@ class Encodings(StubClientMixin):
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packet_handler("encodings", self._process_encodings, False)
 
-    def _process_encodings(self, packet : PacketType) -> None:
+    def _process_encodings(self, packet: PacketType) -> None:
         caps = typedict(packet[1])
         self._parse_server_capabilities(caps)
 
@@ -161,7 +161,7 @@ class Encodings(StubClientMixin):
         }
         return caps
 
-    def parse_server_capabilities(self, c : typedict) -> bool:
+    def parse_server_capabilities(self, c: typedict) -> bool:
         self._parse_server_capabilities(c)
         return True
 

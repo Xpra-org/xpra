@@ -31,7 +31,7 @@ class ClipboardServer(StubServerMixin):
         self.clipboard_filter_file = None
         self._clipboard_helper = None
         self._clipboard_client = None
-        self._clipboards : tuple[str,...] = ()
+        self._clipboards: tuple[str,...] = ()
 
     def init(self, opts) -> None:
         self.clipboard = (opts.clipboard or "").lower() not in FALSE_OPTIONS
@@ -175,7 +175,7 @@ class ClipboardServer(StubServerMixin):
     def set_session_driver(self, source) -> None:
         self.set_clipboard_source(source)
 
-    def _process_clipboard_packet(self, proto, packet : PacketType) -> None:
+    def _process_clipboard_packet(self, proto, packet: PacketType) -> None:
         assert self.clipboard
         if self.readonly:
             return
@@ -200,7 +200,7 @@ class ClipboardServer(StubServerMixin):
         assert ch, "received a clipboard packet but clipboard sharing is disabled"
         self.idle_add(ch.process_clipboard_packet, packet)
 
-    def _process_clipboard_status(self, proto, packet : PacketType) -> None:
+    def _process_clipboard_status(self, proto, packet: PacketType) -> None:
         assert self.clipboard
         if self.readonly:
             return

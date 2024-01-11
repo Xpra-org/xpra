@@ -45,7 +45,7 @@ class Authenticator(SQLAuthenticator):
         try:
             uid = parse_uid(data["uid"])
             gid = parse_gid(data["gid"])
-            displays : list[str] = []
+            displays: list[str] = []
             env_options = {}
             session_options = {}
             if data["displays"]:

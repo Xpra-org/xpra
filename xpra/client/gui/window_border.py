@@ -7,12 +7,12 @@ class WindowBorder:
 
     def __init__(self, shown: bool = True,
                  red: float = 0.9, green: float = 0.1, blue: float = 0.1, alpha: float = 0.6, size: int = 4):
-        self.shown : bool = shown
-        self.red : float = red
-        self.green : float = green
-        self.blue : float = blue
-        self.alpha : float = alpha
-        self.size : int = size
+        self.shown: bool = shown
+        self.red: float = red
+        self.green: float = green
+        self.blue: float = blue
+        self.alpha: float = alpha
+        self.size: int = size
 
     def toggle(self):
         self.shown = not self.shown

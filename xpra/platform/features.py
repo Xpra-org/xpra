@@ -28,7 +28,7 @@ CLIPBOARD_PREFERRED_TARGETS : tuple[str, ...] = ("UTF8_STRING", "TEXT", "STRING"
 
 EXECUTABLE_EXTENSION : str = ""
 
-OPEN_COMMAND : list[str] = []
+OPEN_COMMAND: list[str] = []
 
 COMMAND_SIGNALS : tuple[str, ...] = ()
 

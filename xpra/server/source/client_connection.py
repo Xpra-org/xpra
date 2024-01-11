@@ -47,7 +47,7 @@ class ClientConnection(StubSourceMixin):
     and the client specific WindowSource instances (which only know about window ids
     and manage window pixel compression).
     It sends messages to the client via its 'protocol' instance (the network connection),
-    directly for a number of cases (cursor, audio, notifications, etc)
+    directly for a number of cases (cursor, audio, notifications, etc.)
     or on behalf of the window sources for pixel data.
 
     Strategy: if we have 'ordinary_packets' to send, send those.
@@ -83,7 +83,7 @@ class ClientConnection(StubSourceMixin):
         # the functions should add the packets they generate to the 'packet_queue'
         self.encode_work_queue : SimpleQueue[None |tuple[bool,Callable,tuple[Any,...]]] = SimpleQueue()
         self.encode_thread = None
-        self.ordinary_packets : list[tuple[PacketType,bool,Callable,Callable]] = []
+        self.ordinary_packets: list[tuple[PacketType,bool,Callable,Callable]] = []
         self.socket_dir = socket_dir
         self.unix_socket_paths = unix_socket_paths
         self.log_disconnect = log_disconnect
@@ -190,7 +190,7 @@ class ClientConnection(StubSourceMixin):
                 weight = window_weight.get(wid, 0)
                 ws.bandwidth_limit = max(MIN_BANDWIDTH//10, bandwidth_limit*weight//total_weight)
 
-    def parse_client_caps(self, c : typedict):
+    def parse_client_caps(self, c: typedict):
         # general features:
         self.share = c.boolget("share")
         self.lock = c.boolget("lock")

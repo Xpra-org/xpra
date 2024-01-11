@@ -263,7 +263,7 @@ cdef extern from "gtk-3.0/gdk/gdkevents.h":
 
 event_receivers_map : Dict[int,Set[Callable]] = {}
 
-def add_event_receiver(xid:int, receiver:callable, max_receivers:int=3) -> None:
+def add_event_receiver(xid: int, receiver:callable, max_receivers: int=3) -> None:
     if not isinstance(xid, int):
         raise TypeError(f"xid must be an int, not a {type(xid)}")
     receivers = event_receivers_map.get(xid)
@@ -278,7 +278,7 @@ def add_event_receiver(xid:int, receiver:callable, max_receivers:int=3) -> None:
         traceback.print_stack()
     receivers.add(receiver)
 
-def remove_event_receiver(xid:int, receiver:callable) -> None:
+def remove_event_receiver(xid: int, receiver:callable) -> None:
     if not isinstance(xid, int):
         raise TypeError(f"xid must be an int, not a {type(xid)}")
     receivers = event_receivers_map.get(xid)
@@ -289,7 +289,7 @@ def remove_event_receiver(xid:int, receiver:callable) -> None:
         event_receivers_map.pop(xid)
 
 #only used for debugging:
-def get_event_receivers(xid:int) -> Set[Callable]:
+def get_event_receivers(xid: int) -> Set[Callable]:
     return event_receivers_map.get(xid)
 
 def cleanup_all_event_receivers() -> None:
@@ -310,9 +310,9 @@ def get_error_text(code) -> str:
 
 
 #and change this debugging on the fly, programmatically:
-def add_debug_route_event(event_type:int) -> None:
+def add_debug_route_event(event_type: int) -> None:
     debug_route_events.append(event_type)
-def remove_debug_route_event(event_type:int) -> None:
+def remove_debug_route_event(event_type: int) -> None:
     debug_route_events.remove(event_type)
 
 

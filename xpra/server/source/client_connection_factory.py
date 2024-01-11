@@ -17,7 +17,7 @@ log = Logger("server")
 def get_enabled_mixins() -> tuple[type,...]:
     # pylint: disable=import-outside-toplevel
     from xpra.server.source.clientinfo import ClientInfoMixin
-    mixins : list[type] = [ClientInfoMixin]
+    mixins: list[type] = [ClientInfoMixin]
     if features.notifications:
         from xpra.server.source.notification import NotificationMixin
         mixins.append(NotificationMixin)
@@ -158,7 +158,7 @@ def get_client_connection_class(caps):
 
         def parse_hello(self, c: typedict):
             self.ui_client = c.boolget("ui_client", True)
-            self.wants : list[str] = list(c.strtupleget("wants", self.wants))
+            self.wants: list[str] = list(c.strtupleget("wants", self.wants))
             for x, enabled in {
                 "encodings" : self.ui_client,
                 "display"   : self.ui_client,

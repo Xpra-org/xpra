@@ -108,8 +108,8 @@ class SocketProtocol:
         self.timeout_add : Callable = scheduler.timeout_add
         self.idle_add : Callable = scheduler.idle_add
         self.source_remove : Callable = scheduler.source_remove
-        self.read_buffer_size : int = READ_BUFFER_SIZE
-        self.hangup_delay : int = 1000
+        self.read_buffer_size: int = READ_BUFFER_SIZE
+        self.hangup_delay: int = 1000
         self._conn = conn
         self._process_packet_cb : Callable[[PacketType],None] = process_packet_cb
         self.make_chunk_header : Callable = self.make_xpra_header
@@ -168,7 +168,7 @@ class SocketProtocol:
         self.source_has_more = self.source_has_more_start
         self.flush_then_close = self.do_flush_then_close
 
-    STATE_FIELDS : tuple[str, ...] = (
+    STATE_FIELDS: tuple[str, ...] = (
         "max_packet_size", "large_packets", "send_aliases", "receive_aliases",
         "cipher_in", "cipher_in_name", "cipher_in_block_size", "cipher_in_padding",
         "cipher_out", "cipher_out_name", "cipher_out_block_size", "cipher_out_padding",
@@ -213,7 +213,7 @@ class SocketProtocol:
     def set_packet_source(self, get_packet_cb:Callable) -> None:
         self._get_packet_cb = get_packet_cb
 
-    def set_cipher_in(self, ciphername:str, iv, password, key_salt, key_hash, key_size:int, iterations:int, padding):
+    def set_cipher_in(self, ciphername:str, iv, password, key_salt, key_hash, key_size: int, iterations: int, padding):
         cryptolog("set_cipher_in%s", (ciphername, iv, password, key_salt, key_hash, key_size, iterations))
         self.cipher_in, self.cipher_in_block_size = get_decryptor(ciphername,
                                                                   iv, password,
@@ -223,7 +223,7 @@ class SocketProtocol:
             cryptolog.info("receiving data using %s encryption", ciphername)
             self.cipher_in_name = ciphername
 
-    def set_cipher_out(self, ciphername:str, iv, password, key_salt, key_hash, key_size:int, iterations:int, padding):
+    def set_cipher_out(self, ciphername:str, iv, password, key_salt, key_hash, key_size: int, iterations: int, padding):
         cryptolog("set_cipher_out%s", (ciphername, iv, password, key_salt, key_hash, key_size, iterations, padding))
         self.cipher_out, self.cipher_out_block_size = get_encryptor(ciphername,
                                                                     iv, password,
@@ -244,7 +244,7 @@ class SocketProtocol:
             self._write_format_thread,
         ) if x is not None)
 
-    def parse_remote_caps(self, caps : typedict) -> None:
+    def parse_remote_caps(self, caps: typedict) -> None:
         for k,v in caps.dictget("aliases", {}).items():
             self.send_aliases[bytestostr(k)] = v
         set_socket_timeout(self._conn, SOCKET_TIMEOUT)
@@ -321,7 +321,7 @@ class SocketProtocol:
         packet = ["disconnect"]+[str(x) for x in reasons]
         self.flush_then_close(self.encode, packet, done_callback=done_callback)
 
-    def send_now(self, packet : PacketType) -> None:
+    def send_now(self, packet: PacketType) -> None:
         if self._closed:
             log("send_now(%s ...) connection is closed already, not sending", packet[0])
             return
@@ -366,7 +366,7 @@ class SocketProtocol:
                 return
             self._internal_error("error in network packet write/format", e, exc_info=True)
 
-    def _add_packet_to_queue(self, packet : PacketType,
+    def _add_packet_to_queue(self, packet: PacketType,
                              start_cb: Callable | None = None,
                              end_cb: Callable | None = None,
                              fail_cb : Callable | None = None,
@@ -378,8 +378,8 @@ class SocketProtocol:
         if packet is None:
             return
         # log("add_packet_to_queue(%s ... %s, %s, %s)", packet[0], synchronous, has_more, wait_for_more)
-        packet_type : str | int = packet[0]
-        chunks : NetPacketType = tuple(self.encode(packet))
+        packet_type: str | int = packet[0]
+        chunks: NetPacketType = tuple(self.encode(packet))
         with self._write_lock:
             if self._closed:
                 return
@@ -531,7 +531,7 @@ class SocketProtocol:
         self.compressor = compressor
         log(f"enable_compressor({compressor}): {self._compress}")
 
-    def encode(self, packet_in : PacketType) -> list[NetPacketType]:
+    def encode(self, packet_in: PacketType) -> list[NetPacketType]:
         """
         Given a packet (tuple or list of items), converts it for the wire.
         This method returns all the binary packets to send, as an array of:
@@ -545,7 +545,7 @@ class SocketProtocol:
             (0,                 0, rencoded(["blah", '', "hello", 200]))
         ]
         """
-        packets : list[NetPacketType] = []
+        packets: list[NetPacketType] = []
         packet = list(packet_in)
         level = self.compression_level
         size_check = LARGE_PACKET_SIZE
@@ -658,7 +658,7 @@ class SocketProtocol:
             log.info(f"sending  {packet_type:<32}: %i bytes", HEADER_SIZE + payload_size)
         return packets
 
-    def set_compression_level(self, level : int) -> None:
+    def set_compression_level(self, level: int) -> None:
         # this may be used next time encode() is called
         if level<0 or level>10:
             raise ValueError(f"invalid compression level: {level} (must be between 0 and 10")
@@ -1155,7 +1155,7 @@ class SocketProtocol:
             writelockrelease()
             done_callback()
 
-        def wait_for_queue(timeout:int=10) -> None:
+        def wait_for_queue(timeout: int=10) -> None:
             #IMPORTANT: if we are here, we have the write lock held!
             if not self._write_queue.empty():
                 #write queue still has stuff in it..
@@ -1198,7 +1198,7 @@ class SocketProtocol:
             #just in case wait_for_packet_sent never fires:
             self.timeout_add(5*1000, close_and_release)
 
-        def wait_for_write_lock(timeout:int=100) -> None:
+        def wait_for_write_lock(timeout: int=100) -> None:
             wl = self._write_lock
             if not wl:
                 #cleaned up already

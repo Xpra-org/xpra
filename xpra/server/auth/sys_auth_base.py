@@ -147,14 +147,14 @@ class SysAuthenticatorBase:
     def check_password(self, _password:str) -> bool:
         return False
 
-    def authenticate(self, caps : typedict) -> bool:
+    def authenticate(self, caps: typedict) -> bool:
         r = self.do_authenticate(caps)
         if r:
             self.passed = True
             log("authentication challenge passed for %s", self)
         return r
 
-    def validate_caps(self, caps : typedict) -> bool:
+    def validate_caps(self, caps: typedict) -> bool:
         if self.passed:
             log("invalid state: challenge has already been passed")
             return False
@@ -171,7 +171,7 @@ class SysAuthenticatorBase:
             return False
         return True
 
-    def do_authenticate(self, caps : typedict) -> bool:
+    def do_authenticate(self, caps: typedict) -> bool:
         if not self.validate_caps(caps):
             return False
         return self.authenticate_check(caps)
@@ -205,7 +205,7 @@ class SysAuthenticatorBase:
             obsc(repr(challenge_response)))
         return value
 
-    def default_authenticate_check(self, caps : typedict) -> bool:
+    def default_authenticate_check(self, caps: typedict) -> bool:
         value : bytes = self.unxor_response(caps)
         # warning: enabling logging here would log the actual system password!
         # log.info("authenticate(%s, %s) password=%s (%s)",
@@ -221,7 +221,7 @@ class SysAuthenticatorBase:
             return False
         return ret
 
-    def authenticate_hmac(self, caps : typedict) -> bool:
+    def authenticate_hmac(self, caps: typedict) -> bool:
         challenge_response = caps.bytesget("challenge_response")
         client_salt = caps.strget("challenge_client_salt")
         log("sys_auth_base.authenticate_hmac(%r, %r)", challenge_response, client_salt)

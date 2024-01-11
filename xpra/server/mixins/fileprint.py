@@ -133,7 +133,7 @@ class FilePrintServer(StubServerMixin):
         self.file_transfer.printing = printing
         printlog("init_printing() printing=%s", printing)
 
-    def _process_print(self, _proto, packet : PacketType) -> None:
+    def _process_print(self, _proto, packet: PacketType) -> None:
         # ie: from the xpraforwarder we call this command:
         # command = ["xpra", "print", "socket:/path/tosocket",
         #           filename, mimetype, source, title, printer, no_copies, print_options]
@@ -229,7 +229,7 @@ class FilePrintServer(StubServerMixin):
             printlog.error("Error: failed to save print job to %s", save_filename)
             printlog.estr(e)
 
-    def _process_printers(self, proto, packet : PacketType) -> None:
+    def _process_printers(self, proto, packet: PacketType) -> None:
         if not self.file_transfer.printing or WIN32:
             printlog.error("Error: received printer definitions data")
             printlog.error(" but this server does not support printer forwarding")
@@ -243,42 +243,42 @@ class FilePrintServer(StubServerMixin):
 
     ######################################################################
     # file transfers:
-    def _process_send_file(self, proto, packet : PacketType) -> None:
+    def _process_send_file(self, proto, packet: PacketType) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for send-file packet")
             return
         ss._process_send_file(packet)
 
-    def _process_ack_file_chunk(self, proto, packet : PacketType) -> None:
+    def _process_ack_file_chunk(self, proto, packet: PacketType) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for ack-file-chunk packet")
             return
         ss._process_ack_file_chunk(packet)
 
-    def _process_send_file_chunk(self, proto, packet : PacketType) -> None:
+    def _process_send_file_chunk(self, proto, packet: PacketType) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for send-file-chunk packet")
             return
         ss._process_send_file_chunk(packet)
 
-    def _process_send_data_request(self, proto, packet : PacketType) -> None:
+    def _process_send_data_request(self, proto, packet: PacketType) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for send-file-request packet")
             return
         ss._process_send_data_request(packet)
 
-    def _process_send_data_response(self, proto, packet : PacketType) -> None:
+    def _process_send_data_response(self, proto, packet: PacketType) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for send-data-response packet")
             return
         ss._process_send_data_response(packet)
 
-    def _process_request_file(self, proto, packet : PacketType) -> None:
+    def _process_request_file(self, proto, packet: PacketType) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for send-data-response packet")
@@ -313,16 +313,16 @@ class FilePrintServer(StubServerMixin):
         # noqa: E241
         if self.file_transfer.printing:
             self.add_packet_handlers({
-                "printers":                             self._process_printers,
-                "print":                                self._process_print,
+                "printers": self._process_printers,
+                "print": self._process_print,
             }, False)
         if self.file_transfer.printing or self.file_transfer.file_transfer:
             self.add_packet_handlers({
-                "send-file":                            self._process_send_file,
-                "ack-file-chunk":                       self._process_ack_file_chunk,
-                "send-file-chunk":                      self._process_send_file_chunk,
-                "send-data-request":                    self._process_send_data_request,
-                "send-data-response":                   self._process_send_data_response,
+                "send-file": self._process_send_file,
+                "ack-file-chunk": self._process_ack_file_chunk,
+                "send-file-chunk": self._process_send_file_chunk,
+                "send-data-request": self._process_send_data_request,
+                "send-data-response": self._process_send_data_response,
             }, False)
         if self.file_transfer.file_transfer:
-            self.add_packet_handler("request-file",     self._process_request_file, False)
+            self.add_packet_handler("request-file", self._process_request_file, False)

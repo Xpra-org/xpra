@@ -27,10 +27,10 @@ from xpra.log import Logger
 
 log = Logger("x11", "shadow")
 
-XSHM : bool = envbool("XPRA_SHADOW_XSHM", True)
-POLL_CURSOR : int = envint("XPRA_SHADOW_POLL_CURSOR", 20)
-NVFBC : bool = envbool("XPRA_SHADOW_NVFBC", True)
-GSTREAMER : bool = envbool("XPRA_SHADOW_GSTREAMER", False)
+XSHM: bool = envbool("XPRA_SHADOW_XSHM", True)
+POLL_CURSOR: int = envint("XPRA_SHADOW_POLL_CURSOR", 20)
+NVFBC: bool = envbool("XPRA_SHADOW_NVFBC", True)
+GSTREAMER: bool = envbool("XPRA_SHADOW_GSTREAMER", False)
 nvfbc = None
 if NVFBC:
     try:
@@ -228,7 +228,7 @@ class XImageCapture:
             self._err(e, "xshm setup")
         return True
 
-    def get_image(self, x:int, y:int, width:int, height:int):
+    def get_image(self, x: int, y:int, width:int, height:int):
         log("XImageCapture.get_image%s for %#x", (x, y, width, height), self.xwindow)
         if self.xshm is None:
             log("no xshm, cannot get image")
@@ -301,7 +301,7 @@ class X11ShadowModel(RootWindowModel):
         super().__init__(root_window, capture, title, geometry)
         self.property_names += ["transient-for", "parent", "relative-position"]
         self.dynamic_property_names += ["transient-for", "parent", "relative-position"]
-        self.override_redirect : bool = False
+        self.override_redirect: bool = False
         self.transient_for = None
         self.parent = None
         self.relative_position = ()

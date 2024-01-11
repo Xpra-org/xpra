@@ -134,13 +134,13 @@ class NotificationForwarder(StubServerMixin):
         for ss in self._server_sources.values():
             ss.notify_close(int(nid))
 
-    def _process_notification_status(self, proto, packet : PacketType) -> None:
+    def _process_notification_status(self, proto, packet: PacketType) -> None:
         assert self.notifications, "cannot toggle notifications: the feature is disabled"
         ss = self.get_server_source(proto)
         if ss:
             ss.send_notifications = bool(packet[1])
 
-    def _process_notification_close(self, proto, packet : PacketType) -> None:
+    def _process_notification_close(self, proto, packet: PacketType) -> None:
         assert self.notifications
         nid, reason, text = packet[1:4]
         ss = self.get_server_source(proto)
@@ -160,7 +160,7 @@ class NotificationForwarder(StubServerMixin):
                     assert int(reason)>=0
                     self.notifications_forwarder.NotificationClosed(nid, reason)
 
-    def _process_notification_action(self, proto, packet : PacketType) -> None:
+    def _process_notification_action(self, proto, packet: PacketType) -> None:
         assert self.notifications
         nid, action_key = packet[1:3]
         ss = self.get_server_source(proto)

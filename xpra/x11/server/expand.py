@@ -142,7 +142,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
     def get_server_mode(self) -> str:
         return "X11 expand"
 
-    def set_refresh_delay(self, v:int) -> None:
+    def set_refresh_delay(self, v: int) -> None:
         assert 0<v<10000
         self.refresh_delay = v
 

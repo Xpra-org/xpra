@@ -5,15 +5,17 @@
 # later version. See the file COPYING for details.
 
 from cairo import ImageSurface, FORMAT_ARGB32  # pylint: disable=no-name-in-module
-from gi.repository import GLib
-from gi.repository import GdkPixbuf
 
 from xpra.common import noop
+from xpra.os_util import gi_import
 from xpra.util.env import envbool
 from xpra.client.gtk3.cairo_backing_base import CairoBackingBase, FORMATS
-
 from xpra.log import Logger
+
 log = Logger("paint", "cairo")
+
+GLib = gi_import("GLib")
+GdkPixbuf = gi_import("GdkPixbuf")
 
 CAIRO_USE_PIXBUF = envbool("XPRA_CAIRO_USE_PIXBUF", False)
 set_image_surface_data = noop
@@ -33,12 +35,7 @@ except ImportError as e:
 class CairoBacking(CairoBackingBase):
     """
     An area we draw onto with cairo
-    This must be used with bindings since bindings no longer supports gdk pixmaps
-
-    /RANT: ideally we would want to use pycairo's create_for_data method:
-    #surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_RGB24, width, height)
-    but this is disabled in most cases, or does not accept our rowstride, so we cannot use it.
-    Instead we have to use PIL to convert via a PNG or Pixbuf!
+    This requires `cairo_bindings`.
     """
 
     RGB_MODES = ["BGRA", "BGRX", "RGBA", "RGBX", "BGR", "RGB", "r210", "BGR565"]
@@ -52,8 +49,8 @@ class CairoBacking(CairoBackingBase):
         return "bindings.CairoBacking(%s : size=%s, render_size=%s)" % (binfo, self.size, self.render_size)
 
     def _do_paint_rgb(self, cairo_format, has_alpha, img_data,
-                      x : int, y : int, width : int, height : int, render_width : int, render_height : int,
-                      rowstride : int, options) -> bool:
+                      x: int, y: int, width: int, height: int, render_width: int, render_height: int,
+                      rowstride: int, options) -> bool:
         """ must be called from UI thread """
         log("cairo._do_paint_rgb%s set_image_surface_data=%s, use pixbuf=%s",
             (FORMATS.get(cairo_format, cairo_format), has_alpha, len(img_data),

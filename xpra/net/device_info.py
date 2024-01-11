@@ -76,7 +76,7 @@ def get_device_value(coptions : dict, device_info : dict, attr: str, conv: Calla
     return default_value
 
 
-def guess_adapter_type(name:str) -> str:
+def guess_adapter_type(name: str) -> str:
     dnl = name.lower()
     if dnl.startswith("wlan") or dnl.startswith("wlp") or any(dnl.find(x) >= 0 for x in (
         "wireless", "wlan", "80211", "modem"
@@ -93,7 +93,7 @@ def guess_adapter_type(name:str) -> str:
     return ""
 
 
-def jitter_for_adapter_type(adapter_type:str) -> int:
+def jitter_for_adapter_type(adapter_type: str) -> int:
     if not adapter_type:
         return -1
     at = adapter_type.lower()
@@ -111,7 +111,7 @@ def jitter_for_adapter_type(adapter_type:str) -> int:
     return -1
 
 
-def guess_bandwidth_limit(adapter_type:str) -> int:
+def guess_bandwidth_limit(adapter_type: str) -> int:
     at = adapter_type.lower()
 
     def anyfind(*args) -> bool:

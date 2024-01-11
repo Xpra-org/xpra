@@ -383,7 +383,7 @@ class AudioServer(StubServerMixin):
             info["private-socket"] = self.pulseaudio_private_socket
         return info
 
-    def _process_sound_control(self, proto, packet : PacketType) -> None:
+    def _process_sound_control(self, proto, packet: PacketType) -> None:
         ss = self.get_server_source(proto)
         audio_control = getattr(ss, "audio_control", None)
         if not audio_control:
@@ -393,7 +393,7 @@ class AudioServer(StubServerMixin):
             return
         audio_control(*packet[1:])
 
-    def _process_sound_data(self, proto, packet : PacketType) -> None:
+    def _process_sound_data(self, proto, packet: PacketType) -> None:
         ss = self.get_server_source(proto)
         if ss:
             ss.audio_data(*packet[1:])

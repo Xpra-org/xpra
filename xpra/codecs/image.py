@@ -29,7 +29,7 @@ class ImageWrapper:
     PLANAR_2 : PlanarFormat = PlanarFormat.PLANAR_2
     PLANAR_3 : PlanarFormat = PlanarFormat.PLANAR_3
     PLANAR_4 : PlanarFormat = PlanarFormat.PLANAR_4
-    PLANE_OPTIONS : tuple[PlanarFormat, PlanarFormat, PlanarFormat, PlanarFormat] = (
+    PLANE_OPTIONS: tuple[PlanarFormat, PlanarFormat, PlanarFormat, PlanarFormat] = (
         PACKED, PLANAR_2, PLANAR_3, PLANAR_4,
     )
 
@@ -42,7 +42,7 @@ class ImageWrapper:
         self.width : int  = width
         self.height : int  = height
         self.pixels = pixels
-        self.pixel_format : str = pixel_format
+        self.pixel_format: str = pixel_format
         self.depth : int  = depth
         self.rowstride = rowstride
         self.bytesperpixel : int = bytesperpixel

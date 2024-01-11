@@ -18,7 +18,7 @@ log = Logger("exec")
 class ShellMixin(StubSourceMixin):
 
     @classmethod
-    def is_needed(cls, caps : typedict) -> bool:
+    def is_needed(cls, caps: typedict) -> bool:
         return caps.boolget("shell", False)
 
     def __init__(self, *_args):

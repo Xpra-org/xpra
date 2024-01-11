@@ -46,7 +46,7 @@ class Avahilistener:
         log.error("Avahilistener.resolve_error%s", args)
 
     def service_resolved(self, interface, protocol, name:str, stype:str,
-                         domain:str, host:str, x, address, port:int, text_array, v) -> None:
+                         domain:str, host:str, x, address, port: int, text_array, v) -> None:
         log("Avahilistener.service_resolved%s",
             (interface, protocol, name, stype, domain, host, x, address, port, "..", v))
         if self.mdns_add:
@@ -64,7 +64,7 @@ class Avahilistener:
             nargs = (dbus_to_native(x) for x in (interface, protocol, name, stype, domain, host, address, port, text))
             self.mdns_add(*nargs)
 
-    def service_found(self, interface, protocol, name:str, stype:str, domain:str, flags:int) -> None:
+    def service_found(self, interface, protocol, name:str, stype:str, domain:str, flags: int) -> None:
         log("service_found%s", (interface, protocol, name, stype, domain, flags))
         if flags & avahi.LOOKUP_RESULT_LOCAL:
             # local service, skip
@@ -75,7 +75,7 @@ class Avahilistener:
                                    domain, avahi.PROTO_UNSPEC, dbus.UInt32(0),
                                    reply_handler=self.service_resolved, error_handler=self.resolve_error)
 
-    def service_removed(self, interface, protocol, name:str, stype:str, domain, flags:int) -> None:
+    def service_removed(self, interface, protocol, name:str, stype:str, domain, flags: int) -> None:
         log("service_removed%s", (interface, protocol, name, stype, domain, flags))
         if self.mdns_remove:
             nargs = (dbus_to_native(x) for x in (interface, protocol, name, stype, domain, flags))

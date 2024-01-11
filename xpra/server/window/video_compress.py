@@ -452,7 +452,7 @@ class WindowVideoSource(WindowSource):
         super().update_encoding_selection(encoding, exclude, init)
         self.supports_scrolling = "scroll" in self.common_encodings
 
-    def do_set_client_properties(self, properties : typedict) -> None:
+    def do_set_client_properties(self, properties: typedict) -> None:
         # client may restrict csc modes for specific windows
         self.supports_scrolling = "scroll" in self.common_encodings
         self.scroll_min_percent = properties.intget("scrolling.min-percent", self.scroll_min_percent)

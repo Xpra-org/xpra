@@ -61,7 +61,7 @@ class MutableInteger:
     __slots__ = ("counter", )
 
     def __init__(self, integer: int = 0):
-        self.counter : int = integer
+        self.counter: int = integer
 
     def increase(self, inc: int=1) -> int:
         self.counter = self.counter + inc

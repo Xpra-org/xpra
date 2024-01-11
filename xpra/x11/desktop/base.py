@@ -36,12 +36,12 @@ metadatalog = Logger("x11", "metadata")
 screenlog = Logger("screen")
 iconlog = Logger("icon")
 
-MODIFY_GSETTINGS : bool = envbool("XPRA_MODIFY_GSETTINGS", True)
-MULTI_MONITORS : bool = envbool("XPRA_DESKTOP_MULTI_MONITORS", True)
+MODIFY_GSETTINGS: bool = envbool("XPRA_MODIFY_GSETTINGS", True)
+MULTI_MONITORS: bool = envbool("XPRA_DESKTOP_MULTI_MONITORS", True)
 
 
 def get_desktop_server_base_classes() -> tuple[type,...]:
-    classes : list[type] = [GObject.GObject]
+    classes: list[type] = [GObject.GObject]
     if features.rfb:
         from xpra.server.rfb.server import RFBServer
         classes.append(RFBServer)
@@ -225,7 +225,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         # we export the whole desktop as a window:
         return 0, 0
 
-    def _process_map_window(self, proto, packet : PacketType) -> None:
+    def _process_map_window(self, proto, packet: PacketType) -> None:
         wid, x, y, w, h = (int(x) for x in packet[1:6])
         window = self._id_to_window.get(wid)
         if not window:
@@ -239,7 +239,7 @@ class DesktopServerBase(DesktopServerBaseClass):
             self._set_client_properties(proto, wid, window, packet[6])
         self.refresh_window_area(window, 0, 0, w, h)
 
-    def _process_unmap_window(self, proto, packet : PacketType) -> None:
+    def _process_unmap_window(self, proto, packet: PacketType) -> None:
         wid = int(packet[1])
         window = self._id_to_window.get(wid)
         if not window:
@@ -254,7 +254,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         # TODO: handle inconification?
         # iconified = len(packet)>=3 and bool(packet[2])
 
-    def _process_configure_window(self, proto, packet : PacketType) -> None:
+    def _process_configure_window(self, proto, packet: PacketType) -> None:
         wid, x, y, w, h = (int(x) for x in packet[1:6])
         if len(packet)>=13 and features.input_devices and not self.readonly:
             pwid = int(packet[10])
@@ -313,11 +313,11 @@ class DesktopServerBase(DesktopServerBaseClass):
         with xsync:
             X11ServerBase._move_pointer(self, device_id, wid, pos, props)
 
-    def _process_close_window(self, proto, packet : PacketType) -> None:
+    def _process_close_window(self, proto, packet: PacketType) -> None:
         # disconnect?
         pass
 
-    def _process_desktop_size(self, proto, packet : PacketType) -> None:
+    def _process_desktop_size(self, proto, packet: PacketType) -> None:
         """
         Usually, desktop servers don't need to do anything when the client's geometry changes.
         """

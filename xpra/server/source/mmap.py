@@ -16,7 +16,7 @@ log = Logger("mmap")
 class MMAP_Connection(StubSourceMixin):
 
     @classmethod
-    def is_needed(cls, caps : typedict) -> bool:
+    def is_needed(cls, caps: typedict) -> bool:
         v = typedict(caps.get("mmap") or {})
         return v.intget("size", 0) > 0
 

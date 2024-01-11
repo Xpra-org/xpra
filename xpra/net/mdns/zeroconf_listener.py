@@ -101,7 +101,7 @@ def main():
 
     from xpra.platform import program_context
     with program_context("zeroconf-listener", "zeroconf-listener"):
-        listeners : list[Zeroconflistener] = []
+        listeners: list[Zeroconflistener] = []
         from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
 
         def add(service_type):

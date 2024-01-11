@@ -49,7 +49,7 @@ def stop_proc(proc) -> None:
 class AudioMixin(StubSourceMixin):
 
     @classmethod
-    def is_needed(cls, caps : typedict) -> bool:
+    def is_needed(cls, caps: typedict) -> bool:
         audio = caps.get("audio")
         if isinstance(audio, dict):
             audio = typedict(audio)
@@ -57,7 +57,7 @@ class AudioMixin(StubSourceMixin):
         return False
 
     def __init__(self):
-        self.audio_properties : typedict = typedict()
+        self.audio_properties: typedict = typedict()
         self.audio_source_plugin = ""
         self.supports_speaker = False
         self.speaker_codecs = []
@@ -80,8 +80,8 @@ class AudioMixin(StubSourceMixin):
         self.pulseaudio_id = ""
         self.pulseaudio_cookie_hash = ""
         self.pulseaudio_server = ""
-        self.audio_decoders : tuple[str,...] = ()
-        self.audio_encoders : tuple[str,...]= ()
+        self.audio_decoders: tuple[str,...] = ()
+        self.audio_encoders: tuple[str,...]= ()
         self.audio_receive = False
         self.audio_send = False
         self.audio_fade_timer = 0

@@ -34,8 +34,8 @@ Gdk = gi_import("Gdk")
 
 X11Keyboard = X11KeyboardBindings()
 
-MAP_MISSING_MODIFIERS : bool = envbool("XPRA_MAP_MISSING_MODIFIERS", True)
-SHIFT_LOCK : bool = envbool("XPRA_SHIFT_LOCK", False)
+MAP_MISSING_MODIFIERS: bool = envbool("XPRA_MAP_MISSING_MODIFIERS", True)
+SHIFT_LOCK: bool = envbool("XPRA_SHIFT_LOCK", False)
 
 ALL_X11_MODIFIERS : dict[str, int] = {
     "shift"     : 0,
@@ -61,7 +61,7 @@ def kmlog(keyname, msg, *args) -> None:
 class KeyboardConfig(KeyboardConfigBase):
     def __init__(self):
         super().__init__()
-        self.raw : bool = False
+        self.raw: bool = False
         self.query_struct = None
         self.modifier_map : dict[str, int] = {}
         self.mod_meanings = {}

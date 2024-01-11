@@ -19,7 +19,7 @@ DEFAULT_AV_SYNC_DELAY = envint("XPRA_DEFAULT_AV_SYNC_DELAY", 150)
 class AVSyncMixin(StubSourceMixin):
 
     @classmethod
-    def is_needed(cls, caps : typedict) -> bool:
+    def is_needed(cls, caps: typedict) -> bool:
         audio = caps.get("audio")
         if not isinstance(audio, dict):
             return False
@@ -54,7 +54,7 @@ class AVSyncMixin(StubSourceMixin):
             },
         }
 
-    def parse_client_caps(self, c : typedict) -> None:
+    def parse_client_caps(self, c: typedict) -> None:
         av_sync = c.get("av-sync")
         if isinstance(av_sync, dict):
             av_sync = typedict(av_sync)

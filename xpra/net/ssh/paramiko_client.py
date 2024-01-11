@@ -312,6 +312,7 @@ def connect_to(display_desc):
         log(f"authentication modes={auth_modes}")
         sock = None
         transport = None
+        sockname = peername = host
         while not transport:
             sock = socket_connect(host, port)
             if not sock:
@@ -364,7 +365,7 @@ def connect_to(display_desc):
         return conn
 
 
-AUTH_MODES : tuple[str, ...] = ("none", "agent", "key", "password")
+AUTH_MODES: tuple[str, ...] = ("none", "agent", "key", "password")
 
 
 def get_auth_modes(paramiko_config, host_config: dict, password: str) -> list[str]:
@@ -495,7 +496,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
                     log.info(" %s", e)
             log("dnscheck=%s", dnscheck)
 
-            def adddnscheckinfo(q : list[str]):
+            def adddnscheckinfo(q: list[str]):
                 if dnscheck is not True:
                     if dnscheck:
                         q.append("SSHFP validation failed:")
@@ -507,7 +508,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
                 log.info("found a valid SSHFP record for host %s", host)
             elif known_host_key:
                 log.warn("Warning: SSH server key mismatch")
-                qinfo : list[str] = [
+                qinfo: list[str] = [
                     "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!",
                     "IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!",
                     "Someone could be eavesdropping on you right now (man-in-the-middle attack)!",

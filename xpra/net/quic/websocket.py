@@ -62,7 +62,7 @@ class ServerWebSocketConnection(XpraQuicConnection):
             return
         super().http_event_received(event)
 
-    def send_accept(self, stream_id : int) -> None:
+    def send_accept(self, stream_id: int) -> None:
         self.send_headers(stream_id=stream_id, headers={
             ":status"   : 200,
             "server"    : SERVER_NAME,

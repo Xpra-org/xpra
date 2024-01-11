@@ -15,7 +15,7 @@ class Handler:
 
     def __init__(self, client, **kwargs):
         self.client = client
-        self.password_file : str = kwargs.get("filename", "")
+        self.password_file: str = kwargs.get("filename", "")
         if not self.password_file and client.password_file:
             self.password_file = client.password_file[0]
             client.password_file = client.password_file[1:]

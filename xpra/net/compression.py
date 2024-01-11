@@ -14,19 +14,19 @@ from xpra.common import MIN_COMPRESS_SIZE, MAX_DECOMPRESSED_SIZE
 
 
 # all the compressors we know about:
-ALL_COMPRESSORS : tuple[str, ...] = ("lz4", "zlib", "brotli", "none")
+ALL_COMPRESSORS: tuple[str, ...] = ("lz4", "zlib", "brotli", "none")
 # the compressors we may want to use, in the best compatibility order:
-TRY_COMPRESSORS : tuple[str, ...] = ("lz4", "brotli", "none")
+TRY_COMPRESSORS: tuple[str, ...] = ("lz4", "brotli", "none")
 # order for performance:
-PERFORMANCE_ORDER : tuple[str, ...] = ("none", "lz4", "brotli")
+PERFORMANCE_ORDER: tuple[str, ...] = ("none", "lz4", "brotli")
 # require compression (disallow 'none'):
-PERFORMANCE_COMPRESSION : tuple[str, ...] = ("lz4", "brotli")
+PERFORMANCE_COMPRESSION: tuple[str, ...] = ("lz4", "brotli")
 
 
 @dataclass
 class Compression:
-    name : str
-    version : str
+    name: str
+    version: str
     compress : Callable[[ByteString,int], ByteString]
     decompress : Callable[[ByteString], ByteString]
 
@@ -114,7 +114,7 @@ def use(compressor) -> bool:
     return compressor in COMPRESSION
 
 
-def get_compression_caps(full_info : int=1) -> dict[str,Any]:
+def get_compression_caps(full_info: int=1) -> dict[str,Any]:
     caps : dict[str,Any] = {}
     for x in TRY_COMPRESSORS:
         c = COMPRESSION.get(x)
@@ -232,7 +232,7 @@ def get_compression_type(level) -> str:
     return "zlib"
 
 
-def decompress(data:bytes, level:int):
+def decompress(data:bytes, level: int):
     from xpra.net.protocol.header import LZ4_FLAG, BROTLI_FLAG
     if level & LZ4_FLAG:
         algo = "lz4"

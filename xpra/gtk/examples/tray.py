@@ -121,7 +121,7 @@ class FakeApplication:
     def after_handshake(self, cb:Callable, *args) -> None:
         self.idle_add(cb, *args)
 
-    def on_server_setting_changed(self, setting:str, cb:Callable) -> None:
+    def on_server_setting_changed(self, setting: str, cb:Callable) -> None:
         """ this method is part of the GUI client "interface" """
 
     def connect(self, *args) -> None:
@@ -142,8 +142,7 @@ class FakeApplication:
     def send_sharing_enabled(self, *_args):
         """ this method is part of the GUI client "interface" """
 
-
-    def get_image(self, icon_name:str, size=None):
+    def get_image(self, icon_name: str, size=None):
         with log.trap_error(f"Error loading image for icon {icon_name!r} and size {size}"):
             if not icon_name:
                 return None
@@ -152,11 +151,10 @@ class FakeApplication:
                 return None
             pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename=icon_filename)
             if not pixbuf:
-                return  None
+                return None
             return scaled_image(pixbuf, size)
 
-
-    def xpra_tray_click(self, button:int, pressed:bool, time:int=0):
+    def xpra_tray_click(self, button: int, pressed: bool, time: int = 0):
         log("xpra_tray_click(%s, %s, %s)", button, pressed, time)
         if button==1 and pressed:
             self.idle_add(self.menu_helper.activate, button, time)
@@ -172,7 +170,6 @@ class FakeApplication:
 
     def xpra_tray_geometry(self, *args):
         log("xpra_tray_geometry%s geometry=%s", args, self.tray.get_geometry())
-
 
     def disconnect_and_quit(self, *_args):
         Gtk.main_quit()

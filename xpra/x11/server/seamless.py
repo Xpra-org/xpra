@@ -321,7 +321,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
     # Manage the virtual screen:
     #
 
-    def set_screen_size(self, desired_w:int, desired_h:int):
+    def set_screen_size(self, desired_w: int, desired_h: int):
         # clamp all window models to the new screen size:
         for window in tuple(self._window_to_id.keys()):
             if window.is_tray() or window.is_OR():
@@ -611,7 +611,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             return
         try:
             # pylint: disable=import-outside-toplevel
-            tray_xid : int = get_tray_window(gdk_window)
+            tray_xid: int = get_tray_window(gdk_window)
             if tray_xid:
                 assert self._tray
                 from xpra.x11.models.systray import SystemTrayWindowModel
@@ -869,7 +869,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if update_geometry:
             win._update_client_geometry()
 
-    def _process_map_window(self, proto, packet : PacketType) -> None:
+    def _process_map_window(self, proto, packet: PacketType) -> None:
         wid, x, y, w, h = packet[1:6]
         window = self._lookup_window(wid)
         if not window:
@@ -899,7 +899,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             self.client_configure_window(window, geometry)
         self.refresh_window_area(window, 0, 0, w, h)
 
-    def _process_unmap_window(self, proto, packet : PacketType) -> None:
+    def _process_unmap_window(self, proto, packet: PacketType) -> None:
         wid = packet[1]
         window = self._lookup_window(wid)
         if not window:
@@ -960,7 +960,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 ss.move_resize_window(wid, window, x, y, w, h, resize_counter)
         return geom
 
-    def _process_configure_window(self, proto, packet : PacketType) -> None:
+    def _process_configure_window(self, proto, packet: PacketType) -> None:
         wid, x, y, w, h = packet[1:6]
         window = self._lookup_window(wid)
         if not window:
@@ -1111,7 +1111,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                     window.raise_window()
         super()._move_pointer(device_id, wid, pos, props)
 
-    def _process_close_window(self, proto, packet : PacketType) -> None:
+    def _process_close_window(self, proto, packet: PacketType) -> None:
         if proto not in self._server_sources:
             return
         wid = packet[1]
@@ -1123,7 +1123,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             windowlog("cannot close window %s: it is already gone!", wid)
         self.repaint_root_overlay()
 
-    def _process_window_signal(self, proto, packet : PacketType) -> None:
+    def _process_window_signal(self, proto, packet: PacketType) -> None:
         if proto not in self._server_sources:
             return
         wid = packet[1]

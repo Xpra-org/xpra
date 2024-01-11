@@ -224,7 +224,7 @@ def driver_init() -> bool:
     return driver_init_done
 
 
-DEVICES : list[int] | None = None
+DEVICES: list[int] | None = None
 
 
 def init_all_devices():

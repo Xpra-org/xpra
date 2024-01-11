@@ -21,7 +21,7 @@ from xpra.log import Logger
 log = Logger("network", "util")
 
 
-netifaces_version : tuple[Any, ...] = ()
+netifaces_version: tuple[Any, ...] = ()
 _netifaces = None
 
 
@@ -256,7 +256,7 @@ def get_net_sys_config() -> dict[str,Any]:
     def stripnl(v):
         return str(v).rstrip("\r").rstrip("\n")
 
-    def addproc(procpath:str, subsystem:str, name:str, conv:Callable=stripnl):
+    def addproc(procpath: str, subsystem: str, name: str, conv:Callable=stripnl):
         assert name
         try:
             with open(procpath, encoding="latin1") as f:
@@ -302,7 +302,7 @@ def get_net_sys_config() -> dict[str,Any]:
     ):
         addproc(f"/proc/sys/net/ipv4/{k}", "ipv4", k)
 
-    def parsenums(v:str) -> tuple[int,...]:
+    def parsenums(v: str) -> tuple[int,...]:
         return tuple(int(x.strip()) for x in v.split("\t") if len(x.strip())>0)
     for k in ("tcp_mem", "tcp_rmem", "tcp_wmem", "ip_local_port_range", "ip_local_reserved_ports", ):
         addproc(f"/proc/sys/net/ipv4/{k}", "ipv4", k, parsenums)
@@ -368,7 +368,7 @@ def get_ssl_info(show_constants=False) -> dict[str, Any]:
     return info
 
 
-def get_network_caps(full_info : int=1) -> dict[str,Any]:
+def get_network_caps(full_info: int=1) -> dict[str,Any]:
     # pylint: disable=import-outside-toplevel
     from xpra.net.digest import get_digests
     from xpra.net.compression import get_enabled_compressors, get_compression_caps

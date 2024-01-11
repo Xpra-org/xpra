@@ -14,14 +14,14 @@ import struct
 # without too many side effects
 # pylint: disable=import-outside-toplevel
 
-WIN32 : bool = sys.platform.startswith("win")
-OSX : bool = sys.platform.startswith("darwin")
-LINUX : bool = sys.platform.startswith("linux")
-NETBSD : bool = sys.platform.startswith("netbsd")
-OPENBSD : bool = sys.platform.startswith("openbsd")
-FREEBSD : bool = sys.platform.startswith("freebsd")
-POSIX : bool = os.name == "posix"
-BITS : int = struct.calcsize(b"P")*8
+WIN32: bool = sys.platform.startswith("win")
+OSX: bool = sys.platform.startswith("darwin")
+LINUX: bool = sys.platform.startswith("linux")
+NETBSD: bool = sys.platform.startswith("netbsd")
+OPENBSD: bool = sys.platform.startswith("openbsd")
+FREEBSD: bool = sys.platform.startswith("freebsd")
+POSIX: bool = os.name == "posix"
+BITS: int = struct.calcsize(b"P")*8
 
 
 GIR_VERSIONS : dict[str, str] = {

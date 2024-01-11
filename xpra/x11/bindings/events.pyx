@@ -374,7 +374,7 @@ def set_debug_events():
 x_event_parsers : Dict[int,Callable] = {}
 
 
-def add_x_event_parser(extension_opcode : int, parser : Callable):
+def add_x_event_parser(extension_opcode: int, parser : Callable):
     x_event_parsers[extension_opcode] = parser
 
 

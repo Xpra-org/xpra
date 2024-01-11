@@ -31,23 +31,23 @@ class ClipboardClient(StubClientMixin):
 
     def __init__(self):
         super().__init__()
-        self.client_clipboard_type : str = ""
-        self.client_clipboard_direction : str = "both"
+        self.client_clipboard_type: str = ""
+        self.client_clipboard_direction: str = "both"
         self.client_supports_clipboard : bool = False
         self.clipboard_enabled : bool = False
-        self.server_clipboard_direction : str = "both"
+        self.server_clipboard_direction: str = "both"
         self.server_clipboard : bool = False
-        self.server_clipboard_preferred_targets : tuple[str, ...] = ()
-        self.server_clipboards : tuple[str,...] = ()
+        self.server_clipboard_preferred_targets: tuple[str, ...] = ()
+        self.server_clipboards: tuple[str,...] = ()
         self.server_clipboard_greedy : bool = False
         self.server_clipboard_want_targets : bool = False
-        self.server_clipboard_selections : tuple[str, ...] = ()
+        self.server_clipboard_selections: tuple[str, ...] = ()
         self.clipboard_helper = None
         self.local_clipboard_requests : int = 0
         self.remote_clipboard_requests : int = 0
         #only used with the translated clipboard class:
-        self.local_clipboard : str = ""
-        self.remote_clipboard : str = ""
+        self.local_clipboard: str = ""
+        self.remote_clipboard: str = ""
 
     def init(self, opts):
         self.client_clipboard_type = opts.clipboard
@@ -102,7 +102,7 @@ class ClipboardClient(StubClientMixin):
         }
         return {"clipboard": caps}
 
-    def parse_server_capabilities(self, c : typedict) -> bool:
+    def parse_server_capabilities(self, c: typedict) -> bool:
         try:
             from xpra import clipboard
             assert clipboard
@@ -125,7 +125,7 @@ class ClipboardClient(StubClientMixin):
                 log.warn("Warning: incompatible clipboard direction settings")
                 log.warn(" server setting: %s, client setting: %s",
                          self.server_clipboard_direction, self.client_clipboard_direction)
-        clipboards : tuple[str, ...] = ()
+        clipboards: tuple[str, ...] = ()
         try:
             from xpra.clipboard.core import ALL_CLIPBOARDS
             clipboards = ALL_CLIPBOARDS
@@ -147,7 +147,7 @@ class ClipboardClient(StubClientMixin):
         self.server_clipboard_preferred_targets = c.strtupleget("clipboard.preferred-targets", ())
         return True
 
-    def process_ui_capabilities(self, caps : typedict) -> None:
+    def process_ui_capabilities(self, caps: typedict) -> None:
         log("process_ui_capabilities() clipboard_enabled=%s", self.clipboard_enabled)
         if self.clipboard_enabled:
             ch = self.make_clipboard_helper()

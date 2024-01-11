@@ -21,8 +21,8 @@ log = Logger("opengl", "paint")
 
 class GLDrawingArea(GLWindowBackingBase):
 
-    def __init__(self, wid : int, window_alpha : bool, pixel_depth : int=0):
-        self.on_realize_cb : list[tuple[Callable,tuple[Any,...]]] = []
+    def __init__(self, wid: int, window_alpha: bool, pixel_depth: int=0):
+        self.on_realize_cb: list[tuple[Callable,tuple[Any,...]]] = []
         super().__init__(wid, window_alpha, pixel_depth)
 
     def __repr__(self):

@@ -118,7 +118,7 @@ def get_display_id_info(path:str) -> dict[str, str]:
     return d
 
 
-def get_window_info(wi : typedict) -> tuple[tuple[str, int], ...]:
+def get_window_info(wi: typedict) -> tuple[tuple[str, int], ...]:
     # version info:
     geom = wi.inttupleget("geometry")
     g_str = "%ix%i at %i,%i" % (geom[2], geom[3], geom[0], geom[1])
@@ -711,7 +711,7 @@ class TopSessionClient(InfoTimerClient):
             d = self.td(d.dictget(part, {}))
         return d
 
-    def get_client_info(self, ci : typedict) -> tuple:
+    def get_client_info(self, ci: typedict) -> tuple:
         # version info:
         ctype = ci.strget("type", "unknown")
         title = f"{ctype} client version "

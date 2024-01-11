@@ -40,7 +40,7 @@ class ClipboardInstance:
         self.value_entry.set_max_length(100)
         self.value_entry.set_width_chars(32)
 
-        def b(text:str, callback:Callable):
+        def b(text: str, callback:Callable):
             btn = Gtk.Button(label=text)
             btn.connect("clicked", callback)
             return btn

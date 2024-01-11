@@ -77,7 +77,7 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
 
     def managed_connect(self, detailed_signal, handler, *args) -> int:
         """ connects a signal handler and makes sure we will clean it up on unmanage() """
-        handler_id : int = self.connect(detailed_signal, handler, *args)
+        handler_id: int = self.connect(detailed_signal, handler, *args)
         self._managed_handlers.append(handler_id)
         return handler_id
 

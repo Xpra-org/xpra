@@ -62,7 +62,7 @@ class NotifierBase:
         return ""
 
     def clean_notification(self, nid: int | NotificationID) -> None:
-        temp_file = self.temp_files.pop(int(nid), None)
+        temp_file = self.temp_files.pop(int(nid), "")
         log("clean_notification(%s) temp_file=%s", nid, temp_file)
         if temp_file:
             try:

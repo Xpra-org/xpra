@@ -118,7 +118,7 @@ class SystemTray(GObject.GObject):
         super().__init__()
         # the window where we embed all the tray icons:
         self.tray_window : GdkX11.X11Window | None = None
-        self.xid : int = 0
+        self.xid: int = 0
         # map xid to the gdk window:
         self.window_trays : dict[int,Gdk.Window] = {}
         # map gdk windows to their corral window:

@@ -60,14 +60,14 @@ def get_padding_options() -> tuple[str, ...]:
     return tuple(options)
 
 
-PADDING_OPTIONS : tuple[str,...] = get_padding_options()
+PADDING_OPTIONS: tuple[str,...] = get_padding_options()
 
 
 # pylint: disable=import-outside-toplevel
-CIPHERS : tuple[str,...] = ()
-MODES : tuple[str,...] = ()
-KEY_HASHES : tuple[str,...] = ()
-KEY_STRETCHING : tuple[str,...] = ()
+CIPHERS: tuple[str,...] = ()
+MODES: tuple[str,...] = ()
+KEY_HASHES: tuple[str,...] = ()
+KEY_STRETCHING: tuple[str,...] = ()
 
 
 def crypto_backend_init():
@@ -111,7 +111,7 @@ def patch_crypto_be_discovery() -> None:
     Objective: support pyinstaller / cx_freeze / pyexe / py2app freezing.
     """
     from cryptography.hazmat import backends
-    available : list = []
+    available: list = []
     try:
         from cryptography.hazmat.backends.commoncrypto.backend import backend as be_cc
         available.append(be_cc)
@@ -181,7 +181,7 @@ def validate_backend() -> None:
             log(" test passed")
 
 
-def pad(padding:str, size:int) -> bytes:
+def pad(padding: str, size: int) -> bytes:
     if padding==PADDING_LEGACY:
         return b" "*size
     if padding==PADDING_PKCS7:
@@ -206,7 +206,7 @@ def get_iterations() -> int:
     return DEFAULT_ITERATIONS
 
 
-def new_cipher_caps(proto, cipher:str, cipher_mode:str, encryption_key, padding_options) -> dict[str,Any]:
+def new_cipher_caps(proto, cipher: str, cipher_mode: str, encryption_key, padding_options) -> dict[str,Any]:
     iv = get_iv()
     key_salt = get_salt()
     key_size = DEFAULT_KEYSIZE
@@ -249,7 +249,7 @@ def get_crypto_caps(full=True) -> dict[str,Any]:
     return caps
 
 
-def get_encryptor(ciphername : str, iv:str, password, key_salt, key_hash : str, key_size : int, iterations : int):
+def get_encryptor(ciphername: str, iv: str, password, key_salt, key_hash: str, key_size: int, iterations: int):
     log("get_encryptor%s", (ciphername, iv, password, hexstr(key_salt), key_hash, key_size, iterations))
     if not ciphername:
         return None, 0
@@ -263,13 +263,13 @@ def get_encryptor(ciphername : str, iv:str, password, key_salt, key_hash : str, 
     return get_cipher_encryptor(key, iv, mode), get_block_size(mode)
 
 
-def get_cipher_encryptor(key, iv:str, mode:str):
+def get_cipher_encryptor(key, iv: str, mode: str):
     encryptor = _get_cipher(key, iv, mode).encryptor()
     encryptor.encrypt = encryptor.update
     return encryptor
 
 
-def get_decryptor(ciphername : str, iv:str, password, key_salt, key_hash : str, key_size : int, iterations : int):
+def get_decryptor(ciphername: str, iv: str, password, key_salt, key_hash: str, key_size: int, iterations: int):
     log("get_decryptor%s", (ciphername, iv, password, hexstr(key_salt), key_hash, key_size, iterations))
     if not ciphername:
         return None, 0
@@ -283,7 +283,7 @@ def get_decryptor(ciphername : str, iv:str, password, key_salt, key_hash : str, 
     return get_cipher_decryptor(key, iv, mode), get_block_size(mode)
 
 
-def get_cipher_decryptor(key, iv:str, mode:str):
+def get_cipher_decryptor(key, iv: str, mode:str):
     decryptor = _get_cipher(key, iv, mode).decryptor()
     #the function we expect to call is named 'decrypt':
     decryptor.decrypt = decryptor.update
@@ -298,7 +298,7 @@ def get_block_size(mode:str) -> int:
     return 0
 
 
-def get_key(password, key_salt, key_hash, block_size:int, iterations:int):
+def get_key(password, key_salt, key_hash, block_size: int, iterations: int):
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
     from cryptography.hazmat.primitives import hashes
     if key_hash.upper() not in KEY_HASHES:

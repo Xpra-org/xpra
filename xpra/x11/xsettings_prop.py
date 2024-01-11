@@ -24,15 +24,15 @@ from xpra.util.str_fn import strtobytes, bytestostr, hexstr
 
 log: Logger = Logger("x11", "xsettings")
 
-BLACKLISTED_XSETTINGS : list[str] = os.environ.get(
+BLACKLISTED_XSETTINGS: list[str] = os.environ.get(
     "XPRA_BLACKLISTED_XSETTINGS",
     "Gdk/WindowScalingFactor,Gtk/SessionBusId,Gtk/IMModule"
 ).split(",")
 
 
 # undocumented XSETTINGS endianness values:
-LITTLE_ENDIAN : int = 0
-BIG_ENDIAN : int    = 1
+LITTLE_ENDIAN: int = 0
+BIG_ENDIAN: int    = 1
 
 
 def get_local_byteorder() -> int:
@@ -56,7 +56,7 @@ XSettingsNames : dict[int,str] = {
 }
 
 
-XSETTINGS_CACHE : tuple[int, list[tuple]] = (0, [])
+XSETTINGS_CACHE: tuple[int, list[tuple]] = (0, [])
 
 
 def bytes_to_xsettings(d:bytes) -> tuple[int, list[tuple[int, str, Any, int]]]:
@@ -74,7 +74,7 @@ def bytes_to_xsettings(d:bytes) -> tuple[int, list[tuple[int, str, Any, int]]]:
     if cache and cache[0]==serial:
         log("bytes_to_xsettings(..) returning value from cache")
         return cache
-    settings : list[tuple] = []
+    settings: list[tuple] = []
     pos = 12
 
     def req(what="int", nbytes=4):
@@ -130,7 +130,7 @@ def bytes_to_xsettings(d:bytes) -> tuple[int, list[tuple[int, str, Any, int]]]:
     return serial, settings
 
 
-def xsettings_to_bytes(d : tuple[int, list[tuple[int, str, Any, int]]]) -> bytes:
+def xsettings_to_bytes(d: tuple[int, list[tuple[int, str, Any, int]]]) -> bytes:
     if len(d) != 2:
         raise ValueError(f"invalid format for XSETTINGS: {d!r}")
     serial, settings = d

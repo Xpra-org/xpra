@@ -307,17 +307,17 @@ class SessionInfo(Gtk.Window):
             self.grid.attach(widget, i, r, 1, 1)
         self.row.increase()
 
-    def new_row(self, text:str, *widgets):
+    def new_row(self, text: str, *widgets):
         self.add_row(slabel(text), *widgets)
 
-    def label_row(self, text:str, value=""):
+    def label_row(self, text: str, value=""):
         lbl = slabel(value)
         al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0.0)
         al.add(lbl)
         self.add_row(title_box(text), al)
         return lbl
 
-    def clrow(self, label_str:str, client_label, server_label):
+    def clrow(self, label_str: str, client_label, server_label):
         labels = []
         if self.show_client:
             labels.append(client_label)
@@ -332,7 +332,7 @@ class SessionInfo(Gtk.Window):
             slabel(server_str) if self.show_server else None,
         )
 
-    def grid_tab(self, icon_filename:str, title:str, populate_cb:Callable):
+    def grid_tab(self, icon_filename: str, title: str, populate_cb:Callable):
         self.grid = Gtk.Grid()
         self.row.set(0)
         vbox = self.vbox_tab(icon_filename, title, populate_cb)
@@ -341,12 +341,12 @@ class SessionInfo(Gtk.Window):
         vbox.pack_start(al, expand=True, fill=True, padding=20)
         return vbox
 
-    def vbox_tab(self, icon_filename:str, title:str, populate_cb:Callable):
+    def vbox_tab(self, icon_filename: str, title: str, populate_cb:Callable):
         vbox = Gtk.VBox(homogeneous=False, spacing=0)
         self.add_tab(icon_filename, title, populate_cb, contents=vbox)
         return vbox
 
-    def add_tab(self, icon_filename:str, title:str, populate_cb:Callable, contents):
+    def add_tab(self, icon_filename: str, title: str, populate_cb:Callable, contents):
         icon = get_icon_pixbuf(icon_filename)
 
         def show_tab(*_args):

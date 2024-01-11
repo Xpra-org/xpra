@@ -108,7 +108,7 @@ def init_all_specs(*exclude) -> None:
     # the self-tests should disable what isn't available / doesn't work
     specs : dict[str,dict[str,list]] = {}
     colorspaces : dict[str,dict[str,list]] = {}
-    missing : list[str] = []
+    missing: list[str] = []
 
     def add(element:str, encoding:str, cs_in:str, css_out, *args):
         if element in missing:
@@ -183,7 +183,7 @@ class Encoder(VideoPipeline):
     """
     Dispatch video encoding to a gstreamer pipeline
     """
-    def create_pipeline(self, options : typedict):
+    def create_pipeline(self, options: typedict):
         if self.encoding not in get_encodings():
             raise ValueError(f"invalid encoding {self.encoding!r}")
         self.dst_formats = options.strtupleget("dst-formats")
@@ -222,7 +222,7 @@ class Encoder(VideoPipeline):
         if not self.setup_pipeline_and_bus(elements):
             raise RuntimeError("failed to setup gstreamer pipeline")
 
-    def get_profile(self, options : typedict) -> str:
+    def get_profile(self, options: typedict) -> str:
         default_profile: str = {
             # "x264enc"   : "constrained-baseline",
             # "vaapih264enc" : "constrained-baseline",

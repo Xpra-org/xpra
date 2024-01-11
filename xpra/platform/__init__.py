@@ -189,7 +189,7 @@ def platform_import(where, pm, required, *imports):
     if pm:
         module += ".%s" % pm
 
-    # cannot log this early! (win32 needs log to file redirection..)
+    # cannot log this early! (win32 needs log to file redirection…)
     # log = Logger("platform", "import")
     # log("importing %s from %s (required=%s)" % (imports, module, required))
     try:

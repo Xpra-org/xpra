@@ -98,7 +98,7 @@ NAME_TO_INFO_PLUGIN = {
 # format: encoder, container-formatter, decoder, container-parser, stream-compressor
 # we keep multiple options here for the same encoding
 # and will populate the ones that are actually available into the "CODECS" dict
-CODEC_OPTIONS : tuple[tuple[str, str, str, str, str, str], ...] = (
+CODEC_OPTIONS: tuple[tuple[str, str, str, str, str, str], ...] = (
     (VORBIS_MKA , "vorbisenc",      "matroskamux",  "vorbisdec",                    "matroskademux",    ""),
     (VORBIS_MKA , "vorbisenc",      "webmmux",      "vorbisdec",                    "matroskademux",    ""),
     # those two used to fail silently (older versions of gstreamer?)
@@ -119,7 +119,7 @@ CODEC_OPTIONS : tuple[tuple[str, str, str, str, str, str], ...] = (
     (AAC_MPEG4  , "voaacenc",       "mp4mux",       "faad",                         "qtdemux",          ""),
 )
 
-MUX_OPTIONS : tuple[tuple[str, str, str], ...] = (
+MUX_OPTIONS: tuple[tuple[str, str, str], ...] = (
     (OGG,    "oggmux",   "oggdemux"),
     (MKA,    "webmmux",  "matroskademux"),
     (MKA,    "matroskamux",  "matroskademux"),

@@ -119,7 +119,7 @@ def get_encodings() -> tuple[str,...]:
     return ENCODINGS
 
 
-ENCODINGS : tuple[str,...] = tuple(do_get_encodings())
+ENCODINGS: tuple[str,...] = tuple(do_get_encodings())
 
 
 def get_info() -> dict[str,Any]:

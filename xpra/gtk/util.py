@@ -55,7 +55,7 @@ GRAB_STATUS_STRING = {
 }
 
 
-dsinit : bool = False
+dsinit: bool = False
 
 
 def init_display_source() -> None:

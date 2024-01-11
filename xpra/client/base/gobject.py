@@ -54,7 +54,7 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
     def init_packet_handlers(self) -> None:
         XpraClientBase.init_packet_handlers(self)
 
-        def noop_handler(packet : PacketType) -> None:    # pragma: no cover
+        def noop_handler(packet: PacketType) -> None:    # pragma: no cover
             log("ignoring packet: %s", packet)
         # ignore the following packet types without error:
         # (newer servers should avoid sending us any of those)

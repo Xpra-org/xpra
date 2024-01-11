@@ -132,7 +132,7 @@ class TrayClient(StubClientMixin):
         return make_instance(tc, self, *args)
 
     def get_tray_title(self) -> str:
-        t : list[str] = []
+        t: list[str] = []
         if self.session_name or self.server_session_name:
             t.append(self.session_name or self.server_session_name)
         ce = self.get_connection_endpoint()

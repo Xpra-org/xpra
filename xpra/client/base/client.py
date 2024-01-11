@@ -103,7 +103,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         for k,v in os.environ.items():
             log(f" {k}={v!r}")
         #client state:
-        self.exit_code : int | ExitCode | None = None
+        self.exit_code: int | ExitCode | None = None
         self.exit_on_signal = False
         self.display_desc = {}
         self.progress_process = None
@@ -682,7 +682,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         assert self.server_client_shutdown
         self.send("shutdown-server")
 
-    def _process_disconnect(self, packet : PacketType) -> None:
+    def _process_disconnect(self, packet: PacketType) -> None:
         #ie: ("disconnect", "version error", "incompatible version")
         netlog("%s", packet)
         info = tuple(nonl(bytestostr(x)) for x in packet[1:])
@@ -728,7 +728,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             return ExitCode.AUTHENTICATION_FAILED
         return ExitCode.OK
 
-    def _process_connection_lost(self, _packet : PacketType) -> None:
+    def _process_connection_lost(self, _packet: PacketType) -> None:
         p = self._protocol
         if p and p.input_raw_packetcount==0:
             props = p.get_info()
@@ -753,7 +753,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         ssl_attrs = typedict(packet[1])
         start_thread(self.ssl_upgrade, "ssl-upgrade", True, args=(ssl_attrs, ))
 
-    def ssl_upgrade(self, ssl_attrs : typedict) -> None:
+    def ssl_upgrade(self, ssl_attrs: typedict) -> None:
         # send ssl-upgrade request!
         ssllog = Logger("client", "ssl")
         ssllog(f"ssl-upgrade({ssl_attrs})")
@@ -1079,7 +1079,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             netlog.info("error in hello packet", exc_info=True)
             self.warn_and_quit(ExitCode.FAILURE, f"error processing hello packet from server: {e}")
 
-    def server_connection_established(self, caps : typedict) -> bool:
+    def server_connection_established(self, caps: typedict) -> bool:
         netlog("server_connection_established(..)")
         if not self.parse_encryption_capabilities(caps):
             netlog("server_connection_established(..) failed encryption capabilities")
@@ -1094,7 +1094,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.init_authenticated_packet_handlers()
         return True
 
-    def parse_server_capabilities(self, c : typedict) -> bool:
+    def parse_server_capabilities(self, c: typedict) -> bool:
         for bc in XpraClientBase.__bases__:
             if not bc.parse_server_capabilities(self, c):
                 log.info(f"server capabilities rejected by {bc}")
@@ -1103,7 +1103,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.server_compressors = c.strtupleget("compressors", )
         return True
 
-    def parse_network_capabilities(self, caps : typedict) -> bool:
+    def parse_network_capabilities(self, caps: typedict) -> bool:
         p = self._protocol
         if p.TYPE=="rfb":
             return True
@@ -1116,7 +1116,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         netlog(f"self.server_packet_types={self.server_packet_types}")
         return True
 
-    def parse_encryption_capabilities(self, caps : typedict) -> bool:
+    def parse_encryption_capabilities(self, caps: typedict) -> bool:
         p = self._protocol
         if not p:
             return False

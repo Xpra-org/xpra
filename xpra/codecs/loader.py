@@ -36,7 +36,7 @@ CODEC_FAIL_SELFTEST = os.environ.get("XPRA_CODEC_FAIL_SELFTEST", "").split(",")
 log(f"codec loader settings: {SELFTEST=}, {FULL_SELFTEST=}, {CODEC_FAIL_IMPORT=}, {CODEC_FAIL_SELFTEST=}")
 
 
-SKIP_LIST : tuple[str,...] = ()
+SKIP_LIST: tuple[str,...] = ()
 if OSX:
     SKIP_LIST = ("avif", "nvenc", "nvdec", "nvjpeg")
 
@@ -64,7 +64,7 @@ SOURCES: tuple[str,...] = filt(
     "v4l2", "evdi", "drm", "nvfbc",
 )
 
-ALL_CODECS : tuple[str,...] = filt(*set(
+ALL_CODECS: tuple[str,...] = filt(*set(
     CSC_CODECS + ENCODER_CODECS + ENCODER_VIDEO_CODECS + DECODER_CODECS + DECODER_VIDEO_CODECS + SOURCES)
 )
 
@@ -247,7 +247,7 @@ CODEC_OPTIONS : dict[str,tuple[str,str,str,str]] = {
     "nvfbc"         : ("NVIDIA Capture SDK","nvidia.nvfbc", f"capture_{platformname}", "NvFBC_SysCapture"),
 }
 
-NOLOAD : list[str] = []
+NOLOAD: list[str] = []
 if OSX:
     # none of the nvidia codecs are available on MacOS,
     # so don't bother trying:
@@ -275,7 +275,7 @@ def load_codec(name:str):
 
 def load_codecs(encoders=True, decoders=True, csc=True, video=True, sources=False) -> tuple[str, ...]:
     log("loading codecs")
-    loaded : list[str] = []
+    loaded: list[str] = []
 
     def load(*names):
         for name in names:
@@ -336,7 +336,7 @@ def get_rgb_compression_options() -> list[str]:
     from xpra.net import compression
     compressors = compression.get_enabled_compressors()
     compressors = tuple(x for x in compressors if x!="brotli")
-    RGB_COMP_OPTIONS : list[str] = ["Raw RGB"]
+    RGB_COMP_OPTIONS: list[str] = ["Raw RGB"]
     if compressors:
         RGB_COMP_OPTIONS  += ["/".join(compressors)]
     return RGB_COMP_OPTIONS

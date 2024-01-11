@@ -17,7 +17,7 @@ FAST_DECODE_MIN_SPEED : int = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)
 
 # note: this is just for defining the order of encodings,
 # so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
-PREFERRED_ENCODING_ORDER : tuple[str, ...] = (
+PREFERRED_ENCODING_ORDER: tuple[str, ...] = (
     "h264", "vp9", "vp8", "mpeg4",
     "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm",
     "png", "png/P", "png/L", "webp", "avif",
@@ -27,20 +27,20 @@ PREFERRED_ENCODING_ORDER : tuple[str, ...] = (
     "grayscale",
     "stream",
 )
-STREAM_ENCODINGS : tuple[str,...] = (
+STREAM_ENCODINGS: tuple[str,...] = (
     "h264", "vp9", "vp8", "mpeg4",
     "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm",
     "h265", "av1",
 )
 
 # encoding order for edges (usually one pixel high or wide):
-EDGE_ENCODING_ORDER : tuple[str, ...] = (
+EDGE_ENCODING_ORDER: tuple[str, ...] = (
     "rgb24", "rgb32",
     "png", "webp",
     "png/P", "png/L", "rgb", "jpeg", "jpega",
 )
 
-HELP_ORDER : tuple[str, ...] = (
+HELP_ORDER: tuple[str, ...] = (
     "auto",
     "stream",
     "grayscale",
@@ -146,7 +146,7 @@ class CodecStateException(Exception):
 class _codec_spec:
 
     codec_class     : Callable
-    codec_type      : str
+    codec_type     : str
     quality         : int = 50
     speed           : int = 50
     size_efficiency : int = 50
@@ -162,7 +162,7 @@ class _codec_spec:
     width_mask      : int = 0xFFFF
     height_mask     : int = 0xFFFF
     max_instances   : int = 0
-    skipped_fields  : tuple[str,...] = ("instances", "skipped_fields", )
+    skipped_fields : tuple[str,...] = ("instances", "skipped_fields", )
     # not exported:
     instances       : WeakSet[Any] = field(default_factory=WeakSet)
 
@@ -217,9 +217,9 @@ class _codec_spec:
 @dataclass(kw_only=True)
 class VideoSpec(_codec_spec):
 
-    encoding            : str = "invalid"
-    input_colorspace    : str = "invalid"
-    output_colorspaces  : tuple[str,...] = ()      # ie: ("YUV420P" : "YUV420P", ...)
+    encoding           : str = "invalid"
+    input_colorspace   : str = "invalid"
+    output_colorspaces : tuple[str,...] = ()      # ie: ("YUV420P" : "YUV420P", ...)
     has_lossless_mode   : bool = False
 
     def __repr__(self):

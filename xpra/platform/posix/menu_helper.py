@@ -30,10 +30,10 @@ LOAD_FROM_THEME : bool = envbool("XPRA_XDG_LOAD_FROM_THEME", True)
 LOAD_GLOB : bool = envbool("XPRA_XDG_LOAD_GLOB", False)
 
 EXPORT_ICONS : bool = envbool("XPRA_XDG_EXPORT_ICONS", True)
-DEBUG_COMMANDS : list[str] = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
+DEBUG_COMMANDS: list[str] = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
 EXPORT_TERMINAL_APPLICATIONS : bool = envbool("XPRA_XDG_EXPORT_TERMINAL_APPLICATIONS", False)
 EXPORT_SELF : bool = envbool("XPRA_XDG_EXPORT_SELF", False)
-LOAD_APPLICATIONS : list[str] = os.environ.get(
+LOAD_APPLICATIONS: list[str] = os.environ.get(
     "XPRA_MENU_LOAD_APPLICATIONS",
     f"{sys.prefix}/share/applications"
 ).split(":")

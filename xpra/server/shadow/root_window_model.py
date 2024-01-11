@@ -53,14 +53,14 @@ class RootWindowModel:
         self.title : str= title
         self.geometry = geometry
         self.capture = capture
-        self.property_names : list[str] = [
+        self.property_names: list[str] = [
             "title", "class-instance",
             "client-machine", "window-type",
             "size-hints", "icons", "shadow",
             "depth",
         ]
-        self.dynamic_property_names : list[str] = []
-        self.internal_property_names : list[str] = ["content-type"]
+        self.dynamic_property_names: list[str] = []
+        self.internal_property_names: list[str] = ["content-type"]
         self.signal_listeners : dict[str,list[tuple]] = {}
 
     def __repr__(self):

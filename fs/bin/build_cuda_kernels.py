@@ -31,6 +31,7 @@ def get_nvcc_version(command):
     print(f"found CUDA compiler {command!r} : {version_str}")
     return tuple(int(x) for x in version.split("."))
 
+
 def get_nvcc():
     path_options = os.environ.get("PATH", "").split(os.path.pathsep)
     if WIN32:
@@ -62,7 +63,8 @@ def get_nvcc():
         print(f" using version {nvcc_version} from {nvcc}")
     return nvcc, nvcc_version
 
-def get_nvcc_args(nvcc:str, nvcc_version=(0, 0)):
+
+def get_nvcc_args(nvcc: str, nvcc_version=(0, 0)):
     if nvcc_version < (11, 6):
         raise RuntimeError(f"nvcc version {nvcc_version} is too old, minimum is 11.6")
     nvcc_cmd = [
@@ -99,6 +101,7 @@ def main(args):
         nvcc_commands.append(kbuild_cmd)
     #parallel build:
     nvcc_errors = []
+
     def nvcc_compile(nvcc_cmd):
         c, stdout, stderr = get_status_output(nvcc_cmd)
         if c!=0:
@@ -118,6 +121,7 @@ def main(args):
             sys.exit(1)
         t.join()
     return len(nvcc_errors)
+
 
 if __name__ == "__main__":
     r = main(sys.argv)

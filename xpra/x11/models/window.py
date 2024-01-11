@@ -67,11 +67,11 @@ CLAMP_OVERLAP = envint("XPRA_WINDOW_CLAMP_OVERLAP", 20)
 assert CLAMP_OVERLAP>=0
 
 
-def calc_constrained_size(width : int, height : int, hints):
+def calc_constrained_size(width: int, height: int, hints):
     if not hints:
         return width, height
 
-    def getintpair(key, dv1 : int, dv2 : int):
+    def getintpair(key, dv1: int, dv2: int):
         v = hints.get(key)
         if v:
             try:
@@ -249,7 +249,7 @@ class WindowModel(BaseWindowModel):
     _internal_property_names = BaseWindowModel._internal_property_names+["children"]
     _MODELTYPE = "Window"
 
-    def __init__(self, parking_window_xid:int, xid:int, desktop_geometry, size_constraints=None):
+    def __init__(self, parking_window_xid: int, xid: int, desktop_geometry, size_constraints=None):
         """Register a new client window with the WM.
 
         Raises an Unmanageable exception if this window should not be
@@ -258,14 +258,14 @@ class WindowModel(BaseWindowModel):
 
         super().__init__(xid)
         self.parking_window_xid = parking_window_xid
-        self.corral_xid : int = 0
+        self.corral_xid: int = 0
         self.desktop_geometry = desktop_geometry
         self.size_constraints = size_constraints or (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
         self.saved_events = -1
         # these extra state attributes allow us to `unmanage()` the window cleanly:
-        self.in_save_set : bool = False
-        self.client_reparented : bool = False
-        self.kill_count : int = 0
+        self.in_save_set: bool = False
+        self.client_reparented: bool = False
+        self.kill_count: int = 0
 
         self.call_setup()
 
@@ -851,7 +851,7 @@ class WindowModel(BaseWindowModel):
         "_NET_WM_ICON"                  : _handle_net_wm_icon_change,
     }
 
-    def get_default_window_icon(self, size:int=48):
+    def get_default_window_icon(self, size: int=48):
         return None
 
     def get_wm_state(self, prop) -> bool:

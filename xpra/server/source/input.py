@@ -20,7 +20,7 @@ class InputMixin(StubSourceMixin):
     """
 
     @classmethod
-    def is_needed(cls, caps : typedict) -> bool:
+    def is_needed(cls, caps: typedict) -> bool:
         return any((
             caps.boolget("keyboard"),
             caps.boolget("mouse"),
@@ -30,7 +30,7 @@ class InputMixin(StubSourceMixin):
     def init_state(self) -> None:
         self.keyboard_config = None
         self.double_click_time : int = -1
-        self.double_click_distance : tuple[int, int] | None = None
+        self.double_click_distance: tuple[int, int] | None = None
         # mouse echo:
         self.mouse_last_position : tuple[int,int] | None = None
         self.mouse_last_relative_position : tuple[int,int] | None = None
@@ -38,7 +38,7 @@ class InputMixin(StubSourceMixin):
     def cleanup(self) -> None:
         self.keyboard_config = None
 
-    def parse_client_caps(self, c : typedict):
+    def parse_client_caps(self, c: typedict):
         dc = c.dictget("double_click")
         if dc:
             dc = typedict(dc)

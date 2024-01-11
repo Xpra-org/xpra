@@ -22,7 +22,7 @@ log = Logger("x11")
 DEF XNone = 0
 
 
-def isX11(display_name : str=os.environ.get("DISPLAY", "")):
+def isX11(display_name: str=os.environ.get("DISPLAY", "")):
     b = display_name.encode()
     cdef char* display = b
     cdef Display *d = NULL
@@ -34,7 +34,7 @@ def isX11(display_name : str=os.environ.get("DISPLAY", "")):
     return True
 
 
-def isxwayland(display_name : str=os.environ.get("DISPLAY", "")):
+def isxwayland(display_name: str=os.environ.get("DISPLAY", "")):
     b = display_name.encode()
     cdef char* display = b
     cdef Display *d = NULL
@@ -71,7 +71,7 @@ def isxwayland(display_name : str=os.environ.get("DISPLAY", "")):
         XCloseDisplay(d)
 
 
-cdef Atom get_XAtom(Display *display, name : str):
+cdef Atom get_XAtom(Display *display, name: str):
     b = name.encode()
     return XInternAtom(display, b, True)
 

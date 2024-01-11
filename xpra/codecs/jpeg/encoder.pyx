@@ -178,7 +178,7 @@ cdef class Encoder:
         if self.compressor==NULL:
             raise RuntimeError("Error: failed to instantiate a JPEG compressor")
 
-    def init_context(self, encoding, width : int, height : int, src_format, options : typedict):
+    def init_context(self, encoding, width : int, height : int, src_format, options: typedict):
         assert encoding in ("jpeg", "jpega"), "invalid encoding: %s" % encoding
         assert src_format in get_input_colorspaces(encoding)
         scaled_width = options.intget("scaled-width", width)

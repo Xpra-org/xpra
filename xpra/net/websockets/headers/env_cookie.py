@@ -9,7 +9,7 @@ import os
 from xpra.util.str_fn import strtobytes
 
 
-def get_headers(host:str, port:int) -> dict[bytes,bytes]:    # pylint: disable=unused-argument
+def get_headers(host:str, port: int) -> dict[bytes,bytes]:    # pylint: disable=unused-argument
     cookie = os.environ.get("XPRA_WS_COOKIE")
     if cookie:
         return {b"Cookie": strtobytes(cookie)}

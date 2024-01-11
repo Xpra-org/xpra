@@ -15,7 +15,7 @@ class DBUS_Mixin(StubSourceMixin):
     """
 
     @classmethod
-    def is_needed(cls, caps : typedict) -> bool:
+    def is_needed(cls, caps: typedict) -> bool:
         #the DBUSSource we create is only useful if the client
         #supports one of the mixins it exposes:
         return caps.boolget("windows", False) or caps.boolget("sound", False) or caps.get("audio", False)

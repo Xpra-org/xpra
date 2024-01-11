@@ -124,7 +124,7 @@ class AudioPipeline(Pipeline):
         self.volume = None
 
     def onstart(self) -> None:
-        # we don't always get the "audio-codec" message..
+        # we don't always get the "audio-codec" message…
         # so print the codec from here instead (and assume gstreamer is using what we told it to)
         # after a delay, just in case we do get the real "audio-codec" message!
         self.timeout_add(500, self.new_codec_description, self.codec.split("+")[0])

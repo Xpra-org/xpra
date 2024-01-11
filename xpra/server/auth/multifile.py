@@ -90,7 +90,7 @@ class Authenticator(FileAuthenticatorBase):
             return ""
         return entry[1]
 
-    def authenticate_hmac(self, caps : typedict) -> bool:
+    def authenticate_hmac(self, caps: typedict) -> bool:
         challenge_response = caps.bytesget("challenge_response")
         client_salt = caps.bytesget("challenge_client_salt")
         log(f"multifile_auth.authenticate_hmac challenge-response={challenge_response!r}, client-salt={client_salt!r}")

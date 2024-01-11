@@ -45,7 +45,7 @@ def close_about(*_args):
         about_dialog.hide()
 
 
-def about(on_close=close_about, parent: Gtk.Window | None=None):
+def about(on_close=close_about, parent: Gtk.Window | None = None):
     global about_dialog
     if about_dialog:
         about_dialog.show()

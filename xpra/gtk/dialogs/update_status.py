@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+from collections.abc import Callable
 
 from xpra.os_util import gi_import
 from xpra.platform.gui import init as gui_init, force_focus
@@ -22,7 +23,7 @@ log = Logger("util")
 _instance = None
 
 
-def getUpdateStatusWindow():
+def get_update_status_window():
     global _instance
     if _instance is None:
         _instance = UpdateStatusWindow()
@@ -57,7 +58,7 @@ class UpdateStatusWindow:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
 
-        def btn(label, tooltip, callback, icon_name=None):
+        def btn(label: str, tooltip: str, callback: Callable, icon_name: str = ""):
             btn = Gtk.Button(label=label)
             btn.set_tooltip_text(tooltip)
             btn.connect("clicked", callback)
@@ -129,7 +130,7 @@ class UpdateStatusWindow:
             self.window.destroy()
             self.window = None
 
-    def run(self):
+    def run(self) -> None:
         log("run()")
         Gtk.main()
         log("run() Gtk.main done")

@@ -104,7 +104,7 @@ def osclose(fd) -> None:
         pass
 
 
-def create_xorg_device_configs(xorg_conf_dir:str, device_uuid, uid:int, gid:int) -> None:
+def create_xorg_device_configs(xorg_conf_dir:str, device_uuid, uid: int, gid: int) -> None:
     log = get_vfb_logger()
     log("create_xorg_device_configs(%s, %s, %i, %i)", xorg_conf_dir, device_uuid, uid, gid)
     if not device_uuid:
@@ -117,7 +117,7 @@ def create_xorg_device_configs(xorg_conf_dir:str, device_uuid, uid:int, gid:int)
 
     # create conf dir if needed:
     d = xorg_conf_dir
-    dirs : list[str] = []
+    dirs: list[str] = []
     while d and not os.path.exists(d):
         log("create_device_configs: dir does not exist: %s", d)
         dirs.insert(0, d)
@@ -125,7 +125,7 @@ def create_xorg_device_configs(xorg_conf_dir:str, device_uuid, uid:int, gid:int)
     for d in dirs:
         makedir(d)
 
-    conf_files : list[str] = []
+    conf_files: list[str] = []
     for i, dev_type in (
         (0, "pointer"),
         (1, "touchpad"),
@@ -134,7 +134,7 @@ def create_xorg_device_configs(xorg_conf_dir:str, device_uuid, uid:int, gid:int)
         conf_files.append(f)
 
 
-def save_input_conf(xorg_conf_dir:str, i, dev_type, device_uuid, uid:int, gid:int) -> str:
+def save_input_conf(xorg_conf_dir:str, i, dev_type, device_uuid, uid: int, gid: int) -> str:
     # create individual device files:
     upper_dev_type = dev_type[:1].upper()+dev_type[1:]   # ie: Pointer
     product_name = f"Xpra Virtual {upper_dev_type} {bytestostr(device_uuid)}"
@@ -158,7 +158,7 @@ EndSection
     return conf_file
 
 
-def valid_xauth(filename:str, uid:int=getuid(), gid:int=getgid()) -> str:
+def valid_xauth(filename:str, uid: int=getuid(), gid: int=getgid()) -> str:
     if not filename:
         return ""
     if not os.path.exists(filename):
@@ -186,8 +186,8 @@ def get_xauthority_path(display_name) -> str:
     return os.path.join(d, filename)
 
 
-def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd,
-               uid:int, gid:int, username:str, uinput_uuid=None):
+def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth: int, display_name:str, cwd,
+               uid: int, gid: int, username:str, uinput_uuid=None):
     if not POSIX:
         raise InitException(f"starting an Xvfb is not supported on {os.name}")
     if OSX:

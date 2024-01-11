@@ -64,12 +64,12 @@ class Authenticator(SysAuthenticator):
             return None
         return super().get_challenge(["xor"])
 
-    def validate_caps(self, caps : typedict) -> bool:
+    def validate_caps(self, caps: typedict) -> bool:
         if not self.require_challenge:
             return True
         return super().validate_caps(caps)
 
-    def default_authenticate_check(self, caps : typedict) -> bool:
+    def default_authenticate_check(self, caps: typedict) -> bool:
         info = f"Connection request from {self.connection_str}"
         subs = {
             "auth_dialog"   : get_default_auth_dialog(),

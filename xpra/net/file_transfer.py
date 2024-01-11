@@ -48,7 +48,7 @@ ACCEPT = 1      # the file / URL will be sent
 OPEN = 2        # don't send, open on sender
 
 
-def osclose(fd:int) -> None:
+def osclose(fd: int) -> None:
     try:
         os.close(fd)
     except OSError as e:
@@ -57,7 +57,7 @@ def osclose(fd:int) -> None:
         filelog.estr(e)
 
 
-def basename(filename:str) -> str:
+def basename(filename: str) -> str:
     # we can't use os.path.basename,
     # because the remote end may have sent us a filename
     # which is using a different pathsep
@@ -76,7 +76,7 @@ def basename(filename:str) -> str:
     return tmp
 
 
-def safe_open_download_file(basefilename:str, mimetype:str) -> tuple[str,int]:
+def safe_open_download_file(basefilename: str, mimetype: str) -> tuple[str,int]:
     from xpra.platform.paths import get_download_dir  # pylint: disable=import-outside-toplevel
     dd = os.path.expanduser(get_download_dir())
     filename = os.path.abspath(os.path.join(dd, basename(basefilename)))
@@ -111,8 +111,8 @@ class ReceiveChunkState:
     fd: int
     filename: str
     mimetype: str
-    printit : bool
-    openit : bool
+    printit: bool
+    openit: bool
     filesize: int
     options: typedict
     digest: hashlib._Hash | None
@@ -138,9 +138,9 @@ class SendPendingData:
     url : str
     mimetype : str
     data : bytes
-    filesize : int
-    printit : bool
-    openit : bool
+    filesize: int
+    printit: bool
+    openit: bool
     options : dict
 
 
@@ -313,7 +313,7 @@ class FileTransferHandler(FileTransferAttributes):
         }
         return info
 
-    def digest_mismatch(self, filename:str, digest, expected_digest) -> None:
+    def digest_mismatch(self, filename: str, digest, expected_digest) -> None:
         filelog.error(f"Error: data does not match, invalid {digest.name} file digest")
         filelog.error(f" for {filename!r}")
         filelog.error(f" received {digest.hexdigest()}")
@@ -324,7 +324,7 @@ class FileTransferHandler(FileTransferAttributes):
         except OSError:
             filelog.error(f"Error: failed to delete uploaded file {filename}")
 
-    def _check_chunk_receiving(self, chunk_id:str, chunk_no:int) -> None:
+    def _check_chunk_receiving(self, chunk_id: str, chunk_no: int) -> None:
         chunk_state = self.receive_chunks_in_progress.get(chunk_id)
         filelog("_check_chunk_receiving(%s, %s) chunk_state=%s", chunk_id, chunk_no, chunk_state)
         if not chunk_state:
@@ -338,7 +338,7 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.error(f"Error: chunked file transfer f{chunk_id} timed out")
             self.receive_chunks_in_progress.pop(chunk_id, None)
 
-    def cancel_download(self, send_id:str, message="Cancelled") -> None:
+    def cancel_download(self, send_id: str, message="Cancelled") -> None:
         filelog("cancel_download(%s, %s)", send_id, message)
         for chunk_id, chunk_state in dict(self.receive_chunks_in_progress).items():
             if chunk_state.send_id==send_id:
@@ -346,7 +346,7 @@ class FileTransferHandler(FileTransferAttributes):
                 return
         filelog.error(f"Error: cannot cancel download {send_id!r}, entry not found!")
 
-    def cancel_file(self, chunk_id:str, message:str, chunk:int=0) -> None:
+    def cancel_file(self, chunk_id: str, message: str, chunk: int=0) -> None:
         filelog("cancel_file%s", (chunk_id, message, chunk))
         chunk_state = self.receive_chunks_in_progress.get(chunk_id)
         if chunk_state:
@@ -373,7 +373,7 @@ class FileTransferHandler(FileTransferAttributes):
                 filelog.error(f" {filename!r} : {e}")
         self.send("ack-file-chunk", chunk_id, False, message, chunk)
 
-    def _process_send_file_chunk(self, packet : PacketType) -> None:
+    def _process_send_file_chunk(self, packet: PacketType) -> None:
         chunk_id = str(packet[1])
         chunk = int(packet[2])
         file_data : bytes = packet[3]
@@ -459,7 +459,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.process_downloaded_file(filename, chunk_state.mimetype,
                                      chunk_state.printit, chunk_state.openit, chunk_state.filesize, options)
 
-    def accept_data(self, send_id:str, dtype, basefilename:str, printit:bool, openit:bool) -> tuple[bool,bool]:
+    def accept_data(self, send_id: str, dtype, basefilename: str, printit:bool, openit:bool) -> tuple[bool,bool]:
         #subclasses should check the flags,
         #and if ask is True, verify they have accepted this specific send_id
         filelog("accept_data%s", (send_id, dtype, basefilename, printit, openit))
@@ -484,7 +484,7 @@ class FileTransferHandler(FileTransferAttributes):
             openit = False
         return printit, openit
 
-    def _process_send_file(self, packet : PacketType) -> None:
+    def _process_send_file(self, packet: PacketType) -> None:
         # the remote end is sending us a file
         start = monotonic()
         basefilename = str(packet[1])
@@ -596,7 +596,7 @@ class FileTransferHandler(FileTransferAttributes):
                              args=(filename, mimetype, printit, openit, filesize, options))
             filelog("started process-download thread: %s", t)
 
-    def do_process_downloaded_file(self, filename:str, mimetype:str, printit:bool, openit:bool, filesize:int, options):
+    def do_process_downloaded_file(self, filename: str, mimetype:str, printit:bool, openit:bool, filesize: int, options):
         filelog("do_process_downloaded_file%s", (filename, mimetype, printit, openit, filesize, options))
         if printit:
             self._print_file(filename, mimetype, options)
@@ -717,12 +717,12 @@ class FileTransferHandler(FileTransferAttributes):
         cr = getChildReaper()
         cr.add_process(proc, f"Open file {url}", command, True, True, open_done)
 
-    def file_size_warning(self, action:str, location:str, basefilename:str, filesize:int, limit:int) -> None:
+    def file_size_warning(self, action:str, location:str, basefilename:str, filesize: int, limit: int) -> None:
         filelog.warn("Warning: cannot %s the file '%s'", action, basefilename)
         filelog.warn(" this file is too large: %sB", std_unit(filesize))
         filelog.warn(" the %s file size limit is %sB", location, std_unit(limit))
 
-    def check_file_size(self, action:str, filename:str, filesize:int) -> bool:
+    def check_file_size(self, action:str, filename:str, filesize: int) -> bool:
         basefilename = os.path.basename(filename)
         if filesize>self.file_size_limit:
             self.file_size_warning(action, "local", basefilename, filesize, self.file_size_limit)
@@ -736,7 +736,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.send("request-file", filename, openit)
         self.files_requested[filename] = openit
 
-    def _process_open_url(self, packet : PacketType):
+    def _process_open_url(self, packet: PacketType):
         send_id = str(packet[2])
         url = str(packet[1])
         if not self.open_url:
@@ -820,7 +820,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.send("send-data-request", dtype, send_id, url, mimetype, filesize, printit, openit, options or {})
         return send_id
 
-    def _process_send_data_request(self, packet : PacketType) -> None:
+    def _process_send_data_request(self, packet: PacketType) -> None:
         dtype, send_id, url, _, filesize, printit, openit = packet[1:8]
         options = {}
         if len(packet)>=9:
@@ -873,14 +873,14 @@ class FileTransferHandler(FileTransferAttributes):
         else:
             self.ask_data_request(cb_answer, send_id, dtype, url, filesize, printit, openit)
 
-    def ask_data_request(self, cb_answer:Callable, send_id:str, dtype:str, url:str, filesize:int,
+    def ask_data_request(self, cb_answer:Callable, send_id:str, dtype:str, url:str, filesize: int,
                          printit:bool, openit:bool) -> None:
         # subclasses may prompt the user here instead
         filelog("ask_data_request%s", (send_id, dtype, url, filesize, printit, openit))
         v = self.accept_data(send_id, dtype, url, printit, openit)
         cb_answer(v)
 
-    def _process_send_data_response(self, packet : PacketType) -> None:
+    def _process_send_data_response(self, packet: PacketType) -> None:
         send_id = str(packet[1])
         accept = int(packet[2])
         filelog("process send-data-response: send_id=%s, accept=%s", send_id, accept)
@@ -925,7 +925,7 @@ class FileTransferHandler(FileTransferAttributes):
         filelog.warn(" the send approval request timed out")
         return False
 
-    def do_send_file(self, filename:str, mimetype:str, data, filesize:int=0,
+    def do_send_file(self, filename:str, mimetype:str, data, filesize: int=0,
                      printit:bool=False, openit:bool=False, options=None, send_id:str="") -> bool:
         if printit:
             action = "print"
@@ -966,7 +966,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.send("send-file", basefilename, mimetype, printit, openit, filesize, cdata, options, send_id)
         return True
 
-    def _check_chunk_sending(self, chunk_id:str, chunk_no:int) -> None:
+    def _check_chunk_sending(self, chunk_id:str, chunk_no: int) -> None:
         chunk_state = self.send_chunks_in_progress.get(chunk_id)
         filelog("_check_chunk_sending(%s, %s) chunk_state found: %s", chunk_id, chunk_no, bool(chunk_state))
         if not chunk_state:

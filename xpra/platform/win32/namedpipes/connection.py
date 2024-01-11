@@ -19,7 +19,7 @@ from xpra.platform.win32.common import (
     CloseHandle, FormatMessageSystem,
     ERROR_PIPE_BUSY, ERROR_PIPE_NOT_CONNECTED,
     IO_ERROR_STR, ERROR_BROKEN_PIPE, ERROR_IO_PENDING,
-    )
+)
 from xpra.platform.win32.namedpipes.common import (
     OVERLAPPED, WAIT_STR, INVALID_HANDLE_VALUE,
     INFINITE,
@@ -27,12 +27,12 @@ from xpra.platform.win32.namedpipes.common import (
     ReadFile, WriteFile, SetEvent,
     DisconnectNamedPipe, FlushFileBuffers, WaitNamedPipeA,
     GetLastError, SetNamedPipeHandleState, WaitForSingleObject, GetOverlappedResult,
-    )
+)
 from xpra.platform.win32.constants import (
     FILE_FLAG_OVERLAPPED,
     GENERIC_READ, GENERIC_WRITE,
     OPEN_EXISTING, PIPE_READMODE_BYTE,
-    )
+)
 
 from xpra.log import Logger
 log = Logger("network", "named-pipe", "win32")
@@ -42,7 +42,7 @@ BUFSIZE = 65536
 CONNECTION_CLOSED_ERRORS = {
     ERROR_BROKEN_PIPE           : "BROKENPIPE",
     ERROR_PIPE_NOT_CONNECTED    : "PIPE_NOT_CONNECTED",
-    }
+}
 #some of these may be redundant or impossible to hit? (does not hurt I think)
 for x in ("WSAENETDOWN", "WSAENETUNREACH", "WSAECONNABORTED", "WSAECONNRESET",
           "WSAENOTCONN", "WSAESHUTDOWN", "WSAETIMEDOUT", "WSAETIMEDOUT",
@@ -79,7 +79,6 @@ class NamedPipeConnection(Connection):
         if closed:
             raise ConnectionClosedException(e) from None
         return False
-
 
     def untilConcludes(self, fn, *args, **kwargs):
         try:
@@ -162,8 +161,10 @@ class NamedPipeConnection(Connection):
         if not ph:
             return
         self.pipe_handle = None
+
         def _close_err(fn, e):
             log.error("Error: %s(%s) %s", fn, ph, e)
+
         def logerr(fn, *args):
             try:
                 fn(*args)
@@ -204,8 +205,8 @@ def connect_to_namedpipe(pipe_name, timeout=10):
         else:
             raise RuntimeError("cannot open named pipe '%s': %s" % (pipe_name, FormatMessageSystem(err)))
     #we have a valid handle!
-    dwMode = c_ulong(PIPE_READMODE_BYTE)
-    r = SetNamedPipeHandleState(pipe_handle, byref(dwMode), None, None)
+    dw_mode = c_ulong(PIPE_READMODE_BYTE)
+    r = SetNamedPipeHandleState(pipe_handle, byref(dw_mode), None, None)
     log("SetNamedPipeHandleState(..)=%i", r)
     if not r:
         log.warn("Warning: SetNamedPipeHandleState failed")

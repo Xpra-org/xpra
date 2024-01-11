@@ -36,16 +36,16 @@ class UI_thread_watcher:
         self.source_remove = source_remove
         self.polling_timeout = polling_timeout
         self.max_delta : int = polling_timeout * 2
-        self.announce_timeout : float = announce_timeout/1000.0 if announce_timeout else float('inf')
+        self.announce_timeout: float = announce_timeout/1000.0 if announce_timeout else float('inf')
         self.init_vars()
 
     def init_vars(self) -> None:
-        self.alive_callbacks : list[Callable] = []
-        self.fail_callbacks : list[Callable] = []
-        self.resume_callbacks : list[Callable] = []
+        self.alive_callbacks: list[Callable] = []
+        self.fail_callbacks: list[Callable] = []
+        self.resume_callbacks: list[Callable] = []
         self.UI_blocked : bool = False
         self.announced_blocked : bool = False
-        self.last_UI_thread_time : float = 0
+        self.last_UI_thread_time: float = 0
         self.ui_wakeup_timer : int = 0
         self.exit : Event = Event()
 

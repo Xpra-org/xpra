@@ -221,7 +221,7 @@ class TwoFileConnection(Connection):
         self.may_abort("read")
         return self._read(os.read, self._read_fd, n)
 
-    def write(self, buf, _packet_type:str=""):
+    def write(self, buf, _packet_type: str=""):
         self.may_abort("write")
         return self._write(os.write, self._write_fd, buf)
 
@@ -354,7 +354,7 @@ class SocketConnection(Connection):
     def read(self, n: int) -> bytes:
         return self._read(self._socket.recv, n)
 
-    def write(self, buf, _packet_type:str=""):
+    def write(self, buf, _packet_type: str=""):
         return self._write(self._socket.send, buf)
 
     def close(self) -> None:
@@ -517,7 +517,7 @@ class SocketPeekFile:
             return self.readline
         return getattr(self.fileobj, attr)
 
-    def readline(self, limit:int=-1):
+    def readline(self, limit: int=-1):
         if self.peeked:
             newline = self.peeked.find(b"\n")
             peeked = self.peeked

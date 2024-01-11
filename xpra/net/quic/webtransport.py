@@ -52,7 +52,7 @@ class WebTransportHandler(XpraQuicConnection):
         while self.http_event_queue.qsize():
             self.http_event_received(self.http_event_queue.get())
 
-    def send_close(self, code : int = 403, reason : str = ""):
+    def send_close(self, code: int = 403, reason: str = ""):
         if not self.accepted:
             self.closed = True
             self.send_headers(0, {":status" : code})
@@ -62,7 +62,7 @@ class WebTransportHandler(XpraQuicConnection):
         self.connection.send_datagram(flow_id=self.stream_id, data=data)
         self.transmit()
 
-    def write(self, stream_id : int, data : bytes) -> None:
+    def write(self, stream_id: int, data: bytes) -> None:
         self.connection._quic.send_stream_data(stream_id=stream_id, data=data)
         self.transmit()
 

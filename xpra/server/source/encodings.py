@@ -36,7 +36,7 @@ class EncodingsMixin(StubSourceMixin):
     """
 
     @classmethod
-    def is_needed(cls, caps : typedict) -> bool:
+    def is_needed(cls, caps: typedict) -> bool:
         return bool(caps.strtupleget("encodings")) or caps.boolget("windows")
 
     def init_state(self) -> None:
@@ -221,7 +221,7 @@ class EncodingsMixin(StubSourceMixin):
             self.calculate_timer = 0
             self.source_remove(ct)
 
-    def parse_client_caps(self, c : typedict) -> None:
+    def parse_client_caps(self, c: typedict) -> None:
         #batch options:
 
         def batch_value(prop, default, minv=None, maxv=None):

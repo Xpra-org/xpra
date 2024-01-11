@@ -49,7 +49,7 @@ class DotXpra:
         elif sockdir not in sockdirs:
             sockdirs.insert(0, sockdir)
         self._sockdir = self.osexpand(sockdir)
-        self._sockdirs : list[str] = [self.osexpand(x) for x in sockdirs]
+        self._sockdirs: list[str] = [self.osexpand(x) for x in sockdirs]
 
     def osexpand(self, v:str) -> str:
         return osexpand(v, self.username, self.uid, self.gid)

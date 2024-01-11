@@ -179,13 +179,13 @@ class DisplayManager(StubServerMixin):
             "display": i,
         }
 
-    def _process_set_cursors(self, proto, packet : PacketType) -> None:
+    def _process_set_cursors(self, proto, packet: PacketType) -> None:
         assert self.cursors, "cannot toggle send_cursors: the feature is disabled"
         ss = self.get_server_source(proto)
         if ss:
             ss.send_cursors = bool(packet[1])
 
-    def _process_set_bell(self, proto, packet : PacketType) -> None:
+    def _process_set_bell(self, proto, packet: PacketType) -> None:
         assert self.bell, "cannot toggle send_bell: the feature is disabled"
         ss = self.get_server_source(proto)
         if ss:
@@ -332,7 +332,7 @@ class DisplayManager(StubServerMixin):
         log("get_client_refresh_rate(%s)=%s (from %s)", ss, rrate, vrefresh)
         return rrate
 
-    def _process_desktop_size(self, proto, packet : PacketType) -> None:
+    def _process_desktop_size(self, proto, packet: PacketType) -> None:
         log("new desktop size from %s: %s", proto, packet)
         ss = self.get_server_source(proto)
         if ss is None:
@@ -374,7 +374,7 @@ class DisplayManager(StubServerMixin):
         #ensures that DPI and antialias information gets reset:
         self.update_all_server_settings()
 
-    def _process_configure_display(self, proto, packet : PacketType) -> None:
+    def _process_configure_display(self, proto, packet: PacketType) -> None:
         ss = self.get_server_source(proto)
         if ss is None:
             return
@@ -449,7 +449,7 @@ class DisplayManager(StubServerMixin):
 
     ######################################################################
     # screenshots:
-    def _process_screenshot(self, proto, _packet : PacketType) -> None:
+    def _process_screenshot(self, proto, _packet: PacketType) -> None:
         packet = self.make_screenshot_packet()
         ss = self.get_server_source(proto)
         if packet and ss:

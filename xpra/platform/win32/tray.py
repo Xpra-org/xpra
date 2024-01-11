@@ -24,8 +24,8 @@ log = Logger("tray", "win32")
 
 class Win32Tray(TrayBase):
 
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.calculate_offset()
         self.default_icon_extension = "ico"
         icon_filename = get_icon_filename(self.default_icon_filename, "ico")
@@ -40,7 +40,6 @@ class Win32Tray(TrayBase):
 
     def hide(self):
         """ we can't hide or show the tray on MS Windows """
-
 
     def get_size(self):
         w = GetSystemMetrics(win32con.SM_CXSMICON)
@@ -81,7 +80,6 @@ class Win32Tray(TrayBase):
         if self.tray_widget:
             self.tray_widget.set_tooltip(tooltip)
 
-
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options=None):
         if self.tray_widget:
             self.tray_widget.set_icon_from_data(pixels, has_alpha, w, h, rowstride, options)
@@ -103,7 +101,6 @@ class Win32Tray(TrayBase):
             if geom:
                 return geom
         return self.geometry_guess
-
 
     def move_cb(self, *args):
         pos = wintypes.POINT()

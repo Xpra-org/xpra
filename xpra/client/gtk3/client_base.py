@@ -343,7 +343,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return None
         return values[0]
 
-    def do_process_challenge_prompt_dialog(self, values : list, wait : Event, prompt="password") -> None:
+    def do_process_challenge_prompt_dialog(self, values: list, wait : Event, prompt="password") -> None:
         # pylint: disable=import-outside-toplevel
         title = self.get_server_authentication_string()
         dialog = Gtk.Dialog(title,
@@ -1054,7 +1054,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             c = None
         return c
 
-    def process_ui_capabilities(self, caps : typedict) -> None:
+    def process_ui_capabilities(self, caps: typedict) -> None:
         UIXpraClient.process_ui_capabilities(self, caps)
         # this requires the "DisplayClient" mixin:
         if not hasattr(self, "screen_size_changed"):

@@ -96,7 +96,7 @@ class Authenticator(SysAuthenticator):
     def __repr__(self):
         return "u2f"
 
-    def u2f_check(self, caps : typedict) -> bool:
+    def u2f_check(self, caps: typedict) -> bool:
         challenge_response = caps.strget("challenge_response")
         client_salt = caps.strget("challenge_client_salt")
         log(f"authenticate_check: response={challenge_response}, client-salt={client_salt}")

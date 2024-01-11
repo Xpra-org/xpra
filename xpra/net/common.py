@@ -34,7 +34,10 @@ DEFAULT_PORTS: dict[str,int] = {
     "quic"  : 20000,
 }
 
-PacketElement: TypeAlias = Union[tuple,list,dict,int,bool,str,bytes,memoryview,Compressible,Compressed,LargeStructure]
+PacketElement: TypeAlias = Union[
+    tuple, list, dict, int, bool, str, bytes, memoryview,
+    Compressible, Compressed, LargeStructure,
+]
 
 # packet type followed by attributes:
 # in 3.11: tuple[str, *tuple[int, ...]]

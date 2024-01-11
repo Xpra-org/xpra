@@ -16,14 +16,14 @@ from xpra.client.gl.drivers import GL_MATCH_LIST, WHITELIST, GREYLIST, BLACKLIST
 
 log = Logger("opengl")
 
-required_extensions : tuple[str, ...] = ("GL_ARB_texture_rectangle", "GL_ARB_vertex_program")
+required_extensions: tuple[str, ...] = ("GL_ARB_texture_rectangle", "GL_ARB_vertex_program")
 
 
-GL_ALPHA_SUPPORTED : bool = envbool("XPRA_ALPHA", True)
-DOUBLE_BUFFERED : bool = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", True)
+GL_ALPHA_SUPPORTED: bool = envbool("XPRA_ALPHA", True)
+DOUBLE_BUFFERED: bool = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", True)
 
-CRASH : bool = envbool("XPRA_OPENGL_FORCE_CRASH", False)
-TIMEOUT : int = envint("XPRA_OPENGL_FORCE_TIMEOUT", 0)
+CRASH: bool = envbool("XPRA_OPENGL_FORCE_CRASH", False)
+TIMEOUT: int = envint("XPRA_OPENGL_FORCE_TIMEOUT", 0)
 
 
 # by default, we raise an ImportError as soon as we find something missing:
@@ -39,7 +39,7 @@ gl_check_error = raise_error
 gl_fatal_error = raise_fatal_error
 
 
-def parse_pyopengl_version(vstr : str) -> tuple[int,...]:
+def parse_pyopengl_version(vstr: str) -> tuple[int,...]:
     def numv(s):
         try:
             return int(s)
@@ -89,7 +89,7 @@ def get_max_viewport_dims() -> tuple[int,int]:
 
 
 def get_extensions() -> list[str]:
-    extensions : list[str] = _get_gl_enums("extensions", "GL_NUM_EXTENSIONS", "GL_EXTENSIONS")
+    extensions: list[str] = _get_gl_enums("extensions", "GL_NUM_EXTENSIONS", "GL_EXTENSIONS")
     if not extensions:
         # try legacy mode:
         from OpenGL.error import GLError
@@ -478,7 +478,7 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
         check_texture_functions,
         check_shader_functions,
     ):
-        msg : str = check_fn()
+        msg: str = check_fn()
         if msg:
             unsafe(msg)
 

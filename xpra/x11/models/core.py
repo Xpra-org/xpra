@@ -284,12 +284,12 @@ class CoreX11WindowModel(WindowModelStub):
         "_NET_FRAME_EXTENTS", "_NET_WM_ALLOWED_ACTIONS",
     ]
 
-    def __init__(self, xid:int):
+    def __init__(self, xid: int):
         super().__init__()
         if not isinstance(xid, int):
             raise TypeError(f"xid must be an int, not a {type(xid)}")
         log("new window %#x", xid)
-        self.xid : int = xid
+        self.xid: int = xid
         self._composite = None
         self._damage_forward_handle = None
         self._setup_done = False

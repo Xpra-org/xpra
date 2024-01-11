@@ -161,7 +161,7 @@ def cleanup_module() -> None:
     log("gstreamer.cleanup_module()")
 
 
-def get_gst_rgb_format(rgb_format : str) -> str:
+def get_gst_rgb_format(rgb_format: str) -> str:
     if rgb_format in (
         "NV12",
         "RGBA", "BGRA", "ARGB", "ABGR",

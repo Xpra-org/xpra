@@ -47,7 +47,7 @@ class InitExit(Exception):
         super().__init__(msg)
 
 
-DEBUG_CONFIG_PROPERTIES : list[str] = os.environ.get("XPRA_DEBUG_CONFIG_PROPERTIES", "").split()
+DEBUG_CONFIG_PROPERTIES: list[str] = os.environ.get("XPRA_DEBUG_CONFIG_PROPERTIES", "").split()
 
 DEFAULT_XPRA_CONF_FILENAME : str = os.environ.get("XPRA_CONF_FILENAME", 'xpra.conf')
 DEFAULT_NET_WM_NAME : str = os.environ.get("XPRA_NET_WM_NAME", "Xpra")
@@ -378,7 +378,7 @@ def conf_files(conf_dir: str, xpra_conf_filename: str = DEFAULT_XPRA_CONF_FILENA
         Returns all the config file paths found in the config directory
         ie: ["/etc/xpra/conf.d/15_features.conf", ..., "/etc/xpra/xpra.conf"]
     """
-    d : list[str] = []
+    d: list[str] = []
     cdir = os.path.expanduser(conf_dir)
     if not os.path.exists(cdir) or not os.path.isdir(cdir):
         debug(f"invalid config directory: {cdir!r}")

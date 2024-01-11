@@ -45,10 +45,10 @@ class WebcamForwarder(StubClientMixin):
         self.webcam_send_timer = 0
         self.webcam_lock = RLock()
         self.server_webcam = False
-        self.server_webcam_encodings : tuple[str,...] = ()
+        self.server_webcam_encodings: tuple[str,...] = ()
         self.server_virtual_video_devices = 0
         #duplicated from encodings mixin:
-        self.server_encodings : tuple[str,...] = ()
+        self.server_encodings: tuple[str,...] = ()
         if not hasattr(self, "server_ping_latency"):
             from collections import deque
             self.server_ping_latency : deque[tuple[float,float]] = deque(maxlen=1000)
@@ -81,7 +81,7 @@ class WebcamForwarder(StubClientMixin):
             return {}
         return {"webcam": True}
 
-    def parse_server_capabilities(self, c : typedict) -> bool:
+    def parse_server_capabilities(self, c: typedict) -> bool:
         v = c.get("webcam")
         if isinstance(v, dict):
             cdict = typedict(v)
@@ -298,13 +298,13 @@ class WebcamForwarder(StubClientMixin):
 
     ######################################################################
     #packet handlers
-    def _process_webcam_stop(self, packet : PacketType):
+    def _process_webcam_stop(self, packet: PacketType):
         device_no = packet[1]
         if device_no != self.webcam_device_no:
             return
         self.stop_sending_webcam()
 
-    def _process_webcam_ack(self, packet : PacketType):
+    def _process_webcam_ack(self, packet: PacketType):
         log("process_webcam_ack: %s", packet)
         with self.webcam_lock:
             if self.webcam_device:

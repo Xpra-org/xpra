@@ -14,6 +14,7 @@ from xpra.gtk.pixbuf import get_icon_pixbuf
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
 GLib = gi_import("GLib")
+GObject = gi_import("GObject")
 
 
 class TestForm:
@@ -52,13 +53,19 @@ class TestForm:
     def show_click_settings(self):
         root = Gdk.get_default_root_window()
         screen = root.get_screen()
-        #use undocumented constants found in source:
+        # use undocumented constants found in source:
         try:
-            t = screen.get_setting("gtk-double-click-time")
+            val = GObject.Value()
+            val.init(GObject.TYPE_INT)
+            if screen.get_setting("gtk-double-click-time"):
+                t = val.get_int()
         except Exception:
             t = ""
         try:
-            d = screen.get_setting("gtk-double-click-distance")
+            val = GObject.Value()
+            val.init(GObject.TYPE_INT)
+            if screen.get_setting("gtk-double-click-distance"):
+                d = val.get_int()
         except Exception:
             d = ""
         self.info.set_text(f"Time (ms): {t}, Distance: {d}")
@@ -75,6 +82,7 @@ class TestForm:
             self.label.set_text("Click")
         else:
             self.label.set_text("Unexpected event: %s" % event)
+
 
 def main():
     from xpra.gtk.signals import quit_on_signals

@@ -17,7 +17,7 @@ log = Logger("notify")
 class NotificationMixin(StubSourceMixin):
 
     @classmethod
-    def is_needed(cls, caps : typedict) -> bool:
+    def is_needed(cls, caps: typedict) -> bool:
         v = caps.get("notifications")
         if isinstance(v, bool):
             return v
@@ -29,7 +29,7 @@ class NotificationMixin(StubSourceMixin):
         self.send_notifications : bool = False
         self.notification_callbacks : dict[int,Callable] = {}
 
-    def parse_client_caps(self, c : typedict) -> None:
+    def parse_client_caps(self, c: typedict) -> None:
         v = c.get("notifications")
         if isinstance(v, dict):
             self.send_notifications = typedict(v).boolget("enabled")

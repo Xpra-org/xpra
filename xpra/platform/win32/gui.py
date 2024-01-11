@@ -209,7 +209,7 @@ def gl_check() -> str:
     return ""
 
 
-def get_monitor_workarea_for_window(handle:int):
+def get_monitor_workarea_for_window(handle: int):
     try:
         monitor = MonitorFromWindow(handle, win32con.MONITOR_DEFAULTTONEAREST)
         mi = GetMonitorInfo(monitor)
@@ -666,7 +666,7 @@ FE_FONTSMOOTHING_STR : dict[int,str] = {
     }
 
 
-def _add_SPI(info:dict[str,Any], constant:int, name:str, convert:Callable, default:Any=None) -> None:
+def _add_SPI(info:dict[str,Any], constant: int, name:str, convert:Callable, default:Any=None) -> None:
     v = GetIntSystemParametersInfo(constant)
     if v is not None:
         info[name] = convert(v)
@@ -991,7 +991,7 @@ def getTaskbar():
     return taskbar
 
 
-def set_window_progress(window, pct:int):
+def set_window_progress(window, pct: int):
     taskbar = getattr(window, "taskbar", None)
     if not taskbar:
         taskbar = getTaskbar()
@@ -1131,7 +1131,7 @@ class ClientExtras:
                           win32con.WM_KEYUP         : "KEYUP",
                           win32con.WM_SYSKEYUP      : "SYSKEYUP",
                           }
-        def low_level_keyboard_handler(nCode:int, wParam:int, lParam:int):
+        def low_level_keyboard_handler(nCode: int, wParam: int, lParam: int):
             log("WH_KEYBOARD_LL: %s", (nCode, wParam, lParam))
             kh = getattr(self.client, "keyboard_helper", None)
             locked = getattr(kh, "locked", False)
@@ -1228,7 +1228,7 @@ class ClientExtras:
             keylog("DispatchMessageA(%#x)=%s", lpmsg, r)
 
 
-    def wm_move(self, wParam:int, lParam:int) -> None:
+    def wm_move(self, wParam: int, lParam: int) -> None:
         c = self.client
         log("WM_MOVE: %s/%s client=%s", wParam, lParam, c)
         if c:
@@ -1236,7 +1236,7 @@ class ClientExtras:
             #but we do want to process it as such (see window reinit code)
             c.screen_size_changed()
 
-    def end_session(self, wParam:int, lParam:int):
+    def end_session(self, wParam: int, lParam: int):
         log("WM_ENDSESSION")
         c = self.client
         if not c:
@@ -1254,7 +1254,7 @@ class ClientExtras:
             return
         c.disconnect_and_quit(ExitCode.OK, reason)
 
-    def session_change_event(self, event:int, session:int):
+    def session_change_event(self, event: int, session: int):
         event_name = WTS_SESSION_EVENTS.get(event) or str(event)
         log("WM_WTSSESSION_CHANGE: %s on session %#x", event_name, session)
         c = self.client
@@ -1270,11 +1270,11 @@ class ClientExtras:
             GLib.idle_add(c.unfreeze)
 
 
-    def inputlangchange(self, wParam:int, lParam:int):
+    def inputlangchange(self, wParam: int, lParam: int):
         keylog("WM_INPUTLANGCHANGE: %i, %i", wParam, lParam)
         self.poll_layout()
 
-    def inichange(self, wParam:int, lParam:int):
+    def inichange(self, wParam: int, lParam: int):
         if lParam:
             from ctypes import c_char_p
             log("WM_WININICHANGE: %#x=%s", lParam, c_char_p(lParam).value)
@@ -1282,7 +1282,7 @@ class ClientExtras:
             log("WM_WININICHANGE: %i, %i", wParam, lParam)
 
 
-    def activateapp(self, wParam:int, lParam:int) -> None:
+    def activateapp(self, wParam: int, lParam: int) -> None:
         c = self.client
         log("WM_ACTIVATEAPP: %s/%s client=%s", wParam, lParam, c)
         if not c:
@@ -1299,7 +1299,7 @@ class ClientExtras:
                 fixup_window_style()
 
 
-    def power_broadcast_event(self, wParam:int, lParam:int):
+    def power_broadcast_event(self, wParam: int, lParam: int):
         c = self.client
         log("WM_POWERBROADCAST: %s/%s client=%s", POWER_EVENTS.get(wParam, wParam), lParam, c)
         #maybe also "PBT_APMQUERYSUSPEND" and "PBT_APMQUERYSTANDBY"?
@@ -1311,7 +1311,7 @@ class ClientExtras:
             c.resume()
 
 
-    def handle_console_event(self, event:int) -> int:
+    def handle_console_event(self, event: int) -> int:
         c = self.client
         event_name = KNOWN_EVENTS.get(event, event)
         log("handle_console_event(%s) client=%s, event_name=%s", event, c, event_name)

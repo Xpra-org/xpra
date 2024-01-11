@@ -12,7 +12,7 @@ from xpra.server.auth.sys_auth_base import SysAuthenticator
 class Authenticator(SysAuthenticator):
 
     def __init__(self, **kwargs):
-        self.value : str = bytestostr(kwargs.pop("value", None))
+        self.value: str = bytestostr(kwargs.pop("value", None))
         super().__init__(**kwargs)
         self.authenticate_check : Callable = self.authenticate_hmac
 

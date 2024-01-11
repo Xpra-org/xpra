@@ -15,5 +15,5 @@ class Authenticator(SysAuthenticator):
     def get_password(self) -> str:
         return ""
 
-    def authenticate(self, _caps : typedict) -> bool:
+    def authenticate(self, _caps: typedict) -> bool:
         return True

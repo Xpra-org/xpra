@@ -39,7 +39,7 @@ class Capture(Pipeline):
     __gsignals__ = Pipeline.__generic_signals__.copy()
     __gsignals__["new-image"] = n_arg_signal(3)
 
-    def __init__(self, element : str="ximagesrc", pixel_format : str="BGRX",
+    def __init__(self, element: str="ximagesrc", pixel_format : str="BGRX",
                  width : int=0, height : int=0):
         super().__init__()
         self.capture_element = element.split(" ")[0]

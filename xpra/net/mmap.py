@@ -23,7 +23,7 @@ MMAP_GROUP = os.environ.get("XPRA_MMAP_GROUP", "xpra")
 MADVISE = envbool("XPRA_MMAP_MADVISE", True)
 MADVISE_FLAGS = os.environ.get("XPRA_MMAP_MADVISE_FLAGS", "SEQUENTIAL,DONTFORK,UNMERGEABLE,DONTDUMP").split(",")
 
-DEFAULT_TOKEN_BYTES : int = 128
+DEFAULT_TOKEN_BYTES: int = 128
 
 
 """
@@ -52,7 +52,7 @@ def xpra_group() -> int:
     return 0
 
 
-def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*1024, filename:str="")\
+def init_client_mmap(mmap_group=None, socket_filename: str="", size: int=128*1024*1024, filename: str="")\
         -> tuple[bool, bool, Any, int, Any, str]:
     """
         Initializes a mmap area, writes the token in it and returns:
@@ -67,7 +67,7 @@ def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*
     mmap_temp_file = None
     delete = True
 
-    def validate_size(size : int):
+    def validate_size(size: int):
         if size<64*1024*1024:
             raise ValueError("mmap size is too small: %sB (minimum is 64MB)" % std_unit(size))
         if size>16*1024*1024*1024:
@@ -199,7 +199,7 @@ def clean_mmap(mmap_filename: str) -> None:
             log.estr(e)
 
 
-def write_mmap_token(mmap_area, token, index:int, count:int=DEFAULT_TOKEN_BYTES) -> None:
+def write_mmap_token(mmap_area, token, index: int, count: int=DEFAULT_TOKEN_BYTES) -> None:
     assert count>0
     # write the token one byte at a time - no endianness
     log("write_mmap_token(%s, %#x, %#x, %#x)", mmap_area, token, index, count)
@@ -260,7 +260,7 @@ def init_server_mmap(mmap_filename: str, mmap_size: int = 0) -> tuple[Any | None
         return None, 0
 
 
-def int_from_buffer(mmap_area, pos:int) -> c_uint32:
+def int_from_buffer(mmap_area, pos: int) -> c_uint32:
     return c_uint32.from_buffer(mmap_area, pos)      # @UndefinedVariable
 
 

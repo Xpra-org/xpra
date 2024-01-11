@@ -139,7 +139,7 @@ class NotificationClient(StubClientMixin):
         else:
             self.idle_add(show_notification)
 
-    def _process_notify_show(self, packet : PacketType):
+    def _process_notify_show(self, packet: PacketType):
         if not self.notifications_enabled:
             log("process_notify_show: ignoring packet, notifications are disabled")
             return
@@ -171,7 +171,7 @@ class NotificationClient(StubClientMixin):
                                   app_name, replaces_nid, app_icon,
                                   summary, body, actions, hints, expire_timeout, icon)
 
-    def _process_notify_close(self, packet : PacketType):
+    def _process_notify_close(self, packet: PacketType):
         if not self.notifications_enabled:
             return
         assert self.notifier

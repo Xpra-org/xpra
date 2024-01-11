@@ -56,7 +56,7 @@ class MenuProvider:
         self.watch_manager = None
         self.watch_notifier = None
         self.xdg_menu_reload_timer = 0
-        self.on_reload : list[Callable] = []
+        self.on_reload: list[Callable] = []
         self.menu_data : dict[str,Any] | None = None
         self.desktop_sessions : dict[str,Any] | None = None
         self.load_lock = Lock()

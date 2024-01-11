@@ -96,7 +96,7 @@ class InputServer(StubServerMixin):
         """ GTK servers will start listening for the 'keys-changed' signal """
 
     def parse_hello_ui_keyboard(self, ss, c:typedict) -> None:
-        other_ui_clients : list[str] = [s.uuid for s in self._server_sources.values() if s!=ss and s.ui_client]
+        other_ui_clients: list[str] = [s.uuid for s in self._server_sources.values() if s!=ss and s.ui_client]
         kb_client = hasattr(ss, "keyboard_config")
         if not kb_client:
             return
@@ -130,7 +130,7 @@ class InputServer(StubServerMixin):
         keylog("get_keyboard_info took %ims", (monotonic()-start)*1000)
         return info
 
-    def _process_layout(self, proto, packet : PacketType) -> None:
+    def _process_layout(self, proto, packet: PacketType) -> None:
         if self.readonly:
             return
         layout, variant = packet[1:3]
@@ -142,7 +142,7 @@ class InputServer(StubServerMixin):
         if ss and ss.set_layout(layout, variant, options):
             self.set_keymap(ss, force=True)
 
-    def _process_keymap(self, proto, packet : PacketType) -> None:
+    def _process_keymap(self, proto, packet: PacketType) -> None:
         if self.readonly:
             return
         props = typedict(packet[1])
@@ -161,7 +161,7 @@ class InputServer(StubServerMixin):
             modifiers = props.get("modifiers", [])
             ss.make_keymask_match(modifiers)
 
-    def set_keyboard_layout_group(self, grp:int) -> None:
+    def set_keyboard_layout_group(self, grp: int) -> None:
         #only actually implemented in X11ServerBase
         pass
 
@@ -253,8 +253,8 @@ class InputServer(StubServerMixin):
             self.key_repeat_timer = 0
             self.source_remove(krt)
 
-    def _key_repeat(self, wid:int, pressed:bool, keyname:str, keyval:int, keycode:int,
-                    modifiers:list, is_mod:bool, delay_ms:int=0) -> None:
+    def _key_repeat(self, wid: int, pressed:bool, keyname:str, keyval: int, keycode: int,
+                    modifiers:list, is_mod:bool, delay_ms: int=0) -> None:
         """ Schedules/cancels the key repeat timeouts """
         self.cancel_key_repeat_timer()
         if pressed:
@@ -264,7 +264,7 @@ class InputServer(StubServerMixin):
             self.key_repeat_timer = self.timeout_add(delay_ms, self._key_repeat_timeout,
                                                      now, delay_ms, wid, keyname, keyval, keycode, modifiers, is_mod)
 
-    def _key_repeat_timeout(self, when, delay_ms:int, wid:int, keyname:str, keyval:int, keycode:int,
+    def _key_repeat_timeout(self, when, delay_ms: int, wid: int, keyname:str, keyval: int, keycode: int,
                             modifiers:list, is_mod:bool) -> None:
         self.key_repeat_timer = 0
         now = monotonic()
@@ -273,7 +273,7 @@ class InputServer(StubServerMixin):
         self._handle_key(wid, False, keyname, keyval, keycode, modifiers, is_mod, True)
         self.keys_timedout[keycode] = now
 
-    def _process_key_repeat(self, proto, packet : PacketType) -> None:
+    def _process_key_repeat(self, proto, packet: PacketType) -> None:
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -310,7 +310,7 @@ class InputServer(StubServerMixin):
         self._key_repeat(wid, True, keyname, keyval, keycode, modifiers, is_mod, self.key_repeat_interval)
         ss.user_event()
 
-    def _process_keyboard_sync_enabled_status(self, proto, packet : PacketType) -> None:
+    def _process_keyboard_sync_enabled_status(self, proto, packet: PacketType) -> None:
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -338,7 +338,7 @@ class InputServer(StubServerMixin):
     def set_keyboard_repeat(self, key_repeat) -> None:
         keylog("set_keyboard_repeat(%s)", key_repeat)
 
-    def set_keymap(self, ss, force:bool=False) -> None:
+    def set_keymap(self, ss, force: bool = False) -> None:
         keylog("set_keymap(%s, %s)", ss, force)
 
     ######################################################################
@@ -346,8 +346,8 @@ class InputServer(StubServerMixin):
     def _move_pointer(self, device_id, wid, pos, *args) -> None:
         raise NotImplementedError()
 
-    def _adjust_pointer(self, proto, device_id, wid, pointer):
-        #the window may not be mapped at the same location by the client:
+    def _adjust_pointer(self, proto, device_id, wid: int, pointer):
+        # the window may not be mapped at the same location by the client:
         ss = self.get_server_source(proto)
         if not hasattr(ss, "update_mouse"):
             return pointer
@@ -370,7 +370,7 @@ class InputServer(StubServerMixin):
                             return [ax, ay]+list(pointer[2:])
         return pointer
 
-    def process_mouse_common(self, proto, device_id:int, wid:int, opointer, props=None):
+    def process_mouse_common(self, proto, device_id: int, wid: int, opointer, props=None):
         pointer = self._adjust_pointer(proto, device_id, wid, opointer)
         if not pointer:
             return None
@@ -378,10 +378,10 @@ class InputServer(StubServerMixin):
             return pointer
         return None
 
-    def do_process_mouse_common(self, proto, device_id:int, wid:int, pointer, props) -> bool:
+    def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
         return True
 
-    def _process_pointer_button(self, proto, packet : PacketType) -> None:
+    def _process_pointer_button(self, proto, packet: PacketType) -> None:
         mouselog("process_pointer_button(%s, %s)", proto, packet)
         if self.readonly:
             return
@@ -400,7 +400,7 @@ class InputServer(StubServerMixin):
             self.pointer_sequence[device_id] = seq
         self.do_process_button_action(proto, device_id, wid, button, pressed, pointer, props)
 
-    def _process_button_action(self, proto, packet : PacketType) -> None:
+    def _process_button_action(self, proto, packet: PacketType) -> None:
         mouselog("process_button_action(%s, %s)", proto, packet)
         if self.readonly:
             return
@@ -425,7 +425,7 @@ class InputServer(StubServerMixin):
     def _update_modifiers(self, proto, wid, modifiers) -> None:
         """ servers subclasses may change the modifiers state """
 
-    def _process_pointer(self, proto, packet : PacketType) -> None:
+    def _process_pointer(self, proto, packet: PacketType) -> None:
         #v5 packet format
         mouselog("_process_pointer(%s, %s) readonly=%s, ui_driver=%s",
                  proto, packet, self.readonly, self.ui_driver)
@@ -454,7 +454,7 @@ class InputServer(StubServerMixin):
             if modifiers is not None:
                 self._update_modifiers(proto, wid, modifiers)
 
-    def _process_pointer_position(self, proto, packet : PacketType) -> None:
+    def _process_pointer_position(self, proto, packet: PacketType) -> None:
         mouselog("_process_pointer_position(%s, %s) readonly=%s, ui_driver=%s",
                  proto, packet, self.readonly, self.ui_driver)
         if self.readonly:
@@ -480,7 +480,7 @@ class InputServer(StubServerMixin):
 
     ######################################################################
     # input devices:
-    def _process_input_devices(self, _proto, packet : PacketType) -> None:
+    def _process_input_devices(self, _proto, packet: PacketType) -> None:
         self.input_devices_format = packet[1]
         self.input_devices_data = packet[2]
         from xpra.util.str_fn import print_nested_dict

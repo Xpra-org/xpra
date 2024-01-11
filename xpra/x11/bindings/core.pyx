@@ -65,7 +65,7 @@ cdef class X11CoreBindingsInstance:
         self.display_name = bstr
         self.XSynchronize(envbool("XPRA_X_SYNC", False))
 
-    def XSynchronize(self, enable : bool):
+    def XSynchronize(self, enable: bool):
         XSynchronize(self.display, enable)
 
     def XSync(self, discard=False):

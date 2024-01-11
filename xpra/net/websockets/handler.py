@@ -17,7 +17,7 @@ WEBSOCKET_ONLY_UPGRADE = envbool("XPRA_WEBSOCKET_ONLY_UPGRADE", False)
 # HyBi-07 report version 7
 # HyBi-08 - HyBi-12 report version 8
 # HyBi-13 reports version 13
-SUPPORT_HyBi_PROTOCOLS : tuple[str,...] = ("7", "8", "13")
+SUPPORT_HyBi_PROTOCOLS: tuple[str,...] = ("7", "8", "13")
 
 
 class WebSocketRequestHandler(HTTPRequestHandler):

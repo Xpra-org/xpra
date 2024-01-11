@@ -25,7 +25,7 @@ MAX_CLIPBOARD_LIMIT_DURATION = envint("XPRA_CLIPBOARD_LIMIT_DURATION", 3)
 class ClipboardConnection(StubSourceMixin):
 
     @classmethod
-    def is_needed(cls, caps : typedict) -> bool:
+    def is_needed(cls, caps: typedict) -> bool:
         return caps.boolget("clipboard")
 
     def init_state(self) -> None:
@@ -43,7 +43,7 @@ class ClipboardConnection(StubSourceMixin):
     def cleanup(self) -> None:
         self.cancel_clipboard_progress_timer()
 
-    def parse_client_caps(self, c : typedict) -> None:
+    def parse_client_caps(self, c: typedict) -> None:
         ccaps = c.get("clipboard")
         if ccaps and isinstance(ccaps, dict):
             ccaps = typedict(ccaps)
@@ -120,7 +120,7 @@ class ClipboardConnection(StubSourceMixin):
         #call compress_clibboard via the encode work queue:
         self.queue_encode((True, self.compress_clipboard, (packet, )))
 
-    def compress_clipboard(self, packet : PacketType) -> None:
+    def compress_clipboard(self, packet: PacketType) -> None:
         # pylint: disable=import-outside-toplevel
         from xpra.net.compression import Compressible, compressed_wrapper
         #Note: this runs in the 'encode' thread!

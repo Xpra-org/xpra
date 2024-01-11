@@ -118,19 +118,19 @@ class WindowBackingBase:
     Generic superclass for all Backing code,
     see CairoBackingBase and GTK2WindowBacking subclasses for actual implementations
     """
-    RGB_MODES : tuple[str, ...] = ()
+    RGB_MODES: tuple[str, ...] = ()
 
-    def __init__(self, wid : int, window_alpha : bool):
+    def __init__(self, wid: int, window_alpha: bool):
         load_csc_options()
         load_video_decoders()
-        self.wid : int = wid
-        self.size : tuple[int, int] = (0, 0)
-        self.render_size : tuple[int, int] = (0, 0)
-        #padding between the window contents and where we actually draw the backing
-        #(ie: if the window is bigger than the backing,
+        self.wid: int = wid
+        self.size: tuple[int, int] = (0, 0)
+        self.render_size: tuple[int, int] = (0, 0)
+        # padding between the window contents and where we actually draw the backing
+        # (ie: if the window is bigger than the backing,
         # we may be rendering the backing in the center of the window)
-        self.offsets : tuple[int, int, int, int] = (0, 0, 0, 0)       #top,left,bottom,right
-        self.gravity : int = 0
+        self.offsets: tuple[int, int, int, int] = (0, 0, 0, 0)       # top,left,bottom,right
+        self.gravity: int = 0
         self._alpha_enabled = window_alpha
         self._backing = None
         self._video_decoder = None
@@ -154,15 +154,15 @@ class WindowBackingBase:
         self.nvjpeg_decoder = get_codec("dec_nvjpeg")
         self.nvdec_decoder = get_codec("nvdec")
         self.cuda_context = None
-        self.draw_needs_refresh : bool = True
-        self.repaint_all : bool = REPAINT_ALL
+        self.draw_needs_refresh: bool = True
+        self.repaint_all: bool = REPAINT_ALL
         self.mmap = None
-        self.mmap_enabled : bool = False
+        self.mmap_enabled: bool = False
         self.fps_events : deque = deque(maxlen=120)
-        self.fps_buffer_size : tuple[int,int] = (0, 0)
-        self.fps_buffer_update_time : float = 0
-        self.fps_value : int = 0
-        self.fps_refresh_timer : int = 0
+        self.fps_buffer_size: tuple[int,int] = (0, 0)
+        self.fps_buffer_update_time: float = 0
+        self.fps_value: int = 0
+        self.fps_refresh_timer: int = 0
         self.paint_stats : dict[str,int] = {}
 
     def idle_add(self, *_args, **_kwargs):

@@ -1586,7 +1586,7 @@ class GTKTrayMenu(MenuHelper):
                 smi.set_image(image)
         return smi
 
-    def make_applaunch_menu_item(self, app_name : str, command_props : typedict):
+    def make_applaunch_menu_item(self, app_name: str, command_props: typedict):
         icondata = command_props.bytesget("IconData")
         app_menu_item = self.start_menuitem(app_name, icondata)
 

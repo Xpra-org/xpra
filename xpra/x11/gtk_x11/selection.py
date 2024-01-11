@@ -51,8 +51,8 @@ class ManagerSelection(GObject.GObject):
         self.atom = selection
         atom = Gdk.Atom.intern(selection, False)
         self.clipboard = Gtk.Clipboard.get(atom)
-        self.xid : int = 0
-        self.exit_timer : int = 0
+        self.xid: int = 0
+        self.exit_timer: int = 0
 
     def _owner(self) -> int:
         return X11WindowBindings().XGetSelectionOwner(self.atom)

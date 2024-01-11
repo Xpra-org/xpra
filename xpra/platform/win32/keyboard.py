@@ -15,7 +15,7 @@ from xpra.platform.win32.common import (
     GetKeyState, GetKeyboardLayoutList, GetKeyboardLayout,
     GetIntSystemParametersInfo, GetKeyboardLayoutName,
     GetWindowThreadProcessId,
-    )
+)
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.layouts import WIN32_LAYOUTS, WIN32_KEYBOARDS
@@ -38,12 +38,13 @@ def _GetKeyboardLayoutList() -> list[int]:
         layouts.append(int(handle_list[i]))
     return layouts
 
+
 def x11_layouts_to_win32_hkl() -> dict[str,int]:
     KMASKS = {
         0xffffffff : (0, 16),
         0xffff  : (0, ),
         0x3ff   : (0, ),
-        }
+    }
     layout_to_hkl : dict[str,int] = {}
     max_items = 32
     try:
@@ -69,6 +70,7 @@ def x11_layouts_to_win32_hkl() -> dict[str,int]:
         log("x11_layouts_to_win32_hkl()", exc_info=True)
     return layout_to_hkl
 
+
 EMULATE_ALTGR = envbool("XPRA_EMULATE_ALTGR", True)
 EMULATE_ALTGR_CONTROL_KEY_DELAY = envint("XPRA_EMULATE_ALTGR_CONTROL_KEY_DELAY", 50)
 
@@ -86,12 +88,12 @@ class Keyboard(KeyboardBase):
         self.altgr_modifier = None
         self.delayed_event = None
         self.last_layout_message = None
-        #workaround for "period" vs "KP_Decimal" with gtk2 (see ticket #586):
-        #translate "period" with keyval=46 and keycode=110 to KP_Decimal:
-        KEY_TRANSLATIONS[("period",     46,     110)]   = "KP_Decimal"
-        #workaround for "fr" keyboards, which use a different key name under X11:
-        KEY_TRANSLATIONS[("dead_tilde", 65107,  50)]    = "asciitilde"
-        KEY_TRANSLATIONS[("dead_grave", 65104,  55)]    = "grave"
+        # workaround for "period" vs "KP_Decimal" with gtk2 (see ticket #586):
+        # translate "period" with keyval=46 and keycode=110 to KP_Decimal:
+        KEY_TRANSLATIONS[("period",     46,     110)] = "KP_Decimal"
+        # workaround for "fr" keyboards, which use a different key name under X11:
+        KEY_TRANSLATIONS[("dead_tilde", 65107,  50)] = "asciitilde"
+        KEY_TRANSLATIONS[("dead_grave", 65104,  55)] = "grave"
         self.__x11_layouts_to_win32_hkl = x11_layouts_to_win32_hkl()
 
     def set_platform_layout(self, layout:str) -> None:
@@ -161,10 +163,9 @@ class Keyboard(KeyboardBase):
             ask the server to manage numlock, and lock can be missing from mouse events
             (or maybe this is virtualbox causing it?)
         """
-        return  {}, [], ["lock"]
+        return {}, [], ["lock"]
 
-
-    def get_all_x11_layouts(self) -> dict[str,str]:
+    def get_all_x11_layouts(self) -> dict[str, str]:
         x11_layouts = {}
         for win32_layout in WIN32_LAYOUTS.values():
             #("ARA", "Saudi Arabia",   "Arabic",                   1356,   "ar", []),
@@ -175,13 +176,12 @@ class Keyboard(KeyboardBase):
             x11_layouts[x11_layout] = name
         return x11_layouts
 
-
     def get_layout_spec(self) -> tuple[str,list[str],str,list[str],str]:
         KMASKS = {
             0xffffffff : (0, 16),
             0xffff  : (0, ),
             0x3ff   : (0, ),
-            }
+        }
         layout = ""
         layouts_defs = {}
         variant = ""
@@ -195,7 +195,7 @@ class Keyboard(KeyboardBase):
                 for mask, bitshifts in KMASKS.items():
                     kbid = 0
                     for bitshift in bitshifts:
-                        kbid = (hkl & mask)>>bitshift
+                        kbid = (hkl & mask) >> bitshift
                         if kbid in WIN32_LAYOUTS:
                             break
                     win32_layout = WIN32_LAYOUTS.get(kbid)
@@ -262,7 +262,7 @@ class Keyboard(KeyboardBase):
                     layout0, kbid, variants, code, kbid, hkl)
                 if layout0 not in layouts_defs:
                     layouts_defs[layout0] = hkl
-                #only override "layout" if unset:
+                # only override "layout" if unset:
                 if not layout and layout0:
                     layout = layout0
                     layout_code = hkl
@@ -295,7 +295,6 @@ class Keyboard(KeyboardBase):
         except Exception as e:
             log.error("failed to get keyboard rate: %s", e)
         return None
-
 
     def process_key_event(self, send_key_action_cb:Callable, wid:int, key_event) -> None:
         """ Caps_Lock and Num_Lock don't work properly: they get reported more than once,

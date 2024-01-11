@@ -35,8 +35,8 @@ def get_opengl_module_names(opengl="on") -> tuple[str, ...]:
         return ("native", )
     # auto-detect:
     if os.environ.get("WAYLAND_DISPLAY") or OSX:
-        return ("glarea", "native")
-    return ("native", "glarea", )
+        return "glarea", "native"
+    return "native", "glarea",
 
 
 def get_gl_client_window_module(opengl="on") -> tuple[dict,Any]:

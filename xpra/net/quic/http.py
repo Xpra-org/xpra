@@ -46,7 +46,7 @@ class HttpRequestHandler:
             self.send_response_body(body)
         self.transmit()
 
-    def send_response_header(self, status : int = 200, headers : dict = None) -> None:
+    def send_response_header(self, status: int = 200, headers : dict = None) -> None:
         headers = [
             (b":status", str(status).encode()),
             (b"server", SERVER_NAME.encode()),
@@ -54,7 +54,7 @@ class HttpRequestHandler:
         ] + list((strtobytes(k).lower(), strtobytes(v)) for k,v in (headers or {}).items())
         self.connection.send_headers(stream_id=self.stream_id, headers=headers)
 
-    def send_response_body(self, body : bytes = b"", more_body : bool = False) -> None:
+    def send_response_body(self, body : bytes = b"", more_body: bool = False) -> None:
         self.connection.send_data(stream_id=self.stream_id, data=body, end_stream=not more_body)
 
     def http_event_received(self, event: H3Event) -> None:

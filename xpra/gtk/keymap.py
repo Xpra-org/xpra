@@ -36,7 +36,7 @@ def do_get_gtk_keymap(display, ignore_keys:tuple[Any]) -> tuple[tuple[int,str,in
     keymap = Gdk.Keymap.get_for_display(display)
     log("keymap_get_for_display(%s)=%s, direction=%s, bidirectional layouts: %s",
         display, keymap, keymap.get_direction(), keymap.have_bidi_layouts())
-    keycodes : list[tuple[int,str,int,int,int]] = []
+    keycodes: list[tuple[int,str,int,int,int]] = []
     for i in range(0, 2**8):
         entries = keymap.get_entries_for_keycode(i)
         if not entries:     # pragma: no cover

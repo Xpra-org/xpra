@@ -459,8 +459,8 @@ class MenuHelper:
 
     def make_updatecheckmenuitem(self) -> Gtk.ImageMenuItem:
         def show_update_window():
-            from xpra.gtk.dialogs.update_status import getUpdateStatusWindow
-            w = getUpdateStatusWindow()
+            from xpra.gtk.dialogs.update_status import get_update_status_window
+            w = get_update_status_window()
             w.show()
             w.check()
         return self.menuitem("Check for updates", "update.png", cb=show_update_window)

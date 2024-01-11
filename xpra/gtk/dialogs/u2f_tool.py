@@ -81,7 +81,7 @@ def main():
 
         from pyu2f.model import RegisteredKey  # @UnresolvedImport
         info("Please activate your U2F device now to generate a new key")
-        registered_keys : list[RegisteredKey] = []
+        registered_keys: list[RegisteredKey] = []
         challenge = b'01234567890123456789012345678901'  # unused
         rr = dev.Register(APP_ID, challenge, registered_keys)
         b = rr.registration_data

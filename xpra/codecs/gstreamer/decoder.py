@@ -186,8 +186,8 @@ class Decoder(VideoPipeline):
             Ystride = roundup(self.width, 4)
             Ysize = Ystride*roundup(self.height, 2)
             Y = mem[:Ysize]
-            planes : tuple[memoryview,...]
-            strides : tuple[int,...]
+            planes: tuple[memoryview,...]
+            strides: tuple[int,...]
             if self.output_format=="YUV420P":
                 UVstride = roundup(roundup(self.width, 2)//2, 4)
                 UVsize = UVstride*roundup(self.height, 2)//2

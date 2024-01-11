@@ -496,7 +496,7 @@ class ShadowServer(GTKShadowServerBase):
                 win32con.VK_LCONTROL,   win32con.VK_RCONTROL,   win32con.VK_CONTROL,
                 win32con.VK_LMENU,      win32con.VK_RMENU,      win32con.VK_MENU,
                 win32con.VK_LWIN,       win32con.VK_RWIN,
-                ):
+            ):
                 keystate[x] = 0
             SetKeyboardState(keystate)
 
@@ -538,11 +538,11 @@ class ShadowServer(GTKShadowServerBase):
         info.update(GTKShadowServerBase.get_info(self, proto))
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {
-                                   "pixel-depth": self.pixel_depth,
-                                   "type"       : "Python/gtk2/win32-shadow",
-                                   "tray"       : self.tray,
-                                   "tray-icon"  : self.tray_icon or ""
-                                   })
+            "pixel-depth": self.pixel_depth,
+            "type"       : "Python/gtk2/win32-shadow",
+            "tray"       : self.tray,
+            "tray-icon"  : self.tray_icon or ""
+        })
         return info
 
 

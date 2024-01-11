@@ -61,7 +61,7 @@ if WIN32:
     #                        "USERDOMAIN,WORKGROUP,USERNAME,USERPROFILE,WINDIR,"+
     #                        "XPRA_REDIRECT_OUTPUT,XPRA_LOG_FILENAME,XPRA_ALL_DEBUG"
     DEFAULT_ENV_WHITELIST = "*"
-ENV_WHITELIST : list[str] = os.environ.get("XPRA_PROXY_ENV_WHITELIST", DEFAULT_ENV_WHITELIST).split(",")
+ENV_WHITELIST: list[str] = os.environ.get("XPRA_PROXY_ENV_WHITELIST", DEFAULT_ENV_WHITELIST).split(",")
 
 
 def get_socktype(proto):
@@ -177,7 +177,7 @@ class ProxyServer(ServerCore):
         #add shutdown handler
         self._default_packet_handlers["shutdown-server"] = self._process_proxy_shutdown_server
 
-    def _process_proxy_shutdown_server(self, proto, _packet : PacketType) -> None:
+    def _process_proxy_shutdown_server(self, proto, _packet: PacketType) -> None:
         assert proto in self._requests
         self.clean_quit(False)
 

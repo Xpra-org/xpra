@@ -400,7 +400,7 @@ def get_encoder_max_sizes(encoder_module):
     return w, h
 
 
-def get_encoder_max_size(encoder_module, encoding:str, limit_w:int=TEST_LIMIT_W, limit_h:int=TEST_LIMIT_H):
+def get_encoder_max_size(encoder_module, encoding: str, limit_w: int = TEST_LIMIT_W, limit_h: int = TEST_LIMIT_H):
     # probe to find the max dimensions:
     # (it may go higher but we don't care as windows can't)
     etype = encoder_module.get_type()

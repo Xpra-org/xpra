@@ -36,7 +36,7 @@ class SystemTrayWindowModel(CoreX11WindowModel):
 
     def __init__(self, xid: int, corral_xid: int):
         super().__init__(xid)
-        self.corral_xid : int = corral_xid
+        self.corral_xid: int = corral_xid
         self._updateprop("tray", True)
 
     def __repr__(self) -> str:

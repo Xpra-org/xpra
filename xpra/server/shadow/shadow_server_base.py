@@ -30,7 +30,7 @@ SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 NOTIFY_STARTUP = envbool("XPRA_SHADOW_NOTIFY_STARTUP", True)
 
 
-SHADOWSERVER_BASE_CLASS : type = object
+SHADOWSERVER_BASE_CLASS: type = object
 if features.rfb:
     from xpra.server.rfb.server import RFBServer
     SHADOWSERVER_BASE_CLASS = RFBServer
@@ -38,7 +38,7 @@ if features.rfb:
 
 class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
-    #20 fps unless the client specifies more:
+    # 20 fps unless the client specifies more:
     DEFAULT_REFRESH_RATE : int = 20
 
     def __init__(self, root_window, capture=None):
@@ -58,11 +58,11 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         self.last_cursor_data = None
         self.session_name = "shadow"
         self.keyboard_config = None
-        batch_config.ALWAYS = True             #always batch
+        batch_config.ALWAYS = True             # always batch
 
     def init(self, opts) -> None:
         if SHADOWSERVER_BASE_CLASS!=object:
-            #RFBServer:
+            # RFBServer:
             SHADOWSERVER_BASE_CLASS.init(self, opts)
         self.notifications = bool(opts.notifications)
         if self.notifications:
@@ -126,7 +126,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         except AttributeError as e:
             log(f"no screen info: {e}")
             return
-        if l>1:
+        if l > 1:
             log.info(f" with {l} monitors:")
             for window in self._id_to_window.values():
                 title = window.get_property("title")
@@ -136,7 +136,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     def apply_refresh_rate(self, ss) -> None:
         rrate = super().apply_refresh_rate(ss)
         if rrate>0:
-            #adjust refresh delay to try to match:
+            # adjust refresh delay to try to match:
             self.set_refresh_delay(max(10, 1000//rrate))
 
     def make_hello(self, _source) -> dict[str,Any]:
@@ -152,7 +152,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         return info
 
     def get_window_position(self, _window) -> tuple[int,int]:
-        #we export the whole desktop as a window:
+        # we export the whole desktop as a window:
         return 0, 0
 
     def _keys_changed(self) -> None:
@@ -163,11 +163,11 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             log.info("the keymap has been changed: %s", Keyboard().get_layout_spec()[0])
 
     def timeout_add(self, *args) -> int:
-        #usually done via gobject
+        # usually done via gobject
         raise NotImplementedError("subclasses should define this method!")
 
     def source_remove(self, *args) -> None:
-        #usually done via gobject
+        # usually done via gobject
         raise NotImplementedError("subclasses should define this method!")
 
     ############################################################################
@@ -196,9 +196,9 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
                 notifylog("failed to instantiate %s", x, exc_info=True)
 
     def get_notifier_classes(self) -> list[type]:
-        #subclasses will generally add their toolkit specific variants
-        #by overriding this method
-        #use the native ones first:
+        # subclasses will generally add their toolkit specific variants
+        # by overriding this method
+        # use the native ones first:
         if not NATIVE_NOTIFIER:
             return []
         return get_native_notifier_classes()
@@ -212,7 +212,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             nid = NotificationID.NEW_USER
             title = "User '%s' connected to the session" % (ss.name or ss.username or ss.uuid)
             body = "\n".join(ss.get_connect_info())
-            actions : list = []
+            actions: list = []
             hints : dict[str,Any] = {}
             icon_filename = os.path.join(get_icon_dir(), "user.png")
             icon = parse_image_path(icon_filename)
@@ -252,7 +252,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             self.refresh_timer = self.timeout_add(self.refresh_delay, self.refresh)
 
     def set_refresh_delay(self, v:int) -> None:
-        assert 0<v<10000
+        assert 0 < v < 10000
         self.refresh_delay = v
         if self.mapped:
             self.cancel_refresh_timer()
@@ -318,7 +318,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         rwm = None
         wid = None
         rx, ry = 0, 0
-        #find the window model containing the pointer:
+        # find the window model containing the pointer:
         for wid, window in self._id_to_window.items():
             wx, wy, ww, wh = window.geometry
             if wx<=x<(wx+ww) and wy<=y<(wy+wh):
@@ -347,7 +347,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             if v and len(v)>2:
                 return v[2:]
             return None
-        if cmpv(prev)!=cmpv(curr):
+        if cmpv(prev) != cmpv(curr):
             fields = ("x", "y", "width", "height", "xhot", "yhot", "serial", "pixels", "name")
             if len(prev or [])==len(curr or []) and len(prev or [])==len(fields):
                 diff = []
@@ -370,11 +370,11 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
                 ss.send_cursor()
 
     def do_get_cursor_data(self):
-        #this method is overridden in subclasses with platform specific code
+        # this method is overridden in subclasses with platform specific code
         return None
 
     def get_cursor_data(self):
-        #return cached value we get from polling:
+        # return cached value we get from polling:
         return self.last_cursor_data
 
     ############################################################################
@@ -421,7 +421,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         for i,model in enumerate(self.makeRootWindowModels()):
             log(f"load_existing_windows() root window model {i} : {model}")
             self._add_new_window(model)
-            #at least big enough for 2 frames of BGRX pixel data:
+            # at least big enough for 2 frames of BGRX pixel data:
             w, h = model.get_dimensions()
             self.min_mmap_size = max(self.min_mmap_size, w*h*4*2)
 
@@ -458,7 +458,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         wid, x, y, width, height = packet[1:6]
         window = self.process_window_common(wid)
         if not window:
-            #already gone
+            # already gone
             return
         self._window_mapped_at(proto, wid, window, (x, y, width, height))
         self.refresh_window_area(window, 0, 0, width, height)
@@ -470,7 +470,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         wid = packet[1]
         window = self.process_window_common(wid)
         if not window:
-            #already gone
+            # already gone
             return
         self._window_mapped_at(proto, wid, window)
         # TODO: deal with more than one window / more than one client
@@ -482,7 +482,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         wid, x, y, w, h = packet[1:6]
         window = self.process_window_common(wid)
         if not window:
-            #already gone
+            # already gone
             return
         self._window_mapped_at(proto, wid, window, (x, y, w, h))
         self.refresh_window_area(window, 0, 0, w, h)
@@ -493,7 +493,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         wid = packet[1]
         window = self.process_window_common(wid)
         if not window:
-            #already gone
+            # already gone
             return
         # FIXME: with multiple windows / clients,
         # we have to keep track of mappings!

@@ -172,7 +172,7 @@ class Keyboard(KeyboardBase):
         #parses the "_XKB_RULES_NAMES" X11 property
         if not is_X11():
             return ()
-        xkb_rules_names : list[str] = []
+        xkb_rules_names: list[str] = []
         # pylint: disable=import-outside-toplevel
         from xpra.gtk.error import xlog
         from xpra.x11.common import get_X11_root_property

@@ -16,7 +16,7 @@ GdkPixbuf = gi_import("GdkPixbuf")
 log = Logger("menu")
 
 
-def show_qr(uri:str, width:int=640, height:int=640):
+def show_qr(uri: str, width: int=640, height: int=640):
     assert uri.find(":")>0, "invalid uri"
     # support old-style URIs, ie: tcp:host:port
     if uri.find(":")!=uri.find("://"):
@@ -48,7 +48,7 @@ def show_qr(uri:str, width:int=640, height:int=640):
         Gtk.main()
 
 
-def qr_pixbuf(uri:str, width:int=640, height:int=640):
+def qr_pixbuf(uri: str, width: int=640, height: int=640):
     img = qrencode(uri)
     if not img:
         return None

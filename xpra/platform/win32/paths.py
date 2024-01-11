@@ -8,10 +8,7 @@ import os.path
 import sys
 import tempfile
 import platform
-from ctypes import (
-    WinDLL,  # @UnresolvedImport
-    create_unicode_buffer
-    )
+from ctypes import WinDLL, create_unicode_buffer
 from ctypes.wintypes import MAX_PATH
 
 from xpra.util.io import get_util_logger
@@ -35,8 +32,9 @@ def sh_get_folder_path(v) -> str:
     except Exception:
         return ""
 
+
 def _get_data_dir(roaming=True) -> str:
-    #if not running from a binary, return current directory:
+    # if not running from a binary, return current directory:
     if not getattr(sys, 'frozen', ''):
         return os.getcwd()
     appdata = sh_get_folder_path(CSIDL_APPDATA if roaming else CSIDL_LOCAL_APPDATA)
@@ -46,7 +44,7 @@ def _get_data_dir(roaming=True) -> str:
         # so we place the log file (etc) in "~/Application Data"
         appdata = os.environ.get("APPDATA" if roaming else "LOCALAPPDATA", "")
     if not appdata:
-        #we need some kind of path..
+        # we need some kind of path..
         appdata = tempfile.gettempdir()
         assert appdata, "cannot find any usable directory for log files"
     if not os.path.exists(appdata):
@@ -67,32 +65,36 @@ def do_get_resources_dir() -> str:
             return share_xpra
     return app_dir
 
+
 def do_get_image_dir() -> str:
     from xpra.platform.paths import get_resources_dir
     return os.path.join(get_resources_dir(), "images")
+
 
 def do_get_icon_dir() -> str:
     from xpra.platform.paths import get_resources_dir
     return os.path.join(get_resources_dir(), "icons")
 
+
 def do_get_default_log_dirs() -> list[str]:
     dd = _get_data_dir()
     temp = tempfile.gettempdir()
-    if dd==temp:
+    if dd == temp:
         return [temp]
     return [dd, temp]
 
 
 def get_program_data_dir() -> str:
-    #ie: "C:\ProgramData"
+    # ie: "C:\ProgramData"
     try:
         return sh_get_folder_path(CSIDL_COMMON_APPDATA) or "C:\\ProgramData"
     except Exception:
         get_util_logger().debug("get_program_data_dir()", exc_info=True)
     return "C:\\ProgramData"
 
+
 def do_get_system_conf_dirs() -> list[str]:
-    #ie: C:\ProgramData\Xpra
+    # ie: C:\ProgramData\Xpra
     return [os.path.join(get_program_data_dir(), "Xpra")]
 
 
@@ -125,34 +127,37 @@ def do_get_ssh_conf_dirs() -> list[str]:
         d = os.path.join(fpath, "SSH")
         dirs.append(d)
     dirs += do_get_default_conf_dirs()+[
-        openssh_dir,        #ie: C:\Windows\system32\OpenSSH
+        openssh_dir,        # ie: C:\Windows\system32\OpenSSH
         "~/.ssh",
         "~/ssh",
-        ]
+    ]
     return dirs
 
+
 def do_get_ssh_known_hosts_files() -> list[str]:
-    #reverse the order (avoid dotfiles on win32):
+    # reverse the order (avoid dotfiles on win32):
     return ["~/ssh/known_hosts", "~/.ssh/known_hosts"]
 
 
 def do_get_state_dir() -> str:
     return "%APPDATA%\\Xpra\\state"
 
+
 def do_get_sessions_dir() -> str:
     return "%APPDATA%\\Xpra\\sessions"
 
 
 def do_get_default_conf_dirs() -> list[str]:
-    #ie: C:\Program Files\Xpra\
+    # ie: C:\Program Files\Xpra\
     from xpra.platform.paths import get_app_dir
     return [os.path.join(get_app_dir(), "etc", "xpra")]
 
+
 def do_get_user_conf_dirs(_uid) -> list[str]:
     dd = _get_data_dir()
-    #ie: "C:\Users\<user name>\AppData\Roaming"
+    # ie: "C:\Users\<user name>\AppData\Roaming"
     SYSTEMROOT = os.environ.get("SYSTEMROOT", "")
-    #ie: when running as a system service, we may get:
+    # ie: when running as a system service, we may get:
     # "C:\Windows\System32\config\systemprofile\AppData\Roaming"
     # and we don't want to use that:
     if SYSTEMROOT and dd.startswith(SYSTEMROOT):
@@ -164,10 +169,10 @@ def do_get_user_conf_dirs(_uid) -> list[str]:
 
 def do_get_desktop_background_paths() -> list[str]:
     try:
-        from winreg import OpenKey, HKEY_CURRENT_USER, KEY_READ, QueryValueEx # @Reimport
+        from winreg import OpenKey, HKEY_CURRENT_USER, KEY_READ, QueryValueEx  # @Reimport
         key_path = "Control Panel\\Desktop"
-        key = OpenKey(HKEY_CURRENT_USER, key_path, 0, KEY_READ)    #@UndefinedVariable
-        wallpaper = QueryValueEx(key, 'WallPaper')[0]    #@UndefinedVariable
+        key = OpenKey(HKEY_CURRENT_USER, key_path, 0, KEY_READ)
+        wallpaper = QueryValueEx(key, 'WallPaper')[0]
         return [wallpaper,]
     except Exception:
         log = get_util_logger()
@@ -177,34 +182,38 @@ def do_get_desktop_background_paths() -> list[str]:
 
 def do_get_download_dir() -> str:
     try:
-        #values found here: https://stackoverflow.com/a/48706260
-        from winreg import OpenKey, HKEY_CURRENT_USER, QueryValueEx # @Reimport
+        # values found here: https://stackoverflow.com/a/48706260
+        from winreg import OpenKey, HKEY_CURRENT_USER, QueryValueEx  # @Reimport
         sub_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders'
         downloads_guid = '{374DE290-123F-4565-9164-39C4925E467B}'
         with OpenKey(HKEY_CURRENT_USER, sub_key) as key:
             DOWNLOAD_PATH = QueryValueEx(key, downloads_guid)[0]
     except Exception:
         get_util_logger()("do_get_download_dir()", exc_info=True)
-        #fallback to what the documentation says is the default:
+        # fallback to what the documentation says is the default:
         DOWNLOAD_PATH = os.path.join(os.environ.get("USERPROFILE", "~"), "My Documents", "Downloads")
         if not os.path.exists(DOWNLOAD_PATH):
             DOWNLOAD_PATH = os.path.join(os.environ.get("USERPROFILE", "~"), "Downloads")
     return DOWNLOAD_PATH
 
+
 def do_get_script_bin_dirs() -> list[str]:
-    #we don't save the "run-xpra" script anywhere on win32
+    # we don't save the "run-xpra" script anywhere on win32
     return []
+
 
 def do_get_socket_dirs() -> list[str]:
     return []
 
 
 APP_DIR : str = ""
+
+
 if getattr(sys, 'frozen', False) is True:
-    #cx_freeze = sys.frozen == True
+    # cx_freeze = sys.frozen == True
     APP_DIR = os.path.dirname(sys.executable)
     if len(APP_DIR)>3 and APP_DIR[1]==":" and APP_DIR[2]=="/":
-        #it seems that mingw builds can get confused about the correct value for os.pathsep:
+        # it seems that mingw builds can get confused about the correct value for os.pathsep:
         APP_DIR = APP_DIR.replace("/", "\\")
     try:
         sys.path.remove(APP_DIR)
@@ -212,7 +221,7 @@ if getattr(sys, 'frozen', False) is True:
         pass
     sys.path.insert(0, APP_DIR)
     os.chdir(APP_DIR)
-    #so we can easily load DLLs with ctypes:
+    # so we can easily load DLLs with ctypes:
     os.environ['PATH'] = APP_DIR + os.pathsep + os.environ['PATH']
 
 
@@ -220,21 +229,24 @@ def do_get_app_dir() -> str:
     global APP_DIR
     if APP_DIR:
         return APP_DIR
-    from xpra.platform.paths import default_get_app_dir   #imported here to prevent import loop
+    from xpra.platform.paths import default_get_app_dir   # imported here to prevent import loop
     return default_get_app_dir()
+
 
 def do_get_nodock_command() -> list[str]:
     return _get_xpra_exe_command(
-        "Xpra",             #executable without a shell
-        "Xpra_cmd",         #we should never end up using this one
-        )
+        "Xpra",             # executable without a shell
+        "Xpra_cmd",         # we should never end up using this one
+    )
+
 
 def do_get_audio_command() -> list[str]:
     return _get_xpra_exe_command(
-        "Xpra_Audio",       #executable without a shell, and with a nicer name
-        "Xpra",             #executable without a shell
-        "Xpra_cmd",         #we should never end up using this one
-        )
+        "Xpra_Audio",       # executable without a shell, and with a nicer name
+        "Xpra",             # executable without a shell
+        "Xpra_cmd",         # we should never end up using this one
+    )
+
 
 def _get_xpra_exe_command(*cmd_options) -> list[str]:
     from xpra.platform.paths import get_app_dir
@@ -243,41 +255,42 @@ def _get_xpra_exe_command(*cmd_options) -> list[str]:
     for cmd in cmd_options:
         exe_name = "%s.exe" % cmd
         if sys.executable.lower().endswith(exe_name):
-            #prefer the same executable we were launched from:
+            # prefer the same executable we were launched from:
             return [sys.executable]
-        #try to find it in exe dir:
+        # try to find it in exe dir:
         exe = os.path.join(exe_dir, exe_name)
         if os.path.exists(exe) and os.path.isfile(exe):
             return [exe]
-        #without ".exe" extension:
-        script = os.path.join(exe_dir, cmd)
+        # without ".exe" extension:
+        script: str = os.path.join(exe_dir, cmd)
         if os.path.exists(script) and os.path.isfile(script):
             return [script]
         if mingw:
-            #the python interpreter to use with the scripts:
+            # the python interpreter to use with the scripts:
             py = os.path.join(mingw, "bin", "python3.exe")
             if os.path.exists(py):
                 if cmd.lower() in ("python", "python3"):
                     return [py]
-                #ie: /e/Xpra/trunk/src/dist/xpra
+                # ie: /e/Xpra/trunk/src/dist/xpra
                 script = os.path.join(os.getcwd(), "scripts", cmd.lower())
                 if os.path.exists(script) and os.path.isfile(script):
                     return [py, script]
-                #ie: /mingw64/bin/xpra
+                # ie: /mingw64/bin/xpra
                 script = os.path.join(mingw, "bin", cmd.lower())
                 if os.path.exists(script) and os.path.isfile(script):
                     return [py, script]
     from xpra.platform.paths import default_do_get_xpra_command
     d = default_do_get_xpra_command()
     if len(d) == 1:
-        #ie: d="xpra"
+        # ie: d="xpra"
         if not d[0].lower().endswith(".exe"):
             return [sys.executable, d[0]]
     return d
 
+
 def do_get_xpra_command() -> list[str]:
     sl = sys.executable.lower()
-    #keep the exact same command used to launch if we can:
+    # keep the exact same command used to launch if we can:
     if sl.endswith("xpra_cmd.exe") or sl.endswith("xpra.exe"):
         return [sys.executable]
     return _get_xpra_exe_command("Xpra", "Xpra_cmd")
@@ -285,6 +298,7 @@ def do_get_xpra_command() -> list[str]:
 
 def do_get_python_exec_command() -> list[str]:
     return _get_xpra_exe_command("Python_exec_gui", "Python")
+
 
 def do_get_python_execfile_command() -> list[str]:
     return _get_xpra_exe_command("Python_execfile_gui", "Python")

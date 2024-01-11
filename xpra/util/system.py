@@ -101,7 +101,7 @@ def get_distribution_version_id() -> str:
     return ""
 
 
-os_release_file_data : str | None = None
+os_release_file_data: str | None = None
 
 
 def load_os_release_file() -> str:

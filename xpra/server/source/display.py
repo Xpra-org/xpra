@@ -29,15 +29,15 @@ class ClientDisplayMixin(StubSourceMixin):
         self.vrefresh : int = -1
         self.icc : dict = {}
         self.display_icc : dict = {}
-        self.desktop_size : tuple[int, int] | None = None
-        self.desktop_mode_size : tuple[int, int] | None = None
-        self.desktop_size_unscaled : tuple[int, int] | None = None
-        self.desktop_size_server : tuple[int, int] | None = None
+        self.desktop_size: tuple[int, int] | None = None
+        self.desktop_mode_size: tuple[int, int] | None = None
+        self.desktop_size_unscaled: tuple[int, int] | None = None
+        self.desktop_size_server: tuple[int, int] | None = None
         self.desktop_fullscreen : bool = False
-        self.screen_sizes : list = []
+        self.screen_sizes: list = []
         self.monitors : dict[int,Any] = {}
         self.desktops : int = 1
-        self.desktop_names : tuple[str, ...] = ()
+        self.desktop_names: tuple[str, ...] = ()
         self.show_desktop_allowed : bool = False
         self.opengl_props : dict[str, Any] = {}
 
@@ -58,7 +58,7 @@ class ClientDisplayMixin(StubSourceMixin):
             info["desktop_size"] = {"unscaled" : self.desktop_size_unscaled}
         return info
 
-    def parse_client_caps(self, c : typedict) -> None:
+    def parse_client_caps(self, c: typedict) -> None:
         self.vrefresh = c.intget("vrefresh", -1)
         self.desktop_size = c.intpair("desktop_size")
         if self.desktop_size is not None:

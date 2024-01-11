@@ -205,7 +205,7 @@ def fix_unicode_out():
                             while remaining:
                                 n = DWORD(0)
                                 # There is a shorter-than-documented limitation on the
-                                # length of the string passed to WriteConsoleW (see
+                                # length of the string passed to WriteConsoleW, see:
                                 # <http://tahoe-lafs.org/trac/tahoe-lafs/ticket/1232>.
                                 retval = WriteConsoleW(self._hConsole, text, min(remaining, 10000), byref(n), None)
                                 if retval == 0 or n.value == 0:

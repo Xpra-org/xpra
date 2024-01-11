@@ -117,7 +117,7 @@ class subprocess_callee:
         self.timeout_add = GLib.timeout_add
         self.source_remove = GLib.source_remove
 
-    def connect_export(self, signal_name:str, *user_data) -> None:
+    def connect_export(self, signal_name: str, *user_data) -> None:
         """ gobject style signal registration for the wrapped object,
             the signals will automatically be forwarded to the wrapper process
             using send(signal_name, *signal_args, *user_data)
@@ -238,7 +238,7 @@ class subprocess_callee:
 
     def send(self, *args) -> None:
         if HEXLIFY_PACKETS:
-            args = args[:1]+[hexstr(str(x)[:32]) for x in args[1:]]
+            args = list(args[:1])+[hexstr(str(x)[:32]) for x in args[1:]]
         log("send: adding '%s' message (%s items already in queue)", args[0], self.send_queue.qsize())
         self.send_queue.put(args)
         p = self.protocol
@@ -352,7 +352,7 @@ class subprocess_caller:
         self.timeout_add = GLib.timeout_add
         self.source_remove = GLib.source_remove
 
-    def connect(self, signal:str, cb, *args) -> None:
+    def connect(self, signal: str, cb, *args) -> None:
         """ gobject style signal registration """
         self.signal_callbacks.setdefault(signal, []).append((cb, list(args)))
 

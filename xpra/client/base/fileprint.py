@@ -27,9 +27,9 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
         StubClientMixin.__init__(self)
         FileTransferHandler.__init__(self)
         self.printer_attributes = []
-        self.send_printers_timer : int = 0
+        self.send_printers_timer: int = 0
         self.exported_printers = None
-        self.remote_request_file : bool = False
+        self.remote_request_file: bool = False
 
     def init(self, opts) -> None:
         #printing and file transfer:
@@ -53,13 +53,13 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
         self.cleanup_printing()
         FileTransferHandler.cleanup(self)
 
-    def parse_server_capabilities(self, c : typedict) -> bool:
+    def parse_server_capabilities(self, c: typedict) -> bool:
         self.parse_printing_capabilities(c)
         self.parse_file_transfer_caps(c)
         self.remote_request_file = c.boolget("request-file", False)
         return True
 
-    def parse_printing_capabilities(self, caps : typedict) -> None:
+    def parse_printing_capabilities(self, caps: typedict) -> None:
         printlog("parse_printing_capabilities() client printing support=%s", self.printing)
         if self.printing:
             server_printing = caps.boolget("printing")

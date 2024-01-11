@@ -32,7 +32,7 @@ for attr in dir(cairo):
         FORMATS[getattr(cairo, attr)] = attr.replace("FORMAT_", "")
 
 
-def cairo_paint_pointer_overlay(context, cursor_data, px : int, py : int, start_time) -> None:
+def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_time) -> None:
     if not cursor_data:
         return
     elapsed = max(0, monotonic()-start_time)
@@ -72,7 +72,7 @@ class CairoBackingBase(WindowBackingBase):
         self.render_size = 0, 0
         self.fps_image = None
 
-    def init(self, ww : int, wh : int, bw : int, bh : int) -> None:
+    def init(self, ww: int, wh: int, bw: int, bh : int) -> None:
         mod = self.size!=(bw, bh) or self.render_size!=(ww, wh)
         self.size = bw, bh
         self.render_size = ww, wh

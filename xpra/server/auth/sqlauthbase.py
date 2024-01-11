@@ -14,7 +14,7 @@ class SQLAuthenticator(SysAuthenticator):
     CLIENT_USERNAME = True
 
     def __init__(self, **kwargs):
-        self.password_query : str = kwargs.pop("password_query", "SELECT password FROM users WHERE username=(%s)")
+        self.password_query: str = kwargs.pop("password_query", "SELECT password FROM users WHERE username=(%s)")
         self.sessions_query : str = kwargs.pop("sessions_query",
                                                "SELECT uid, gid, displays, env_options, session_options FROM users WHERE username=(%s) AND password=(%s)")  # noqa: E501
         super().__init__(**kwargs)

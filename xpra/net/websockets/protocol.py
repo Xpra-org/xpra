@@ -30,9 +30,9 @@ class WebSocketProtocol(SocketProtocol):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ws_data : ByteString = b""
-        self.ws_payload : list[ByteString] = []
-        self.ws_payload_opcode : int = 0
-        self.ws_mask : bool = MASK
+        self.ws_payload: list[ByteString] = []
+        self.ws_payload_opcode: int = 0
+        self.ws_mask: bool = MASK
         self._process_read = self.parse_ws_frame
         self.make_chunk_header : Callable = self.make_xpra_header
         self.make_frame_header : Callable = self.make_wsframe_header

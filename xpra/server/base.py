@@ -27,7 +27,7 @@ from xpra.log import Logger
 
 
 def get_server_base_classes() -> tuple[type,...]:
-    classes : list[type] = [ServerCore]
+    classes: list[type] = [ServerCore]
     if features.control:
         from xpra.server.mixins.controlcommands import ServerBaseControlCommands
         classes.append(ServerBaseControlCommands)

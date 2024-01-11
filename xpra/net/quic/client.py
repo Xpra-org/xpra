@@ -56,7 +56,7 @@ WS_HEADERS = {
 class ClientWebSocketConnection(XpraQuicConnection):
 
     def __init__(self, connection : HttpConnection, stream_id: int, transmit: Callable[[], None],
-                 host : str, port : int, info=None, options=None) -> None:
+                 host: str, port: int, info=None, options=None) -> None:
         super().__init__(connection, stream_id, transmit, host, port, info, options)
         self.write_buffer = SimpleQueue()
 
@@ -107,7 +107,7 @@ class WebSocketClient(QuicConnectionProtocol):
         else:
             self._http = H3Connection(self._quic)
 
-    def open(self, host : str, port : int, path : str) -> ClientWebSocketConnection:
+    def open(self, host: str, port: int, path: str) -> ClientWebSocketConnection:
         log(f"open({host}, {port}, {path})")
         stream_id = self._quic.get_next_available_stream_id()
         websocket = ClientWebSocketConnection(self._http, stream_id, self.transmit,
@@ -195,9 +195,9 @@ async def get_address_options(host: str, port: int) -> tuple:
     return tuple(addr_info for addr_info in infos if addr_info[0] in family_options)
 
 
-def quic_connect(host : str, port : int, path : str,
-                 ssl_cert : str, ssl_key : str, ssl_key_password : str,
-                 ssl_ca_certs, ssl_server_verify_mode : str, ssl_server_name : str):
+def quic_connect(host: str, port: int, path: str,
+                 ssl_cert: str, ssl_key: str, ssl_key_password: str,
+                 ssl_ca_certs, ssl_server_verify_mode: str, ssl_server_name: str):
     configuration = QuicConfiguration(
         alpn_protocols=H3_ALPN,
         is_client=True,

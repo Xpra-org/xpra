@@ -16,7 +16,7 @@ SubstructureNotifyMask = constants["SubstructureNotifyMask"]
 SubstructureRedirectMask = constants["SubstructureRedirectMask"]
 
 
-def send_wm_take_focus(xid: int, timestamp : int = CurrentTime):
+def send_wm_take_focus(xid: int, timestamp: int = CurrentTime):
     log("sending WM_TAKE_FOCUS: %#x, X11 timestamp=%r", xid, int(timestamp or 0))
     if timestamp < 0:
         timestamp = 0

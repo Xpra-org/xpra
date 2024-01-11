@@ -40,14 +40,14 @@ if not XRes.check_xres():
 log = Logger("x11", "clipboard")
 
 
-CurrentTime : int = constants["CurrentTime"]
-StructureNotifyMask : int = constants["StructureNotifyMask"]
+CurrentTime: int = constants["CurrentTime"]
+StructureNotifyMask: int = constants["StructureNotifyMask"]
 
 sizeof_long = struct.calcsize(b'@L')
 
-MAX_DATA_SIZE : int = 4*1024*1024
+MAX_DATA_SIZE: int = 4*1024*1024
 
-BLACKLISTED_CLIPBOARD_CLIENTS : list[str] = os.environ.get("XPRA_BLACKLISTED_CLIPBOARD_CLIENTS", "clipit").split(",")
+BLACKLISTED_CLIPBOARD_CLIENTS: list[str] = os.environ.get("XPRA_BLACKLISTED_CLIPBOARD_CLIENTS", "clipit").split(",")
 log("BLACKLISTED_CLIPBOARD_CLIENTS=%s", BLACKLISTED_CLIPBOARD_CLIENTS)
 
 
@@ -68,7 +68,7 @@ def parse_translated_targets(v: str) -> dict[str, list[str]]:
     return trans
 
 
-DEFAULT_TRANSLATED_TARGETS : str = "#".join(
+DEFAULT_TRANSLATED_TARGETS: str = "#".join(
     (
         "text/plain;charset=utf-8:UTF8_STRING,text/plain,public.utf8-plain-text",
         "TEXT:text/plain,text/plain;charset=utf-8,UTF8_STRING,public.utf8-plain-text",
@@ -117,13 +117,13 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
     def __init__(self, xid:int, selection="CLIPBOARD"):
         ClipboardProxyCore.__init__(self, selection)
         GObject.GObject.__init__(self)
-        self.xid : int = xid
-        self.owned : bool = False
-        self._want_targets : bool = False
+        self.xid: int = xid
+        self.owned: bool = False
+        self._want_targets: bool = False
         self.remote_requests : dict[str, list[tuple]] = {}
         self.local_requests : dict[str,dict[int,tuple[int,Callable]]] = {}
-        self.local_request_counter : int = 0
-        self.targets : tuple[str,...] = ()
+        self.local_request_counter: int = 0
+        self.targets: tuple[str,...] = ()
         self.target_data : dict[str,tuple] = {}
         self.reset_incr_data()
 

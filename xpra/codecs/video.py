@@ -69,7 +69,7 @@ HARDWARE_ENCODER_OPTIONS: tuple[str, ...] = ("nvenc", "nvjpeg")
 ALL_CSC_MODULE_OPTIONS: tuple[str, ...] = ("cython", "libyuv")
 ALL_VIDEO_DECODER_OPTIONS: tuple[str, ...] = ("openh264", "vpx", "gstreamer", "nvdec")
 
-PREFERRED_ENCODER_ORDER : tuple[str, ...] = tuple(
+PREFERRED_ENCODER_ORDER: tuple[str, ...] = tuple(
     autoprefix("enc", x) for x in (
         "nvenc", "nvjpeg", "x264", "vpx", "jpeg", "webp", "gstreamer")
 )

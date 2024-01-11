@@ -68,7 +68,7 @@ class ConfigureGUI(BaseGUIWindow):
         HEIGHT = 480
         FRAMERATE = 10
 
-        def lal(text:str, element:str, test="") -> None:
+        def lal(text: str, element: str, test="") -> None:
             r = int(row)
             grid.attach(title_box(text), 0, r, 1, 1)
             lbl = slabel(element)
@@ -104,7 +104,7 @@ class ConfigureGUI(BaseGUIWindow):
                    f"framerate=(fraction){FRAMERATE}/1' !"\
                    " videoconvert ! {element} ! avdec_{fmt} ! videoconvert ! {videosink}"
 
-        def encoder_option(text:str, element:str, fmt:str):
+        def encoder_option(text: str, element: str, fmt: str):
             lal(text, element, testencoder(element, fmt))
 
         for sw in ("x264", "vp8", "vp9", "av1"):

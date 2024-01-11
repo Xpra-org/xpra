@@ -65,15 +65,15 @@ class X11ServerBase(X11ServerCore):
 
     def __init__(self):
         super().__init__()
-        self._default_xsettings : tuple[int,list[tuple]] = (0, [])
+        self._default_xsettings: tuple[int,list[tuple]] = (0, [])
         self._settings : dict[str,Any] = {}
-        self.double_click_time : int = 0
-        self.double_click_distance : int = 0
-        self.dpi : int = 0
-        self.default_dpi : int = 0
+        self.double_click_time: int = 0
+        self.double_click_distance: int = 0
+        self.dpi: int = 0
+        self.default_dpi: int = 0
         self._xsettings_manager = None
-        self._xsettings_enabled : bool = False
-        self.display_pid : int = 0
+        self._xsettings_enabled: bool = False
+        self.display_pid: int = 0
         self.icc_profile : bytes = b""
         self.input_devices = "xtest"
 
@@ -134,7 +134,7 @@ class X11ServerBase(X11ServerCore):
             self.touchpad_device.root_h = root_h
         return root_w, root_h
 
-    def init_dbus(self, dbus_pid:int, dbus_env:dict[str, str]) -> None:
+    def init_dbus(self, dbus_pid: int, dbus_env:dict[str, str]) -> None:
         dbuslog("init_dbus(%s, %s)", dbus_pid, dbus_env)
         if dbus_pid and dbus_env:
             os.environ.update(dbus_env)
@@ -387,7 +387,7 @@ class X11ServerBase(X11ServerCore):
                 v = value.encode("utf-8")
 
             # cook xsettings to add various settings:
-            # (as those may not be present in xsettings on some platforms.. like win32 and osx)
+            # (as those may not be present in xsettings on some platforms… like win32 and osx)
             have_override = self.double_click_time > 0 or self.double_click_distance != (-1, -1) or antialias or dpi > 0
             if k == "xsettings-blob" and have_override:
                 # start by removing blacklisted options:

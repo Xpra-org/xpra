@@ -40,12 +40,12 @@ class WindowPerformanceStatistics:
         self.reset()
 
     # assume 100ms until we get some data to compute the real values
-    DEFAULT_DAMAGE_LATENCY : float = 0.1
-    DEFAULT_NETWORK_LATENCY : float = 0.1
-    DEFAULT_TARGET_LATENCY : float = 0.1
+    DEFAULT_DAMAGE_LATENCY: float = 0.1
+    DEFAULT_NETWORK_LATENCY: float = 0.1
+    DEFAULT_TARGET_LATENCY: float = 0.1
 
     def reset(self) -> None:
-        self.init_time : float = monotonic()
+        self.init_time: float = monotonic()
         #records how long it took the client to decode frames:
         #(ack_time, no of pixels, decoding_time*1000*1000)
         self.client_decode_time : Deque[tuple[float,int,int]] = deque(maxlen=NRECS)
@@ -287,7 +287,7 @@ class WindowPerformanceStatistics:
             count += 1
         return pixels, count
 
-    def get_bitrate(self, max_elapsed : float=1) -> int:
+    def get_bitrate(self, max_elapsed: float=1) -> int:
         cutoff = monotonic()-max_elapsed
         recs = tuple((v[0], v[4]) for v in tuple(self.encoding_stats) if v[0]>=cutoff)
         if len(recs)<2:

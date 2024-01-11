@@ -35,7 +35,7 @@ def get_icon_from_file(filename):
     return pixbuf
 
 
-def get_icon_pixbuf(icon_name):
+def get_icon_pixbuf(icon_name: str):
     if not icon_name:
         log("get_icon_pixbuf(%s)=None", icon_name)
         return None
@@ -48,7 +48,7 @@ def get_icon_pixbuf(icon_name):
     return None
 
 
-def get_pixbuf_from_data(rgb_data, has_alpha : bool, w : int, h : int, rowstride : int) -> GdkPixbuf.Pixbuf:
+def get_pixbuf_from_data(rgb_data, has_alpha: bool, w: int, h: int, rowstride: int) -> GdkPixbuf.Pixbuf:
     from gi.repository import GLib
     data = GLib.Bytes(rgb_data)
     return GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB,

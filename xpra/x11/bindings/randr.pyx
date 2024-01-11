@@ -289,7 +289,7 @@ cdef extern from "X11/extensions/Xrandr.h":
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
 
-cdef get_mode_info(XRRModeInfo *mi, with_sync : bool):
+cdef get_mode_info(XRRModeInfo *mi, with_sync: bool):
     info = {
         "id"            : mi.id,
         "width"         : mi.width,

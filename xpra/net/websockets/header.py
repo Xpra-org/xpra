@@ -12,7 +12,7 @@ from xpra.net.websockets.common import OPCODE_CLOSE
 from xpra.net.websockets.mask import hybi_unmask
 
 
-def close_packet(code : int = 1000, reason : str = "") -> bytes:
+def close_packet(code: int = 1000, reason: str = "") -> bytes:
     data = struct.pack("!H", code)
     if reason:
         #should validate that encoded data length is less than 125, meh

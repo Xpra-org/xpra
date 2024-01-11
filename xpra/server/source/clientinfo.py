@@ -32,7 +32,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.username = ""
         self.user = ""
         self.name = ""
-        self.argv : tuple[str,...] = ()
+        self.argv: tuple[str,...] = ()
         self.sharing = False
         # client capabilities/options:
         self.client_type = ""
@@ -48,14 +48,14 @@ class ClientInfoMixin(StubSourceMixin):
         self.client_wm_name = ""
         self.client_session_type = ""
         self.client_session_type_full = ""
-        self.client_opengl : typedict = typedict()
+        self.client_opengl: typedict = typedict()
         self.proxy_hostname = ""
         self.proxy_platform = ""
         self.proxy_release = ""
         self.proxy_version = ""
         self.proxy_version = ""
 
-    def parse_client_caps(self, c : typedict) -> None:
+    def parse_client_caps(self, c: typedict) -> None:
         self.uuid = c.strget("uuid")
         self.session_id = c.strget("session-id")
         self.machine_id = c.strget("machine_id")

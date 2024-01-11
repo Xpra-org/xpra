@@ -65,7 +65,7 @@ def get_headers(host: str, port: int) -> dict:
     return headers
 
 
-def client_upgrade(read:Callable, write:Callable, host:str, port:int, path="") -> None:
+def client_upgrade(read:Callable, write:Callable, host:str, port: int, path="") -> None:
     key = b64encode(uuid.uuid4().bytes)
     request = get_client_upgrade_request(host, port, path, key)
     write_request(write, request)
@@ -74,7 +74,7 @@ def client_upgrade(read:Callable, write:Callable, host:str, port:int, path="") -
     log("client_upgrade: done")
 
 
-def get_client_upgrade_request(host:str, port:int, path:str, key:bytes):
+def get_client_upgrade_request(host:str, port: int, path:str, key:bytes):
     url_path = quote(path)
     request = f"GET /{url_path} HTTP/1.1"
     log(f"client websocket upgrade request: {request!r}")

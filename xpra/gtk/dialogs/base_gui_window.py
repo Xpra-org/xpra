@@ -187,7 +187,7 @@ class BaseGUIWindow(Gtk.Window):
         log("focus_out(%s, %s)", window, event)
         self.reset_cursors()
 
-    def app_signal(self, signum : int | signal.Signals) -> None:
+    def app_signal(self, signum: int | signal.Signals) -> None:
         if self.exit_code is None:
             self.exit_code = 128 + int(signum)
         log("app_signal(%s) exit_code=%i", signum, self.exit_code)
@@ -259,7 +259,7 @@ class BaseGUIWindow(Gtk.Window):
                     self.show()
             # don't ask me why,
             # but on macos we can get file descriptor errors
-            # if we exit immediately after we spawn the attach command
+            # if we exit immediately after we spawn the `attach` command
             GLib.timeout_add(2000, may_exit)
 
     def may_notify(self, nid: NotificationID, summary: str, body: str) -> None:

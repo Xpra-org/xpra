@@ -60,9 +60,9 @@ class ChildCommandServer(StubServerMixin):
         self.source_env : dict[str, str] = {}
         self.start_env : dict[str, str] = {}
         self.exec_cwd : str = os.getcwd()
-        self.exec_wrapper : list[str] = []
+        self.exec_wrapper: list[str] = []
         self.terminate_children : bool = False
-        self.children_started : list[ProcInfo] = []
+        self.children_started: list[ProcInfo] = []
         self.child_reaper = None
         self.reaper_exit : Callable = self.reaper_exit_check
         #does not belong here...
@@ -364,7 +364,7 @@ class ChildCommandServer(StubServerMixin):
                 self.session_name = new_name
                 self.mdns_update()
 
-    def _process_start_command(self, proto, packet : PacketType) -> None:
+    def _process_start_command(self, proto, packet: PacketType) -> None:
         log(f"start new command: {packet}")
         if not self.start_new_commands:
             log.warn("Warning: received start-command request,")
@@ -388,7 +388,7 @@ class ChildCommandServer(StubServerMixin):
                 ss.add_window_filter("window", "pid", "=", proc.pid)
         log(f"process_start_command: proc={proc}")
 
-    def _process_command_signal(self, _proto, packet : PacketType) -> None:
+    def _process_command_signal(self, _proto, packet: PacketType) -> None:
         pid = packet[1]
         signame = bytestostr(packet[2])
         if signame not in COMMAND_SIGNALS:

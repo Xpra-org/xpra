@@ -47,8 +47,8 @@ class EncodingServer(StubServerMixin):
         self.default_min_quality = 0
         self.default_speed = -1
         self.default_min_speed = 0
-        self.allowed_encodings : tuple[str,...] = ()
-        self.core_encodings : tuple[str,...] = ()
+        self.allowed_encodings: tuple[str,...] = ()
+        self.core_encodings: tuple[str,...] = ()
         self.encodings : tuple[str,...] = ()
         self.lossless_encodings : tuple[str,...] = ()
         self.lossless_mode_encodings : tuple[str,...] = ()
@@ -227,7 +227,7 @@ class EncodingServer(StubServerMixin):
             log.warn("ignored invalid default encoding option: %s", self.encoding)
             self.default_encoding = self.encoding
 
-    def _process_encoding(self, proto, packet : PacketType) -> None:
+    def _process_encoding(self, proto, packet: PacketType) -> None:
         encoding = bytestostr(packet[1])
         ss = self.get_server_source(proto)
         if ss is None:

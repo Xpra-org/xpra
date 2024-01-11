@@ -48,7 +48,7 @@ def get_network_logger():
     return network_logger
 
 
-def create_unix_domain_socket(sockpath:str, socket_permissions: int = 0o600):
+def create_unix_domain_socket(sockpath: str, socket_permissions: int = 0o600):
     assert POSIX
     listener = socket.socket(socket.AF_UNIX)
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -104,7 +104,7 @@ def create_unix_domain_socket(sockpath:str, socket_permissions: int = 0o600):
     return listener, cleanup_socket
 
 
-def hosts(host_str:str) -> list[str]:
+def hosts(host_str: str) -> list[str]:
     if host_str=="*":
         if socket.has_dualstack_ipv6():
             #IPv6 will also listen for IPv4:
@@ -114,7 +114,7 @@ def hosts(host_str:str) -> list[str]:
     return [host_str]
 
 
-def add_listen_socket(socktype:str, sock, info, server, new_connection_cb, options=None) -> Callable | None:
+def add_listen_socket(socktype: str, sock, info, server, new_connection_cb, options=None) -> Callable | None:
     log = get_network_logger()
     log("add_listen_socket%s", (socktype, sock, info, server, new_connection_cb, options))
     try:
@@ -161,7 +161,7 @@ def add_listen_socket(socktype:str, sock, info, server, new_connection_cb, optio
         return None
 
 
-def accept_connection(socktype:str, listener, timeout=None, socket_options=None):
+def accept_connection(socktype: str, listener, timeout=None, socket_options=None):
     log = get_network_logger()
     try:
         sock, address = listener.accept()
@@ -183,7 +183,7 @@ def accept_connection(socktype:str, listener, timeout=None, socket_options=None)
     return conn
 
 
-def peek_connection(conn, timeout:int=PEEK_TIMEOUT_MS, size:int=PEEK_SIZE):
+def peek_connection(conn, timeout: int=PEEK_TIMEOUT_MS, size: int=PEEK_SIZE):
     log = get_network_logger()
     log("peek_connection(%s, %i, %i)", conn, timeout, size)
     peek_data = b""
@@ -310,7 +310,7 @@ def guess_packet_type(data: ByteString) -> str:
     return ""
 
 
-def create_sockets(opts, error_cb:Callable, retry:int=0):
+def create_sockets(opts, error_cb:Callable, retry: int=0):
     bind_tcp = parse_bind_ip(opts.bind_tcp)
     bind_ssl = parse_bind_ip(opts.bind_ssl, 443)
     bind_ssh = parse_bind_ip(opts.bind_ssh, 22)
@@ -429,7 +429,7 @@ def create_tcp_socket(host: str, iport: int) -> socket.socket:
     return listener
 
 
-def setup_tcp_socket(host:str, iport:int, socktype:str="tcp") -> tuple[str, socket.socket, tuple[str,int], Callable]:
+def setup_tcp_socket(host: str, iport: int, socktype: str="tcp") -> tuple[str, socket.socket, tuple[str,int], Callable]:
     log = get_network_logger()
     try:
         tcp_socket = create_tcp_socket(host, iport)
@@ -452,7 +452,7 @@ def setup_tcp_socket(host:str, iport:int, socktype:str="tcp") -> tuple[str, sock
     return socktype, tcp_socket, (host, iport), cleanup_tcp_socket
 
 
-def create_udp_socket(host:str, iport:int, family=socket.AF_INET) -> socket.socket:
+def create_udp_socket(host: str, iport: int, family=socket.AF_INET) -> socket.socket:
     if family==socket.AF_INET6:
         if not socket.has_ipv6:
             raise RuntimeError("specified an IPv6 address but this is not supported on this system")
@@ -472,7 +472,7 @@ def create_udp_socket(host:str, iport:int, family=socket.AF_INET) -> socket.sock
     return listener
 
 
-def setup_quic_socket(host:str, port:int) -> socket.socket:
+def setup_quic_socket(host: str, port: int) -> socket.socket:
     try:
         from xpra.net.quic import common
         import aioquic
@@ -532,7 +532,7 @@ def parse_bind_ip(bind_ip: list[str], default_port: int = DEFAULT_PORT) -> dict[
     return ip_sockets
 
 
-def setup_vsock_socket(cid:int, iport:int) -> tuple[str, Any, tuple[int,int], Callable]:
+def setup_vsock_socket(cid: int, iport: int) -> tuple[str, Any, tuple[int,int], Callable]:
     log = get_network_logger()
     try:
         from xpra.net.vsock.vsock import bind_vsocket
@@ -571,7 +571,7 @@ def parse_bind_vsock(bind_vsock: list[str]) -> dict[tuple[int, int], dict]:
     return vsock_sockets
 
 
-def setup_sd_listen_socket(stype:str, sock, addr):
+def setup_sd_listen_socket(stype: str, sock, addr):
     log = get_network_logger()
 
     def cleanup_sd_listen_socket():
@@ -607,7 +607,7 @@ def normalize_local_display_name(local_display_name:str) -> str:
 def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
                         display_name:str, clobber,
                         mmap_group:str="auto", socket_permissions:str="600", username:str="",
-                        uid:int=0, gid:int=0) -> dict[Any, Callable]:
+                        uid: int=0, gid: int=0) -> dict[Any, Callable]:
     log = get_network_logger()
     log("setup_local_sockets%s",
         (bind, socket_dir, socket_dirs, session_dir, display_name, clobber, mmap_group,
@@ -799,7 +799,7 @@ def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
     return defs
 
 
-def handle_socket_error(sockpath:str, sperms:int, e) -> None:
+def handle_socket_error(sockpath:str, sperms: int, e) -> None:
     log = get_network_logger()
     log("socket creation error", exc_info=True)
     if sockpath.startswith("/var/run/xpra") or sockpath.startswith("/run/xpra"):

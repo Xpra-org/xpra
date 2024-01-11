@@ -313,7 +313,7 @@ class ClientWindowBase(ClientWidgetBase):
             default_values = {
                 "title"           : "<untitled window>",
                 "client-machine"  : UNKNOWN_MACHINE,
-                "windowid"        : str(self.wid),
+                "windowid"       : str(self.wid),
                 "server-machine"  : std(remote_hostname) or UNKNOWN_MACHINE,
                 "server-display"  : std(remote_display) or "<unknown display>",
             }

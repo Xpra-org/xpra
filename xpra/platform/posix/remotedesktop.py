@@ -71,7 +71,7 @@ class RemoteDesktop(PortalShadow):
             UInt32(pressed),
             dbus_interface=REMOTEDESKTOP_IFACE)
 
-    def _process_key_action(self, proto, packet : PacketType) -> None:
+    def _process_key_action(self, proto, packet: PacketType) -> None:
         if self.readonly or not self.input_devices or not self.keymap:
             return
         keyname = str(packet[2])

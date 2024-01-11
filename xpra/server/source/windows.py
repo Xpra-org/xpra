@@ -51,7 +51,7 @@ class WindowsMixin(StubSourceMixin):
     """
 
     @classmethod
-    def is_needed(cls, caps : typedict) -> bool:
+    def is_needed(cls, caps: typedict) -> bool:
         return caps.boolget("windows")
 
     def __init__(self):

@@ -39,7 +39,7 @@ class WebcamMixin(StubSourceMixin):
     """
 
     @classmethod
-    def is_needed(cls, caps : typedict) -> bool:
+    def is_needed(cls, caps: typedict) -> bool:
         if not caps.boolget("webcam"):
             return False
         try:

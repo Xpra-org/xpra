@@ -66,7 +66,7 @@ def is_socket(sockpath:str, check_uid:int | None=None) -> bool:
     return True
 
 
-def is_writable(path : str, uid:int, gid:int) -> bool:
+def is_writable(path: str, uid:int, gid:int) -> bool:
     if uid == 0:
         return True
     try:
@@ -142,7 +142,7 @@ class CaptureStdErr:
             os.dup2(self.savedstderr, 2)
 
 
-def path_permission_info(filename : str, ftype=None) -> tuple[str, ...]:
+def path_permission_info(filename: str, ftype=None) -> tuple[str, ...]:
     from xpra.os_util import POSIX
     if not POSIX:
         return ()

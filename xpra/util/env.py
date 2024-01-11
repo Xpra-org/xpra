@@ -16,18 +16,18 @@ def unsetenv(*varnames) -> None:
         os.environ.pop(x, None)
 
 
-def hasenv(name : str) -> bool:
+def hasenv(name: str) -> bool:
     return os.environ.get(name) is not None
 
 
-def envint(name : str, d: int = 0) -> int:
+def envint(name: str, d: int = 0) -> int:
     try:
         return int(os.environ.get(name, d))
     except ValueError:
         return d
 
 
-def envbool(name : str, d: bool = False) -> bool:
+def envbool(name: str, d: bool = False) -> bool:
     try:
         v = os.environ.get(name, "").lower()
         if v is None:
@@ -41,7 +41,7 @@ def envbool(name : str, d: bool = False) -> bool:
         return d
 
 
-def envfloat(name : str, d: float = 0) -> float:
+def envfloat(name: str, d: float = 0) -> float:
     try:
         return float(os.environ.get(name, d))
     except ValueError:
@@ -65,7 +65,7 @@ def restore_script_env(env):
     return env
 
 
-def shellsub(s : str, subs=None) -> str:
+def shellsub(s: str, subs=None) -> str:
     """ shell style string substitution using the dictionary given """
     if subs:
         for var, value in subs.items():
@@ -84,7 +84,7 @@ def shellsub(s : str, subs=None) -> str:
     return s
 
 
-def osexpand(s : str, actual_username="", uid=0, gid=0, subs=None) -> str:
+def osexpand(s: str, actual_username="", uid=0, gid=0, subs=None) -> str:
     if not s:
         return s
 

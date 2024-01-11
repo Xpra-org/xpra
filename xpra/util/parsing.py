@@ -45,7 +45,7 @@ def parse_scaling(desktop_scaling: str, root_w: int, root_h: int,
     if desktop_scaling.startswith("auto"):
         # figure out if the command line includes settings to use for auto mode:
         # here are our defaults:
-        limits : list[tuple[int, int, float, float]] = [
+        limits: list[tuple[int, int, float, float]] = [
             (3960, 2160, 1.0, 1.0),         # 100% no auto scaling up to 4k
             (7680, 4320, 1.25, 1.25),       # 125%
             (8192, 8192, 1.5, 1.5),         # 150%

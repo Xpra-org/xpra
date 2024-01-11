@@ -61,7 +61,7 @@ def rgb_reformat(image : ImageWrapper, rgb_formats, supports_transparency:bool) 
         # (required for r210 which is not handled by PIL directly)
         log("rgb_reformat: using argb_swap for %s", image)
         return argb_swap(image, rgb_formats, supports_transparency)
-    modes : tuple[tuple[str,str], ...] = ()
+    modes: tuple[tuple[str,str], ...] = ()
     try:
         # pylint: disable=import-outside-toplevel
         from PIL import Image
@@ -73,7 +73,7 @@ def rgb_reformat(image : ImageWrapper, rgb_formats, supports_transparency:bool) 
             modes = PIL_conv.get(pixel_format, ())
         else:
             modes = PIL_conv_noalpha.get(pixel_format, ())
-    target_rgb : tuple[tuple[str,str], ...] = tuple((im,om) for (im,om) in modes if om in rgb_formats)
+    target_rgb: tuple[tuple[str,str], ...] = tuple((im,om) for (im,om) in modes if om in rgb_formats)
     if not target_rgb:
         log("rgb_reformat: no matching target modes for converting %s to %s", image, rgb_formats)
         # try argb module:

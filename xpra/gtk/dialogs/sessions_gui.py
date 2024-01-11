@@ -337,8 +337,8 @@ class SessionsGUI(Gtk.Window):
         self.contents = grid
         self.vbox.add(grid)
 
-    def get_uri(self, password, interface, protocol, name:str, stype:str, domain, host:str,
-                address, port:int, text) -> str:
+    def get_uri(self, password, interface, protocol, name: str, stype: str, domain, host: str,
+                address, port: int, text) -> str:
         dstr = ""
         tt = typedict(text)
         display = tt.strget("display", "")
@@ -426,7 +426,7 @@ class SessionsGUI(Gtk.Window):
         url = url[:url.rfind("/")]
         webbrowser.open_new_tab(url)
 
-    def make_connect_widgets(self, key, recs, address, port:int, display):
+    def make_connect_widgets(self, key, recs, address, port: int, display):
         d = {}
         proc = self.clients.get(key)
         if proc and proc.poll() is None:

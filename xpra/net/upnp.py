@@ -6,7 +6,7 @@
 from xpra.util.str_fn import csv
 
 
-def upnp_add(socktype:str, info, options):
+def upnp_add(socktype: str, info, options):
     from xpra.log import Logger
     log = Logger("network", "upnp")
     log("upnp_add%s", (socktype, info, options))
@@ -49,7 +49,7 @@ def upnp_add(socktype:str, info, options):
                 device = upnp.get_igd()
                 log("using IGD device %s", device)
             except Exception as e:
-                dstr : tuple[str,...] = ()
+                dstr: tuple[str,...] = ()
                 if devices:
                     dstr = (
                         "%i devices:" % len(devices),
@@ -224,7 +224,7 @@ def upnp_add(socktype:str, info, options):
         return err(e)
 
 
-def get_action(service, action_name:str):
+def get_action(service, action_name: str):
     actions = service.get_actions()
     for action in actions:
         if action.name==action_name:

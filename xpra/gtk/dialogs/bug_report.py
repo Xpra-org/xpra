@@ -39,7 +39,7 @@ class BugReport:
         self.includes : dict = {}
         self.window : Gtk.Window | None = None
         self.description : Gtk.TextView | None = None
-        self.toggles : tuple = ()
+        self.toggles: tuple = ()
 
     def init(self, show_about:bool=True,
              get_server_info:Callable | None=None,
@@ -362,7 +362,7 @@ class BugReport:
                 info.external_attr = 0o644 << 16
                 info.comment = str(tooltip).encode("utf8")
                 if isinstance(s, bytes):
-                    rm : str = ""
+                    rm: str = ""
                     try:
                         try:
                             import tempfile

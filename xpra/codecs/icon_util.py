@@ -48,7 +48,7 @@ def load_Rsvg():
     return _rsvg
 
 
-def load_icon_from_file(filename : str, max_size: int = MAX_ICON_SIZE) -> tuple:
+def load_icon_from_file(filename: str, max_size: int = MAX_ICON_SIZE) -> tuple:
     if os.path.isdir(filename):
         log("load_icon_from_file(%s, %i) path is a directory!", filename, max_size)
         return ()

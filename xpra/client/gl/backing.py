@@ -187,29 +187,29 @@ class GLWindowBackingBase(WindowBackingBase):
 
     We create an OpenGL framebuffer object, which will be always up-to-date with the latest windows contents.
     This framebuffer object is updated with YUV painting and RGB painting. It is presented on screen by drawing a
-    textured quad when requested, that is: after each YUV or RGB painting operation, and upon receiving an expose event.
-    The use of a intermediate framebuffer object is the only way to guarantee that the client keeps
+    textured quad when requested, that is: after each YUV or RGB painting operation, and upon receiving an `expose` event.
+    The use of an intermediate framebuffer object is the only way to guarantee that the client keeps
     an always fully up-to-date window image, which is critical because of backbuffer content losses upon buffer swaps
     or offscreen window movement.
     """
 
-    RGB_MODES : list[str] = [
+    RGB_MODES: list[str] = [
         "YUV420P", "YUV422P", "YUV444P", "NV12",
         "GBRP", "BGRA", "BGRX", "RGBA", "RGBX",
         "RGB", "BGR",
     ]
-    HAS_ALPHA : bool = GL_ALPHA_SUPPORTED
+    HAS_ALPHA: bool = GL_ALPHA_SUPPORTED
 
     def __init__(self, wid: int, window_alpha: bool, pixel_depth: int = 0):
         self.wid: int = wid
         # this is the planar pixel format we are currently updating the fbo with
         # can be: "YUV420P", "YUV422P", "YUV444P", "GBRP" or None when not initialized yet.
-        self.planar_pixel_format : str = ""
+        self.planar_pixel_format: str = ""
         self.internal_format = GL_RGBA8
         self.textures = None  # OpenGL texture IDs
         self.shaders : dict[str, GLuint] = {}
         self.programs : dict[str, GLuint] = {}
-        self.texture_size : tuple[int, int] = (0, 0)
+        self.texture_size: tuple[int, int] = (0, 0)
         self.gl_setup = False
         self.debug_setup = False
         self.border: WindowBorder = WindowBorder(shown=False)
@@ -218,7 +218,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.offscreen_fbo = None
         self.tmp_fbo = None
         self.vao = None
-        self.pending_fbo_paint : list[tuple[int, int, int, int]] = []
+        self.pending_fbo_paint: list[tuple[int, int, int, int]] = []
         self.last_flush = monotonic()
         self.last_present_fbo_error = ""
         self.bit_depth = pixel_depth
@@ -230,12 +230,12 @@ class GLWindowBackingBase(WindowBackingBase):
         self.init_backing()
         self.bit_depth: int = self.get_bit_depth(self.bit_depth)
         self.init_formats()
-        self.draw_needs_refresh : bool = DRAW_REFRESH
+        self.draw_needs_refresh: bool = DRAW_REFRESH
         # the correct check would be this:
         # `self.repaint_all = self.is_double_buffered() or bw!=ww or bh!=wh`
         # but we're meant to be using double-buffered everywhere,
         # so don't bother and just repaint everything:
-        self.repaint_all : bool = True
+        self.repaint_all: bool = True
         assert self._backing is not None
         self._backing.show()
 
@@ -694,7 +694,7 @@ class GLWindowBackingBase(WindowBackingBase):
     def do_present_fbo(self, context) -> None:
         # the GL_DRAW_FRAMEBUFFER must already be set when calling this method
         # some backends render to the screen (0), otherws may render elsewhere
-        # (ie: the GTK backend renders to its own buffer..)
+        # (ie: the GTK backend renders to its own buffer…)
         bw, bh = self.size
         rect_count = len(self.pending_fbo_paint)
         if self.is_double_buffered() or self.size != self.render_size:
@@ -824,7 +824,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
         self.draw_rectangle(0, 0, bw, bh, self.border.size, *rgba)
 
-    def paint_box(self, encoding : str, x: int, y: int, w: int, h: int) -> None:
+    def paint_box(self, encoding: str, x: int, y: int, w: int, h: int) -> None:
         # show region being painted if debug paint box is enabled only:
         if self.paint_box_line_width <= 0:
             return

@@ -17,18 +17,18 @@ from xpra.util.str_fn import strtobytes
 from xpra.util.env import envbool
 
 # all the encoders we know about:
-ALL_ENCODERS : tuple[str, ...] = ("rencodeplus", "none")
+ALL_ENCODERS: tuple[str, ...] = ("rencodeplus", "none")
 # the encoders we may have, in the best compatibility order
-TRY_ENCODERS : tuple[str, ...] = ("rencodeplus", "none")
+TRY_ENCODERS: tuple[str, ...] = ("rencodeplus", "none")
 # order for performance:
-PERFORMANCE_ORDER : tuple[str, ...] = ("rencodeplus", )
+PERFORMANCE_ORDER: tuple[str, ...] = ("rencodeplus", )
 
 
 @dataclass
 class Encoding:
-    name : str
-    flag : int
-    version : str
+    name: str
+    flag: int
+    version: str
     encode : Callable[[Any], ByteString]
     decode : Callable[[ByteString], Any]
 
@@ -84,7 +84,7 @@ def init_all() -> None:
     init_encoders(*(list(TRY_ENCODERS)+["none"]))
 
 
-def get_packet_encoding_caps(full_info : int=1) -> dict[str,Any]:
+def get_packet_encoding_caps(full_info: int=1) -> dict[str,Any]:
     caps : dict[str,Any] = {}
     for name in TRY_ENCODERS:
         d = caps.setdefault(name, {})

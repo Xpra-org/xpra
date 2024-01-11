@@ -161,7 +161,7 @@ class LoggingServer(StubServerMixin):
         finally:
             self.in_remote_logging = False
 
-    def _process_logging_control(self, proto, packet : PacketType) -> None:
+    def _process_logging_control(self, proto, packet: PacketType) -> None:
         action = bytestostr(packet[1])
         if action=="start":
             self.add_logging_client(proto)
@@ -170,7 +170,7 @@ class LoggingServer(StubServerMixin):
         else:
             log.warn("Warning: unknown logging-control action '%r'", action)
 
-    def _process_logging(self, proto, packet : PacketType) -> None:
+    def _process_logging(self, proto, packet: PacketType) -> None:
         assert self.remote_logging_receive
         ss = self.get_server_source(proto)
         if ss is None:

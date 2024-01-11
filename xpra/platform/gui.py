@@ -324,7 +324,7 @@ def can_access_display() -> bool:
     return True
 
 
-def set_window_progress(window, pct:int) -> None:
+def set_window_progress(window, pct: int) -> None:
     """ some platforms can indicate progress for a specific window """
 
 

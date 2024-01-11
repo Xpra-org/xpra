@@ -21,8 +21,8 @@ from xpra.common import FULL_INFO
 XPRA_VERSION = xpra.__version__
 XPRA_NUMERIC_VERSION = xpra.__version_info__
 
-CHECK_SSL : bool = envbool("XPRA_VERSION_CHECK_SSL", True)
-SSL_CAFILE : str = ""
+CHECK_SSL: bool = envbool("XPRA_VERSION_CHECK_SSL", True)
+SSL_CAFILE: str = ""
 if WIN32:
     try:
         import certifi
@@ -62,11 +62,11 @@ def full_version_str() -> str:
     return rstr
 
 
-def caps_to_version(caps : typedict) -> str:
+def caps_to_version(caps: typedict) -> str:
     return caps.strget("version", "0")+"-"+caps_to_revision(caps)
 
 
-def caps_to_revision(caps : typedict) -> str:
+def caps_to_revision(caps: typedict) -> str:
     revision = caps.strget("revision")
     local_modifications = caps.intget("local_modifications")
     commit = caps.strget("commit")

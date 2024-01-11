@@ -31,7 +31,7 @@ def get_digests() -> list[str]:
     return digests
 
 
-def get_digest_module(digest : str) -> Callable | None:
+def get_digest_module(digest: str) -> Callable | None:
     log(f"get_digest_module({digest})")
     if not digest or not digest.startswith("hmac"):
         return None
@@ -61,7 +61,7 @@ def choose_digest(options) -> str:
     raise ValueError(f"no known digest options found in '{csv(options)}'")
 
 
-def gendigest(digest:str, password_in, salt_in:ByteString) -> bytes:
+def gendigest(digest: str, password_in, salt_in:ByteString) -> bytes:
     assert password_in and salt_in
     salt : bytes = memoryview_to_bytes(salt_in)
     password : bytes = strtobytes(password_in)
@@ -87,7 +87,7 @@ def gendigest(digest:str, password_in, salt_in:ByteString) -> bytes:
     return strtobytes(hmac.HMAC(password, salt, digestmod=digestmod).hexdigest())
 
 
-def verify_digest(digest:str, password:str, salt, challenge_response:bytes) -> bool:
+def verify_digest(digest: str, password: str, salt, challenge_response:bytes) -> bool:
     if not password or not salt or not challenge_response:
         return False
     verify = gendigest(digest, password, salt)
@@ -97,7 +97,7 @@ def verify_digest(digest:str, password:str, salt, challenge_response:bytes) -> b
     return True
 
 
-def get_salt(l:int=DEFAULT_SALT_LENGTH) -> bytes:
+def get_salt(l: int=DEFAULT_SALT_LENGTH) -> bytes:
     # too short: we would not feed enough random data to HMAC
     if l<32:
         raise ValueError(f"salt is too short: only {l} bytes")

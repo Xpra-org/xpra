@@ -36,7 +36,7 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
     def __init__(self, xid:int):
         WindowDamageHandler.__init__(self, xid)
         GObject.GObject.__init__(self)
-        self._listening_to : list[int] = []
+        self._listening_to: list[int] = []
 
     def __repr__(self):
         return f"CompositeHelper({self.xid:x})"
@@ -80,7 +80,7 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
         #   3) repeat 1 & 2 up to the root
         #   4) call NameWindowPixmap
         # we are safe.  (I think.)
-        listening : list[int] = []
+        listening: list[int] = []
         e = None
         try:
             world = get_world_window()

@@ -64,7 +64,7 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return False
 
-    def authenticate(self, _caps : typedict) -> bool:
+    def authenticate(self, _caps: typedict) -> bool:
         if not self.host or not check_host(self.peername, self.host):
             errinfo = "'%s'" % self.peername
             if self.peername!=self.host:

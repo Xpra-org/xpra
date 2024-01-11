@@ -1709,7 +1709,7 @@ cdef class Encoder:
         return profile
 
 
-    def threaded_init_device(self, options : typedict):
+    def threaded_init_device(self, options: typedict):
         global device_lock
         with device_lock:
             if SLOW_DOWN_INIT:
@@ -1732,7 +1732,7 @@ cdef class Encoder:
                 log.warn(" %s", e)
                 self.clean()
 
-    def init_device(self, options : typedict):
+    def init_device(self, options: typedict):
         global bad_presets
         cdef double start = monotonic()
         with self.cuda_device_context as cuda_context:
@@ -1789,7 +1789,7 @@ cdef class Encoder:
             quality, v, self.encoding, self.scaling, bool(NATIVE_RGB), YUV444_CODEC_SUPPORT, bool(YUV420_ENABLED), bool(YUV444_ENABLED), YUV444_THRESHOLD, bool(LOSSLESS_ENABLED), self.src_format, csv(self.dst_formats))
         return v
 
-    def get_target_lossless(self, pixel_format : str, quality : int):
+    def get_target_lossless(self, pixel_format: str, quality : int):
         global LOSSLESS_ENABLED, LOSSLESS_CODEC_SUPPORT
         if pixel_format not in ("YUV444P", "r210"):
             return False

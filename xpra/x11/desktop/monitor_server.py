@@ -42,9 +42,9 @@ class XpraMonitorServer(DesktopServerBase):
                 DISPLAY = os.environ.get("DISPLAY", "")
                 raise InitException(f"the vfb display {DISPLAY!r} cannot virtualize monitors - dummy RandR 1.6 missing")
         super().__init__()
-        self.session_type : str = "monitor"
-        self.reconfigure_timer : int = 0
-        self.reconfigure_locked : bool = False
+        self.session_type: str = "monitor"
+        self.reconfigure_timer: int = 0
+        self.reconfigure_locked: bool = False
 
     def server_init(self) -> None:
         super().server_init()
@@ -309,7 +309,7 @@ class XpraMonitorServer(DesktopServerBase):
         self._adjust_monitors(wid, delta_x, delta_y)
         self.reconfigure_monitors()
 
-    def add_monitor(self, width : int, height : int) -> None:
+    def add_monitor(self, width: int, height: int) -> None:
         count = len(self._id_to_window)
         if count>=16:
             raise RuntimeError(f"already too many monitors: {count}")
@@ -373,7 +373,7 @@ class XpraMonitorServer(DesktopServerBase):
                 continue
             self.send_new_desktop_model(model, ss)
 
-    def _process_configure_monitor(self, proto, packet : PacketType) -> None:
+    def _process_configure_monitor(self, proto, packet: PacketType) -> None:
         action = str(packet[1])
         if action=="remove":
             identifier = str(packet[2])

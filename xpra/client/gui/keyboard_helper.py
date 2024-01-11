@@ -64,15 +64,15 @@ class KeyboardHelper:
         self.keyboard.set_modifier_mappings(mappings)
 
     def reset_state(self) -> None:
-        self.keycodes : tuple[tuple[int,str,int,int,int],...] = ()
+        self.keycodes: tuple[tuple[int,str,int,int,int],...] = ()
         self.x11_keycodes = {}
         self.mod_meanings : dict[str,Any] = {}
-        self.mod_managed : list[str] = []
-        self.mod_pointermissing : list[str] = []
+        self.mod_managed: list[str] = []
+        self.mod_pointermissing: list[str] = []
         self.layout = ""
-        self.layouts : list[str] = []
+        self.layouts: list[str] = []
         self.variant = ""
-        self.variants : list[str] = []
+        self.variants: list[str] = []
         self.options = ""
         self.query = ""
         self.query_struct = {}

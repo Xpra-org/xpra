@@ -21,7 +21,7 @@ GRACE_PERCENT = envint("XPRA_GRACE_PERCENT", 90)
 class IdleMixin(StubSourceMixin):
 
     @classmethod
-    def is_needed(cls, caps : typedict) -> bool:
+    def is_needed(cls, caps: typedict) -> bool:
         return caps.boolget("keyboard") or caps.boolget("mouse") or caps.boolget("windows")
 
     def __init__(self) -> None:
@@ -52,7 +52,7 @@ class IdleMixin(StubSourceMixin):
             "idle"              : self.idle,
         }
 
-    def parse_client_caps(self, _c : typedict) -> None:
+    def parse_client_caps(self, _c: typedict) -> None:
         # start the timer
         self.schedule_idle_grace_timeout()
         self.schedule_idle_timeout()
@@ -103,7 +103,7 @@ class IdleMixin(StubSourceMixin):
         nid = NotificationID.IDLE
         if nid in self.notification_callbacks:
             return
-        actions : tuple[str,...] = ()
+        actions: tuple[str,...] = ()
         if self.send_notifications_actions:
             actions = ("cancel", "Cancel Timeout")
         if self.session_name != "Xpra":

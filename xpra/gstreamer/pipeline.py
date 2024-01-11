@@ -47,7 +47,7 @@ class Pipeline(GObject.GObject):
         self.pipeline : Gst.Pipeline | None = None
         self.pipeline_str = ""
         self.element_handlers : dict[Any,list[int]] = {}
-        self.start_time : float = 0
+        self.start_time: float = 0
         self.state : str = "stopped"
         self.info : dict[str,Any] = {}
         self.idle_add = GLib.idle_add

@@ -15,7 +15,7 @@ from xpra.net.common import PacketHandlerType
 
 class StubClientMixin:
 
-    __signals__ : list[str] = []
+    __signals__: list[str] = []
 
     def __init__(self):
         self.exit_code = None
@@ -79,14 +79,14 @@ class StubClientMixin:
         """
         return {}
 
-    def parse_server_capabilities(self, c : typedict) -> bool:   # pylint: disable=unused-argument
+    def parse_server_capabilities(self, c: typedict) -> bool:   # pylint: disable=unused-argument
         """
         Parse server attributes specified in the hello capabilities.
         This runs in a non-UI thread.
         """
         return True
 
-    def process_ui_capabilities(self, caps : typedict) -> None:
+    def process_ui_capabilities(self, caps: typedict) -> None:
         """
         Parse server attributes specified in the hello capabilities.
         This runs in the UI thread.

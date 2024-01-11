@@ -31,14 +31,14 @@ GLib = gi_import("GLib")
 log = Logger("network")
 bandwidthlog = Logger("bandwidth")
 
-SSH_AGENT : bool = envbool("XPRA_SSH_AGENT", True)
-FAKE_BROKEN_CONNECTION : int = envint("XPRA_FAKE_BROKEN_CONNECTION")
+SSH_AGENT: bool = envbool("XPRA_SSH_AGENT", True)
+FAKE_BROKEN_CONNECTION: int = envint("XPRA_FAKE_BROKEN_CONNECTION")
 PING_TIMEOUT : int = envint("XPRA_PING_TIMEOUT", 60)
 MIN_PING_TIMEOUT : int = envint("XPRA_MIN_PING_TIMEOUT", 2)
 MAX_PING_TIMEOUT : int = envint("XPRA_MAX_PING_TIMEOUT", 10)
 SWALLOW_PINGS : bool = envbool("XPRA_SWALLOW_PINGS", False)
 # LOG_INFO_RESPONSE = ("^window.*position", "^window.*size$")
-LOG_INFO_RESPONSE : str = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
+LOG_INFO_RESPONSE: str = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
 AUTO_BANDWIDTH_PCT : int = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
 assert 1 < AUTO_BANDWIDTH_PCT <= 100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 
@@ -56,7 +56,7 @@ class NetworkState(StubClientMixin):
 
     def __init__(self):
         super().__init__()
-        self.server_start_time : float = -1
+        self.server_start_time: float = -1
         # legacy:
         self.compression_level : int = 0
 
@@ -67,14 +67,14 @@ class NetworkState(StubClientMixin):
         self.bandwidth_limit : int = 0
         self.bandwidth_detection : bool = False
         self.server_bandwidth_limit : int = 0
-        self.server_session_name : str = ""
+        self.server_session_name: str = ""
 
         # info requests
         self.server_last_info : dict = {}
         self.info_request_pending : bool = False
 
         # network state:
-        self.server_packet_encoders : tuple[str, ...] = ()
+        self.server_packet_encoders: tuple[str, ...] = ()
         self.server_ping_latency : deque[tuple[float, float]] = deque(maxlen=1000)
         self.server_load = (0, 0, 0)
         self.client_ping_latency : deque[tuple[float, float]] = deque(maxlen=1000)
@@ -165,7 +165,7 @@ class NetworkState(StubClientMixin):
         caps["ping-echo-sourceid"] = True
         return caps
 
-    def parse_server_capabilities(self, c : typedict) -> bool:
+    def parse_server_capabilities(self, c: typedict) -> bool:
         # make sure the server doesn't provide a start time in the future:
         import time
         self.server_start_time = min(time.time(), c.intget("start_time", -1))
@@ -174,7 +174,7 @@ class NetworkState(StubClientMixin):
         self.server_packet_encoders = tuple(x for x in ALL_ENCODERS if c.boolget(x, False))
         return True
 
-    def process_ui_capabilities(self, caps : typedict) -> None:
+    def process_ui_capabilities(self, caps: typedict) -> None:
         self.send_ping()
         if self.pings>0:
             self.ping_timer = GLib.timeout_add(1000*self.pings, self.send_ping)
@@ -186,14 +186,14 @@ class NetworkState(StubClientMixin):
             GLib.source_remove(pt)
 
     def cancel_ping_echo_timers(self) -> None:
-        pet : tuple[int, ...] = tuple(self.ping_echo_timers.values())
+        pet: tuple[int, ...] = tuple(self.ping_echo_timers.values())
         self.ping_echo_timers = {}
         for t in pet:
             GLib.source_remove(t)
 
     ######################################################################
     # info:
-    def _process_info_response(self, packet : PacketType) -> None:
+    def _process_info_response(self, packet: PacketType) -> None:
         self.info_request_pending = False
         self.server_last_info = packet[1]
         log("info-response: %s", self.server_last_info)
@@ -265,7 +265,7 @@ class NetworkState(StubClientMixin):
         wait = 1000*MIN_PING_TIMEOUT
         aspl = tuple(self.server_ping_latency)
         if aspl:
-            spl : tuple[float,...] = tuple(x[1] for x in aspl)
+            spl: tuple[float,...] = tuple(x[1] for x in aspl)
             avg = sum(spl) / len(spl)
             wait = max(1000*MIN_PING_TIMEOUT, min(1000*MAX_PING_TIMEOUT, round(1000+avg*2000)))
             log("send_ping() timestamp=%s, average server latency=%ims, using max wait %ims",
@@ -274,7 +274,7 @@ class NetworkState(StubClientMixin):
         self.ping_echo_timers[now_ms] = t
         return True
 
-    def _process_ping_echo(self, packet : PacketType) -> None:
+    def _process_ping_echo(self, packet: PacketType) -> None:
         echoedtime, l1, l2, l3, cl = packet[1:6]
         self.last_ping_echoed_time = echoedtime
         self.check_server_echo(0)
@@ -285,7 +285,7 @@ class NetworkState(StubClientMixin):
             self.client_ping_latency.append((monotonic(), cl/1000.0))
         log("ping echo server load=%s, measured client latency=%sms", self.server_load, cl)
 
-    def _process_ping(self, packet : PacketType) -> None:
+    def _process_ping(self, packet: PacketType) -> None:
         echotime = packet[1]
         l1, l2, l3 = 0, 0, 0
         sid = ""

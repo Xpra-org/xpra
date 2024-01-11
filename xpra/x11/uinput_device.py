@@ -45,7 +45,7 @@ class UInputDevice:
 
     def __init__(self, device, device_path):
         self.device = device
-        self.device_path : str = device_path
+        self.device_path: str = device_path
         self.wheel_delta : dict[int,float] = {}
         # the first event always goes MIA:
         # http://who-t.blogspot.co.at/2012/06/xi-21-protocol-design-issues.html
@@ -95,7 +95,7 @@ class UInputDevice:
             log("UInput.click(%i, %s) uinput button not found - using XTest", button, pressed)
             X11Keyboard.xtest_fake_button(button, pressed)
 
-    def wheel_motion(self, button:int, distance:float):
+    def wheel_motion(self, button: int, distance:float):
         if button in (4, 5):
             val = distance*MOUSE_WHEEL_CLICK_MULTIPLIER
             ubutton = REL_WHEEL
@@ -125,7 +125,7 @@ class UInputPointerDevice(UInputDevice):
     def __repr__(self):
         return "UInput pointer device %s" % self.device_path
 
-    def move_pointer(self, x:int, y:int, props=None):
+    def move_pointer(self, x: int, y: int, props=None):
         log("UInputPointerDevice.move_pointer(%i, %s, %s)", x, y, props)
         # calculate delta:
         with xsync:
@@ -154,7 +154,7 @@ class UInputTouchpadDevice(UInputDevice):
     def __repr__(self):
         return "UInput touchpad device %s" % self.device_path
 
-    def move_pointer(self, x:int, y:int, props=None):
+    def move_pointer(self, x: int, y: int, props=None):
         log("UInputTouchpadDevice.move_pointer(%s, %s, %s)", x, y, props)
         self.device.emit(BTN_TOUCH, 1, syn=False)
         self.device.emit(ABS_X, x*(2**24)//self.root_w, syn=False)
