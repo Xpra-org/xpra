@@ -289,6 +289,18 @@ def record_build_info() -> None:
                 pkg_name, version = parts
                 pkg_name = pkg_name.replace("-", "_")
                 set_prop(props, f"lib_{pkg_name}", version)
+    elif sys.platform == "darwin":
+        returncode, out, _ = get_status_output(["jhbuild", "list", "-a", "-r"])
+        if returncode == 0:
+            for line in out.decode().splitlines():
+                parts = line.split(" ")
+                if len(parts) != 2:
+                    continue
+                pkg_name, version = parts
+                if pkg_name == "Modules":
+                    return
+                pkg_name = pkg_name.replace("-", "_")
+                set_prop(props, f"lib_{pkg_name}", version.lstrip("(").rstrip(")"))
     else:
         for pkg in (
             "libc",
