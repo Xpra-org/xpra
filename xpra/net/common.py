@@ -14,12 +14,19 @@ from xpra.net.compression import Compressed, Compressible, LargeStructure
 from xpra.common import noop
 from xpra.os_util import LINUX, FREEBSD, WIN32
 from xpra.scripts.config import parse_bool
-from xpra.util.io import get_util_logger
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool
-from xpra.log import Logger
 
-log = Logger("network")
+
+logger = None
+
+
+def get_logger():
+    global logger
+    if logger is None:
+        from xpra.log import Logger
+        logger = Logger("network")
+    return logger
 
 
 DEFAULT_PORT: int = 14500
@@ -148,15 +155,15 @@ def get_log_packets(exclude=False) -> tuple[str, ...]:
 
 def _may_log_packet(sending, packet_type, packet) -> None:
     if LOG_PACKET_TYPE:
-        log.info("%s %s (thread=%s)", "sending  " if sending else "receiving", packet_type, threading.current_thread())
+        get_logger().info("%s %s (thread=%s)", "sending  " if sending else "receiving", packet_type, threading.current_thread())
     if LOG_PACKETS or NOLOG_PACKETS:
         if packet_type in NOLOG_PACKETS:
             return
         if packet_type in LOG_PACKETS or "*" in LOG_PACKETS:
             s = str(packet)
-            if len(s)>PACKET_LOG_MAX_SIZE:
+            if len(s) > PACKET_LOG_MAX_SIZE:
                 s = repr_ellipsized(s, PACKET_LOG_MAX_SIZE)
-            log.info(s)
+            get_logger().info(s)
 
 
 LOG_PACKETS: tuple[str, ...] = ()
@@ -169,7 +176,7 @@ may_log_packet: Callable = noop
 
 
 def get_peercred(sock) -> tuple[int, int, int] | None:
-    log = get_util_logger()
+    log = get_logger()
     if LINUX:
         SO_PEERCRED = 17
         try:
@@ -195,7 +202,7 @@ def is_request_allowed(proto, request="info", default=True) -> bool:
     except AttributeError:
         return default
     r = parse_bool(request, req_option, default)
-    log(f"is_request_allowed%s={r}", (proto, request, default))
+    get_logger().debug(f"is_request_allowed%s={r}", (proto, request, default))
     return r
 
 
@@ -230,5 +237,5 @@ def has_websocket_handler():
         assert WebSocketRequestHandler
         return True
     except ImportError:
-        log("importing WebSocketRequestHandler", exc_info=True)
+        get_logger().debug("importing WebSocketRequestHandler", exc_info=True)
     return False
