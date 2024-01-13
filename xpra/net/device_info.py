@@ -41,9 +41,14 @@ def get_NM_adapter_type(device_name) -> str:
         if not connection:
             return ""
         try:
-            nmdevice = connection.get_controller()
+            index = connection.get_controller()
         except AttributeError:
-            nmdevice = connection.get_master()
+            index = connection.get_master()
+        try:
+            nmdevice = nmclient.get_devices()[index]
+        except IndexError as e:
+            log(f"invalid device index {index}: {e}")
+            return ""
     if not nmdevice:
         return ""
     log(f"NM device {device_name!r}: {nmdevice.get_vendor()} {nmdevice.get_product()}")
