@@ -9,26 +9,27 @@ import unittest
 
 from xpra.util.env import OSEnvContext
 from xpra.net import common
+from xpra.log import set_global_logging_handler
+
+
+def mlp(sending, packet_type, *args) -> None:
+    packet = [packet_type] + list(args)
+    common.may_log_packet(sending, packet_type, packet)
+
 
 class TestLogPackets(unittest.TestCase):
-
 
     def info(self, *args):
         self.log_messages.append(args)
 
     def setup_log_intercept(self):
-        #get_log_packets, may_log_packet, log
+        # get_log_packets, may_log_packet, log
         self.log_messages = []
-        common.log = self
+        set_global_logging_handler(self.info)
 
     def lm(self, n=0):
-        assert len(self.log_messages)==n, "expected %i log messages, got %i" % (n, len(self.log_messages))
+        assert len(self.log_messages) == n, "expected %i log messages, got %i" % (n, len(self.log_messages))
         self.log_messages = []
-
-    def t(self, sending, packet_type, *args):
-        packet = [packet_type] + list(args)
-        return common.may_log_packet(sending, packet_type, packet)
-
 
     def test_env_log(self):
         with OSEnvContext():
@@ -40,12 +41,14 @@ class TestLogPackets(unittest.TestCase):
                 logged = 1+inc
                 for sending in (True, False):
                     self.setup_log_intercept()
-                    def t(packet_type, *args):
-                        return self.t(sending, packet_type, *args)   # pylint: disable=cell-var-from-loop
+
+                    def t(packet_type, *args) -> None:
+                        mlp(sending, packet_type, *args)   # pylint: disable=cell-var-from-loop
+
                     self.lm()
                     t("hello", {})
                     self.lm(inc)
-                    t("info", {"foo" : "bar"})
+                    t("info", {"foo": "bar"})
                     self.lm(logged)
                     t("ping", 1, 2, 3)
                     self.lm(logged)
@@ -54,7 +57,7 @@ class TestLogPackets(unittest.TestCase):
                     t("bell", 100)
                     self.lm(inc)
                     t("info", "0"*common.PACKET_LOG_MAX_SIZE*2)
-                    assert len(self.log_messages[-1])<=common.PACKET_LOG_MAX_SIZE
+                    assert len(self.log_messages[-1]) <= common.PACKET_LOG_MAX_SIZE
                     self.lm(logged)
 
     def test_default_nolog(self):
@@ -62,13 +65,14 @@ class TestLogPackets(unittest.TestCase):
             os.environ.pop("XPRA_LOG_PACKETS", None)
             self.setup_log_intercept()
             for pt in common.PACKET_TYPES:
-                self.t(True, pt, (1, 2))
-                self.t(False, pt, (1, 2))
+                mlp(True, pt, (1, 2))
+                mlp(False, pt, (1, 2))
                 self.lm(0)
 
 
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()
