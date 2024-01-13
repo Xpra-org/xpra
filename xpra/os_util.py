@@ -36,6 +36,7 @@ GIR_VERSIONS : dict[str, str] = {
     "Gio": "2.0",
     "Rsvg": "2.0",
     "Gst": "1.0",
+    "NM": "1.0",
 }
 
 

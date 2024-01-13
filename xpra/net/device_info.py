@@ -29,7 +29,7 @@ def get_NM_adapter_type(device_name) -> str:
         log("get_NM_adapter_type() no main loop")
         return ""
     try:
-        NM = gi_import("NM", "1.0")
+        NM = gi_import("NM")
     except (ImportError, ValueError):
         log("get_NM_adapter_type() no network-manager bindings")
         return ""
