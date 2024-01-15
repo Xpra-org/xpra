@@ -2281,7 +2281,7 @@ toggle_packages(enc_proxy_ENABLED, "xpra.codecs.proxy")
 toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia")
 toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia.cuda")
 CUDA_BIN = f"{share_xpra}/cuda"
-if nvenc_ENABLED or nvjpeg_encoder_ENABLED:
+if cuda_kernels_ENABLED:
     kernels = (
         "XRGB_to_NV12", "XRGB_to_YUV444", "BGRX_to_NV12", "BGRX_to_YUV444",
         "BGRX_to_RGB", "RGBX_to_RGB", "RGBA_to_RGBAP", "BGRA_to_RGBAP",
