@@ -327,7 +327,7 @@ nvjpeg_decoder_ENABLED  = nvidia_ENABLED and pkg_config_ok("--exists", "nvjpeg")
 nvenc_ENABLED           = nvidia_ENABLED and pkg_config_version("10", "nvenc")
 nvdec_ENABLED           = False
 nvfbc_ENABLED           = nvidia_ENABLED and not ARM and pkg_config_ok("--exists", "nvfbc")
-cuda_kernels_ENABLED    = nvidia_ENABLED and not OSX
+cuda_kernels_ENABLED    = nvidia_ENABLED and (nvenc_ENABLED or nvjpeg_encoder_ENABLED)
 cuda_rebuild_ENABLED    = None if (nvidia_ENABLED and not WIN32) else False
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
 gstreamer_ENABLED       = DEFAULT
@@ -2281,7 +2281,7 @@ toggle_packages(enc_proxy_ENABLED, "xpra.codecs.proxy")
 toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia")
 toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia.cuda")
 CUDA_BIN = f"{share_xpra}/cuda"
-if nvidia_ENABLED:
+if nvenc_ENABLED or nvjpeg_encoder_ENABLED:
     kernels = (
         "XRGB_to_NV12", "XRGB_to_YUV444", "BGRX_to_NV12", "BGRX_to_YUV444",
         "BGRX_to_RGB", "RGBX_to_RGB", "RGBA_to_RGBAP", "BGRA_to_RGBAP",
