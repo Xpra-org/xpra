@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from ctypes import WinDLL, WINFUNCTYPE, oledll, c_int, create_unicode_buffer, byref, cast
+from ctypes import WinDLL, WINFUNCTYPE, oledll, c_int, c_char, byref, cast
 from ctypes.wintypes import BOOL, LPVOID, LPCWSTR, LPCVOID, LPOLESTR
 
 
@@ -28,7 +28,8 @@ def _enum_devices(fn):
     def cb_enum(lpGUID, lpszDesc, _lpszDrvName, _):
         dev = ""
         if lpGUID is not None:
-            buf = create_unicode_buffer(256)
+            buftype = c_char * 256
+            buf = buftype()
             pbuf = byref(buf)
             if StringFromGUID2(lpGUID, cast(pbuf, LPOLESTR), 256):
                 dev = buf.value

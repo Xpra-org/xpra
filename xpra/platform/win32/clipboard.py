@@ -261,7 +261,9 @@ def rgb_to_bitmap(img_data) -> HBITMAP:
     bitmapinfo = BITMAPINFO()
     bitmapinfo.bmiColors = 0
     memmove(byref(bitmapinfo.bmiHeader), byref(header), sizeof(BITMAPINFOHEADER))
-    rgb_buf = create_string_buffer(rgb_data)
+    buftype = c_char * len(rgb_data)
+    rgb_buf = buftype()
+    rgb_buf.value = rgb_data
     pbuf = cast(byref(rgb_buf), c_void_p)
     hdc = GetDC(None)
     try:

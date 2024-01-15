@@ -5,9 +5,9 @@
 
 import time
 from ctypes import (
-    get_last_error, windll, # @UnresolvedImport
-    Structure, create_string_buffer, addressof, byref, c_ubyte,
-    )
+    get_last_error, windll,  # @UnresolvedImport
+    Structure, byref, c_ubyte, c_char,
+)
 from io import BytesIO
 from typing import Any
 from PIL import Image
@@ -19,37 +19,41 @@ from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_virtualscreenmetrics
 from xpra.codecs.image import ImageWrapper
 
-#user32:
+# user32:
 from xpra.platform.win32.common import (
     GetDesktopWindow, GetWindowDC, ReleaseDC, DeleteDC,
     CreateCompatibleDC, CreateCompatibleBitmap,
     GetBitmapBits, SelectObject, DeleteObject,
     BitBlt, GetDeviceCaps,
     GetSystemPaletteEntries,
-    )
+)
 
 log = Logger("shadow", "win32")
 
-NULLREGION = 1      #The region is empty.
-SIMPLEREGION = 2    #The region is a single rectangle.
-COMPLEXREGION = 3   #The region is more than a single rectangle.
-REGION_CONSTS : dict[int,str] = {
-                NULLREGION      : "the region is empty",
-                SIMPLEREGION    : "the region is a single rectangle",
-                COMPLEXREGION   : "the region is more than a single rectangle",
-                }
+NULLREGION = 1      # The region is empty.
+SIMPLEREGION = 2    # The region is a single rectangle.
+COMPLEXREGION = 3   # The region is more than a single rectangle.
+REGION_CONSTS: dict[int, str] = {
+    NULLREGION: "the region is empty",
+    SIMPLEREGION: "the region is a single rectangle",
+    COMPLEXREGION: "the region is more than a single rectangle",
+}
 DISABLE_DWM_COMPOSITION = envbool("XPRA_DISABLE_DWM_COMPOSITION", False)
+
 
 class PALETTEENTRY(Structure):
     _fields_ = [
-        ('peRed',   c_ubyte),
+        ('peRed', c_ubyte),
         ('peGreen', c_ubyte),
-        ('peBlue',  c_ubyte),
+        ('peBlue', c_ubyte),
         ('peFlags', c_ubyte),
-        ]
+    ]
+
 
 DWM_EC_DISABLECOMPOSITION = 0
 DWM_EC_ENABLECOMPOSITION = 1
+
+
 def set_dwm_composition(value=DWM_EC_DISABLECOMPOSITION) -> bool:
     try:
         windll.dwmapi.DwmEnableComposition(value)
@@ -60,6 +64,7 @@ def set_dwm_composition(value=DWM_EC_DISABLECOMPOSITION) -> bool:
         log.estr(e)
         return False
 
+
 def get_desktop_bit_depth() -> int:
     desktop_wnd = GetDesktopWindow()
     dc = GetWindowDC(desktop_wnd)
@@ -69,17 +74,18 @@ def get_desktop_bit_depth() -> int:
     ReleaseDC(desktop_wnd, dc)
     return bit_depth
 
+
 def get_palette(dc) -> list:
     count = GetSystemPaletteEntries(dc, 0, 0, None)
     log("palette size: %s", count)
     palette = []
-    if count>0:
+    if count > 0:
         buf = (PALETTEENTRY*count)()
         r = GetSystemPaletteEntries(dc, 0, count, byref(buf))
         for i in range(min(count, r)):
             p = buf[i]
             #we expect 16-bit values, so bit-shift them:
-            palette.append((p.peRed<<8, p.peGreen<<8, p.peBlue<<8))
+            palette.append((p.peRed << 8, p.peGreen << 8, p.peBlue << 8))
     return palette
 
 
@@ -89,7 +95,7 @@ RGB_FORMATS = {
     24  : "BGR",
     16  : "BGR565",
     8   : "RLE8",
-    }
+}
 
 
 class GDICapture:
@@ -106,9 +112,9 @@ class GDICapture:
 
     def get_info(self) -> dict[str,Any]:
         return {
-            "type"  : "gdi",
-            "depth" : self.bit_depth,
-            }
+            "type": "gdi",
+            "depth": self.bit_depth,
+        }
 
     def get_type(self) -> str:
         return "GDI"
@@ -136,7 +142,7 @@ class GDICapture:
     def get_capture_coords(self, x:int, y:int, width:int, height:int) -> tuple[int,int,int,int]:
         metrics = get_virtualscreenmetrics()
         if self.metrics is None or self.metrics!=metrics:
-            #new metrics, start from scratch:
+            # new metrics, start from scratch:
             self.metrics = metrics
             self.clean()
         log("get_image%s metrics=%s", (x, y, width, height), metrics)
@@ -145,7 +151,7 @@ class GDICapture:
             width = dw
         if height==0:
             height = dh
-        #clamp rectangle requested to the virtual desktop size:
+        # clamp rectangle requested to the virtual desktop size:
         if x<dx:
             width -= x-dx
             x = dx
@@ -191,7 +197,7 @@ class GDICapture:
         try:
             if BitBlt(self.memdc, 0, 0, width, height, self.dc, x, y, win32con.SRCCOPY)==0:
                 e = get_last_error()
-                #rate limit the error message:
+                # rate limit the error message:
                 now = time.time()
                 if now-self.bitblt_err_time>10:
                     log.error("Error: failed to blit the screen, error %i", e)
@@ -207,8 +213,10 @@ class GDICapture:
         log("get_image BitBlt took %ims", (bitblt_time-select_time)*1000)
         rowstride = roundup(width*self.bit_depth//8, 2)
         buf_size = rowstride*height
-        buf = create_string_buffer(b"", buf_size)
-        log("GetBitmapBits(%#x, %#x, %#x)", bitmap, buf_size, addressof(buf))
+        buftype = c_char * buf_size
+        buf = buftype()
+        buf.value = b""
+        log("GetBitmapBits(%#x, %#x, %#x)", bitmap, buf_size, byref(buf))
         r = GetBitmapBits(bitmap, buf_size, byref(buf))
         if not r:
             log.error("Error: failed to copy screen bitmap data")
@@ -265,6 +273,7 @@ def main():
         with open(filename, "wb") as f:
             f.write(image[4])
         capture.clean()
+
 
 if __name__ == "__main__":
     main()
