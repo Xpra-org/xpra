@@ -933,7 +933,7 @@ def pick_display(error_cb, opts, extra_args, cmdline=()):
 def do_pick_display(dotxpra, error_cb, opts, extra_args, cmdline=()):
     if not extra_args:
         # Pick a default server
-        dir_servers = dotxpra.socket_details(matching_state=SocketState.LIVE)
+        dir_servers = dotxpra.socket_details()
         try:
             sockdir, display, sockpath = single_display_match(dir_servers, error_cb)
         except Exception:
@@ -981,6 +981,14 @@ def single_display_match(dir_servers, error_cb, nomatch="cannot find any live se
                 allservers.append((sockdir, display, path))
                 if not display.startswith(":proxy-"):
                     noproxy.append((sockdir, display, path))
+    if not allservers:
+        # maybe one is starting?
+        for sockdir, servers in dir_servers.items():
+            for state, display, path in servers:
+                if state == SocketState.UNKNOWN:
+                    allservers.append((sockdir, display, path))
+                    if not display.startswith(":proxy-"):
+                        noproxy.append((sockdir, display, path))
     if not allservers:
         error_cb(nomatch)
     if len(allservers)>1:
@@ -1127,12 +1135,19 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         display_desc["socket_path"] = sockpath
         sock = socket.socket(socket.AF_UNIX)
         sock.settimeout(SOCKET_TIMEOUT)
-        try:
-            sock.connect(sockpath)
-        except Exception as e:
-            get_logger().debug(f"failed to connect using {sock.connect}({sockpath})", exc_info=True)
-            noerr(sock.close)
-            raise InitExit(ExitCode.CONNECTION_FAILED, f"failed to connect to {sockpath!r}:\n {e}") from None
+        start = monotonic()
+        while monotonic()-start < SOCKET_TIMEOUT:
+            try:
+                sock.connect(sockpath)
+                break
+            except ConnectionRefusedError as e:
+                elapsed = monotonic()-start
+                get_logger().debug("%s, retrying %i < %i", e, elapsed, SOCKET_TIMEOUT)
+                continue
+            except Exception as e:
+                get_logger().debug(f"failed to connect using {sock.connect}({sockpath})", exc_info=True)
+                noerr(sock.close)
+                raise InitExit(ExitCode.CONNECTION_FAILED, f"failed to connect to {sockpath!r}:\n {e}") from None
         sock.settimeout(None)
         conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype)
         conn.timeout = SOCKET_TIMEOUT
