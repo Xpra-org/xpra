@@ -280,7 +280,7 @@ nvjpeg_decoder_ENABLED  = nvidia_ENABLED and pkg_config_ok("--exists", "nvjpeg")
 nvenc_ENABLED           = nvidia_ENABLED and pkg_config_version("10", "nvenc")
 nvdec_ENABLED           = False
 nvfbc_ENABLED           = nvidia_ENABLED and not ARM and pkg_config_ok("--exists", "nvfbc")
-cuda_kernels_ENABLED    = nvidia_ENABLED and not OSX
+cuda_kernels_ENABLED    = nvidia_ENABLED and (nvenc_ENABLED or nvjpeg_encoder_ENABLED)
 cuda_rebuild_ENABLED    = cuda_kernels_ENABLED and not WIN32
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
 gstreamer_ENABLED       = DEFAULT
@@ -2196,7 +2196,7 @@ toggle_packages(enc_proxy_ENABLED, "xpra.codecs.proxy")
 
 toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia")
 CUDA_BIN = f"{share_xpra}/cuda"
-if nvidia_ENABLED:
+if cuda_kernels_ENABLED:
     #find nvcc:
     from xpra.util import sorted_nicely  # pylint: disable=import-outside-toplevel
     path_options = os.environ.get("PATH", "").split(os.path.pathsep)
