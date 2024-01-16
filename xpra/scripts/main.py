@@ -1231,7 +1231,8 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
                                 dtype, socket_options=display_desc)
 
         if dtype in ("ssl", "wss"):
-            from xpra.net.socket_util import ssl_wrap_socket, ssl_handshake
+            from xpra.net.ssl_util import ssl_handshake
+            from xpra.net.ssl_util import ssl_wrap_socket
             #convert option names to function arguments:
             ssl_options = {k.replace("-", "_"): v for k, v in display_desc.get("ssl-options", {}).items()}
             sock = ssl_wrap_socket(sock, **ssl_options)
@@ -1458,7 +1459,7 @@ def connect_to_server(app, display_desc:dict[str,Any], opts) -> None:
             werr("failed to connect:", f" {e}")
             GLib.idle_add(app.quit, ExitCode.OK)
         except InitExit as e:
-            from xpra.net.socket_util import ssl_retry
+            from xpra.net.ssl_util import ssl_retry
             ssllog = Logger("ssl")
             mods = ssl_retry(e, opts.ssl_ca_certs)
             ssllog("do_setup_connection() ssl_retry(%s, %s)=%s", e, opts.ssl_ca_certs, mods)
@@ -2223,7 +2224,7 @@ def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, 
                 app.show_progress(80, "connecting to server")
                 break
             except InitExit as e:
-                from xpra.net.socket_util import ssl_retry
+                from xpra.net.ssl_util import ssl_retry
                 mods = ssl_retry(e, opts.ssl_ca_certs)
                 if mods:
                     for k, v in mods.items():

@@ -28,7 +28,8 @@ from xpra.os_util import POSIX
 from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode
 from xpra.net.bytestreams import pretty_socket
-from xpra.net.socket_util import get_ssl_verify_mode, create_udp_socket
+from xpra.net.socket_util import create_udp_socket
+from xpra.net.ssl_util import get_ssl_verify_mode
 from xpra.net.quic.connection import XpraQuicConnection
 from xpra.net.quic.asyncio_thread import get_threaded_loop
 from xpra.net.quic.common import USER_AGENT, MAX_DATAGRAM_FRAME_SIZE, binary_headers

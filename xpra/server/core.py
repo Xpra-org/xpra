@@ -35,8 +35,8 @@ from xpra.net.common import (
 from xpra.net.socket_util import (
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
     add_listen_socket, accept_connection, guess_packet_type,
-    hosts, peek_connection, ssl_wrap_socket,
-)
+    hosts, peek_connection, )
+from xpra.net.ssl_util import ssl_wrap_socket
 from xpra.net.bytestreams import (
     SSLSocketConnection, SocketConnection,
     log_new_connection, pretty_socket, SOCKET_TIMEOUT
@@ -291,7 +291,7 @@ class ServerCore:
 
     def init_ssl(self, opts) -> None:
         self.ssl_mode = opts.ssl
-        from xpra.net.socket_util import get_ssl_attributes
+        from xpra.net.ssl_util import get_ssl_attributes
         self._ssl_attributes = get_ssl_attributes(opts, True)
         netlog("init_ssl(..) ssl attributes=%s", self._ssl_attributes)
 

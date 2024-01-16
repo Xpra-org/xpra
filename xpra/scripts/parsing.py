@@ -594,7 +594,8 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(),
 def get_ssl_options(desc, opts, cmdline) -> dict[str, Any]:
     port = desc["port"]
     ssl_host = opts.ssl_server_hostname or desc["host"]
-    from xpra.net.socket_util import get_ssl_attributes, load_ssl_options
+    from xpra.net.ssl_util import load_ssl_options
+    from xpra.net.ssl_util import get_ssl_attributes
     # load the host+port specific options from file:
     ssl_options = load_ssl_options(ssl_host, port)
     # only override these options via the command line and not configuration files:
