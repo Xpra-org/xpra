@@ -6,17 +6,19 @@
 from typing import Any
 from contextlib import AbstractContextManager
 from ctypes import c_int, c_void_p, byref, cast, POINTER
-from OpenGL import GLX
-from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
-from OpenGL.raw.GLX._types import struct__XDisplay, struct___GLXcontextRec
 
 from xpra.os_util import gi_import
-from xpra.util.env import envbool, envfloat
+from xpra.util.env import envbool, envfloat, NumpyImportContext
 from xpra.client.gl.check import check_PyOpenGL_support
 from xpra.x11.bindings.display_source import get_display_ptr
 from xpra.gtk.error import xsync
 from xpra.gtk.window import set_visual
 from xpra.log import Logger
+
+with NumpyImportContext(True):
+    from OpenGL import GLX
+    from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
+    from OpenGL.raw.GLX._types import struct__XDisplay, struct___GLXcontextRec
 
 log = Logger("opengl")
 

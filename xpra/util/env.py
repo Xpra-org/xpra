@@ -177,8 +177,11 @@ numpy_import_lock = RLock()
 
 class NumpyImportContext(AbstractContextManager):
 
+    def __init__(self, blocking=False):
+        self.blocking = blocking
+
     def __enter__(self):
-        if not numpy_import_lock.acquire(blocking=False):
+        if not numpy_import_lock.acquire(blocking=self.blocking):
             raise RuntimeError("the numpy import lock is already held!")
         os.environ["XPRA_NUMPY_IMPORT"] = "1"
 
@@ -187,7 +190,7 @@ class NumpyImportContext(AbstractContextManager):
         numpy_import_lock.release()
 
     def __repr__(self):
-        return "numpy_import_context"
+        return f"numpy_import_context({self.blocking=})"
 
 
 _saved_env = os.environ.copy()
