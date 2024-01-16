@@ -16,7 +16,7 @@ from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
 from xpra.exit_codes import ExitCode
 from xpra.net.common import DEFAULT_PORT
 from xpra.net.bytestreams import set_socket_timeout, pretty_socket, SocketConnection, SOCKET_TIMEOUT
-from xpra.os_util import getuid, get_username_for_uid, get_groups, get_group_id, WIN32, OSX, POSIX
+from xpra.os_util import getuid, get_username_for_uid, get_groups, get_group_id, gi_import, WIN32, OSX, POSIX
 from xpra.util.io import path_permission_info, umask_context
 from xpra.util.str_fn import csv
 from xpra.util.parsing import parse_simple_dict
@@ -50,6 +50,7 @@ def get_network_logger():
 
 def create_unix_domain_socket(sockpath: str, socket_permissions: int = 0o600) -> tuple[socket.socket, Callable]:
     assert POSIX
+    log = get_network_logger()
     listener = socket.socket(socket.AF_UNIX)
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     # bind the socket, using umask to set the correct permissions
@@ -65,25 +66,23 @@ def create_unix_domain_socket(sockpath: str, socket_permissions: int = 0o600) ->
         inode = os.stat(sockpath).st_ino
     except OSError:
         inode = -1
-    #set to the "xpra" group if we are a member of it, or if running as root:
+    # set to the "xpra" group if we are a member of it, or if running as root:
     uid = getuid()
     username = get_username_for_uid(uid)
     groups = get_groups(username)
-    if uid==0 or GROUP in groups:
+    if uid == 0 or GROUP in groups:
         group_id = get_group_id(GROUP)
-        if group_id>=0:
+        if group_id >= 0:
             try:
                 os.lchown(sockpath, -1, group_id)
             except Exception as e:
-                log = get_network_logger()
                 log.warn("Warning: failed to set '%s' group ownership", GROUP)
                 log.warn(" on socket '%s':", sockpath)
                 log.warn(" %s", e)
-            #don't know why this doesn't work:
-            #os.fchown(listener.fileno(), -1, group_id)
+            # don't know why this doesn't work:
+            # os.fchown(listener.fileno(), -1, group_id)
 
     def cleanup_socket() -> None:
-        log = get_network_logger()
         try:
             listener.close()
         except OSError as e:
@@ -95,7 +94,7 @@ def create_unix_domain_socket(sockpath: str, socket_permissions: int = 0o600) ->
             return
         delpath = sockpath
         log("cleanup_socket '%s', original inode=%s, new inode=%s", sockpath, inode, cur_inode)
-        if cur_inode==inode:
+        if cur_inode == inode:
             log.info("removing unix domain socket '%s'", delpath)
             try:
                 os.unlink(delpath)
@@ -107,9 +106,9 @@ def create_unix_domain_socket(sockpath: str, socket_permissions: int = 0o600) ->
 def hosts(host_str: str) -> list[str]:
     if host_str == "*":
         if socket.has_dualstack_ipv6():
-            #IPv6 will also listen for IPv4:
+            # IPv6 will also listen for IPv4:
             return ["::"]
-        #no dual stack, so we have to listen on both IPv4 and IPv6 explicitly:
+        # no dual stack, so we have to listen on both IPv4 and IPv6 explicitly:
         return ["0.0.0.0", "::"]
     return [host_str]
 
@@ -120,23 +119,24 @@ def add_listen_socket(socktype: str, sock, info, server, new_connection_cb, opti
     try:
         # ugly that we have different ways of starting sockets,
         # TODO: abstract this into the socket class
-        if socktype=="named-pipe":
-            #named pipe listener uses a thread:
+        if socktype == "named-pipe":
+            # named pipe listener uses a thread:
             sock.new_connection_cb = new_connection_cb
             sock.start()
             return None
-        if socktype=="quic":
+        if socktype == "quic":
             from xpra.net.quic.listener import listen_quic
             assert server, "cannot use quic sockets without a server"
             listen_quic(sock, server, options)
             return None
         sources = []
-        from gi.repository import GLib  # @UnresolvedImport
         sock.listen(5)
 
         def io_in_cb(sock, flags):
             log("io_in_cb(%s, %s)", sock, flags)
             return new_connection_cb(socktype, sock)
+
+        GLib = gi_import("GLib")
         source = GLib.io_add_watch(sock, GLib.PRIORITY_DEFAULT, GLib.IO_IN, io_in_cb)
         sources.append(source)
         upnp_cleanup = []
@@ -170,7 +170,7 @@ def accept_connection(socktype: str, listener, timeout=None, socket_options=None
         log.error("Error: cannot accept new connection:")
         log.estr(e)
         return None
-    #log("peercred(%s)=%s", sock, get_peercred(sock))
+    # log("peercred(%s)=%s", sock, get_peercred(sock))
     try:
         peername = sock.getpeername()
     except OSError:
@@ -189,7 +189,7 @@ def peek_connection(conn, timeout: int = PEEK_TIMEOUT_MS, size: int = PEEK_SIZE)
     start = monotonic()
     elapsed = 0
     set_socket_timeout(conn, PEEK_TIMEOUT_MS/1000)
-    while elapsed<=timeout:
+    while elapsed <= timeout:
         try:
             peek_data = conn.peek(size)
             if peek_data:
@@ -211,7 +211,7 @@ POSIX_TCP_INFO = (
 )
 
 
-def get_sockopt_tcp_info(sock, TCP_INFO, attributes=POSIX_TCP_INFO) -> dict[str, Any]:
+def get_sockopt_tcp_info(sock, sockopt_tcpinfo: int, attributes=POSIX_TCP_INFO) -> dict[str, Any]:
     def get_tcpinfo_class(fields):
         class TCPInfo(Structure):
             _fields_ = tuple(fields)
@@ -219,23 +219,23 @@ def get_sockopt_tcp_info(sock, TCP_INFO, attributes=POSIX_TCP_INFO) -> dict[str,
             def __repr__(self):
                 return f"TCPInfo({self.getdict()})"
 
-            def getdict(self) -> dict[str,Any]:
-                return {k[0] : getattr(self, k[0]) for k in self._fields_}
+            def getdict(self) -> dict[str, Any]:
+                return {k[0]: getattr(self, k[0]) for k in self._fields_}
         return TCPInfo
     # calculate full structure size with all the fields defined:
     tcpinfo_class = get_tcpinfo_class(attributes)
     tcpinfo_size = sizeof(tcpinfo_class)
-    data = sock.getsockopt(socket.SOL_TCP, TCP_INFO, tcpinfo_size)
+    data = sock.getsockopt(socket.SOL_TCP, sockopt_tcpinfo, tcpinfo_size)
     data_size = len(data)
     # but only define fields in the ctypes.Structure
     # if they are actually present in the returned data:
-    while tcpinfo_size>data_size:
+    while tcpinfo_size > data_size:
         # trim it down:
         attributes = attributes[:-1]
         tcpinfo_class = get_tcpinfo_class(attributes)
         tcpinfo_size = sizeof(tcpinfo_class)
     log = get_network_logger()
-    if tcpinfo_size==0:
+    if tcpinfo_size == 0:
         log("getsockopt(SOL_TCP, TCP_INFO, %i) no data", tcpinfo_size)
         return {}
     # log("total size=%i for fields: %s", size, csv(fdef[0] for fdef in fields))
@@ -268,9 +268,9 @@ def looks_like_xpra_packet(data: ByteString) -> bool:
     # and I don't think we can make packets smaller than 8 bytes,
     # even with packet name aliases and rencode
     # (and aliases should not be defined for the initial packet anyway)
-    if packet_index!=0:
+    if packet_index != 0:
         return False
-    if data_size<8 or data_size>=256*1024*1024:
+    if data_size < 8 or data_size >= 256*1024*1024:
         return False
     rencode = bool(protocol_flags & FLAGS_RENCODE)
     yaml = bool(protocol_flags & FLAGS_YAML)
@@ -278,9 +278,9 @@ def looks_like_xpra_packet(data: ByteString) -> bool:
     brotli = bool(protocol_flags & BROTLI_FLAG)
     compressors = sum((lz4, brotli))
     # only one compressor can be enabled:
-    if compressors>1:
+    if compressors > 1:
         return False
-    if compressors==1 and compression_level<=0:
+    if compressors == 1 and compression_level <= 0:
         # if compression is enabled, the compression level must be set:
         return False
     if rencode and yaml:
@@ -302,7 +302,7 @@ def guess_packet_type(data: ByteString) -> str:
     if data[:4] == b"RFB ":
         return "vnc"
     line1 = data.splitlines()[0]
-    if line1.find(b"HTTP/")>0 or line1.split(b" ")[0] in (b"GET", b"POST"):
+    if line1.find(b"HTTP/") > 0 or line1.split(b" ")[0] in (b"GET", b"POST"):
         return "http"
     if line1.lower().startswith(b"<!doctype html") or line1.lower().startswith(b"<html"):
         return "http"
@@ -313,7 +313,7 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0) -> dict[Any, dict]:
     bind_tcp = parse_bind_ip(opts.bind_tcp)
     bind_ssl = parse_bind_ip(opts.bind_ssl, 443)
     bind_ssh = parse_bind_ip(opts.bind_ssh, 22)
-    bind_ws  = parse_bind_ip(opts.bind_ws, 80)
+    bind_ws = parse_bind_ip(opts.bind_ws, 80)
     bind_wss = parse_bind_ip(opts.bind_wss, 443)
     bind_rfb = parse_bind_ip(opts.bind_rfb, 5900)
     bind_quic = parse_bind_ip(opts.bind_quic, 20000)
@@ -344,16 +344,16 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0) -> dict[Any, dict]:
     # prepare tcp socket definitions:
     tcp_defs = []
     for socktype, defs in {
-        "tcp"   : bind_tcp,
-        "ssl"   : bind_ssl,
-        "ssh"   : bind_ssh,
-        "ws"    : bind_ws,
-        "wss"   : bind_wss,
-        "rfb"   : bind_rfb,
+        "tcp": bind_tcp,
+        "ssl": bind_ssl,
+        "ssh": bind_ssh,
+        "ws": bind_ws,
+        "wss": bind_wss,
+        "rfb": bind_rfb,
     }.items():
         log("setting up %s sockets: %s", socktype, csv(defs.items()))
         for (host, iport), options in defs.items():
-            if iport!=0 and iport<min_port:
+            if iport != 0 and iport<min_port:
                 error_cb(f"invalid {socktype} port number {iport} (minimum value is {min_port})")
             for h in hosts(host):
                 tcp_defs.append((socktype, h, iport, options, None))
@@ -375,7 +375,7 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0) -> dict[Any, dict]:
         if tcp_defs:
             sleep(1)
     if tcp_defs:
-        #failed to create some sockets:
+        # failed to create some sockets:
         for socktype, host, iport, options, exception in tcp_defs:
             log.error("Error creating %s socket", socktype)
             log.error(" on %s:%s", host, iport)
@@ -486,7 +486,7 @@ def setup_quic_socket(host: str, port: int) -> socket.socket:
 def setup_udp_socket(host: str, iport: int, socktype: str) -> tuple[str, socket.socket, tuple[str, int], Callable]:
     log = get_network_logger()
     try:
-        udp_socket = create_udp_socket(host, iport, family=socket.AF_INET6 if host.find(":")>=0 else socket.AF_INET)
+        udp_socket = create_udp_socket(host, iport, family=socket.AF_INET6 if host.find(":") >= 0 else socket.AF_INET)
     except Exception as e:
         log("create_udp_socket%s", pretty_socket((host, iport)), exc_info=True)
         raise InitExit(ExitCode.SOCKET_CREATION_ERROR,
@@ -523,11 +523,11 @@ def parse_bind_ip(bind_ip: list[str], default_port: int = DEFAULT_PORT) -> dict[
             else:
                 try:
                     iport = int(port)
-                    assert 0<iport<2**16
+                    assert 0 < iport < 2**16
                 except (TypeError, ValueError):
                     raise InitException(f"invalid port number: {port}") from None
             options = {}
-            if len(parts)==2:
+            if len(parts) == 2:
                 options = parse_simple_dict(parts[1])
             ip_sockets[(host, iport)] = options
     return ip_sockets
@@ -542,7 +542,7 @@ def setup_vsock_socket(cid: int, iport: int) -> tuple[str, Any, tuple[int, int],
         raise InitExit(ExitCode.SOCKET_CREATION_ERROR,
                        f"failed to setup vsock socket on {cid}:{iport} {e}") from None
 
-    def cleanup_vsock_socket():
+    def cleanup_vsock_socket() -> None:
         log.info("closing vsock socket %s:%s", cid, iport)
         try:
             vsock_socket.close()
@@ -558,7 +558,7 @@ def parse_bind_vsock(bind_vsock: list[str]) -> dict[tuple[int, int], dict]:
         for spec in bind_vsock:
             parts = spec.split(",", 1)
             cid_port = parts[0].split(":")
-            if len(cid_port)!=2:
+            if len(cid_port) != 2:
                 raise ValueError(f"invalid format for vsock: {parts[0]!r}, use 'CID:PORT' format")
             cid = parse_vsock_cid(cid_port[0])
             try:
@@ -566,7 +566,7 @@ def parse_bind_vsock(bind_vsock: list[str]) -> dict[tuple[int, int], dict]:
             except ValueError:
                 raise ValueError(f"vsock port must be an integer, {cid_port[0]!r} is not")
             options = {}
-            if len(parts)==2:
+            if len(parts) == 2:
                 options = parse_simple_dict(parts[1])
             vsock_sockets[(cid, iport)] = options
     return vsock_sockets
@@ -584,11 +584,11 @@ def setup_sd_listen_socket(stype: str, sock, addr) -> tuple[str, socket.socket, 
     return stype, sock, addr, cleanup_sd_listen_socket
 
 
-def normalize_local_display_name(local_display_name:str) -> str:
+def normalize_local_display_name(local_display_name: str) -> str:
     if local_display_name.startswith("wayland-") or os.path.isabs(local_display_name):
         return local_display_name
     pos = local_display_name.find(":")
-    if pos<0:
+    if pos < 0:
         after_sc = local_display_name
         local_display_name = ":" + local_display_name
     else:
@@ -614,9 +614,9 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
         (bind, socket_dir, socket_dirs, session_dir, display_name, clobber, mmap_group,
          socket_permissions, username, uid, gid)
         )
-    if not bind or csv(bind)=="none":
+    if not bind or csv(bind) == "none":
         return {}
-    if not socket_dir and (not socket_dirs or (len(socket_dirs)==1 and not socket_dirs[0])):
+    if not socket_dir and (not socket_dirs or (len(socket_dirs) == 1 and not socket_dirs[0])):
         if WIN32:
             socket_dirs = [""]
         elif not session_dir:
@@ -626,7 +626,7 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
     dotxpra = DotXpra(socket_dir or socket_dirs[0], socket_dirs, username, uid, gid)
     if display_name is not None and not WIN32:
         display_name = normalize_local_display_name(display_name)
-    defs : dict[Any, Callable] = {}
+    defs: dict[Any, Callable] = {}
     try:
         sockpaths = {}
         log(f"setup_local_sockets: bind={bind}, dotxpra={dotxpra}")
@@ -700,7 +700,7 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                     state = dotxpra.get_server_state(sockpath, 1)
                     log(f"state({sockpath})={state}")
                     checkstate(sockpath, state)
-                    if state==SocketState.UNKNOWN:
+                    if state == SocketState.UNKNOWN:
                         unknown.append(sockpath)
                 d = os.path.dirname(sockpath)
                 try:
@@ -730,7 +730,7 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                     # we need a loop because "DEAD" sockets may return immediately
                     # (ie: when the server is starting up)
                     start = monotonic()
-                    while monotonic()-start<WAIT_PROBE_TIMEOUT:
+                    while monotonic()-start < WAIT_PROBE_TIMEOUT:
                         state = dotxpra.get_server_state(sockpath, WAIT_PROBE_TIMEOUT)
                         log(f"timeout_probe() get_server_state({sockpath!r})={state}")
                         if state not in (SocketState.UNKNOWN, SocketState.DEAD):
@@ -842,9 +842,9 @@ def socket_connect(host: str, port: int, timeout: float = SOCKET_TIMEOUT):
         addrinfo = socket.getaddrinfo(host, port, family, socktype)
     except Exception as e:
         stypestr = {
-            socket.AF_INET6 : "IPv6",
-            socket.AF_INET  : "IPv4",
-            0               : "any",
+            socket.AF_INET6: "IPv6",
+            socket.AF_INET: "IPv4",
+            0: "any",
         }.get(family, "")
         raise InitException(f"cannot get {stypestr} address for {host}:{port} : {e}") from None
     log = get_network_logger()
