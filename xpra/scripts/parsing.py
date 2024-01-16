@@ -303,7 +303,9 @@ def load_password_file(password_file:str) -> str:
 def normalize_display_name(display_name: str) -> str:
     if not display_name:
         raise ValueError("no display name specified")
-    if display_name.startswith("/") and POSIX:
+    if display_name.startswith("@"):
+        return display_name
+    if POSIX and display_name.startswith("/"):
         return "socket://"+display_name
     # URL mode aliases (ie: "xpra+tcp://host:port")
     from xpra.net.common import URL_MODES
@@ -374,7 +376,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(),
                        find_session_by_name: Callable | None = None) -> dict[str, Any]:
     display_name = normalize_display_name(display_name)
     # last chance to find it by name:
-    if display_name.find(":")<0 and display_name.find("wayland-")<0:
+    if display_name.find(":") < 0 and display_name.find("wayland-") < 0 and not display_name.startswith("@"):
         if not find_session_by_name:
             raise ValueError(f"invalid display name {display_name!r}")
         r = find_session_by_name(opts, display_name)
@@ -454,22 +456,28 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(),
     def add_query() -> None:
         process_query_string(parsed.query)
 
-    if display_name.startswith(":") or display_name.startswith("wayland-"):
-        if WIN32 or OSX:
+    if display_name.startswith(":") or display_name.startswith("wayland-") or display_name.startswith("@"):
+        if display_name.startswith("@"):
+            if WIN32:
+                raise ValueError("abstract sockets are not supported on MS Windows")
+        elif WIN32 or OSX:
             raise RuntimeError("X11 / Wayland display names are not supported on this platform")
         add_query()
-        display = parsed.path.lstrip(":")
-        desc.update(
-            {
-                "type"          : "socket",
-                "local"         : True,
-                "display"       : display,
-                "socket_dirs"   : opts.socket_dirs,
-            }
-        )
+        if display_name.startswith("@"):
+            display = parsed.path[1:]
+            desc["socket_path"] = parsed.path
+        else:
+            display = parsed.path.lstrip(":")
+            if opts.socket_dirs:
+                desc["socket_dirs"] = opts.socket_dirs
+            if opts.socket_dir:
+                desc["socket_dir"] = opts.socket_dir
         opts.display = display
-        if opts.socket_dir:
-            desc["socket_dir"] = opts.socket_dir
+        desc.update({
+            "type": "socket",
+            "local": True,
+            "display": display,
+        })
         return desc
 
     if protocol=="vsock":

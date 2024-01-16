@@ -49,9 +49,27 @@ def get_network_logger():
     return network_logger
 
 
-def create_unix_domain_socket(sockpath: str, socket_permissions: int = 0o600) -> tuple[socket.socket, Callable]:
-    assert POSIX
+def create_abstract_socket(sockpath: str) -> tuple[socket.socket, Callable]:
     log = get_network_logger()
+    log(f"create_abstract_socket({sockpath!r})")
+    assert POSIX
+    assert sockpath[:1] == "@"
+    assert sockpath[1:].isalnum()
+    asockpath = "\0"+sockpath[1:]
+    listener = socket.socket(socket.AF_UNIX)
+    listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    listener.bind(asockpath)
+
+    def cleanup_socket() -> None:
+        close_socket_listener(listener)
+
+    return listener, cleanup_socket
+
+
+def create_unix_domain_socket(sockpath: str, socket_permissions: int = 0o600) -> tuple[socket.socket, Callable]:
+    log = get_network_logger()
+    log(f"create_unix_domain_socket({sockpath!r}, {socket_permissions:o})")
+    assert POSIX
     listener = socket.socket(socket.AF_UNIX)
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     # bind the socket, using umask to set the correct permissions
@@ -84,10 +102,7 @@ def create_unix_domain_socket(sockpath: str, socket_permissions: int = 0o600) ->
             # os.fchown(listener.fileno(), -1, group_id)
 
     def cleanup_socket() -> None:
-        try:
-            listener.close()
-        except OSError as e:
-            log(f"cleanup_socket() {listener.close}() error: {e}")
+        close_socket_listener(listener)
         try:
             cur_inode = os.stat(sockpath).st_ino
         except OSError:
@@ -102,6 +117,14 @@ def create_unix_domain_socket(sockpath: str, socket_permissions: int = 0o600) ->
             except OSError:
                 pass
     return listener, cleanup_socket
+
+
+def close_socket_listener(listener) -> None:
+    try:
+        listener.close()
+    except OSError:
+        log = get_network_logger()
+        log(f"cleanup_socket() {listener.close}()", exc_info=True)
 
 
 def hosts(host_str: str) -> list[str]:
@@ -649,6 +672,14 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                     session_socket = os.path.join(session_dir, "socket")
                     sockpaths[session_socket] = options
                 log(f"sockpaths({display_name})={sockpaths} (uid={uid}, gid={gid})")
+            elif sockpath.startswith("@"):
+                # abstract socket
+                if WIN32:
+                    raise ValueError("abstract sockets are not supported on MS Windows")
+                sockpath = dotxpra.osexpand(sockpath)
+                if not sockpath[1:].isalnum():
+                    raise ValueError(f"invalid characters in abstract socket name {sockpath!r}")
+                sockpaths[sockpath] = options
             else:
                 sockpath = dotxpra.osexpand(sockpath)
                 if sockpath.endswith("/") or (os.path.exists(sockpath) and os.path.isdir(sockpath)):
@@ -697,7 +728,7 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
             # and create the directories for the sockets:
             unknown = []
             for sockpath in sockpaths:
-                if clobber and os.path.exists(sockpath):
+                if clobber and not sockpath.startswith("@") and os.path.exists(sockpath):
                     os.unlink(sockpath)
                 else:
                     state = dotxpra.get_server_state(sockpath, 1)
@@ -705,6 +736,8 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                     checkstate(sockpath, state)
                     if state == SocketState.UNKNOWN:
                         unknown.append(sockpath)
+                if sockpath.startswith("@"):
+                    continue
                 d = os.path.dirname(sockpath)
                 try:
                     kwargs = {}
@@ -775,13 +808,16 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                     except ValueError:
                         raise ValueError("invalid socket permissions "
                                          f"(must be an octal number): {socket_permissions!r}") from None
-                    if sperms<0 or sperms>0o777:
+                    if sperms < 0 or sperms > 0o777:
                         raise ValueError(f"invalid socket permission value {sperms:o}")
                 # now try to create all the sockets:
                 created = []
                 for sockpath, options in sockpaths.items():
                     try:
-                        sock, cleanup_socket = create_unix_domain_socket(sockpath, sperms)
+                        if sockpath.startswith("@"):
+                            sock, cleanup_socket = create_abstract_socket(sockpath)
+                        else:
+                            sock, cleanup_socket = create_unix_domain_socket(sockpath, sperms)
                     except Exception as e:
                         handle_socket_error(sockpath, sperms, e)
                         del e

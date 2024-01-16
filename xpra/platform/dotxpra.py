@@ -12,6 +12,7 @@ import errno
 from xpra.common import SocketState
 from xpra.util.env import osexpand
 from xpra.util.io import is_socket, umask_context, get_util_logger
+from xpra.os_util import POSIX
 from xpra.platform.dotxpra_common import PREFIX
 from xpra.platform import platform_import
 
@@ -101,7 +102,11 @@ class DotXpra:
         return norm_makepath(self._sockdir, local_display_name)
 
     def get_server_state(self, sockpath: str, timeout=5) -> SocketState:
-        if not os.path.exists(sockpath):
+        saved_sockpath = sockpath
+        if sockpath.startswith("@"):
+            assert POSIX
+            sockpath = "\0"+sockpath[1:]
+        elif not os.path.exists(sockpath):
             return SocketState.DEAD
         sock = socket.socket(socket.AF_UNIX)
         sock.settimeout(timeout)
@@ -109,11 +114,13 @@ class DotXpra:
             sock.connect(sockpath)
             return SocketState.LIVE
         except OSError as e:
-            debug(f"get_server_state: connect({sockpath!r})={e} (timeout={timeout}")
+            debug(f"get_server_state: connect({saved_sockpath!r})={e} (timeout={timeout}")
             err = e.args[0]
             if err == errno.EACCES:
                 return SocketState.INACCESSIBLE
             if err == errno.ECONNREFUSED:
+                if saved_sockpath.startswith("@"):
+                    return SocketState.DEAD
                 # could be the server is starting up
                 debug("ECONNREFUSED")
                 return SocketState.UNKNOWN

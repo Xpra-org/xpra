@@ -1022,6 +1022,8 @@ class ServerCore:
     def touch_sockets(self) -> bool:
         netlog("touch_sockets() unix socket paths=%s", self.unix_socket_paths)
         for sockpath in self.unix_socket_paths:
+            if sockpath.startswith("@"):
+                continue
             if not os.path.exists(sockpath):
                 if first_time(f"missing-socket-{sockpath}"):
                     log.warn("Warning: the unix domain socket cannot be found:")

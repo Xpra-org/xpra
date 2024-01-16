@@ -1133,12 +1133,13 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             raise InitException(msg)
         sockpath = get_sockpath(display_desc, sockpathfail_cb)
         display_desc["socket_path"] = sockpath
+        actual_path = "\0"+sockpath[1:] if sockpath.startswith("@") else sockpath
         sock = socket.socket(socket.AF_UNIX)
         sock.settimeout(SOCKET_TIMEOUT)
         start = monotonic()
         while monotonic()-start < SOCKET_TIMEOUT:
             try:
-                sock.connect(sockpath)
+                sock.connect(actual_path)
                 break
             except ConnectionRefusedError as e:
                 elapsed = monotonic()-start
@@ -1321,54 +1322,54 @@ def run_send_file(extra_args) -> ExitValue:
 def get_sockpath(display_desc: dict[str, Any], error_cb, timeout=CONNECT_TIMEOUT) -> str:
     #if the path was specified, use that:
     sockpath = display_desc.get("socket_path")
-    if not sockpath:
-        #find the socket using the display:
-        # if uid, gid or username are missing or not found on the local system,
-        # use the uid, gid and username of the current user:
-        uid = display_desc.get("uid", getuid())
-        gid = display_desc.get("gid", getgid())
-        username = display_desc.get("username", get_username_for_uid(uid))
-        if not username:
-            uid = getuid()
-            gid = getgid()
-            username = get_username_for_uid(uid)
-        dotxpra = DotXpra(
-            display_desc.get("socket_dir"),
-            display_desc.get("socket_dirs"),
-            username,
-            uid,
-            gid,
-        )
-        display = display_desc["display"]
+    if sockpath:
+        return sockpath
+    #find the socket using the display:
+    # if uid, gid or username are missing or not found on the local system,
+    # use the uid, gid and username of the current user:
+    uid = display_desc.get("uid", getuid())
+    gid = display_desc.get("gid", getgid())
+    username = display_desc.get("username", get_username_for_uid(uid))
+    if not username:
+        uid = getuid()
+        gid = getgid()
+        username = get_username_for_uid(uid)
+    dotxpra = DotXpra(
+        display_desc.get("socket_dir"),
+        display_desc.get("socket_dirs"),
+        username,
+        uid,
+        gid,
+    )
+    display = display_desc["display"]
 
-        def socket_details(state=SocketState.LIVE):
-            return dotxpra.socket_details(matching_state=state, matching_display=display)
-        dir_servers = socket_details()
-        if display and not dir_servers:
-            state = dotxpra.get_display_state(display)
-            if state in (SocketState.UNKNOWN, SocketState.DEAD) and timeout>0:
-                #found the socket for this specific display in UNKNOWN state,
-                #or not found any sockets at all (DEAD),
-                #this could be a server starting up,
-                #so give it a bit of time:
-                if state==SocketState.UNKNOWN:
-                    werr(f"server socket for display {display} is in {SocketState.UNKNOWN} state")
-                else:
-                    werr(f"server socket for display {display} not found")
-                werr(f" waiting up to {timeout} seconds")
-                start = monotonic()
-                log = Logger("network")
-                while monotonic()-start<timeout:
-                    state = dotxpra.get_display_state(display)
-                    log(f"get_display_state({display})={state}")
-                    if state in (SocketState.LIVE, SocketState.INACCESSIBLE):
-                        #found a final state
-                        break
-                    time.sleep(0.1)
-                dir_servers = socket_details()
-        sockpath = single_display_match(dir_servers, error_cb,
-                                        nomatch=f"cannot find live server for display {display}")[-1]
-    return sockpath
+    def socket_details(state=SocketState.LIVE):
+        return dotxpra.socket_details(matching_state=state, matching_display=display)
+    dir_servers = socket_details()
+    if display and not dir_servers:
+        state = dotxpra.get_display_state(display)
+        if state in (SocketState.UNKNOWN, SocketState.DEAD) and timeout>0:
+            #found the socket for this specific display in UNKNOWN state,
+            #or not found any sockets at all (DEAD),
+            #this could be a server starting up,
+            #so give it a bit of time:
+            if state==SocketState.UNKNOWN:
+                werr(f"server socket for display {display} is in {SocketState.UNKNOWN} state")
+            else:
+                werr(f"server socket for display {display} not found")
+            werr(f" waiting up to {timeout} seconds")
+            start = monotonic()
+            log = Logger("network")
+            while monotonic()-start<timeout:
+                state = dotxpra.get_display_state(display)
+                log(f"get_display_state({display})={state}")
+                if state in (SocketState.LIVE, SocketState.INACCESSIBLE):
+                    #found a final state
+                    break
+                time.sleep(0.1)
+            dir_servers = socket_details()
+    return single_display_match(dir_servers, error_cb,
+                                nomatch=f"cannot find live server for display {display}")[-1]
 
 
 def run_client(script_file, cmdline, error_cb, opts, extra_args, mode:str) -> ExitValue:
