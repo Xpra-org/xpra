@@ -631,7 +631,7 @@ def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
         for b in bind:
             if b in ("none", ""):
                 continue
-            parts = b.split(",")
+            parts = b.split(",", 1)
             sockpath = parts[0]
             options = {}
             if len(parts)==2:
