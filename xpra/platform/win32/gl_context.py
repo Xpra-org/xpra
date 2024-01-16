@@ -3,10 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from ctypes import (
-    FormatError,
-    sizeof, byref, cast, c_void_p,
-    )
+from typing import Any
+from ctypes import FormatError, sizeof, byref, cast, c_void_p
 from ctypes.wintypes import LPCWSTR
 from contextlib import nullcontext, AbstractContextManager
 
@@ -16,19 +14,19 @@ from xpra.platform.win32.gui import get_window_handle
 from xpra.platform.win32.constants import (
     CS_OWNDC, CS_HREDRAW, CS_VREDRAW, COLOR_WINDOW,
     WS_OVERLAPPED, WS_SYSMENU, CW_USEDEFAULT,
-    )
+)
 from xpra.platform.win32.common import (
     GetDC, SwapBuffers, ChoosePixelFormat, DescribePixelFormat, SetPixelFormat,
     BeginPaint, EndPaint, DestroyWindow, UnregisterClassW,
     GetModuleHandleA, RegisterClassExA, CreateWindowExA, DefWindowProcA, WNDPROC, WNDCLASSEX
-    )
+)
 from xpra.platform.win32.glwin32 import (
     wglCreateContext, wglMakeCurrent, wglDeleteContext,
     HGLRC,
     PIXELFORMATDESCRIPTOR, PFD_TYPE_RGBA, PFD_DRAW_TO_WINDOW, PFD_SUPPORT_OPENGL,
     PFD_DOUBLEBUFFER, PFD_DEPTH_DONTCARE, PFD_SUPPORT_COMPOSITION, PFD_MAIN_PLANE,
     PAINTSTRUCT,
-    )
+)
 from xpra.log import Logger
 
 log = Logger("opengl")
@@ -36,7 +34,7 @@ log = Logger("opengl")
 DOUBLE_BUFFERED = True
 
 
-def DefWndProc(hwnd, msg, w_param, l_param):
+def DefWndProc(hwnd, msg, w_param, l_param) -> int:
     return DefWindowProcA(hwnd, msg, w_param, l_param)
 
 
@@ -71,7 +69,7 @@ class WGLWindowContext:
     def update_geometry(self):
         """ not needed on MS Windows """
 
-    def swap_buffers(self):
+    def swap_buffers(self) -> None:
         assert self.paint_hdc
         log("swap_buffers: calling SwapBuffers(%#x)", self.paint_hdc)
         SwapBuffers(self.paint_hdc)
@@ -84,6 +82,7 @@ class WGLWindowContext:
 
 
 gl_init_done = False
+
 
 def get_gl_context_manager() -> AbstractContextManager:
     # capture stderr only the first time this is called
@@ -105,7 +104,7 @@ class WGLContext:
         self.context = 0
         self.pixel_format_props = {}
 
-    def check_support(self, force_enable=False):
+    def check_support(self, force_enable=False) -> dict[str, Any]:
         # create a temporary window to query opengl attributes:
         h_inst = GetModuleHandleA(0)
         log("check_support() GetModuleHandleW()=%#x", h_inst or 0)
@@ -120,7 +119,7 @@ class WGLContext:
         reg_atom = RegisterClassExA(byref(wndc))
         log("check_support() RegisterClassExW()=%#x", reg_atom or 0)
         if not reg_atom:
-            return {"info" : "disabled: failed to register window class, %s" % FormatError()}
+            return {"info": "disabled: failed to register window class, %s" % FormatError()}
         style = WS_OVERLAPPED | WS_SYSMENU
         window_name = "Xpra OpenGL Test"
         self.hwnd = CreateWindowExA(0, reg_atom, window_name, style,
@@ -234,14 +233,14 @@ class WGLContext:
             "aux-buffers"       : pfd.cAuxBuffers,
             "visible-mask"      : int(pfd.dwVisibleMask),
             "double-buffered"   : bool(pfd.dwFlags & PFD_DOUBLEBUFFER)
-            })
+        })
         log("DescribePixelFormat: %s", self.pixel_format_props)
         context = wglCreateContext(self.hdc)
         assert context, "wglCreateContext failed"
         log("wglCreateContext(%#x)=%#x", self.hdc, context)
         return context
 
-    def destroy(self):
+    def destroy(self) -> None:
         c = self.context
         if c:
             self.context = 0
