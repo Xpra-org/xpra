@@ -193,7 +193,9 @@ def get_ssl_wrap_socket_context(cert=None, key=None, key_password=None, ca_certs
     ssllog(" ca-certs=%s", ca_certs)
     # parse protocol:
     import ssl
-    proto = getattr(ssl, "PROTOCOL_" + protocol.upper().replace("V", "v"), None)
+    if protocol.upper() == "TLS":
+        protocol = "TLS_SERVER" if server_side else "TLS_CLIENT"
+    proto = getattr(ssl, "PROTOCOL_" + protocol.upper().replace("TLSV", "TLSv"), None)
     if proto is None:
         values = [k[len("PROTOCOL_"):] for k in dir(ssl) if k.startswith("PROTOCOL_")]
         raise InitException(f"invalid ssl-protocol {protocol!r}, must be one of: "+csv(values))
@@ -232,6 +234,8 @@ def get_ssl_wrap_socket_context(cert=None, key=None, key_password=None, ca_certs
 
     context = ssl.SSLContext(proto)
     context.set_ciphers(ciphers)
+    if not server_side:
+        context.check_hostname = check_hostname
     context.verify_mode = ssl_cert_reqs
     context.verify_flags = ssl_verify_flags
     context.options = ssl_options
@@ -257,7 +261,6 @@ def get_ssl_wrap_socket_context(cert=None, key=None, key_password=None, ca_certs
             purpose = ssl.Purpose.CLIENT_AUTH
         else:
             purpose = ssl.Purpose.SERVER_AUTH
-            context.check_hostname = check_hostname
             ssllog(" check_hostname=%s, server_hostname=%s", check_hostname, server_hostname)
             if context.check_hostname and not server_hostname:
                 raise InitException("ssl error: check-hostname is set but server-hostname is not")
