@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2022-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
@@ -10,10 +10,9 @@ from typing import Any
 
 from xpra.util.version import version_str
 from xpra.util.types import typedict
-from xpra.util.str_fn import csv
-from xpra.util.env import envint, envbool, envfloat
+from xpra.util.env import envint, envfloat
 from xpra.common import ConnectionMessage
-from xpra.os_util import get_machine_id, gi_import, WIN32, POSIX, OSX
+from xpra.os_util import get_machine_id, gi_import, POSIX, OSX
 from xpra.net.bytestreams import log_new_connection
 from xpra.net.socket_util import create_sockets, add_listen_socket, accept_connection, setup_local_sockets
 from xpra.net.net_util import get_network_caps
@@ -30,7 +29,6 @@ log = Logger("network")
 SOCKET_TIMEOUT = envfloat("XPRA_CLIENT_SOCKET_TIMEOUT", 0.1)
 MAX_CONCURRENT_CONNECTIONS = envint("XPRA_MAX_CONCURRENT_CONNECTIONS", 5)
 REQUEST_TIMEOUT = envint("XPRA_CLIENT_REQUEST_TIMEOUT", 10)
-WIN32_LOCAL_SOCKETS = envbool("XPRA_WIN32_LOCAL_SOCKETS", True)
 
 
 class Networklistener(StubClientMixin):
@@ -54,20 +52,19 @@ class Networklistener(StubClientMixin):
         def err(msg):
             raise InitException(msg)
         self.sockets = create_sockets(opts, err)
-        if opts.bind and (not WIN32 or WIN32_LOCAL_SOCKETS or csv(opts.bind)!="auto"):
-            log(f"setup_local_sockets bind={opts.bind}, client_socket_dirs={opts.client_socket_dirs}")
-            try:
-                local_sockets = setup_local_sockets(opts.bind,
-                                                    "", opts.client_socket_dirs, "",
-                                                    str(os.getpid()), True,
-                                                    opts.mmap_group, opts.socket_permissions)
-            except (OSError, InitExit, ImportError) as e:
-                log("setup_local_sockets bind=%s, client_socket_dirs=%s",
-                    opts.bind, opts.client_socket_dirs, exc_info=True)
-                log.warn("Warning: failed to create the client sockets:")
-                log.warn(" '%s'", e)
-            else:
-                self.sockets.update(local_sockets)
+        log(f"setup_local_sockets bind={opts.bind}, client_socket_dirs={opts.client_socket_dirs}")
+        try:
+            local_sockets = setup_local_sockets(opts.bind,
+                                                "", opts.client_socket_dirs, "",
+                                                str(os.getpid()), True,
+                                                opts.mmap_group, opts.socket_permissions)
+        except (OSError, InitExit, ImportError) as e:
+            log("setup_local_sockets bind=%s, client_socket_dirs=%s",
+                opts.bind, opts.client_socket_dirs, exc_info=True)
+            log.warn("Warning: failed to create the client sockets:")
+            log.warn(" '%s'", e)
+        else:
+            self.sockets.update(local_sockets)
 
     def run(self) -> None:
         self.start_listen_sockets()

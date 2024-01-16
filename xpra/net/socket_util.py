@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -20,7 +20,7 @@ from xpra.os_util import getuid, get_username_for_uid, get_groups, get_group_id,
 from xpra.util.io import path_permission_info, umask_context
 from xpra.util.str_fn import csv
 from xpra.util.parsing import parse_simple_dict
-from xpra.util.env import envint, SilenceWarningsContext
+from xpra.util.env import envint, envbool, SilenceWarningsContext
 from xpra.util.thread import start_thread
 
 # pylint: disable=import-outside-toplevel
@@ -32,6 +32,7 @@ PEEK_TIMEOUT_MS = envint("XPRA_PEEK_TIMEOUT_MS", PEEK_TIMEOUT*1000)
 UNIXDOMAIN_PEEK_TIMEOUT_MS = envint("XPRA_UNIX_DOMAIN_PEEK_TIMEOUT_MS", 100)
 SOCKET_PEEK_TIMEOUT_MS = envint("XPRA_SOCKET_PEEK_TIMEOUT_MS", UNIXDOMAIN_PEEK_TIMEOUT_MS)
 PEEK_SIZE = envint("XPRA_PEEK_SIZE", 8192)
+WIN32_LOCAL_SOCKETS = envbool("XPRA_WIN32_LOCAL_SOCKETS", True)
 
 SOCKET_DIR_MODE = num = int(os.environ.get("XPRA_SOCKET_DIR_MODE", "775"), 8)
 SOCKET_DIR_GROUP = os.environ.get("XPRA_SOCKET_DIR_GROUP", GROUP)
@@ -614,6 +615,8 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
         (bind, socket_dir, socket_dirs, session_dir, display_name, clobber, mmap_group,
          socket_permissions, username, uid, gid)
         )
+    if WIN32 and not WIN32_LOCAL_SOCKETS and csv(bind) == "auto":
+        return {}
     if not bind or csv(bind) == "none":
         return {}
     if not socket_dir and (not socket_dirs or (len(socket_dirs) == 1 and not socket_dirs[0])):
