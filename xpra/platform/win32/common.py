@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from typing import Any
 
 from ctypes import (
     WinDLL, WINFUNCTYPE, GetLastError,  # @UnresolvedImport
     POINTER, Structure,
     c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t, c_char,
     byref, sizeof,
-    )
+)
 from ctypes.wintypes import (
     HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE,
     SHORT, ATOM, RECT, POINT, MAX_PATH, WCHAR, BYTE,
@@ -17,8 +19,8 @@ from ctypes.wintypes import (
     LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA,
     HINSTANCE, HMENU, ULONG, HHOOK, LPMSG,
     LCID, HKL,
-    )
-#imported from this module but not used here:
+)
+# imported from this module but not used here:
 assert GetLastError
 
 LPCTSTR = LPCSTR
@@ -31,6 +33,7 @@ HCURSOR = HANDLE
 HICON = HANDLE
 HBRUSH = HANDLE
 
+
 class CURSORINFO(Structure):
     _fields_ = [
         ("cbSize",          DWORD),
@@ -38,6 +41,7 @@ class CURSORINFO(Structure):
         ("hCursor",         HCURSOR),
         ("ptScreenPos",     POINT),
     ]
+
 
 class ICONINFO(Structure):
     _fields_ = [
@@ -47,7 +51,10 @@ class ICONINFO(Structure):
         ("hbmMask",         HBITMAP),
         ("hbmColor",        HBITMAP),
     ]
+
+
 PICONINFO = POINTER(ICONINFO)
+
 
 class ICONINFOEXA(Structure):
     _fields_ = [
@@ -61,7 +68,11 @@ class ICONINFOEXA(Structure):
         ("sxModName",       c_char*MAX_PATH),
         ("szResName",       c_char*MAX_PATH),
     ]
+
+
 PICONINFOEXA = POINTER(ICONINFOEXA)
+
+
 class ICONINFOEXW(Structure):
     _fields_ = [
         ("cbSize",          DWORD),
@@ -74,7 +85,10 @@ class ICONINFOEXW(Structure):
         ("sxModName",       WCHAR*MAX_PATH),
         ("szResName",       WCHAR*MAX_PATH),
     ]
+
+
 PICONINFOEXW = POINTER(ICONINFOEXW)
+
 
 class Bitmap(Structure):
     _fields_ = [
@@ -85,7 +99,8 @@ class Bitmap(Structure):
         ("bmPlanes",        WORD),
         ("bmBitsPixel",     WORD),
         ("bmBits",          LPVOID)
-        ]
+    ]
+
 
 class CIEXYZ(Structure):
     _fields_ = [
@@ -94,12 +109,14 @@ class CIEXYZ(Structure):
         ('ciexyzZ', DWORD),
     ]
 
+
 class CIEXYZTRIPLE(Structure):
     _fields_ = [
         ('ciexyzRed',   CIEXYZ),
         ('ciexyzBlue',  CIEXYZ),
         ('ciexyzGreen', CIEXYZ),
     ]
+
 
 class BITMAPINFOHEADER(Structure):
     _fields_ = [
@@ -114,15 +131,21 @@ class BITMAPINFOHEADER(Structure):
         ("biYPelsPerMeter", LONG),
         ("biClrUsed",       DWORD),
         ("biClrImportant",  DWORD),
-        ]
+    ]
+
+
 PBITMAPINFOHEADER = POINTER(BITMAPINFOHEADER)
+
 
 class BITMAPINFO(Structure):
     _fields_ = [
         ("bmiHeader",       BITMAPINFOHEADER),
         ("bmiColors",       DWORD),
-        ]
+    ]
+
+
 PBITMAPINFO = POINTER(BITMAPINFO)
+
 
 class BITMAPV5HEADER(Structure):
     _fields_ = [
@@ -151,9 +174,13 @@ class BITMAPV5HEADER(Structure):
         ('bV5ProfileSize',      DWORD),
         ('bV5Reserved',         DWORD),
     ]
+
+
 PBITMAPV5HEADER = POINTER(BITMAPV5HEADER)
 
 CCHDEVICENAME = 32
+
+
 class MONITORINFOEX(Structure):
     _fields_ = [
         ('cbSize', DWORD),
@@ -161,30 +188,35 @@ class MONITORINFOEX(Structure):
         ('rcWork', RECT),
         ('dwFlags', DWORD),
         ('szDevice', WCHAR * CCHDEVICENAME),
-        ]
+    ]
+
 
 class SECURITY_ATTRIBUTES(Structure):
     _fields_ = [
         ("nLength",                 c_int),
         ("lpSecurityDescriptor",    c_void_p),
         ("bInheritHandle",          c_int),
-        ]
+    ]
+
+
 LPSECURITY_ATTRIBUTES = POINTER(SECURITY_ATTRIBUTES)
 
-def GetMonitorInfo(hmonitor):
+
+def GetMonitorInfo(hmonitor) -> dict[str, Any]:
     info = MONITORINFOEX()
     info.szDevice = ""
     info.cbSize = sizeof(MONITORINFOEX)
     if not GetMonitorInfoW(hmonitor, byref(info)):
-        raise OSError()    #@UndefinedVariable
+        raise OSError()    # @UndefinedVariable
     monitor = info.rcMonitor.left, info.rcMonitor.top, info.rcMonitor.right, info.rcMonitor.bottom
     work = info.rcWork.left, info.rcWork.top, info.rcWork.right, info.rcWork.bottom
-    return  {
+    return {
         "Work"      : work,
         "Monitor"   : monitor,
         "Flags"     : info.dwFlags,
         "Device"    : info.szDevice or "",
-        }
+    }
+
 
 kernel32 = WinDLL("kernel32", use_last_error=True)
 LocalFree = kernel32.LocalFree
@@ -247,7 +279,7 @@ WideCharToMultiByte.restype = c_int
 WideCharToMultiByte.argtypes = [UINT, DWORD, LPCWSTR, c_int, c_void_p, c_int, LPCSTR, POINTER(BOOL)]
 MultiByteToWideChar = kernel32.MultiByteToWideChar
 MultiByteToWideChar.restype = c_int
-MultiByteToWideChar.argtypes =  [UINT, DWORD, LPCSTR, c_int, LPWSTR, c_int]
+MultiByteToWideChar.argtypes = [UINT, DWORD, LPCSTR, c_int, LPWSTR, c_int]
 WTSGetActiveConsoleSessionId = kernel32.WTSGetActiveConsoleSessionId
 WTSGetActiveConsoleSessionId.restype = DWORD
 WTSGetActiveConsoleSessionId.argtypes = []
@@ -309,7 +341,11 @@ GetWindowLongW.argtypes = [HWND, INT]
 ClipCursor = user32.ClipCursor
 ClipCursor.restype = BOOL
 GetCursorPos = user32.GetCursorPos
+GetCursorPos.argtypes = [POINTER(POINT)]
+GetCursorPos.restype = BOOL
 SetCursorPos = user32.SetCursorPos
+SetCursorPos.argtypes = [INT, INT]
+SetCursorPos.restype = BOOL
 GetPhysicalCursorPos = user32.GetPhysicalCursorPos
 GetPhysicalCursorPos.argtypes = [POINTER(POINT)]
 GetPhysicalCursorPos.restype = BOOL
@@ -395,8 +431,8 @@ ReleaseDC.argtypes = [HWND, HDC]
 mouse_event = user32.mouse_event
 LoadIconA = user32.LoadIconA
 LoadIconA.restype = HICON
-#can also pass int as second arg, so don't declare argtypes:
-#LoadIconA.argtypes = [HINSTANCE, LPCSTR]
+# can also pass int as second arg, so don't declare argtypes:
+# LoadIconA.argtypes = [HINSTANCE, LPCSTR]
 RegisterWindowMessageA = user32.RegisterWindowMessageA
 RegisterWindowMessageA.restype = UINT
 RegisterWindowMessageA.argtypes = [LPCSTR]
@@ -495,13 +531,17 @@ CreatePopupMenu.argtypes = []
 AppendMenu = user32.AppendMenuW
 AppendMenu.restype = BOOL
 AppendMenu.argtypes = [HMENU, UINT, UINT, LPCWSTR]
-#clipboard functions:
+# clipboard functions:
+
+
 class COPYDATASTRUCT(Structure):
     _fields_ = [
         ("dwData",          POINTER(ULONG)),
         ("cbData",          DWORD),
         ("lpData",          LPVOID),
     ]
+
+
 OpenClipboard = user32.OpenClipboard
 OpenClipboard.restype = BOOL
 OpenClipboard.argtypes = [HWND]
@@ -576,8 +616,12 @@ class PROCESS_INFORMATION(Structure):
         ('_hThread',    HANDLE),
         ('dwProcessId', DWORD),
         ('dwThreadId',  DWORD),
-        )
+    )
+
+
 PPROCESS_INFORMATION = POINTER(PROCESS_INFORMATION)
+
+
 class STARTUPINFOA(Structure):
     _fields_ = (
         ('cb',              DWORD),
@@ -598,7 +642,9 @@ class STARTUPINFOA(Structure):
         ('hStdInput',       HANDLE),
         ('hStdOutput',      HANDLE),
         ('hStdError',       HANDLE),
-        )
+    )
+
+
 PSTARTUPINFOA = POINTER(STARTUPINFOA)
 advapi32 = WinDLL("advapi32")
 CreateProcessAsUserA = advapi32.CreateProcessAsUserA
@@ -677,12 +723,15 @@ GetObjectA = gdi32.GetObjectA
 GetObjectA.argtypes = [HGDIOBJ, INT, LPVOID]
 GetObjectA.restype = INT
 
-#wrap EnumDisplayMonitors to hide the callback function:
+# wrap EnumDisplayMonitors to hide the callback function:
 MonitorEnumProc = WINFUNCTYPE(BOOL, HMONITOR, HDC, POINTER(RECT), LPARAM)
 _EnumDisplayMonitors.argtypes = [HDC, POINTER(RECT), MonitorEnumProc, LPARAM]
 _EnumDisplayMonitors.restype = BOOL
+
+
 def EnumDisplayMonitors():
     results = []
+
     def _callback(monitor, _dc, _rect, _data):
         results.append(monitor)
         return 1
@@ -690,10 +739,11 @@ def EnumDisplayMonitors():
     _EnumDisplayMonitors(0, None, callback, 0)
     return results
 
+
 def GetIntSystemParametersInfo(key):
     rv = INT()
     r = SystemParametersInfoA(key, 0, byref(rv), 0)
-    if r==0:
+    if r == 0:
         return None
     return rv.value
 
@@ -714,7 +764,10 @@ class WNDCLASSEX(Structure):
         ("hIconSm",         HANDLE),
     ]
 
-#GUID = c_ubyte * 16
+
+# GUID = c_ubyte * 16
+
+
 class GUID(Structure):
     _fields_ = [
         ('Data1', c_ulong),
@@ -722,6 +775,7 @@ class GUID(Structure):
         ('Data3', c_ushort),
         ('Data4', c_ubyte*8),
     ]
+
     def __str__(self):
         return "{%08x-%04x-%04x-%s-%s}" % (
             self.Data1,
@@ -730,6 +784,7 @@ class GUID(Structure):
             ''.join(["%02x" % d for d in self.Data4[:2]]),
             ''.join(["%02x" % d for d in self.Data4[2:]]),
         )
+
 
 IID = GUID
 REFIID = POINTER(IID)
@@ -767,15 +822,16 @@ IO_ERROR_STR = {
     ERROR_SUCCESS               : "SUCCESS",
     ERROR_COUNTER_TIMEOUT       : "COUNTER_TIMEOUT",
     ERROR_PIPE_BUSY             : "PIPE_BUSY",
-    }
+}
 
-#https://gist.github.com/EBNull/6135237
+# https://gist.github.com/EBNull/6135237
 LANG_NEUTRAL = 0x00
 SUBLANG_NEUTRAL = 0x00
 SUBLANG_DEFAULT = 0x01
 
 LANG_ENGLISH = 0x09
 SUBLANG_ENGLISH_US = 0x01
+
 
 def MAKELANGID(primary, sublang) -> int:
     return (primary & 0xFF) | (sublang & 0xFF) << 16
@@ -785,9 +841,12 @@ LCID_ENGLISH = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US)
 LCID_DEFAULT = MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT)
 LCID_NEUTRAL = MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL)
 
-def FormatMessageSystem(message_id, langid:int=LCID_ENGLISH) -> str:
-    from xpra.platform.win32.constants import FORMAT_MESSAGE_ALLOCATE_BUFFER, FORMAT_MESSAGE_FROM_SYSTEM, FORMAT_MESSAGE_IGNORE_INSERTS
-    sys_flag = FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS
+
+def FormatMessageSystem(message_id, langid: int = LCID_ENGLISH) -> str:
+    from xpra.platform.win32.constants import (
+        FORMAT_MESSAGE_ALLOCATE_BUFFER, FORMAT_MESSAGE_FROM_SYSTEM, FORMAT_MESSAGE_IGNORE_INSERTS,
+    )
+    sys_flag = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS
     bufptr = LPWSTR()
     chars = kernel32.FormatMessageW(sys_flag, None, message_id, langid, byref(bufptr), 0, None)
     if not chars:

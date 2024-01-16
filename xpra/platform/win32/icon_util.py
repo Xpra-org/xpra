@@ -6,27 +6,28 @@
 
 from ctypes import (
     WinError, get_last_error,
-    byref, c_void_p, sizeof, create_string_buffer, memmove,
+    byref, c_void_p, c_char, sizeof, memmove,
 )
 
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import (
-    ICONINFO, BITMAPV5HEADER,
+    ICONINFO, BITMAPV5HEADER, HICON, HBITMAP,
     CreateIconIndirect,
     GetDC, ReleaseDC,
     CreateBitmap, CreateDIBSection,
     DeleteObject,
 )
 from xpra.log import Logger
+
 log = Logger("win32")
 
 BI_RGB = 0
 BI_BITFIELDS = 0x00000003
 
 
-def image_to_ICONINFO(img, alpha=True):
+def image_to_ICONINFO(img, alpha=True) -> HICON:
     w, h = img.size
-    if alpha and img.mode.find("A")>=0:   #ie: RGBA
+    if alpha and img.mode.find("A") >= 0:   # ie: RGBA
         rgb_format = "BGRA"
     else:
         rgb_format = "BGR"
@@ -34,7 +35,7 @@ def image_to_ICONINFO(img, alpha=True):
     return make_ICONINFO(w, h, rgb_data, rgb_format=rgb_format)
 
 
-def make_ICONINFO(w, h, rgb_data, rgb_format="BGRA"):
+def make_ICONINFO(w: int, h: int, rgb_data, rgb_format="BGRA") -> HICON:
     log("make_ICONINFO(%i, %i, %i bytes, %s)", w, h, len(rgb_data), rgb_format)
     bitmap = 0
     mask = 0
@@ -57,7 +58,7 @@ def make_ICONINFO(w, h, rgb_data, rgb_format="BGRA"):
         return hicon
     except Exception:
         log.error("Error: failed to set tray icon", exc_info=True)
-        return None
+        return 0
     finally:
         if mask:
             DeleteObject(mask)
@@ -65,10 +66,10 @@ def make_ICONINFO(w, h, rgb_data, rgb_format="BGRA"):
             DeleteObject(bitmap)
 
 
-def rgb_to_bitmap(rgb_data, bytes_per_pixel : int, w : int, h : int):
+def rgb_to_bitmap(rgb_data, bytes_per_pixel: int, w: int, h: int) -> HBITMAP:
     log("rgb_to_bitmap%s", (rgb_data, bytes_per_pixel, w, h))
     assert bytes_per_pixel in (3, 4)        # only BGRA or BGR are supported
-    assert w>0 and h>0
+    assert w > 0 and h > 0
     header = BITMAPV5HEADER()
     header.bV5Size = sizeof(BITMAPV5HEADER)
     header.bV5Width = w
@@ -92,6 +93,9 @@ def rgb_to_bitmap(rgb_data, bytes_per_pixel : int, w : int, h : int):
     if not dataptr or not bitmap:
         raise WinError(get_last_error())
     log("CreateDIBSection(..) got bitmap=%#x, dataptr=%s", int(bitmap), dataptr)
-    img_data = create_string_buffer(rgb_data)
-    memmove(dataptr, byref(img_data), w*h*bytes_per_pixel)
+    size = len(rgb_data)
+    buftype = c_char * size
+    buf = buftype()
+    buf.value = rgb_data
+    memmove(dataptr, byref(buf), w*h*bytes_per_pixel)
     return bitmap

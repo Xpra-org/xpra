@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (c) 2017-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (c) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#@PydevCodeAnalysisIgnore
 
 from ctypes.wintypes import HANDLE, DWORD
-from ctypes import byref, sizeof, create_string_buffer, cast, c_void_p, c_long, pointer, POINTER
+from ctypes import byref, sizeof, create_string_buffer, cast, c_char, c_void_p, c_long, pointer, POINTER
 from threading import Thread
 from collections.abc import Callable
 
-from xpra.common import  noop
+from xpra.common import noop
 from xpra.log import Logger
 from xpra.util.env import envbool
 from xpra.util.str_fn import strtobytes
@@ -19,7 +18,7 @@ from xpra.platform.win32.common import (
     CloseHandle, ERROR_IO_PENDING, FormatMessageSystem,
     GetCurrentProcess,
     SECURITY_ATTRIBUTES,
-    )
+)
 from xpra.platform.win32.namedpipes.common import (
     OVERLAPPED, INFINITE, WAIT_STR,
     SECURITY_DESCRIPTOR, TOKEN_USER, TOKEN_PRIMARY_GROUP,
@@ -32,14 +31,14 @@ from xpra.platform.win32.namedpipes.common import (
     InitializeAcl, GetLengthSid,
     AddAccessAllowedAce, CreateWellKnownSid,
     SID, ACL, ACCESS_ALLOWED_ACE,
-    )
+)
 from xpra.platform.win32.constants import (
     FILE_FLAG_OVERLAPPED, PIPE_ACCESS_DUPLEX, PIPE_READMODE_BYTE,
     PIPE_UNLIMITED_INSTANCES, PIPE_WAIT, PIPE_TYPE_BYTE, NMPWAIT_USE_DEFAULT_WAIT,
     WAIT_TIMEOUT,
     ACL_REVISION,
     SECURITY_DESCRIPTOR_REVISION,
-    )
+)
 log = Logger("network", "named-pipe", "win32")
 
 UNRESTRICTED = envbool("XPRA_NAMED_PIPE_UNRESTRICTED", False)
@@ -64,7 +63,7 @@ ACL_ERRORS = {
     ERROR_INVALID_ACL               : "ERROR_INVALID_ACL",
     ERROR_INVALID_SID               : "ERROR_INVALID_SID",
     ERROR_REVISION_MISMATCH         : "ERROR_REVISION_MISMATCH",
-    }
+}
 
 TokenUser = 0x1
 TokenPrimaryGroup = 0x5
@@ -79,10 +78,10 @@ GENERIC_ALL = 0x10000000
 
 
 class NamedPipeListener(Thread):
-    def __init__(self, pipe_name:str, new_connection_cb:Callable=noop):
+    def __init__(self, pipe_name: str, new_connection_cb: Callable = noop):
         log("NamedPipeListener(%s, %s)", pipe_name, new_connection_cb)
         self.pipe_name = pipe_name
-        if new_connection_cb!=noop:
+        if new_connection_cb != noop:
             self.new_connection_cb = new_connection_cb
         self.exit_loop = False
         super().__init__(name="NamedPipeListener-%s" % pipe_name)
@@ -130,7 +129,7 @@ class NamedPipeListener(Thread):
                     log.estr(e)
                     return
                 log("CreatePipeHandle()=%#x", pipe_handle)
-                if c_long(pipe_handle).value==INVALID_HANDLE_VALUE:
+                if c_long(pipe_handle).value == INVALID_HANDLE_VALUE:
                     log.error("Error: invalid handle for named pipe '%s'", self.pipe_name)
                     err : int = GetLastError()
                     log.error(" '%s' (%i)", FormatMessageSystem(err).rstrip("\n\r."), err)
@@ -145,18 +144,18 @@ class NamedPipeListener(Thread):
             log("ConnectNamedPipe()=%s", r)
             if self.exit_loop:
                 break
-            if r==0:
+            if r == 0:
                 err = GetLastError()
                 log("GetLastError()=%s (%i)", FormatMessageSystem(err).rstrip("\n\r"), err)
-                if err==ERROR_PIPE_CONNECTED:
+                if err == ERROR_PIPE_CONNECTED:
                     "non-zero, but OK!"
-                elif err==ERROR_IO_PENDING:
+                elif err == ERROR_IO_PENDING:
                     while not self.exit_loop:
                         r = WaitForSingleObject(event, INFINITE)
                         log("WaitForSingleObject(..)=%s", WAIT_STR.get(r, r))
-                        if r==WAIT_TIMEOUT:
+                        if r == WAIT_TIMEOUT:
                             continue
-                        if r==0:
+                        if r == 0:
                             break
                         log.error("Error: cannot connect to named pipe '%s'", self.pipe_name)
                         log.error(" %s", WAIT_STR.get(r, r))
@@ -170,21 +169,21 @@ class NamedPipeListener(Thread):
                     pipe_handle = None
                 if self.exit_loop:
                     break
-            #from now on, the pipe_handle will be managed elsewhere:
+            # from now on, the pipe_handle will be managed elsewhere:
             if pipe_handle:
                 self.new_connection_cb("named-pipe", self, pipe_handle)
                 pipe_handle = None
         if pipe_handle:
             self.close_handle(pipe_handle)
 
-    def close_handle(self, pipe_handle:HANDLE) -> None:
+    def close_handle(self, pipe_handle: HANDLE) -> None:
         try:
             log("CloseHandle(%#x)", pipe_handle)
             CloseHandle(pipe_handle)
         except Exception:
             log("CloseHandle(%#x)", pipe_handle, exc_info=True)
 
-    def new_connection(self, socktype, listener, pipe_handle:HANDLE) -> None:
+    def new_connection(self, socktype, listener, pipe_handle: HANDLE) -> None:
         log.info("new_connection(%s, %s, %#x)", socktype, listener, pipe_handle)
         self.close_handle(pipe_handle)
 
@@ -200,10 +199,11 @@ class NamedPipeListener(Thread):
         assert self.token_process
         data_size = DWORD()
         if not GetTokenInformation(self.token_process, token_type, 0, 0, byref(data_size)):
-            if GetLastError()!=ERROR_INSUFFICIENT_BUFFER:
+            if GetLastError() != ERROR_INSUFFICIENT_BUFFER:
                 raise OSError()
         log("GetTokenInformation data size %#x", data_size.value)
-        token_data = create_string_buffer(data_size.value)
+        buftype = c_char * (data_size.value+1)
+        token_data = buftype()
         if not GetTokenInformation(self.token_process, token_type, byref(token_data), data_size.value, byref(data_size)):
             raise OSError()
         token = cast(token_data, POINTER(token_struct)).contents
@@ -222,7 +222,7 @@ class NamedPipeListener(Thread):
         self.security_descriptor = SD
         log("SECURITY_DESCRIPTOR=%s", SD)
         if not InitializeSecurityDescriptor(byref(SD), SECURITY_DESCRIPTOR_REVISION):
-            raise OSError()    #@UndefinedVariable
+            raise OSError()    # @UndefinedVariable
         log("InitializeSecurityDescriptor: %s", SD)
         if not SetSecurityDescriptorOwner(byref(SD), user.SID, False):
             raise OSError()
@@ -240,13 +240,13 @@ class NamedPipeListener(Thread):
             raise OSError()
         if not SetSecurityDescriptorDacl(byref(SD), True, None, False):
             raise OSError()
-        #this doesn't work - and I don't know why:
-        #SECURITY_NT_AUTHORITY = 5
-        #sia_anonymous = SID_IDENTIFIER_AUTHORITY((0, 0, 0, 0, 0, SECURITY_NT_AUTHORITY))
-        #log("SID_IDENTIFIER_AUTHORITY(SECURITY_NT_AUTHORITY)=%s", sia_anonymous)
-        #sid_allow = SID()
-        #log("empty SID: %s", sid_allow)
-        #if not AllocateAndInitializeSid(byref(sia_anonymous), 1,
+        # this doesn't work - and I don't know why:
+        # SECURITY_NT_AUTHORITY = 5
+        # sia_anonymous = SID_IDENTIFIER_AUTHORITY((0, 0, 0, 0, 0, SECURITY_NT_AUTHORITY))
+        # log("SID_IDENTIFIER_AUTHORITY(SECURITY_NT_AUTHORITY)=%s", sia_anonymous)
+        # sid_allow = SID()
+        # log("empty SID: %s", sid_allow)
+        # if not AllocateAndInitializeSid(byref(sia_anonymous), 1,
         #                         SECURITY_ANONYMOUS_LOGON_RID, 0, 0, 0, 0, 0, 0, 0,
         #                         byref(sid_allow),
         #                         ):
@@ -267,7 +267,7 @@ class NamedPipeListener(Thread):
         acl_size += 2*(sizeof(ACCESS_ALLOWED_ACE) - sizeof(DWORD))
         acl_size += GetLengthSid(byref(sid_allow))
         acl_size += GetLengthSid(byref(user.SID.contents))
-        #acl_size += GetLengthSid(user.SID)
+        # acl_size += GetLengthSid(user.SID)
         acl_data = create_string_buffer(acl_size)
         acl = cast(acl_data, POINTER(ACL)).contents
         log("acl_size=%s, acl_data=%s, acl=%s", acl_size, acl_data, acl)
@@ -278,7 +278,7 @@ class NamedPipeListener(Thread):
         rights = STANDARD_RIGHTS_ALL | SPECIFIC_RIGHTS_ALL
         add_sid = user.SID
         r = AddAccessAllowedAce(byref(acl), ACL_REVISION, rights, add_sid)
-        if r==0:
+        if r == 0:
             err = GetLastError()
             log("AddAccessAllowedAce(..)=%s", ACL_ERRORS.get(err, err))
             raise OSError()
@@ -286,7 +286,7 @@ class NamedPipeListener(Thread):
         rights = STANDARD_RIGHTS_ALL | SPECIFIC_RIGHTS_ALL
         add_sid = byref(sid_allow)
         r = AddAccessAllowedAce(byref(acl), ACL_REVISION, rights, add_sid)
-        if r==0:
+        if r == 0:
             err = GetLastError()
             log("AddAccessAllowedAce(..)=%s", ACL_ERRORS.get(err, err))
             raise OSError()
@@ -305,10 +305,11 @@ def main():
         if verbose in sys.argv:
             log.enable_debug()
     pipe_name = "Xpra\\Test"
-    if len(sys.argv)>1:
+    if len(sys.argv) > 1:
         pipe_name = sys.argv[1]
-    l = NamedPipeListener("\\\\.\\pipe\\%s" % pipe_name)
-    l.run()
+    listener = NamedPipeListener("\\\\.\\pipe\\%s" % pipe_name)
+    listener.run()
+
 
 if __name__ == "__main__":
     main()

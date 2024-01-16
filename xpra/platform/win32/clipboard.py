@@ -223,7 +223,8 @@ def w_to_utf8(data):
     ulen = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, None, 0, None, None)
     if ulen>MAX_CLIPBOARD_PACKET_SIZE:
         raise ValueError("unicode data is too large: %i bytes" % ulen)
-    buf = create_string_buffer(ulen)
+    buftype = c_char * ulen
+    buf = buftype()
     l = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, byref(buf), ulen, None, None)
     if l==0:
         raise ValueError("failed to convert to UTF8: %s" % FormatError(get_last_error()))
@@ -608,9 +609,11 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             fmt_name = LPCSTR(img_format.upper().encode("latin1")+b"\0")   #ie: "PNG"
             fmt = RegisterClipboardFormatA(fmt_name)
             if fmt:
-                buf = create_string_buffer(img_data)
-                pbuf = cast(byref(buf), c_void_p)
                 l = len(img_data)
+                buftype = c_char*l
+                buf = buftype()
+                buf.value = img_data
+                pbuf = cast(byref(buf), c_void_p)
                 data_handle = GlobalAlloc(GMEM_MOVEABLE, l)
                 if not data_handle:
                     log.error("Error: failed to allocate %i bytes of global memory", l)

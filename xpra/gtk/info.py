@@ -197,7 +197,7 @@ def get_screen_monitor_info(screen, i) -> dict[str, Any]:
     return info
 
 
-def get_monitors_info(xscale: float=1, yscale: float=1) -> dict[int, Any]:
+def get_monitors_info(xscale: float = 1.0, yscale: float = 1.0) -> dict[int, Any]:
     display = Gdk.Display.get_default()
     info : dict[int,Any] = {}
     n = display.get_n_monitors()

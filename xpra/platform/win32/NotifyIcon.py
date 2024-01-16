@@ -201,7 +201,7 @@ class win32NotifyIcon:
     def __repr__(self):
         return "win32NotifyIcon(%#x)" % self.app_id
 
-    def create_tray_window(self):
+    def create_tray_window(self) -> None:
         log("create_tray_window()")
         self.create_window()
         self.register_tray()
@@ -232,7 +232,7 @@ class win32NotifyIcon:
         if not r:
             raise RuntimeError("Shell_NotifyIcon failed to ADD")
 
-    def make_nid(self, flags):
+    def make_nid(self, flags) -> NOTIFYICONDATA:
         assert self.hwnd
         nid = NOTIFYICONDATA()
         nid.cbSize = sizeof(NOTIFYICONDATA)
@@ -292,14 +292,14 @@ class win32NotifyIcon:
         # because multi-monitor coordinates may have offsets
         # we don't know about (done inside GTK)
         n = len(EnumDisplayMonitors())
-        if n==1:
+        if n == 1:
             nii = NOTIFYICONIDENTIFIER()
             nii.cbSize = sizeof(NOTIFYICONIDENTIFIER)
             nii.hWnd = self.hwnd
             nii.uID = self.app_id
             # nii.guidItem = XPRA_GUID
             rect = RECT()
-            if Shell_NotifyIconGetRect(byref(nii), byref(rect))==0:
+            if Shell_NotifyIconGetRect(byref(nii), addressof(rect)) == 0:
                 geom = (rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top)
                 geomlog("Shell_NotifyIconGetRect: %s", geom)
                 return geom
@@ -520,7 +520,7 @@ def main(args):
         AppendMenu(menu, win32con.MF_STRING, 1024, "Generate balloon")
         AppendMenu(menu, win32con.MF_STRING, 1025, "Exit")
         pos = POINT()
-        GetCursorPos(byref(pos))
+        GetCursorPos(addressof(pos))
         hwnd = tray.hwnd
         user32.SetForegroundWindow(hwnd)  # @UndefinedVariable
         user32.TrackPopupMenu(menu, win32con.TPM_LEFTALIGN, pos.x, pos.y, 0, hwnd, None)  # @UndefinedVariable

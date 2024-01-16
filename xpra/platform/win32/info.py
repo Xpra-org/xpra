@@ -6,25 +6,28 @@
 import os
 
 
-def get_sys_info():
-    return  {}
+def get_sys_info() -> dict:
+    return {}
 
-def get_name():
+
+def get_name() -> str:
     try:
         from ctypes import (
             WinError, get_last_error,  # @UnresolvedImport
-            byref, create_string_buffer,
-            )
+            c_char, byref,
+        )
         from ctypes.wintypes import DWORD
         from xpra.platform.win32.common import GetUserNameA
         max_len = 256
         size = DWORD(max_len)
-        buf = create_string_buffer(max_len + 1)
+        buftype = c_char * (max_len+1)
+        buf = buftype()
         if not GetUserNameA(byref(buf), byref(size)):
             raise WinError(get_last_error())
-        return buf.value
+        return buf.value[:size.value]
     except Exception:
         return os.environ.get("USERNAME", "")
 
-def get_version_info():
+
+def get_version_info() -> dict:
     return {}
