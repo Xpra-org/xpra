@@ -64,21 +64,21 @@ MAX_TIP_SIZE = 64
 def getNOTIFYICONDATAClass(char_type=CHAR, tip_size:int=MAX_TIP_SIZE):
     class _NOTIFYICONDATA(Structure):
         _fields_ = (
-            ("cbSize",              DWORD),
-            ("hWnd",                HWND),
-            ("uID",                 UINT),
-            ("uFlags",              UINT),
-            ("uCallbackMessage",    UINT),
-            ("hIcon",               HICON),
-            ("szTip",               char_type * tip_size),
-            ("dwState",             DWORD),
-            ("dwStateMask",         DWORD),
-            ("szInfo",              char_type * 256),
-            ("uVersion",            UINT),
-            ("szInfoTitle",         char_type * 64),
-            ("dwInfoFlags",         DWORD),
-            ("guidItem",            GUID),
-            ("hBalloonIcon",        HICON),
+            ("cbSize", DWORD),
+            ("hWnd", HWND),
+            ("uID", UINT),
+            ("uFlags", UINT),
+            ("uCallbackMessage", UINT),
+            ("hIcon", HICON),
+            ("szTip", char_type * tip_size),
+            ("dwState", DWORD),
+            ("dwStateMask", DWORD),
+            ("szInfo", char_type * 256),
+            ("uVersion", UINT),
+            ("szInfoTitle", char_type * 64),
+            ("dwInfoFlags", DWORD),
+            ("guidItem", GUID),
+            ("hBalloonIcon", HICON),
         )
     return _NOTIFYICONDATA
 
@@ -99,10 +99,10 @@ SHSTDAPI = HRESULT
 
 class NOTIFYICONIDENTIFIER(Structure):
     _fields_ = (
-        ("cbSize",              DWORD),
-        ("hWnd",                HWND),
-        ("uID",                 UINT),
-        ("guidItem",            GUID),
+        ("cbSize", DWORD),
+        ("hWnd", HWND),
+        ("uID", UINT),
+        ("guidItem", GUID),
     )
 
 
@@ -299,7 +299,7 @@ class win32NotifyIcon:
             nii.uID = self.app_id
             # nii.guidItem = XPRA_GUID
             rect = RECT()
-            if Shell_NotifyIconGetRect(byref(nii), addressof(rect)) == 0:
+            if Shell_NotifyIconGetRect(byref(nii), addressof(rect)) == 0:       # NOSONAR
                 geom = (rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top)
                 geomlog("Shell_NotifyIconGetRect: %s", geom)
                 return geom
@@ -520,9 +520,9 @@ def main(args):
         AppendMenu(menu, win32con.MF_STRING, 1024, "Generate balloon")
         AppendMenu(menu, win32con.MF_STRING, 1025, "Exit")
         pos = POINT()
-        GetCursorPos(addressof(pos))
+        GetCursorPos(addressof(pos))        # NOSONAR
         hwnd = tray.hwnd
-        user32.SetForegroundWindow(hwnd)  # @UndefinedVariable
+        user32.SetForegroundWindow(hwnd)
         user32.TrackPopupMenu(menu, win32con.TPM_LEFTALIGN, pos.x, pos.y, 0, hwnd, None)  # @UndefinedVariable
         PostMessageA(hwnd, win32con.WM_NULL, 0, 0)
 
@@ -564,7 +564,7 @@ def main(args):
 
     # pump messages:
     msg = MSG()
-    p_msg = addressof(msg)
+    p_msg = addressof(msg)          # NOSONAR
     while user32.GetMessageA(p_msg, win32con.NULL, 0, 0) != 0:
         user32.TranslateMessage(p_msg)
         user32.DispatchMessageA(p_msg)
