@@ -5,15 +5,20 @@
 
 from typing import Dict, Any
 from ctypes import c_int, byref, cast, POINTER
-from OpenGL import GLX
-from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
 
-from xpra.util import envbool
+from xpra.util import envbool, numpy_import_lock
 from xpra.client.gl.gl_check import check_PyOpenGL_support
 from xpra.x11.bindings.display_source import get_display_ptr        #@UnresolvedImport
 from xpra.gtk_common.error import xsync
 from xpra.gtk_common.gtk_util import set_visual
 from xpra.log import Logger
+
+try:
+    numpy_import_lock.acquire(blocking=True)
+    from OpenGL import GLX
+    from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
+finally:
+    numpy_import_lock.release()
 
 log = Logger("opengl")
 

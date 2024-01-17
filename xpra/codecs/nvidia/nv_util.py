@@ -6,7 +6,6 @@
 
 import sys
 import os
-from threading import RLock
 from typing import Dict, Tuple
 
 from xpra.util import pver, print_nested_dict, envbool, csv
@@ -18,8 +17,6 @@ log = Logger("encoder", "util")
 
 MIN_VERSION = 466
 
-
-numpy_import_lock = RLock()
 
 NVIDIA_PROC_FILE = "/proc/driver/nvidia/version"
 NVIDIA_HARDWARE = envbool("XPRA_NVIDIA_HARDWARE", False)

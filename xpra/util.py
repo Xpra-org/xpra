@@ -10,6 +10,7 @@ import sys
 import binascii
 import traceback
 from itertools import chain
+from threading import RLock
 from enum import Enum, IntEnum
 try:
     #Python 3.11 and later:
@@ -1046,3 +1047,6 @@ def first_time(key:str) -> bool:
         _once_only.add(key)
         return True
     return False
+
+numpy_import_lock = RLock()
+
