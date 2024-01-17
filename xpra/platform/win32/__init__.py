@@ -40,6 +40,10 @@ STDOUT_FILENO = 1
 STDERR_FILENO = 2
 WriteConsoleW = WINFUNCTYPE(BOOL, HANDLE, LPWSTR, DWORD, POINTER(DWORD), LPVOID)(("WriteConsoleW", kernel32))
 
+CSIDL_COMMON_STARTMENU = 0x16
+CSIDL_STARTMENU = 0xb
+CSIDL_COMMON_APPDATA = 35
+
 GetConsoleCP = kernel32.GetConsoleCP  # @UndefinedVariable
 
 # redirect output if we're not running from a console:
@@ -50,37 +54,34 @@ REDIRECT_OUTPUT = envbool("XPRA_REDIRECT_OUTPUT", FROZEN and GetConsoleCP() == 0
 def is_wine() -> bool:
     try:
         import winreg
-        hKey = winreg.OpenKey(win32con.HKEY_LOCAL_MACHINE, r"Software\\Wine")
-        return bool(hKey)
-    except Exception:
+        h_key = winreg.OpenKey(win32con.HKEY_LOCAL_MACHINE, r"Software\\Wine")
+        return bool(h_key)
+    except OSError:
         # no wine key, assume not present and wait for input
         pass
     return False
 
 
-def get_csidl_folder(csidl) -> str:
+def get_csidl_folder(csidl: int) -> str:
     try:
         buf = create_unicode_buffer(wintypes.MAX_PATH)
         shell32 = WinDLL("shell32", use_last_error=True)
-        SHGetFolderPath = shell32.SHGetFolderPathW
-        SHGetFolderPath(0, csidl, None, 0, buf)
+        get_folder_path = shell32.SHGetFolderPathW
+        get_folder_path(0, csidl, None, 0, buf)
         return os.path.normpath(buf.value)
-    except Exception:
+    except OSError:
         return ""
 
 
 def get_common_startmenu_dir() -> str:
-    CSIDL_COMMON_STARTMENU = 0x16
     return get_csidl_folder(CSIDL_COMMON_STARTMENU)
 
 
 def get_startmenu_dir() -> str:
-    CSIDL_STARTMENU = 0xb
     return get_csidl_folder(CSIDL_STARTMENU)
 
 
 def get_commonappdata_dir() -> str:
-    CSIDL_COMMON_APPDATA = 35
     return get_csidl_folder(CSIDL_COMMON_APPDATA)
 
 
@@ -92,7 +93,7 @@ def set_prgname(name: str) -> None:
     prg_name = name
     try:
         SetConsoleTitleA(name)
-    except Exception:
+    except OSError:
         pass
 
 
@@ -163,7 +164,7 @@ def set_wait_for_input() -> None:
 def should_wait_for_input() -> bool:
     wfi = os.environ.get("XPRA_WAIT_FOR_INPUT")
     if wfi is not None:
-        return wfi!="0"
+        return wfi != "0"
     if is_wine():
         # don't wait for input when running under wine
         # (which usually does not pop up a new shell window)
@@ -179,7 +180,7 @@ def should_wait_for_input() -> bool:
     return get_console_position(handle) == (0, 0)
 
 
-def setup_console_event_listener(handler, enable: bool) -> None:
+def setup_console_event_listener(handler, enable: bool) -> bool:
     from xpra.log import Logger
     log = Logger("win32")
     try:
