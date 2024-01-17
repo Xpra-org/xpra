@@ -1179,6 +1179,9 @@ def do_wrap_socket(tcp_socket, context, **kwargs):
         tcp_socket.setblocking(True)
     try:
         ssl_sock = wrap_socket(tcp_socket, **kwargs)
+    except (InitExit, InitException) as e:
+        ssllog.debug("wrap_socket(%s, %s)", tcp_socket, kwargs, exc_info=True)
+        raise
     except Exception as e:
         ssllog.debug("wrap_socket(%s, %s)", tcp_socket, kwargs, exc_info=True)
         SSLEOFError = getattr(ssl, "SSLEOFError", None)
