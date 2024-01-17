@@ -764,9 +764,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             raise ValueError(f"cannot upgrade {socktype} to ssl")
         log.info(f"upgrading {conn} to {new_socktype}")
         self.send("ssl-upgrade", {})
-        from xpra.net.ssl_util import ssl_handshake
-        from xpra.net.ssl_util import ssl_wrap_socket
-        from xpra.net.ssl_util import get_ssl_attributes
+        from xpra.net.ssl_util import ssl_handshake, ssl_wrap_socket, get_ssl_attributes
         overrides = {
             "verify_mode" : "none",
             "check_hostname" : "no",

@@ -36,7 +36,6 @@ from xpra.net.socket_util import (
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
     add_listen_socket, accept_connection, guess_packet_type,
     hosts, peek_connection, )
-from xpra.net.ssl_util import ssl_wrap_socket
 from xpra.net.bytestreams import (
     SSLSocketConnection, SocketConnection,
     log_new_connection, pretty_socket, SOCKET_TIMEOUT
@@ -1318,6 +1317,7 @@ class ServerCore:
         ssllog("ssl_wrap_socket(%s, %s, %s)", socktype, sock, socket_options)
         kwargs = self.get_ssl_socket_options(socket_options)
         try:
+            from xpra.net.ssl_util import ssl_wrap_socket
             ssl_sock = ssl_wrap_socket(sock, **kwargs)
             ssllog("_ssl_wrap_socket(%s, %s)=%s", sock, kwargs, ssl_sock)
             if ssl_sock is None:

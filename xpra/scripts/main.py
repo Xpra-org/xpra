@@ -1232,8 +1232,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
                                 dtype, socket_options=display_desc)
 
         if dtype in ("ssl", "wss"):
-            from xpra.net.ssl_util import ssl_handshake
-            from xpra.net.ssl_util import ssl_wrap_socket
+            from xpra.net.ssl_util import ssl_handshake, ssl_wrap_socket
             #convert option names to function arguments:
             ssl_options = {k.replace("-", "_"): v for k, v in display_desc.get("ssl-options", {}).items()}
             sock = ssl_wrap_socket(sock, **ssl_options)
