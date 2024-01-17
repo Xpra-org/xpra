@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,13 +10,13 @@ import os
 _init_done = False
 
 
-def init(prgname=None, appname=None):
+def init(prgname="", appname="") -> None:
     """ do whatever is needed to prepare an application for running,
         some platforms may initialize logging to file, etc.
         If the names are supplied, we call set_name()
     """
     global _init_done
-    if prgname is not None or appname is not None:
+    if prgname or appname:
         set_default_name(prgname, appname)
         set_name()
     init_env()
@@ -25,19 +25,19 @@ def init(prgname=None, appname=None):
         do_init()
 
 
-def do_init():  # pragma: no cover
+def do_init() -> None:  # pragma: no cover
     """ some platforms override this """
 
 
-def init_env():
+def init_env() -> None:
     do_init_env()
 
 
-def do_init_env():
+def do_init_env() -> None:
     init_env_common()
 
 
-def init_env_common():
+def init_env_common() -> None:
     # turn off gdk scaling to make sure we get the actual window geometry:
     os.environ["GDK_SCALE"] = os.environ.get("GDK_SCALE", "1")
     os.environ["GDK_DPI_SCALE"] = os.environ.get("GDK_DPI_SCALE", "1")
@@ -47,7 +47,7 @@ def init_env_common():
     init_hashlib()
 
 
-def init_hashlib():
+def init_hashlib() -> None:
     from xpra.util.env import envbool
     if envbool("XPRA_NOMD5", False):
         import hashlib
@@ -76,7 +76,7 @@ def threaded_server_init():
 
 
 class program_context:
-    def __init__(self, prgname=None, appname=None):
+    def __init__(self, prgname="", appname=""):
         self.prgname = prgname
         self.appname = appname
 
@@ -91,26 +91,26 @@ class program_context:
         return f"gui_context({self.prgname}, {self.appname})"
 
 
-_prgname = None
-_appname = None
+_prgname = ""
+_appname = ""
 
 
-def set_default_name(prgname=None, appname=None):
+def set_default_name(prgname="", appname="") -> None:
     # sets the default prg and app names
     global _prgname, _appname
-    if prgname is not None:
+    if prgname:
         _prgname = prgname
-    if appname is not None:
+    if appname:
         _appname = appname
 
 
 # platforms can override this
-def command_error(message):
+def command_error(message) -> None:
     from xpra.scripts.main import error
     error(message)
 
 
-def command_info(message):
+def command_info(message) -> None:
     from xpra.scripts.main import info
     info(message)
 
@@ -118,7 +118,7 @@ def command_info(message):
 _clean_done = False
 
 
-def clean():
+def clean() -> None:
     global _clean_done
     if not _clean_done:
         _clean_done = True
@@ -132,7 +132,7 @@ def do_clean():  # pragma: no cover
 _name_set = False
 
 
-def set_name(prgname=None, appname=None):
+def set_name(prgname="", appname="") -> None:
     global _name_set
     if not _name_set:
         _name_set = True
@@ -141,7 +141,7 @@ def set_name(prgname=None, appname=None):
 
 
 # platforms can override this
-def set_prgname(name):
+def set_prgname(name="") -> None:
     if not name:
         return
     try:
@@ -152,29 +152,30 @@ def set_prgname(name):
         pass
 
 
-def get_prgname():
+def get_prgname() -> str:
     global _prgname
     return _prgname
 
 
 # platforms can override this
-def set_application_name(name):
+def set_application_name(name="") -> None:
     if not name:
         return
     try:
-        from gi.repository import GLib  # @UnresolvedImport
+        from xpra.os_util import gi_import
+        GLib = gi_import("GLib")
     except ImportError:
         pass
     else:
         GLib.set_application_name(name)
 
 
-def get_application_name():
+def get_application_name() -> str:
     global _appname
     return _appname
 
 
-def platform_import(where, pm, required, *imports):
+def platform_import(where: dict, pm="", required=False, *imports) -> None:
     from xpra.os_util import OSX, POSIX
     if os.name == "nt":     # pragma: no cover
         p = "win32"
@@ -208,7 +209,7 @@ def platform_import(where, pm, required, *imports):
             where[x] = getattr(platform_module, x)
 
 
-platform_import(globals(), None, False,
+platform_import(globals(), "", False,
                 "do_init", "do_clean", "do_init_env",
                 "threaded_server_init",
                 "set_prgname", "set_application_name", "program_context",

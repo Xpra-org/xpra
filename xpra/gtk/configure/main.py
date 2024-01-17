@@ -8,7 +8,7 @@ from importlib import import_module
 
 from xpra.gtk.configure.common import get_user_config_file
 from xpra.scripts.config import InitExit
-from xpra.exit_codes import ExitCode
+from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import gi_import, LINUX
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.widget import label
@@ -29,7 +29,7 @@ class ConfigureGUI(BaseGUIWindow):
             default_size=(480, 300),
             header_bar=(False, False),
         )
-        self.dialogs : dict[str, BaseGUIWindow] = {}
+        self.dialogs: dict[str, BaseGUIWindow] = {}
 
     def populate(self):
         self.vbox.add(label("Configure Xpra", font="sans 20"))
@@ -71,7 +71,7 @@ def run_gui(gui_class=ConfigureGUI) -> int:
         return 0
 
 
-def main(args) -> ExitCode:
+def main(args) -> ExitValue:
     if args:
         conf = get_user_config_file()
         subcommand = args[0]
@@ -100,7 +100,6 @@ def main(args) -> ExitCode:
         else:
             if any(not str.isalnum(x) for x in subcommand):
                 raise ValueError("invalid characters found in subcommand")
-            from importlib import import_module
             mod = import_module(f"xpra.gtk.configure.{subcommand}")
             if not mod:
                 raise InitExit(ExitCode.FILE_NOT_FOUND, f"unknown configure subcommand {subcommand!r}")
