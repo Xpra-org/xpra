@@ -15,8 +15,6 @@ log = Logger("encoder", "util")
 
 MIN_VERSION = 375
 
-from threading import RLock
-numpy_import_lock = RLock()
 
 nvml_init_warned = False
 def wrap_nvml_init(nvmlInit):

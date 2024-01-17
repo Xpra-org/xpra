@@ -9,8 +9,7 @@
 import os
 from threading import RLock
 
-from xpra.codecs.nv_util import numpy_import_lock
-from xpra.util import engs, print_nested_dict, envbool, envint, csv
+from xpra.util import engs, print_nested_dict, envbool, envint, csv, numpy_import_lock
 from xpra.os_util import monotonic_time, bytestostr, PYTHON2
 from xpra.log import Logger
 

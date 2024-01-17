@@ -939,3 +939,6 @@ def first_time(key):
         _once_only.add(key)
         return True
     return False
+
+numpy_import_lock = threading.RLock()
+

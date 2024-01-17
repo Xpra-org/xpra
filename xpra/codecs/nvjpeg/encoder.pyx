@@ -9,7 +9,7 @@ from libc.stdint cimport uintptr_t
 from xpra.monotonic_time cimport monotonic_time
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 
-from xpra.codecs.nv_util import numpy_import_lock
+from xpra.util import numpy_import_lock
 from xpra.os_util import bytestostr
 from xpra.codecs.cuda_common.cuda_context import (
     select_device,

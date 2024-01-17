@@ -16,7 +16,7 @@ from threading import Lock
 
 from xpra.os_util import WIN32, LINUX, PYTHON3, strtobytes, bytestostr
 from xpra.make_thread import start_thread
-from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool, first_time, typedict
+from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool, first_time, typedict, numpy_import_lock
 from xpra.codecs.cuda_common.cuda_context import (
     init_all_devices, get_devices, select_device, get_device_name,
     get_cuda_info, get_pycuda_info, device_info, reset_state,
@@ -27,7 +27,6 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.nv_util import (
     get_nvidia_module_version, get_license_keys,
     validate_driver_yuv444lossless, get_cards,
-    numpy_import_lock
     )
 from xpra.log import Logger
 
