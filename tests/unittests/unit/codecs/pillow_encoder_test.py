@@ -22,7 +22,8 @@ class TestPillow(unittest.TestCase):
             selftest(full)
 
     def test_module_functions(self):
-        assert get_version()>"3"
+        numver = tuple(noerr(int, x) or 0 for x in get_version().split("."))
+        assert numver > (5, 0)
         assert get_type()=="pillow"
         assert get_info()
 
