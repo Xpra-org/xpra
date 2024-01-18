@@ -15,7 +15,7 @@ import threading
 from urllib.parse import urlparse, parse_qsl, unquote
 from weakref import WeakKeyDictionary
 from time import sleep, time, monotonic
-from threading import Thread, Lock
+from threading import Lock
 from typing import Any
 from collections.abc import Callable
 
@@ -308,8 +308,7 @@ class ServerCore:
         self.init_dbus_server()
         self.init_control_commands()
         # for things that can take longer:
-        self.init_thread = Thread(target=self.threaded_init)
-        self.init_thread.start()
+        self.init_thread = start_thread(target=self.threaded_init, name="server-init-thread")
 
     ######################################################################
     # run / stop:
