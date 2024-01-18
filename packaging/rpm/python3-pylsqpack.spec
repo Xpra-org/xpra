@@ -1,8 +1,11 @@
 %define _disable_source_fetch 0
+%define __python_requires %{nil}
+%define __pythondist_requires %{nil}
+Autoreq: 0
 
 Name:           python3-pylsqpack
 Version:        0.3.18
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        pylsqpack is a wrapper around the ls-qpack library
 Group:          Development/Languages
 License:        MIT
@@ -51,6 +54,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Jan 18 2024 Antoine Martin <antoine@xpra.org> - 0.3.18-2
+- rebuild without auto-dependencies
+
 * Sun Nov 12 2023 Antoine Martin <antoine@xpra.org> - 0.3.18-1
 - new upstream release
 
