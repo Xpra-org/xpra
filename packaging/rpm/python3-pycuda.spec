@@ -31,6 +31,7 @@ License:        MIT
 Group:          Development/Libraries/Python
 %if 0%{?el8}
 Source0:        https://files.pythonhosted.org/packages/2d/1f/48a3a5b2c715345e7af1e09361100bd98c3d72b4025371692ab233f523d3/pycuda-%{version}.tar.gz
+Patch0:         pycuda-oldcompute.patch
 %else
 Source0:        https://files.pythonhosted.org/packages/3f/50/dd356c8afe228baecaf0259b9579121dd869c5ace07a296158c39ac5065a/pycuda-%{version}.tar.gz
 %endif
@@ -67,6 +68,9 @@ if [ "${sha256}" != "d50d23ff6371482cff7d4b953ef40ab81c9df038ecb614484f9fd534732
 	exit 1
 fi
 %setup -q -n pycuda-%{version}
+%if 0%{?el8}
+%patch -p1 -P 0
+%endif
 
 %build
 CUDA=/opt/cuda
