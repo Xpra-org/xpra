@@ -4,6 +4,9 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
+%define __python_requires %{nil}
+%define __pythondist_requires %{nil}
+Autoreq: 0
 #this is a pure python package so debug is meaningless here:
 %define debug_package %{nil}
 

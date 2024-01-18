@@ -1,4 +1,7 @@
 %define _disable_source_fetch 0
+%define __python_requires %{nil}
+%define __pythondist_requires %{nil}
+Autoreq: 0
 
 Name: pycairo
 Version: 1.20.0

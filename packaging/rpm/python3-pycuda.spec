@@ -8,6 +8,9 @@
 %define __requires_exclude ^libcuda.*$
 
 %define _disable_source_fetch 0
+%define __python_requires %{nil}
+%define __pythondist_requires %{nil}
+Autoreq: 0
 %global debug_package %{nil}
 
 %define STUBS_DIR targets/x86_64-linux/lib/stubs/

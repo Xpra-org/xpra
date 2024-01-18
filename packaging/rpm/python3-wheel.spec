@@ -1,4 +1,8 @@
 %define _disable_source_fetch 0
+%define __python_requires %{nil}
+%define __pythondist_requires %{nil}
+Autoreq: 0
+
 %define python3_version %(python3 -c 'import sys;vi=sys.version_info;print(f"{vi[0]}.{vi[1]}")')
 %define python3_minor %(python3 -c 'import sys;vi=sys.version_info;print(f"{vi[1]}")')
 
