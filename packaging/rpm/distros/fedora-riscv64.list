@@ -21,6 +21,7 @@ python3-pyu2f
 python3-uinput
 python3-wheel
 python3-pylsqpack
+python3-aioquic
 python3-cairo
 pygobject3
 xpra
@@ -34,6 +35,7 @@ python3-pyu2f
 python3-uinput
 python3-wheel
 python3-pylsqpack
+python3-aioquic
 python3-cairo
 pygobject3
 xpra

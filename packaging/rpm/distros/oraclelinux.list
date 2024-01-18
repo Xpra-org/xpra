@@ -32,6 +32,7 @@ python3-wheel
 python3-dbus
 python3-pyxdg
 python3-pylsqpack
+python3-aioquic
 python3-pyopengl
 python3-cairo
 pygobject3
