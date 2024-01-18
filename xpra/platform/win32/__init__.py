@@ -294,6 +294,7 @@ def do_clean() -> None:
         noerr(sys.stdout.flush)
         noerr(sys.stderr.flush)
         sys.stdin.readline()
+        return
 
     # undo the redirect to file:
     if REDIRECT_OUTPUT and envbool("XPRA_LOG_TO_FILE", True):
