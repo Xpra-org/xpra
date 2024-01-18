@@ -427,3 +427,11 @@ def do_clean():
         except IOError:
             pass
         sys.stdin.readline()
+        return
+    # undo the redirect to file:
+    if REDIRECT_OUTPUT and envbool("XPRA_LOG_TO_FILE", True):
+        log_filename = os.environ.get("XPRA_LOG_FILENAME")
+        if log_filename and os.path.exists(log_filename):
+            noerr(sys.stdout.close)
+            sys.stdout = sys.stderr = None
+
