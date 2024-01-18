@@ -92,7 +92,7 @@ def set_prgname(name: str) -> None:
     global prg_name
     prg_name = name
     try:
-        SetConsoleTitleA(name)
+        SetConsoleTitleA(name.encode("latin1"))
     except OSError:
         pass
 
