@@ -6,12 +6,13 @@
 
 import unittest
 
+from xpra.common import noerr
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.pillow.encoder import (
     get_encodings, encode,
     get_version, get_type, get_info,
     selftest,
-    )
+)
 
 
 class TestPillow(unittest.TestCase):
@@ -22,8 +23,9 @@ class TestPillow(unittest.TestCase):
             selftest(full)
 
     def test_module_functions(self):
-        assert get_version()>"3"
-        assert get_type()=="pillow"
+        numver = tuple(noerr(int, x) or 0 for x in get_version().split("."))
+        assert numver > (5, 0)
+        assert get_type() == "pillow"
         assert get_info()
 
     def test_resize(self):
