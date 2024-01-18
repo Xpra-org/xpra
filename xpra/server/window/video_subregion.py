@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,14 +7,16 @@ import math
 from time import monotonic
 from typing import Any
 from collections.abc import Callable
-from gi.repository import GLib  # @UnresolvedImport
 
+from xpra.os_util import gi_import
 from xpra.util.env import envint, envbool
 from xpra.util.rectangle import rectangle, add_rectangle, remove_rectangle, merge_all
 from xpra.log import Logger
 
 sslog = Logger("regiondetect")
 refreshlog = Logger("regionrefresh")
+
+GLib = gi_import("GLib")
 
 VIDEO_SUBREGION = envbool("XPRA_VIDEO_SUBREGION", True)
 SUBWINDOW_REGION_BOOST = envint("XPRA_SUBWINDOW_REGION_BOOST", 20)

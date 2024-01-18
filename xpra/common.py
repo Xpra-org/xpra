@@ -1,11 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import binascii
 import os
 from enum import Enum, IntEnum
+from collections.abc import Callable
 
 try:
     # Python 3.11 and later:
@@ -128,7 +129,7 @@ class Gravity(IntEnum):
     Static      = 10
 
 
-def GravityStr(v):
+def GravityStr(v) -> str:
     try:
         return str(Gravity(v))
     except ValueError:
@@ -266,9 +267,9 @@ def get_refresh_rate_for_value(refresh_rate_str, invalue) -> int:
     v = i(refresh_rate_str)
     if v is not None:
         # server specifies an absolute value:
-        if 0<v<1000:
+        if 0 < v < 1000:
             return v*1000
-        if v>=1000:
+        if v >= 1000:
             return v
     if refresh_rate_str.endswith("%"):
         # server specifies a percentage:
@@ -313,7 +314,7 @@ DEFAULT_METADATA_SUPPORTED = (
 )
 
 
-def noerr(fn, *args):
+def noerr(fn: Callable, *args):
     try:
         return fn(*args)
     except Exception:

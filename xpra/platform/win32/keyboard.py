@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,6 +10,7 @@ from ctypes import create_string_buffer, byref
 from ctypes.wintypes import DWORD
 from collections.abc import Callable
 
+from xpra.os_util import gi_import
 from xpra.platform.win32.common import (
     ActivateKeyboardLayout,
     GetKeyState, GetKeyboardLayoutList, GetKeyboardLayout,
@@ -29,7 +30,7 @@ log = Logger("keyboard")
 
 def _GetKeyboardLayoutList() -> list[int]:
     max_items = 32
-    #PHANDLE = ctypes.POINTER(HANDLE)
+    # PHANDLE = ctypes.POINTER(HANDLE)
     handle_list = (HANDLE*max_items)()
     GetKeyboardLayoutList.argtypes = [ctypes.c_int, ctypes.POINTER(HANDLE*max_items)]
     count = GetKeyboardLayoutList(max_items, ctypes.byref(handle_list))
@@ -56,7 +57,7 @@ def x11_layouts_to_win32_hkl() -> dict[str,int]:
             for mask, bitshifts in KMASKS.items():
                 kbid = 0
                 for bitshift in bitshifts:
-                    kbid = (hkli & mask)>>bitshift
+                    kbid = (hkli & mask) >> bitshift
                     if kbid in WIN32_LAYOUTS:
                         break
                 if kbid in WIN32_LAYOUTS:
@@ -90,10 +91,10 @@ class Keyboard(KeyboardBase):
         self.last_layout_message = None
         # workaround for "period" vs "KP_Decimal" with gtk2 (see ticket #586):
         # translate "period" with keyval=46 and keycode=110 to KP_Decimal:
-        KEY_TRANSLATIONS[("period",     46,     110)] = "KP_Decimal"
+        KEY_TRANSLATIONS[("period", 46, 110)] = "KP_Decimal"
         # workaround for "fr" keyboards, which use a different key name under X11:
-        KEY_TRANSLATIONS[("dead_tilde", 65107,  50)] = "asciitilde"
-        KEY_TRANSLATIONS[("dead_grave", 65104,  55)] = "grave"
+        KEY_TRANSLATIONS[("dead_tilde", 65107, 50)] = "asciitilde"
+        KEY_TRANSLATIONS[("dead_grave", 65104, 55)] = "grave"
         self.__x11_layouts_to_win32_hkl = x11_layouts_to_win32_hkl()
 
     def set_platform_layout(self, layout:str) -> None:
@@ -125,7 +126,7 @@ class Keyboard(KeyboardBase):
         names = super().mask_to_names(mask)
         if EMULATE_ALTGR:
             rmenu = GetKeyState(win32con.VK_RMENU)
-            #log("GetKeyState(VK_RMENU)=%s", rmenu)
+            # log("GetKeyState(VK_RMENU)=%s", rmenu)
             if rmenu not in (0, 1):
                 self.AltGr_modifiers(names)
         if self.num_lock_modifier:
@@ -168,7 +169,7 @@ class Keyboard(KeyboardBase):
     def get_all_x11_layouts(self) -> dict[str, str]:
         x11_layouts = {}
         for win32_layout in WIN32_LAYOUTS.values():
-            #("ARA", "Saudi Arabia",   "Arabic",                   1356,   "ar", []),
+            # ("ARA", "Saudi Arabia",   "Arabic",                   1356,   "ar", []),
             x11_layout = win32_layout[4]
             if x11_layout in x11_layouts:
                 continue
@@ -230,7 +231,7 @@ class Keyboard(KeyboardBase):
                     log("get_layout_spec() WIN32_KEYBOARDS[%#x]=%s", val, kbdef)
                     if kbdef:
                         _layout, _descr = kbdef
-                        if _layout=="??":
+                        if _layout == "??":
                             log.warn("Warning: the X11 codename for %#x is not known", val)
                             log.warn(" only identified as '%s'", _descr)
                             log.warn(" please file a bug report")
@@ -284,10 +285,10 @@ class Keyboard(KeyboardBase):
         try:
             _delay = GetIntSystemParametersInfo(win32con.SPI_GETKEYBOARDDELAY)
             _speed = GetIntSystemParametersInfo(win32con.SPI_GETKEYBOARDSPEED)
-            #now we need to normalize those weird win32 values:
-            #0=250, 3=1000:
+            # now we need to normalize those weird win32 values:
+            # 0=250, 3=1000:
             delay = (_delay+1) * 250
-            #0=1000/30, 31=1000/2.5
+            # 0=1000/30, 31=1000/2.5
             _speed = min(31, max(0, _speed))
             speed = int(1000/(2.5+27.5*_speed/31))
             log("keyboard repeat speed(%s)=%s, delay(%s)=%s", _speed, speed, _delay, delay)
@@ -305,32 +306,32 @@ class Keyboard(KeyboardBase):
         if key_event.keyval==2**24-1 and key_event.keyname=="VoidSymbol":
             log("process_key_event: ignoring %s", key_event)
             return
-        #self.modifier_mappings = None       #{'control': [(37, 'Control_L'), (105, 'Control_R')], 'mod1':
-        #self.modifier_keys = {}             #{"Control_L" : "control", ...}
-        #self.modifier_keycodes = {}         #{"Control_R" : [105], ...}
-        #self.modifier_keycodes = {"ISO_Level3_Shift": [108]}
-        #we can only deal with 'Alt_R' and simulate AltGr (ISO_Level3_Shift)
-        #if we have modifier_mappings
+        # self.modifier_mappings = None       #{'control': [(37, 'Control_L'), (105, 'Control_R')], 'mod1':
+        # self.modifier_keys = {}             #{"Control_L" : "control", ...}
+        # self.modifier_keycodes = {}         #{"Control_R" : [105], ...}
+        # self.modifier_keycodes = {"ISO_Level3_Shift": [108]}
+        # we can only deal with 'Alt_R' and simulate AltGr (ISO_Level3_Shift)
+        # if we have modifier_mappings
         if EMULATE_ALTGR and self.altgr_modifier and len(self.modifier_mappings)>0:
             rmenu = GetKeyState(win32con.VK_RMENU)
             if key_event.keyname=="Control_L":
                 log("process_key_event: %s pressed=%s, with GetKeyState(VK_RMENU)=%s",
                     key_event.keyname, key_event.pressed, rmenu)
-                #AltGr key events are often preceded by a spurious "Control_L" event
-                #delay this one a little bit so we can skip it if an "AltGr" does come through next:
+                # AltGr key events are often preceded by a spurious "Control_L" event
+                # delay this one a little bit so we can skip it if an "AltGr" does come through next:
                 if rmenu in (0, 1):
                     self.delayed_event = (send_key_action_cb, wid, key_event)
-                    #needed for altgr emulation timeouts:
-                    from gi.repository import GLib  # @UnresolvedImport
-                    GLib.timeout_add(EMULATE_ALTGR_CONTROL_KEY_DELAY, self.send_delayed_key)
+                    # needed for altgr emulation timeouts:
+                    glib = gi_import("GLib")
+                    glib.timeout_add(EMULATE_ALTGR_CONTROL_KEY_DELAY, self.send_delayed_key)
                 return
-            if key_event.keyname=="Alt_R":
+            if key_event.keyname == "Alt_R":
                 log("process_key_event: Alt_R pressed=%s, with GetKeyState(VK_RMENU)=%s", key_event.pressed, rmenu)
                 if rmenu in (0, 1):
                     #cancel "Control_L" if one was due:
                     self.delayed_event = None
-                #modify the key event so that it will only trigger the modifier update,
-                #and not not the key event itself:
+                # modify the key event so that it will only trigger the modifier update,
+                # and not not the key event itself:
                 key_event.string = ""
                 key_event.keyname = ""
                 key_event.group = -1
@@ -341,7 +342,7 @@ class Keyboard(KeyboardBase):
         super().process_key_event(send_key_action_cb, wid, key_event)
 
     def send_delayed_key(self) -> None:
-        #timeout: this must be a real one, send it now
+        # timeout: this must be a real one, send it now
         dk = self.delayed_event
         log("send_delayed_key() delayed_event=%s", dk)
         if dk:

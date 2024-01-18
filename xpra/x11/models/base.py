@@ -1,12 +1,12 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from collections.abc import Callable
-from gi.repository import GObject
 
+from xpra.os_util import gi_import
 from xpra.common import WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.x11.models.core import CoreX11WindowModel, xswallow, Above, RESTACKING_STR
 from xpra.x11.bindings.window import X11WindowBindings, constants
@@ -18,6 +18,7 @@ log = Logger("x11", "window")
 workspacelog = Logger("x11", "window", "workspace")
 metalog = Logger("x11", "window", "metadata")
 
+GObject = gi_import("GObject")
 
 dbus_helper = None
 query_actions = None

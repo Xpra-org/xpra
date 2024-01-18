@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,6 @@ from typing import Any
 from ctypes import c_float, c_void_p
 from collections.abc import Callable, Iterable
 from contextlib import AbstractContextManager, nullcontext
-from gi.repository import GLib  # @UnresolvedImport
 
 from OpenGL.error import GLError
 from OpenGL.constant import IntConstant
@@ -51,7 +50,7 @@ from OpenGL.GL.ARB.framebuffer_object import (
     glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D, glBlitFramebuffer,
 )
 
-from xpra.os_util import POSIX, OSX
+from xpra.os_util import POSIX, OSX, gi_import
 from xpra.util.str_fn import repr_ellipsized, nonl, bytestostr, hexstr
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.types import typedict
@@ -72,6 +71,7 @@ from xpra.log import Logger
 log = Logger("opengl", "paint")
 fpslog = Logger("opengl", "fps")
 
+glib = gi_import("GLib")
 
 OPENGL_DEBUG = envbool("XPRA_OPENGL_DEBUG", False)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
@@ -361,7 +361,7 @@ class GLWindowBackingBase(WindowBackingBase):
                     return
                 self.pending_fbo_paint = ((0, 0, bw, bh), )
                 self.do_present_fbo(glcontext)
-            GLib.timeout_add(FBO_RESIZE_DELAY, self.with_gl_context, redraw)
+            glib.timeout_add(FBO_RESIZE_DELAY, self.with_gl_context, redraw)
 
     def gl_init_textures(self) -> None:
         log("gl_init_textures()")
@@ -891,7 +891,7 @@ class GLWindowBackingBase(WindowBackingBase):
             if context:
                 self.update_fps()
                 self.managed_present_fbo(context)
-        self.fps_refresh_timer = GLib.timeout_add(1000, self.with_gl_context, refresh_screen)
+        self.fps_refresh_timer = glib.timeout_add(1000, self.with_gl_context, refresh_screen)
 
     def validate_cursor(self) -> bool:
         cursor_data = self.cursor_data

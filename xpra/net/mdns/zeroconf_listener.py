@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -96,7 +96,8 @@ def main():
     def mdns_update(*args):
         print(f"mdns_update: {args}")
 
-    from gi.repository import GLib  # @UnresolvedImport
+    from xpra.os_util import gi_import
+    GLib = gi_import("GLib")
     loop = GLib.MainLoop()
 
     from xpra.platform import program_context

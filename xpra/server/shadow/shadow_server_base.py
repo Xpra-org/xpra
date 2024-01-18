@@ -1,11 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 from typing import Any
 
+from xpra.os_util import gi_import
 from xpra.server.window import batch_config
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.notifications.common import parse_image_path
@@ -75,8 +76,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def run(self):
         if NOTIFY_STARTUP:
-            from gi.repository import GLib  # @UnresolvedImport
-            GLib.timeout_add(1000, self.notify_startup_complete)
+            glib = gi_import("GLib")
+            glib.timeout_add(1000, self.notify_startup_complete)
         return super().run()
 
     def cleanup(self) -> None:

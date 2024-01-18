@@ -1,12 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from time import time
 from typing import Any
-from gi.repository import GLib  # @UnresolvedImport
 
+from xpra.os_util import gi_import
 from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window_backing_base import WindowBackingBase
 from xpra.util.str_fn import memoryview_to_bytes
@@ -14,6 +14,8 @@ from xpra.util.env import envbool
 from xpra.log import Logger
 
 log = Logger("tray")
+
+GLib = gi_import("GLib")
 
 SAVE = envbool("XPRA_SAVE_SYSTRAY", False)
 

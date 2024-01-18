@@ -1,20 +1,19 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-#pylint: disable-msg=E1101
+# pylint: disable-msg=E1101
 
 import os
 from time import sleep
 from typing import Any
 from collections.abc import Callable
-from gi.repository import GLib
 
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.scripts.config import parse_with_unit
 from xpra.util.stats import std_unit
 from xpra.net.common import PacketType
-from xpra.os_util import POSIX
+from xpra.os_util import POSIX, gi_import
 from xpra.util.io import livefds
 from xpra.util.pysystem import detect_leaks
 from xpra.util.types import typedict
@@ -23,6 +22,8 @@ from xpra.log import Logger
 
 log = Logger("network")
 bandwidthlog = Logger("bandwidth")
+
+GLib = gi_import("GLib")
 
 DETECT_MEMLEAKS = envint("XPRA_DETECT_MEMLEAKS", 0)
 DETECT_FDLEAKS = envbool("XPRA_DETECT_FDLEAKS", False)

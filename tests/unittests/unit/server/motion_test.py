@@ -79,6 +79,7 @@ class TestMotion(unittest.TestCase):
         assert -1 in d, "expected distance of -1 but got: %s" % d.keys()
         linecount = sum(d.get(-1, {}).values())
         assert linecount==len(common), "expected %i hits but got: %s" % (len(common), linecount)
+
         def cdf(v1, v2):
             try:
                 self.calculate_distances(v1, v2, 1)
@@ -106,16 +107,19 @@ class TestMotion(unittest.TestCase):
         self.do_test_detect_motion(1920, 1080)
 
     def do_test_detect_motion(self, W, H):
-        try:
-            from numpy import random, roll
-        except ImportError:
-            print("WARNING: numpy not found")
-            print(" the motion detection test has been skipped")
-            return
+        from xpra.util.env import numpy_import_lock
+        with numpy_import_lock:
+            try:
+                from numpy import random, roll
+            except ImportError:
+                print("WARNING: numpy not found")
+                print(" the motion detection test has been skipped")
+                return
         BPP = 4
         #W, H, BPP = 2, 4, 4
         LEN = W * H * BPP
         na1 = random.randint(255, size=LEN, dtype="uint8")
+
         def tobytes(a):
             return a.tobytes()
         buf1 = tobytes(na1)
@@ -173,7 +177,7 @@ class TestMotion(unittest.TestCase):
             18117428461752083731, 16517651160080181273, 16482769665263024512, 16482769665263024512, 16482769665263024512, 16482769665263024512, 16482769665263024512, 16482769665263024512,
             16482769665263024512, 16482769665263024512, 16482769665263024512, 16482769665263024512, 2620400469557574299, 7552116755125697612, 3191732720857892986, 15697817096682717297,
             14669207905734636057, 14669207905734636057, 14669207905734636057, 14669207905734636057, 14669207905734636057, 14669207905734636057, 14669207905734636057, 14669207905734636057,
-            ]
+        ]
         a2 = [
             16517651160080181273, 16482769665263024512, 16482769665263024512, 16482769665263024512, 16482769665263024512, 16482769665263024512, 16482769665263024512, 16482769665263024512,
             16482769665263024512, 16482769665263024512, 16482769665263024512, 2620400469557574299, 7552116755125697612, 3191732720857892986, 15697817096682717297, 14669207905734636057,
@@ -192,8 +196,8 @@ class TestMotion(unittest.TestCase):
             6893409879058778343, 5414245501850544038, 10339135854757169820, 8701041795744152980, 3604633436491088815, 9865399393235410477, 10031306284568036792, 14669207905734636057,
             14669207905734636057, 14669207905734636057, 14669207905734636057, 14669207905734636057, 14669207905734636057, 14669207905734636057, 14669207905734636057, 11266963446837574547,
             17157005122993541799, 5218869126146608853, 13274228147453099388, 16342723934713827717, 2435034235422505275, 3689766606612767057, 13721141386368216492, 14859793948180065358,
-            ]
-        #distances = motion.scroll_distances(a1[100:400], a2[100:400], 2, 1000)
+        ]
+        # distances = motion.scroll_distances(a1[100:400], a2[100:400], 2, 1000)
         x, y, w = 0, 0, 1050
         h = len(a1)
         sd = motion.ScrollData(x, y, w, h)
@@ -205,6 +209,7 @@ class TestMotion(unittest.TestCase):
         raw_scroll, non_scroll = sd.get_scroll_values()
         assert len(non_scroll)>0
         scrolls = []
+
         def hexstr(v):
             return hex(v).lstrip("0x").rstrip("L")
         for i in range(h):

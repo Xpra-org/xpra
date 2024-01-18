@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -10,9 +10,9 @@ import platform
 from typing import Any
 from time import monotonic
 from collections import deque
-from gi.repository import GLib, Gtk, Gdk  # @UnresolvedImport
 from collections.abc import Callable
 
+from xpra.os_util import gi_import
 from xpra.util.version import XPRA_VERSION, revision_str, make_revision_str
 from xpra.util.system import get_linux_distribution, platform_name
 from xpra.util.types import typedict, AtomicInteger
@@ -30,6 +30,10 @@ from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.log import Logger
 
 log = Logger("info")
+
+GLib = gi_import("GLib")
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
 
 N_SAMPLES = 20      # how many sample points to show on the graphs
 SHOW_PIXEL_STATS = True

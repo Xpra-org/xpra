@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,15 +9,13 @@ import os.path
 from subprocess import Popen, PIPE
 from collections.abc import Callable
 
-from gi.repository import Gtk, Gdk, GLib  # @UnresolvedImport
-
 from xpra.gtk.signals import register_os_signals
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import imagebutton, label, setfont
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.str_fn import repr_ellipsized
 from xpra.common import noop
-from xpra.os_util import POSIX, OSX, WIN32
+from xpra.os_util import POSIX, OSX, WIN32, gi_import
 from xpra.util.system import is_Wayland, platform_name
 from xpra.util.stats import std_unit_dec
 from xpra.scripts.config import get_defaults, parse_bool, OPTION_TYPES, FALSE_OPTIONS, TRUE_OPTIONS
@@ -28,6 +26,10 @@ from xpra.platform.paths import get_xpra_command
 from xpra.log import Logger
 
 log = Logger("client", "util")
+
+GLib = gi_import("GLib")
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
 
 SCREEN_SIZES = os.environ.get("XPRA_SCREEN_SIZES", "1024x768,1600x1200,1920x1080,2560x1600,3840x2160").split(",")
 

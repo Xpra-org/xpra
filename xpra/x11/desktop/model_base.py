@@ -5,8 +5,8 @@
 
 import socket
 from typing import Any
-from gi.repository import GObject, Gdk, GLib  # @UnresolvedImport
 
+from xpra.os_util import gi_import
 from xpra.util.system import get_generic_os_name
 from xpra.util.io import load_binary_file
 from xpra.platform.paths import get_icon, get_icon_filename
@@ -26,6 +26,10 @@ RandR = RandRBindings()
 eventlog = Logger("server", "window", "events")
 geomlog = Logger("server", "window", "geometry")
 iconlog = Logger("icon")
+
+GObject = gi_import("GObject")
+Gdk = gi_import("Gdk")
+GLib = gi_import("GLib")
 
 
 class DesktopModelBase(WindowModelStub, WindowDamageHandler):

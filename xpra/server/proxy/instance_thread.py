@@ -1,16 +1,17 @@
 # This file is part of Xpra.
-# Copyright (C) 2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GLib  # @UnresolvedImport
-
+from xpra.os_util import gi_import
 from xpra.net.protocol.factory import get_server_protocol_class
 from xpra.server.proxy.instance_base import ProxyInstance
 from xpra.codecs.video import getVideoHelper
 from xpra.log import Logger
 
 log = Logger("proxy")
+
+GLib = gi_import("GLib")
 
 
 class ProxyInstanceThread(ProxyInstance):

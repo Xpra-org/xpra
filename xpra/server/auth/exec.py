@@ -1,21 +1,22 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import shlex
 from subprocess import Popen
-from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util.types import typedict
 from xpra.util.str_fn import std, alnum, bytestostr
 from xpra.util.env import envint, shellsub, first_time
-from xpra.os_util import OSX
+from xpra.os_util import OSX, gi_import
 from xpra.scripts.config import TRUE_OPTIONS
 from xpra.util.child_reaper import getChildReaper
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 from xpra.platform.features import EXECUTABLE_EXTENSION
+
+GLib = gi_import("GLib")
 
 TIMEOUT = envint("XPRA_EXEC_AUTH_TIMEOUT", 600)
 

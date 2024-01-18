@@ -6,8 +6,8 @@
 import sys
 from typing import Any
 from collections.abc import Callable
-from gi.repository import GLib, Gtk, Gdk  # @UnresolvedImport
 
+from xpra.os_util import gi_import
 from xpra.util.str_fn import ellipsizer
 from xpra.client.gl.backing import GLWindowBackingBase
 from xpra.platform.gl_context import GLContext
@@ -17,6 +17,10 @@ if not GLContext:
     raise ImportError("no OpenGL context implementation for %s" % sys.platform)
 
 log = Logger("opengl", "paint")
+
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
+GLib = gi_import("GLib")
 
 
 class GLDrawingArea(GLWindowBackingBase):

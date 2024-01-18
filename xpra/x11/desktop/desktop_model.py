@@ -1,17 +1,19 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject, Gdk  # @UnresolvedImport
-
 import xpra.gtk.info
+from xpra.os_util import gi_import
 from xpra.gtk.error import XError, xsync
 from xpra.x11.desktop.model_base import DesktopModelBase
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.log import Logger
 
 RandR = RandRBindings()
+
+GObject = gi_import("GObject")
+Gdk = gi_import("Gdk")
 
 geomlog = Logger("server", "window", "geometry")
 screenlog = Logger("screen")

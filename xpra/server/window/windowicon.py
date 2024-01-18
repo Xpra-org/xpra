@@ -1,9 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-#pylint: disable-msg=E1101
+# pylint: disable-msg=E1101
 
 import threading
 from io import BytesIO
@@ -15,6 +15,7 @@ try:
 except ImportError:
     Image = None
 
+from xpra.os_util import gi_import
 from xpra.util.io import load_binary_file
 from xpra.net import compression
 from xpra.util.str_fn import csv, memoryview_to_bytes
@@ -115,7 +116,7 @@ class WindowIconSource:
         wmclass_name = self.get_window_wm_class_name()
         if not wmclass_name:
             return None
-        from gi.repository import Gtk
+        Gtk = gi_import("Gtk")
         it = Gtk.IconTheme.get_default()  # pylint: disable=no-member
         log("get_default_window_icon(%i) icon theme=%s, wmclass_name=%s", size, it, wmclass_name)
         for icon_name in (

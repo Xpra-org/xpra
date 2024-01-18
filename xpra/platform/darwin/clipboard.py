@@ -1,21 +1,21 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from io import BytesIO
+from collections.abc import Callable
 
 from AppKit import (
     NSStringPboardType, NSTIFFPboardType, NSPasteboardTypePNG, NSPasteboardTypeURL,
     NSPasteboard,
-    )
+)
 from CoreFoundation import NSData, CFDataGetBytes, CFDataGetLength
-from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.clipboard.core import (
     _filter_targets, ClipboardProxyCore, TEXT_TARGETS,
-    )
+)
 from xpra.platform.ui_thread_watcher import get_UI_watcher
 from xpra.util.str_fn import csv, ellipsizer, bytestostr
 from xpra.os_util import gi_import
@@ -23,13 +23,16 @@ from xpra.log import Logger
 
 log = Logger("clipboard", "osx")
 
+GLib = gi_import("GLib")
+
 TARGET_TRANS = {
     NSStringPboardType : "STRING",
-    }
+}
 
 IMAGE_FORMATS = ["image/png", "image/jpeg", "image/tiff"]
 
-def filter_targets(targets) -> tuple[str,...]:
+
+def filter_targets(targets) -> tuple[str, ...]:
     return _filter_targets(TARGET_TRANS.get(x, x) for x in targets)
 
 
@@ -41,11 +44,11 @@ class OSXClipboardProxy(ClipboardProxyCore):
         self.send_clipboard_token_handler = send_clipboard_token_handler
         super().__init__(selection)
         self.update_change_count()
-        #setup clipboard counter watcher:
+        # setup clipboard counter watcher:
         w = get_UI_watcher(GLib.timeout_add, GLib.source_remove)
         w.add_alive_callback(self.timer_clipboard_check)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         super().cleanup()
         w = get_UI_watcher()
         if w:
@@ -54,22 +57,22 @@ class OSXClipboardProxy(ClipboardProxyCore):
             except (KeyError, ValueError):
                 pass
 
-    def timer_clipboard_check(self):
+    def timer_clipboard_check(self) -> None:
         c = self.change_count
         self.update_change_count()
         log("timer_clipboard_check() was %s, now %s (have token: %s)", c, self.change_count, self._have_token)
-        if c!=self.change_count:
+        if c != self.change_count:
             self.local_clipboard_changed()
 
-    def update_change_count(self):
+    def update_change_count(self) -> None:
         p = self.pasteboard
         if p:
             self.change_count = p.changeCount()
 
-    def clear(self):
+    def clear(self) -> None:
         self.pasteboard.clearContents()
 
-    def do_emit_token(self):
+    def do_emit_token(self) -> None:
         packet_data = []
         if self._want_targets:
             targets = self.get_targets()
@@ -81,13 +84,12 @@ class OSXClipboardProxy(ClipboardProxyCore):
                     packet_data += ["STRING", "bytes", 8, text]
         self.send_clipboard_token_handler(self, packet_data)
 
-
-    def get_clipboard_text(self):
+    def get_clipboard_text(self) -> str:
         text = self.pasteboard.stringForType_(NSStringPboardType)
         log("get_clipboard_text() NSStringPboardType='%s' (%s)", text, type(text))
         return str(text)
 
-    def get_targets(self):
+    def get_targets(self) -> list[str]:
         types = self.pasteboard.types()
         targets = []
         if any(t in (NSStringPboardType, NSPasteboardTypeURL, "public.utf8-plain-text", "public.html", "TEXT") for t in types):
@@ -97,9 +99,9 @@ class OSXClipboardProxy(ClipboardProxyCore):
         log("get_targets() targets(%s)=%s", types, targets)
         return targets
 
-    def get_contents(self, target, got_contents):
+    def get_contents(self, target, got_contents: Callable) -> None:
         log("get_contents%s", (target, got_contents))
-        if target=="TARGETS":
+        if target == "TARGETS":
             got_contents("ATOM", 32, self.get_targets())
             return
         if target in IMAGE_FORMATS:
@@ -114,16 +116,16 @@ class OSXClipboardProxy(ClipboardProxyCore):
             text = self.get_clipboard_text()
             got_contents(target, 8, text)
             return
-        #we don't know how to handle this target,
-        #return an empty response:
+        # we don't know how to handle this target,
+        # return an empty response:
         got_contents(target, 8, b"")
 
     def get_image_contents(self, target):
         types = filter_targets(self.pasteboard.types())
-        if target=="image/png" and NSPasteboardTypePNG in types:
+        if target == "image/png" and NSPasteboardTypePNG in types:
             src_dtype = target
             img_data = self.pasteboard.dataForType_(NSPasteboardTypePNG)
-        elif target=="image/tiff" and NSTIFFPboardType in types:
+        elif target == "image/tiff" and NSTIFFPboardType in types:
             src_dtype = target
             img_data = self.pasteboard.dataForType_(NSTIFFPboardType)
         elif NSPasteboardTypePNG in types:
@@ -143,7 +145,6 @@ class OSXClipboardProxy(ClipboardProxyCore):
         log("get_image_contents(%s)=%i %s", target, len(img_data or ()), type(img_data))
         return img_data
 
-
     def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False) -> None:
         # the remote end now owns the clipboard
         self.cancel_emit_token()
@@ -162,9 +163,9 @@ class OSXClipboardProxy(ClipboardProxyCore):
                     dtype, dformat, data = td_def
                     dtype = bytestostr(dtype)
                     self.got_contents(target, dtype, dformat, data)
-            #since we claim to be greedy
-            #the peer should have sent us the target and target_data,
-            #if not then request it:
+            # since we claim to be greedy
+            # the peer should have sent us the target and target_data,
+            # if not then request it:
             if not targets:
                 self.send_clipboard_request_handler(self, self._selection, "TARGETS")
         if not claim:
@@ -173,34 +174,34 @@ class OSXClipboardProxy(ClipboardProxyCore):
         if claim:
             self._have_token = True
 
-    def got_contents(self, target, dtype=None, dformat=None, data=None):
-        #if this is the special target 'TARGETS', cache the result:
-        if target=="TARGETS" and dtype=="ATOM" and dformat==32:
+    def got_contents(self, target, dtype=None, dformat=None, data=None) -> None:
+        # if this is the special target 'TARGETS', cache the result:
+        if target == "TARGETS" and dtype == "ATOM" and dformat == 32:
             self.targets = _filter_targets(data)
             log("got_contents: tell OS we have %s", csv(self.targets))
             image_types = tuple(t for t in IMAGE_FORMATS if t in self.targets)
             log("image_types=%s, dtype=%s (is text=%s)",
-                     image_types, dtype, dtype in TEXT_TARGETS)
+                image_types, dtype, dtype in TEXT_TARGETS)
             if image_types and dtype not in TEXT_TARGETS:
-                #request image:
+                # request image:
                 self.send_clipboard_request_handler(self, self._selection, image_types[0])
             return
-        if dformat==8 and dtype in TEXT_TARGETS:
+        if dformat == 8 and dtype in TEXT_TARGETS:
             log("we got a byte string: %s", ellipsizer(data))
             self.set_clipboard_text(bytestostr(data))
-        if dformat==8 and dtype in IMAGE_FORMATS:
+        if dformat == 8 and dtype in IMAGE_FORMATS:
             log("we got a %s image", dtype)
             self.set_image_data(dtype, data)
 
     def set_image_data(self, dtype, data):
-        img_type = dtype.split("/")[1]      #ie: "png"
+        img_type = dtype.split("/")[1]      # ie: "png"
         from xpra.codecs.pillow.decoder import open_only
         img = open_only(data, (img_type, ))
         for img_type, macos_types in {
-            "png"   : [NSPasteboardTypePNG, "image/png"],
-            "tiff"  : [NSTIFFPboardType, "image/tiff"],
-            "jpeg"  : ["public.jpeg", "image/jpeg"],
-            }.items():
+            "png": [NSPasteboardTypePNG, "image/png"],
+            "tiff": [NSTIFFPboardType, "image/tiff"],
+            "jpeg": ["public.jpeg", "image/jpeg"],
+        }.items():
             try:
                 save_img = img
                 if img_type=="jpeg" and img.mode=="RGBA":
@@ -219,14 +220,13 @@ class OSXClipboardProxy(ClipboardProxyCore):
                 log.error("Error: failed to copy %s image to clipboard", img_type)
                 log.estr(e)
 
-    def set_clipboard_text(self, text):
+    def set_clipboard_text(self, text) -> None:
         self.pasteboard.clearContents()
         r = self.pasteboard.setString_forType_(text, NSStringPboardType)
         log("set_clipboard_text(%s) success=%s", text, r)
         self.update_change_count()
 
-
-    def local_clipboard_changed(self):
+    def local_clipboard_changed(self) -> None:
         log("local_clipboard_changed()")
         self.do_owner_changed()
 
@@ -241,10 +241,8 @@ class OSXClipboardProtocolHelper(ClipboardTimeoutHelper):
         kwargs["clipboards.local"] = ["CLIPBOARD"]
         super().__init__(*args, **kwargs)
 
-
     def __repr__(self):
         return "OSXClipboardProtocolHelper"
-
 
     def cleanup(self) -> None:
         super().cleanup()
@@ -272,18 +270,19 @@ def main():
     with program_context("OSX Clipboard Change Test"):
         log.enable_debug()
 
-        #init UI watcher with gobject (required by pasteboard monitoring code)
+        # init UI watcher with gobject (required by pasteboard monitoring code)
         get_UI_watcher(GLib.timeout_add, GLib.source_remove)
 
         log.info("testing pasteboard")
 
-        Gtk = gi_import("Gtk")
+        gtk = gi_import("Gtk")
         pasteboard = NSPasteboard.generalPasteboard()
+
         def nosend(*args):
             log("nosend%s", args)
         proxy = OSXClipboardProxy("CLIPBOARD", pasteboard, nosend, nosend)
         log.info("current change count=%s", proxy.change_count)
-        clipboard = Gtk.Clipboard(selection="CLIPBOARD")
+        clipboard = gtk.Clipboard(selection="CLIPBOARD")
         log.info("changing clipboard %s contents", clipboard)
         clipboard.set_text("HELLO WORLD %s" % time.time())
         proxy.update_change_count()
@@ -292,7 +291,7 @@ def main():
         cc = proxy.change_count
         while True:
             v = proxy.change_count
-            if v!=cc:
+            if v != cc:
                 log.info("success! the clipboard change has been detected, new change count=%s", v)
             else:
                 log.info(".")

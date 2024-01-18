@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,6 @@ from time import monotonic
 from collections import deque
 from threading import Lock
 from typing import Any, Literal
-from gi.repository import GObject  # @UnresolvedImport
 
 from xpra.audio.audio_pipeline import AudioPipeline
 from xpra.gstreamer.common import (
@@ -27,6 +26,7 @@ from xpra.audio.gstreamer_util import (
 from xpra.gtk.gobject import one_arg_signal
 from xpra.net.compression import decompress_by_name
 from xpra.scripts.config import InitExit
+from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.util.thread import start_thread
@@ -34,6 +34,8 @@ from xpra.log import Logger
 
 log = Logger("audio")
 gstlog = Logger("gstreamer")
+
+GObject = gi_import("GObject")
 
 SINK_SHARED_DEFAULT_ATTRIBUTES : dict[str,Any] = {
     "sync"    : False,
@@ -461,7 +463,8 @@ GObject.type_register(AudioSink)
 
 
 def main() -> int:
-    from gi.repository import GLib  # @UnresolvedImport
+    from xpra.os_util import gi_import
+    glib = gi_import("GLib")
     from xpra.platform import program_context
     with program_context("Audio-Record"):
         args = sys.argv
@@ -507,17 +510,17 @@ def main() -> int:
 
         def eos(*args):
             print("eos%s" % (args,))
-            GLib.idle_add(glib_mainloop.quit)
+            glib.idle_add(glib_mainloop.quit)
         ss.connect("eos", eos)
         ss.start()
 
-        glib_mainloop = GLib.MainLoop()
+        glib_mainloop = glib.MainLoop()
 
         import signal
 
         def deadly_signal(*_args):
-            GLib.idle_add(ss.stop)
-            GLib.idle_add(glib_mainloop.quit)
+            glib.idle_add(ss.stop)
+            glib.idle_add(glib_mainloop.quit)
 
             def force_quit(_sig, _frame):
                 sys.exit()
@@ -531,11 +534,11 @@ def main() -> int:
             if qtime<=0:
                 log.info("underrun (end of stream)")
                 start_thread(ss.stop, "stop", daemon=True)
-                GLib.timeout_add(500, glib_mainloop.quit)
+                glib.timeout_add(500, glib_mainloop.quit)
                 return False
             return True
-        GLib.timeout_add(1000, check_for_end)
-        GLib.idle_add(ss.add_data, data)
+        glib.timeout_add(1000, check_for_end)
+        glib.idle_add(ss.add_data, data)
 
         glib_mainloop.run()
         return 0

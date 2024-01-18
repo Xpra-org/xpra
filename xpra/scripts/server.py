@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -744,8 +744,8 @@ def do_run_server(script_file:str, cmdline, error_cb, opts, extra_args, mode:str
             if pct==100:
                 #it should exit on its own, but just in case:
                 from xpra.common import SPLASH_EXIT_DELAY
-                from gi.repository import GLib  # @UnresolvedImport
-                GLib.timeout_add(SPLASH_EXIT_DELAY*1000+500, stop_progress_process)
+                glib = gi_import("GLib")
+                glib.timeout_add(SPLASH_EXIT_DELAY*1000+500, stop_progress_process)
         progress = show_progress
     else:
         def noprogressshown(*_args):

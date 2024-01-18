@@ -17,7 +17,6 @@ from xpra.codecs.pillow.encoder import (
 
 class TestPillow(unittest.TestCase):
 
-
     def test_selftest(self):
         for full in (False, True):
             selftest(full)
@@ -41,7 +40,7 @@ class TestPillow(unittest.TestCase):
                 "speed" : speed,
                 "scaled-width" : 64,
                 "scaled-height" : 64,
-                })
+            })
             assert comp
 
     def test_grayscale(self):
@@ -61,7 +60,7 @@ class TestPillow(unittest.TestCase):
             "BGRA"      : 32,
             "BGR565"    : 16,
             "RLE8"      : 8,
-            }.items():
+        }.items():
             for encoding in get_encodings():
                 if encoding=="jpeg" and pixel_format!="BGRA":
                     continue
@@ -83,10 +82,10 @@ class TestPillow(unittest.TestCase):
                                                  width*Bpp, Bpp, planes=ImageWrapper.PACKED,
                                                  thread_safe=True, palette=palette)
                             options = {
-                                    "quality" : quality,
-                                    "speed" : speed,
-                                    "alpha" : transparency,
-                                    }
+                                "quality" : quality,
+                                "speed" : speed,
+                                "alpha" : transparency,
+                            }
                             try:
                                 comp = encode(encoding, image, options)
                                 if not comp:
@@ -133,6 +132,7 @@ class TestPillow(unittest.TestCase):
 
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()

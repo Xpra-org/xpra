@@ -1,14 +1,13 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-#pylint: disable-msg=E1101
+# pylint: disable-msg=E1101
 
 import os.path
 from typing import Any
-from gi.repository import GLib
 
-from xpra.os_util import OSX, POSIX
+from xpra.os_util import OSX, POSIX, gi_import
 from xpra.util.str_fn import ellipsizer
 from xpra.net.common import PacketType
 from xpra.util.thread import start_thread
@@ -16,6 +15,8 @@ from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
 log = Logger("notify")
+
+glib = gi_import("GLib")
 
 
 class NotificationForwarder(StubServerMixin):
@@ -42,12 +43,12 @@ class NotificationForwarder(StubServerMixin):
     def get_info(self, _source=None)-> dict[str,Any]:
         if not self.notifications_forwarder:
             return {}
-        return {"notifications" : self.notifications_forwarder.get_info()}
+        return {"notifications": self.notifications_forwarder.get_info()}
 
     def get_server_features(self, _source=None)-> dict[str,Any]:
         return {
-            "notifications" : {
-                "enabled" : self.notifications,
+            "notifications": {
+                "enabled": self.notifications,
             },
         }
 
@@ -76,7 +77,7 @@ class NotificationForwarder(StubServerMixin):
         log.warn(" use the 'notifications=no' option")
 
     def notify_new_user(self, ss) -> None:
-        #tell other users:
+        # tell other users:
         log("notify_new_user(%s) sources=%s", ss, self._server_sources)
         if not self._server_sources:
             return
@@ -90,26 +91,26 @@ class NotificationForwarder(StubServerMixin):
             title = f"User {name!r} connected to the session"
             body = "\n".join(ss.get_connect_info())
             for s in self._server_sources.values():
-                if s!=ss:
+                if s != ss:
                     s.notify("", NotificationID.NEW_USER, "Xpra", 0, "", title, body, [], {}, 10*1000, icon)
         except Exception as e:
             log("%s(%s)", self.notify_new_user, ss, exc_info=True)
             log.error("Error: failed to show notification of user login:")
             log.estr(e)
 
-    def notify_callback(self, dbus_id, nid:int, app_name:str, replaces_nid:int, app_icon,
-                        summary:str, body:str, actions, hints, expire_timeout:int) -> None:
+    def notify_callback(self, dbus_id, nid: int, app_name: str, replaces_nid: int, app_icon,
+                        summary: str, body: str, actions, hints, expire_timeout: int) -> None:
         assert self.notifications_forwarder and self.notifications
-        #make sure that we run in the main thread:
-        GLib.idle_add(self.do_notify_callback, dbus_id, nid,
+        # make sure that we run in the main thread:
+        glib.idle_add(self.do_notify_callback, dbus_id, nid,
                       app_name, replaces_nid, app_icon,
                       summary, body,
                       actions, hints, expire_timeout)
 
-    def do_notify_callback(self, dbus_id, nid:int,
-                           app_name:str, replaces_nid:int, app_icon,
-                           summary:str, body:str,
-                           actions, hints, expire_timeout:int) -> None:
+    def do_notify_callback(self, dbus_id, nid: int,
+                           app_name: str, replaces_nid: int, app_icon,
+                           summary: str, body: str,
+                           actions, hints, expire_timeout: int) -> None:
         try:
             icon = self.get_notification_icon(str(app_icon))
             if os.path.isabs(str(app_icon)):
@@ -125,10 +126,10 @@ class NotificationForwarder(StubServerMixin):
             log.error("Error processing notification:")
             log.estr(e)
 
-    def get_notification_icon(self, _icon_string:str) -> Any:
+    def get_notification_icon(self, _icon_string: str) -> Any:
         return None
 
-    def notify_close_callback(self, nid:int) -> None:
+    def notify_close_callback(self, nid: int) -> None:
         assert self.notifications_forwarder
         log("notify_close_callback(%s)", nid)
         for ss in self._server_sources.values():
@@ -147,15 +148,15 @@ class NotificationForwarder(StubServerMixin):
         assert ss
         log("closing notification %s: %s, %s", nid, reason, text)
         try:
-            #remove client callback if we have one:
+            # remove client callback if we have one:
             ss.notification_callbacks.pop(nid)
         except KeyError:
             if self.notifications_forwarder:
-                #regular notification forwarding:
+                # regular notification forwarding:
                 active = self.notifications_forwarder.is_notification_active(nid)
                 log("notification-close nid=%s, reason=%s, text=%s, active=%s", nid, reason, text, active)
                 if active:
-                    #an invalid type of the arguments can crash dbus!
+                    # an invalid type of the arguments can crash dbus!
                     assert int(nid)>=0
                     assert int(reason)>=0
                     self.notifications_forwarder.NotificationClosed(nid, reason)
@@ -167,11 +168,11 @@ class NotificationForwarder(StubServerMixin):
         assert ss
         ss.user_event()
         try:
-            #special client callback notification:
+            # special client callback notification:
             client_callback = ss.notification_callbacks.pop(nid)
         except KeyError:
             if self.notifications_forwarder:
-                #regular notification forwarding:
+                # regular notification forwarding:
                 active = self.notifications_forwarder.is_notification_active(nid)
                 log("notification-action nid=%i, action key=%s, active=%s", nid, action_key, active)
                 if active:

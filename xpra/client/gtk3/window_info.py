@@ -1,10 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import Gtk, Gdk, GLib  # @UnresolvedImport
-
+from xpra.os_util import gi_import
 from xpra.util.types import typedict, AtomicInteger
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import IgnoreWarningsContext
@@ -15,6 +14,10 @@ from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.log import Logger
 
 log = Logger("info")
+
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
+GLib = gi_import("GLib")
 
 
 def slabel(text: str = "", tooltip: str = "", font: str = ""):

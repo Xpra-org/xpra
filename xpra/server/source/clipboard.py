@@ -7,8 +7,8 @@
 from time import monotonic
 from typing import Any, Deque
 from collections import deque
-from gi.repository import GLib
 
+from xpra.os_util import gi_import
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.platform.features import CLIPBOARDS
 from xpra.net.common import PacketType
@@ -17,6 +17,8 @@ from xpra.util.env import envint
 from xpra.log import Logger
 
 log = Logger("clipboard")
+
+GLib = gi_import("GLib")
 
 MAX_CLIPBOARD_LIMIT = envint("XPRA_CLIPBOARD_LIMIT", 30)
 MAX_CLIPBOARD_LIMIT_DURATION = envint("XPRA_CLIPBOARD_LIMIT_DURATION", 3)

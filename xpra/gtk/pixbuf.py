@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -49,8 +49,8 @@ def get_icon_pixbuf(icon_name: str):
 
 
 def get_pixbuf_from_data(rgb_data, has_alpha: bool, w: int, h: int, rowstride: int) -> GdkPixbuf.Pixbuf:
-    from gi.repository import GLib
-    data = GLib.Bytes(rgb_data)
+    glib = gi_import("GLib")
+    data = glib.Bytes(rgb_data)
     return GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB,
                                            has_alpha, 8, w, h, rowstride)
 

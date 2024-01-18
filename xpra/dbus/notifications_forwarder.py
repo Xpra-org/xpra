@@ -180,8 +180,9 @@ def register(notify_callback=None, close_callback=None, replace=False):
 
 def main():
     register()
-    from gi.repository import GLib  # @UnresolvedImport
-    mainloop = GLib.MainLoop()
+    from xpra.os_util import gi_import
+    glib = gi_import("GLib")
+    mainloop = glib.MainLoop()
     mainloop.run()
 
 

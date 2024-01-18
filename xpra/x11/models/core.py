@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,8 +9,8 @@ import signal
 from socket import gethostname
 from typing import Any
 from collections.abc import Callable
-from gi.repository import GObject   # @UnresolvedImport
 
+from xpra.os_util import gi_import
 from xpra.util.env import envbool, first_time
 from xpra.util.io import get_proc_cmdline
 from xpra.util.str_fn import bytestostr
@@ -35,6 +35,7 @@ grablog = Logger("x11", "window", "grab")
 framelog = Logger("x11", "window", "frame")
 geomlog = Logger("x11", "window", "geometry")
 
+GObject = gi_import("GObject")
 
 X11Window = X11WindowBindings()
 

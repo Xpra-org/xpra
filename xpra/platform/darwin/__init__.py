@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,7 +12,7 @@ def do_init():
     for x in list(sys.argv):
         if x.startswith("-psn_"):
             sys.argv.remove(x)
-    if os.environ.get("XPRA_HIDE_DOCK", "")=="1":
+    if os.environ.get("XPRA_HIDE_DOCK", "") == "1":
         from AppKit import NSApp
         # NSApplicationActivationPolicyAccessory = 1
         NSApp.setActivationPolicy_(1)
@@ -33,8 +33,8 @@ def do_init_env():
 
 def default_gtk_main_exit():
     from xpra.os_util import gi_import
-    Gtk = gi_import("Gtk")
-    Gtk.main_quit()
+    gtk = gi_import("Gtk")
+    gtk.main_quit()
 
 
 exit_cb : Callable = default_gtk_main_exit
@@ -57,10 +57,9 @@ macapp = None
 def get_OSXApplication():
     global macapp
     if macapp is None:
-        import gi
-        gi.require_version('GtkosxApplication', '1.0')  # @UndefinedVariable
-        from gi.repository import GtkosxApplication     # @UnresolvedImport
-        macapp = GtkosxApplication.Application()
+        from xpra.os_util import gi_import
+        osxapp = gi_import("GtkosxApplication")
+        macapp = osxapp.Application()
         macapp.connect("NSApplicationWillTerminate", quit_handler)
     return macapp
 
@@ -77,6 +76,7 @@ def patch_find_library():
             return res
         return '/System/Library/Frameworks/'+name+'.framework/'+name
     util.find_library = new_util_find_library
+
 
 if os.environ.get("XPRA_OSX_PATCH_FIND_LIBRARY", "1") == "1":
     patch_find_library()

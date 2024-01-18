@@ -1,11 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject, Gdk, Gtk  # @UnresolvedImport
-
+from xpra.os_util import gi_import
 from xpra.gtk.gobject import no_arg_signal, one_arg_signal
 from xpra.gtk.error import xlog, XError
 from xpra.x11.gtk_x11.prop import raw_prop_set, raw_prop_get
@@ -15,6 +14,10 @@ from xpra.x11.xsettings_prop import bytes_to_xsettings, xsettings_to_bytes
 from xpra.log import Logger
 
 log = Logger("x11", "xsettings")
+
+GObject = gi_import("GObject")
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
 
 # the X11 atom name for the XSETTINGS property:
 XSETTINGS = "_XSETTINGS_SETTINGS"

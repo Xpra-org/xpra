@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -220,7 +220,8 @@ def main():
     host = "0.0.0.0"
     host_ports = [(host, port)]
     service_name = "test %s" % int(random.random()*100000)
-    from gi.repository import GLib  # @UnresolvedImport
+    from xpra.os_util import gi_import
+    GLib = gi_import("GLib")
     publishers = []
 
     def add(service_type):

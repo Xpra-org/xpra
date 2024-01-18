@@ -119,19 +119,22 @@ def main():
     def mdns_remove(*args):
         print(f"mdns_remove: {args}")
 
+    # we must preserve the order here
+    # (as dbus loop_init injects some magic)
     from xpra.dbus.common import loop_init
     loop_init()
-    from gi.repository import GLib  # @UnresolvedImport
+    from xpra.os_util import gi_import
+    glib = gi_import("GLib")
     listeners = []
 
     def add(service_type):
         listener = Avahilistener(service_type, mdns_found, mdns_add, mdns_remove)
         listeners.append(listener)
-        GLib.idle_add(listener.start)
+        glib.idle_add(listener.start)
     add(XPRA_TCP_MDNS_TYPE)
     add(XPRA_UDP_MDNS_TYPE)
     try:
-        GLib.MainLoop().run()
+        glib.MainLoop().run()
     finally:
         for l in listeners:
             l.stop()

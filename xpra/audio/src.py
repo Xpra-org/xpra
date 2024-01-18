@@ -383,8 +383,8 @@ def main() -> int:
                     f.write(data)
                     f.flush()
 
-        from gi.repository import GLib  # @UnresolvedImport
-        glib_mainloop = GLib.MainLoop()
+        glib = gi_import("GLib")
+        glib_mainloop = glib.MainLoop()
 
         ss.connect("new-buffer", new_buffer)
         ss.start()
@@ -393,8 +393,8 @@ def main() -> int:
 
         def deadly_signal(sig, _frame):
             log.warn("got deadly signal %s", SIGNAMES.get(sig, sig))
-            GLib.idle_add(ss.stop)
-            GLib.idle_add(glib_mainloop.quit)
+            glib.idle_add(ss.stop)
+            glib.idle_add(glib_mainloop.quit)
 
             def force_quit(_sig, _frame):
                 sys.exit()
@@ -410,7 +410,7 @@ def main() -> int:
         ss.stop()
 
         f.flush()
-        if f!=sys.stdout:
+        if f != sys.stdout:
             log.info("wrote %s bytes to %s", f.tell(), filename)
         with lock:
             f.close()

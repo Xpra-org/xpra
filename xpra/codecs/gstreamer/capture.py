@@ -1,12 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2023-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from queue import Queue, Empty, Full
 from typing import Any
-from gi.repository import GObject  # @UnresolvedImport
 
+from xpra.os_util import gi_import
 from xpra.util.types import typedict
 from xpra.gstreamer.common import (
     import_gst, GST_FLOW_OK, get_element_str,
@@ -28,6 +28,7 @@ from xpra.log import Logger
 Gst = import_gst()
 log = Logger("encoder", "gstreamer")
 
+GObject = gi_import("GObject")
 
 log(f"capture: {get_type()} {get_version()}, {init_module}, {cleanup_module}")
 
@@ -225,11 +226,11 @@ GObject.type_register(CaptureAndEncode)
 
 def selftest(_full=False) -> None:
     log("gstreamer encoder selftest: %s", get_info())
-    from gi.repository import GLib   # @UnresolvedImport
+    glib = gi_import("GLib")
     from xpra.gtk.util import get_root_size
     w, h = get_root_size()
     c = Capture(width=w, height=h)
-    loop = GLib.MainLoop()
+    loop = glib.MainLoop()
 
     def check():
         i = c.get_image()
@@ -237,9 +238,9 @@ def selftest(_full=False) -> None:
             c.stop()
             return False
         return True
-    GLib.timeout_add(500, check)
-    GLib.timeout_add(2000, c.stop)
-    GLib.timeout_add(2500, loop.quit)
+    glib.timeout_add(500, check)
+    glib.timeout_add(2000, c.stop)
+    glib.timeout_add(2500, loop.quit)
     c.start()
     loop.run()
 

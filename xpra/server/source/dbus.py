@@ -1,12 +1,13 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.os_util import gi_import
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.util.types import typedict
 
-from gi.repository import GLib
+GLib = gi_import("GLib")
 
 
 class DBUS_Mixin(StubSourceMixin):

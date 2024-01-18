@@ -251,10 +251,11 @@ class FileTransferHandler(FileTransferAttributes):
         self.receive_chunks_in_progress : dict[str,ReceiveChunkState] = {}
         self.file_descriptors : set[int] = set()
         if not getattr(self, "timeout_add", None):
-            from gi.repository import GLib  # pylint: disable=import-outside-toplevel @UnresolvedImport
-            self.timeout_add = GLib.timeout_add
-            self.idle_add = GLib.idle_add
-            self.source_remove = GLib.source_remove
+            from xpra.os_util import gi_import
+            glib = gi_import("GLib")
+            self.timeout_add = glib.timeout_add
+            self.idle_add = glib.idle_add
+            self.source_remove = glib.source_remove
 
     def cleanup(self) -> None:
         for t in self.pending_send_data_timers.values():

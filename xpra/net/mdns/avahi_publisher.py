@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -234,7 +234,7 @@ class AvahiPublisher:
             log.warn("Warning: cannot update mdns record")
             log.warn(" publisher has already been stopped")
             return
-        #prevent avahi from choking on ints:
+        # prevent avahi from choking on ints:
         txt_strs = {k:str(v) for k,v in txt.items()}
 
         def reply_handler(*args):
@@ -257,7 +257,8 @@ class AvahiPublisher:
 
 
 def main():
-    from gi.repository import GLib  # @UnresolvedImport
+    from xpra.os_util import gi_import
+    glib = gi_import("GLib")
     import random
     import signal
     port = int(20000*random.random())+10000
@@ -266,7 +267,7 @@ def main():
     bus = init_system_bus()
     publishers = []
 
-    def add(service_type:str=XPRA_TCP_MDNS_TYPE):
+    def add(service_type: str = XPRA_TCP_MDNS_TYPE):
         publisher = AvahiPublisher(bus, name, port, stype=service_type, host=host, text=("somename=somevalue",))
         publishers.append(publisher)
 
@@ -275,12 +276,12 @@ def main():
 
         def update_rec():
             publisher.update_txt({b"hello" : b"world"})
-        GLib.idle_add(start)
-        GLib.timeout_add(5*1000, update_rec)
+        glib.idle_add(start)
+        glib.timeout_add(5*1000, update_rec)
     add(XPRA_TCP_MDNS_TYPE)
     add(XPRA_UDP_MDNS_TYPE)
     signal.signal(signal.SIGTERM, exit)
-    GLib.MainLoop().run()
+    glib.MainLoop().run()
 
 
 if __name__ == "__main__":

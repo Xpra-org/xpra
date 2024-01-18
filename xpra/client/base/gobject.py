@@ -1,19 +1,21 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from typing import Any
 
-from gi.repository import GLib, GObject  # @UnresolvedImport
-
+from xpra.os_util import gi_import
 from xpra.net.common import PacketType
 from xpra.client.base.client import XpraClientBase, EXTRA_TIMEOUT
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.log import Logger
 
 log = Logger("gobject", "client")
+
+GObject = gi_import("GObject")
+GLib = gi_import("GLib")
 
 
 class GObjectXpraClient(GObject.GObject, XpraClientBase):

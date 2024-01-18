@@ -1,10 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-from gi.repository import GObject  # @UnresolvedImport
 from typing import Any
 
 from xpra.gstreamer.common import (
@@ -18,13 +17,15 @@ from xpra.codecs.gstreamer.common import (
     init_module, cleanup_module,
     get_default_decoder_options,
 )
-from xpra.os_util import WIN32
+from xpra.os_util import WIN32, gi_import
 from xpra.common import roundup
 from xpra.util.types import typedict
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 
 log = Logger("decoder", "gstreamer")
+
+GObject = gi_import("GObject")
 
 log(f"decoder: {get_type()} {get_version()}, {init_module}, {cleanup_module}")
 

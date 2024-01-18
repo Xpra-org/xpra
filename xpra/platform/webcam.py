@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2016-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from collections.abc import Callable
 
+from xpra.os_util import gi_import
 from xpra.platform import platform_import
 from xpra.log import Logger
+
 log = Logger("webcam")
 
 
@@ -77,9 +79,9 @@ def main(argv):
                 else:
                     log.info("device change")
             log.info("starting main loop")
-            from gi.repository import GLib  # @UnresolvedImport
-            main_loop = GLib.MainLoop()
-            GLib.idle_add(add_video_device_change_callback, callback)
+            glib = gi_import("GLib")
+            main_loop = glib.MainLoop()
+            glib.idle_add(add_video_device_change_callback, callback)
             try:
                 main_loop.run()
             except KeyboardInterrupt:

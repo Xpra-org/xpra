@@ -1,11 +1,10 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject, Gdk
-
+from xpra.os_util import gi_import
 from xpra.x11.gtk_x11.damage import WindowDamageHandler
 from xpra.gtk.gobject import one_arg_signal
 from xpra.x11.gtk3.bindings import add_event_receiver, remove_event_receiver
@@ -16,6 +15,9 @@ from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.log import Logger
 
 log = Logger("x11", "window", "damage")
+
+GObject = gi_import("GObject")
+Gdk = gi_import("Gdk")
 
 XImage = XImageBindings()
 X11Window = X11WindowBindings()

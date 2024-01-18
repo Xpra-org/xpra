@@ -5,15 +5,20 @@
 
 from typing import Any
 from collections.abc import Callable
-from gi.repository import Gtk, Gdk, GObject, GLib
 
 from xpra.common import noop
+from xpra.os_util import gi_import
 from xpra.util.str_fn import ellipsizer
 from xpra.client.gl.gtk3.client_window import GLClientWindowBase
 from xpra.client.gl.backing import GLWindowBackingBase
 from xpra.log import Logger
 
 log = Logger("opengl", "paint")
+
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
+GObject = gi_import("GObject")
+GLib = gi_import("GLib")
 
 
 def GLArea(alpha:bool) -> Gtk.GLArea:

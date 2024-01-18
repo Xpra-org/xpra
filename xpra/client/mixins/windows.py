@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -19,7 +19,6 @@ from threading import Thread
 from typing import Any
 from subprocess import Popen, PIPE, STDOUT, TimeoutExpired
 from collections.abc import Callable
-from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.platform.gui import (
     get_window_min_size, get_window_max_size,
@@ -31,7 +30,7 @@ from xpra.platform.paths import get_icon_filename, get_resources_dir, get_python
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.thread import start_thread
 from xpra.util.str_fn import std, bytestostr, memoryview_to_bytes
-from xpra.os_util import OSX, POSIX
+from xpra.os_util import OSX, POSIX, gi_import
 from xpra.util.system import is_Ubuntu
 from xpra.util.types import typedict, make_instance
 from xpra.util.str_fn import repr_ellipsized
@@ -51,6 +50,8 @@ cursorlog = Logger("cursor")
 metalog = Logger("metadata")
 traylog = Logger("client", "tray")
 execlog = Logger("client", "exec")
+
+GLib = gi_import("GLib")
 
 SMOOTH_SCROLL: bool = envbool("XPRA_SMOOTH_SCROLL", True)
 

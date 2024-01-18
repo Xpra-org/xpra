@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,7 @@ import sys
 import glob
 import os.path
 
+from xpra.os_util import gi_import
 from xpra.util.env import osexpand
 from xpra.util.io import load_binary_file, use_gui_prompt
 from xpra.util.str_fn import bytestostr, hexstr
@@ -23,7 +24,8 @@ def main():
     from xpra.platform import program_context
     with program_context("U2F-Register", "Xpra U2F Registration Tool"):
         if use_gui_prompt():
-            from gi.repository import GLib, Gtk  # @UnresolvedImport
+            Gtk = gi_import("Gtk")
+            GLib = gi_import("GLib")
 
             def show_dialog(mode, *msgs):
                 dialog = Gtk.MessageDialog(None, 0, mode, Gtk.ButtonsType.CLOSE, "\n".join(msgs))
@@ -98,7 +100,7 @@ def main():
         i = 1
         while True:
             c = ""
-            if i>1:
+            if i > 1:
                 c = "-%i"
             public_key_filename = os.path.join(conf_dir, "u2f%s-pub.hex" % c)
             if not os.path.exists(public_key_filename):

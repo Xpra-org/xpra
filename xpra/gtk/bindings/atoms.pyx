@@ -1,14 +1,15 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 # cython code for manipulating GdkAtoms
 
-from gi.repository import Gdk
-
+from xpra.os_util import gi_import
 from xpra.util.str_fn import bytestostr
 from libc.stdint cimport uintptr_t   # pylint: disable=syntax-error
+
+Gdk = gi_import("Gdk")
 
 
 cdef extern from "Python.h":

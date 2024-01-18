@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,6 @@ import os.path
 import sys
 import time
 from collections.abc import Callable
-from gi.repository import Gtk, Gdk  # @UnresolvedImport
 
 from xpra.common import ScreenshotData, noop
 from xpra.gtk.util import get_default_root_window
@@ -18,12 +17,16 @@ from xpra.gtk.widget import scaled_image, label, choose_file
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.platform.gui import force_focus
+from xpra.os_util import gi_import
 from xpra.util.str_fn import nonl, repr_ellipsized, hexstr
 from xpra.util.env import envint
 from xpra.common import FULL_INFO
 from xpra.log import Logger
 
 log = Logger("util")
+
+Gtk = gi_import("Gtk")
+Gdk = gi_import("Gdk")
 
 STEP_DELAY = envint("XPRA_BUG_REPORT_STEP_DELAY", 0)
 

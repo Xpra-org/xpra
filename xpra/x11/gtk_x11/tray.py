@@ -207,8 +207,9 @@ class SystemTray(GObject.GObject):
                 window = self.get_pywindow(xid)
                 log("tray docking window %s", window)
                 if window:
-                    from gi.repository import GLib  # pylint: disable=import-outside-toplevel @UnresolvedImport
-                    GLib.idle_add(self.dock_tray, xid)
+                    from xpra.os_util import gi_import
+                    glib = gi_import("GLib")
+                    glib.idle_add(self.dock_tray, xid)
             elif opcode==SYSTEM_TRAY_BEGIN_MESSAGE:
                 timeout = event.data[2]
                 mlen = event.data[3]

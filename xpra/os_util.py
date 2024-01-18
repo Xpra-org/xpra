@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -37,6 +37,7 @@ GIR_VERSIONS : dict[str, str] = {
     "Rsvg": "2.0",
     "Gst": "1.0",
     "NM": "1.0",
+    "GtkosxApplication" : "1.0",
 }
 
 

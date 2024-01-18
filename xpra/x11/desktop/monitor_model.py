@@ -1,12 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2022-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from collections import namedtuple
 from typing import Any
-from gi.repository import GObject  # @UnresolvedImport
 
+from xpra.os_util import gi_import
 from xpra.gtk.error import xlog
 from xpra.x11.common import get_wm_name
 from xpra.x11.desktop.model_base import DesktopModelBase
@@ -15,6 +15,7 @@ from xpra.log import Logger
 
 log = Logger("server")
 
+GObject = gi_import("GObject")
 
 MIN_SIZE = 640, 350
 MAX_SIZE = 8192, 8192

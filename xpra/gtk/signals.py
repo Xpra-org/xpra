@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -29,7 +29,7 @@ def register_os_signals(callback: Callable[[int], None],
 
 
 def register_os_signal(callback: Callable[[int], None], commandtype: str = "", signum: signal.Signals = signal.SIGINT):
-    from gi.repository import GLib
+    glib = gi_import("GLib")
     signame = SIGNAMES.get(signum, str(signum))
 
     def write_signal() -> None:
@@ -50,18 +50,18 @@ def register_os_signal(callback: Callable[[int], None], commandtype: str = "", s
         # replace the previous definition if we had one:
         current = _glib_unix_signals.get(signum, None)
         if current:
-            GLib.source_remove(current)
+            glib.source_remove(current)
 
         def handle_signal(_signum) -> bool:
             write_signal()
-            GLib.idle_add(do_handle_signal)
+            glib.idle_add(do_handle_signal)
             return True
-        source_id = GLib.unix_signal_add(GLib.PRIORITY_HIGH, signum, handle_signal, signum)
+        source_id = glib.unix_signal_add(glib.PRIORITY_HIGH, signum, handle_signal, signum)
         _glib_unix_signals[signum] = source_id
     else:
         def os_signal(_signum, _frame) -> None:
             write_signal()
-            GLib.idle_add(do_handle_signal)
+            glib.idle_add(do_handle_signal)
         signal.signal(signum, os_signal)
 
 
@@ -92,5 +92,5 @@ def install_signal_handlers(sstr: str, signal_handler: Callable[[int], None]):
     def do_install_signal_handlers():
         register_os_signals(signal_handler, sstr)
         register_SIGUSR_signals(sstr)
-    from gi.repository import GLib
-    GLib.idle_add(do_install_signal_handlers)
+    glib = gi_import("GLib")
+    glib.idle_add(do_install_signal_handlers)

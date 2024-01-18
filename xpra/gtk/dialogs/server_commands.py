@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 from time import monotonic
-from gi.repository import GLib, Gtk  # @UnresolvedImport
 
+from xpra.os_util import gi_import
 from xpra.gtk.signals import register_os_signals
 from xpra.util.types import typedict, AdHocStruct
 from xpra.gtk.window import add_close_accel
@@ -17,6 +17,8 @@ from xpra.log import Logger, enable_debug_for
 
 log = Logger("util")
 
+GLib = gi_import("GLib")
+Gtk = gi_import("Gtk")
 
 _instance = None
 

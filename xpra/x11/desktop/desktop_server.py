@@ -4,8 +4,8 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
-from gi.repository import GObject  # @UnresolvedImport
 
+from xpra.os_util import gi_import
 from xpra.x11.desktop.base import DesktopServerBase
 from xpra.x11.desktop.desktop_model import ScreenDesktopModel
 from xpra.x11.bindings.randr import RandRBindings
@@ -14,6 +14,8 @@ from xpra.gtk.error import xsync, xlog
 from xpra.log import Logger
 
 RandR = RandRBindings()
+
+GObject = gi_import("GObject")
 
 log = Logger("server")
 geomlog = Logger("server", "window", "geometry")

@@ -2444,6 +2444,7 @@ if cythonize_more_ENABLED:
     ax("xpra.net")
     if notifications_ENABLED:
         ax("xpra.notifications")
+    ace("xpra.platform.dotxpra_common")
     ace("xpra.platform.paths")
     ace("xpra.platform.ui_thread_watcher")
     if LINUX:

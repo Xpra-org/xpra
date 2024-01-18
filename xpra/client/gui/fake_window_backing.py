@@ -1,14 +1,13 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
-from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.client.gui.window_backing_base import fire_paint_callbacks
 from xpra.util.env import envint
 from xpra.log import Logger
+
 log = Logger("window", "fake")
 
 FAKE_BACKING_DELAY = envint("XPRA_FAKE_BACKING_DELAY", 5)
@@ -31,7 +30,9 @@ class FakeBacking:
 
     def draw_region(self, _x, _y, _width, _height, _coding, _img_data, _rowstride, _options, callbacks):
         log("draw_region(..) faking it after %sms", self.fake_delay)
-        GLib.timeout_add(self.fake_delay, fire_paint_callbacks, callbacks, True)
+        from xpra.os_util import gi_import
+        glib = gi_import("GLib")
+        glib.timeout_add(self.fake_delay, fire_paint_callbacks, callbacks, True)
 
     def cairo_draw(self, context, x, y):
         log("cairo_draw%s", (context, x, y))

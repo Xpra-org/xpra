@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,30 +12,30 @@ from weakref import WeakValueDictionary
 from typing import Any
 from collections.abc import Callable
 
-from gi.repository import GLib
 import objc
 import Quartz
 import Quartz.CoreGraphics as CG
 from Quartz import (
     CGWindowListCopyWindowInfo, kCGDisplaySetModeFlag, kCGWindowListOptionOnScreenOnly,
     kCGNullWindowID, kCGWindowListOptionAll,
-    )
+)
 from Quartz.CoreGraphics import (
     CGDisplayRegisterReconfigurationCallback,
     CGDisplayRemoveReconfigurationCallback,
-    )
+)
 from AppKit import (
     NSObject, NSAppleEventManager, NSScreen, NSBeep,
     NSApp, NSApplication, NSWorkspace,
     NSWorkspaceActiveSpaceDidChangeNotification,
     NSWorkspaceWillSleepNotification,
     NSWorkspaceDidWakeNotification,
-    )
+)
 from Foundation import (
     NSUserNotification, NSUserNotificationCenter,
     NSUserNotificationDefaultSoundName,
-    )
+)
 
+from xpra.os_util import gi_import
 from xpra.common import roundup, NotificationID
 from xpra.util.env import envint, envbool
 from xpra.util.io import CaptureStdErr
@@ -48,6 +48,8 @@ workspacelog = Logger("osx", "events", "workspace")
 mouselog = Logger("osx", "events", "mouse")
 notifylog = Logger("osx", "notify")
 
+GLib = gi_import("GLib")
+
 OSX_FOCUS_WORKAROUND = envint("XPRA_OSX_FOCUS_WORKAROUND", 2000)
 SLEEP_HANDLER = envbool("XPRA_OSX_SLEEP_HANDLER", True)
 EVENT_LISTENER = envbool("XPRA_OSX_EVENT_LISTENER", True)
@@ -59,17 +61,21 @@ NATIVE_NOTIFIER = envbool("XPRA_OSX_NATIVE_NOTIFIER", True)
 SUBPROCESS_NOTIFIER = envbool("XPRA_OSX_SUBPROCESS_NOTIFIER", False)
 
 ALPHA = {
-         CG.kCGImageAlphaNone                  : "AlphaNone",
-         CG.kCGImageAlphaPremultipliedLast     : "PremultipliedLast",
-         CG.kCGImageAlphaPremultipliedFirst    : "PremultipliedFirst",
-         CG.kCGImageAlphaLast                  : "Last",
-         CG.kCGImageAlphaFirst                 : "First",
-         CG.kCGImageAlphaNoneSkipLast          : "SkipLast",
-         CG.kCGImageAlphaNoneSkipFirst         : "SkipFirst",
-   }
-#if there is an easier way of doing this, I couldn't find it:
+    CG.kCGImageAlphaNone                  : "AlphaNone",
+    CG.kCGImageAlphaPremultipliedLast     : "PremultipliedLast",
+    CG.kCGImageAlphaPremultipliedFirst    : "PremultipliedFirst",
+    CG.kCGImageAlphaLast                  : "Last",
+    CG.kCGImageAlphaFirst                 : "First",
+    CG.kCGImageAlphaNoneSkipLast          : "SkipLast",
+    CG.kCGImageAlphaNoneSkipFirst         : "SkipFirst",
+}
+
+
+# if there is an easier way of doing this, I couldn't find it:
 def nodbltime() -> float:
     return -1
+
+
 GetDblTime : Callable = nodbltime
 try:
     Carbon_ctypes = ctypes.CDLL("/System/Library/Frameworks/Carbon.framework/Carbon")
@@ -118,12 +124,12 @@ class OSX_Notifier(NotifierBase):
         self.notification_center = NSUserNotificationCenter.defaultUserNotificationCenter()
         assert self.notification_center
 
-    def show_notify(self, dbus_id, tray, nid:int|NotificationID,
-                    app_name:str, replaces_nid:int|NotificationID, app_icon,
-                    summary:str, body:str, actions, hints, expire_timeout:int, icon):
+    def show_notify(self, dbus_id, tray, nid: int | NotificationID,
+                    app_name: str, replaces_nid: int | NotificationID, app_icon,
+                    summary: str, body: str, actions, hints, expire_timeout: int, icon):
         GTK_NOTIFIER = envbool("XPRA_OSX_GTK_NOTIFIER", True)
         if actions and GTK_NOTIFIER:
-            #try to use GTK notifier if we have actions buttons to handle:
+            # try to use GTK notifier if we have actions buttons to handle:
             try:
                 from xpra.gtk.notifier import GTKNotifier
             except ImportError as e:
@@ -136,14 +142,15 @@ class OSX_Notifier(NotifierBase):
                 return
         GLib.idle_add(self.do_show_notify, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
 
-    def do_show_notify(self, dbus_id, tray, nid:int|NotificationID, app_name:str, replaces_nid:int|NotificationID, app_icon,
-                       summary:str, body:str, actions, hints, expire_timeout:int, icon):
+    def do_show_notify(self, dbus_id, tray, nid: int | NotificationID, app_name: str,
+                       replaces_nid: int | NotificationID, app_icon,
+                       summary: str, body: str, actions, hints, expire_timeout: int, icon):
         notification = NSUserNotification.alloc()
         notification.init()
         notification.setTitle_(summary)
         notification.setInformativeText_(body)
         notification.setIdentifier_("%s" % nid)
-        #enable sound:
+        # enable sound:
         notification.setSoundName_(NSUserNotificationDefaultSoundName)
         notifylog("do_show_notify(..) nid=%s, %s(%s)", nid, self.notification_center.deliverNotification_, notification)
         self.notifications[nid] = notification
@@ -176,17 +183,20 @@ def get_native_notifier_classes() -> list[type]:
     notifylog("get_native_notifier_classes()=%s", v)
     return v
 
+
 def get_native_tray_menu_helper_class() -> Callable | None:
     if get_OSXApplication():
         from xpra.platform.darwin.menu import getOSXMenuHelper
         return getOSXMenuHelper
     return None
 
+
 def get_native_tray_classes() -> list[type]:
     if get_OSXApplication():
         from xpra.platform.darwin.tray import OSXTray
         return [OSXTray]
     return []
+
 
 def system_bell(*_args) -> bool:
     NSBeep()
@@ -195,8 +205,11 @@ def system_bell(*_args) -> bool:
 
 def _sizetotuple(s) -> tuple[int,int]:
     return int(s.width), int(s.height)
+
+
 def _recttotuple(r) -> tuple[int,int,int,int]:
     return int(r.origin.x), int(r.origin.y), int(r.size.width), int(r.size.height)
+
 
 def get_double_click_time() -> int:
     try:
@@ -213,17 +226,20 @@ def get_double_click_time() -> int:
 
 
 def get_window_min_size() -> tuple[int,int]:
-    #roughly enough to see the window buttons:
+    # roughly enough to see the window buttons:
     return 120, 1
 
-#def get_window_max_size():
+
+# def get_window_max_size():
 #    return 2**15-1, 2**15-1
 
+
 def get_window_frame_sizes():
-    #use a hard-coded window position and size:
+    # use a hard-coded window position and size:
     return get_window_frame_size(20, 20, 100, 100)
 
-def get_window_frame_size(x, y, w, h):
+
+def get_window_frame_size(x: int, y: int, w: int, h: int):
     try:
         cr = Quartz.NSMakeRect(x, y, w, h)
         mask = Quartz.NSTitledWindowMask | Quartz.NSClosableWindowMask | Quartz.NSMiniaturizableWindowMask | Quartz.NSResizableWindowMask
@@ -232,28 +248,30 @@ def get_window_frame_size(x, y, w, h):
         dy = int(wr[0][1] - cr[0][1])
         dw = int(wr[1][0] - cr[1][0])
         dh = int(wr[1][1] - cr[1][1])
-        #note: we assume that the title bar is at the top
-        #dx, dy and dw are usually 0
-        #dh is usually 22 on my 10.5.x system
+        # note: we assume that the title bar is at the top
+        # dx, dy and dw are usually 0
+        # dh is usually 22 on my 10.5.x system
         return {
-                "offset"    : (dx+dw//2, dy+dh),
-                "frame"     : (dx+dw//2, dx+dw//2, dy+dh, dy),
-                }
+            "offset": (dx+dw//2, dy+dh),
+            "frame": (dx+dw//2, dx+dw//2, dy+dh, dy),
+        }
     except Exception:
         log("failed to query frame size using Quartz, using hardcoded value", exc_info=True)
-        return {            #left, right, top, bottom:
-                "offset"    : (0, 22),
-                "frame"     : (0, 0, 22, 0),
-               }
+        return {            # left, right, top, bottom:
+            "offset": (0, 22),
+            "frame": (0, 0, 22, 0),
+        }
+
 
 def get_workarea():
     w = get_workareas()
-    if w and len(w)==1:
+    if w and len(w) == 1:
         return w[0]
     return None
 
-#per monitor workareas (assuming a single screen)
-def get_workareas():
+
+# per monitor workareas (assuming a single screen)
+def get_workareas() -> list:
     workareas = []
     screens = NSScreen.screens()
     for screen in screens:
@@ -269,6 +287,7 @@ def get_workareas():
         workareas.append((x, y, w, h))
     log("get_workareas()=%s", workareas)
     return workareas
+
 
 def get_vrefresh() -> int:
     vrefresh = []
@@ -290,7 +309,7 @@ def get_vrefresh() -> int:
     return -1
 
 
-def get_display_icc_info() -> dict[Any,dict]:
+def get_display_icc_info() -> dict[Any, dict]:
     info = {}
     try:
         err, active_displays, no = CG.CGGetActiveDisplayList(99, None, None)
@@ -301,8 +320,9 @@ def get_display_icc_info() -> dict[Any,dict]:
         log("failed to query colorspace for active displays: %s", e)
     return info
 
-def get_icc_info():
-    #maybe we shouldn't return anything if there's more than one display?
+
+def get_icc_info() -> dict:
+    # maybe we shouldn't return anything if there's more than one display?
     info = {}
     try:
         did = CG.CGMainDisplayID()
@@ -314,51 +334,54 @@ def get_icc_info():
 
 def get_colorspace_info(cs) -> dict[str,Any]:
     MODELS : dict[Any, str] = {
-              CG.kCGColorSpaceModelUnknown     : "unknown",
-              CG.kCGColorSpaceModelMonochrome  : "monochrome",
-              CG.kCGColorSpaceModelRGB         : "RGB",
-              CG.kCGColorSpaceModelCMYK        : "CMYK",
-              CG.kCGColorSpaceModelLab         : "lab",
-              CG.kCGColorSpaceModelDeviceN     : "DeviceN",
-              CG.kCGColorSpaceModelIndexed     : "indexed",
-              CG.kCGColorSpaceModelPattern     : "pattern",
-              }
-    #base = CGColorSpaceGetBaseColorSpace(cs)
-    #color_table = CGColorSpaceGetColorTable(cs)
+        CG.kCGColorSpaceModelUnknown     : "unknown",
+        CG.kCGColorSpaceModelMonochrome  : "monochrome",
+        CG.kCGColorSpaceModelRGB         : "RGB",
+        CG.kCGColorSpaceModelCMYK        : "CMYK",
+        CG.kCGColorSpaceModelLab         : "lab",
+        CG.kCGColorSpaceModelDeviceN     : "DeviceN",
+        CG.kCGColorSpaceModelIndexed     : "indexed",
+        CG.kCGColorSpaceModelPattern     : "pattern",
+    }
+    # base = CGColorSpaceGetBaseColorSpace(cs)
+    # color_table = CGColorSpaceGetColorTable(cs)
+
     def tomodelstr(v) -> str:
         return MODELS.get(v, "unknown")
     defs = (
-            ("name",                "CGColorSpaceCopyName",                 str),
-            ("icc-profile",         "CGColorSpaceCopyICCProfile",           str),
-            ("icc-data",            "CGColorSpaceCopyICCData",              str),
-            ("components",          "CGColorSpaceGetNumberOfComponents",    int),
-            ("supports-output",     "CGColorSpaceSupportsOutput",           bool),
-            ("model",               "CGColorSpaceGetModel",                 tomodelstr),
-            ("wide-gamut",          "CGColorSpaceIsWideGamutRGB",           bool),
-            ("color-table-count",   "CGColorSpaceGetColorTableCount",       int),
-            )
+        ("name",                "CGColorSpaceCopyName",                 str),
+        ("icc-profile",         "CGColorSpaceCopyICCProfile",           str),
+        ("icc-data",            "CGColorSpaceCopyICCData",              str),
+        ("components",          "CGColorSpaceGetNumberOfComponents",    int),
+        ("supports-output",     "CGColorSpaceSupportsOutput",           bool),
+        ("model",               "CGColorSpaceGetModel",                 tomodelstr),
+        ("wide-gamut",          "CGColorSpaceIsWideGamutRGB",           bool),
+        ("color-table-count",   "CGColorSpaceGetColorTableCount",       int),
+    )
     return _call_CG_conv(defs, cs)
+
 
 def get_display_mode_info(mode) -> dict[str,Any]:
     defs = (
-            ("width",               "CGDisplayModeGetWidth",                int),
-            ("height",              "CGDisplayModeGetHeight",               int),
-            ("pixel-encoding",      "CGDisplayModeCopyPixelEncoding",       str),
-            ("vrefresh",            "CGDisplayModeGetRefreshRate",          int),
-            ("io-flags",            "CGDisplayModeGetIOFlags",              int),
-            ("id",                  "CGDisplayModeGetIODisplayModeID",      int),
-            ("usable-for-desktop",  "CGDisplayModeIsUsableForDesktopGUI",   bool),
-            )
+        ("width",               "CGDisplayModeGetWidth",                int),
+        ("height",              "CGDisplayModeGetHeight",               int),
+        ("pixel-encoding",      "CGDisplayModeCopyPixelEncoding",       str),
+        ("vrefresh",            "CGDisplayModeGetRefreshRate",          int),
+        ("io-flags",            "CGDisplayModeGetIOFlags",              int),
+        ("id",                  "CGDisplayModeGetIODisplayModeID",      int),
+        ("usable-for-desktop",  "CGDisplayModeIsUsableForDesktopGUI",   bool),
+    )
     return _call_CG_conv(defs, mode)
+
 
 def get_display_modes_info(modes) -> dict[int,Any]:
     return {i:get_display_mode_info(mode) for i,mode in enumerate(modes)}
 
 
 def _call_CG_conv(defs:tuple[tuple[str,str,Callable],...], argument) -> dict[str,Any]:
-    #utility for calling functions on CG with an argument,
-    #then convert the return value using another function
-    #missing functions are ignored, and None values are skipped
+    # utility for calling functions on CG with an argument,
+    # then convert the return value using another function
+    # missing functions are ignored, and None values are skipped
     info = {}
     for prop_name, fn_name, conv in defs:
         fn = getattr(CG, fn_name, None)
@@ -377,33 +400,34 @@ def _call_CG_conv(defs:tuple[tuple[str,str,Callable],...], argument) -> dict[str
             log("function %s does not exist", fn_name)
     return info
 
-def get_display_info(did) -> dict[str,Any]:
+
+def get_display_info(did) -> dict[str, Any]:
     defs = (
-            ("height",                  "CGDisplayPixelsHigh",              int),
-            ("width",                   "CGDisplayPixelsWide",              int),
-            ("bounds",                  "CGDisplayBounds",                  _recttotuple),
-            ("active",                  "CGDisplayIsActive",                bool),
-            ("asleep",                  "CGDisplayIsAsleep",                bool),
-            ("online",                  "CGDisplayIsOnline",                bool),
-            ("main",                    "CGDisplayIsMain",                  bool),
-            ("builtin",                 "CGDisplayIsBuiltin",               bool),
-            ("in-mirror-set",           "CGDisplayIsInMirrorSet",           bool),
-            ("always-in-mirror-set",    "CGDisplayIsAlwaysInMirrorSet",     bool),
-            ("in-hw-mirror-set",        "CGDisplayIsInHWMirrorSet",         bool),
-            ("mirrors-display",         "CGDisplayMirrorsDisplay",          int),
-            ("stereo",                  "CGDisplayIsStereo",                bool),
-            ("primary",                 "CGDisplayPrimaryDisplay",          bool),
-            ("unit-number",             "CGDisplayUnitNumber",              int),
-            ("vendor",                  "CGDisplayVendorNumber",            int),
-            ("model",                   "CGDisplayModelNumber",             int),
-            ("serial",                  "CGDisplaySerialNumber",            int),
-            ("service-port",            "CGDisplayIOServicePort",           int),
-            ("size",                    "CGDisplayScreenSize",              _sizetotuple),
-            ("rotation",                "CGDisplayRotation",                int),
-            ("colorspace",              "CGDisplayCopyColorSpace",          get_colorspace_info),
-            ("opengl-acceleration",     "CGDisplayUsesOpenGLAcceleration",  bool),
-            ("mode",                    "CGDisplayCopyDisplayMode",         get_display_mode_info),
-            )
+        ("height",                  "CGDisplayPixelsHigh",              int),
+        ("width",                   "CGDisplayPixelsWide",              int),
+        ("bounds",                  "CGDisplayBounds",                  _recttotuple),
+        ("active",                  "CGDisplayIsActive",                bool),
+        ("asleep",                  "CGDisplayIsAsleep",                bool),
+        ("online",                  "CGDisplayIsOnline",                bool),
+        ("main",                    "CGDisplayIsMain",                  bool),
+        ("builtin",                 "CGDisplayIsBuiltin",               bool),
+        ("in-mirror-set",           "CGDisplayIsInMirrorSet",           bool),
+        ("always-in-mirror-set",    "CGDisplayIsAlwaysInMirrorSet",     bool),
+        ("in-hw-mirror-set",        "CGDisplayIsInHWMirrorSet",         bool),
+        ("mirrors-display",         "CGDisplayMirrorsDisplay",          int),
+        ("stereo",                  "CGDisplayIsStereo",                bool),
+        ("primary",                 "CGDisplayPrimaryDisplay",          bool),
+        ("unit-number",             "CGDisplayUnitNumber",              int),
+        ("vendor",                  "CGDisplayVendorNumber",            int),
+        ("model",                   "CGDisplayModelNumber",             int),
+        ("serial",                  "CGDisplaySerialNumber",            int),
+        ("service-port",            "CGDisplayIOServicePort",           int),
+        ("size",                    "CGDisplayScreenSize",              _sizetotuple),
+        ("rotation",                "CGDisplayRotation",                int),
+        ("colorspace",              "CGDisplayCopyColorSpace",          get_colorspace_info),
+        ("opengl-acceleration",     "CGDisplayUsesOpenGLAcceleration",  bool),
+        ("mode",                    "CGDisplayCopyDisplayMode",         get_display_mode_info),
+    )
     info = _call_CG_conv(defs, did)
     try:
         modes = CG.CGDisplayCopyAllDisplayModes(did, None)
@@ -412,22 +436,24 @@ def get_display_info(did) -> dict[str,Any]:
         log("failed to query display modes: %s", e)
     return info
 
-def get_displays_info() -> dict[str,Any]:
+
+def get_displays_info() -> dict[str, Any]:
     did = CG.CGMainDisplayID()
-    info : dict[str,Any] = {
-            "main" : get_display_info(did),
-            }
+    info: dict[str, Any] = {
+        "main" : get_display_info(did),
+    }
     err, active_displays, no = CG.CGGetActiveDisplayList(99, None, None)
-    if err==0 and no>0:
-        for i,adid in enumerate(active_displays):
+    if err == 0 and no > 0:
+        for i, adid in enumerate(active_displays):
             info.setdefault("active", {})[i] = get_display_info(adid)
     err, online_displays, no = CG.CGGetOnlineDisplayList(99, None, None)
-    if err==0 and no>0:
-        for i,odid in enumerate(online_displays):
+    if err == 0 and no > 0:
+        for i, odid in enumerate(online_displays):
             info.setdefault("online", {})[i] = get_display_info(odid)
     return info
 
-def get_info() -> dict[str,Any]:
+
+def get_info() -> dict[str, Any]:
     from xpra.platform.gui import get_info_base
     i = get_info_base()
     with log.trap_error("Error: OSX get_display_info failed"):
@@ -435,8 +461,9 @@ def get_info() -> dict[str,Any]:
     return i
 
 
-#keep track of the window object for each view
+# keep track of the window object for each view
 VIEW_TO_WINDOW : WeakValueDictionary[int,Any] = WeakValueDictionary()
+
 
 def get_nsview(window) -> int:
     try:
@@ -448,11 +475,13 @@ def get_nsview(window) -> int:
     except Exception:
         return 0
 
+
 def add_window_hooks(window) -> None:
     if WHEEL:
         nsview = get_nsview(window)
         if nsview:
             VIEW_TO_WINDOW[nsview] = window
+
 
 def remove_window_hooks(window) -> None:
     if WHEEL:
@@ -472,9 +501,9 @@ def get_CG_imagewrapper(rect=None):
         x, y, w, h = rect
         region = CG.CGRectMake(x, y, roundup(w, 2), roundup(h, 2))
     image = CG.CGWindowListCreateImage(region,
-                CG.kCGWindowListOptionOnScreenOnly,
-                CG.kCGNullWindowID,
-                CG.kCGWindowImageNominalResolution) #CG.kCGWindowImageDefault)
+                                       CG.kCGWindowListOptionOnScreenOnly,
+                                       CG.kCGNullWindowID,
+                                       CG.kCGWindowImageNominalResolution)  # CG.kCGWindowImageDefault)
     width = CG.CGImageGetWidth(image)
     height = CG.CGImageGetHeight(image)
     bpc = CG.CGImageGetBitsPerComponent(image)
@@ -487,7 +516,8 @@ def get_CG_imagewrapper(rect=None):
     argb = CG.CGDataProviderCopyData(prov)
     return ImageWrapper(x, y, width, height, argb, "BGRX", 24, rowstride)
 
-def take_screenshot() -> tuple[int,int,str,int,bytes]:
+
+def take_screenshot() -> tuple[int, int, str, int, bytes]:
     log("grabbing screenshot")
     from PIL import Image
     from io import BytesIO
@@ -501,6 +531,7 @@ def take_screenshot() -> tuple[int,int,str,int,bytes]:
     buf.close()
     return w, h, "png", image.get_rowstride(), data
 
+
 def force_focus(duration=2000) -> None:
     enable_focus_workaround()
     GLib.timeout_add(duration, disable_focus_workaround)
@@ -511,6 +542,8 @@ __osx_open_signal = False
 #to get the NSApplicationOpenFile signal,
 #or the GURLHandler.
 OPEN_SIGNAL_WAIT = envint("XPRA_OSX_OPEN_SIGNAL_WAIT", 500)
+
+
 def add_open_handlers(open_file_cb:Callable, open_url_cb:Callable) -> None:
 
     def idle_add(fn, *args):
@@ -532,11 +565,13 @@ def add_open_handlers(open_file_cb:Callable, open_url_cb:Callable) -> None:
     register_file_handler(open_file)
     register_URL_handler(open_URL)
 
-def wait_for_open_handlers(show_cb:Callable,
-                           open_file_cb:Callable,
-                           open_url_cb:Callable,
-                           delay:int=OPEN_SIGNAL_WAIT) -> None:
+
+def wait_for_open_handlers(show_cb: Callable,
+                           open_file_cb: Callable,
+                           open_url_cb: Callable,
+                           delay: int = OPEN_SIGNAL_WAIT) -> None:
     add_open_handlers(open_file_cb, open_url_cb)
+
     def may_show():
         global __osx_open_signal
         log("may_show() osx open signal=%s", __osx_open_signal)
@@ -544,6 +579,7 @@ def wait_for_open_handlers(show_cb:Callable,
             force_focus()
             show_cb()
     GLib.timeout_add(delay, may_show)
+
 
 def register_file_handler(handler:Callable) -> None:
     log("register_file_handler(%s)", handler)
@@ -553,8 +589,10 @@ def register_file_handler(handler:Callable) -> None:
         log.error("Error: cannot handle file associations:")
         log.estr(e)
 
+
 def register_URL_handler(handler:Callable) -> None:
     log("register_URL_handler(%s)", handler)
+
     class GURLHandler(NSObject):
         def handleEvent_withReplyEvent_(self, event, reply_event):
             log("GURLHandler.handleEvent(%s, %s)", event, reply_event)
@@ -574,7 +612,7 @@ def register_URL_handler(handler:Callable) -> None:
     manager.setEventHandler_andSelector_forEventClass_andEventID_(
         urlh, 'handleEvent:withReplyEvent:',
         four_char_to_int(b'GURL'), four_char_to_int(b'GURL')
-        )
+    )
 
 
 class AppDelegate(NSObject):
@@ -595,6 +633,7 @@ class AppDelegate(NSObject):
         mouselog("wheel_event_handler(%#x, %.4f, %.4f, %s) window=%s", nsview, deltax, deltay, precise, window)
         if not window:
             return False    #not handled
+
         def normalize_precision(distance):
             if distance==0:
                 return 0
@@ -626,13 +665,13 @@ class AppDelegate(NSObject):
         log("register_sleep_handlers()")
         self.workspace : NSWorkspace = NSWorkspace.sharedWorkspace()
         self.notificationCenter = self.workspace.notificationCenter()
+
         def add_observer(fn, val):
             self.notificationCenter.addObserver_selector_name_object_(self, fn, val, None)
-        #NSWorkspaceWillPowerOffNotification
+        # NSWorkspaceWillPowerOffNotification
         add_observer(self.receiveSleepNotification_, NSWorkspaceWillSleepNotification)
         add_observer(self.receiveWakeNotification_, NSWorkspaceDidWakeNotification)
         add_observer(self.receiveWorkspaceChangeNotification_, NSWorkspaceActiveSpaceDidChangeNotification)
-
 
     @objc.typedSelector(b'B@:#B')
     def applicationShouldHandleReopen_hasVisibleWindows_(self, ns_app, flag):
@@ -661,7 +700,7 @@ class AppDelegate(NSObject):
             else:
                 self.delegate_cb("sleep")
 
-    #def application_openFile_(self, application, fileName):
+    # def application_openFile_(self, application, fileName):
     #    log.warn("application_openFile_(%s, %s)", application, fileName)
     @objc.typedSelector(b'v@:I')
     def receiveSleepNotification_(self, aNotification):
@@ -685,12 +724,14 @@ class AppDelegate(NSObject):
 
 def disable_focus_workaround() -> None:
     NSApp.activateIgnoringOtherApps_(False)
+
+
 def enable_focus_workaround() -> None:
     NSApp.activateIgnoringOtherApps_(True)
 
 
 def can_access_display() -> bool:
-    #see: https://stackoverflow.com/a/11511419/428751
+    # see: https://stackoverflow.com/a/11511419/428751
     d = Quartz.CGSessionCopyCurrentDictionary()
     if not d:
         return False
@@ -740,10 +781,10 @@ class ClientExtras:
             r = CGDisplayRemoveReconfigurationCallback(self.display_change, self)
         except ValueError as e:
             log("CGDisplayRemoveReconfigurationCallback: %s", e)
-            #if we exit from a signal, this may fail
+            # if we exit from a signal, this may fail
             r = 1
-        if r!=0:
-            #don't bother logging this as a warning since we are terminating anyway:
+        if r != 0:
+            # don't bother logging this as a warning since we are terminating anyway:
             log("failed to unregister display reconfiguration callback")
         self.client = None
 
@@ -763,7 +804,7 @@ class ClientExtras:
                 "sleep" : self.client.suspend,
                 "wake" : self.client.resume,
                 "deiconify" : self.client.deiconify_windows,
-                })
+            })
         self.shared_app.setDelegate_(self.delegate)
         log("setup_event_listener() the application delegate has been registered")
         r = CGDisplayRegisterReconfigurationCallback(self.display_change, self)
@@ -773,8 +814,8 @@ class ClientExtras:
     def display_change(self, display, flags, userinfo) -> None:
         log("display_change%s", (display, flags, userinfo))
         c = self.client
-        #The display mode has changed
-        #opengl windows may need to be re-created since the GPU may have changed:
+        # The display mode has changed
+        # opengl windows may need to be re-created since the GPU may have changed:
         if (flags & kCGDisplaySetModeFlag) and c and c.opengl_enabled:
             c.reinit_windows()
 
@@ -804,13 +845,13 @@ class ClientExtras:
             return False
 
     def run(self) -> None:
-        #this is for running standalone
+        # this is for running standalone
         log("starting console event loop")
         self.event_loop_started = True
         import PyObjCTools.AppHelper as AppHelper
         AppHelper.runConsoleEventLoop(installInterrupt=True)
-        #when running from the GTK main loop, we rely on another part of the code
-        #to run the event loop for us
+        # when running from the GTK main loop, we rely on another part of the code
+        # to run the event loop for us
 
     def stop(self) -> None:
         if self.event_loop_started:
