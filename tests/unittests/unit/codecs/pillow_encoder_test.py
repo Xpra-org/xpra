@@ -11,7 +11,8 @@ from xpra.codecs.pillow.encoder import (
     get_encodings, encode,
     get_version, get_type, get_info,
     selftest,
-    )
+)
+from xpra.util import noerr
 
 
 class TestPillow(unittest.TestCase):
