@@ -53,26 +53,27 @@ cdef extern from "NvFBC.h":
     int NVFBC_VERSION_MAJOR
     int NVFBC_VERSION_MINOR
 
-    ctypedef int NVFBCSTATUS
-
-    NVFBCSTATUS NVFBC_SUCCESS
-    NVFBCSTATUS NVFBC_ERR_API_VERSION           #This indicates that the API version between the client and the library is not compatible
-    NVFBCSTATUS NVFBC_ERR_INTERNAL              #An internal error occurred
-    NVFBCSTATUS NVFBC_ERR_INVALID_PARAM         #This indicates that one or more of the parameter passed to the API call is invalid
-    NVFBCSTATUS NVFBC_ERR_INVALID_PTR           #This indicates that one or more of the pointers passed to the API call is invalid
-    NVFBCSTATUS NVFBC_ERR_INVALID_HANDLE        #This indicates that the handle passed to the API call to identify the client is invalid
-    NVFBCSTATUS NVFBC_ERR_MAX_CLIENTS           #This indicates that the maximum number of threaded clients of the same process has been reached.
+    ctypedef enum NVFBCSTATUS:
+        NVFBC_SUCCESS
+        NVFBC_ERR_API_VERSION           #This indicates that the API version between the client and the library is not compatible
+        NVFBC_ERR_INTERNAL              #An internal error occurred
+        NVFBC_ERR_INVALID_PARAM         #This indicates that one or more of the parameter passed to the API call is invalid
+        NVFBC_ERR_INVALID_PTR           #This indicates that one or more of the pointers passed to the API call is invalid
+        NVFBC_ERR_INVALID_HANDLE        #This indicates that the handle passed to the API call to identify the client is invalid
+        NVFBC_ERR_MAX_CLIENTS           #This indicates that the maximum number of threaded clients of the same process has been reached.
                                                 #The limit is 10 threads per process.
                                                 #There is no limit on the number of process.
-    NVFBCSTATUS NVFBC_ERR_UNSUPPORTED           #This indicates that the requested feature is not currently supported by the library.
-    NVFBCSTATUS NVFBC_ERR_OUT_OF_MEMORY         #This indicates that the API call failed because it was unable to allocate
+        NVFBC_ERR_UNSUPPORTED           #This indicates that the requested feature is not currently supported by the library.
+        NVFBC_ERR_OUT_OF_MEMORY         #This indicates that the API call failed because it was unable to allocate
                                                 #enough memory to perform the requested operation
-    NVFBCSTATUS NVFBC_ERR_BAD_REQUEST           #This indicates that the API call was not expected.  This happens when
+        NVFBC_ERR_BAD_REQUEST           #This indicates that the API call was not expected.  This happens when
                                                 #API calls are performed in a wrong order, such as trying to capture
                                                 #a frame prior to creating a new capture session; or trying to set up
                                                 #a capture to video memory although a capture session to system memory
                                                 #was created.
-    ctypedef int NVFBC_BOOL
+    ctypedef enum NVFBC_BOOL:
+        NVFBC_FALSE
+        NVFBC_TRUE
 
     ctypedef int NVFBC_CAPTURE_TYPE
     NVFBC_CAPTURE_TYPE NVFBC_CAPTURE_TO_SYS
@@ -85,12 +86,12 @@ cdef extern from "NvFBC.h":
     NVFBC_TRACKING_TYPE NVFBC_TRACKING_OUTPUT
     NVFBC_TRACKING_TYPE NVFBC_TRACKING_SCREEN
 
-    ctypedef int NVFBC_BUFFER_FORMAT
-    NVFBC_BUFFER_FORMAT NVFBC_BUFFER_FORMAT_ARGB    #Data will be converted to ARGB unsigned byte format. 32 bpp
-    NVFBC_BUFFER_FORMAT NVFBC_BUFFER_FORMAT_BGRA    #Data will be converted to BGRA unsigned byte format. 32 bpp
-    NVFBC_BUFFER_FORMAT NVFBC_BUFFER_FORMAT_RGB     #Data will be converted to RGB unsigned byte format. 24 bpp
-    NVFBC_BUFFER_FORMAT NVFBC_BUFFER_FORMAT_YUV420P #Data will be converted to YUV 420 planar format using HDTV weights according to ITU-R BT.709.  12 bpp.
-    NVFBC_BUFFER_FORMAT NVFBC_BUFFER_FORMAT_YUV444P #Data will be converted to YUV 444 planar format using HDTV weights according to ITU-R BT.709.  24 bpp
+    ctypedef enum NVFBC_BUFFER_FORMAT:
+        NVFBC_BUFFER_FORMAT_ARGB    #Data will be converted to ARGB unsigned byte format. 32 bpp
+        NVFBC_BUFFER_FORMAT_BGRA    #Data will be converted to BGRA unsigned byte format. 32 bpp
+        NVFBC_BUFFER_FORMAT_RGB     #Data will be converted to RGB unsigned byte format. 24 bpp
+        NVFBC_BUFFER_FORMAT_YUV420P #Data will be converted to YUV 420 planar format using HDTV weights according to ITU-R BT.709.  12 bpp.
+        NVFBC_BUFFER_FORMAT_YUV444P #Data will be converted to YUV 444 planar format using HDTV weights according to ITU-R BT.709.  24 bpp
 
     ctypedef uint64_t NVFBC_SESSION_HANDLE
 
