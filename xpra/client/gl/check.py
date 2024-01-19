@@ -260,12 +260,14 @@ def check_shader_functions() -> str:
     from OpenGL.GL import (
         glCreateShader, glDeleteShader,
         glShaderSource, glCompileShader, glGetShaderiv, glGetShaderInfoLog,
+        glDeleteProgram,
         GL_FRAGMENT_SHADER, GL_COMPILE_STATUS,
     )
     # don't check GL_FALSE, which is zero!
     return check_available(
         glCreateShader, glDeleteShader,
         glShaderSource, glCompileShader, glGetShaderiv, glGetShaderInfoLog,
+        glDeleteProgram,
         GL_FRAGMENT_SHADER, GL_COMPILE_STATUS,
     )
 
