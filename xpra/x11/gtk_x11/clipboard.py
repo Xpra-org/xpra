@@ -468,7 +468,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 return tuple(fmts)
             # if we can't choose a text target, at least choose a supported one:
             if not any(x for x in targets if x in TEXT_TARGETS and x in self.preferred_targets):
-                return tuple(x for x in targets if x in self.preferred_targets)
+                return tuple(x for x in self.preferred_targets if x in targets)
         # otherwise choose a text target:
         return tuple(x for x in targets if x in TEXT_TARGETS)
 
