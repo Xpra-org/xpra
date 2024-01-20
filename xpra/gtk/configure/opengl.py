@@ -231,7 +231,10 @@ class ConfigureGUI(BaseGUIWindow):
 
     def close_test_windows(self):
         for window in self.windows:
-            window.destroy()
+            try:
+                window.destroy()
+            except Exception:
+                log.warn(f"Warning: error closing window {window}", exc_info=True)
         self.windows = []
 
     def test_passed(self, *_args):
