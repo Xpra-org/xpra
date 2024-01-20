@@ -38,6 +38,11 @@ if CLIPBOARDS_ENV is not None:
     CLIPBOARDS = [x.upper().strip() for x in CLIPBOARDS_ENV.split(",")]
 del CLIPBOARDS_ENV
 
+TEXT_TARGETS: tuple[str, ...] = tuple(
+    os.environ.get("XPRA_CLIPBOARD_TEXT_TARGETS",
+                   "UTF8_STRING,TEXT,STRING,text/plain,text/html").split(",")
+)
+
 TEST_DROP_CLIPBOARD_REQUESTS = envint("XPRA_TEST_DROP_CLIPBOARD")
 DELAY_SEND_TOKEN = envint("XPRA_DELAY_SEND_TOKEN", 100)
 
@@ -74,8 +79,6 @@ DISCARD_EXTRA_TARGETS = tuple(re.compile(dt) for dt in get_discard_targets(
 log("DISCARD_TARGETS=%s", csv(DISCARD_TARGETS))
 log("DISCARD_EXTRA_TARGETS=%s", csv(DISCARD_EXTRA_TARGETS))
 
-
-TEXT_TARGETS : tuple[str, ...] = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
 
 TRANSLATED_TARGETS : dict[str, str] = {
     "application/x-moz-nativehtml" : "UTF8_STRING",
