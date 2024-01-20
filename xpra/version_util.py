@@ -238,7 +238,7 @@ def do_get_platform_info() -> Dict[str, Any]:
             import re
             for line in data.split("\n"):
                 if "model name" in line:
-                    return re.sub(".*model name.*:", "", line,1).strip()
+                    return re.sub(".*model name.*:", "", line, count=1).strip()
         return pp.processor()
     info : Dict[str, Any] = {}
     ld = get_linux_distribution()
