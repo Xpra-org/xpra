@@ -426,26 +426,27 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             self._have_token = False
             self.emit("send-clipboard-token", token_data)
 
-        def with_targets(targets) -> None:
+        def with_targets(otargets) -> None:
             if not self._greedy_client:
                 send_token_with_targets()
                 return
             # find the preferred targets:
-            targets = self.choose_targets(targets)
+            targets = self.choose_targets(otargets)
+            log(f"choose_targets({otargets})={targets}")
             if not targets:
                 send_token_with_targets()
                 return
             target = targets[0]
 
-            def got_text_target(dtype, dformat, data) -> None:
-                log("got_text_target(%s, %s, %s)", dtype, dformat, ellipsizer(data))
+            def got_chosen_target(dtype, dformat, data) -> None:
+                log("got_chosen_target(%s, %s, %s)", dtype, dformat, ellipsizer(data))
                 if not (dtype and dformat and data):
                     send_token_with_targets()
                     return
                 token_data = (targets, (target, dtype, dformat, data))
                 self._have_token = False
                 self.emit("send-clipboard-token", token_data)
-            self.get_contents(target, got_text_target)
+            self.get_contents(target, got_chosen_target)
         if self.targets:
             with_targets(self.targets)
             return
@@ -466,11 +467,18 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                     fmts.append(img_fmt)
             if fmts:
                 return tuple(fmts)
-            # if we can't choose a text target, at least choose a supported one:
-            if not any(x for x in targets if x in TEXT_TARGETS and x in self.preferred_targets):
-                return tuple(x for x in self.preferred_targets if x in targets)
-        # otherwise choose a text target:
-        return tuple(x for x in targets if x in TEXT_TARGETS)
+            common_targets = tuple(x for x in self.preferred_targets if x in targets)
+            # prefer text targets:
+            preferred_text_targets = tuple(x for x in common_targets if x in TEXT_TARGETS)
+            log(f"choose_targets(..) {common_targets=}, {preferred_text_targets=}")
+            if preferred_text_targets:
+                return preferred_text_targets
+            return common_targets
+        # prefer a text target:
+        text_targets = tuple(x for x in targets if x in TEXT_TARGETS)
+        if text_targets:
+            return text_targets
+        return targets
 
     def do_selection_clear_event(self, event) -> None:
         log("do_xpra_selection_clear(%s) was owned=%s", event, self.owned)
