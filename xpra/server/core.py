@@ -677,6 +677,7 @@ class ServerCore:
             if POSIX:
                 for d in ("/usr/share/xpra", "/usr/local/share/xpra"):
                     dirs.append((d, "www"))
+                dirs.append("/var/www/xpra")
             for ad, d in dirs:
                 self._www_dir = os.path.abspath(os.path.join(ad, d))
                 if os.path.exists(self._www_dir):
