@@ -66,7 +66,10 @@ log("DISCARD_TARGETS=%s", csv(DISCARD_TARGETS))
 log("DISCARD_EXTRA_TARGETS=%s", csv(DISCARD_EXTRA_TARGETS))
 
 
-TEXT_TARGETS = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
+TEXT_TARGETS = tuple(
+    os.environ.get("XPRA_CLIPBOARD_TEXT_TARGETS",
+                   "UTF8_STRING,TEXT,STRING,text/plain,text/html").split(",")
+)
 
 TRANSLATED_TARGETS = {
     "application/x-moz-nativehtml" : "UTF8_STRING"
