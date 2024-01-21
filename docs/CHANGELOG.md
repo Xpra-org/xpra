@@ -1,7 +1,8 @@
 # Changelog
 
-## [5.0.5] 2023-12-17
+## [5.0.5] 2024-01-21
 * Major:
+    * [race condition in OpenGL initialization](https://github.com/Xpra-org/xpra/commit/498b8f6c7da012bb555fb087ead26ba218701ada)
     * [http socket upgrades for slow requests](https://github.com/Xpra-org/xpra/commit/c2935630d505b11752c2851dc0f1b1590c2788eb)
     * [fixup DPI backport for Xvfb users](https://github.com/Xpra-org/xpra/commit/30c7cfa5a9f119aac300b5652d3d545f9ca799cf)
     * [window max-height nor honoured](https://github.com/Xpra-org/xpra/commit/824d488b11d78df580657181fcb10d8021c6c78d)
@@ -12,14 +13,27 @@
     * [incomplete desktop server startup with `Xvfb` backend](https://github.com/Xpra-org/xpra/commit/c2dfebc63caa9d85517a2b8f8e6158d1ffeb32f8)
 * Platforms and packaging:
     * (Free)BSD compatibility: [don't build pam](https://github.com/Xpra-org/xpra/commit/dd80ab2f02fbd2f4e72165c99012d072a5373952), [do build drm](https://github.com/Xpra-org/xpra/commit/4753b487a56b16d065b868ababc8a27e99e025d0)
-    * [Cython 3.0.7](https://github.com/Xpra-org/xpra/commit/143e8a0a38b7567293ed9cf62ee9940aa94defec)
+    * [MS Windows console title was not set](https://github.com/Xpra-org/xpra/commit/70b8e54bafb2444d88c050334ce4e300d81940c1)
+    * [close log files to avoid warnings on MS Windows](https://github.com/Xpra-org/xpra/commit/bb77dfc46902ee7e2626d53c688434028fc48610)
+    * [only build CUDA kernels if needed](https://github.com/Xpra-org/xpra/commit/c388d6930de7d49da768fca5f27ed39b262c7013)
+    * [RHEL8 pycuda 2022.1 patch for compatibility with CUDA 12.x](https://github.com/Xpra-org/xpra/commit/dd3e514f92269ba9cf0c967c576aea59af23a2a0)
+    * [use the correct enum type for nvfbc constants](https://github.com/Xpra-org/xpra/commit/5d962187d75bfe1c77a62e3c5971668c8f444a45)
     * [pycuda 2024.1](https://github.com/Xpra-org/xpra/commit/513d3292bd0181714d9e5778bb857ffb0a0621b2)
-    * [aioquic 0.9.24](https://github.com/Xpra-org/xpra/commit/76571a2b62aa0372260f885c3156a0270b7c0a8f)
+    * [Cython 3.0.8](https://github.com/Xpra-org/xpra/commit/3b77de331d8978c5c999c2115dd3fcd75d22632f)
+    * [aioquic 0.9.25](https://github.com/Xpra-org/xpra/commit/a026d41f783f53c222b4e0bb16d89fc29382a0e7)
+    * [disable auto-dependencies for python modules](https://github.com/Xpra-org/xpra/commit/51cfb4e6bba2db4f4d0237eab0f52bbe1e7c6c04)
+* Clipboard:
+    * [honour client specified order of clipboard preferred targets](https://github.com/Xpra-org/xpra/commit/0da4d81741fed523e1d356f8ab3fce209cdbd221)
+    * [allow `text/html` as `text` target](https://github.com/Xpra-org/xpra/commit/eaf2e5472b7a3f775d2fd3a6944804eaa833f268)
 * Minor:
+    * [don't wrap our own exceptions twice](https://github.com/Xpra-org/xpra/commit/bc4a33642923ca7274971678325a1a570076b156)
+    * [support multiple attributes with `bind` options](https://github.com/Xpra-org/xpra/commit/eaf2e5472b7a3f775d2fd3a6944804eaa833f268)
     * [make iconify delay configurable](https://github.com/Xpra-org/xpra/commit/a9441fb82745fb6cd8e0c2f2d085a1c1a7e3fe4c)
     * [update trixie and sid libavif dependency](https://github.com/Xpra-org/xpra/commit/4ba44484eb9d8a3225d11d823f4ea57794dd08b7)
     * [simplify regex syntax](https://github.com/Xpra-org/xpra/commit/8cf8494340a26a1149ee7f273eaa27c1e62a0aab)
+    * [pillow unit test failure with versions >= 10](https://github.com/Xpra-org/xpra/commit/1275e3caac610c94174a11862bf7fe61cc8b9f6c)
     * [documentation dead links](https://github.com/Xpra-org/xpra/commit/c322b77f1c3d7d2d95c9ff94362ee1c16cc3e022)
+    * deprecation warnings: [ssl constants](https://github.com/Xpra-org/xpra/commit/111ec73e442569bc949644a0894340125f94f82e), [re.sub](https://github.com/Xpra-org/xpra/commit/119e58de1a687ba75d917da936bce33d1d4a7d63)
 
 ## [5.0.4] 2023-11-28
 * Major:

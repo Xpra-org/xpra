@@ -768,8 +768,42 @@ fi
 
 
 %changelog
-* Wed Nov 29 2023 Antoine Martin <antoine@xpra.org> 5.0.5-10
-- TODO
+* Sun Jan 21 2024 Antoine Martin <antoine@xpra.org> 5.0.5-10
+- Major:
+   race condition in OpenGL initialization
+   http socket upgrades for slow requests
+   fixup DPI backport for Xvfb users
+   window max-height nor honoured
+   tools and examples hang on SIGINT
+   workaround missing icon size config
+   broken about dialog
+   workaround paramiko error with agent keys
+   incomplete desktop server startup with `Xvfb` backend
+- Platforms and packaging:
+   (Free)BSD compatibility: don't build pam, do build drm
+   MS Windows console title was not set
+   close log files to avoid warnings on MS Windows
+   only build CUDA kernels if needed
+   RHEL8 pycuda 2022.1 patch for compatibility with CUDA 12.x
+   use the correct enum type for nvfbc constants
+   pycuda 2024.1
+   Cython 3.0.8
+   aioquic 0.9.25
+   disable auto-dependencies for python modules
+- Clipboard:
+   honour client specified order of clipboard preferred targets
+   allow `text/html` as `text` target
+- Minor:
+   don't wrap our own exceptions twice
+   support multiple attributes with `bind` options
+   make iconify delay configurable
+   update trixie and sid libavif dependency
+   simplify regex syntax
+   pillow unit test failure with versions >= 10
+   documentation dead links
+   deprecation warnings: ssl constants, re.sub
+
+
 * Tue Nov 28 2023 Antoine Martin <antoine@xpra.org> 5.0.4-10
 - Major:
    missing flush marker with some scroll screen updates
