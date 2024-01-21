@@ -17,7 +17,7 @@ import ctypes
 from ctypes import WINFUNCTYPE, WinDLL, POINTER, byref, c_int
 from ctypes.wintypes import BOOL, HANDLE, DWORD, LPWSTR, LPCWSTR, LPVOID, POINT, WORD, SMALL_RECT
 
-from xpra.util import envbool
+from xpra.util import envbool, noerr
 from xpra.os_util import PYTHON2, PYTHON3
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import (
@@ -381,3 +381,12 @@ def do_clean():
         except IOError:
             pass
         sys.stdin.readline()
+        return
+    # undo the redirect to file:
+    if REDIRECT_OUTPUT and envbool("XPRA_LOG_TO_FILE", True):
+        log_filename = os.environ.get("XPRA_LOG_FILENAME")
+        if log_filename and os.path.exists(log_filename):
+            noerr(sys.stdout.close)
+            sys.stdout = sys.stderr = None
+
+
