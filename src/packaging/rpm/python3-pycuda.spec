@@ -28,6 +28,7 @@ License:        MIT
 Group:          Development/Libraries/Python
 %if !0%{?el8}
 Source0:        https://files.pythonhosted.org/packages/dd/b2/e30282f3286ddad05ef44548fa5c306a179ed3baceefa699af078e49ce6e/pycuda-%{version}.tar.gz
+Patch0:         pycuda-oldcompute.patch
 %else
 Source0:        https://files.pythonhosted.org/packages/2d/1f/48a3a5b2c715345e7af1e09361100bd98c3d72b4025371692ab233f523d3/pycuda-%{version}.tar.gz
 Patch1:		pycuda-compute2x.patch

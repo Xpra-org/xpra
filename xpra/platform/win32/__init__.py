@@ -85,7 +85,7 @@ def set_prgname(name):
     global prg_name
     prg_name = name
     try:
-        SetConsoleTitleA(name)
+        SetConsoleTitleA(name.encode("latin1"))
         if PYTHON2:
             import glib     #@UnresolvedImport
             glib.set_prgname(name)
