@@ -1,5 +1,6 @@
 v3.1.7 (2024-01-08)
 	-- major fixes:
+		- race condition in OpenGL initialization
 		- http socket upgrades for slow requests
 		- size constraint calculation for max size
 		- workaround paramiko error with some agent keys
@@ -8,7 +9,9 @@ v3.1.7 (2024-01-08)
 		- pycuda 2020.1 patch for compatibility between RHEL 8 and newer CUDA SDKs
 		- always build python rencode and python lz4 for RHEL 9
 		- newer libyuv snapshot
-		- Cython 0.29.37.1 / 3.0.7
+		- install Cython via pip for DEB builds
+		- Cython 0.29.37.1 / 3.0.8
+		- ffmpeg 6.1.1
 	-- cosmetic:
 		- Python 3.12 SyntaxWarning
 
