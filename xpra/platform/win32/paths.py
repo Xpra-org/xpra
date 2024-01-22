@@ -63,6 +63,10 @@ def do_get_resources_dir() -> str:
         share_xpra = os.path.join(d, "share", "xpra")
         if os.path.exists(share_xpra):
             return share_xpra
+        # source directory?
+        share_xpra = os.path.join(d, "fs", "share", "xpra")
+        if os.path.exists(share_xpra):
+            return share_xpra
     return app_dir
 
 
