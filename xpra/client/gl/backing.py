@@ -54,6 +54,7 @@ from xpra.os_util import POSIX, OSX, gi_import
 from xpra.util.str_fn import repr_ellipsized, nonl, bytestostr, hexstr
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.types import typedict
+from xpra.util.system import is_Wayland
 from xpra.common import roundup
 from xpra.codecs.constants import get_subsampling_divs, get_plane_name
 from xpra.client.gui.window_border import WindowBorder
@@ -161,7 +162,7 @@ DATATYPE_TO_STR : dict[IntConstant, str] = {
 }
 
 paint_context_manager: AbstractContextManager = nullcontext()
-if POSIX and not OSX:
+if POSIX and not OSX and not is_Wayland():
     # pylint: disable=ungrouped-imports
     from xpra.gtk.error import xsync
     paint_context_manager = xsync
