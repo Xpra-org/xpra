@@ -539,19 +539,24 @@ class GLWindowBackingBase(WindowBackingBase):
             self._backing = None
             b.destroy()
         super().close()
-        from OpenGL.GL import glDeleteProgram, glDeleteShader
-        programs = self.programs
-        self.programs = {}
-        for name, program in programs.items():
-            glDeleteProgram(program)
-        shaders = self.shaders
-        self.shaders = {}
-        for name, shader in shaders.items():
-            glDeleteShader(shader)
-        vao = self.vao
-        if vao:
-            self.vao = None
-            glDeleteVertexArrays(1, [vao])
+        try:
+            from OpenGL.GL import glDeleteProgram, glDeleteShader
+            programs = self.programs
+            self.programs = {}
+            for name, program in programs.items():
+                glDeleteProgram(program)
+            shaders = self.shaders
+            self.shaders = {}
+            for name, shader in shaders.items():
+                glDeleteShader(shader)
+            vao = self.vao
+            if vao:
+                self.vao = None
+                glDeleteVertexArrays(1, [vao])
+        except Exception as e:
+            log(f"{self}.close()", exc_info=True)
+            log.error("Error closing OpenGL backing, some resources have not been freed")
+            log.estr(e)
 
     def paint_scroll(self, scroll_data, options: typedict, callbacks: Iterable[Callable]) -> None:
         flush = options.intget("flush", 0)
