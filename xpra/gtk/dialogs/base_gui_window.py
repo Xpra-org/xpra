@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,7 @@ from collections.abc import Callable
 from xpra.gtk.window import add_close_accel, add_window_accel
 from xpra.gtk.widget import imagebutton, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.os_util import gi_import
+from xpra.os_util import gi_import, WIN32
 from xpra.util.env import IgnoreWarningsContext
 from xpra.exit_codes import exit_str
 from xpra.common import NotificationID, noop
@@ -71,7 +71,8 @@ class BaseGUIWindow(Gtk.Window):
         if icon:
             self.set_icon(icon)
         if parent:
-            self.set_transient_for(parent)
+            if not WIN32:
+                self.set_transient_for(parent)
             self.do_dismiss = self.hide
         else:
             self.do_dismiss = self.quit
