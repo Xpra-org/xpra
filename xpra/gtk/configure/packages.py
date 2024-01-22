@@ -266,7 +266,7 @@ class ConfigureGUI(BaseGUIWindow):
 
 
 def main(_args) -> int:
-    from xpra.gtk.configure.main import run_gui
+    from xpra.gtk.configure.common import run_gui
     return run_gui(ConfigureGUI)
 
 

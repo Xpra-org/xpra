@@ -10,7 +10,7 @@ from subprocess import Popen, PIPE
 from xpra.util.types import AtomicInteger
 from xpra.os_util import gi_import, OSX, WIN32
 from xpra.util.system import is_gnome, is_X11
-from xpra.gtk.configure.common import DISCLAIMER, sync
+from xpra.gtk.configure.common import DISCLAIMER, sync, run_gui
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.widget import label, slabel, title_box
 from xpra.platform.paths import get_image
@@ -184,7 +184,6 @@ class ConfigureGUI(BaseGUIWindow):
 
 
 def main(_args) -> int:
-    from xpra.gtk.configure.main import run_gui
     return run_gui(ConfigureGUI)
 
 

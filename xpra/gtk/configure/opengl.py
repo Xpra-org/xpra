@@ -13,7 +13,7 @@ from xpra.util.types import typedict
 from xpra.platform.paths import get_image, get_image_dir
 from xpra.util.io import load_binary_file
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
-from xpra.gtk.configure.common import sync, parse_user_config_file, save_user_config_file, get_user_config_file
+from xpra.gtk.configure.common import sync, parse_user_config_file, save_user_config_file, get_user_config_file, run_gui
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
@@ -115,7 +115,7 @@ def add_test_images():
 add_test_images()
 
 
-def create_twin_test_windows():
+def create_twin_test_windows(parent: Gtk.Window):
     from xpra.gtk.window import add_close_accel
     from xpra.client.gui.fake_client import FakeClient
     from xpra.client.gui.window_border import WindowBorder
@@ -126,7 +126,9 @@ def create_twin_test_windows():
         return opengl_props, []
     gl_window_class = gl_client_window_module.GLClientWindow
     pixel_depth = 0  # int(opts.pixel_depth)
+    wid = 10000
     noclient = FakeClient()
+    noclient._id_to_window[wid] = parent
     ww, wh = WW, WH
     metadata = typedict({
         # prevent resizing:
@@ -134,6 +136,7 @@ def create_twin_test_windows():
         "minimum-size" : (WW, WH),
         "modal" : True,
         "has-alpha" : not WIN32,
+        "transient-for": wid,
     })
     border = WindowBorder(False)
     max_window_size = None  # (1024, 1024)
@@ -190,7 +193,7 @@ class ConfigureGUI(BaseGUIWindow):
 
     def start_test(self, *_args):
         sync()
-        self.opengl_props, self.windows = create_twin_test_windows()
+        self.opengl_props, self.windows = create_twin_test_windows(self)
         if not self.windows:
             log.warn(f"{self.opengl_props=}")
             self.populate_form(
@@ -308,7 +311,6 @@ class ConfigureGUI(BaseGUIWindow):
 
 
 def main(_args) -> int:
-    from xpra.gtk.configure.main import run_gui
     return run_gui(ConfigureGUI)
 
 

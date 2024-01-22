@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -18,6 +18,7 @@ from xpra.log import Logger
 log = Logger("util")
 
 GLib = gi_import("GLib")
+Gtk = gi_import("Gtk")
 
 
 DISCLAIMER = """
@@ -41,7 +42,7 @@ def get_user_config_file() -> str:
     return osexpand(os.path.join(get_user_conf_dirs()[0], "conf.d", "99_configure_tool.conf"))
 
 
-def parse_user_config_file() -> dict:
+def parse_user_config_file() -> dict[str, str | list[str]]:
     filename = get_user_config_file()
     if not os.path.exists(filename):
         return {}
@@ -61,14 +62,14 @@ def save_user_config_file(options: dict) -> None:
             f.write(f"{k} = {v}\n")
 
 
-def update_config_attribute(attribute, value):
+def update_config_attribute(attribute: str, value) -> None:
     log(f"update config: {attribute}={value}")
     config = parse_user_config_file()
     config[attribute] = str(value)
     save_user_config_file(config)
 
 
-def with_config(cb: Callable):
+def with_config(cb: Callable) -> None:
     # load config in a thread as this involves IO,
     # then run the callback in the UI thread
     def load_config():
@@ -76,3 +77,21 @@ def with_config(cb: Callable):
         GLib.idle_add(cb, defaults)
 
     start_thread(load_config, "load-config", daemon=True)
+
+
+def run_gui(gui_class) -> int:
+    # pylint: disable=import-outside-toplevel
+    from xpra.platform import program_context
+    from xpra.log import enable_color
+    from xpra.platform.gui import init, ready
+    from xpra.gtk.signals import install_signal_handlers
+    with program_context("xpra-configure-gui", "Xpra Configure GUI"):
+        enable_color()
+        init()
+        gui = gui_class()
+        install_signal_handlers("xpra-configure-gui", gui.app_signal)
+        ready()
+        gui.show()
+        Gtk.main()
+        log("do_main() gui.exit_code=%i", gui.exit_code)
+        return 0

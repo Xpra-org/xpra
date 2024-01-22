@@ -5,7 +5,7 @@
 
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.scripts.config import parse_bool
-from xpra.gtk.configure.common import update_config_attribute, with_config
+from xpra.gtk.configure.common import update_config_attribute, with_config, run_gui
 from xpra.gtk.widget import label
 from xpra.os_util import gi_import
 from xpra.log import Logger
@@ -110,7 +110,6 @@ class ConfigureGUI(BaseGUIWindow):
 
 
 def main(_args) -> int:
-    from xpra.gtk.configure.main import run_gui
     return run_gui(ConfigureGUI)
 
 

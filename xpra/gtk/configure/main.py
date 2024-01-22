@@ -1,22 +1,17 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os.path
 from importlib import import_module
 
-from xpra.gtk.configure.common import get_user_config_file
+from xpra.gtk.configure.common import get_user_config_file, run_gui
 from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.os_util import gi_import, LINUX
+from xpra.os_util import LINUX
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.widget import label
-from xpra.log import Logger
-
-Gtk = gi_import("Gtk")
-
-log = Logger("util")
 
 
 class ConfigureGUI(BaseGUIWindow):
@@ -51,24 +46,6 @@ class ConfigureGUI(BaseGUIWindow):
                 self.dialogs[configure] = dialog
             dialog.show()
         self.ib(title, icon_name, tooltip, callback=callback)
-
-
-def run_gui(gui_class=ConfigureGUI) -> int:
-    # pylint: disable=import-outside-toplevel
-    from xpra.platform import program_context
-    from xpra.log import enable_color
-    from xpra.platform.gui import init, ready
-    from xpra.gtk.signals import install_signal_handlers
-    with program_context("xpra-configure-gui", "Xpra Configure GUI"):
-        enable_color()
-        init()
-        gui = gui_class()
-        install_signal_handlers("xpra-configure-gui", gui.app_signal)
-        ready()
-        gui.show()
-        Gtk.main()
-        log("do_main() gui.exit_code=%i", gui.exit_code)
-        return 0
 
 
 def main(args) -> ExitValue:
