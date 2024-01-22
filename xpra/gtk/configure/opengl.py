@@ -122,6 +122,8 @@ def create_twin_test_windows():
     from xpra.client.gl.window import get_gl_client_window_module
     from xpra.client.gtk3.window import ClientWindow
     opengl_props, gl_client_window_module = get_gl_client_window_module("force")
+    if not gl_client_window_module:
+        return opengl_props, []
     gl_window_class = gl_client_window_module.GLClientWindow
     pixel_depth = 0  # int(opts.pixel_depth)
     noclient = FakeClient()
@@ -189,6 +191,15 @@ class ConfigureGUI(BaseGUIWindow):
     def start_test(self, *_args):
         sync()
         self.opengl_props, self.windows = create_twin_test_windows()
+        if not self.windows:
+            log.warn(f"{self.opengl_props=}")
+            self.populate_form(
+                (
+                    "Xpra was unable to intialize the test windows",
+                ),
+                ("Exit", self.dismiss),
+            )
+            return
         glp = typedict(self.opengl_props)
         version = ".".join(str(x) for x in glp.inttupleget("opengl", ()))
         renderer = glp.get("renderer", "unknown").split(";")[0]
