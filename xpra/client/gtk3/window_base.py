@@ -1610,12 +1610,20 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def get_window_workspace(self):
         if WIN32:
-            from xpra.platform.win32.gui import get_window_handle
-            from pyvda.pyvda import AppView
+            try:
+                from xpra.platform.win32.gui import get_window_handle
+                from pyvda.pyvda import AppView
+            except ImportError as e:
+                workspacelog(f"unable to query workspace: {e}")
+                return 0
             hwnd = get_window_handle(self)
             if not hwnd:
                 return 0
-            return AppView(hwnd).desktop.number-1
+            try:
+                return AppView(hwnd).desktop.number-1
+            except Exception:
+                workspacelog("failed to query pyvda appview", exc_info=True)
+                return 0
         return self.do_get_workspace(self.get_window(), "_NET_WM_DESKTOP", WORKSPACE_UNSET)
 
     def do_get_workspace(self, target, prop:str, default_value=0) -> int:
