@@ -72,7 +72,6 @@ class BaseGUIWindow(Gtk.Window):
             self.set_icon(icon)
         if parent:
             self.set_transient_for(parent)
-            self.set_modal(True)
             self.do_dismiss = self.hide
         else:
             self.do_dismiss = self.quit
