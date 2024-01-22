@@ -35,6 +35,9 @@ class FakeClient(AdHocStruct):
         self.update_focus = noop
         self.has_focus = noop
 
+        self._id_to_window = {}
+        self._window_to_id = {}
+
         self.handle_key_action = noop
         self.window_ungrab = noop
         self.keyboard_grabbed = False
