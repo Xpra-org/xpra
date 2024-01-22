@@ -68,6 +68,25 @@ TEST_STEPS = [
 ]
 
 
+def load_image(name: str) -> tuple[int, int, bytes]:
+    filename = os.path.join(get_image_dir(), name)
+    image_data = load_binary_file(filename)
+    w = h = 0
+    if image_data:
+        try:
+            from PIL import Image
+            img = Image.open(filename)
+            w = int(img.width)
+            h = int(img.height)
+            img.close()
+        except ImportError:
+            img = get_image(filename)
+            if img:
+                w = int(img.get_width())
+                h = int(img.get_height())
+    return w, h, image_data
+
+
 def add_test_images():
     encodings = []
     for decoder_name in ("pillow", "jpeg", "webp", "spng", "avif"):
@@ -83,15 +102,11 @@ def add_test_images():
         encoding = name.split(".")[-1]
         if encoding not in encodings:
             continue
-        filename = os.path.join(get_image_dir(), name)
-        image_data = load_binary_file(filename)
-        image = get_image(name)
+        width, height, image_data = load_image(name)
         options : dict[str, str] = {}
-        if image and image_data:
-            w = int(image.get_width())
-            h = int(image.get_height())
+        if width and height and image_data:
             paint_data = (
-                0, 0, w, h,
+                0, 0, width, height,
                 encoding, bytes(image_data), 0, options,
             )
             TEST_STEPS.append((description, (paint_data, )))
