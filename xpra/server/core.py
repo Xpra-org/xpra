@@ -1774,22 +1774,36 @@ class ServerCore:
         self.cancel_verify_connection_accepted(protocol)
         if self.is_timedout(protocol):
             conn = getattr(protocol, "_conn", None)
-            log.error("Error: connection timed out: %s", conn or protocol)
-            elapsed = monotonic()-protocol.start_time
-            log.error(f" after {round(elapsed)} seconds")
+            elapsed = round(monotonic()-protocol.start_time)
+            messages = [
+                "Error: connection timed out",
+                " "+str(conn or protocol),
+                f" after {elapsed} seconds",
+            ]
             if conn:
-                log.error(f" sent {conn.output_bytecount} bytes")
-                log.error(f" received {conn.input_bytecount} bytes")
+                messages += [
+                    f" sent {conn.output_bytecount} bytes",
+                    f" received {conn.input_bytecount} bytes",
+                ]
                 if conn.input_bytecount == 0:
                     try:
                         data = conn.peek(200)
                     except Exception:
                         data = b""
                     if data:
-                        log.error(f" read buffer={data!r}")
+                        messages.append(f" read buffer={data!r}")
                         packet_type = guess_packet_type(data)
                         if packet_type:
-                            log.error(f" looks like {packet_type!r}")
+                            messages.append(f" looks like {packet_type!r}")
+                    elif conn.output_bytecount == 0:
+                        # no data was ever received or sent,
+                        # this can happen with probes or browser connections,
+                        # log at debug level only to avoid spamming the log:
+                        for msg in messages:
+                            netlog(msg)
+                        messages = []
+            for msg in messages:
+                netlog.error(msg)
             self.send_disconnect(protocol, ConnectionMessage.LOGIN_TIMEOUT)
 
     def cancel_verify_connection_accepted(self, protocol: SocketProtocol) -> None:
