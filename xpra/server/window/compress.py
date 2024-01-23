@@ -56,6 +56,7 @@ AUTO_REFRESH_SPEED = envint("XPRA_AUTO_REFRESH_SPEED", 50)
 
 INITIAL_QUALITY = envint("XPRA_INITIAL_QUALITY", 65)
 INITIAL_SPEED = envint("XPRA_INITIAL_SPEED", 40)
+TEXT_QUALITY = envint("XPRA_TEXT_QUALITY", 100)
 
 LOCKED_BATCH_DELAY = envint("XPRA_LOCKED_BATCH_DELAY", 1000)
 
@@ -2016,7 +2017,8 @@ class WindowSource(WindowIconSource):
             if self._fixed_quality > 0:
                 quality = self._fixed_quality
             else:
-                quality = self._current_quality
+                text_hint = self.content_type.find("text") >= 0
+                quality = TEXT_QUALITY if text_hint else self._current_quality
                 if packets_backlog is None:
                     packets_backlog = self.get_packets_backlog()
                 now = monotonic()
