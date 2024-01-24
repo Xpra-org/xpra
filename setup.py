@@ -336,7 +336,7 @@ example_ENABLED         = DEFAULT
 # Cython / gcc / packaging build options:
 docs_ENABLED            = DEFAULT and shutil.which("pandoc")
 pandoc_lua_ENABLED      = DEFAULT
-annotate_ENABLED        = DEFAULT
+annotate_ENABLED        = False
 warn_ENABLED            = True
 strict_ENABLED          = False
 PIC_ENABLED             = not WIN32     # ming32 moans that it is always enabled already
