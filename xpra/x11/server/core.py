@@ -429,7 +429,7 @@ class X11ServerCore(GTKServerBase):
 
     def get_window_info(self, window) -> dict[str,Any]:
         info = super().get_window_info(window)
-        info["XShm"] = window.uses_XShm()
+        info["XShm"] = window.uses_xshm()
         info["geometry"] = window.get_geometry()
         return info
 

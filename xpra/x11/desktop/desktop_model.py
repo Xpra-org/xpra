@@ -19,13 +19,17 @@ Gdk = gi_import("Gdk")
 geomlog = Logger("server", "window", "geometry")
 screenlog = Logger("screen")
 
+# we should also figure out what the potential increments are,
+# rather than hard-coding them here:
+INC_VALUES = (16, 32, 64, 128, 256)
+
 
 class ScreenDesktopModel(DesktopModelBase):
     """
     A desktop model covering the entire screen as a single window.
     """
     __gsignals__ = dict(DesktopModelBase.__common_gsignals__)
-    _property_names         = DesktopModelBase._property_names+["xid"]
+    _property_names = DesktopModelBase._property_names+["xid"]
     _dynamic_property_names = ["size-hints", "title", "icons"]
 
     def __init__(self, resize_exact=False):
@@ -50,7 +54,7 @@ class ScreenDesktopModel(DesktopModelBase):
             return self.screen.get_width(), self.screen.get_height()
 
     def get_property(self, prop):
-        if prop=="xid":
+        if prop == "xid":
             return self.xid
         return super().get_property(prop)
 
@@ -79,7 +83,7 @@ class ScreenDesktopModel(DesktopModelBase):
             geomlog.error("Error: failed to resize desktop display to %ix%i:", rw, rh)
             geomlog.error(" %s", str(e) or type(e))
 
-    def _screen_size_changed(self, screen):
+    def _screen_size_changed(self, _screen):
         w, h = self.get_dimensions()
         screenlog("screen size changed: new size %ix%i", w, h)
         root = self.screen.get_root_window()
@@ -96,9 +100,9 @@ class ScreenDesktopModel(DesktopModelBase):
         def use_fixed_size():
             size = w, h
             size_hints.update({
-                "maximum-size"  : size,
-                "minimum-size"  : size,
-                "base-size"     : size,
+                "maximum-size": size,
+                "minimum-size": size,
+                "base-size": size,
             })
         if RandR.has_randr():
             if self.resize_exact:
@@ -123,9 +127,6 @@ class ScreenDesktopModel(DesktopModelBase):
                         size_hints["maximum-size"] = max_size[max_pixels]
                         # find the best increment we can use:
                         inc_hits = {}
-                        # we should also figure out what the potential increments are,
-                        # rather than hardcoding them here:
-                        INC_VALUES = (16, 32, 64, 128, 256)
                         for inc in INC_VALUES:
                             hits = 0
                             for tsize in screen_sizes:
@@ -135,18 +136,18 @@ class ScreenDesktopModel(DesktopModelBase):
                             inc_hits[inc] = hits
                         screenlog("size increment hits: %s", inc_hits)
                         max_hits = max(inc_hits.values())
-                        if max_hits>16:
+                        if max_hits > 16:
                             # find the first increment value matching the max hits
                             for inc in INC_VALUES:
-                                if inc_hits[inc]==max_hits:
+                                if inc_hits[inc] == max_hits:
                                     break
                             # TODO: also get these values from the screen sizes:
                             size_hints |= {
-                                "base-size"             : (640, 640),
-                                "minimum-size"          : (640, 640),
-                                "increment"             : (128, 128),
-                                "minimum-aspect-ratio"  : (1, 3),
-                                "maximum-aspect-ratio"  : (3, 1),
+                                "base-size": (640, 640),
+                                "minimum-size": (640, 640),
+                                "increment": (128, 128),
+                                "minimum-aspect-ratio": (1, 3),
+                                "maximum-aspect-ratio": (3, 1),
                             }
         else:
             use_fixed_size()

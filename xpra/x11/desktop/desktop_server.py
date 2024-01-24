@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -35,15 +35,16 @@ class XpraDesktopServer(DesktopServerBase):
         self.resize_timer = 0
         self.gsettings_modified = {}
         self.root_prop_watcher = None
+        self.resize_value = -1, -1
 
     def server_init(self) -> None:
         super().server_init()
         from xpra.x11.vfb_util import set_initial_resolution, get_desktop_vfb_resolutions
         screenlog(f"server_init() randr={self.randr}, initial-resolutions={self.initial_resolutions}")
-        if not self.randr or self.initial_resolutions==() or not features.display:
+        if not self.randr or self.initial_resolutions == () or not features.display:
             return
         res = self.initial_resolutions or get_desktop_vfb_resolutions(default_refresh_rate=self.refresh_rate)
-        if len(res)>1:
+        if len(res) > 1:
             log.warn(f"Warning: cannot set desktop resolution to {res}")
             log.warn(" multi monitor mode is not enabled")
             res = (res[0], )
@@ -58,7 +59,7 @@ class XpraDesktopServer(DesktopServerBase):
             screenlog("configure_best_screen_size() no randr")
             return root_w, root_h
         sss = tuple(x for x in self._server_sources.values() if x.ui_client)
-        if len(sss)!=1:
+        if len(sss) != 1:
             screenlog.info(f"screen used by {len(sss)} clients:")
             return root_w, root_h
         ss = sss[0]
@@ -69,12 +70,12 @@ class XpraDesktopServer(DesktopServerBase):
         w, h = requested_size
         screenlog("client requested desktop mode resolution is %sx%s (current server resolution is %sx%s)",
                   w, h, root_w, root_h)
-        if w<=0 or h<=0 or w>=32768 or h>=32768:
+        if w <= 0 or h <= 0 or w >= 32768 or h >= 32768:
             screenlog("configure_best_screen_size() client requested an invalid desktop mode size: %s", requested_size)
             return root_w, root_h
         return self.set_screen_size(w, h)
 
-    def resize(self, w:int, h:int) -> None:
+    def resize(self, w: int, h: int) -> None:
         geomlog("resize(%i, %i)", w, h)
         if not RandR.has_randr():
             geomlog.error("Error: cannot honour resize request,")
@@ -107,10 +108,10 @@ class XpraDesktopServer(DesktopServerBase):
     def get_server_mode(self) -> str:
         return "X11 desktop"
 
-    def make_hello(self, source) -> dict[str,Any]:
+    def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)
         if "features" in source.wants:
-            capabilities["desktop"] =True
+            capabilities["desktop"] = True
         return capabilities
 
     def load_existing_windows(self) -> None:

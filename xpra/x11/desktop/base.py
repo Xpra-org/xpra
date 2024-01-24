@@ -54,7 +54,7 @@ DesktopServerBaseClass = type('DesktopServerBaseClass', DESKTOPSERVER_BASES, {})
 log("DesktopServerBaseClass%s", DESKTOPSERVER_BASES)
 
 
-def do_modify_gsettings(defs:dict[str,Any], value=False) -> dict[str,Any]:
+def do_modify_gsettings(defs:dict[str, Any], value=False) -> dict[str, Any]:
     modified = {}
     schemas = Gio.Settings.list_schemas()
     for schema, attributes in defs.items():
@@ -82,7 +82,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         A server base class for RFB / VNC-like virtual desktop or virtual monitors,
         used with the "start-desktop" subcommand.
     """
-    __common_gsignals__ : dict[str, tuple] = {
+    __common_gsignals__: dict[str, tuple] = {
         "xpra-xkb-event": one_arg_signal,
         "xpra-cursor-event": one_arg_signal,
         "xpra-motion-event": one_arg_signal,
@@ -92,9 +92,9 @@ class DesktopServerBase(DesktopServerBaseClass):
     def __init__(self):
         X11ServerBase.__init__(self)  # pylint: disable=non-parent-init-called
         for c in DESKTOPSERVER_BASES:
-            if c!=X11ServerBase:
+            if c != X11ServerBase:
                 c.__init__(self)  # pylint: disable=non-parent-init-called
-        self.gsettings_modified : dict[str,Any] = {}
+        self.gsettings_modified : dict[str, Any] = {}
         self.root_prop_watcher = None
 
     def init(self, opts) -> None:
@@ -105,7 +105,7 @@ class DesktopServerBase(DesktopServerBaseClass):
     def x11_init(self) -> None:
         X11ServerBase.x11_init(self)
         display = Gdk.Display.get_default()
-        assert display.get_n_screens()==1
+        assert display.get_n_screens() == 1
         screen = display.get_screen(0)
         root = screen.get_root_window()
         add_event_receiver(root.get_xid(), self)
@@ -178,8 +178,8 @@ class DesktopServerBase(DesktopServerBaseClass):
             capabilities.setdefault("pointer", {})["grabs"] = True
             capabilities["desktop"] = True
             capabilities.setdefault("window", {}).update({
-                "decorations" : True,
-                "states" : ["iconified", "focused"],
+                "decorations": True,
+                "states": ["iconified", "focused"],
             })
             capabilities["screen_sizes"] = get_screen_sizes()
         return capabilities
@@ -187,12 +187,12 @@ class DesktopServerBase(DesktopServerBaseClass):
     def load_existing_windows(self):
         raise NotImplementedError
 
-    def send_initial_windows(self, ss, sharing:bool=False) -> None:
+    def send_initial_windows(self, ss, sharing: bool = False) -> None:
         windowlog("send_initial_windows(%s, %s) will send: %s", ss, sharing, self._id_to_window)
         for model in self._id_to_window.values():
             self.send_new_desktop_model(model, ss, sharing)
 
-    def send_new_desktop_model(self, model, ss, _sharing:bool=False) -> None:
+    def send_new_desktop_model(self, model, ss, _sharing: bool = False) -> None:
         x, y, w, h = model.get_geometry()
         wid = self._window_to_id[model]
         wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
@@ -207,7 +207,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         log("contents changed on %s: %s", window, event)
         self.refresh_window_area(window, event.x, event.y, event.width, event.height)
 
-    def _set_window_state(self, proto, wid:int, window, new_window_state) -> list[str]:
+    def _set_window_state(self, proto, wid: int, window, new_window_state) -> list[str]:
         if not new_window_state:
             return []
         metadatalog("set_window_state%s", (proto, wid, window, new_window_state))
@@ -221,7 +221,7 @@ class DesktopServerBase(DesktopServerBaseClass):
             changes.append("focused")
         return changes
 
-    def get_window_position(self, _window) -> tuple[int,int]:
+    def get_window_position(self, _window) -> tuple[int, int]:
         # we export the whole desktop as a window:
         return 0, 0
 
@@ -233,9 +233,9 @@ class DesktopServerBase(DesktopServerBaseClass):
             return
         geomlog("client mapped window %s - %s, at: %s", wid, window, (x, y, w, h))
         self._window_mapped_at(proto, wid, window, (x, y, w, h))
-        if len(packet)>=8:
+        if len(packet) >= 8:
             self._set_window_state(proto, wid, window, packet[7])
-        if len(packet)>=7:
+        if len(packet) >= 7:
             self._set_client_properties(proto, wid, window, packet[6])
         self.refresh_window_area(window, 0, 0, w, h)
 
@@ -245,7 +245,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         if not window:
             log("cannot map window %s: already removed!", wid)
             return
-        if len(packet)>=4:
+        if len(packet) >= 4:
             # optional window_state added in 0.15 to update flags
             # during iconification events:
             self._set_window_state(proto, wid, window, packet[3])
@@ -264,20 +264,20 @@ class DesktopServerBase(DesktopServerBaseClass):
             if self.process_mouse_common(proto, device_id, pwid, pointer):
                 self._update_modifiers(proto, wid, modifiers)
         # some "configure-window" packets are only meant for metadata updates:
-        skip_geometry = len(packet)>=10 and packet[9]
+        skip_geometry = len(packet) >= 10 and packet[9]
         window = self._id_to_window.get(wid)
         if not window:
             geomlog("cannot map window %s: already removed!", wid)
             return
         damage = False
-        if len(packet)>=9:
+        if len(packet) >= 9:
             damage = bool(self._set_window_state(proto, wid, window, packet[8]))
         if not skip_geometry and not self.readonly:
             owx, owy, oww, owh = window.get_geometry()
             geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
-            if oww!=w or owh!=h:
+            if oww != w or owh != h:
                 window.resize(w, h)
-        if len(packet)>=7:
+        if len(packet) >= 7:
             cprops = packet[6]
             if cprops:
                 metadatalog("window client properties updates: %s", cprops)
@@ -286,7 +286,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         if damage:
             self.refresh_window_area(window, 0, 0, w, h)
 
-    def _adjust_pointer(self, proto, device_id:int, wid:int, pointer):
+    def _adjust_pointer(self, proto, device_id: int, wid: int, pointer):
         mouselog("_adjust_pointer%s", (proto, device_id, wid, pointer))
         window = self._id_to_window.get(wid)
         if not window:
@@ -297,15 +297,15 @@ class DesktopServerBase(DesktopServerBaseClass):
         # maybe the pointer is off-screen:
         ww, wh = window.get_dimensions()
         x, y = pointer[:2]
-        if x<0 or x>=ww or y<0 or y>=wh:
+        if x < 0 or x >= ww or y < 0 or y >= wh:
             mouselog("adjust pointer: pointer outside desktop, suspending cursor")
             self.suspend_cursor(proto)
             return None
         self.restore_cursor(proto)
         return pointer
 
-    def _move_pointer(self, device_id:int, wid:int, pos, props=None):
-        if wid>=0:
+    def _move_pointer(self, device_id: int, wid: int, pos, props=None):
+        if wid >= 0:
             window = self._id_to_window.get(wid)
             if not window:
                 mouselog("_move_pointer(%s, %s) invalid window id", wid, pos)

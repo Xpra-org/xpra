@@ -853,7 +853,7 @@ class WindowModel(BaseWindowModel):
         "_NET_WM_ICON"                  : _handle_net_wm_icon_change,
     }
 
-    def get_default_window_icon(self, size: int=48):
+    def get_default_window_icon(self, size: int = 48):
         return None
 
     def get_wm_state(self, prop) -> bool:

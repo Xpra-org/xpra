@@ -104,13 +104,13 @@ class RootWindowModel:
     def has_alpha(self) -> bool:
         return False
 
-    def uses_XShm(self) -> bool:
+    def uses_xshm(self) -> bool:
         return False
 
     def is_shadow(self) -> bool:
         return True
 
-    def get_default_window_icon(self, _size):
+    def get_default_window_icon(self, _size: int = 48):
         return None
 
     def acknowledge_changes(self) -> None:

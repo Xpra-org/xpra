@@ -832,6 +832,7 @@ class WindowVideoSource(WindowSource):
                 # give a boost if we have a video region and this is not video:
                 quality_pct = 140
             novideo_options = self.assign_sq_options(options, quality_pct=quality_pct)
+            log.warn(f"{novideo_options=}")
             self.do_send_regions(damage_time, regions, encoding, novideo_options,
                                  exclude_region=exclude_region, get_best_encoding=get_best_encoding)
 

@@ -36,11 +36,11 @@ class MonitorDesktopModel(DesktopModelBase):
     def __repr__(self):
         return f"MonitorDesktopModel({self.name} : {self.monitor_geometry})"
 
-    def __init__(self, monitor:dict[str,Any]):
+    def __init__(self, monitor: dict[str, Any]):
         super().__init__()
         self.init(monitor)
 
-    def init(self, monitor:dict[str,Any]) -> None:
+    def init(self, monitor: dict[str, Any]) -> None:
         self.name = monitor.get("name", "")
         self.resize_delta = 0, 0
         x = monitor.get("x", 0)
@@ -63,21 +63,21 @@ class MonitorDesktopModel(DesktopModelBase):
             title += f" on {self.name}"
         return title
 
-    def get_geometry(self) -> tuple[int,int,int,int]:
+    def get_geometry(self) -> tuple[int, int, int, int]:
         return self.monitor_geometry
 
-    def get_dimensions(self) -> tuple[int,int]:
+    def get_dimensions(self) -> tuple[int, int]:
         return self.monitor_geometry[2:4]
 
-    def get_definition(self) -> dict[str,Any]:
+    def get_definition(self) -> dict[str, Any]:
         x, y, width, height = self.monitor_geometry
         return {
-            "geometry"  : self.monitor_geometry,
-            "x"         : x,
-            "y"         : y,
-            "width"     : width,
-            "height"    : height,
-            "name"      : self.name,
+            "geometry": self.monitor_geometry,
+            "x": x,
+            "y": y,
+            "width": width,
+            "height": height,
+            "name": self.name,
         }
 
     def do_xpra_damage_event(self, event) -> None:

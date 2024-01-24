@@ -172,7 +172,7 @@ class WindowIconSource:
             sizes = []
             for size in (self.window_icon_size, self.window_icon_max_size, (48, 64)):
                 if size:
-                    for dim in size:        #ie: 48
+                    for dim in size:        # ie: 48
                         if dim not in sizes:
                             sizes.append(dim)
             for size in sizes:
@@ -180,7 +180,7 @@ class WindowIconSource:
                 if icon:
                     icons.append(icon)
             if not icons:
-                #try to find one using the wmclass:
+                # try to find one using the wmclass:
                 icon = self.get_default_window_icon()
                 if icon:
                     log("send_window_icon window %s using default window icon", self.window)

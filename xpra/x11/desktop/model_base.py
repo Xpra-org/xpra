@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,7 @@ from xpra.util.system import get_generic_os_name
 from xpra.util.io import load_binary_file
 from xpra.platform.paths import get_icon, get_icon_filename
 from xpra.gtk.gobject import no_arg_signal, one_arg_signal
-from xpra.gtk.error import xsync
+from xpra.gtk.error import xlog
 from xpra.x11.common import get_wm_name
 from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.bindings.window import X11WindowBindings
@@ -36,11 +36,11 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
     __common_gsignals__ = {}
     __common_gsignals__ |= WindowDamageHandler.__common_gsignals__
     __common_gsignals__ |= {
-        "resized"                  : no_arg_signal,
-        "client-contents-changed"  : one_arg_signal,
-        "motion"                   : one_arg_signal,
-        "xpra-motion-event"        : one_arg_signal,
-        "xpra-property-notify-event" : one_arg_signal,
+        "resized": no_arg_signal,
+        "client-contents-changed": one_arg_signal,
+        "motion": one_arg_signal,
+        "xpra-motion-event": one_arg_signal,
+        "xpra-property-notify-event": one_arg_signal,
     }
 
     __gproperties__ = {
@@ -124,11 +124,9 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         self._managed = False
 
     def update_wm_name(self) -> bool:
-        try:
-            with xsync:
-                wm_name = get_wm_name()     # pylint: disable=assignment-from-none
-        except Exception:
-            wm_name = ""
+        wm_name = ""
+        with xlog:
+            wm_name = get_wm_name()     # pylint: disable=assignment-from-none
         iconlog("update_wm_name() wm-name=%s", wm_name)
         return self._updateprop("wm-name", wm_name)
 
@@ -158,10 +156,10 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
             iconlog("failed to return window icon", exc_info=True)
         return self._updateprop("icons", icons)
 
-    def uses_XShm(self) -> bool:
+    def uses_xshm(self) -> bool:
         return bool(self._xshm_handle)
 
-    def get_default_window_icon(self, _size) -> tuple[int, int, str, bytes] | None:
+    def get_default_window_icon(self, _size: int = 48) -> tuple[int, int, str, bytes] | None:
         icon_name = get_generic_os_name()+".png"
         icon = get_icon(icon_name)
         if not icon:
