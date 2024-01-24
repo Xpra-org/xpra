@@ -5,6 +5,7 @@
 
 import os
 import struct
+from time import monotonic
 from socket import error as socket_error
 from queue import Queue
 
@@ -34,6 +35,7 @@ class RFBProtocol:
     def __init__(self, scheduler, conn, process_packet_cb, data=b""):
         assert scheduler is not None
         assert conn is not None
+        self.start_time = monotonic()
         self.timeout_add = scheduler.timeout_add
         self.idle_add = scheduler.idle_add
         self._conn = conn
