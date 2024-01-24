@@ -16,6 +16,7 @@ from typing import ContextManager, Any
 from collections.abc import Callable, Iterable
 
 from xpra.os_util import POSIX, OSX
+from xpra.util.system import is_Wayland
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv, repr_ellipsized, decode_str
 from xpra.util.env import envint, envbool, first_time
@@ -123,7 +124,7 @@ COMPRESS_FMT        : str = COMPRESS_FMT_PREFIX+" with ratio %5.1f%%  (%5iKB to 
 
 
 ui_context : ContextManager = nullcontext()
-if POSIX and not OSX:
+if POSIX and not OSX and not is_Wayland():
     from xpra.gtk.error import xlog
     ui_context = xlog
 

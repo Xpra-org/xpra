@@ -15,7 +15,7 @@ from xpra.util.env import first_time
 from xpra.util.system import is_Wayland, is_X11
 from xpra.util.str_fn import bytestostr
 
-if is_X11():
+if is_X11() and not is_Wayland():
     from xpra.gtk.error import xsync
 
 log = Logger("keyboard", "posix")
