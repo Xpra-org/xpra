@@ -3742,7 +3742,7 @@ def get_x11_display_info(display, sessions_dir=None) -> dict[str, Any]:
                             display_info["state"] = "UNKNOWN"
                     except (TypeError, ValueError):
                         xvfb_pid = 0
-                    xauthority = (load_session_file("xauthority") or b"").decode()
+                    xauthority = load_session_file("xauthority").decode()
                     log(f"xauthority({display})={xauthority}")
                     pidfile = session_file_path("server.pid")
                     sockfile = session_file_path("socket")

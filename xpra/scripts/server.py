@@ -1149,7 +1149,7 @@ def _do_run_server(script_file:str, cmdline,
     if (start_vfb or clobber or (shadowing and display_name.startswith(":"))) and display_name.find("wayland")<0:
         #XAUTHORITY
         from xpra.x11.vfb_util import get_xauthority_path, valid_xauth, xauth_add
-        xauthority = valid_xauth((load_session_file("xauthority") or b"").decode(), uid, gid)
+        xauthority = valid_xauth((load_session_file("xauthority")).decode(), uid, gid)
         if not xauthority:
             # from here on, we need to save the `xauthority` session file
             # since there is no session file, or it isn't valid
