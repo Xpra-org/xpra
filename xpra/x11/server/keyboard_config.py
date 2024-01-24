@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -62,7 +62,7 @@ class KeyboardConfig(KeyboardConfigBase):
         super().__init__()
         self.raw: bool = False
         self.query_struct = None
-        self.modifier_map : dict[str, int] = {}
+        self.modifier_map: dict[str, int] = {}
         self.mod_meanings = {}
         self.mod_managed = []
         self.mod_pointermissing = []
@@ -114,9 +114,9 @@ class KeyboardConfig(KeyboardConfigBase):
                 kminfo[i] = (keyval, name, keycode, group, level)
                 i += 1
         # modifiers:
-        modinfo = {}
-        modsinfo = {}
-        modinfo["filter"] = self.modifiers_filter
+        modinfo: dict[str, dict[str, Any]] = {
+            "filter": self.modifiers_filter,
+        }
         if self.modifier_client_keycodes:
             for mod, keys in self.modifier_client_keycodes.items():
                 modinfo.setdefault(mod, {})["client_keys"] = keys
@@ -134,10 +134,14 @@ class KeyboardConfig(KeyboardConfigBase):
             v = getattr(self, x)
             if v:
                 info[x] = v
-        modsinfo["nuisance"] = tuple(self.mod_nuisance or [])
-        info["modifier"] = modinfo
-        info["modifiers"] = modsinfo
-        info["keys-pressed"] = self.keys_pressed
+        modsinfo = {
+            "nuisance": tuple(self.mod_nuisance or []),
+        }
+        info.update({
+            "modifier": modinfo,
+            "modifiers": modsinfo,
+            "keys-pressed": self.keys_pressed,
+        })
         # this would need to always run in the UI thread:
         # info["state"] = {
         #    "modifiers" : self.get_current_mask(),
@@ -407,7 +411,7 @@ class KeyboardConfig(KeyboardConfigBase):
             keycode_to_keynames = get_keycode_mappings()
             self.keycode_translation = {}
             # prefer keycodes that don't use the lowest level+mode:
-            default_for_keyname : dict[str, tuple[str | int, int]] = {}
+            default_for_keyname: dict[str, tuple[str | int, int]] = {}
             for keycode, keynames in keycode_to_keynames.items():
                 for i, keyname in enumerate(keynames):
                     self.keycode_translation[(keyname, i)] = keycode
