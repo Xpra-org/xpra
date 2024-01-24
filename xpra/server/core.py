@@ -1795,8 +1795,8 @@ class ServerCore:
                         packet_type = guess_packet_type(data)
                         if packet_type:
                             messages.append(f" looks like {packet_type!r}")
-                    elif conn.output_bytecount == 0:
-                        # no data was ever received or sent,
+                    else:
+                        # no data was ever received,
                         # this can happen with probes or browser connections,
                         # log at debug level only to avoid spamming the log:
                         for msg in messages:
