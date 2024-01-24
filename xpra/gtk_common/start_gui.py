@@ -673,7 +673,7 @@ class StartSession(Gtk.Window):
                 port = int(self.port_entry.get_text())
             except ValueError:
                 port = 0
-            if port and port!=get_default_port(mode):
+            if port and port!=self.get_default_port(mode):
                 uri += ":%s" % port
             uri += "/"
             if display:
