@@ -60,7 +60,7 @@ from xpra.server.background_worker import add_work_item, quit_worker
 from xpra.server.menu_provider import get_menu_provider
 from xpra.server.auth.auth_helper import get_auth_module
 from xpra.util.thread import start_thread
-from xpra.common import LOG_HELLO, FULL_INFO, ConnectionMessage, noerr
+from xpra.common import LOG_HELLO, FULL_INFO, SSH_AGENT_DISPATCH, ConnectionMessage, noerr
 from xpra.util.pysystem import dump_all_frames
 from xpra.util.types import typedict, notypedict, merge_dicts
 from xpra.util.str_fn import (
@@ -208,6 +208,10 @@ class ServerCore:
             # notifications may use a TMP dir:
             "tmp/*", "tmp",
         ]
+        if SSH_AGENT_DISPATCH:
+            self.session_files.append("ssh/agent")
+            self.session_files.append("ssh/agent.default")
+            self.session_files.append("ssh")
         self.splash_process = None
         self.control_commands: dict[str, Any] = {}
 

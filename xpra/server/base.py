@@ -129,11 +129,6 @@ class ServerBase(ServerBaseClass):
         # duplicated from Server Source...
         self.client_shutdown: bool = CLIENT_CAN_SHUTDOWN
 
-        if SSH_AGENT_DISPATCH and "ssh" not in self.session_files:
-            self.session_files.append("ssh/agent")
-            self.session_files.append("ssh/agent.default")
-            self.session_files.append("ssh")
-
         self.init_packet_handlers()
         self.init_aliases()
 
