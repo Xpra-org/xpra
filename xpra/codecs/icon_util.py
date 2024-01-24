@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,7 +13,7 @@ import re
 from io import BytesIO
 
 from xpra.util.str_fn import ellipsizer
-from xpra.util.env import envint, envbool, first_time
+from xpra.util.env import envint, envbool, first_time, SilenceWarningsContext
 from xpra.os_util import gi_import
 from xpra.util.io import load_binary_file
 from xpra.log import Logger
@@ -32,7 +32,7 @@ large_icons = []
 _rsvg = None
 
 
-def load_Rsvg():
+def load_rsvg():
     global _rsvg
     if _rsvg is None:
         try:
@@ -55,6 +55,7 @@ def load_icon_from_file(filename: str, max_size: int = MAX_ICON_SIZE) -> tuple:
     log("load_icon_from_file(%s, %i)", filename, max_size)
     if filename.endswith("xpm"):
         from PIL import Image  # pylint: disable=import-outside-toplevel
+        img = None
         try:
             img = Image.open(filename)
             buf = BytesIO()
@@ -68,6 +69,9 @@ def load_icon_from_file(filename: str, max_size: int = MAX_ICON_SIZE) -> tuple:
             log(f"Image.open({filename})", exc_info=True)
             log.error(f"Error loading {filename!r}:")
             log.estr(e)
+        finally:
+            if img:
+                img.close()
     icondata = load_binary_file(filename)
     if not icondata:
         return ()
@@ -88,20 +92,29 @@ def load_icon_from_file(filename: str, max_size: int = MAX_ICON_SIZE) -> tuple:
 def svg_to_png(filename: str, icondata, w: int = 128, h: int = 128) -> bytes:
     if not SVG_TO_PNG:
         return b""
-    rsvg = load_Rsvg()
+    rsvg = load_rsvg()
     log("svg_to_png%s rsvg=%s", (filename, f"{len(icondata)} bytes", w, h), rsvg)
     if not rsvg:
         return b""
     try:
         # pylint: disable=no-name-in-module, import-outside-toplevel
         from cairo import ImageSurface, Context, FORMAT_ARGB32
-        # '\sinkscape:[a-zA-Z]*=["a-zA-Z0-9]*'
         img = ImageSurface(FORMAT_ARGB32, w, h)
         ctx = Context(img)
         handle = rsvg.Handle.new_from_data(data=icondata)
-        dim = handle.get_dimensions()
-        ctx.scale(w/dim.width, h/dim.height)
-        handle.render_cairo(ctx)
+        if hasattr(handle, "render_document"):
+            # Rsvg version 2.46 and later:
+            rect = rsvg.Rectangle()
+            rect.x = rect.y = 0
+            rect.width = w
+            rect.height = h
+            if not handle.render_document(ctx, rect):
+                raise RuntimeError(f"{handle}.render_document failed")
+        else:
+            with SilenceWarningsContext():
+                dim = handle.get_dimensions()
+                ctx.scale(w/dim.width, h/dim.height)
+                handle.render_cairo(ctx)
         del handle
         img.flush()
         buf = BytesIO()
