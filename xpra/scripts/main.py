@@ -3020,9 +3020,8 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults) -> Exi
                 #and we use an OSEnvContext to avoid polluting the env with it
                 #(we need it to use the server ssh agent path functions)
                 session_dir = get_session_dir("attach", opts.sessions_dir, display_name, getuid())
-                with OSEnvContext(XPRA_SESSION_DIR=session_dir):
-                    #ie: "/run/user/$UID/xpra/$DISPLAY/ssh/$UUID
-                    setup_proxy_ssh_socket(cmdline)
+                #ie: "/run/user/$UID/xpra/$DISPLAY/ssh/$UUID
+                setup_proxy_ssh_socket(cmdline, session_dir=session_dir)
             except OSError:
                 sshlog = Logger("ssh")
                 sshlog.error("Error setting up client ssh agent forwarding socket", exc_info=True)

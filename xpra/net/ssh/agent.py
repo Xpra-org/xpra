@@ -82,15 +82,18 @@ def clean_agent_socket(uuid: str = "") -> None:
         log.estr(e)
 
 
-def setup_proxy_ssh_socket(cmdline: Iterable[str], auth_sock: str = os.environ.get("SSH_AUTH_SOCK", "")) -> str:
+def setup_proxy_ssh_socket(
+        cmdline: Iterable[str],
+        auth_sock: str = os.environ.get("SSH_AUTH_SOCK", ""),
+        session_dir: str = os.environ.get("XPRA_SESSION_DIR"),
+) -> str:
     log(f"setup_proxy_ssh_socket({cmdline}, {auth_sock!r}")
     # this is the socket path that the ssh client wants us to use:
     # ie: "SSH_AUTH_SOCK=/tmp/ssh-XXXX4KyFhe/agent.726992"
     if not auth_sock or not os.path.exists(auth_sock) or not is_socket(auth_sock):
         log(f"setup_proxy_ssh_socket invalid SSH_AUTH_SOCK={auth_sock!r}")
         return ""
-    session_dir = os.environ.get("XPRA_SESSION_DIR")
-    if not session_dir or not os.path.exists(session_dir):
+    if not session_dir or not os.path.exists(session_dir) or not os.path.isdir(session_dir):
         log(f"setup_proxy_ssh_socket invalid XPRA_SESSION_DIR={session_dir!r}")
         return ""
     # locate the ssh agent uuid,
