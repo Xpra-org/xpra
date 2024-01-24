@@ -13,7 +13,6 @@ from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.gtk.keymap import get_gtk_keymap
-from xpra.gtk.util import get_default_root_window
 from xpra.gtk.error import xsync, xlog
 from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names
 from xpra.server.keyboard_config_base import KeyboardConfigBase
@@ -572,11 +571,8 @@ class KeyboardConfig(KeyboardConfigBase):
         return keycode or 0, rgroup or 0
 
     def get_current_mask(self) -> list:
-        root = get_default_root_window()
-        if not root:
-            return []
-        current_mask = X11Keyboard.query_mask()
-        return mask_to_names(current_mask, self.modifier_map)
+        # this is only called from an existing xsync context in this module
+        return mask_to_names(X11Keyboard.query_mask(), self.modifier_map)
 
     def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None) -> None:
         """
