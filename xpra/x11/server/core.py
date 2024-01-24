@@ -945,7 +945,8 @@ class X11ServerCore(GTKServerBase):
         mouselog("do_process_mouse_common%s", (proto, device_id, wid, pointer, props))
         if self.readonly:
             return False
-        pos = self.root_window.get_pointer()[-3:-1]
+        with xsync:
+            pos = X11Keyboard.query_pointer()
         if (pointer and pos != pointer[:2]) or self.input_devices=="xi":
             with xswallow:
                 self._move_pointer(device_id, wid, pointer, props)

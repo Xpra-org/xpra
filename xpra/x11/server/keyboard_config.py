@@ -575,7 +575,7 @@ class KeyboardConfig(KeyboardConfigBase):
         root = get_default_root_window()
         if not root:
             return []
-        current_mask = root.get_pointer()[-1]
+        current_mask = X11Keyboard.query_mask()
         return mask_to_names(current_mask, self.modifier_map)
 
     def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None) -> None:

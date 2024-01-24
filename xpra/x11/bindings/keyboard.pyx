@@ -1140,3 +1140,14 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         XQueryPointer(self.display, root_window, &root, &child,
                       &root_x, &root_y, &win_x, &win_y, &mask)
         return root_x, root_y
+
+    def query_mask(self):
+        self.context_check("query_mask")
+        cdef Window root_window = XDefaultRootWindow(self.display)
+        cdef Window root, child
+        cdef int root_x, root_y
+        cdef int win_x, win_y
+        cdef unsigned int mask
+        XQueryPointer(self.display, root_window, &root, &child,
+                      &root_x, &root_y, &win_x, &win_y, &mask)
+        return mask
