@@ -3,9 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import xpra.gtk.info
 from xpra.os_util import gi_import
+from xpra.util.env import IgnoreWarningsContext
 from xpra.gtk.error import XError, xsync
+from xpra.gtk.info import get_screen_sizes
 from xpra.x11.desktop.model_base import DesktopModelBase
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.log import Logger
@@ -41,10 +42,12 @@ class ScreenDesktopModel(DesktopModelBase):
         self.update_size_hints()
 
     def get_geometry(self):
-        return 0, 0, self.screen.get_width(), self.screen.get_height()
+        w, h = self.get_dimensions()
+        return 0, 0, w, h
 
     def get_dimensions(self):
-        return self.screen.get_width(), self.screen.get_height()
+        with IgnoreWarningsContext():
+            return self.screen.get_width(), self.screen.get_height()
 
     def get_property(self, prop):
         if prop=="xid":
@@ -58,7 +61,7 @@ class ScreenDesktopModel(DesktopModelBase):
             with xsync:
                 ow, oh = RandR.get_screen_size()
             with xsync:
-                if RandR.is_dummy16() and (rw, rh) not in xpra.gtk.info.get_screen_sizes():
+                if RandR.is_dummy16() and (rw, rh) not in get_screen_sizes():
                     RandR.add_screen_size(rw, rh)
             with xsync:
                 if not RandR.set_screen_size(rw, rh):
@@ -77,7 +80,7 @@ class ScreenDesktopModel(DesktopModelBase):
             geomlog.error(" %s", str(e) or type(e))
 
     def _screen_size_changed(self, screen):
-        w, h = self.screen.get_width(), screen.get_height()
+        w, h = self.get_dimensions()
         screenlog("screen size changed: new size %ix%i", w, h)
         root = self.screen.get_root_window()
         screenlog("root window geometry=%s", root.get_geometry())
@@ -86,7 +89,7 @@ class ScreenDesktopModel(DesktopModelBase):
         self.emit("resized")
 
     def update_size_hints(self):
-        w, h = self.screen.get_width(), self.screen.get_height()
+        w, h = self.get_dimensions()
         screenlog("screen dimensions: %ix%i", w, h)
         size_hints = {}
 
