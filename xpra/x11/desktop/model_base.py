@@ -132,28 +132,32 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
 
     def update_icon(self) -> bool:
         icons = None
+        wm_name = self.get_property("wm-name")
+        if not wm_name:
+            return False
+        icon_name = get_icon_filename(wm_name.lower()+".png")
+        if not icon_name:
+            return False
         try:
-            wm_name = self.get_property("wm-name")
-            if not wm_name:
-                return False
-            icon_name = get_icon_filename(wm_name.lower()+".png")
-            try:
-                from PIL import Image  # pylint: disable=import-outside-toplevel
-            except ImportError:
-                iconlog("unable to get icon without pillow")
-                img = None
-            else:
-                img = Image.open(icon_name)
-                iconlog("Image(%s)=%s", icon_name, img)
-            if img:
-                icon_data = load_binary_file(icon_name)
-                if not icon_data:
-                    raise ValueError(f"failed to load icon {icon_name!r}")
-                w, h = img.size
-                icon = (w, h, "png", icon_data)
-                icons = (icon,)
-        except Exception:
-            iconlog("failed to return window icon", exc_info=True)
+            from xpra.codecs.pillow.decoder import open_only  # pylint: disable=import-outside-toplevel
+        except ImportError:
+            iconlog("unable to get icon without pillow")
+            return False
+        icon_data = load_binary_file(icon_name)
+        if not icon_data:
+            raise ValueError(f"failed to load icon {icon_name!r}")
+        try:
+            img = open_only(icon_data, types=("png", ))
+            w, h = img.size
+            img.close()
+        except OSError:
+            iconlog("failed to open window icon", exc_info=True)
+            return False
+        iconlog("Image(%s)=%s", icon_name, img)
+        if not img:
+            return False
+        icon = (w, h, "png", icon_data)
+        icons = (icon,)
         return self._updateprop("icons", icons)
 
     def uses_xshm(self) -> bool:
