@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -34,7 +34,7 @@ AUTHORIZED_KEYS_HASHES = os.environ.get("XPRA_AUTHORIZED_KEYS_HASHES",
                                         "md5,sha1,sha224,sha256,sha384,sha512").split(",")
 
 
-def get_keyclass(keytype:str):
+def get_keyclass(keytype: str):
     if not keytype:
         return None
     # 'dsa' -> 'DSS'
@@ -63,9 +63,9 @@ def detect_ssh_stanza(cmd):
     #  else echo "no run-xpra command found"; exit 1; fi']
     # if .* ; then .*/run-xpra _proxy;
     log(f"parse cmd={cmd} (len={len(cmd)})")
-    if len(cmd)==1:         # ie: 'thelongcommand'
+    if len(cmd) == 1:         # ie: 'thelongcommand'
         parse_cmd = cmd[0]
-    elif len(cmd)==3 and cmd[:2]==["sh", "-c"]:     # ie: 'sh' '-c' 'thelongcommand'
+    elif len(cmd) == 3 and cmd[:2] == ["sh", "-c"]:     # ie: 'sh' '-c' 'thelongcommand'
         parse_cmd = cmd[2]
     else:
         return None
@@ -80,11 +80,11 @@ def detect_ssh_stanza(cmd):
                ) and s.find("then ") > 0:
             then_str = s.split("then ", 1)[1]
             # ie: then_str="$XDG_RUNTIME_DIR/xpra/run-xpra _proxy; el"
-            if then_str.find(";")>0:
+            if then_str.find(";") > 0:
                 then_str = then_str.split(";")[0]
             parts = shlex.split(then_str)
             log(f"parts({then_str})={parts}")
-            if len(parts)>=2:
+            if len(parts) >= 2:
                 subcommand = parts[1]       # ie: "_proxy"
                 if subcommand not in subcommands:
                     subcommands[subcommand] = parts
@@ -119,7 +119,7 @@ def find_fingerprint(filename: str, fingerprint):
                     continue
                 fp_plain = hash_instance.hexdigest()
                 log(f"{hash_algo}({line})={fp_plain}")
-                if fp_plain==hex_fingerprint:
+                if fp_plain == hex_fingerprint:
                     return True
             count += 1
     log(f"no match in {count} keys from {filename!r}")
@@ -185,11 +185,11 @@ class SSHServer(paramiko.ServerInterface):
         log("check_auth_publickey(%s, %r) pubkey_auth=%s", username, key, self.pubkey_auth)
         if not self.pubkey_auth:
             return paramiko.AUTH_FAILED
-        if not POSIX or getuid()!=0:
+        if not POSIX or getuid() != 0:
             # pylint: disable=import-outside-toplevel
             import getpass
             sysusername = getpass.getuser()
-            if sysusername!=username:
+            if sysusername != username:
                 log.warn("Warning: ssh password authentication failed,")
                 log.warn(" username does not match:")
                 log.warn(f" expected {sysusername!r}, got {username!r}")
@@ -239,16 +239,16 @@ class SSHServer(paramiko.ServerInterface):
         log(f"check_channel_exec_request({channel}, {command})")
         cmd = shlex.split(decode_str(command))
         log(f"check_channel_exec_request: cmd={cmd}")
-        if cmd[0] == "command" and len(cmd)==1:
+        if cmd[0] == "command" and len(cmd) == 1:
             return csend(out="\r\n")
         if cmd == ["command", "-v", "xpra"]:
             return csend(out="xpra\r\n")
-        if cmd[0] == "ver" and len(cmd)==1:
+        if cmd[0] == "ver" and len(cmd) == 1:
             # older xpra versions run this command to detect win32:
             if WIN32:
                 return csend(out="Microsoft Windows")
             return csend(1, err=f"{cmd[0]}: not found\r\n")
-        if cmd[0] == "echo" and len(cmd)==2:
+        if cmd[0] == "echo" and len(cmd) == 2:
             # echo can be used to detect the platform,
             # so emulate a basic echo command,
             # just enough for the os detection to work:
@@ -276,7 +276,7 @@ class SSHServer(paramiko.ServerInterface):
             # pylint: disable=import-outside-toplevel
             from xpra.platform.paths import get_app_dir
             return csend(out=f"InstallPath {get_app_dir()}\r\n")
-        if cmd[0] in ("type", "which") and len(cmd)==2:
+        if cmd[0] in ("type", "which") and len(cmd) == 2:
             xpra_cmd = cmd[-1]   # ie: $XDG_RUNTIME_DIR/xpra/run-xpra or "xpra"
             # only allow '*xpra' commands:
             if any(xpra_cmd.lower().endswith(x) for x in ("xpra", "run-xpra", "xpra_cmd.exe", "xpra.exe")):
@@ -293,21 +293,21 @@ class SSHServer(paramiko.ServerInterface):
                     return fail(f"Warning: received a {subcommand!r} session request",
                                 " this feature is not enabled with the builtin ssh server")
                 self.proxy_start(channel, subcommand, cmd[2:])
-            elif subcommand=="_proxy":
+            elif subcommand == "_proxy":
                 display_name = getattr(self, "display_name", "")
-                #if specified, the display name must match this session:
-                display = None
+                # if specified, the display name must match this session:
+                display = ""
                 for arg in cmd[2:]:
                     if not arg.startswith("--"):
                         display = arg
-                if display and display_name!=display:
+                if display and display_name != display:
                     return fail(f"Warning: the display requested {display!r}",
                                 f" does not match the current display {display_name!r}")
                 log(f"ssh 'xpra {subcommand}' subcommand: display_name={display_name!r}, agent={self.agent}")
                 setup_agent(cmd)
             else:
                 return fail(f"Warning: unsupported xpra subcommand '{cmd[1]}'")
-            #we're ready to use this socket as an xpra channel
+            # we're ready to use this socket as an xpra channel
             self._run_proxy(channel)
             return True
         proxy_cmd = detect_ssh_stanza(cmd)
@@ -338,7 +338,7 @@ class SSHServer(paramiko.ServerInterface):
 
     def proxy_start(self, channel, subcommand, args) -> None:
         log(f"ssh proxy-start({channel}, {subcommand}, {args})")
-        if subcommand=="_proxy_shadow_start":
+        if subcommand == "_proxy_shadow_start":
             server_mode = "shadow"
         else:
             # ie: "_proxy_start_desktop" -> "start-desktop"
@@ -497,7 +497,7 @@ def make_ssh_server_connection(conn, socket_options, none_auth: bool = False, pa
             chan = t.accept(SERVER_WAIT)
             if chan is None:
                 log.warn("Warning: SSH channel setup failed")
-                #prevent errors trying to access this connection, now likely dead:
+                # prevent errors trying to access this connection, now likely dead:
                 conn.set_active(False)
                 close()
                 return None
@@ -533,6 +533,6 @@ def make_ssh_server_connection(conn, socket_options, none_auth: bool = False, pa
                 chan.sendall_stderr(err)
             chan.send_exit_status(exit_status)
             chan.close()
-            #the client may now make another request on a new channel:
+            # the client may now make another request on a new channel:
             ssh_server.event.clear()
     return None

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,13 +13,13 @@ from xpra.log import Logger
 
 log = Logger("ssh")
 
-_key_algorithms : dict[str,str] = {
-    'ssh-rsa'               : '1',
-    'ssh-dss'               : '2',
-    'ecdsa-sha2-nistp256'   : '3',
-    'ecdsa-sha2-nistp384'   : '3',
-    'ecdsa-sha2-nistp521'   : '3',
-    'ssh-ed25519'           : '4',
+_key_algorithms: dict[str,str] = {
+    'ssh-rsa': '1',
+    'ssh-dss': '2',
+    'ecdsa-sha2-nistp256': '3',
+    'ecdsa-sha2-nistp384': '3',
+    'ecdsa-sha2-nistp521': '3',
+    'ssh-ed25519': '4',
 }
 
 _hash_funcs : dict[str, Callable] = {
@@ -38,7 +38,7 @@ def check_host_key(hostname:str, key):
         return f"error checking sshfp record: {e}"
 
 
-def do_check_host_key(hostname:str, keytype, keydata):
+def do_check_host_key(hostname: str, keytype, keydata):
     resolver = Resolver()
     resolver.use_edns(0, flags.DO, 1280)  # type: ignore[attr-defined]
     log("do_check_host_key(%s, %s, ..) resolver=%s", hostname, keytype, resolver)
@@ -82,7 +82,7 @@ def main(argv) -> int:
     if "-v" in argv:
         log.enable_debug()
         argv.remove("-v")
-    if len(argv)!=3:
+    if len(argv) != 3:
         print(f"usage: {argv[0]} hostname rsaprivatekeyfile [-v]")
         return 1
     hostname = argv[1]

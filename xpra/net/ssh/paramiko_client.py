@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -402,7 +402,7 @@ def get_auth_modes(paramiko_config, host_config: dict, password: str) -> list[st
     return auth
 
 
-class iauthhandler:
+class IAuthHandler:
     def __init__(self, password):
         self.authcount = 0
         self.password = password
@@ -704,16 +704,15 @@ def do_connect_to(transport, host:str, username:str, password:str,
     def auth_interactive() -> None:
         log("trying interactive authentication")
         try:
-            myiauthhandler = iauthhandler(password)
-            transport.auth_interactive(username, myiauthhandler.handle_request, "")
-        except SSHException as e:
-            auth_errors.setdefault("interactive", []).append(str(e))
+            iauthhandler = IAuthHandler(password)
+            transport.auth_interactive(username, iauthhandler.handle_request, "")
+        except SSHException as authe:
+            estr = getattr(authe, "message", str(authe))
+            auth_errors.setdefault("interactive", []).append(estr)
             log("auth_interactive(..)", exc_info=True)
             log.info("SSH password authentication failed:")
-            for emsg in getattr(e, "message", str(e)).split(";"):
+            for emsg in getattr(authe, "message", estr).split(";"):
                 log.info(f" {emsg}")
-        finally:
-            del myiauthhandler
 
     banner = transport.get_banner()
     if banner:

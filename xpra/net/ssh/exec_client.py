@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -24,7 +24,7 @@ if log.is_debug_enabled():
     import logging
     logging.getLogger("paramiko").setLevel(logging.DEBUG)
 
-INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "")    #"xpra initenv"
+INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "")    # "xpra initenv"
 MAGIC_QUOTES = envbool("XPRA_SSH_MAGIC_QUOTES", True)
 
 
@@ -32,8 +32,8 @@ def connect_failed(_message):
     # by the time ssh fails, we may have entered the gtk main loop
     # (and more than once thanks to the clipboard code..)
     if "gi.repository.Gtk" in sys.modules:
-        Gtk = gi_import("Gtk")
-        Gtk.main_quit()
+        gtk = gi_import("Gtk")
+        gtk.main_quit()
 
 
 def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
@@ -60,9 +60,9 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             startupinfo.wShowWindow = 0     # aka win32.con.SW_HIDE
             flags = CREATE_NEW_PROCESS_GROUP | CREATE_NEW_CONSOLE
             kwargs |= {
-                "startupinfo"   : startupinfo,
-                "creationflags" : flags,
-                "stderr"        : PIPE,
+                "startupinfo": startupinfo,
+                "creationflags": flags,
+                "stderr": PIPE,
             }
         elif not display_desc.get("exit_ssh", False) and not OSX:
             kwargs["start_new_session"] = True
@@ -88,8 +88,8 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             remote_cmd = INITENV_COMMAND + ";" + remote_cmd
         # how many times we need to escape the remote command string
         # depends on how many times the ssh command is parsed
-        nssh = sum(int(x=="ssh") for x in cmd)
-        if nssh>=2 and MAGIC_QUOTES:
+        nssh = sum(int(x == "ssh") for x in cmd)
+        if nssh >= 2 and MAGIC_QUOTES:
             for _ in range(nssh):
                 remote_cmd = shlex.quote(remote_cmd)
         else:
@@ -130,9 +130,9 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
 
     def abort_test(action):
         """ if ssh dies, we don't need to try to read/write from its sockets """
-        e = child.poll()
-        if e is not None:
-            had_connected = conn.input_bytecount>0 or conn.output_bytecount>0
+        exitcode = child.poll()
+        if exitcode is not None:
+            had_connected = conn.input_bytecount > 0 or conn.output_bytecount > 0
             if had_connected:
                 error_message = f"cannot {action} using SSH"
             else:
@@ -140,13 +140,13 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             sshpass_error = None
             if sshpass_command:
                 sshpass_error = {
-                    1  : "Invalid command line argument",
-                    2  : "Conflicting arguments given",
-                    3  : "General runtime error",
-                    4  : "Unrecognized response from ssh (parse error)",
-                    5  : "Invalid/incorrect password",
-                    6  : "Host public key is unknown. sshpass exits without confirming the new key.",
-                }.get(e)
+                    1: "Invalid command line argument",
+                    2: "Conflicting arguments given",
+                    3: "General runtime error",
+                    4: "Unrecognized response from ssh (parse error)",
+                    5: "Invalid/incorrect password",
+                    6: "Host public key is unknown. sshpass exits without confirming the new key.",
+                }.get(exitcode)
                 if sshpass_error:
                     error_message += f": {sshpass_error}"
             if debug_cb:
@@ -164,10 +164,10 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
                     display_name = display_desc["display_name"]
                     log.error(f" for server: {display_name}")
                 else:
-                    log.error(f"The SSH process has terminated with exit code {e}")
-                cmd_info = " ".join(display_desc["full_ssh"])
+                    log.error(f"The SSH process has terminated with exit code {exitcode}")
+                ssh_cmd_info = " ".join(display_desc["full_ssh"])
                 log.error(" the command line used was:")
-                log.error(f" {cmd_info}")
+                log.error(f" {ssh_cmd_info}")
             raise ConnectionClosedException(error_message) from None
 
     def stop_tunnel():
@@ -175,40 +175,40 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             # on posix, the tunnel may be shared with other processes
             # so don't kill it... which may leave it behind after use.
             # but at least make sure we close all the pipes:
-            for name,fd in {
-                "stdin" : child.stdin,
-                "stdout" : child.stdout,
-                "stderr" : child.stderr,
+            for name, fd in {
+                "stdin": child.stdin,
+                "stdout": child.stdout,
+                "stderr": child.stderr,
             }.items():
                 try:
                     if fd:
                         fd.close()
-                except Exception as e:
-                    log.error(f"Error closing ssh tunnel {name}: {e}")
+                except Exception as fd_err:
+                    log.error(f"Error closing ssh tunnel {name}: {fd_err}")
             if not display_desc.get("exit_ssh", False):
                 # leave it running
                 return
         try:
             if child.poll() is None:
                 child.terminate()
-        except Exception as e:
-            log.error(f"Error trying to stop ssh tunnel process: {e}")
-    host = display_desc["host"]
-    port = display_desc.get("port", 22)
-    username = display_desc.get("username")
-    display = display_desc.get("display")
+        except OSError as term_err:
+            log.error(f"Error trying to stop ssh tunnel process: {term_err}")
+    host: str = display_desc["host"]
+    port: int = display_desc.get("port", 22)
+    username: str = display_desc.get("username", "")
+    display: str = display_desc.get("display", "")
     info = {
-        "host"  : host,
-        "port"  : port,
+        "host": host,
+        "port": port,
     }
     from xpra.net.bytestreams import TwoFileConnection
     conn = TwoFileConnection(child.stdin, child.stdout,
                              abort_test, target=(host, port),
                              socktype="ssh", close_cb=stop_tunnel, info=info)
     conn.endpoint = host_target_string("ssh", username, host, port, display)
-    conn.timeout = 0            #taken care of by abort_test
+    conn.timeout = 0            # taken care of by abort_test
     conn.process = (child, "ssh", cmd)
-    if kwargs.get("stderr")==PIPE:
+    if kwargs.get("stderr") == PIPE:
 
         def stderr_reader():
             errs = []
@@ -226,7 +226,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
                     errs.append(s)
             if errs:
                 log.warn("remote SSH stderr:")
-                for e in errs:
-                    log.warn(f" {e}")
+                for err in errs:
+                    log.warn(f" {err}")
         start_thread(stderr_reader, "ssh-stderr-reader", daemon=True)
     return conn
