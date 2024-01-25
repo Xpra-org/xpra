@@ -15,7 +15,6 @@ from threading import Event
 from collections.abc import ByteString, Callable
 import paramiko
 
-from xpra.net.ssh.paramiko_client import SSHSocketConnection
 from xpra.net.bytestreams import pretty_socket
 from xpra.util.str_fn import csv, decode_str
 from xpra.util.env import envint, osexpand, first_time
@@ -231,7 +230,7 @@ class SSHServer(paramiko.ServerInterface):
                 if auth_sock:
                     # pylint: disable=import-outside-toplevel
                     from xpra.net.ssh.agent import setup_proxy_ssh_socket
-                    setup_proxy_ssh_socket(cmd, auth_sock)
+                    setup_proxy_ssh_socket(cmd, auth_sock=auth_sock)
 
         def csend(exit_status=0, out=None, err=None) -> bool:
             channel.exec_response = (exit_status, out, err)
@@ -520,6 +519,7 @@ def make_ssh_server_connection(conn, socket_options, none_auth: bool = False, pa
             if getattr(proxy_channel, "proxy_process", None):
                 log("proxy channel is handled using a subprocess")
                 return None
+            from xpra.net.ssh.paramiko_client import SSHSocketConnection
             return SSHSocketConnection(proxy_channel, sock,
                                        conn.local, conn.endpoint, conn.target,
                                        socket_options=socket_options)

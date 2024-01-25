@@ -32,6 +32,9 @@ if log.is_debug_enabled():
     import logging
     logging.getLogger("paramiko").setLevel(logging.DEBUG)
 
+from paramiko.ssh_exception import SSHException, ProxyCommandFailure, PasswordRequiredException     # noqa: E402
+from paramiko.transport import Transport    # noqa: E402
+
 
 WINDOW_SIZE = envint("XPRA_SSH_WINDOW_SIZE", 2**27-1)
 TIMEOUT = envint("XPRA_SSH_TIMEOUT", 60)
@@ -58,6 +61,10 @@ DEFAULT_WIN32_INSTALL_PATH = "C:\\Program Files\\Xpra"
 
 PARAMIKO_SESSION_LOST = "No existing session"
 
+WIN32_REGISTRY_QUERY = "REG QUERY \"HKEY_LOCAL_MACHINE\\Software\\Xpra\" /v InstallPath"
+
+AUTH_MODES: tuple[str, ...] = ("none", "agent", "key", "password")
+
 
 def keymd5(k) -> str:
     import binascii
@@ -71,7 +78,7 @@ def keymd5(k) -> str:
 
 class SSHSocketConnection(SocketConnection):
 
-    def __init__(self, ssh_channel, sock, sockname, peername, target, info=None, socket_options=None):
+    def __init__(self, ssh_channel, sock, sockname: str, peername, target, info=None, socket_options=None):
         self._raw_socket = sock
         super().__init__(ssh_channel, sockname, peername, target, "ssh", info, socket_options)
 
@@ -81,7 +88,7 @@ class SSHSocketConnection(SocketConnection):
     def start_stderr_reader(self) -> None:
         start_thread(self._stderr_reader, "ssh-stderr-reader", daemon=True)
 
-    def _stderr_reader(self):
+    def _stderr_reader(self) -> None:
         chan = self._socket
         stderr = chan.makefile_stderr("rb", 1)
         while self.active:
@@ -108,15 +115,15 @@ class SSHSocketConnection(SocketConnection):
         s = self._socket
         if s:
             i["ssh-channel"] = {
-                "id"    : s.get_id(),
-                "name"  : s.get_name(),
+                "id": s.get_id(),
+                "name": s.get_name(),
             }
         return i
 
 
 class SSHProxyCommandConnection(SSHSocketConnection):
     def __init__(self, ssh_channel, peername, target, info):
-        super().__init__(ssh_channel, None, None, peername, target, info)
+        super().__init__(ssh_channel, None, "", peername, target, info)
         self.process = None
 
     def error_is_closed(self, e) -> bool:
@@ -134,10 +141,10 @@ class SSHProxyCommandConnection(SSHSocketConnection):
             return {}
         proc, _ssh, cmd = p
         return {
-            "process" : {
-                "pid"       : proc.pid,
+            "process": {
+                "pid": proc.pid,
                 "returncode": proc.returncode,
-                "command"   : cmd,
+                "command": cmd,
             }
         }
 
@@ -150,7 +157,7 @@ class SSHProxyCommandConnection(SSHSocketConnection):
             log("SSHProxyCommandConnection.close()", exc_info=True)
 
 
-def safe_lookup(config_obj, host: str) -> dict[Any, Any]:
+def safe_lookup(config_obj, host: str) -> dict:
     try:
         return dict(config_obj.lookup(host) or {})
     except ImportError as e:
@@ -166,26 +173,26 @@ def safe_lookup(config_obj, host: str) -> dict[Any, Any]:
     return {}
 
 
-def connect_to(display_desc):
+def connect_to(display_desc: dict) -> SSHSocketConnection:
     log(f"connect_to({display_desc})")
     # plain socket attributes:
-    host = display_desc["host"]
-    port = display_desc.get("port", 22)
+    host: str = display_desc["host"]
+    port: int = display_desc.get("port", 22)
     # ssh and command attributes:
-    username = display_desc.get("username") or get_username()
+    username: str = display_desc.get("username") or get_username()
     if "proxy_host" in display_desc:
         display_desc.setdefault("proxy_username", get_username())
-    password = display_desc.get("password", "")
+    password: str = display_desc.get("password", "")
     remote_xpra = display_desc["remote_xpra"]
     proxy_command = display_desc["proxy_command"]       # ie: "_proxy_start"
-    socket_dir = display_desc.get("socket_dir", "")
-    display = display_desc.get("display", "")
-    display_as_args = display_desc["display_as_args"]   # ie: "--start=xterm :10"
-    paramiko_config = display_desc.copy()
+    socket_dir: str = display_desc.get("socket_dir", "")
+    display: str = display_desc.get("display", "")
+    display_as_args: list[str] = display_desc["display_as_args"]   # ie: "--start=xterm :10"
+    paramiko_config: dict = display_desc.copy()
     paramiko_config.update(display_desc.get("paramiko-config", {}))
-    socket_info = {
-        "host"  : host,
-        "port"  : port,
+    socket_info: dict[str, Any] = {
+        "host": host,
+        "port": port,
     }
 
     def fail(msg: str) -> None:
@@ -195,8 +202,6 @@ def connect_to(display_desc):
     from paramiko import SSHConfig, ProxyCommand
     ssh_config = SSHConfig()
 
-    def ssh_lookup(key):
-        return safe_lookup(ssh_config, key)
     etc = "etc" if sys.prefix == "/usr" else sys.prefix+"/etc"
     for config_file in (
         f"{etc}/ssh/ssh_config",
@@ -211,16 +216,19 @@ def connect_to(display_desc):
                 log(f"parse({config_file})", exc_info=True)
                 log.error(f"Error parsing {config_file!r}:")
                 log.estr(e)
-        log(f"parsed user config {config_file!r}")
+        log(f"parsed ssh config {config_file!r}")
     try:
         log("%i hosts found", len(ssh_config.get_hostnames()))
     except KeyError:
         pass
-    sock = None
+
+    def ssh_lookup(key) -> dict:
+        return safe_lookup(ssh_config, key)
     host_config: dict = ssh_lookup("*")
     host_config.update(ssh_lookup(host))
+    log(f"host_config({host})={host_config}")
 
-    def get_keyfiles(config_name="key"):
+    def get_keyfiles(config_name="key") -> list[str]:
         keyfiles = host_config.get("identityfile") or get_default_keyfiles()
         keyfile = paramiko_config.get(config_name)
         if keyfile:
@@ -269,7 +277,6 @@ def connect_to(display_desc):
             conn.start_stderr_reader()
             conn.process = (sock.process, "ssh", cmd)
             from xpra.net import bytestreams
-            from paramiko.ssh_exception import ProxyCommandFailure
             bytestreams.CLOSED_EXCEPTIONS = tuple(list(bytestreams.CLOSED_EXCEPTIONS)+[ProxyCommandFailure])
             return conn
 
@@ -349,7 +356,7 @@ def connect_to(display_desc):
                 noerr(sock.close)
                 sock = None
 
-    remote_port = display_desc.get("remote_port", 0)
+    remote_port: int = display_desc.get("remote_port", 0)
     if remote_port:
         # we want to connect directly to a remote port,
         # we don't need to run a command
@@ -365,9 +372,6 @@ def connect_to(display_desc):
     return conn
 
 
-AUTH_MODES: tuple[str, ...] = ("none", "agent", "key", "password")
-
-
 def get_auth_modes(paramiko_config, host_config: dict, password: str) -> list[str]:
 
     def configvalue(key: str):
@@ -377,8 +381,8 @@ def get_auth_modes(paramiko_config, host_config: dict, password: str) -> list[st
         # fallback to the value from the host config:
         return host_config.get(key)
 
-    def configbool(key: str, default_value=True):
-        return parse_bool(key, configvalue(key), default_value)
+    def configbool(key: str, default_value=True) -> bool:
+        return bool(parse_bool(key, configvalue(key), default_value))
 
     auth_str = configvalue("auth")
     if auth_str:
@@ -403,7 +407,7 @@ class iauthhandler:
         self.authcount = 0
         self.password = password
 
-    def handle_request(self, title:str, instructions, prompt_list) -> list:
+    def handle_request(self, title: str, instructions, prompt_list) -> list:
         log("handle_request%s counter=%i", (title, instructions, prompt_list), self.authcount)
         p = []
         for pent in prompt_list:
@@ -419,8 +423,6 @@ class iauthhandler:
 
 def do_connect(chan, host: str, username: str, password: str,
                host_config=None, keyfiles=None, paramiko_config=None, auth_modes=AUTH_MODES):
-    from paramiko import SSHException
-    from paramiko.transport import Transport
     transport = Transport(chan)
     transport.use_compression(False)
     log("SSH transport %s", transport)
@@ -435,9 +437,6 @@ def do_connect(chan, host: str, username: str, password: str,
 
 def do_connect_to(transport, host:str, username:str, password:str,
                   host_config=None, keyfiles=None, paramiko_config=None, auth_modes=AUTH_MODES):
-    from paramiko import SSHException, PasswordRequiredException
-    from paramiko.agent import Agent
-    from paramiko.hostkeys import HostKeys
     log("do_connect_to%s", (transport, host, username, password, host_config, keyfiles, paramiko_config))
 
     def configvalue(key: str) -> Any:
@@ -460,10 +459,11 @@ def do_connect_to(transport, host:str, username:str, password:str,
     assert host_key, "no remote server key"
     log("remote_server_key=%s", keymd5(host_key))
     if configbool("verify-hostkey", VERIFY_HOSTKEY):
+        from paramiko.hostkeys import HostKeys
         host_keys = HostKeys()
         host_keys_filename = None
-        KNOWN_HOSTS = get_ssh_known_hosts_files()
-        for known_hosts in KNOWN_HOSTS:
+        known_hosts = get_ssh_known_hosts_files()
+        for known_hosts in known_hosts:
             host_keys.clear()
             try:
                 path = os.path.expanduser(known_hosts)
@@ -554,7 +554,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
                     if not host_keys_filename:
                         # the first one is the default,
                         # ie: ~/.ssh/known_hosts on posix
-                        host_keys_filename = os.path.expanduser(KNOWN_HOSTS[0])
+                        host_keys_filename = os.path.expanduser(known_hosts[0])
                     log(f"adding {keyname()} key for host {host!r} to {host_keys_filename!r}")
                     if not os.path.exists(host_keys_filename):
                         keys_dir = os.path.dirname(host_keys_filename)
@@ -583,6 +583,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
     auth_errors: dict[str, list[str]] = {}
 
     def auth_agent() -> None:
+        from paramiko.agent import Agent
         agent = Agent()
         agent_keys = agent.get_keys()
         log("agent keys: %s", agent_keys)
@@ -654,7 +655,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
                 except Exception:
                     log(f"auth_publickey() loading as {pkey_classname}", exc_info=True)
                     key_data = load_binary_file(keyfile_path)
-                    if key_data and key_data.find(b"BEGIN OPENSSH PRIVATE KEY")>=0:
+                    if key_data and key_data.find(b"BEGIN OPENSSH PRIVATE KEY") >= 0:
                         log(" (OpenSSH private key file)")
             if key:
                 log(f"auth_publickey using {keyfile_path!r} as {pkey_classname}: {keymd5(key)}")
@@ -686,10 +687,11 @@ def do_connect_to(transport, host:str, username:str, password:str,
         log("trying password authentication")
         try:
             transport.auth_password(username, password)
-        except SSHException as e:
-            auth_errors.setdefault("password", []).append(str(e))
+        except SSHException as authe:
+            estr = getattr(authe, "message", str(authe))
+            auth_errors.setdefault("password", []).append(estr)
             log("auth_password(..)", exc_info=True)
-            emsgs = getattr(e, "message", str(e)).split(";")
+            emsgs = estr.split(";")
         else:
             emsgs = []
         if not transport.is_authenticated():
@@ -767,7 +769,7 @@ class SSHAuthenticationError(InitExit):
         self.errors = errors
 
 
-def run_test_command(transport, cmd:str) -> tuple[list[str], list[str], int]:
+def run_test_command(transport, cmd: str) -> tuple[list[str], list[str], int]:
     from paramiko import SSHException
     log(f"run_test_command(transport, {cmd})")
     try:
@@ -816,7 +818,7 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
     assert remote_xpra
     log(f"will try to run xpra from: {remote_xpra}")
 
-    def rtc(cmd) -> tuple[list[str], list[str], int]:
+    def rtc(cmd: str) -> tuple[list[str], list[str], int]:
         return run_test_command(transport, cmd)
 
     def detectosname() -> str:
@@ -837,15 +839,14 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
             log.info(f"ssh server OS is {name!r}")
             return name
         return "unknown"
-    WIN32_REGISTRY_QUERY = "REG QUERY \"HKEY_LOCAL_MACHINE\\Software\\Xpra\" /v InstallPath"
 
     def getexeinstallpath():
         cmd = WIN32_REGISTRY_QUERY
-        if osname=="msys":
+        if osname == "msys":
             # escape for msys shell:
             cmd = cmd.replace("/", "//")
         r = rtc(cmd)
-        if r[2]!=0:
+        if r[2] != 0:
             return None
         out = r[0]
         for line in out:
@@ -875,11 +876,11 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
                 test_path = winpath(f"{DEFAULT_WIN32_INSTALL_PATH}\\{xpra_cmd}")
                 cmd = f'dir "{test_path}"'
                 r = rtc(cmd)
-                if r[2]==0:
+                if r[2] == 0:
                     xpra_cmd = test_path
                     found = True
         if not found and not find_command and not osname.startswith("Windows"):
-            if rtc("command")[2]==0:
+            if rtc("command")[2] == 0:
                 find_command = "command -v"
             else:
                 find_command = "which"
@@ -903,7 +904,7 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
                     # try the default system installation path
                     r = rtc(f"command -v '{default_path}'")
                     if r[2] == 0:
-                        xpra_cmd = default_path     #ie: "/mingw64/bin/xpra"
+                        xpra_cmd = default_path     # ie: "/mingw64/bin/xpra"
                         found = True
         if not found or xpra_cmd in tried:
             continue
