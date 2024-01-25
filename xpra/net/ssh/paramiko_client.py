@@ -273,96 +273,96 @@ def connect_to(display_desc):
             bytestreams.CLOSED_EXCEPTIONS = tuple(list(bytestreams.CLOSED_EXCEPTIONS)+[ProxyCommandFailure])
             return conn
 
-        keys = get_keyfiles()
-        from xpra.net.socket_util import socket_connect
-        if "proxy_host" in display_desc:
-            proxy_host = display_desc["proxy_host"]
-            proxy_port = int(display_desc.get("proxy_port", 22))
-            proxy_username = display_desc.get("proxy_username", username)
-            proxy_password = display_desc.get("proxy_password", password)
-            proxy_keys = get_keyfiles("proxy_key")
-            sock = socket_connect(proxy_host, proxy_port)
-            if not sock:
-                fail(f"SSH proxy transport failed to connect to {proxy_host}:{proxy_port}")
-            middle_transport = do_connect(sock, proxy_host,
-                                          proxy_username, proxy_password,
-                                          ssh_lookup(host) or ssh_lookup("*"),
-                                          proxy_keys,
-                                          paramiko_config)
-            log("Opening proxy channel")
-            chan_to_middle = middle_transport.open_channel("direct-tcpip", (host, port), ("localhost", 0))
-            transport = do_connect(chan_to_middle, host,
-                                   username, password,
-                                   host_config,
-                                   keys,
-                                   paramiko_config)
-            chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
-            peername = (host, port)
-            conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
-            to_str = host_target_string("ssh", username, host, port, display)
-            proxy_str = host_target_string("ssh", proxy_username, proxy_host, proxy_port, None)
-            conn.target = f"{to_str} via {proxy_str}"
-            conn.timeout = SOCKET_TIMEOUT
-            conn.start_stderr_reader()
-            return conn
-
-        # plain TCP connection to the server,
-        # we open it then give the socket to paramiko:
-        auth_modes = get_auth_modes(paramiko_config, host_config, password)
-        log(f"authentication modes={auth_modes}")
-        sock = None
-        transport = None
-        sockname = peername = host
-        while not transport:
-            sock = socket_connect(host, port)
-            if not sock:
-                fail(f"SSH failed to connect to {host}:{port}")
-            sockname = sock.getsockname()
-            peername = sock.getpeername()
-            log(f"paramiko socket_connect: sockname={sockname}, peername={peername}")
-            try:
-                transport = do_connect(sock, host, username, password,
-                                       host_config,
-                                       keys,
-                                       paramiko_config,
-                                       auth_modes)
-            except SSHAuthenticationError as e:
-                log(f"paramiko authentication errors on socket {sock} with modes {auth_modes}: {e.errors}",
-                    exc_info=True)
-                pw_errors = []
-                for errs in e.errors.values():
-                    pw_errors += errs
-                if ("key" in auth_modes or "agent" in auth_modes) and PARAMIKO_SESSION_LOST in pw_errors:
-                    # try connecting again but without 'key' and 'agent' authentication:
-                    # see https://github.com/Xpra-org/xpra/issues/3223
-                    for m in ("key", "agent"):
-                        try:
-                            auth_modes.remove(m)
-                        except KeyError:
-                            pass
-                    log.info(f"retrying SSH authentication with modes {csv(auth_modes)}")
-                    continue
-                raise
-            finally:
-                if sock and not transport:
-                    noerr(sock.shutdown)
-                    noerr(sock.close)
-                    sock = None
-
-        remote_port = display_desc.get("remote_port", 0)
-        if remote_port:
-            # we want to connect directly to a remote port,
-            # we don't need to run a command
-            chan = transport.open_channel("direct-tcpip", ("localhost", remote_port), ('localhost', 0))
-            log(f"direct channel to remote port {remote_port} : {chan}")
-        else:
-            chan = run_remote_xpra(transport, proxy_command, remote_xpra,
-                                   socket_dir, display_as_args, paramiko_config)
-        conn = SSHSocketConnection(chan, sock, sockname, peername, (host, port), socket_info)
-        conn.target = host_target_string("ssh", username, host, port, display)
+    keys = get_keyfiles()
+    from xpra.net.socket_util import socket_connect
+    if "proxy_host" in display_desc:
+        proxy_host = display_desc["proxy_host"]
+        proxy_port = int(display_desc.get("proxy_port", 22))
+        proxy_username = display_desc.get("proxy_username", username)
+        proxy_password = display_desc.get("proxy_password", password)
+        proxy_keys = get_keyfiles("proxy_key")
+        sock = socket_connect(proxy_host, proxy_port)
+        if not sock:
+            fail(f"SSH proxy transport failed to connect to {proxy_host}:{proxy_port}")
+        middle_transport = do_connect(sock, proxy_host,
+                                      proxy_username, proxy_password,
+                                      ssh_lookup(host) or ssh_lookup("*"),
+                                      proxy_keys,
+                                      paramiko_config)
+        log("Opening proxy channel")
+        chan_to_middle = middle_transport.open_channel("direct-tcpip", (host, port), ("localhost", 0))
+        transport = do_connect(chan_to_middle, host,
+                               username, password,
+                               host_config,
+                               keys,
+                               paramiko_config)
+        chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
+        peername = (host, port)
+        conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
+        to_str = host_target_string("ssh", username, host, port, display)
+        proxy_str = host_target_string("ssh", proxy_username, proxy_host, proxy_port, None)
+        conn.target = f"{to_str} via {proxy_str}"
         conn.timeout = SOCKET_TIMEOUT
         conn.start_stderr_reader()
         return conn
+
+    # plain TCP connection to the server,
+    # we open it then give the socket to paramiko:
+    auth_modes = get_auth_modes(paramiko_config, host_config, password)
+    log(f"authentication modes={auth_modes}")
+    sock = None
+    transport = None
+    sockname = peername = host
+    while not transport:
+        sock = socket_connect(host, port)
+        if not sock:
+            fail(f"SSH failed to connect to {host}:{port}")
+        sockname = sock.getsockname()
+        peername = sock.getpeername()
+        log(f"paramiko socket_connect: sockname={sockname}, peername={peername}")
+        try:
+            transport = do_connect(sock, host, username, password,
+                                   host_config,
+                                   keys,
+                                   paramiko_config,
+                                   auth_modes)
+        except SSHAuthenticationError as e:
+            log(f"paramiko authentication errors on socket {sock} with modes {auth_modes}: {e.errors}",
+                exc_info=True)
+            pw_errors = []
+            for errs in e.errors.values():
+                pw_errors += errs
+            if ("key" in auth_modes or "agent" in auth_modes) and PARAMIKO_SESSION_LOST in pw_errors:
+                # try connecting again but without 'key' and 'agent' authentication:
+                # see https://github.com/Xpra-org/xpra/issues/3223
+                for m in ("key", "agent"):
+                    try:
+                        auth_modes.remove(m)
+                    except KeyError:
+                        pass
+                log.info(f"retrying SSH authentication with modes {csv(auth_modes)}")
+                continue
+            raise
+        finally:
+            if sock and not transport:
+                noerr(sock.shutdown)
+                noerr(sock.close)
+                sock = None
+
+    remote_port = display_desc.get("remote_port", 0)
+    if remote_port:
+        # we want to connect directly to a remote port,
+        # we don't need to run a command
+        chan = transport.open_channel("direct-tcpip", ("localhost", remote_port), ('localhost', 0))
+        log(f"direct channel to remote port {remote_port} : {chan}")
+    else:
+        chan = run_remote_xpra(transport, proxy_command, remote_xpra,
+                               socket_dir, display_as_args, paramiko_config)
+    conn = SSHSocketConnection(chan, sock, sockname, peername, (host, port), socket_info)
+    conn.target = host_target_string("ssh", username, host, port, display)
+    conn.timeout = SOCKET_TIMEOUT
+    conn.start_stderr_reader()
+    return conn
 
 
 AUTH_MODES: tuple[str, ...] = ("none", "agent", "key", "password")
