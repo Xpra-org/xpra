@@ -1445,6 +1445,7 @@ def connect_to_server(app, display_desc:dict[str,Any], opts) -> None:
         try:
             log("do_setup_connection() display_desc=%s", display_desc)
             conn = connect_or_fail(display_desc, opts)
+            assert conn
             log("do_setup_connection() conn=%s", conn)
             # UGLY warning: connect_or_fail() will parse the display string,
             # which may change the username and password..
