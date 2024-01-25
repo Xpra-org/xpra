@@ -1024,6 +1024,17 @@ def detect_xdummy_setup(install_dir=None):
     conf_dir = get_conf_dir(install_dir)
     return config.detect_xdummy_command(conf_dir, None, Xdummy_wrapper_ENABLED)
 
+
+def unexpand(socket_dir: str) -> str:
+    xrd = os.environ.get("XDG_RUNTIME_DIR", "")
+    if POSIX and xrd and socket_dir.startswith(xrd):
+        return "$XDG_RUNTIME_DIR/" + socket_dir[len(xrd):].lstrip("/")
+    home = os.environ.get("HOME", "")
+    if POSIX and home and socket_dir.startswith(home):
+        return "~/" + socket_dir[len(home):].lstrip("/")
+    return socket_dir
+
+
 def build_xpra_conf(install_dir):
     # pylint: disable=import-outside-toplevel
     #generates an actual config file from the template
@@ -1051,7 +1062,7 @@ def build_xpra_conf(install_dir):
         DEFAULT_POSTSCRIPT_PRINTER, DEFAULT_PULSEAUDIO,
         )
     #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
-    socket_dirs = get_socket_dirs()
+    socket_dirs = [unexpand(x) for x in get_socket_dirs()]
     if POSIX and getuid()>0:
         #remove any paths containing the uid,
         #osx uses /var/tmp/$UID-Xpra,
