@@ -12,16 +12,15 @@ from xpra.log import Logger
 log = Logger("server", "ssh")
 
 
-def ssh_dir_path() -> str:
-    session_dir = os.environ["XPRA_SESSION_DIR"]
+def ssh_dir_path(session_dir: str = os.environ.get("XPRA_SESSION_DIR")) -> str:
     return os.path.join(session_dir, "ssh")
 
 
-def setup_ssh_auth_sock() -> str:
+def setup_ssh_auth_sock(session_dir: str) -> str:
     # the 'ssh' dir contains agent socket symlinks to the real agent socket,
     # so we can just update the "agent" symlink
     # which is the one that applications are told to use
-    ssh_dir = ssh_dir_path()
+    ssh_dir = ssh_dir_path(session_dir)
     if not os.path.exists(ssh_dir):
         os.mkdir(ssh_dir, 0o700)
     # ie: "/run/user/1000/xpra/10/ssh/agent"
@@ -40,8 +39,8 @@ def setup_ssh_auth_sock() -> str:
     return agent_sockpath
 
 
-def get_ssh_agent_path(filename: str) -> str:
-    ssh_dir = ssh_dir_path()
+def get_ssh_agent_path(filename: str, session_dir: str = os.environ.get("XPRA_SESSION_DIR")) -> str:
+    ssh_dir = ssh_dir_path(session_dir)
     if "/" in filename or ".." in filename:
         raise ValueError(f"illegal characters found in ssh agent filename {filename!r}")
     return os.path.join(ssh_dir, filename or "agent.default")
@@ -94,7 +93,7 @@ def setup_proxy_ssh_socket(
         log(f"setup_proxy_ssh_socket invalid SSH_AUTH_SOCK={auth_sock!r}")
         return ""
     if not session_dir or not os.path.exists(session_dir) or not os.path.isdir(session_dir):
-        log(f"setup_proxy_ssh_socket invalid XPRA_SESSION_DIR={session_dir!r}")
+        log(f"setup_proxy_ssh_socket invalid session_dir={session_dir!r}")
         return ""
     # locate the ssh agent uuid,
     # which is used to derive the agent path symlink
@@ -110,7 +109,7 @@ def setup_proxy_ssh_socket(
         log(f"setup_proxy_ssh_socket invalid SSH_AGENT_UUID={agent_uuid!r}")
         return ""
     # ie: "/run/user/$UID/xpra/$DISPLAY/ssh/$UUID
-    agent_uuid_sockpath = get_ssh_agent_path(agent_uuid)
+    agent_uuid_sockpath = get_ssh_agent_path(agent_uuid, session_dir)
     if os.path.exists(agent_uuid_sockpath) or os.path.islink(agent_uuid_sockpath):
         if is_socket(agent_uuid_sockpath):
             log(f"setup_proxy_ssh_socket keeping existing valid socket {agent_uuid_sockpath!r}")

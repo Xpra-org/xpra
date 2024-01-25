@@ -386,7 +386,7 @@ def write_displayfd(display_name : str, fd : int) -> None:
         log.estr(e)
 
 
-def get_session_dir(mode:str, sessions_dir:str, display_name:str, uid:int) -> str:
+def get_session_dir(mode: str, sessions_dir: str, display_name: str, uid: int) -> str:
     session_dir = osexpand(os.path.join(sessions_dir, display_name.lstrip(":")), uid=uid)
     if not os.path.exists(session_dir):
         ROOT = POSIX and getuid()==0
@@ -1413,7 +1413,7 @@ def _do_run_server(script_file:str, cmdline,
         progress(50, "setup ssh agent forwarding")
         try:
             from xpra.net.ssh.agent import setup_ssh_auth_sock
-            ssh_auth_sock = setup_ssh_auth_sock()
+            ssh_auth_sock = setup_ssh_auth_sock(session_dir)
             os.environ["SSH_AUTH_SOCK"] = ssh_auth_sock
             protected_env["SSH_AUTH_SOCK"] = ssh_auth_sock
         except Exception as e:
