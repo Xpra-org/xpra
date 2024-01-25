@@ -3990,8 +3990,9 @@ def clean_sockets(dotxpra, sockets, timeout=LIST_REPROBE_TIMEOUT) -> None:
             try:
                 mtime = os.stat(sockpath).st_mtime
                 elapsed = ceil(time.time() - mtime)
-                sys.stdout.write(f"\t{state} session at {sockpath} ignored, modified {elapsed} seconds ago\n")
-                continue
+                if elapsed <= 120:
+                    sys.stdout.write(f"\t{state} session at {sockpath} ignored, modified {elapsed} seconds ago\n")
+                    continue
             except OSError:
                 pass
         may_cleanup_socket(state, display, sockpath, clean_states=clean_states)
