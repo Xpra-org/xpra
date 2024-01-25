@@ -1088,16 +1088,6 @@ def detect_xdummy_setup(install_dir=None):
     return config.detect_xdummy_command(conf_dir, None, Xdummy_wrapper_ENABLED)
 
 
-def unexpand(socket_dir: str) -> str:
-    xrd = os.environ.get("XDG_RUNTIME_DIR", "")
-    if POSIX and xrd and socket_dir.startswith(xrd):
-        return "$XDG_RUNTIME_DIR/" + socket_dir[len(xrd):].lstrip("/")
-    home = os.environ.get("HOME", "")
-    if POSIX and home and socket_dir.startswith(home):
-        return "~/" + socket_dir[len(home):].lstrip("/")
-    return socket_dir
-
-
 def build_xpra_conf(install_dir):
     # pylint: disable=import-outside-toplevel
     # generates an actual config file from the template
@@ -1117,7 +1107,7 @@ def build_xpra_conf(install_dir):
     from xpra.platform.features import DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
     from xpra.platform.paths import get_socket_dirs
     from xpra.scripts.config import (
-        wrap_cmd_str,
+        wrap_cmd_str, unexpand,
         get_default_key_shortcuts, get_default_systemd_run, get_default_pulseaudio_command,
         DEFAULT_POSTSCRIPT_PRINTER, DEFAULT_PULSEAUDIO,
     )
