@@ -1143,6 +1143,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
                 sock.connect(actual_path)
             except OSError:
                 get_logger().debug(f"failed to connect to abstract socket {sockpath}")
+                noerr(sock.close)
                 sock = None
         if not sock:
             sockpath = get_sockpath(display_desc, sockpathfail_cb)
