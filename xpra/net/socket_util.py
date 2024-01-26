@@ -667,10 +667,10 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
             if sockpath == "auto":
                 assert display_name is not None
                 for sockpath in dotxpra.norm_socket_paths(display_name):
-                    sockpaths[sockpath] = options
+                    sockpaths[sockpath] = dict(options)
                 if session_dir and not WIN32:
                     session_socket = os.path.join(session_dir, "socket")
-                    sockpaths[session_socket] = options
+                    sockpaths[session_socket] = dict(options)
                 log(f"sockpaths({display_name})={sockpaths} (uid={uid}, gid={gid})")
             elif sockpath.startswith("@"):
                 # abstract socket
