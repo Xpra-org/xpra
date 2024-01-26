@@ -55,7 +55,7 @@ from xpra.scripts.config import (
     dict_to_validated_config, get_xpra_defaults_dirs, get_defaults, read_xpra_conf,
     make_defaults_struct, parse_bool, has_audio_support, name_to_field,
 )
-from xpra.net.common import DEFAULT_PORTS
+from xpra.net.common import DEFAULT_PORTS, SOCKET_TYPES
 from xpra.log import is_debug_enabled, Logger, get_debug_args
 assert callable(error), "used by modules importing this function from here"
 
@@ -513,7 +513,6 @@ def run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, defaul
 def is_connection_arg(mode, arg):
     if POSIX and (arg.startswith(":") or arg.startswith("wayland-")):
         return True
-    from xpra.net.common import SOCKET_TYPES
     if any(arg.startswith(f"{mode}://") for mode in SOCKET_TYPES):
         return True
     if any(arg.startswith(f"{mode}:") for mode in SOCKET_TYPES):
@@ -1692,7 +1691,6 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode:str):
                 line1 = peek_connection(conn)[1]
                 netlog(f"handle_new_connection({conn}) line1={line1!r}")
                 if line1:
-                    from xpra.net.common import SOCKET_TYPES
                     uri = bytestostr(line1)
                     for socktype in SOCKET_TYPES:
                         if uri.startswith(f"{socktype}://"):
