@@ -14,7 +14,7 @@ from collections.abc import Callable, ByteString
 from xpra.common import GROUP, SocketState, noerr
 from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
 from xpra.exit_codes import ExitCode
-from xpra.net.common import DEFAULT_PORT
+from xpra.net.common import DEFAULT_PORT, AUTO_ABSTRACT_SOCKET, ABSTRACT_SOCKET_PREFIX
 from xpra.net.bytestreams import set_socket_timeout, pretty_socket, SocketConnection, SOCKET_TIMEOUT
 from xpra.os_util import getuid, get_username_for_uid, get_groups, get_group_id, gi_import, WIN32, OSX, POSIX
 from xpra.util.io import path_permission_info, umask_context
@@ -33,6 +33,7 @@ UNIXDOMAIN_PEEK_TIMEOUT_MS = envint("XPRA_UNIX_DOMAIN_PEEK_TIMEOUT_MS", 100)
 SOCKET_PEEK_TIMEOUT_MS = envint("XPRA_SOCKET_PEEK_TIMEOUT_MS", UNIXDOMAIN_PEEK_TIMEOUT_MS)
 PEEK_SIZE = envint("XPRA_PEEK_SIZE", 8192)
 WIN32_LOCAL_SOCKETS = envbool("XPRA_WIN32_LOCAL_SOCKETS", True)
+ABSTRACT_SOCKET_AUTH = os.environ.get("XPRA_ABSTRACT_SOCKET_AUTH", "peercred")
 
 SOCKET_DIR_MODE = num = int(os.environ.get("XPRA_SOCKET_DIR_MODE", "775"), 8)
 SOCKET_DIR_GROUP = os.environ.get("XPRA_SOCKET_DIR_GROUP", GROUP)
@@ -54,7 +55,10 @@ def create_abstract_socket(sockpath: str) -> tuple[socket.socket, Callable]:
     log(f"create_abstract_socket({sockpath!r})")
     assert POSIX
     assert sockpath[:1] == "@"
-    assert sockpath[1:].isalnum()
+    if sockpath[1:].startswith(ABSTRACT_SOCKET_PREFIX):
+        assert sockpath[1+len(ABSTRACT_SOCKET_PREFIX):].isalnum()
+    else:
+        assert sockpath[1:].isalnum()
     asockpath = "\0"+sockpath[1:]
     listener = socket.socket(socket.AF_UNIX)
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -638,7 +642,7 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
         (bind, socket_dir, socket_dirs, session_dir, display_name, clobber, mmap_group,
          socket_permissions, username, uid, gid)
         )
-    if WIN32 and not WIN32_LOCAL_SOCKETS and csv(bind) == "auto":
+    if WIN32 and not WIN32_LOCAL_SOCKETS and csv(bind) in ("auto", "noabstract"):
         return {}
     if not bind or csv(bind) == "none":
         return {}
@@ -648,7 +652,7 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
         elif not session_dir:
             raise InitExit(ExitCode.SOCKET_CREATION_ERROR,
                            "at least one socket directory must be set to use unix domain sockets")
-    from xpra.platform.dotxpra import DotXpra, norm_makepath
+    from xpra.platform.dotxpra import DotXpra, norm_makepath, strip_display_prefix
     dotxpra = DotXpra(socket_dir or socket_dirs[0], socket_dirs, username, uid, gid)
     if display_name is not None and not WIN32:
         display_name = normalize_local_display_name(display_name)
@@ -664,13 +668,19 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
             options = {}
             if len(parts) == 2:
                 options = parse_simple_dict(parts[1])
-            if sockpath == "auto":
+            if sockpath in ("auto", "noabstract"):
                 assert display_name is not None
-                for sockpath in dotxpra.norm_socket_paths(display_name):
-                    sockpaths[sockpath] = dict(options)
+                for path in dotxpra.norm_socket_paths(display_name):
+                    sockpaths[path] = dict(options)
                 if session_dir and not WIN32:
-                    session_socket = os.path.join(session_dir, "socket")
-                    sockpaths[session_socket] = dict(options)
+                    path = os.path.join(session_dir, "socket")
+                    sockpaths[path] = dict(options)
+                if sockpath != "noabstract" and AUTO_ABSTRACT_SOCKET:
+                    path = "@" + ABSTRACT_SOCKET_PREFIX + strip_display_prefix(display_name)
+                    abs_options = dict(options)
+                    if "auth" not in options:
+                        abs_options["auth"] = ABSTRACT_SOCKET_AUTH
+                    sockpaths[path] = abs_options
                 log(f"sockpaths({display_name})={sockpaths} (uid={uid}, gid={gid})")
             elif sockpath.startswith("@"):
                 # abstract socket
@@ -824,9 +834,15 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                     else:
                         created.append(sockpath)
                         defs[("socket", sock, sockpath, cleanup_socket)] = options
-                if created:
+                unix = [x for x in created if not x.startswith("@")]
+                if unix:
                     log.info("created unix domain sockets:")
-                    for cpath in created:
+                    for cpath in unix:
+                        log.info(f" {cpath!r}")
+                abstract = [x for x in created if x.startswith("@")]
+                if abstract:
+                    log.info("created abstract sockets:")
+                    for cpath in abstract:
                         log.info(f" {cpath!r}")
     except Exception:
         for sock, cleanup_socket in defs.items():

@@ -12,7 +12,7 @@ from collections.abc import Callable, ByteString
 
 from xpra.net.compression import Compressed, Compressible, LargeStructure
 from xpra.common import noop
-from xpra.os_util import LINUX, FREEBSD, WIN32
+from xpra.os_util import LINUX, FREEBSD, WIN32, POSIX
 from xpra.scripts.config import parse_bool
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool
@@ -71,6 +71,9 @@ class ConnectionClosedException(Exception):
 MAX_PACKET_SIZE: int = envint("XPRA_MAX_PACKET_SIZE", 16*1024*1024)
 FLUSH_HEADER: bool = envbool("XPRA_FLUSH_HEADER", True)
 SSL_UPGRADE: bool = envbool("XPRA_SSL_UPGRADE", False)
+
+AUTO_ABSTRACT_SOCKET = envbool("XPRA_AUTO_ABSTRACT_SOCKET", POSIX)
+ABSTRACT_SOCKET_PREFIX = "xpra/"
 
 SOCKET_TYPES: tuple[str, ...] = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "socket", "named-pipe", "quic")
 

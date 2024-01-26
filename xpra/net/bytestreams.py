@@ -96,14 +96,20 @@ def untilConcludes(is_active_cb:Callable, can_retry_cb:Callable, f:Callable, *a,
 
 def pretty_socket(s) -> str:
     try:
+        if isinstance(s, bytes):
+            if len(s) >= 2 and s[0] == 0:
+                return "@" + s[1:].decode("latin1")
+            return s.decode("latin1")
         if isinstance(s, str):
+            if s and s[0] == "\0":
+                return "@" + s[1:]
             return s
         if len(s) == 2:
-            if str(s[0]).find(":")>=0:
+            if str(s[0]).find(":") >= 0:
                 # IPv6
                 return "[%s]:%s" % (s[0], s[1])
             return "%s:%s" % (s[0], s[1])
-        if len(s)==4:
+        if len(s) == 4:
             return csv(str(x) for x in s)
     except (ValueError, TypeError):
         pass
@@ -658,9 +664,9 @@ def log_new_connection(conn, socket_info="") -> None:
         log.info(" from '%s'", pretty_socket(frominfo))
         if socket_info:
             log.info(" on '%s'", pretty_socket(socket_info))
-    elif socktype=="socket":
+    elif socktype == "socket":
         frominfo = sockname
-        log.info(" on '%s'", frominfo)
+        log.info(" on '%s'", pretty_socket(frominfo))
     else:
         if socket_info:
             log.info(" on %s", pretty_socket(socket_info))

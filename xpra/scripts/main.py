@@ -55,7 +55,7 @@ from xpra.scripts.config import (
     dict_to_validated_config, get_xpra_defaults_dirs, get_defaults, read_xpra_conf,
     make_defaults_struct, parse_bool, has_audio_support, name_to_field,
 )
-from xpra.net.common import DEFAULT_PORTS, SOCKET_TYPES
+from xpra.net.common import DEFAULT_PORTS, SOCKET_TYPES, AUTO_ABSTRACT_SOCKET, ABSTRACT_SOCKET_PREFIX
 from xpra.log import is_debug_enabled, Logger, get_debug_args
 assert callable(error), "used by modules importing this function from here"
 
@@ -1130,24 +1130,39 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
 
         def sockpathfail_cb(msg):
             raise InitException(msg)
-        sockpath = get_sockpath(display_desc, sockpathfail_cb)
-        display_desc["socket_path"] = sockpath
-        actual_path = "\0"+sockpath[1:] if sockpath.startswith("@") else sockpath
-        sock = socket.socket(socket.AF_UNIX)
-        sock.settimeout(SOCKET_TIMEOUT)
-        start = monotonic()
-        while monotonic()-start < SOCKET_TIMEOUT:
+
+        sock = None
+        if display_name and not display_desc.get("socket_path") and AUTO_ABSTRACT_SOCKET:
+            # see if we can just connect to the abstract socket if one exists:
+            from xpra.platform.dotxpra import strip_display_prefix
+            sockpath = "@" + ABSTRACT_SOCKET_PREFIX + strip_display_prefix(display_name)
+            actual_path = "\0"+sockpath[1:] if sockpath.startswith("@") else sockpath
+            sock = socket.socket(socket.AF_UNIX)
+            sock.settimeout(1.0)
             try:
                 sock.connect(actual_path)
-                break
-            except ConnectionRefusedError as e:
-                elapsed = monotonic()-start
-                get_logger().debug("%s, retrying %i < %i", e, elapsed, SOCKET_TIMEOUT)
-                continue
-            except Exception as e:
-                get_logger().debug(f"failed to connect using {sock.connect}({sockpath})", exc_info=True)
-                noerr(sock.close)
-                raise InitExit(ExitCode.CONNECTION_FAILED, f"failed to connect to {sockpath!r}:\n {e}") from None
+            except OSError:
+                get_logger().debug(f"failed to connect to abstract socket {sockpath}")
+                sock = None
+        if not sock:
+            sockpath = get_sockpath(display_desc, sockpathfail_cb)
+            display_desc["socket_path"] = sockpath
+            actual_path = "\0" + ABSTRACT_SOCKET_PREFIX + sockpath[1:] if sockpath.startswith("@") else sockpath
+            sock = socket.socket(socket.AF_UNIX)
+            sock.settimeout(SOCKET_TIMEOUT)
+            start = monotonic()
+            while monotonic()-start < SOCKET_TIMEOUT:
+                try:
+                    sock.connect(actual_path)
+                    break
+                except ConnectionRefusedError as e:
+                    elapsed = monotonic()-start
+                    get_logger().debug("%s, retrying %i < %i", e, elapsed, SOCKET_TIMEOUT)
+                    continue
+                except Exception as e:
+                    get_logger().debug(f"failed to connect using {sock.connect}({sockpath})", exc_info=True)
+                    noerr(sock.close)
+                    raise InitExit(ExitCode.CONNECTION_FAILED, f"failed to connect to {sockpath!r}:\n {e}") from None
         sock.settimeout(None)
         conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype)
         conn.timeout = SOCKET_TIMEOUT

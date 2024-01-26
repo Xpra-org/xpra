@@ -10,6 +10,7 @@ from typing import Any
 
 from xpra.util.version import version_str
 from xpra.util.types import typedict
+from xpra.util.str_fn import csv
 from xpra.util.env import envint, envfloat
 from xpra.common import ConnectionMessage
 from xpra.os_util import get_machine_id, gi_import, POSIX, OSX
@@ -54,7 +55,10 @@ class Networklistener(StubClientMixin):
         self.sockets = create_sockets(opts, err)
         log(f"setup_local_sockets bind={opts.bind}, client_socket_dirs={opts.client_socket_dirs}")
         try:
-            local_sockets = setup_local_sockets(opts.bind,
+            # don't use abstract sockets for clients:
+            # (as these may collide with display numbers)
+            bind = ["noabstract"] if csv(opts.bind) == "auto" else opts.bind
+            local_sockets = setup_local_sockets(bind,
                                                 "", opts.client_socket_dirs, "",
                                                 str(os.getpid()), True,
                                                 opts.mmap_group, opts.socket_permissions)
