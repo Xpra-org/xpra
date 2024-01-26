@@ -15,6 +15,7 @@ from typing import Any
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized, pver, strtobytes, bytestostr, hexstr, memoryview_to_bytes
 from xpra.util.env import envint, envbool, osexpand, first_time, IgnoreWarningsContext, ignorewarnings
+from xpra.util.child_reaper import getChildReaper
 from xpra.os_util import gi_import, WIN32, OSX, POSIX
 from xpra.util.system import is_Wayland, is_gnome
 from xpra.util.io import load_binary_file
@@ -283,6 +284,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if pp:
             self.pinentry_proc = None
             noerr(pp.terminate)
+            for fd_name in ("stdin", "stdout", "stderr"):
+                fd = getattr(pp, fd_name, None)
+                if hasattr(fd, "close"):
+                    noerr(fd.close)
 
     def get_server_authentication_string(self) -> str:
         p = self._protocol
@@ -303,6 +308,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         except OSError:
             authlog("pinentry failed", exc_info=True)
             return self.process_challenge_prompt_dialog(prompt)
+        getChildReaper().add_process(proc, "pinentry", cmd, True, True)
         self.pinentry_proc = proc
         q = f"Enter {prompt}"
         p = self._protocol
