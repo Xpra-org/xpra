@@ -24,12 +24,12 @@ POSIX: bool = os.name == "posix"
 BITS: int = struct.calcsize(b"P")*8
 
 
-GIR_VERSIONS : dict[str, str] = {
+GIR_VERSIONS: dict[str, str] = {
     "Gtk": "3.0",
     "Gdk": "3.0",
-    "GdkX11" : "3.0",
+    "GdkX11": "3.0",
     "Pango": "1.0",
-    "PangoCairo" : "1.0",
+    "PangoCairo": "1.0",
     "GLib": "2.0",
     "GObject": "2.0",
     "GdkPixbuf": "2.0",
@@ -37,7 +37,7 @@ GIR_VERSIONS : dict[str, str] = {
     "Rsvg": "2.0",
     "Gst": "1.0",
     "NM": "1.0",
-    "GtkosxApplication" : "1.0",
+    "GtkosxApplication": "1.0",
 }
 
 

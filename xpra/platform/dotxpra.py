@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -19,13 +19,11 @@ from xpra.platform import platform_import
 DISPLAY_PREFIX = ":"
 
 
-def norm_makepath(dirpath:str, name:str) -> str:
-    if DISPLAY_PREFIX and name.startswith(DISPLAY_PREFIX):
-        name = name[len(DISPLAY_PREFIX):]
-    return os.path.join(dirpath, PREFIX + name)
+def norm_makepath(dirpath: str, name: str) -> str:
+    return os.path.join(dirpath, PREFIX + strip_display_prefix(name))
 
 
-def strip_display_prefix(s:str) -> str:
+def strip_display_prefix(s: str) -> str:
     if s.startswith(DISPLAY_PREFIX):
         return s[len(DISPLAY_PREFIX):]
     return s
@@ -37,7 +35,7 @@ def debug(msg: str, *args, **kwargs) -> None:
 
 
 class DotXpra:
-    def __init__(self, sockdir=None, sockdirs=None, actual_username="", uid=0, gid=0):
+    def __init__(self, sockdir="", sockdirs=None, actual_username="", uid=0, gid=0):
         self.uid = uid or os.getuid()
         self.gid = gid or os.getgid()
         self.username = actual_username
@@ -52,7 +50,7 @@ class DotXpra:
         self._sockdir = self.osexpand(sockdir)
         self._sockdirs: list[str] = [self.osexpand(x) for x in sockdirs]
 
-    def osexpand(self, v:str) -> str:
+    def osexpand(self, v: str) -> str:
         return osexpand(v, self.username, self.uid, self.gid)
 
     def __repr__(self):
@@ -76,14 +74,14 @@ class DotXpra:
         elif d != "/tmp":
             try:
                 st_mode = os.stat(d).st_mode & 0o777
-                if st_mode==0o750 and d.startswith("/run/xpra"):
+                if st_mode == 0o750 and d.startswith("/run/xpra"):
                     # this directory is for shared sockets, o750 is OK
                     return
-                if st_mode!=mode:
+                if st_mode != mode:
                     # perhaps this directory lives in $XDG_RUNTIME_DIR
                     # ie: /run/user/$UID/xpra or /run/user/$UID/xpra/100
                     xrd = os.environ.get("XDG_RUNTIME_DIR")
-                    if xrd and d.startswith(xrd) and os.stat(xrd).st_mode & 0o777==0o700:
+                    if xrd and d.startswith(xrd) and os.stat(xrd).st_mode & 0o777 == 0o700:
                         # $XDG_RUNTIME_DIR has the correct permissions
                         return
                     log = get_util_logger()
@@ -92,13 +90,13 @@ class DotXpra:
             except OSError:
                 get_util_logger().error("Error: mksockdir%s", (d, mode, uid, gid), exc_info=True)
 
-    def socket_expand(self, path:str) -> str:
+    def socket_expand(self, path: str) -> str:
         return osexpand(path, self.username, uid=self.uid, gid=self.gid)
 
-    def norm_socket_paths(self, local_display_name:str) -> list[str]:
+    def norm_socket_paths(self, local_display_name: str) -> list[str]:
         return [norm_makepath(x, local_display_name) for x in self._sockdirs]
 
-    def socket_path(self, local_display_name:str) -> str:
+    def socket_path(self, local_display_name: str) -> str:
         return norm_makepath(self._sockdir, local_display_name)
 
     def get_server_state(self, sockpath: str, timeout=5) -> SocketState:
@@ -154,7 +152,7 @@ class DotXpra:
 
     def _unique_sock_dirs(self):
         dirs = []
-        if self._sockdir!="undefined":
+        if self._sockdir != "undefined":
             dirs.append(self._sockdir)
         dirs += [x for x in self._sockdirs if x not in dirs]
         seen = set()
@@ -163,7 +161,7 @@ class DotXpra:
                 continue
             seen.add(d)
             real_dir = os.path.realpath(osexpand(d))
-            if real_dir!=d:
+            if real_dir != d:
                 if real_dir in seen:
                     continue
                 seen.add(real_dir)
@@ -172,7 +170,7 @@ class DotXpra:
                 continue
             yield real_dir
 
-    def get_display_state(self, display:str) -> SocketState:
+    def get_display_state(self, display: str) -> SocketState:
         state = None
         for d in self._unique_sock_dirs():
             # look for a 'socket' in the session directory
@@ -202,7 +200,7 @@ class DotXpra:
         debug("socket_details%s sockdir=%s, sockdirs=%s",
               (check_uid, matching_state, matching_display), self._sockdir, self._sockdirs)
 
-        def add_result(d: str, item:tuple[SocketState, str, str]) -> None:
+        def add_result(d: str, item: tuple[SocketState, str, str]) -> None:
             results: list[tuple[SocketState, str, str]] = sd.setdefault(d, [])
             if item not in results:
                 results.append(item)
