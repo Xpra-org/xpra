@@ -351,7 +351,7 @@ def write_pidfile(pidfile: str) -> int:
                 inode = os.fstat(f.fileno()).st_ino
             except OSError:
                 inode = 0
-        log.info(f"wrote pid {pidstr} to {pidfile!r}")
+        log.info(f"wrote pid {pidstr} to '{pidfile}'")
     except Exception as e:
         log(f"write_pidfile({pidfile})", exc_info=True)
         log.info(f"Error: failed to write pid {pidstr} to {pidfile!r}")
