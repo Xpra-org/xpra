@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -16,7 +16,7 @@ cdef extern from "Python.h":
     int PyBUF_ANY_CONTIGUOUS
 
 
-def xor_str(a, b):
+def xor_str(a, b) -> memoryview:
     if len(a)!=len(b):
         raise ValueError("cyxor cannot xor strings of different lengths (%s:%s vs %s:%s)" % (type(a), len(a), type(b), len(b)))
     cdef Py_buffer py_bufa
@@ -62,4 +62,4 @@ def xor_str(a, b):
                 ocbuf[j] = acbuf[j] ^ bcbuf[j]
     PyBuffer_Release(&py_bufa)
     PyBuffer_Release(&py_bufb)
-    return memoryview(out_buf)
+    return memoryview(out_buf).toreadonly()

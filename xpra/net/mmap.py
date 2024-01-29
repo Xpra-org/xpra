@@ -279,7 +279,7 @@ def mmap_read(mmap_area, *descr_data) -> ByteString:
         # construct an array directly from the mmap zone:
         offset, length = descr_data[0]
         data_start.value = offset + length
-        return mv[offset:offset + length]
+        return (mv[offset:offset + length]).toreadonly()
     # re-construct the buffer from discontiguous chunks:
     data = []
     for offset, length in descr_data:

@@ -40,13 +40,13 @@ def pixels_for_upload(img_data) -> tuple[str, Any]:
     # prepare the pixel buffer for upload:
     if isinstance(img_data, memoryview):
         if zerocopy_upload:
-            return "zerocopy:memoryview", img_data
+            return "zerocopy:memoryview", img_data.toreadonly()
         # not safe, make a copy :(
         return "copy:memoryview.tobytes", img_data.tobytes()
     if isinstance(img_data, bytes):
         if zerocopy_upload:
             # we can zerocopy if we wrap it:
-            return "zerocopy:bytes-as-memoryview", memoryview(img_data)
+            return "zerocopy:bytes-as-memoryview", memoryview(img_data).toreadonly()
         return "copy:bytes", img_data
     if hasattr(img_data, "raw"):
         return "zerocopy:mmap", img_data.raw

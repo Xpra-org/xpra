@@ -75,7 +75,7 @@ cdef class compressor:
             log("LZ4_compress_fast_continue failed for input size %i and output buffer size %i", in_buf.len, max_size)
             return None
         PyBuffer_Release(&in_buf)
-        return mem[:(size_header+r)]
+        return (mem[:(size_header+r)]).toreadonly()
 
 def compress(data, acceleration=1):
     c = compressor()
@@ -104,4 +104,4 @@ def decompress(data, int max_size=0, int size=0):
     if r<=0:
         log("LZ4_decompress_safe failed for input size %i", in_buf.len)
         return None
-    return memoryview(out_buf)[:r]
+    return (memoryview(out_buf)[:r]).toreadonly()

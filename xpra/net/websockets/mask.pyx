@@ -61,5 +61,5 @@ cdef object do_hybi_mask(uintptr_t mp, uintptr_t dp, unsigned int datalen):
             j = datalen-last_chars+i
             ocbuf[align+j] = dcbuf[j] ^ mcbuf[j & 0x3]
     if align>0:
-        return memoryview(out_buf)[align:]
-    return memoryview(out_buf)
+        return (memoryview(out_buf)[align:]).toreadonly()
+    return memoryview(out_buf).toreadonly()
