@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,14 +8,14 @@ from contextlib import AbstractContextManager
 from ctypes import c_int, c_void_p, byref, cast, POINTER
 
 from xpra.os_util import gi_import
-from xpra.util.env import envbool, envfloat, NumpyImportContext
+from xpra.util.env import envbool, envfloat, numpy_import_context
 from xpra.client.gl.check import check_PyOpenGL_support
 from xpra.x11.bindings.display_source import get_display_ptr
 from xpra.gtk.error import xsync
 from xpra.gtk.window import set_visual
 from xpra.log import Logger
 
-with NumpyImportContext(True):
+with numpy_import_context(True):
     from OpenGL import GLX
     from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
     from OpenGL.raw.GLX._types import struct__XDisplay, struct___GLXcontextRec

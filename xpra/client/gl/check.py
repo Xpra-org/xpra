@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
 # Copyright (C) 2012 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ import logging
 from typing import Any
 
 from xpra.util.str_fn import csv, print_nested_dict, bytestostr
-from xpra.util.env import envint, envbool, NumpyImportContext
+from xpra.util.env import envint, envbool, numpy_import_context
 from xpra.log import Logger, CaptureHandler
 from xpra.client.gl.drivers import GL_MATCH_LIST, WHITELIST, GREYLIST, BLACKLIST, OpenGLFatalError
 
@@ -321,7 +321,7 @@ def check_PyOpenGL_support(force_enable) -> dict[str, Any]:
             logger.handlers = [CaptureHandler()]
             logger.propagate = False
 
-        with NumpyImportContext():
+        with numpy_import_context():
             return do_check_PyOpenGL_support(force_enable)
 
     finally:

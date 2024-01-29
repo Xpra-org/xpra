@@ -1,17 +1,17 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from time import monotonic
 
-from xpra.util.env import NumpyImportContext
+from xpra.util.env import numpy_import_context
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 
 log = Logger("cuda")
 
-with NumpyImportContext():
+with numpy_import_context():
     from numpy import byte  # @UnresolvedImport
     from pycuda.driver import (
         pagelocked_empty,

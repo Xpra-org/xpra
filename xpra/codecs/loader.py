@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ from types import ModuleType
 from typing import Any
 
 from xpra.util.str_fn import csv, print_nested_dict, pver
-from xpra.util.env import envbool, NumpyImportContext
+from xpra.util.env import envbool, numpy_import_context
 from xpra.os_util import OSX, WIN32
 from xpra.util.version import parse_version
 from xpra.codecs.constants import HELP_ORDER
@@ -446,7 +446,7 @@ def main(args) -> int:
                 return 1
             list_codecs = ALL_CODECS
             # not really a codec, but gets used by codecs, so include version info:
-            with NumpyImportContext():
+            with numpy_import_context():
                 add_codec_version("numpy", "numpy")
 
         # use another logger for printing the results,

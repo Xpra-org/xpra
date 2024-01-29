@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -16,7 +16,7 @@ from typing import Any
 from xpra.codecs.constants import TransientCodecException
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv, print_nested_dict
-from xpra.util.env import envint, envbool, first_time, NumpyImportContext
+from xpra.util.env import envint, envbool, first_time, numpy_import_context
 from xpra.platform.paths import (
     get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs,
     get_resources_dir, get_app_dir,
@@ -29,7 +29,7 @@ from xpra.log import Logger
 if WIN32 and not os.environ.get("CUDA_PATH") and getattr(sys, "frozen", None) in ("windows_exe", "console_exe", True):
     os.environ["CUDA_PATH"] = get_app_dir()
 
-with NumpyImportContext():
+with numpy_import_context():
     if is_WSL() and not envbool("XPRA_PYCUDA_WSL", False):
         raise ImportError("refusing to import pycuda on WSL, use XPRA_PYCUDA_WSL=1 to override")
     import pycuda
@@ -529,7 +529,7 @@ class cuda_device_context:
     def make_context(self) -> None:
         start = monotonic()
         if self.opengl:
-            with NumpyImportContext():
+            with numpy_import_context():
                 from pycuda import gl  # @UnresolvedImport pylint: disable=import-outside-toplevel
                 self.context = gl.make_context(self.device)
         else:
