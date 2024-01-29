@@ -11,7 +11,7 @@ from xpra.log import Logger
 
 log = Logger("cuda")
 
-with numpy_import_context():
+with numpy_import_context("CUDA"):
     from numpy import byte  # @UnresolvedImport
     from pycuda.driver import (
         pagelocked_empty,

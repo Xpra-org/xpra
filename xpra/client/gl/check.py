@@ -321,7 +321,7 @@ def check_PyOpenGL_support(force_enable) -> dict[str, Any]:
             logger.handlers = [CaptureHandler()]
             logger.propagate = False
 
-        with numpy_import_context():
+        with numpy_import_context("OpenGL", True):
             return do_check_PyOpenGL_support(force_enable)
 
     finally:

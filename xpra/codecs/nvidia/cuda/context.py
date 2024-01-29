@@ -29,7 +29,7 @@ from xpra.log import Logger
 if WIN32 and not os.environ.get("CUDA_PATH") and getattr(sys, "frozen", None) in ("windows_exe", "console_exe", True):
     os.environ["CUDA_PATH"] = get_app_dir()
 
-with numpy_import_context():
+with numpy_import_context("CUDA"):
     if is_WSL() and not envbool("XPRA_PYCUDA_WSL", False):
         raise ImportError("refusing to import pycuda on WSL, use XPRA_PYCUDA_WSL=1 to override")
     import pycuda
@@ -529,7 +529,7 @@ class cuda_device_context:
     def make_context(self) -> None:
         start = monotonic()
         if self.opengl:
-            with numpy_import_context():
+            with numpy_import_context("CUDA"):
                 from pycuda import gl  # @UnresolvedImport pylint: disable=import-outside-toplevel
                 self.context = gl.make_context(self.device)
         else:

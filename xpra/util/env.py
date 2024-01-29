@@ -195,19 +195,6 @@ class nomodule_context:
         return f"nomodule_context({self.module_name})"
 
 
-class nonumpy_context(nomodule_context):
-
-    def __init__(self):
-        super().__init__("numpy")
-
-    def __enter__(self, blocking=False):
-        # we ignore the blocking flag here, only NumpyImportContext uses it
-        super().__enter__()
-
-    def __repr__(self):
-        return f"nonumpy_context({self.module_name})"
-
-
 numpy_import_lock = RLock()
 
 
@@ -229,10 +216,14 @@ class NumpyImportContext(AbstractContextManager):
         return f"numpy_import_context({self.blocking=})"
 
 
-def numpy_import_context() -> AbstractContextManager:
-    if envbool("XPRA_NUMPY", True):
-        return NumpyImportContext()
-    return nonumpy_context()
+def numpy_import_context(subsystem: str, blocking=False) -> AbstractContextManager:
+    env_name = "XPRA_"+(subsystem.upper())+"_NUMPY"
+    if env_name not in os.environ:
+        env_name = "XPRA_NUMPY"
+    allow_numpy = envbool(env_name, True)
+    if allow_numpy:
+        return NumpyImportContext(blocking=blocking)
+    return nomodule_context("numpy")
 
 
 _saved_env = os.environ.copy()

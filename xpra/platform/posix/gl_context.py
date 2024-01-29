@@ -15,7 +15,7 @@ from xpra.gtk.error import xsync
 from xpra.gtk.window import set_visual
 from xpra.log import Logger
 
-with numpy_import_context(True):
+with numpy_import_context("OpenGL", True):
     from OpenGL import GLX
     from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
     from OpenGL.raw.GLX._types import struct__XDisplay, struct___GLXcontextRec
