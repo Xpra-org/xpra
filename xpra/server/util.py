@@ -18,7 +18,8 @@ from xpra.platform.dotxpra import norm_makepath
 from xpra.platform.paths import get_python_exec_command
 from xpra.scripts.config import InitException, FALSE_OPTIONS
 
-UINPUT_UUID_LEN : int = 12
+UINPUT_UUID_LEN: int = 12
+
 
 # pylint: disable=import-outside-toplevel
 
@@ -46,11 +47,11 @@ def source_env(source=()) -> dict[str, str]:
     return env
 
 
-def decode_dict(out:str) -> dict[str, str]:
+def decode_dict(out: str) -> dict[str, str]:
     env = {}
     for line in out.splitlines():
         parts = line.split("=", 1)
-        if len(parts)==2:
+        if len(parts) == 2:
             env[parts[0]] = parts[1]
     return env
 
@@ -61,11 +62,11 @@ def decode_json(out):
 
 # credit: https://stackoverflow.com/a/47080959/428751
 # returns a dictionary of the environment variables resulting from sourcing a file
-def env_from_sourcing(file_to_source_path:str, include_unexported_variables:bool=False) -> dict[str, str]:
+def env_from_sourcing(file_to_source_path: str, include_unexported_variables: bool = False) -> dict[str, str]:
     log = Logger("exec")
     cmd: list[str] = shlex.split(file_to_source_path)
 
-    def abscmd(s:str):
+    def abscmd(s: str):
         if os.path.isabs(s):
             return s
         c = which(s)
@@ -76,6 +77,7 @@ def env_from_sourcing(file_to_source_path:str, include_unexported_variables:bool
         if os.path.isabs(c):
             return c
         return os.path.abspath(c)
+
     filename = abscmd(cmd[0])
     cmd[0] = filename
     # figure out if this is a script to source,
@@ -107,14 +109,14 @@ def env_from_sourcing(file_to_source_path:str, include_unexported_variables:bool
         log("env_from_sourcing%s cmd=%s", (filename, include_unexported_variables), cmd)
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
         out, err = proc.communicate()
-        if proc.returncode!=0:
+        if proc.returncode != 0:
             log.error(f"Error {proc.returncode} running source script {filename!r}")
     except OSError as e:
         log("env_from_sourcing%s", (filename, include_unexported_variables), exc_info=True)
         log(f" stdout={out!r} ({type(out)})")
         log(f" stderr={err!r} ({type(err)})")
         log.error(f"Error running source script {file_to_source_path!r}")
-        if proc and proc.returncode is not None:        #NOSONAR @SuppressWarnings("python:S5727")
+        if proc and proc.returncode is not None:  # NOSONAR @SuppressWarnings("python:S5727")
             log.error(f" exit code: {proc.returncode}")
         log.error(f" {e}")
         return {}
@@ -127,34 +129,35 @@ def env_from_sourcing(file_to_source_path:str, include_unexported_variables:bool
         except UnicodeDecodeError:
             log.error(f"Error decoding {fdname} from {filename!r}", exc_info=True)
         return ""
-    env : dict[str,str] = {}
+
+    env: dict[str, str] = {}
     env.update(decode(proc_str(out, "stdout")))
     env.update(decode_dict(proc_str(err, "stderr")))
     log("env_from_sourcing%s=%s", (file_to_source_path, include_unexported_variables), env)
     return env
 
 
-def sh_quotemeta(s:str) -> str:
+def sh_quotemeta(s: str) -> str:
     return "'" + s.replace("'", "'\\''") + "'"
 
 
-def xpra_env_shell_script(socket_dir:str, env : dict[str, str]) -> str:
+def xpra_env_shell_script(socket_dir: str, env: dict[str, str]) -> str:
     script = ["#!/bin/sh", ""]
     for var, value in env.items():
         if var in ("PATH", "LD_LIBRARY_PATH", "PYTHONPATH"):
             # prevent those paths from accumulating the same values multiple times,
             # only keep the first one:
             pathsep = os.pathsep
-            pval = value.split(pathsep)      # ie: ["/usr/bin", "/usr/local/bin", "/usr/bin"]
+            pval = value.split(pathsep)  # ie: ["/usr/bin", "/usr/local/bin", "/usr/bin"]
             seen = set()
-            value = pathsep.join(x for x in pval if not (x in seen or seen.add(x)))   # type: ignore[func-returns-value]
-            qval = sh_quotemeta(value)+f':"${var}"'
+            value = pathsep.join(x for x in pval if not (x in seen or seen.add(x)))  # type: ignore[func-returns-value]
+            qval = sh_quotemeta(value) + f':"${var}"'
         elif var in (
-            # whitelist:
-            "XDG_MENU_PREFIX", "XDG_RUNTIME_DIR",
-            "XAUTHORITY",
-            "HOSTNAME", "HOME", "USERNAME", "USER",
-            "SSH_ASKPASS",
+                # whitelist:
+                "XDG_MENU_PREFIX", "XDG_RUNTIME_DIR",
+                "XAUTHORITY",
+                "HOSTNAME", "HOME", "USERNAME", "USER",
+                "SSH_ASKPASS",
         ):
             qval = sh_quotemeta(value)
         else:
@@ -184,7 +187,7 @@ def xpra_runner_shell_script(xpra_file: str, starting_dir: str) -> str:
         # which is execed by a shell script, which we have to find..
         sexec = sys.executable
         bini = sexec.rfind("Resources/bin/")
-        if bini>0:
+        if bini > 0:
             sexec = os.path.join(sexec[:bini], "Resources", "MacOS", "Xpra")
         script.append(f"_XPRA_SCRIPT={sh_quotemeta(sexec)}\n")
         script.append("""
@@ -215,7 +218,7 @@ fi
     return "\n".join(script)
 
 
-def write_runner_shell_scripts(contents: str, overwrite: bool=True) -> None:
+def write_runner_shell_scripts(contents: str, overwrite: bool = True) -> None:
     assert POSIX
     # This used to be given a display-specific name, but now we give it a
     # single fixed name and if multiple servers are started then the last one
@@ -258,7 +261,7 @@ def write_runner_shell_scripts(contents: str, overwrite: bool=True) -> None:
             log.error(" %s\n", e)
 
 
-def open_log_file(logpath:str):
+def open_log_file(logpath: str):
     """ renames the existing log file if it exists,
         then opens it for writing.
     """
@@ -282,9 +285,9 @@ def select_log_file(log_dir: str, log_file: str, display_name: str) -> str:
             logpath = log_file
         else:
             logpath = os.path.join(log_dir, log_file)
-        v = shellsub(logpath, {"DISPLAY" : display_name})
-        if display_name or v==logpath:
-            #we have 'display_name', or we just don't need it:
+        v = shellsub(logpath, {"DISPLAY": display_name})
+        if display_name or v == logpath:
+            # we have 'display_name', or we just don't need it:
             return v
     if display_name:
         logpath = norm_makepath(log_dir, display_name) + ".log"
@@ -329,13 +332,13 @@ def redirect_std_to_log(logfd: int):
 def daemonize() -> None:
     os.chdir("/")
     if os.fork():
-        os._exit(0)     # pylint: disable=protected-access
+        os._exit(0)  # pylint: disable=protected-access
     os.setsid()
     if os.fork():
-        os._exit(0)     # pylint: disable=protected-access
+        os._exit(0)  # pylint: disable=protected-access
 
 
-def write_pidfile(pidfile:str) -> int:
+def write_pidfile(pidfile: str) -> int:
     log = get_logger()
     pidstr = str(os.getpid())
     inode = 0
@@ -360,11 +363,11 @@ def rm_pidfile(pidfile: str, inode: int) -> None:
     # verify this is the right file!
     log = get_logger()
     log("cleanuppidfile(%s, %s)", pidfile, inode)
-    if inode>0:
+    if inode > 0:
         try:
             i = os.stat(pidfile).st_ino
             log("cleanuppidfile: current inode=%i", i)
-            if i!=inode:
+            if i != inode:
                 return
         except OSError:
             pass
@@ -386,7 +389,7 @@ def get_uinput_device_path(device) -> str:
         buf = ctypes.create_string_buffer(l)
         # this magic value was calculated using the C macros:
         l = fcntl.ioctl(fd, 2148554028, buf)
-        if 0<l<16:
+        if 0 < l < 16:
             virt_dev_path = buf.raw[:l].rstrip(b"\0")
             log("UI_GET_SYSNAME(%s)=%s", fd, virt_dev_path)
             uevent_path = b"/sys/devices/virtual/input/%s" % virt_dev_path
@@ -396,10 +399,10 @@ def get_uinput_device_path(device) -> str:
                 uevent_filename = os.path.join(uevent_path, d, b"uevent")
                 uevent_conf = open(uevent_filename, "rb").read()
                 for line in uevent_conf.splitlines():
-                    if line.find(b"=")>0:
-                        k,v = line.split(b"=", 1)
+                    if line.find(b"=") > 0:
+                        k, v = line.split(b"=", 1)
                         log("%s=%s", k, v)
-                        if k==b"DEVNAME":
+                        if k == b"DEVNAME":
                             dev_path = (b"/dev/%s" % v).decode("latin1")
                             log(f"found device path: {dev_path}")
                             return dev_path
@@ -428,7 +431,7 @@ def has_uinput() -> bool:
         log.warn(" %s", e)
         return False
     try:
-        uinput.fdopen()         # @UndefinedVariable
+        uinput.fdopen()  # @UndefinedVariable
     except Exception as e:
         log = get_logger()
         log("has_uinput()", exc_info=True)
@@ -439,7 +442,7 @@ def has_uinput() -> bool:
     return True
 
 
-def create_uinput_device(uid:int, events, name:str) -> tuple[str, Any, str] | None:
+def create_uinput_device(uid: int, events, name: str) -> tuple[str, Any, str] | None:
     log = get_logger()
     import uinput  # @UnresolvedImport
     BUS_USB = 0x03
@@ -453,7 +456,7 @@ def create_uinput_device(uid:int, events, name:str) -> tuple[str, Any, str] | No
         device = uinput.Device(events, name=name, bustype=BUS_USB, vendor=VENDOR, product=PRODUCT, version=VERSION)
     except OSError as e:
         log("uinput.Device creation failed", exc_info=True)
-        if os.getuid()==0:
+        if os.getuid() == 0:
             # running as root, this should work!
             log.error("Error: cannot open uinput,")
             log.error(" make sure that the kernel module is loaded")
@@ -467,7 +470,7 @@ def create_uinput_device(uid:int, events, name:str) -> tuple[str, Any, str] | No
     return name, device, dev_path
 
 
-def create_uinput_pointer_device(uuid, uid)-> tuple[str, Any, str] | None:
+def create_uinput_pointer_device(uuid, uid) -> tuple[str, Any, str] | None:
     if not envbool("XPRA_UINPUT_POINTER", True):
         return None
     from uinput import (
@@ -486,14 +489,14 @@ def create_uinput_pointer_device(uuid, uid)-> tuple[str, Any, str] | None:
     return create_uinput_device(uid, events, name)
 
 
-def create_uinput_touchpad_device(uuid, uid: int)-> tuple[str, Any, str] | None:
+def create_uinput_touchpad_device(uuid, uid: int) -> tuple[str, Any, str] | None:
     if not envbool("XPRA_UINPUT_TOUCHPAD", False):
         return None
     from uinput import BTN_TOUCH, ABS_X, ABS_Y, ABS_PRESSURE
     events = (
         BTN_TOUCH,
-        ABS_X + (0, 2**24-1, 0, 0),
-        ABS_Y + (0, 2**24-1, 0, 0),
+        ABS_X + (0, 2 ** 24 - 1, 0, 0),
+        ABS_Y + (0, 2 ** 24 - 1, 0, 0),
         ABS_PRESSURE + (0, 255, 0, 0),
         # BTN_TOOL_PEN,
     )
@@ -501,7 +504,7 @@ def create_uinput_touchpad_device(uuid, uid: int)-> tuple[str, Any, str] | None:
     return create_uinput_device(uid, events, name)
 
 
-def create_uinput_devices(uinput_uuid, uid:int) -> dict[str,Any]:
+def create_uinput_devices(uinput_uuid, uid: int) -> dict[str, Any]:
     log = get_logger()
     try:
         import uinput  # @UnresolvedImport
@@ -520,13 +523,14 @@ def create_uinput_devices(uinput_uuid, uid:int) -> dict[str,Any]:
             return {}
         name, uinput_pointer, dev_path = device
         return {
-            "name"      : name,
-            "uinput"    : uinput_pointer,
-            "device"    : dev_path,
+            "name": name,
+            "uinput": uinput_pointer,
+            "device": dev_path,
         }
+
     return {
-        "pointer"   : i(pointer),
-        "touchpad"  : i(touchpad),
+        "pointer": i(pointer),
+        "touchpad": i(touchpad),
     }
 
 
@@ -545,8 +549,8 @@ def setuidgid(uid: int, gid: int) -> None:
             username = getpwuid(uid).pw_name
         except KeyError:
             raise ValueError(f"uid {uid} not found") from None
-        #set the groups:
-        if hasattr(os, "initgroups"):   # python >= 2.7
+        # set the groups:
+        if hasattr(os, "initgroups"):  # python >= 2.7
             os.initgroups(username, gid)
         else:
             import grp
@@ -554,21 +558,21 @@ def setuidgid(uid: int, gid: int) -> None:
             os.setgroups(groups)
     # change uid and gid:
     try:
-        if os.getgid()!=gid:
+        if os.getgid() != gid:
             os.setgid(gid)
     except OSError as e:
         log.error(f"Error: cannot change gid to {gid}")
-        if os.getgid()==0:
+        if os.getgid() == 0:
             # don't run as root!
             raise
         log.estr(e)
         log.error(f" continuing with gid={os.getgid()}")
     try:
-        if os.getuid()!=uid:
+        if os.getuid() != uid:
             os.setuid(uid)
     except OSError as e:
         log.error(f"Error: cannot change uid to {uid}")
-        if os.getuid()==0:
+        if os.getuid() == 0:
             # don't run as root!
             raise
         log.estr(e)
