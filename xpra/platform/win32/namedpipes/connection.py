@@ -122,7 +122,7 @@ class NamedPipeConnection(Connection):
         log("pipe_read: %i bytes", len(data or ""))          #, binascii.hexlify(s))
         return data
 
-    def write(self, buf):
+    def write(self, buf, _packet_type):
         return self._write(self._pipe_write, buf)
 
     def _pipe_write(self, buf):
