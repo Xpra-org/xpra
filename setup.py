@@ -946,6 +946,8 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         addldflags("-Wall")
         if sys.version_info >= (3, 12):
             addcflags("-Wno-deprecated-declarations")
+        if CC.find("clang") >= 0:
+            addcflags("-Wno-implicit-function-declaration")
     if strict_ENABLED:
         if CC.find("clang")>=0:
             # clang emits too many warnings with cython code,
