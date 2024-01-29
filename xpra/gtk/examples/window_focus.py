@@ -40,23 +40,28 @@ def make_window():
 
         def bcb(*_args):
             cb()
+
         b.connect('clicked', bcb)
         hbox.add(b)
 
     def restack_above():
         window.get_window().restack(None, True)
+
     add_btn("Restack Above", restack_above)
 
     def restack_below():
         window.get_window().restack(None, False)
+
     add_btn("Restack Below", restack_below)
 
     def _raise():
         window.get_window().raise_()
+
     add_btn("Raise", _raise)
 
     def _lower():
         window.get_window().lower()
+
     add_btn("Lower", _lower)
 
     vbox.add(hbox)
@@ -75,6 +80,7 @@ def make_window():
         text.append("%s: %s" % (datetime.now(), s))
         for i, t in enumerate(text):
             labels[i].set_text(t)
+
     # self.selectX11FocusChange(self)
 
     def focus_in(_window, _event):
@@ -118,6 +124,7 @@ def main():
             force_focus()
             w.show_all()
             w.present()
+
         GLib.idle_add(show_with_focus)
         Gtk.main()
         return 0

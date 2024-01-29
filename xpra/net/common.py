@@ -17,7 +17,6 @@ from xpra.scripts.config import parse_bool
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool
 
-
 logger = None
 
 
@@ -31,14 +30,14 @@ def get_logger():
 
 DEFAULT_PORT: int = 14500
 
-DEFAULT_PORTS: dict[str,int] = {
-    "ws"    : 80,
-    "wss"   : 443,
-    "ssl"   : DEFAULT_PORT,   # could also default to 443?
-    "ssh"   : 22,
-    "tcp"   : DEFAULT_PORT,
-    "vnc"   : 5900,
-    "quic"  : 20000,
+DEFAULT_PORTS: dict[str, int] = {
+    "ws": 80,
+    "wss": 443,
+    "ssl": DEFAULT_PORT,  # could also default to 443?
+    "ssh": 22,
+    "tcp": DEFAULT_PORT,
+    "vnc": 5900,
+    "quic": 20000,
 }
 
 PacketElement: TypeAlias = Union[
@@ -52,8 +51,9 @@ PacketElement: TypeAlias = Union[
 
 try:
     from typing import Unpack
+
     PacketType: TypeAlias = tuple[str, Unpack[tuple[PacketElement, ...]]]
-except ImportError:   # pragma: no cover
+except ImportError:  # pragma: no cover
     PacketType: TypeAlias = tuple
 
 # client packet handler:
@@ -68,7 +68,7 @@ class ConnectionClosedException(Exception):
     pass
 
 
-MAX_PACKET_SIZE: int = envint("XPRA_MAX_PACKET_SIZE", 16*1024*1024)
+MAX_PACKET_SIZE: int = envint("XPRA_MAX_PACKET_SIZE", 16 * 1024 * 1024)
 FLUSH_HEADER: bool = envbool("XPRA_FLUSH_HEADER", True)
 SSL_UPGRADE: bool = envbool("XPRA_SSL_UPGRADE", False)
 
@@ -80,24 +80,23 @@ SOCKET_TYPES: tuple[str, ...] = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock
 IP_SOCKTYPES: tuple[str, ...] = ("tcp", "ssl", "ws", "wss", "ssh", "quic")
 TCP_SOCKTYPES: tuple[str, ...] = ("tcp", "ssl", "ws", "wss", "ssh")
 
-URL_MODES: dict[str,str] = {
-    "xpra"      : "tcp",
-    "xpras"     : "ssl",
-    "xpra+tcp"  : "tcp",
-    "xpratcp"   : "tcp",
-    "xpra+tls"  : "ssl",
-    "xpratls"   : "ssl",
-    "xpra+ssl"  : "ssl",
-    "xprassl"   : "ssl",
-    "xpra+ssh"  : "ssh",
-    "xprassh"   : "ssh",
-    "xpra+ws"   : "ws",
-    "xpraws"    : "ws",
-    "xpra+wss"  : "wss",
-    "xprawss"   : "wss",
-    "rfb"       : "vnc",
+URL_MODES: dict[str, str] = {
+    "xpra": "tcp",
+    "xpras": "ssl",
+    "xpra+tcp": "tcp",
+    "xpratcp": "tcp",
+    "xpra+tls": "ssl",
+    "xpratls": "ssl",
+    "xpra+ssl": "ssl",
+    "xprassl": "ssl",
+    "xpra+ssh": "ssh",
+    "xprassh": "ssh",
+    "xpra+ws": "ws",
+    "xpraws": "ws",
+    "xpra+wss": "wss",
+    "xprawss": "wss",
+    "rfb": "vnc",
 }
-
 
 # this is used for generating aliases:
 PACKET_TYPES: list[str] = [
@@ -151,14 +150,15 @@ def get_log_packets(exclude=False) -> tuple[str, ...]:
         return ()
     pt = []
     for x in lp.split(","):
-        if x.startswith("-")==exclude:
+        if x.startswith("-") == exclude:
             pt.append(x[int(exclude):])
     return tuple(pt)
 
 
 def _may_log_packet(sending, packet_type, packet) -> None:
     if LOG_PACKET_TYPE:
-        get_logger().info("%s %s (thread=%s)", "sending  " if sending else "receiving", packet_type, threading.current_thread())
+        get_logger().info("%s %s (thread=%s)", "sending  " if sending else "receiving", packet_type,
+                          threading.current_thread())
     if LOG_PACKETS or NOLOG_PACKETS:
         if packet_type in NOLOG_PACKETS:
             return
@@ -174,7 +174,6 @@ NOLOG_PACKETS: tuple[str, ...] = ()
 LOG_PACKET_TYPE: bool = False
 PACKET_LOG_MAX_SIZE: int = 500
 
-
 may_log_packet: Callable = noop
 
 
@@ -184,7 +183,7 @@ def get_peercred(sock) -> tuple[int, int, int] | None:
         SO_PEERCRED = 17
         try:
             creds = sock.getsockopt(socket.SOL_SOCKET, SO_PEERCRED, struct.calcsize(b'3i'))
-            pid, uid, gid = struct.unpack(b'3i',creds)
+            pid, uid, gid = struct.unpack(b'3i', creds)
             log("peer: %s", (pid, uid, gid))
             return pid, uid, gid
         except OSError as e:

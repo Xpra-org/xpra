@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel
 
 from typing import Any, ByteString
 from collections.abc import Callable
@@ -21,7 +21,7 @@ ALL_ENCODERS: tuple[str, ...] = ("rencodeplus", "none")
 # the encoders we may have, in the best compatibility order
 TRY_ENCODERS: tuple[str, ...] = ("rencodeplus", "none")
 # order for performance:
-PERFORMANCE_ORDER: tuple[str, ...] = ("rencodeplus", )
+PERFORMANCE_ORDER: tuple[str, ...] = ("rencodeplus",)
 
 
 @dataclass
@@ -29,19 +29,20 @@ class Encoding:
     name: str
     flag: int
     version: str
-    encode : Callable[[Any], ByteString]
-    decode : Callable[[ByteString], Any]
+    encode: Callable[[Any], ByteString]
+    decode: Callable[[ByteString], Any]
 
 
-ENCODERS : dict[str,Encoding] = {}
+ENCODERS: dict[str, Encoding] = {}
 
 
 def init_rencodeplus() -> Encoding:
-    from xpra.net.rencodeplus import rencodeplus    # type: ignore[attr-defined]
+    from xpra.net.rencodeplus import rencodeplus  # type: ignore[attr-defined]
     rencodeplus_dumps = rencodeplus.dumps  # @UndefinedVariable
 
     def do_rencodeplus(v):
         return rencodeplus_dumps(v), FLAGS_RENCODEPLUS
+
     return Encoding("rencodeplus", FLAGS_RENCODEPLUS, rencodeplus.__version__, do_rencodeplus, rencodeplus.loads)
 
 
@@ -54,10 +55,12 @@ def init_none() -> Encoding:
             if isinstance(x, bytes):
                 return x
             return codecs.latin_1_encode(x)[0]
-        return b(": ".join(str(x) for x in data)+"\n"), FLAGS_NOHEADER
+
+        return b(": ".join(str(x) for x in data) + "\n"), FLAGS_NOHEADER
 
     def decode(data):
         return data
+
     return Encoding("none", FLAGS_NOHEADER, "0", encode, decode)
 
 
@@ -67,7 +70,7 @@ def init_encoders(*names) -> None:
             logger = Logger("network", "protocol")
             logger.warn("Warning: invalid encoder '%s'", x)
             continue
-        if not envbool("XPRA_"+x.upper(), True):
+        if not envbool("XPRA_" + x.upper(), True):
             continue
         fn = globals().get(f"init_{x}")
         try:
@@ -81,18 +84,18 @@ def init_encoders(*names) -> None:
 
 
 def init_all() -> None:
-    init_encoders(*(list(TRY_ENCODERS)+["none"]))
+    init_encoders(*(list(TRY_ENCODERS) + ["none"]))
 
 
-def get_packet_encoding_caps(full_info: int=1) -> dict[str,Any]:
-    caps : dict[str,Any] = {}
+def get_packet_encoding_caps(full_info: int = 1) -> dict[str, Any]:
+    caps: dict[str, Any] = {}
     for name in TRY_ENCODERS:
         d = caps.setdefault(name, {})
         e = ENCODERS.get(name)
         d[""] = e is not None
         if e is None:
             continue
-        if full_info>1 and e.version:
+        if full_info > 1 and e.version:
             d["version"] = e.version
     return caps
 
@@ -128,7 +131,7 @@ def pack_one_packet(packet: tuple) -> bytes:
     if ee:
         e = get_encoder(ee[0])
         data, flags = e(packet)
-        return pack_header(flags, 0, 0, len(data))+data
+        return pack_header(flags, 0, 0, len(data)) + data
     return strtobytes(packet)
 
 
@@ -142,7 +145,7 @@ def decode(data, protocol_flags: int):
     raise InvalidPacketEncodingException(f"{ptype!r} decoder is not available")
 
 
-def main():     # pragma: no cover
+def main():  # pragma: no cover
     from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context
     with program_context("Packet Encoding", "Packet Encoding Info"):

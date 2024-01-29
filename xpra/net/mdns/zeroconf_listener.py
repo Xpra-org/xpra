@@ -17,7 +17,7 @@ class Zeroconflistener:
     def __init__(self, service_type, mdns_found=None, mdns_add=None, mdns_remove=None, mdns_update=None):
         log("Zeroconflistener%s", (service_type, mdns_found, mdns_add, mdns_remove, mdns_update))
         self.zeroconf = Zeroconf()
-        self.browser : ServiceBrowser | None = None
+        self.browser: ServiceBrowser | None = None
         if not service_type.endswith("local."):
             service_type += "local."
         self.service_type = service_type
@@ -29,18 +29,18 @@ class Zeroconflistener:
     def __repr__(self):
         return "Zeroconflistener(%s)" % self.service_type
 
-    def update_service(self, zeroconf, stype:str, name:str) -> None:
+    def update_service(self, zeroconf, stype: str, name: str) -> None:
         log("update_service%s", (zeroconf, stype, name))
         if self.mdns_update:
             self.mdns_update(name, stype)
 
-    def remove_service(self, zeroconf, stype:str, name:str) -> None:
+    def remove_service(self, zeroconf, stype: str, name: str) -> None:
         log("remove_service%s", (zeroconf, stype, name))
         if self.mdns_remove:
             domain = "local"
             self.mdns_remove(0, 0, name, stype, domain, 0)
 
-    def add_service(self, zeroconf, stype:str, name:str):
+    def add_service(self, zeroconf, stype: str, name: str):
         log("add_service%s", (zeroconf, stype, name))
         info = zeroconf.get_service_info(stype, name)
         log("service info: %s", info)
@@ -83,7 +83,6 @@ class Zeroconflistener:
 
 
 def main():
-
     def mdns_found(*args):
         print(f"mdns_found: {args}")
 
@@ -106,9 +105,10 @@ def main():
         from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
 
         def add(service_type):
-            listener = Zeroconflistener(service_type+"local.", mdns_found, mdns_add, mdns_remove, mdns_update)
+            listener = Zeroconflistener(service_type + "local.", mdns_found, mdns_add, mdns_remove, mdns_update)
             log(f"{listener=}")
             listener.start()
+
         add(XPRA_TCP_MDNS_TYPE)
         add(XPRA_UDP_MDNS_TYPE)
         try:

@@ -19,11 +19,10 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.os_util import WIN32
 from xpra.log import Logger
+
 log = Logger("quic")
 
-
 UVLOOP = envbool("XPRA_UVLOOP", not WIN32)
-
 
 ExceptionWrapper = namedtuple("ExceptionWrapper", "exception,args")
 
@@ -37,6 +36,7 @@ class ThreadedAsyncioLoop:
     * turning an async function into a sync function
      (for calling async functions from regular threads)
     """
+
     def __init__(self):
         self.loop: asyncio.AbstractEventLoop | None = None
         start_thread(self.run_forever, "asyncio-thread", True)
@@ -45,7 +45,7 @@ class ThreadedAsyncioLoop:
     def run_forever(self) -> None:
         if UVLOOP:
             try:
-                import uvloop   # pylint: disable=import-outside-toplevel
+                import uvloop  # pylint: disable=import-outside-toplevel
             except ImportError:
                 log.warn("Warning: uvloop not found")
             else:
@@ -60,7 +60,7 @@ class ThreadedAsyncioLoop:
 
     def wait_for_loop(self) -> None:
         now = monotonic()
-        while monotonic()-now<1 and self.loop is None:
+        while monotonic() - now < 1 and self.loop is None:
             log("waiting for asyncio event loop")
             time.sleep(0.01)
         if self.loop is None:
@@ -75,12 +75,13 @@ class ThreadedAsyncioLoop:
                 log(f"creating task for {f}")
                 assert self.loop
                 self.loop.create_task(f)
+
             self.loop.call_soon_threadsafe(tsafe)
         else:
             self.loop.call_soon_threadsafe(f)
 
     def sync(self, async_fn: Callable[..., Awaitable[Any]], *args) -> Any:
-        response : SimpleQueue[Any] = SimpleQueue()
+        response: SimpleQueue[Any] = SimpleQueue()
 
         async def awaitable():
             log("awaitable()")
@@ -92,7 +93,7 @@ class ThreadedAsyncioLoop:
                 response.put(ExceptionWrapper(InitExit, (e.status, str(e))))
             except Exception as e:
                 log(f"error calling async function {async_fn} with {args}", exc_info=True)
-                response.put(ExceptionWrapper(RuntimeError, (str(e), )))
+                response.put(ExceptionWrapper(RuntimeError, (str(e),)))
 
         def tsafe() -> None:
             a = awaitable()

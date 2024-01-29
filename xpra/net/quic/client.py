@@ -36,6 +36,7 @@ from xpra.net.quic.common import USER_AGENT, MAX_DATAGRAM_FRAME_SIZE, binary_hea
 from xpra.util.str_fn import csv, ellipsizer
 from xpra.util.env import envbool
 from xpra.log import Logger
+
 log = Logger("quic")
 
 HttpConnection = Union[H0Connection, H3Connection]
@@ -43,20 +44,19 @@ HttpConnection = Union[H0Connection, H3Connection]
 IPV6 = socket.has_ipv6 and envbool("XPRA_IPV6", True)
 PREFER_IPV6 = IPV6 and envbool("XPRA_PREFER_IPV6", POSIX)
 
-
 WS_HEADERS = {
-    ":method"   : "CONNECT",
-    ":scheme"   : "https",
-    ":protocol" : "websocket",
-    "sec-websocket-version" : 13,
-    "sec-websocket-protocol" : "xpra",
-    "user-agent" : USER_AGENT,
+    ":method": "CONNECT",
+    ":scheme": "https",
+    ":protocol": "websocket",
+    "sec-websocket-version": 13,
+    "sec-websocket-protocol": "xpra",
+    "user-agent": USER_AGENT,
 }
 
 
 class ClientWebSocketConnection(XpraQuicConnection):
 
-    def __init__(self, connection : HttpConnection, stream_id: int, transmit: Callable[[], None],
+    def __init__(self, connection: HttpConnection, stream_id: int, transmit: Callable[[], None],
                  host: str, port: int, info=None, options=None) -> None:
         super().__init__(connection, stream_id, transmit, host, port, info, options)
         self.write_buffer = SimpleQueue()
@@ -115,8 +115,8 @@ class WebSocketClient(QuicConnectionProtocol):
                                               host, port)
         self._websockets[stream_id] = websocket
         headers = {
-            ":authority" : host,
-            ":path" : path,
+            ":authority": host,
+            ":path": path,
         }
         headers.update(WS_HEADERS)
         log("open: sending http headers for websocket upgrade")
@@ -133,15 +133,15 @@ class WebSocketClient(QuicConnectionProtocol):
             log.warn(f"Warning: unexpected http event type: {event}")
             return
         stream_id = event.stream_id
-        websocket : ClientWebSocketConnection | None = self._websockets.get(stream_id)
+        websocket: ClientWebSocketConnection | None = self._websockets.get(stream_id)
         if not websocket:
             # perhaps this is a new substream?
             sub = -1
             hdict = {}
             if isinstance(event, HeadersReceived):
-                hdict = {k.decode():v.decode() for k,v in event.headers}
+                hdict = {k.decode(): v.decode() for k, v in event.headers}
                 sub = int(hdict.get("substream", -1))
-            if sub<0:
+            if sub < 0:
                 log.warn(f"Warning: unexpected websocket stream id: {stream_id} in {event}")
                 return
             websocket = self._websockets.get(sub)
@@ -155,7 +155,7 @@ class WebSocketClient(QuicConnectionProtocol):
 
 
 def create_local_socket(family=socket.AF_INET):
-    if family==socket.AF_INET6:
+    if family == socket.AF_INET6:
         local_host = "::"
     else:
         local_host = "0.0.0.0"
@@ -172,7 +172,7 @@ async def get_address_options(host: str, port: int) -> tuple:
         family_options = (socket.AF_INET, socket.AF_INET6)
     else:
         family = socket.AF_INET
-        family_options = (socket.AF_INET, )
+        family_options = (socket.AF_INET,)
     try:
         tl = get_threaded_loop()
         infos = await tl.loop.getaddrinfo(host, port, family=family, type=socket.SOCK_DGRAM)
@@ -180,14 +180,14 @@ async def get_address_options(host: str, port: int) -> tuple:
     except Exception as e:
         log(f"getaddrinfo({host}, {port}, {family}, SOCK_DGRAM)", exc_info=True)
         raise RuntimeError(f"cannot get address information for {pretty_socket((host, port))}: {e}") from None
-    if PREFER_IPV6 and not any(addr_info[0]==socket.AF_INET6 for addr_info in infos):
+    if PREFER_IPV6 and not any(addr_info[0] == socket.AF_INET6 for addr_info in infos):
         # no ipv6 returned, cook one up:
-        ipv4_infos = tuple(addr_info for addr_info in infos if addr_info[0]==socket.AF_INET)
+        ipv4_infos = tuple(addr_info for addr_info in infos if addr_info[0] == socket.AF_INET)
         # ie:( (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_DGRAM: 2>, 17, '', ('192.168.0.114', 10000)), )
         if ipv4_infos:
             ipv4 = ipv4_infos[0]
-            addr = ipv4[4]          # ie: ('192.168.0.114', 10000)
-            if len(addr)==2:
+            addr = ipv4[4]  # ie: ('192.168.0.114', 10000)
+            if len(addr) == 2:
                 addr = ("::ffff:" + addr[0], addr[1], 0, 0)
                 infos.insert(0, (socket.AF_INET6, socket.SOCK_DGRAM, ipv4[2], ipv4[3], addr))
                 log(f"added IPv6 option: {infos[0]}")
@@ -217,6 +217,7 @@ def quic_connect(host: str, port: int, path: str,
             ipaddress.ip_address(host)
         except ValueError:
             configuration.server_name = host
+
     # configuration.max_data = args.max_data
     # configuration.max_stream_data = args.max_stream_data
     # configuration.quic_logger = QuicFileLogger(args.quic_log)
@@ -237,7 +238,7 @@ def quic_connect(host: str, port: int, path: str,
         transport, protocol = await tl.loop.create_datagram_endpoint(create_protocol, sock=sock)
         log(f"{transport=}, {protocol=}")
         protocol = cast(QuicConnectionProtocol, protocol)
-        addr = addr_info[4]     # ie: ('192.168.0.10', 10000)
+        addr = addr_info[4]  # ie: ('192.168.0.10', 10000)
         log(f"connecting from {pretty_socket(local_addr)} to {pretty_socket(addr)}")
         protocol.connect(addr)
         try:
@@ -263,10 +264,11 @@ def quic_connect(host: str, port: int, path: str,
                         #    raise InitExit(ExitCode.CONNECTION_FAILED, msg)
                         raise RuntimeError(close_event.reason_phrase) from None
             raise RuntimeError(str(e)) from None
+
     # protocol.close()
     # await protocol.wait_closed()
     # transport.close()
-    if len(addresses)==1:
+    if len(addresses) == 1:
         return tl.sync(connect, addresses[0])
 
     errors = []
@@ -278,4 +280,4 @@ def quic_connect(host: str, port: int, path: str,
             estr = str(ce) or type(ce)
             if estr not in errors:
                 errors.append(estr)
-    raise InitExit(ExitCode.CONNECTION_FAILED, "failed to connect: "+csv(errors))
+    raise InitExit(ExitCode.CONNECTION_FAILED, "failed to connect: " + csv(errors))

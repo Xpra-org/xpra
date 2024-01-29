@@ -30,13 +30,13 @@ OPCODE_CLOSE = 8
 OPCODE_PING = 9
 OPCODE_PONG = 10
 
-OPCODES : dict[int,str] = {
-    OPCODE_CONTINUE     : "CONTINUE",
-    OPCODE_TEXT         : "TEXT",
-    OPCODE_BINARY       : "BINARY",
-    OPCODE_CLOSE        : "CLOSE",
-    OPCODE_PING         : "PING",
-    OPCODE_PONG         : "PONG",
+OPCODES: dict[int, str] = {
+    OPCODE_CONTINUE: "CONTINUE",
+    OPCODE_TEXT: "TEXT",
+    OPCODE_BINARY: "BINARY",
+    OPCODE_CLOSE: "CLOSE",
+    OPCODE_PING: "PING",
+    OPCODE_PONG: "PONG",
 }
 
 
@@ -65,7 +65,7 @@ def get_headers(host: str, port: int) -> dict:
     return headers
 
 
-def client_upgrade(read:Callable, write:Callable, host:str, port: int, path="") -> None:
+def client_upgrade(read: Callable, write: Callable, host: str, port: int, path="") -> None:
     key = b64encode(uuid.uuid4().bytes)
     request = get_client_upgrade_request(host, port, path, key)
     write_request(write, request)
@@ -74,42 +74,44 @@ def client_upgrade(read:Callable, write:Callable, host:str, port: int, path="") 
     log("client_upgrade: done")
 
 
-def get_client_upgrade_request(host:str, port: int, path:str, key:bytes):
+def get_client_upgrade_request(host: str, port: int, path: str, key: bytes):
     url_path = quote(path)
     request = f"GET /{url_path} HTTP/1.1"
     log(f"client websocket upgrade request: {request!r}")
     lines = [request.encode("latin1")]
     headers = get_headers(host, port)
     headers[b"Sec-WebSocket-Key"] = key
-    for k,v in headers.items():
+    for k, v in headers.items():
         lines.append(b"%s: %s" % (k, v))
     lines.append(b"")
     lines.append(b"")
     return b"\r\n".join(lines)
 
 
-def write_request(write:Callable, http_request):
+def write_request(write: Callable, http_request):
     now = monotonic()
     while http_request:
-        elapsed = monotonic()-now
-        if elapsed>=MAX_WRITE_TIME:
+        elapsed = monotonic() - now
+        if elapsed >= MAX_WRITE_TIME:
             raise RuntimeError(f"http write timeout, took more {elapsed:.1f} seconds")
         w = write(http_request)
         http_request = http_request[w:]
 
 
-def read_server_upgrade(read:Callable):
+def read_server_upgrade(read: Callable):
     now = monotonic()
     response = b""
 
     def hasheader(k):
         return k in parse_response_header(response)
-    while monotonic()-now<MAX_READ_TIME and not (hasheader("sec-websocket-protocol") or hasheader("www-authenticate")):
+
+    while monotonic() - now < MAX_READ_TIME and not (
+            hasheader("sec-websocket-protocol") or hasheader("www-authenticate")):
         response += read(READ_CHUNK_SIZE)
     return parse_response_header(response)
 
 
-def parse_response_header(response:bytes):
+def parse_response_header(response: bytes):
     head = response.split(b"\r\n\r\n", 1)[0]
     lines = head.split(b"\r\n")
     headers = {}
@@ -129,15 +131,15 @@ def verify_response_headers(headers: dict[str, Any], key):
     upgrade = headers.get("upgrade")
     if not upgrade:
         raise ValueError("http connection was not upgraded to websocket")
-    if upgrade!="websocket":
+    if upgrade != "websocket":
         raise ValueError(f"invalid http upgrade: {upgrade!r}")
     protocol = headers.get("sec-websocket-protocol")
-    if protocol!="binary":
+    if protocol != "binary":
         raise ValueError(f"invalid websocket protocol: {protocol!r}")
     accept_key = headers.get("sec-websocket-accept")
     if not accept_key:
         raise ValueError("websocket accept key is missing")
     expected_key = make_websocket_accept_hash(key)
-    if bytestostr(accept_key)!=bytestostr(expected_key):
+    if bytestostr(accept_key) != bytestostr(expected_key):
         log(f"expected {expected_key!r}, received {accept_key!r}")
         raise ValueError("websocket accept key is invalid")

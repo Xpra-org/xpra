@@ -27,39 +27,46 @@ def make_window():
     vbox = Gtk.VBox(homogeneous=False, spacing=0)
 
     btn = Gtk.Button(label="Create Transient")
+
     def create_transient(*_args):
         tw = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         tw.set_size_request(200, 100)
         if icon:
             tw.set_icon(icon)
-        tw.connect("delete_event", lambda x,y : tw.destroy())
+        tw.connect("delete_event", lambda x, y: tw.destroy())
         tw.set_transient_for(window)
         tw.add(label("Transient Window"))
         tw.show_all()
+
     btn.connect('clicked', create_transient)
     vbox.pack_start(btn, expand=False, fill=False, padding=10)
 
     btn = Gtk.Button(label="Create Transient (with 5 second delay)")
+
     def delayed_transient(*_args):
         GLib.timeout_add(5000, create_transient)
+
     btn.connect('clicked', delayed_transient)
     vbox.pack_start(btn, expand=False, fill=False, padding=10)
 
     btn = Gtk.Button(label="Create Root Transient")
+
     def create_root_transient(*_args):
         tw = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         tw.set_size_request(200, 100)
         if icon:
             tw.set_icon(icon)
-        tw.connect("delete_event", lambda x,y : tw.destroy())
+        tw.connect("delete_event", lambda x, y: tw.destroy())
         tw.realize()
         tw.get_window().set_transient_for(get_default_root_window())
         tw.add(label("Transient Root Window"))
         tw.show_all()
+
     btn.connect('clicked', create_root_transient)
     vbox.pack_start(btn, expand=False, fill=False, padding=10)
     window.add(vbox)
     return window
+
 
 def main():
     with program_context("window-transient", "Window Transient"):
@@ -72,6 +79,7 @@ def main():
             force_focus()
             w.show_all()
             w.present()
+
         GLib.idle_add(show_with_focus)
         Gtk.main()
         return 0

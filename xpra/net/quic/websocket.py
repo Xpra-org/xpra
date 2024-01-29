@@ -16,6 +16,7 @@ from xpra.net.quic.common import SERVER_NAME, http_date, binary_headers
 from xpra.util.env import first_time
 from xpra.util.str_fn import ellipsizer
 from xpra.log import Logger
+
 log = Logger("quic")
 
 # can be used to use substreams based on packet prefix: sound,webcam,draw
@@ -23,6 +24,8 @@ SUBSTREAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get(
     "XPRA_QUIC_SUBSTREAM_PACKET_TYPES",
     ""
 ).split(",") if x.strip())
+
+
 # SUBSTREAM_PACKET_LOSS_PCT = envint("XPRA_QUIC_SUBSTREAM_PACKET_LOSS_PCT", 0)
 
 
@@ -31,10 +34,10 @@ class ServerWebSocketConnection(XpraQuicConnection):
                  stream_id: int, transmit: Callable[[], None]) -> None:
         super().__init__(connection, stream_id, transmit, "", 0, info=None, options=None)
         self.scope: dict = scope
-        self._packet_type_streams : dict[str,int] = {}
+        self._packet_type_streams: dict[str, int] = {}
         self._use_substreams = bool(SUBSTREAM_PACKET_TYPES)
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         info = super().get_info()
         info.setdefault("quic", {})["scope"] = self.scope
         return info
@@ -64,10 +67,10 @@ class ServerWebSocketConnection(XpraQuicConnection):
 
     def send_accept(self, stream_id: int) -> None:
         self.send_headers(stream_id=stream_id, headers={
-            ":status"   : 200,
-            "server"    : SERVER_NAME,
-            "date"      : http_date(),
-            "sec-websocket-protocol" : "xpra",
+            ":status": 200,
+            "server": SERVER_NAME,
+            "date": http_date(),
+            "sec-websocket-protocol": "xpra",
         })
 
     def get_packet_stream_id(self, packet_type) -> int:
@@ -75,11 +78,11 @@ class ServerWebSocketConnection(XpraQuicConnection):
             return self.stream_id
         if not any(packet_type.startswith(x) for x in SUBSTREAM_PACKET_TYPES):
             return self.stream_id
-        #ie: "sound-data" -> "sound"
+        # ie: "sound-data" -> "sound"
         stream_type = packet_type.split("-", 1)[0]
         stream_id = self._packet_type_streams.get(stream_type)
         if stream_id is not None:
-            #already allocated substream:
+            # already allocated substream:
             return stream_id
         # allocate a new one and record it
         # (even if it fails, so we don't retry to allocate it again and again):
@@ -93,10 +96,10 @@ class ServerWebSocketConnection(XpraQuicConnection):
         # (we don't need those headers,
         # but the client would drop the packet without them..)
         headers = binary_headers({
-            ":method" : self.scope.get("method", "CONNECT"),
-            ":scheme" : self.scope.get("scheme", "wss"),
-            ":authority" : self.scope.get("transport-info", {}).get("sockname", ("localhost", ))[0],
-            ":path" : self.scope.get("path", "/"),
+            ":method": self.scope.get("method", "CONNECT"),
+            ":scheme": self.scope.get("scheme", "wss"),
+            ":authority": self.scope.get("transport-info", {}).get("sockname", ("localhost",))[0],
+            ":path": self.scope.get("path", "/"),
         })
         try:
             stream_id = self.connection.send_push_promise(self.stream_id, headers)
@@ -105,13 +108,13 @@ class ServerWebSocketConnection(XpraQuicConnection):
             if first_time("quic-no-push-id"):
                 log.warn(f"Warning: unable to allocate a new stream-id for {stream_type!r}")
             else:
-                #more than one error, stop trying:
+                # more than one error, stop trying:
                 self._use_substreams = False
             return 0
         log.info(f"new stream: {stream_id} for {stream_type!r} with headers={headers}")
         self.send_headers(stream_id=stream_id, headers={
-            ":status" : 200,
-            "substream" : self.stream_id,
-            "stream-type" : stream_type,
+            ":status": 200,
+            "substream": self.stream_id,
+            "stream-type": stream_type,
         })
         return stream_id

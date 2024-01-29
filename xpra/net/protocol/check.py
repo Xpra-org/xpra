@@ -27,6 +27,7 @@ def do_verify_packet(tree, packet) -> bool:
         nt = tree[:]
         nt.append(append)
         return nt
+
     if packet is None:
         err("None value")
         return False
@@ -36,7 +37,7 @@ def do_verify_packet(tree, packet) -> bool:
             if not do_verify_packet(new_tree(f"[{i}]"), x):
                 r = False
     elif isinstance(packet, dict):
-        for k,v in packet.items():
+        for k, v in packet.items():
             if not do_verify_packet(new_tree(f"key for value={v!r}"), k):
                 r = False
             if not do_verify_packet(new_tree(f"value for key={k!r}"), v):

@@ -40,8 +40,8 @@ class DBUS_Notifier(NotifierBase):
     def __init__(self, *args):
         super().__init__(*args)
         self.app_name_format = NOTIFICATION_APP_NAME
-        self.last_notification : tuple[Any,...] = ()
-        self.actual_notification_id : dict[int,int] = {}
+        self.last_notification: tuple[Any, ...] = ()
+        self.actual_notification_id: dict[int, int] = {}
         self.setup_dbusnotify()
         self.handles_actions = True
         self.may_retry = True
@@ -92,6 +92,7 @@ class DBUS_Notifier(NotifierBase):
             def NotifyReply(notification_id):
                 log("NotifyReply(%s) for nid=%i", notification_id, nid)
                 self.actual_notification_id[nid] = int(notification_id)
+
             dbus_hints = self.parse_hints(hints)
             log("calling %s%s", self.dbusnotify.Notify,
                 (app_str, 0, icon_string, summary, body, actions, dbus_hints, timeout))
@@ -116,15 +117,15 @@ class DBUS_Notifier(NotifierBase):
             if v is not None:
                 hints[native_to_dbus(x)] = native_to_dbus(v)
         image_data = h.get("image-data")
-        if image_data and bytestostr(image_data[0])=="png":
+        if image_data and bytestostr(image_data[0]) == "png":
             try:
                 from xpra.codecs.pillow.decoder import open_only  # pylint: disable=import-outside-toplevel
                 img_data = image_data[3]
                 img = open_only(img_data, ("png",))
                 w, h = img.size
                 channels = len(img.mode)
-                rowstride = w*channels
-                has_alpha = img.mode=="RGBA"
+                rowstride = w * channels
+                has_alpha = img.mode == "RGBA"
                 pixel_data = bytearray(img.tobytes("raw", img.mode))
                 args = w, h, rowstride, has_alpha, 8, channels, pixel_data
                 hints["image-data"] = tuple(native_to_dbus(x) for x in args)
@@ -161,7 +162,7 @@ class DBUS_Notifier(NotifierBase):
             if isinstance(dbus_error, DBusException):
                 message = dbus_error.get_dbus_message()
                 dbus_error_name = dbus_error.get_dbus_name()
-                if dbus_error_name!="org.freedesktop.DBus.Error.ServiceUnknown":
+                if dbus_error_name != "org.freedesktop.DBus.Error.ServiceUnknown":
                     log.error("unhandled dbus exception: %s, %s", message, dbus_error_name)
                     return False
 
@@ -182,7 +183,7 @@ class DBUS_Notifier(NotifierBase):
         log.estr(dbus_error)
         return False
 
-    def close_notify(self, nid : int) -> None:
+    def close_notify(self, nid: int) -> None:
         actual_id = self.actual_notification_id.get(nid)
         if actual_id is None:
             log("close_notify(%i) actual notification not found, already closed?", nid)
@@ -190,7 +191,7 @@ class DBUS_Notifier(NotifierBase):
         log("close_notify(%i) actual id=%s", nid, actual_id)
         self.do_close(nid, actual_id)
 
-    def do_close(self, nid : int, actual_id : int) -> None:
+    def do_close(self, nid: int, actual_id: int) -> None:
         log("do_close_notify(%i)", actual_id)
 
         def CloseNotificationReply():
@@ -199,6 +200,7 @@ class DBUS_Notifier(NotifierBase):
         def CloseNotificationError(dbus_error, *_args):
             log.warn("Error: error closing notification:")
             log.warn(" %s", dbus_error)
+
         self.dbusnotify.CloseNotification(actual_id,
                                           reply_handler=CloseNotificationReply,
                                           error_handler=CloseNotificationError)
@@ -217,6 +219,7 @@ def main():
                       "Summary", "Body line1\nline2...",
                       actions, {}, 0, "")
         return False
+
     GLib.idle_add(show)
     GLib.timeout_add(20000, Gtk.main_quit)
     Gtk.main()

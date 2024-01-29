@@ -118,27 +118,31 @@ class FakeApplication:
                 log.warn("failed to create tray %s: %s", x, e)
         self.tray.set_tooltip("Test System Tray")
 
-    def after_handshake(self, cb:Callable, *args) -> None:
+    def after_handshake(self, cb: Callable, *args) -> None:
         self.idle_add(cb, *args)
 
-    def on_server_setting_changed(self, setting: str, cb:Callable) -> None:
+    def on_server_setting_changed(self, setting: str, cb: Callable) -> None:
         """ this method is part of the GUI client "interface" """
 
     def connect(self, *args) -> None:
         """ this method is part of the GUI client "interface" """
 
-    def get_encodings(self) -> tuple[str,...]:
+    def get_encodings(self) -> tuple[str, ...]:
         from xpra.codecs.constants import PREFERRED_ENCODING_ORDER
         return PREFERRED_ENCODING_ORDER
 
     def show_start_new_command(self, *_args):
         """ this method is part of the GUI client "interface" """
+
     def show_server_commands(self, *_args):
         """ this method is part of the GUI client "interface" """
+
     def show_ask_data_dialog(self, *_args):
         """ this method is part of the GUI client "interface" """
+
     def show_file_upload(self, *_args):
         """ this method is part of the GUI client "interface" """
+
     def send_sharing_enabled(self, *_args):
         """ this method is part of the GUI client "interface" """
 
@@ -156,9 +160,9 @@ class FakeApplication:
 
     def xpra_tray_click(self, button: int, pressed: bool, time: int = 0):
         log("xpra_tray_click(%s, %s, %s)", button, pressed, time)
-        if button==1 and pressed:
+        if button == 1 and pressed:
             self.idle_add(self.menu_helper.activate, button, time)
-        elif button==3 and not pressed:
+        elif button == 3 and not pressed:
             self.idle_add(self.menu_helper.popup, button, time)
 
     def xpra_tray_mouseover(self, *args):

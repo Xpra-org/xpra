@@ -18,6 +18,7 @@ def upnp_add(socktype: str, info, options):
             if msg:
                 log.error(" %s", msg)
         return None
+
     # find the port number:
     try:
         internal_host, internal_port = info
@@ -49,7 +50,7 @@ def upnp_add(socktype: str, info, options):
                 device = upnp.get_igd()
                 log("using IGD device %s", device)
             except Exception as e:
-                dstr: tuple[str,...] = ()
+                dstr: tuple[str, ...] = ()
                 if devices:
                     dstr = (
                         "%i devices:" % len(devices),
@@ -89,11 +90,11 @@ def upnp_add(socktype: str, info, options):
                 INET["INET6"] = netifaces.AF_INET6  # @UndefinedVariable
 
             def get_device_interface():
-                default_gw = gateways.get("default")    # ie: {2: ('192.168.3.1', 'eth0')}
+                default_gw = gateways.get("default")  # ie: {2: ('192.168.3.1', 'eth0')}
                 if default_gw:
-                    for v in INET.values():             # ie: AF_INET
-                        inet = default_gw.get(v)        # ie: ('192.168.3.1', 'eth0')
-                        if inet and len(inet)>=2:
+                    for v in INET.values():  # ie: AF_INET
+                        inet = default_gw.get(v)  # ie: ('192.168.3.1', 'eth0')
+                        if inet and len(inet) >= 2:
                             return inet[1]
                 for v in INET.values():
                     # ie: gws = [('192.168.3.1', 'eth0', True), ('192.168.0.1', 'wlan0', False)]}
@@ -101,14 +102,16 @@ def upnp_add(socktype: str, info, options):
                     if not gws:
                         continue
                     for inet in gws:
-                        if inet and len(inet)>=2:
+                        if inet and len(inet) >= 2:
                             return inet[1]
+
             interface = get_device_interface()
             if not interface:
                 return err(f"cannot identify the network interface for {device.address!r}")
             log("identified interface '%s' for device address %s", interface, device.address)
-            addrs = netifaces.ifaddresses(interface)    # @UndefinedVariable
+            addrs = netifaces.ifaddresses(interface)  # @UndefinedVariable
             log("ifaddresses(%s)=%s", interface, addrs)
+
             # ie: {17: [{'addr': '30:52:cb:85:54:03', 'broadcast': 'ff:ff:ff:ff:ff:ff'}],
             #      2: [{'addr': '192.168.0.111', 'netmask': '255.255.255.0', 'broadcast': '192.168.0.255'}],
             #     10: [{'addr': 'fe80::1944:64a7:ab7b:9d67%wlan0', 'netmask': 'ffff:ffff:ffff:ffff::/64'}]}
@@ -126,6 +129,7 @@ def upnp_add(socktype: str, info, options):
                         if host:
                             return host
                 return None
+
             internal_host = get_interface_address()
             if not internal_host:
                 return err("no address found for interface '%s'", interface)
@@ -148,10 +152,10 @@ def upnp_add(socktype: str, info, options):
                 log("using service %i: %s", no, service)
             except ValueError:
                 # find the service by id
-                matches = [v for v in services if v.id.split(":")[-1]==s]
-                if len(matches)>1:
+                matches = [v for v in services if v.id.split(":")[-1] == s]
+                if len(matches) > 1:
                     return err(f"more than one service matches {s!r}")
-                if len(matches)!=1:
+                if len(matches) != 1:
                     return err(f"service {s!r} not found on {device}")
                 service = matches[0]
                 log("using service %s", service)
@@ -171,14 +175,14 @@ def upnp_add(socktype: str, info, options):
         if not delete:
             return err("service %s does not support 'DeletePortMapping'")
         kwargs = {
-            "NewRemoteHost"     : remote_host,
-            "NewExternalPort"   : external_port,
-            "NewProtocol"       : protocol,
-            "NewInternalPort"   : internal_port,
-            "NewInternalClient" : internal_host,
-            "NewEnabled"        : True,
-            "NewPortMappingDescription" : "Xpra-%s" % socktype,
-            "NewLeaseDuration"  : duration,
+            "NewRemoteHost": remote_host,
+            "NewExternalPort": external_port,
+            "NewProtocol": protocol,
+            "NewInternalPort": internal_port,
+            "NewInternalClient": internal_host,
+            "NewEnabled": True,
+            "NewPortMappingDescription": "Xpra-%s" % socktype,
+            "NewLeaseDuration": duration,
         }
         log("%s%s", add, kwargs)
         add(**kwargs)
@@ -206,9 +210,9 @@ def upnp_add(socktype: str, info, options):
         def cleanup():
             try:
                 kwargs = {
-                    "NewRemoteHost"     : remote_host,
-                    "NewExternalPort"   : external_port,
-                    "NewProtocol"       : protocol,
+                    "NewRemoteHost": remote_host,
+                    "NewExternalPort": external_port,
+                    "NewProtocol": protocol,
                 }
                 log("%s%s", delete, kwargs)
                 delete(**kwargs)
@@ -219,6 +223,7 @@ def upnp_add(socktype: str, info, options):
                 log.error(" for external port %i,", external_port)
                 log.error(" internal port %i (%s):", internal_port, socktype)
                 log.estr(e)
+
         return cleanup
     except Exception as e:
         return err(e)
@@ -227,6 +232,6 @@ def upnp_add(socktype: str, info, options):
 def get_action(service, action_name: str):
     actions = service.get_actions()
     for action in actions:
-        if action.name==action_name:
+        if action.name == action_name:
             return action
     return None

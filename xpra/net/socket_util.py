@@ -28,7 +28,7 @@ from xpra.util.thread import start_thread
 # what timeout value to use on the socket probe attempt:
 WAIT_PROBE_TIMEOUT = envint("XPRA_WAIT_PROBE_TIMEOUT", 6)
 PEEK_TIMEOUT = envint("XPRA_PEEK_TIMEOUT", 1)
-PEEK_TIMEOUT_MS = envint("XPRA_PEEK_TIMEOUT_MS", PEEK_TIMEOUT*1000)
+PEEK_TIMEOUT_MS = envint("XPRA_PEEK_TIMEOUT_MS", PEEK_TIMEOUT * 1000)
 UNIXDOMAIN_PEEK_TIMEOUT_MS = envint("XPRA_UNIX_DOMAIN_PEEK_TIMEOUT_MS", 100)
 SOCKET_PEEK_TIMEOUT_MS = envint("XPRA_SOCKET_PEEK_TIMEOUT_MS", UNIXDOMAIN_PEEK_TIMEOUT_MS)
 PEEK_SIZE = envint("XPRA_PEEK_SIZE", 8192)
@@ -37,7 +37,6 @@ ABSTRACT_SOCKET_AUTH = os.environ.get("XPRA_ABSTRACT_SOCKET_AUTH", "peercred")
 
 SOCKET_DIR_MODE = num = int(os.environ.get("XPRA_SOCKET_DIR_MODE", "775"), 8)
 SOCKET_DIR_GROUP = os.environ.get("XPRA_SOCKET_DIR_GROUP", GROUP)
-
 
 network_logger = None
 
@@ -56,10 +55,10 @@ def create_abstract_socket(sockpath: str) -> tuple[socket.socket, Callable]:
     assert POSIX
     assert sockpath[:1] == "@"
     if sockpath[1:].startswith(ABSTRACT_SOCKET_PREFIX):
-        assert sockpath[1+len(ABSTRACT_SOCKET_PREFIX):].isalnum()
+        assert sockpath[1 + len(ABSTRACT_SOCKET_PREFIX):].isalnum()
     else:
         assert sockpath[1:].isalnum()
-    asockpath = "\0"+sockpath[1:]
+    asockpath = "\0" + sockpath[1:]
     listener = socket.socket(socket.AF_UNIX)
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     listener.bind(asockpath)
@@ -78,7 +77,7 @@ def create_unix_domain_socket(sockpath: str, socket_permissions: int = 0o600) ->
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     # bind the socket, using umask to set the correct permissions
     # convert this to a `umask`!
-    umask = (0o777-socket_permissions) & 0o777
+    umask = (0o777 - socket_permissions) & 0o777
     try:
         with umask_context(umask):
             listener.bind(sockpath)
@@ -120,6 +119,7 @@ def create_unix_domain_socket(sockpath: str, socket_permissions: int = 0o600) ->
                 os.unlink(delpath)
             except OSError:
                 pass
+
     return listener, cleanup_socket
 
 
@@ -181,6 +181,7 @@ def add_listen_socket(socktype: str, sock, info, server, new_connection_cb, opti
             for c in upnp_cleanup:
                 if c:
                     start_thread(c, f"pnp-cleanup-{c}", daemon=True)
+
         return cleanup
     except Exception as e:
         log("add_listen_socket%s", (socktype, sock, info, new_connection_cb, options), exc_info=True)
@@ -216,7 +217,7 @@ def peek_connection(conn, timeout: int = PEEK_TIMEOUT_MS, size: int = PEEK_SIZE)
     peek_data = b""
     start = monotonic()
     elapsed = 0
-    set_socket_timeout(conn, PEEK_TIMEOUT_MS/1000)
+    set_socket_timeout(conn, PEEK_TIMEOUT_MS / 1000)
     while elapsed <= timeout:
         try:
             peek_data = conn.peek(size)
@@ -227,8 +228,8 @@ def peek_connection(conn, timeout: int = PEEK_TIMEOUT_MS, size: int = PEEK_SIZE)
         except ValueError:
             log("peek_connection(%s, %i) failed", conn, timeout, exc_info=True)
             break
-        sleep(timeout/4000.0)
-        elapsed = int(1000*(monotonic()-start))
+        sleep(timeout / 4000.0)
+        elapsed = int(1000 * (monotonic() - start))
         log("peek: elapsed=%s, timeout=%s", elapsed, timeout)
     log("socket %s peek: got %i bytes", conn, len(peek_data))
     return peek_data
@@ -249,7 +250,9 @@ def get_sockopt_tcp_info(sock, sockopt_tcpinfo: int, attributes=POSIX_TCP_INFO) 
 
             def getdict(self) -> dict[str, Any]:
                 return {k[0]: getattr(self, k[0]) for k in self._fields_}
+
         return TCPInfo
+
     # calculate full structure size with all the fields defined:
     tcpinfo_class = get_tcpinfo_class(attributes)
     tcpinfo_size = sizeof(tcpinfo_class)
@@ -298,7 +301,7 @@ def looks_like_xpra_packet(data: ByteString) -> bool:
     # (and aliases should not be defined for the initial packet anyway)
     if packet_index != 0:
         return False
-    if data_size < 8 or data_size >= 256*1024*1024:
+    if data_size < 8 or data_size >= 256 * 1024 * 1024:
         return False
     rencode = bool(protocol_flags & FLAGS_RENCODE)
     yaml = bool(protocol_flags & FLAGS_YAML)
@@ -381,13 +384,13 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0) -> dict[Any, dict]:
     }.items():
         log("setting up %s sockets: %s", socktype, csv(defs.items()))
         for (host, iport), options in defs.items():
-            if iport != 0 and iport<min_port:
+            if iport != 0 and iport < min_port:
                 error_cb(f"invalid {socktype} port number {iport} (minimum value is {min_port})")
             for h in hosts(host):
                 tcp_defs.append((socktype, h, iport, options, None))
 
     sockets = {}
-    for attempt in range(retry+1):
+    for attempt in range(retry + 1):
         if not tcp_defs:
             break
         try_list = tuple(tcp_defs)
@@ -472,6 +475,7 @@ def setup_tcp_socket(host: str, iport: int, socktype: str = "tcp") \
             tcp_socket.close()
         except OSError:
             pass
+
     if iport == 0:
         iport = tcp_socket.getsockname()[1]
         log.info(f"allocated {socktype} port {iport} on {host}")
@@ -481,7 +485,7 @@ def setup_tcp_socket(host: str, iport: int, socktype: str = "tcp") \
 
 
 def create_udp_socket(host: str, iport: int, family=socket.AF_INET) -> socket.socket:
-    if family==socket.AF_INET6:
+    if family == socket.AF_INET6:
         if not socket.has_ipv6:
             raise RuntimeError("specified an IPv6 address but this is not supported on this system")
         if host.startswith("[") and host.endswith("]"):
@@ -536,7 +540,7 @@ def setup_udp_socket(host: str, iport: int, socktype: str) -> tuple[str, socket.
 
 
 def parse_bind_ip(bind_ip: list[str], default_port: int = DEFAULT_PORT) -> dict[tuple[str, int], dict]:
-    ip_sockets : dict[tuple[str, int], dict] = {}
+    ip_sockets: dict[tuple[str, int], dict] = {}
     if bind_ip:
         for spec in bind_ip:
             parts = spec.split(",", 1)
@@ -551,7 +555,7 @@ def parse_bind_ip(bind_ip: list[str], default_port: int = DEFAULT_PORT) -> dict[
             else:
                 try:
                     iport = int(port)
-                    assert 0 < iport < 2**16
+                    assert 0 < iport < 2 ** 16
                 except (TypeError, ValueError):
                     raise InitException(f"invalid port number: {port}") from None
             options = {}
@@ -576,13 +580,14 @@ def setup_vsock_socket(cid: int, iport: int) -> tuple[str, Any, tuple[int, int],
             vsock_socket.close()
         except OSError:
             pass
+
     return "vsock", vsock_socket, (cid, iport), cleanup_vsock_socket
 
 
 def parse_bind_vsock(bind_vsock: list[str]) -> dict[tuple[int, int], dict]:
-    vsock_sockets : dict[tuple[int, int], dict] = {}
+    vsock_sockets: dict[tuple[int, int], dict] = {}
     if bind_vsock:
-        from xpra.scripts.parsing import parse_vsock_cid    # pylint: disable=import-outside-toplevel
+        from xpra.scripts.parsing import parse_vsock_cid  # pylint: disable=import-outside-toplevel
         for spec in bind_vsock:
             parts = spec.split(",", 1)
             cid_port = parts[0].split(":")
@@ -609,6 +614,7 @@ def setup_sd_listen_socket(stype: str, sock, addr) -> tuple[str, socket.socket, 
             sock.close()
         except OSError:
             pass
+
     return stype, sock, addr, cleanup_sd_listen_socket
 
 
@@ -620,7 +626,7 @@ def normalize_local_display_name(local_display_name: str) -> str:
         after_sc = local_display_name
         local_display_name = ":" + local_display_name
     else:
-        after_sc = local_display_name[pos+1:]
+        after_sc = local_display_name[pos + 1:]
     if WIN32 or OSX:
         if after_sc.isalnum():
             return local_display_name
@@ -733,6 +739,7 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                     raise InitExit(ExitCode.SERVER_ALREADY_EXISTS,
                                    f"You already have an xpra server running at {sockpath!r}\n"
                                    "  (did you want 'xpra upgrade'?)")
+
             # remove existing sockets if clobber is set,
             # otherwise verify there isn't a server already running
             # and create the directories for the sockets:
@@ -756,11 +763,11 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                         # but we may need to do it ourselves in some cases:
                         kwargs["mode"] = SOCKET_DIR_MODE
                         xpra_gid = get_group_id(SOCKET_DIR_GROUP)
-                        if xpra_gid>0:
+                        if xpra_gid > 0:
                             kwargs["gid"] = xpra_gid
                     log(f"creating sockdir={d!r}, kwargs={kwargs}")
                     dotxpra.mksockdir(d, **kwargs)
-                    log(f"{d!r} permission mask: "+oct(os.stat(d).st_mode))
+                    log(f"{d!r} permission mask: " + oct(os.stat(d).st_mode))
                 except Exception as e:
                     log.warn(f"Warning: failed to create socket directory {d!r}")
                     log.warn(f" {e}")
@@ -776,12 +783,13 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                     # we need a loop because "DEAD" sockets may return immediately
                     # (ie: when the server is starting up)
                     start = monotonic()
-                    while monotonic()-start < WAIT_PROBE_TIMEOUT:
+                    while monotonic() - start < WAIT_PROBE_TIMEOUT:
                         state = dotxpra.get_server_state(sockpath, WAIT_PROBE_TIMEOUT)
                         log(f"timeout_probe() get_server_state({sockpath!r})={state}")
                         if state not in (SocketState.UNKNOWN, SocketState.DEAD):
                             break
                         sleep(1)
+
                 log.warn("Warning: some of the sockets are in an unknown state:")
                 for sockpath in unknown:
                     log.warn(f" {sockpath!r}")
@@ -790,7 +798,7 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                 log.warn(" please wait as we allow the socket probing to timeout")
                 # wait for all the threads to do their job:
                 for t in threads:
-                    t.join(WAIT_PROBE_TIMEOUT+1)
+                    t.join(WAIT_PROBE_TIMEOUT + 1)
             if sockpaths:
                 # now we can re-check quickly:
                 # (they should all be DEAD or UNKNOWN):
@@ -862,7 +870,7 @@ def handle_socket_error(sockpath: str, sperms: int, e) -> None:
     if sockpath.startswith("/var/run/xpra") or sockpath.startswith("/run/xpra"):
         log.info(f"cannot create group socket {sockpath!r}")
         log.info(f" {e}")
-        dirname = sockpath[:sockpath.find("xpra")+len("xpra")]
+        dirname = sockpath[:sockpath.find("xpra") + len("xpra")]
         if not os.path.exists(dirname):
             log.info(f" {dirname!r} does not exist")
         # only show extra information if the socket permissions
@@ -871,7 +879,7 @@ def handle_socket_error(sockpath: str, sperms: int, e) -> None:
             uid = getuid()
             username = get_username_for_uid(uid)
             groups = get_groups(username)
-            log.info(f" user {username!r} is a member of groups: "+(csv(groups) or "no groups!"))
+            log.info(f" user {username!r} is a member of groups: " + (csv(groups) or "no groups!"))
             if "xpra" not in groups:
                 log.info("  add 'xpra' group membership to enable group socket sharing")
             for x in path_permission_info(dirname):
@@ -879,7 +887,7 @@ def handle_socket_error(sockpath: str, sperms: int, e) -> None:
     elif sockpath.startswith("/var/run/user") or sockpath.startswith("/run/user"):
         log.warn(f"Warning: cannot create socket {sockpath!r}:")
         log.warn(f" {e}")
-        run_user = sockpath.split("/user")[0]+"/user"
+        run_user = sockpath.split("/user")[0] + "/user"
         if not os.path.exists(run_user):
             log.warn(f" {run_user} does not exist")
         else:
@@ -892,7 +900,7 @@ def handle_socket_error(sockpath: str, sperms: int, e) -> None:
 
 def socket_connect(host: str, port: int, timeout: float = SOCKET_TIMEOUT):
     socktype = socket.SOCK_STREAM
-    family = 0   # 0 means any
+    family = 0  # 0 means any
     try:
         addrinfo = socket.getaddrinfo(host, port, family, socktype)
     except Exception as e:

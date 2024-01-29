@@ -50,7 +50,7 @@ class TransparentColorWindow(Gtk.Window):
 
     def area_draw(self, widget, cr):
         cr.set_font_size(32)
-        #Clear everything:
+        # Clear everything:
         cr.save()
         cr.set_operator(OPERATOR_CLEAR)
         alloc = widget.get_allocated_size()[0]
@@ -61,33 +61,34 @@ class TransparentColorWindow(Gtk.Window):
         cr.set_operator(OPERATOR_SOURCE)
 
         def paint_block(label, x, y, r, g, b):
-            #fill with colour
+            # fill with colour
             cr.set_source_rgba(r, g, b, 1)
-            cr.rectangle(x, y, x+w//2, y+h//2)
+            cr.rectangle(x, y, x + w // 2, y + h // 2)
             cr.fill()
-            #top and bottom thirds as a shade to transparent on the edges:
-            shade_h = h//2//3
+            # top and bottom thirds as a shade to transparent on the edges:
+            shade_h = h // 2 // 3
             for i in range(shade_h):
-                alpha = i/shade_h
+                alpha = i / shade_h
                 cr.set_source_rgba(r, g, b, alpha)
-                cr.rectangle(x, y+i, x+w//2, 1)
+                cr.rectangle(x, y + i, x + w // 2, 1)
                 cr.fill()
                 cr.set_source_rgba(r, g, b, alpha)
-                cr.rectangle(x, y+h//2-i-1, x+w//2, 1)
+                cr.rectangle(x, y + h // 2 - i - 1, x + w // 2, 1)
                 cr.fill()
             if label:
                 cr.set_source_rgba(1, 1, 1, 1)
-                cr.move_to(x+w//4-21*len(label)//2, y+h//4+8)
+                cr.move_to(x + w // 4 - 21 * len(label) // 2, y + h // 4 + 8)
                 cr.show_text(label)
 
-        #Red block
+        # Red block
         paint_block("RED", 0, 0, 1, 0, 0)
-        #Green block:
-        paint_block("GREEN", w//2, 0, 0, 1, 0)
-        #Blue block:
-        paint_block("BLUE", 0, h//2, 0, 0, 1)
-        #Black block:
-        paint_block("BLACK", w//2, h//2, 0, 0, 0)
+        # Green block:
+        paint_block("GREEN", w // 2, 0, 0, 1, 0)
+        # Blue block:
+        paint_block("BLUE", 0, h // 2, 0, 0, 1)
+        # Black block:
+        paint_block("BLACK", w // 2, h // 2, 0, 0, 0)
+
 
 def main():
     from xpra.platform.gui import init, set_default_icon

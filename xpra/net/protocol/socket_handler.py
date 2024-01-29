@@ -50,7 +50,6 @@ from xpra.log import Logger
 log = Logger("network", "protocol")
 cryptolog = Logger("network", "crypto")
 
-
 USE_ALIASES = envbool("XPRA_USE_ALIASES", True)
 READ_BUFFER_SIZE = envint("XPRA_READ_BUFFER_SIZE", 65536)
 # merge header and packet if packet is smaller than:
@@ -71,16 +70,16 @@ def noop():  # pragma: no cover
 
 def exit_queue() -> SimpleQueue:
     queue = SimpleQueue()
-    for _ in range(10):     # just 2 should be enough!
+    for _ in range(10):  # just 2 should be enough!
         queue.put(None)
     return queue
 
 
-def force_flush_queue(q : Queue):
+def force_flush_queue(q: Queue):
     try:
         # discard all elements in the old queue and push the None marker:
         try:
-            while q.qsize()>0:
+            while q.qsize() > 0:
                 q.get(False)
         except Exception:
             log("force_flush_queue(%s)", q, exc_info=True)
@@ -98,27 +97,27 @@ class SocketProtocol:
 
     TYPE = "xpra"
 
-    def __init__(self, scheduler, conn, process_packet_cb:Callable, get_packet_cb: Callable | None=None):
+    def __init__(self, scheduler, conn, process_packet_cb: Callable, get_packet_cb: Callable | None = None):
         """
             You must call this constructor and source_has_more() from the main thread.
         """
         assert scheduler is not None
         assert conn is not None
         self.start_time = monotonic()
-        self.timeout_add : Callable = scheduler.timeout_add
-        self.idle_add : Callable = scheduler.idle_add
-        self.source_remove : Callable = scheduler.source_remove
+        self.timeout_add: Callable = scheduler.timeout_add
+        self.idle_add: Callable = scheduler.idle_add
+        self.source_remove: Callable = scheduler.source_remove
         self.read_buffer_size: int = READ_BUFFER_SIZE
         self.hangup_delay: int = 1000
         self._conn = conn
-        self._process_packet_cb : Callable[[PacketType],None] = process_packet_cb
-        self.make_chunk_header : Callable = self.make_xpra_header
-        self.make_frame_header : Callable[[str,Iterable], ByteString] = self.noframe_header
-        self._write_queue : Queue[tuple] = Queue(1)
-        self._read_queue : Queue[ByteString] = Queue(20)
+        self._process_packet_cb: Callable[[PacketType], None] = process_packet_cb
+        self.make_chunk_header: Callable = self.make_xpra_header
+        self.make_frame_header: Callable[[str, Iterable], ByteString] = self.noframe_header
+        self._write_queue: Queue[tuple] = Queue(1)
+        self._read_queue: Queue[ByteString] = Queue(20)
         self._pre_read = None
-        self._process_read : Callable = self.read_queue_put
-        self._read_queue_put : Callable = self.read_queue_put
+        self._process_read: Callable = self.read_queue_put
+        self._read_queue_put: Callable = self.read_queue_put
         # Invariant: if .source is None, then _source_has_more == False
         self._get_packet_cb: Callable | None = get_packet_cb
         # counters:
@@ -130,14 +129,14 @@ class SocketProtocol:
         self.output_raw_packetcount = 0
         # initial value which may get increased by client/server after handshake:
         self.max_packet_size = MAX_PACKET_SIZE
-        self.abs_max_packet_size = 256*1024*1024
+        self.abs_max_packet_size = 256 * 1024 * 1024
         self.large_packets = [
             "hello", "window-metadata", "sound-data", "notify_show", "setting-change",
             "shell-reply", "configure-display",
         ]
         self.send_aliases = {}
         self.receive_aliases = {}
-        self._log_stats = None          # None here means auto-detect
+        self._log_stats = None  # None here means auto-detect
         self._closed = False
         self.encoder = "none"
         self._encoder = packet_encoding.get_encoder("none")
@@ -159,9 +158,9 @@ class SocketProtocol:
         self._threading_lock = RLock()
         self._write_lock = Lock()
         self._write_thread: Thread | None = None
-        self._read_thread: Thread | None= make_thread(self._read_thread_loop, "read", daemon=True)
-        self._read_parser_thread: Thread | None = None         # started when needed
-        self._write_format_thread: Thread | None = None        # started when needed
+        self._read_thread: Thread | None = make_thread(self._read_thread_loop, "read", daemon=True)
+        self._read_parser_thread: Thread | None = None  # started when needed
+        self._write_format_thread: Thread | None = None  # started when needed
         self._source_has_more = Event()
         self.receive_pending = False
         self.wait_for_header = False
@@ -175,13 +174,13 @@ class SocketProtocol:
         "compression_level", "encoder", "compressor",
     )
 
-    def save_state(self) -> dict[str,Any]:
+    def save_state(self) -> dict[str, Any]:
         state = {}
         for x in self.STATE_FIELDS:
             state[x] = getattr(self, x)
         return state
 
-    def restore_state(self, state:dict[str,Any]) -> None:
+    def restore_state(self, state: dict[str, Any]) -> None:
         assert state is not None
         for x in self.STATE_FIELDS:
             assert x in state, f"field {x!r} is missing"
@@ -210,33 +209,34 @@ class SocketProtocol:
                 exited = False
         return exited
 
-    def set_packet_source(self, get_packet_cb:Callable) -> None:
+    def set_packet_source(self, get_packet_cb: Callable) -> None:
         self._get_packet_cb = get_packet_cb
 
-    def set_cipher_in(self, ciphername:str, iv, password, key_salt, key_hash, key_size: int, iterations: int, padding):
+    def set_cipher_in(self, ciphername: str, iv, password, key_salt, key_hash, key_size: int, iterations: int, padding):
         cryptolog("set_cipher_in%s", (ciphername, iv, password, key_salt, key_hash, key_size, iterations))
         self.cipher_in, self.cipher_in_block_size = get_decryptor(ciphername,
                                                                   iv, password,
-                                                                  key_salt,key_hash, key_size, iterations)
+                                                                  key_salt, key_hash, key_size, iterations)
         self.cipher_in_padding = padding
-        if self.cipher_in_name!=ciphername:
+        if self.cipher_in_name != ciphername:
             cryptolog.info("receiving data using %s encryption", ciphername)
             self.cipher_in_name = ciphername
 
-    def set_cipher_out(self, ciphername:str, iv, password, key_salt, key_hash, key_size: int, iterations: int, padding):
+    def set_cipher_out(self, ciphername: str, iv, password, key_salt, key_hash, key_size: int, iterations: int,
+                       padding):
         cryptolog("set_cipher_out%s", (ciphername, iv, password, key_salt, key_hash, key_size, iterations, padding))
         self.cipher_out, self.cipher_out_block_size = get_encryptor(ciphername,
                                                                     iv, password,
                                                                     key_salt, key_hash, key_size, iterations)
         self.cipher_out_padding = padding
-        if self.cipher_out_name!=ciphername:
+        if self.cipher_out_name != ciphername:
             cryptolog.info("sending data using %s encryption", ciphername)
             self.cipher_out_name = ciphername
 
     def __repr__(self):
         return f"Protocol({self._conn})"
 
-    def get_threads(self) -> tuple[Thread,...]:
+    def get_threads(self) -> tuple[Thread, ...]:
         return tuple(x for x in (
             self._write_thread,
             self._read_thread,
@@ -245,22 +245,22 @@ class SocketProtocol:
         ) if x is not None)
 
     def parse_remote_caps(self, caps: typedict) -> None:
-        for k,v in caps.dictget("aliases", {}).items():
+        for k, v in caps.dictget("aliases", {}).items():
             self.send_aliases[bytestostr(k)] = v
         set_socket_timeout(self._conn, SOCKET_TIMEOUT)
 
-    def set_receive_aliases(self, aliases:dict) -> None:
+    def set_receive_aliases(self, aliases: dict) -> None:
         self.receive_aliases = aliases
 
-    def get_info(self, alias_info:bool=True) -> dict[str,Any]:
+    def get_info(self, alias_info: bool = True) -> dict[str, Any]:
         shm = self._source_has_more
         info = {
-            "large_packets"         : self.large_packets,
-            "compression_level"     : self.compression_level,
-            "max_packet_size"       : self.max_packet_size,
-            "aliases"               : USE_ALIASES,
-            "has_more"              : shm and shm.is_set(),
-            "receive-pending"       : self.receive_pending,
+            "large_packets": self.large_packets,
+            "compression_level": self.compression_level,
+            "max_packet_size": self.max_packet_size,
+            "aliases": USE_ALIASES,
+            "has_more": shm and shm.is_set(),
+            "receive-pending": self.receive_pending,
         }
         c = self.compressor
         if c:
@@ -278,29 +278,29 @@ class SocketProtocol:
         # add stats to connection info:
         info.setdefault("input", {}).update(
             {
-                "buffer-size"            : self.read_buffer_size,
-                "hangup-delay"           : self.hangup_delay,
-                "packetcount"            : self.input_packetcount,
-                "raw_packetcount"        : self.input_raw_packetcount,
-                "count"                  : self.input_stats,
-                "cipher"                 : {
+                "buffer-size": self.read_buffer_size,
+                "hangup-delay": self.hangup_delay,
+                "packetcount": self.input_packetcount,
+                "raw_packetcount": self.input_raw_packetcount,
+                "count": self.input_stats,
+                "cipher": {
                     "": self.cipher_in_name or "",
-                    "padding"        : self.cipher_in_padding,
+                    "padding": self.cipher_in_padding,
                 },
             }
         )
         info.setdefault("output", {}).update(
             {
-                "packet-join-size"      : PACKET_JOIN_SIZE,
-                "large-packet-size"     : LARGE_PACKET_SIZE,
-                "inline-size"           : INLINE_SIZE,
-                "min-compress-size"     : MIN_COMPRESS_SIZE,
-                "packetcount"           : self.output_packetcount,
-                "raw_packetcount"       : self.output_raw_packetcount,
-                "count"                 : self.output_stats,
-                "cipher"                : {
+                "packet-join-size": PACKET_JOIN_SIZE,
+                "large-packet-size": LARGE_PACKET_SIZE,
+                "inline-size": INLINE_SIZE,
+                "min-compress-size": MIN_COMPRESS_SIZE,
+                "packetcount": self.output_packetcount,
+                "raw_packetcount": self.output_raw_packetcount,
+                "count": self.output_stats,
+                "cipher": {
                     "": self.cipher_out_name or "",
-                    "padding" : self.cipher_out_padding
+                    "padding": self.cipher_out_padding
                 },
             }
         )
@@ -313,12 +313,13 @@ class SocketProtocol:
         def start_network_read_thread():
             if not self._closed:
                 self._read_thread.start()
+
         self.idle_add(start_network_read_thread)
         if SEND_INVALID_PACKET:
-            self.timeout_add(SEND_INVALID_PACKET*1000, self.raw_write, SEND_INVALID_PACKET_DATA)
+            self.timeout_add(SEND_INVALID_PACKET * 1000, self.raw_write, SEND_INVALID_PACKET_DATA)
 
     def send_disconnect(self, reasons, done_callback=noop) -> None:
-        packet = ["disconnect"]+[str(x) for x in reasons]
+        packet = ["disconnect"] + [str(x) for x in reasons]
         self.flush_then_close(self.encode, packet, done_callback=done_callback)
 
     def send_now(self, packet: PacketType) -> None:
@@ -335,11 +336,12 @@ class SocketProtocol:
             if not tmp_queue:
                 raise RuntimeError("packet callback used more than once!")
             packet = tmp_queue.pop()
-            return (packet, )
+            return (packet,)
+
         self._get_packet_cb = packet_cb
         self.source_has_more()
 
-    def source_has_more_start(self) -> None:       # pylint: disable=method-hidden
+    def source_has_more_start(self) -> None:  # pylint: disable=method-hidden
         shm = self._source_has_more
         if not shm or self._closed:
             return
@@ -369,7 +371,7 @@ class SocketProtocol:
     def _add_packet_to_queue(self, packet: PacketType,
                              start_cb: Callable | None = None,
                              end_cb: Callable | None = None,
-                             fail_cb : Callable | None = None,
+                             fail_cb: Callable | None = None,
                              synchronous=True, has_more=False, wait_for_more=False) -> None:
         if not has_more:
             shm = self._source_has_more
@@ -392,14 +394,14 @@ class SocketProtocol:
                 log("add_chunks_to_queue%s", (chunks, start_cb, end_cb, fail_cb), exc_info=True)
                 raise
 
-    def _add_chunks_to_queue(self, packet_type:str, chunks,
+    def _add_chunks_to_queue(self, packet_type: str, chunks,
                              start_cb: Callable | None = None,
                              end_cb: Callable | None = None,
                              fail_cb: Callable | None = None,
                              synchronous=True, more=False) -> None:
         """ the write_lock must be held when calling this function """
         items = []
-        for proto_flags,index,level,data in chunks:
+        for proto_flags, index, level, data in chunks:
             payload_size = len(data)
             if not payload_size:
                 raise RuntimeError(f"missing data in chunk {index}")
@@ -407,20 +409,20 @@ class SocketProtocol:
             if self.cipher_out:
                 proto_flags |= FLAGS_CIPHER
                 # note: since we are padding: l!=len(data)
-                if self.cipher_out_block_size==0:
+                if self.cipher_out_block_size == 0:
                     padding_size = 0
                 else:
                     padding_size = self.cipher_out_block_size - (payload_size % self.cipher_out_block_size)
-                if padding_size==0:
+                if padding_size == 0:
                     padded = data
                 else:
                     # pad byte value is number of padding bytes added
                     padded = memoryview_to_bytes(data) + pad(self.cipher_out_padding, padding_size)
                     actual_size += padding_size
-                if len(padded)!=actual_size:
+                if len(padded) != actual_size:
                     raise RuntimeError(f"expected padded size to be {actual_size}, but got {len(padded)}")
                 data = self.cipher_out.encrypt(padded)
-                if len(data)!=actual_size:
+                if len(data) != actual_size:
                     raise RuntimeError(f"expected encrypted size to be {actual_size}, but got {len(data)}")
                 cryptolog("sending %s bytes %s encrypted with %s bytes of padding",
                           payload_size, self.cipher_out_name, padding_size)
@@ -431,23 +433,23 @@ class SocketProtocol:
                 items.append(data)
             else:
                 # if the other end can use this flag, expose it:
-                if index==0 and not more:
+                if index == 0 and not more:
                     proto_flags |= FLAGS_FLUSH
                 # the xpra packet header:
                 # (WebSocketProtocol may also add a websocket header too)
                 header = self.make_chunk_header(packet_type, proto_flags, level, index, payload_size)
-                if actual_size<PACKET_JOIN_SIZE:
+                if actual_size < PACKET_JOIN_SIZE:
                     if not isinstance(data, bytes):
                         data = memoryview_to_bytes(data)
-                    items.append(header+data)
+                    items.append(header + data)
                 else:
                     items.append(header)
                     items.append(data)
         # WebSocket header may be added here:
-        frame_header = self.make_frame_header(packet_type, items)        # pylint: disable=assignment-from-none
+        frame_header = self.make_frame_header(packet_type, items)  # pylint: disable=assignment-from-none
         if frame_header:
             item0 = items[0]
-            if len(item0)<PACKET_JOIN_SIZE:
+            if len(item0) < PACKET_JOIN_SIZE:
                 if not isinstance(item0, bytes):
                     item0 = memoryview_to_bytes(item0)
                 items[0] = frame_header + item0
@@ -484,7 +486,7 @@ class SocketProtocol:
         assert opts, "no packet encoders available!"
         self.enable_encoder(opts[0])
 
-    def enable_encoder_from_caps(self, caps:typedict) -> bool:
+    def enable_encoder_from_caps(self, caps: typedict) -> bool:
         options = packet_encoding.get_enabled_encoders(order=packet_encoding.PERFORMANCE_ORDER)
         log(f"enable_encoder_from_caps(..) options={options}")
         for e in options:
@@ -495,7 +497,7 @@ class SocketProtocol:
         log.error("no matching packet encoder found!")
         return False
 
-    def enable_encoder(self, e:str) -> None:
+    def enable_encoder(self, e: str) -> None:
         self._encoder = packet_encoding.get_encoder(e)
         self.encoder = e
         log(f"enable_encoder({e}): {self._encoder}")
@@ -507,15 +509,15 @@ class SocketProtocol:
         else:
             self.enable_compressor("none")
 
-    def enable_compressor_from_caps(self, caps:typedict) -> None:
-        if self.compression_level==0:
+    def enable_compressor_from_caps(self, caps: typedict) -> None:
+        if self.compression_level == 0:
             self.enable_compressor("none")
             return
         opts = compression.get_enabled_compressors(order=compression.PERFORMANCE_ORDER)
         compressors = caps.strtupleget("compressors")
         log(f"enable_compressor_from_caps(..) options={opts}, compressors from caps={compressors}")
-        for c in opts:      #ie: ["lz4", "none"]
-            if c=="none":
+        for c in opts:  # ie: ["lz4", "none"]
+            if c == "none":
                 continue
             if c in compressors or caps.boolget(c):
                 self.enable_compressor(c)
@@ -526,7 +528,7 @@ class SocketProtocol:
         log.warn(f" enabled compressors: {csv(opts)}")
         self.enable_compressor("none")
 
-    def enable_compressor(self, compressor:str) -> None:
+    def enable_compressor(self, compressor: str) -> None:
         self._compress = compression.get_compressor(compressor)
         self.compressor = compressor
         log(f"enable_compressor({compressor}): {self._compress}")
@@ -575,7 +577,7 @@ class SocketProtocol:
                 packet[i] = item
                 # (it may now be a "Compressed" item and be processed further)
             if isinstance(item, memoryview):
-                if self.encoder!="rencodeplus":
+                if self.encoder != "rencodeplus":
                     packet[i] = item.tobytes()
                 continue
             if isinstance(item, LargeStructure):
@@ -583,7 +585,7 @@ class SocketProtocol:
                 continue
             if isinstance(item, Compressed):
                 # already compressed data (usually pixels, cursors, etc)
-                if not item.can_inline or l>INLINE_SIZE:
+                if not item.can_inline or l > INLINE_SIZE:
                     il = 0
                     if isinstance(item, LevelCompressed):
                         # unlike `Compressed` (usually pixels, decompressed in the paint thread),
@@ -596,12 +598,12 @@ class SocketProtocol:
                 else:
                     # data is small enough, inline it:
                     packet[i] = item.data
-                    if isinstance(item.data, memoryview) and self.encoder!="rencodeplus":
+                    if isinstance(item.data, memoryview) and self.encoder != "rencodeplus":
                         packet[i] = item.data.tobytes()
                     min_comp_size += l
                     size_check += l
                 continue
-            if isinstance(item, bytes) and level>0 and l>LARGE_PACKET_SIZE:
+            if isinstance(item, bytes) and level > 0 and l > LARGE_PACKET_SIZE:
                 log.warn("Warning: found a large uncompressed item")
                 log.warn(f" in packet {packet_type!r} at position {i}: {len(item)} bytes")
                 # add new binary packet with large item:
@@ -615,7 +617,7 @@ class SocketProtocol:
                 log.warn(f"Warning: unexpected data type {type(item)}")
                 log.warn(f" in {packet_type!r} packet at position {i}: {repr_ellipsized(item)}")
         # now the main packet (or what is left of it):
-        self.output_stats[packet_type] = self.output_stats.get(packet_type, 0)+1
+        self.output_stats[packet_type] = self.output_stats.get(packet_type, 0) + 1
         if USE_ALIASES:
             alias = self.send_aliases.get(packet_type)
             if alias:
@@ -641,10 +643,10 @@ class SocketProtocol:
             log.warn(" sizes: %s", csv(len(strtobytes(x)) for x in packet[1:]))
             log.warn(f" packet: {repr_ellipsized(packet, limit=4096)}")
         # compress, but don't bother for small packets:
-        if level>0 and l>min_comp_size:
+        if level > 0 and l > min_comp_size:
             try:
                 cl, cdata = self._compress(main_packet, level)
-                if LOG_RAW_PACKET_SIZE and packet_type!="logging":
+                if LOG_RAW_PACKET_SIZE and packet_type != "logging":
                     log.info(f"         {packet_type:<32}: %i bytes compressed", len(cdata))
             except Exception as e:
                 log.error(f"Error compressing {packet_type} packet")
@@ -654,17 +656,17 @@ class SocketProtocol:
         else:
             packets.append((proto_flags, 0, 0, main_packet))
         may_log_packet(True, packet_type, packet)
-        if LOG_RAW_PACKET_SIZE and packet_type!="logging":
+        if LOG_RAW_PACKET_SIZE and packet_type != "logging":
             log.info(f"sending  {packet_type:<32}: %i bytes", HEADER_SIZE + payload_size)
         return packets
 
     def set_compression_level(self, level: int) -> None:
         # this may be used next time encode() is called
-        if level<0 or level>10:
+        if level < 0 or level > 10:
             raise ValueError(f"invalid compression level: {level} (must be between 0 and 10")
         self.compression_level = level
 
-    def _io_thread_loop(self, name:str, callback : Callable) -> None:
+    def _io_thread_loop(self, name: str, callback: Callable) -> None:
         try:
             log(f"io_thread_loop({name}, {callback}) loop starting")
             while not self._closed and callback():
@@ -705,9 +707,9 @@ class SocketProtocol:
         if not conn:
             return False
         try:
-            if more or len(buf_data)>1:
+            if more or len(buf_data) > 1:
                 conn.set_nodelay(False)
-            if len(buf_data)>1:
+            if len(buf_data) > 1:
                 conn.set_cork(True)
         except OSError:
             log("write_items(..)", exc_info=True)
@@ -721,7 +723,7 @@ class SocketProtocol:
                     log.error(f"Error on write start callback {start_cb}", exc_info=True)
         self.write_buffers(buf_data, packet_type, fail_cb, synchronous)
         try:
-            if len(buf_data)>1:
+            if len(buf_data) > 1:
                 conn.set_cork(False)
             if not more:
                 conn.set_nodelay(True)
@@ -786,7 +788,7 @@ class SocketProtocol:
             return
         ei = exc_info
         if exc:
-            ei = None   #log it separately below
+            ei = None  # log it separately below
         log.error(f"Error: {message}", exc_info=ei)
         if exc:
             log.error(f" {exc}", exc_info=exc_info)
@@ -820,7 +822,7 @@ class SocketProtocol:
             err = f"{msg}: {guess}"
         else:
             err = "%s: 0x%s" % (msg, hexstr(data[:HEADER_SIZE]))
-            if len(data)>1:
+            if len(data) > 1:
                 err += " read buffer=%s (%i bytes)" % (repr_ellipsized(data), len(data))
         self.gibberish(err, data)
 
@@ -891,7 +893,7 @@ class SocketProtocol:
                 # for this to work, we have to assume that the initial packet is smaller than 64KB:
                 joined = b"".join(read_buffers)
                 pos = find_xpra_header(joined)
-                if pos<0:
+                if pos < 0:
                     # wait some more:
                     read_buffers = [joined]
                     continue
@@ -901,22 +903,22 @@ class SocketProtocol:
 
             while read_buffers:
                 # have we read the header yet?
-                if payload_size<0:
-                    #try to handle the first buffer:
+                if payload_size < 0:
+                    # try to handle the first buffer:
                     buf = read_buffers[0]
-                    if not header and buf[0]!=PACKET_HEADER_CHAR:
+                    if not header and buf[0] != PACKET_HEADER_CHAR:
                         self.invalid_header(self, buf, "invalid packet header byte")
                         return
                     # how much to we need to slice off to complete the header:
-                    read = min(len(buf), HEADER_SIZE-len(header))
+                    read = min(len(buf), HEADER_SIZE - len(header))
                     header += memoryview_to_bytes(buf[:read])
-                    if len(header)<HEADER_SIZE:
+                    if len(header) < HEADER_SIZE:
                         # need to process more buffers to get a full header:
                         read_buffers.pop(0)
                         continue
-                    if len(buf)<=read:
+                    if len(buf) <= read:
                         # we only got the header:
-                        assert len(buf)==read
+                        assert len(buf) == read
                         read_buffers.pop(0)
                         continue
                     # got the full header and more, keep the rest of the packet:
@@ -926,11 +928,11 @@ class SocketProtocol:
                     _, protocol_flags, compression_level, packet_index, data_size = unpack_header(header)
 
                     # sanity check size (will often fail if not an xpra client):
-                    if data_size>self.abs_max_packet_size:
+                    if data_size > self.abs_max_packet_size:
                         self.invalid_header(self, header, f"invalid size in packet header: {data_size}")
                         return
 
-                    if packet_index>=16:
+                    if packet_index >= 16:
                         self.invalid_header(self, header, f"invalid packet index: {packet_index}")
                         return
 
@@ -941,7 +943,7 @@ class SocketProtocol:
                             cryptolog.warn(" not an xpra client?")
                             self.invalid_header(self, header, "invalid encryption packet flag (no cipher configured)")
                             return
-                        if self.cipher_in_block_size==0:
+                        if self.cipher_in_block_size == 0:
                             padding_size = 0
                         else:
                             padding_size = self.cipher_in_block_size - (data_size % self.cipher_in_block_size)
@@ -950,10 +952,10 @@ class SocketProtocol:
                         # no cipher, no padding:
                         padding_size = 0
                         payload_size = data_size
-                    if payload_size<=0:
+                    if payload_size <= 0:
                         raise ValueError(f"invalid payload size {payload_size} for header {header!r}")
 
-                    if payload_size>self.max_packet_size:
+                    if payload_size > self.max_packet_size:
                         # this packet is seemingly too big, but check again from the main UI thread
                         # this gives 'set_max_packet_size' a chance to run from "hello"
 
@@ -962,26 +964,27 @@ class SocketProtocol:
                                 return False
                             log("check_packet_size(%#x, %s) max=%#x",
                                 size_to_check, hexstr(packet_header), self.max_packet_size)
-                            if size_to_check>self.max_packet_size:
+                            if size_to_check > self.max_packet_size:
                                 # pylint: disable=line-too-long
                                 msg = f"packet size requested is {size_to_check}"
                                 msg += f" but maximum allowed is {self.max_packet_size}"
                                 self.invalid(msg, packet_header)
                             return False
+
                         self.timeout_add(1000, check_packet_size, payload_size, header)
 
                 # how much data do we have?
                 bl = sum(len(v) for v in read_buffers)
-                if bl<payload_size:
+                if bl < payload_size:
                     # incomplete packet, wait for the rest to arrive
                     break
 
                 data: ByteString
                 buf = read_buffers[0]
-                if len(buf)==payload_size:
+                if len(buf) == payload_size:
                     # exact match, consume it all:
                     data = read_buffers.pop(0)
-                elif len(buf)>payload_size:
+                elif len(buf) > payload_size:
                     # keep rest of packet for later:
                     read_buffers[0] = buf[payload_size:]
                     data = buf[:payload_size]
@@ -997,7 +1000,7 @@ class SocketProtocol:
                         read_buffers = [data[payload_size:]]
                         data = data[:payload_size]
 
-                #decrypt if needed:
+                # decrypt if needed:
                 if self.cipher_in:
                     if not protocol_flags & FLAGS_CIPHER:
                         self.invalid("unencrypted packet dropped", data)
@@ -1011,6 +1014,7 @@ class SocketProtocol:
                                 return hexstr(s)
                             except Exception:
                                 return csv(tuple(s))
+
                         # pad byte value is number of padding bytes added
                         padtext = pad(self.cipher_in_padding, padding_size)
                         if data.endswith(padtext):
@@ -1028,8 +1032,8 @@ class SocketProtocol:
                             self._internal_error(f"{self.cipher_in_name} encryption padding error - wrong key?")
                             return
                         data = data[:-padding_size]
-                #uncompress if needed:
-                if compression_level>0:
+                # uncompress if needed:
+                if compression_level > 0:
                     try:
                         data = decompress(data, compression_level)
                     except InvalidCompressionException as e:
@@ -1042,8 +1046,8 @@ class SocketProtocol:
                         if self.cipher_in:
                             msg += " (invalid encryption key?)"
                         else:
-                            #only include the exception text when not using encryption
-                            #as this may leak crypto information:
+                            # only include the exception text when not using encryption
+                            # as this may leak crypto information:
                             msg += f" {e}"
                         del e
                         self.gibberish(msg, data)
@@ -1052,24 +1056,24 @@ class SocketProtocol:
                 if self._closed:
                     return
 
-                #we're processing this packet,
-                #make sure we get a new header next time
+                # we're processing this packet,
+                # make sure we get a new header next time
                 header = b""
-                if packet_index>0:
+                if packet_index > 0:
                     if packet_index in raw_packets:
                         self.invalid(f"duplicate raw packet at index {packet_index}", data)
                         return
-                    #raw packet, store it and continue:
+                    # raw packet, store it and continue:
                     raw_packets[packet_index] = data
                     payload_size = -1
-                    if len(raw_packets)>=4:
+                    if len(raw_packets) >= 4:
                         self.invalid(f"too many raw packets: {len(raw_packets)}", data)
                         return
-                    #we know for sure that another packet should follow immediately
-                    #the one with packet_index=0 for this raw packet
+                    # we know for sure that another packet should follow immediately
+                    # the one with packet_index=0 for this raw packet
                     self.receive_pending = True
                     continue
-                #final packet (packet_index==0), decode it:
+                # final packet (packet_index==0), decode it:
                 try:
                     packet = list(decode(data, protocol_flags))
                 except InvalidPacketEncodingException as e:
@@ -1092,10 +1096,10 @@ class SocketProtocol:
                 if self._closed:
                     return
                 payload_size = len(data)
-                #add any raw packets back into it:
+                # add any raw packets back into it:
                 if raw_packets:
-                    for index,raw_data in raw_packets.items():
-                        #replace placeholder with the raw_data packet data:
+                    for index, raw_data in raw_packets.items():
+                        # replace placeholder with the raw_data packet data:
                         packet[index] = raw_data
                         payload_size += len(raw_data)
                     raw_packets = {}
@@ -1109,8 +1113,8 @@ class SocketProtocol:
                         raise ValueError(f"receive alias not found for packet type {packet_type}")
                 else:
                     packet_type = bytestostr(packet_type)
-                self.input_stats[packet_type] = self.output_stats.get(packet_type, 0)+1
-                if LOG_RAW_PACKET_SIZE and packet_type!="logging":
+                self.input_stats[packet_type] = self.output_stats.get(packet_type, 0) + 1
+                if LOG_RAW_PACKET_SIZE and packet_type != "logging":
                     log.info(f"received {packet_type:<32}: %i bytes", HEADER_SIZE + payload_size)
                 payload_size = -1
                 self.input_packetcount += 1
@@ -1121,7 +1125,7 @@ class SocketProtocol:
 
     def do_flush_then_close(self, encoder: Callable | None = None,
                             last_packet=None,
-                            done_callback: Callable = noop) -> None:    # pylint: disable=method-hidden
+                            done_callback: Callable = noop) -> None:  # pylint: disable=method-hidden
         """ Note: this is best-effort only
             the packet may not get sent.
 
@@ -1131,9 +1135,11 @@ class SocketProtocol:
             we wait again for the queue to flush,
             then no matter what, we close the connection and stop the threads.
         """
+
         def closing_already(encoder, last_packet, done_callback=noop):
             log("flush_then_close%s had already been called, this new request has been ignored",
                 (encoder, last_packet, done_callback))
+
         self.flush_then_close = closing_already
         log("flush_then_close%s closed=%s", (encoder, last_packet, done_callback), self._closed)
         if self._closed:
@@ -1155,17 +1161,17 @@ class SocketProtocol:
             writelockrelease()
             done_callback()
 
-        def wait_for_queue(timeout: int=10) -> None:
-            #IMPORTANT: if we are here, we have the write lock held!
+        def wait_for_queue(timeout: int = 10) -> None:
+            # IMPORTANT: if we are here, we have the write lock held!
             if not self._write_queue.empty():
-                #write queue still has stuff in it..
-                if timeout<=0:
+                # write queue still has stuff in it..
+                if timeout <= 0:
                     log("flush_then_close: queue still busy, closing without sending the last packet")
                     close_and_release()
                     return
-                #retry later:
+                # retry later:
                 log("flush_then_close: still waiting for queue to flush")
-                self.timeout_add(100, wait_for_queue, timeout-1)
+                self.timeout_add(100, wait_for_queue, timeout - 1)
                 return
             if not last_packet:
                 close_and_release()
@@ -1177,41 +1183,43 @@ class SocketProtocol:
                 log("flush_then_close: wait_for_packet_sent() queue.empty()=%s, closed=%s",
                     self._write_queue.empty(), closed)
                 if self._write_queue.empty() or closed:
-                    #it got sent, we're done!
+                    # it got sent, we're done!
                     close_and_release()
                     return False
-                return not closed     #run until we manage to close (here or via the timeout)
+                return not closed  # run until we manage to close (here or via the timeout)
 
             def packet_queued(*_args):
-                #if we're here, we have the lock and the packet is in the write queue
+                # if we're here, we have the lock and the packet is in the write queue
                 log("flush_then_close: packet_queued() closed=%s", self._closed)
                 if wait_for_packet_sent():
-                    #check again every 100ms
+                    # check again every 100ms
                     self.timeout_add(100, wait_for_packet_sent)
+
             if encoder:
                 chunks = encoder(last_packet)
                 self._add_chunks_to_queue(last_packet[0], chunks,
                                           start_cb=None, end_cb=packet_queued,
                                           synchronous=False, more=False)
             else:
-                self.raw_write((last_packet, ), "flush-then-close")
-            #just in case wait_for_packet_sent never fires:
-            self.timeout_add(5*1000, close_and_release)
+                self.raw_write((last_packet,), "flush-then-close")
+            # just in case wait_for_packet_sent never fires:
+            self.timeout_add(5 * 1000, close_and_release)
 
-        def wait_for_write_lock(timeout: int=100) -> None:
+        def wait_for_write_lock(timeout: int = 100) -> None:
             wl = self._write_lock
             if not wl:
-                #cleaned up already
+                # cleaned up already
                 return
-            if wl.acquire(timeout=timeout/1000):
+            if wl.acquire(timeout=timeout / 1000):
                 log("flush_then_close: acquired the write lock")
-                #we have the write lock - we MUST free it!
+                # we have the write lock - we MUST free it!
                 wait_for_queue()
             else:
                 log("flush_then_close: timeout waiting for the write lock")
                 self.close()
                 done_callback()
-        #normal codepath:
+
+        # normal codepath:
         # -> wait_for_write_lock
         # -> wait_for_queue
         # -> _add_chunks_to_queue
@@ -1236,8 +1244,8 @@ class SocketProtocol:
             with log.trap_error("Error closing %s", c):
                 log("Protocol.close(%s) calling %s", message, c.close)
                 c.close()
-                if self._log_stats is None and c.input_bytecount==0 and c.output_bytecount==0:
-                    #no data sent or received, skip logging of stats:
+                if self._log_stats is None and c.input_bytecount == 0 and c.output_bytecount == 0:
+                    # no data sent or received, skip logging of stats:
                     self._log_stats = False
                 if self._log_stats:
                     # pylint: disable=import-outside-toplevel
@@ -1251,13 +1259,13 @@ class SocketProtocol:
         log("Protocol.close(%s) done", message)
 
     def steal_connection(self, read_callback: Callable | None = None):
-        #so we can re-use this connection somewhere else
-        #(frees all protocol threads and resources)
-        #Note: this method can only be used with non-blocking sockets,
-        #and if more than one packet can arrive, the read_callback should be used
-        #to ensure that no packets get lost.
-        #The caller must call wait_for_io_threads_exit() to ensure that this
-        #class is no longer reading from the connection before it can re-use it
+        # so we can re-use this connection somewhere else
+        # (frees all protocol threads and resources)
+        # Note: this method can only be used with non-blocking sockets,
+        # and if more than one packet can arrive, the read_callback should be used
+        # to ensure that no packets get lost.
+        # The caller must call wait_for_io_threads_exit() to ensure that this
+        # class is no longer reading from the connection before it can re-use it
         assert not self._closed, "cannot steal a closed connection"
         if read_callback:
             self._read_queue_put = read_callback
@@ -1265,13 +1273,13 @@ class SocketProtocol:
         self._closed = True
         self._conn = None
         if conn:
-            #this ensures that we exit the untilConcludes() read/write loop
+            # this ensures that we exit the untilConcludes() read/write loop
             conn.set_active(False)
         self.terminate_queue_threads()
         return conn
 
     def clean(self) -> None:
-        #clear all references to ensure we can get garbage collected quickly:
+        # clear all references to ensure we can get garbage collected quickly:
         self._get_packet_cb = None
         self._encoder = None
         self._write_thread = None
@@ -1284,22 +1292,22 @@ class SocketProtocol:
         self._compress = None
         self._write_lock = None
         self._source_has_more = None
-        self._conn = None       #should be redundant
+        self._conn = None  # should be redundant
         self.source_has_more = noop
 
     def terminate_queue_threads(self) -> None:
         log("terminate_queue_threads()")
-        #the format thread will exit:
+        # the format thread will exit:
         self._get_packet_cb = None
         self._source_has_more.set()
-        #make all the queue based threads exit by adding the empty marker:
-        #write queue:
+        # make all the queue based threads exit by adding the empty marker:
+        # write queue:
         owq = self._write_queue
         self._write_queue = exit_queue()
         force_flush_queue(owq)
-        #read queue:
+        # read queue:
         orq = self._read_queue
         self._read_queue = exit_queue()
         force_flush_queue(orq)
-        #just in case the read thread is waiting again:
+        # just in case the read thread is waiting again:
         self._source_has_more.set()

@@ -13,7 +13,7 @@ from xpra.log import Logger
 
 log = Logger("ssh")
 
-_key_algorithms: dict[str,str] = {
+_key_algorithms: dict[str, str] = {
     'ssh-rsa': '1',
     'ssh-dss': '2',
     'ecdsa-sha2-nistp256': '3',
@@ -22,7 +22,7 @@ _key_algorithms: dict[str,str] = {
     'ssh-ed25519': '4',
 }
 
-_hash_funcs : dict[str, Callable] = {
+_hash_funcs: dict[str, Callable] = {
     '1': hashlib.sha1,
     '2': hashlib.sha256,
 }
@@ -30,7 +30,7 @@ if os.environ.get("XPRA_SSHFP_NOSHA1"):
     _hash_funcs.pop('1')
 
 
-def check_host_key(hostname:str, key):
+def check_host_key(hostname: str, key):
     try:
         return do_check_host_key(hostname, key.get_name(), key.asbytes())
     except Exception as e:
@@ -58,7 +58,7 @@ def do_check_host_key(hostname: str, keytype, keydata):
             alg, fg_type, fg = item.to_text().split()
             log("found SSHFP record: %s", (alg, fg_type, fg))
         except ValueError:
-            return "invalid SSHFP record format: "+item.to_text()
+            return "invalid SSHFP record format: " + item.to_text()
 
         if alg != key_alg:
             log("SSHFP record does not match algorithm")
@@ -96,5 +96,6 @@ def main(argv) -> int:
 
 if __name__ == "__main__":
     import sys
+
     code = main(sys.argv)
     sys.exit(code)

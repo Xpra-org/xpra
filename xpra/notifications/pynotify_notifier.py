@@ -13,8 +13,7 @@ from xpra.common import NotificationID
 
 
 class PyNotify_Notifier(NotifierBase):
-
-    CACHE: dict[int,Any] = {}
+    CACHE: dict[int, Any] = {}
 
     def show_notify(self, dbus_id, tray, nid: int | NotificationID,
                     app_name: str, replaces_nid: int | NotificationID, app_icon,
@@ -32,13 +31,14 @@ class PyNotify_Notifier(NotifierBase):
         if icon_string:
             def notification_closed(*_args):
                 self.clean_notification(nid)
+
             n.connect("closed", notification_closed)
 
-    def clean_notification(self, nid : int) -> None:
+    def clean_notification(self, nid: int) -> None:
         PyNotify_Notifier.CACHE.pop(nid, None)
         super().clean_notification(nid)
 
-    def close_notify(self, nid:int) -> None:
+    def close_notify(self, nid: int) -> None:
         n = PyNotify_Notifier.CACHE.pop(nid, None)
         if n:
             n.close()
@@ -50,9 +50,9 @@ def main(args):
     GLib = gi_import("GLib")
     summary = "Summary"
     body = "Body..."
-    if len(args)>1:
+    if len(args) > 1:
         summary = args[1]
-    if len(args)>2:
+    if len(args) > 2:
         body = args[2]
 
     def show():
@@ -61,6 +61,7 @@ def main(args):
         n.show_notify("", None, nid, "Test", 0, "", summary, body, ["0", "Hello", "1", "Bye"], {}, 0, "")
         GLib.timeout_add(5000, n.close_notify, nid)
         return False
+
     GLib.idle_add(show)
     GLib.timeout_add(20000, Gtk.main_quit)
     Gtk.main()

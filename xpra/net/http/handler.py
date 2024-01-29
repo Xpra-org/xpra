@@ -33,7 +33,7 @@ AUTH_PASSWORD = os.environ.get("XPRA_HTTP_AUTH_PASSWORD", "")
 
 
 # should be converted to use standard library
-def parse_url(handler) -> dict[str,str]:
+def parse_url(handler) -> dict[str, str]:
     try:
         args_str = handler.path.split("?", 1)[1]
     except IndexError:
@@ -42,31 +42,31 @@ def parse_url(handler) -> dict[str,str]:
     args = {}
     for x in args_str.split("&"):
         v = x.split("=", 1)
-        if len(v)==1:
+        if len(v) == 1:
             args[v[0]] = ""
         else:
             args[v[0]] = v[1]
     return args
 
 
-http_headers_cache : dict[str,str] = {}
-http_headers_time : dict[str,float] = {}
+http_headers_cache: dict[str, str] = {}
+http_headers_time: dict[str, float] = {}
 
 
 def may_reload_headers(http_headers_dirs):
-    mtimes : dict[str,float] = {}
+    mtimes: dict[str, float] = {}
     global http_headers_cache
     if http_headers_cache:
         # do we need to refresh the cache?
         for d in http_headers_dirs:
             if os.path.exists(d) and os.path.isdir(d):
                 mtime = os.path.getmtime(d)
-                if mtime>http_headers_time.get(d, -1):
+                if mtime > http_headers_time.get(d, -1):
                     mtimes[d] = mtime
         if not mtimes:
             return http_headers_cache.copy()
         log("headers directories have changed: %s", mtimes)
-    headers : dict[str,str] = {}
+    headers: dict[str, str] = {}
     for d in http_headers_dirs:
         if not os.path.exists(d) or not os.path.isdir(d):
             continue
@@ -76,16 +76,16 @@ def may_reload_headers(http_headers_dirs):
             if not os.path.isfile(header_file):
                 continue
             log("may_reload_headers() loading from '%s'", header_file)
-            h : dict[str,str] = {}
+            h: dict[str, str] = {}
             with open(header_file, encoding="latin1") as hf:
                 for line in hf:
                     sline = line.strip().rstrip("\r\n").strip()
                     if sline.startswith("#") or not sline:
                         continue
                     parts = sline.split("=", 1)
-                    if len(parts)!=2 and sline.find(":")>0:
+                    if len(parts) != 2 and sline.find(":") > 0:
                         parts = sline.split(":", 1)
-                    if len(parts)!=2:
+                    if len(parts) != 2:
                         continue
                     h[parts[0].strip()] = parts[1].strip()
             log(f"may_reload_headers() {header_file}={h!r}")
@@ -96,12 +96,12 @@ def may_reload_headers(http_headers_dirs):
     return headers.copy()
 
 
-def translate_path(path:str, web_root: str = "/usr/share/xpra/www") -> str:
+def translate_path(path: str, web_root: str = "/usr/share/xpra/www") -> str:
     # code duplicated from superclass since we can't easily inject the web_root..
     s = path
     # abandon query parameters
-    path = path.split('?',1)[0]
-    path = path.split('#',1)[0]
+    path = path.split('?', 1)[0]
+    path = path.split('#', 1)[0]
     # Don't forget explicit trailing slash when normalizing. Issue17324
     trailing_slash = path.rstrip().endswith('/')
     path = posixpath.normpath(unquote(path))
@@ -109,7 +109,7 @@ def translate_path(path:str, web_root: str = "/usr/share/xpra/www") -> str:
     words = list(filter(None, words))
     path = web_root
     xdg_data_dirs = os.environ.get("XDG_DATA_DIRS", DEFAULT_XDG_DATA_DIRS)
-    www_dir_options = [web_root]+[os.path.join(x, "xpra", "www") for x in xdg_data_dirs.split(":")]
+    www_dir_options = [web_root] + [os.path.join(x, "xpra", "www") for x in xdg_data_dirs.split(":")]
     for p in www_dir_options:
         if os.path.exists(p) and os.path.isdir(p):
             path = p
@@ -140,7 +140,7 @@ def translate_path(path:str, web_root: str = "/usr/share/xpra/www") -> str:
 
 def load_path(accept_encoding: list[str], path: str) -> tuple[int, dict[str, Any], bytes]:
     ext = os.path.splitext(path)[1]
-    extra_headers : dict[str,Any] = {}
+    extra_headers: dict[str, Any] = {}
     with open(path, "rb") as f:
         # Always read in binary mode. Opening files in text mode may cause
         # newline translations, making the actual size of the content
@@ -162,10 +162,10 @@ def load_path(accept_encoding: list[str], path: str) -> tuple[int, dict[str, Any
         content = None
         log("accept-encoding=%s", csv(accept))
         for enc in HTTP_ACCEPT_ENCODING:
-            #find a matching pre-compressed file:
+            # find a matching pre-compressed file:
             if enc not in accept:
                 continue
-            compressed_path = f"{path}.{enc}"       #ie: "/path/to/index.html.br"
+            compressed_path = f"{path}.{enc}"  # ie: "/path/to/index.html.br"
             if not os.path.exists(compressed_path):
                 continue
             if not os.path.isfile(compressed_path):
@@ -175,11 +175,11 @@ def load_path(accept_encoding: list[str], path: str) -> tuple[int, dict[str, Any
                 log.warn(f"Warning: {compressed_path!r} is not readable")
                 continue
             st = os.stat(compressed_path)
-            if st.st_size==0:
+            if st.st_size == 0:
                 log.warn(f"Warning: {compressed_path!r} is empty")
                 continue
             log("sending pre-compressed file '%s'", compressed_path)
-            #read pre-gzipped file:
+            # read pre-gzipped file:
             with open(compressed_path, "rb") as cf:
                 content = cf.read()
             assert content, f"no data in {compressed_path!r}"
@@ -187,25 +187,25 @@ def load_path(accept_encoding: list[str], path: str) -> tuple[int, dict[str, Any
             break
         if not content:
             content = f.read()
-            if len(content)!=content_length:
+            if len(content) != content_length:
                 raise RuntimeError(f"expected {path!r} to contain {content_length} bytes but read {len(content)} bytes")
             if all((
-                content_length>128,
-                "gzip" in accept,
-                "gzip" in HTTP_ACCEPT_ENCODING,
-                ext not in (".png", ),
+                    content_length > 128,
+                    "gzip" in accept,
+                    "gzip" in HTTP_ACCEPT_ENCODING,
+                    ext not in (".png",),
             )):
-                #gzip it on the fly:
+                # gzip it on the fly:
                 import zlib  # pylint: disable=import-outside-toplevel
                 gzip_compress = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
                 compressed_content = gzip_compress.compress(content) + gzip_compress.flush()
-                if len(compressed_content)<content_length:
+                if len(compressed_content) < content_length:
                     log("gzip compressed '%s': %i down to %i bytes", path, content_length, len(compressed_content))
                     extra_headers["Content-Encoding"] = "gzip"
                     content = compressed_content
         extra_headers |= {
-            "Content-Length"    : len(content),
-            "Last-Modified"     : fs.st_mtime,
+            "Content-Length": len(content),
+            "Last-Modified": fs.st_mtime,
         }
         return 200, extra_headers, content
 
@@ -222,13 +222,13 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     (subclassed in WebSocketRequestHandler to add WebSocket support)
     """
 
-    wbufsize = 0    #we flush explicitly when needed
+    wbufsize = 0  # we flush explicitly when needed
     server_version = "Xpra-HTTP-Server"
 
     def __init__(self, sock, addr,
-                 web_root:str="/usr/share/xpra/www/",
-                 http_headers_dirs:Iterable[str]=("/etc/xpra/http-headers",), script_paths=None,
-                 username:str=AUTH_USERNAME, password:str=AUTH_PASSWORD):
+                 web_root: str = "/usr/share/xpra/www/",
+                 http_headers_dirs: Iterable[str] = ("/etc/xpra/http-headers",), script_paths=None,
+                 username: str = AUTH_USERNAME, password: str = AUTH_PASSWORD):
         self.web_root = web_root
         self.http_headers_dirs = http_headers_dirs
         self.script_paths = script_paths or {}
@@ -237,18 +237,18 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         server = AdHocStruct()
         server.logger = log
         self.directory_listing = DIRECTORY_LISTING
-        self.extra_headers : dict[str,Any] = {}
+        self.extra_headers: dict[str, Any] = {}
         super().__init__(sock, addr, server)
 
     def log_error(self, fmt, *args) -> None:  # pylint: disable=arguments-differ
         # don't log 404s at error level:
-        if len(args)==2 and args[0]==404:
+        if len(args) == 2 and args[0] == 404:
             log(fmt, *args)
         else:
             log.error(fmt, *args)
 
     def log_message(self, fmt, *args) -> None:  # pylint: disable=arguments-differ
-        if args and len(args)==3 and fmt=='"%s" %s %s' and args[1]=="400":
+        if args and len(args) == 3 and fmt == '"%s" %s %s' and args[1] == "400":
             fmt = '"%r" %s %s'
             largs = list(args)
             largs[0] = repr_ellipsized(args[0])
@@ -267,7 +267,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         if self.extra_headers:
             headers.update(self.extra_headers)
         if headers:
-            for k,v in headers.items():
+            for k, v in headers.items():
                 self.send_header(k, v)
         super().end_headers()
 
@@ -299,6 +299,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             except (AttributeError, OSError):
                 pass
             return False
+
         auth = self.headers.get("Authorization")
         authlog("handle_request() auth header=%s", auth)
         if not auth:
@@ -312,10 +313,10 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             s = base64.b64decode(b64str).decode("utf8")
         except Exception:
             s = ""
-        if s.find(":")<0:
+        if s.find(":") < 0:
             return auth_err("invalid authentication format")
         username, password = s.split(":", 1)
-        if (self.username and username!=self.username) or password!=self.password:
+        if (self.username and username != self.username) or password != self.password:
             authlog("http authentication: expected %s:%s but received %s:%s",
                     self.username or "", self.password, username, password)
             return auth_err("invalid credentials")
@@ -360,10 +361,10 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     # code taken from MIT licensed code in GzipSimpleHTTPServer.py
     def send_head(self):
-        path = self.path.split("?",1)[0].split("#",1)[0]
-        #strip path after second slash:
+        path = self.path.split("?", 1)[0].split("#", 1)[0]
+        # strip path after second slash:
         script_path = path
-        while script_path.rfind("/", 1)>0:
+        while script_path.rfind("/", 1) > 0:
             script_path = script_path[:script_path.rfind("/", 1)]
         script = self.script_paths.get(script_path)
         log("send_head() script(%s)=%s", script_path, script)

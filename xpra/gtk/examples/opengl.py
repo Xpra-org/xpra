@@ -21,7 +21,7 @@ def main(argv=()):
             gl_client_window_class = gl_client_window_module.GLClientWindow
             pixel_depth = 0
             log("do_run_glcheck() gl_client_window_class=%s, pixel_depth=%s", gl_client_window_class, pixel_depth)
-            #if pixel_depth not in (0, 16, 24, 30) and pixel_depth<32:
+            # if pixel_depth not in (0, 16, 24, 30) and pixel_depth<32:
             #    pixel_depth = 0
             draw_result = test_gl_client_window(gl_client_window_class, pixel_depth=pixel_depth, show=True)
             success = draw_result.pop("success", False)
@@ -33,7 +33,9 @@ def main(argv=()):
             log("do_run_glcheck(..)", exc_info=True)
             return 1
 
+
 if __name__ == "__main__":
     import sys
+
     r = main(sys.argv)
     sys.exit(r)

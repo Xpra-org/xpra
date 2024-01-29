@@ -44,7 +44,7 @@ def get_ssl_attributes(opts, server_side: bool = True, overrides: dict | None = 
         v = (overrides or {}).get(attr)
         if v is None:
             fn = attr.replace("-", "_")
-            ssl_attr = f"ssl_{fn}"          # ie: "ssl_ca_certs"
+            ssl_attr = f"ssl_{fn}"  # ie: "ssl_ca_certs"
             v = getattr(opts, ssl_attr)
         args[attr] = v
     return args
@@ -53,7 +53,7 @@ def get_ssl_attributes(opts, server_side: bool = True, overrides: dict | None = 
 def find_ssl_cert(filename: str = "ssl-cert.pem"):
     ssllog = get_ssl_logger()
     # try to locate the cert file from known locations
-    from xpra.platform.paths import get_ssl_cert_dirs   # pylint: disable=import-outside-toplevel
+    from xpra.platform.paths import get_ssl_cert_dirs  # pylint: disable=import-outside-toplevel
     dirs = get_ssl_cert_dirs()
     ssllog(f"find_ssl_cert({filename}) get_ssl_cert_dirs()={dirs}")
     for d in dirs:
@@ -106,7 +106,7 @@ SSL_VERIFY_UNTRUSTED_ROOT = 19
 SSL_VERIFY_IP_MISMATCH = 64
 SSL_VERIFY_HOSTNAME_MISMATCH = 62
 SSL_VERIFY_CODES: dict[int, str] = {
-    SSL_VERIFY_EXPIRED: "expired",    # also revoked!
+    SSL_VERIFY_EXPIRED: "expired",  # also revoked!
     SSL_VERIFY_WRONG_HOST: "wrong host",
     SSL_VERIFY_SELF_SIGNED: "self-signed",
     SSL_VERIFY_UNTRUSTED_ROOT: "untrusted-root",
@@ -157,7 +157,7 @@ def get_ssl_verify_mode(verify_mode_str: str):
     ssl_cert_reqs = getattr(ssl, "CERT_" + verify_mode_str.upper(), None)
     if ssl_cert_reqs is None:
         values = [k[len("CERT_"):].lower() for k in dir(ssl) if k.startswith("CERT_")]
-        raise InitException(f"invalid ssl-server-verify-mode {verify_mode_str!r}, must be one of: "+csv(values))
+        raise InitException(f"invalid ssl-server-verify-mode {verify_mode_str!r}, must be one of: " + csv(values))
     return ssl_cert_reqs
 
 
@@ -198,7 +198,7 @@ def get_ssl_wrap_socket_context(cert=None, key=None, key_password=None, ca_certs
     proto = getattr(ssl, "PROTOCOL_" + protocol.upper().replace("TLSV", "TLSv"), None)
     if proto is None:
         values = [k[len("PROTOCOL_"):] for k in dir(ssl) if k.startswith("PROTOCOL_")]
-        raise InitException(f"invalid ssl-protocol {protocol!r}, must be one of: "+csv(values))
+        raise InitException(f"invalid ssl-protocol {protocol!r}, must be one of: " + csv(values))
     ssllog(" protocol=%#x", proto)
     # ca_data may be hex encoded:
     ca_data = parse_encoded_bin_data(ca_data or "")
@@ -215,7 +215,7 @@ def get_ssl_wrap_socket_context(cert=None, key=None, key_password=None, ca_certs
         x = x.strip()
         if not x:
             continue
-        v = getattr(ssl, "VERIFY_"+x.upper(), None)
+        v = getattr(ssl, "VERIFY_" + x.upper(), None)
         if v is None:
             raise InitException(f"invalid ssl verify-flag: {x!r}")
         ssl_verify_flags |= v
@@ -226,7 +226,7 @@ def get_ssl_wrap_socket_context(cert=None, key=None, key_password=None, ca_certs
         x = x.strip()
         if not x:
             continue
-        v = getattr(ssl, "OP_"+x.upper(), None)
+        v = getattr(ssl, "OP_" + x.upper(), None)
         if v is None:
             raise InitException(f"invalid ssl option: {x!r}")
         ssl_options |= v
@@ -340,8 +340,8 @@ def ssl_retry(e, ssl_ca_certs) -> dict[str, Any] | None:
     server_hostname = ssl_sock.server_hostname
     ssllog("ssl_retry: peername=%s, server_hostname=%s", addr, server_hostname)
     if verify_code not in (
-        SSL_VERIFY_SELF_SIGNED, SSL_VERIFY_WRONG_HOST,
-        SSL_VERIFY_IP_MISMATCH, SSL_VERIFY_HOSTNAME_MISMATCH,
+            SSL_VERIFY_SELF_SIGNED, SSL_VERIFY_WRONG_HOST,
+            SSL_VERIFY_IP_MISMATCH, SSL_VERIFY_HOSTNAME_MISMATCH,
     ):
         ssllog("ssl_retry: %s not handled here", SSL_VERIFY_CODES.get(verify_code, verify_code))
         return None
@@ -382,7 +382,7 @@ def ssl_retry(e, ssl_ca_certs) -> dict[str, Any] | None:
         # ask the user if he wants to accept this certificate:
         title = "SSL Certificate Verification Failure"
         prompt = "Do you want to accept this certificate?"
-        if not confirm((msg, ), title, prompt):
+        if not confirm((msg,), title, prompt):
             return None
         filename = save_ssl_config_file(server_hostname, port,
                                         CERT_FILENAME, "certificate", cert_data.encode("latin1"))
@@ -427,7 +427,7 @@ def load_ssl_options(server_hostname: str, port: int) -> dict[str, Any]:
                         ssllog("Warning: unknown SSL attribute %r in %r", k, f)
                         continue
                     # some options use boolean values, convert them back:
-                    if k in ("check-hostname", ):
+                    if k in ("check-hostname",):
                         options[k] = v.lower() in TRUE_OPTIONS
                     else:
                         options[k] = v
@@ -451,7 +451,7 @@ def find_ssl_config_file(server_hostname: str, port=443, filename="cert.pem"):
     ssllog = get_ssl_logger()
     from xpra.platform.paths import get_ssl_hosts_config_dirs
     dirs = get_ssl_hosts_config_dirs()
-    host_dirname = std(server_hostname, extras="-.:#_")+f"_{port}"
+    host_dirname = std(server_hostname, extras="-.:#_") + f"_{port}"
     host_dirs = [os.path.join(osexpand(d), host_dirname) for d in dirs]
     ssllog(f"looking for {filename!r} in {host_dirs}")
     for d in host_dirs:
@@ -467,7 +467,7 @@ def save_ssl_config_file(server_hostname: str, port=443,
     ssllog = get_ssl_logger()
     from xpra.platform.paths import get_ssl_hosts_config_dirs
     dirs = get_ssl_hosts_config_dirs()
-    host_dirname = std(server_hostname, extras="-.:#_")+f"_{port}"
+    host_dirname = std(server_hostname, extras="-.:#_") + f"_{port}"
     host_dirs = [os.path.join(osexpand(d), host_dirname) for d in dirs]
     ssllog(f"save_ssl_config_file%s dirs={dirs}, host_dirname={host_dirname}, host_dirs={host_dirs}",
            (server_hostname, port, filename, fileinfo, ellipsizer(filedata)), )
@@ -487,11 +487,11 @@ def save_ssl_config_file(server_hostname: str, port=443,
         # we have to be careful and create the 'ssl' dir with 0o700 permissions
         # but any directory above that can use 0o755
         try:
-            ssl_dir_index = len(folders)-1
-            while ssl_dir_index>0 and folders[ssl_dir_index] != "ssl":
+            ssl_dir_index = len(folders) - 1
+            while ssl_dir_index > 0 and folders[ssl_dir_index] != "ssl":
                 ssl_dir_index -= 1
             if ssl_dir_index > 1:
-                parent = os.path.join(*folders[:ssl_dir_index-1])
+                parent = os.path.join(*folders[:ssl_dir_index - 1])
                 ssl_dir = os.path.join(*folders[:ssl_dir_index])
                 os.makedirs(parent, exist_ok=True)
                 os.makedirs(ssl_dir, mode=0o700, exist_ok=True)

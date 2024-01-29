@@ -32,6 +32,7 @@ from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode
 from xpra.util.str_fn import ellipsizer
 from xpra.log import Logger
+
 log = Logger("quic")
 
 quic_logger = QuicLogger()
@@ -71,8 +72,8 @@ class HttpServerProtocol(QuicConnectionProtocol):
             handler = self.new_http_handler(event)
             handler.xpra_server = self._xpra_server
             self._handlers[event.stream_id] = handler
-            #asyncio.ensure_future(handler.run_asgi(self.app))
-            #return
+            # asyncio.ensure_future(handler.run_asgi(self.app))
+            # return
         if isinstance(event, (DataReceived, HeadersReceived)) and handler:
             handler.http_event_received(event)
             return
@@ -125,7 +126,7 @@ class HttpServerProtocol(QuicConnectionProtocol):
             "path": path,
             "query_string": query_string,
             "raw_path": raw_path,
-            "transport-info" : einfo,
+            "transport-info": einfo,
         }
         if method == "CONNECT" and protocol == "websocket":
             subprotocols: list[str] = []
@@ -133,9 +134,9 @@ class HttpServerProtocol(QuicConnectionProtocol):
                 if header == b"sec-websocket-protocol":
                     subprotocols = [x.strip() for x in value.decode().split(",")]
             scope |= {
-                "subprotocols"  : subprotocols,
-                "type"          : "websocket",
-                "scheme"        : "wss",
+                "subprotocols": subprotocols,
+                "type": "websocket",
+                "scheme": "wss",
             }
             wsc = ServerWebSocketConnection(connection=self._http, scope=scope,
                                             stream_id=event.stream_id,
@@ -146,15 +147,15 @@ class HttpServerProtocol(QuicConnectionProtocol):
 
         if method == "CONNECT" and protocol == "webtransport":
             scope |= {
-                "scheme"        : "https",
-                "type"          : "webtransport",
+                "scheme": "https",
+                "type": "webtransport",
             }
             log.info("WebTransport request at %s", path)
             return WebTransportHandler(connection=self._http, scope=scope,
                                        stream_id=event.stream_id,
                                        transmit=self.transmit)
-        #extensions: dict[str, dict] = {}
-        #if isinstance(self._http, H3Connection):
+        # extensions: dict[str, dict] = {}
+        # if isinstance(self._http, H3Connection):
         #    extensions["http.response.push"] = {}
         scope |= {
             "scheme": "https",
@@ -173,6 +174,7 @@ async def do_listen(sock, xpra_server, cert, key, retry):
 
     def create_protocol(*args, **kwargs):
         return HttpServerProtocol(*args, xpra_server=xpra_server, **kwargs)
+
     configuration = QuicConfiguration(
         alpn_protocols=H3_ALPN + H0_ALPN + ["siduck"],
         is_client=False,
@@ -198,6 +200,7 @@ async def do_listen(sock, xpra_server, cert, key, retry):
                 session_ticket_handler=session_ticket_store.add,
                 retry=retry,
             )
+
         loop = asyncio.get_event_loop()
         r = await loop.create_datagram_endpoint(create_server, sock=sock)
         log(f"create_datagram_endpoint({create_server}, {sock})={r}")
@@ -207,7 +210,7 @@ async def do_listen(sock, xpra_server, cert, key, retry):
         raise
 
 
-def listen_quic(sock, xpra_server, socket_options : dict):
+def listen_quic(sock, xpra_server, socket_options: dict):
     log(f"listen_quic({sock}, {xpra_server}, {socket_options})")
     ssl_socket_options = xpra_server.get_ssl_socket_options(socket_options)
     cert = ssl_socket_options.get("cert")

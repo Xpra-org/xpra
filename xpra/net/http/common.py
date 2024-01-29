@@ -3,9 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 EXTENSION_TO_MIMETYPE = {
-    ".wasm" : "application/wasm",
-    ".js"   : "text/javascript",
-    ".css"  : "text/css",
+    ".wasm": "application/wasm",
+    ".js": "text/javascript",
+    ".css": "text/css",
 }
 HTTP_UNSUPORTED = b"""HTTP/1.1 400 Bad request syntax or unsupported method
 

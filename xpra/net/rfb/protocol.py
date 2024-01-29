@@ -15,7 +15,7 @@ from xpra.util.thread import make_thread, start_thread
 from xpra.util.stats import std_unit
 from xpra.net.protocol.socket_handler import force_flush_queue, exit_queue
 from xpra.net.protocol.constants import INVALID, CONNECTION_LOST
-from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
+from xpra.net.common import ConnectionClosedException  # @UndefinedVariable (pydev false positive)
 from xpra.net.bytestreams import ABORT
 from xpra.net.rfb.const import RFBClientMessage, CLIENT_PACKET_TYPE_STR, PACKET_STRUCT
 from xpra.log import Logger
@@ -29,7 +29,6 @@ PROTOCOL_VERSION = (3, 8)
 
 
 class RFBProtocol:
-
     TYPE = "rfb"
 
     def __init__(self, scheduler, conn, process_packet_cb, data=b""):
@@ -72,17 +71,17 @@ class RFBProtocol:
 
     def _parse_protocol_handshake(self, packet):
         log(f"parse_protocol_handshake({packet})")
-        if len(packet)<12:
+        if len(packet) < 12:
             return 0
         if not packet.startswith(b'RFB '):
             self.invalid_header(self, packet, "invalid RFB protocol handshake packet header")
             return 0
         # ie: packet==b'RFB 003.008\n'
         protocol_version = tuple(int(x) for x in packet[4:11].split(b"."))
-        if protocol_version!=PROTOCOL_VERSION:
+        if protocol_version != PROTOCOL_VERSION:
             msg = b"unsupported protocol version"
             log.error(f"Error: {msg}")
-            self.send(struct.pack(b"!BI", 0, len(msg))+msg)
+            self.send(struct.pack(b"!BI", 0, len(msg)) + msg)
             self.invalid(msg, packet)
             return 0
         self.handshake_complete()
@@ -109,28 +108,28 @@ class RFBProtocol:
         if not packet_type:
             self.invalid(f"unknown RFB packet type: {ptype:x}", packet)
             return 0
-        s = PACKET_STRUCT.get(ptype)     # ie: Struct("!BBBB")
+        s = PACKET_STRUCT.get(ptype)  # ie: Struct("!BBBB")
         if not s:
             self.invalid(f"RFB packet type {packet_type!r} is not supported", packet)
             return 0
-        if len(packet)<s.size:
+        if len(packet) < s.size:
             return 0
         size = s.size
         values = list(s.unpack(packet[:size]))
         values[0] = packet_type
         # some packets require parsing extra data:
-        if ptype==RFBClientMessage.SetEncodings:
+        if ptype == RFBClientMessage.SetEncodings:
             N = values[2]
-            estruct = struct.Struct(b"!"+b"i"*N)
+            estruct = struct.Struct(b"!" + b"i" * N)
             size += estruct.size
-            if len(packet)<size:
+            if len(packet) < size:
                 return 0
             encodings = estruct.unpack(packet[s.size:size])
             values.append(encodings)
-        elif ptype==RFBClientMessage.ClientCutText:
+        elif ptype == RFBClientMessage.ClientCutText:
             l = values[4]
             size += l
-            if len(packet)<size:
+            if len(packet) < size:
                 return 0
             text = packet[s.size:size]
             values.append(text)
@@ -148,7 +147,7 @@ class RFBProtocol:
         return tuple(x for x in (self._write_thread, self._read_thread) if x is not None)
 
     def get_info(self, *_args):
-        info = {"protocol" : PROTOCOL_VERSION}
+        info = {"protocol": PROTOCOL_VERSION}
         for t in self.get_threads():
             info.setdefault("thread", {})[t.name] = t.is_alive()
         return info
@@ -157,10 +156,11 @@ class RFBProtocol:
         def start_network_read_thread():
             if not self._closed:
                 self._read_thread.start()
+
         self.idle_add(start_network_read_thread)
 
     def send_disconnect(self, *_args, **_kwargs):
-        #no such packet in RFB, just close
+        # no such packet in RFB, just close
         self.close()
 
     def queue_size(self):
@@ -172,7 +172,7 @@ class RFBProtocol:
             return
         if log.is_debug_enabled():
             l = len(packet)
-            lstr = str(l) if l<=16 else std_unit(l)
+            lstr = str(l) if l <= 16 else std_unit(l)
             log(f"send({lstr} bytes: %s..)", hexstr(packet[:16]))
         if self.log:
             self.log.write(f"send: {hexstr(packet)}\n")
@@ -193,13 +193,13 @@ class RFBProtocol:
         except ConnectionClosedException:
             log(f"{self._conn} closed", exc_info=True)
             if not self._closed:
-                #ConnectionClosedException means the warning has been logged already
+                # ConnectionClosedException means the warning has been logged already
                 self._connection_lost(f"{name} connection {self._conn} closed")
         except (OSError, socket_error) as e:
             if not self._closed:
                 self._internal_error(f"{name} connection {self._conn} reset", e, exc_info=e.args[0] not in ABORT)
         except Exception as e:
-            #can happen during close(), in which case we just ignore:
+            # can happen during close(), in which case we just ignore:
             if not self._closed:
                 log.error(f"Error: {name} on {self._conn} failed: {type(e)}", exc_info=True)
                 self.close()
@@ -233,7 +233,7 @@ class RFBProtocol:
         if not c:
             return None
         buf = c.read(READ_BUFFER_SIZE)
-        #log("read()=%i bytes (%s)", len(buf or b""), type(buf))
+        # log("read()=%i bytes (%s)", len(buf or b""), type(buf))
         if not buf:
             log("read thread: eof")
             # give time to the parse thread to call close itself,
@@ -244,10 +244,10 @@ class RFBProtocol:
             self.log.write(f"receive: {hexstr(buf)}\n")
         self.input_raw_packetcount += 1
         self._buffer += buf
-        #log("calling %s(%s)", self._packet_parser, repr_ellipsized(self._buffer))
+        # log("calling %s(%s)", self._packet_parser, repr_ellipsized(self._buffer))
         while self._buffer:
             consumed = self._packet_parser(self._buffer)
-            if consumed==0:
+            if consumed == 0:
                 break
             self._buffer = self._buffer[consumed:]
         return True
@@ -258,7 +258,7 @@ class RFBProtocol:
             return
         ei = exc_info
         if exc:
-            ei = None   #log it separately below
+            ei = None  # log it separately below
         log.error(f"Error: {message}", exc_info=ei)
         if exc:
             log.error(f" {exc}", exc_info=exc_info)
@@ -284,7 +284,7 @@ class RFBProtocol:
     def _invalid_header(self, _proto, data, msg="invalid packet header"):
         self._packet_parser = self._parse_invalid
         err = f"{msg}: {hexstr(data[:8])!r}"
-        if len(data)>1:
+        if len(data) > 1:
             err += f" read buffer={repr_ellipsized(data)} ({len(data)} bytes)"
         self.invalid(err, data)
 
@@ -298,7 +298,7 @@ class RFBProtocol:
         if self._closed:
             return
         self._closed = True
-        #self.idle_add(self._process_packet_cb, self, [CONNECTION_LOST])
+        # self.idle_add(self._process_packet_cb, self, [CONNECTION_LOST])
         if c:
             try:
                 log(f"RFBProtocol.close() calling {c.close}")

@@ -34,18 +34,18 @@
 
 from struct import pack, unpack
 
-
 ###################################################
 #
 # start: changes made for VNC.
 #
 
 # This constant was taken from vncviewer/rfb/vncauth.c:
-vnckey = [23,82,107,6,35,78,88,7]
+vnckey = [23, 82, 107, 6, 35, 78, 88, 7]
 
 # This is a departure from the original code.
 # bytebit = [ 0o200, 0o100, 0o40, 0o20, 0o10, 0o4, 0o2, 0o1 ] # original
-bytebit = [0o1, 0o2, 0o4, 0o10, 0o20, 0o40, 0o100, 0o200]   # VNC version
+bytebit = [0o1, 0o2, 0o4, 0o10, 0o20, 0o40, 0o100, 0o200]  # VNC version
+
 
 # two password functions for VNC protocol.
 
@@ -56,8 +56,9 @@ def decrypt_passwd(data):
 
 
 def generate_response(passwd, challenge):
-    ek = deskey((passwd+b'\x00'*8)[:8], False)
+    ek = deskey((passwd + b'\x00' * 8)[:8], False)
     return desfunc(challenge[:8], ek) + desfunc(challenge[8:], ek)
+
 
 #
 # end: changes made for VNC.
@@ -66,39 +67,39 @@ def generate_response(passwd, challenge):
 
 
 bigbyte = [
-    0x800000,    0x400000,      0x200000,      0x100000,
-    0x80000,     0x40000,       0x20000,       0x10000,
-    0x8000,      0x4000,        0x2000,        0x1000,
-    0x800,       0x400,         0x200,         0x100,
-    0x80,        0x40,          0x20,          0x10,
-    0x8,         0x4,           0x2,           0x1,
+    0x800000, 0x400000, 0x200000, 0x100000,
+    0x80000, 0x40000, 0x20000, 0x10000,
+    0x8000, 0x4000, 0x2000, 0x1000,
+    0x800, 0x400, 0x200, 0x100,
+    0x80, 0x40, 0x20, 0x10,
+    0x8, 0x4, 0x2, 0x1,
 ]
 
 # Use the key schedule specified in the Standard (ANSI X3.92-1981).
 
 pc1 = [
-    56, 48, 40, 32, 24, 16,  8,    0, 57, 49, 41, 33, 25, 17,
-    9,  1, 58, 50, 42, 34, 26,   18, 10,  2, 59, 51, 43, 35,
-    62, 54, 46, 38, 30, 22, 14,    6, 61, 53, 45, 37, 29, 21,
-    13,  5, 60, 52, 44, 36, 28,   20, 12,  4, 27, 19, 11,  3
+    56, 48, 40, 32, 24, 16, 8, 0, 57, 49, 41, 33, 25, 17,
+    9, 1, 58, 50, 42, 34, 26, 18, 10, 2, 59, 51, 43, 35,
+    62, 54, 46, 38, 30, 22, 14, 6, 61, 53, 45, 37, 29, 21,
+    13, 5, 60, 52, 44, 36, 28, 20, 12, 4, 27, 19, 11, 3
 ]
 
-totrot = [1,2,4,6,8,10,12,14,15,17,19,21,23,25,27,28]
+totrot = [1, 2, 4, 6, 8, 10, 12, 14, 15, 17, 19, 21, 23, 25, 27, 28]
 
 pc2 = [
-    13, 16, 10, 23,  0,  4,  2, 27, 14,  5, 20,  9,
-    22, 18, 11,  3, 25,  7, 15,  6, 26, 19, 12,  1,
+    13, 16, 10, 23, 0, 4, 2, 27, 14, 5, 20, 9,
+    22, 18, 11, 3, 25, 7, 15, 6, 26, 19, 12, 1,
     40, 51, 30, 36, 46, 54, 29, 39, 50, 44, 32, 47,
     43, 48, 38, 55, 33, 52, 45, 41, 49, 35, 28, 31
 ]
 
 
-def deskey(key, decrypt):      # Thanks to James Gillogly & Phil Karn!
+def deskey(key, decrypt):  # Thanks to James Gillogly & Phil Karn!
     key = unpack('8B', key)
 
-    pc1m = [0]*56
-    pcr = [0]*56
-    kn = [0]*32
+    pc1m = [0] * 56
+    pcr = [0] * 56
+    kn = [0] * 32
 
     for j in range(56):
         l = pc1[j]
@@ -130,7 +131,7 @@ def deskey(key, decrypt):      # Thanks to James Gillogly & Phil Karn!
         for j in range(24):
             if pcr[pc2[j]]:
                 kn[m] |= bigbyte[j]
-            if pcr[pc2[j+24]]:
+            if pcr[pc2[j + 24]]:
                 kn[n] |= bigbyte[j]
 
     return cookey(kn)
@@ -139,13 +140,13 @@ def deskey(key, decrypt):      # Thanks to James Gillogly & Phil Karn!
 def cookey(raw):
     key = []
     for i in range(0, 32, 2):
-        (raw0, raw1) = (raw[i], raw[i+1])
-        k  = (raw0 & 0x00fc0000) << 6
+        (raw0, raw1) = (raw[i], raw[i + 1])
+        k = (raw0 & 0x00fc0000) << 6
         k |= (raw0 & 0x00000fc0) << 10
         k |= (raw1 & 0x00fc0000) >> 10
         k |= (raw1 & 0x00000fc0) >> 6
         key.append(k)
-        k  = (raw0 & 0x0003f000) << 12
+        k = (raw0 & 0x0003f000) << 12
         k |= (raw0 & 0x0000003f) << 16
         k |= (raw1 & 0x0003f000) >> 4
         k |= (raw1 & 0x0000003f)
@@ -328,25 +329,25 @@ def desfunc(block, keys):
     leftt = ((leftt << 1) | ((leftt >> 31) & 1)) & 0xffffffff
 
     for i in range(0, 32, 4):
-        work  = (right << 28) | (right >> 4)
+        work = (right << 28) | (right >> 4)
         work ^= keys[i]
-        fval  = SP7[work & 0x3f]
+        fval = SP7[work & 0x3f]
         fval |= SP5[(work >> 8) & 0x3f]
         fval |= SP3[(work >> 16) & 0x3f]
         fval |= SP1[(work >> 24) & 0x3f]
-        work  = right ^ keys[i+1]
+        work = right ^ keys[i + 1]
         fval |= SP8[work & 0x3f]
         fval |= SP6[(work >> 8) & 0x3f]
         fval |= SP4[(work >> 16) & 0x3f]
         fval |= SP2[(work >> 24) & 0x3f]
         leftt ^= fval
-        work  = (leftt << 28) | (leftt >> 4)
-        work ^= keys[i+2]
-        fval  = SP7[work & 0x3f]
+        work = (leftt << 28) | (leftt >> 4)
+        work ^= keys[i + 2]
+        fval = SP7[work & 0x3f]
         fval |= SP5[(work >> 8) & 0x3f]
         fval |= SP3[(work >> 16) & 0x3f]
         fval |= SP1[(work >> 24) & 0x3f]
-        work  = leftt ^ keys[i+3]
+        work = leftt ^ keys[i + 3]
         fval |= SP8[work & 0x3f]
         fval |= SP6[(work >> 8) & 0x3f]
         fval |= SP4[(work >> 16) & 0x3f]

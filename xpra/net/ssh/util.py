@@ -19,7 +19,7 @@ class nomodule_context:
     def __enter__(self):
         self.saved_module = sys.modules.get(self.module_name)
         # noinspection PyTypeChecker
-        sys.modules[self.module_name] = None        # type: ignore[assignment]
+        sys.modules[self.module_name] = None  # type: ignore[assignment]
 
     def __exit__(self, *_args):
         if sys.modules.get(self.module_name) is None:

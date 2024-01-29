@@ -9,7 +9,7 @@ from xpra.platform.gui import force_focus
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
 
-from cairo import OPERATOR_SOURCE   # pylint: disable=no-name-in-module
+from cairo import OPERATOR_SOURCE  # pylint: disable=no-name-in-module
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
@@ -49,7 +49,7 @@ class TransparentWindow(Gtk.Window):
         self.area_draw(self, cr)
 
     def area_draw(self, widget, cr):
-        cr.set_source_rgba(1.0, 1.0, 1.0, 0.0) # Transparent
+        cr.set_source_rgba(1.0, 1.0, 1.0, 0.0)  # Transparent
         # Draw the background
         cr.set_operator(OPERATOR_SOURCE)
         cr.paint()
@@ -57,8 +57,8 @@ class TransparentWindow(Gtk.Window):
         alloc = widget.get_allocated_size()[0]
         width, height = alloc.width, alloc.height
         cr.set_source_rgba(1.0, 0.2, 0.2, 0.6)
-        radius = min(width, height)/2 - 0.8
-        cr.arc(width/2, height/2, radius, 0, 2.0*3.14)
+        radius = min(width, height) / 2 - 0.8
+        cr.arc(width / 2, height / 2, radius, 0, 2.0 * 3.14)
         cr.fill()
         cr.stroke()
 

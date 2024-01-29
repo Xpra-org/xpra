@@ -30,13 +30,13 @@ from xpra.log import Logger
 log = Logger("network", "ssh")
 if log.is_debug_enabled():
     import logging
+
     logging.getLogger("paramiko").setLevel(logging.DEBUG)
 
-from paramiko.ssh_exception import SSHException, ProxyCommandFailure, PasswordRequiredException     # noqa: E402
-from paramiko.transport import Transport    # noqa: E402
+from paramiko.ssh_exception import SSHException, ProxyCommandFailure, PasswordRequiredException  # noqa: E402
+from paramiko.transport import Transport  # noqa: E402
 
-
-WINDOW_SIZE = envint("XPRA_SSH_WINDOW_SIZE", 2**27-1)
+WINDOW_SIZE = envint("XPRA_SSH_WINDOW_SIZE", 2 ** 27 - 1)
 TIMEOUT = envint("XPRA_SSH_TIMEOUT", 60)
 
 VERIFY_HOSTKEY = envbool("XPRA_SSH_VERIFY_HOSTKEY", True)
@@ -71,7 +71,7 @@ def keymd5(k) -> str:
     f = bytestostr(binascii.hexlify(k.get_fingerprint()))
     s = "MD5"
     while f:
-        s += ":"+f[:2]
+        s += ":" + f[:2]
         f = f[2:]
     return s
 
@@ -184,10 +184,10 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
         display_desc.setdefault("proxy_username", get_username())
     password: str = display_desc.get("password", "")
     remote_xpra = display_desc["remote_xpra"]
-    proxy_command = display_desc["proxy_command"]       # ie: "_proxy_start"
+    proxy_command = display_desc["proxy_command"]  # ie: "_proxy_start"
     socket_dir: str = display_desc.get("socket_dir", "")
     display: str = display_desc.get("display", "")
-    display_as_args: list[str] = display_desc["display_as_args"]   # ie: "--start=xterm :10"
+    display_as_args: list[str] = display_desc["display_as_args"]  # ie: "--start=xterm :10"
     paramiko_config: dict = display_desc.copy()
     paramiko_config.update(display_desc.get("paramiko-config", {}))
     socket_info: dict[str, Any] = {
@@ -202,10 +202,10 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
     from paramiko import SSHConfig, ProxyCommand
     ssh_config = SSHConfig()
 
-    etc = "etc" if sys.prefix == "/usr" else sys.prefix+"/etc"
+    etc = "etc" if sys.prefix == "/usr" else sys.prefix + "/etc"
     for config_file in (
-        f"{etc}/ssh/ssh_config",
-        os.path.expanduser("~/.ssh/config"),
+            f"{etc}/ssh/ssh_config",
+            os.path.expanduser("~/.ssh/config"),
     ):
         if not os.path.exists(config_file):
             continue
@@ -224,6 +224,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
 
     def ssh_lookup(key) -> dict:
         return safe_lookup(ssh_config, key)
+
     host_config: dict = ssh_lookup("*")
     host_config.update(ssh_lookup(host))
     log(f"host_config({host})={host_config}")
@@ -254,6 +255,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
 
             def proxycommand_ended(proc):
                 log(f"proxycommand_ended({proc}) exit code={proc.poll()}")
+
             getChildReaper().add_process(sock.process, "paramiko-ssh-client", cmd, True, True,
                                          callback=proxycommand_ended)
             proxy_keys = get_keyfiles("proxy_key")
@@ -277,7 +279,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
             conn.start_stderr_reader()
             conn.process = (sock.process, "ssh", cmd)
             from xpra.net import bytestreams
-            bytestreams.CLOSED_EXCEPTIONS = tuple(list(bytestreams.CLOSED_EXCEPTIONS)+[ProxyCommandFailure])
+            bytestreams.CLOSED_EXCEPTIONS = tuple(list(bytestreams.CLOSED_EXCEPTIONS) + [ProxyCommandFailure])
             return conn
 
     keys = get_keyfiles()
@@ -373,7 +375,6 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
 
 
 def get_auth_modes(paramiko_config, host_config: dict, password: str) -> list[str]:
-
     def configvalue(key: str):
         # if the paramiko config has a setting, honour it:
         if paramiko_config and key in paramiko_config:
@@ -435,7 +436,7 @@ def do_connect(chan, host: str, username: str, password: str,
                          host_config, keyfiles, paramiko_config, auth_modes)
 
 
-def do_connect_to(transport, host:str, username:str, password:str,
+def do_connect_to(transport, host: str, username: str, password: str,
                   host_config=None, keyfiles=None, paramiko_config=None, auth_modes=AUTH_MODES):
     log("do_connect_to%s", (transport, host, username, password, host_config, keyfiles, paramiko_config))
 
@@ -481,7 +482,8 @@ def do_connect_to(transport, host:str, username:str, password:str,
 
         def keyname():
             return host_key.get_name().replace("ssh-", "")
-        if known_host_key and host_key==known_host_key:
+
+        if known_host_key and host_key == known_host_key:
             assert host_key
             log("%s host key '%s' OK for host '%s'", keyname(), keymd5(host_key), host)
         else:
@@ -503,6 +505,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
                         q.append(str(dnscheck))
                     else:
                         q.append("SSHFP validation failed")
+
             if dnscheck is True:
                 # DNSSEC provided a matching record
                 log.info("found a valid SSHFP record for host %s", host)
@@ -623,7 +626,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
             try_key_formats = ()
             for kf in ("RSA", "DSS", "ECDSA", "Ed25519"):
                 if keyfile_path.lower().endswith(kf.lower()):
-                    try_key_formats = (kf, )
+                    try_key_formats = (kf,)
                     break
             if not try_key_formats:
                 try_key_formats = ("RSA", "DSS", "ECDSA", "Ed25519")
@@ -781,7 +784,7 @@ def run_test_command(transport, cmd: str) -> tuple[list[str], list[str], int]:
     log(f"exec_command({cmd!r}) returned")
     start = monotonic()
     while not chan.exit_status_ready():
-        if monotonic()-start>TEST_COMMAND_TIMEOUT:
+        if monotonic() - start > TEST_COMMAND_TIMEOUT:
             chan.close()
             raise InitException(f"SSH test command {cmd!r} timed out")
         log("exit status is not ready yet, sleeping")
@@ -853,6 +856,7 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
             if qmatch:
                 return qmatch.group(1).rstrip("\n\r")
         return None
+
     osname = detectosname()
     tried = set()
     find_command = None
@@ -865,8 +869,9 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
                 if osname == "msys":
                     return p.replace("\\", "\\\\")
                 if osname == "cygwin":
-                    return "/cygdrive/"+p.replace(":\\", "/").replace("\\", "/")
+                    return "/cygdrive/" + p.replace(":\\", "/").replace("\\", "/")
                 return p
+
             installpath = getexeinstallpath()
             if installpath:
                 xpra_cmd = winpath(f"{installpath}\\Xpra_cmd.exe")
@@ -903,7 +908,7 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
                     # try the default system installation path
                     r = rtc(f"command -v '{default_path}'")
                     if r[2] == 0:
-                        xpra_cmd = default_path     # ie: "/mingw64/bin/xpra"
+                        xpra_cmd = default_path  # ie: "/mingw64/bin/xpra"
                         found = True
         if not found or xpra_cmd in tried:
             continue

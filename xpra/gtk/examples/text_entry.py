@@ -43,14 +43,17 @@ def make_window():
     window.add(entry)
     return window
 
+
 def main():
     with program_context("text-entry", "Text Entry"):
         w = make_window()
         add_close_accel(w, Gtk.main_quit)
+
         def show_with_focus():
             force_focus()
             w.show_all()
             w.present()
+
         GLib.idle_add(show_with_focus)
         from xpra.gtk.signals import quit_on_signals
         quit_on_signals("text entry test window")

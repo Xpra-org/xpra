@@ -9,7 +9,7 @@ from xpra.platform.gui import force_focus
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.pixbuf import get_icon_pixbuf
 
-from cairo import OPERATOR_CLEAR, OPERATOR_SOURCE   # pylint: disable=no-name-in-module
+from cairo import OPERATOR_CLEAR, OPERATOR_SOURCE  # pylint: disable=no-name-in-module
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
@@ -44,7 +44,7 @@ class ColorPlainWindow(Gtk.Window):
 
     def area_draw(self, widget, cr):
         cr.set_font_size(32)
-        #Clear everything:
+        # Clear everything:
         cr.set_operator(OPERATOR_CLEAR)
         alloc = widget.get_allocated_size()[0]
         w, h = alloc.width, alloc.height
@@ -55,21 +55,21 @@ class ColorPlainWindow(Gtk.Window):
             cr.set_operator(OPERATOR_SOURCE)
             cr.set_source_rgb(R, G, B)
             cr.rectangle(x, y, w, h)
-            #print("rectangle(%s, %s, %s, %s) alpha=%s" % (rx, ry, rw, rh, alpha))
+            # print("rectangle(%s, %s, %s, %s) alpha=%s" % (rx, ry, rw, rh, alpha))
             cr.fill()
             if label:
                 cr.set_source_rgb(1, 1, 1)
-                cr.move_to(x+w/2-12, y+h/2+8)
+                cr.move_to(x + w / 2 - 12, y + h / 2 + 8)
                 cr.show_text(label)
 
-        #Red block
-        paint_block(0, 0, w/2, h/2, 255, 0, 0, "R")
-        #Green block:
-        paint_block(w/2, 0, w/2, h/2, 0, 254, 0, "G")
-        #Blue block:
-        paint_block(0, h/2, w/2, h/2, 0, 0, 253, "B")
-        #Black Shade Block:
-        paint_block(w/2, h/2, w/2, h/2, 128, 128, 128)
+        # Red block
+        paint_block(0, 0, w / 2, h / 2, 255, 0, 0, "R")
+        # Green block:
+        paint_block(w / 2, 0, w / 2, h / 2, 0, 254, 0, "G")
+        # Blue block:
+        paint_block(0, h / 2, w / 2, h / 2, 0, 0, 253, "B")
+        # Black Shade Block:
+        paint_block(w / 2, h / 2, w / 2, h / 2, 128, 128, 128)
 
 
 def main():

@@ -24,7 +24,7 @@ HttpConnection = Union[H0Connection, H3Connection]
 
 
 class HttpRequestHandler:
-    def __init__(self, xpra_server : object,
+    def __init__(self, xpra_server: object,
                  authority: bytes,
                  connection: HttpConnection,
                  protocol: QuicConnectionProtocol,
@@ -40,27 +40,27 @@ class HttpRequestHandler:
         self.stream_id = stream_id
         self.transmit = transmit
 
-    def send_http3_response(self, code, headers : dict = None, body : bytes = b""):
+    def send_http3_response(self, code, headers: dict = None, body: bytes = b""):
         self.send_response_header(code, headers)
         if body:
             self.send_response_body(body)
         self.transmit()
 
-    def send_response_header(self, status: int = 200, headers : dict = None) -> None:
+    def send_response_header(self, status: int = 200, headers: dict = None) -> None:
         headers = [
             (b":status", str(status).encode()),
             (b"server", SERVER_NAME.encode()),
             (b"date", http_date().encode()),
-        ] + list((strtobytes(k).lower(), strtobytes(v)) for k,v in (headers or {}).items())
+        ] + list((strtobytes(k).lower(), strtobytes(v)) for k, v in (headers or {}).items())
         self.connection.send_headers(stream_id=self.stream_id, headers=headers)
 
-    def send_response_body(self, body : bytes = b"", more_body: bool = False) -> None:
+    def send_response_body(self, body: bytes = b"", more_body: bool = False) -> None:
         self.connection.send_data(stream_id=self.stream_id, data=body, end_stream=not more_body)
 
     def http_event_received(self, event: H3Event) -> None:
         log(f"http_event_received(%s) scope={self.scope}", ellipsizer(event))
         http_version = self.scope.get("http_version", "0")
-        if http_version!="3":
+        if http_version != "3":
             log.error(f"Error: http version {http_version} is not supported")
             self.protocol.close()
             return
@@ -74,7 +74,7 @@ class HttpRequestHandler:
             log(f"request for {req_path} handled using {script}")
             self.send_http3_response(*script(req_path))
             return
-        if method!="GET":
+        if method != "GET":
             log.warn(f"Warning: http {method} requests are not supported")
             self.protocol.close()
             return

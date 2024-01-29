@@ -20,9 +20,9 @@ def http_date():
     return formatdate(time(), usegmt=True)
 
 
-def binary_headers(headers : dict):
+def binary_headers(headers: dict):
     """ aioquic expects the headers as a list of binary pairs """
-    return [(strtobytes(k), strtobytes(v)) for k,v in headers.items()]
+    return [(strtobytes(k), strtobytes(v)) for k, v in headers.items()]
 
 
 def override_aioquic_logger():
@@ -39,4 +39,4 @@ def override_aioquic_logger():
         aioquic_logger.setLevel(logging.DEBUG)
     else:
         aioquic_logger.setLevel(logging.WARN)
-    logger.addHandler(aioquic_logger)               # type: ignore
+    logger.addHandler(aioquic_logger)  # type: ignore

@@ -25,7 +25,7 @@ log = Logger("network", "protocol")
 SOCKET_CORK: bool = envbool("XPRA_SOCKET_CORK", LINUX)
 if SOCKET_CORK:
     try:
-        assert socket.TCP_CORK > 0      # @UndefinedVariable
+        assert socket.TCP_CORK > 0  # @UndefinedVariable
     except (AttributeError, AssertionError) as cork_e:
         log.warn("Warning: unable to use TCP_CORK on %s", sys.platform)
         log.warn(" %s", cork_e)
@@ -41,11 +41,10 @@ SOCKET_SHUTDOWN: bool = envbool("XPRA_SOCKET_SHUTDOWN", False)
 LOG_TIMEOUTS: int = envint("XPRA_LOG_TIMEOUTS", 1)
 
 ABORT: dict[int, str] = {
-    errno.ENXIO            : "ENXIO",
-    errno.ECONNRESET       : "ECONNRESET",
-    errno.EPIPE            : "EPIPE",
+    errno.ENXIO: "ENXIO",
+    errno.ECONNRESET: "ECONNRESET",
+    errno.EPIPE: "EPIPE",
 }
-
 
 PROTOCOL_STR = {}
 FAMILY_STR = {}
@@ -81,7 +80,7 @@ def can_retry(e) -> bool | str:
     return False
 
 
-def untilConcludes(is_active_cb:Callable, can_retry_cb:Callable, f:Callable, *a, **kw):
+def untilConcludes(is_active_cb: Callable, can_retry_cb: Callable, f: Callable, *a, **kw):
     while is_active_cb():
         try:
             return f(*a, **kw)
@@ -89,9 +88,9 @@ def untilConcludes(is_active_cb:Callable, can_retry_cb:Callable, f:Callable, *a,
             retry = can_retry_cb(e)
             if not retry:
                 raise
-            if LOG_TIMEOUTS>0:
+            if LOG_TIMEOUTS > 0:
                 log("untilConcludes(%s, %s, %s, %s, %s) %s, retry=%s",
-                    is_active_cb, can_retry_cb, f, a, kw, e, retry, exc_info=LOG_TIMEOUTS>=2)
+                    is_active_cb, can_retry_cb, f, a, kw, e, retry, exc_info=LOG_TIMEOUTS >= 2)
 
 
 def pretty_socket(s) -> str:
@@ -133,7 +132,7 @@ class Connection:
         self.input_readcount = 0
         self.output_bytecount = 0
         self.output_writecount = 0
-        self.filename = None            # only used for unix domain sockets!
+        self.filename = None  # only used for unix domain sockets!
         self.active = True
         self.timeout = 0
 
@@ -178,19 +177,19 @@ class Connection:
 
     def get_info(self) -> dict[str, Any]:
         info = self.info.copy()
-        if self.socktype_wrapped!=self.socktype:
+        if self.socktype_wrapped != self.socktype:
             info["wrapped"] = self.socktype_wrapped
         info |= {
-            "type"              : self.socktype or "",
-            "endpoint"          : self.endpoint or (),
-            "active"            : self.active,
-            "input"             : {
-                "bytecount"      : self.input_bytecount,
-                "readcount"      : self.input_readcount,
+            "type": self.socktype or "",
+            "endpoint": self.endpoint or (),
+            "active": self.active,
+            "input": {
+                "bytecount": self.input_bytecount,
+                "readcount": self.input_readcount,
             },
-            "output"            : {
-                "bytecount"      : self.output_bytecount,
-                "writecount"     : self.output_writecount,
+            "output": {
+                "bytecount": self.output_bytecount,
+                "writecount": self.output_writecount,
             },
         }
         return info
@@ -227,7 +226,7 @@ class TwoFileConnection(Connection):
         self.may_abort("read")
         return self._read(os.read, self._read_fd, n)
 
-    def write(self, buf, _packet_type: str=""):
+    def write(self, buf, _packet_type: str = ""):
         self.may_abort("write")
         return self._write(os.write, self._write_fd, buf)
 
@@ -255,6 +254,7 @@ class TwoFileConnection(Connection):
                 self._writeable.close()
             except OSError as e:
                 log("close_files_thread() %s", self._writeable, e)
+
         start_thread(close_files_thread, "close-files-thread", daemon=True)
         log("%s.close() done", self)
 
@@ -264,10 +264,10 @@ class TwoFileConnection(Connection):
     def get_info(self) -> dict[str, Any]:
         d = super().get_info()
         d |= {
-            "type"  : "pipe",
-            "pipe"  : {
-                "read"     : {"fd" : self._read_fd},
-                "write"    : {"fd" : self._write_fd},
+            "type": "pipe",
+            "pipe": {
+                "read": {"fd": self._read_fd},
+                "write": {"fd": self._write_fd},
             },
         }
         return d
@@ -290,6 +290,7 @@ class SocketConnection(Connection):
                     return bool(int(v))
                 except ValueError:
                     return default_value
+
             self.cork = boolget("cork", SOCKET_CORK)
             self.nodelay = boolget("nodelay", SOCKET_NODELAY)
             log("%s options: cork=%s, nodelay=%s", self.socktype_wrapped, self.cork, self.nodelay)
@@ -306,7 +307,7 @@ class SocketConnection(Connection):
                         sock = self.get_raw_socket()
                         if sock:
                             # @UndefinedVariable pylint: disable=no-member
-                            sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idletime*1000, interval*1000))
+                            sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idletime * 1000, interval * 1000))
                     elif OSX:
                         TCP_KEEPALIVE = 0x10
                         self._setsockopt(socket.IPPROTO_TCP, TCP_KEEPALIVE, interval)
@@ -339,7 +340,7 @@ class SocketConnection(Connection):
                 sock.setsockopt(*args)
 
     def set_nodelay(self, nodelay: bool) -> None:
-        if self.nodelay is None and self.nodelay_value!=nodelay:
+        if self.nodelay is None and self.nodelay_value != nodelay:
             self.do_set_nodelay(nodelay)
 
     def do_set_nodelay(self, nodelay: bool) -> None:
@@ -348,8 +349,8 @@ class SocketConnection(Connection):
         log("changed %s socket to nodelay=%s", self.socktype, nodelay)
 
     def set_cork(self, cork: bool) -> None:
-        if self.cork and self.cork_value!=cork:
-            self._setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, cork)     # @UndefinedVariable
+        if self.cork and self.cork_value != cork:
+            self._setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, cork)  # @UndefinedVariable
             self.cork_value = cork
             log("changed %s socket to cork=%s", self.socktype, cork)
 
@@ -360,7 +361,7 @@ class SocketConnection(Connection):
     def read(self, n: int) -> bytes:
         return self._read(self._socket.recv, n)
 
-    def write(self, buf, _packet_type: str=""):
+    def write(self, buf, _packet_type: str = ""):
         return self._write(self._socket.send, buf)
 
     def close(self) -> None:
@@ -403,7 +404,7 @@ class SocketConnection(Connection):
         try:
             d["remote"] = self.remote or ""
             d["protocol-type"] = self.protocol_type
-            if FULL_INFO>0:
+            if FULL_INFO > 0:
                 si = self.get_socket_info()
                 if si:
                     d["socket"] = si
@@ -420,17 +421,17 @@ class SocketConnection(Connection):
         info: dict[str, Any] = {}
         try:
             info |= {
-                "proto"         : s.proto,
-                "family"        : FAMILY_STR.get(s.family, int(s.family)),
-                "type"          : PROTOCOL_STR.get(s.type, int(s.type)),
-                "cork"          : self.cork,
+                "proto": s.proto,
+                "family": FAMILY_STR.get(s.family, int(s.family)),
+                "type": PROTOCOL_STR.get(s.type, int(s.type)),
+                "cork": self.cork,
             }
         except AttributeError:
             log("do_get_socket_info()", exc_info=True)
         if self.nodelay is not None:
             info["nodelay"] = self.nodelay
         try:
-            info["timeout"] = int(1000*(s.gettimeout() or 0))
+            info["timeout"] = int(1000 * (s.gettimeout() or 0))
         except OSError:
             pass
         try:
@@ -442,14 +443,14 @@ class SocketConnection(Connection):
                 info["fileno"] = fd
             # ie: self.local = ("192.168.1.7", "14500")
             log("do_get_socket_info(%s) fd=%s, local=%s", s, fd, self.local)
-            if self.local and len(self.local)==2:
+            if self.local and len(self.local) == 2:
                 from xpra.net.net_util import get_interface
                 iface = get_interface(self.local[0])
                 # ie: iface = "eth0"
                 device_info = {}
                 if iface:
                     device_info["name"] = iface
-                if iface and iface!="lo":
+                if iface and iface != "lo":
                     try:
                         from xpra.platform.netdev_query import get_interface_info
                     except ImportError as e:
@@ -504,7 +505,7 @@ def get_socket_options(sock, level, options) -> dict:
                 opts[k] = v
     if errs:
         fileno = getattr(sock, "fileno", None)
-        if fileno and fileno()==-1:
+        if fileno and fileno() == -1:
             log("socket is closed, ignoring: %s", csv(errs))
         else:
             log.warn("Warning: failed to query %s", csv(errs))
@@ -519,11 +520,11 @@ class SocketPeekFile:
         self.update_peek = update_peek
 
     def __getattr__(self, attr):
-        if attr=="readline" and self.peeked:
+        if attr == "readline" and self.peeked:
             return self.readline
         return getattr(self.fileobj, attr)
 
-    def readline(self, limit: int=-1):
+    def readline(self, limit: int = -1):
         if self.peeked:
             newline = self.peeked.find(b"\n")
             peeked = self.peeked
@@ -534,14 +535,14 @@ class SocketPeekFile:
                     if limit == -1:
                         more = self.fileobj.readline(limit)
                     else:
-                        more = self.fileobj.readline(limit-len(self.peeked))
+                        more = self.fileobj.readline(limit - len(self.peeked))
                     self.peeked = b""
                     self.update_peek(self.peeked)
-                    return peeked+more
+                    return peeked + more
                 read = limit
             else:
                 if limit < 0 or limit >= newline:
-                    read = newline+1
+                    read = newline + 1
                 else:
                     read = limit
             self.peeked = peeked[read:]
@@ -577,7 +578,7 @@ class SocketPeekWrapper:
             if l >= bufsize:
                 log("patched_recv() peeking using existing data: %i bytes", bufsize)
                 return self.peeked[:bufsize]
-            v = self.socket.recv(bufsize-l)
+            v = self.socket.recv(bufsize - l)
             if v:
                 log("patched_recv() peeked more: %i bytes", len(v))
                 self.peeked += v
@@ -594,7 +595,7 @@ class SSLSocketConnection(SocketConnection):
     SSL_TIMEOUT_MESSAGES = ("The read operation timed out", "The write operation timed out")
 
     def can_retry(self, e) -> bool | str:
-        if getattr(e, "library", None)=="SSL":
+        if getattr(e, "library", None) == "SSL":
             reason = getattr(e, "reason", None)
             if reason in ("WRONG_VERSION_NUMBER", "UNEXPECTED_RECORD"):
                 return False
@@ -610,10 +611,10 @@ class SSLSocketConnection(SocketConnection):
         i = super().get_info()
         i["ssl"] = True
         for k, fn in {
-            "compression"      : "compression",
-            "alpn-protocol"    : "selected_alpn_protocol",
-            "npn-protocol"     : "selected_npn_protocol",
-            "version"          : "version",
+            "compression": "compression",
+            "alpn-protocol": "selected_alpn_protocol",
+            "npn-protocol": "selected_npn_protocol",
+            "version": "version",
         }.items():
             sfn = getattr(self._socket, fn, None)
             if sfn:
@@ -625,15 +626,15 @@ class SSLSocketConnection(SocketConnection):
             cipher = cipher_fn()
             if cipher:
                 i["cipher"] = {
-                    "name"       : cipher[0],
-                    "protocol"   : cipher[1],
-                    "bits"       : cipher[2],
+                    "name": cipher[0],
+                    "protocol": cipher[1],
+                    "bits": cipher[2],
                 }
         return i
 
 
 def set_socket_timeout(conn, timeout=None) -> None:
-    #FIXME: this is ugly, but less intrusive than the alternative?
+    # FIXME: this is ugly, but less intrusive than the alternative?
     if isinstance(conn, SocketConnection):
         sock = conn._socket
         log("set_socket_timeout(%s, %s) applied to %s", conn, timeout, sock)
@@ -654,7 +655,7 @@ def log_new_connection(conn, socket_info="") -> None:
     try:
         sockname = sock.getsockname()
     except AttributeError:
-        #ie: ssh channel
+        # ie: ssh channel
         sockname = ""
     log("log_new_connection(%s, %s) type=%s, sock=%s, sockname=%s, address=%s, peername=%s",
         conn, socket_info, type(conn), sock, sockname, address, peername)
@@ -678,11 +679,11 @@ def get_socket_config() -> dict[str, Any]:
         # pylint: disable=import-outside-toplevel
         from xpra.net.bytestreams import VSOCK_TIMEOUT, SOCKET_TIMEOUT, SOCKET_NODELAY
         config = {
-            "vsocket.timeout"    : VSOCK_TIMEOUT,
-            "socket.timeout"     : SOCKET_TIMEOUT,
+            "vsocket.timeout": VSOCK_TIMEOUT,
+            "socket.timeout": SOCKET_TIMEOUT,
         }
         if SOCKET_NODELAY is not None:
             config["socket.nodelay"] = SOCKET_NODELAY
-    except Exception:   # pragma: no cover
+    except Exception:  # pragma: no cover
         log("get_net_config()", exc_info=True)
     return config

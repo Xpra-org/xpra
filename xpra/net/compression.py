@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from xpra.util.env import envbool
 from xpra.common import MIN_COMPRESS_SIZE, MAX_DECOMPRESSED_SIZE
 
-
 # all the compressors we know about:
 ALL_COMPRESSORS: tuple[str, ...] = ("lz4", "zlib", "brotli", "none")
 # the compressors we may want to use, in the best compatibility order:
@@ -27,11 +26,11 @@ PERFORMANCE_COMPRESSION: tuple[str, ...] = ("lz4", "brotli")
 class Compression:
     name: str
     version: str
-    compress : Callable[[ByteString,int], ByteString]
-    decompress : Callable[[ByteString], ByteString]
+    compress: Callable[[ByteString, int], ByteString]
+    decompress: Callable[[ByteString], ByteString]
 
 
-COMPRESSION : dict[str, Compression] = {}
+COMPRESSION: dict[str, Compression] = {}
 
 
 def init_lz4() -> Compression:
@@ -42,10 +41,11 @@ def init_lz4() -> Compression:
 
     def lz4_compress(packet, level):
         flag = min(15, level) | LZ4_FLAG
-        return flag, compress(packet, acceleration=max(0, 5-level//3))
+        return flag, compress(packet, acceleration=max(0, 5 - level // 3))
 
     def lz4_decompress(data):
         return decompress(data, max_size=MAX_DECOMPRESSED_SIZE)
+
     return Compression("lz4", get_version(), lz4_compress, lz4_decompress)
 
 
@@ -60,13 +60,14 @@ def init_brotli() -> Compression:
     brotli_version = get_version()
 
     def brotli_compress_shim(packet, level):
-        if len(packet)>1024*1024:
+        if len(packet) > 1024 * 1024:
             level = min(9, level)
         else:
             level = min(11, level)
         if not isinstance(packet, (bytes, bytearray, memoryview)):
             packet = bytes(str(packet), 'UTF-8')
         return level | BROTLI_FLAG, brotli_compress(packet, quality=level)
+
     return Compression("brotli", brotli_version, brotli_compress_shim, brotli_decompress)
 
 
@@ -78,13 +79,14 @@ def init_none() -> Compression:
 
     def nodecompress(v):
         return v
+
     return Compression("none", None, nocompress, nodecompress)
 
 
 def init_compressors(*names) -> None:
     for x in names:
         assert x not in ("compressors", "all"), "attempted to recurse!"
-        if not envbool("XPRA_"+x.upper(), True):
+        if not envbool("XPRA_" + x.upper(), True):
             continue
         attr = globals().get(f"init_{x}", None)
         if attr is None:
@@ -95,7 +97,7 @@ def init_compressors(*names) -> None:
         try:
             if not callable(attr):
                 raise ValueError(f"{attr!r} for {x} is not callable")
-            fn : Callable = attr
+            fn: Callable = attr
             c = fn()
             assert c
             COMPRESSION[x] = c
@@ -107,27 +109,27 @@ def init_compressors(*names) -> None:
 
 
 def init_all() -> None:
-    init_compressors(*(list(TRY_COMPRESSORS)+["none"]))
+    init_compressors(*(list(TRY_COMPRESSORS) + ["none"]))
 
 
 def use(compressor) -> bool:
     return compressor in COMPRESSION
 
 
-def get_compression_caps(full_info: int=1) -> dict[str,Any]:
-    caps : dict[str,Any] = {}
+def get_compression_caps(full_info: int = 1) -> dict[str, Any]:
+    caps: dict[str, Any] = {}
     for x in TRY_COMPRESSORS:
         c = COMPRESSION.get(x)
         if c is None:
             continue
         ccaps = caps.setdefault(x, {})
-        if full_info>1 and c.version:
+        if full_info > 1 and c.version:
             ccaps["version"] = c.version
         ccaps[""] = True
     return caps
 
 
-def get_enabled_compressors(order=TRY_COMPRESSORS) -> tuple[str,...]:
+def get_enabled_compressors(order=TRY_COMPRESSORS) -> tuple[str, ...]:
     return tuple(x for x in order if x in COMPRESSION)
 
 
@@ -182,6 +184,7 @@ class LargeStructure:
 
 class Compressible(LargeStructure):
     __slots__ = ()
+
     # wrapper for data that should be compressed at some point,
     # to use this class, you must override compress()
 
@@ -197,12 +200,13 @@ def compressed_wrapper(datatype, data, level=5, can_inline=True, **kwargs) -> Co
 
     def no():
         return Compressed(f"raw {datatype}", data, can_inline=can_inline)
-    if size<=MIN_COMPRESS_SIZE:
+
+    if size <= MIN_COMPRESS_SIZE:
         # don't bother
         return no()
-    if size>MAX_DECOMPRESSED_SIZE:
-        sizemb = size//1024//1024
-        maxmb = MAX_DECOMPRESSED_SIZE//1024//1024
+    if size > MAX_DECOMPRESSED_SIZE:
+        sizemb = size // 1024 // 1024
+        maxmb = MAX_DECOMPRESSED_SIZE // 1024 // 1024
         raise ValueError(f"uncompressed data is too large: {sizemb}MB, limit is {maxmb}MB")
     try:
         algo = next(x for x in PERFORMANCE_COMPRESSION if kwargs.get(x) and x in COMPRESSION)
@@ -214,7 +218,7 @@ def compressed_wrapper(datatype, data, level=5, can_inline=True, **kwargs) -> Co
     c = COMPRESSION[algo]
     cl, cdata = c.compress(data, level)
     min_saving = int(kwargs.get("min_saving", 0))
-    if len(cdata)>=size+min_saving:
+    if len(cdata) >= size + min_saving:
         return no()
     return LevelCompressed(datatype, cdata, cl, algo, can_inline=can_inline)
 
@@ -232,7 +236,7 @@ def get_compression_type(level) -> str:
     return "zlib"
 
 
-def decompress(data:bytes, level: int):
+def decompress(data: bytes, level: int):
     from xpra.net.protocol.header import LZ4_FLAG, BROTLI_FLAG
     if level & LZ4_FLAG:
         algo = "lz4"
@@ -250,7 +254,7 @@ def decompress_by_name(data: bytes, algo: str):
     return c.decompress(data)
 
 
-def main():         # pragma: no cover
+def main():  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context

@@ -153,7 +153,8 @@ def setup_client_ssh_agent_socket(uuid: str, ssh_auth_sock: str) -> str:
         # perhaps this is a local client,
         # and we can find its agent socket and create the symlink now:
         log(f"client supplied ssh-auth-sock={ssh_auth_sock}")
-        if ssh_auth_sock and os.path.isabs(ssh_auth_sock) and os.path.exists(ssh_auth_sock) and is_socket(ssh_auth_sock):  # noqa: E501
+        if ssh_auth_sock and os.path.isabs(ssh_auth_sock) and os.path.exists(ssh_auth_sock) and is_socket(
+                ssh_auth_sock):  # noqa: E501
             try:
                 # ie: /run/user/1000/xpra/10/$UUID -> /tmp/ssh-XXXXvjt4hN/agent.766599
                 os.link(ssh_auth_sock, sockpath, follow_symlinks=False)

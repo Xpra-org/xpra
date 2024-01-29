@@ -20,7 +20,6 @@ from xpra.log import Logger
 
 log = Logger("network", "util")
 
-
 netifaces_version: tuple[Any, ...] = ()
 _netifaces = None
 
@@ -29,10 +28,10 @@ def import_netifaces() -> object:
     global _netifaces, netifaces_version
     if _netifaces is None:
         try:
-            import netifaces    # pylint: disable=import-outside-toplevel
+            import netifaces  # pylint: disable=import-outside-toplevel
             log("netifaces loaded successfully")
             _netifaces = netifaces
-            netifaces_version = parse_version(netifaces.version)    # @UndefinedVariable
+            netifaces_version = parse_version(netifaces.version)  # @UndefinedVariable
         except ImportError:
             _netifaces = False
             log.warn("Warning: the python netifaces package is missing")
@@ -48,7 +47,7 @@ def get_interfaces():
     netifaces = import_netifaces()
     if not netifaces:
         return []
-    return netifaces.interfaces()           #@UndefinedVariable pylint: disable=no-member
+    return netifaces.interfaces()  # @UndefinedVariable pylint: disable=no-member
 
 
 def get_interfaces_addresses() -> dict:
@@ -56,21 +55,21 @@ def get_interfaces_addresses() -> dict:
     netifaces = import_netifaces()
     if netifaces:
         for iface in get_interfaces():
-            d[iface] = netifaces.ifaddresses(iface)     #@UndefinedVariable pylint: disable=no-member
+            d[iface] = netifaces.ifaddresses(iface)  # @UndefinedVariable pylint: disable=no-member
     return d
 
 
 def get_interface(address):
     for iface, idefs in get_interfaces_addresses().items():
-        #ie: {
+        # ie: {
         #    17: [{'broadcast': u'ff:ff:ff:ff:ff:ff', 'addr': u'00:e0:4c:68:46:a6'}],
         #    2: [{'broadcast': u'192.168.1.255', 'netmask': u'255.255.255.0', 'addr': u'192.168.1.7'}],
         #    10: [{'netmask': u'ffff:ffff:ffff:ffff::/64', 'addr': u'fe80::6c45:655:c59e:92a1%eth0'}]
-        #}
+        # }
         for _itype, defs in idefs.items():
-            #ie: itype=2, defs=[{'broadcast': u'192.168.1.255', 'netmask': u'255.255.255.0', 'addr': u'192.168.1.7'}]
+            # ie: itype=2, defs=[{'broadcast': u'192.168.1.255', 'netmask': u'255.255.255.0', 'addr': u'192.168.1.7'}]
             for props in defs:
-                if props.get("addr")==address:
+                if props.get("addr") == address:
                     return iface
     return None
 
@@ -88,7 +87,7 @@ def get_gateways() -> dict:
                 AF_NAMES[v] = k[3:]
         gateways = {}
         for family, gws in d.items():
-            if family=="default":
+            if family == "default":
                 continue
             gateways[AF_NAMES.get(family, family)] = gws
         return gateways
@@ -112,14 +111,14 @@ def do_get_bind_IPs():
     ips = []
     netifaces = import_netifaces()
     assert netifaces
-    ifaces = netifaces.interfaces()            #@UndefinedVariable pylint: disable=no-member
+    ifaces = netifaces.interfaces()  # @UndefinedVariable pylint: disable=no-member
     log("ifaces=%s", ifaces)
     for iface in ifaces:
         if_ipmasks = []
         try:
             ipmasks = do_get_bind_ifacemask(iface)
             for ipmask in ipmasks:
-                (ip,_) = ipmask
+                (ip, _) = ipmask
                 if ip not in ips:
                     ips.append(ip)
                 if ipmask not in if_ipmasks:
@@ -138,17 +137,17 @@ def do_get_bind_ifacemask(iface):
     ipmasks = []
     netifaces = import_netifaces()
     assert netifaces
-    address_types = netifaces.ifaddresses(iface)    #@UndefinedVariable pylint: disable=no-member
+    address_types = netifaces.ifaddresses(iface)  # @UndefinedVariable pylint: disable=no-member
     for addresses in address_types.values():
         for address in addresses:
             if 'netmask' in address and 'addr' in address:
                 addr = address['addr']
                 mask = address['netmask']
-                if addr!= '::1' and addr != '0.0.0.0' and addr.find("%")<0:
+                if addr != '::1' and addr != '0.0.0.0' and addr.find("%") < 0:
                     try:
-                        fam = socket.AF_INET6 if len(addr.split(":"))>2 else socket.AF_INET
+                        fam = socket.AF_INET6 if len(addr.split(":")) > 2 else socket.AF_INET
                         b = socket.inet_pton(fam, addr)
-                        log(f"socket.inet_pton(AF_INET%s, {addr}={b}", "6" if fam==socket.AF_INET6 else "")
+                        log(f"socket.inet_pton(AF_INET%s, {addr}={b}", "6" if fam == socket.AF_INET6 else "")
                         ipmasks.append((addr, mask))
                     except Exception as e:
                         log(f"do_get_bind_ifacemask({iface})", exc_info=True)
@@ -163,7 +162,7 @@ def get_iface(ip) -> str:
     log("get_iface(%s)", ip)
     if not ip:
         return ""
-    if ip.find("%")>=0:
+    if ip.find("%") >= 0:
         iface = ip.split("%", 1)[1]
         try:
             socket.if_nametoindex(iface)
@@ -171,17 +170,17 @@ def get_iface(ip) -> str:
             return ""
         else:
             return iface
-    ipv6 = ip.find(":")>=0
+    ipv6 = ip.find(":") >= 0
     af = socket.AF_INET6 if ipv6 else socket.AF_INET
     ipchars = ".:0123456789"
     if ipv6:
         ipchars += "[]"
-    if any(x for x in ip if ipchars.find(x)<0):
-        #extra characters, assume this is a hostname:
+    if any(x for x in ip if ipchars.find(x) < 0):
+        # extra characters, assume this is a hostname:
         sockaddr = ()
         try:
             v = socket.getaddrinfo(ip, None)
-            assert len(v)>0
+            assert len(v) > 0
         except Exception as e:
             log("socket.getaddrinfo(%s, None)", ip, exc_info=True)
             log.error(f"Error resolving {ip!r}: {e}")
@@ -189,16 +188,16 @@ def get_iface(ip) -> str:
         for i, x in enumerate(v):
             family, socktype, proto, canonname, sockaddr = x
             log("get_iface(%s) [%i]=%s", ip, i, (family, socktype, proto, canonname, sockaddr))
-            if family==af:
+            if family == af:
                 break
         if sockaddr:
             log("get_iface(%s) sockaddr=%s", ip, sockaddr)
             ip = sockaddr[0]
 
-    ipv6 = ip.find(":")>=0
+    ipv6 = ip.find(":") >= 0
     if not ipv6:
         ip_parts = ip.split(".")
-        if len(ip_parts)!=4:
+        if len(ip_parts) != 4:
             return ""
 
     best_match = ""
@@ -206,23 +205,23 @@ def get_iface(ip) -> str:
     for iface, ipmasks in iface_ipmasks.items():
         for test_ip, mask in ipmasks:
             if test_ip == ip:
-                #exact match
+                # exact match
                 log("get_iface(%s)=%s", iface, ip)
                 return iface
-            if len(test_ip.split(":"))>2:
-                #test_ip is ipv6
+            if len(test_ip.split(":")) > 2:
+                # test_ip is ipv6
                 test_ip_parts = test_ip.split("/")[0].split(":")
                 mask_parts = mask.split("/")[0].split(":")
             else:
                 test_ip_parts = test_ip.split(".")
                 mask_parts = mask.split(".")
-                if len(test_ip_parts)!=4 or len(mask_parts)!=4:
+                if len(test_ip_parts) != 4 or len(mask_parts) != 4:
                     log.error(f"Error: incorrect IP {test_ip} or mask {mask}")
             match = True
             try:
                 for i, ip_part_str in enumerate(test_ip_parts):
-                    if i>=len(mask_parts):
-                        #end of the mask
+                    if i >= len(mask_parts):
+                        # end of the mask
                         break
                     try:
                         mask_part = int(mask_parts[i] or 0)
@@ -233,7 +232,7 @@ def get_iface(ip) -> str:
                     except ValueError:
                         ip_part = int(ip_part_str, 16)
                     test_ip_part = ip_part & mask_part
-                    if ip_part!=test_ip_part:
+                    if ip_part != test_ip_part:
                         match = False
                         break
                 if match:
@@ -245,10 +244,10 @@ def get_iface(ip) -> str:
     return best_match
 
 
-net_sys_config : dict[str,Any] = {}
+net_sys_config: dict[str, Any] = {}
 
 
-def get_net_sys_config() -> dict[str,Any]:
+def get_net_sys_config() -> dict[str, Any]:
     global net_sys_config
     if net_sys_config or not os.path.exists("/proc"):
         return net_sys_config
@@ -256,105 +255,107 @@ def get_net_sys_config() -> dict[str,Any]:
     def stripnl(v):
         return str(v).rstrip("\r").rstrip("\n")
 
-    def addproc(procpath: str, subsystem: str, name: str, conv:Callable=stripnl):
+    def addproc(procpath: str, subsystem: str, name: str, conv: Callable = stripnl):
         assert name
         try:
             with open(procpath, encoding="latin1") as f:
                 data = f.read()
                 subdict = net_sys_config.setdefault(subsystem, {})
-                if name.find("/")>0:
+                if name.find("/") > 0:
                     sub, name = name.split("/", 1)
                     subdict = subdict.setdefault(sub, {})
                 for sub in ("ip", "tcp", "ipfrag", "icmp", "igmp"):
                     if name.startswith(f"{sub}_"):
-                        name = name[len(sub)+1:]
+                        name = name[len(sub) + 1:]
                         subdict = subdict.setdefault(sub, {})
                         break
                 subdict[name] = conv(data)
         except Exception as e:
             log("cannot read '%s': %s", procpath, e)
+
     for k in (
-        "netdev_max_backlog", "optmem_max",
-        "rmem_default", "rmem_max", "wmem_default", "wmem_max", "max_skb_frags",
-        "busy_poll", "busy_read", "somaxconn",
+            "netdev_max_backlog", "optmem_max",
+            "rmem_default", "rmem_max", "wmem_default", "wmem_max", "max_skb_frags",
+            "busy_poll", "busy_read", "somaxconn",
     ):
         addproc(f"/proc/sys/net/core/{k}", "core", k, int)
-    for k in ("default_qdisc", ):
+    for k in ("default_qdisc",):
         addproc(f"/proc/sys/net/core/{k}", "core", k)
-    for k in ("max_dgram_qlen", ):
+    for k in ("max_dgram_qlen",):
         addproc(f"/proc/sys/net/unix/{k}", "unix", k, int)
     for k in (
-        "ip_forward", "ip_forward_use_pmtu",
-        "tcp_abort_on_overflow", "fwmark_reflect", "tcp_autocorking", "tcp_dsack",
-        "tcp_ecn_fallback", "tcp_fack",
-        # "tcp_l3mdev_accept",
-        "tcp_low_latency", "tcp_no_metrics_save", "tcp_recovery", "tcp_retrans_collapse", "tcp_timestamps",
-        "tcp_workaround_signed_windows", "tcp_thin_linear_timeouts", "tcp_thin_dupack", "ip_nonlocal_bind",
-        "ip_dynaddr", "ip_early_demux", "icmp_echo_ignore_all", "icmp_echo_ignore_broadcasts",
+            "ip_forward", "ip_forward_use_pmtu",
+            "tcp_abort_on_overflow", "fwmark_reflect", "tcp_autocorking", "tcp_dsack",
+            "tcp_ecn_fallback", "tcp_fack",
+            # "tcp_l3mdev_accept",
+            "tcp_low_latency", "tcp_no_metrics_save", "tcp_recovery", "tcp_retrans_collapse", "tcp_timestamps",
+            "tcp_workaround_signed_windows", "tcp_thin_linear_timeouts", "tcp_thin_dupack", "ip_nonlocal_bind",
+            "ip_dynaddr", "ip_early_demux", "icmp_echo_ignore_all", "icmp_echo_ignore_broadcasts",
     ):
         addproc(f"/proc/sys/net/ipv4/{k}", "ipv4", k, bool)
     for k in (
-        "tcp_allowed_congestion_control", "tcp_available_congestion_control",
-        "tcp_congestion_control", "tcp_early_retrans",
-        "tcp_moderate_rcvbuf", "tcp_rfc1337", "tcp_sack", "tcp_slow_start_after_idle", "tcp_stdurg",
-        "tcp_syncookies", "tcp_tw_recycle", "tcp_tw_reuse", "tcp_window_scaling",
-        "icmp_ignore_bogus_error_responses", "icmp_errors_use_inbound_ifaddr",
+            "tcp_allowed_congestion_control", "tcp_available_congestion_control",
+            "tcp_congestion_control", "tcp_early_retrans",
+            "tcp_moderate_rcvbuf", "tcp_rfc1337", "tcp_sack", "tcp_slow_start_after_idle", "tcp_stdurg",
+            "tcp_syncookies", "tcp_tw_recycle", "tcp_tw_reuse", "tcp_window_scaling",
+            "icmp_ignore_bogus_error_responses", "icmp_errors_use_inbound_ifaddr",
     ):
         addproc(f"/proc/sys/net/ipv4/{k}", "ipv4", k)
 
-    def parsenums(v: str) -> tuple[int,...]:
-        return tuple(int(x.strip()) for x in v.split("\t") if len(x.strip())>0)
-    for k in ("tcp_mem", "tcp_rmem", "tcp_wmem", "ip_local_port_range", "ip_local_reserved_ports", ):
+    def parsenums(v: str) -> tuple[int, ...]:
+        return tuple(int(x.strip()) for x in v.split("\t") if len(x.strip()) > 0)
+
+    for k in ("tcp_mem", "tcp_rmem", "tcp_wmem", "ip_local_port_range", "ip_local_reserved_ports",):
         addproc(f"/proc/sys/net/ipv4/{k}", "ipv4", k, parsenums)
     for k in (
-        "ip_default_ttl", "ip_no_pmtu_disc", "route/min_pmtu",
-        "route/mtu_expires", "route/min_adv_mss",
-        "ipfrag_high_thresh", "ipfrag_low_thresh", "ipfrag_time", "ipfrag_max_dist",
-        "tcp_adv_win_scale", "tcp_app_win", "tcp_base_mss", "tcp_ecn", "tcp_fin_timeout", "tcp_frto",
-        "tcp_invalid_ratelimit", "tcp_keepalive_time", "tcp_keepalive_probes", "tcp_keepalive_intvl",
-        "tcp_max_orphans", "tcp_max_syn_backlog", "tcp_max_tw_buckets",
-        "tcp_min_rtt_wlen", "tcp_mtu_probing", "tcp_probe_interval",
-        "tcp_probe_threshold", "tcp_orphan_retries",
-        "tcp_reordering", "tcp_max_reordering", "tcp_retries1", "tcp_retries2", "tcp_synack_retries",
-        "tcp_fastopen", "tcp_syn_retries", "tcp_min_tso_segs", "tcp_pacing_ss_ratio",
-        "tcp_pacing_ca_ratio", "tcp_tso_win_divisor", "tcp_notsent_lowat",
-        "tcp_limit_output_bytes", "tcp_challenge_ack_limit",
-        "icmp_ratelimit", "icmp_msgs_per_sec", "icmp_msgs_burst", "icmp_ratemask",
-        "igmp_max_memberships", "igmp_max_msf", "igmp_qrv",
+            "ip_default_ttl", "ip_no_pmtu_disc", "route/min_pmtu",
+            "route/mtu_expires", "route/min_adv_mss",
+            "ipfrag_high_thresh", "ipfrag_low_thresh", "ipfrag_time", "ipfrag_max_dist",
+            "tcp_adv_win_scale", "tcp_app_win", "tcp_base_mss", "tcp_ecn", "tcp_fin_timeout", "tcp_frto",
+            "tcp_invalid_ratelimit", "tcp_keepalive_time", "tcp_keepalive_probes", "tcp_keepalive_intvl",
+            "tcp_max_orphans", "tcp_max_syn_backlog", "tcp_max_tw_buckets",
+            "tcp_min_rtt_wlen", "tcp_mtu_probing", "tcp_probe_interval",
+            "tcp_probe_threshold", "tcp_orphan_retries",
+            "tcp_reordering", "tcp_max_reordering", "tcp_retries1", "tcp_retries2", "tcp_synack_retries",
+            "tcp_fastopen", "tcp_syn_retries", "tcp_min_tso_segs", "tcp_pacing_ss_ratio",
+            "tcp_pacing_ca_ratio", "tcp_tso_win_divisor", "tcp_notsent_lowat",
+            "tcp_limit_output_bytes", "tcp_challenge_ack_limit",
+            "icmp_ratelimit", "icmp_msgs_per_sec", "icmp_msgs_burst", "icmp_ratemask",
+            "igmp_max_memberships", "igmp_max_msf", "igmp_qrv",
     ):
         addproc(f"/proc/sys/net/ipv4/{k}", "ipv4", k, int)
     return net_sys_config
 
 
-SSL_CONV : dict[str, tuple[str,Callable]] = {
-    ""           : ("version-str", str),
-    "_INFO"      : ("version", parse_version),
-    "_NUMBER"    : ("version-number", int),
+SSL_CONV: dict[str, tuple[str, Callable]] = {
+    "": ("version-str", str),
+    "_INFO": ("version", parse_version),
+    "_NUMBER": ("version-number", int),
 }
 
 
 def get_ssl_info(show_constants=False) -> dict[str, Any]:
     try:
         import ssl  # pylint: disable=import-outside-toplevel
-    except ImportError as e:    # pragma: no cover
+    except ImportError as e:  # pragma: no cover
         log("no ssl: %s", e)
         return {}
-    info : dict[str,Any] = {}
+    info: dict[str, Any] = {}
     if show_constants:
-        protocols = {k:int(getattr(ssl, k)) for k in dir(ssl) if k.startswith("PROTOCOL_")}
-        ops = {k:int(getattr(ssl, k)) for k in dir(ssl) if k.startswith("OP_")}
-        vers = {k:int(getattr(ssl, k)) for k in dir(ssl) if k.startswith("VERIFY_")}
+        protocols = {k: int(getattr(ssl, k)) for k in dir(ssl) if k.startswith("PROTOCOL_")}
+        ops = {k: int(getattr(ssl, k)) for k in dir(ssl) if k.startswith("OP_")}
+        vers = {k: int(getattr(ssl, k)) for k in dir(ssl) if k.startswith("VERIFY_")}
         info |= {
-            "protocols"    : protocols,
-            "options"    : ops,
-            "verify"    : vers,
+            "protocols": protocols,
+            "options": ops,
+            "verify": vers,
         }
-    for k,name in {
-        "HAS_ALPN"                : "alpn",
-        "HAS_ECDH"                : "ecdh",
-        "HAS_SNI"                : "sni",
-        "HAS_NPN"                : "npn",
-        "CHANNEL_BINDING_TYPES"    : "channel-binding-types",
+    for k, name in {
+        "HAS_ALPN": "alpn",
+        "HAS_ECDH": "ecdh",
+        "HAS_SNI": "sni",
+        "HAS_NPN": "npn",
+        "CHANNEL_BINDING_TYPES": "channel-binding-types",
     }.items():
         v = getattr(ssl, k, None)
         if v is not None:
@@ -368,27 +369,27 @@ def get_ssl_info(show_constants=False) -> dict[str, Any]:
     return info
 
 
-def get_network_caps(full_info: int=1) -> dict[str,Any]:
+def get_network_caps(full_info: int = 1) -> dict[str, Any]:
     # pylint: disable=import-outside-toplevel
     from xpra.net.digest import get_digests
     from xpra.net.compression import get_enabled_compressors, get_compression_caps
     from xpra.net.packet_encoding import get_enabled_encoders, get_packet_encoding_caps
     digests = get_digests()
-    #"hmac" is the legacy name, "xor" and "des" should not be used for salt:
+    # "hmac" is the legacy name, "xor" and "des" should not be used for salt:
     salt_digests = tuple(x for x in digests if x not in ("hmac", "xor", "des"))
-    caps: dict[str,Any] = {
-        "digest"                : digests,
-        "salt-digest"           : salt_digests,
-        "compressors"           : get_enabled_compressors(),
-        "encoders"              : get_enabled_encoders(),
-        "flush"                 : FLUSH_HEADER,
+    caps: dict[str, Any] = {
+        "digest": digests,
+        "salt-digest": salt_digests,
+        "compressors": get_enabled_compressors(),
+        "encoders": get_enabled_encoders(),
+        "flush": FLUSH_HEADER,
     }
     caps.update(get_compression_caps(full_info))
     caps.update(get_packet_encoding_caps(full_info))
     return caps
 
 
-def get_info() -> dict[str,Any]:
+def get_info() -> dict[str, Any]:
     i = get_network_caps()
     netifaces = import_netifaces()
     if netifaces:
@@ -398,7 +399,7 @@ def get_info() -> dict[str,Any]:
         ssli = get_ssl_info()
         ssli[""] = True
         i["ssl"] = ssli
-    if FULL_INFO>1:
+    if FULL_INFO > 1:
         s = get_net_sys_config()
         if s:
             i["system"] = s
@@ -406,12 +407,12 @@ def get_info() -> dict[str,Any]:
     paramiko = sys.modules.get("paramiko")
     if paramiko:
         i["paramiko"] = {
-            "version"   : paramiko.__version_info__,
+            "version": paramiko.__version_info__,
         }
     return i
 
 
-def main():     # pragma: no cover
+def main():  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     from xpra.os_util import POSIX
     from xpra.util.str_fn import print_nested_dict
@@ -434,15 +435,15 @@ def main():     # pragma: no cover
                 print("* %s (index=%s)" % (iface.ljust(20), socket.if_nametoindex(iface)))
             except OSError:
                 print(f"* {iface}")
-            addresses = netifaces.ifaddresses(iface)     #@UndefinedVariable pylint: disable=no-member
+            addresses = netifaces.ifaddresses(iface)  # @UndefinedVariable pylint: disable=no-member
             for addr, defs in addresses.items():
                 if addr in (socket.AF_INET, socket.AF_INET6):
                     for d in defs:
                         ip = d.get("addr")
                         if ip:
                             stype = {
-                                socket.AF_INET  : "IPv4",
-                                socket.AF_INET6 : "IPv6",
+                                socket.AF_INET: "IPv4",
+                                socket.AF_INET6: "IPv6",
                             }[addr]
                             print(f" * {stype}:     {ip}")
                             if POSIX:
@@ -468,7 +469,7 @@ def main():     # pragma: no cover
                 lastx = None
                 for x in v:
                     if lastx is not None:
-                        #dot separated numbers
+                        # dot separated numbers
                         if isinstance(lastx, int):
                             s += "."
                         else:
@@ -483,11 +484,11 @@ def main():     # pragma: no cover
             return str(v)
 
         print("Gateways found:")
-        for gt,idefs in get_gateways().items():
-            print(f"* {gt}")      #ie: "INET"
+        for gt, idefs in get_gateways().items():
+            print(f"* {gt}")  # ie: "INET"
             for i, idef in enumerate(idefs):
                 if isinstance(idef, (list, tuple)):
-                    print(f" [{i}]           "+csv(idef))
+                    print(f" [{i}]           " + csv(idef))
 
         print("")
         print("Protocol Capabilities:")
@@ -496,7 +497,7 @@ def main():     # pragma: no cover
         from xpra.net import packet_encoding
         packet_encoding.init_all()
         netcaps = get_network_caps()
-        netif = {""    : bool(netifaces)}
+        netif = {"": bool(netifaces)}
         if netifaces_version:
             netif["version"] = netifaces_version
         netcaps["netifaces"] = netif

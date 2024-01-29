@@ -24,32 +24,30 @@ from xpra.log import Logger
 
 log = Logger("util")
 
-
-#this wrapper allows us to interact with a subprocess as if it was
-#a normal class with gobject signals
-#so that we can interact with it using a standard xpra protocol layer
-#there is a wrapper for the caller
-#and one for the class
-#they talk to each other through stdin / stdout,
-#using the protocol for encoding the data
+# this wrapper allows us to interact with a subprocess as if it was
+# a normal class with gobject signals
+# so that we can interact with it using a standard xpra protocol layer
+# there is a wrapper for the caller
+# and one for the class
+# they talk to each other through stdin / stdout,
+# using the protocol for encoding the data
 
 
 DEBUG_WRAPPER = envbool("XPRA_WRAPPER_DEBUG", False)
-#to make it possible to inspect files (more human readable):
+# to make it possible to inspect files (more human readable):
 HEXLIFY_PACKETS = envbool("XPRA_HEXLIFY_PACKETS", False)
-#avoids showing a new console window on win32:
+# avoids showing a new console window on win32:
 WIN32_SHOWWINDOW = envbool("XPRA_WIN32_SHOWWINDOW", False)
-#assume that the subprocess is running the same version of xpra,
-#so we can set the packet aliases without exchanging and parsing caps:
-#(this can break, ie: if both python2 and python3 builds are installed
+# assume that the subprocess is running the same version of xpra,
+# so we can set the packet aliases without exchanging and parsing caps:
+# (this can break, ie: if both python2 and python3 builds are installed
 # and the python2 builds are from an older version)
 LOCAL_ALIASES = envbool("XPRA_LOCAL_ALIASES", False)
 
-LOCAL_SEND_ALIASES = {v: i for i,v in enumerate(PACKET_TYPES)}
+LOCAL_SEND_ALIASES = {v: i for i, v in enumerate(PACKET_TYPES)}
 LOCAL_RECEIVE_ALIASES = dict(enumerate(PACKET_TYPES))
 
 FLUSH = envbool("XPRA_SUBPROCESS_FLUSH", False)
-
 
 FAULT_RATE = envint("XPRA_WRAPPER_FAULT_INJECTION_RATE")
 
@@ -59,22 +57,23 @@ def nofault(_p):
 
 
 INJECT_FAULT = nofault
-if FAULT_RATE>0:
+if FAULT_RATE > 0:
     _counter = 0
 
     def DO_INJECT_FAULT(p):
         global _counter
         _counter += 1
-        if (_counter % FAULT_RATE)==0:
+        if (_counter % FAULT_RATE) == 0:
             log.warn("injecting fault in %s", p)
             p.raw_write("junk", "Wrapper JUNK! added by fault injection code")
+
     INJECT_FAULT = DO_INJECT_FAULT
 
 
 def setup_fastencoder_nocompression(protocol):
     from xpra.net.packet_encoding import get_enabled_encoders, PERFORMANCE_ORDER
     encoders = get_enabled_encoders(PERFORMANCE_ORDER)
-    assert len(encoders)>0, "no packet encoders available!?"
+    assert len(encoders) > 0, "no packet encoders available!?"
     for encoder in encoders:
         try:
             protocol.enable_encoder(encoder)
@@ -95,6 +94,7 @@ class subprocess_callee:
     You can also call send() to pass packets back to the caller.
     (there is no validation of which signals are valid or not)
     """
+
     def __init__(self, input_filename="-", output_filename="-", wrapped_object=None, method_whitelist=None):
         self.name = ""
         self._input = None
@@ -169,13 +169,13 @@ class subprocess_callee:
 
     def make_protocol(self) -> SocketProtocol:
         # figure out where we read from and write to:
-        if self.input_filename=="-":
+        if self.input_filename == "-":
             # disable stdin buffering:
             self._input = os.fdopen(sys.stdin.fileno(), "rb", 0)
             setbinarymode(self._input.fileno())
         else:
             self._input = open(self.input_filename, "rb")
-        if self.output_filename=="-":
+        if self.output_filename == "-":
             # disable stdout buffering:
             self._output = os.fdopen(sys.stdout.fileno(), "wb", 0)
             setbinarymode(self._output.fileno())
@@ -238,7 +238,7 @@ class subprocess_callee:
 
     def send(self, *args) -> None:
         if HEXLIFY_PACKETS:
-            args = list(args[:1])+[hexstr(str(x)[:32]) for x in args[1:]]
+            args = list(args[:1]) + [hexstr(str(x)[:32]) for x in args[1:]]
         log("send: adding '%s' message (%s items already in queue)", args[0], self.send_queue.qsize())
         self.send_queue.put(args)
         p = self.protocol
@@ -255,21 +255,21 @@ class subprocess_callee:
 
     def process_packet(self, proto, packet) -> None:
         command = bytestostr(packet[0])
-        if command==CONNECTION_LOST:
+        if command == CONNECTION_LOST:
             log("connection-lost: %s, calling stop", packet[1:])
             self.net_stop()
             return
-        if command==GIBBERISH:
+        if command == GIBBERISH:
             log.warn("gibberish received:")
             log.warn(" %s", repr_ellipsized(packet[1], limit=80))
             log.warn(" stopping")
             self.net_stop()
             return
-        if command=="stop":
+        if command == "stop":
             log("received stop message")
             self.net_stop()
             return
-        if command=="exit":
+        if command == "exit":
             log("received exit message")
             sys.exit(0)
         # make it easier to hookup signals to methods:
@@ -292,7 +292,7 @@ class subprocess_callee:
         INJECT_FAULT(proto)
 
 
-def exec_kwargs() -> dict[str,Any]:
+def exec_kwargs() -> dict[str, Any]:
     kwargs = {}
     stderr = sys.stderr.fileno()
     if WIN32:
@@ -304,19 +304,19 @@ def exec_kwargs() -> dict[str,Any]:
         if not WIN32_SHOWWINDOW:
             startupinfo = subprocess.STARTUPINFO()  # @UndefinedVariable
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW  # @UndefinedVariable
-            startupinfo.wShowWindow = 0     # aka win32.con.SW_HIDE
+            startupinfo.wShowWindow = 0  # aka win32.con.SW_HIDE
             kwargs["startupinfo"] = startupinfo
     kwargs["stderr"] = stderr
     return kwargs
 
 
-def exec_env(blacklist=("LS_COLORS", )) -> dict[str, str]:
+def exec_env(blacklist=("LS_COLORS",)) -> dict[str, str]:
     env = os.environ.copy()
     env["XPRA_SKIP_UI"] = "1"
     env["XPRA_FORCE_COLOR_LOG"] = "1"
     # let's make things more complicated than they should be:
     # on win32, the environment can end up containing unicode, and subprocess chokes on it
-    for k,v in env.items():
+    for k, v in env.items():
         if k in blacklist:
             continue
         try:
@@ -357,7 +357,7 @@ class subprocess_caller:
         self.signal_callbacks.setdefault(signal, []).append((cb, list(args)))
 
     def subprocess_exit(self, *args) -> None:
-        #beware: this may fire more than once!
+        # beware: this may fire more than once!
         log("subprocess_exit%s command=%s", args, self.command)
         self._fire_callback("exit")
 
@@ -395,7 +395,7 @@ class subprocess_caller:
         getChildReaper().add_process(proc, self.description, self.command, True, True, callback=self.subprocess_exit)
         return proc
 
-    def get_env(self) -> dict[str,str]:
+    def get_env(self) -> dict[str, str]:
         env = exec_env()
         env["XPRA_LOG_PREFIX"] = "%s " % self.description
         env["XPRA_FIX_UNICODE_OUT"] = "0"

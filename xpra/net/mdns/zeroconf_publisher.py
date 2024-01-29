@@ -19,10 +19,9 @@ log("python-zeroconf version %s", zeroconf_version)
 IPV6 = envbool("XPRA_ZEROCONF_IPV6", True)
 IPV6_LO = envbool("XPRA_ZEROCONF_IPV6_LOOPBACK", False)
 
-
 LOOPBACK_AFAM = {
-    "0.0.0.0"   : socket.AF_INET,
-    "::"        : socket.AF_INET6,
+    "0.0.0.0": socket.AF_INET,
+    "::": socket.AF_INET6,
 }
 
 
@@ -34,15 +33,15 @@ def get_interface_index(host):
 
 
 def inet_ton(af, addr):
-    if af==socket.AF_INET:
+    if af == socket.AF_INET:
         return socket.inet_aton(addr)
-    return socket.inet_pton(af, addr)   # @UndefinedVariable
+    return socket.inet_pton(af, addr)  # @UndefinedVariable
 
 
 def txt_rec(text_dict) -> dict:
     # prevent zeroconf from mangling our ints into booleans:
     new_dict = {}
-    for k,v in text_dict.items():
+    for k, v in text_dict.items():
         if isinstance(v, int):
             new_dict[k] = str(v)
         else:
@@ -54,14 +53,15 @@ class ZeroconfPublishers:
     """
     Expose services via python zeroconf
     """
-    def __init__(self, listen_on, service_name:str, service_type:str=XPRA_TCP_MDNS_TYPE, text_dict=None):
+
+    def __init__(self, listen_on, service_name: str, service_type: str = XPRA_TCP_MDNS_TYPE, text_dict=None):
         log("ZeroconfPublishers%s", (listen_on, service_name, service_type, text_dict))
         self.services = []
         self.ports = {}
 
         def add_address(host, port, af=socket.AF_INET):
             try:
-                if af==socket.AF_INET6 and host.find("%"):
+                if af == socket.AF_INET6 and host.find("%"):
                     host = host.split("%")[0]
                 try:
                     host = socket.gethostbyname(host)
@@ -77,7 +77,7 @@ class ZeroconfPublishers:
             ports = set(self.ports.get(service_name, ()))
             log("add_address(%s, %s, %s) ports=%s", host, port, af, ports)
             ports.add(port)
-            if len(ports)>1:
+            if len(ports) > 1:
                 sn += f"-{len(ports)}"
             try:
                 zp = ZeroconfPublisher(address, host, port, sn, service_type, text_dict)
@@ -87,12 +87,13 @@ class ZeroconfPublishers:
             else:
                 self.services.append(zp)
                 self.ports[service_name] = ports
+
         for host, port in listen_on:
             if host.startswith("[") and host.endswith("]"):
                 host = host[1:-1]
             if host in ("0.0.0.0", "::"):
                 af = LOOPBACK_AFAM.get(host)
-                if af==socket.AF_INET6 and not IPV6_LO:
+                if af == socket.AF_INET6 and not IPV6_LO:
                     if first_time(f"zeroconf-{host}"):
                         log.info(f"python-zeroconf: {host!r} IPv6 loopback address is not supported")
                         log("try XPRA_ZEROCONF_IPV6_LOOPBACK=1 to enable it at your own risk")
@@ -108,10 +109,10 @@ class ZeroconfPublishers:
                         if addr:
                             add_address(addr, port, af)
                 continue
-            if host=="":
+            if host == "":
                 host = "127.0.0.1"
             af = socket.AF_INET
-            if host.find(":")>=0:
+            if host.find(":") >= 0:
                 if IPV6:
                     af = socket.AF_INET6
                 else:
@@ -148,23 +149,23 @@ class ZeroconfPublisher:
             # ie: service_name = localhost.localdomain :2 (ssl)
             parts = service_name.split(" ", 1)
             regname = parts[0].split(".")[0]
-            if len(parts)==2:
+            if len(parts) == 2:
                 regname += parts[1]
             regname = regname.replace(":", "-")
             regname = regname.replace(" ", "-")
             regname = regname.replace("(", "")
             regname = regname.replace(")", "")
             # ie: regname = localhost-2-ssl
-            st = service_type+"local."
-            regname += "."+st
+            st = service_type + "local."
+            regname += "." + st
             td = txt_rec(text_dict or {})
             self.kwargs = {
-                "type_"         : st,       # "_xpra._tcp.local."
-                "name"          : regname,
-                "server"        : regname,
-                "port"          : port,
-                "properties"    : td,
-                "addresses"     : [self.address],
+                "type_": st,  # "_xpra._tcp.local."
+                "name": regname,
+                "server": regname,
+                "port": port,
+                "properties": td,
+                "addresses": [self.address],
             }
             service = ServiceInfo(**self.kwargs)
             log("ServiceInfo(%s)=%s", self.kwargs, service)
@@ -215,23 +216,25 @@ class ZeroconfPublisher:
 
 def main():
     import random
-    port = int(20000*random.random())+10000
-    #host = "127.0.0.1"
+    port = int(20000 * random.random()) + 10000
+    # host = "127.0.0.1"
     host = "0.0.0.0"
     host_ports = [(host, port)]
-    service_name = "test %s" % int(random.random()*100000)
+    service_name = "test %s" % int(random.random() * 100000)
     from xpra.os_util import gi_import
     GLib = gi_import("GLib")
     publishers = []
 
     def add(service_type):
-        publisher = ZeroconfPublishers(host_ports, service_name, service_type, {"somename":"somevalue"})
+        publisher = ZeroconfPublishers(host_ports, service_name, service_type, {"somename": "somevalue"})
         GLib.idle_add(publisher.start)
         publishers.append(publisher)
 
         def update_rec():
             publisher.update_txt({"somename": "someothervalue"})
-        GLib.timeout_add(10*1000, update_rec)
+
+        GLib.timeout_add(10 * 1000, update_rec)
+
     add(XPRA_TCP_MDNS_TYPE)
     add(XPRA_UDP_MDNS_TYPE)
     loop = GLib.MainLoop()

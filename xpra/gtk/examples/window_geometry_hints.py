@@ -38,25 +38,26 @@ class HintedWindows(Gtk.Window):
 
         def configure_event(_widget, event):
             self.set_title(title or "%ix%i" % (event.width, event.height))
+
         da.connect("configure-event", configure_event)
 
         geom = Gdk.Geometry()
         for attr in (
-            "min_width", "min_height",
-            "max_width", "max_height",
-            "base_width", "base_height",
-            "width_inc", "height_inc",
-            ):
+                "min_width", "min_height",
+                "max_width", "max_height",
+                "base_width", "base_height",
+                "width_inc", "height_inc",
+        ):
             v = kwargs.pop(attr, -1)
             setattr(geom, attr, v)
         value = 0
-        if geom.min_width>=0 or geom.min_height>=0:
+        if geom.min_width >= 0 or geom.min_height >= 0:
             value |= Gdk.WindowHints.MIN_SIZE
-        if geom.max_width>=0 or geom.max_height>=0:
+        if geom.max_width >= 0 or geom.max_height >= 0:
             value |= Gdk.WindowHints.MAX_SIZE
-        if geom.base_width>=0 or geom.base_height>=0:
+        if geom.base_width >= 0 or geom.base_height >= 0:
             value |= Gdk.WindowHints.BASE_SIZE
-        if geom.width_inc>=0 or geom.height_inc>=0:
+        if geom.width_inc >= 0 or geom.height_inc >= 0:
             value |= Gdk.WindowHints.RESIZE_INC
         hints = Gdk.WindowHints(value)
         width = kwargs.pop("width", -1)
@@ -93,15 +94,19 @@ class OptionWindow(Gtk.Window):
 
         def attach(widget, col, row):
             grid.attach(expand(widget), col, row, 1, 1)
-        def l(s):    # noqa: E743
+
+        def l(s):  # noqa: E743
             return label(s)
+
         def line(row, *widgets):
             for i, widget in enumerate(widgets):
                 attach(widget, i, row)
+
         def e():
             entry = Gtk.Entry()
             entry.set_text("")
             return entry
+
         line(0, l("Size Property"), l("Width"), l("Height"))
         self.requested_width, self.requested_height = e(), e()
         line(1, l("Requested"), self.requested_width, self.requested_height)
@@ -122,13 +127,13 @@ class OptionWindow(Gtk.Window):
         line(8, l(""), btn)
         self.add(grid)
         for i, entry in enumerate((
-            self.requested_width, self.requested_height,
-            self.min_width, self.min_height,
-            self.max_width, self.max_height,
-            self.base_width, self.base_height,
-            self.inc_width, self.inc_height,
-            )):
-            if len(args)<=i:
+                self.requested_width, self.requested_height,
+                self.min_width, self.min_height,
+                self.max_width, self.max_height,
+                self.base_width, self.base_height,
+                self.inc_width, self.inc_height,
+        )):
+            if len(args) <= i:
                 break
             try:
                 int(args[i])
@@ -140,17 +145,17 @@ class OptionWindow(Gtk.Window):
     def create(self, *_args):
         kwargs = {}
         for prop, entry in {
-            "width"         : self.requested_width,
-            "height"        : self.requested_height,
-            "min_width"     : self.min_width,
-            "min_height"    : self.min_height,
-            "max_width"     : self.max_width,
-            "max_height"    : self.max_height,
-            "base_width"    : self.base_width,
-            "base_height"   : self.base_height,
-            "inc_width"     : self.inc_width,
-            "inc_height"    : self.inc_height,
-            }.items():
+            "width": self.requested_width,
+            "height": self.requested_height,
+            "min_width": self.min_width,
+            "min_height": self.min_height,
+            "max_width": self.max_width,
+            "max_height": self.max_height,
+            "base_width": self.base_width,
+            "base_height": self.base_height,
+            "inc_width": self.inc_width,
+            "inc_height": self.inc_height,
+        }.items():
             v = entry.get_text()
             if not v:
                 continue
@@ -177,6 +182,7 @@ def main():
             force_focus()
             w.show_all()
             w.present()
+
         GLib.idle_add(show_with_focus)
         Gtk.main()
 

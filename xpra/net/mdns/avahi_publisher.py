@@ -9,6 +9,7 @@
 import avahi  # @UnresolvedImport
 import dbus
 from socket import if_nametoindex, if_indextoname
+
 try:
     from dbus.exceptions import DBusException
 except ImportError:
@@ -53,7 +54,7 @@ class AvahiPublishers:
     and to convert the text dict into a TXT string.
     """
 
-    def __init__(self, listen_on, service_name:str, service_type:str=XPRA_TCP_MDNS_TYPE, text_dict=None):
+    def __init__(self, listen_on, service_name: str, service_type: str = XPRA_TCP_MDNS_TYPE, text_dict=None):
         log("AvahiPublishers%s", (listen_on, service_name, service_type, text_dict))
         self.publishers = []
         try:
@@ -74,7 +75,7 @@ class AvahiPublishers:
                     pass
             txt = []
             if text_dict:
-                for k,v in td.items():
+                for k, v in td.items():
                     txt.append(f"{k}={v}")
             fqdn = host
             if host in ("0.0.0.0", "::"):
@@ -84,10 +85,10 @@ class AvahiPublishers:
                     import socket
                     fqdn = socket.gethostbyaddr(host)[0]
                     log("gethostbyaddr(%s)=%s", host, fqdn)
-                    if fqdn.find(".")<0:
+                    if fqdn.find(".") < 0:
                         fqdn = socket.getfqdn(host)
                         log("getfqdn(%s)=%s", host, fqdn)
-                    if fqdn.find(".")<0:
+                    if fqdn.find(".") < 0:
                         if fqdn:
                             fqdn += ".local"
                         log("cannot find a fully qualified domain name for '%s', using: %s", host, fqdn)
@@ -138,7 +139,7 @@ class AvahiPublisher:
         self.group = None
 
     def iface(self) -> str:
-        if self.interface>0:
+        if self.interface > 0:
             return "interface %i" % self.interface
         return "all interfaces"
 
@@ -177,7 +178,7 @@ class AvahiPublisher:
         state_str = "unknown"
         for const in ("INVALID", "REGISTERING", "COLLISION", "FAILURE"):
             val = getattr(avahi, "SERVER_%s" % const, None)
-            if val is not None and val==state:
+            if val is not None and val == state:
                 state_str = const
                 break
         log.warn("Warning: mdns server state changed to '%s'", state_str)
@@ -203,7 +204,7 @@ class AvahiPublisher:
             message = e.get_dbus_message()
             dbus_error_name = e.get_dbus_name()
             log.error("Error starting publisher %s", self.host_str())
-            if dbus_error_name=="org.freedesktop.Avahi.CollisionError":
+            if dbus_error_name == "org.freedesktop.Avahi.CollisionError":
                 log.error(" another instance already claims this dbus name")
                 log.estr(e)
                 log.error(" %s", message)
@@ -235,7 +236,7 @@ class AvahiPublisher:
             log.warn(" publisher has already been stopped")
             return
         # prevent avahi from choking on ints:
-        txt_strs = {k:str(v) for k,v in txt.items()}
+        txt_strs = {k: str(v) for k, v in txt.items()}
 
         def reply_handler(*args):
             log("reply_handler%s", args)
@@ -247,8 +248,9 @@ class AvahiPublisher:
             log.warn(" for name '%s'", self.name)
             log.warn(" host=%s, port=%s", self.host, self.port)
             log.warn(" with new data:")
-            for k,v in txt_strs.items():
+            for k, v in txt_strs.items():
                 log.warn(" * %s=%s", k, v)
+
         txt_array = avahi.dict_to_txt_array(txt_strs)
         self.group.UpdateServiceTxt(self.interface,
                                     avahi.PROTO_UNSPEC, dbus.UInt32(0), self.name, self.stype, self.domain,
@@ -261,7 +263,7 @@ def main():
     glib = gi_import("GLib")
     import random
     import signal
-    port = int(20000*random.random())+10000
+    port = int(20000 * random.random()) + 10000
     host = ""
     name = "test service"
     bus = init_system_bus()
@@ -275,9 +277,11 @@ def main():
             publisher.start()
 
         def update_rec():
-            publisher.update_txt({b"hello" : b"world"})
+            publisher.update_txt({b"hello": b"world"})
+
         glib.idle_add(start)
-        glib.timeout_add(5*1000, update_rec)
+        glib.timeout_add(5 * 1000, update_rec)
+
     add(XPRA_TCP_MDNS_TYPE)
     add(XPRA_UDP_MDNS_TYPE)
     signal.signal(signal.SIGTERM, exit)

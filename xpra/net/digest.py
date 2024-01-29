@@ -23,10 +23,10 @@ def get_digests() -> list[str]:
     digests += [f"hmac+{x}" for x in tuple(reversed(sorted(hashlib.algorithms_available)))
                 if not x.startswith("shake_") and x not in BLACKLISTED_HASHES and getattr(hashlib, x, None) is not None]
     try:
-        from xpra.net.rfb import d3des      # pylint: disable=import-outside-toplevel
+        from xpra.net.rfb import d3des  # pylint: disable=import-outside-toplevel
         assert d3des
         digests.append("des")
-    except (ImportError, TypeError):    # pragma: no cover
+    except (ImportError, TypeError):  # pragma: no cover
         pass
     return digests
 
@@ -36,7 +36,7 @@ def get_digest_module(digest: str) -> Callable | None:
     if not digest or not digest.startswith("hmac"):
         return None
     try:
-        digest_module = digest.split("+")[1]        # ie: "hmac+sha512" -> "sha512"
+        digest_module = digest.split("+")[1]  # ie: "hmac+sha512" -> "sha512"
     except IndexError:
         return None
     try:
@@ -47,7 +47,7 @@ def get_digest_module(digest: str) -> Callable | None:
 
 
 def choose_digest(options) -> str:
-    assert len(options)>0, "no digest options"
+    assert len(options) > 0, "no digest options"
     log(f"choose_digest({options})")
     # prefer stronger hashes:
     for h in ("sha512", "sha384", "sha256", "sha224"):
@@ -61,11 +61,11 @@ def choose_digest(options) -> str:
     raise ValueError(f"no known digest options found in '{csv(options)}'")
 
 
-def gendigest(digest: str, password_in, salt_in:ByteString) -> bytes:
+def gendigest(digest: str, password_in, salt_in: ByteString) -> bytes:
     assert password_in and salt_in
-    salt : bytes = memoryview_to_bytes(salt_in)
-    password : bytes = strtobytes(password_in)
-    if digest=="des":
+    salt: bytes = memoryview_to_bytes(salt_in)
+    password: bytes = strtobytes(password_in)
+    if digest == "des":
         from xpra.net.rfb.d3des import generate_response  # pylint: disable=import-outside-toplevel
         password = password.ljust(8, b"\x00")[:8]
         salt = salt.ljust(16, b"\x00")[:16]
@@ -75,7 +75,7 @@ def gendigest(digest: str, password_in, salt_in:ByteString) -> bytes:
         # kerberos, gss and keycloak use xor because we need to use the actual token
         # at the other end
         salt = salt.ljust(len(password), b"\x00")[:len(password)]
-        from xpra.buffers.cyxor import xor_str      # pylint: disable=import-outside-toplevel
+        from xpra.buffers.cyxor import xor_str  # pylint: disable=import-outside-toplevel
         v = xor_str(password, salt)
         return memoryview_to_bytes(v)
     digestmod = get_digest_module(digest)
@@ -87,7 +87,7 @@ def gendigest(digest: str, password_in, salt_in:ByteString) -> bytes:
     return strtobytes(hmac.HMAC(password, salt, digestmod=digestmod).hexdigest())
 
 
-def verify_digest(digest: str, password: str, salt, challenge_response:bytes) -> bool:
+def verify_digest(digest: str, password: str, salt, challenge_response: bytes) -> bool:
     if not password or not salt or not challenge_response:
         return False
     verify = gendigest(digest, password, salt)
@@ -97,12 +97,12 @@ def verify_digest(digest: str, password: str, salt, challenge_response:bytes) ->
     return True
 
 
-def get_salt(l: int=DEFAULT_SALT_LENGTH) -> bytes:
+def get_salt(l: int = DEFAULT_SALT_LENGTH) -> bytes:
     # too short: we would not feed enough random data to HMAC
-    if l<32:
+    if l < 32:
         raise ValueError(f"salt is too short: only {l} bytes")
     # too long: limit the amount of random data we request from the system
-    if l>=1024:
+    if l >= 1024:
         raise ValueError(f"salt is too long: {l} bytes")
     # all server versions support a client salt,
     # they also tell us which digest to use:

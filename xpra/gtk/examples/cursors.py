@@ -14,9 +14,10 @@ Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
 GLib = gi_import("GLib")
 
-
 width = 400
 height = 200
+
+
 def main():
     with program_context("cursors", "Cursors"):
         window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
@@ -44,6 +45,7 @@ def main():
             window.get_window().set_cursor(cursor)
 
         cursor_combo.connect("changed", change_cursor)
+
         def show_with_focus():
             force_focus()
             window.show_all()

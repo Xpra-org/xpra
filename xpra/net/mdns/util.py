@@ -57,7 +57,7 @@ def mdns_publish(display_name, listen_on, text_dict=None):
         log.warn(" or use the 'mdns=no' option")
         return ()
     d = dict(text_dict or {})
-    #ensure we don't have duplicate interfaces:
+    # ensure we don't have duplicate interfaces:
     f_listen_on = {}
     for host, port in listen_on:
         f_listen_on[(get_interface_index(host), port)] = (host, port)
@@ -69,19 +69,19 @@ def mdns_publish(display_name, listen_on, text_dict=None):
         name += f" {display_name}"
     mode = d.get("mode", "tcp")
     service_type = {
-        "rfb"   : RFB_MDNS_TYPE,
-        "quic"  : XPRA_UDP_MDNS_TYPE,
+        "rfb": RFB_MDNS_TYPE,
+        "quic": XPRA_UDP_MDNS_TYPE,
     }.get(mode, XPRA_TCP_MDNS_TYPE)
     index = 0
     aps = []
     for host, port in listen_on:
         sn = name
         mode_str = mode
-        if index>0:
-            mode_str = f"{mode}-{index+1}"
+        if index > 0:
+            mode_str = f"{mode}-{index + 1}"
         if mode not in ("tcp", "rfb"):
             sn += f" ({mode_str})"
-        listen = ((host, port), )
+        listen = ((host, port),)
         index += 1
         aps.append(MDNSPublishers(listen, sn, service_type=service_type, text_dict=d))
     return aps

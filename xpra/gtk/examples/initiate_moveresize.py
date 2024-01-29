@@ -13,7 +13,6 @@ from xpra.platform import program_context
 Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
 
-
 width = 400
 height = 400
 
@@ -30,7 +29,7 @@ def make_window():
     def get_root_window():
         return window.get_window().get_screen().get_root_window()
 
-    def initiate(x_root: float, y_root: float, direction : MoveResize, button: int, source_indication: int):
+    def initiate(x_root: float, y_root: float, direction: MoveResize, button: int, source_indication: int):
         from xpra.x11.gtk3.display_source import init_gdk_display_source
         init_gdk_display_source()
         from xpra.x11.bindings.core import X11CoreBindings
@@ -63,36 +62,37 @@ def make_window():
         cancel()
         with IgnoreWarningsContext():
             pos = get_root_window().get_pointer()
-        source_indication = 1    #normal
+        source_indication = 1  # normal
         button = 1
         initiate(pos.x, pos.y, MoveResize.MOVE, button, source_indication)
-        GLib.timeout_add(5*1000, cancel)
+        GLib.timeout_add(5 * 1000, cancel)
+
     btn.connect('button-press-event', initiate_move)
 
-    def btn_callback(_btn, _event, direction:MoveResize):
+    def btn_callback(_btn, _event, direction: MoveResize):
         cancel()
         with IgnoreWarningsContext():
             pos = get_root_window().get_pointer()
-        source_indication = 1    #normal
+        source_indication = 1  # normal
         button = 1
         initiate(pos.x, pos.y, direction, button, source_indication)
-        GLib.timeout_add(5*1000, cancel)
+        GLib.timeout_add(5 * 1000, cancel)
 
-    def add_button(x: int, y: int, direction:MoveResize):
+    def add_button(x: int, y: int, direction: MoveResize):
         btn = Gtk.Button(label=MOVERESIZE_DIRECTION_STRING[direction])
         btn.connect('button-press-event', btn_callback, direction)
         grid.attach(expand(btn), x, y, 1, 1)
 
-    for x,y,direction in (
-        (0, 0, MoveResize.SIZE_TOPLEFT),
-        (1, 0, MoveResize.SIZE_TOP),
-        (2, 0, MoveResize.SIZE_TOPRIGHT),
-        (0, 1, MoveResize.SIZE_LEFT),
-        (1, 1, MoveResize.MOVE),
-        (2, 1, MoveResize.SIZE_RIGHT),
-        (0, 2, MoveResize.SIZE_BOTTOMLEFT),
-        (1, 2, MoveResize.SIZE_BOTTOM),
-        (2, 2, MoveResize.SIZE_BOTTOMRIGHT),
+    for x, y, direction in (
+            (0, 0, MoveResize.SIZE_TOPLEFT),
+            (1, 0, MoveResize.SIZE_TOP),
+            (2, 0, MoveResize.SIZE_TOPRIGHT),
+            (0, 1, MoveResize.SIZE_LEFT),
+            (1, 1, MoveResize.MOVE),
+            (2, 1, MoveResize.SIZE_RIGHT),
+            (0, 2, MoveResize.SIZE_BOTTOMLEFT),
+            (1, 2, MoveResize.SIZE_BOTTOM),
+            (2, 2, MoveResize.SIZE_BOTTOMRIGHT),
     ):
         add_button(x, y, direction)
     grid.show_all()

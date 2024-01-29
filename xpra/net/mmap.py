@@ -25,7 +25,6 @@ MADVISE_FLAGS = os.environ.get("XPRA_MMAP_MADVISE_FLAGS", "SEQUENTIAL,DONTFORK,U
 
 DEFAULT_TOKEN_BYTES: int = 128
 
-
 """
 Utility functions for communicating via mmap
 """
@@ -52,7 +51,7 @@ def xpra_group() -> int:
     return 0
 
 
-def init_client_mmap(mmap_group=None, socket_filename: str="", size: int=128*1024*1024, filename: str="")\
+def init_client_mmap(mmap_group=None, socket_filename: str = "", size: int = 128 * 1024 * 1024, filename: str = "") \
         -> tuple[bool, bool, Any, int, Any, str]:
     """
         Initializes a mmap area, writes the token in it and returns:
@@ -60,18 +59,21 @@ def init_client_mmap(mmap_group=None, socket_filename: str="", size: int=128*102
         The caller must keep hold of temp_file to ensure it does not get deleted!
         This is used by the client.
     """
+
     def rerr():
         return False, False, None, 0, None, ""
+
     log("init_mmap%s", (mmap_group, socket_filename, size, filename))
     mmap_filename = filename
     mmap_temp_file = None
     delete = True
 
     def validate_size(size: int):
-        if size<64*1024*1024:
+        if size < 64 * 1024 * 1024:
             raise ValueError("mmap size is too small: %sB (minimum is 64MB)" % std_unit(size))
-        if size>16*1024*1024*1024:
+        if size > 16 * 1024 * 1024 * 1024:
             raise ValueError("mmap is too big: %sB (maximum is 4GB)" % std_unit(size))
+
     try:
         import mmap
         unit = max(4096, mmap.PAGESIZE)
@@ -95,13 +97,13 @@ def init_client_mmap(mmap_group=None, socket_filename: str="", size: int=128*102
                     validate_size(mmap_size)
                     # mmap_size = 4*1024*1024    #size restriction needed with ivshmem
                     delete = False
-                    log.info("Using existing mmap file '%s': %sMB", mmap_filename, mmap_size//1024//1024)
+                    log.info("Using existing mmap file '%s': %sMB", mmap_filename, mmap_size // 1024 // 1024)
                 else:
                     validate_size(mmap_size)
                     flags = os.O_CREAT | os.O_EXCL | os.O_RDWR
                     try:
                         fd = os.open(filename, flags)
-                        mmap_temp_file = None   #os.fdopen(fd, 'w')
+                        mmap_temp_file = None  # os.fdopen(fd, 'w')
                         mmap_filename = filename
                     except FileExistsError:
                         log.error("Error: the mmap file '%s' already exists", filename)
@@ -113,9 +115,9 @@ def init_client_mmap(mmap_group=None, socket_filename: str="", size: int=128*102
                 mmap_dir = get_mmap_dir()
                 subs = os.environ.copy()
                 subs |= {
-                    "UID"               : str(os.getuid()),
-                    "GID"               : str(os.getgid()),
-                    "PID"               : str(os.getpid()),
+                    "UID": str(os.getuid()),
+                    "GID": str(os.getgid()),
+                    "PID": str(os.getpid()),
                 }
                 mmap_dir = shellsub(mmap_dir, subs)
                 if mmap_dir and not os.path.exists(mmap_dir):
@@ -137,15 +139,15 @@ def init_client_mmap(mmap_group=None, socket_filename: str="", size: int=128*102
             # set the group permissions and gid if the mmap-group option is specified
             mmap_group = (mmap_group or "")
             if POSIX and mmap_group and mmap_group not in FALSE_OPTIONS:
-                if mmap_group=="SOCKET":
+                if mmap_group == "SOCKET":
                     group_id = get_socket_group(socket_filename)
-                elif mmap_group.lower()=="auto":
+                elif mmap_group.lower() == "auto":
                     group_id = xpra_group()
                     if not group_id and socket_filename:
                         group_id = get_socket_group(socket_filename)
                 else:
                     group_id = get_group_id(mmap_group)
-                if group_id>0:
+                if group_id > 0:
                     log("setting mmap file %s to group id=%i", mmap_filename, group_id)
                     try:
                         os.fchown(fd, -1, group_id)
@@ -156,7 +158,7 @@ def init_client_mmap(mmap_group=None, socket_filename: str="", size: int=128*102
                     from stat import S_IRUSR, S_IWUSR, S_IRGRP, S_IWGRP
                     os.fchmod(fd, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)
             log("using mmap file %s, fd=%s, size=%s", mmap_filename, fd, mmap_size)
-            os.lseek(fd, mmap_size-1, os.SEEK_SET)
+            os.lseek(fd, mmap_size - 1, os.SEEK_SET)
             assert os.write(fd, b'\x00')
             os.lseek(fd, 0, os.SEEK_SET)
             mmap_area = mmap.mmap(fd, length=mmap_size)
@@ -199,24 +201,24 @@ def clean_mmap(mmap_filename: str) -> None:
             log.estr(e)
 
 
-def write_mmap_token(mmap_area, token, index: int, count: int=DEFAULT_TOKEN_BYTES) -> None:
-    assert count>0
+def write_mmap_token(mmap_area, token, index: int, count: int = DEFAULT_TOKEN_BYTES) -> None:
+    assert count > 0
     # write the token one byte at a time - no endianness
     log("write_mmap_token(%s, %#x, %#x, %#x)", mmap_area, token, index, count)
     v = token
     for i in range(0, count):
-        poke = c_ubyte.from_buffer(mmap_area, index+i)
+        poke = c_ubyte.from_buffer(mmap_area, index + i)
         poke.value = v % 256
         v = v >> 8
     assert v == 0, "token value is too big"
 
 
-def read_mmap_token(mmap_area, index: int, count: int=DEFAULT_TOKEN_BYTES) -> int:
-    assert count>0
+def read_mmap_token(mmap_area, index: int, count: int = DEFAULT_TOKEN_BYTES) -> int:
+    assert count > 0
     v = 0
     for i in range(0, count):
         v = v << 8
-        peek = c_ubyte.from_buffer(mmap_area, index+count-1-i)
+        peek = c_ubyte.from_buffer(mmap_area, index + count - 1 - i)
         v += peek.value
     log("read_mmap_token(%s, %#x, %#x)=%#x", mmap_area, index, count, v)
     return v
@@ -240,14 +242,14 @@ def init_server_mmap(mmap_filename: str, mmap_size: int = 0) -> tuple[Any | None
                 log.error(" see mmap-group option?")
                 return None, 0
             actual_mmap_size = os.path.getsize(mmap_filename)
-            if mmap_size and actual_mmap_size!=mmap_size:
+            if mmap_size and actual_mmap_size != mmap_size:
                 log.warn("Warning: expected mmap file '%s' of size %i but got %i",
                          mmap_filename, mmap_size, actual_mmap_size)
             mmap_area = mmap.mmap(f.fileno(), mmap_size)
             f.close()
             return mmap_area, actual_mmap_size
-        assert sys.platform=="win32"
-        if mmap_size==0:
+        assert sys.platform == "win32"
+        if mmap_size == 0:
             log.error("Error: client did not supply the mmap area size")
             log.error(" try updating your client version?")
             return None, 0
@@ -261,7 +263,7 @@ def init_server_mmap(mmap_filename: str, mmap_size: int = 0) -> tuple[Any | None
 
 
 def int_from_buffer(mmap_area, pos: int) -> c_uint32:
-    return c_uint32.from_buffer(mmap_area, pos)      # @UndefinedVariable
+    return c_uint32.from_buffer(mmap_area, pos)  # @UndefinedVariable
 
 
 # descr_data is a list of (offset, length)
@@ -271,18 +273,18 @@ def mmap_read(mmap_area, *descr_data) -> ByteString:
         Reads data from the mmap_area as written by 'mmap_write'.
         The descr_data is the list of mmap chunks used.
     """
-    data_start : c_uint32 = int_from_buffer(mmap_area, 0)
+    data_start: c_uint32 = int_from_buffer(mmap_area, 0)
     mv = memoryview(mmap_area)
-    if len(descr_data)==1:
+    if len(descr_data) == 1:
         # construct an array directly from the mmap zone:
         offset, length = descr_data[0]
         data_start.value = offset + length
-        return mv[offset:offset+length]
+        return mv[offset:offset + length]
     # re-construct the buffer from discontiguous chunks:
     data = []
     for offset, length in descr_data:
-        data.append(mv[offset:offset+length])
-        data_start.value = offset+length
+        data.append(mv[offset:offset + length])
+        data_start.value = offset + length
     return b"".join(data)
 
 
@@ -301,37 +303,37 @@ def mmap_write(mmap_area, mmap_size: int, data):
     # '+' is for data we have written
     # '*' is for data we have just written in this call
     # E and S show the location pointed to by data_start/data_end
-    mmap_data_start : c_uint32 = int_from_buffer(mmap_area, 0)
-    mmap_data_end : c_uint32 = int_from_buffer(mmap_area, 4)
+    mmap_data_start: c_uint32 = int_from_buffer(mmap_area, 0)
+    mmap_data_end: c_uint32 = int_from_buffer(mmap_area, 4)
     start = max(8, mmap_data_start.value)
     end = max(8, mmap_data_end.value)
     l = len(data)
     log("mmap: start=%i, end=%i, size of data to write=%i", start, end, l)
-    if end<start:
+    if end < start:
         # we have wrapped around but the client hasn't yet:
         # [++++++++E--------------------S+++++]
         # so there is one chunk available (from E to S) which we will use:
         # [++++++++************E--------S+++++]
-        available = start-end
+        available = start - end
         chunk = available
     else:
         # we have not wrapped around yet, or the client has wrapped around too:
         # [------------S++++++++++++E---------]
         # so there are two chunks available (from E to the end, from the start to S):
         # [****--------S++++++++++++E*********]
-        chunk = mmap_size-end
-        available = chunk+(start-8)
+        chunk = mmap_size - end
+        available = chunk + (start - 8)
     # update global mmap stats:
-    mmap_free_size = available-l
-    if l>(mmap_size-8):
+    mmap_free_size = available - l
+    if l > (mmap_size - 8):
         log.warn("Warning: mmap area is too small!")
-        log.warn(" we need to store %s bytes but the mmap area is limited to %i", l, (mmap_size-8))
+        log.warn(" we need to store %s bytes but the mmap area is limited to %i", l, (mmap_size - 8))
         return None, mmap_free_size
-    if mmap_free_size<=0:
+    if mmap_free_size <= 0:
         log.warn("Warning: mmap area is full!")
         log.warn(" we need to store %s bytes but only have %s free space left", l, available)
         return None, mmap_free_size
-    if l<chunk:
+    if l < chunk:
         # data fits in the first chunk:
         # ie: initially:
         # [----------------------------------]
@@ -342,17 +344,17 @@ def mmap_write(mmap_area, mmap_size: int, data):
         mmap_area.seek(end)
         mmap_area.write(data)
         chunks = [(end, l)]
-        mmap_data_end.value = end+l
+        mmap_data_end.value = end + l
     else:
         # data does not fit in first chunk alone:
-        if not ALWAYS_WRAP and available>=(mmap_size/2) and available>=(l*3) and l<(start-8):
+        if not ALWAYS_WRAP and available >= (mmap_size / 2) and available >= (l * 3) and l < (start - 8):
             # still plenty of free space, don't wrap around: just start again:
             # [------------------S+++++++++E------]
             # [*******E----------S+++++++++-------]
             mmap_area.seek(8)
             mmap_area.write(data)
             chunks = [(8, l)]
-            mmap_data_end.value = 8+l
+            mmap_data_end.value = 8 + l
         else:
             # split in 2 chunks: wrap around the end of the mmap buffer:
             # [------------------S+++++++++E------]
@@ -361,8 +363,8 @@ def mmap_write(mmap_area, mmap_size: int, data):
             mmap_area.write(data[:chunk])
             mmap_area.seek(8)
             mmap_area.write(data[chunk:])
-            l2 = l-chunk
+            l2 = l - chunk
             chunks = [(end, chunk), (8, l2)]
-            mmap_data_end.value = 8+l2
+            mmap_data_end.value = 8 + l2
     log("sending damage with mmap: %s bytes", len(data))
     return chunks, mmap_free_size

@@ -17,11 +17,10 @@ WEBSOCKET_ONLY_UPGRADE = envbool("XPRA_WEBSOCKET_ONLY_UPGRADE", False)
 # HyBi-07 report version 7
 # HyBi-08 - HyBi-12 report version 8
 # HyBi-13 reports version 13
-SUPPORT_HyBi_PROTOCOLS: tuple[str,...] = ("7", "8", "13")
+SUPPORT_HyBi_PROTOCOLS: tuple[str, ...] = ("7", "8", "13")
 
 
 class WebSocketRequestHandler(HTTPRequestHandler):
-
     server_version = "Xpra-WebSocket-Server"
 
     def __init__(self, sock, addr, new_websocket_client,
@@ -31,7 +30,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
                  redirect_https=False,
                  username=AUTH_USERNAME, password=AUTH_PASSWORD,
                  ):
-        self.new_websocket_client : Callable = new_websocket_client
+        self.new_websocket_client: Callable = new_websocket_client
         self.only_upgrade = WEBSOCKET_ONLY_UPGRADE
         self.redirect_https = redirect_https
         super().__init__(sock, addr,
@@ -42,7 +41,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         log("handle_websocket() calling %s, request=%s (%s)",
             self.new_websocket_client, self.request, type(self.request))
         log("headers:")
-        for k,v in self.headers.items():
+        for k, v in self.headers.items():
             log(f" {k}={v}")
         ver = self.headers.get("Sec-WebSocket-Version", "")
         if not ver:
@@ -94,7 +93,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
                 log.estr(e)
                 self.send_error(403, f"failed to handle websocket: {e}")
             return
-        if self.headers.get("Upgrade-Insecure-Requests", "")=="1" and self.redirect_https:
+        if self.headers.get("Upgrade-Insecure-Requests", "") == "1" and self.redirect_https:
             self.do_redirect_https()
             return
         super().do_GET()

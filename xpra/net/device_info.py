@@ -14,14 +14,13 @@ from xpra.log import Logger
 
 log = Logger("network")
 
-
 ETHERNET_JITTER: int = envint("XPRA_LOCAL_JITTER", 0)
 WAN_JITTER: int = envint("XPRA_WAN_JITTER", 20)
 ADSL_JITTER: int = envint("XPRA_WAN_JITTER", 20)
 WIRELESS_JITTER: int = envint("XPRA_WIRELESS_JITTER", 1000)
 
-WIFI_LIMIT: int = envint("XPRA_WIFI_LIMIT", 10*1000*1000)
-ADSL_LIMIT: int = envint("XPRA_WIFI_LIMIT", 1000*1000)
+WIFI_LIMIT: int = envint("XPRA_WIFI_LIMIT", 10 * 1000 * 1000)
+ADSL_LIMIT: int = envint("XPRA_WIFI_LIMIT", 1000 * 1000)
 
 
 def get_NM_adapter_type(device_name) -> str:
@@ -62,7 +61,7 @@ def get_NM_adapter_type(device_name) -> str:
     return adapter_type
 
 
-def get_device_value(coptions : dict, device_info : dict, attr: str, conv: Callable = str, default_value: Any = ""):
+def get_device_value(coptions: dict, device_info: dict, attr: str, conv: Callable = str, default_value: Any = ""):
     # first try an env var:
     v = os.environ.get("XPRA_NETWORK_%s" % attr.upper().replace("-", "_"))
     # next try device options (ie: from connection URI)
@@ -84,7 +83,7 @@ def get_device_value(coptions : dict, device_info : dict, attr: str, conv: Calla
 def guess_adapter_type(name: str) -> str:
     dnl = name.lower()
     if dnl.startswith("wlan") or dnl.startswith("wlp") or any(dnl.find(x) >= 0 for x in (
-        "wireless", "wlan", "80211", "modem"
+            "wireless", "wlan", "80211", "modem"
     )):
         return "wireless"
     if dnl == "lo" or dnl.find("loopback") >= 0 or dnl.startswith("local"):
@@ -105,6 +104,7 @@ def jitter_for_adapter_type(adapter_type: str) -> int:
 
     def anyfind(*args) -> bool:
         return any(at.find(str(x)) >= 0 for x in args)
+
     if anyfind("loopback"):
         return 0
     if anyfind("ether", "local", "fiber", "1394", "infiniband"):
@@ -121,6 +121,7 @@ def guess_bandwidth_limit(adapter_type: str) -> int:
 
     def anyfind(*args) -> bool:
         return any(at.find(str(x)) >= 0 for x in args)
+
     if anyfind("wireless", "wifi", "wimax", "modem"):
         return WIFI_LIMIT
     if anyfind("adsl", "ppp"):

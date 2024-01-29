@@ -24,18 +24,17 @@ MASK = envbool("XPRA_WEBSOCKET_MASK", False)
 
 
 class WebSocketProtocol(SocketProtocol):
-
     TYPE = "websocket"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ws_data : ByteString = b""
+        self.ws_data: ByteString = b""
         self.ws_payload: list[ByteString] = []
         self.ws_payload_opcode: int = 0
         self.ws_mask: bool = MASK
         self._process_read = self.parse_ws_frame
-        self.make_chunk_header : Callable = self.make_xpra_header
-        self.make_frame_header : Callable = self.make_wsframe_header
+        self.make_chunk_header: Callable = self.make_xpra_header
+        self.make_frame_header: Callable = self.make_wsframe_header
 
     def __repr__(self):
         return f"WebSocket({self._conn})"
@@ -48,7 +47,7 @@ class WebSocketProtocol(SocketProtocol):
         self.ws_data = b""
         self.ws_payload = []
 
-    def send_ws_close(self, code: int = 1000, reason:str="closing") -> None:
+    def send_ws_close(self, code: int = 1000, reason: str = "closing") -> None:
         data = close_packet(code, reason)
         self.flush_then_close(None, data)
 
@@ -62,7 +61,7 @@ class WebSocketProtocol(SocketProtocol):
             # now mask all the items:
             for i, item in enumerate(items):
                 items[i] = hybi_mask(mask, item)
-            return header+mask
+            return header + mask
         return header
 
     def parse_ws_frame(self, buf: ByteString) -> None:
@@ -70,11 +69,11 @@ class WebSocketProtocol(SocketProtocol):
             self._read_queue_put(buf)
             return
         if self.ws_data:
-            ws_data = self.ws_data+buf
+            ws_data = self.ws_data + buf
             self.ws_data = b""
         else:
             ws_data = buf
-        while self.input_packetcount==0 and ws_data.startswith(b"\r\n"):
+        while self.input_packetcount == 0 and ws_data.startswith(b"\r\n"):
             ws_data = ws_data[2:]
         log("parse_ws_frame(%i bytes) total buffer is %i bytes", len(buf), len(ws_data))
         while ws_data and not self._closed:
@@ -89,11 +88,11 @@ class WebSocketProtocol(SocketProtocol):
             ws_data = ws_data[processed:]
             log("parse_ws_frame(%i bytes) payload=%i bytes, processed=%i, remaining=%i, opcode=%s, fin=%s",
                 len(buf), len(payload), processed, len(ws_data), OPCODES.get(opcode, opcode), fin)
-            if opcode==OPCODE_CONTINUE:
+            if opcode == OPCODE_CONTINUE:
                 assert self.ws_payload_opcode and self.ws_payload, "continuation frame does not follow a partial frame"
                 self.ws_payload.append(payload)
                 if not fin:
-                    #wait for more
+                    # wait for more
                     continue
                 # join all the frames and process the payload:
                 full_payload = b"".join(memoryview_to_bytes(v) for v in self.ws_payload)
@@ -115,17 +114,17 @@ class WebSocketProtocol(SocketProtocol):
                     self.ws_payload_opcode = opcode
                     self.ws_payload.append(payload)
                     continue
-            if opcode==OPCODE_BINARY:
+            if opcode == OPCODE_BINARY:
                 self._read_queue_put(full_payload)
-            elif opcode==OPCODE_TEXT:
+            elif opcode == OPCODE_TEXT:
                 if first_time(f"ws-text-frame-from-{self._conn}"):
                     log.warn("Warning: handling text websocket frame as binary")
                 self._read_queue_put(full_payload)
-            elif opcode==OPCODE_CLOSE:
+            elif opcode == OPCODE_CLOSE:
                 self._process_ws_close(full_payload)
-            elif opcode==OPCODE_PING:
+            elif opcode == OPCODE_PING:
                 self._process_ws_ping(full_payload)
-            elif opcode==OPCODE_PONG:
+            elif opcode == OPCODE_PONG:
                 self._process_ws_pong(full_payload)
             else:
                 log.warn("Warning unhandled websocket opcode '%s'", OPCODES.get(opcode, f"{opcode:x}"))
@@ -134,7 +133,7 @@ class WebSocketProtocol(SocketProtocol):
     def _process_ws_ping(self, payload: ByteString) -> None:
         log("_process_ws_ping(%r)", payload)
         item = encode_hybi_header(OPCODE_PONG, len(payload)) + memoryview_to_bytes(payload)
-        items = (item, )
+        items = (item,)
         with self._write_lock:
             self.raw_write("ws-ping", items)
 
@@ -143,7 +142,7 @@ class WebSocketProtocol(SocketProtocol):
 
     def _process_ws_close(self, payload: ByteString) -> None:
         log("_process_ws_close(%r)", payload)
-        if len(payload)<2:
+        if len(payload) < 2:
             self._connection_lost("unknown reason")
             return
         code = struct.unpack(">H", payload[:2])[0]

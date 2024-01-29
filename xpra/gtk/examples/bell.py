@@ -36,6 +36,7 @@ class BellWindow(Gtk.Window):
         from xpra.platform.gui import system_bell
         system_bell(self.get_window(), 0, 100, 2000, 1000, 0, 0, "test")
 
+
 def main():
     from xpra.gtk.signals import quit_on_signals
     from xpra.gtk.util import init_display_source

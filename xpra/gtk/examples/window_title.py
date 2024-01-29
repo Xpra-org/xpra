@@ -19,6 +19,7 @@ def change_callback(entry, window):
     print("text=%s" % entry.get_text())
     window.set_title(entry.get_text())
 
+
 def make_window():
     window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
     window.set_size_request(400, 100)
@@ -32,12 +33,13 @@ def make_window():
     entry.connect("changed", change_callback, window)
     title = "Hello"
 
-    if len(sys.argv)>1:
+    if len(sys.argv) > 1:
         title = sys.argv[1]
     entry.set_text(title)
     entry.show()
     window.add(entry)
     return window
+
 
 def main():
     with program_context("window-title", "Window Title"):
@@ -50,10 +52,11 @@ def main():
             force_focus()
             w.show_all()
             w.present()
+
         GLib.idle_add(show_with_focus)
         Gtk.main()
         return 0
 
+
 if __name__ == "__main__":
     main()
-

@@ -14,7 +14,7 @@ from xpra.log import Logger
 
 log = Logger("dbus", "notify")
 
-IconData : TypeAlias = tuple[str, int, int, bytes]
+IconData: TypeAlias = tuple[str, int, int, bytes]
 
 
 def PIL_Image():
@@ -53,7 +53,7 @@ def parse_image_data(data) -> IconData | None:
     return None
 
 
-def parse_image_path(path:str) -> IconData | None:
+def parse_image_path(path: str) -> IconData | None:
     if path and os.path.exists(path):
         Image = PIL_Image()
         if not Image:
@@ -77,11 +77,11 @@ def image_data(img) -> IconData:
     img.save(buf, "png")
     data = buf.getvalue()
     buf.close()
-    w,h = img.size
+    w, h = img.size
     return "png", w, h, data
 
 
-def get_notification_icon(icon_string:str) -> IconData | None:
+def get_notification_icon(icon_string: str) -> IconData | None:
     # this method *must* be called from the UI thread
     # since we may end up calling svg_to_png which uses Cairo
     #
@@ -130,7 +130,7 @@ def get_notification_icon(icon_string:str) -> IconData | None:
     return "png", w, h, cpixels
 
 
-def get_gtk_theme_icon(icon_string:str):
+def get_gtk_theme_icon(icon_string: str):
     # try to find it in the theme:
     try:
         Gtk = gi_import("Gtk")

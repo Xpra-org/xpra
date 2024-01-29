@@ -16,6 +16,7 @@ from aioquic.h3.events import (
 from xpra.net.quic.connection import XpraQuicConnection, HttpConnection
 from xpra.net.quic.common import SERVER_NAME, http_date
 from xpra.log import Logger
+
 log = Logger("quic")
 
 
@@ -39,11 +40,11 @@ class WebTransportHandler(XpraQuicConnection):
 
     def send_accept(self) -> None:
         self.accepted = True
-        headers : dict[str,Any] = {
-            ":status"   : "200",
-            "server"    : SERVER_NAME,
-            "date"      : http_date(),
-            "sec-webtransport-http3-draft" : "draft02",
+        headers: dict[str, Any] = {
+            ":status": "200",
+            "server": SERVER_NAME,
+            "date": http_date(),
+            "sec-webtransport-http3-draft": "draft02",
         }
         self.send_headers(0, headers)
         self.transmit()
@@ -55,7 +56,7 @@ class WebTransportHandler(XpraQuicConnection):
     def send_close(self, code: int = 403, reason: str = ""):
         if not self.accepted:
             self.closed = True
-            self.send_headers(0, {":status" : code})
+            self.send_headers(0, {":status": code})
             self.transmit()
 
     def send_datagram(self, data):

@@ -19,6 +19,7 @@ from xpra.net.quic.common import binary_headers, override_aioquic_logger
 from xpra.util.str_fn import ellipsizer, memoryview_to_bytes
 from xpra.util.env import envbool
 from xpra.log import Logger
+
 log = Logger("quic")
 
 HttpConnection = Union[H0Connection, H3Connection]
@@ -48,24 +49,24 @@ class XpraQuicConnection(Connection):
     def __repr__(self):
         return f"XpraQuicConnection<{self.stream_id}>"
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         info = super().get_info()
         qinfo = {
-            "read-queue"    : self.read_queue.qsize(),
-            "stream-id"     : self.stream_id,
-            "accepted"      : self.accepted,
-            "closed"        : self.closed,
+            "read-queue": self.read_queue.qsize(),
+            "stream-id": self.stream_id,
+            "accepted": self.accepted,
+            "closed": self.closed,
         }
         quic = getattr(self.connection, "_quic", None)
         if quic:
             config = quic.configuration
             qinfo |= {
-                "alpn-protocols" : config.alpn_protocols,
-                "idle-timeout"  : config.idle_timeout,
-                "client"        : config.is_client,
-                "max-data"      : config.max_data,
-                "max-stream-data" : config.max_stream_data,
-                "server-name"   : config.server_name or "",
+                "alpn-protocols": config.alpn_protocols,
+                "idle-timeout": config.idle_timeout,
+                "client": config.is_client,
+                "max-data": config.max_data,
+                "max-stream-data": config.max_stream_data,
+                "server-name": config.server_name or "",
             }
         info["quic"] = qinfo
         return info
@@ -93,10 +94,10 @@ class XpraQuicConnection(Connection):
             data = close_packet(code, reason)
             self.write(data, "close")
         else:
-            self.send_headers(self.stream_id, headers={":status" : code})
+            self.send_headers(self.stream_id, headers={":status": code})
             self.transmit()
 
-    def send_headers(self, stream_id: int, headers : dict):
+    def send_headers(self, stream_id: int, headers: dict):
         self.connection.send_headers(
             stream_id=stream_id,
             headers=binary_headers(headers),
@@ -127,6 +128,7 @@ class XpraQuicConnection(Connection):
                     log("connection is already closed, packet {packet_type} dropped")
                     return
                 raise
+
         get_threaded_loop().call(do_write)
         return len(buf)
 
