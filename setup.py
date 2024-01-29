@@ -2259,7 +2259,7 @@ if cuda_kernels_ENABLED:
             #GCC 6 uses C++11 by default:
             else:
                 nvcc_cmd.append("-std=c++11")
-            if gcc_version>=(12, 0):
+            if gcc_version>=(12, 0) or CC_is_clang():
                 nvcc_cmd.append("--allow-unsupported-compiler")
             if nvcc_version>=(11, 5):
                 nvcc_cmd += ["-arch=all",
