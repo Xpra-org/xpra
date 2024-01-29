@@ -275,6 +275,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if pp:
             self.pinentry_proc = None
             noerr(pp.terminate)
+            for fd_name in ("stdin", "stdout", "stderr"):
+                fd = getattr(pp, fd_name, None)
+                if hasattr(fd, "close"):
+                    noerr(fd.close)
 
     def get_server_authentication_string(self) -> str:
         p = self._protocol
