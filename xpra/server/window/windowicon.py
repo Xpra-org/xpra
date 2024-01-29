@@ -38,11 +38,11 @@ class WindowIconSource:
     Mixin for handling the sending of window icon pixels.
     """
 
-    fallback_window_icon : bool | tuple[int, int, str, bytes] = False
+    fallback_window_icon: bool | tuple[int, int, str, bytes] = False
 
     def __init__(self, window_icon_encodings, icons_encoding_options):
         self.window_icon_encodings = window_icon_encodings
-        self.icons_encoding_options = icons_encoding_options    #icon caps
+        self.icons_encoding_options = icons_encoding_options  # icon caps
 
         self.has_png = PNG_ICONS and ("png" in self.window_icon_encodings)
         self.has_default = DEFAULT_ICONS and ("default" in self.window_icon_encodings)
@@ -80,17 +80,17 @@ class WindowIconSource:
             self.send_window_icon_timer = 0
             self.source_remove(swit)
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         idata = self.window_icon_data
         if not idata:
             return {}
         w, h, fmt, data = idata
         return {
-            "icon" : {
-                "width"         : w,
-                "height"        : h,
-                "format"        : fmt,
-                "bytes"         : len(data),
+            "icon": {
+                "width": w,
+                "height": h,
+                "format": fmt,
+                "bytes": len(data),
             }
         }
 
@@ -112,7 +112,7 @@ class WindowIconSource:
         return WindowIconSource.fallback_window_icon
 
     def get_default_window_icon(self, size=48):
-        #return the icon which would be used from the wmclass
+        # return the icon which would be used from the wmclass
         wmclass_name = self.get_window_wm_class_name()
         if not wmclass_name:
             return None
@@ -120,12 +120,12 @@ class WindowIconSource:
         it = Gtk.IconTheme.get_default()  # pylint: disable=no-member
         log("get_default_window_icon(%i) icon theme=%s, wmclass_name=%s", size, it, wmclass_name)
         for icon_name in (
-            f"{wmclass_name}-color",
-            wmclass_name,
-            f"{wmclass_name}_{size}x{size}",
-            f"application-x-{wmclass_name}",
-            f"{wmclass_name}-symbolic",
-            f"{wmclass_name}.symbolic",
+                f"{wmclass_name}-color",
+                wmclass_name,
+                f"{wmclass_name}_{size}x{size}",
+                f"application-x-{wmclass_name}",
+                f"{wmclass_name}-symbolic",
+                f"{wmclass_name}.symbolic",
         ):
             i = it.lookup_icon(icon_name, size, 0)
             log("lookup_icon(%s)=%s", icon_name, i)
@@ -147,7 +147,7 @@ class WindowIconSource:
             c_i = self.window.get_property("class-instance")
         except Exception:
             return None
-        if not c_i or len(c_i)!=2:
+        if not c_i or len(c_i) != 2:
             return None
         return c_i[0]
 
@@ -156,23 +156,23 @@ class WindowIconSource:
         return wm_class and wm_class in self.theme_default_icons
 
     def send_window_icon(self):
-        #some of this code could be moved to the work queue half, meh
+        # some of this code could be moved to the work queue half, meh
         assert self.ui_thread == threading.current_thread()
         if self.suspended:
             return
-        #this runs in the UI thread
+        # this runs in the UI thread
         icons = self.window.get_property("icons")
         log("send_window_icon window %s found %i icons", self.window, len(icons or ()))
         if not icons:
             if self.client_has_theme_icon():
                 log("%s in client theme icons already (not sending default icon)", self.theme_default_icons)
                 return
-            #try to load the icon for this class-instance from the theme:
+            # try to load the icon for this class-instance from the theme:
             icons = []
             sizes = []
             for size in (self.window_icon_size, self.window_icon_max_size, (48, 64)):
                 if size:
-                    for dim in size:        # ie: 48
+                    for dim in size:  # ie: 48
                         if dim not in sizes:
                             sizes.append(dim)
             for size in sizes:
@@ -194,16 +194,16 @@ class WindowIconSource:
         if not icon:
             if not self.window_icon_greedy:
                 return
-            #"greedy": client does not set a default icon, so we must provide one every time
-            #to make sure that the window icon does get set to something
-            #(our icon is at least better than the window manager's default)
+            # "greedy": client does not set a default icon, so we must provide one every time
+            # to make sure that the window icon does get set to something
+            # (our icon is at least better than the window manager's default)
             if self.has_default:
-                #client will set the default itself,
-                #send a mostly empty packet:
+                # client will set the default itself,
+                # send a mostly empty packet:
                 packet = ("window-icon", self.wid, 0, 0, "default", "")
                 log("queuing window icon update: %s", packet)
-                #this is cheap, so don't use the encode thread,
-                #and make sure we don't send another one via the timer:
+                # this is cheap, so don't use the encode thread,
+                # and make sure we don't send another one via the timer:
                 self.cancel_window_icon_timer()
                 self.queue_packet(packet, wait_for_more=True)
                 return
@@ -214,17 +214,17 @@ class WindowIconSource:
             return
         self.window_icon_data = icon
         if not self.send_window_icon_timer:
-            #call compress via the work queue
-            #and delay sending it by a bit to allow basic icon batching:
+            # call compress via the work queue
+            # and delay sending it by a bit to allow basic icon batching:
             w, h = self.window_icon_data[:2]
-            delay = min(1000, max(50, w*h*self.batch_config.delay_per_megapixel//1000000))
+            delay = min(1000, max(50, w * h * self.batch_config.delay_per_megapixel // 1000000))
             log("send_window_icon() window=%s, wid=%s, compression scheduled in %sms for batch delay=%i",
                 self.window, self.wid, delay, self.batch_config.delay_per_megapixel)
             self.send_window_icon_timer = self.timeout_add(delay, self.call_in_encode_thread,
                                                            True, self.compress_and_send_window_icon)
 
     def compress_and_send_window_icon(self):
-        #this runs in the work queue
+        # this runs in the work queue
         self.send_window_icon_timer = 0
         idata = self.window_icon_data
         if not idata or not self.has_png:
@@ -234,20 +234,20 @@ class WindowIconSource:
             w, h, pixel_format, len(pixel_data), self.wid)
         if pixel_format not in ("BGRA", "RGBA", "png"):
             raise RuntimeError(f"invalid window icon format {pixel_format}")
-        if pixel_format=="BGRA":
+        if pixel_format == "BGRA":
             # BGRA data is always unpremultiplied
             # (that's what we get from NetWMIcons)
             from xpra.codecs.argb.argb import premultiply_argb  # pylint: disable=import-outside-toplevel
             pixel_data = premultiply_argb(pixel_data)
 
         max_w, max_h = self.window_icon_max_size
-        #use png if supported and if "premult_argb32" is not supported by the client (ie: html5)
-        #or if we must downscale it (bigger than what the client is willing to deal with),
-        #or if we want to save window icons
-        must_scale = w>max_w or h>max_h
+        # use png if supported and if "premult_argb32" is not supported by the client (ie: html5)
+        # or if we must downscale it (bigger than what the client is willing to deal with),
+        # or if we want to save window icons
+        must_scale = w > max_w or h > max_h
         log("compress_and_send_window_icon: %sx%s (max-size=%s, standard-size=%s), pixel_format=%s",
             w, h, self.window_icon_max_size, self.window_icon_size, pixel_format)
-        must_convert = pixel_format!="png"
+        must_convert = pixel_format != "png"
         log(" must convert=%s, must scale=%s", must_convert, must_scale)
 
         image = None
@@ -255,20 +255,20 @@ class WindowIconSource:
             if Image is None:
                 log("cannot scale or convert window icon without python-pillow")
                 return
-            #we're going to need a PIL Image:
-            if pixel_format=="png":
+            # we're going to need a PIL Image:
+            if pixel_format == "png":
                 image = Image.open(BytesIO(pixel_data))
             else:
-                image = Image.frombuffer("RGBA", (w,h), memoryview_to_bytes(pixel_data), "raw", pixel_format, 0, 1)
+                image = Image.frombuffer("RGBA", (w, h), memoryview_to_bytes(pixel_data), "raw", pixel_format, 0, 1)
             if must_scale:
-                #scale the icon down to the size the client wants
-                #(we should scale + paste to preserve the aspect ratio, meh)
+                # scale the icon down to the size the client wants
+                # (we should scale + paste to preserve the aspect ratio, meh)
                 icon_w, icon_h = self.window_icon_size
-                if float(w)/icon_w>=float(h)/icon_h:
-                    rh = min(max_h, h*icon_w//w)
+                if float(w) / icon_w >= float(h) / icon_h:
+                    rh = min(max_h, h * icon_w // w)
                     rw = icon_w
                 else:
-                    rw = min(max_w, w*icon_h//h)
+                    rw = min(max_w, w * icon_h // h)
                     rh = icon_h
                 log("scaling window icon down to %sx%s", rw, rh)
                 image = image.resize((rw, rh), Image.Resampling.LANCZOS)
@@ -278,7 +278,7 @@ class WindowIconSource:
                 log("server window icon saved to %s", filename)
 
         if image:
-            #image got converted or scaled, get the new pixel data:
+            # image got converted or scaled, get the new pixel data:
             output = BytesIO()
             image.save(output, "png")
             pixel_data = output.getvalue()
@@ -294,11 +294,11 @@ class WindowIconSource:
         if not icons:
             return None
         log("choose_icon from: %s", csv("%ix%i %s" % icon[:3] for icon in icons))
-        size_image = {icon[0]*icon[1]: icon for icon in icons if icon[0]<max_w and icon[1]<max_h}
+        size_image = {icon[0] * icon[1]: icon for icon in icons if icon[0] < max_w and icon[1] < max_h}
         if not size_image:
             return None
-        #we should choose one whose size is close to what the client wants,
-        #take the biggest one for now:
+        # we should choose one whose size is close to what the client wants,
+        # take the biggest one for now:
         largest_size = sorted(size_image)[-1]
         icon = size_image[largest_size]
         log("choose_icon(..)=%ix%i %s", *icon[:3])

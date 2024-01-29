@@ -35,7 +35,7 @@ GLib = gi_import("GLib")
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
 
-N_SAMPLES = 20      # how many sample points to show on the graphs
+N_SAMPLES = 20  # how many sample points to show on the graphs
 SHOW_PIXEL_STATS = True
 SHOW_SOUND_STATS = True
 SHOW_RECV = True
@@ -53,7 +53,7 @@ def make_datetime(date, time) -> str:
     return "%s %s" % (bytestostr(date), bytestostr(time))
 
 
-def bool_icon(image, on_off:bool):
+def bool_icon(image, on_off: bool):
     if on_off:
         icon = get_icon_pixbuf("ticked-small.png")
     else:
@@ -62,15 +62,15 @@ def bool_icon(image, on_off:bool):
 
 
 def pixelstr(v) -> str:
-    if v<0:
+    if v < 0:
         return "n/a"
     return std_unit_dec(v)
 
 
 def fpsstr(v) -> str:
-    if v<0:
+    if v < 0:
         return "n/a"
-    return "%s" % (int(v*10)/10.0)
+    return "%s" % (int(v * 10) / 10.0)
 
 
 def average(seconds, pixel_counter):
@@ -80,24 +80,24 @@ def average(seconds, pixel_counter):
     mins = None
     maxs = 0
     avgs = 0
-    mint = now-seconds      # ignore records older than N seconds
-    startt = now            # when we actually start counting from
+    mint = now - seconds  # ignore records older than N seconds
+    startt = now  # when we actually start counting from
     for _, t, count in pixel_counter:
-        if t>=mint:
+        if t >= mint:
             total += count
             total_n += 1
             startt = min(t, startt)
             if mins:
-                mins = min(mins,count)
+                mins = min(mins, count)
             else:
                 mins = count
             maxs = max(maxs, count)
             avgs += count
-    if total==0 or startt==now:
+    if total == 0 or startt == now:
         return None
-    avgs = avgs/total_n
-    elapsed = now-startt
-    return int(total/elapsed), total_n/elapsed, mins, avgs, maxs
+    avgs = avgs / total_n
+    elapsed = now - startt
+    return int(total / elapsed), total_n / elapsed, mins, avgs, maxs
 
 
 def dictlook(d, k, fallback=None):
@@ -108,7 +108,7 @@ def dictlook(d, k, fallback=None):
     v = d.get(k)
     if v is not None:
         return v
-    parts = (b"client."+strtobytes(k)).split(b".")
+    parts = (b"client." + strtobytes(k)).split(b".")
     v = newdictlook(d, parts, fallback)
     if v is None:
         parts = strtobytes(k).split(b".")
@@ -165,13 +165,14 @@ def make_os_str(sys_platform, platform_release, platform_platform, platform_linu
 
 
 def get_server_platform_name(client) -> str:
-    server_info:dict = getattr(client, "server_last_info") or {}
+    server_info: dict = getattr(client, "server_last_info") or {}
     pinfo = server_info.get("server", {}).get("platform", {})
 
     def plat(key=""):
         # we can get the platform information from the server info mixin,
         # or from the server last info:
         return pinfo.get(key) or getattr(client, f"_remote_platform{key}", "")
+
     return make_os_str(
         plat(""),
         plat("release"),
@@ -187,6 +188,7 @@ def get_local_platform_name() -> str:
 def get_server_builddate(client) -> str:
     def cattr(name):
         return getattr(client, name, "")
+
     return make_datetime(cattr("_remote_build_date"), cattr("_remote_build_time"))
 
 
@@ -206,6 +208,7 @@ def get_server_version(client) -> str:
 def get_server_revision_str(client) -> str:
     def cattr(name):
         return getattr(client, name, "")
+
     return make_revision_str(
         cattr("_remote_revision"),
         cattr("_remote_modifications"),
@@ -214,7 +217,7 @@ def get_server_revision_str(client) -> str:
     )
 
 
-def get_glbuffering_info(opengl_props:dict) -> str:
+def get_glbuffering_info(opengl_props: dict) -> str:
     display_mode = opengl_props.get("display_mode", [])
     bit_depth = opengl_props.get("depth", 0)
     info = []
@@ -278,6 +281,7 @@ class SessionInfo(Gtk.Window):
 
         def window_deleted(*_args):
             self.is_closed = True
+
         self.connect('delete_event', window_deleted)
         self.show_tab(self.tabs[0][2])
         self.set_size_request(-1, -1)
@@ -336,7 +340,7 @@ class SessionInfo(Gtk.Window):
             slabel(server_str) if self.show_server else None,
         )
 
-    def grid_tab(self, icon_filename: str, title: str, populate_cb:Callable):
+    def grid_tab(self, icon_filename: str, title: str, populate_cb: Callable):
         self.grid = Gtk.Grid()
         self.row.set(0)
         vbox = self.vbox_tab(icon_filename, title, populate_cb)
@@ -345,16 +349,17 @@ class SessionInfo(Gtk.Window):
         vbox.pack_start(al, expand=True, fill=True, padding=20)
         return vbox
 
-    def vbox_tab(self, icon_filename: str, title: str, populate_cb:Callable):
+    def vbox_tab(self, icon_filename: str, title: str, populate_cb: Callable):
         vbox = Gtk.VBox(homogeneous=False, spacing=0)
         self.add_tab(icon_filename, title, populate_cb, contents=vbox)
         return vbox
 
-    def add_tab(self, icon_filename: str, title: str, populate_cb:Callable, contents):
+    def add_tab(self, icon_filename: str, title: str, populate_cb: Callable, contents):
         icon = get_icon_pixbuf(icon_filename)
 
         def show_tab(*_args):
             self.show_tab(contents)
+
         button = imagebutton(title, icon, clicked_callback=show_tab)
         button.connect("clicked", show_tab)
         button.set_relief(Gtk.ReliefStyle.NONE)
@@ -364,7 +369,7 @@ class SessionInfo(Gtk.Window):
     def show_tab(self, grid):
         button = None
         for _, b, t, p_cb in self.tabs:
-            if t==grid:
+            if t == grid:
                 button = b
                 b.set_relief(Gtk.ReliefStyle.NORMAL)
                 b.grab_focus()
@@ -373,7 +378,7 @@ class SessionInfo(Gtk.Window):
                 b.set_relief(Gtk.ReliefStyle.NONE)
         assert button
         for x in self.tab_box.get_children():
-            if x!=self.tab_button_box:
+            if x != self.tab_button_box:
                 self.tab_box.remove(x)
         self.tab_box.pack_start(grid, expand=True, fill=True, padding=0)
         grid.show_all()
@@ -391,10 +396,10 @@ class SessionInfo(Gtk.Window):
             return
         # at the moment, we only handle the tab name as argument:
         tab_name = args[0]
-        if tab_name.lower()!="help":
+        if tab_name.lower() != "help":
             title = ""
             for title, _, table, _ in self.tabs:
-                if title.lower()==tab_name.lower():
+                if title.lower() == tab_name.lower():
                     self.show_tab(table)
                     return
             log.warn("could not find session info tab named: %s", title)
@@ -416,6 +421,7 @@ class SessionInfo(Gtk.Window):
 
         def set_cursor(widget) -> None:
             widget.get_window().set_cursor(arrow_down)
+
         if arrow_down:
             button.connect("realize", set_cursor)
         graph = Gtk.Image()
@@ -439,6 +445,7 @@ class SessionInfo(Gtk.Window):
 
                 def qlookup(attr) -> int:
                     return int(newdictlook(info, ("queue", attr), 0))
+
                 self.audio_out_queue_cur.append(qlookup("cur"))
                 self.audio_out_queue_min.append(qlookup("min"))
                 self.audio_out_queue_max.append(qlookup("max"))
@@ -455,19 +462,20 @@ class SessionInfo(Gtk.Window):
             self.show_opengl_state()
             self.show_window_renderers()
             # record bytecount every second:
-            self.net_in_bitcount.append(conn.input_bytecount*8)
-            self.net_out_bitcount.append(conn.output_bytecount*8)
+            self.net_in_bitcount.append(conn.input_bytecount * 8)
+            self.net_out_bitcount.append(conn.output_bytecount * 8)
             if features.audio and SHOW_SOUND_STATS:
-                if self.client.audio_in_bytecount>0:
+                if self.client.audio_in_bytecount > 0:
                     self.audio_in_bitcount.append(self.client.audio_in_bytecount * 8)
-                if self.client.audio_out_bytecount>0:
+                if self.client.audio_out_bytecount > 0:
                     self.audio_out_bitcount.append(self.client.audio_out_bytecount * 8)
 
         if self.show_client and features.windows:
             # count pixels in the last second:
-            since = monotonic()-1
-            decoded = [0]+[pixels for _,t,pixels in self.client.pixel_counter if t>since]
+            since = monotonic() - 1
+            decoded = [0] + [pixels for _, t, pixels in self.client.pixel_counter if t > since]
             self.pixel_in_data.append(sum(decoded))
+
         # update latency values
         # there may be more than one record for each second,
         # so we have to average them to prevent the graph from "jumping":
@@ -476,59 +484,61 @@ class SessionInfo(Gtk.Window):
             recs = {}
             src_list = list(src)
             now = int(monotonic())
-            while src_list and len(recs)<size:
+            while src_list and len(recs) < size:
                 when, value = src_list.pop()
-                if when>=(now-1):           # ignore last second
+                if when >= (now - 1):  # ignore last second
                     continue
                 iwhen = int(when)
                 cv = recs.get(iwhen)
-                v = 1000.0*value
+                v = 1000.0 * value
                 if cv:
-                    v = (v+cv) / 2.0        # not very fair if more than 2 values... but this shouldn't happen anyway
+                    v = (v + cv) / 2.0  # not very fair if more than 2 values... but this shouldn't happen anyway
                 recs[iwhen] = v
             # ensure we always have a record for the last N seconds, even an empty one
             for x in range(size):
-                i = now-2-x
+                i = now - 2 - x
                 if i not in recs:
                     recs[i] = None
             return tuple(recs.get(x) for x in sorted(recs.keys()))
+
         self.server_latency = get_ping_latency_records(self.client.server_ping_latency)
         self.client_latency = get_ping_latency_records(self.client.client_ping_latency)
         if self.client.server_last_info:
             # populate running averages for graphs:
 
             def getavg(*names):
-                return newdictlook(self.client.server_last_info, list(names)+["avg"]) or \
-                    newdictlook(self.client.server_last_info, ["client"]+list(names)+["avg"])
+                return newdictlook(self.client.server_last_info, list(names) + ["avg"]) or \
+                    newdictlook(self.client.server_last_info, ["client"] + list(names) + ["avg"])
 
             def addavg(l, *names):
                 v = getavg(*names)
                 if v:
                     l.append(v)
+
             addavg(self.avg_batch_delay, "batch", "delay")
             addavg(self.avg_damage_out_latency, "damage", "out_latency")
-            spl = tuple(1000.0*x[1] for x in tuple(self.client.server_ping_latency))
-            cpl = tuple(1000.0*x[1] for x in tuple(self.client.client_ping_latency))
+            spl = tuple(1000.0 * x[1] for x in tuple(self.client.server_ping_latency))
+            cpl = tuple(1000.0 * x[1] for x in tuple(self.client.client_ping_latency))
             if spl and cpl:
-                self.avg_ping_latency.append(round(sum(spl+cpl)/len(spl+cpl)))
+                self.avg_ping_latency.append(round(sum(spl + cpl) / len(spl + cpl)))
             if features.windows and self.show_client:
                 pc = tuple(self.client.pixel_counter)
                 if pc:
                     tsize = 0
                     ttime = 0
                     for start_time, end_time, size in pc:
-                        ttime += 1000.0 * (end_time-start_time) * size
+                        ttime += 1000.0 * (end_time - start_time) * size
                         tsize += size
-                    self.avg_decoding_latency.append(round(ttime/tsize))
+                    self.avg_decoding_latency.append(round(ttime / tsize))
         # totals: ping latency is halved since we only care about sending, not sending+receiving
-        els  = (
+        els = (
             (tuple(self.avg_batch_delay), 1),
             (tuple(self.avg_damage_out_latency), 1),
             (tuple(self.avg_ping_latency), 2),
             (tuple(self.avg_decoding_latency), 1),
         )
         if all(x[0] for x in els):
-            totals = tuple(x[-1]/r for x, r in els)
+            totals = tuple(x[-1] / r for x, r in els)
             log("frame totals=%s", totals)
             self.avg_total.append(round(sum(totals)))
         return not self.is_closed
@@ -546,6 +556,7 @@ class SessionInfo(Gtk.Window):
         def server_vinfo(lib):
             rlv = getattr(self.client, "_remote_lib_versions", {})
             return make_version_str(rlv.get(lib, ""))
+
         try:
             from xpra.audio.wrapper import query_audio
             props = query_audio()
@@ -564,6 +575,7 @@ class SessionInfo(Gtk.Window):
             if not self.show_server:
                 return ""
             return make_version_str(typedict(self.client.server_opengl or {}).get(prop, default_value))
+
         for prop in ("OpenGL", "Vendor", "PyOpenGL"):
             key = prop.lower()
             self.csrow(prop, clientgl(key), servergl(key))
@@ -573,11 +585,11 @@ class SessionInfo(Gtk.Window):
         return False
 
     def init_counters(self):
-        self.avg_batch_delay = deque(maxlen=N_SAMPLES+4)
-        self.avg_damage_out_latency = deque(maxlen=N_SAMPLES+4)
-        self.avg_ping_latency = deque(maxlen=N_SAMPLES+4)
-        self.avg_decoding_latency = deque(maxlen=N_SAMPLES+4)
-        self.avg_total = deque(maxlen=N_SAMPLES+4)
+        self.avg_batch_delay = deque(maxlen=N_SAMPLES + 4)
+        self.avg_damage_out_latency = deque(maxlen=N_SAMPLES + 4)
+        self.avg_ping_latency = deque(maxlen=N_SAMPLES + 4)
+        self.avg_decoding_latency = deque(maxlen=N_SAMPLES + 4)
+        self.avg_total = deque(maxlen=N_SAMPLES + 4)
 
     def populate_tab(self, *_args):
         if self.is_closed:
@@ -646,7 +658,7 @@ class SessionInfo(Gtk.Window):
         size_info = ""
         if features.windows:
             if self.client.server_actual_desktop_size:
-                w,h = self.client.server_actual_desktop_size
+                w, h = self.client.server_actual_desktop_size
                 size_info = f"{w}x{h}"
                 if self.client.server_randr and self.client.server_max_desktop_size:
                     size_info += " (max %s)" % ("x".join([str(x) for x in self.client.server_max_desktop_size]))
@@ -659,7 +671,7 @@ class SessionInfo(Gtk.Window):
         self.server_randr_label.set_text("%s" % size_info)
         if self.show_client:
             root_w, root_h = self.client.get_root_size()
-            if features.windows and (self.client.xscale!=1 or self.client.yscale!=1):
+            if features.windows and (self.client.xscale != 1 or self.client.yscale != 1):
                 sw, sh = self.client.cp(root_w, root_h)
                 display_info = "%ix%i (scaled from %ix%i)" % (sw, sh, root_w, root_h)
             else:
@@ -706,7 +718,7 @@ class SessionInfo(Gtk.Window):
     def populate_codecs(self):
         # clamp the large labels so they will overflow vertically:
         w = self.tab_box.get_preferred_width()[0]
-        lw = max(200, int(w//2.5))
+        lw = max(200, int(w // 2.5))
         if self.show_client:
             self.client_encodings_label.set_size_request(lw, -1)
             self.client_speaker_codecs_label.set_size_request(lw, -1)
@@ -715,12 +727,14 @@ class SessionInfo(Gtk.Window):
             self.server_encodings_label.set_size_request(lw, -1)
             self.server_speaker_codecs_label.set_size_request(lw, -1)
             self.server_microphone_codecs_label.set_size_request(lw, -1)
+
         # audio/video codec table:
 
         def codec_info(enabled, codecs):
             if not enabled:
                 return "n/a"
             return ", ".join(codecs or ())
+
         if features.audio:
             c = self.client
             if self.show_server:
@@ -743,6 +757,7 @@ class SessionInfo(Gtk.Window):
             except ValueError:
                 pass
             return csv(sorted(v))
+
         se = ()
         if features.encoding:
             se = self.client.server_core_encodings
@@ -770,6 +785,7 @@ class SessionInfo(Gtk.Window):
 
         def cattr(name) -> str:
             return getattr(self.client, name, "")
+
         if self.connection:
             self.connection.target = self.label_row("Server Endpoint")
         if features.display and self.client.server_display:
@@ -799,13 +815,14 @@ class SessionInfo(Gtk.Window):
             details = slabel(font="monospace 10")
             self.add_row(title_box(text), al, details)
             return lbl, details
+
         self.speaker_label, self.speaker_details = add_audio_row("Speaker")
         self.microphone_label, self.microphone_details = add_audio_row("Microphone")
 
     def populate_connection(self):
         if self.client.server_load:
-            self.server_load_label.set_text("  ".join("%.1f" % (x/1000.0) for x in self.client.server_load))
-        if self.client.server_start_time>0:
+            self.server_load_label.set_text("  ".join("%.1f" % (x / 1000.0) for x in self.client.server_load))
+        if self.client.server_start_time > 0:
             settimedeltastr(self.session_started_label, self.client.server_start_time)
         else:
             self.session_started_label.set_text("unknown")
@@ -825,10 +842,10 @@ class SessionInfo(Gtk.Window):
             self.output_bytes_label.set_text(std_unit_dec(c.output_bytecount))
         else:
             for l in (
-                self.input_packets_label,
-                self.input_bytes_label,
-                self.output_packets_label,
-                self.output_bytes_label,
+                    self.input_packets_label,
+                    self.input_bytes_label,
+                    self.output_packets_label,
+                    self.output_bytes_label,
             ):
                 l.set_text("n/a")
 
@@ -836,9 +853,9 @@ class SessionInfo(Gtk.Window):
 
             def get_audio_info(supported, prop):
                 if not supported:
-                    return {"state" : "disabled"}
+                    return {"state": "disabled"}
                 if prop is None:
-                    return {"state" : "inactive"}
+                    return {"state": "inactive"}
                 return prop.get_info()
 
             def set_audio_info(label, details, supported, prop):
@@ -846,8 +863,8 @@ class SessionInfo(Gtk.Window):
                 state = d.strget("state", "")
                 codec_descr = d.strget("codec") or d.strget("codec_description")
                 container_descr = d.strget("container_description", "")
-                if state=="active" and codec_descr:
-                    if codec_descr.find(container_descr)>=0:
+                if state == "active" and codec_descr:
+                    if codec_descr.find(container_descr) >= 0:
                         descr = codec_descr
                     else:
                         descr = csv(x for x in (codec_descr, container_descr) if x)
@@ -856,9 +873,10 @@ class SessionInfo(Gtk.Window):
                 if details:
                     s = ""
                     bitrate = d.intget("bitrate", 0)
-                    if bitrate>0:
+                    if bitrate > 0:
                         s = "%sbit/s" % std_unit(bitrate)
                     details.set_text(s)
+
             set_audio_info(self.speaker_label, self.speaker_details,
                            self.client.speaker_enabled, self.client.audio_sink)
             set_audio_info(self.microphone_label, None,
@@ -869,8 +887,8 @@ class SessionInfo(Gtk.Window):
         encoder = protocol_info.get("encoder", "bug")
         compressor = protocol_info.get("compressor", "none")
         level = protocol_info.get("compression_level", 0)
-        compression_str = encoder + " + "+compressor
-        if level>0:
+        compression_str = encoder + " + " + compressor
+        if level > 0:
             compression_str += " (level %s)" % level
         self.compression_label.set_text(compression_str)
 
@@ -882,12 +900,13 @@ class SessionInfo(Gtk.Window):
                 info = "None"
             else:
                 info = str(cipher)
-            if c.socktype.lower()=="ssh":
+            if c.socktype.lower() == "ssh":
                 info += " (%s)" % c.socktype
             backend = ccaps.get("backend")
-            if backend=="python-cryptography":
+            if backend == "python-cryptography":
                 info += " / python-cryptography"
             label_widget.set_text(info)
+
         enclabel(self.input_encryption_label, p.cipher_in_name)
         enclabel(self.output_encryption_label, p.cipher_out_name)
         return True
@@ -897,12 +916,13 @@ class SessionInfo(Gtk.Window):
             return ""
         altv = ""
         if alt:
-            altv = dictlook(self.client.server_last_info, (alt+"."+suffix).encode(), "")
-        return dictlook(self.client.server_last_info, (prefix+"."+suffix).encode(), altv)
+            altv = dictlook(self.client.server_last_info, (alt + "." + suffix).encode(), "")
+        return dictlook(self.client.server_last_info, (prefix + "." + suffix).encode(), altv)
 
     def values_from_info(self, prefix, alt=None):
         def getv(suffix):
             return self.getval(prefix, suffix, alt)
+
         return getv("cur"), getv("min"), getv("avg"), getv("90p"), getv("max")
 
     def all_values_from_info(self, *window_props):
@@ -924,6 +944,7 @@ class SessionInfo(Gtk.Window):
             labels = [title_box(metric, tooltip), slabel(), slabel(), slabel(), slabel(), slabel()]
             self.add_row(*labels)
             return labels[1:]
+
         self.server_latency_labels = maths_labels(
             "Server Latency (ms)",
             "The time it takes for the server to respond to pings",
@@ -990,40 +1011,40 @@ class SessionInfo(Gtk.Window):
 
     def populate_statistics(self):
         log("populate_statistics()")
-        if monotonic()-self.last_populate_statistics<1.0:
+        if monotonic() - self.last_populate_statistics < 1.0:
             # don't repopulate more than every second
             return True
         self.last_populate_statistics = monotonic()
         self.client.send_info_request()
 
         def setall(labels, values):
-            assert len(labels)==len(values), "%s labels and %s values (%s vs %s)" % (
+            assert len(labels) == len(values), "%s labels and %s values (%s vs %s)" % (
                 len(labels), len(values), labels, values)
             for i, l in enumerate(labels):
                 l.set_text(str(values[i]))
 
-        def setlabels(labels, values, rounding: Callable=int):
+        def setlabels(labels, values, rounding: Callable = int):
             if not values:
                 return
-            avg = sum(values)/len(values)
+            avg = sum(values) / len(values)
             svalues = sorted(values)
             l = len(svalues)
-            assert l>0
-            if l<10:
-                index = l-1
+            assert l > 0
+            if l < 10:
+                index = l - 1
             else:
-                index = int(l*90/100)
-            index = max(0, min(l-1, index))
+                index = int(l * 90 / 100)
+            index = max(0, min(l - 1, index))
             pct = svalues[index]
             disp = values[-1], min(values), avg, pct, max(values)
             rounded_values = [rounding(v) for v in disp]
             setall(labels, rounded_values)
 
         if self.client.server_ping_latency:
-            spl = tuple(int(1000*x[1]) for x in tuple(self.client.server_ping_latency))
+            spl = tuple(int(1000 * x[1]) for x in tuple(self.client.server_ping_latency))
             setlabels(self.server_latency_labels, spl)
         if self.client.client_ping_latency:
-            cpl = tuple(int(1000*x[1]) for x in tuple(self.client.client_ping_latency))
+            cpl = tuple(int(1000 * x[1]) for x in tuple(self.client.client_ping_latency))
             setlabels(self.client_latency_labels, cpl)
         if features.windows and self.client.windows_enabled:
             setall(self.batch_labels, self.values_from_info("batch_delay", "batch.delay"))
@@ -1041,19 +1062,19 @@ class SessionInfo(Gtk.Window):
                 regions_per_second = {}
                 pixels_per_second = {}
                 for start_time, end_time, size in self.client.pixel_counter:
-                    decoding_latency.append(int(1000.0*(end_time-start_time)))
+                    decoding_latency.append(int(1000.0 * (end_time - start_time)))
                     region_sizes.append(size)
-                    if min_time is None or min_time>end_time:
+                    if min_time is None or min_time > end_time:
                         min_time = end_time
-                    if max_time is None or max_time<end_time:
+                    if max_time is None or max_time < end_time:
                         max_time = end_time
                     time_in_seconds = int(end_time)
                     regions = regions_per_second.get(time_in_seconds, 0)
-                    regions_per_second[time_in_seconds] = regions+1
+                    regions_per_second[time_in_seconds] = regions + 1
                     pixels = pixels_per_second.get(time_in_seconds, 0)
                     pixels_per_second[time_in_seconds] = pixels + size
-                if int(min_time)+1 < int(max_time):
-                    for t in range(int(min_time)+1, int(max_time)):
+                if int(min_time) + 1 < int(max_time):
+                    for t in range(int(min_time) + 1, int(max_time)):
                         rps.append(regions_per_second.get(t, 0))
                         pps.append(pixels_per_second.get(t, 0))
             setlabels(self.decoding_labels, decoding_latency)
@@ -1066,7 +1087,7 @@ class SessionInfo(Gtk.Window):
                 if w.is_tray():
                     trays += 1
                 elif w.is_OR():
-                    transient +=1
+                    transient += 1
                 else:
                     windows += 1
                 if w.is_GL():
@@ -1086,7 +1107,7 @@ class SessionInfo(Gtk.Window):
                 for wid, props in window_encoder_stats.items():
                     l = slabel("%s (%s)" % (wid, bytestostr(props.get(""))))
                     l.show()
-                    info = ("%s=%s" % (k,v) for k,v in props.items() if k!="")
+                    info = ("%s=%s" % (k, v) for k, v in props.items() if k != "")
                     l.set_tooltip_text(" ".join(info))
                     self.encoder_info_box.add(l)
         return True
@@ -1096,7 +1117,7 @@ class SessionInfo(Gtk.Window):
         # new-style server with namespace (easier):
         window_dict = self.client.server_last_info.get("window")
         if window_dict and isinstance(window_dict, dict):
-            for k,v in window_dict.items():
+            for k, v in window_dict.items():
                 with log.trap_error("Error: cannot lookup window dict"):
                     wid = int(k)
                     encoder_stats = v.get("encoder")
@@ -1140,19 +1161,19 @@ class SessionInfo(Gtk.Window):
         box = self.tab_box
         h = box.get_preferred_height()[0]
         bh = self.tab_button_box.get_preferred_height()[0]
-        if h<=0:
+        if h <= 0:
             return True
-        start_x_offset = min(1.0, (monotonic()-self.last_populate_time)*0.95)
+        start_x_offset = min(1.0, (monotonic() - self.last_populate_time) * 0.95)
         rect = box.get_allocation()
         maxw, maxh = self.client.get_root_size()
-        ngraphs = 2+int(SHOW_SOUND_STATS)
+        ngraphs = 2 + int(SHOW_SOUND_STATS)
         # the preferred size (which does not cause the window to grow too big):
         W = 360
-        H = 160*3//ngraphs
-        w = min(maxw, max(W, rect.width-20))
+        H = 160 * 3 // ngraphs
+        w = min(maxw, max(W, rect.width - 20))
         # need some padding to be able to shrink the window again:
         pad = 50
-        h = min(maxh-pad//ngraphs, max(H, (h-bh-pad)//ngraphs, (rect.height-bh-pad)//ngraphs))
+        h = min(maxh - pad // ngraphs, max(H, (h - bh - pad) // ngraphs, (rect.height - bh - pad) // ngraphs))
         # bandwidth graph:
         labels, datasets = [], []
 
@@ -1166,9 +1187,9 @@ class SessionInfo(Gtk.Window):
 
         if self.net_in_bitcount and self.net_out_bitcount:
             net_in_scale, net_in_data = values_to_diff_scaled_values(tuple(
-                self.net_in_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+                self.net_in_bitcount)[1:N_SAMPLES + 3], scale_unit=1000, min_scaled_value=50)
             net_out_scale, net_out_data = values_to_diff_scaled_values(tuple(
-                self.net_out_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+                self.net_out_bitcount)[1:N_SAMPLES + 3], scale_unit=1000, min_scaled_value=50)
             if SHOW_RECV:
                 labels += ["recv %sb/s" % unit(net_in_scale), "sent %sb/s" % unit(net_out_scale)]
                 datasets += [net_in_data, net_out_data]
@@ -1177,17 +1198,17 @@ class SessionInfo(Gtk.Window):
                 datasets += [net_in_data]
         if features.windows and SHOW_PIXEL_STATS and self.client.windows_enabled:
             pixel_scale, in_pixels = values_to_scaled_values(tuple(
-                self.pixel_in_data)[3:N_SAMPLES+4], min_scaled_value=100)
+                self.pixel_in_data)[3:N_SAMPLES + 4], min_scaled_value=100)
             datasets.append(in_pixels)
             labels.append("%s pixels/s" % unit(pixel_scale))
         if features.audio and SHOW_SOUND_STATS and self.audio_in_bitcount:
             audio_in_scale, audio_in_data = values_to_diff_scaled_values(tuple(
-                self.audio_in_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+                self.audio_in_bitcount)[1:N_SAMPLES + 3], scale_unit=1000, min_scaled_value=50)
             datasets.append(audio_in_data)
             labels.append("Speaker %sb/s" % unit(audio_in_scale))
         if features.audio and SHOW_SOUND_STATS and self.audio_out_bitcount:
             audio_out_scale, audio_out_data = values_to_diff_scaled_values(tuple(
-                self.audio_out_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+                self.audio_out_bitcount)[1:N_SAMPLES + 3], scale_unit=1000, min_scaled_value=50)
             datasets.append(audio_out_data)
             labels.append("Mic %sb/s" % unit(audio_out_scale))
 
@@ -1206,8 +1227,8 @@ class SessionInfo(Gtk.Window):
                 if not l:
                     continue
                 l = list(l)
-                if len(l)<size:
-                    for _ in range(size-len(l)):
+                if len(l) < size:
+                    for _ in range(size - len(l)):
                         l.insert(0, None)
                 else:
                     l = l[:size]
@@ -1242,7 +1263,7 @@ class SessionInfo(Gtk.Window):
                     (self.audio_out_queue_cur, "Level"),
                     (self.audio_out_queue_min, "Min"),
                 ),
-                N_SAMPLES*10
+                N_SAMPLES * 10
             )
             surface = make_graph_imagesurface(queue_values, labels=queue_labels,
                                               width=w, height=h,
@@ -1270,7 +1291,7 @@ class SessionInfo(Gtk.Window):
         chooser.hide()
         chooser.close()
         if response == Gtk.ResponseType.OK:
-            if len(filenames)==1:
+            if len(filenames) == 1:
                 filename = filenames[0]
                 if not filename.lower().endswith(".png"):
                     filename += ".png"
@@ -1283,6 +1304,7 @@ class SessionInfo(Gtk.Window):
                 def save_file():
                     with open(filename, "wb") as f:
                         f.write(b.getvalue())
+
                 from xpra.util.thread import start_thread
                 start_thread(save_file, "save-graph")
         elif response in (Gtk.ResponseType.CANCEL, Gtk.ResponseType.CLOSE, Gtk.ResponseType.DELETE_EVENT):
@@ -1298,7 +1320,6 @@ class SessionInfo(Gtk.Window):
 
 
 class SessionInfoClient(InfoTimerClient):
-
     REFRESH_RATE = envint("XPRA_INFO_REFRESH_RATE", 2)
 
     def setup_connection(self, conn):
@@ -1336,6 +1357,7 @@ class SessionInfoClient(InfoTimerClient):
                 v = d.dictget(prop)
                 d = typedict(v or {})
             return d
+
         from xpra.client.base.serverinfo import get_remote_lib_versions
         features = rtdict("features")
         self.server_clipboard = features.boolget("clipboard")
@@ -1379,6 +1401,7 @@ class SessionInfoClient(InfoTimerClient):
 
             def destroy(*_args):
                 self.exit_loop()
+
             self.window.connect("destroy", destroy)
         self.window.populate()
         return False

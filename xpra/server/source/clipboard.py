@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -35,12 +35,12 @@ class ClipboardConnection(StubSourceMixin):
         self.clipboard_notifications = False
         self.clipboard_notifications_current = 0
         self.clipboard_notifications_pending = 0
-        self.clipboard_progress_timer : int = 0
-        self.clipboard_stats : Deque[float] = deque(maxlen=MAX_CLIPBOARD_LIMIT*MAX_CLIPBOARD_LIMIT_DURATION)
+        self.clipboard_progress_timer: int = 0
+        self.clipboard_stats: Deque[float] = deque(maxlen=MAX_CLIPBOARD_LIMIT * MAX_CLIPBOARD_LIMIT_DURATION)
         self.clipboard_greedy = False
         self.clipboard_want_targets = False
         self.clipboard_selections = CLIPBOARDS
-        self.clipboard_preferred_targets : tuple[str,...] = ()
+        self.clipboard_preferred_targets: tuple[str, ...] = ()
 
     def cleanup(self) -> None:
         self.cancel_clipboard_progress_timer()
@@ -60,19 +60,19 @@ class ClipboardConnection(StubSourceMixin):
         log("client clipboard: greedy=%s, want_targets=%s, selections=%s",
             self.clipboard_greedy, self.clipboard_want_targets, self.clipboard_selections)
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         return {
-            "clipboard" : {
-                "enabled"               : self.clipboard_enabled,
-                "notifications"         : self.clipboard_notifications,
-                "greedy"                : self.clipboard_greedy,
-                "want-targets"          : self.clipboard_want_targets,
-                "preferred-targets"     : self.clipboard_preferred_targets,
-                "selections"            : self.clipboard_selections,
+            "clipboard": {
+                "enabled": self.clipboard_enabled,
+                "notifications": self.clipboard_notifications,
+                "greedy": self.clipboard_greedy,
+                "want-targets": self.clipboard_want_targets,
+                "preferred-targets": self.clipboard_preferred_targets,
+                "selections": self.clipboard_selections,
             },
         }
 
-    def send_clipboard_enabled(self, reason:str="") -> None:
+    def send_clipboard_enabled(self, reason: str = "") -> None:
         if not self.hello_sent:
             return
         self.send_async("set-clipboard-enabled", self.clipboard_enabled, reason)
@@ -83,20 +83,22 @@ class ClipboardConnection(StubSourceMixin):
             self.clipboard_progress_timer = 0
             GLib.source_remove(cpt)
 
-    def send_clipboard_progress(self, count : int) -> None:
+    def send_clipboard_progress(self, count: int) -> None:
         if not self.clipboard_notifications or not self.hello_sent or self.clipboard_progress_timer:
             return
-        #always set "pending" to the latest value:
+        # always set "pending" to the latest value:
         self.clipboard_notifications_pending = count
-        #but send the latest value via a timer to tame toggle storms:
+
+        # but send the latest value via a timer to tame toggle storms:
 
         def may_send_progress_update() -> None:
             self.clipboard_progress_timer = 0
-            if self.clipboard_notifications_current!=self.clipboard_notifications_pending:
+            if self.clipboard_notifications_current != self.clipboard_notifications_pending:
                 self.clipboard_notifications_current = self.clipboard_notifications_pending
                 log("sending clipboard-pending-requests=%s to %s", self.clipboard_notifications_current, self)
                 self.send_more("clipboard-pending-requests", self.clipboard_notifications_current)
-        delay = (count==0)*100
+
+        delay = (count == 0) * 100
         self.clipboard_progress_timer = GLib.timeout_add(delay, may_send_progress_update)
 
     def send_clipboard(self, packet) -> None:
@@ -106,26 +108,26 @@ class ClipboardConnection(StubSourceMixin):
             return
         now = monotonic()
         self.clipboard_stats.append(now)
-        if len(self.clipboard_stats)>=MAX_CLIPBOARD_LIMIT:
+        if len(self.clipboard_stats) >= MAX_CLIPBOARD_LIMIT:
             event = self.clipboard_stats[-MAX_CLIPBOARD_LIMIT]
-            elapsed = now-event
+            elapsed = now - event
             log("send_clipboard(..) elapsed=%.2f, clipboard_stats=%s", elapsed, self.clipboard_stats)
-            if elapsed<1:
+            if elapsed < 1:
                 msg = f"more than {MAX_CLIPBOARD_LIMIT} clipboard requests per second!"
                 log.warn("Warning: %s", msg)
-                #disable if this rate is sustained for more than S seconds:
-                events = [x for x in tuple(self.clipboard_stats) if x>(now-MAX_CLIPBOARD_LIMIT_DURATION)]
+                # disable if this rate is sustained for more than S seconds:
+                events = [x for x in tuple(self.clipboard_stats) if x > (now - MAX_CLIPBOARD_LIMIT_DURATION)]
                 log("%i events in the last %i seconds: %s", len(events), MAX_CLIPBOARD_LIMIT_DURATION, events)
-                if len(events)>=MAX_CLIPBOARD_LIMIT*MAX_CLIPBOARD_LIMIT_DURATION:
+                if len(events) >= MAX_CLIPBOARD_LIMIT * MAX_CLIPBOARD_LIMIT_DURATION:
                     log.warn(" limit sustained for more than %i seconds,", MAX_CLIPBOARD_LIMIT_DURATION)
                 return
-        #call compress_clibboard via the encode work queue:
-        self.queue_encode((True, self.compress_clipboard, (packet, )))
+        # call compress_clibboard via the encode work queue:
+        self.queue_encode((True, self.compress_clipboard, (packet,)))
 
     def compress_clipboard(self, packet: PacketType) -> None:
         # pylint: disable=import-outside-toplevel
         from xpra.net.compression import Compressible, compressed_wrapper
-        #Note: this runs in the 'encode' thread!
+        # Note: this runs in the 'encode' thread!
         packet = list(packet)
         for i, item in enumerate(packet):
             if isinstance(item, Compressible):

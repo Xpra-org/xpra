@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,7 +15,7 @@ class StubSourceMixin:
     """
 
     @classmethod
-    def is_needed(cls, caps: typedict) -> bool:   # pylint: disable=unused-argument
+    def is_needed(cls, caps: typedict) -> bool:  # pylint: disable=unused-argument
         """
         Is this mixin needed for the caps given?
         """
@@ -47,7 +47,7 @@ class StubSourceMixin:
         Parse client attributes specified in the hello capabilities.
         """
 
-    def get_caps(self) -> dict[str,Any]:
+    def get_caps(self) -> dict[str, Any]:
         """
         Return the capabilities provided by this mixin.
         """
@@ -59,7 +59,7 @@ class StubSourceMixin:
         and after `get_caps()` has already been called to send the `hello` packet to the client.
         """
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         """
         Runtime information on this mixin, includes state and settings.
         Somewhat overlaps with the capabilities,
@@ -79,7 +79,7 @@ class StubSourceMixin:
         This dummy implementation makes it easier to test without a network connection.
         """
 
-    def queue_encode(self, item : None |tuple[bool,Callable,tuple]):
+    def queue_encode(self, item: None | tuple[bool, Callable, tuple]):
         """
         Used by the window source to send data to be processed in the encode thread
         """

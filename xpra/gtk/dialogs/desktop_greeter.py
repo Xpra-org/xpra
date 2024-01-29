@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2021-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -39,7 +39,7 @@ def sf(w, font="sans 14"):
     return w
 
 
-def l(text):    # noqa: E743
+def l(text):  # noqa: E743
     widget = label(text)
     return sf(widget)
 
@@ -74,6 +74,7 @@ class DesktopGreeter(Gtk.Window):
                              default=default, label_font="sans 16")
             hbox.pack_start(ib)
             return ib
+
         self.cancel_btn = btn("Exit", "", self.quit)
         self.run_btn = btn("Start", "Start the desktop environment", self.run_command)
 
@@ -161,7 +162,7 @@ class DesktopGreeter(Gtk.Window):
         self.desktop_combo.set_active(0)
 
 
-def main(_options=None):   # pragma: no cover
+def main(_options=None):  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     assert POSIX and not OSX
     from xpra.platform import program_context

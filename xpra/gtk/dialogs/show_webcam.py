@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2016-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -31,7 +31,7 @@ def main():
             return 1
         log("cv2=%s", cv2)
         device = 0
-        if len(sys.argv)==2:
+        if len(sys.argv) == 2:
             try:
                 device = int(sys.argv[1])
             except ValueError:
@@ -49,7 +49,7 @@ def main():
                 command_error("Error: frame capture failed using device %s" % device)
                 return 1
             cv2.imshow('frame', frame)  # @UndefinedVariable
-            if cv2.waitKey(10) & 0xFF in (ord('q'), 27):    # @UndefinedVariable
+            if cv2.waitKey(10) & 0xFF in (ord('q'), 27):  # @UndefinedVariable
                 break
         cap.release()
         cv2.destroyAllWindows()

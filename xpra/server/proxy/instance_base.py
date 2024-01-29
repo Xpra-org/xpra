@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -32,14 +32,13 @@ from xpra.log import Logger
 log = Logger("proxy")
 enclog = Logger("encoding")
 
-
 PROXY_QUEUE_SIZE = envint("XPRA_PROXY_QUEUE_SIZE", 0)
 # for testing only: passthrough as RGB:
 PASSTHROUGH_RGB = envbool("XPRA_PROXY_PASSTHROUGH_RGB", False)
-VIDEO_TIMEOUT = 5                  # destroy video encoder after N seconds of idle state
+VIDEO_TIMEOUT = 5  # destroy video encoder after N seconds of idle state
 PASSTHROUGH_AUTH = envbool("XPRA_PASSTHROUGH_AUTH", True)
 
-PING_INTERVAL = max(1, envint("XPRA_PROXY_PING_INTERVAL", 5))*1000
+PING_INTERVAL = max(1, envint("XPRA_PROXY_PING_INTERVAL", 5)) * 1000
 PING_WARNING = max(5, envint("XPRA_PROXY_PING_WARNING", 5))
 PING_TIMEOUT = max(5, envint("XPRA_PROXY_PING_TIMEOUT", 90))
 
@@ -82,11 +81,11 @@ class ProxyInstance:
         self.client_challenge_packet = None
         self.exit = False
         self.lost_windows = None
-        self.encode_queue = None            # holds draw packets to encode
+        self.encode_queue = None  # holds draw packets to encode
         self.encode_thread = None
         # setup protocol wrappers:
-        self.server_packets : Queue[tuple] = Queue(PROXY_QUEUE_SIZE)
-        self.client_packets : Queue[tuple] = Queue(PROXY_QUEUE_SIZE)
+        self.server_packets: Queue[tuple] = Queue(PROXY_QUEUE_SIZE)
+        self.client_packets: Queue[tuple] = Queue(PROXY_QUEUE_SIZE)
         self.video_encoding_defs = None
         self.video_encoders = None
         self.video_encoders_last_used_time = None
@@ -130,22 +129,22 @@ class ProxyInstance:
 
     def close_connections(self, skip_proto, *reasons) -> None:
         for proto in (self.client_protocol, self.server_protocol):
-            if proto and proto!=skip_proto:
+            if proto and proto != skip_proto:
                 log("sending disconnect to %s", proto)
-                proto.send_disconnect([ConnectionMessage.SERVER_SHUTDOWN]+list(reasons))
+                proto.send_disconnect([ConnectionMessage.SERVER_SHUTDOWN] + list(reasons))
         # wait for connections to close down cleanly before we exit
         cp = self.client_protocol
         sp = self.server_protocol
         for i in range(10):
             if cp.is_closed() and sp.is_closed():
                 break
-            if i==0:
+            if i == 0:
                 log("waiting for network connections to close")
-            elif i==1:
+            elif i == 1:
                 log.info("waiting for network connections to close")
             else:
                 log("still waiting %i/10 - client.closed=%s, server.closed=%s",
-                    i+1, cp.is_closed(), sp.is_closed())
+                    i + 1, cp.is_closed(), sp.is_closed())
             sleep(0.1)
         if not cp.is_closed():
             log.warn("Warning: proxy instance client connection has not been closed yet:")
@@ -182,8 +181,8 @@ class ProxyInstance:
 
     ################################################################################
 
-    def get_proxy_info(self, proto) -> dict[str,Any]:
-        sinfo = {"threads" : get_thread_info(proto)}
+    def get_proxy_info(self, proto) -> dict[str, Any]:
+        sinfo = {"threads": get_thread_info(proto)}
         sinfo.update(get_server_info())
         linfo = {}
         if self.client_last_ping_latency:
@@ -191,12 +190,12 @@ class ProxyInstance:
         if self.server_last_ping_latency:
             linfo["server"] = int(self.server_last_ping_latency)
         return {
-            "proxy" : {
-                "version"    : vparts(XPRA_VERSION, FULL_INFO+1),
-                ""           : sinfo,
-                "latency"    : linfo,
+            "proxy": {
+                "version": vparts(XPRA_VERSION, FULL_INFO + 1),
+                "": sinfo,
+                "latency": linfo,
             },
-            "window" : self.get_window_info(),
+            "window": self.get_window_info(),
         }
 
     def get_window_info(self) -> dict[int, dict[str, Any]]:
@@ -204,24 +203,24 @@ class ProxyInstance:
         now = monotonic()
         for wid, encoder in self.video_encoders.items():
             einfo = encoder.get_info()
-            einfo["idle_time"] = int(now-self.video_encoders_last_used_time.get(wid, 0))
+            einfo["idle_time"] = int(now - self.video_encoders_last_used_time.get(wid, 0))
             info[wid] = {
-                "proxy"    : {
-                    ""           : encoder.get_type(),
-                    "encoder"    : einfo
+                "proxy": {
+                    "": encoder.get_type(),
+                    "encoder": einfo
                 },
             }
         enclog("get_window_info()=%s", info)
         return info
 
-    def get_connection_info(self) -> dict[str,Any]:
+    def get_connection_info(self) -> dict[str, Any]:
         return {
-            "client" : self.client_protocol.get_info(),
-            "server" : self.server_protocol.get_info(),
+            "client": self.client_protocol.get_info(),
+            "server": self.server_protocol.get_info(),
         }
 
-    def get_info(self) -> dict[str,Any]:
-        return {"connection" : self.get_connection_info()}
+    def get_info(self) -> dict[str, Any]:
+        return {"connection": self.get_connection_info()}
 
     ################################################################################
 
@@ -229,8 +228,8 @@ class ProxyInstance:
         hello = self.filter_client_caps(self.caps)
         if challenge_response:
             hello.update({
-                "challenge_response"      : challenge_response,
-                "challenge_client_salt"   : client_salt,
+                "challenge_response": challenge_response,
+                "challenge_client_salt": client_salt,
             })
         hello.setdefault("network", {})["pings"] = self.pings
         self.queue_server_packet(("hello", hello))
@@ -240,12 +239,13 @@ class ProxyInstance:
 
         def number(k, v):
             return parse_number(int, k, v)
-        OPTION_WHITELIST : dict[str,Callable] = {
-            "compression_level" : number,
-            "lz4"               : parse_bool,
-            "rencodeplus"       : parse_bool,
+
+        OPTION_WHITELIST: dict[str, Callable] = {
+            "compression_level": number,
+            "lz4": parse_bool,
+            "rencodeplus": parse_bool,
         }
-        for k,v in options.items():
+        for k, v in options.items():
             parser = OPTION_WHITELIST.get(k)
             if parser:
                 log("trying to add %s=%s using %s", k, v, parser)
@@ -264,16 +264,16 @@ class ProxyInstance:
         # update with options provided via config if any:
         fc.update(self.sanitize_session_options(self.session_options))
         # add video proxies if any:
-        fc["encoding.proxy.video"] = len(self.video_encoding_defs)>0
+        fc["encoding.proxy.video"] = len(self.video_encoding_defs) > 0
         if self.video_encoding_defs:
             fc["encoding.proxy.video.encodings"] = self.video_encoding_defs
         return fc
 
-    def filter_server_caps(self, caps:dict) -> dict:
+    def filter_server_caps(self, caps: dict) -> dict:
         self.server_protocol.enable_encoder_from_caps(caps)
-        return self.filter_caps(caps, ("aliases", ), self.client_protocol)
+        return self.filter_caps(caps, ("aliases",), self.client_protocol)
 
-    def filter_caps(self, caps:dict, prefixes, proto=None) -> dict:
+    def filter_caps(self, caps: dict, prefixes, proto=None) -> dict:
         # removes caps that the proxy overrides / does not use:
         pcaps = {}
         removed = []
@@ -287,7 +287,7 @@ class ProxyInstance:
         pcaps |= get_network_caps() | proto_crypto_caps(proto)
         # then add the proxy info:
         si = get_server_info()
-        if FULL_INFO>0:
+        if FULL_INFO > 0:
             si["hostname"] = socket.gethostname()
         pcaps["proxy"] = si
         return pcaps
@@ -304,12 +304,12 @@ class ProxyInstance:
         p = self.client_packets.get()
         s = self.client_packets.qsize()
         log("sending to client: %s (queue size=%i)", p[0], s)
-        return p, None, None, None, True, s>0 or self.server_has_more
+        return p, None, None, None, True, s > 0 or self.server_has_more
 
     def process_client_packet(self, proto, packet: PacketType) -> None:
         packet_type = str(packet[0])
         log("process_client_packet: %s", packet_type)
-        if packet_type==CONNECTION_LOST:
+        if packet_type == CONNECTION_LOST:
             self.stop(proto, "client connection lost")
             return
         self.client_has_more = proto.receive_pending
@@ -329,7 +329,7 @@ class ProxyInstance:
         if packet_type == "ping_echo" and self.client_ping_timer and len(packet) >= 7 and packet[6] == self.uuid:
             # this is one of our ping packets:
             self.client_last_ping_echo = packet[1]
-            self.client_last_ping_latency = 1000*monotonic()-self.client_last_ping_echo
+            self.client_last_ping_latency = 1000 * monotonic() - self.client_last_ping_echo
             log("ping-echo: client latency=%.1fms", self.client_last_ping_latency)
             return
         # the packet types below are forwarded:
@@ -341,17 +341,17 @@ class ProxyInstance:
             else:
                 self.stop(None, "disconnect from client", *reasons)
         elif packet_type == "send-file" and packet[6]:
-            packet = self.compressed_marker(packet, 6,"file-data")
+            packet = self.compressed_marker(packet, 6, "file-data")
         elif packet_type == "send-file-chunk" and packet[3]:
             packet = self.compressed_marker(packet, 3, "file-chunk-data")
         self.queue_server_packet(packet)
 
-    def compressed_marker(self, packet: PacketType, index: int, description:str):
+    def compressed_marker(self, packet: PacketType, index: int, description: str):
         return self.replace_packet_item(packet, index, Compressed(description, packet[index], can_inline=False))
 
     def replace_packet_item(self, packet: PacketType, index: int, new_value: Any) -> PacketType:
         # make the packet data mutable and replace the contents at `index`:
-        assert index>0
+        assert index > 0
         lpacket = list(packet)
         lpacket[index] = new_value
         # noinspection PyTypeChecker
@@ -367,16 +367,16 @@ class ProxyInstance:
         p = self.server_packets.get()
         s = self.server_packets.qsize()
         log("sending to server: %s (queue size=%i)", p[0], s)
-        return p, None, None, None, True, s>0 or self.client_has_more
+        return p, None, None, None, True, s > 0 or self.client_has_more
 
-    def _packet_recompress(self, packet: PacketType, index: int, name:str) -> PacketType:
-        if len(packet)<=index:
+    def _packet_recompress(self, packet: PacketType, index: int, name: str) -> PacketType:
+        if len(packet) <= index:
             return packet
         data = packet[index]
-        if len(data)<MIN_COMPRESS_SIZE:
+        if len(data) < MIN_COMPRESS_SIZE:
             return packet
         # this is ugly and not generic!
-        kw = {"lz4" : self.caps.boolget("lz4")}
+        kw = {"lz4": self.caps.boolget("lz4")}
         return self.replace_packet_item(packet, index, compressed_wrapper(name, data, can_inline=False, **kw))
 
     def cancel_server_ping_timer(self) -> None:
@@ -409,40 +409,40 @@ class ProxyInstance:
         log("send_server_ping() server_last_ping=%s", self.server_last_ping)
         # if we've already sent one, check for the echo:
         if self.server_last_ping:
-            delta = self.server_last_ping-self.server_last_ping_echo
-            if delta>PING_WARNING:
+            delta = self.server_last_ping - self.server_last_ping_echo
+            if delta > PING_WARNING:
                 log.warn("Warning: late server ping, %i seconds", delta)
-            if delta>PING_TIMEOUT:
+            if delta > PING_TIMEOUT:
                 log.error("Error: server ping timeout, %i seconds", delta)
                 self.stop(None, "proxy to server ping timeout")
                 return False
         now = monotonic()
         self.server_last_ping = now
-        packet: PacketType = ("ping", int(now*1000), int(time()*1000), self.uuid)
+        packet: PacketType = ("ping", int(now * 1000), int(time() * 1000), self.uuid)
         self.queue_server_packet(packet)
         return True
 
     def send_client_ping(self) -> bool:
         log("send_client_ping() client_last_ping=%s", self.client_last_ping)
-        #if we've already sent one, check for the echo:
+        # if we've already sent one, check for the echo:
         if self.client_last_ping:
-            delta = self.client_last_ping-self.client_last_ping_echo
-            if delta>PING_WARNING:
+            delta = self.client_last_ping - self.client_last_ping_echo
+            if delta > PING_WARNING:
                 log.warn("Warning: late client ping, %i seconds", delta)
-            if delta>PING_TIMEOUT:
+            if delta > PING_TIMEOUT:
                 log.error("Error: client ping timeout, %i seconds", delta)
                 self.stop(None, "proxy to client ping timeout")
                 return False
         now = monotonic()
         self.client_last_ping = now
-        packet: PacketType = ("ping", int(now*1000), int(time()*1000), self.uuid)
+        packet: PacketType = ("ping", int(now * 1000), int(time() * 1000), self.uuid)
         self.queue_client_packet(packet)
         return True
 
     def process_server_packet(self, proto, packet: PacketType) -> None:
         packet_type = str(packet[0])
         log("process_server_packet: %s", packet_type)
-        if packet_type==CONNECTION_LOST:
+        if packet_type == CONNECTION_LOST:
             self.stop(proto, "server connection lost")
             return
         self.server_has_more = proto.receive_pending
@@ -469,12 +469,12 @@ class ProxyInstance:
                                             self.cipher, self.cipher_mode, self.encryption_key, padding_options)
                 caps.update(auth_caps)
             # may need to bump packet size:
-            proto.max_packet_size = max(MAX_PACKET_SIZE, maxw*maxh*4*4)
+            proto.max_packet_size = max(MAX_PACKET_SIZE, maxw * maxh * 4 * 4)
             packet = ("hello", caps)
         elif packet_type == "ping_echo" and self.server_ping_timer and len(packet) >= 7 and packet[6] == self.uuid:
             # this is one of our ping packets:
             self.server_last_ping_echo = packet[1]
-            self.server_last_ping_latency = 1000*monotonic()-self.server_last_ping_echo
+            self.server_last_ping_latency = 1000 * monotonic() - self.server_last_ping_echo
             log("ping-echo: server latency=%.1fms", self.server_last_ping_latency)
             return
         elif packet_type == "info-response":
@@ -505,7 +505,7 @@ class ProxyInstance:
             # packet = ["cursor", "png", x, y, width, height, xhot, yhot, serial, pixels, name]
             # or:
             # packet = ["cursor", ""]
-            if len(packet)>=8:
+            if len(packet) >= 8:
                 packet = self._packet_recompress(packet, 9, "cursor")
         elif packet_type == "window-icon":
             if not isinstance(packet[5], str):
@@ -523,7 +523,7 @@ class ProxyInstance:
                 if not PASSTHROUGH_AUTH:
                     self.stop(None, "authentication requested by the server,",
                               "but no password is available for this session")
-                #otherwise, just forward it to the client
+                # otherwise, just forward it to the client
                 self.client_challenge_packet = packet
             else:
                 # client may have already responded to the challenge,
@@ -532,12 +532,12 @@ class ProxyInstance:
                 l = len(server_salt)
                 digest = str(packet[3])
                 salt_digest = "xor"
-                if len(packet)>=5:
+                if len(packet) >= 5:
                     salt_digest = str(packet[4])
                 if salt_digest in ("xor", "des"):
                     self.stop(None, f"server uses legacy salt digest {salt_digest!r}")
                     return
-                if salt_digest=="xor":
+                if salt_digest == "xor":
                     # with xor, we have to match the size
                     if l < 16:
                         raise ValueError("server salt is too short: only {l} bytes, minimum is 16")
@@ -569,9 +569,11 @@ class ProxyInstance:
 
     def encode_loop(self) -> None:
         """ thread for slower encoding related work """
+
         def delvideo(wid: int):
             self.video_encoders.pop(wid, None)
             self.video_encoders_last_used_time.pop(wid, None)
+
         while not self.exit:
             packet = self.encode_queue.get()
             if packet is None:
@@ -586,18 +588,18 @@ class ProxyInstance:
                         delvideo(wid)
                         ve.clean()
                 elif packet_type == "draw":
-                    #modify the packet with the video encoder:
+                    # modify the packet with the video encoder:
                     self.process_draw(packet)
                 elif packet_type == "check-video-timeout":
-                    #not a real packet, this is added by the timeout check:
+                    # not a real packet, this is added by the timeout check:
                     wid = packet[1]
                     ve = self.video_encoders.get(wid)
                     now = monotonic()
-                    idle_time = now-self.video_encoders_last_used_time.get(wid, 0)
-                    if ve and idle_time>VIDEO_TIMEOUT:
+                    idle_time = now - self.video_encoders_last_used_time.get(wid, 0)
+                    if ve and idle_time > VIDEO_TIMEOUT:
                         enclog("timing out the video encoder context for window %s", wid)
-                        #timeout is confirmed, we are in the encoding thread,
-                        #so it is now safe to clean it up:
+                        # timeout is confirmed, we are in the encoding thread,
+                        # so it is now safe to clean it up:
                         ve.clean()
                         delvideo(wid)
                 else:
@@ -623,7 +625,7 @@ class ProxyInstance:
         rgb_format = client_options.strget("rgb_format", "")
         enclog("proxy draw: encoding=%s, client_options=%s", encoding, client_options)
 
-        def send_updated(packet:PacketType, encoding, compressed_data, updated_client_options) -> None:
+        def send_updated(packet: PacketType, encoding, compressed_data, updated_client_options) -> None:
             # update the packet with actual encoding data used:
             packet = self.replace_packet_item(packet, 6, encoding)
             packet = self.replace_packet_item(packet, 7, compressed_data)
@@ -637,19 +639,19 @@ class ProxyInstance:
                    rgb_format, rowstride, client_options.intget("rowstride", 0), strip_alpha)
             updated = packet
             if strip_alpha:
-                #passthrough as plain RGB:
+                # passthrough as plain RGB:
                 Xindex = rgb_format.upper().find("X")
-                if Xindex>=0 and len(rgb_format)==4:
-                    #force clear alpha (which may be garbage):
+                if Xindex >= 0 and len(rgb_format) == 4:
+                    # force clear alpha (which may be garbage):
                     newdata = bytearray(pixels)
                     c = chr(255)
-                    for i in range(len(pixels)//4):
-                        newdata[i*4+Xindex] = c
+                    for i in range(len(pixels) // 4):
+                        newdata[i * 4 + Xindex] = c
                     updated = self.replace_packet_item(packet, 9, client_options.intget("rowstride", 0))
                     cdata = bytes(newdata)
                 else:
                     cdata = pixels
-                new_client_options = {"rgb_format" : rgb_format}
+                new_client_options = {"rgb_format": rgb_format}
             else:
                 # preserve
                 cdata = pixels
@@ -670,44 +672,44 @@ class ProxyInstance:
             self.queue_client_packet(packet)
             return
 
-        #video encoding: find existing encoder
+        # video encoding: find existing encoder
         ve = self.video_encoders.get(wid)
         if ve:
             if ve in self.lost_windows:
-                #we cannot clean the video encoder here, there may be more frames queue up
-                #"lost-window" in encode_loop will take care of it safely
+                # we cannot clean the video encoder here, there may be more frames queue up
+                # "lost-window" in encode_loop will take care of it safely
                 return
-            #we must verify that the encoder is still valid
-            #and scrap it if not (ie: when window is resized)
-            if ve.get_width()!=width or ve.get_height()!=height:
+            # we must verify that the encoder is still valid
+            # and scrap it if not (ie: when window is resized)
+            if ve.get_width() != width or ve.get_height() != height:
                 enclog("closing existing video encoder %s because dimensions have changed from %sx%s to %sx%s",
                        ve, ve.get_width(), ve.get_height(), width, height)
                 ve.clean()
                 ve = None
-            elif ve.get_encoding()!=encoding:
+            elif ve.get_encoding() != encoding:
                 enclog("closing existing video encoder %s because encoding has changed from %s to %s",
                        ve.get_encoding(), encoding)
                 ve.clean()
                 ve = None
-        #scaling and depth are proxy-encoder attributes:
+        # scaling and depth are proxy-encoder attributes:
         scaling = client_options.inttupleget("scaling", (1, 1))
-        depth   = client_options.intget("depth", 24)
+        depth = client_options.intget("depth", 24)
         rowstride = client_options.intget("rowstride", rowstride)
         quality = client_options.intget("quality", -1)
-        speed   = client_options.intget("speed", -1)
+        speed = client_options.intget("speed", -1)
         timestamp = client_options.intget("timestamp")
 
         image = ImageWrapper(x, y, width, height, pixels, rgb_format, depth, rowstride, planes=ImageWrapper.PACKED)
         if timestamp is not None:
             image.set_timestamp(timestamp)
 
-        #the encoder options are passed through:
+        # the encoder options are passed through:
         encoder_options = client_options.dictget("options", {})
         if not ve:
-            #make a new video encoder:
+            # make a new video encoder:
             spec = self._find_video_encoder(encoding, rgb_format)
             if spec is None:
-                #no video encoder!
+                # no video encoder!
                 enc_pillow = get_codec("enc_pillow")
                 if not enc_pillow:
                     if first_time(f"no-video-no-PIL-{rgb_format}"):
@@ -722,11 +724,11 @@ class ProxyInstance:
 
             enclog("creating new video encoder %s for window %s", spec, wid)
             ve = spec.make_instance()
-            #dst_formats is specified with first frame only:
+            # dst_formats is specified with first frame only:
             dst_formats = client_options.strtupleget("dst_formats")
             if dst_formats is not None:
-                #save it in case we time out the video encoder,
-                #so we can instantiate it again, even from a frame no>1
+                # save it in case we time out the video encoder,
+                # so we can instantiate it again, even from a frame no>1
                 self.video_encoders_dst_formats = dst_formats
             else:
                 if not self.video_encoders_dst_formats:
@@ -734,12 +736,12 @@ class ProxyInstance:
                 dst_formats = self.video_encoders_dst_formats
             ve.init_context(width, height, rgb_format, dst_formats, encoding, quality, speed, scaling, {})
             self.video_encoders[wid] = ve
-            self.video_encoders_last_used_time[wid] = monotonic()      #just to make sure this is always set
-        #actual video compression:
+            self.video_encoders_last_used_time[wid] = monotonic()  # just to make sure this is always set
+        # actual video compression:
         enclog("proxy compression using %s with quality=%s, speed=%s", ve, quality, speed)
         data, out_options = ve.compress_image(image, quality, speed, encoder_options)
-        #pass through some options if we don't have them from the encoder
-        #(maybe we should also use the "pts" from the real server?)
+        # pass through some options if we don't have them from the encoder
+        # (maybe we should also use the "pts" from the real server?)
         for k in ("timestamp", "rgb_format", "depth", "csc"):
             if k not in out_options and k in client_options:
                 out_options[k] = client_options[k]
@@ -747,23 +749,23 @@ class ProxyInstance:
         send_updated(packet, ve.get_encoding(), Compressed(encoding, data), out_options)
 
     def timeout_video_encoders(self) -> bool:
-        #have to be careful as another thread may come in...
-        #so we just ask the encode thread (which deals with encoders already)
-        #to do what may need to be done if we find a timeout:
+        # have to be careful as another thread may come in...
+        # so we just ask the encode thread (which deals with encoders already)
+        # to do what may need to be done if we find a timeout:
         now = monotonic()
         for wid in tuple(self.video_encoders_last_used_time.keys()):
             vetime = self.video_encoders_last_used_time.get(wid)
             if not vetime:
                 continue
-            idle_time = int(now-vetime)
+            idle_time = int(now - vetime)
             enclog("timeout_video_encoders() wid=%s, idle_time=%s", wid, idle_time)
-            if idle_time and idle_time>VIDEO_TIMEOUT:
+            if idle_time and idle_time > VIDEO_TIMEOUT:
                 self.encode_queue.put(["check-video-timeout", wid])
-        return True     #run again
+        return True  # run again
 
     def _find_video_encoder(self, video_encoding, rgb_format):
-        #try the one specified first, then all the others:
-        try_encodings = [video_encoding] + [x for x in self.video_helper.get_encodings() if x!=video_encoding]
+        # try the one specified first, then all the others:
+        try_encodings = [video_encoding] + [x for x in self.video_helper.get_encodings() if x != video_encoding]
         for encoding in try_encodings:
             colorspace_specs = self.video_helper.get_encoder_specs(encoding)
             especs = colorspace_specs.get(rgb_format)
@@ -771,7 +773,7 @@ class ProxyInstance:
                 continue
             for etype in self.video_encoder_types:
                 for spec in especs:
-                    if etype==spec.codec_type:
+                    if etype == spec.codec_type:
                         enclog("_find_video_encoder(%s, %s)=%s", encoding, rgb_format, spec)
                         return spec
         enclog("_find_video_encoder(%s, %s) not found", video_encoding, rgb_format)
@@ -779,7 +781,7 @@ class ProxyInstance:
 
     def video_helper_init(self) -> None:
         self.video_helper = getVideoHelper()
-        #only use video encoders (no CSC supported in proxy)
+        # only use video encoders (no CSC supported in proxy)
         self.video_helper.set_modules(video_encoders=self.video_encoder_modules)
         self.video_helper.init()
 
@@ -796,34 +798,34 @@ class ProxyInstance:
         self.video_encoders_last_used_time = {}
         self.video_encoder_types = []
 
-        #figure out which encoders we want to proxy for (if any):
+        # figure out which encoders we want to proxy for (if any):
         encoder_types = set()
         for encoding in self.video_helper.get_encodings():
             colorspace_specs = self.video_helper.get_encoder_specs(encoding)
             for colorspace, especs in colorspace_specs.items():
                 if colorspace not in ("BGRX", "BGRA", "RGBX", "RGBA"):
-                    #only deal with encoders that can handle plain RGB directly
+                    # only deal with encoders that can handle plain RGB directly
                     continue
 
-                for spec in especs:                             #ie: VideoSpec("x264")
+                for spec in especs:  # ie: VideoSpec("x264")
                     spec_props = spec.to_dict()
-                    del spec_props["codec_class"]               #not serializable!
-                    #we want to win scoring, so we get used ahead of other encoders:
+                    del spec_props["codec_class"]  # not serializable!
+                    # we want to win scoring, so we get used ahead of other encoders:
                     spec_props["score_boost"] = 50
-                    #limit to 3 video streams we proxy for (we really want 2,
+                    # limit to 3 video streams we proxy for (we really want 2,
                     # but because of races with garbage collection, we need to allow more)
                     spec_props["max_instances"] = 3
 
-                    #store it in encoding defs:
+                    # store it in encoding defs:
                     self.video_encoding_defs.setdefault(encoding, {}).setdefault(colorspace, []).append(spec_props)
                     encoder_types.add(spec.codec_type)
 
         enclog("encoder types found: %s", tuple(encoder_types))
-        #remove duplicates and use preferred order:
+        # remove duplicates and use preferred order:
         order = list(PREFERRED_ENCODER_ORDER)
         for x in tuple(encoder_types):
             if x not in order:
                 order.append(x)
         self.video_encoder_types = [x for x in order if x in encoder_types]
-        enclog.info("proxy video encoders: %s", csv(self.video_encoder_types or ["none",]))
-        self.timeout_add(VIDEO_TIMEOUT*1000, self.timeout_video_encoders)
+        enclog.info("proxy video encoders: %s", csv(self.video_encoder_types or ["none", ]))
+        self.timeout_add(VIDEO_TIMEOUT * 1000, self.timeout_video_encoders)

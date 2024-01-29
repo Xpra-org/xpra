@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -28,33 +28,33 @@ class NetworkStateMixin(StubSourceMixin):
         return any((
             caps.boolget("network-state"),
             typedict(caps.dictget("network") or {}).intget("pings") > 0,
-            caps.boolget("ping-echo-sourceid"),      # legacy clients
+            caps.boolget("ping-echo-sourceid"),  # legacy clients
         ))
 
     def init_state(self) -> None:
         self.last_ping_echoed_time = 0
-        self.check_ping_echo_timers : dict[int, int] = {}
+        self.check_ping_echo_timers: dict[int, int] = {}
         self.ping_timer = 0
         self.bandwidth_limit = 0
-        self.client_load = (0,0,0)
-        self.client_connection_data : dict[str, Any] = {}
+        self.client_load = (0, 0, 0)
+        self.client_connection_data: dict[str, Any] = {}
 
     def cleanup(self) -> None:
         self.cancel_ping_echo_timers()
         self.cancel_ping_timer()
 
     def get_caps(self) -> dict[str, Any]:
-        return {"ping-echo-sourceid" : True}
+        return {"ping-echo-sourceid": True}
 
     def get_info(self) -> dict[str, Any]:
         lpe = 0
         if self.last_ping_echoed_time > 0:
-            lpe = int(monotonic()*1000-self.last_ping_echoed_time)
+            lpe = int(monotonic() * 1000 - self.last_ping_echoed_time)
         info = {
-            "bandwidth-limit"   : {
-                "setting"       : self.bandwidth_limit or 0,
+            "bandwidth-limit": {
+                "setting": self.bandwidth_limit or 0,
             },
-            "last-ping-echo"    : lpe,
+            "last-ping-echo": lpe,
         }
         return info
 
@@ -63,16 +63,16 @@ class NetworkStateMixin(StubSourceMixin):
     def ping(self) -> None:
         self.ping_timer = 0
         # NOTE: all ping time/echo time/load avg values are in milliseconds
-        now_ms = int(1000*monotonic())
+        now_ms = int(1000 * monotonic())
         log("sending ping to %s with time=%s", self.protocol, now_ms)
-        self.send_async("ping", now_ms, int(time.time()*1000), will_have_more=False)
+        self.send_async("ping", now_ms, int(time.time() * 1000), will_have_more=False)
         timeout = PING_TIMEOUT
-        self.check_ping_echo_timers[now_ms] = self.timeout_add(timeout*1000,
+        self.check_ping_echo_timers[now_ms] = self.timeout_add(timeout * 1000,
                                                                self.check_ping_echo_timeout, now_ms, timeout)
 
-    def check_ping_echo_timeout(self, now_ms:int, timeout:int) -> None:
+    def check_ping_echo_timeout(self, now_ms: int, timeout: int) -> None:
         self.check_ping_echo_timers.pop(now_ms, None)
-        if self.last_ping_echoed_time<now_ms and not self.is_closed():
+        if self.last_ping_echoed_time < now_ms and not self.is_closed():
             self.disconnect(ConnectionMessage.CLIENT_PING_TIMEOUT, "waited %s seconds without a response" % timeout)
 
     def cancel_ping_echo_timers(self) -> None:
@@ -88,12 +88,12 @@ class NetworkStateMixin(StubSourceMixin):
             # send back the load average:
             if POSIX:
                 fl1, fl2, fl3 = os.getloadavg()
-                l1, l2, l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
+                l1, l2, l3 = int(fl1 * 1000), int(fl2 * 1000), int(fl3 * 1000)
             # and the last client ping latency we measured (if any):
             stats = getattr(self, "statistics", None)
             if stats and stats.client_ping_latency:
                 _, cl = stats.client_ping_latency[-1]
-                cl = int(1000.0*cl)
+                cl = int(1000.0 * cl)
         self.send_async("ping_echo", time_to_echo, l1, l2, l3, cl, sid, will_have_more=False)
         # if the client is pinging us, ping it too:
         if not self.ping_timer:
@@ -111,13 +111,13 @@ class NetworkStateMixin(StubSourceMixin):
         if timer:
             self.source_remove(timer)
         self.last_ping_echoed_time = echoedtime
-        client_ping_latency = monotonic()-echoedtime/1000.0
+        client_ping_latency = monotonic() - echoedtime / 1000.0
         stats = getattr(self, "statistics", None)
-        if stats and 0<client_ping_latency<60:
+        if stats and 0 < client_ping_latency < 60:
             stats.client_ping_latency.append((monotonic(), client_ping_latency))
         self.client_load = l1, l2, l3
-        if 0<=server_ping_latency<60000 and stats:
-            stats.server_ping_latency.append((monotonic(), server_ping_latency/1000.0))
+        if 0 <= server_ping_latency < 60000 and stats:
+            stats.server_ping_latency.append((monotonic(), server_ping_latency / 1000.0))
         log("ping echo client load=%s, measured server latency=%s", self.client_load, server_ping_latency)
 
     def update_connection_data(self, data) -> None:

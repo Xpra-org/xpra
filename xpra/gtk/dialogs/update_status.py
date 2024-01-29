@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -18,7 +18,6 @@ Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
 
 log = Logger("util")
-
 
 _instance = None
 
@@ -67,16 +66,18 @@ class UpdateStatusWindow:
                 btn.set_image(scaled_image(icon, 24))
             hbox.pack_start(btn)
             return btn
+
         btn("Download", "Show download page", self.download, "download.png")
         btn("Close", "", self.close, "quit.png")
 
         def accel_close(*_args):
             self.close()
+
         add_close_accel(self.window, accel_close)
         vbox.show_all()
         self.window.vbox = vbox
         self.window.add(vbox)
-        self.newer_version : None |bool |tuple[int,...] = None
+        self.newer_version: None | bool | tuple[int, ...] = None
 
     def check(self):
         if self.progress:
@@ -113,6 +114,7 @@ class UpdateStatusWindow:
             force_focus()
             self.window.show()
             self.window.present()
+
         GLib.idle_add(show)
 
     def hide(self):

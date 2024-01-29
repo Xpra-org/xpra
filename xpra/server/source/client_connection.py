@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -27,9 +27,8 @@ log = Logger("server")
 notifylog = Logger("notify")
 bandwidthlog = Logger("bandwidth")
 
-
 BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
-MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 5*1024*1024)
+MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 5 * 1024 * 1024)
 AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
 assert 1 < AUTO_BANDWIDTH_PCT <= 100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 YIELD = envbool("XPRA_YIELD", False)
@@ -37,7 +36,7 @@ YIELD = envbool("XPRA_YIELD", False)
 counter = AtomicInteger()
 
 ENCODE_WORK_ITEM_TUPLE = tuple[bool, Callable, tuple[Any, ...]]
-ENCODE_WORK_ITEM : TypeAlias = ENCODE_WORK_ITEM_TUPLE | None
+ENCODE_WORK_ITEM: TypeAlias = ENCODE_WORK_ITEM_TUPLE | None
 
 
 class ClientConnection(StubSourceMixin):
@@ -81,9 +80,9 @@ class ClientConnection(StubSourceMixin):
         # this queue will hold functions to call to compress data (pixels, clipboard)
         # items placed in this queue are picked off by the "encode" thread,
         # the functions should add the packets they generate to the 'packet_queue'
-        self.encode_work_queue : SimpleQueue[None |tuple[bool,Callable,tuple[Any,...]]] = SimpleQueue()
+        self.encode_work_queue: SimpleQueue[None | tuple[bool, Callable, tuple[Any, ...]]] = SimpleQueue()
         self.encode_thread = None
-        self.ordinary_packets: list[tuple[PacketType,bool,Callable,Callable]] = []
+        self.ordinary_packets: list[tuple[PacketType, bool, Callable, Callable]] = []
         self.socket_dir = socket_dir
         self.unix_socket_paths = unix_socket_paths
         self.log_disconnect = log_disconnect
@@ -93,7 +92,7 @@ class ClientConnection(StubSourceMixin):
         # network constraints:
         self.server_bandwidth_limit = bandwidth_limit
         self.bandwidth_detection = bandwidth_detection
-        self.queue_encode : Callable[[ENCODE_WORK_ITEM], None] = self.start_queue_encode
+        self.queue_encode: Callable[[ENCODE_WORK_ITEM], None] = self.start_queue_encode
 
     def run(self):
         # ready for processing:
@@ -107,7 +106,7 @@ class ClientConnection(StubSourceMixin):
         self.hello_sent = False
         self.share = False
         self.lock = False
-        self.control_commands : tuple[str,...] = ()
+        self.control_commands: tuple[str, ...] = ()
         self.xdg_menu = True
         self.bandwidth_limit = self.server_bandwidth_limit
         self.soft_bandwidth_limit = self.bandwidth_limit
@@ -143,7 +142,7 @@ class ClientConnection(StubSourceMixin):
 
     def compressed_wrapper(self, datatype, data, **kwargs):
         # set compression flags based on self.lz4:
-        kw = {"lz4" : getattr(self, "lz4", False)}
+        kw = {"lz4": getattr(self, "lz4", False)}
         kw.update(kwargs)
         return compressed_wrapper(datatype, data, can_inline=False, **kw)
 
@@ -158,13 +157,13 @@ class ClientConnection(StubSourceMixin):
         if BANDWIDTH_DETECTION:
             bandwidth_limit = self.statistics.avg_congestion_send_speed
             bandwidthlog("avg_congestion_send_speed=%s", bandwidth_limit)
-            if bandwidth_limit>20*1024*1024:
+            if bandwidth_limit > 20 * 1024 * 1024:
                 # ignore congestion speed if greater 20Mbps
                 bandwidth_limit = 0
-        if (self.bandwidth_limit or 0)>0:
+        if (self.bandwidth_limit or 0) > 0:
             # command line options could overrule what we detect?
             bandwidth_limit = min(self.bandwidth_limit, bandwidth_limit)
-        if bandwidth_limit>0:
+        if bandwidth_limit > 0:
             bandwidth_limit = max(MIN_BANDWIDTH, bandwidth_limit)
         self.soft_bandwidth_limit = bandwidth_limit
         bandwidthlog("update_bandwidth_limits() bandwidth_limit=%s, soft bandwidth limit=%s",
@@ -179,16 +178,16 @@ class ClientConnection(StubSourceMixin):
                 ww, wh = ws.window_dimensions
                 # try to reserve bandwidth for at least one screen update,
                 # and add the number of pixels damaged:
-                weight = ww*wh + ws.statistics.get_damage_pixels()
+                weight = ww * wh + ws.statistics.get_damage_pixels()
             window_weight[wid] = weight
         bandwidthlog("update_bandwidth_limits() window weights=%s", window_weight)
         total_weight = max(1, sum(window_weight.values()))
         for wid, ws in self.window_sources.items():
-            if bandwidth_limit==0:
+            if bandwidth_limit == 0:
                 ws.bandwidth_limit = 0
             else:
                 weight = window_weight.get(wid, 0)
-                ws.bandwidth_limit = max(MIN_BANDWIDTH//10, bandwidth_limit*weight//total_weight)
+                ws.bandwidth_limit = max(MIN_BANDWIDTH // 10, bandwidth_limit * weight // total_weight)
 
     def parse_client_caps(self, c: typedict):
         # general features:
@@ -211,7 +210,7 @@ class ClientConnection(StubSourceMixin):
                      server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit, self.bandwidth_detection)
         self.ssh_auth_sock = c.strget("ssh-auth-sock", "")
 
-        if getattr(self, "mmap_size", 0)>0:
+        if getattr(self, "mmap_size", 0) > 0:
             log("mmap enabled, ignoring bandwidth-limit")
             self.bandwidth_limit = 0
 
@@ -226,7 +225,7 @@ class ClientConnection(StubSourceMixin):
             return 0
         bandwidthlog("get_socket_bandwidth_limit() socket_speed=%s", socket_speed)
         # auto: use 80% of socket speed if we have it:
-        return socket_speed*AUTO_BANDWIDTH_PCT//100 or 0
+        return socket_speed * AUTO_BANDWIDTH_PCT // 100 or 0
 
     def startup_complete(self):
         log("startup_complete()")
@@ -255,9 +254,9 @@ class ClientConnection(StubSourceMixin):
         self.queue_encode((optional, fn, args))
 
     def queue_packet(self, packet, wid=0, pixels=0,
-                     start_send_cb : Callable | None = None,
-                     end_send_cb : Callable | None = None,
-                     fail_cb : Callable | None = None,
+                     start_send_cb: Callable | None = None,
+                     end_send_cb: Callable | None = None,
+                     fail_cb: Callable | None = None,
                      wait_for_more=False):
         """
             Add a new 'draw' packet to the 'packet_queue'.
@@ -285,7 +284,7 @@ class ClientConnection(StubSourceMixin):
         while True:
             item = self.encode_work_queue.get(True)
             if item is None:
-                return              # empty marker
+                return  # empty marker
             # some function calls are optional and can be skipped when closing:
             # (but some are not, like encoder clean functions)
             optional_when_closing, fn, args = item
@@ -338,22 +337,22 @@ class ClientConnection(StubSourceMixin):
 
     ######################################################################
     # info:
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         if not FULL_INFO:
-            return {"protocol" : "xpra"}
+            return {"protocol": "xpra"}
         info = {
-            "protocol"          : "xpra",
-            "connection_time"   : int(self.connection_time),
-            "elapsed_time"      : int(monotonic()-self.connection_time),
-            "counter"           : self.counter,
-            "hello-sent"        : self.hello_sent,
-            "jitter"            : self.jitter,
-            "adapter-type"      : self.adapter_type,
-            "ssh-auth-sock"     : self.ssh_auth_sock,
-            "packet-types"      : self.client_packet_types,
-            "bandwidth-limit"   : {
-                "detection"     : self.bandwidth_detection,
-                "actual"        : self.soft_bandwidth_limit or 0,
+            "protocol": "xpra",
+            "connection_time": int(self.connection_time),
+            "elapsed_time": int(monotonic() - self.connection_time),
+            "counter": self.counter,
+            "hello-sent": self.hello_sent,
+            "jitter": self.jitter,
+            "adapter-type": self.adapter_type,
+            "ssh-auth-sock": self.ssh_auth_sock,
+            "packet-types": self.client_packet_types,
+            "bandwidth-limit": {
+                "detection": self.bandwidth_detection,
+                "actual": self.soft_bandwidth_limit or 0,
             }
         }
         p = self.protocol
@@ -364,9 +363,9 @@ class ClientConnection(StubSourceMixin):
 
     def get_features_info(self) -> dict[str, Any]:
         info = {
-            "lock"  : bool(self.lock),
-            "share" : bool(self.share),
-            "xdg-menu" : bool(self.xdg_menu),
+            "lock": bool(self.lock),
+            "share": bool(self.share),
+            "xdg-menu": bool(self.xdg_menu),
         }
         return info
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 
 import re
 import sys
@@ -40,10 +40,11 @@ class ClipboardInstance:
         self.value_entry.set_max_length(100)
         self.value_entry.set_width_chars(32)
 
-        def b(text: str, callback:Callable):
+        def b(text: str, callback: Callable):
             btn = Gtk.Button(label=text)
             btn.connect("clicked", callback)
             return btn
+
         self.clear_label_btn = b("X", self.clear_label)
         self.clear_entry_btn = b("X", self.clear_entry)
         self.get_get_targets_btn = b("Get Targets", self.do_get_targets)
@@ -85,7 +86,7 @@ class ClipboardInstance:
         i = 0
         for t in filtered:
             self.get_targets.append_text(str(t))
-            if t==ct:
+            if t == ct:
                 self.get_targets.set_active(i)
             i += 1
         self.get_targets.show_all()
@@ -101,8 +102,8 @@ class ClipboardInstance:
         self.log("set_target_changed(%s) target=%s" % (cb, self.set_targets.get_active_text()))
 
     def ellipsis(self, val):
-        if len(val)>24:
-            return val[:24]+".."
+        if len(val) > 24:
+            return val[:24] + ".."
         return val
 
     def selection_value_callback(self, _cb, selection_data, *_args):
@@ -183,7 +184,7 @@ class ClipboardStateInfoWindow:
         vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(15)
 
-        self.log : deque[str] = deque(maxlen=25)
+        self.log: deque[str] = deque(maxlen=25)
         for x in range(25):
             self.log.append("")
         self.events = label("", font="monospace 9")
@@ -196,19 +197,19 @@ class ClipboardStateInfoWindow:
             grid.attach(label(text), i, 1, 1, 1)
 
         for row, selection in enumerate(self.clipboards):
-            grid.attach(label(selection), 0, 2+row*2, 1, 2)
+            grid.attach(label(selection), 0, 2 + row * 2, 1, 2)
             cs = ClipboardInstance(selection, self.add_event)
             get_actions = Gtk.HBox()
             for x in (cs.get_get_targets_btn, cs.get_target_btn, cs.get_string_btn):
                 get_actions.pack_start(x)
             for i, widget in enumerate((cs.value_label, cs.clear_label_btn, cs.get_targets, get_actions)):
-                grid.attach(widget, 1+i, 2+row*2, 1, 1)
+                grid.attach(widget, 1 + i, 2 + row * 2, 1, 1)
             set_actions = Gtk.HBox()
             for x in (cs.set_target_btn, cs.set_string_btn):
                 set_actions.pack_start(x)
             widgets = (cs.value_entry, cs.clear_entry_btn, cs.set_targets, set_actions)
             for i, widget in enumerate(widgets):
-                grid.attach(widget, 1+i, 3+row*2, 1, 1)
+                grid.attach(widget, 1 + i, 3 + row * 2, 1, 1)
         vbox.pack_start(grid)
         vbox.add(self.events)
 

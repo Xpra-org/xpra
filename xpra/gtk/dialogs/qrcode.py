@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -16,16 +16,16 @@ GdkPixbuf = gi_import("GdkPixbuf")
 log = Logger("menu")
 
 
-def show_qr(uri: str, width: int=640, height: int=640):
-    assert uri.find(":")>0, "invalid uri"
+def show_qr(uri: str, width: int = 640, height: int = 640):
+    assert uri.find(":") > 0, "invalid uri"
     # support old-style URIs, ie: tcp:host:port
-    if uri.find(":")!=uri.find("://"):
+    if uri.find(":") != uri.find("://"):
         uri = uri.replace(":", "://", 1)
     parts = uri.split(":", 1)
     if parts[0] in ("tcp", "ws"):
-        uri = "http:"+parts[1]
+        uri = "http:" + parts[1]
     else:
-        uri = "https:"+parts[1]
+        uri = "https:" + parts[1]
     pixbuf = qr_pixbuf(uri, width, height)
     if not pixbuf:
         return
@@ -38,17 +38,19 @@ def show_qr(uri: str, width: int=640, height: int=640):
 
     def close(*_args):
         window.close()
+
     add_close_accel(window, close)
     window.show_all()
-    if Gtk.main_level()<=0:
+    if Gtk.main_level() <= 0:
         def gtk_quit(*_args):
             close()
             Gtk.main_quit()
+
         window.connect("delete-event", gtk_quit)
         Gtk.main()
 
 
-def qr_pixbuf(uri: str, width: int=640, height: int=640):
+def qr_pixbuf(uri: str, width: int = 640, height: int = 640):
     img = qrencode(uri)
     if not img:
         return None
@@ -72,5 +74,6 @@ def main():
 
 if __name__ == "__main__":
     import sys
+
     main()
     sys.exit(0)

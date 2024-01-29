@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 
 import sys
 import warnings
@@ -49,7 +49,7 @@ class KeyboardStateInfoWindow:
         self.window.add(vbox)
         GLib.timeout_add(100, self.populate_modifiers)
 
-        self.key_events : deque[str] = deque(maxlen=35)
+        self.key_events: deque[str] = deque(maxlen=35)
         self.window.connect("key-press-event", self.key_press)
         self.window.connect("key-release-event", self.key_release)
         display = Gdk.Display.get_default()
@@ -64,24 +64,24 @@ class KeyboardStateInfoWindow:
 
     def init_constants(self):
         self.modifier_names = {
-            Gdk.ModifierType.SHIFT_MASK        : "Shift",
-            Gdk.ModifierType.LOCK_MASK         : "Lock",
-            Gdk.ModifierType.CONTROL_MASK      : "Control",
-            Gdk.ModifierType.MOD1_MASK         : "mod1",
-            Gdk.ModifierType.MOD2_MASK         : "mod2",
-            Gdk.ModifierType.MOD3_MASK         : "mod3",
-            Gdk.ModifierType.MOD4_MASK         : "mod4",
-            Gdk.ModifierType.MOD5_MASK         : "mod5"
+            Gdk.ModifierType.SHIFT_MASK: "Shift",
+            Gdk.ModifierType.LOCK_MASK: "Lock",
+            Gdk.ModifierType.CONTROL_MASK: "Control",
+            Gdk.ModifierType.MOD1_MASK: "mod1",
+            Gdk.ModifierType.MOD2_MASK: "mod2",
+            Gdk.ModifierType.MOD3_MASK: "mod3",
+            Gdk.ModifierType.MOD4_MASK: "mod4",
+            Gdk.ModifierType.MOD5_MASK: "mod5"
         }
         self.short_modifier_names = {
-            Gdk.ModifierType.SHIFT_MASK        : "S",
-            Gdk.ModifierType.LOCK_MASK         : "L",
-            Gdk.ModifierType.CONTROL_MASK      : "C",
-            Gdk.ModifierType.MOD1_MASK         : "1",
-            Gdk.ModifierType.MOD2_MASK         : "2",
-            Gdk.ModifierType.MOD3_MASK         : "3",
-            Gdk.ModifierType.MOD4_MASK         : "4",
-            Gdk.ModifierType.MOD5_MASK         : "5"
+            Gdk.ModifierType.SHIFT_MASK: "S",
+            Gdk.ModifierType.LOCK_MASK: "L",
+            Gdk.ModifierType.CONTROL_MASK: "C",
+            Gdk.ModifierType.MOD1_MASK: "1",
+            Gdk.ModifierType.MOD2_MASK: "2",
+            Gdk.ModifierType.MOD3_MASK: "3",
+            Gdk.ModifierType.MOD4_MASK: "4",
+            Gdk.ModifierType.MOD5_MASK: "5"
         }
 
     def populate_modifiers(self, *_args):
@@ -95,7 +95,7 @@ class KeyboardStateInfoWindow:
 
     def mask_to_names(self, mask, names_dict):
         names = []
-        for m,name in names_dict.items():
+        for m, name in names_dict.items():
             if mask & m:
                 names.append(name)
         return names
@@ -111,15 +111,15 @@ class KeyboardStateInfoWindow:
         if not Keyboard:
             log.warn("no keyboard support!")
             return
-        keyboard = Keyboard()      # pylint: disable=not-callable
+        keyboard = Keyboard()  # pylint: disable=not-callable
         layout, layouts, variant, variants, options = keyboard.get_layout_spec()
         self.add_event_text(msg)
         for k, v in {
-            "layout"    : layout,
-            "variant"   : variant,
-            "layouts"   : layouts,
-            "variants"  : variants,
-            "options"  : options,
+            "layout": layout,
+            "variant": variant,
+            "layouts": layouts,
+            "variants": variants,
+            "options": options,
         }.items():
             if v:
                 if isinstance(v, (list, tuple)):
@@ -138,12 +138,12 @@ class KeyboardStateInfoWindow:
         modifiers = self.mask_to_names(event.state, self.short_modifier_names)
         name = Gdk.keyval_name(event.keyval)
         text = ""
-        for v,l in ((etype, 5), (name, 24), (repr(event.string), 8),
-                    (event.keyval, 10), (event.hardware_keycode, 10),
-                    (event.is_modifier, 2), (event.group, 5),
-                    (csv(modifiers), -1)):
+        for v, l in ((etype, 5), (name, 24), (repr(event.string), 8),
+                     (event.keyval, 10), (event.hardware_keycode, 10),
+                     (event.is_modifier, 2), (event.group, 5),
+                     (csv(modifiers), -1)):
             s = str(v)
-            if l>0:
+            if l > 0:
                 s = s.ljust(l)
             text += s
         self.add_event_text(text)

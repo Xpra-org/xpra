@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,7 +17,6 @@ from xpra.log import Logger, enable_debug_for
 Gtk = gi_import("Gtk")
 
 log = Logger("exec")
-
 
 _instance = None
 
@@ -106,6 +105,7 @@ class StartNewCommand:
 
         def accel_close(*_args):
             self.close()
+
         add_close_accel(self.window, accel_close)
         vbox.show_all()
         self.window.vbox = vbox

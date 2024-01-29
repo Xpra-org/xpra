@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -29,12 +29,13 @@ def getprop(window, prop: str):
             return None
         return window.get_property(prop)
 
+
 ################################################################
 # generic file parsing functions
 ################################################################
 
 
-def _load_dict_file(filename:str, parser:Callable) -> dict:
+def _load_dict_file(filename: str, parser: Callable) -> dict:
     # filter out comments and remove line endings
     lines = []
     with open(filename, encoding="utf8") as f:
@@ -47,7 +48,7 @@ def _load_dict_file(filename:str, parser:Callable) -> dict:
     return parser(lines)
 
 
-def _load_dict_dir(d:str, parser: Callable) -> dict:
+def _load_dict_dir(d: str, parser: Callable) -> dict:
     # load all the .conf files from the directory
     if not os.path.exists(d) or not os.path.isdir(d):
         log("load_content_categories_dir(%s) directory not found", d)
@@ -67,7 +68,7 @@ def _load_dict_dir(d:str, parser: Callable) -> dict:
     return v
 
 
-def _load_dict_dirs(dirname:str, parser:Callable) -> dict:
+def _load_dict_dirs(dirname: str, parser: Callable) -> dict:
     if not GUESS_CONTENT:
         return {}
     # finds all the ".conf" files from the dirname specified
@@ -88,7 +89,7 @@ def _load_dict_dirs(dirname:str, parser:Callable) -> dict:
 # `content-type` mapping:
 ################################################################
 
-content_type_defs : dict | None = None
+content_type_defs: dict | None = None
 
 
 def load_content_type_defs() -> dict:
@@ -102,7 +103,7 @@ def load_content_type_defs() -> dict:
 
 
 def parse_content_types(lines) -> dict[str, dict[Any, tuple[str, str]]]:
-    defs : dict[str, dict[Any, tuple[str, str]]] = {}
+    defs: dict[str, dict[Any, tuple[str, str]]] = {}
     for line in lines:
         if not line:
             continue
@@ -166,6 +167,7 @@ def guess_content_type_from_defs(window) -> str:
                     return content_type
     return ""
 
+
 ################################################################
 # `content-categories` mapping:
 ################################################################
@@ -194,7 +196,7 @@ def load_categories_to_type() -> dict:
 # command mapping: using menu data
 ################################################################
 
-command_to_type : dict[str, str] | None = None
+command_to_type: dict[str, str] | None = None
 
 
 def load_command_to_type() -> dict[str, str]:
@@ -306,7 +308,7 @@ def guess_content_type(window) -> str:
 def main():
     # pylint: disable=import-outside-toplevel
     import sys
-    assert len(sys.argv)==2
+    assert len(sys.argv) == 2
     ppid = int(sys.argv[1])
     c = guess_content_from_parent_pid(ppid)
     print(f"guess_content_from_parent_pid({ppid})={c}")

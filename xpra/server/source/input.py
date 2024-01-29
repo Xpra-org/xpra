@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -24,16 +24,16 @@ class InputMixin(StubSourceMixin):
         return any((
             caps.boolget("keyboard"),
             caps.boolget("mouse"),
-            bool(caps.get("xkbmap_keycodes")),      # legacy clients
+            bool(caps.get("xkbmap_keycodes")),  # legacy clients
         ))
 
     def init_state(self) -> None:
         self.keyboard_config = None
-        self.double_click_time : int = -1
+        self.double_click_time: int = -1
         self.double_click_distance: tuple[int, int] | None = None
         # mouse echo:
-        self.mouse_last_position : tuple[int,int] | None = None
-        self.mouse_last_relative_position : tuple[int,int] | None = None
+        self.mouse_last_position: tuple[int, int] | None = None
+        self.mouse_last_relative_position: tuple[int, int] | None = None
 
     def cleanup(self) -> None:
         self.keyboard_config = None
@@ -50,7 +50,7 @@ class InputMixin(StubSourceMixin):
         self.mouse_last_position = c.intpair("mouse.initial-position")
 
     def get_info(self) -> dict[str, Any]:
-        dc_info : dict[str,Any] = {}
+        dc_info: dict[str, Any] = {}
         dct = self.double_click_time
         if dct:
             dc_info["time"] = dct
@@ -66,13 +66,13 @@ class InputMixin(StubSourceMixin):
         return info
 
     def get_caps(self) -> dict[str, Any]:
-        #expose the "modifier_client_keycodes" defined in the X11 server keyboard config object,
-        #so clients can figure out which modifiers map to which keys:
+        # expose the "modifier_client_keycodes" defined in the X11 server keyboard config object,
+        # so clients can figure out which modifiers map to which keys:
         kc = self.keyboard_config
         if kc:
             mck = getattr(kc, "modifier_client_keycodes", None)
             if mck:
-                return {"modifier_keycodes" : mck}
+                return {"modifier_keycodes": mck}
         return {}
 
     def set_layout(self, layout: str, variant: str, options):
@@ -118,7 +118,7 @@ class InputMixin(StubSourceMixin):
                 current_id = current_keyboard_config.get_hash()
             keymap_id = kc.get_hash()
             log("current keyboard id=%s, new keyboard id=%s", current_id, keymap_id)
-            if force or current_id is None or keymap_id!=current_id:
+            if force or current_id is None or keymap_id != current_id:
                 kc.keys_pressed = keys_pressed
                 kc.set_keymap(translate_only)
                 kc.owner = self.uuid
@@ -137,7 +137,7 @@ class InputMixin(StubSourceMixin):
     def update_mouse(self, wid: int, x: int, y: int, rx: int, ry: int) -> None:
         log("update_mouse(%s, %i, %i, %i, %i) current=%s, client=%i",
             wid, x, y, rx, ry, self.mouse_last_position, self.counter)
-        if self.mouse_last_position!=(x, y) or self.mouse_last_relative_position!=(rx, ry):
+        if self.mouse_last_position != (x, y) or self.mouse_last_relative_position != (rx, ry):
             self.mouse_last_position = (x, y)
             self.mouse_last_position = (rx, ry)
             self.send_async("pointer-position", wid, x, y, rx, ry)

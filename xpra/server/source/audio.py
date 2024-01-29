@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -65,27 +65,27 @@ class AudioMixin(StubSourceMixin):
         self.microphone_codecs = []
 
     def init_from(self, _protocol, server) -> None:
-        self.audio_properties       = typedict(server.audio_properties)
-        self.audio_source_plugin    = server.audio_source_plugin
-        self.supports_speaker       = server.supports_speaker
-        self.supports_microphone    = server.supports_microphone
-        self.speaker_codecs         = server.speaker_codecs
-        self.microphone_codecs      = server.microphone_codecs
+        self.audio_properties = typedict(server.audio_properties)
+        self.audio_source_plugin = server.audio_source_plugin
+        self.supports_speaker = server.supports_speaker
+        self.supports_microphone = server.supports_microphone
+        self.speaker_codecs = server.speaker_codecs
+        self.microphone_codecs = server.microphone_codecs
 
     def init_state(self) -> None:
         self.wants_audio = True
         self.audio_source_sequence = 0
-        self.audio_source : Any = None
-        self.audio_sink : Any = None
+        self.audio_source: Any = None
+        self.audio_sink: Any = None
         self.pulseaudio_id = ""
         self.pulseaudio_cookie_hash = ""
         self.pulseaudio_server = ""
-        self.audio_decoders: tuple[str,...] = ()
-        self.audio_encoders: tuple[str,...]= ()
+        self.audio_decoders: tuple[str, ...] = ()
+        self.audio_encoders: tuple[str, ...] = ()
         self.audio_receive = False
         self.audio_send = False
         self.audio_fade_timer = 0
-        self.new_stream_timers : dict[Popen,int] = {}
+        self.new_stream_timers: dict[Popen, int] = {}
 
     def cleanup(self) -> None:
         log("%s.cleanup()", self)
@@ -104,7 +104,7 @@ class AudioMixin(StubSourceMixin):
                 self.source_remove(timer)
             stop_proc(proc)
 
-    def parse_client_caps(self, c:typedict) -> None:
+    def parse_client_caps(self, c: typedict) -> None:
         self.wants_audio = "audio" in c.strtupleget("wants")
         audio = typedict(c.dictget("audio") or {})
         if audio:
@@ -123,21 +123,21 @@ class AudioMixin(StubSourceMixin):
         if not self.wants_audio or not self.audio_properties:
             return {}
         audio_props = dict(self.audio_properties)
-        if FULL_INFO<2:
+        if FULL_INFO < 2:
             # only expose these specific keys:
-            audio_props = {k:v for k,v in audio_props.items() if k in (
+            audio_props = {k: v for k, v in audio_props.items() if k in (
                 "muxers", "demuxers",
             )}
         audio_props.update({
-            "codec-full-names"  : True,
-            "encoders"          : self.speaker_codecs,
-            "decoders"          : self.microphone_codecs,
-            "send"              : self.supports_speaker and len(self.speaker_codecs)>0,
-            "receive"           : self.supports_microphone and len(self.microphone_codecs)>0,
+            "codec-full-names": True,
+            "encoders": self.speaker_codecs,
+            "decoders": self.microphone_codecs,
+            "send": self.supports_speaker and len(self.speaker_codecs) > 0,
+            "receive": self.supports_microphone and len(self.microphone_codecs) > 0,
         })
-        return {"audio" : audio_props}
+        return {"audio": audio_props}
 
-    def audio_loop_check(self, mode:str="speaker") -> bool:
+    def audio_loop_check(self, mode: str = "speaker") -> bool:
         log("audio_loop_check(%s)", mode)
         # pylint: disable=import-outside-toplevel
         from xpra.audio.gstreamer_util import ALLOW_SOUND_LOOP, loop_warning_messages
@@ -152,10 +152,10 @@ class AudioMixin(StubSourceMixin):
         log("audio_loop_check(%s) machine_id=%s client machine_id=%s, uuid=%s, client uuid=%s",
             mode, machine_id, client_machine_id, uuid, client_uuid)
         if client_machine_id:
-            if client_machine_id!=machine_id:
+            if client_machine_id != machine_id:
                 # not the same machine, so OK
                 return True
-            if client_uuid!=uuid:
+            if client_uuid != uuid:
                 # different user, assume different pulseaudio server
                 return True
         # check pulseaudio id if we have it
@@ -167,10 +167,10 @@ class AudioMixin(StubSourceMixin):
         log("audio_loop_check(%s) pulseaudio cookie hash=%s, client pulseaudio cookie hash=%s",
             mode, pulseaudio_cookie_hash, self.pulseaudio_cookie_hash)
         if pulseaudio_id and self.pulseaudio_id:
-            if self.pulseaudio_id!=pulseaudio_id:
+            if self.pulseaudio_id != pulseaudio_id:
                 return True
         elif pulseaudio_cookie_hash and self.pulseaudio_cookie_hash:
-            if self.pulseaudio_cookie_hash!=pulseaudio_cookie_hash:
+            if self.pulseaudio_cookie_hash != pulseaudio_cookie_hash:
                 return True
         else:
             # no cookie or id, so probably not a pulseaudio setup,
@@ -185,7 +185,7 @@ class AudioMixin(StubSourceMixin):
             log.warn(" %s", x)
         return False
 
-    def start_sending_audio(self, codec:str="", volume:float=1.0,
+    def start_sending_audio(self, codec: str = "", volume: float = 1.0,
                             new_stream=None, new_buffer=None, skip_client_codec_check=False):
         log("start_sending_audio(%s)", codec)
         ss = None
@@ -246,12 +246,12 @@ class AudioMixin(StubSourceMixin):
 
     def audio_source_error(self, source, message) -> None:
         # this should be printed to stderr by the audio process already
-        if source==self.audio_source:
+        if source == self.audio_source:
             log("audio capture error: %s", message)
 
     def audio_source_exit(self, source, *args) -> None:
         log("audio_source_exit(%s, %s)", source, args)
-        if source==self.audio_source:
+        if source == self.audio_source:
             self.stop_sending_audio()
 
     def audio_source_info(self, source, info) -> None:
@@ -267,19 +267,19 @@ class AudioMixin(StubSourceMixin):
             ss.cleanup()
         self.call_update_av_sync_delay()
 
-    def send_eos(self, codec:str, sequence:int=0) -> None:
+    def send_eos(self, codec: str, sequence: int = 0) -> None:
         log("send_eos(%s, %s)", codec, sequence)
         # tell the client this is the end:
         self.send_more("sound-data", codec, "",
                        {
-                           "end-of-stream" : True,
-                           "sequence"      : sequence,
+                           "end-of-stream": True,
+                           "sequence": sequence,
                        })
 
     def new_stream_sound(self) -> None:
         if not NEW_STREAM_SOUND:
             return
-        from xpra.platform.paths import get_resources_dir   # pylint: disable=import-outside-toplevel
+        from xpra.platform.paths import get_resources_dir  # pylint: disable=import-outside-toplevel
         sample = os.path.abspath(os.path.normpath(os.path.join(get_resources_dir(), "bell.wav")))
         log(f"new_stream_sound() sample={sample}, exists={os.path.exists(sample)}")
         if not os.path.exists(sample):
@@ -302,7 +302,8 @@ class AudioMixin(StubSourceMixin):
             def stop_new_stream_notification():
                 if self.new_stream_timers.pop(proc, None):
                     stop_proc(proc)
-            timer = self.timeout_add(NEW_STREAM_SOUND_STOP*1000, stop_new_stream_notification)
+
+            timer = self.timeout_add(NEW_STREAM_SOUND_STOP * 1000, stop_new_stream_notification)
             self.new_stream_timers[proc] = timer
         except Exception as e:
             log("new_stream_sound() error playing new stream sound", exc_info=True)
@@ -310,25 +311,25 @@ class AudioMixin(StubSourceMixin):
             log.error(f" using: {cmd_str}:")
             log.estr(e)
 
-    def new_stream(self, audio_source, codec:str) -> None:
+    def new_stream(self, audio_source, codec: str) -> None:
         log("new_stream(%s, %s)", audio_source, codec)
         self.new_stream_sound()
-        if self.audio_source!=audio_source:
+        if self.audio_source != audio_source:
             log("dropping new-stream signal (current source=%s, signal source=%s)", self.audio_source, audio_source)
             return
         codec = codec or audio_source.codec
         audio_source.codec = codec
         # tell the client this is the start:
         self.send("sound-data", codec, "", {
-            "start-of-stream"    : True,
-            "codec"              : codec,
-            "sequence"           : audio_source.sequence,
+            "start-of-stream": True,
+            "codec": codec,
+            "sequence": audio_source.sequence,
         })
         self.call_update_av_sync_delay()
         # run it again after 10 seconds,
         # by that point the source info will actually be populated:
         GLib = gi_import("GLib")
-        GLib.timeout_add(10*1000, self.call_update_av_sync_delay)
+        GLib.timeout_add(10 * 1000, self.call_update_av_sync_delay)
 
     def call_update_av_sync_delay(self) -> None:
         # loose coupling with avsync mixin:
@@ -340,10 +341,10 @@ class AudioMixin(StubSourceMixin):
     def new_audio_buffer(self, audio_source, data, metadata, packet_metadata=None) -> None:
         log("new_audio_buffer(%s, %s, %s, %s) info=%s",
             audio_source, len(data or []), metadata, [len(x) for x in packet_metadata], audio_source.info)
-        if self.audio_source!=audio_source or self.is_closed():
+        if self.audio_source != audio_source or self.is_closed():
             log("audio buffer dropped: from old source or closed")
             return
-        if audio_source.sequence<self.audio_source_sequence:
+        if audio_source.sequence < self.audio_source_sequence:
             log("audio buffer dropped: old sequence number: %s (current is %s)",
                 audio_source.sequence, self.audio_source_sequence)
             return
@@ -351,13 +352,13 @@ class AudioMixin(StubSourceMixin):
             # the packet metadata is compressed already:
             packet_metadata = Compressed("packet metadata", packet_metadata, can_inline=True)
         # don't drop the first 10 buffers
-        can_drop_packet = (audio_source.info or {}).get("buffer_count", 0)>10
+        can_drop_packet = (audio_source.info or {}).get("buffer_count", 0) > 10
         self.send_audio_data(audio_source, data, metadata, packet_metadata, can_drop_packet)
 
     def send_audio_data(self, audio_source, data, metadata, packet_metadata=None, can_drop_packet=False) -> None:
         packet_data = [audio_source.codec, Compressed(audio_source.codec, data), metadata, packet_metadata or ()]
         sequence = audio_source.sequence
-        if sequence>=0:
+        if sequence >= 0:
             metadata["sequence"] = sequence
         fail_cb = None
         if can_drop_packet:
@@ -365,6 +366,7 @@ class AudioMixin(StubSourceMixin):
                 # ideally we would tell gstreamer to send an audio "key frame"
                 # or synchronization point to ensure the stream recovers
                 log("a audio data buffer was not received and will not be resent")
+
             fail_cb = audio_data_fail_cb
         self.send("sound-data", *packet_data, synchronous=False, fail_cb=fail_cb, will_have_more=True)
 
@@ -387,7 +389,7 @@ class AudioMixin(StubSourceMixin):
             if first_time(f"unknown-{method}"):
                 log.error("Error: %s", msg)
             return msg
-        return method(*args)   # pylint: disable=not-callable
+        return method(*args)  # pylint: disable=not-callable
 
     def audio_control_stop(self, sequence_str="") -> str:
         if sequence_str:
@@ -397,7 +399,7 @@ class AudioMixin(StubSourceMixin):
                 msg = f"audio sequence number {sequence_str!r} is invalid"
                 log.warn(msg)
                 return msg
-            if sequence!=self.audio_source_sequence:
+            if sequence != self.audio_source_sequence:
                 log.warn("Warning: audio sequence mismatch: %i vs %i",
                          sequence, self.audio_source_sequence)
                 return "not stopped"
@@ -405,12 +407,12 @@ class AudioMixin(StubSourceMixin):
         self.stop_sending_audio()
         return "stopped"
 
-    def audio_control_fadein(self, codec:str="", delay_str="") -> str:
+    def audio_control_fadein(self, codec: str = "", delay_str="") -> str:
         self.do_audio_control_start(0.0, codec)
         delay = 1000
         if delay_str:
-            delay = max(1, min(10*1000, int(delay_str)))
-        step = 1.0/(delay/100.0)
+            delay = max(1, min(10 * 1000, int(delay_str)))
+        step = 1.0 / (delay / 100.0)
         log("audio_control fadein delay=%s, step=%1.f", delay, step)
 
         def fadein():
@@ -419,19 +421,20 @@ class AudioMixin(StubSourceMixin):
                 return False
             volume = ss.get_volume()
             log("fadein() volume=%.1f", volume)
-            if volume<1.0:
-                volume = min(1.0, volume+step)
+            if volume < 1.0:
+                volume = min(1.0, volume + step)
                 ss.set_volume(volume)
-            return volume<1.0
+            return volume < 1.0
+
         self.cancel_audio_fade_timer()
         self.audio_fade_timer = self.timeout_add(100, fadein)
         return "fadein started"
 
-    def audio_control_start(self, codec:str="") -> str:
+    def audio_control_start(self, codec: str = "") -> str:
         self.do_audio_control_start(1.0, codec)
         return f"requested {codec} audio"
 
-    def do_audio_control_start(self, volume:float, codec:str) -> str:
+    def do_audio_control_start(self, volume: float, codec: str) -> str:
         codec = bytestostr(codec)
         log("do_audio_control_start(%s, %s)", volume, codec)
         if not self.start_sending_audio(codec, volume):
@@ -445,8 +448,8 @@ class AudioMixin(StubSourceMixin):
         assert self.audio_source, "no active audio capture"
         delay = 1000
         if delay_str:
-            delay = max(1, min(10*1000, int(delay_str)))
-        step = 1.0/(delay/100.0)
+            delay = max(1, min(10 * 1000, int(delay_str)))
+        step = 1.0 / (delay / 100.0)
         log("audio_control fadeout delay=%s, step=%1.f", delay, step)
 
         def fadeout():
@@ -455,11 +458,12 @@ class AudioMixin(StubSourceMixin):
                 return False
             volume = ss.get_volume()
             log("fadeout() volume=%.1f", volume)
-            if volume>0:
-                ss.set_volume(max(0, volume-step))
+            if volume > 0:
+                ss.set_volume(max(0, volume - step))
                 return True
             self.stop_sending_audio()
             return False
+
         self.cancel_audio_fade_timer()
         self.audio_fade_timer = self.timeout_add(100, fadeout)
         return "fadeout started"
@@ -479,7 +483,7 @@ class AudioMixin(StubSourceMixin):
             codec, len(data or []), metadata, packet_metadata, self.audio_sink)
         if self.is_closed():
             return
-        if self.audio_sink is not None and codec!=self.audio_sink.codec:
+        if self.audio_sink is not None and codec != self.audio_sink.codec:
             log.info("audio codec changed from %s to %s", self.audio_sink.codec, codec)
             self.audio_sink.cleanup()
             self.audio_sink = None
@@ -498,6 +502,7 @@ class AudioMixin(StubSourceMixin):
                     log("audio_sink_error%s", args)
                     log.warn("Warning: stopping audio input because of an error")
                     self.stop_receiving_audio()
+
                 from xpra.audio.wrapper import start_receiving_audio  # pylint: disable=import-outside-toplevel
                 ss = start_receiving_audio(codec)
                 if not ss:
@@ -525,7 +530,7 @@ class AudioMixin(StubSourceMixin):
                     log("server side queue level: %s", q)
                 # get the latency from the source info, if it has it:
                 encoder_latency = info.intget("latency", -1)
-                if encoder_latency<0:
+                if encoder_latency < 0:
                     # fallback to hard-coded values:
                     # pylint: disable=import-outside-toplevel
                     from xpra.audio.gstreamer_util import ENCODER_LATENCY, RECORD_PIPELINE_LATENCY
@@ -539,12 +544,12 @@ class AudioMixin(StubSourceMixin):
         log("get_audio_source_latency() %s: %s", cinfo, encoder_latency)
         return encoder_latency
 
-    def get_info(self) -> dict[str,Any]:
-        return {"audio" : self.get_audio_info()}
+    def get_info(self) -> dict[str, Any]:
+        return {"audio": self.get_audio_info()}
 
-    def get_audio_info(self) -> dict[str,Any]:
+    def get_audio_info(self) -> dict[str, Any]:
         def audio_info(supported, subprocess_wrapper, codecs):
-            i = {"codecs" : codecs}
+            i = {"codecs": codecs}
             if not supported:
                 i["state"] = "disabled"
                 return i
@@ -553,9 +558,10 @@ class AudioMixin(StubSourceMixin):
                 return i
             i.update(subprocess_wrapper.get_info())
             return i
+
         info = {
-            "speaker"       : audio_info(self.supports_speaker, self.audio_source, self.audio_decoders),
-            "microphone"    : audio_info(self.supports_microphone, self.audio_sink, self.audio_encoders),
+            "speaker": audio_info(self.supports_speaker, self.audio_source, self.audio_decoders),
+            "microphone": audio_info(self.supports_microphone, self.audio_sink, self.audio_encoders),
         }
         for prop in ("pulseaudio_id", "pulseaudio_server"):
             v = getattr(self, prop)

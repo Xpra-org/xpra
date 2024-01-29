@@ -43,6 +43,7 @@ def button(tooltip: str, icon_name: str, callback: Callable) -> Gtk.Button:
 
     def clicked(*_args):
         callback(btn)
+
     btn.connect("clicked", clicked)
     return btn
 
@@ -55,7 +56,7 @@ class BaseGUIWindow(Gtk.Window):
                  wm_class=("xpra-gui", "Xpra-GUI"),
                  default_size=(640, 300),
                  header_bar=(True, True, False),
-                 parent : Gtk.Window | None = None,
+                 parent: Gtk.Window | None = None,
                  ):
         self.exit_code = 0
         super().__init__()
@@ -210,7 +211,7 @@ class BaseGUIWindow(Gtk.Window):
         about(parent=self)
 
     def get_xpra_command(self, *args) -> list[str]:
-        return get_xpra_command()+list(args)
+        return get_xpra_command() + list(args)
 
     def button_command(self, btn, *args) -> None:
         cmd = self.get_xpra_command(*args)
@@ -237,7 +238,7 @@ class BaseGUIWindow(Gtk.Window):
             display = Gdk.Display.get_default()
             cursor = Gdk.Cursor.new_for_display(display, watch)
             widget.get_window().set_cursor(cursor)
-            GLib.timeout_add(5*1000, self.reset_cursors)
+            GLib.timeout_add(5 * 1000, self.reset_cursors)
 
     def reset_cursors(self, *_args) -> None:
         for widget in self.vbox.get_children():
@@ -257,6 +258,7 @@ class BaseGUIWindow(Gtk.Window):
                     self.quit()
                 else:
                     self.show()
+
             # don't ask me why,
             # but on macos we can get file descriptor errors
             # if we exit immediately after we spawn the `attach` command

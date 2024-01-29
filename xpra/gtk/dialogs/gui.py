@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -47,8 +47,8 @@ class GUI(BaseGUIWindow):
 
     def populate(self):
         if has_client():
-            self.ib("Browse", "browse.png","Browse and connect to local and mDNS sessions", self.browse)
-            self.ib("Connect", "connect.png","Connect to an existing session\nover the network", self.show_launcher)
+            self.ib("Browse", "browse.png", "Browse and connect to local and mDNS sessions", self.browse)
+            self.ib("Connect", "connect.png", "Connect to an existing session\nover the network", self.show_launcher)
         if has_server():
             if has_shadow():
                 tooltip = "\n".join((
@@ -65,7 +65,7 @@ class GUI(BaseGUIWindow):
         grid.set_row_homogeneous(True)
         grid.set_column_homogeneous(True)
         for i, widget in enumerate(self.widgets):
-            grid.attach(widget, i % 2, i//2, 1, 1)
+            grid.attach(widget, i % 2, i // 2, 1, 1)
         self.vbox.add(grid)
 
     def add_widget(self, widget):
@@ -73,9 +73,9 @@ class GUI(BaseGUIWindow):
 
     def get_xpra_command(self, *args):
         argv = list(self.argv[1:])
-        if argv.index("gui")>=0:
+        if argv.index("gui") >= 0:
             argv.pop(argv.index("gui"))
-        return super().get_xpra_command(*args)+argv
+        return super().get_xpra_command(*args) + argv
 
     def shadow(self, button):
         cmd_args = ["shadow", "--bind-tcp=0.0.0.0:14500,auth=sys,ssl-cert=auto"] if (WIN32 or OSX) else ["shadow"]
@@ -99,7 +99,7 @@ class GUI(BaseGUIWindow):
         self.exec_subcommand("attach", url)
 
 
-def main(argv):   # pragma: no cover
+def main(argv):  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.log import enable_color

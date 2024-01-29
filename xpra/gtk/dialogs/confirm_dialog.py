@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -47,6 +47,7 @@ class ConfirmDialogWindow(Gtk.Dialog):
             al.add(l)
             al.show_all()
             return al
+
         vbox.add(al(title, "sans 18", 0.5))
         info_box = Gtk.VBox()
         for i in info:
@@ -78,18 +79,19 @@ def show_confirm_dialog(argv):
         if len(argv) <= n:
             return ""
         return argv[n].replace("\\n\\r", "\\n").replace("\\n", "\n")
+
     title = arg(0) or "Confirm Key"
     prompt = arg(1)
     info = arg(2)
     icon = arg(3)
     buttons = []
     n = 4
-    while len(argv)>(n+1):
+    while len(argv) > (n + 1):
         text = arg(n)
         try:
-            code = int(arg(n+1))
+            code = int(arg(n + 1))
         except ValueError as e:
-            log.error("Error: confirm dialog cannot parse code '%s': %s", arg(n+1), e)
+            log.error("Error: confirm dialog cannot parse code '%s': %s", arg(n + 1), e)
             return 1
         buttons.append((text, code))
         n += 2

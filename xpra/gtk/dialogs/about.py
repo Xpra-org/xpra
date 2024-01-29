@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2009-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2009-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -20,7 +20,6 @@ APPLICATION_NAME = "Xpra"
 SITE_DOMAIN = "xpra.org"
 SITE_URL = f"https://{SITE_DOMAIN}/"
 
-
 GPL2 = None
 
 
@@ -32,8 +31,8 @@ def load_license():
         if os.path.exists(gpl2_file):
             with open(gpl2_file, mode="rb") as f:
                 GPL2 = f.read().decode("latin1")
-    return GPL2 or "Your installation may be corrupted,"\
-                   " the license text for GPL version 2 could not be found,"\
+    return GPL2 or "Your installation may be corrupted," \
+                   " the license text for GPL version 2 could not be found," \
                    "\nplease refer to:\nhttp://www.gnu.org/licenses/gpl-2.0.txt"
 
 

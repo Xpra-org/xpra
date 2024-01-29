@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -35,6 +35,7 @@ class ShortcutInfo(Gtk.Window):
 
         def window_deleted(*_args):
             self.is_closed = True
+
         self.connect('delete_event', window_deleted)
         self.set_title("Xpra Keyboard Shortcuts")
         self.set_size_request(320, 320)
@@ -55,7 +56,7 @@ class ShortcutInfo(Gtk.Window):
         total = 0
         for keyname in shortcuts:
             total += len(shortcuts[keyname])
-        vlabel("%i Shortcuts:" % (total, ), "sans 16", 20)
+        vlabel("%i Shortcuts:" % (total,), "sans 16", 20)
 
         grid = Gtk.Grid()
         grid.set_row_homogeneous(True)
@@ -72,6 +73,7 @@ class ShortcutInfo(Gtk.Window):
             l.set_margin_bottom(2)
             al.add(l)
             grid.attach(al, x, row, 1, 1)
+
         attach("Keys", 0, "sans bold 12")
         attach("Action", 1, "sans bold 12")
         row += 1
@@ -81,7 +83,7 @@ class ShortcutInfo(Gtk.Window):
                 modifiers, action, args = shortcut
                 if args:
                     action += "(%s)" % args
-                keys = "+".join(list(modifiers)+[keyname])
+                keys = "+".join(list(modifiers) + [keyname])
                 attach(keys, 0)
                 attach(action, 1)
                 row += 1
@@ -114,7 +116,7 @@ def main(_args):
         if not Keyboard:
             log.warn("missing keyboard support")
             return
-        keyboard = Keyboard()   # pylint: disable=not-callable
+        keyboard = Keyboard()  # pylint: disable=not-callable
         mod_meanings = keyboard.get_keymap_modifiers()[0]
         modifier_names = get_modifier_names(mod_meanings)
 

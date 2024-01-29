@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -32,18 +32,18 @@ class ClientInfoMixin(StubSourceMixin):
         self.username = ""
         self.user = ""
         self.name = ""
-        self.argv: tuple[str,...] = ()
+        self.argv: tuple[str, ...] = ()
         self.sharing = False
         # client capabilities/options:
         self.client_type = ""
         self.client_version = ""
-        self.client_revision= ""
+        self.client_revision = ""
         self.client_bits = 0
         self.client_platform = ""
         self.client_machine = ""
         self.client_processor = ""
         self.client_release = ""
-        self.client_linux_distribution : tuple[str,...] = ()
+        self.client_linux_distribution: tuple[str, ...] = ()
         self.client_proxy = False
         self.client_wm_name = ""
         self.client_session_type = ""
@@ -87,9 +87,9 @@ class ClientInfoMixin(StubSourceMixin):
         log(f"client uuid {self.uuid}")
 
     def get_connect_info(self) -> list[str]:
-        #client platform / version info:
+        # client platform / version info:
         pinfo = [std(self.client_type)]
-        if FULL_INFO>0:
+        if FULL_INFO > 0:
             if self.client_platform:
                 pinfo += [platform_name(self.client_platform, self.client_linux_distribution or self.client_release)]
             if self.client_session_type:
@@ -102,19 +102,19 @@ class ClientInfoMixin(StubSourceMixin):
             version = (self.client_version or "").split(".")[0]
         pinfo += [f"client version {std(version)}{std(revinfo)}{bitsstr}"]
         cinfo = [" ".join(x for x in pinfo if x)]
-        if FULL_INFO>0:
-            #connection info:
+        if FULL_INFO > 0:
+            # connection info:
             if self.hostname or self.username:
                 msg = "connected"
                 if self.hostname:
                     msg += f" from {std(self.hostname)!r}"
                 if self.username:
                     msg += f" as {std(self.username)!r}"
-                    if self.name and self.name!=self.username:
+                    if self.name and self.name != self.username:
                         msg += f" - {std(self.name)!r}"
                 if msg:
                     cinfo.append(msg)
-            #proxy info
+            # proxy info
             if self.client_proxy:
                 pname = platform_name(self.proxy_platform, self.proxy_release)
                 msg = f"via {pname} proxy"
@@ -123,7 +123,7 @@ class ClientInfoMixin(StubSourceMixin):
                 if self.proxy_hostname:
                     msg += f" on {std(self.proxy_hostname)!r}"
                 cinfo.append(msg)
-            #opengl info:
+            # opengl info:
             if self.client_opengl:
                 msg = "OpenGL is "
                 if not self.client_opengl.boolget("enabled"):
@@ -139,28 +139,29 @@ class ClientInfoMixin(StubSourceMixin):
                 cinfo.append(msg)
         return cinfo
 
-    def get_info(self) -> dict[str,Any]:
-        info : dict[str,Any] = {
-            "sharing"           : bool(self.sharing),
+    def get_info(self) -> dict[str, Any]:
+        info: dict[str, Any] = {
+            "sharing": bool(self.sharing),
         }
         if self.client_version:
-            info["version"] = vparts(self.client_version, FULL_INFO+1)
+            info["version"] = vparts(self.client_version, FULL_INFO + 1)
 
         def addattr(key, name=None):
             v = getattr(self, (name or key).replace("-", "_"))
-            #skip empty values:
+            # skip empty values:
             if v:
                 info[key.replace("_", "-")] = v
+
         for k in ("session-id", "uuid"):
             addattr(k)
-        if FULL_INFO>1:
+        if FULL_INFO > 1:
             for k in ("user", "name", "argv"):
                 addattr(k)
             for x in (
-                "revision",
-                "type", "platform", "release", "machine", "processor", "proxy",
-                "wm_name", "session_type", "session_type_full",
+                    "revision",
+                    "type", "platform", "release", "machine", "processor", "proxy",
+                    "wm_name", "session_type", "session_type_full",
             ):
-                addattr(x, "client_"+x)
+                addattr(x, "client_" + x)
             info["platform_name"] = platform_name(self.client_platform, self.client_release)
         return info

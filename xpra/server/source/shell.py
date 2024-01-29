@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -39,13 +39,13 @@ class ShellMixin(StubSourceMixin):
             self.shell_enabled = False
         log("init_from(%s, %s) shell_enabled(%s)=%s", protocol, server, options, self.shell_enabled)
 
-    def get_caps(self) -> dict[str,Any]:
-        return {"shell" : self.shell_enabled}
+    def get_caps(self) -> dict[str, Any]:
+        return {"shell": self.shell_enabled}
 
-    def get_info(self) -> dict[str,Any]:
-        return {"shell" : self.shell_enabled}
+    def get_info(self) -> dict[str, Any]:
+        return {"shell": self.shell_enabled}
 
-    def shell_exec(self, code:str) -> tuple[str,str]:
+    def shell_exec(self, code: str) -> tuple[str, str]:
         stdout, stderr = self.do_shell_exec(code)
         log("shell_exec(%s) stdout=%r", code, stdout)
         log("shell_exec(%s) stderr=%r", code, stderr)
@@ -61,14 +61,14 @@ class ShellMixin(StubSourceMixin):
             return "shell support is not available with this connection", ""
         try:
             _globals = {
-                "connection" : self,
-                "server"    : self._server,
-                "log"       : log,
+                "connection": self,
+                "server": self._server,
+                "log": log,
             }
             stdout = io.StringIO()
             stderr = io.StringIO()
             with redirect_stdout(stdout), redirect_stderr(stderr):
-                exec(code, _globals, {})   # pylint: disable=exec-used
+                exec(code, _globals, {})  # pylint: disable=exec-used
             return stdout.getvalue(), stderr.getvalue()
         except Exception as e:
             log("shell_exec(..)", exc_info=True)

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -132,8 +132,8 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
         log("ProxyProcessProcess.run() pid=%s, uid=%s, gid=%s", os.getpid(), getuid(), getgid())
         set_proc_title(f"Xpra Proxy Instance for {self.server_conn}")
-        if POSIX and (getuid()!=self.uid or getgid()!=self.gid):
-            #do we need a valid XDG_RUNTIME_DIR for the socket-dir?
+        if POSIX and (getuid() != self.uid or getgid() != self.gid):
+            # do we need a valid XDG_RUNTIME_DIR for the socket-dir?
             username = get_username_for_uid(self.uid)
             socket_dir = osexpand(self.socket_dir, username, self.uid, self.gid)
             if not os.path.exists(socket_dir):
@@ -141,7 +141,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 for prefix in ("/run/user/", "/var/run/user/"):
                     if socket_dir.startswith(prefix):
                         from xpra.scripts.server import create_runtime_dir  # pylint: disable=import-outside-toplevel
-                        xrd = os.path.join(prefix, str(self.uid))   #ie: /run/user/99
+                        xrd = os.path.join(prefix, str(self.uid))  # ie: /run/user/99
                         log("creating XDG_RUNTIME_DIR=%s for uid=%i, gid=%i", xrd, self.uid, self.gid)
                         create_runtime_dir(xrd, self.uid, self.gid)
                         break
@@ -185,6 +185,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
         def stop(msg):
             self.stop(None, f"cannot create the proxy control socket: {msg}")
+
         username = get_username_for_uid(self.uid)
         dotxpra = DotXpra(self.socket_dir, actual_username=username, uid=self.uid, gid=self.gid)
         sockname = f":proxy-{os.getpid()}"
@@ -247,7 +248,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         self.control_socket_thread = None
 
     def new_control_connection(self, sock, address) -> None:
-        if len(self.potential_protocols)>=self.max_connections:
+        if len(self.potential_protocols) >= self.max_connections:
             log.error("too many connections (%s), ignoring new one", len(self.potential_protocols))
             sock.close()
             return
@@ -257,7 +258,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             peername = str(address)
         sockname = sock.getsockname()
         target = peername or sockname
-        #sock.settimeout(0)
+        # sock.settimeout(0)
         log("new_control_connection() sock=%s, sockname=%s, address=%s, peername=%s", sock, sockname, address, peername)
         sc = SocketConnection(sock, sockname, address, target, "socket")
         log.info("New proxy instance control connection received:")
@@ -267,7 +268,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         self.potential_protocols.append(protocol)
         protocol.enable_default_encoder()
         protocol.start()
-        self.timeout_add(SOCKET_TIMEOUT*1000, self.verify_connection_accepted, protocol)
+        self.timeout_add(SOCKET_TIMEOUT * 1000, self.verify_connection_accepted, protocol)
 
     def verify_connection_accepted(self, protocol) -> None:
         if not protocol.is_closed() and protocol in self.potential_protocols:
@@ -306,7 +307,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 return parse_bool(mode, req_option)
 
             def is_req(mode):
-                return generic_request==mode or caps.boolget(f"{mode}_request")
+                return generic_request == mode or caps.boolget(f"{mode}_request")
 
             if is_req("info"):
                 if is_req_allowed("info"):
@@ -315,7 +316,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 else:
                     info = {"error": "`info` requests are not enabled for this connection"}
                 proto.send_now(("hello", info))
-                self.timeout_add(5*1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
+                self.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
                                  "info sent")
                 return
             if is_req("stop"):
@@ -328,8 +329,8 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 version = XPRA_VERSION
                 if caps.boolget("full-version-request"):
                     version = full_version_str()
-                proto.send_now(("hello", {"version" : version}))
-                self.timeout_add(5*1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
+                proto.send_now(("hello", {"version": version}))
+                self.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
                                  "version sent")
                 return
             log.warn("Warning: invalid hello packet,")

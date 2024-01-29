@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,7 +14,7 @@ from xpra.log import Logger
 log = Logger("server")
 
 
-def get_enabled_mixins() -> tuple[type,...]:
+def get_enabled_mixins() -> tuple[type, ...]:
     # pylint: disable=import-outside-toplevel
     from xpra.server.source.clientinfo import ClientInfoMixin
     mixins: list[type] = [ClientInfoMixin]
@@ -66,7 +66,7 @@ def get_enabled_mixins() -> tuple[type,...]:
     return tuple(mixins)
 
 
-def get_needed_based_classes(caps:typedict) -> tuple[type,...]:
+def get_needed_based_classes(caps: typedict) -> tuple[type, ...]:
     from xpra.server.source.client_connection import ClientConnection
     classes = [ClientConnection]
     mixins = get_enabled_mixins()
@@ -79,7 +79,6 @@ def get_needed_based_classes(caps:typedict) -> tuple[type,...]:
 
 
 def get_client_connection_class(caps):
-
     CC_BASES = get_needed_based_classes(caps)
     ClientConnectionClass = type('ClientConnectionClass', CC_BASES, {})
     log("ClientConnectionClass%s", CC_BASES)
@@ -97,7 +96,7 @@ def get_client_connection_class(caps):
             for bc in CC_BASES:
                 try:
                     if bc == ClientConnection:
-                        initargs = [protocol, disconnect_cb, session_name]+list(args)
+                        initargs = [protocol, disconnect_cb, session_name] + list(args)
                     else:
                         initargs = []
                     bc.__init__(self, *initargs)
@@ -143,8 +142,9 @@ def get_client_connection_class(caps):
             def module_name(m):
                 name = str(m.__name__.split(".")[-1])
                 return name.replace("Mixin", "").replace("Connection", "").rstrip("_")
+
             info = {
-                "modules"   : tuple(module_name(x) for x in CC_BASES),
+                "modules": tuple(module_name(x) for x in CC_BASES),
             }
             for bc in CC_BASES:
                 log("%s.get_info()", bc)
@@ -160,13 +160,13 @@ def get_client_connection_class(caps):
             self.ui_client = c.boolget("ui_client", True)
             self.wants: list[str] = list(c.strtupleget("wants", self.wants))
             for x, enabled in {
-                "encodings" : self.ui_client,
-                "display"   : self.ui_client,
-                "events"    : False,
-                "aliases"   : True,
-                "versions"  : True,
-                "features"  : True,
-                "default_cursor"    : False,
+                "encodings": self.ui_client,
+                "display": self.ui_client,
+                "events": False,
+                "aliases": True,
+                "versions": True,
+                "features": True,
+                "default_cursor": False,
             }.items():
                 if enabled:
                     self.wants.append(x)

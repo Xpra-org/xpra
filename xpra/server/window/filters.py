@@ -1,9 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.log import Logger
+
 log = Logger("filters")
 
 
@@ -43,8 +44,8 @@ class WindowPropertyIn(WindowPropertyFilter):
 
     def evaluate(self, window_value):
         vtypes = set([type(x) for x in self.value])
-        if len(vtypes)==1 and list(vtypes)[0]==str:
-            #coerce value to match:
+        if len(vtypes) == 1 and list(vtypes)[0] == str:
+            # coerce value to match:
             window_value = str(window_value)
         return window_value in self.value
 
@@ -66,10 +67,10 @@ def get_window_filter(object_name, property_name, operator, value):
     oname = object_name.lower()
     if oname not in ("window", "window-parent"):
         raise ValueError("invalid object name '%s'" % object_name)
-    recurse = oname=="window-parent"
-    if operator=="=":
+    recurse = oname == "window-parent"
+    if operator == "=":
         window_filter = WindowPropertyIn(property_name, [value], recurse)
-    elif operator=="!=":
+    elif operator == "!=":
         window_filter = WindowPropertyNotIn(property_name, [value], recurse)
     else:
         raise ValueError("invalid window filter operator: %s" % operator)

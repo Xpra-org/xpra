@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -32,7 +32,6 @@ log = Logger("gtk", "file")
 
 URI_MAX_WIDTH = envint("XPRA_URI_MAX_WIDTH", 320)
 REMOVE_ENTRY_DELAY = envint("XPRA_FILE_REMOVE_ENTRY_DELAY", 5)
-
 
 _instance = None
 
@@ -78,6 +77,7 @@ class OpenRequestsWindow:
         def btn(text, callback, icon_name=None):
             b = self.btn(text, callback, icon_name)
             hbox.pack_start(b)
+
         if self.show_file_upload_cb:
             btn("Upload", self.show_file_upload_cb, "upload.png")
         btn("Close", self.close, "quit.png")
@@ -87,6 +87,7 @@ class OpenRequestsWindow:
 
         def accel_close(*_args):
             self.close()
+
         add_close_accel(self.window, accel_close)
         vbox.show_all()
         self.window.vbox = vbox
@@ -106,7 +107,7 @@ class OpenRequestsWindow:
 
     def add_request(self, cb_answer, send_id: str, dtype: str, url: str, filesize: int,
                     printit: bool, openit: bool, timeout: int):
-        expires = monotonic()+timeout
+        expires = monotonic() + timeout
         self.requests.append((cb_answer, send_id, dtype, url, filesize, printit, openit, expires))
         self.populate_table()
         if not self.populate_timer:
@@ -115,9 +116,9 @@ class OpenRequestsWindow:
     def update_expires_label(self) -> bool:
         expired = 0
         for widget, expiry in self.expire_labels.values():
-            seconds = max(0, expiry-monotonic())
+            seconds = max(0, expiry - monotonic())
             widget.set_text("%i" % seconds)
-            if seconds==0:
+            if seconds == 0:
                 expired += 1
         if expired:
             self.populate_table()
@@ -132,7 +133,7 @@ class OpenRequestsWindow:
             self.alignment.remove(self.contents)
         # remove expired requests:
         now = monotonic()
-        self.requests = [x for x in self.requests if x[-1]>now]
+        self.requests = [x for x in self.requests if x[-1] > now]
         if not self.requests:
             self.contents = label("No requests pending", font="sans 18")
             self.alignment.add(self.contents)
@@ -141,23 +142,24 @@ class OpenRequestsWindow:
         self.expire_labels = {}
         grid = Gtk.Grid()
 
-        def l(s=""):    # noqa: E743
+        def l(s=""):  # noqa: E743
             return label(s)
+
         for i, text in enumerate(("URL / Filename", "", "Expires in", "Action")):
             grid.attach(l(text), i, 0, 1, 1)
         row = 1
         for cb_answer, send_id, dtype, url, filesize, printit, openit, expires in self.requests:
             details = ""
-            if dtype=="file" and filesize>0:
+            if dtype == "file" and filesize > 0:
                 details = "%sB" % std_unit_dec(filesize)
             expires_label = l()
             self.expire_labels[send_id] = (expires_label, expires)
             buttons = self.action_buttons(cb_answer, send_id, dtype, printit, openit)
             s = bytestostr(url)
             main_label = l(s)
-            if dtype=="url" and s.find("?")>0 and len(s)>48:
+            if dtype == "url" and s.find("?") > 0 and len(s) > 48:
                 parts = s.split("?", 1)
-                main_label.set_label(parts[0]+"?..")
+                main_label.set_label(parts[0] + "?..")
                 main_label.set_tooltip_text(s)
             main_label.set_line_wrap(True)
             main_label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)  # @UndefinedVariable
@@ -174,7 +176,7 @@ class OpenRequestsWindow:
 
     def remove_entry(self, send_id, can_close=True):
         self.expire_labels.pop(send_id, None)
-        self.requests = [x for x in self.requests if x[1]!=send_id]
+        self.requests = [x for x in self.requests if x[1] != send_id]
         self.progress_bars.pop(send_id, None)
         if not self.requests and can_close:
             self.close()
@@ -209,8 +211,8 @@ class OpenRequestsWindow:
             hbox.pack_start(pb)
             hbox.show_all()
             pb.set_size_request(420, 30)
-            if position is not None and total>0:
-                pb.set_fraction(position/total)
+            if position is not None and total > 0:
+                pb.set_fraction(position / total)
                 pb.set_text("%sB of %s" % (std_unit(position), std_unit(total)))
             self.progress_bars[send_id] = [stop_btn, pb, position, total]
 
@@ -238,6 +240,7 @@ class OpenRequestsWindow:
             log(f"progressaccept{args}")
             cb_answer(ACCEPT, True)
             show_progressbar()
+
         pbd = self.progress_bars.pop(send_id, None)
         if pbd:
             # we already accepted this one, show stop + progressbar
@@ -245,7 +248,7 @@ class OpenRequestsWindow:
             return hbox
         cancel_btn = self.btn("Cancel", cancel, "close.png")
         hbox.pack_start(cancel_btn)
-        if bytestostr(dtype)=="url":
+        if bytestostr(dtype) == "url":
             hbox.pack_start(self.btn("Open Locally", accept, "open.png"))
             hbox.pack_start(self.btn("Open on server", remote))
         elif printit:
@@ -279,25 +282,25 @@ class OpenRequestsWindow:
             if stop_btn:
                 stop_btn.hide()
             pb.set_text("Error: %s, file transfer aborted" % error)
-            GLib.timeout_add(REMOVE_ENTRY_DELAY*1000, self.remove_entry, transfer_id)
+            GLib.timeout_add(REMOVE_ENTRY_DELAY * 1000, self.remove_entry, transfer_id)
             return
         else:
             pbd[2] = position
             pbd[3] = total
-        if pb and total>0:
-            pb.set_fraction(position/total)
+        if pb and total > 0:
+            pb.set_fraction(position / total)
             pb.set_text("%sB of %s" % (std_unit(position), std_unit(total)))
             pb.set_show_text(True)
-        if position==total:
+        if position == total:
             if stop_btn:
                 stop_btn.hide()
             pb.set_text("Complete: %sB" % std_unit(total))
             pb.set_show_text(True)
-            GLib.timeout_add(REMOVE_ENTRY_DELAY*1000, self.remove_entry, transfer_id)
+            GLib.timeout_add(REMOVE_ENTRY_DELAY * 1000, self.remove_entry, transfer_id)
         # totals:
         position = sum(pbd[2] for pbd in self.progress_bars.values())
         total = sum(pbd[3] for pbd in self.progress_bars.values())
-        set_window_progress(self.window, round(100*position/total))
+        set_window_progress(self.window, round(100 * position / total))
 
     def show(self):
         log("show()")
@@ -325,7 +328,7 @@ class OpenRequestsWindow:
     def show_downloads(self, _btn):
         downloads = os.path.expanduser(get_download_dir())
         if WIN32:
-            os.startfile(downloads)   # @UndefinedVariable pylint: disable=no-member
+            os.startfile(downloads)  # @UndefinedVariable pylint: disable=no-member
             return
         if OSX:
             cmd = ["open", downloads]
@@ -351,7 +354,7 @@ class OpenRequestsWindow:
         Gtk.main_quit()
 
 
-def main():     # pragma: no cover
+def main():  # pragma: no cover
     from xpra.platform import program_context
     from xpra.platform.gui import init as gui_init, ready as gui_ready
     gui_init()
@@ -364,6 +367,7 @@ def main():     # pragma: no cover
 
         def cb(accept):
             print("callback: %s" % (accept,))
+
         app.add_request(cb, "1", "file", "someimage.png", 16384, False, True, 10)
         app.add_request(cb, "2", "file", "otherimage.png", 16384, False, True, 100)
         app.add_request(cb, "3", "file", "document.pdf", 32768, True, False, 200)

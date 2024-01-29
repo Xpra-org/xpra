@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -55,7 +55,7 @@ class SplashScreen(Gtk.Window):
         self.connect("key-press-event", self.exit)
         title = "Xpra %s" % __version__
         self.set_title(title)
-        self.set_size_request(W, 40+40*LINES)
+        self.set_size_request(W, 40 + 40 * LINES)
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_decorated(False)
         import warnings
@@ -79,7 +79,7 @@ class SplashScreen(Gtk.Window):
         self.labels = []
         for i in range(LINES):
             lbl = label(" ")
-            lbl.set_opacity((i+1)/LINES)
+            lbl.set_opacity((i + 1) / LINES)
             self.labels.append(lbl)
             al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0, yscale=0)
             al.add(lbl)
@@ -120,20 +120,21 @@ class SplashScreen(Gtk.Window):
         self.show_all()
         force_focus()
         self.present()
-        self.timeout_timer = GLib.timeout_add(TIMEOUT*1000, self.timeout)
+        self.timeout_timer = GLib.timeout_add(TIMEOUT * 1000, self.timeout)
         self.pulse_timer = GLib.timeout_add(100, self.pulse)
         scrash = envint("XPRA_SPLASH_CRASH", -1)
         if scrash >= 0:
             def crash():
                 import ctypes  # pylint: disable=import-outside-toplevel
                 ctypes.string_at(0)
+
             GLib.timeout_add(scrash, crash)
         self.start_time = monotonic()
         Gtk.main()
         return self.exit_code or 0
 
     def _focus_change(self, *args) -> None:
-        if WIN32 and monotonic()-self.start_time < 1:
+        if WIN32 and monotonic() - self.start_time < 1:
             # ignore initial focus events on win32
             return
         has = self.has_toplevel_focus()
@@ -211,8 +212,8 @@ class SplashScreen(Gtk.Window):
             else:
                 self.current_label_text = text
                 if self.pct != pct:
-                    for i in range(len(self.labels)-1):
-                        next_line = self.labels[i+1].get_label()
+                    for i in range(len(self.labels) - 1):
+                        next_line = self.labels[i + 1].get_label()
                         for c in PULSE_CHARS:
                             next_line = next_line.replace(c, DONE_CHAR)
                         self.labels[i].set_label(next_line)
@@ -223,21 +224,22 @@ class SplashScreen(Gtk.Window):
 
     def show_progress_value(self, pct: int) -> None:
         self.cancel_progress_timer()
-        GLib.idle_add(self.progress_bar.set_fraction, pct/100.0)
+        GLib.idle_add(self.progress_bar.set_fraction, pct / 100.0)
         if pct >= 100:
             self.cancel_pulse_timer()
             self.cancel_fade_out_timer()
-            self.fade_out_timer = GLib.timeout_add(SPLASH_EXIT_DELAY*1000//100, self.fade_out)
+            self.fade_out_timer = GLib.timeout_add(SPLASH_EXIT_DELAY * 1000 // 100, self.fade_out)
             self.cancel_exit_timer()
 
             def exit_splash():
                 self.exit_timer = 0
                 self.exit()
-            self.exit_timer = GLib.timeout_add(SPLASH_EXIT_DELAY*1000, exit_splash)
+
+            self.exit_timer = GLib.timeout_add(SPLASH_EXIT_DELAY * 1000, exit_splash)
         else:
             self.progress_timer = GLib.timeout_add(40, self.increase_fraction, pct)
-            self.opacity = min(100, max(50, 130-pct))
-            self.set_opacity(self.opacity/100.0)
+            self.opacity = min(100, max(50, 130 - pct))
+            self.set_opacity(self.opacity / 100.0)
         set_window_progress(self, pct)
 
     def cancel_exit_timer(self) -> None:
@@ -267,16 +269,17 @@ class SplashScreen(Gtk.Window):
     def increase_fraction(self, pct: int, inc=1, max_increase=10) -> bool:
         log("increase_fraction%s", (pct, inc, max_increase))
         self.cancel_progress_timer()
-        GLib.idle_add(self.progress_bar.set_fraction, (pct+inc)/100.0)
+        GLib.idle_add(self.progress_bar.set_fraction, (pct + inc) / 100.0)
         if inc < max_increase:
-            self.progress_timer = GLib.timeout_add(40+20*(2+inc)**2, self.increase_fraction, pct, inc+1, max_increase)
+            self.progress_timer = GLib.timeout_add(40 + 20 * (2 + inc) ** 2, self.increase_fraction, pct, inc + 1,
+                                                   max_increase)
         return False
 
     def fade_out(self) -> bool:
-        self.opacity = max(0, self.opacity-1)
-        actual = int(ignorewarnings(self.get_opacity)*100)
+        self.opacity = max(0, self.opacity - 1)
+        actual = int(ignorewarnings(self.get_opacity) * 100)
         if actual > self.opacity:
-            self.set_opacity(self.opacity/100.0)
+            self.set_opacity(self.opacity / 100.0)
         if actual <= 0:
             self.fade_out_timer = 0
         return actual > 0
@@ -295,7 +298,7 @@ class SplashScreen(Gtk.Window):
 
     def handle_signal(self, signum, frame=None) -> None:
         log("handle_signal(%s, %s)", SIGNAMES.get(signum, signum), frame)
-        self.exit_code = 128-(signum or 0)
+        self.exit_code = 128 - (signum or 0)
         GLib.idle_add(self.exit)
 
 

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -43,14 +43,14 @@ class AVSyncMixin(StubSourceMixin):
         self.av_sync_delay_total = 0
         self.av_sync_delta = AV_SYNC_DELTA
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         return {
-            "av-sync" : {
-                ""          : self.av_sync,
-                "enabled"   : self.av_sync_enabled,
-                "client"    : self.av_sync_delay,
-                "total"     : self.av_sync_delay_total,
-                "delta"     : self.av_sync_delta,
+            "av-sync": {
+                "": self.av_sync,
+                "enabled": self.av_sync_enabled,
+                "client": self.av_sync_delay,
+                "total": self.av_sync_delay_total,
+                "delta": self.av_sync_delta,
             },
         }
 
@@ -69,13 +69,13 @@ class AVSyncMixin(StubSourceMixin):
         log("av-sync: server=%s, client=%s, enabled=%s, total=%s",
             self.av_sync, enabled, self.av_sync_enabled, self.av_sync_delay_total)
 
-    def set_av_sync_delta(self, delta:int) -> None:
+    def set_av_sync_delta(self, delta: int) -> None:
         log("set_av_sync_delta(%i)", delta)
         self.av_sync_delta = delta
         self.update_av_sync_delay_total()
 
-    def set_av_sync_delay(self, v:int) -> None:
-        #update all window sources with the given delay
+    def set_av_sync_delay(self, v: int) -> None:
+        # update all window sources with the given delay
         self.av_sync_delay = v
         self.update_av_sync_delay_total()
 

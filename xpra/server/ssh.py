@@ -40,14 +40,14 @@ def get_keyclass(keytype: str):
     # 'dsa' -> 'DSS'
     if keytype == "dsa" and hasattr(paramiko, "DSSKey"):
         return paramiko.DSSKey
-    keyclass = getattr(paramiko, keytype.upper()+"Key", None)
+    keyclass = getattr(paramiko, keytype.upper() + "Key", None)
     if keyclass:
         return keyclass
-    keyclass = getattr(paramiko, keytype.upper()+"Key", None)
+    keyclass = getattr(paramiko, keytype.upper() + "Key", None)
     if keyclass:
         return keyclass
     # Ed25519Key
-    return getattr(paramiko, keytype[:1].upper()+keytype[1:]+"Key", None)
+    return getattr(paramiko, keytype[:1].upper() + keytype[1:] + "Key", None)
 
 
 def detect_ssh_stanza(cmd):
@@ -63,9 +63,9 @@ def detect_ssh_stanza(cmd):
     #  else echo "no run-xpra command found"; exit 1; fi']
     # if .* ; then .*/run-xpra _proxy;
     log(f"parse cmd={cmd} (len={len(cmd)})")
-    if len(cmd) == 1:         # ie: 'thelongcommand'
+    if len(cmd) == 1:  # ie: 'thelongcommand'
         parse_cmd = cmd[0]
-    elif len(cmd) == 3 and cmd[:2] == ["sh", "-c"]:     # ie: 'sh' '-c' 'thelongcommand'
+    elif len(cmd) == 3 and cmd[:2] == ["sh", "-c"]:  # ie: 'sh' '-c' 'thelongcommand'
         parse_cmd = cmd[2]
     else:
         return None
@@ -85,7 +85,7 @@ def detect_ssh_stanza(cmd):
             parts = shlex.split(then_str)
             log(f"parts({then_str})={parts}")
             if len(parts) >= 2:
-                subcommand = parts[1]       # ie: "_proxy"
+                subcommand = parts[1]  # ie: "_proxy"
                 if subcommand not in subcommands:
                     subcommands[subcommand] = parts
     log(f"subcommands={subcommands}")
@@ -109,7 +109,7 @@ def find_fingerprint(filename: str, fingerprint):
             for hash_algo in AUTHORIZED_KEYS_HASHES:
                 try:
                     hash_class = getattr(hashlib, hash_algo)  # ie: hashlib.md5
-                    hash_instance = hash_class(key)     # can raise ValueError (ie: on FIPS compliant systems)
+                    hash_instance = hash_class(key)  # can raise ValueError (ie: on FIPS compliant systems)
                 except (AttributeError, ValueError):
                     hash_instance = None
                 if not hash_instance:
@@ -140,7 +140,7 @@ class SSHServer(paramiko.ServerInterface):
     def get_banner(self) -> tuple[str, str]:
         return f"{BANNER}\n\r", "EN"
 
-    def get_allowed_auths(self, username:str) -> str:
+    def get_allowed_auths(self, username: str) -> str:
         # return "gssapi-keyex,gssapi-with-mic,password,publickey"
         mods = []
         if self.none_auth:
@@ -169,14 +169,14 @@ class SSHServer(paramiko.ServerInterface):
             return bool(ssh_auth_sock)
         return False
 
-    def check_auth_none(self, username:str) -> int:
+    def check_auth_none(self, username: str) -> int:
         log("check_auth_none(%s) none_auth=%s", username, self.none_auth)
         if self.none_auth:
             return paramiko.AUTH_SUCCESSFUL
         return paramiko.AUTH_FAILED
 
     def check_auth_password(self, username: str, password: str) -> int:
-        log("check_auth_password(%s, %s) password_auth=%s", username, "*"*len(password), self.password_auth)
+        log("check_auth_password(%s, %s) password_auth=%s", username, "*" * len(password), self.password_auth)
         if not self.password_auth or not self.password_auth(username, password):
             return paramiko.AUTH_FAILED
         return paramiko.AUTH_SUCCESSFUL
@@ -215,7 +215,7 @@ class SSHServer(paramiko.ServerInterface):
         log(f"check_channel_shell_request({channel})")
         return False
 
-    def check_channel_exec_request(self, channel, command:ByteString) -> int:
+    def check_channel_exec_request(self, channel, command: ByteString) -> int:
         def fail(*messages) -> bool:
             for m in messages:
                 log.warn(m)
@@ -236,6 +236,7 @@ class SSHServer(paramiko.ServerInterface):
             channel.exec_response = (exit_status, out, err)
             self.event.set()
             return True
+
         log(f"check_channel_exec_request({channel}, {command})")
         cmd = shlex.split(decode_str(command))
         log(f"check_channel_exec_request: cmd={cmd}")
@@ -263,28 +264,29 @@ class SSHServer(paramiko.ServerInterface):
             else:
                 if echo.startswith("$"):
                     envname = echo[1:]
-                    if envname in ("OSTYPE", ):
+                    if envname in ("OSTYPE",):
                         echo = sys.platform
                     else:
                         echo = ""
             echo += "\r\n"
             log(f"exec request {cmd} returning: {echo!r}")
             return csend(out=echo)
-        if WIN32 and (" ".join(cmd)).find("REG QUERY")>=0 and str(cmd).find(r"HKEY_LOCAL_MACHINE\\Software\\Xpra")>0:
+        if WIN32 and (" ".join(cmd)).find("REG QUERY") >= 0 and str(cmd).find(
+                r"HKEY_LOCAL_MACHINE\\Software\\Xpra") > 0:
             # this batch command is used to detect the xpra.exe installation path
             # (see xpra/net/ssh.py)
             # pylint: disable=import-outside-toplevel
             from xpra.platform.paths import get_app_dir
             return csend(out=f"InstallPath {get_app_dir()}\r\n")
         if cmd[0] in ("type", "which") and len(cmd) == 2:
-            xpra_cmd = cmd[-1]   # ie: $XDG_RUNTIME_DIR/xpra/run-xpra or "xpra"
+            xpra_cmd = cmd[-1]  # ie: $XDG_RUNTIME_DIR/xpra/run-xpra or "xpra"
             # only allow '*xpra' commands:
             if any(xpra_cmd.lower().endswith(x) for x in ("xpra", "run-xpra", "xpra_cmd.exe", "xpra.exe")):
                 # we don't really allow the xpra command to be executed anyway,
                 # so just reply that it exists:
                 return csend(out="xpra\r\n")
             return csend(1, err=f"type: {xpra_cmd!r}: not found\r\n")
-        if (cmd[0].endswith("xpra") or cmd[0].endswith("Xpra_cmd.exe")) and len(cmd)>=2:
+        if (cmd[0].endswith("xpra") or cmd[0].endswith("Xpra_cmd.exe")) and len(cmd) >= 2:
             subcommand = cmd[1].strip("\"'").rstrip(";")
             log(f"ssh xpra subcommand: {subcommand}")
             if subcommand.startswith("_proxy_"):
@@ -344,7 +346,7 @@ class SSHServer(paramiko.ServerInterface):
             # ie: "_proxy_start_desktop" -> "start-desktop"
             server_mode = subcommand.replace("_proxy_", "").replace("_", "-")
         log.info(f"ssh channel starting proxy {server_mode} session")
-        cmd = get_xpra_command()+[subcommand]+args
+        cmd = get_xpra_command() + [subcommand] + args
         try:
             # pylint: disable=consider-using-with
             proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, bufsize=0, close_fds=True)
@@ -362,6 +364,7 @@ class SSHServer(paramiko.ServerInterface):
         def close() -> None:
             if proc.poll() is None:
                 proc.terminate()
+
         getChildReaper().add_process(proc, f"proxy-start-{subcommand}", cmd, True, True, proxy_ended)
 
         def proc_to_channel(read, send) -> None:
@@ -381,6 +384,7 @@ class SSHServer(paramiko.ServerInterface):
                         log(f"proc_to_channel({read}, {send})", exc_info=True)
                         close()
                         return
+
         # forward to/from the process and the channel:
 
         def stderr_reader() -> None:
@@ -399,6 +403,7 @@ class SSHServer(paramiko.ServerInterface):
                 # log("stdin_reader() %i bytes: %s", len(r or b""), ellipsizer(r))
                 stdin.write(r)
                 stdin.flush()
+
         tname = subcommand.replace("_proxy_", "proxy-").replace("_", "-")
         start_thread(stderr_reader, f"{tname}-stderr", True)
         start_thread(stdout_reader, f"{tname}-stdout", True)
@@ -425,6 +430,7 @@ def make_ssh_server_connection(conn, socket_options, none_auth: bool = False, pa
             conn.close()
         except Exception:
             log(f"{conn}.close()")
+
     try:
         t = paramiko.Transport(sock, gss_kex=DoGSSAPIKeyExchange)
         ssh_server.transport = t
@@ -457,6 +463,7 @@ def make_ssh_server_connection(conn, socket_options, none_auth: bool = False, pa
                 log.error(f"Error: cannot add {keytype} host key {ff!r}:")
                 log.estr(e)
             return False
+
         host_key = socket_options.get("ssh-host-key")
         if host_key:
             d, f = os.path.split(host_key)
@@ -468,7 +475,7 @@ def make_ssh_server_connection(conn, socket_options, none_auth: bool = False, pa
                 return None
         else:
             ssh_key_dirs = get_ssh_conf_dirs()
-            log("trying to load ssh host keys from: "+csv(ssh_key_dirs))
+            log("trying to load ssh host keys from: " + csv(ssh_key_dirs))
             for d in ssh_key_dirs:
                 fd = osexpand(d)
                 log(f"osexpand({d})={fd}")
@@ -481,7 +488,7 @@ def make_ssh_server_connection(conn, socket_options, none_auth: bool = False, pa
             if not host_keys:
                 log.error("Error: cannot start SSH server,")
                 log.error(" no readable SSH host keys found in:")
-                log.error(" "+csv(ssh_key_dirs))
+                log.error(" " + csv(ssh_key_dirs))
                 close()
                 return None
         log("loaded host keys: %s", tuple(host_keys.values()))
@@ -511,7 +518,7 @@ def make_ssh_server_connection(conn, socket_options, none_auth: bool = False, pa
         timedout = not ssh_server.event.wait(SERVER_WAIT)
         if timedout:
             log.warn("Warning: timeout waiting for xpra SSH subcommand,")
-            log.warn(" closing connection from "+pretty_socket(conn.target))
+            log.warn(" closing connection from " + pretty_socket(conn.target))
             close()
             return None
         proxy_channel = ssh_server.proxy_channel

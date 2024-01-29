@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -18,7 +18,7 @@ MAX_WEBCAM_DEVICES = envint("XPRA_MAX_WEBCAM_DEVICES", 1)
 
 
 def valid_encodings(args):
-    #ensure that the encodings specified can be validated using HEADERS
+    # ensure that the encodings specified can be validated using HEADERS
     try:
         from xpra.codecs.pillow.decoder import HEADERS  # pylint: disable=import-outside-toplevel
     except ImportError:
@@ -55,49 +55,49 @@ class WebcamMixin(StubSourceMixin):
         self.webcam_encodings = []
 
     def init_from(self, _protocol, server) -> None:
-        self.webcam_enabled     = server.webcam_enabled
-        self.webcam_device      = server.webcam_device
-        self.webcam_encodings   = valid_encodings(server.webcam_encodings)
+        self.webcam_enabled = server.webcam_enabled
+        self.webcam_device = server.webcam_device
+        self.webcam_encodings = valid_encodings(server.webcam_encodings)
         log("WebcamMixin: enabled=%s, device=%s, encodings=%s",
             self.webcam_enabled, self.webcam_device, self.webcam_encodings)
 
     def init_state(self) -> None:
-        #for each webcam device_id, the actual device used
-        self.webcam_forwarding_devices : dict = {}
+        # for each webcam device_id, the actual device used
+        self.webcam_forwarding_devices: dict = {}
 
     def cleanup(self) -> None:
         self.stop_all_virtual_webcams()
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         return {
-            "webcam" : {
-                "encodings"         : self.webcam_encodings,
-                "active-devices"    : len(self.webcam_forwarding_devices),
+            "webcam": {
+                "encodings": self.webcam_encodings,
+                "active-devices": len(self.webcam_forwarding_devices),
             }
         }
 
-    def get_device_options(self, device_id : int) -> dict[Any,Any]:   # pylint: disable=unused-argument
+    def get_device_options(self, device_id: int) -> dict[Any, Any]:  # pylint: disable=unused-argument
         if not POSIX or OSX or not self.webcam_enabled:
             return {}
         if self.webcam_device:
-            #use the device specified:
+            # use the device specified:
             return {
-                0 : {
-                    "device" : self.webcam_device,
+                0: {
+                    "device": self.webcam_device,
                 },
             }
         from xpra.platform.posix.webcam import get_virtual_video_devices  # pylint: disable=import-outside-toplevel
         return get_virtual_video_devices()
 
-    def send_webcam_ack(self, device, frame:int, *args) -> None:
+    def send_webcam_ack(self, device, frame: int, *args) -> None:
         self.send_async("webcam-ack", device, frame, *args)
 
     def send_webcam_stop(self, device, message) -> None:
         self.send_async("webcam-stop", device, message)
 
-    def start_virtual_webcam(self, device_id, w:int, h:int) -> bool:
+    def start_virtual_webcam(self, device_id, w: int, h: int) -> bool:
         log("start_virtual_webcam%s", (device_id, w, h))
-        assert w>0 and h>0
+        assert w > 0 and h > 0
         webcam = self.webcam_forwarding_devices.get(device_id)
         if webcam:
             log.warn("Warning: virtual webcam device %s already in use,", device_id)
@@ -108,6 +108,7 @@ class WebcamMixin(StubSourceMixin):
             log.error("Error: cannot start webcam forwarding")
             log.error(" %s", msg)
             self.send_webcam_stop(device_id, msg)
+
         if not self.webcam_enabled:
             fail("webcam forwarding is disabled")
             return False
@@ -115,7 +116,7 @@ class WebcamMixin(StubSourceMixin):
         if not devices:
             fail("no virtual devices found")
             return False
-        if len(self.webcam_forwarding_devices)>MAX_WEBCAM_DEVICES:
+        if len(self.webcam_forwarding_devices) > MAX_WEBCAM_DEVICES:
             ndev = len(self.webcam_forwarding_devices)
             fail(f"too many virtual devices are already in use: {ndev}")
             return False
@@ -141,7 +142,7 @@ class WebcamMixin(StubSourceMixin):
                 errs[device_str] = str(e)
                 del e
         fail("all devices failed")
-        if len(errs)>1:
+        if len(errs) > 1:
             log.error(" tried %i devices:", len(errs))
         for device_str, err in errs.items():
             log.error(" %s : %s", device_str, err)
@@ -164,7 +165,7 @@ class WebcamMixin(StubSourceMixin):
             log.error("Error stopping virtual webcam device: %s", e)
             log("%s.clean()", exc_info=True)
 
-    def process_webcam_frame(self, device_id, frame_no:int, encoding:str, w:int, h:int, data) -> bool:
+    def process_webcam_frame(self, device_id, frame_no: int, encoding: str, w: int, h: int, data) -> bool:
         webcam = self.webcam_forwarding_devices.get(device_id)
         log("process_webcam_frame: device %s, frame no %i: %s %ix%i, %i bytes, webcam=%s",
             device_id, frame_no, encoding, w, h, len(data), webcam)
@@ -178,16 +179,16 @@ class WebcamMixin(StubSourceMixin):
             from xpra.codecs.pillow.decoder import open_only
             if encoding not in self.webcam_encodings:
                 raise ValueError(f"invalid encoding specified: {encoding} (must be one of {self.webcam_encodings})")
-            rgb_pixel_format = "BGRX"       #BGRX
+            rgb_pixel_format = "BGRX"  # BGRX
             img = open_only(data, (encoding,))
             pixels = img.tobytes("raw", rgb_pixel_format)
             from xpra.codecs.image import ImageWrapper
-            bgrx_image = ImageWrapper(0, 0, w, h, pixels, rgb_pixel_format, 32, w*4, planes=ImageWrapper.PACKED)
+            bgrx_image = ImageWrapper(0, 0, w, h, pixels, rgb_pixel_format, 32, w * 4, planes=ImageWrapper.PACKED)
             src_format = webcam.get_src_format()
             if not src_format:
-                #closed / closing
+                # closed / closing
                 return False
-            #one of those two should be present
+            # one of those two should be present
             try:
                 csc_mod = "csc_libyuv"
                 from xpra.codecs.libyuv.converter import (
@@ -216,7 +217,7 @@ class WebcamMixin(StubSourceMixin):
             csc.init_context(w, h, rgb_pixel_format, tw, th, src_format)
             image = csc.convert_image(bgrx_image)
             webcam.push_image(image)
-            #tell the client all is good:
+            # tell the client all is good:
             self.send_webcam_ack(device_id, frame_no)
             return True
         except Exception as e:

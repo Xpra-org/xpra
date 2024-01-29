@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -71,11 +71,12 @@ class PasswordInputDialogWindow(Gtk.Dialog):
             force_focus()
             self.present()
             self.password_input.grab_focus()
+
         GLib.idle_add(show)
 
     def run(self) -> str:
         r = super().run()
-        if r==0:
+        if r == 0:
             return self.get_password()
         return ""
 
@@ -107,9 +108,10 @@ def show_pass_dialog(argv):
     log("show_pass_dialog(%s)", argv)
 
     def arg(n):
-        if len(argv)<=n:
+        if len(argv) <= n:
             return ""
         return argv[n].replace("\\n\\r", "\\n").replace("\\n", "\n")
+
     title = arg(0) or "Enter Password"
     prompt = arg(1)
     icon = arg(2)

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,7 +15,7 @@ class KeyboardConfigBase:
         self.enabled = True
         self.owner = None
         self.sync = True
-        self.pressed_translation : dict[int,tuple[int,int]] = {}
+        self.pressed_translation: dict[int, tuple[int, int]] = {}
 
     def __repr__(self):
         return "KeyboardConfigBase"
@@ -30,7 +30,7 @@ class KeyboardConfigBase:
     def parse_options(self, props) -> int:
         oldsync = self.sync
         self.sync = props.boolget("keyboard_sync", True)
-        return int(oldsync!=self.sync)
+        return int(oldsync != self.sync)
 
     def get_hash(self) -> bytes:
         return b""
@@ -48,8 +48,8 @@ class KeyboardConfigBase:
         """ should be overridden to match the modifier state specified """
 
     def get_keycode(self, client_keycode: int, keyname: str, pressed: bool,
-                    modifiers, keyval: int, keystr: str, group: int) -> tuple[int,int]:
-        if not keyname and client_keycode<0:
+                    modifiers, keyval: int, keystr: str, group: int) -> tuple[int, int]:
+        if not keyname and client_keycode < 0:
             return -1, group
         if not pressed:
             r = self.pressed_translation.get(client_keycode)
@@ -62,14 +62,14 @@ class KeyboardConfigBase:
             self.pressed_translation[client_keycode] = keycode, group
         return keycode, group
 
-    def do_get_keycode(self, client_keycode:int, keyname:str, pressed:bool,
-                       modifiers, keyval:int, keystr:str, group:int) -> tuple[int,int]:
+    def do_get_keycode(self, client_keycode: int, keyname: str, pressed: bool,
+                       modifiers, keyval: int, keystr: str, group: int) -> tuple[int, int]:
         from xpra.log import Logger  # pylint: disable=import-outside-toplevel
         log = Logger("keyboard")
         log("do_get_keycode%s", (client_keycode, keyname, pressed, modifiers, keyval, keystr, group))
         log.warn("Warning: %s does not implement get_keycode!", type(self))
         return -1, 0
 
-    def is_modifier(self, _keycode:int) -> bool:
+    def is_modifier(self, _keycode: int) -> bool:
         # should be overridden in subclasses
         return False

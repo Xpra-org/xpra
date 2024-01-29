@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -26,8 +26,8 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
         return bool(caps.boolget("file-transfer") or caps.boolget("printing"))
 
     def init_state(self) -> None:
-        self.printers : dict[str, dict] = {}
-        self.printers_added : set[str] = set()
+        self.printers: dict[str, dict] = {}
+        self.printers_added: set[str] = set()
         # duplicated from clientinfo mixin
         self.machine_id = ""
 
@@ -38,15 +38,15 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
         FileTransferHandler.parse_file_transfer_caps(self, c)
         self.machine_id = c.strget("machine_id")
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         return {
-            "printers"          : self.printers,
-            "file-transfers"    : FileTransferHandler.get_info(self),
+            "printers": self.printers,
+            "file-transfers": FileTransferHandler.get_info(self),
         }
 
     def init_from(self, _protocol, server) -> None:
         self.init_attributes()
-        #copy attributes
+        # copy attributes
         for x in (
                 "file_transfer", "file_transfer_ask", "file_size_limit", "file_chunks",
                 "printing", "printing_ask", "open_files", "open_files_ask",
@@ -60,7 +60,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
     def set_printers(self, printers, password_file, auth, encryption, encryption_keyfile) -> None:
         log("set_printers%s for %s",
             (printers, password_file, auth, encryption, encryption_keyfile), self)
-        if self.machine_id==get_machine_id() and not ADD_LOCAL_PRINTERS:
+        if self.machine_id == get_machine_id() and not ADD_LOCAL_PRINTERS:
             self.printers = printers
             log("local client with identical machine id,")
             log(" not configuring local printers")
@@ -69,13 +69,13 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             log.warn("Warning: client did not supply a UUID,")
             log.warn(" printer forwarding cannot be enabled")
             return
-        #remove the printers no longer defined
-        #or those whose definition has changed (and we will re-add them):
+        # remove the printers no longer defined
+        # or those whose definition has changed (and we will re-add them):
         for k in tuple(self.printers.keys()):
             cpd = self.printers.get(k)
             npd = printers.get(k)
-            if cpd==npd:
-                #unchanged: make sure we don't try adding it again:
+            if cpd == npd:
+                # unchanged: make sure we don't try adding it again:
                 printers.pop(k, None)
                 continue
             if npd is None:
@@ -84,18 +84,19 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
                 log("printer %s has been modified:", k)
                 log(" was %s", cpd)
                 log(" now %s", npd)
-            #remove it:
+            # remove it:
             self.printers.pop(k, None)
             self.remove_printer(k)
-        #expand it here so the xpraforwarder doesn't need to import anything xpra:
+        # expand it here so the xpraforwarder doesn't need to import anything xpra:
         attributes = {
-            "display"         : os.environ.get("DISPLAY"),
-            "source"          : self.uuid,
+            "display": os.environ.get("DISPLAY"),
+            "source": self.uuid,
         }
 
         def makeabs(filename):
-            #convert to an absolute path since the backend may run as a different user:
+            # convert to an absolute path since the backend may run as a different user:
             return os.path.abspath(os.path.expanduser(filename))
+
         if auth:
             auth_password_file = None
             try:
@@ -113,12 +114,12 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             else:
                 attributes["encryption"] = encryption
                 attributes["encryption-keyfile"] = makeabs(encryption_keyfile)
-        #if we can, tell it exactly where to connect:
+        # if we can, tell it exactly where to connect:
         if self.unix_socket_paths:
-            #prefer sockets in public paths:
+            # prefer sockets in public paths:
             attributes["socket-path"] = self.choose_socket_path()
         log("printer attributes: %s", attributes)
-        for printer,props in printers.items():
+        for printer, props in printers.items():
             if printer not in self.printers:
                 self.setup_printer(printer, props, attributes)
 
@@ -126,11 +127,11 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
         assert self.unix_socket_paths
         for d in ("run", "var", "tmp"):
             for x in self.unix_socket_paths:
-                if x.startswith("/"+d):
+                if x.startswith("/" + d):
                     return x
         return self.unix_socket_paths[0]
 
-    def setup_printer(self, printer, props:typedict, attributes:dict) -> None:
+    def setup_printer(self, printer, props: typedict, attributes: dict) -> None:
         from xpra.platform.pycups_printing import add_printer  # pylint: disable=import-outside-toplevel
         props = typedict(props)
         info = props.strget("printer-info", "")
@@ -141,15 +142,16 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
         if self.hostname:
             location = "on %s"
             if PRINTER_LOCATION_STRING:
-                #ie: on FOO (via xpra)
+                # ie: on FOO (via xpra)
                 location = f"on {self.hostname} ({PRINTER_LOCATION_STRING})"
         try:
             def printer_added():
-                #once the printer has been added, register it in the list
-                #(so it will be removed on exit)
+                # once the printer has been added, register it in the list
+                # (so it will be removed on exit)
                 log.info("the remote printer '%s' has been configured", printer)
                 self.printers[printer] = props
                 self.printers_added.add(printer)
+
             add_printer(printer, props, info, location, attrs, success_cb=printer_added)
         except Exception as e:
             log.warn("Warning: failed to add virtual printer '%s'", printer)
@@ -157,13 +159,13 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             log("setup_printer(%s, %s, %s)", printer, props, attributes, exc_info=True)
 
     def remove_printers(self) -> None:
-        if self.machine_id==get_machine_id() and not ADD_LOCAL_PRINTERS:
+        if self.machine_id == get_machine_id() and not ADD_LOCAL_PRINTERS:
             return
         self.printers = {}
         for k in tuple(self.printers_added):
             self.remove_printer(k)
 
-    def remove_printer(self, printer:str) -> None:
+    def remove_printer(self, printer: str) -> None:
         try:
             self.printers_added.remove(printer)
         except KeyError:

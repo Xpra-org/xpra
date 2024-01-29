@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -24,9 +24,9 @@ MENU_RELOAD_DELAY = envint("XPRA_MENU_RELOAD_DELAY", 5)
 EXPORT_XDG_MENU_DATA = envbool("XPRA_EXPORT_XDG_MENU_DATA", True)
 
 
-def noicondata(menu_data:dict) -> dict:
+def noicondata(menu_data: dict) -> dict:
     newdata = {}
-    for k,v in menu_data.items():
+    for k, v in menu_data.items():
         if k in ("IconData", b"IconData"):
             continue
         if isinstance(v, dict):
@@ -57,8 +57,8 @@ class MenuProvider:
         self.watch_notifier = None
         self.xdg_menu_reload_timer = 0
         self.on_reload: list[Callable] = []
-        self.menu_data : dict[str,Any] | None = None
-        self.desktop_sessions : dict[str,Any] | None = None
+        self.menu_data: dict[str, Any] | None = None
+        self.desktop_sessions: dict[str, Any] | None = None
         self.load_lock = Lock()
 
     def setup(self) -> None:
@@ -107,7 +107,7 @@ class MenuProvider:
             def process_IN_DELETE(self, event):
                 menu_data_updated(False, event.pathname)
 
-        mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE  #@UndefinedVariable pylint: disable=no-member
+        mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE  # @UndefinedVariable pylint: disable=no-member
         handler = EventHandler()
         self.watch_notifier = pyinotify.ThreadedNotifier(self.watch_manager, handler)
         self.watch_notifier.daemon = True
@@ -139,7 +139,7 @@ class MenuProvider:
             except OSError:
                 log("error closing watch manager %s", wm, exc_info=True)
 
-    def load_menu_data(self, force_reload:bool=False) -> None:
+    def load_menu_data(self, force_reload: bool = False) -> None:
         # start loading in a thread,
         # as this may take a while and
         # so server startup can complete:
@@ -154,9 +154,10 @@ class MenuProvider:
                 log.error("Error loading menu data", exc_info=True)
             finally:
                 self.clear_cache()
+
         start_thread(load, "load-menu-data", True)
 
-    def get_menu_data(self, force_reload=False, remove_icons=False, wait=True) -> dict[str,Any]:
+    def get_menu_data(self, force_reload=False, remove_icons=False, wait=True) -> dict[str, Any]:
         log("get_menu_data%s", (force_reload, remove_icons, wait))
         if not EXPORT_XDG_MENU_DATA:
             return {}
@@ -195,7 +196,7 @@ class MenuProvider:
 
     def schedule_xdg_menu_reload(self) -> None:
         self.cancel_xdg_menu_reload()
-        self.xdg_menu_reload_timer = GLib.timeout_add(MENU_RELOAD_DELAY*1000, self.xdg_menu_reload)
+        self.xdg_menu_reload_timer = GLib.timeout_add(MENU_RELOAD_DELAY * 1000, self.xdg_menu_reload)
 
     def xdg_menu_reload(self) -> bool:
         self.xdg_menu_reload_timer = 0

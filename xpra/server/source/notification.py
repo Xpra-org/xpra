@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -26,8 +26,8 @@ class NotificationMixin(StubSourceMixin):
         return False
 
     def init_state(self) -> None:
-        self.send_notifications : bool = False
-        self.notification_callbacks : dict[int,Callable] = {}
+        self.send_notifications: bool = False
+        self.notification_callbacks: dict[int, Callable] = {}
 
     def parse_client_caps(self, c: typedict) -> None:
         v = c.get("notifications")
@@ -35,17 +35,17 @@ class NotificationMixin(StubSourceMixin):
             self.send_notifications = typedict(v).boolget("enabled")
         log("send notifications=%s", self.send_notifications)
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         return {
-            "notifications" : self.send_notifications,
+            "notifications": self.send_notifications,
         }
 
     ######################################################################
     # notifications:
     # Utility functions for mixins (makes notifications optional)
-    def may_notify(self, nid: int | NotificationID=0, summary: str = "", body: str = "",
-                   actions=(), hints=None, expire_timeout=10*1000,
-                   icon_name: str = "", user_callback: Callable | None=None) -> None:
+    def may_notify(self, nid: int | NotificationID = 0, summary: str = "", body: str = "",
+                   actions=(), hints=None, expire_timeout=10 * 1000,
+                   icon_name: str = "", user_callback: Callable | None = None) -> None:
         try:
             from xpra.platform.paths import get_icon_filename
             from xpra.notifications.common import parse_image_path
@@ -78,7 +78,7 @@ class NotificationMixin(StubSourceMixin):
                             summary, body, expire_timeout, icon or b"", actions, hints)
         return True
 
-    def notify_close(self, nid : int) -> None:
+    def notify_close(self, nid: int) -> None:
         if not self.send_notifications or self.suspended or not self.hello_sent:
             return
         self.send_more("notify_close", nid)

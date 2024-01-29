@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -27,7 +27,7 @@ class IdleMixin(StubSourceMixin):
     def __init__(self) -> None:
         self.idle_timeout = 0
         # duplicated from clientconnection:
-        self.notification_callbacks : dict[int,Callable] = {}
+        self.notification_callbacks: dict[int, Callable] = {}
         self.send_notifications = False
         self.send_notifications_actions = False
 
@@ -37,7 +37,7 @@ class IdleMixin(StubSourceMixin):
     def init_state(self) -> None:
         self.last_user_event = monotonic()
         # grace duration is at least 10 seconds:
-        self.idle_grace_duration = max(10, int(self.idle_timeout*(100-GRACE_PERCENT)//100))
+        self.idle_grace_duration = max(10, int(self.idle_timeout * (100 - GRACE_PERCENT) // 100))
         self.idle = False
         self.idle_timer = 0
         self.idle_grace_timer = 0
@@ -46,10 +46,10 @@ class IdleMixin(StubSourceMixin):
         self.cancel_idle_grace_timeout()
         self.cancel_idle_timeout()
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         return {
-            "idle_time"         : int(monotonic()-self.last_user_event),
-            "idle"              : self.idle,
+            "idle_time": int(monotonic() - self.last_user_event),
+            "idle": self.idle,
         }
 
     def parse_client_caps(self, _c: typedict) -> None:
@@ -77,8 +77,8 @@ class IdleMixin(StubSourceMixin):
 
     def schedule_idle_timeout(self) -> None:
         log("schedule_idle_timeout() idle_timer=%s, idle_timeout=%s", self.idle_timer, self.idle_timeout)
-        if self.idle_timeout>0:
-            self.idle_timer = self.timeout_add(self.idle_timeout*1000, self.idle_timedout)
+        if self.idle_timeout > 0:
+            self.idle_timer = self.timeout_add(self.idle_timeout * 1000, self.idle_timedout)
 
     def cancel_idle_grace_timeout(self) -> None:
         igt = self.idle_grace_timer
@@ -88,9 +88,9 @@ class IdleMixin(StubSourceMixin):
 
     def schedule_idle_grace_timeout(self) -> None:
         log("schedule_idle_grace_timeout() grace timer=%s, idle_timeout=%s", self.idle_grace_timer, self.idle_timeout)
-        if self.idle_timeout>0 and not self.is_closed():
+        if self.idle_timeout > 0 and not self.is_closed():
             grace = self.idle_timeout - self.idle_grace_duration
-            self.idle_grace_timer = self.timeout_add(max(0, int(grace*1000)), self.idle_grace_timedout)
+            self.idle_grace_timer = self.timeout_add(max(0, int(grace * 1000)), self.idle_grace_timedout)
             log("schedule_idle_grace_timeout() timer=%s due in %i seconds", self.idle_grace_timer, grace)
 
     def idle_grace_timedout(self) -> None:
@@ -103,7 +103,7 @@ class IdleMixin(StubSourceMixin):
         nid = NotificationID.IDLE
         if nid in self.notification_callbacks:
             return
-        actions: tuple[str,...] = ()
+        actions: tuple[str, ...] = ()
         if self.send_notifications_actions:
             actions = ("cancel", "Cancel Timeout")
         if self.session_name != "Xpra":
@@ -114,11 +114,11 @@ class IdleMixin(StubSourceMixin):
         body = "Unless this session sees some activity,\n" + \
                "it will be terminated soon."
         self.may_notify(nid, summary, body,
-                        actions, {}, expire_timeout=10*1000,
+                        actions, {}, expire_timeout=10 * 1000,
                         icon_name="timer", user_callback=self.idle_notification_action)
         self.go_idle()
 
-    def idle_notification_action(self, nid:int, action_id) -> None:
+    def idle_notification_action(self, nid: int, action_id) -> None:
         log("idle_notification_action(%i, %s)", nid, action_id)
         if action_id == "cancel":
             self.user_event()

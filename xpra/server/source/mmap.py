@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,6 +10,7 @@ from xpra.util.types import typedict
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 
 from xpra.log import Logger
+
 log = Logger("mmap")
 
 
@@ -33,7 +34,7 @@ class MMAP_Connection(StubSourceMixin):
     def init_state(self) -> None:
         self.mmap = None
         self.mmap_size = 0
-        self.mmap_client_token = 0                   # the token we write that the client may check
+        self.mmap_client_token = 0  # the token we write that the client may check
         self.mmap_client_token_index = 512
         self.mmap_client_token_bytes = 0
 
@@ -76,20 +77,20 @@ class MMAP_Connection(StubSourceMixin):
             self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_size)
             log("found client mmap area: %s, %i bytes - min mmap size=%i in '%s'",
                 self.mmap, self.mmap_size, self.min_mmap_size, mmap_filename)
-            if self.mmap_size>0 and self.mmap is not None:
+            if self.mmap_size > 0 and self.mmap is not None:
                 index = c.intget("token_index", 0)
                 count = c.intget("token_bytes", DEFAULT_TOKEN_BYTES)
                 v = read_mmap_token(self.mmap, index, count)
-                if v!=mmap_token:
+                if v != mmap_token:
                     log.warn("Warning: mmap token verification failed, not using mmap area!")
                     log.warn(f" expected {mmap_token:x}, found {v:x}")
                     self.mmap.close()
                     self.mmap = None
                     self.mmap_size = 0
-                elif self.mmap_size<self.min_mmap_size:
+                elif self.mmap_size < self.min_mmap_size:
                     log.warn("Warning: client supplied mmap area is too small, discarding it")
                     log.warn(" we need at least %iMB and this area is %iMB",
-                             self.min_mmap_size//1024//1024, self.mmap_size//1024//1024)
+                             self.min_mmap_size // 1024 // 1024, self.mmap_size // 1024 // 1024)
                     self.mmap.close()
                     self.mmap = None
                     self.mmap_size = 0
@@ -97,33 +98,33 @@ class MMAP_Connection(StubSourceMixin):
                     from xpra.os_util import get_int_uuid
                     self.mmap_client_token = get_int_uuid()
                     self.mmap_client_token_bytes = DEFAULT_TOKEN_BYTES
-                    self.mmap_client_token_index = randint(0, self.mmap_size-self.mmap_client_token_bytes)
+                    self.mmap_client_token_index = randint(0, self.mmap_size - self.mmap_client_token_bytes)
                     write_mmap_token(self.mmap,
                                      self.mmap_client_token,
                                      self.mmap_client_token_index,
                                      self.mmap_client_token_bytes)
-        if self.mmap_size>0:
+        if self.mmap_size > 0:
             from xpra.util.stats import std_unit
             log.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
 
-    def get_caps(self) -> dict[str,Any]:
-        mmap_caps : dict[str, Any] = {
-            "enabled" : self.mmap_size>0,
+    def get_caps(self) -> dict[str, Any]:
+        mmap_caps: dict[str, Any] = {
+            "enabled": self.mmap_size > 0,
         }
         if self.mmap_client_token:
             mmap_caps.update({
-                "token"         : self.mmap_client_token,
-                "token_index"   : self.mmap_client_token_index,
-                "token_bytes"   : self.mmap_client_token_bytes,
+                "token": self.mmap_client_token,
+                "token_index": self.mmap_client_token_index,
+                "token_bytes": self.mmap_client_token_bytes,
             })
-        return {"mmap" : mmap_caps}
+        return {"mmap": mmap_caps}
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         return {
-            "mmap" : {
-                "supported"     : self.supports_mmap,
-                "enabled"       : self.mmap is not None,
-                "size"          : self.mmap_size,
-                "filename"      : self.mmap_filename or "",
+            "mmap": {
+                "supported": self.supports_mmap,
+                "enabled": self.mmap is not None,
+                "size": self.mmap_size,
+                "filename": self.mmap_filename or "",
             },
         }

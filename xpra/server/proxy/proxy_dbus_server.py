@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -31,7 +31,7 @@ class Proxy_DBUS_Server(DBUS_Server_Base):
         i = self.server.get_minimal_server_info()
         self.log(".GetInfo()=%s", i)
         try:
-            v = dbus.types.Dictionary((str(k), native_to_dbus(v)) for k,v in i.items())
+            v = dbus.types.Dictionary((str(k), native_to_dbus(v)) for k, v in i.items())
             log("native_to_dbus(..)=%s", v)
         except Exception:
             log("GetInfo:gotinfo", exc_info=True)

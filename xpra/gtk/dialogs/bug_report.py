@@ -37,15 +37,15 @@ class BugReport:
         self.checkboxes = {}
         self.server_log = None
         self.show_about = True
-        self.get_server_info : Callable | None = None
-        self.opengl_info : dict = {}
-        self.includes : dict = {}
-        self.window : Gtk.Window | None = None
-        self.description : Gtk.TextView | None = None
+        self.get_server_info: Callable | None = None
+        self.opengl_info: dict = {}
+        self.includes: dict = {}
+        self.window: Gtk.Window | None = None
+        self.description: Gtk.TextView | None = None
         self.toggles: tuple = ()
 
-    def init(self, show_about:bool=True,
-             get_server_info:Callable | None=None,
+    def init(self, show_about: bool = True,
+             get_server_info: Callable | None = None,
              opengl_info=None, includes=None):
         self.show_about = show_about
         self.get_server_info = get_server_info
@@ -79,6 +79,7 @@ class BugReport:
 
             def show_about(*_args):
                 about(parent=self.window)
+
             logo_button.connect("clicked", show_about)
             logo_button.set_tooltip_text("About")
             image = Gtk.Image()
@@ -122,6 +123,7 @@ class BugReport:
         def get_gl_info():
             if self.opengl_info:
                 return self.opengl_info
+
         from xpra.net.net_util import get_info as get_net_info
         from xpra.platform.paths import get_info as get_path_info
         from xpra.platform.gui import get_info as get_gui_info
@@ -131,23 +133,24 @@ class BugReport:
             from xpra.platform.info import get_user_info
             from xpra.scripts.config import read_xpra_defaults
             return {
-                "argv"          : sys.argv,
-                "path"          : sys.path,
-                "exec_prefix"   : sys.exec_prefix,
-                "executable"    : sys.executable,
-                "version"       : get_version_info(),
-                "platform"      : get_platform_info(),
-                "host"          : get_host_info(FULL_INFO),
-                "paths"         : get_path_info(),
-                "gtk"           : get_gtk_version_info(),
-                "gui"           : get_gui_info(),
-                "display"       : get_display_info(),
-                "user"          : get_user_info(),
-                "env"           : os.environ,
-                "config"        : read_xpra_defaults(),
+                "argv": sys.argv,
+                "path": sys.path,
+                "exec_prefix": sys.exec_prefix,
+                "executable": sys.executable,
+                "version": get_version_info(),
+                "platform": get_platform_info(),
+                "host": get_host_info(FULL_INFO),
+                "paths": get_path_info(),
+                "gtk": get_gtk_version_info(),
+                "gui": get_gui_info(),
+                "display": get_display_info(),
+                "user": get_user_info(),
+                "env": os.environ,
+                "config": read_xpra_defaults(),
             }
-        get_screenshot : Callable = noop
-        take_screenshot_fn : Callable = noop
+
+        get_screenshot: Callable = noop
+        take_screenshot_fn: Callable = noop
         # screenshot: may have OS-specific code
         try:
             from xpra.platform.gui import take_screenshot
@@ -166,7 +169,8 @@ class BugReport:
                     img.save(out, format="PNG")
                     v = out.getvalue()
                     out.close()
-                    return img.width, img.height, "png", img.width*3, v
+                    return img.width, img.height, "png", img.width * 3, v
+
                 take_screenshot_fn = pillow_imagegrab_screenshot
             except Exception as e:
                 log("cannot use Pillow's ImageGrab: %s", e)
@@ -180,14 +184,15 @@ class BugReport:
                 log.warn("Warning: failed to load gtk screenshot code", exc_info=True)
         log("take_screenshot_fn=%s", take_screenshot_fn)
         if take_screenshot_fn:
-
             def _get_screenshot():
                 # take_screenshot() returns: w, h, "png", rowstride, data
                 return take_screenshot_fn()[4]
+
             get_screenshot = _get_screenshot
 
         def get_server_log():
             return self.server_log
+
         self.toggles = (
             ("system", "txt", "System", get_sys_info, True,
              "Xpra version, platform and host information - including hostname and account information"),
@@ -210,7 +215,7 @@ class BugReport:
         )
         self.checkboxes = {}
         for name, _, title, value_cb, sensitive, tooltip in self.toggles:
-            cb = Gtk.CheckButton(label=title+[" (not available)", ""][bool(value_cb)])
+            cb = Gtk.CheckButton(label=title + [" (not available)", ""][bool(value_cb)])
             cb.set_active(self.includes.get(name, True))
             cb.set_sensitive(sensitive)
             cb.set_tooltip_text(tooltip)
@@ -238,6 +243,7 @@ class BugReport:
 
         def accel_close(*_args):
             self.close()
+
         add_close_accel(self.window, accel_close)
         vbox.show_all()
         self.window.vbox = vbox
@@ -318,7 +324,7 @@ class BugReport:
             if value is None:
                 s = "not available"
             elif isinstance(value, dict):
-                s = os.linesep.join("%s : %s" % (k.ljust(32), nonl(str(v))) for k,v in sorted(value.items()))
+                s = os.linesep.join("%s : %s" % (k.ljust(32), nonl(str(v))) for k, v in sorted(value.items()))
             elif isinstance(value, (list, tuple)):
                 s = os.linesep.join(str(x) for x in value)
             else:
@@ -335,8 +341,9 @@ class BugReport:
             if isinstance(v, bytes):
                 return hexstr(v)
             return str(v)
+
         text = os.linesep.join("%s: %s%s%s%s" % (title, tooltip, os.linesep, cdata(v), os.linesep)
-                               for (title,tooltip,dtype,v) in data if dtype=="txt")
+                               for (title, tooltip, dtype, v) in data if dtype == "txt")
         clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         clipboard.set_text(text, len(text))
         log.info("%s characters copied to clipboard", len(text))
@@ -350,7 +357,7 @@ class BugReport:
     def do_save(self, filename):
         log("do_save(%s)", filename)
         if not filename.lower().endswith(".zip"):
-            filename = filename+".zip"
+            filename = filename + ".zip"
         basenoext = os.path.splitext(os.path.basename(filename))[0]
         data = self.get_data()
         import zipfile
@@ -358,7 +365,7 @@ class BugReport:
         try:
             zf = zipfile.ZipFile(filename, mode='w', compression=zipfile.ZIP_DEFLATED)
             for title, tooltip, dtype, s in data:
-                cfile = os.path.join(basenoext, title.replace(" ", "_")+"."+dtype)
+                cfile = os.path.join(basenoext, title.replace(" ", "_") + "." + dtype)
                 info = zipfile.ZipInfo(cfile, date_time=time.localtime(time.time()))
                 info.compress_type = zipfile.ZIP_DEFLATED
                 # very poorly documented:
@@ -378,7 +385,7 @@ class BugReport:
                             log.error("Error: cannot create mmap file:")
                             log.estr(e)
                         else:
-                            zf.write(temp.name, cfile, zipfile.ZIP_STORED if dtype=="png" else zipfile.ZIP_DEFLATED)
+                            zf.write(temp.name, cfile, zipfile.ZIP_STORED if dtype == "png" else zipfile.ZIP_DEFLATED)
                     finally:
                         if rm:
                             os.unlink(rm)
@@ -392,6 +399,7 @@ class BugReport:
 
             def close(*_args):
                 dialog.close()
+
             dialog.connect("response", close)
             dialog.show_all()
         finally:

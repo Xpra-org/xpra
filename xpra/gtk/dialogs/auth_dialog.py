@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -44,7 +44,7 @@ class AuthDialog(Gtk.Window):
         info_label = label(info, font="sans 12")
         self.vbox.add(info_label)
 
-        if self.timeout>0:
+        if self.timeout > 0:
             self.timeout_label = label()
             self.update_timeout()
             self.vbox.add(self.timeout_label)
@@ -75,7 +75,7 @@ class AuthDialog(Gtk.Window):
         return btn
 
     def update_timeout(self):
-        if self.timeout<=0:
+        if self.timeout <= 0:
             self.exit_code = 2
             self.quit()
             return False
@@ -113,11 +113,11 @@ def main():
     with program_context("Session Access"):
         from xpra.platform.gui import init as gui_init
         gui_init()
-        if len(sys.argv)<2:
+        if len(sys.argv) < 2:
             stderr_print(f"usage: {sys.argv[0]} 'message' [timeout-in-seconds]")
             sys.exit(4)
         info = sys.argv[1]
-        if len(sys.argv)>=3:
+        if len(sys.argv) >= 3:
             timeout = int(sys.argv[2])
         else:
             timeout = 600

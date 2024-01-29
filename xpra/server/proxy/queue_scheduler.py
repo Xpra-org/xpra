@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,29 +13,28 @@ from xpra.log import Logger
 
 log = Logger("util")
 
+ScheduledItemType: TypeAlias = tuple[callable, tuple[Any, ...], dict[str, Any]]
 
-ScheduledItemType : TypeAlias = tuple[callable,tuple[Any,...],dict[str,Any]]
 
-
-#emulate the glib main loop using a single thread + queue:
+# emulate the glib main loop using a single thread + queue:
 class QueueScheduler:
     __slots__ = ("main_queue", "exit", "timer_id", "timers", "timer_lock")
 
     def __init__(self):
-        self.main_queue : SimpleQueue[ScheduledItemType | None] = SimpleQueue()
+        self.main_queue: SimpleQueue[ScheduledItemType | None] = SimpleQueue()
         self.exit = False
         self.timer_id = AtomicInteger()
-        self.timers : dict[int, Timer | None] = {}
+        self.timers: dict[int, Timer | None] = {}
         self.timer_lock = RLock()
 
-    def source_remove(self, tid : int) -> None:
+    def source_remove(self, tid: int) -> None:
         log("source_remove(%i)", tid)
         with self.timer_lock:
             timer = self.timers.pop(tid, None)
             if timer:
                 timer.cancel()
 
-    def idle_add(self, fn : Callable, *args, **kwargs) -> int:
+    def idle_add(self, fn: Callable, *args, **kwargs) -> int:
         tid = self.timer_id.increase()
         self.main_queue.put((self.idle_repeat_call, (tid, fn, args, kwargs), {}))
         # add an entry,
@@ -43,37 +42,37 @@ class QueueScheduler:
         self.timers[tid] = None
         return tid
 
-    def idle_repeat_call(self, tid : int, fn : Callable, args, kwargs):
+    def idle_repeat_call(self, tid: int, fn: Callable, args, kwargs):
         if tid not in self.timers:
-            return False    #cancelled
+            return False  # cancelled
         return fn(*args, **kwargs)
 
-    def timeout_add(self, timeout : int, fn : Callable, *args, **kwargs) -> int:
+    def timeout_add(self, timeout: int, fn: Callable, *args, **kwargs) -> int:
         tid = self.timer_id.increase()
         self.do_timeout_add(tid, timeout, fn, *args, **kwargs)
         return tid
 
-    def do_timeout_add(self, tid : int, timeout : int, fn : Callable, *args, **kwargs) -> None:
-        #emulate glib's timeout_add using Timers
+    def do_timeout_add(self, tid: int, timeout: int, fn: Callable, *args, **kwargs) -> None:
+        # emulate glib's timeout_add using Timers
         args = (tid, timeout, fn, args, kwargs)
-        t = Timer(timeout/1000.0, self.queue_timeout_function, args)
+        t = Timer(timeout / 1000.0, self.queue_timeout_function, args)
         self.timers[tid] = t
         t.start()
 
-    def queue_timeout_function(self, tid : int, timeout : int, fn : Callable, fn_args, fn_kwargs) -> None:
+    def queue_timeout_function(self, tid: int, timeout: int, fn: Callable, fn_args, fn_kwargs) -> None:
         if tid not in self.timers:  # pragma: no cover
-            return      # cancelled
+            return  # cancelled
         # add to run queue:
         mqargs = (tid, timeout, fn, fn_args, fn_kwargs)
         self.main_queue.put((self.timeout_repeat_call, mqargs, {}))
 
-    def timeout_repeat_call(self, tid : int, timeout : int, fn : Callable, fn_args, fn_kwargs) -> bool:
+    def timeout_repeat_call(self, tid: int, timeout: int, fn: Callable, fn_args, fn_kwargs) -> bool:
         # executes the function then re-schedules it (if it returns True)
         if tid not in self.timers:  # pragma: no cover
-            return False    #cancelled
+            return False  # cancelled
         v = fn(*fn_args, **fn_kwargs)
         if bool(v):
-            #create a new timer with the same tid:
+            # create a new timer with the same tid:
             with self.timer_lock:
                 if tid in self.timers:
                     self.do_timeout_add(tid, timeout, fn, *fn_args, **fn_kwargs)
@@ -108,6 +107,6 @@ class QueueScheduler:
     def stop_main_queue(self) -> None:
         self.main_queue.put(None)
         # empty the main queue:
-        q : SimpleQueue = SimpleQueue()
+        q: SimpleQueue = SimpleQueue()
         q.put(None)
         self.main_queue = q

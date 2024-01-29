@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -29,7 +29,6 @@ GLib = gi_import("GLib")
 log = Logger("client", "util")
 
 IPV6 = envbool("XPRA_IPV6", False)
-
 
 inject_css_overrides()
 
@@ -67,7 +66,7 @@ class QRCodeClient(InfoXpraClient):
                 host = bytestostr(host)
                 if host.startswith("127.0.0.") or host.startswith("::1"):
                     continue
-                if host.find(":")>=0:
+                if host.find(":") >= 0:
                     if IPV6:
                         host = "[%s]" % host
                     else:
@@ -79,7 +78,7 @@ class QRCodeClient(InfoXpraClient):
             for addr, socktypes in addr_types.items():
                 host, port = addr
                 proto = "http" if "ws" in socktypes else "https"
-                if (proto=="http" and port==80) or (proto=="https" and port==443):
+                if (proto == "http" and port == 80) or (proto == "https" and port == 443):
                     uri = "%s://%s/" % (proto, host)
                 else:
                     uri = "%s://%s:%i/" % (proto, host, port)
@@ -88,6 +87,7 @@ class QRCodeClient(InfoXpraClient):
             def show_addresses():
                 w = QRCodeWindow(uris)
                 w.show_all()
+
             GLib.idle_add(show_addresses)
         else:
             noerr(sys.stdout.write, "no addresses found")
@@ -97,11 +97,11 @@ class QRCodeClient(InfoXpraClient):
     def exit_loop(self):
         Gtk.main_quit()
 
-    def quit(self, exit_code: ExitValue=0):
+    def quit(self, exit_code: ExitValue = 0):
         # only exit if we encountered an error
         # InfoXpraClient calls quit(ExitCode.OK) on `connection-lost`,
         # but we don't want to exit then
-        if exit_code!=0:
+        if exit_code != 0:
             super().quit(exit_code)
 
     def run(self):
@@ -120,7 +120,7 @@ class QRCodeWindow(Gtk.Window):
         title = "Xpra Server QR Codes"
         n = len(uris)
         self.set_title(title)
-        self.set_size_request(512*n, 580)
+        self.set_size_request(512 * n, 580)
         self.set_position(Gtk.WindowPosition.CENTER)
         icon = get_icon_pixbuf("xpra.png")
         if icon:
@@ -139,14 +139,14 @@ class QRCodeWindow(Gtk.Window):
 
     def handle_signal(self, signum, frame=None):
         log("handle_signal(%s, %s)", SIGNAMES.get(signum, signum), frame)
-        self.exit_code = 128-(signum or 0)
+        self.exit_code = 128 - (signum or 0)
         GLib.idle_add(self.exit)
 
     def run(self):
         self.show_all()
         force_focus()
         self.present()
-        if Gtk.main_level()==0:
+        if Gtk.main_level() == 0:
             Gtk.main()
         return self.exit_code or 0
 

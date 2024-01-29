@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -36,6 +36,7 @@ class mdns_sessions(SessionsGUI):
             log("%s%s=%s", listener_class, (service_type, None, self.mdns_add, self.mdns_remove), instance)
             self.listeners.append(instance)
             instance.start()
+
         add(XPRA_TCP_MDNS_TYPE)
         add(XPRA_UDP_MDNS_TYPE)
 
@@ -53,14 +54,16 @@ class mdns_sessions(SessionsGUI):
         self.records = [
             (interface, protocol, name, stype, domain, host, address, port, text) for
             (interface, protocol, name, stype, domain, host, address, port, text) in self.records
-            if (interface!=r_interface or protocol!=r_protocol or name!=r_name or stype!=r_stype or domain!=r_domain)
+            if (
+                interface != r_interface or protocol != r_protocol or name != r_name or stype != r_stype or domain != r_domain
+            )
         ]
-        if old_recs!=self.records:
+        if old_recs != self.records:
             GLib.idle_add(self.populate_table)
 
     def mdns_add(self, interface, protocol, name, stype, domain, host, address, port, text):
         log("mdns_add%s", (interface, protocol, name, stype, domain, host, address, port, text))
-        if HIDE_IPV6 and address.find(":")>=0:
+        if HIDE_IPV6 and address.find(":") >= 0:
             return
         text = text or {}
         # strip service from hostname:
@@ -68,12 +71,12 @@ class mdns_sessions(SessionsGUI):
         if host:
             if stype and host.endswith(stype):
                 host = host[:-len(stype)]
-            elif stype and domain and host.endswith(stype+"."+domain):
-                host = host[:-len(stype+"."+domain)]
+            elif stype and domain and host.endswith(stype + "." + domain):
+                host = host[:-len(stype + "." + domain)]
             if text:
                 mode = text.get("mode")
-                if mode and host.endswith(mode+"."):
-                    host = host[:-len(mode+".")]
+                if mode and host.endswith(mode + "."):
+                    host = host[:-len(mode + ".")]
             if host.endswith(".local."):
                 host = host[:-len(".local.")]
         self.records.append((interface, protocol, name, stype, domain, host, address, port, text))

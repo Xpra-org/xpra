@@ -17,8 +17,8 @@ class DBUS_Mixin(StubSourceMixin):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        #the DBUSSource we create is only useful if the client
-        #supports one of the mixins it exposes:
+        # the DBUSSource we create is only useful if the client
+        # supports one of the mixins it exposes:
         return caps.boolget("windows", False) or caps.boolget("sound", False) or caps.get("audio", False)
 
     def __init__(self):
@@ -37,6 +37,7 @@ class DBUS_Mixin(StubSourceMixin):
                 import os
                 from xpra.server.dbus.source import DBUS_Source
                 return DBUS_Source(self, os.environ.get("DISPLAY", "").lstrip(":"))
+
             self.dbus_server = dbus_exception_wrap(make_dbus_server, "setting up client dbus instance")
 
     def cleanup(self) -> None:

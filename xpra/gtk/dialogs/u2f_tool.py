@@ -48,6 +48,7 @@ def main():
             def printmsgs(*msgs):
                 for x in msgs:
                     print(x)
+
             error = info = printmsgs
 
         key_handle_filenames = [os.path.join(d, "u2f-keyhandle.hex") for d in get_user_conf_dirs()]
@@ -87,7 +88,7 @@ def main():
         challenge = b'01234567890123456789012345678901'  # unused
         rr = dev.Register(APP_ID, challenge, registered_keys)
         b = rr.registration_data
-        assert b[0]==5
+        assert b[0] == 5
         pubkey = bytes(b[1:66])
         khl = b[66]
         key_handle = bytes(b[67:67 + khl])
