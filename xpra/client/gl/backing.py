@@ -86,6 +86,7 @@ FBO_RESIZE_DELAY = envint("XPRA_OPENGL_FBO_RESIZE_DELAY", -1)
 CONTEXT_REINIT = envbool("XPRA_OPENGL_CONTEXT_REINIT", False)
 NVJPEG = envbool("XPRA_OPENGL_NVJPEG", True)
 NVDEC = envbool("XPRA_OPENGL_NVDEC", False)
+ALWAYS_RGBA = envbool("XPRA_OPENGL_ALWAYS_RGBA", False)
 
 CURSOR_IDLE_TIMEOUT: int = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 
@@ -297,7 +298,7 @@ class GLWindowBackingBase(WindowBackingBase):
             if self.bit_depth not in (0, 24, 32) and first_time(f"bit-depth-{self.bit_depth}"):
                 log.warn(f"Warning: invalid bit depth {self.bit_depth}, using 24")
             # (pixels are always stored in 32bpp - but this makes it clearer when we do/don't support alpha)
-            if self._alpha_enabled:
+            if self._alpha_enabled or ALWAYS_RGBA:
                 self.internal_format = GL_RGBA8
             else:
                 self.internal_format = GL_RGB8
