@@ -417,6 +417,7 @@ def main():  # pragma: no cover
     from xpra.os_util import POSIX
     from xpra.util.str_fn import print_nested_dict
     from xpra.util.str_fn import csv
+    from xpra.net.device_info import get_NM_adapter_type
     from xpra.platform import program_context
     from xpra.platform.netdev_query import get_interface_info
     from xpra.log import enable_color, add_debug_category, enable_debug_for
@@ -456,10 +457,12 @@ def main():  # pragma: no cover
                                         print("  %s" % info)
                                 finally:
                                     sock.close()
-            if not POSIX:
-                info = get_interface_info(0, iface)
-                if info:
-                    print(f"  {info}")
+            info = get_interface_info(0, iface)
+            dtype = get_NM_adapter_type(iface, ignore_inactive=False)
+            if dtype:
+                info["type"] = dtype
+            if info:
+                print(f"  {info}")
 
         from xpra.util.str_fn import bytestostr
 
@@ -483,6 +486,7 @@ def main():  # pragma: no cover
                 return v[1:]
             return str(v)
 
+        print("")
         print("Gateways found:")
         for gt, idefs in get_gateways().items():
             print(f"* {gt}")  # ie: "INET"

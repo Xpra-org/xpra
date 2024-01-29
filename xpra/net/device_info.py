@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
@@ -23,7 +23,7 @@ WIFI_LIMIT: int = envint("XPRA_WIFI_LIMIT", 10 * 1000 * 1000)
 ADSL_LIMIT: int = envint("XPRA_WIFI_LIMIT", 1000 * 1000)
 
 
-def get_NM_adapter_type(device_name) -> str:
+def get_NM_adapter_type(device_name, ignore_inactive=True) -> str:
     if not any(sys.modules.get(f"gi.repository.{mod}") for mod in ("GLib", "Gtk")):
         log("get_NM_adapter_type() no main loop")
         return ""
@@ -53,10 +53,13 @@ def get_NM_adapter_type(device_name) -> str:
     log(f"NM device {device_name!r}: {nmdevice.get_vendor()} {nmdevice.get_product()}")
     nmstate = nmdevice.get_state()
     log(f"NM state({device_name})={nmstate}")
-    if nmdevice.get_state() != NM.DeviceState.ACTIVATED:
+    inactive = nmdevice.get_state() != NM.DeviceState.ACTIVATED
+    if ignore_inactive and inactive:
         log.info(f"ignoring {device_name}: {nmstate.value_name}")
         return ""
     adapter_type = nmdevice.get_device_type().value_name
+    if adapter_type.startswith("NM_DEVICE_TYPE_"):
+        adapter_type = adapter_type[len("NM_DEVICE_TYPE_"):]
     log(f"NM device-type({device_name})={adapter_type}")
     return adapter_type
 
