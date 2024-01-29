@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#authentication from a file containing a list of entries of the form:
+# authentication from a file containing a list of entries of the form:
 # username|password|uid|gid|displays|env_options|session_options
 
 from xpra.server.auth.sys_auth_base import parse_uid, parse_gid, SessionData
@@ -13,31 +13,31 @@ from xpra.util.parsing import parse_simple_dict
 from xpra.util.types import typedict
 from xpra.net.digest import verify_digest
 
-AuthLine = tuple[str,str,int,int,list[str],dict[str,str],dict[str,str]]
+AuthLine = tuple[str, str, int, int, list[str], dict[str, str], dict[str, str]]
 
 
-def parse_auth_line(line:str) -> AuthLine:
+def parse_auth_line(line: str) -> AuthLine:
     ldata = line.split("|")
-    if len(ldata)<2:
+    if len(ldata) < 2:
         raise ValueError(f"not enough fields: {len(ldata)}, minimum is 2")
     log(f"found {len(ldata)} fields")
     # parse fields:
     username = ldata[0]
     password = ldata[1]
-    if len(ldata)>=5:
+    if len(ldata) >= 5:
         uid = parse_uid(ldata[2])
         gid = parse_gid(ldata[3])
         displays = ldata[4].split(",")
     else:
-        #this will use the default value, usually "nobody":
+        # this will use the default value, usually "nobody":
         uid = parse_uid(None)
         gid = parse_gid(None)
         displays = []
     env_options = {}
     session_options = {}
-    if len(ldata)>=6:
+    if len(ldata) >= 6:
         env_options = parse_simple_dict(bytestostr(ldata[5]), ";")
-    if len(ldata)>=7:
+    if len(ldata) >= 7:
         session_options = parse_simple_dict(bytestostr(ldata[6]), ";")
     return username, password, uid, gid, displays, env_options, session_options
 
@@ -49,10 +49,10 @@ class Authenticator(FileAuthenticatorBase):
         super().__init__(**kwargs)
         self.sessions: SessionData | None = None
 
-    def parse_filedata(self, data:str) -> dict[str,AuthLine]:
+    def parse_filedata(self, data: str) -> dict[str, AuthLine]:
         if not data:
             return {}
-        auth_data : dict[str,AuthLine] = {}
+        auth_data: dict[str, AuthLine] = {}
         i = 0
         for line in data.splitlines():
             i += 1

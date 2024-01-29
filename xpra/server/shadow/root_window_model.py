@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,12 +15,12 @@ from xpra.log import Logger
 log = Logger("shadow")
 
 
-def get_os_icons() -> tuple[tuple[int,int,str,bytes],...]:
+def get_os_icons() -> tuple[tuple[int, int, str, bytes], ...]:
     try:
         from PIL import Image  # pylint: disable=import-outside-toplevel
     except ImportError:
         return ()
-    filename = (get_generic_os_name() or "").lower()+".png"
+    filename = (get_generic_os_name() or "").lower() + ".png"
     icon_name = get_icon_filename(filename)
     if not icon_name:
         log(f"get_os_icons() no icon matching {filename!r}")
@@ -48,9 +48,9 @@ class RootWindowModel:
         "signal_listeners",
     )
 
-    def __init__(self, root_window, capture=None, title:str="", geometry=None):
+    def __init__(self, root_window, capture=None, title: str = "", geometry=None):
         self.window = root_window
-        self.title : str= title
+        self.title: str = title
         self.geometry = geometry
         self.capture = capture
         self.property_names: list[str] = [
@@ -61,12 +61,12 @@ class RootWindowModel:
         ]
         self.dynamic_property_names: list[str] = []
         self.internal_property_names: list[str] = ["content-type"]
-        self.signal_listeners : dict[str,list[tuple]] = {}
+        self.signal_listeners: dict[str, list[tuple]] = {}
 
     def __repr__(self):
         return f"RootWindowModel({self.capture} : {str(self.geometry):24})"
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         info = {}
         c = self.capture
         if c:
@@ -76,12 +76,12 @@ class RootWindowModel:
     def take_screenshot(self):
         return self.capture.take_screenshot()
 
-    def get_image(self, x:int, y:int, width:int, height:int):
+    def get_image(self, x: int, y: int, width: int, height: int):
         ox, oy = self.geometry[:2]
-        image = self.capture.get_image(ox+x, oy+y, width, height)
-        if image and (ox>0 or oy>0):
-            #adjust x and y of where the image is displayed on the client (target_x and target_y)
-            #not where the image lives within the current buffer (x and y)
+        image = self.capture.get_image(ox + x, oy + y, width, height)
+        if image and (ox > 0 or oy > 0):
+            # adjust x and y of where the image is displayed on the client (target_x and target_y)
+            # not where the image lives within the current buffer (x and y)
             image.set_target_x(x)
             image.set_target_y(y)
         return image
@@ -117,7 +117,7 @@ class RootWindowModel:
         """ only window models that use the X11 Damage extension use this method """
 
     def get_dimensions(self):
-        #used by get_window_info only
+        # used by get_window_info only
         return self.geometry[2:4]
 
     def get_geometry(self):
@@ -157,16 +157,16 @@ class RootWindowModel:
         if prop == "size-hints":
             size = self.get_dimensions()
             return {
-                "maximum-size"  : size,
-                "minimum-size"  : size,
-                "base-size" : size,
+                "maximum-size": size,
+                "minimum-size": size,
+                "base-size": size,
             }
         if prop == "class-instance":
             osn = do_get_generic_os_name()
             if osn == "Linux":
                 try:
-                    osn += "-"+get_linux_distribution()[0].replace(" ", "-")
-                except Exception:   # pragma: no cover
+                    osn += "-" + get_linux_distribution()[0].replace(" ", "-")
+                except Exception:  # pragma: no cover
                     pass
             return f"xpra-{osn.lower()}", f"Xpra {osn.replace('-', ' ')}"
         if prop == "icons":
@@ -175,14 +175,14 @@ class RootWindowModel:
             return "desktop"
         raise ValueError(f"invalid property {prop!r}")
 
-    def get(self, name:str, default_value=None):
+    def get(self, name: str, default_value=None):
         try:
             return self.get_property(name)
         except ValueError as e:
             log("get(%s, %s) %s on %s", name, default_value, e, self)
             return default_value
 
-    def notify(self, prop:str) -> None:
+    def notify(self, prop: str) -> None:
         listeners = self.signal_listeners.get(prop)
         if listeners is None:
             log.warn(f"Warning: ignoring notify for {prop!r}")
@@ -193,15 +193,15 @@ class RootWindowModel:
             with log.trap_error(f"Error on {prop!r} signal listener {listener}"):
                 listener(self, pspec, *args)
 
-    def managed_connect(self, signal:str, *args):   # pragma: no cover
+    def managed_connect(self, signal: str, *args):  # pragma: no cover
         self.connect(signal, *args)
 
-    def connect(self, signal:str, *args):           # pragma: no cover
-        prop = signal.split(":")[-1]        #notify::geometry
+    def connect(self, signal: str, *args):  # pragma: no cover
+        prop = signal.split(":")[-1]  # notify::geometry
         if prop not in self.dynamic_property_names:
             log.warn(f"Warning: ignoring signal connect request: {args}")
             return
         self.signal_listeners.setdefault(prop, []).append(args)
 
-    def disconnect(self, *args):        # pragma: no cover
+    def disconnect(self, *args):  # pragma: no cover
         log.warn(f"Warning: ignoring signal disconnect request: {args}")

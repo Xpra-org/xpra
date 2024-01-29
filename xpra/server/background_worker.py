@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,6 +11,7 @@ from collections.abc import Callable
 
 from xpra.os_util import gi_import
 from xpra.log import Logger
+
 log = Logger("util")
 
 
@@ -26,12 +27,12 @@ class Worker_Thread(Thread):
         super().__init__(name="Worker_Thread", daemon=True)
         self.items: Queue[Callable | None] = Queue()
         self.exit = False
-        self.daemon_work_items : WeakSet[Callable] = WeakSet()
+        self.daemon_work_items: WeakSet[Callable] = WeakSet()
 
     def __repr__(self):
         return f"Worker_Thread(items={self.items.qsize()}, exit={self.exit})"
 
-    def stop(self, force:bool=False) -> None:
+    def stop(self, force: bool = False) -> None:
         if self.exit:
             return
         items = tuple(x for x in self.items.queue if x is not None and x not in self.daemon_work_items)
@@ -50,8 +51,8 @@ class Worker_Thread(Thread):
                 log.info("waiting for %s items in work queue to complete", len(items))
         self.items.put(None)
 
-    def add(self, item:Callable, allow_duplicates:bool=True, daemon:bool=False) -> None:
-        if self.items.qsize()>10:
+    def add(self, item: Callable, allow_duplicates: bool = True, daemon: bool = False) -> None:
+        if self.items.qsize() > 10:
             log.warn("Worker_Thread.items queue size is %s", self.items.qsize())
         if not allow_duplicates and item in self.items.queue:
             return
@@ -74,7 +75,7 @@ class Worker_Thread(Thread):
 
 
 # only one worker thread for now:
-singleton : Worker_Thread | None= None
+singleton: Worker_Thread | None = None
 # locking to ensure multithreaded code doesn't create more than one
 lock = Lock()
 
@@ -91,14 +92,14 @@ def get_worker(create: bool = True) -> Worker_Thread | None:
     return singleton
 
 
-def add_work_item(item, allow_duplicates:bool=False, daemon:bool=True) -> None:
+def add_work_item(item, allow_duplicates: bool = False, daemon: bool = True) -> None:
     w = get_worker(True)
     log("add_work_item(%s, %s, %s) worker=%s", item, allow_duplicates, daemon, w)
     assert w is not None
     w.add(item, allow_duplicates, daemon)
 
 
-def stop_worker(force:bool=False) -> None:
+def stop_worker(force: bool = False) -> None:
     w = get_worker(False)
     log("stop_worker(%s) worker=%s", force, w)
     if w:
@@ -136,6 +137,7 @@ def quit_worker(callback: Callable) -> None:
                 except Exception:
                     pass
         callback()
+
     GLib = gi_import("GLib")
     GLib.timeout_add(250, quit_timer)
     log("clean_quit(..) quit timer scheduled, worker=%s", w)

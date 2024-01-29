@@ -12,12 +12,12 @@ class Authenticator:
     def __init__(self, **kwargs):
         self.challenge_sent = False
         self.prompt: str = kwargs.pop("prompt", "password")
-        self.passed : bool = False
+        self.passed: bool = False
 
     def requires_challenge(self) -> bool:
         return True
 
-    def get_challenge(self, digests) -> tuple[bytes,str]:
+    def get_challenge(self, digests) -> tuple[bytes, str]:
         self.challenge_sent = True
         return get_salt(), choose_digest(digests)
 
@@ -30,13 +30,13 @@ class Authenticator:
     def get_gid(self) -> int:
         return -1
 
-    def get_passwords(self) -> tuple[str,...]:
+    def get_passwords(self) -> tuple[str, ...]:
         return ()
 
     def get_password(self) -> str:
         return ""
 
-    def authenticate(self, _caps: typedict) -> bool:   # pylint: disable=unused-argument
+    def authenticate(self, _caps: typedict) -> bool:  # pylint: disable=unused-argument
         return False
 
     def get_sessions(self) -> SessionData | None:

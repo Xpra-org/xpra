@@ -15,15 +15,15 @@ class SQLAuthenticator(SysAuthenticator):
 
     def __init__(self, **kwargs):
         self.password_query: str = kwargs.pop("password_query", "SELECT password FROM users WHERE username=(%s)")
-        self.sessions_query : str = kwargs.pop("sessions_query",
-                                               "SELECT uid, gid, displays, env_options, session_options FROM users WHERE username=(%s) AND password=(%s)")  # noqa: E501
+        self.sessions_query: str = kwargs.pop("sessions_query",
+                                              "SELECT uid, gid, displays, env_options, session_options FROM users WHERE username=(%s) AND password=(%s)")  # noqa: E501
         super().__init__(**kwargs)
         self.authenticate_check = self.authenticate_hmac
 
     def db_cursor(self, *sqlargs):
         raise NotImplementedError()
 
-    def get_passwords(self) -> tuple[str,...]:
+    def get_passwords(self) -> tuple[str, ...]:
         cursor = self.db_cursor(self.password_query, (self.username,))
         data = cursor.fetchall()
         if not data:
@@ -45,11 +45,11 @@ class SQLAuthenticator(SysAuthenticator):
         try:
             uid = int(data[0] or "0")
             gid = int(data[1] or "0")
-            if len(data)>2:
+            if len(data) > 2:
                 displays = [x.strip() for x in str(data[2]).split(",")]
-            if len(data)>3:
+            if len(data) > 3:
                 env_options = parse_simple_dict(str(data[3]), ";")
-            if len(data)>4:
+            if len(data) > 4:
                 session_options = parse_simple_dict(str(data[4]), ";")
         except Exception as e:
             log("parse_session_data() error on row %s", data, exc_info=True)
@@ -62,7 +62,7 @@ class SQLAuthenticator(SysAuthenticator):
 
 class DatabaseUtilBase:
 
-    def __init__(self, uri:str):
+    def __init__(self, uri: str):
         self.uri = uri
         self.param = "?"
 
@@ -80,16 +80,16 @@ class DatabaseUtilBase:
                "session_options VARCHAR(8191))")
         self.exec_database_sql_script(None, sql)
 
-    def add_user(self, username:str, password:str, uid:int=getuid(), gid:int=getgid(),
+    def add_user(self, username: str, password: str, uid: int = getuid(), gid: int = getgid(),
                  displays="", env_options="", session_options="") -> None:
-        sql = "INSERT INTO users(username, password, uid, gid, displays, env_options, session_options) "\
-              "VALUES(%s, %s, %s, %s, %s, %s, %s)" % ((self.param,)*7)
+        sql = "INSERT INTO users(username, password, uid, gid, displays, env_options, session_options) " \
+              "VALUES(%s, %s, %s, %s, %s, %s, %s)" % ((self.param,) * 7)
         self.exec_database_sql_script(None, sql,
                                       (username, password, uid, gid, displays, env_options, session_options))
 
-    def remove_user(self, username:str, password:str="") -> None:
+    def remove_user(self, username: str, password: str = "") -> None:
         sql = "DELETE FROM users WHERE username=%s" % self.param
-        sqlargs: tuple[str,...] = (username, )
+        sqlargs: tuple[str, ...] = (username,)
         if password:
             sql += " AND password=%s" % self.param
             sqlargs = (username, password)
@@ -101,9 +101,9 @@ class DatabaseUtilBase:
         def fmt(values, sizes):
             s = ""
             for i, field in enumerate(values):
-                if i==0:
+                if i == 0:
                     s += "|"
-                s += ("%s" % field).rjust(sizes[i])+"|"
+                s += ("%s" % field).rjust(sizes[i]) + "|"
             return s
 
         def cursor_callback(cursor):
@@ -113,22 +113,23 @@ class DatabaseUtilBase:
                 cursor.close()
                 return
             print("%i rows found:" % len(rows))
-            #calculate max size for each field:
-            sizes = [len(x)+1 for x in fields]
+            # calculate max size for each field:
+            sizes = [len(x) + 1 for x in fields]
             for row in rows:
                 for i, value in enumerate(row):
-                    sizes[i] = max(sizes[i], len(str(value))+1)
-            total = sum(sizes)+len(fields)+1
-            print("-"*total)
+                    sizes[i] = max(sizes[i], len(str(value)) + 1)
+            total = sum(sizes) + len(fields) + 1
+            print("-" * total)
             print(fmt((field.replace("_", " ") for field in fields), sizes))
-            print("-"*total)
+            print("-" * total)
             for row in rows:
                 print(fmt(row, sizes))
             cursor.close()
+
         sql = "SELECT %s FROM users" % csv(fields)
         self.exec_database_sql_script(cursor_callback, sql)
 
-    def authenticate(self, username:str, password:str) -> None:
+    def authenticate(self, username: str, password: str) -> None:
         auth_class = self.get_authenticator_class()
         a = auth_class(username, self.uri)
         passwords = a.get_passwords()
@@ -154,6 +155,7 @@ def run_dbutil(database_util_class=DatabaseUtilBase, conn_str="databaseURI", arg
         print(" %s %s remove username [password]" % (argv[0], conn_str))
         print(" %s %s authenticate username password" % (argv[0], conn_str))
         return 1
+
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("SQL Auth", "SQL Auth"):
@@ -163,23 +165,23 @@ def run_dbutil(database_util_class=DatabaseUtilBase, conn_str="databaseURI", arg
         uri = argv[1]
         dbutil = database_util_class(uri)
         cmd = argv[2]
-        if cmd=="create":
+        if cmd == "create":
             if l != 3:
                 return usage()
             dbutil.create()
-        elif cmd=="add":
+        elif cmd == "add":
             if l < 5 or l > 10:
                 return usage()
             dbutil.add_user(*argv[3:])
-        elif cmd=="remove":
+        elif cmd == "remove":
             if l not in (4, 5):
                 return usage()
             dbutil.remove_user(*argv[3:])
-        elif cmd=="list":
+        elif cmd == "list":
             if l != 3:
                 return usage()
             dbutil.list_users()
-        elif cmd=="authenticate":
+        elif cmd == "authenticate":
             if l != 5:
                 return usage()
             dbutil.authenticate(*argv[3:])

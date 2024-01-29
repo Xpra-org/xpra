@@ -20,7 +20,7 @@ UNKNOWN = b""
 unknown = c_char_p(UNKNOWN)
 
 
-def check_host(peername:str, host:str) -> bool:
+def check_host(peername: str, host: str) -> bool:
     libwrap = CDLL(LIBWRAP)
     assert libwrap
     hosts_ctl = libwrap.hosts_ctl
@@ -28,10 +28,10 @@ def check_host(peername:str, host:str) -> bool:
     hosts_ctl.restype = c_int
 
     log("check_host(%s, %s)", peername, host)
-    #name = c_char_p(username)
+    # name = c_char_p(username)
     c_host = c_char_p(strtobytes(host))
     c_peername = c_char_p(strtobytes(peername))
-    #v = hosts_ctl(prg, c_host, unknown, unknown)
+    # v = hosts_ctl(prg, c_host, unknown, unknown)
     v = hosts_ctl(prg, c_peername, c_host, unknown)
     log("hosts_ctl%s=%s", (PRG_NAME, peername, host, UNKNOWN), v)
     return bool(v)
@@ -46,7 +46,7 @@ class Authenticator(SysAuthenticator):
             return
         connection = kwargs.get("connection", None)
         try:
-            from xpra.net.bytestreams import SocketConnection   # pylint: disable=import-outside-toplevel
+            from xpra.net.bytestreams import SocketConnection  # pylint: disable=import-outside-toplevel
             if not connection and isinstance(connection, SocketConnection):
                 raise ValueError(f"hosts: invalid connection {connection!r} (not a socket connection)")
             info = connection.get_info()
@@ -67,7 +67,7 @@ class Authenticator(SysAuthenticator):
     def authenticate(self, _caps: typedict) -> bool:
         if not self.host or not check_host(self.peername, self.host):
             errinfo = "'%s'" % self.peername
-            if self.peername!=self.host:
+            if self.peername != self.host:
                 errinfo += " ('%s')" % self.host
             log.warn("Warning: access denied for host %s" % errinfo)
             return False
@@ -85,11 +85,11 @@ def main(argv) -> int:
             while x in argv:
                 argv.remove(x)
                 log.enable_debug()
-        if len(argv)<3:
+        if len(argv) < 3:
             print("usage: %s peername1 hostname1 [peername2 hostname2] [..]" % sys.argv[0])
             return 1
         argv = argv[1:]
-        while len(argv)>=2:
+        while len(argv) >= 2:
             peername, host = argv[:2]
             check = check_host(peername, host)
             print(f"host check for {peername!r}, {host!r}: {check}")

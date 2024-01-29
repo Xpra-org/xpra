@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -26,6 +26,7 @@ SSL_CAFILE: str = ""
 if WIN32:
     try:
         import certifi
+
         SSL_CAFILE = certifi.where()
     except (ImportError, AttributeError):
         get_util_logger().error("failed to locate SSL ca file", exc_info=True)
@@ -40,13 +41,13 @@ def warn(msg, *args, **kwargs) -> None:
     get_util_logger().warn(msg, *args, **kwargs)
 
 
-def vparts(vstr:str, n=1) -> str:
+def vparts(vstr: str, n=1) -> str:
     return ".".join(vstr.split(".")[:n])
 
 
 def version_str() -> str:
     rstr = revision_str()
-    return XPRA_VERSION if not rstr else XPRA_VERSION+"-"+rstr
+    return XPRA_VERSION if not rstr else XPRA_VERSION + "-" + rstr
 
 
 def full_version_str() -> str:
@@ -57,13 +58,13 @@ def full_version_str() -> str:
     except ImportError:
         pass
     else:
-        if BRANCH=="master":
+        if BRANCH == "master":
             rstr += " beta"
     return rstr
 
 
 def caps_to_version(caps: typedict) -> str:
-    return caps.strget("version", "0")+"-"+caps_to_revision(caps)
+    return caps.strget("version", "0") + "-" + caps_to_revision(caps)
 
 
 def caps_to_revision(caps: typedict) -> str:
@@ -90,7 +91,7 @@ def make_revision_str(revision, local_modifications, branch, commit) -> str:
     try:
         if isinstance(revision, int):
             rstr += "r%i" % revision
-        if isinstance(local_modifications, int) and local_modifications>0:
+        if isinstance(local_modifications, int) and local_modifications > 0:
             rstr += "M"
         if branch == "master" and commit:
             rstr += " (%s)" % commit
@@ -127,16 +128,16 @@ def version_compat_check(remote_version) -> str | None:
     return None
 
 
-def get_host_info(full_info: int=1) -> dict[str, Any]:
+def get_host_info(full_info: int = 1) -> dict[str, Any]:
     # this function is for non UI thread info
-    info : dict[str, Any] = {}
-    if full_info>1:
+    info: dict[str, Any] = {}
+    if full_info > 1:
         info |= {
-            "byteorder"             : sys.byteorder,
-            "python"                : {
-                "bits"                  : BITS,
-                "full_version"          : sys.version,
-                "version"               : ".".join(str(x) for x in sys.version_info[:3]),
+            "byteorder": sys.byteorder,
+            "python": {
+                "bits": BITS,
+                "full_version": sys.version,
+                "version": ".".join(str(x) for x in sys.version_info[:3]),
             },
         }
     if full_info > 0:
@@ -148,25 +149,25 @@ def get_host_info(full_info: int=1) -> dict[str, Any]:
             pass
         if POSIX:
             info |= {
-                "uid"   : os.getuid(),
-                "gid"   : os.getgid(),
+                "uid": os.getuid(),
+                "gid": os.getgid(),
             }
     return info
 
 
-def get_version_info(full: int=1) -> dict[str, Any]:
-    info: dict[str, Any] = {"version" : vparts(XPRA_VERSION, full+1)}
-    if full>0:
+def get_version_info(full: int = 1) -> dict[str, Any]:
+    info: dict[str, Any] = {"version": vparts(XPRA_VERSION, full + 1)}
+    if full > 0:
         try:
             # pylint: disable=import-outside-toplevel
             from xpra.src_info import LOCAL_MODIFICATIONS, REVISION, COMMIT, BRANCH
             for k, v in {
-                "local_modifications"   : LOCAL_MODIFICATIONS,
-                "revision"              : REVISION,
-                "branch"                : BRANCH,
-                "commit"                : COMMIT,
+                "local_modifications": LOCAL_MODIFICATIONS,
+                "revision": REVISION,
+                "branch": BRANCH,
+                "commit": COMMIT,
             }.items():
-                if v is not None and v!="unknown":
+                if v is not None and v != "unknown":
                     info[k] = v
         except ImportError as e:
             warn("missing some source information: %s", e)
@@ -175,21 +176,21 @@ def get_version_info(full: int=1) -> dict[str, Any]:
     return info
 
 
-def get_build_info(full: int=1) -> dict[str, Any]:
+def get_build_info(full: int = 1) -> dict[str, Any]:
     info: dict[str, Any] = {}
     try:
         from xpra import build_info  # pylint: disable=import-outside-toplevel
         # rename these build info properties:
         for k, bk in {
-            "date"                 : "BUILD_DATE",
-            "time"                 : "BUILD_TIME",
-            "bit"                  : "BUILD_BIT",
-            "cpu"                  : "BUILD_CPU",
-            "compiler"             : "COMPILER_VERSION",
-            "nvcc"                 : "NVCC_VERSION",
-            "linker"               : "LINKER_VERSION",
-            "python"               : "PYTHON_VERSION",
-            "cython"               : "CYTHON_VERSION",
+            "date": "BUILD_DATE",
+            "time": "BUILD_TIME",
+            "bit": "BUILD_BIT",
+            "cpu": "BUILD_CPU",
+            "compiler": "COMPILER_VERSION",
+            "nvcc": "NVCC_VERSION",
+            "linker": "LINKER_VERSION",
+            "python": "PYTHON_VERSION",
+            "cython": "CYTHON_VERSION",
         }.items():
             v = getattr(build_info, bk, None)
             if v is not None:
@@ -197,7 +198,7 @@ def get_build_info(full: int=1) -> dict[str, Any]:
                     v = parse_version(v)
                 info[k] = v
         # record library versions:
-        if full>1:
+        if full > 1:
             info["lib"] = {k.lstrip("lib_"): parse_version(getattr(build_info, k))
                            for k in dir(build_info) if k.startswith("lib_")}
     except Exception as e:
@@ -213,27 +214,30 @@ def parse_version(v) -> tuple[Any, ...]:
                 return int(v)
             except ValueError:
                 return v
+
         v = tuple(maybeint(x) for x in v.split("-")[0].split("."))
     return tuple(v or ())
 
 
-def vtrim(v, parts=FULL_INFO+1):
+def vtrim(v, parts=FULL_INFO + 1):
     if isinstance(v, (list, tuple)):
         return v[:parts]
     return v
 
 
-def dict_version_trim(d, parts=FULL_INFO+1):
+def dict_version_trim(d, parts=FULL_INFO + 1):
     """
     trims version numbers from info dictionaries
     """
+
     def vfilt(k, v):
         if k.endswith("version") and isinstance(v, (list, tuple)):
             v = vtrim(v, parts)
         elif isinstance(v, dict):
             return k, dict_version_trim(v, parts)
         return k, v
-    return dict(vfilt(k,v) for k,v in d.items())
+
+    return dict(vfilt(k, v) for k, v in d.items())
 
 
 def do_get_platform_info() -> dict[str, Any]:
@@ -256,7 +260,8 @@ def do_get_platform_info() -> dict[str, Any]:
                 if "model name" in line:
                     return re.sub(".*model name.*:", "", line, count=1).strip()
         return pp.processor()
-    info : dict[str, Any] = {}
+
+    info: dict[str, Any] = {}
     ld = get_linux_distribution()
     if ld:
         info["linux_distribution"] = ld
@@ -266,14 +271,14 @@ def do_get_platform_info() -> dict[str, Any]:
         log("do_get_platform_info()", exc_info=True)
         release = "unknown"
     info |= {
-        ""          : sys.platform,
-        "name"      : platform_name(sys.platform, info.get("linux_distribution") or release),
-        "release"   : pp.release(),
+        "": sys.platform,
+        "name": platform_name(sys.platform, info.get("linux_distribution") or release),
+        "release": pp.release(),
         "sysrelease": release,
-        "platform"  : pp.platform(),
-        "machine"   : pp.machine(),
-        "architecture" : pp.architecture(),
-        "processor" : get_processor_name(),
+        "platform": pp.platform(),
+        "machine": pp.machine(),
+        "architecture": pp.architecture(),
+        "processor": get_processor_name(),
     }
     return info
 
@@ -289,7 +294,7 @@ def get_platform_info():
     return platform_info_cache
 
 
-def get_version_from_url(url) -> tuple[int,...] | None:
+def get_version_from_url(url) -> tuple[int, ...] | None:
     try:
         from urllib.request import urlopen
     except ImportError as e:
@@ -303,7 +308,7 @@ def get_version_from_url(url) -> tuple[int,...] | None:
         return latest_version_no
     except Exception as e:
         log("get_version_from_url(%s)", url, exc_info=True)
-        if getattr(e, "code", 0)==404:
+        if getattr(e, "code", 0) == 404:
             log("no version at url=%s", url)
         else:
             log("Error retrieving URL '%s': %s", url, e)
@@ -314,17 +319,17 @@ def version_update_check():
     FAKE_NEW_VERSION = envbool("XPRA_FAKE_NEW_VERSION", False)
     CURRENT_VERSION_URL = ("https" if CHECK_SSL else "http") + "://xpra.org/CURRENT_VERSION"
     PLATFORM_FRIENDLY_NAMES = {
-        "linux2" : "LINUX",
-        "win" : "WINDOWS",
-        "darwin" : "OSX",
+        "linux2": "LINUX",
+        "win": "WINDOWS",
+        "darwin": "OSX",
     }
     our_version_no = tuple(int(y) for y in XPRA_VERSION.split("."))
     platform_name = PLATFORM_FRIENDLY_NAMES.get(sys.platform, sys.platform)
     arch = get_platform_info().get("machine")
     for url in (
-        f"{CURRENT_VERSION_URL}_{platform_name}_{arch}?{XPRA_VERSION}",
-        f"{CURRENT_VERSION_URL}_{platform_name}?{XPRA_VERSION}",
-        f"{CURRENT_VERSION_URL}?{XPRA_VERSION}",
+            f"{CURRENT_VERSION_URL}_{platform_name}_{arch}?{XPRA_VERSION}",
+            f"{CURRENT_VERSION_URL}_{platform_name}?{XPRA_VERSION}",
+            f"{CURRENT_VERSION_URL}?{XPRA_VERSION}",
     ):
         latest_version_no = get_version_from_url(url)
         if latest_version_no:
@@ -332,7 +337,7 @@ def version_update_check():
     if latest_version_no is None:
         log("version_update_check() failed to contact version server")
         return None
-    if latest_version_no>our_version_no or FAKE_NEW_VERSION:
+    if latest_version_no > our_version_no or FAKE_NEW_VERSION:
         log("version_update_check() newer version found")
         log(" local version is {our_version_no} and the latest version available is {latest_version_no}")
         return latest_version_no

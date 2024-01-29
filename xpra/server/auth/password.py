@@ -14,7 +14,7 @@ class Authenticator(SysAuthenticator):
     def __init__(self, **kwargs):
         self.value: str = bytestostr(kwargs.pop("value", None))
         super().__init__(**kwargs)
-        self.authenticate_check : Callable = self.authenticate_hmac
+        self.authenticate_check: Callable = self.authenticate_hmac
 
     def __repr__(self):
         return "password"

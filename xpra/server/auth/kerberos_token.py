@@ -40,7 +40,7 @@ class Authenticator(SysAuthenticatorBase):
         self.challenge_sent = True
         return self.salt, "kerberos:%s" % self.service
 
-    def check_password(self, token:str) -> bool:
+    def check_password(self, token: str) -> bool:
         log("check(%r)", token)
         assert self.challenge_sent
         try:
@@ -54,19 +54,19 @@ class Authenticator(SysAuthenticatorBase):
             log.warn(" %s", e)
             return False
         v, ctx = kerberos.authGSSServerInit(self.service)  # @UndefinedVariable
-        if v!=1:
+        if v != 1:
             log.error("Error: kerberos GSS server init failed for service '%s'", self.service)
             return False
         try:
             r = kerberos.authGSSServerStep(ctx, token)  # @UndefinedVariable
-            log("kerberos auth server step result: %s", r==1)
-            if r!=1:
+            log("kerberos auth server step result: %s", r == 1)
+            if r != 1:
                 return False
             targetname = kerberos.authGSSServerTargetName(ctx)  # @UndefinedVariable
-            #response = kerberos.authGSSServerResponse(ctx)
+            # response = kerberos.authGSSServerResponse(ctx)
             principal = kerberos.authGSSServerUserName(ctx)  # @UndefinedVariable
-            #ie: user1@LOCALDOMAIN
-            #maybe we should validate the realm?
+            # ie: user1@LOCALDOMAIN
+            # maybe we should validate the realm?
             log("kerberos targetname=%s, principal=%s", targetname, principal)
             return True
         finally:
@@ -77,23 +77,23 @@ def main(argv) -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Kerberos-Token-Auth", "Kerberos Token Authentication"):
-        if len(argv)!=3:
+        if len(argv) != 3:
             stderr_print("%s invalid arguments" % argv[0])
             stderr_print("usage: %s username token" % argv[0])
             return 1
         username = argv[1]
         token = argv[2]
-        kwargs = {"username" : username}
+        kwargs = {"username": username}
         a = Authenticator(**kwargs)
         server_salt, digest = a.get_challenge(["xor"])
         salt_digest = a.choose_salt_digest(get_digests())
-        assert digest=="xor"
+        assert digest == "xor"
         client_salt = get_salt(len(server_salt))
         combined_salt = gendigest(salt_digest, client_salt, server_salt)
         response = xor(token, combined_salt)
         caps = typedict({
-            "challenge_response"    : response,
-            "challenge_client_salt" : client_salt,
+            "challenge_response": response,
+            "challenge_client_salt": client_salt,
         })
         a.authenticate(caps)
     return 0

@@ -73,12 +73,12 @@ class DBUSNotificationsForwarder(dbus.service.Object):
 
     def get_info(self) -> dict[str, Any]:
         return {
-            "active"        : tuple(self.active_notifications),
-            "counter"       : self.counter,
-            "dbus-id"       : self.dbus_id,
-            "bus-name"      : BUS_NAME,
-            "bus-path"      : BUS_PATH,
-            "capabilities"  : get_capabilities(),
+            "active": tuple(self.active_notifications),
+            "counter": self.counter,
+            "dbus-id": self.dbus_id,
+            "bus-name": BUS_NAME,
+            "bus-path": BUS_PATH,
+            "capabilities": get_capabilities(),
         }
 
     def next_id(self):
@@ -139,7 +139,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         else:
             if self.close_callback:
                 self.close_callback(nid)
-            self.NotificationClosed(nid, 3)     # 3="The notification was closed by a call to CloseNotification"
+            self.NotificationClosed(nid, 3)  # 3="The notification was closed by a call to CloseNotification"
 
     def is_notification_active(self, nid):
         return nid in self.active_notifications

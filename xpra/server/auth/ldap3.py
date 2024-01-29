@@ -12,6 +12,7 @@ from xpra.util.types import typedict
 from xpra.util.str_fn import obsc
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
 from xpra.log import enable_debug_for, is_debug_enabled
+
 assert log  # tests will disable logging from here
 
 LDAP_CACERTFILE = os.environ.get("XPRA_LDAP_CACERTFILE")
@@ -54,11 +55,11 @@ class Authenticator(SysAuthenticatorBase):
     def __repr__(self):
         return "ldap3"
 
-    def get_challenge(self, digests) -> tuple[bytes,str]:
+    def get_challenge(self, digests) -> tuple[bytes, str]:
         self.req_xor(digests)
         return super().get_challenge(["xor"])
 
-    def check_password(self, password:str) -> bool:
+    def check_password(self, password: str) -> bool:
         log("check_password(%s)", obsc(password))
         try:
             from ldap3 import Server, Connection, Tls, ALL, SIMPLE, SASL, NTLM
@@ -69,9 +70,9 @@ class Authenticator(SysAuthenticatorBase):
             return False
         try:
             MECHANISM = {
-                "SIMPLE"    : SIMPLE,
-                "SASL"      : SASL,
-                "NTLM"      : NTLM,
+                "SIMPLE": SIMPLE,
+                "SASL": SASL,
+                "NTLM": NTLM,
             }
             authentication = MECHANISM[self.authentication]
             tls = None
@@ -111,29 +112,29 @@ def main(argv) -> int:
             if x in ("-v", "--verbose"):
                 enable_debug_for("auth")
                 argv.remove(x)
-        if len(argv) not in (3,4,5,6):
+        if len(argv) not in (3, 4, 5, 6):
             stderr_print("%s invalid arguments" % argv[0])
             stderr_print("usage: %s username password [host] [port] [tls]" % argv[0])
             return 1
         username = argv[1]
         password = argv[2]
-        kwargs = {"username" : username}
-        if len(argv)>=4:
+        kwargs = {"username": username}
+        if len(argv) >= 4:
             kwargs["host"] = argv[3]
-        if len(argv)>=5:
+        if len(argv) >= 5:
             kwargs["port"] = argv[4]
-        if len(argv)>=6:
+        if len(argv) >= 6:
             kwargs["tls"] = argv[5]
         a = Authenticator(**kwargs)
         server_salt, digest = a.get_challenge(["xor"])
         salt_digest = a.choose_salt_digest(get_digests())
         client_salt = get_salt(len(server_salt))
         combined_salt = gendigest(salt_digest, client_salt, server_salt)
-        assert digest=="xor"
+        assert digest == "xor"
         response = gendigest(digest, password, combined_salt)
         caps = typedict({
-            "challenge_response"    : response,
-            "challenge_client_salt" : client_salt,
+            "challenge_response": response,
+            "challenge_client_salt": client_salt,
         })
         r = a.authenticate(caps)
         print("success: %s" % r)

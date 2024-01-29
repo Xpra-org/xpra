@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2015-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -18,8 +18,8 @@ from xpra.log import (
     add_debug_category, remove_debug_category,
     disable_debug_for, enable_debug_for,
 )
-log = Logger("dbus", "server")
 
+log = Logger("dbus", "server")
 
 Rectangle = namedtuple("Rectangle", "x,y,width,height")
 
@@ -188,7 +188,7 @@ class DBUS_Server(DBUS_Server_Base):
         for wid, window in self.server._id_to_window.items():
             try:
                 d[wid] = window.get_property("title")
-            except Exception:   # pragma: no cover
+            except Exception:  # pragma: no cover
                 d[wid] = str(window)
         self.log(".ListWindows()=%s", d)
         return d
@@ -296,7 +296,7 @@ class DBUS_Server(DBUS_Server_Base):
 
     @dbus.service.method(INTERFACE, in_signature='sii')
     def SetClipboardProperties(self, direction, max_copyin, max_copyout):
-        #keep direction unchanged if not specified
+        # keep direction unchanged if not specified
         max_copyin, max_copyout = ni(max_copyin), ni(max_copyout)
         direction = ns(direction) or self.server.clipboard_direction
         self.log(".SetClipboardProperties%s", (direction, max_copyin, max_copyout))
@@ -318,7 +318,7 @@ class DBUS_Server(DBUS_Server_Base):
         s = ns(uuid)
         self.log(".DetachClient(%s)", s)
         for p, source in self.server._server_sources.items():
-            if source.uuid==s:
+            if source.uuid == s:
                 self.log("matched %s", source)
                 self.server.disconnect_client(p, ConnectionMessage.DETACH_REQUEST)
 
@@ -342,13 +342,14 @@ class DBUS_Server(DBUS_Server_Base):
 
         def gotinfo(_proto, info):
             try:
-                v = dbus.types.Dictionary((str(k), native_to_dbus(v)) for k,v in info.items())
-                #v =  native_to_dbus(info)
+                v = dbus.types.Dictionary((str(k), native_to_dbus(v)) for k, v in info.items())
+                # v =  native_to_dbus(info)
                 log("native_to_dbus(..)=%s", v)
                 callback(v)
             except Exception as e:  # pragma: no cover
                 log("GetAllInfo:gotinfo", exc_info=True)
                 errback(str(e))
+
         v = self.server.get_all_info(gotinfo)
         self.log(".GetAllInfo()=%s", v)
         return v
@@ -366,6 +367,7 @@ class DBUS_Server(DBUS_Server_Base):
             except Exception as e:  # pragma: no cover
                 log("GetInfo:gotinfo", exc_info=True)
                 errback(str(e))
+
         v = self.server.get_all_info(gotinfo)
         self.log(".GetInfo(%s)=%s", subsystem, v)
         return v

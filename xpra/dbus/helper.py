@@ -48,7 +48,7 @@ def native_to_dbus(value, signature=None):
         if not value:
             return types.Array(signature="s")
         keytypes = set(type(x) for x in value)
-        if not signature and len(keytypes)==1:
+        if not signature and len(keytypes) == 1:
             # just one type of key:
             keytype = tuple(keytypes)[0]
             if keytype is int:
@@ -70,7 +70,7 @@ def native_to_dbus(value, signature=None):
         if signature is None:
             keytypes = set(type(x) for x in value.keys())
             sig = None
-            if len(keytypes)==1:
+            if len(keytypes) == 1:
                 # just one type of key:
                 keytype = tuple(keytypes)[0]
                 if keytype is int:
@@ -80,11 +80,11 @@ def native_to_dbus(value, signature=None):
                 elif keytype is float:
                     sig = "d"
             if sig:
-                value = {k: native_to_dbus(v) for k,v in value.items()}
+                value = {k: native_to_dbus(v) for k, v in value.items()}
             else:
                 sig = "s"
                 # use strings as keys
-                value = {str(k): native_to_dbus(v) for k,v in value.items()}
+                value = {str(k): native_to_dbus(v) for k, v in value.items()}
             signature = f"{sig}v"
         return types.Dictionary(value, signature=signature)
     return types.String(value)
@@ -109,6 +109,7 @@ class DBusHelper:
             log("DBusHelper: %s", msg)
             err_cb(msg)
             return None
+
         from dbus import DBusException
         try:
             # remote_object = self.bus.get_object("com.example.SampleService","/SomeObject")
@@ -123,9 +124,9 @@ class DBusHelper:
             return err("failed to locate remote function '%s' on %s" % (function, obj))
         try:
             log("calling %s(%s)", fn, args)
-            keywords = {"dbus_interface"        : interface,
-                        "reply_handler"         : ok_cb,
-                        "error_handler"         : err_cb}
+            keywords = {"dbus_interface": interface,
+                        "reply_handler": ok_cb,
+                        "error_handler": err_cb}
             fn.call_async(*args, **keywords)
         except Exception as e:
             return err("error invoking %s on %s: %s" % (function, obj, e))

@@ -29,19 +29,19 @@ import logging
 
 class _AnsiColorStreamHandler(logging.StreamHandler):
     DEFAULT = '\x1b[0m'
-    RED     = '\x1b[31m'
-    GREEN   = '\x1b[32m'
-    YELLOW  = '\x1b[33m'
-    CYAN    = '\x1b[36m'
-    BLUE    = '\x1b[34m'
+    RED = '\x1b[31m'
+    GREEN = '\x1b[32m'
+    YELLOW = '\x1b[33m'
+    CYAN = '\x1b[36m'
+    BLUE = '\x1b[34m'
     MAGENTA = '\x1b[35m'
-    NONE    = ''
+    NONE = ''
 
     CRITICAL = MAGENTA
-    ERROR    = RED
-    WARNING  = YELLOW
-    INFO     = NONE
-    DEBUG    = GREEN
+    ERROR = RED
+    WARNING = YELLOW
+    INFO = NONE
+    DEBUG = GREEN
 
     @classmethod
     def _get_color(cls, level):
@@ -68,33 +68,33 @@ class _AnsiColorStreamHandler(logging.StreamHandler):
 
 class _WinColorStreamHandler(logging.StreamHandler):
     # wincon.h
-    FOREGROUND_BLACK     = 0x0000
-    FOREGROUND_BLUE      = 0x0001
-    FOREGROUND_GREEN     = 0x0002
-    FOREGROUND_CYAN      = 0x0003
-    FOREGROUND_RED       = 0x0004
-    FOREGROUND_MAGENTA   = 0x0005
-    FOREGROUND_YELLOW    = 0x0006
-    FOREGROUND_GREY      = 0x0007
+    FOREGROUND_BLACK = 0x0000
+    FOREGROUND_BLUE = 0x0001
+    FOREGROUND_GREEN = 0x0002
+    FOREGROUND_CYAN = 0x0003
+    FOREGROUND_RED = 0x0004
+    FOREGROUND_MAGENTA = 0x0005
+    FOREGROUND_YELLOW = 0x0006
+    FOREGROUND_GREY = 0x0007
     FOREGROUND_INTENSITY = 0x0008  # foreground color is intensified.
-    FOREGROUND_WHITE     = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED
+    FOREGROUND_WHITE = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED
 
-    BACKGROUND_BLACK     = 0x0000
-    BACKGROUND_BLUE      = 0x0010
-    BACKGROUND_GREEN     = 0x0020
-    BACKGROUND_CYAN      = 0x0030
-    BACKGROUND_RED       = 0x0040
-    BACKGROUND_MAGENTA   = 0x0050
-    BACKGROUND_YELLOW    = 0x0060
-    BACKGROUND_GREY      = 0x0070
+    BACKGROUND_BLACK = 0x0000
+    BACKGROUND_BLUE = 0x0010
+    BACKGROUND_GREEN = 0x0020
+    BACKGROUND_CYAN = 0x0030
+    BACKGROUND_RED = 0x0040
+    BACKGROUND_MAGENTA = 0x0050
+    BACKGROUND_YELLOW = 0x0060
+    BACKGROUND_GREY = 0x0070
     BACKGROUND_INTENSITY = 0x0080  # background color is intensified.
 
-    DEFAULT  = FOREGROUND_GREEN
+    DEFAULT = FOREGROUND_GREEN
     CRITICAL = BACKGROUND_YELLOW | FOREGROUND_MAGENTA | FOREGROUND_INTENSITY | BACKGROUND_INTENSITY
-    ERROR    = FOREGROUND_RED | FOREGROUND_INTENSITY
-    WARNING  = FOREGROUND_YELLOW | FOREGROUND_INTENSITY
-    INFO     = FOREGROUND_WHITE
-    DEBUG    = FOREGROUND_GREEN
+    ERROR = FOREGROUND_RED | FOREGROUND_INTENSITY
+    WARNING = FOREGROUND_YELLOW | FOREGROUND_INTENSITY
+    INFO = FOREGROUND_WHITE
+    DEBUG = FOREGROUND_GREEN
 
     @classmethod
     def _get_color(cls, level):
@@ -120,7 +120,7 @@ class _WinColorStreamHandler(logging.StreamHandler):
         import ctypes.util
         crtname = ctypes.util.find_msvcrt()  # @UndefinedVariable
         crtlib = ctypes.cdll.LoadLibrary(crtname)
-        self._outhdl = crtlib._get_osfhandle(stream.fileno())   # pylint: disable=protected-access
+        self._outhdl = crtlib._get_osfhandle(stream.fileno())  # pylint: disable=protected-access
 
     def emit(self, record):
         color = self._get_color(record.levelno)

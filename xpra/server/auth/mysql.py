@@ -27,10 +27,10 @@ def url_path_to_dict(path: str) -> dict[str, str]:
     return m.groupdict() if m is not None else None
 
 
-def db_from_uri(uri:str):
+def db_from_uri(uri: str):
     d = url_path_to_dict(uri)
     log("settings for uri=%s : %s", uri, d)
-    import mysql.connector as mysql   # pylint: disable=import-outside-toplevel
+    import mysql.connector as mysql  # pylint: disable=import-outside-toplevel
     db = mysql.connect(
         host=d.get("host", "localhost"),
         # port = int(d.get("port", 3306)),
@@ -68,7 +68,7 @@ class MySQLDatabaseUtil(DatabaseUtilBase):
     def __init__(self, uri):
         super().__init__(uri)
         import mysql.connector as mysql
-        assert mysql.paramstyle=="pyformat"
+        assert mysql.paramstyle == "pyformat"
         self.param = "%s"
 
     def exec_database_sql_script(self, cursor_cb, *sqlargs):

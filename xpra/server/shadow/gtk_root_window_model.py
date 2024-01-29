@@ -37,7 +37,7 @@ def get_rgb_rawdata(window, x: int, y: int, width: int, height: int) \
     if width <= 0 or height <= 0:
         return None
     pixbuf = Gdk.pixbuf_get_from_window(window, x, y, width, height)
-    log("get_rgb_rawdata(..) pixbuf.get_from_drawable took %s ms", int(1000*(monotonic()-start)))
+    log("get_rgb_rawdata(..) pixbuf.get_from_drawable took %s ms", int(1000 * (monotonic() - start)))
     raw_data = pixbuf.get_pixels()
     rowstride = pixbuf.get_rowstride()
     return x, y, width, height, raw_data, "RGB", 24, rowstride, 3
@@ -45,12 +45,12 @@ def get_rgb_rawdata(window, x: int, y: int, width: int, height: int) \
 
 def take_png_screenshot(window) -> ScreenshotData | None:
     log("grabbing screenshot")
-    w,h = window.get_geometry()[2:4]
+    w, h = window.get_geometry()[2:4]
     pixbuf = Gdk.pixbuf_get_from_window(window, 0, 0, w, h)
     if not pixbuf:
         return None
     data = pixbuf_save_to_memory(pixbuf, "png")
-    rowstride = w*3
+    rowstride = w * 3
     return w, h, "png", rowstride, data
 
 
@@ -72,7 +72,7 @@ class GTKImageCapture:
     def refresh(self) -> bool:
         return True
 
-    def get_image(self, x:int, y:int, width:int, height:int) -> ImageWrapper | None:
+    def get_image(self, x: int, y: int, width: int, height: int) -> ImageWrapper | None:
         attrs = get_rgb_rawdata(self.window, x, y, width, height)
         if not attrs:
             return None
@@ -93,7 +93,8 @@ def main(filename) -> int:
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv)!=2:
+
+    if len(sys.argv) != 2:
         print(f"usage: {sys.argv[0]} filename.png")
         v = 1
     else:

@@ -40,7 +40,7 @@ class Authenticator(SysAuthenticatorBase):
             return None
         return super().get_challenge(["xor"])
 
-    def check_password(self, password:str) -> bool:
+    def check_password(self, password: str) -> bool:
         try:
             if WIN32:
                 import winkerberos as kerberos
@@ -65,27 +65,27 @@ def main(argv) -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Kerberos-Password-Auth", "Kerberos-Password-Authentication"):
-        if len(argv) not in (3,4,5):
+        if len(argv) not in (3, 4, 5):
             stderr_print("%s invalid arguments" % argv[0])
             stderr_print("usage: %s username password [service [realm]]" % argv[0])
             return 1
         username = argv[1]
         password = argv[2]
-        kwargs = {"username" : username}
-        if len(argv)>=4:
+        kwargs = {"username": username}
+        if len(argv) >= 4:
             kwargs["service"] = argv[3]
-        if len(argv)==5:
+        if len(argv) == 5:
             kwargs["realm"] = argv[4]
         a = Authenticator(**kwargs)
         server_salt, digest = a.get_challenge(["xor"])
         salt_digest = a.choose_salt_digest(get_digests())
-        assert digest=="xor"
+        assert digest == "xor"
         client_salt = get_salt(len(server_salt))
         combined_salt = gendigest(salt_digest, client_salt, server_salt)
         response = xor(password, combined_salt)
         caps = typedict({
-            "challenge_response"    : response,
-            "challenge_client_salt" : client_salt,
+            "challenge_response": response,
+            "challenge_client_salt": client_salt,
         })
         a.authenticate(caps)
     return 0

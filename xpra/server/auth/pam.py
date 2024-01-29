@@ -16,7 +16,8 @@ PAM_AUTH_SERVICE = os.environ.get("XPRA_PAM_AUTH_SERVICE", "login")
 PAM_CHECK_ACCOUNT = envbool("XPRA_PAM_CHECK_ACCOUNT", False)
 
 
-def check(username:str, password:str, service:str=PAM_AUTH_SERVICE, check_account:bool=PAM_CHECK_ACCOUNT) -> bool:
+def check(username: str, password: str, service: str = PAM_AUTH_SERVICE,
+          check_account: bool = PAM_CHECK_ACCOUNT) -> bool:
     log("pam check(%s, [..])", username)
     from xpra.server.pam import pam_session  # pylint: disable=import-outside-toplevel
     b = strtobytes
@@ -40,20 +41,20 @@ def check(username:str, password:str, service:str=PAM_AUTH_SERVICE, check_accoun
 
 
 class Authenticator(SysAuthenticator):
-    CLIENT_USERNAME = getuid()==0
+    CLIENT_USERNAME = getuid() == 0
 
     def __init__(self, **kwargs):
         self.service = kwargs.pop("service", PAM_AUTH_SERVICE)
         self.check_account = bool(parse_bool("check-account", kwargs.pop("check-account", PAM_CHECK_ACCOUNT), False))
         super().__init__(**kwargs)
 
-    def check_password(self, password:str) -> bool:
+    def check_password(self, password: str) -> bool:
         log("pam.check_password(..) pw=%s", self.pw)
         if self.pw is None:
             return False
         return check(self.username, password, self.service, self.check_account)
 
-    def get_challenge(self, digests) -> tuple[bytes,str]:
+    def get_challenge(self, digests) -> tuple[bytes, str]:
         self.req_xor(digests)
         return super().do_get_challenge(["xor"])
 
@@ -62,7 +63,7 @@ class Authenticator(SysAuthenticator):
 
 
 def main(args) -> int:
-    if len(args)!=3:
+    if len(args) != 3:
         print("invalid number of arguments")
         print("usage:")
         print(f"{args[0]} username password")

@@ -25,7 +25,6 @@ def b32(s):
 
 
 class Authenticator(SysAuthenticator):
-
     # DEFAULT_PROMPT = "OTP for '{username}'"
     DEFAULT_PROMPT = "OTP"
 
@@ -38,7 +37,7 @@ class Authenticator(SysAuthenticator):
         self.issuer_name = kwargs.pop("issuer-name", "Xpra")
         self.secret = b32(kwargs.pop("secret", pyotp.random_hex()))
         self.valid_window = int(kwargs.pop("valid-window", 0))
-        #validate the base32 secret early:
+        # validate the base32 secret early:
         base64.b32decode(self.secret, casefold=True)
         super().__init__(**kwargs)
         if SHOW_URI:
@@ -54,7 +53,7 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return True
 
-    def get_challenge(self, digests) -> tuple[bytes,str] | None:
+    def get_challenge(self, digests) -> tuple[bytes, str] | None:
         if self.salt is not None:
             log.error("Error: authentication challenge already sent!")
             return None
@@ -72,7 +71,7 @@ class Authenticator(SysAuthenticator):
             log("recheck: %s", totp.verify(now))
         return self.salt, self.digest
 
-    def check_password(self, password:str) -> bool:
+    def check_password(self, password: str) -> bool:
         log("otp.check_password(%s)", obsc(password))
         import pyotp  # @UnresolvedImport
         totp = pyotp.TOTP(self.secret)
@@ -87,7 +86,7 @@ class Authenticator(SysAuthenticator):
 
 
 def main(argv) -> int:
-    if len(argv)<2 or len(argv)>4:
+    if len(argv) < 2 or len(argv) > 4:
         print(f"usage: {argv[0]} SECRET [username] [issuer-name]")
         return 1
     enable_color()
@@ -95,14 +94,14 @@ def main(argv) -> int:
     secret = b32(argv[1])
     username = os.environ.get("USERNAME")
     issuer_name = "Xpra"
-    if len(argv)>=3:
+    if len(argv) >= 3:
         username = argv[2]
-    if len(argv)>=4:
+    if len(argv) >= 4:
         issuer_name = argv[3]
     import pyotp  # @UnresolvedImport
     totp_uri = pyotp.totp.TOTP(secret).provisioning_uri(username, issuer_name)
     log.info("provisioning_uri=%s", totp_uri)
-    #qrcode module has problems - don't use it for now
+    # qrcode module has problems - don't use it for now
     try:
         from xpra.gtk.dialogs.qrcode import show_qr
     except ImportError as e:
@@ -114,4 +113,5 @@ def main(argv) -> int:
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main(sys.argv))

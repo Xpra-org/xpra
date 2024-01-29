@@ -41,7 +41,7 @@ class Authenticator(SysAuthenticatorBase):
         self.challenge_sent = True
         return self.salt, "gss:%s" % self.service
 
-    def check(self, token:bytes) -> bool:
+    def check(self, token: bytes) -> bool:
         log("check(%s)", repr(token))
         assert self.challenge_sent
         try:
@@ -63,13 +63,13 @@ def main(argv):
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("GSS-Auth", "GSS-Authentication"):
-        if len(argv)!=3:
+        if len(argv) != 3:
             stderr_print("%s invalid arguments" % argv[0])
             stderr_print("usage: %s username token" % argv[0])
             return 1
         username = argv[1]
         token = argv[2]
-        kwargs = {"username" : username}
+        kwargs = {"username": username}
         a = Authenticator(**kwargs)
         server_salt, digest = a.get_challenge(["gss"])
         salt_digest = a.choose_salt_digest(get_digests())
@@ -78,8 +78,8 @@ def main(argv):
         combined_salt = gendigest(salt_digest, client_salt, server_salt)
         response = gendigest(digest, token, combined_salt)
         caps = typedict({
-            "challenge_response"    : response,
-            "challenge_client_salt" : client_salt,
+            "challenge_response": response,
+            "challenge_client_salt": client_salt,
         })
         r = a.authenticate(caps)
         print("success: %s" % bool(r))

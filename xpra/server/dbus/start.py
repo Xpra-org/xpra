@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,7 +15,7 @@ from xpra.log import Logger
 log = Logger("dbus")
 
 
-def start_dbus(dbus_launch) -> tuple[int,dict]:
+def start_dbus(dbus_launch) -> tuple[int, dict]:
     if not dbus_launch or dbus_launch.lower() in FALSE_OPTIONS:
         log("start_dbus(%s) disabled", dbus_launch)
         return 0, {}
@@ -26,7 +26,7 @@ def start_dbus(dbus_launch) -> tuple[int,dict]:
         log.warn(" DBUS_SESSION_BUS_ADDRESS=%s", bus_address)
     assert POSIX
     try:
-        env = {k:v for k,v in os.environ.items() if k in (
+        env = {k: v for k, v in os.environ.items() if k in (
             "PATH",
             "SSH_CLIENT", "SSH_CONNECTION",
             "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE", "XDG_RUNTIME_DIR",
@@ -37,9 +37,9 @@ def start_dbus(dbus_launch) -> tuple[int,dict]:
         log("start_dbus(%s) env=%s", dbus_launch, env)
         proc = Popen(cmd, stdin=PIPE, stdout=PIPE, env=env, start_new_session=True, universal_newlines=True)
         out = proc.communicate()[0]
-        assert proc.poll()==0, "exit code is %s" % proc.poll()
+        assert proc.poll() == 0, "exit code is %s" % proc.poll()
         # parse and add to global env:
-        dbus_env : dict[str,str] = {}
+        dbus_env: dict[str, str] = {}
         log("out(%s)=%r", cmd, out)
         for l in out.splitlines():
             if l.startswith("export "):
@@ -51,9 +51,9 @@ def start_dbus(dbus_launch) -> tuple[int,dict]:
             if l.startswith("set "):
                 l = l[len("set "):]
             parts = l.split(sep, 1)
-            if len(parts)!=2:
+            if len(parts) != 2:
                 continue
-            k,v = parts
+            k, v = parts
             if v.startswith("'") and v.endswith("';"):
                 v = v[1:-2]
             elif v.endswith(";"):

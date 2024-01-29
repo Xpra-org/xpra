@@ -12,7 +12,7 @@ from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 
 KEYCLOAK_SERVER_URL = os.environ.get("XPRA_KEYCLOAK_SERVER_URL", "https://localhost:8080/auth/")
 KEYCLOAK_REALM_NAME = os.environ.get("XPRA_KEYCLOAK_REALM_NAME", "example_realm")
-KEYCLOAK_CLIENT_ID  = os.environ.get("XPRA_KEYCLOAK_CLIENT_ID", "example_client")
+KEYCLOAK_CLIENT_ID = os.environ.get("XPRA_KEYCLOAK_CLIENT_ID", "example_client")
 KEYCLOAK_CLIENT_SECRET_KEY = os.environ.get("XPRA_KEYCLOAK_CLIENT_SECRET_KEY", "secret")
 KEYCLOAK_REDIRECT_URI = os.environ.get("XPRA_KEYCLOAK_REDIRECT_URI", "http://localhost/login/")
 KEYCLOAK_SCOPE = os.environ.get("XPRA_KEYCLOAK_SCOPE", "openid")
@@ -49,7 +49,7 @@ class Authenticator(SysAuthenticator):
                                                    redirect_uri=self.redirect_uri,
                                                    scope=[self.scope],
                                                    )
-        except ImportError as e:    # pragma: no cover
+        except ImportError as e:  # pragma: no cover
             log("check(..)", exc_info=True)
             log.warn("Warning: cannot use keycloak authentication:")
             log.warn(" %s", e)
@@ -67,7 +67,7 @@ class Authenticator(SysAuthenticator):
         self.challenge_sent = True
         return self.salt, "keycloak"
 
-    def check(self, response_json:bytes) -> bool:
+    def check(self, response_json: bytes) -> bool:
         log(f"check({response_json!r})")
         assert self.challenge_sent
         if not response_json:
@@ -168,7 +168,7 @@ class Authenticator(SysAuthenticator):
             return False
 
 
-def main(args) -> int:   # pragma: no cover
+def main(args) -> int:  # pragma: no cover
     if len(args) != 2:
         print("invalid number of arguments")
         print("usage:")

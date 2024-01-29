@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2015-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,6 +10,7 @@ from dbus.exceptions import DBusException  # @UnresolvedImport
 
 from xpra.dbus.helper import dbus_to_native
 from xpra.log import Logger
+
 log = Logger("dbus", "server")
 
 BUS_NAME = "org.xpra.Server"
@@ -35,7 +36,7 @@ class DBUS_Server_Base(dbus.service.Object):
             log.estr(e)
 
     def log(self, fmt, *args):
-        log("%s"+fmt, INTERFACE, *args)
+        log("%s" + fmt, INTERFACE, *args)
 
     @dbus.service.signal(INTERFACE, signature='sas')
     def Event(self, event, args):
@@ -53,7 +54,7 @@ class DBUS_Server_Base(dbus.service.Object):
 
     @dbus.service.method(PROPERTIES_IFACE, in_signature='', out_signature='a{sv}')
     def GetAll(self, interface_name):
-        if interface_name==PROPERTIES_IFACE:
+        if interface_name == PROPERTIES_IFACE:
             v = {x: self.Get(interface_name, x) for x in self._properties.keys()}
         else:
             v = {}

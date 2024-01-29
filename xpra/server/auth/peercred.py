@@ -28,11 +28,11 @@ class Authenticator(SysAuthenticator):
         connection = kwargs.get("connection", None)
         uids = kwargs.pop("uid", "")
         gids = kwargs.pop("gid", "")
-        allow_owner= kwargs.pop("allow-owner", "yes").lower() in TRUE_OPTIONS
+        allow_owner = kwargs.pop("allow-owner", "yes").lower() in TRUE_OPTIONS
         self.check_peercred(connection, uids, gids, allow_owner)
         super().__init__(**kwargs)
 
-    def check_peercred(self, connection, uids="", gids="", allow_owner:bool=False) -> None:
+    def check_peercred(self, connection, uids="", gids="", allow_owner: bool = False) -> None:
         allow_uids = allow_gids = None
         if uids or allow_owner:
             allow_uids = []
@@ -45,7 +45,7 @@ class Authenticator(SysAuthenticator):
                 try:
                     allow_uids.append(int(x))
                 except ValueError:
-                    import pwd   # pylint: disable=import-outside-toplevel
+                    import pwd  # pylint: disable=import-outside-toplevel
                     try:
                         pw = pwd.getpwnam(x)
                         allow_uids.append(pw.pw_uid)
@@ -62,7 +62,7 @@ class Authenticator(SysAuthenticator):
                     allow_gids.append(int(x))
                 except ValueError:
                     gid = get_group_id(x)
-                    if gid>=0:
+                    if gid >= 0:
                         allow_gids.append(gid)
                     else:
                         log.warn("Warning: unknown group '%s'", x)
@@ -105,7 +105,7 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return False
 
-    def authenticate(self, _caps: typedict) -> bool:     # pylint: disable=arguments-differ
+    def authenticate(self, _caps: typedict) -> bool:  # pylint: disable=arguments-differ
         return self.peercred_check
 
     def __repr__(self):

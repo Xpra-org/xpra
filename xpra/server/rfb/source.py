@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -40,11 +40,11 @@ class RFBSource:
         self.pixel_format = (32, 24, 0, 1, 255, 255, 255, 16, 8, 0)
         self.quality = 0
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         return {
-            "protocol"  : "rfb",
-            "uuid"      : self.uuid,
-            "share"     : self.share,
+            "protocol": "rfb",
+            "uuid": self.uuid,
+            "share": self.share,
         }
 
     def set_encodings(self, encodings):
@@ -108,7 +108,7 @@ class RFBSource:
     def damage(self, _wid, window, x, y, w, h, options=None):
         polling = options and options.get("polling", False)
         p = self.protocol
-        if polling and p is None or p.queue_size()>=2:
+        if polling and p is None or p.queue_size() >= 2:
             # very basic RFB update rate control,
             # if there are packets waiting already
             # we'll just process the next polling update instead:
@@ -117,8 +117,8 @@ class RFBSource:
             return
         encode = raw_encode
         kwargs = {}
-        if self.pixel_format[:2]!=(32, 24):
-            if self.pixel_format[:3]==(8, 6, 0):
+        if self.pixel_format[:2] != (32, 24):
+            if self.pixel_format[:3] == (8, 6, 0):
                 # crappy initial format chosen by realvnc
                 encode = rgb222_encode
             else:
@@ -128,7 +128,7 @@ class RFBSource:
             encode = tight_png
         elif RFBEncoding.TIGHT in self.encodings:
             encode = tight_encode
-            kwargs = {"quality" : self.quality}
+            kwargs = {"quality": self.quality}
         # doesn't work
         # elif RFBEncoding.ZLIB in self.encodings:
         #    encode = zlib_encode
@@ -145,6 +145,7 @@ class RFBSource:
             if joined:
                 self.send(b"".join(memoryview_to_bytes(p) for p in joined))
                 joined[:] = []
+
         for packet in packets:
             joined.append(packet)
             if sum(len(p) for p in joined) > PACKET_JOIN_SIZE:
@@ -156,7 +157,7 @@ class RFBSource:
 
     def send_clipboard(self, text):
         nocr = strtobytes(text.replace("\r", ""))
-        msg = struct.pack(b"!BBBBI", 3, 0, 0, 0, len(nocr))+nocr
+        msg = struct.pack(b"!BBBBI", 3, 0, 0, 0, len(nocr)) + nocr
         self.send(msg)
 
     def bell(self, *_args):

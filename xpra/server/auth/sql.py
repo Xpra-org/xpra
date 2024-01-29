@@ -36,8 +36,8 @@ class SQLDatabaseUtil(DatabaseUtilBase):
 
     def __init__(self, uri):
         super().__init__(uri)
-        #from sqlalchemy import create_engine
-        #db = create_engine(self.uri)
+        # from sqlalchemy import create_engine
+        # db = create_engine(self.uri)
         self.param = os.environ.get("PARAMSTYLE", "%s")
 
     def exec_database_sql_script(self, cursor_cb, *sqlargs):

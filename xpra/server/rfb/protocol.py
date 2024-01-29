@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2021-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -25,7 +25,7 @@ class RFBServerProtocol(RFBProtocol):
 
     def handshake_complete(self):
         log.info("RFB connection from %s", self._conn.target)
-        #reply with Security Handshake:
+        # reply with Security Handshake:
         self._packet_parser = self._parse_security_handshake
         if self._authenticator and self._authenticator.requires_challenge():
             security_types = [RFBAuth.VNC]
@@ -44,12 +44,12 @@ class RFBServerProtocol(RFBProtocol):
             self._internal_error(packet, "cannot parse security handshake response '%s'" % hexstr(packet))
             return 0
         auth_str = AUTH_STR.get(auth, auth)
-        if auth==RFBAuth.VNC:
-            #send challenge:
+        if auth == RFBAuth.VNC:
+            # send challenge:
             self._packet_parser = self._parse_challenge
             assert self._authenticator
             challenge, digest = self._authenticator.get_challenge("des")
-            assert digest=="des", "invalid digest %r, only 'des' is supported" % digest
+            assert digest == "des", "invalid digest %r, only 'des' is supported" % digest
             self._challenge = challenge[:16]
             authlog("sending RFB challenge value: %s", hexstr(self._challenge))
             self.send(self._challenge)
@@ -58,22 +58,22 @@ class RFBServerProtocol(RFBProtocol):
             self.invalid_header(self, packet, "invalid security handshake response, authentication is required")
             return 0
         authlog("parse_security_handshake: auth=%s, sending SecurityResult", auth_str)
-        #Security Handshake, send SecurityResult Handshake
+        # Security Handshake, send SecurityResult Handshake
         self._packet_parser = self._parse_security_result
         self.send(struct.pack(b"!I", 0))
         return 1
 
     def _parse_challenge(self, response):
         authlog("parse_challenge(%s)", hexstr(response))
-        if len(response)<16:
+        if len(response) < 16:
             return 0
         assert self._authenticator
         try:
-            assert len(response)==16
+            assert len(response) == 16
             hex_response = hexstr(response)
-            #log("padded password=%s", password)
+            # log("padded password=%s", password)
             caps = typedict({
-                "challenge_response" : hex_response,
+                "challenge_response": hex_response,
             })
             if self._authenticator.authenticate(caps):
                 authlog("challenge authentication succeeded")
@@ -94,7 +94,7 @@ class RFBServerProtocol(RFBProtocol):
         self.close()
 
     def _parse_security_result(self, packet):
-        self.share  = packet != b"\0"
+        self.share = packet != b"\0"
         authlog("parse_security_result: sharing=%s, sending ClientInit with session-name=%s",
                 self.share, self.session_name)
         # send ServerInit
@@ -107,7 +107,7 @@ class RFBServerProtocol(RFBProtocol):
         packet = struct.pack(CLIENT_INIT,
                              w, h, bpp, depth, bigendian, truecolor,
                              rmax, gmax, bmax, rshift, bshift, gshift,
-                             0, 0, 0, len(sn))+sn
+                             0, 0, 0, len(sn)) + sn
         self.send(packet)
         self._process_packet_cb(self, [b"authenticated"])
         return 1

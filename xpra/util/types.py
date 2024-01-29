@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,17 +13,17 @@ from xpra.util.io import get_util_logger
 class AtomicInteger:
     __slots__ = ("counter", "lock")
 
-    def __init__(self, integer: int=0):
+    def __init__(self, integer: int = 0):
         self.counter: int = integer
         from threading import RLock
-        self.lock : RLock = RLock()
+        self.lock: RLock = RLock()
 
-    def increase(self, inc: int=1) -> int:
+    def increase(self, inc: int = 1) -> int:
         with self.lock:
             self.counter = self.counter + inc
             return self.counter
 
-    def decrease(self, dec: int=1) -> int:
+    def decrease(self, dec: int = 1) -> int:
         with self.lock:
             self.counter = self.counter - dec
             return self.counter
@@ -31,7 +31,7 @@ class AtomicInteger:
     def get(self) -> int:
         return self.counter
 
-    def set(self, value:int):
+    def set(self, value: int):
         with self.lock:
             self.counter = value
 
@@ -46,28 +46,28 @@ class AtomicInteger:
 
     def __eq__(self, other) -> bool:
         try:
-            return self.counter==int(other)
+            return self.counter == int(other)
         except ValueError:
             return False
 
     def __cmp__(self, other) -> int:
         try:
-            return self.counter-int(other)
+            return self.counter - int(other)
         except ValueError:
             return -1
 
 
 class MutableInteger:
-    __slots__ = ("counter", )
+    __slots__ = ("counter",)
 
     def __init__(self, integer: int = 0):
         self.counter: int = integer
 
-    def increase(self, inc: int=1) -> int:
+    def increase(self, inc: int = 1) -> int:
         self.counter = self.counter + inc
         return self.counter
 
-    def decrease(self, dec: int=1) -> int:
+    def decrease(self, dec: int = 1) -> int:
         self.counter = self.counter - dec
         return self.counter
 
@@ -84,35 +84,35 @@ class MutableInteger:
         return self.counter
 
     def __eq__(self, other) -> bool:
-        return self.counter==int(other)
+        return self.counter == int(other)
 
     def __ne__(self, other) -> bool:
-        return self.counter!=int(other)
+        return self.counter != int(other)
 
     def __lt__(self, other) -> bool:
-        return self.counter<int(other)
+        return self.counter < int(other)
 
     def __le__(self, other) -> bool:
-        return self.counter<=int(other)
+        return self.counter <= int(other)
 
     def __gt__(self, other) -> bool:
-        return self.counter>int(other)
+        return self.counter > int(other)
 
     def __ge__(self, other) -> bool:
-        return self.counter>=int(other)
+        return self.counter >= int(other)
 
     def __cmp__(self, other) -> int:
-        return self.counter-int(other)
+        return self.counter - int(other)
 
 
 _RaiseKeyError = object()
 
 
 class typedict(dict):
-    __slots__ = ("warn", )  # no __dict__ - that would be redundant
+    __slots__ = ("warn",)  # no __dict__ - that would be redundant
 
     @staticmethod  # because this doesn't make sense as a global function.
-    def _process_args(mapping=(), **kwargs) -> dict[str,Any]:
+    def _process_args(mapping=(), **kwargs) -> dict[str, Any]:
         if hasattr(mapping, "items"):
             mapping = getattr(mapping, "items")()
         return {bytestostr(k): v for k, v in chain(mapping, getattr(kwargs, "items")())}
@@ -135,7 +135,7 @@ class typedict(dict):
         if kstr in self:
             return super().get(kstr, default)
         # try to locate this value in a nested dictionary:
-        if kstr.find(".")>0:
+        if kstr.find(".") > 0:
             prefix, k = kstr.split(".", 1)
             if prefix in self:
                 v = super().get(prefix)
@@ -175,7 +175,7 @@ class typedict(dict):
         else:
             # try harder by recursing:
             d = self
-            while strkey.find(".")>0:
+            while strkey.find(".") > 0:
                 prefix, k = strkey.split(".", 1)
                 if prefix not in d:
                     return default
@@ -198,26 +198,26 @@ class typedict(dict):
             self._warn(f" from {type(v)} using {conv}: {e}")
             return default
 
-    def strget(self, k, default: str | None=None) -> str:
+    def strget(self, k, default: str | None = None) -> str:
         return self.conv_get(k, default, bytestostr)
 
-    def bytesget(self, k , default: bytes=b"") -> bytes:
+    def bytesget(self, k, default: bytes = b"") -> bytes:
         return self.conv_get(k, default, strtobytes)
 
-    def intget(self, k , default: int=0) -> int:
+    def intget(self, k, default: int = 0) -> int:
         return self.conv_get(k, default, int)
 
-    def boolget(self, k , default: bool=False) -> bool:
+    def boolget(self, k, default: bool = False) -> bool:
         return self.conv_get(k, default, bool)
 
-    def dictget(self, k , default: dict | None=None) -> dict:
+    def dictget(self, k, default: dict | None = None) -> dict:
         return self.conv_get(k, default, checkdict)
 
-    def intpair(self, k , default_value:tuple[int,int] | None=None) -> tuple[int, int] | None:
+    def intpair(self, k, default_value: tuple[int, int] | None = None) -> tuple[int, int] | None:
         v = self.inttupleget(k, default_value)
         if v is None:
             return default_value
-        if len(v)!=2:
+        if len(v) != 2:
             # "%s is not a pair of numbers: %s" % (k, len(v))
             return default_value
         try:
@@ -226,20 +226,20 @@ class typedict(dict):
             return default_value
 
     def strtupleget(self, k, default_value=(),
-                    min_items:int | None=None, max_items:int | None=None) -> tuple[str, ...]:
+                    min_items: int | None = None, max_items: int | None = None) -> tuple[str, ...]:
         return self.tupleget(k, default_value, str, min_items, max_items)
 
     def inttupleget(self, k, default_value=(),
-                    min_items:int | None=None, max_items:int | None=None) -> tuple[int, ...]:
+                    min_items: int | None = None, max_items: int | None = None) -> tuple[int, ...]:
         return self.tupleget(k, default_value, int, min_items, max_items)
 
     def tupleget(self, k, default_value=(), item_type=None,
-                 min_items:int | None=None, max_items:int | None=None) -> tuple[Any, ...]:
+                 min_items: int | None = None, max_items: int | None = None) -> tuple[Any, ...]:
         v = self._listget(k, default_value, item_type, min_items, max_items)
         return tuple(v or ())
 
     def _listget(self, k, default_value, item_type=None,
-                 min_items:int | None=None, max_items:int | None=None) -> list[Any] | tuple[Any,...]:
+                 min_items: int | None = None, max_items: int | None = None) -> list[Any] | tuple[Any, ...]:
         v = self.get(k)
         if v is None:
             return default_value
@@ -249,19 +249,19 @@ class typedict(dict):
             self._warn("listget%s", (k, default_value, item_type, max_items))
             self._warn("expected a list or tuple value for %s but got %s: %s", k, type(v), v)
             return default_value
-        if min_items is not None and len(v)<min_items:
+        if min_items is not None and len(v) < min_items:
             self._warn("too few items in %s %s: minimum %s allowed, but got %s", type(v), k, max_items, len(v))
             return default_value
-        if max_items is not None and len(v)>max_items:
+        if max_items is not None and len(v) > max_items:
             self._warn("too many items in %s %s: maximum %s allowed, but got %s", type(v), k, max_items, len(v))
             return default_value
         aslist = list(v)
         if item_type:
             for i, x in enumerate(aslist):
-                if isinstance(x, bytes) and item_type==str:
+                if isinstance(x, bytes) and item_type == str:
                     x = bytestostr(x)
                     aslist[i] = x
-                elif isinstance(x, str) and item_type==str:
+                elif isinstance(x, str) and item_type == str:
                     x = str(x)
                     aslist[i] = x
                 if not isinstance(x, item_type):
@@ -292,7 +292,7 @@ def checkdict(v):
     return v
 
 
-def notypedict(d:dict, path="") -> dict:
+def notypedict(d: dict, path="") -> dict:
     for k in list(d.keys()):
         v = d[k]
         if isinstance(v, typedict):
@@ -306,7 +306,7 @@ def notypedict(d:dict, path="") -> dict:
 
 def make_instance(class_options, *args):
     log = get_util_logger()
-    log("make_instance%s", tuple([class_options]+list(args)))
+    log("make_instance%s", tuple([class_options] + list(args)))
     for c in class_options:
         if c is None:
             continue
@@ -322,14 +322,14 @@ def make_instance(class_options, *args):
     return None
 
 
-def reverse_dict(d:dict) -> dict:
+def reverse_dict(d: dict) -> dict:
     reversed_d = {}
-    for k,v in d.items():
+    for k, v in d.items():
         reversed_d[v] = k
     return reversed_d
 
 
-def merge_dicts(a : dict[str,Any], b : dict[str,Any], path:list[str] | None=None) -> dict[str,Any]:
+def merge_dicts(a: dict[str, Any], b: dict[str, Any], path: list[str] | None = None) -> dict[str, Any]:
     """ merges b into a """
     if path is None:
         path = []

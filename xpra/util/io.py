@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -41,7 +41,7 @@ def load_binary_file(filename) -> bytes:
         return b""
 
 
-def filedata_nocrlf(filename:str) -> bytes:
+def filedata_nocrlf(filename: str) -> bytes:
     v = load_binary_file(filename)
     if v is None:
         log = get_util_logger()
@@ -50,7 +50,7 @@ def filedata_nocrlf(filename:str) -> bytes:
     return v.strip(b"\n\r")
 
 
-def is_socket(sockpath:str, check_uid:int | None=None) -> bool:
+def is_socket(sockpath: str, check_uid: int | None = None) -> bool:
     try:
         s = os.stat(sockpath)
     except OSError as e:
@@ -59,14 +59,14 @@ def is_socket(sockpath:str, check_uid:int | None=None) -> bool:
         return False
     if not stat.S_ISSOCK(s.st_mode):
         return False
-    if check_uid is not None and s.st_uid!=check_uid:
+    if check_uid is not None and s.st_uid != check_uid:
         # socket uid does not match
         get_util_logger().debug(f"is_socket({sockpath}) uid {s.st_uid} does not match {check_uid}")
         return False
     return True
 
 
-def is_writable(path: str, uid:int, gid:int) -> bool:
+def is_writable(path: str, uid: int, gid: int) -> bool:
     if uid == 0:
         return True
     try:
@@ -76,10 +76,10 @@ def is_writable(path: str, uid:int, gid:int) -> bool:
         # socket cannot be accessed
         return False
     mode = s.st_mode
-    if s.st_uid==uid and mode & stat.S_IWUSR:
+    if s.st_uid == uid and mode & stat.S_IWUSR:
         # uid has write access
         return True
-    if s.st_gid==gid and mode & stat.S_IWGRP:
+    if s.st_gid == gid and mode & stat.S_IWGRP:
         # gid has write access:
         return True
     return False
@@ -123,7 +123,7 @@ class CaptureStdErr:
         self.stderr = b""
 
     def __enter__(self):
-        noerr(sys.stderr.flush)   # <--- important when redirecting to files
+        noerr(sys.stderr.flush)  # <--- important when redirecting to files
         self.savedstderr = os.dup(2)
         self.tmp = NamedTemporaryFile(prefix="stderr")
         fd = self.tmp.fileno()
@@ -175,13 +175,13 @@ def disable_stdout_buffering():
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 
 
-def setbinarymode(fd:int):
+def setbinarymode(fd: int):
     from xpra.os_util import WIN32
     if WIN32:
         # turn on binary mode:
         try:
             import msvcrt
-            msvcrt.setmode(fd, os.O_BINARY)         # pylint: disable=no-member
+            msvcrt.setmode(fd, os.O_BINARY)  # pylint: disable=no-member
         except OSError:
             get_util_logger().error("setting stdin to binary mode failed", exc_info=True)
 
@@ -232,7 +232,7 @@ class umask_context:
         return f"umask_context({self.umask})"
 
 
-def find_lib_ldconfig(libname:str) -> str:
+def find_lib_ldconfig(libname: str) -> str:
     libname = re.escape(libname)
     arch_map = {"x86_64": "libc6,x86-64"}
     arch = arch_map.get(os.uname()[4], "libc6")
@@ -278,7 +278,7 @@ def pollwait(process, timeout=5) -> int | None:
         return None
 
 
-def find_in_PATH(command:str) -> str | None:
+def find_in_PATH(command: str) -> str | None:
     path = os.environ.get("PATH", None)
     if not path:
         return None
@@ -290,20 +290,20 @@ def find_in_PATH(command:str) -> str | None:
     return None
 
 
-def get_which_impl() -> Callable[[str],str]:
+def get_which_impl() -> Callable[[str], str]:
     try:
         from shutil import which
         return which
     except ImportError:
         pass
     try:
-        from distutils.spawn import find_executable   # pylint: disable=deprecated-module
+        from distutils.spawn import find_executable  # pylint: disable=deprecated-module
         return find_executable
     except ImportError:
         return find_in_PATH
 
 
-def which(command:str) -> str | None:
+def which(command: str) -> str | None:
     find_executable = get_which_impl()
     try:
         return find_executable(command)
@@ -312,11 +312,11 @@ def which(command:str) -> str | None:
         return None
 
 
-def get_status_output(*args, **kwargs) -> tuple[int,Any,Any]:
+def get_status_output(*args, **kwargs) -> tuple[int, Any, Any]:
     kwargs |= {
-        "stdout"    : PIPE,
-        "stderr"    : PIPE,
-        "universal_newlines"    : True,
+        "stdout": PIPE,
+        "stderr": PIPE,
+        "universal_newlines": True,
     }
     try:
         p = Popen(*args, **kwargs)

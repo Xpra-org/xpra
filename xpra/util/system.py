@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -19,8 +19,7 @@ from xpra.util.thread import main_thread
 from xpra.util.io import load_binary_file, get_util_logger
 from xpra.util.str_fn import bytestostr
 
-
-SIGNAMES : dict[int, str] = {}
+SIGNAMES: dict[int, str] = {}
 for signame in (sig for sig in dir(signal) if sig.startswith("SIG") and not sig.startswith("SIG_")):
     try:
         SIGNAMES[int(getattr(signal, signame))] = signame
@@ -51,6 +50,7 @@ def register_SIGUSR_signals(idle_add=no_idle) -> None:
         log = get_util_logger().info
         log("SIGUSR2")
         idle_add(dump_gc_frames, log)
+
     signal.signal(signal.SIGUSR1, sigusr1)
     signal.signal(signal.SIGUSR2, sigusr2)
 
@@ -59,7 +59,7 @@ def is_Wayland() -> bool:
     return _is_Wayland(_saved_env)
 
 
-def _is_Wayland(env : dict) -> bool:
+def _is_Wayland(env: dict) -> bool:
     backend = env.get("GDK_BACKEND", "")
     if backend == "wayland":
         return True
@@ -125,7 +125,7 @@ def is_Debian() -> bool:
 _linux_distribution = ("", "", "")
 
 
-def get_linux_distribution() -> tuple[str,str,str]:
+def get_linux_distribution() -> tuple[str, str, str]:
     global _linux_distribution
     if LINUX and _linux_distribution == ("", "", ""):
         # linux_distribution is deprecated in Python 3.5,
@@ -149,7 +149,7 @@ def get_linux_distribution() -> tuple[str,str,str]:
                 if len(parts) == 2:
                     d[parts[0].lower().replace(" ", "_")] = parts[1].strip()
             _linux_distribution = (
-                d.get("distributor_id","unknown"),
+                d.get("distributor_id", "unknown"),
                 d.get("release", "unknown"),
                 d.get("codename", "unknown"),
             )
@@ -162,7 +162,7 @@ def is_unity() -> bool:
 
 
 def is_gnome() -> bool:
-    if os.environ.get("XDG_SESSION_DESKTOP", "").split("-", 1)[0] in ("i3", "ubuntu", ):
+    if os.environ.get("XDG_SESSION_DESKTOP", "").split("-", 1)[0] in ("i3", "ubuntu",):
         # "i3-gnome" is not really gnome... ie: the systray does work!
         return False
     return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().find("gnome") >= 0
@@ -197,15 +197,15 @@ def get_generic_os_name() -> str:
 
 
 def do_get_generic_os_name() -> str:
-    for k,v in {
-            "linux"     : "Linux",
-            "darwin"    : "MacOS",
-            "win"       : "MS Windows",
-            "freebsd"   : "FreeBSD",
+    for k, v in {
+        "linux": "Linux",
+        "darwin": "MacOS",
+        "win": "MS Windows",
+        "freebsd": "FreeBSD",
     }.items():
         if sys.platform.startswith(k):
             return v
-    return sys.platform     # pragma: no cover
+    return sys.platform  # pragma: no cover
 
 
 def is_X11() -> bool:
@@ -240,7 +240,7 @@ def get_frame_info(ignore_threads: tuple[Thread, ...] = ()) -> dict[str | int, A
     }
     try:
         import traceback
-        thread_ident : dict[int | None, str | None] = {}
+        thread_ident: dict[int | None, str | None] = {}
         for t in threading.enumerate():
             if t not in ignore_threads:
                 thread_ident[t.ident] = t.name
@@ -252,7 +252,7 @@ def get_frame_info(ignore_threads: tuple[Thread, ...] = ()) -> dict[str | int, A
         }
         frames = sys._current_frames()  # pylint: disable=protected-access
         stack = None
-        for i,frame_pair in enumerate(frames.items()):
+        for i, frame_pair in enumerate(frames.items()):
             stack = traceback.extract_stack(frame_pair[1])
             tident = thread_ident.get(frame_pair[0], "unknown")
             if tident is None:
@@ -280,17 +280,17 @@ def get_env_info() -> dict[str, str]:
     return filtered_env
 
 
-def get_sysconfig_info() -> dict[str,Any]:
+def get_sysconfig_info() -> dict[str, Any]:
     import sysconfig
-    sysinfo : dict[str,Any] = {}
+    sysinfo: dict[str, Any] = {}
     log = get_util_logger()
     for attr in (
-        "platform",
-        "python-version",
-        "config-vars",
-        "paths",
+            "platform",
+            "python-version",
+            "config-vars",
+            "paths",
     ):
-        fn = "get_"+attr.replace("-", "_")
+        fn = "get_" + attr.replace("-", "_")
         getter = getattr(sysconfig, fn, None)
         if getter:
             try:
@@ -340,6 +340,7 @@ def platform_name(sys_platform=sys.platform, release=None) -> str:
         else:
             values.append(release)
         return " ".join(str(x) for x in values if x and x != "unknown")
+
     for k, v in platforms.items():
         regexp = re.compile(k)
         if regexp.match(sys_platform):

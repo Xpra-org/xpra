@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
@@ -52,14 +52,14 @@ class RFBServer:
         if not models:
             log.error("RFB: no window models to export, dropping connection")
             return None
-        if len(models)!=1:
+        if len(models) != 1:
             log.error("RFB can only handle a single desktop window, found %i", len(self._window_to_id))
             return None
         return models[0]
 
     def _get_rfb_desktop_wid(self):
         ids = tuple(self._window_to_id.values())
-        if len(ids)!=1:
+        if len(ids) != 1:
             log.error("RFB can only handle a single desktop window, found %i", len(self._window_to_id))
             return None
         return ids[0]
@@ -74,21 +74,22 @@ class RFBServer:
 
         def rfb_protocol_class(conn):
             auths = self.make_authenticators("rfb", "rfb", conn)
-            assert len(auths)<=1, "rfb does not support multiple authentication modules"
+            assert len(auths) <= 1, "rfb does not support multiple authentication modules"
             auth = None
-            if len(auths)==1:
+            if len(auths) == 1:
                 auth = auths[0]
             log("creating RFB protocol with authentication=%s", auth)
             return RFBServerProtocol(self, conn, auth,
                                      self.process_rfb_packet, self.get_rfb_pixelformat,
                                      self.session_name or "Xpra Server",
                                      data)
+
         p = self.do_make_protocol("rfb", conn, {}, rfb_protocol_class)
         log("handle_rfb_connection(%s) protocol=%s", conn, p)
         p.send_protocol_handshake()
 
     def process_rfb_packet(self, proto, packet):
-        #log("RFB packet: '%s'", packet)
+        # log("RFB packet: '%s'", packet)
         fn_name = "_process_rfb_%s" % bytestostr(packet[0]).replace("-", "_")
         fn = getattr(self, fn_name, None)
         if not fn:
@@ -137,7 +138,7 @@ class RFBServer:
         start_refresh = getattr(self, "start_refresh", None)
         if start_refresh:
             for wid in tuple(self._window_to_id.values()):
-                start_refresh(wid)       # pylint: disable=not-callable
+                start_refresh(wid)  # pylint: disable=not-callable
 
     def _process_rfb_PointerEvent(self, _proto, packet):
         if not features.input_devices or self.readonly:
@@ -149,15 +150,16 @@ class RFBServer:
             mouselog("RFB PointerEvent(%#x, %s, %s) desktop wid=%s", buttons, x, y, wid)
             device_id = -1
             self._move_pointer(device_id, wid, (x, y))
-            if buttons!=self.rfb_buttons:
-                #figure out which buttons have changed:
+            if buttons != self.rfb_buttons:
+                # figure out which buttons have changed:
                 for button in range(8):
-                    mask = 2**button
+                    mask = 2 ** button
                     if buttons & mask != self.rfb_buttons & mask:
                         pressed = bool(buttons & mask)
-                        mouselog(" %spressing button %i", ["un",""][pressed], 1+button)
-                        self.button_action(device_id, 0, (x, y), 1+button, pressed)
+                        mouselog(" %spressing button %i", ["un", ""][pressed], 1 + button)
+                        self.button_action(device_id, 0, (x, y), 1 + button, pressed)
                 self.rfb_buttons = buttons
+
         self.idle_add(process_pointer_event)
 
     def _process_rfb_KeyEvent(self, proto, packet):
@@ -174,7 +176,7 @@ class RFBServer:
         keyname = RFB_KEYNAMES.get(key)
         keylog("RFB KeyEvent(%s, %s, %s, %s) keyname=%s, desktop wid=%s", pressed, p1, p2, key, keyname, wid)
         if not keyname:
-            if 0<key<255:
+            if 0 < key < 255:
                 keyname = chr(key)
             elif self.X11Keyboard:
                 keyname = self.X11Keyboard.keysym_str(key)
@@ -198,7 +200,7 @@ class RFBServer:
         self._server_sources[proto].set_pixel_format(pixel_format)
 
     def _process_rfb_FramebufferUpdateRequest(self, _proto, packet):
-        #pressed, _, _, keycode = packet[1:5]
+        # pressed, _, _, keycode = packet[1:5]
         inc, x, y, w, h = packet[1:6]
         log("RFB: FramebufferUpdateRequest inc=%s, geometry=%s", inc, (x, y, w, h))
         if not inc:
@@ -206,6 +208,6 @@ class RFBServer:
             self.idle_add(self.refresh_window_area, model, x, y, w, h)
 
     def _process_rfb_ClientCutText(self, _proto, packet):
-        #l = packet[4]
+        # l = packet[4]
         text = packet[5]
         log("RFB got clipboard text: %r", text)

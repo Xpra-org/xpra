@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -93,15 +93,16 @@ def osexpand(s: str, actual_username="", uid=0, gid=0, subs=None) -> str:
             # replace "~/" with "~$actual_username/"
             return os.path.expanduser("~%s/%s" % (actual_username, s[2:]))
         return os.path.expanduser(s)
+
     d = dict(subs or {})
     d |= {
-        "PID"   : os.getpid(),
-        "HOME"  : expanduser("~/"),
+        "PID": os.getpid(),
+        "HOME": expanduser("~/"),
     }
     if os.name == "posix":
         d |= {
-            "UID"   : uid or os.geteuid(),
-            "GID"   : gid or os.getegid(),
+            "UID": uid or os.geteuid(),
+            "GID": gid or os.getegid(),
         }
         from xpra.os_util import OSX
         if not OSX:
@@ -242,7 +243,7 @@ def save_env() -> None:
     _saved_env = os.environ.copy()
 
 
-def get_saved_env() -> dict[str,str]:
+def get_saved_env() -> dict[str, str]:
     return _saved_env.copy()
 
 

@@ -39,7 +39,7 @@ class Authenticator(SysAuthenticatorBase):
             default_port = 389
         self.port = int(kwargs.pop("port", default_port))
         self.username_format = kwargs.pop("username_format", LDAP_USERNAME_FORMAT)
-        #self.username_format = kwargs.pop("username_format", "%username@%domain")
+        # self.username_format = kwargs.pop("username_format", "%username@%domain")
         super().__init__(**kwargs)
         log("ldap auth: host=%s, port=%i, tls=%s, username_format=%s, cacert=%s, encoding=%s",
             self.host, self.port, self.tls, self.username_format, self.cacert, self.encoding)
@@ -59,7 +59,7 @@ class Authenticator(SysAuthenticatorBase):
             return None
         return super().get_challenge(["xor"])
 
-    def check_password(self, password:str) -> bool:
+    def check_password(self, password: str) -> bool:
         log("check_password(%s)", obsc(password))
 
         def emsg(e):
@@ -70,6 +70,7 @@ class Authenticator(SysAuthenticatorBase):
             except Exception:
                 # python3: no way to get to the message dict?
                 log.warn(" %s", e)
+
         try:
             from ldap import (  # pylint: disable=import-outside-toplevel
                 initialize, LDAPError,
@@ -131,32 +132,32 @@ def main(argv) -> int:
             if x in ("-v", "--verbose"):
                 enable_debug_for("auth")
                 argv.remove(x)
-        if len(argv) not in (3,4,5,6,7):
+        if len(argv) not in (3, 4, 5, 6, 7):
             stderr_print("%s invalid arguments" % argv[0])
             stderr_print("usage: %s username password [host] [port] [tls] [username_format]" % argv[0])
             return 1
         username = argv[1]
         password = argv[2]
-        kwargs = {"username" : username}
-        if len(argv)>=4:
+        kwargs = {"username": username}
+        if len(argv) >= 4:
             kwargs["host"] = argv[3]
-        if len(argv)>=5:
+        if len(argv) >= 5:
             kwargs["port"] = argv[4]
-        if len(argv)>=6:
+        if len(argv) >= 6:
             kwargs["tls"] = argv[5]
-        if len(argv)>=7:
+        if len(argv) >= 7:
             kwargs["username_format"] = argv[6]
         a = Authenticator(**kwargs)
         server_salt, digest = a.get_challenge(["xor"])
         salt_digest = a.choose_salt_digest(get_digests())
-        assert digest=="xor"
+        assert digest == "xor"
         client_salt = get_salt(len(server_salt))
         combined_salt = gendigest(salt_digest, client_salt, server_salt)
-        assert digest=="xor"
+        assert digest == "xor"
         response = gendigest(digest, password, combined_salt)
         caps = typedict({
-            "challenge_response"    : response,
-            "challenge_client_salt" : client_salt,
+            "challenge_response": response,
+            "challenge_client_salt": client_salt,
         })
         r = a.authenticate(caps)
         print("success: %s" % bool(r))

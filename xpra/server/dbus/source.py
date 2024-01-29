@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2015-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -71,7 +71,7 @@ class DBUS_Source(dbus.service.Object):
             log.estr(e)
 
     def log(self, fmt, *args):
-        log("%s"+fmt, INTERFACE, *args)
+        log("%s" + fmt, INTERFACE, *args)
 
     @dbus.service.method(PROPERTIES_IFACE, in_signature='s', out_signature='v')
     def Get(self, property_name):
@@ -85,7 +85,7 @@ class DBUS_Source(dbus.service.Object):
 
     @dbus.service.method(PROPERTIES_IFACE, in_signature='', out_signature='a{sv}')
     def GetAll(self, interface_name):
-        if interface_name==INTERFACE:
+        if interface_name == INTERFACE:
             v = {x: self.Get(x) for x in self._properties.keys()}
         else:
             v = {}

@@ -22,16 +22,16 @@ from xpra.log import Logger
 
 log = Logger("auth")
 
-USED_SALT_CACHE_SIZE = envint("XPRA_USED_SALT_CACHE_SIZE", 1024*1024)
+USED_SALT_CACHE_SIZE = envint("XPRA_USED_SALT_CACHE_SIZE", 1024 * 1024)
 DEFAULT_UID = os.environ.get("XPRA_AUTHENTICATION_DEFAULT_UID", "nobody")
 DEFAULT_GID = os.environ.get("XPRA_AUTHENTICATION_DEFAULT_GID", "nobody")
 
 # uid, gid, displays, env_options, session_options
-SessionData = tuple[int,int,list[str],dict[str,str],dict[str,str]]
+SessionData = tuple[int, int, list[str], dict[str, str], dict[str, str]]
 
 
 def xor(s1, s2) -> bytes:
-    return b"".join(b"%c" % (a ^ b) for a,b in zip(s1,s2))
+    return b"".join(b"%c" % (a ^ b) for a, b in zip(s1, s2))
 
 
 def parse_uid(v) -> int:
@@ -59,7 +59,7 @@ def parse_gid(v) -> int:
             log(f"gid {v!r} is not an integer")
     if POSIX:
         try:
-            import grp      # pylint: disable=import-outside-toplevel
+            import grp  # pylint: disable=import-outside-toplevel
             return grp.getgrnam(v or DEFAULT_GID).gr_gid
         except Exception as e:
             log(f"parse_gid({v})", exc_info=True)
@@ -69,7 +69,7 @@ def parse_gid(v) -> int:
 
 
 class SysAuthenticatorBase:
-    USED_SALT : Deque[bytes] = deque(maxlen=USED_SALT_CACHE_SIZE)
+    USED_SALT: Deque[bytes] = deque(maxlen=USED_SALT_CACHE_SIZE)
     DEFAULT_PROMPT = "password for user '{username}'"
     CLIENT_USERNAME = False
 
@@ -81,13 +81,13 @@ class SysAuthenticatorBase:
         self.salt = None
         self.digest = None
         self.salt_digest = None
-        prompt_attr = {"username" : std(self.username)}
+        prompt_attr = {"username": std(self.username)}
         self.prompt = kwargs.pop("prompt", self.DEFAULT_PROMPT).format(**prompt_attr)
         self.socket_dirs = kwargs.pop("socket-dirs", get_socket_dirs())
         self.challenge_sent = False
         self.passed = False
         self.password_used = None
-        self.authenticate_check : Callable[[typedict],bool] = self.default_authenticate_check
+        self.authenticate_check: Callable[[typedict], bool] = self.default_authenticate_check
         # we can't warn about unused options
         # because the options are shared with other socket options (nodelay, cork, etc)
         # unused = dict((k,v) for k,v in kwargs.items() if k not in ("connection", "exec_cwd", "username"))
@@ -112,22 +112,22 @@ class SysAuthenticatorBase:
         if required not in digests:
             raise RuntimeError(f"{self!r} authenticator requires the {required!r} digest")
 
-    def get_challenge(self, digests) -> tuple[bytes,str] | None:
+    def get_challenge(self, digests) -> tuple[bytes, str] | None:
         if self.salt is not None:
             log.error("Error: authentication challenge already sent!")
             return None
         return self.do_get_challenge(digests)
 
-    def do_get_challenge(self, digests) -> tuple[bytes,str]:
+    def do_get_challenge(self, digests) -> tuple[bytes, str]:
         self.salt = get_salt()
         self.digest = choose_digest(digests)
         self.challenge_sent = True
         return self.salt, self.digest
 
-    def get_passwords(self) -> tuple[str,...]:
+    def get_passwords(self) -> tuple[str, ...]:
         """ this default implementation just returns a tuple
             with the password from `get_password` if there is one """
-        p = self.get_password()     # pylint: disable=assignment-from-none
+        p = self.get_password()  # pylint: disable=assignment-from-none
         if p:
             if not isinstance(p, str):
                 raise ValueError(f"password value is not a string: {type(p)}")
@@ -137,14 +137,14 @@ class SysAuthenticatorBase:
     def get_password(self) -> str:
         return ""
 
-    def check(self, value:bytes) -> bool:
+    def check(self, value: bytes) -> bool:
         try:
             password = value.decode("utf8")
         except UnicodeDecodeError:
             password = bytestostr(value)
         return self.check_password(password)
 
-    def check_password(self, _password:str) -> bool:
+    def check_password(self, _password: str) -> bool:
         return False
 
     def authenticate(self, caps: typedict) -> bool:
@@ -193,7 +193,7 @@ class SysAuthenticatorBase:
         SysAuthenticator.USED_SALT.append(salt)
         return salt
 
-    def unxor_response(self, caps:typedict) -> bytes:
+    def unxor_response(self, caps: typedict) -> bytes:
         challenge_response = caps.bytesget("challenge_response")
         client_salt = caps.strget("challenge_client_salt")
         if self.salt is None:
@@ -206,12 +206,12 @@ class SysAuthenticatorBase:
         return value
 
     def default_authenticate_check(self, caps: typedict) -> bool:
-        value : bytes = self.unxor_response(caps)
+        value: bytes = self.unxor_response(caps)
         # warning: enabling logging here would log the actual system password!
         # log.info("authenticate(%s, %s) password=%s (%s)",
         #    hexstr(challenge_response), hexstr(client_salt), password, hexstr(password))
         # verify login:
-        try :
+        try:
             ret = self.check(value)
             log(f"authenticate_check(..)={ret}")
         except Exception as e:
@@ -240,7 +240,7 @@ class SysAuthenticatorBase:
                 self.password_used = x
                 return True
         log.warn(f"Warning: {self.digest} challenge for {self.username!r} does not match")
-        if len(passwords)>1:
+        if len(passwords) > 1:
             log.warn(f" checked {len(passwords)} passwords")
         return False
 
@@ -253,7 +253,7 @@ class SysAuthenticatorBase:
             results = sockdir.sockets(check_uid=uid)
             displays = []
             for state, display in results:
-                if state==SocketState.LIVE and display not in displays:
+                if state == SocketState.LIVE and display not in displays:
                     displays.append(display)
             log(f"sockdir={sockdir}, results={results}, displays={displays}")
         except Exception as e:
@@ -261,7 +261,7 @@ class SysAuthenticatorBase:
             log.error(f"Error: cannot get the list of sessions for {self.username!r}:")
             log.estr(e)
             displays = []
-        v : SessionData = (uid, gid, displays, {}, {})
+        v: SessionData = (uid, gid, displays, {}, {})
         log(f"{self}.get_sessions()={v}")
         return v
 

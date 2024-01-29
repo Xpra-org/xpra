@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#authentication from a file containing just the password
+# authentication from a file containing just the password
 
 from xpra.net.digest import verify_digest
 from xpra.server.auth.file_auth_base import FileAuthenticatorBase, log
@@ -22,7 +22,7 @@ class Authenticator(FileAuthenticatorBase):
             return False
         salt = self.get_response_salt(client_salt)
         password = self.get_password()
-        log("authenticate_hmac() get_password()="+obsc(password))
+        log("authenticate_hmac() get_password()=" + obsc(password))
         if not password:
             log.warn("Warning: authentication failed")
             log.warn(f" no password for {self.username!r} in {self.password_filename!r}")
@@ -32,14 +32,14 @@ class Authenticator(FileAuthenticatorBase):
             return False
         return True
 
-    def parse_filedata(self, data:str) -> str:
+    def parse_filedata(self, data: str) -> str:
         return data
 
     def get_password(self) -> str:
         password = super().get_password()
         if not password:
             return password
-        if password.find("\n")>=0 or password.find("\r")>=0:
+        if password.find("\n") >= 0 or password.find("\r") >= 0:
             log.warn("Warning: newline found in password data")
             log.warn(" this is usually a mistake")
         return password

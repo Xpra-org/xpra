@@ -21,19 +21,19 @@ def get_auth_module(auth_str, cwd=os.getcwd(), **auth_options) -> tuple[str, Any
     # either with ":" or "," as separator
     scpos = auth_str.find(":")
     cpos = auth_str.find(",")
-    if cpos<0 or scpos<cpos:
+    if cpos < 0 or scpos < cpos:
         parts = auth_str.split(":", 1)
     else:
         parts = auth_str.split(",", 1)
     auth = parts[0]
     if auth.endswith("base") or auth.endswith("helper"):
         raise ValueError(f"invalid authentication module name {auth}")
-    if len(parts)>1:
+    if len(parts) > 1:
         auth_options.update(parse_simple_dict(parts[1]))
     auth_options["exec_cwd"] = cwd
     try:
-        if auth=="sys":
-            #resolve virtual "sys" auth:
+        if auth == "sys":
+            # resolve virtual "sys" auth:
             if WIN32:
                 auth_modname = "win32"
             else:
@@ -41,7 +41,7 @@ def get_auth_module(auth_str, cwd=os.getcwd(), **auth_options) -> tuple[str, Any
             log("will try to use sys auth module '%s' for %s", auth, sys.platform)
         else:
             auth_modname = auth.replace("-", "_")
-        auth_mod_name = "xpra.server.auth."+auth_modname
+        auth_mod_name = "xpra.server.auth." + auth_modname
         log("auth module name for '%s': '%s'", auth, auth_mod_name)
         auth_module = __import__(auth_mod_name, {}, {}, ["Authenticator"])
     except ImportError as e:

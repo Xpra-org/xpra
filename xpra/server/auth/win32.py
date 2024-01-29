@@ -24,7 +24,7 @@ class Authenticator(SysAuthenticator):
     def get_password(self) -> str:
         return self.password
 
-    def get_challenge(self, digests) -> tuple[bytes,str]:
+    def get_challenge(self, digests) -> tuple[bytes, str]:
         self.req_xor(digests)
         return super().do_get_challenge(["xor"])
 
@@ -49,7 +49,7 @@ def main(argv) -> int:
             if x in tuple(argv):
                 log.enable_debug()
                 argv.remove(x)
-        if len(argv)!=3:
+        if len(argv) != 3:
             log.warn("invalid number of arguments")
             log.warn("usage: %s [--verbose] username password", argv[0])
             return 1
@@ -64,4 +64,5 @@ def main(argv) -> int:
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main(sys.argv))

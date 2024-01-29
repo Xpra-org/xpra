@@ -21,7 +21,6 @@ from xpra.net.digest import get_salt
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 from xpra.platform.paths import get_user_conf_dirs
 
-
 PUB_KEY_DER_PREFIX = binascii.a2b_hex("3059301306072a8648ce3d020106082a8648ce3d030107034200")
 APP_ID = os.environ.get("XPRA_U2F_APP_ID", "Xpra")
 
@@ -35,16 +34,16 @@ class Authenticator(SysAuthenticator):
         self.public_keys = {}
         key_strs = {}
         if key_hexstring:
-            log("u2f_auth: public key from configuration="+key_hexstring)
+            log("u2f_auth: public key from configuration=" + key_hexstring)
             key_strs["command-option"] = key_hexstring
         # try to load public keys from the user conf dir(s):
-        if getuid()==0 and POSIX:
+        if getuid() == 0 and POSIX:
             # root: use the uid of the username specified:
             uid = self.get_uid()
         else:
             uid = getuid()
         conf_dirs = get_user_conf_dirs(uid)
-        log("u2f: will try to load public keys from "+csv(conf_dirs))
+        log("u2f: will try to load public keys from " + csv(conf_dirs))
         # load public keys:
         for d in conf_dirs:
             ed = osexpand(d)
@@ -71,7 +70,7 @@ class Authenticator(SysAuthenticator):
                 continue
             log(f"u2f: trying to load DER public key {key!r}")
             if not key.startswith(PUB_KEY_DER_PREFIX):
-                key = PUB_KEY_DER_PREFIX+key
+                key = PUB_KEY_DER_PREFIX + key
             try:
                 k = load_der_public_key(key, default_backend())
             except Exception as e:
@@ -84,7 +83,7 @@ class Authenticator(SysAuthenticator):
             raise RuntimeError("u2f authenticator requires at least one public key")
         self.authenticate_check = self.u2f_check
 
-    def get_challenge(self, digests) -> tuple[bytes,str] | None:
+    def get_challenge(self, digests) -> tuple[bytes, str] | None:
         if "u2f" not in digests:
             log.error("Error: client does not support u2f authentication")
             return None
@@ -108,9 +107,9 @@ class Authenticator(SysAuthenticator):
         server_challenge_b64 = server_challenge_b64.rstrip('=')
         log("challenge_b64(%s)=%s", repr(self.salt), server_challenge_b64)
         client_data = {
-            "challenge" : server_challenge_b64,
-            "origin"    : client_salt,
-            "typ"       : "navigator.id.getAssertion",
+            "challenge": server_challenge_b64,
+            "origin": client_salt,
+            "typ": "navigator.id.getAssertion",
         }
         client_param = sha256(json.dumps(client_data, sort_keys=True).encode('utf8')).digest()
         param = app_param + pack(b'>B', user_presence) + pack(b'>I', counter) + client_param

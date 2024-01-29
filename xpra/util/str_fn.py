@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,6 +15,7 @@ from xpra.util.env import envbool
 def std(v, extras="-,./: ") -> str:
     def f(c):
         return str.isalnum(c) or c in extras
+
     return "".join(filter(f, bytestostr(v or "")))
 
 
@@ -78,7 +79,7 @@ def repr_ellipsized(obj, limit=100) -> str:
 
 def print_nested_dict(d: dict, prefix: str = "", lchar: str = "*", pad: int = 32,
                       vformat=None, print_fn: Callable | None = None,
-                      version_keys=("version", "revision"), hex_keys=("data", )) -> None:
+                      version_keys=("version", "revision"), hex_keys=("data",)) -> None:
     # "smart" value formatting function:
     def sprint(arg):
         if print_fn:
@@ -101,7 +102,8 @@ def print_nested_dict(d: dict, prefix: str = "", lchar: str = "*", pad: int = 32
         except Exception:
             pass
         return nonl(pver(v, ", ", ", "))
-    l = pad-len(prefix)-len(lchar)
+
+    l = pad - len(prefix) - len(lchar)
     for k in sorted_nicely(d.keys()):
         v = d[k]
         if isinstance(v, dict):
@@ -112,7 +114,7 @@ def print_nested_dict(d: dict, prefix: str = "", lchar: str = "*", pad: int = 32
                     v.pop(x, None)
             else:
                 sprint("%s%s %s" % (prefix, lchar, bytestostr(k)))
-            print_nested_dict(v, prefix+"  ", "-", vformat=vformat, print_fn=print_fn,
+            print_nested_dict(v, prefix + "  ", "-", vformat=vformat, print_fn=print_fn,
                               version_keys=version_keys, hex_keys=hex_keys)
         else:
             sprint("%s%s %s : %s" % (prefix, lchar, bytestostr(k).ljust(l), vf(k, v)))
@@ -167,12 +169,14 @@ def pver(v, numsep: str = ".", strsep: str = ", ") -> str:
                         return x.decode("utf8")
                     except UnicodeDecodeError:
                         return bytestostr(x)
+
                 return strsep.join(s(x) for x in v)
     return bytestostr(v)
 
 
-def sorted_nicely(l:Iterable):
+def sorted_nicely(l: Iterable):
     """ Sort the given iterable in the way that humans expect."""
+
     def convert(text):
         if text.isdigit():
             return int(text)
@@ -180,6 +184,7 @@ def sorted_nicely(l:Iterable):
 
     def alphanum_key(key):
         return [convert(c) for c in re.split(r"(\d+)", bytestostr(key))]
+
     return sorted(l, key=alphanum_key)
 
 

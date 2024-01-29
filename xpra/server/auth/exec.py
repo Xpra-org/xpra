@@ -25,11 +25,11 @@ def get_default_auth_dialog() -> str:
     if os.name == "posix":
         auth_dialog = "/usr/libexec/xpra/auth_dialog"
     else:
-        from xpra.platform.paths import get_app_dir   # pylint: disable=import-outside-toplevel
+        from xpra.platform.paths import get_app_dir  # pylint: disable=import-outside-toplevel
         auth_dialog = os.path.join(get_app_dir(), "auth_dialog")
     if EXECUTABLE_EXTENSION:
         # ie: add ".exe" on MS Windows
-        auth_dialog += "."+EXECUTABLE_EXTENSION
+        auth_dialog += "." + EXECUTABLE_EXTENSION
     log(f"auth_dialog={auth_dialog!r}")
     if not os.path.exists(auth_dialog) and first_time("auth-dialog-not-found"):
         log.warn(f"Warning: authentication dialog command {auth_dialog!r} does not exist")
@@ -73,28 +73,28 @@ class Authenticator(SysAuthenticator):
     def default_authenticate_check(self, caps: typedict) -> bool:
         info = f"Connection request from {self.connection_str}"
         subs = {
-            "auth_dialog"   : get_default_auth_dialog(),
-            "info"          : info,
-            "timeout"       : self.timeout,
-            "username"      : alnum(self.username),
-            "prompt"        : std(self.prompt),
+            "auth_dialog": get_default_auth_dialog(),
+            "info": info,
+            "timeout": self.timeout,
+            "username": alnum(self.username),
+            "prompt": std(self.prompt),
         }
         if self.require_challenge:
             subs["password"] = bytestostr(self.unxor_response(caps))
         cmd = tuple(shellsub(v, subs) for v in self.command)
         log(f"authenticate(..) shellsub({self.command}={cmd}")
-        #[self.command, info, str(self.timeout)]
+        # [self.command, info, str(self.timeout)]
         try:
             with Popen(cmd) as proc:
                 self.proc = proc
                 log(f"authenticate(..) Popen({cmd})={proc}")
-                #if required, make sure we kill the command when it times out:
-                if self.timeout>0:
-                    self.timer = GLib.timeout_add(self.timeout*1000, self.command_timedout)
+                # if required, make sure we kill the command when it times out:
+                if self.timeout > 0:
+                    self.timer = GLib.timeout_add(self.timeout * 1000, self.command_timedout)
                     if not OSX:
-                        #python on macos may set a 0 returncode when we use poll()
-                        #so we cannot use the ChildReaper on macos,
-                        #and we can't cancel the timer
+                        # python on macos may set a 0 returncode when we use poll()
+                        # so we cannot use the ChildReaper on macos,
+                        # and we can't cancel the timer
                         getChildReaper().add_process(proc, "exec auth", cmd, True, True, self.command_ended)
         except OSError as e:
             log(f"error running {cmd!r}", exc_info=True)
@@ -106,7 +106,7 @@ class Authenticator(SysAuthenticator):
         log(f"authenticate(..) returncode({cmd})={v}")
         if self.timeout_event:
             return False
-        return v==0
+        return v == 0
 
     def command_ended(self, *args) -> None:
         t = self.timer

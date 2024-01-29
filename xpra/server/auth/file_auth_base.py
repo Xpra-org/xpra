@@ -63,7 +63,7 @@ class FileAuthenticatorBase(SysAuthenticator):
             return ""
         return file_data
 
-    def parse_filedata(self, data:str):  # pragma: no cover
+    def parse_filedata(self, data: str):  # pragma: no cover
         raise NotImplementedError()
 
     def load_password_file(self):
@@ -75,7 +75,7 @@ class FileAuthenticatorBase(SysAuthenticator):
             self.password_filedata = None
         else:
             ptime = self.stat_password_filetime()
-            if self.password_filedata is None or ptime!=self.password_filetime:
+            if self.password_filedata is None or ptime != self.password_filetime:
                 self.password_filetime = 0
                 self.password_filedata = b""
                 try:

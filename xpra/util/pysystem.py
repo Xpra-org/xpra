@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 import os
@@ -12,7 +12,7 @@ from xpra.util.io import get_util_logger
 
 def dump_all_frames(logger=None) -> None:
     try:
-        frames = sys._current_frames()      # pylint: disable=protected-access
+        frames = sys._current_frames()  # pylint: disable=protected-access
     except AttributeError:
         return
     else:
@@ -31,7 +31,7 @@ def dump_frames(frames, logger=None) -> None:
     if not logger:
         logger = get_util_logger()
     logger("found %s frames:", len(frames))
-    for i,(fid,frame) in enumerate(frames):
+    for i, (fid, frame) in enumerate(frames):
         fidstr = ""
         if fid is not None:
             try:
@@ -64,6 +64,7 @@ def detect_leaks() -> Callable[[], bool]:
             for line in stat.traceback.format():
                 print(line)
         return True
+
     return print_leaks
 
 
@@ -72,14 +73,14 @@ def start_mem_watcher(ms) -> None:
     start_thread(mem_watcher, name="mem-watcher", daemon=True, args=(ms,))
 
 
-def mem_watcher(ms, pid:int=os.getpid()) -> None:
+def mem_watcher(ms, pid: int = os.getpid()) -> None:
     import time
     import psutil
     process = psutil.Process(pid)
     while True:
         mem = process.memory_full_info()
         get_util_logger().info("memory usage for %s: %s", pid, mem)
-        time.sleep(ms/1000.0)
+        time.sleep(ms / 1000.0)
 
 
 def log_mem_info(prefix="memory usage: ", pid=os.getpid()) -> None:
