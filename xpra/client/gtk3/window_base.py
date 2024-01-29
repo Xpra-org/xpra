@@ -1096,6 +1096,12 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 self.cancel_send_iconifiy_timer()
                 self._frozen = False
                 self.process_map_event()
+
+        # Always send maximized if some other update is performed. It is a
+        # per-client setting that is mirrored as part of every update.
+        if server_updates and 'maximized' not in server_updates:
+            server_updates['maximized'] = self._maximized
+
         statelog("window_state_updated(..) state updates: %s, actual updates: %s, server updates: %s",
                  state_updates, actual_updates, server_updates)
         if "maximized" in state_updates:
