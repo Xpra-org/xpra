@@ -42,6 +42,7 @@ class WindowMenuHelper(MenuHelper):
             from xpra.client.gtk3.window_info import WindowInfo
             wi = WindowInfo(self.client, self.window)
             wi.show()
+
         gl = self.menuitem("Window Information", "information.png", "Window state and details", show_info)
         gl.set_tooltip_text()
         return gl
@@ -55,6 +56,7 @@ class WindowMenuHelper(MenuHelper):
         def minimize(*args):
             log("minimize%s", args)
             self.window.iconify()
+
         return self.menuitem("Minimize", "minimize.png", None, minimize)
 
     def make_maximizemenuitem(self):
@@ -67,6 +69,7 @@ class WindowMenuHelper(MenuHelper):
 
         def get_label(maximized):
             return "Unmaximize" if maximized else "Maximize"
+
         label = get_label(self.window.is_maximized())
         self.maximize_menuitem = self.menuitem(label, "maximize.png", None, maximize)
 
@@ -77,6 +80,7 @@ class WindowMenuHelper(MenuHelper):
                 lbl = get_label(event.new_window_state & Gdk.WindowState.MAXIMIZED)
                 self.maximize_menuitem.set_label(lbl)
             self.maximize_menuitem.set_sensitive(self.window.can_maximize())
+
         self.window.connect("window-state-event", window_state_updated)
         return self.maximize_menuitem
 
@@ -84,6 +88,7 @@ class WindowMenuHelper(MenuHelper):
         def fullscreen(*args):
             log("fullscreen%s", args)
             self.window.fullscreen()
+
         return self.menuitem("Fullscreen", "scaling.png", None, fullscreen)
 
     def make_abovenmenuitem(self):
@@ -101,6 +106,7 @@ class WindowMenuHelper(MenuHelper):
             icon_size = self.menu_icon_size or get_icon_size()
             image = self.get_image(icon_name(), icon_size)
             self.above_menuitem.set_image(image)
+
         self.above_menuitem = self.menuitem("Always on top", icon_name(), None, toggle_above)
         return self.above_menuitem
 
@@ -111,6 +117,7 @@ class WindowMenuHelper(MenuHelper):
             reset_icon = getattr(self.window, "reset_icon", None)
             if reset_icon:
                 reset_icon()
+
         return self.menuitem("Refresh", "retry.png", None, force_refresh)
 
     def make_reinitmenuitem(self):
@@ -120,10 +127,12 @@ class WindowMenuHelper(MenuHelper):
             reset_icon = getattr(self.window, "reset_icon", None)
             if reset_icon:
                 reset_icon()
+
         return self.menuitem("Re-initialize", "reinitialize.png", None, force_reinit)
 
     def make_closemenuitem(self):
         def close(*args):
             log("close(%s)", args)
             self.window.close()
+
         return self.menuitem("Close", "close.png", None, close)

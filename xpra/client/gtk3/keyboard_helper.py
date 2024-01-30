@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -65,7 +65,7 @@ class GTKKeyboardHelper(KeyboardHelper):
             self._keymap_change_handler_id = self._keymap.connect("keys-changed", self.keymap_changed)
             self._keymap_changing = False
             if self.locked:
-                #automatic changes not allowed!
+                # automatic changes not allowed!
                 log.info("ignoring keymap change: layout is locked to '%s'", self.layout_str())
                 return
             if self.update() and self.layout:
@@ -74,6 +74,7 @@ class GTKKeyboardHelper(KeyboardHelper):
                 if self.layout:
                     self.send_layout()
                 self.send_keymap()
+
         GLib.timeout_add(500, do_keys_changed)
 
     def update(self):
@@ -83,9 +84,9 @@ class GTKKeyboardHelper(KeyboardHelper):
             with log.trap_error("Error querying modifier map"):
                 self.keyboard.update_modifier_map(Gdk.Display.get_default(), self.mod_meanings)
         log("update() modifier_map=%s, old hash=%s, new hash=%s", self.keyboard.modifier_map, old_hash, self.hash)
-        return old_hash!=self.hash
+        return old_hash != self.hash
 
-    def get_full_keymap(self) -> tuple[tuple[int,str,int,int,int],...]:
+    def get_full_keymap(self) -> tuple[tuple[int, str, int, int, int], ...]:
         return get_gtk_keymap()
 
     def cleanup(self):

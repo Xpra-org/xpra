@@ -33,7 +33,7 @@ def x(self):
 
 
 def dict_str(d):
-    return "\n".join("%s : %s" % (k,v) for k,v in d.items())
+    return "\n".join("%s : %s" % (k, v) for k, v in d.items())
 
 
 def geom_str(geom) -> str:
@@ -41,8 +41,8 @@ def geom_str(geom) -> str:
 
 
 def hsc(sc) -> str:
-    #make the dict more human-readable
-    ssc = dict((bytestostr(k),v) for k,v in sc.items())
+    # make the dict more human-readable
+    ssc = dict((bytestostr(k), v) for k, v in sc.items())
     ssc.pop("gravity", None)
     return dict_str(ssc)
 
@@ -50,15 +50,15 @@ def hsc(sc) -> str:
 def get_window_state(w) -> str:
     state = []
     for s in (
-        "fullscreen", "maximized",
-        "above", "below", "shaded", "sticky",
-        "skip-pager", "skip-taskbar",
-        "iconified",
+            "fullscreen", "maximized",
+            "above", "below", "shaded", "sticky",
+            "skip-pager", "skip-taskbar",
+            "iconified",
     ):
         # ie: "skip-pager" -> self.window._skip_pager
         if getattr(w, "_%s" % s.replace("-", "_"), False):
             state.append(s)
-    for s in ("modal", ):
+    for s in ("modal",):
         fn = getattr(w, "get_%s" % s, None)
         if fn and fn():
             state.append(s)
@@ -72,7 +72,7 @@ def get_window_attributes(w) -> str:
         attr["workspace"] = workspace
     with IgnoreWarningsContext():
         opacity = w.get_opacity()
-    if opacity<1:
+    if opacity < 1:
         attr["opacity"] = opacity
     role = w.get_role()
     if role:
@@ -99,6 +99,7 @@ class WindowInfo(Gtk.Window):
 
         def window_deleted(*_args):
             self.is_closed = True
+
         self.connect('delete_event', window_deleted)
 
         grid = Gtk.Grid()
@@ -115,7 +116,7 @@ class WindowInfo(Gtk.Window):
                 grid.attach(widget, 2, int(row), 1, 1)
             row.increase()
 
-        def lrow(text:str) -> Gtk.Label:
+        def lrow(text: str) -> Gtk.Label:
             l = label()
             l.set_margin_start(10)
             l.set_xalign(0)
@@ -136,6 +137,7 @@ class WindowInfo(Gtk.Window):
             s.set_margin_bottom(3)
             grid.attach(s, 1, int(row), 2, 1)
             row.increase()
+
         self.wid_label = lrow("Window ID")
         self.title_label = lrow("Title")
         self.title_label.set_size_request(320, -1)
@@ -196,35 +198,35 @@ class WindowInfo(Gtk.Window):
         if not w:
             return
         info = {
-            "wid"               : w.wid,
-            "title"             : w.get_title(),
-            "override-redirect" : w._override_redirect,
-            "state"             : get_window_state(w),
-            "attributes"        : get_window_attributes(w),
-            "focused"           : w._focused,
-            "buttons"           : csv(b for b,s in w.button_state.items() if s) or "none",
-            "gravity"           : GravityStr(w.window_gravity),
-            "content-type"      : w.content_type or "unknown",
-            "pixel-depth"       : w.pixel_depth or 24,
-            "alpha"             : w._window_alpha,
-            "opengl"            : w.is_GL(),
-            "geometry"          : geom_str(list(w._pos)+list(w._size)),
-            "outer-geometry"    : geom_str(list(w.get_position()) + list(w.get_size())),
-            "inner-geometry"    : geom_str(w.get_drawing_area_geometry()),
-            "offsets"           : csv(str(x) for x in (w.window_offset or ())) or "none",
-            "frame-extents"     : csv(w._current_frame_extents or []) or "none",
-            "max-size"          : csv(w.max_window_size),
-            "size-constraints"  : hsc(w.size_constraints),
+            "wid": w.wid,
+            "title": w.get_title(),
+            "override-redirect": w._override_redirect,
+            "state": get_window_state(w),
+            "attributes": get_window_attributes(w),
+            "focused": w._focused,
+            "buttons": csv(b for b, s in w.button_state.items() if s) or "none",
+            "gravity": GravityStr(w.window_gravity),
+            "content-type": w.content_type or "unknown",
+            "pixel-depth": w.pixel_depth or 24,
+            "alpha": w._window_alpha,
+            "opengl": w.is_GL(),
+            "geometry": geom_str(list(w._pos) + list(w._size)),
+            "outer-geometry": geom_str(list(w.get_position()) + list(w.get_size())),
+            "inner-geometry": geom_str(w.get_drawing_area_geometry()),
+            "offsets": csv(str(x) for x in (w.window_offset or ())) or "none",
+            "frame-extents": csv(w._current_frame_extents or []) or "none",
+            "max-size": csv(w.max_window_size),
+            "size-constraints": hsc(w.size_constraints),
         }
         # backing:
         b = w._backing
         if b:
             info |= {
-                "size"              : csv(b.size),
-                "render-size"       : csv(b.render_size),
-                "backing-offsets"   : csv(b.offsets),
+                "size": csv(b.size),
+                "render-size": csv(b.render_size),
+                "backing-offsets": csv(b.offsets),
             }
-        text = "\n".join(f"{k}={v}" for k,v in info.items())
+        text = "\n".join(f"{k}={v}" for k, v in info.items())
         clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         clipboard.set_text(text, len(text))
 
@@ -248,7 +250,7 @@ class WindowInfo(Gtk.Window):
         self.state_label.set_text(get_window_state(w))
         self.attributes_label.set_text(get_window_attributes(w))
         self.bool_icon(self.focus_image, w._focused)
-        self.button_state_label.set_text(csv(b for b,s in w.button_state.items() if s) or "none")
+        self.button_state_label.set_text(csv(b for b, s in w.button_state.items() if s) or "none")
         self.fps_label.set_text(fps)
         # self.group_leader_label.set_text(str(w.group_leader))
         self.gravity_label.set_text(GravityStr(w.window_gravity))
@@ -258,7 +260,7 @@ class WindowInfo(Gtk.Window):
         self.bool_icon(self.alpha_image, w._window_alpha)
         self.bool_icon(self.opengl_image, w.is_GL())
         # tells us if this window instance can paint with alpha
-        geom = list(w._pos)+list(w._size)
+        geom = list(w._pos) + list(w._size)
         self.geometry_label.set_text(geom_str(geom))
         geom = list(w.get_position()) + list(w.get_size())
         self.outer_geometry_label.set_text(geom_str(geom))
@@ -279,8 +281,9 @@ class WindowInfo(Gtk.Window):
                 return str(value)
 
             def dict_to_str(d, sep="\n", eq="=", exclude=()):
-                strdict = {k:pv(v) for k,v in d.items() if k not in exclude}
-                return sep.join("%s%s%s" % (k, eq, v) for k,v in strdict.items() if v)
+                strdict = {k: pv(v) for k, v in d.items() if k not in exclude}
+                return sep.join("%s%s%s" % (k, eq, v) for k, v in strdict.items() if v)
+
             self.backing_properties.set_text(dict_to_str(binfo, exclude=(
                 "transparency",
                 "size",
@@ -302,7 +305,7 @@ class WindowInfo(Gtk.Window):
             self.backing_properties.hide()
             self.backing_properties.set_text("")
 
-    def bool_icon(self, image, on_off:bool) -> None:
+    def bool_icon(self, image, on_off: bool) -> None:
         c = self._client
         if not c:
             return

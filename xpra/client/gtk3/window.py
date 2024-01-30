@@ -37,7 +37,7 @@ class ClientWindow(GTKClientWindowBase):
     GTK3 version of the ClientWindow class
     """
 
-    def init_window(self, metadata:typedict):
+    def init_window(self, metadata: typedict):
         super().init_window(metadata)
         self.header_bar_image = None
         if self.can_use_header_bar(metadata):
@@ -46,12 +46,12 @@ class ClientWindow(GTKClientWindowBase):
     def _icon_size(self) -> int:
         tb = self.get_titlebar()
         try:
-            h = tb.get_preferred_size()[-1]-8
+            h = tb.get_preferred_size()[-1] - 8
         except Exception:
             h = 24
         return min(128, max(h, 24))
 
-    def set_icon(self, pixbuf:GdkPixbuf.Pixbuf) -> None:
+    def set_icon(self, pixbuf: GdkPixbuf.Pixbuf) -> None:
         super().set_icon(pixbuf)
         hbi = self.header_bar_image
         if hbi and WINDOW_ICON:
@@ -59,7 +59,7 @@ class ClientWindow(GTKClientWindowBase):
             pixbuf = pixbuf.scale_simple(h, h, GdkPixbuf.InterpType.HYPER)
             hbi.set_from_pixbuf(pixbuf)
 
-    def can_use_header_bar(self, metadata:typedict) -> bool:
+    def can_use_header_bar(self, metadata: typedict) -> bool:
         if self.is_OR() or not self.get_decorated():
             return False
         hbl = (self.headerbar or "").lower().strip()
@@ -74,12 +74,12 @@ class ClientWindow(GTKClientWindowBase):
             if maxs:
                 return False
             mins = tsc.intpair("minimum-size")
-            if mins and mins!=(0, 0):
+            if mins and mins != (0, 0):
                 return False
-            if tsc.intpair("increment", (0, 0))!=(0, 0):
+            if tsc.intpair("increment", (0, 0)) != (0, 0):
                 return False
             return True
-        if hbl=="force":
+        if hbl == "force":
             return True
         return False
 
@@ -127,7 +127,7 @@ class ClientWindow(GTKClientWindowBase):
         from xpra.client.gtk3.cairo_backing import CairoBacking
         return CairoBacking
 
-    def xget_u32_property(self, target, name:str):
+    def xget_u32_property(self, target, name: str):
         if HAS_X11_BINDINGS:
             return GTKClientWindowBase.xget_u32_property(self, target, name)
         # pure Gdk lookup:
@@ -135,14 +135,14 @@ class ClientWindow(GTKClientWindowBase):
             name_atom = Gdk.Atom.intern(name, False)
             type_atom = Gdk.Atom.intern("CARDINAL", False)
             prop = Gdk.property_get(target, name_atom, type_atom, 0, 9999, False)
-            if not prop or len(prop)!=3 or len(prop[2])!=1:
+            if not prop or len(prop) != 3 or len(prop[2]) != 1:
                 return None
             metalog("xget_u32_property(%s, %s)=%s", target, name, prop[2][0])
             return prop[2][0]
         except Exception as e:
             metalog.error("xget_u32_property error on %s / %s: %s", target, name, e)
 
-    def get_drawing_area_geometry(self) -> tuple[int,int,int,int]:
+    def get_drawing_area_geometry(self) -> tuple[int, int, int, int]:
         gdkwindow = self.drawing_area.get_window()
         if gdkwindow:
             x, y = gdkwindow.get_origin()[1:]
@@ -151,20 +151,20 @@ class ClientWindow(GTKClientWindowBase):
         w, h = self.get_size()
         return x, y, w, h
 
-    def apply_geometry_hints(self, hints:typedict) -> None:
+    def apply_geometry_hints(self, hints: typedict) -> None:
         """ we convert the hints as a dict into a gdk.Geometry + gdk.WindowHints """
         wh = Gdk.WindowHints
         name_to_hint = {
-            "max_width"     : wh.MAX_SIZE,
-            "max_height"    : wh.MAX_SIZE,
-            "min_width"     : wh.MIN_SIZE,
-            "min_height"    : wh.MIN_SIZE,
-            "base_width"    : wh.BASE_SIZE,
-            "base_height"   : wh.BASE_SIZE,
-            "width_inc"     : wh.RESIZE_INC,
-            "height_inc"    : wh.RESIZE_INC,
-            "min_aspect_ratio"  : wh.ASPECT,
-            "max_aspect_ratio"  : wh.ASPECT,
+            "max_width": wh.MAX_SIZE,
+            "max_height": wh.MAX_SIZE,
+            "min_width": wh.MIN_SIZE,
+            "min_height": wh.MIN_SIZE,
+            "base_width": wh.BASE_SIZE,
+            "base_height": wh.BASE_SIZE,
+            "width_inc": wh.RESIZE_INC,
+            "height_inc": wh.RESIZE_INC,
+            "min_aspect_ratio": wh.ASPECT,
+            "max_aspect_ratio": wh.ASPECT,
         }
         # these fields can be copied directly to the gdk.Geometry as ints:
         INT_FIELDS = [
@@ -174,8 +174,8 @@ class ClientWindow(GTKClientWindowBase):
             "width_inc", "height_inc",
         ]
         ASPECT_FIELDS = {
-            "min_aspect_ratio"  : "min_aspect",
-            "max_aspect_ratio"  : "max_aspect",
+            "min_aspect_ratio": "min_aspect",
+            "max_aspect_ratio": "max_aspect",
         }
         thints = typedict(hints)
         if self.drawing_area:
@@ -187,7 +187,7 @@ class ClientWindow(GTKClientWindowBase):
 
         geom = Gdk.Geometry()
         mask = 0
-        for k,v in hints.items():
+        for k, v in hints.items():
             k = bytestostr(k)
             if k in INT_FIELDS:
                 setattr(geom, k, v)
@@ -206,11 +206,11 @@ class ClientWindow(GTKClientWindowBase):
             return True
         maxw = hints.intget("max_width", 32768)
         maxh = hints.intget("max_height", 32768)
-        if maxw>32000 and maxh>32000:
+        if maxw > 32000 and maxh > 32000:
             return True
         geom = self.get_drawing_area_geometry()
         dw, dh = geom[2], geom[3]
-        return dw<maxw and dh<maxh
+        return dw < maxw and dh < maxh
 
     def draw_widget(self, widget, context) -> bool:
         paintlog("draw_widget(%s, %s)", widget, context)

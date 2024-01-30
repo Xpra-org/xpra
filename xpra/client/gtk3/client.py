@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,10 +17,9 @@ GObject = gi_import("GObject")
 
 
 class XpraClient(GTKXpraClient):
-
     ClientWindowClass = ClientWindow
 
-    def __repr__(self):   # pylint: disable=arguments-differ
+    def __repr__(self):  # pylint: disable=arguments-differ
         return "gtk3.client"
 
     def client_type(self) -> str:
@@ -32,8 +31,8 @@ class XpraClient(GTKXpraClient):
             if not backend and is_Wayland():
                 backend = "Wayland"
             if backend:
-                #capitalize, ie: "x11" -> "X11"
-                backend = backend[0].upper()+backend[1:]
+                # capitalize, ie: "x11" -> "X11"
+                backend = backend[0].upper() + backend[1:]
                 return f"GTK3 {backend}"
         return "GTK3"
 
@@ -64,19 +63,19 @@ class XpraClient(GTKXpraClient):
     def get_screen_resolution(self) -> int:
         screen = Gdk.Screen.get_default()
         if not screen:
-            #wayland?
+            # wayland?
             return -1
         return round(screen.get_resolution())
 
     def get_xdpi(self) -> int:
         xdpi = get_xdpi()
-        if xdpi>0:
+        if xdpi > 0:
             return xdpi
         return round(self.get_screen_resolution())
 
     def get_ydpi(self) -> int:
         ydpi = get_ydpi()
-        if ydpi>0:
+        if ydpi > 0:
             return ydpi
         return round(self.get_screen_resolution())
 

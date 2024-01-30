@@ -1,13 +1,13 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from time import monotonic
 from typing import Any
 import cairo
-from cairo import (   # pylint: disable=no-name-in-module
+from cairo import (  # pylint: disable=no-name-in-module
     Context, ImageSurface,  # @UnresolvedImport
     FORMAT_ARGB32, FORMAT_RGB30, FORMAT_RGB24, FORMAT_RGB16_565,  # @UnresolvedImport
     OPERATOR_SOURCE, OPERATOR_CLEAR, OPERATOR_OVER,  # @UnresolvedImport
@@ -26,7 +26,7 @@ log = Logger("paint", "cairo")
 
 COPY_OLD_BACKING = envbool("XPRA_CAIRO_COPY_OLD_BACKING", True)
 
-FORMATS = {-1   : "INVALID"}
+FORMATS = {-1: "INVALID"}
 for attr in dir(cairo):
     if attr.startswith("FORMAT_"):
         FORMATS[getattr(cairo, attr)] = attr.replace("FORMAT_", "")
@@ -35,8 +35,8 @@ for attr in dir(cairo):
 def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_time) -> None:
     if not cursor_data:
         return
-    elapsed = max(0, monotonic()-start_time)
-    if elapsed>6:
+    elapsed = max(0, monotonic() - start_time)
+    if elapsed > 6:
         return
     # pylint: disable=import-outside-toplevel
     from xpra.gtk.pixbuf import get_pixbuf_from_data
@@ -46,23 +46,22 @@ def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_ti
     xhot = cursor_data[5]
     yhot = cursor_data[6]
     pixels = cursor_data[8]
-    x = px-xhot
-    y = py-yhot
-    alpha = max(0.0, (5.0-elapsed)/5.0)
+    x = px - xhot
+    y = py - yhot
+    alpha = max(0.0, (5.0 - elapsed) / 5.0)
     log("cairo_paint_pointer_overlay%s drawing pointer with cairo, alpha=%s",
         (context, x, y, start_time), alpha)
     context.translate(x, y)
     context.rectangle(0, 0, cw, ch)
     argb = unpremultiply_argb(pixels)
     img_data = memoryview_to_bytes(argb)
-    pixbuf = get_pixbuf_from_data(img_data, True, cw, ch, cw*4)
+    pixbuf = get_pixbuf_from_data(img_data, True, cw, ch, cw * 4)
     context.set_operator(OPERATOR_OVER)
     Gdk.cairo_set_source_pixbuf(context, pixbuf, 0, 0)
     context.paint_with_alpha(alpha)
 
 
 class CairoBackingBase(WindowBackingBase):
-
     HAS_ALPHA = envbool("XPRA_ALPHA", True)
 
     def __init__(self, wid, window_alpha, _pixel_depth=0):
@@ -72,18 +71,18 @@ class CairoBackingBase(WindowBackingBase):
         self.render_size = 0, 0
         self.fps_image = None
 
-    def init(self, ww: int, wh: int, bw: int, bh : int) -> None:
-        mod = self.size!=(bw, bh) or self.render_size!=(ww, wh)
+    def init(self, ww: int, wh: int, bw: int, bh: int) -> None:
+        mod = self.size != (bw, bh) or self.render_size != (ww, wh)
         self.size = bw, bh
         self.render_size = ww, wh
         if mod:
             self.create_surface()
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         info = super().get_info()
         info |= {
-            "type"  : "Cairo",
-            "rgb-formats" : self.get_rgb_formats(),
+            "type": "Cairo",
+            "rgb-formats": self.get_rgb_formats(),
         }
         return info
 
@@ -109,7 +108,7 @@ class CairoBackingBase(WindowBackingBase):
         if COPY_OLD_BACKING and old_backing is not None:
             oldw, oldh = old_backing.get_width(), old_backing.get_height()
             sx, sy, dx, dy, w, h = self.gravity_copy_coords(oldw, oldh, bw, bh)
-            cr.translate(dx-sx, dy-sy)
+            cr.translate(dx - sx, dy - sy)
             cr.rectangle(sx, sy, w, h)
             cr.clip()
             cr.set_operator(OPERATOR_SOURCE)
@@ -134,10 +133,11 @@ class CairoBackingBase(WindowBackingBase):
     def cairo_paint_surface(self, img_surface, x: int, y: int, width: int, height: int, options) -> None:
         iw, ih = img_surface.get_width(), img_surface.get_height()
         log("source image surface: %s",
-            (img_surface.get_format(), iw, ih, img_surface.get_stride(), img_surface.get_content(), ))
+            (img_surface.get_format(), iw, ih, img_surface.get_stride(), img_surface.get_content(),))
 
         def set_source_surface(gc, surface, sx, sy):
             gc.set_source_surface(surface, sx, sy)
+
         self.cairo_paint_from_source(set_source_surface, img_surface, x, y, iw, ih, width, height, options)
 
     def cairo_paint_from_source(self, set_source_fn, source,
@@ -162,8 +162,8 @@ class CairoBackingBase(WindowBackingBase):
 
         gc.set_operator(OPERATOR_SOURCE)
         gc.translate(x, y)
-        if iw!=width or ih!=height:
-            gc.scale(width/iw, height/ih)
+        if iw != width or ih != height:
+            gc.scale(width / iw, height / ih)
         gc.rectangle(0, 0, width, height)
         set_source_fn(gc, source, 0, 0)
         gc.paint()
@@ -174,33 +174,33 @@ class CairoBackingBase(WindowBackingBase):
             self.cairo_paint_box(gc, encoding, x, y, width, height)
 
         flush = options.get("flush", 0)
-        if flush==0:
+        if flush == 0:
             self.record_fps_event()
 
-    def cairo_paint_box(self, gc, encoding:str, x:int, y:int, w:int, h:int) -> None:
+    def cairo_paint_box(self, gc, encoding: str, x: int, y: int, w: int, h: int) -> None:
         color = get_paint_box_color(encoding)
         gc.set_line_width(self.paint_box_line_width)
         gc.set_source_rgba(*color)
         gc.rectangle(x, y, w, h)
         gc.stroke()
 
-    def _do_paint_rgb16(self, img_data, x:int, y:int, width:int, height:int,
-                        render_width:int, render_height:int, rowstride:int, options) -> bool:
+    def _do_paint_rgb16(self, img_data, x: int, y: int, width: int, height: int,
+                        render_width: int, render_height: int, rowstride: int, options) -> bool:
         return self._do_paint_rgb(FORMAT_RGB16_565, False, img_data,
                                   x, y, width, height, render_width, render_height, rowstride, options)
 
-    def _do_paint_rgb24(self, img_data, x:int, y:int, width:int, height:int,
-                        render_width:int, render_height:int, rowstride:int, options) -> bool:
+    def _do_paint_rgb24(self, img_data, x: int, y: int, width: int, height: int,
+                        render_width: int, render_height: int, rowstride: int, options) -> bool:
         return self._do_paint_rgb(FORMAT_RGB24, False, img_data,
                                   x, y, width, height, render_width, render_height, rowstride, options)
 
-    def _do_paint_rgb30(self, img_data, x:int, y:int, width:int, height:int,
-                        render_width:int, render_height:int, rowstride:int, options) -> bool:
+    def _do_paint_rgb30(self, img_data, x: int, y: int, width: int, height: int,
+                        render_width: int, render_height: int, rowstride: int, options) -> bool:
         return self._do_paint_rgb(FORMAT_RGB30, True, img_data,
                                   x, y, width, height, render_width, render_height, rowstride, options)
 
-    def _do_paint_rgb32(self, img_data, x:int, y:int, width:int, height:int,
-                        render_width:int, render_height:int, rowstride:int, options) -> bool:
+    def _do_paint_rgb32(self, img_data, x: int, y: int, width: int, height: int,
+                        render_width: int, render_height: int, rowstride: int, options) -> bool:
         if self._alpha_enabled:
             cformat = FORMAT_ARGB32
         else:
@@ -224,13 +224,13 @@ class CairoBackingBase(WindowBackingBase):
             fire_paint_callbacks(callbacks, False, message="no context")
             return
         gc.set_operator(OPERATOR_SOURCE)
-        for sx,sy,sw,sh,xdelta,ydelta in scrolls:
+        for sx, sy, sw, sh, xdelta, ydelta in scrolls:
             gc.set_source_surface(old_backing, xdelta, ydelta)
-            x = sx+xdelta
-            y = sy+ydelta
+            x = sx + xdelta
+            y = sy + ydelta
             gc.rectangle(x, y, sw, sh)
             gc.fill()
-            if self.paint_box_line_width>0:
+            if self.paint_box_line_width > 0:
                 self.cairo_paint_box(gc, "scroll", x, y, sw, sh)
         del gc
         self._backing.flush()
@@ -251,7 +251,7 @@ class CairoBackingBase(WindowBackingBase):
         if ww == 0 or w == 0 or wh == 0 or h == 0:
             return
         if w != ww or h != wh:
-            context.scale(ww/w, wh/h)
+            context.scale(ww / w, wh / h)
         x, y = self.offsets[:2]
         if x != 0 or y != 0:
             context.translate(x, y)
@@ -260,9 +260,9 @@ class CairoBackingBase(WindowBackingBase):
         context.paint()
         if self.pointer_overlay and self.cursor_data:
             px, py, _size, start_time = self.pointer_overlay[2:]
-            spx = round(w*px/ww)
-            spy = round(h*py/wh)
-            cairo_paint_pointer_overlay(context, self.cursor_data, x+spx, y+spy, start_time)
+            spx = round(w * px / ww)
+            spy = round(h * py / wh)
+            cairo_paint_pointer_overlay(context, self.cursor_data, x + spx, y + spy, start_time)
         if self.is_show_fps() and self.fps_image:
             x, y = 10, 10
             context.translate(x, y)
@@ -270,6 +270,7 @@ class CairoBackingBase(WindowBackingBase):
             context.set_source_surface(self.fps_image, 0, 0)
             context.paint()
             self.cancel_fps_refresh()
+
             # width, height = self.fps_buffer_size
 
             def refresh_screen():
@@ -279,4 +280,5 @@ class CairoBackingBase(WindowBackingBase):
                     self.update_fps()
                     rw, rh = self.render_size
                     self.repaint(0, 0, rw, rh)
+
             self.fps_refresh_timer = GLib.timeout_add(1000, refresh_screen)

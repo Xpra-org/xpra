@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -26,7 +26,6 @@ GdkPixbuf = gi_import("GdkPixbuf")
 MENU_ICONS = envbool("XPRA_MENU_ICONS", True)
 HIDE_DISABLED_MENU_ENTRIES = envbool("XPRA_HIDE_DISABLED_MENU_ENTRIES", False)
 
-
 LOSSLESS = "Lossless"
 QUALITY_OPTIONS_COMMON = {
     50: "Average",
@@ -46,7 +45,6 @@ QUALITY_OPTIONS |= {
     100: LOSSLESS,
 }
 QUALITY_OPTIONS = dict(sorted(QUALITY_OPTIONS.items()))
-
 
 SPEED_OPTIONS_COMMON = {
     70: "Low Latency",
@@ -69,7 +67,7 @@ def get_bandwidth_menu_options():
     options = []
     for x in os.environ.get("XPRA_BANDWIDTH_MENU_OPTIONS", "1,2,5,10,20,50,100").split(","):
         try:
-            options.append(int(float(x)*1000*1000))
+            options.append(int(float(x) * 1000 * 1000))
         except ValueError:
             log.warn("Warning: invalid bandwidth menu option '%s'", x)
     return options
@@ -85,7 +83,7 @@ def ll(m) -> str:
         return str(m)
 
 
-def set_sensitive(widget, sensitive:bool) -> None:
+def set_sensitive(widget, sensitive: bool) -> None:
     if OSX:
         if sensitive:
             widget.show()
@@ -104,7 +102,7 @@ def load_pixbuf(data) -> GdkPixbuf.Pixbuf:
 def get_appimage(app_name, icondata=None, menu_icon_size=24) -> Gtk.Image | None:
     pixbuf = None
     if app_name and not icondata:
-        #try to load from our icons:
+        # try to load from our icons:
         nstr = bytestostr(app_name).lower()
         icon_filename = os.path.join(get_icon_dir(), "%s.png" % nstr)
         if os.path.exists(icon_filename):
@@ -115,6 +113,7 @@ def get_appimage(app_name, icondata=None, menu_icon_size=24) -> Gtk.Image | None
         log.error("Error: failed to load icon data for '%s':", bytestostr(app_name))
         log.estr(e)
         log.error(" data=%s", repr_ellipsized(icondata))
+
     if not pixbuf and icondata:
         # gtk pixbuf loader:
         try:
@@ -133,11 +132,11 @@ def get_appimage(app_name, icondata=None, menu_icon_size=24) -> Gtk.Image | None
     if not pixbuf and icondata:
         # let's try pillow:
         try:
-            from xpra.codecs.pillow.decoder import open_only   # pylint: disable=import-outside-toplevel
+            from xpra.codecs.pillow.decoder import open_only  # pylint: disable=import-outside-toplevel
             img = open_only(icondata)
-            has_alpha = img.mode=="RGBA"
+            has_alpha = img.mode == "RGBA"
             width, height = img.size
-            rowstride = width * (3+int(has_alpha))
+            rowstride = width * (3 + int(has_alpha))
             pixbuf = get_pixbuf_from_data(img.tobytes(), has_alpha, width, height, rowstride)
             return scaled_image(pixbuf, icon_size=menu_icon_size)
         except Exception as e:
@@ -147,16 +146,16 @@ def get_appimage(app_name, icondata=None, menu_icon_size=24) -> Gtk.Image | None
     return None
 
 
-#utility method to ensure there is always only one CheckMenuItem
-#selected in a submenu:
+# utility method to ensure there is always only one CheckMenuItem
+# selected in a submenu:
 def ensure_item_selected(submenu, item, recurse=True):
     if not isinstance(item, Gtk.CheckMenuItem):
         return None
     if item.get_active():
-        #deactivate all except this one
+        # deactivate all except this one
         def deactivate(items, skip=None):
             for x in items:
-                if x==skip:
+                if x == skip:
                     continue
                 if isinstance(x, Gtk.MenuItem):
                     submenu = x.get_submenu()
@@ -165,8 +164,10 @@ def ensure_item_selected(submenu, item, recurse=True):
                 if isinstance(x, Gtk.CheckMenuItem):
                     if x != item and x.get_active():
                         x.set_active(False)
+
         deactivate(submenu.get_children(), item)
         return item
+
     # ensure there is at least one other active item
 
     def get_active_item(items):
@@ -180,10 +181,11 @@ def ensure_item_selected(submenu, item, recurse=True):
             if isinstance(x, Gtk.CheckMenuItem) and x.get_active():
                 return x
         return None
+
     active = get_active_item(submenu.get_children())
     if active:
         return active
-    #if not then keep this one active:
+    # if not then keep this one active:
     item.set_active(True)
     return item
 
@@ -210,17 +212,17 @@ def make_min_auto_menu(title, min_options, options,
     def populate_menu(options, value, set_fn):
         found_match = False
         items = {}
-        if value and value>0 and value not in options:
+        if value and value > 0 and value not in options:
             options[value] = f"{value}%"
         for s in sorted(options.keys()):
             t = options.get(s)
             qi = Gtk.CheckMenuItem(label=t)
             qi.set_draw_as_radio(True)
-            candidate_match = s>=max(0, value)
+            candidate_match = s >= max(0, value)
             qi.set_active(not found_match and candidate_match)
             found_match |= candidate_match
             qi.connect('activate', set_fn, submenu)
-            if s>0:
+            if s > 0:
                 qi.set_tooltip_text(f"{s}%")
             submenu.append(qi)
             items[s] = qi
@@ -231,7 +233,7 @@ def make_min_auto_menu(title, min_options, options,
             return
         # user selected a new value from the menu:
         s = -1
-        for ts,tl in options.items():
+        for ts, tl in options.items():
             if tl == item.get_label():
                 s = ts
                 break
@@ -240,12 +242,13 @@ def make_min_auto_menu(title, min_options, options,
             ss.set_value_cb(s)
             # deselect other items:
             for x in ss.menu_items.values():
-                if x!=item:
+                if x != item:
                     x.set_active(False)
             # min is only relevant in auto-mode:
             if s != 0:
                 for v, x in ss.min_menu_items.items():
-                    x.set_active(v==0)
+                    x.set_active(v == 0)
+
     submenu.menu_items.update(populate_menu(options, get_current_value(), set_value))
     submenu.append(Gtk.SeparatorMenuItem())
     mstitle = Gtk.MenuItem()
@@ -267,17 +270,18 @@ def make_min_auto_menu(title, min_options, options,
             ss.set_min_value_cb(s)
             # deselect other min items:
             for x in ss.min_menu_items.values():
-                if x!=item:
+                if x != item:
                     x.set_active(False)
             # min requires auto-mode:
             for x in ss.menu_items.values():
-                if x.get_label()=="Auto":
+                if x.get_label() == "Auto":
                     if not x.get_active():
                         x.activate()
                 else:
                     x.set_active(False)
+
     mv = -1
-    if get_current_value()<=0:
+    if get_current_value() <= 0:
         mv = get_current_min_value()
     submenu.min_menu_items.update(populate_menu(min_options, mv, set_min_value))
     submenu.show_all()
@@ -300,7 +304,7 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
     encodings_submenu.encoding_to_index = {}
     NAME_TO_ENCODING = {}
     for i, encoding in enumerate(encodings):
-        if encoding=="-":
+        if encoding == "-":
             encodings_submenu.append(Gtk.SeparatorMenuItem())
             continue
         if encoding.startswith("label:"):
@@ -323,11 +327,12 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
             ensure_item_selected(encodings_submenu, item)
             enc = NAME_TO_ENCODING.get(item.get_label())
             log("encoding_changed(%s) enc=%s, current=%s", item, enc, encodings_submenu.get_current_encoding())
-            if enc is not None and encodings_submenu.get_current_encoding()!=enc:
+            if enc is not None and encodings_submenu.get_current_encoding() != enc:
                 encodings_submenu.set_encoding(enc)
+
         log("populate_encodingsmenu(..) encoding=%s, current=%s, active=%s",
-            encoding, get_current_encoding(), encoding==get_current_encoding())
-        encoding_item.set_active(encoding==get_current_encoding())
+            encoding, get_current_encoding(), encoding == get_current_encoding())
+        encoding_item.set_active(encoding == get_current_encoding())
         sensitive = encoding in server_encodings
         if not sensitive and HIDE_DISABLED_MENU_ENTRIES:
             continue
@@ -347,7 +352,7 @@ class MenuHelper:
         self.menu = None
         self.menu_shown = False
         self.menu_icon_size = get_icon_size()
-        self.handshake_menuitem : Callable = self.do_handshake_menuitem
+        self.handshake_menuitem: Callable = self.do_handshake_menuitem
         self.set_client(client)
 
     def set_client(self, client):
@@ -356,6 +361,7 @@ class MenuHelper:
 
             def shortcut():
                 self.handshake_menuitem = self.menuitem
+
             client.after_handshake(shortcut)
 
     def build(self):
@@ -413,7 +419,7 @@ class MenuHelper:
             self.menu.popup(None, None, None, None, button, time)
         self.menu_shown = True
 
-    def after_handshake(self, cb:Callable, *args) -> None:
+    def after_handshake(self, cb: Callable, *args) -> None:
         if self.client:
             self.client.after_handshake(cb, *args)
 
@@ -424,6 +430,7 @@ class MenuHelper:
 
         def enable_menuitem(*_args):
             set_sensitive(mi, True)
+
         self.after_handshake(enable_menuitem)
         return mi
 
@@ -443,9 +450,10 @@ class MenuHelper:
         def menu_cb(*_args):
             if cb:
                 cb()
+
         return menuitem(title, image, tooltip, menu_cb)
 
-    def checkitem(self, title, cb: Callable | None=None, active=False) -> Gtk.CheckMenuItem:
+    def checkitem(self, title, cb: Callable | None = None, active=False) -> Gtk.CheckMenuItem:
         """ Utility method for easily creating a CheckMenuItem """
         check_item = Gtk.CheckMenuItem(label=title)
         check_item.set_active(active)
@@ -463,6 +471,7 @@ class MenuHelper:
             w = get_update_status_window()
             w.show()
             w.check()
+
         return self.menuitem("Check for updates", "update.png", cb=show_update_window)
 
     def make_qrmenuitem(self) -> Gtk.ImageMenuItem:
@@ -476,6 +485,7 @@ class MenuHelper:
         def show():
             uri = self.client.display_desc.get("display_name")
             show_qr(uri)
+
         qr_menuitem = self.menuitem("Show QR connection string", "qr.png", cb=show)
         log("make_qrmenuitem() qrencode.encode_image=%s", encode_image)
         if encode_image:
@@ -484,6 +494,7 @@ class MenuHelper:
                 if not uri or not any(uri.startswith(proto) for proto in ("tcp:", "ws:", "wss:")):
                     set_sensitive(qr_menuitem, False)
                     qr_menuitem.set_tooltip_text("server uri is not shareable")
+
             self.after_handshake(with_connection)
         else:
             set_sensitive(qr_menuitem, False)
@@ -492,9 +503,10 @@ class MenuHelper:
 
     def make_sessioninfomenuitem(self) -> Gtk.ImageMenuItem:
         def show_session_info_cb(*_args):
-            #we define a generic callback to remove the arguments
-            #(which contain the menu widget and are of no interest to the 'show_session_info' function)
+            # we define a generic callback to remove the arguments
+            # (which contain the menu widget and are of no interest to the 'show_session_info' function)
             self.show_session_info()
+
         sessioninfomenuitem = self.handshake_menuitem("Session Info", "statistics.png", None, show_session_info_cb)
         return sessioninfomenuitem
 
@@ -506,6 +518,7 @@ class MenuHelper:
             from xpra.scripts.main import run_docs
             from xpra.util.thread import start_thread
             start_thread(run_docs, "open documentation", True)
+
         return self.menuitem("Documentation", "documentation.png", cb=show_docs)
 
     def make_html5menuitem(self) -> Gtk.ImageMenuItem:
@@ -520,7 +533,8 @@ class MenuHelper:
                         url_options[k] = v
             except Exception:
                 pass
-            start_thread(run_html5, "open HTML5 client", True, args=(url_options, ))
+            start_thread(run_html5, "open HTML5 client", True, args=(url_options,))
+
         return self.menuitem("HTML5 client", "browser.png", cb=show_html5)
 
     def make_closemenuitem(self) -> Gtk.ImageMenuItem:

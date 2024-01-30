@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -20,8 +20,8 @@ Gtk = gi_import("Gtk")
 GdkPixbuf = gi_import("GdkPixbuf")
 
 ORIENTATION = {
-    Gtk.Orientation.HORIZONTAL  : "HORIZONTAL",
-    Gtk.Orientation.VERTICAL    : "VERTICAL",
+    Gtk.Orientation.HORIZONTAL: "HORIZONTAL",
+    Gtk.Orientation.VERTICAL: "VERTICAL",
 }
 
 GUESS_GEOMETRY = WIN32 or OSX
@@ -97,7 +97,7 @@ class GTKStatusIconTray(TrayBase):
         assert self.tray_widget
         # on X11, if we don't have an `xid`, don't bother querying its geometry,
         # as this would trigger some ugly GTK warnings we can do nothing about
-        if POSIX and os.environ.get("DISPLAY") and ignorewarnings(self.tray_widget.get_x11_window_id)==0:
+        if POSIX and os.environ.get("DISPLAY") and ignorewarnings(self.tray_widget.get_x11_window_id) == 0:
             ag = None
         else:
             ag = ignorewarnings(self.tray_widget.get_geometry)
@@ -105,7 +105,7 @@ class GTKStatusIconTray(TrayBase):
         if ag is None:
             if not self.geometry_guess:
                 self.may_guess()
-            #probably win32 or OSX, gnome-shell or KDE5..
+            # probably win32 or OSX, gnome-shell or KDE5..
             log("GTKStatusIconTray.get_geometry() no geometry value available, returning guess: %s",
                 self.geometry_guess)
             return self.geometry_guess or (0, 0, 0, 0)
@@ -114,10 +114,10 @@ class GTKStatusIconTray(TrayBase):
         geom = ag[-2]
         x, y, w, h = geom.x, geom.y, geom.width, geom.height
         log("GTKStatusIconTray.get_geometry() geometry area rectangle=%s", (x, y, w, h))
-        if x==0 and y==0 and w==0 and h==0 and self.geometry_guess:
+        if x == 0 and y == 0 and w == 0 and h == 0 and self.geometry_guess:
             return self.geometry_guess
-        if x==0 and y==0 and w==200 and h==200:
-            #this isn't right, take a better guess, at least for the size:
+        if x == 0 and y == 0 and w == 200 and h == 200:
+            # this isn't right, take a better guess, at least for the size:
             w = 48
             h = 48
         return x, y, w, h
@@ -126,12 +126,12 @@ class GTKStatusIconTray(TrayBase):
         s = max(8, min(256, self.tray_widget.get_size()))
         return [s, s]
 
-    def set_tooltip(self, tooltip:str=""):
+    def set_tooltip(self, tooltip: str = ""):
         if self.tray_widget:
             ignorewarnings(self.tray_widget.set_tooltip_text, tooltip or "Xpra")
 
     def set_blinking(self, on: bool):
-        #no longer supported with GTK3
+        # no longer supported with GTK3
         pass
 
     def set_icon_from_data(self, pixels, has_alpha: bool, w: int, h: int, rowstride: int, _options=None):
@@ -146,13 +146,13 @@ class GTKStatusIconTray(TrayBase):
         if not tray_icon or not self.tray_widget:
             return
         tw, th = self.get_geometry()[2:4]
-        if (tw<=2 or th<=2) or (tw==200 and th==200):
+        if (tw <= 2 or th <= 2) or (tw == 200 and th == 200):
             log("bogus tray icon size: %ix%i", tw, th)
             tw = th = 48
         w = tray_icon.get_width()
         h = tray_icon.get_height()
         log("set_icon_from_pixbuf(%s) geometry=%s, icon size=%s", tray_icon, self.get_geometry(), (w, h))
-        if tw!=w or th!=h:
+        if tw != w or th != h:
             tray_icon = tray_icon.scale_simple(tw, th, GdkPixbuf.InterpType.HYPER)
             log("tray icon scaled to %ix%i", tw, th)
         if SAVE:
@@ -168,9 +168,9 @@ def main():
     GLib = gi_import("GLib")
     log.enable_debug()
     s = GTKStatusIconTray(None, None, None, "test", "xpra.png", None, None, None, Gtk.main_quit)
-    GLib.timeout_add(1000*2, s.set_blinking, True)
-    GLib.timeout_add(1000*5, s.set_blinking, False)
-    GLib.timeout_add(1000*30, Gtk.main_quit)
+    GLib.timeout_add(1000 * 2, s.set_blinking, True)
+    GLib.timeout_add(1000 * 5, s.set_blinking, False)
+    GLib.timeout_add(1000 * 30, Gtk.main_quit)
     Gtk.main()
 
 

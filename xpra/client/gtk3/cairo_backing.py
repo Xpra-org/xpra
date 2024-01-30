@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -22,6 +22,7 @@ set_image_surface_data = noop
 CAIRO_FORMATS = {}
 try:
     from xpra.client.gtk3 import cairo_workaround
+
     set_image_surface_data = cairo_workaround.set_image_surface_data
     CAIRO_FORMATS.update(cairo_workaround.CAIRO_FORMATS)
 except ImportError as e:
@@ -88,4 +89,4 @@ class CairoBacking(CairoBackingBase):
 
     def update_fps_buffer(self, width, height, pixels) -> None:
         self.fps_image = ImageSurface(FORMAT_ARGB32, width, height)
-        set_image_surface_data(self.fps_image, "RGBA", pixels, width, height, width*4)
+        set_image_surface_data(self.fps_image, "RGBA", pixels, width, height, width * 4)
