@@ -784,13 +784,14 @@ def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
                         handle_socket_error(sockpath, sperms, e)
                         del e
     except Exception:
-        for sock, cleanup_socket in defs.items():
+        for sock_def in defs.keys():
             try:
+                cleanup_socket = sock_def[-1]
                 cleanup_socket()
             except Exception:
                 log(f"error cleaning up socket {sock}", exc_info=True)
                 log.error(f"Error cleaning up socket {sock}:", exc_info=True)
-                log.error(f" using {cleanup_socket}")
+                log.error(f" using {sock_def}")
         raise
     return defs
 
