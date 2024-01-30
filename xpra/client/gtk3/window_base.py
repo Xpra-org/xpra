@@ -65,6 +65,8 @@ prop_get, prop_set, prop_del = None, None, None
 NotifyInferior = None
 X11Window = X11Core = None
 
+WIN32_WORKSPACE = WIN32 and envbool("XPRA_WIN32_WORKSPACE", True)
+
 
 def use_x11_bindings() -> bool:
     if not POSIX or OSX:
@@ -120,12 +122,13 @@ if use_x11_bindings():
                 workspacelog.error("Error: failed to setup workspace hooks:")
                 workspacelog.estr(e)
         CAN_SET_WORKSPACE = can_set_workspace()
-elif WIN32:
+elif WIN32 and WIN32_WORKSPACE:
     from _ctypes import COMError
     try:
         from pyvda.pyvda import get_virtual_desktops
     except (ImportError, COMError) as e:
         workspacelog(f"no workspace support: {e}")
+        WIN32_WORKSPACE = 0
     else:
         CAN_SET_WORKSPACE = len(get_virtual_desktops())>0
 
@@ -1535,6 +1538,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if not self._can_set_workspace:
             return 0
         if WIN32:
+            if not WIN32_WORKSPACE:
+                return 0
             from pyvda.pyvda import get_virtual_desktops
             return len(get_virtual_desktops())
         root = get_default_root_window()
@@ -1578,6 +1583,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             workspacelog("window workspace unchanged: %s", wn(workspace))
             return
         if WIN32:
+            if not WIN32_WORKSPACE:
+                return
             from xpra.platform.win32.gui import get_window_handle
             from pyvda.pyvda import AppView, VirtualDesktop
             hwnd = get_window_handle(self)
@@ -1597,6 +1604,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def get_desktop_workspace(self) -> int:
         if WIN32:
+            if not WIN32_WORKSPACE:
+                return 0
             from pyvda.pyvda import VirtualDesktop
             return VirtualDesktop.current().number-1
 
@@ -1611,6 +1620,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def get_window_workspace(self):
         if WIN32:
+            if not WIN32_WORKSPACE:
+                return 0
             try:
                 from xpra.platform.win32.gui import get_window_handle
                 from pyvda.pyvda import AppView
