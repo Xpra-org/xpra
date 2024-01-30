@@ -49,15 +49,22 @@ def get_network_logger():
     return network_logger
 
 
+def validate_abstract_socketpath(sockpath: str) -> bool:
+    return all((str.isalnum(c) or c in ("-", "_")) for c in sockpath)
+
+
 def create_abstract_socket(sockpath: str) -> tuple[socket.socket, Callable]:
     log = get_network_logger()
     log(f"create_abstract_socket({sockpath!r})")
-    assert POSIX
-    assert sockpath[:1] == "@"
+    if not POSIX:
+        raise RuntimeError(f"cannot use abstract sockets on {os.name}")
+    if sockpath[:1] != "@":
+        raise ValueError(f"missing '@' prefix in abstract socket path: {sockpath}")
+    validate = sockpath[1:]
     if sockpath[1:].startswith(ABSTRACT_SOCKET_PREFIX):
-        assert sockpath[1 + len(ABSTRACT_SOCKET_PREFIX):].isalnum()
-    else:
-        assert sockpath[1:].isalnum()
+        validate = sockpath[1 + len(ABSTRACT_SOCKET_PREFIX):]
+    if not validate_abstract_socketpath(validate):
+        raise ValueError(f"illegal characters found in abstract socket path {validate!r} of {sockpath!r}")
     asockpath = "\0" + sockpath[1:]
     listener = socket.socket(socket.AF_UNIX)
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -693,7 +700,7 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                 if WIN32:
                     raise ValueError("abstract sockets are not supported on MS Windows")
                 sockpath = dotxpra.osexpand(sockpath)
-                if not sockpath[1:].isalnum():
+                if not validate_abstract_socketpath(sockpath[1:]):
                     raise ValueError(f"invalid characters in abstract socket name {sockpath!r}")
                 sockpaths[sockpath] = options
             else:
@@ -895,7 +902,8 @@ def handle_socket_error(sockpath: str, sperms: int, e) -> None:
     else:
         log.error(f"Error: failed to create socket {sockpath!r}")
         log.estr(e)
-        raise InitExit(ExitCode.SOCKET_CREATION_ERROR, f"failed to create socket {sockpath}")
+        if not sockpath.startswith("@"):
+            raise InitExit(ExitCode.SOCKET_CREATION_ERROR, f"failed to create socket {sockpath}")
 
 
 def socket_connect(host: str, port: int, timeout: float = SOCKET_TIMEOUT):
