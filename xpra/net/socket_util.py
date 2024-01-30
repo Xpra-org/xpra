@@ -860,13 +860,14 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                     for cpath in abstract:
                         log.info(f" {cpath!r}")
     except Exception:
-        for sock, cleanup_socket in defs.items():
+        for sock_def in defs.keys():
             try:
+                cleanup_socket = sock_def[-1]
                 cleanup_socket()
             except Exception:
                 log(f"error cleaning up socket {sock}", exc_info=True)
                 log.error(f"Error cleaning up socket {sock}:", exc_info=True)
-                log.error(f" using {cleanup_socket}")
+                log.error(f" using {sock_def}")
         raise
     return defs
 
