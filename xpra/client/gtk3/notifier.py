@@ -7,7 +7,7 @@ from xpra.os_util import gi_import
 from xpra.common import NotificationID
 from xpra.notifications.notifier_base import NotifierBase
 
-Notify = gi_import("Notify", "0.7")
+Notify = gi_import("Notify")
 
 
 class GINotifier(NotifierBase):

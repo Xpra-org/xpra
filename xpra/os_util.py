@@ -38,6 +38,7 @@ GIR_VERSIONS: dict[str, str] = {
     "Gst": "1.0",
     "NM": "1.0",
     "GtkosxApplication": "1.0",
+    "Notify": "0.7",
 }
 
 
