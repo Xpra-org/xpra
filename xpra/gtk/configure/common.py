@@ -42,7 +42,7 @@ def get_user_config_file() -> str:
     return osexpand(os.path.join(get_user_conf_dirs()[0], "conf.d", "99_configure_tool.conf"))
 
 
-def parse_user_config_file() -> dict[str, str | list[str]]:
+def parse_user_config_file() -> dict[str, str | list[str] | dict[str, str]]:
     filename = get_user_config_file()
     if not os.path.exists(filename):
         return {}
@@ -59,7 +59,14 @@ def save_user_config_file(options: dict) -> None:
     with open(filename, "w", encoding="utf8") as f:
         f.write("# generated on " + datetime.now().strftime("%c")+"\n\n")
         for k, v in options.items():
-            f.write(f"{k} = {v}\n")
+            if isinstance(v, dict):
+                for dk, dv in v.items():
+                    f.write(f"{k} = {dk}={dv}\n")
+                continue
+            if not isinstance(v, (list, tuple)):
+                v = [v]
+            for item in v:
+                f.write(f"{k} = {item}\n")
 
 
 def update_config_attribute(attribute: str, value) -> None:
@@ -67,6 +74,27 @@ def update_config_attribute(attribute: str, value) -> None:
     config = parse_user_config_file()
     config[attribute] = str(value)
     save_user_config_file(config)
+
+
+def update_config_env(attribute: str, value) -> None:
+    # there can be many env attributes
+    log(f"update config env: {attribute}={value}")
+    config = parse_user_config_file()
+    env = config.get("env")
+    if not isinstance(env, dict):
+        log.warn(f"Warning: env option was using invalid type {type(env)}")
+        config["env"] = env = {}
+    env[attribute] = str(value)
+    save_user_config_file(config)
+
+
+def get_config_env(var_name: str) -> str:
+    config = parse_user_config_file()
+    env = config.get("env", {})
+    if not isinstance(env, dict):
+        log.warn(f"Warning: env option was using invalid type {type(env)}")
+        return ""
+    return env.get(var_name, "")
 
 
 def with_config(cb: Callable) -> None:

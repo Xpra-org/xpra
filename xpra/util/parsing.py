@@ -143,7 +143,7 @@ def parse_scaling(desktop_scaling: str, root_w: int, root_h: int,
     return sx, sy
 
 
-def parse_simple_dict(s: str = "", sep: str = ",") -> dict[str, str | list[str]]:
+def parse_simple_dict(s: str = "", sep: str = ",") -> dict[str, str | list[str] | dict[str, str]]:
     # parse the options string and add the pairs:
     d: dict[str, str | list[str]] = {}
     for el in s.split(sep):
@@ -156,10 +156,22 @@ def parse_simple_dict(s: str = "", sep: str = ",") -> dict[str, str | list[str]]
             k = k.strip()
             v = v.strip()
 
-            def may_add() -> str | list[str]:
+            def may_add() -> str | list[str] | dict[str, str]:
                 cur = d.get(k)
+                vparts = v.split("=", 1)
                 if cur is None:
+                    # first time we see this key 'k'
+                    if len(vparts) == 2:
+                        # looks like a nested dictionary
+                        return {vparts[0]: vparts[1]}
+                    # first value found for this key,
+                    # keep it as a string - for now
                     return v
+                if isinstance(cur, dict):
+                    if len(vparts) != 2:
+                        raise ValueError(f"cannot add {v} to dictionary {k}")
+                    cur[vparts[0]] = vparts[1]
+                    return cur
                 if not isinstance(cur, list):
                     cur = [cur]
                 cur.append(v)

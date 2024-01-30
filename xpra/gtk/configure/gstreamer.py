@@ -1,18 +1,19 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import shlex
+import os
+from time import sleep
 from textwrap import wrap
-from subprocess import Popen, PIPE
 
-from xpra.util.types import AtomicInteger
-from xpra.os_util import gi_import, OSX, WIN32
-from xpra.util.system import is_gnome, is_X11
-from xpra.gtk.configure.common import DISCLAIMER, sync, run_gui
+from xpra.os_util import gi_import, POSIX, OSX, WIN32
+from xpra.util.env import envint
+from xpra.util.str_fn import csv
+from xpra.util.thread import start_thread
+from xpra.gtk.configure.common import DISCLAIMER, run_gui, get_config_env, update_config_env
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
-from xpra.gtk.widget import label, slabel, title_box
+from xpra.gtk.widget import label, setfont
 from xpra.platform.paths import get_image
 from xpra.log import Logger
 
@@ -21,166 +22,266 @@ GLib = gi_import("GLib")
 
 log = Logger("gstreamer", "util")
 
+STEP_DELAY = envint("XPRA_CONFIGURE_STEP_DELAY", 100)
+
+
+def _set_labels_text(widgets, *messages):
+    for i, widget in enumerate(widgets):
+        if i < len(messages):
+            widget.set_text(messages[i])
+        else:
+            widget.set_text("")
+
 
 class ConfigureGUI(BaseGUIWindow):
 
     def __init__(self, parent: Gtk.Window | None = None):
-        self.warning_shown = False
         self.warning_pixbuf = get_image("warning.png")
         size = (800, 554)
         if self.warning_pixbuf:
-            size = self.warning_pixbuf.get_width()+20, self.warning_pixbuf.get_height()+20
+            size = self.warning_pixbuf.get_width() + 20, self.warning_pixbuf.get_height() + 20
+        self.layout = None
+        self.warning_labels = []
+        self.labels = []
+        self.buttons = []
+        self.elements = []
         super().__init__(
             "Configure Xpra's GStreamer Codecs",
             "gstreamer.png",
             wm_class=("xpra-configure-gstreamer-gui", "Xpra Configure GStreamer GUI"),
             default_size=size,
-            header_bar=(True, False),
+            header_bar=(False, False),
             parent=parent,
         )
         self.set_resizable(False)
 
-    def populate(self):
-        self.clear_vbox()
-        if not self.warning_shown:
-            self.populate_with_warning()
-        else:
-            self.populate_with_grid()
-        self.vbox.show_all()
+    def add_layout(self) -> None:
+        if not self.layout:
+            layout = Gtk.Layout()
+            layout.set_margin_top(0)
+            layout.set_margin_bottom(0)
+            layout.set_margin_start(0)
+            layout.set_margin_end(0)
+            self.layout = layout
+            self.vbox.add(layout)
 
-    def populate_with_grid(self):
-        self.add_widget(label("Configure Xpra GStreamer Codecs", font="sans 20"))
-        grid = Gtk.Grid()
-        grid.set_row_homogeneous(False)
-        grid.set_column_homogeneous(True)
-        hbox = Gtk.HBox()
-        hbox.add(slabel("Please select the viewing element"))
-        videosink = "ximagesink"
-        self.add_widget(hbox)
-        self.add_widget(grid)
-        grid.attach(title_box("Mode"), 0, 0, 1, 1)
-        grid.attach(title_box("GStreamer Elements"), 1, 0, 1, 1)
-        grid.attach(title_box("Test"), 2, 0, 1, 1)
-        grid.attach(title_box("Result"), 3, 0, 1, 1)
-        row = AtomicInteger(1)
-
-        WIDTH = 640
-        HEIGHT = 480
-        FRAMERATE = 10
-
-        def lal(text: str, element: str, test="") -> None:
-            r = int(row)
-            grid.attach(title_box(text), 0, r, 1, 1)
-            lbl = slabel(element)
-            al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0.0)
-            al.add(lbl)
-            grid.attach(al, 1, r, 1, 1)
-            if test:
-                btn = Gtk.Button(label="Run")
-                grid.attach(btn, 2, r, 1, 1)
-                lbl = slabel()
-                al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0.0)
-                al.add(lbl)
-                grid.attach(al, 3, r, 1, 1)
-
-                def run_test(btn, lbl):
-                    log(f"run_test({btn}, {lbl})")
-                    lbl.set_label(f"Testing {element}")
-                    from xpra.util.thread import start_thread
-                    start_thread(self.test_element, f"test {element}", True, (lbl, element, test))
-                btn.connect("clicked", run_test, lbl)
-            row.increase()
-        if is_X11():
-            lal("X11 Capture", "ximagesrc",
-                f"ximagesrc use-damage=0 ! video/x-raw,framerate={FRAMERATE}/1 !"
-                f" videoscale method=0 ! video/x-raw,width={WIDTH},height={HEIGHT}  ! {videosink}")
-        if is_gnome():
-            lal("pipewire ScreenCast", "pipewiresrc")
-            lal("pipewire RemoteDesktop", "pipewiresrc")
-
-        def testencoder(element, fmt) -> str:
-            return "videotestsrc num-buffers=50 !"\
-                   f" 'video/x-raw,format=(string)NV12,width={WIDTH},height={HEIGHT},"\
-                   f"framerate=(fraction){FRAMERATE}/1' !"\
-                   " videoconvert ! {element} ! avdec_{fmt} ! videoconvert ! {videosink}"
-
-        def encoder_option(text: str, element: str, fmt: str):
-            lal(text, element, testencoder(element, fmt))
-
-        for sw in ("x264", "vp8", "vp9", "av1"):
-            fmt = {"x264" : "h264"}.get(sw, sw)
-            encoder_option(f"software {sw} encoder", f"{sw}enc", fmt)
-        for fmt in ("h264", "h265", "jpeg", "vp8", "vp9"):
-            encoder_option(f"vaapi {fmt} encoder", f"vaapi{fmt}enc", fmt)
-            encoder_option(f"libva {fmt} encoder", f"va{fmt}enc", fmt)
-        if WIN32:
-            for fmt in ("h264", "h265"):
-                encoder_option(f"NVidia D3D11 {fmt}", f"nvd3d11{fmt}enc", fmt)
-        for fmt in ("h264", "h265"):
-            encoder_option(f"NVENC {fmt}", f"nv{fmt}enc", fmt)
-        if not (OSX or WIN32):
-            for fmt in ("h264", "h265"):
-                lal(f"AMD AMF {fmt}", f"amf{fmt}enc", fmt)
-
-    def test_element(self, lbl, element, test):
-
-        def set_label(message="OK"):
-            GLib.timeout_add(1000, lbl.set_label, message)
-
-        def run_test_cmd(cmd):
-            try:
-                log.info(f"running {cmd!r}")
-                proc = Popen(cmd, text=True, stdout=PIPE, stderr=PIPE)
-                out, err = proc.communicate(None)
-                if proc.returncode==0:
-                    return True
-                log(f"{proc}.communicate(None)={out!r},{err!r}")
-                log.error(f"Error: {cmd!r} returned {proc.returncode}")
-                set_label(f"Error: test pipeline returned {proc.returncode}")
-            except OSError as e:
-                log.error(f"Error running {cmd!r}: {e}")
-                set_label(f"Error: {e}")
-            return False
-        sync()
-        # first make sure that the element exists:
-        if not run_test_cmd(["gst-inspect-1.0", element]):
-            return
-        set_label("Element found")
-        if not run_test_cmd(["gst-launch-1.0"]+shlex.split(test)):
-            return
-        set_label("Test pipeline worked")
-
-    def populate_with_warning(self):
-        layout = Gtk.Layout()
-        layout.set_margin_top(0)
-        layout.set_margin_bottom(0)
-        layout.set_margin_start(0)
-        layout.set_margin_end(0)
-        self.vbox.add(layout)
+    def populate(self) -> None:
+        self.set_box_margin(0, 0, 0, 0)
+        self.add_layout()
         if self.warning_pixbuf:
             image = Gtk.Image.new_from_pixbuf(self.warning_pixbuf)
-            layout.put(image, 0, 0)
-        for i, text in enumerate((
+            self.layout.put(image, 0, 0)
+        for i in range(3):
+            lbl = label("", font="Sans 22")
+            self.warning_labels.append(lbl)
+            self.layout.put(lbl, 86, 70 + i * 40)
+        for i in range(11):
+            lbl = label("", font="Sans 12")
+            self.layout.put(lbl, 78, 180 + i * 24)
+            self.labels.append(lbl)
+
+        self.set_warning_labels(
             "This tool can cause your system to crash,",
             "it may even damage hardware in rare cases.",
             "            Use with caution.",
-        )):
-            lbl = label(text, font="Sans 22")
-            layout.put(lbl, 86, 70+i*40)
-        for i, line in enumerate(wrap(DISCLAIMER, width=70)):
-            lbl = label(line, font="Sans 12")
-            layout.put(lbl, 72, 220+i*24)
-        button = Gtk.Button.new_with_label("Understood")
-        button.connect("clicked", self.understood)
-        layout.put(button, 200, 450)
-        button = Gtk.Button.new_with_label("Get me out of here")
-        button.connect("clicked", self.dismiss)
-        layout.put(button, 400, 450)
-        self.warning_shown = True
+        )
+        self.set_labels("", "", *wrap(DISCLAIMER))
+        self.add_buttons(
+            ("Understood", self.detect_elements),
+            ("Get me out of here", self.dismiss)
+        )
 
-    def understood(self, *args):
-        self.warning_shown = True
-        self.populate()
+    def set_warning_labels(self, *messages) -> None:
+        _set_labels_text(self.warning_labels, *messages)
+
+    def set_labels(self, *messages) -> None:
+        _set_labels_text(self.labels, *messages)
+
+    def add_buttons(self, *buttons) -> None:
+        # remove existing buttons:
+        for button in self.buttons:
+            self.layout.remove(button)
+        i = 0
+        x = 400 - 100 * len(buttons)
+        for text, callback in buttons:
+            button = Gtk.Button.new_with_label(text)
+            button.connect("clicked", callback)
+            button.show()
+            self.buttons.append(button)
+            self.layout.put(button, x + 200 * i, 450)
+            i += 1
+
+    def detect_elements(self, *_args) -> None:
+        self.set_warning_labels(
+            "Probing the GStreamer elements available,",
+            "please wait.",
+        )
+        self.set_labels()
+        self.add_buttons(("Abort and exit", self.dismiss))
+        messages = []
+
+        def update_messages():
+            sleep(STEP_DELAY / 1000)
+            GLib.idle_add(self.set_labels, *messages)
+
+        def add_message(msg):
+            messages.append(msg)
+            update_messages()
+
+        def update_message(msg: str) -> None:
+            messages[-1] = msg
+            update_messages()
+
+        def probe_elements() -> None:
+            add_message("Loading the GStreamer bindings")
+            try:
+                gst = gi_import("Gst")
+                update_message("loaded the GStreamer bindings")
+                add_message("initializing GStreamer")
+                gst.init(None)
+                update_message("initialized GStreamer")
+            except Exception as e:
+                log("Warning failed to import GStreamer", exc_info=True)
+                update_message(f"Failed to load GStreamer: {e}")
+                return
+            try:
+                add_message("locating plugins")
+                from xpra.gstreamer.common import import_gst, get_all_plugin_names
+                import_gst()
+                self.elements = get_all_plugin_names()
+                update_message(f"found {len(self.elements)} elements")
+            except Exception as e:
+                log("Warning failed to load GStreamer plugins", exc_info=True)
+                update_message(f"Failed to load plugins: {e}")
+                return
+            if not self.elements:
+                update_message("no elements found - cannot continue")
+                return
+            pset = set(self.elements)
+            need = {"capsfilter", "videoconvert", "videoscale", "queue"}
+            missing = tuple(need - pset)
+            if missing:
+                add_message("some essential plugins are missing: " + csv(missing))
+                add_message("install them then you can run this tool again")
+                return
+            add_message("essential plugins found")
+            want = {"x264enc", "vp8enc", "vp9enc", "webmmux"}
+            found = tuple(want & pset)
+            if not found:
+                add_message("install at least one plugin from: " + csv(want))
+                add_message("then you can run this tool again")
+                return
+            missing = tuple(want - pset)
+            if missing:
+                add_message("some useful extra plugins you may want to install: " + csv(missing))
+            if not (WIN32 or OSX) and "pipewiresrc" not in pset:
+                add_message("`pipewiresrc` is missing - it is required for shadowing Wayland sessions")
+
+            GLib.timeout_add(STEP_DELAY * 6, self.add_buttons,
+                             ("configure shadow mode", self.configure_shadow),
+                             # ("configure encoding", self.configure_encoding),
+                             # ("configure decoding", self.configure_decoding),
+                             )
+
+        start_thread(probe_elements, "probe-elements", daemon=True)
+
+    def configure_encoding(self, *_args) -> None:
+        pass
+
+    def configure_decoding(self, *_args) -> None:
+        pass
+
+    def configure_shadow(self, *_args) -> None:
+        self.clear_vbox()
+        self.set_box_margin()
+        self.layout = None
+        messages = (
+            "Configuring shadow mode",
+        )
+
+        def has(*els):
+            return all(el in self.elements for el in els)
+
+        backends = []
+        if POSIX and not OSX:
+            from xpra.platform.posix.shadow_server import SHADOW_OPTIONS
+            backends = SHADOW_OPTIONS
+            options = (
+                (
+                    True, "auto", "Automatic runtime detection",
+                    "this is the default behaviour",
+                    "this option should always find a suitable capture strategy",
+                    "it may not to use a video stream",
+                ),
+                (
+                    has("ximagesrc"), "X11", "X11 image capture",
+                    "GStreamer will capture the session's contents using 'ximagesrc'",
+                    "the pixel data will be compressed using a stream encoder",
+                    "eg: h264, hevc, av1, etc",
+                    "this option is only available for shadowing existing X11 sessions",
+                ),
+                (
+                    has("pipewiresrc"), "pipewire", "pipewire capture",
+                    "GStreamer use a pipewire source from the RemoteDesktop interface",
+                    "the pixel data will be compressed using a stream encoder",
+                    "eg: h264, hevc, av1, etc",
+                    "your desktop sessions must support the 'RemoteDesktop' dbus interface",
+                ),
+            )
+        else:
+            raise RuntimeError(f"unsupported platform {os.name}")
+        for i, message in enumerate(messages):
+            lbl = label(message, font="Sans 22")
+            self.vbox.add(lbl)
+        current_setting = get_config_env("XPRA_SHADOW_BACKEND")
+        self.buttons = []
+        for available, backend, description, *details in options:
+            btn = Gtk.CheckButton(label=description)
+            btn.set_sensitive(available)
+            btn.set_active(backend == current_setting)
+            btn._backend = backend
+            setfont(btn, font="sans 14")
+            self.vbox.add(btn)
+            for detail in details:
+                lbl = label(detail)
+                lbl.set_halign(Gtk.Align.START)
+                lbl.set_margin_start(32)
+                self.vbox.add(lbl)
+            self.buttons.append(btn)
+        btn_box = Gtk.HBox(homogeneous=True, spacing=40)
+        btn_box.set_vexpand(True)
+        btn_box.set_valign(Gtk.Align.END)
+        self.vbox.add(btn_box)
+        cancel_btn = Gtk.Button.new_with_label("Cancel")
+        cancel_btn.connect("clicked", self.dismiss)
+        btn_box.add(cancel_btn)
+        confirm_btn = Gtk.Button.new_with_label("Confirm")
+
+        def save_shadow(*_args):
+            active = [button for button in self.buttons if button.get_active()]
+            assert len(active) == 1
+            setting = active[0]._backend.lower()
+            if setting not in backends:
+                raise RuntimeError(f"invalid backend selected: {setting}")
+            log.info(f"saving XPRA_SHADOW_BACKEND={setting}")
+            update_config_env("XPRA_SHADOW_BACKEND", setting)
+            self.dismiss()
+
+        confirm_btn.connect("clicked", save_shadow)
+        confirm_btn.set_sensitive(False)
+        btn_box.add(confirm_btn)
+
+        # only enable the confirm button once an option has been chosen:
+        def option_toggled(toggled_btn, *_args):
+            if toggled_btn.get_active():
+                for button in self.buttons:
+                    if button != toggled_btn:
+                        button.set_active(False)
+            confirm_btn.set_sensitive(any(button.get_active() for button in self.buttons))
+
+        for btn in self.buttons:
+            btn.connect("toggled", option_toggled)
+        self.vbox.show_all()
 
 
 def main(_args) -> int:
@@ -189,4 +290,5 @@ def main(_args) -> int:
 
 if __name__ == "__main__":
     import sys
-    sys.exit(main(sys.argv[1:]))
+
+sys.exit(main(sys.argv[1:]))
