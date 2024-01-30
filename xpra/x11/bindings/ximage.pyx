@@ -60,6 +60,7 @@ cdef extern from "Python.h":
     int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
     void PyBuffer_Release(Py_buffer *view)
     int PyBUF_ANY_CONTIGUOUS
+    int PyBUF_READ
 
 cdef extern from "stdlib.h":
     int posix_memalign(void **memptr, size_t alignment, size_t size)
@@ -314,7 +315,7 @@ cdef class XImageWrapper:
         cdef void *pix_ptr = self.get_pixels_ptr()
         if pix_ptr==NULL:
             return None
-        return PyMemoryView_FromMemory(<char *> pix_ptr, self.get_size(), False)
+        return PyMemoryView_FromMemory(<char *> pix_ptr, self.get_size(), PyBUF_READ)
 
     def get_sub_image(self, unsigned int x, unsigned int y, unsigned int w, unsigned int h):
         if w<=0 or h<=0:

@@ -26,6 +26,7 @@ cdef extern from "Python.h":
     int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
     void PyBuffer_Release(Py_buffer *view)
     int PyBUF_ANY_CONTIGUOUS
+    int PyBUF_WRITE
 
 cdef extern from "stdlib.h":
     void free(void *ptr)
@@ -631,7 +632,7 @@ cdef class Converter:
         cdef unsigned char i
         for i in range(3):
             strides.append(self.dst_strides[i])
-            planes.append(PyMemoryView_FromMemory(<char *> ((<uintptr_t> buf) + self.offsets[i]), self.dst_sizes[i], True))
+            planes.append(PyMemoryView_FromMemory(<char *> ((<uintptr_t> buf) + self.offsets[i]), self.dst_sizes[i], PyBUF_WRITE))
         out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height,
                                        planes, self.dst_format, bpp, strides,
                                        planes=ImageWrapper.PLANAR_3)
@@ -746,7 +747,7 @@ cdef class Converter:
         return self.packed_image_wrapper(<char *> bgr48, 48)
 
     cdef packed_image_wrapper(self, char *buf, unsigned char bpp=24):
-        pybuf = PyMemoryView_FromMemory(buf, self.dst_sizes[0], True)
+        pybuf = PyMemoryView_FromMemory(buf, self.dst_sizes[0], PyBUF_WRITE)
         out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, pybuf, self.dst_format, bpp, self.dst_strides[0], planes=ImageWrapper.PACKED)
         out_image.cython_buffer = <uintptr_t> buf
         return out_image

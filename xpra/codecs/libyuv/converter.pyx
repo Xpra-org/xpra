@@ -24,6 +24,7 @@ from libc.stdlib cimport free
 
 cdef extern from "Python.h":
     object PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
+    int PyBUF_WRITE
 
 cdef extern from "libyuv/convert_from_argb.h" namespace "libyuv":
     #int BGRAToI420(const uint8_t* src_frame, ...
@@ -576,7 +577,7 @@ cdef class Converter:
             log("libyuv.ScalePlane %i times, took %.1fms", self.planes, 1000.0*elapsed)
             for i in range(self.planes):
                 strides.append(self.scaled_stride[i])
-                planes.append(PyMemoryView_FromMemory(<char *> scaled_planes[i], self.scaled_size[i], True))
+                planes.append(PyMemoryView_FromMemory(<char *> scaled_planes[i], self.scaled_size[i], PyBUF_WRITE))
             self.frames += 1
             out_image = YUVImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, 1, self.planes)
             out_image.cython_buffer = <uintptr_t> scaled_buffer
@@ -584,7 +585,7 @@ cdef class Converter:
             #use output buffer directly:
             for i in range(self.planes):
                 strides.append(self.out_stride[i])
-                planes.append(PyMemoryView_FromMemory(<char *> out_planes[i], self.out_size[i], True))
+                planes.append(PyMemoryView_FromMemory(<char *> out_planes[i], self.out_size[i], PyBUF_WRITE))
             self.frames += 1
             out_image = YUVImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, 1, self.planes)
             out_image.cython_buffer = <uintptr_t> output_buffer

@@ -20,6 +20,7 @@ cdef extern from *:
 
 cdef extern from "Python.h":
     object PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
+    int PyBUF_WRITE
 
 cdef extern from "webp/decode.h":
 
@@ -181,7 +182,7 @@ cdef class WebpBufferWrapper:
 
     def get_pixels(self):
         assert self.buffer_ptr>0, "WebpBufferWrapper has already been freed!"
-        return PyMemoryView_FromMemory(<char *> self.buffer_ptr, self.size, True)
+        return PyMemoryView_FromMemory(<char *> self.buffer_ptr, self.size, PyBUF_WRITE)
 
     def free(self):
         if self.buffer_ptr!=0:
@@ -308,16 +309,16 @@ def decompress_yuv(data, has_alpha=False):
     webp_check(ret)
     if alpha:
         planes = (
-            PyMemoryView_FromMemory(<char *> YUVA.y, y_size, True),
-            PyMemoryView_FromMemory(<char *> YUVA.u, u_size, True),
-            PyMemoryView_FromMemory(<char *> YUVA.v, v_size, True),
-            PyMemoryView_FromMemory(<char *> YUVA.a, a_size, True),
+            PyMemoryView_FromMemory(<char *> YUVA.y, y_size, PyBUF_WRITE),
+            PyMemoryView_FromMemory(<char *> YUVA.u, u_size, PyBUF_WRITE),
+            PyMemoryView_FromMemory(<char *> YUVA.v, v_size, PyBUF_WRITE),
+            PyMemoryView_FromMemory(<char *> YUVA.a, a_size, PyBUF_WRITE),
             )
     else:
         planes = (
-            PyMemoryView_FromMemory(<char *> YUVA.y, y_size, True),
-            PyMemoryView_FromMemory(<char *> YUVA.u, u_size, True),
-            PyMemoryView_FromMemory(<char *> YUVA.v, v_size, True),
+            PyMemoryView_FromMemory(<char *> YUVA.y, y_size, PyBUF_WRITE),
+            PyMemoryView_FromMemory(<char *> YUVA.u, u_size, PyBUF_WRITE),
+            PyMemoryView_FromMemory(<char *> YUVA.v, v_size, PyBUF_WRITE),
             )
     img = YUVImageWrapper(0, 0, w, h, planes, "YUV420P", (3+alpha)*8, strides, 3+alpha, ImageWrapper.PLANAR_3+alpha)
     img.cython_buffer = <uintptr_t> buf
