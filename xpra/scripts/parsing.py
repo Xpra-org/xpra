@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel
 
 import re
 import shlex
@@ -32,20 +32,19 @@ from xpra.scripts.config import (
     validate_config, name_to_field,
 )
 
-
-MODE_ALIAS : dict[str,str] = {
-    "start"             : "seamless",
-    "start-seamless"    : "seamless",
-    "start-desktop"     : "desktop",
-    "start-monitor"     : "monitor",
-    "start-expand"      : "expand",
-    "start-shadow"      : "shadow",
-    "start-shadow-screen" : "shadow-screen",
+MODE_ALIAS: dict[str, str] = {
+    "start": "seamless",
+    "start-seamless": "seamless",
+    "start-desktop": "desktop",
+    "start-monitor": "monitor",
+    "start-expand": "expand",
+    "start-shadow": "shadow",
+    "start-shadow-screen": "shadow-screen",
 }
-REVERSE_MODE_ALIAS : dict[str,str] = {v:k for k,v in MODE_ALIAS.items()}
+REVERSE_MODE_ALIAS: dict[str, str] = {v: k for k, v in MODE_ALIAS.items()}
 
 
-def enabled_str(v, true_str:str="yes", false_str:str="no") -> str:
+def enabled_str(v, true_str: str = "yes", false_str: str = "no") -> str:
     if v:
         return true_str
     return false_str
@@ -57,7 +56,7 @@ def enabled_or_auto(v):
 
 def bool_or(v, other_value, true_str, false_str, other_str):
     vs = str(v).lower()
-    if vs==str(other_value).lower():
+    if vs == str(other_value).lower():
         return other_str
     bv = parse_bool("", v)
     return enabled_str(bv, true_str, false_str)
@@ -81,7 +80,7 @@ class ModifiedOptionParser(optparse.OptionParser):
         raise InitExit(status, msg)
 
 
-def fixup_defaults(defaults:XpraConfig) -> None:
+def fixup_defaults(defaults: XpraConfig) -> None:
     for k in ("debug", "encoding", "audio-source", "microphone-codec", "speaker-codec"):
         fn = k.replace("-", "_")
         v = getattr(defaults, fn)
@@ -96,15 +95,15 @@ def fixup_defaults(defaults:XpraConfig) -> None:
                 v.remove("help")
 
 
-def do_replace_option(cmdline, oldoption:str, newoption:str) -> None:
+def do_replace_option(cmdline, oldoption: str, newoption: str) -> None:
     for i, x in enumerate(cmdline):
-        if x==oldoption:
+        if x == oldoption:
             cmdline[i] = newoption
-        elif newoption.find("=")<0 and x.startswith(f"{oldoption}="):
+        elif newoption.find("=") < 0 and x.startswith(f"{oldoption}="):
             cmdline[i] = f"{newoption}=" + x.split("=", 1)[1]
 
 
-def do_legacy_bool_parse(cmdline, optionname:str, newoptionname:str="") -> None:
+def do_legacy_bool_parse(cmdline, optionname: str, newoptionname: str = "") -> None:
     # find --no-XYZ or --XYZ
     # and replace it with --XYZ=yes|no
     if not newoptionname:
@@ -115,10 +114,10 @@ def do_legacy_bool_parse(cmdline, optionname:str, newoptionname:str="") -> None:
 
 def ignore_options(args, options) -> None:
     for x in options:
-        o = f"--{x}"      # ie: --use-display
+        o = f"--{x}"  # ie: --use-display
         while o in args:
             args.remove(o)
-        o = f"--{x}="     # ie: --bind-tcp=....
+        o = f"--{x}="  # ie: --bind-tcp=....
         remove = []
         # find all command line arguments starting with this option:
         for v in args:
@@ -131,13 +130,13 @@ def ignore_options(args, options) -> None:
 
 
 def parse_env(env) -> dict[str, str]:
-    d : dict[str, str] = {}
+    d: dict[str, str] = {}
     for ev in env:
         try:
             if ev.startswith("#"):
                 continue
             v = ev.split("=", 1)
-            if len(v)!=2:
+            if len(v) != 2:
                 warn(f"Warning: invalid environment option string {ev!r}")
                 continue
             d[v[0]] = os.path.expandvars(v[1])
@@ -154,10 +153,10 @@ def parse_URL(url: str) -> tuple[str, dict]:
     qpos = url.find("?")
     options = {}
     if qpos > 0:
-        params_str = url[qpos+1:]
+        params_str = url[qpos + 1:]
         params = parse_qs(params_str, keep_blank_values=True)
-        f_params : dict[str, Any] = {}
-        for k,v in params.items():
+        f_params: dict[str, Any] = {}
+        for k, v in params.items():
             t = OPTION_TYPES.get(k)
             if t is not None and t not in (list, tuple):
                 f_params[k] = v[0]
@@ -176,14 +175,14 @@ def _sep_pos(display_name):
     # split the display name on ":" or "/"
     scpos = display_name.find(":")
     slpos = display_name.find("/")
-    if scpos<0:
+    if scpos < 0:
         return slpos
-    if slpos<0:
+    if slpos < 0:
         return scpos
     return min(scpos, slpos)
 
 
-def auto_proxy(scheme, host:str) -> dict[str, Any]:
+def auto_proxy(scheme, host: str) -> dict[str, Any]:
     try:
         from xpra.net.libproxy import ProxyFactory
     except ImportError as e:
@@ -192,14 +191,14 @@ def auto_proxy(scheme, host:str) -> dict[str, Any]:
         return {}
     p = ProxyFactory()
     proxies = p.getProxies(f"{scheme}://{host}")
-    if not proxies or proxies[0]=="direct://":
+    if not proxies or proxies[0] == "direct://":
         return {}
     # for the time being, just try the first one:
     from urllib.parse import urlparse
     url = urlparse(proxies[0])
     if not url.scheme or not url.netloc:
         return {}
-    options = {"proxy-host" : url.hostname}
+    options = {"proxy-host": url.hostname}
     if url.port:
         options["proxy-port"] = url.port
     if url.username:
@@ -216,26 +215,26 @@ def parse_remote_display(s: str) -> dict[str, Any]:
     cpos = s.find(",")
     display = None
     options_str = None
-    if qpos>=0 and (qpos<cpos or cpos<0):
+    if qpos >= 0 and (qpos < cpos or cpos < 0):
         # query string format, ie: "DISPLAY?key1=value1&key2=value2#extra_stuff
         attr_sep = "&"
         parts = s.split("?", 1)
         s = parts[0].split("#")[0]
         options_str = parts[1]
-    elif cpos>0 and (cpos<qpos or qpos<0):
+    elif cpos > 0 and (cpos < qpos or qpos < 0):
         # csv string format,
         # ie: DISPLAY,key1=value1,key2=value2
         # or: key1=value1,key2=value2
         attr_sep = ","
         parts = s.split(",", 1)
-        if parts[0].find("=")>0:
+        if parts[0].find("=") > 0:
             # if the first part is a key=value,
             # assume it is part of the parameters
             parts = ["", s]
             display = ""
-        if len(parts)==2:
+        if len(parts) == 2:
             options_str = parts[1]
-    elif s.find("=")>0:
+    elif s.find("=") > 0:
         # ie: just one key=value
         # (so this is not a display)
         display = ""
@@ -245,14 +244,14 @@ def parse_remote_display(s: str) -> dict[str, Any]:
         attr_sep = ","
     if display is None:
         try:
-            assert [int(x) for x in s.split(".")]   # ie: ":10.0" -> [10, 0]
-            display = ":" + s       # ie: ":10.0"
+            assert [int(x) for x in s.split(".")]  # ie: ":10.0" -> [10, 0]
+            display = ":" + s  # ie: ":10.0"
         except ValueError:
-            display = s             # ie: "tcp://somehost:10000/"
+            display = s  # ie: "tcp://somehost:10000/"
     if display:
         desc = {
-            "display"   : display,
-            "display_as_args"   : [display],
+            "display": display,
+            "display_as_args": [display],
         }
     else:
         desc = {}
@@ -260,7 +259,7 @@ def parse_remote_display(s: str) -> dict[str, Any]:
         desc["options_str"] = options_str
         # parse extra attributes
         d = parse_simple_dict(options_str, attr_sep)
-        for k,v in d.items():
+        for k, v in d.items():
             if k in desc:
                 warn(f"Warning: cannot override {k!r} with URI")
             else:
@@ -270,8 +269,8 @@ def parse_remote_display(s: str) -> dict[str, Any]:
 
 def parse_username_and_password(s: str) -> dict[str, str]:
     ppos = s.find(":")
-    if ppos>=0:
-        password = s[ppos+1:]
+    if ppos >= 0:
+        password = s[ppos + 1:]
         username = s[:ppos]
     else:
         username = s
@@ -285,7 +284,7 @@ def parse_username_and_password(s: str) -> dict[str, str]:
     return desc
 
 
-def load_password_file(password_file:str) -> str:
+def load_password_file(password_file: str) -> str:
     if not password_file:
         return ""
     if not os.path.exists(password_file):
@@ -306,14 +305,14 @@ def normalize_display_name(display_name: str) -> str:
     if display_name.startswith("@"):
         return display_name
     if POSIX and display_name.startswith("/"):
-        return "socket://"+display_name
+        return "socket://" + display_name
     # URL mode aliases (ie: "xpra+tcp://host:port")
     from xpra.net.common import URL_MODES
     for alias, prefix in URL_MODES.items():
         falias = f"{alias}:"
         parts = display_name.split(falias, 1)
-        if len(parts)==2:
-            display_name = prefix+":"+parts[1]
+        if len(parts) == 2:
+            display_name = prefix + ":" + parts[1]
             break
     if display_name.startswith("socket://"):
         # if the URL uses the form:
@@ -331,48 +330,48 @@ def normalize_display_name(display_name: str) -> str:
         host = legacy_ssh.group(1)
         display = legacy_ssh.group(3)
         display_name = f"ssh://{host}/{display}"
-    elif pos>0 and len(display_name)>pos+2 and display_name[pos+1]!="/":
+    elif pos > 0 and len(display_name) > pos + 2 and display_name[pos + 1] != "/":
         # replace the first ":" with "://"
         # so we end up with parsable URL, ie: "tcp://host:port"
-        display_name = display_name[:pos]+"://"+display_name[pos+1:]
-    #workaround missing [] around IPv6 addresses:
+        display_name = display_name[:pos] + "://" + display_name[pos + 1:]
+    # workaround missing [] around IPv6 addresses:
     try:
         netloc = parse.urlparse(display_name).netloc
-        if netloc.find("@")>0:
+        if netloc.find("@") > 0:
             netloc = netloc.split("@", 1)[1]
         if not netloc.startswith("[") and not netloc.endswith("]"):
             pos = display_name.find(netloc)
             parts = netloc.split(":")
-            if pos>0 and len(parts)>2:
-                newnetloc = "["+(":".join(parts[:-1]))+"]:"+parts[-1]
-                display_name = display_name[:pos]+newnetloc+display_name[pos+len(netloc):]
+            if pos > 0 and len(parts) > 2:
+                newnetloc = "[" + (":".join(parts[:-1])) + "]:" + parts[-1]
+                display_name = display_name[:pos] + newnetloc + display_name[pos + len(netloc):]
     except Exception:
         pass
     # workaround for vsock 'VMADDR_PORT_ANY':
     # "any" or "auto" is not a valid port number
-    if POSIX and not OSX and display_name.startswith("vsock://") and len(display_name)>len("vsock://"):
+    if POSIX and not OSX and display_name.startswith("vsock://") and len(display_name) > len("vsock://"):
         # hackish pre-parsing:
         # extract location: "vsock://10:any/foo?arg=20" -> "10:any"
         parts = display_name[len("vsock://"):].split("/", 1)
         netloc = parts[0]
-        extra = parts[1] if len(parts)>1 else ""
+        extra = parts[1] if len(parts) > 1 else ""
         for s in ("any", "auto"):
             if netloc.lower().endswith(s):
                 # use "0" for auto
                 # ie: "vsock://10:0/foo?arg=20"
-                return "vsock://"+netloc[:-len(s)]+"0/"+extra
+                return "vsock://" + netloc[:-len(s)] + "0/" + extra
         return display_name
     # maybe this is just the display number without the ":" prefix?
     if display_name and display_name[0] in "0123456789" and POSIX:
-        return ":"+display_name
-    if WIN32 and display_name[0].isalpha() and display_name.find(":")<0:
+        return ":" + display_name
+    if WIN32 and display_name[0].isalpha() and display_name.find(":") < 0:
         # pragma: no cover
         from xpra.platform.win32.dotxpra import PIPE_PREFIX
         return f"named-pipe://{PIPE_PREFIX}{display_name}"
     return display_name
 
 
-def parse_display_name(error_cb, opts, display_name:str, cmdline=(),
+def parse_display_name(error_cb, opts, display_name: str, cmdline=(),
                        find_session_by_name: Callable | None = None) -> dict[str, Any]:
     display_name = normalize_display_name(display_name)
     # last chance to find it by name:
@@ -392,6 +391,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(),
         for x in SOCKET_TYPES:
             if x not in array:
                 array.append(x)
+
     addschemes(parse.uses_params)
     addschemes(parse.uses_netloc)
     addschemes(parse.uses_query)
@@ -401,9 +401,9 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(),
     protocol = parsed.scheme
 
     desc = {
-        "display_name"  : display_name,
-        "cmdline"       : cmdline,
-        "type"          : protocol,
+        "display_name": display_name,
+        "cmdline": cmdline,
+        "type": protocol,
     }
 
     def add_credentials() -> None:
@@ -418,7 +418,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(),
             desc["password"] = password
             opts.password = password
 
-    def add_host_port(default_port=DEFAULT_PORT) -> tuple[str,int]:
+    def add_host_port(default_port=DEFAULT_PORT) -> tuple[str, int]:
         host = parsed.hostname or "127.0.0.1"
         port = parsed.port or default_port
         desc["host"] = host
@@ -429,11 +429,11 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(),
     def add_path() -> None:
         if parsed.path:
             path = parsed.path.lstrip("/")
-            if path.find(",")>0:
+            if path.find(",") > 0:
                 # ie: path="100,foo=bar
                 path, extra = path.split(",", 1)
                 process_query_string(extra)
-            elif path.find("=")>0:
+            elif path.find("=") > 0:
                 # ie: path="foo=bar"
                 process_query_string(path)
                 return
@@ -444,7 +444,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(),
         for k, v in r.items():
             if k in desc:
                 warn(f"ignoring {k} override from query string")
-            if len(v)==1:
+            if len(v) == 1:
                 desc[k] = v[0]
             else:
                 desc[k] = v
@@ -480,7 +480,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(),
         })
         return desc
 
-    if protocol=="vsock":
+    if protocol == "vsock":
         add_credentials()
         add_query()
         cid = parse_vsock_cid(parsed.hostname or "")
@@ -488,9 +488,9 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(),
         port = parsed.port or PORT_ANY
         desc.update(
             {
-                "local"         : False,
-                "display"       : display_name,
-                "vsock"         : (cid, port),
+                "local": False,
+                "display": display_name,
+                "vsock": (cid, port),
             }
         )
         opts.display = display_name
@@ -499,8 +499,8 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(),
     if protocol in ("ssh", "vnc+ssh"):
         desc.update(
             {
-                "proxy_command"    : ["_proxy"],
-                "exit_ssh"         : opts.exit_ssh,
+                "proxy_command": ["_proxy"],
+                "exit_ssh": opts.exit_ssh,
             }
         )
         if opts.socket_dir:
@@ -516,13 +516,13 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(),
             args = desc.setdefault("display_as_args", [display])
         else:
             args = desc.setdefault("display_as_args", [])
-        if protocol=="vnc+ssh" and display:
+        if protocol == "vnc+ssh" and display:
             # ie: "vnc+ssh://host/10" -> path="/10"
             # use a vnc display string with the proxy command
             # and specify the vnc port if we know the display number:
             vnc_uri = "vnc://localhost"
             try:
-                vnc_port = 5900+int(display)
+                vnc_port = 5900 + int(display)
                 desc["remote_port"] = vnc_port
                 vnc_uri += f":{vnc_port}/"
             except ValueError:
@@ -546,11 +546,11 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(),
         add_query()
         desc.update(
             {
-                "type"          : "socket",
-                "local"         : True,
-                "socket_dir"    : os.path.basename(parsed.path),
-                "socket_dirs"   : opts.socket_dirs,
-                "socket_path"   : parsed.path,
+                "type": "socket",
+                "local": True,
+                "socket_dir": os.path.basename(parsed.path),
+                "socket_dirs": opts.socket_dirs,
+                "socket_path": parsed.path,
             }
         )
         opts.display = None
@@ -568,7 +568,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(),
         else:
             alt_scheme = "http"
         proxy = desc.get("proxy")
-        if proxy=="auto":
+        if proxy == "auto":
             for scheme in (protocol, alt_scheme):
                 pprops = auto_proxy(scheme, host)
                 if pprops:
@@ -576,7 +576,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(),
                     break
         return desc
 
-    if protocol == "named-pipe":   # pragma: no cover
+    if protocol == "named-pipe":  # pragma: no cover
         if not WIN32:
             raise RuntimeError(f"{protocol} is not supported on this platform")
         add_credentials()
@@ -587,9 +587,9 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(),
             pipe_name = f"{PIPE_PREFIX}{pipe_name}"
         desc.update(
             {
-                "local"            : True,
-                "display"          : "DISPLAY",
-                "named-pipe"       : pipe_name,
+                "local": True,
+                "display": "DISPLAY",
+                "named-pipe": pipe_name,
             }
         )
         opts.display = display_name
@@ -621,7 +621,7 @@ def get_ssl_options(desc, opts, cmdline) -> dict[str, Any]:
 
 def parse_ssh_option(ssh_setting: str) -> list[str]:
     ssh_cmd = shlex.split(ssh_setting, posix=not WIN32)
-    if ssh_cmd[0]=="auto":
+    if ssh_cmd[0] == "auto":
         # try paramiko:
         from xpra.log import is_debug_enabled, Logger
         try:
@@ -640,19 +640,19 @@ def parse_ssh_option(ssh_setting: str) -> list[str]:
     return ssh_cmd
 
 
-def get_ssh_display_attributes(args, ssh_option="auto") -> dict[str,Any]:
+def get_ssh_display_attributes(args, ssh_option="auto") -> dict[str, Any]:
     # ie: ssh=["/usr/bin/ssh", "-v"]
     ssh = parse_ssh_option(ssh_option)
     ssh_cmd = ssh[0].lower()
     is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
-    is_paramiko = ssh_cmd.split(":")[0]=="paramiko"
+    is_paramiko = ssh_cmd.split(":")[0] == "paramiko"
     agent_forwarding = envbool("XPRA_SSH_AGENT", "-A" in ssh)
-    desc : dict[str,Any] = {}
+    desc: dict[str, Any] = {}
     if is_paramiko:
         ssh[0] = "paramiko"
         desc["is_paramiko"] = is_paramiko
         paramiko_config = {}
-        if ssh_option.find(":")>0:
+        if ssh_option.find(":") > 0:
             paramiko_config = parse_simple_dict(ssh_option.split(":", 1)[1])
             desc["paramiko-config"] = paramiko_config
         agent_forwarding |= paramiko_config.get("agent", "yes").lower() in TRUE_OPTIONS
@@ -670,7 +670,7 @@ def get_ssh_display_attributes(args, ssh_option="auto") -> dict[str,Any]:
     return desc
 
 
-def get_ssh_args(desc, ssh=("paramiko",), prefix: str="") -> list[str]:
+def get_ssh_args(desc, ssh=("paramiko",), prefix: str = "") -> list[str]:
     ssh_cmd = ssh[0]
     ssh_port = desc.get(f"{prefix}port", 22)
     username = desc.get(f"{prefix}username")
@@ -680,13 +680,13 @@ def get_ssh_args(desc, ssh=("paramiko",), prefix: str="") -> list[str]:
         raise RuntimeError(f"missing host from session descriptor {desc}")
     key = desc.get(f"{prefix}key")
     is_putty = any(ssh_cmd.lower().endswith(x) for x in ("plink", "plink.exe", "putty", "putty.exe"))
-    is_paramiko = ssh_cmd=="paramiko"
+    is_paramiko = ssh_cmd == "paramiko"
     args = []
     if password and is_putty:
         args += ["-pw", password]
     if username and not is_paramiko:
         args += ["-l", username]
-    if ssh_port and ssh_port!=22:
+    if ssh_port and ssh_port != 22:
         # grr, why bother doing it different?
         if is_putty:
             args += ["-P", str(ssh_port)]
@@ -699,14 +699,14 @@ def get_ssh_args(desc, ssh=("paramiko",), prefix: str="") -> list[str]:
             if WIN32 and is_putty:
                 # tortoise plink works with either slash, backslash needs too much escaping
                 # because of the weird way it's passed through as a ProxyCommand
-                key_path = "\"" + key.replace("\\", "/") + "\""     # pragma: no cover
+                key_path = "\"" + key.replace("\\", "/") + "\""  # pragma: no cover
             args += ["-i", key_path]
     return args
 
 
 def get_ssh_proxy_args(desc, ssh) -> list[str]:
     is_putty = ssh[0].endswith("plink") or ssh[0].endswith("plink.exe")
-    is_paramiko = ssh[0]=="paramiko"
+    is_paramiko = ssh[0] == "paramiko"
     args = []
     proxyline = ssh
     if is_putty:
@@ -732,7 +732,7 @@ def supports_x11_server() -> bool:
         return False
 
 
-def get_subcommands() -> tuple[str,...]:
+def get_subcommands() -> tuple[str, ...]:
     return tuple(x.split(" ")[0] for x in get_usage())
 
 
@@ -878,15 +878,15 @@ def do_parse_cmdline(cmdline, defaults):
     if options.debug:
         categories = options.debug.split(",")
         for cat in categories:
-            if cat=="help":
+            if cat == "help":
                 h = []
                 from xpra.log import STRUCT_KNOWN_FILTERS
                 for category, d in STRUCT_KNOWN_FILTERS.items():
                     h.append(f"{category}:")
-                    for k,v in d.items():
+                    for k, v in d.items():
                         h.append(f" * {k:<16}: {v}")
                 raise InitInfo("known logging filters: \n%s" % "\n".join(h))
-    if options.audio_source=="help":
+    if options.audio_source == "help":
         from xpra.audio.gstreamer_util import NAME_TO_INFO_PLUGIN
         try:
             from xpra.audio.wrapper import query_audio
@@ -896,12 +896,12 @@ def do_parse_cmdline(cmdline, defaults):
             raise InitInfo(e) from None
         if source_plugins:
             raise InitInfo(f"The following audio capture plugins may be used (default: {source_default}):\n"
-                           "\n".join([" * "+p.ljust(16)+NAME_TO_INFO_PLUGIN.get(p, "") for p in source_plugins]))
+                           "\n".join([" * " + p.ljust(16) + NAME_TO_INFO_PLUGIN.get(p, "") for p in source_plugins]))
         raise InitInfo("No audio capture plugins found!")
 
     # special handling for URL mode:
     # xpra attach xpra://[mode:]host:port/?param1=value1&param2=value2
-    if len(args)==2 and args[0]=="attach":
+    if len(args) == 2 and args[0] == "attach":
         from xpra.net.common import URL_MODES
         # ie: "xpra+tcp" -> "tcp"
         for prefix, mode in URL_MODES.items():
@@ -910,7 +910,7 @@ def do_parse_cmdline(cmdline, defaults):
             if url.startswith(fullprefix):
                 url = f"{mode}://" + url[len(fullprefix):]
                 address, params = parse_URL(url)
-                for k,v in validate_config(params).items():
+                for k, v in validate_config(params).items():
                     setattr(options, k.replace("-", "_"), v)
                 # replace with our standard URL format,
                 # ie: tcp://host:port
@@ -938,13 +938,14 @@ def do_parse_cmdline(cmdline, defaults):
 def parse_window_size(v, attribute="max-size"):
     def pws_fail():
         raise InitException(f"invalid {attribute}: {v}")
+
     try:
         # split on "," or "x":
         pv = tuple(int(x.strip()) for x in v.replace(",", "x").split("x", 1))
     except ValueError:
         pv = ()
         pws_fail()
-    if len(pv)!=2:
+    if len(pv) != 2:
         pws_fail()
     w, h = pv
     if w < 0 or h < 0 or w >= 32768 or h >= 32768:
@@ -964,7 +965,7 @@ def parse_command_line(cmdline, defaults):
     def replace_option(oldoption, newoption):
         do_replace_option(cmdline, oldoption, newoption)
 
-    def legacy_bool_parse(optionname, newoptionname:str=""):
+    def legacy_bool_parse(optionname, newoptionname: str = ""):
         do_legacy_bool_parse(cmdline, optionname, newoptionname)
 
     def ignore(defaults):
@@ -1196,10 +1197,11 @@ def parse_command_line(cmdline, defaults):
                      help="Whether the server display should be resized to match the client resolution."
                           " Default: %s." % enabled_str(defaults.resize_display))
     defaults_bind = defaults.bind
+    local_sockname = "named pipes" if WIN32 else "unix domain sockets"
     group.add_option("--bind", action="append",
                      dest="bind", default=[],
                      metavar="SOCKET",
-                     help="listen for connections over %s." % ("named pipes" if WIN32 else "unix domain sockets")+ # noqa W504
+                     help=f"listen for connections over {local_sockname}."
                           " You may specify this option multiple times to listen on different locations."
                           " Default: %s" % dcsv(defaults_bind))
     group.add_option("--bind-tcp", action="append",
@@ -1898,9 +1900,9 @@ def parse_command_line(cmdline, defaults):
 
     # only use the defaults if no value is specified:
     for setting in (
-        "bind", "challenge_handlers", "key_shortcut",
-        "source", "source_start",
-        "video_encoders", "video_decoders", "csc_modules", "proxy_video_encoders",
+            "bind", "challenge_handlers", "key_shortcut",
+            "source", "source_start",
+            "video_encoders", "video_decoders", "csc_modules", "proxy_video_encoders",
     ):
         if not getattr(options, setting):
             setattr(options, setting, getattr(defaults, setting, []))
@@ -1913,7 +1915,7 @@ def validated_encodings(encodings) -> tuple[str, ...]:
         from xpra.codecs.constants import preforder
     except ImportError:
         return ()
-    encodings = [x.lower() for x in encodings]+list(encodings)
+    encodings = [x.lower() for x in encodings] + list(encodings)
     validated = preforder(encodings)
     if not validated:
         raise InitException("no valid encodings specified")
@@ -1928,7 +1930,7 @@ def validate_encryption(opts) -> None:
 def do_validate_encryption(auth, tcp_auth,
                            encryption, tcp_encryption, encryption_keyfile, tcp_encryption_keyfile):
     if not encryption and not tcp_encryption:
-        #don't bother initializing anything
+        # don't bother initializing anything
         return
     from xpra.net.crypto import crypto_backend_init
     crypto_backend_init()
@@ -1939,14 +1941,14 @@ def do_validate_encryption(auth, tcp_auth,
     if not ciphers:
         raise InitException("cannot use encryption: no ciphers available"
                             " (the python-cryptography library must be installed)")
-    if encryption=="help" or tcp_encryption=="help":
+    if encryption == "help" or tcp_encryption == "help":
         raise InitInfo(f"the following encryption ciphers are available: {csv(ciphers)}")
-    enc, mode = ((encryption or tcp_encryption)+"-").split("-")[:2]
+    enc, mode = ((encryption or tcp_encryption) + "-").split("-")[:2]
     if not mode:
         mode = DEFAULT_MODE
     if enc:
         if enc not in ciphers:
-            raise InitException(f"encryption {enc} is not supported, try: "+csv(ciphers))
+            raise InitException(f"encryption {enc} is not supported, try: " + csv(ciphers))
         modes = get_modes()
         if mode not in modes:
             raise InitException(f"encryption mode {mode} is not supported, try: " + csv(modes))
@@ -1957,10 +1959,10 @@ def do_validate_encryption(auth, tcp_auth,
             raise InitException(f"tcp-encryption {tcp_encryption} cannot be used "
                                 "without a tcp authentication module or keyfile "
                                 " (see --tcp-encryption-keyfile option)")
-    if pass_key and env_key and pass_key==env_key:
+    if pass_key and env_key and pass_key == env_key:
         raise InitException("encryption and authentication should not use the same value")
-    #discouraged but not illegal:
-    #if password_file and encryption_keyfile and password_file==encryption_keyfile:
+    # discouraged but not illegal:
+    # if password_file and encryption_keyfile and password_file==encryption_keyfile:
     #    if encryption:
     #        raise InitException("encryption %s should not use the same file"
     #                            +" as the password authentication file" % encryption)
@@ -1979,22 +1981,22 @@ def show_audio_codec_help(is_server, speaker_codecs, microphone_codecs) -> list[
     invalid_sc = [x for x in speaker_codecs if x not in all_speaker_codecs]
     hs = "help" in speaker_codecs
     if hs:
-        codec_help.append("speaker codecs available: "+csv(all_speaker_codecs))
+        codec_help.append("speaker codecs available: " + csv(all_speaker_codecs))
     elif invalid_sc:
-        codec_help.append("WARNING: some of the specified speaker codecs are not available: "+csv(invalid_sc))
+        codec_help.append("WARNING: some of the specified speaker codecs are not available: " + csv(invalid_sc))
 
     all_microphone_codecs = props.strtupleget("decoders" if is_server else "encoders")
     invalid_mc = [x for x in microphone_codecs if x not in all_microphone_codecs]
     hm = "help" in microphone_codecs
     if hm:
-        codec_help.append("microphone codecs available: "+csv(all_microphone_codecs))
+        codec_help.append("microphone codecs available: " + csv(all_microphone_codecs))
     elif invalid_mc:
-        codec_help.append("WARNING: some of the specified microphone codecs are not available:"+" "+csv(invalid_mc))
+        codec_help.append("WARNING: some of the specified microphone codecs are not available:" + " " + csv(invalid_mc))
     return codec_help
 
 
-def parse_vsock_cid(cid_str:str) -> int:
-    from xpra.net.vsock.vsock import STR_TO_CID, CID_ANY    # pylint: disable=import-outside-toplevel
+def parse_vsock_cid(cid_str: str) -> int:
+    from xpra.net.vsock.vsock import STR_TO_CID, CID_ANY  # pylint: disable=import-outside-toplevel
     if cid_str.lower() in ("auto", "any"):
         return CID_ANY
     try:
@@ -2006,5 +2008,5 @@ def parse_vsock_cid(cid_str:str) -> int:
         return cid
 
 
-def is_local(host:str) -> bool:
+def is_local(host: str) -> bool:
     return host.lower() in ("localhost", "127.0.0.1", "::1")

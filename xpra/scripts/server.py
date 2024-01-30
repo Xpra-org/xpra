@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel
 
 # DO NOT IMPORT GTK HERE: see
 #  http://lists.partiwm.org/pipermail/parti-discuss/2008-September/000041.html
@@ -14,7 +14,7 @@ import sys
 import glob
 import os.path
 import datetime
-from subprocess import Popen   # pylint: disable=import-outside-toplevel
+from subprocess import Popen  # pylint: disable=import-outside-toplevel
 from typing import Any
 
 from xpra import __version__
@@ -51,7 +51,6 @@ from xpra.common import GROUP
 from xpra.util.child_reaper import getChildReaper
 from xpra.platform.dotxpra import DotXpra
 
-
 DESKTOP_GREETER = envbool("XPRA_DESKTOP_GREETER", True)
 CLEAN_SESSION_FILES = envbool("XPRA_CLEAN_SESSION_FILES", True)
 IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
@@ -76,8 +75,8 @@ def deadly_signal(signum):
     # get bizarre behavior where the signal handler runs, and then I get a
     # KeyboardException (?!?), and the KeyboardException is handled normally
     # and exits the program (causing the cleanup handlers to be run again):
-    #signal.signal(signum, signal.SIG_DFL)
-    #kill(os.getpid(), signum)
+    # signal.signal(signum, signal.SIG_DFL)
+    # kill(os.getpid(), signum)
     force_quit(128 + int(signum))
 
 
@@ -86,11 +85,11 @@ def validate_pixel_depth(pixel_depth, starting_desktop=False):
         pixel_depth = int(pixel_depth)
     except ValueError:
         raise InitException(f"invalid value {pixel_depth} for pixel depth, must be a number") from None
-    if pixel_depth==0:
+    if pixel_depth == 0:
         pixel_depth = 24
     if pixel_depth not in (8, 16, 24, 30):
         raise InitException(f"invalid pixel depth: {pixel_depth}")
-    if not starting_desktop and pixel_depth==8:
+    if not starting_desktop and pixel_depth == 8:
         raise InitException("pixel depth 8 is only supported in 'start-desktop' mode")
     return pixel_depth
 
@@ -100,13 +99,13 @@ def display_name_check(display_name):
         when a low display number is specified """
     if not display_name.startswith(":"):
         return
-    n = display_name[1:].split(".")[0]    #ie: ":0.0" -> "0"
+    n = display_name[1:].split(".")[0]  # ie: ":0.0" -> "0"
     try:
         dno = int(n)
     except (ValueError, TypeError):
         raise InitException(f"invalid display number {n}") from None
     else:
-        if 0<=dno<10:
+        if 0 <= dno < 10:
             warn(f"WARNING: low display number: {dno}")
             warn(" You are attempting to run the xpra server")
             warn(f" against a low X11 display number: {display_name!r}")
@@ -128,9 +127,9 @@ def print_DE_warnings() -> None:
 
 
 def sanitize_env() -> None:
-    #we don't want client apps to think these mean anything:
-    #(if set, they belong to the desktop the server was started from)
-    #TODO: simply whitelisting the env would be safer/better
+    # we don't want client apps to think these mean anything:
+    # (if set, they belong to the desktop the server was started from)
+    # TODO: simply whitelisting the env would be safer/better
     unsetenv("DESKTOP_SESSION",
              "GDMSESSION",
              "GNOME_DESKTOP_SESSION_ID",
@@ -152,25 +151,25 @@ def sanitize_env() -> None:
 
 def configure_imsettings_env(input_method) -> str:
     im = (input_method or "").lower()
-    if im=="auto":
+    if im == "auto":
         ibus_daemon = which("ibus-daemon")
         if ibus_daemon:
             im = "ibus"
         else:
             im = "none"
     if im in ("none", "no"):
-        #the default: set DISABLE_IMSETTINGS=1, fallback to xim
-        #that's because the 'ibus' 'immodule' breaks keyboard handling
-        #unless its daemon is also running - and we don't know if it is..
+        # the default: set DISABLE_IMSETTINGS=1, fallback to xim
+        # that's because the 'ibus' 'immodule' breaks keyboard handling
+        # unless its daemon is also running - and we don't know if it is..
         imsettings_env(True, "xim", "xim", "xim", "none", "@im=none")
-    elif im=="keep":
-        #do nothing and keep whatever is already set, hoping for the best
+    elif im == "keep":
+        # do nothing and keep whatever is already set, hoping for the best
         pass
     elif im in ("xim", "ibus", "scim", "uim"):
-        #ie: (False, "ibus", "ibus", "IBus", "@im=ibus")
-        imsettings_env(True, im.lower(), im.lower(), im.lower(), im, "@im="+im.lower())
+        # ie: (False, "ibus", "ibus", "IBus", "@im=ibus")
+        imsettings_env(True, im.lower(), im.lower(), im.lower(), im, "@im=" + im.lower())
     else:
-        v = imsettings_env(True, im.lower(), im.lower(), im.lower(), im, "@im="+im.lower())
+        v = imsettings_env(True, im.lower(), im.lower(), im.lower(), im, "@im=" + im.lower())
         warn(f"using input method settings: {v}")
         warn(f"unknown input method specified: {input_method}")
         warn(" if it is correct, you may want to file a bug to get it recognized")
@@ -179,39 +178,39 @@ def configure_imsettings_env(input_method) -> str:
 
 def imsettings_env(disabled, gtk_im_module, qt_im_module, clutter_im_module,
                    imsettings_module, xmodifiers) -> dict[str, str]:
-    #for more information, see imsettings:
-    #https://code.google.com/p/imsettings/source/browse/trunk/README
+    # for more information, see imsettings:
+    # https://code.google.com/p/imsettings/source/browse/trunk/README
     if disabled is True:
-        os.environ["DISABLE_IMSETTINGS"] = "1"                  #this should override any XSETTINGS too
+        os.environ["DISABLE_IMSETTINGS"] = "1"  # this should override any XSETTINGS too
     elif disabled is False and ("DISABLE_IMSETTINGS" in os.environ):
         del os.environ["DISABLE_IMSETTINGS"]
     v = {
-        "GTK_IM_MODULE"      : gtk_im_module,            #or "gtk-im-context-simple"?
-        "QT_IM_MODULE"       : qt_im_module,             #or "simple"?
-        "QT4_IM_MODULE"      : qt_im_module,
-        "CLUTTER_IM_MODULE"  : clutter_im_module,
-        "IMSETTINGS_MODULE"  : imsettings_module,        #or "xim"?
-        "XMODIFIERS"         : xmodifiers,
-        #not really sure what to do with those:
-        #"IMSETTINGS_DISABLE_DESKTOP_CHECK"    : "true",
-        #"IMSETTINGS_INTEGRATE_DESKTOP"        : "no"           #we're not a real desktop
+        "GTK_IM_MODULE": gtk_im_module,  # or "gtk-im-context-simple"?
+        "QT_IM_MODULE": qt_im_module,  # or "simple"?
+        "QT4_IM_MODULE": qt_im_module,
+        "CLUTTER_IM_MODULE": clutter_im_module,
+        "IMSETTINGS_MODULE": imsettings_module,  # or "xim"?
+        "XMODIFIERS": xmodifiers,
+        # not really sure what to do with those:
+        # "IMSETTINGS_DISABLE_DESKTOP_CHECK"    : "true",
+        # "IMSETTINGS_INTEGRATE_DESKTOP"        : "no"           #we're not a real desktop
     }
     os.environ.update(v)
     return v
 
 
 def create_runtime_dir(xrd, uid, gid) -> str:
-    if not POSIX or OSX or getuid()!=0 or (uid==0 and gid==0):
+    if not POSIX or OSX or getuid() != 0 or (uid == 0 and gid == 0):
         return ""
-    #workarounds:
-    #* some distros don't set a correct value,
-    #* or they don't create the directory for us,
-    #* or pam_open is going to create the directory but needs time to do so..
+    # workarounds:
+    # * some distros don't set a correct value,
+    # * or they don't create the directory for us,
+    # * or pam_open is going to create the directory but needs time to do so..
     if xrd and xrd.endswith("/user/0"):
-        #don't keep root's directory, as this would not work:
+        # don't keep root's directory, as this would not work:
         xrd = None
     if not xrd:
-        #find the "/run/user" directory:
+        # find the "/run/user" directory:
         run_user = "/run/user"
         if not os.path.exists(run_user):
             run_user = "/var/run/user"
@@ -234,29 +233,29 @@ def create_runtime_dir(xrd, uid, gid) -> str:
 def guess_xpra_display(socket_dir, socket_dirs) -> str:
     dotxpra = DotXpra(socket_dir, socket_dirs)
     results = dotxpra.sockets()
-    live = [display for state, display in results if state==SocketState.LIVE]
+    live = [display for state, display in results if state == SocketState.LIVE]
     if not live:
         raise InitException("no existing xpra servers found")
-    if len(live)>1:
+    if len(live) > 1:
         raise InitException("too many existing xpra servers found, cannot guess which one to use")
     return live[0]
 
 
 def show_encoding_help(opts) -> int:
-    #avoid errors and warnings:
+    # avoid errors and warnings:
     opts.pidfile = None
     opts.encoding = ""
     opts.clipboard = False
     opts.notifications = False
     print("xpra server supports the following encodings:")
     print("(please wait, encoder initialization may take a few seconds)")
-    #disable info logging which would be confusing here
+    # disable info logging which would be confusing here
     from xpra.log import get_all_loggers, set_default_level
     import logging
     set_default_level(logging.WARN)
     logging.root.setLevel(logging.WARN)
     for x in get_all_loggers():
-        if x.getEffectiveLevel()==logging.INFO:
+        if x.getEffectiveLevel() == logging.INFO:
             x.setLevel(logging.WARN)
     from xpra.server import features as sf
     sf.audio = sf.av_sync = sf.clipboard = sf.commands = sf.control = sf.dbus = sf.fileprint = sf.input_devices = False
@@ -273,13 +272,14 @@ def show_encoding_help(opts) -> int:
     EncodingServer.setup(sb)
     from xpra.codecs.loader import encoding_help
     for e in (x for x in HELP_ORDER if x in sb.encodings):
-        print(" * "+encoding_help(e))
+        print(" * " + encoding_help(e))
     return 0
 
 
 def set_server_features(opts) -> None:
     def b(v):
         return str(v).lower() not in FALSE_OPTIONS
+
     # turn off some server mixins:
     from xpra.server import features
     impwarned = []
@@ -297,24 +297,25 @@ def set_server_features(opts) -> None:
                     log.warn(f" for Python {sys.version}")
                 return False
         return True
-    features.control         = impcheck("server.control_command") and envbool("XPRA_CONTROL_CHANNEL", True)
-    features.notifications   = opts.notifications and impcheck("notifications")
-    features.webcam          = b(opts.webcam) and impcheck("codecs")
-    features.clipboard       = b(opts.clipboard) and impcheck("clipboard")
-    features.audio           = b(opts.audio) and impcheck("audio")
-    features.av_sync         = features.audio and b(opts.av_sync)
-    features.fileprint       = b(opts.printing) or b(opts.file_transfer)
-    features.mmap            = b(opts.mmap)
-    features.input_devices   = not opts.readonly and impcheck("keyboard")
-    features.commands        = envbool("XPRA_RUN_COMMANDS", True)
-    features.dbus            = impcheck("dbus", "server.dbus")
-    features.encoding        = impcheck("codecs")
-    features.logging         = b(opts.remote_logging)
+
+    features.control = impcheck("server.control_command") and envbool("XPRA_CONTROL_CHANNEL", True)
+    features.notifications = opts.notifications and impcheck("notifications")
+    features.webcam = b(opts.webcam) and impcheck("codecs")
+    features.clipboard = b(opts.clipboard) and impcheck("clipboard")
+    features.audio = b(opts.audio) and impcheck("audio")
+    features.av_sync = features.audio and b(opts.av_sync)
+    features.fileprint = b(opts.printing) or b(opts.file_transfer)
+    features.mmap = b(opts.mmap)
+    features.input_devices = not opts.readonly and impcheck("keyboard")
+    features.commands = envbool("XPRA_RUN_COMMANDS", True)
+    features.dbus = impcheck("dbus", "server.dbus")
+    features.encoding = impcheck("codecs")
+    features.logging = b(opts.remote_logging)
     # features.network_state   = ??
-    features.shell           = envbool("XPRA_SHELL", True)
-    features.display         = opts.windows
-    features.windows         = opts.windows and impcheck("codecs")
-    features.rfb             = b(opts.rfb_upgrade) and impcheck("server.rfb")
+    features.shell = envbool("XPRA_SHELL", True)
+    features.display = opts.windows
+    features.windows = opts.windows and impcheck("codecs")
+    features.rfb = b(opts.rfb_upgrade) and impcheck("server.rfb")
 
 
 def make_monitor_server():
@@ -368,15 +369,15 @@ def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=Tru
     return 0
 
 
-def write_displayfd(display_name : str, fd : int) -> None:
-    if OSX or not POSIX or fd<=0:
+def write_displayfd(display_name: str, fd: int) -> None:
+    if OSX or not POSIX or fd <= 0:
         return
     from xpra.log import Logger
     log = Logger("server")
     try:
         from xpra.platform import displayfd
         display_no = display_name[1:]
-        #ensure it is a string containing the number:
+        # ensure it is a string containing the number:
         display_no = str(int(display_no))
         log(f"writing display_no={display_no} to displayfd={fd}")
         assert displayfd.write_displayfd(fd, display_no), "timeout"
@@ -389,23 +390,23 @@ def write_displayfd(display_name : str, fd : int) -> None:
 def get_session_dir(mode: str, sessions_dir: str, display_name: str, uid: int) -> str:
     session_dir = osexpand(os.path.join(sessions_dir, display_name.lstrip(":")), uid=uid)
     if not os.path.exists(session_dir):
-        ROOT = POSIX and getuid()==0
+        ROOT = POSIX and getuid() == 0
         ROOT_FALLBACK = ("/run/xpra", "/var/run/xpra", "/tmp")
-        if ROOT and uid==0 and not any(session_dir.startswith(x) for x in ROOT_FALLBACK):
-            #there is usually no $XDG_RUNTIME_DIR when running as root
-            #and even if there was, that's probably not a good path to use,
-            #so try to find a more suitable directory we can use:
+        if ROOT and uid == 0 and not any(session_dir.startswith(x) for x in ROOT_FALLBACK):
+            # there is usually no $XDG_RUNTIME_DIR when running as root
+            # and even if there was, that's probably not a good path to use,
+            # so try to find a more suitable directory we can use:
             for d in ROOT_FALLBACK:
                 if os.path.exists(d):
-                    if mode=="proxy" and (display_name or "").lstrip(":").split(",")[0]=="14500":
-                        #stash the system-wide proxy session files in a 'proxy' subdirectory:
+                    if mode == "proxy" and (display_name or "").lstrip(":").split(",")[0] == "14500":
+                        # stash the system-wide proxy session files in a 'proxy' subdirectory:
                         return os.path.join(d, "proxy")
-                    #otherwise just use the display as subdirectory name:
+                    # otherwise just use the display as subdirectory name:
                     return os.path.join(d, (display_name or "").lstrip(":"))
     return session_dir
 
 
-def make_session_dir(mode:str, sessions_dir:str, display_name:str, uid:int=0, gid:int=0) -> str:
+def make_session_dir(mode: str, sessions_dir: str, display_name: str, uid: int = 0, gid: int = 0) -> str:
     session_dir = get_session_dir(mode, sessions_dir, display_name, uid)
     if not os.path.exists(session_dir):
         try:
@@ -414,24 +415,24 @@ def make_session_dir(mode:str, sessions_dir:str, display_name:str, uid:int=0, gi
             import tempfile
             session_dir = osexpand(os.path.join(tempfile.gettempdir(), display_name.lstrip(":")))
             os.makedirs(session_dir, 0o750, exist_ok=True)
-        ROOT = POSIX and getuid()==0
+        ROOT = POSIX and getuid() == 0
         if ROOT and (session_dir.startswith("/run/user/") or session_dir.startswith("/run/xpra/")):
             os.lchown(session_dir, uid, gid)
     return session_dir
 
 
-def session_file_path(filename:str) -> str:
+def session_file_path(filename: str) -> str:
     session_dir = os.environ.get("XPRA_SESSION_DIR")
     if session_dir is None:
         raise RuntimeError("'XPRA_SESSION_DIR' must be set to use this function")
     return os.path.join(session_dir, filename)
 
 
-def load_session_file(filename:str) -> bytes:
+def load_session_file(filename: str) -> bytes:
     return load_binary_file(session_file_path(filename))
 
 
-def save_session_file(filename:str, contents, uid:int=-1, gid:int=-1):
+def save_session_file(filename: str, contents, uid: int = -1, gid: int = -1):
     if not os.environ.get("XPRA_SESSION_DIR"):
         return None
     if not isinstance(contents, bytes):
@@ -442,7 +443,7 @@ def save_session_file(filename:str, contents, uid:int=-1, gid:int=-1):
         with open(path, "wb+") as f:
             if POSIX:
                 os.fchmod(f.fileno(), 0o640)
-                if getuid()==0 and uid>=0 and gid>=0:
+                if getuid() == 0 and uid >= 0 and gid >= 0:
                     os.fchown(f.fileno(), uid, gid)
             f.write(contents)
     except OSError as e:
@@ -490,7 +491,7 @@ def clean_session_files(*filenames) -> None:
         return
     for filename in filenames:
         path = session_file_path(filename)
-        if filename.find("*")>=0:
+        if filename.find("*") >= 0:
             for p in glob.glob(path):
                 clean_session_path(p)
         else:
@@ -551,10 +552,10 @@ def get_options_file_contents(opts, mode: str = "seamless") -> str:
         aname = attr.replace("-", "_")
         dval = getattr(defaults, aname, None)
         cval = getattr(opts, aname, None)
-        if dval!=cval:
+        if dval != cval:
             if dtype is bool:
-                BOOL_STR = {True : "yes", False : "no"}
-                diff_contents.append(f"{attr}="+BOOL_STR.get(cval, "auto"))
+                BOOL_STR = {True: "yes", False: "no"}
+                diff_contents.append(f"{attr}=" + BOOL_STR.get(cval, "auto"))
             elif dtype in (tuple, list):
                 for x in cval or ():
                     diff_contents.append(f"{attr}={x}")
@@ -564,18 +565,18 @@ def get_options_file_contents(opts, mode: str = "seamless") -> str:
     return "\n".join(diff_contents)
 
 
-def load_options() -> dict[str,Any]:
+def load_options() -> dict[str, Any]:
     config_file = session_file_path("config")
     return read_config(config_file)
 
 
-def apply_config(opts, mode:str, cmdline:str) -> str:
-    #if we had saved the start / start-desktop config, reload it:
+def apply_config(opts, mode: str, cmdline: str) -> str:
+    # if we had saved the start / start-desktop config, reload it:
     options = load_options()
     if not options:
         return mode
-    if mode.find("upgrade")>=0:
-        #unspecified upgrade, try to find the original mode used:
+    if mode.find("upgrade") >= 0:
+        # unspecified upgrade, try to find the original mode used:
         mode = options.pop("mode") or mode
     upgrade_config = dict_to_validated_config(options)
     # apply the previous session options:
@@ -602,7 +603,7 @@ def apply_config(opts, mode:str, cmdline:str) -> str:
     return mode
 
 
-def reload_dbus_attributes(display_name:str) -> tuple[int,dict[str,str]]:
+def reload_dbus_attributes(display_name: str) -> tuple[int, dict[str, str]]:
     from xpra.log import Logger
     dbuslog = Logger("dbus")
     try:
@@ -619,14 +620,14 @@ def reload_dbus_attributes(display_name:str) -> tuple[int,dict[str,str]]:
     dbus_env = {}
     if dbus_env_data:
         for line in dbus_env_data.splitlines():
-            if not line or line.startswith("#") or line.find("=")<0:
+            if not line or line.startswith("#") or line.find("=") < 0:
                 continue
             parts = line.split("=", 1)
             dbus_env[parts[0]] = parts[1]
     dbuslog(f"reload_dbus_attributes({display_name}) dbus_env={dbus_env}")
     dbus_address = dbus_env.get("DBUS_SESSION_BUS_ADDRESS")
     if not (dbus_pid and dbus_address):
-        #less reliable: get it from the wminfo output:
+        # less reliable: get it from the wminfo output:
         from xpra.scripts.main import exec_wminfo
         wminfo = exec_wminfo(display_name)
         if not dbus_pid:
@@ -664,8 +665,8 @@ def is_splash_enabled(mode: str, daemon: bool, splash: bool, display: str):
     if xdisplay:
         # make sure that the display isn't the one we're running against,
         # unless we're shadowing it
-        return xdisplay!=display or mode.startswith("shadow")
-    if mode=="proxy":
+        return xdisplay != display or mode.startswith("shadow")
+    if mode == "proxy":
         return False
     if os.environ.get("XDG_SESSION_DESKTOP"):
         return True
@@ -673,23 +674,23 @@ def is_splash_enabled(mode: str, daemon: bool, splash: bool, display: str):
 
 
 MODE_TO_NAME: dict[str, str] = {
-    "seamless"          : "Seamless",
-    "desktop"           : "Desktop",
-    "monitor"           : "Monitor",
-    "expand"            : "Expand",
-    "upgrade"           : "Upgrade",
-    "upgrade-seamless"  : "Seamless Upgrade",
-    "upgrade-desktop"   : "Desktop Upgrade",
-    "upgrade-monitor"   : "Monitor Upgrade",
-    "shadow"            : "Shadow",
-    "shadow-screen"     : "Shadow Screen",
-    "proxy"             : "Proxy",
+    "seamless": "Seamless",
+    "desktop": "Desktop",
+    "monitor": "Monitor",
+    "expand": "Expand",
+    "upgrade": "Upgrade",
+    "upgrade-seamless": "Seamless Upgrade",
+    "upgrade-desktop": "Desktop Upgrade",
+    "upgrade-monitor": "Monitor Upgrade",
+    "shadow": "Shadow",
+    "shadow-screen": "Shadow Screen",
+    "proxy": "Proxy",
 }
 
 
-def request_exit(uri:str) -> bool:
+def request_exit(uri: str) -> bool:
     from xpra.platform.paths import get_xpra_command
-    cmd = get_xpra_command()+["exit", uri]
+    cmd = get_xpra_command() + ["exit", uri]
     env = os.environ.copy()
     # don't wait too long:
     env["XPRA_CONNECT_TIMEOUT"] = "5"
@@ -708,18 +709,18 @@ def request_exit(uri:str) -> bool:
     return p.poll() in (ExitCode.OK, ExitCode.UPGRADE)
 
 
-def do_run_server(script_file:str, cmdline, error_cb, opts, extra_args, mode:str, display_name:str, defaults):
+def do_run_server(script_file: str, cmdline, error_cb, opts, extra_args, mode: str, display_name: str, defaults):
     assert mode in (
         "seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen",
         "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
         "proxy",
     )
     validate_encryption(opts)
-    if opts.encoding=="help" or "help" in opts.encodings:
+    if opts.encoding == "help" or "help" in opts.encodings:
         return show_encoding_help(opts)
     ################################################################################
     # splash screen:
-    splash_process : Popen | None = None
+    splash_process: Popen | None = None
     if is_splash_enabled(mode, opts.daemon, opts.splash, display_name):
         # use splash screen to show server startup progress:
         mode_str = MODE_TO_NAME.get(mode, "").split(" Upgrade")[0]
@@ -741,15 +742,17 @@ def do_run_server(script_file:str, cmdline, error_cb, opts, extra_args, mode:str
             if stdin:
                 noerr(stdin.write, f"{pct}:{text}\n".encode("latin1"))
                 noerr(stdin.flush)
-            if pct==100:
-                #it should exit on its own, but just in case:
+            if pct == 100:
+                # it should exit on its own, but just in case:
                 from xpra.common import SPLASH_EXIT_DELAY
                 glib = gi_import("GLib")
-                glib.timeout_add(SPLASH_EXIT_DELAY*1000+500, stop_progress_process)
+                glib.timeout_add(SPLASH_EXIT_DELAY * 1000 + 500, stop_progress_process)
+
         progress = show_progress
     else:
         def noprogressshown(*_args):
             """ messages aren't shown """
+
         progress = noprogressshown
     progress(10, "initializing environment")
     try:
@@ -761,8 +764,8 @@ def do_run_server(script_file:str, cmdline, error_cb, opts, extra_args, mode:str
         raise
 
 
-def _do_run_server(script_file:str, cmdline,
-                   error_cb, opts, extra_args, mode:str, display_name:str, defaults,
+def _do_run_server(script_file: str, cmdline,
+                   error_cb, opts, extra_args, mode: str, display_name: str, defaults,
                    splash_process, progress):
     desktop_display = nox()
     try:
@@ -771,21 +774,21 @@ def _do_run_server(script_file:str, cmdline,
         cwd = os.path.expanduser("~")
         warn(f"current working directory does not exist, using {cwd!r}\n")
 
-    #remove anything pointing to dbus from the current env
-    #(so we only detect a dbus instance started by pam,
+    # remove anything pointing to dbus from the current env
+    # (so we only detect a dbus instance started by pam,
     # and override everything else)
     for k in tuple(os.environ.keys()):
         if k.startswith("DBUS_"):
             del os.environ[k]
 
     use_display = parse_bool("use-display", opts.use_display)
-    starting  = mode == "seamless"
-    starting_desktop = mode=="desktop"
-    starting_monitor = mode=="monitor"
+    starting = mode == "seamless"
+    starting_desktop = mode == "desktop"
+    starting_monitor = mode == "monitor"
     expanding = mode == "expand"
     upgrading = mode.startswith("upgrade")
     shadowing = mode.startswith("shadow")
-    proxying  = mode == "proxy"
+    proxying = mode == "proxy"
 
     if not proxying and not shadowing and POSIX and not OSX:
         os.environ["GDK_BACKEND"] = "x11"
@@ -831,18 +834,18 @@ def _do_run_server(script_file:str, cmdline,
             error_cb(f"too many extra arguments ({len(extra_args)}): only expected a display number")
         if len(extra_args) == 1:
             display_name = extra_args[0]
-            #look for display options:
-            #ie: ":1,DP-2" -> ":1" "DP-2"
-            if display_name and display_name.find(",")>0:
+            # look for display options:
+            # ie: ":1,DP-2" -> ":1" "DP-2"
+            if display_name and display_name.find(",") > 0:
                 display_name, display_options = display_name.split(",", 1)
             if not shadowing and not upgrading and not use_display:
                 display_name_check(display_name)
         else:
             if proxying:
-                #find a free display number:
+                # find a free display number:
                 dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
                 all_displays = dotxpra.sockets()
-                #ie: [("LIVE", ":100"), ("LIVE", ":200"), ...]
+                # ie: [("LIVE", ":100"), ("LIVE", ":200"), ...]
                 displays = [v[1] for v in all_displays]
                 display_name = ""
                 for x in range(1000, 20000):
@@ -853,7 +856,7 @@ def _do_run_server(script_file:str, cmdline,
                 if not display_name:
                     error_cb("you must specify a free virtual display name to use with the proxy server")
             elif use_display:
-                #only use automatic guess for xpra displays and not X11 displays:
+                # only use automatic guess for xpra displays and not X11 displays:
                 display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
             else:
                 # We will try to find one automatically
@@ -862,9 +865,9 @@ def _do_run_server(script_file:str, cmdline,
 
     if upgrading:
         assert display_name, "no display found to upgrade"
-        if POSIX and not OSX and get_saved_env_var("DISPLAY", "")==display_name:
+        if POSIX and not OSX and get_saved_env_var("DISPLAY", "") == display_name:
             warn("Warning: upgrading from an environment connected to the same display")
-        #try to stop the existing server if it exists:
+        # try to stop the existing server if it exists:
         dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
         sessions = get_xpra_sessions(dotxpra, ignore_state=(SocketState.UNKNOWN, SocketState.DEAD),
                                      matching_display=display_name, query=True)
@@ -873,11 +876,11 @@ def _do_run_server(script_file:str, cmdline,
             socket_path = session.get("socket-path")
             uri = f"socket://{socket_path}" if socket_path else display_name
             if request_exit(uri):
-                #the server has terminated as we had requested
+                # the server has terminated as we had requested
                 use_display = True
-                #but it may need a second to disconnect the clients
-                #and then close the sockets cleanly
-                #(so we can re-create them safely)
+                # but it may need a second to disconnect the clients
+                # and then close the sockets cleanly
+                # (so we can re-create them safely)
                 import time
                 time.sleep(1)
             else:
@@ -899,20 +902,20 @@ def _do_run_server(script_file:str, cmdline,
     )
     run_xpra_script = None
     env_script = None
-    if POSIX and getuid()!=0:
+    if POSIX and getuid() != 0:
         save_env = os.environ.copy()
         save_env.update(parse_env(opts.env))
         env_script = xpra_env_shell_script(opts.socket_dir, save_env)
         run_xpra_script = env_script + xpra_runner_shell_script(script_file, cwd)
 
-    uid : int = int(opts.uid)
-    gid : int = int(opts.gid)
+    uid: int = int(opts.uid)
+    gid: int = int(opts.gid)
     username = get_username_for_uid(uid)
     home = get_home_for_uid(uid)
-    ROOT : bool = POSIX and getuid()==0
+    ROOT: bool = POSIX and getuid() == 0
     if POSIX and uid and not gid:
-        #try harder to use a valid group,
-        #since we're going to chown files:
+        # try harder to use a valid group,
+        # since we're going to chown files:
         username = get_username_for_uid(uid)
         groups = get_groups(username)
         if GROUP in groups:
@@ -936,7 +939,7 @@ def _do_run_server(script_file:str, cmdline,
     stderr = sys.stderr
     # Daemonize:
     if POSIX and opts.daemon:
-        #daemonize will chdir to "/", so try to use an absolute path:
+        # daemonize will chdir to "/", so try to use an absolute path:
         if opts.password_file:
             opts.password_file = tuple(os.path.abspath(x) for x in opts.password_file)
         daemonize()
@@ -950,13 +953,13 @@ def _do_run_server(script_file:str, cmdline,
             stderr.write(f" {e}\n")
             del e
 
-    clobber = int(upgrading)*CLOBBER_UPGRADE | int(use_display or 0)*CLOBBER_USE_DISPLAY
-    start_vfb : bool = not (shadowing or proxying or clobber or expanding)
-    xauth_data : str = get_hex_uuid() if start_vfb else ""
+    clobber = int(upgrading) * CLOBBER_UPGRADE | int(use_display or 0) * CLOBBER_USE_DISPLAY
+    start_vfb: bool = not (shadowing or proxying or clobber or expanding)
+    xauth_data: str = get_hex_uuid() if start_vfb else ""
 
     # if pam is present, try to create a new session:
     pam = None
-    PAM_OPEN = POSIX and envbool("XPRA_PAM_OPEN", ROOT and uid!=0)
+    PAM_OPEN = POSIX and envbool("XPRA_PAM_OPEN", ROOT and uid != 0)
     if PAM_OPEN:
         try:
             from xpra.server.pam import pam_session
@@ -968,13 +971,13 @@ def _do_run_server(script_file:str, cmdline,
             pam = pam_session(username)
     if pam:
         env = {
-            #"XDG_SEAT"               : "seat1",
-            #"XDG_VTNR"               : "0",
-            "XDG_SESSION_TYPE"       : "x11",
-            #"XDG_SESSION_CLASS"      : "user",
-            "XDG_SESSION_DESKTOP"    : "xpra",
+            # "XDG_SEAT"               : "seat1",
+            # "XDG_VTNR"               : "0",
+            "XDG_SESSION_TYPE": "x11",
+            # "XDG_SESSION_CLASS"      : "user",
+            "XDG_SESSION_DESKTOP": "xpra",
         }
-        #maybe we should just bail out instead?
+        # maybe we should just bail out instead?
         if pam.start():
             pam.set_env(env)
             items = {}
@@ -991,29 +994,29 @@ def _do_run_server(script_file:str, cmdline,
                 protected_env = pam.get_envlist()
                 os.environ.update(protected_env)
 
-    #get XDG_RUNTIME_DIR from env options,
-    #which may not have updated os.environ yet when running as root with "--uid="
+    # get XDG_RUNTIME_DIR from env options,
+    # which may not have updated os.environ yet when running as root with "--uid="
     xrd = parse_env(opts.env).get("XDG_RUNTIME_DIR", "")
     if OSX and not xrd:
         xrd = osexpand("~/.xpra", uid=uid, gid=gid)
         os.environ["XDG_RUNTIME_DIR"] = xrd
     xrd = os.path.abspath(xrd)
-    if ROOT and (uid>0 or gid>0):
-        #we're going to chown the directory if we create it,
-        #ensure this cannot be abused, only use "safe" paths:
-        if xrd==f"/run/user/{uid}":
-            pass    #OK!
+    if ROOT and (uid > 0 or gid > 0):
+        # we're going to chown the directory if we create it,
+        # ensure this cannot be abused, only use "safe" paths:
+        if xrd == f"/run/user/{uid}":
+            pass  # OK!
         elif not any(True for x in ("/tmp", "/var/tmp") if xrd.startswith(x)):
             xrd = ""
-        #these paths could cause problems if we were to create and chown them:
+        # these paths could cause problems if we were to create and chown them:
         elif xrd.startswith(X11_SOCKET_DIR) or xrd.startswith("/tmp/.XIM-unix"):
             xrd = ""
     if not xrd:
         xrd = os.environ.get("XDG_RUNTIME_DIR", "")
     xrd = create_runtime_dir(xrd, uid, gid)
     if xrd:
-        #this may override the value we get from pam
-        #with the value supplied by the user:
+        # this may override the value we get from pam
+        # with the value supplied by the user:
         protected_env["XDG_RUNTIME_DIR"] = xrd
 
     sanitize_env()
@@ -1031,44 +1034,44 @@ def _do_run_server(script_file:str, cmdline,
         os.environ["DISPLAY"] = display_name
         if POSIX:
             os.environ["CKCON_X11_DISPLAY"] = display_name
-    elif not start_vfb or opts.xvfb.find("Xephyr")<0:
+    elif not start_vfb or opts.xvfb.find("Xephyr") < 0:
         os.environ.pop("DISPLAY", None)
     os.environ.update(protected_env)
 
     session_dir = make_session_dir(mode, opts.sessions_dir, display_name, uid, gid)
     os.environ["XPRA_SESSION_DIR"] = session_dir
-    #populate it:
+    # populate it:
     if run_xpra_script:
         # Write out a shell-script so that we can start our proxy in a clean
         # environment:
         write_runner_shell_scripts(run_xpra_script)
     if env_script:
         write_session_file("server.env", env_script)
-    write_session_file("cmdline", "\n".join(cmdline)+"\n")
+    write_session_file("cmdline", "\n".join(cmdline) + "\n")
     upgrading_seamless = upgrading_desktop = upgrading_monitor = False
     if upgrading:
-        #if we had saved the start / start-desktop config, reload it:
+        # if we had saved the start / start-desktop config, reload it:
         mode = apply_config(opts, mode, cmdline)
         if mode.startswith("upgrade-"):
             mode = mode[len("upgrade-"):]
         if mode.startswith("start-"):
             mode = mode[len("start-"):]
-        upgrading_desktop = mode=="desktop"
-        upgrading_monitor = mode=="monitor"
+        upgrading_desktop = mode == "desktop"
+        upgrading_monitor = mode == "monitor"
         upgrading_seamless = not (upgrading_desktop or upgrading_monitor)
 
     write_session_file("config", get_options_file_contents(opts, mode))
 
-    extra_expand = {"TIMESTAMP" : datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
-    log_to_file = opts.daemon or os.environ.get("XPRA_LOG_TO_FILE", "")=="1"
+    extra_expand = {"TIMESTAMP": datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
+    log_to_file = opts.daemon or os.environ.get("XPRA_LOG_TO_FILE", "") == "1"
     log_dir = opts.log_dir or ""
     if start_vfb or log_to_file:
-        #we will probably need a log dir
-        #either for the vfb, or for our own log file
-        if not log_dir or log_dir.lower()=="auto":
+        # we will probably need a log dir
+        # either for the vfb, or for our own log file
+        if not log_dir or log_dir.lower() == "auto":
             log_dir = session_dir
-        #expose the log-dir as "XPRA_LOG_DIR",
-        #this is used by Xdummy for the Xorg log file
+        # expose the log-dir as "XPRA_LOG_DIR",
+        # this is used by Xdummy for the Xorg log file
         if "XPRA_LOG_DIR" not in os.environ:
             os.environ["XPRA_LOG_DIR"] = log_dir
 
@@ -1077,13 +1080,13 @@ def _do_run_server(script_file:str, cmdline,
         log_filename0 = osexpand(select_log_file(log_dir, opts.log_file, display_name),
                                  username, uid, gid, extra_expand)
         if os.path.exists(log_filename0) and not display_name.startswith("S"):
-            #don't overwrite the log file just yet,
-            #as we may still fail to start
+            # don't overwrite the log file just yet,
+            # as we may still fail to start
             log_filename0 += ".new"
         logfd = open_log_file(log_filename0)
         if POSIX:
             os.fchmod(logfd, 0o640)
-            if ROOT and (uid>0 or gid>0):
+            if ROOT and (uid > 0 or gid > 0):
                 try:
                     os.fchown(logfd, uid, gid)
                 except OSError as e:
@@ -1102,7 +1105,7 @@ def _do_run_server(script_file:str, cmdline,
     if (starting or starting_desktop) and desktop_display and opts.notifications and not opts.dbus_launch:
         print_DE_warnings()
 
-    if start_vfb and opts.sync_xvfb is None and any(opts.xvfb.find(x)>=0 for x in ("Xephyr", "Xnest")):
+    if start_vfb and opts.sync_xvfb is None and any(opts.xvfb.find(x) >= 0 for x in ("Xephyr", "Xnest")):
         # automatically enable sync-xvfb for Xephyr and Xnest:
         opts.sync_xvfb = 50
 
@@ -1114,7 +1117,7 @@ def _do_run_server(script_file:str, cmdline,
 
     progress(30, "creating sockets")
     from xpra.net.socket_util import get_network_logger, setup_local_sockets, create_sockets
-    retry = 10*int(mode.startswith("upgrade"))
+    retry = 10 * int(mode.startswith("upgrade"))
     sockets = create_sockets(opts, error_cb, retry=retry)
 
     from xpra.log import Logger
@@ -1122,22 +1125,22 @@ def _do_run_server(script_file:str, cmdline,
     log("env=%s", os.environ)
 
     if POSIX and starting_desktop and not use_display and DESKTOP_GREETER:
-        #if there are no start commands, auto-add a greeter:
+        # if there are no start commands, auto-add a greeter:
         commands = []
         for start_prop in (
-            "start", "start-late",
-            "start-child","start-child-late",
-            "start-after-connect", "start-child-after-connect",
-            "start-on-connect", "start-child-on-connect",
-            "start-on-last-client-exit", "start-child-on-last-client-exit",
+                "start", "start-late",
+                "start-child", "start-child-late",
+                "start-after-connect", "start-child-after-connect",
+                "start-on-connect", "start-child-on-connect",
+                "start-on-last-client-exit", "start-child-on-last-client-exit",
         ):
             commands += list(getattr(opts, start_prop.replace("-", "_")))
         if not commands:
             opts.start.append("xpra desktop-greeter")
-    if POSIX and configure_imsettings_env(opts.input_method)=="ibus" and not (upgrading or shadowing or proxying):
-        #start ibus-daemon unless already specified in 'start':
-        if IBUS_DAEMON_COMMAND and not (
-            any(x.find("ibus-daemon")>=0 for x in opts.start) or any(x.find("ibus-daemon")>=0 for x in opts.start_late)
+    if POSIX and configure_imsettings_env(opts.input_method) == "ibus" and not (upgrading or shadowing or proxying):
+        # start ibus-daemon unless already specified in 'start':
+        if IBUS_DAEMON_COMMAND and not (any(x.find("ibus-daemon") >= 0 for x in opts.start) or any(
+            x.find("ibus-daemon") >= 0 for x in opts.start_late)
         ):
             log("adding ibus-daemon to late startup")
             opts.start_late.insert(0, IBUS_DAEMON_COMMAND)
@@ -1146,8 +1149,8 @@ def _do_run_server(script_file:str, cmdline,
     odisplay_name = display_name
     xvfb = None
     xauthority = None
-    if (start_vfb or clobber or (shadowing and display_name.startswith(":"))) and display_name.find("wayland")<0:
-        #XAUTHORITY
+    if (start_vfb or clobber or (shadowing and display_name.startswith(":"))) and display_name.find("wayland") < 0:
+        # XAUTHORITY
         from xpra.x11.vfb_util import get_xauthority_path, valid_xauth, xauth_add
         xauthority = valid_xauth((load_session_file("xauthority")).decode(), uid, gid)
         if not xauthority:
@@ -1182,24 +1185,24 @@ def _do_run_server(script_file:str, cmdline,
                             stat_info = os.stat(filename)
                         except OSError:
                             continue
-                        if not ROOT and stat_info.st_uid!=uid:
+                        if not ROOT and stat_info.st_uid != uid:
                             continue
-                        if xauth_time==0.0 or stat_info.st_mtime>xauth_time:
+                        if xauth_time == 0.0 or stat_info.st_mtime > xauth_time:
                             xauthority = filename
                             xauth_time = stat_info.st_mtime
             if not valid_xauth(xauthority, uid, gid):
-                #we can choose the path to use:
+                # we can choose the path to use:
                 xauthority = get_xauthority_path(display_name)
                 xauthority = osexpand(xauthority, actual_username=username, uid=uid, gid=gid)
             assert xauthority
             if not os.path.exists(xauthority):
                 if os.path.islink(xauthority):
-                    #broken symlink
+                    # broken symlink
                     os.unlink(xauthority)
                 log(f"creating XAUTHORITY file {xauthority!r}")
                 with open(xauthority, "ab") as xauth_file:
                     os.fchmod(xauth_file.fileno(), 0o640)
-                    if ROOT and (uid!=0 or gid!=0):
+                    if ROOT and (uid != 0 or gid != 0):
                         os.fchown(xauth_file.fileno(), uid, gid)
             elif not is_writable(xauthority, uid, gid) and not ROOT:
                 log(f"chmoding XAUTHORITY file {xauthority!r}")
@@ -1207,9 +1210,9 @@ def _do_run_server(script_file:str, cmdline,
             write_session_file("xauthority", xauthority)
             log(f"using XAUTHORITY file {xauthority!r}")
         os.environ["XAUTHORITY"] = xauthority
-        #resolve use-display='auto':
+        # resolve use-display='auto':
         if use_display is None or upgrading:
-            #figure out if we have to start the vfb or not:
+            # figure out if we have to start the vfb or not:
             if not display_name:
                 if upgrading:
                     error_cb("no displays found to upgrade")
@@ -1218,16 +1221,16 @@ def _do_run_server(script_file:str, cmdline,
                 progress(40, "connecting to the display")
                 stat = None
                 if display_name.startswith(":"):
-                    x11_socket_path = os.path.join(X11_SOCKET_DIR, "X"+display_name[1:])
+                    x11_socket_path = os.path.join(X11_SOCKET_DIR, "X" + display_name[1:])
                     stat = stat_display_socket(x11_socket_path)
                     log(f"stat_display_socket({x11_socket_path})={stat}")
                 if not stat:
                     if upgrading:
                         error_cb(f"cannot access display {display_name!r}")
-                    #no X11 socket to connect to, so we have to start one:
+                    # no X11 socket to connect to, so we have to start one:
                     start_vfb = True
-                elif verify_display(None, display_name, log_errors=False, timeout=1)==0:
-                    #accessed OK:
+                elif verify_display(None, display_name, log_errors=False, timeout=1) == 0:
+                    # accessed OK:
                     start_vfb = False
                 else:
                     # we can't connect to the X11 display,
@@ -1236,12 +1239,12 @@ def _do_run_server(script_file:str, cmdline,
                     if not xauth_data:
                         xauth_data = get_hex_uuid()
                         if pam:
-                            pam.set_items({"XAUTHDATA" : xauth_data})
+                            pam.set_items({"XAUTHDATA": xauth_data})
                     xauth_add(xauthority, display_name, xauth_data, uid, gid)
-                    if verify_display(None, display_name, log_errors=False, timeout=1)!=0:
+                    if verify_display(None, display_name, log_errors=False, timeout=1) != 0:
                         warn(f"display {display_name!r} is not accessible")
                     else:
-                        #now OK!
+                        # now OK!
                         start_vfb = False
     xvfb_pid = 0
     devices = {}
@@ -1274,18 +1277,19 @@ def _do_run_server(script_file:str, cmdline,
                 log(f"xvfb_terminated() removing {xvfb_pidfile}")
                 if xvfb_pidfile:
                     os.unlink(xvfb_pidfile)
+
             getChildReaper().add_process(xvfb, "xvfb", opts.xvfb, ignore=True, callback=xvfb_terminated)
-            #always update as we may now have the "real" display name:
+            # always update as we may now have the "real" display name:
             os.environ["DISPLAY"] = display_name
             os.environ["CKCON_X11_DISPLAY"] = display_name
             os.environ.update(protected_env)
-            if display_name!=odisplay_name:
-                #update with the real display value:
+            if display_name != odisplay_name:
+                # update with the real display value:
                 if pam:
-                    pam.set_items({"XDISPLAY" : display_name})
+                    pam.set_items({"XDISPLAY": display_name})
                 if session_dir:
                     new_session_dir = get_session_dir(mode, opts.sessions_dir, display_name, uid)
-                    if new_session_dir!=session_dir:
+                    if new_session_dir != session_dir:
                         try:
                             if os.path.exists(new_session_dir):
                                 for sess_e in os.listdir(session_dir):
@@ -1298,8 +1302,8 @@ def _do_run_server(script_file:str, cmdline,
                             log.error(f" from {session_dir!r} to {new_session_dir!r}")
                             log.error(f" {e}")
                         session_dir = new_session_dir
-                        #update session dir if needed:
-                        if not opts.log_dir or opts.log_dir.lower()=="auto":
+                        # update session dir if needed:
+                        if not opts.log_dir or opts.log_dir.lower() == "auto":
                             log_dir = session_dir
                         os.environ["XPRA_SESSION_DIR"] = new_session_dir
         elif POSIX and not OSX and not shadowing and not proxying:
@@ -1333,14 +1337,15 @@ def _do_run_server(script_file:str, cmdline,
     if WIN32 and os.environ.get("XPRA_LOG_FILENAME"):
         os.environ["XPRA_SERVER_LOG"] = os.environ["XPRA_LOG_FILENAME"]
     if opts.daemon:
-        if odisplay_name!=display_name:
+        if odisplay_name != display_name:
             # this may be used by scripts, let's try not to change it:
             noerr(stderr.write, f"Actual display used: {display_name}\n")
             noerr(stderr.flush)
         log_filename1 = osexpand(select_log_file(log_dir, opts.log_file, display_name),
                                  username, uid, gid, extra_expand)
         if log_filename0 != log_filename1:
-            if not os.path.exists(log_filename0) and os.path.exists(log_filename1) and log_filename1.startswith(session_dir):   # noqa: E501
+            if not os.path.exists(log_filename0) and os.path.exists(log_filename1) and log_filename1.startswith(
+                    session_dir):  # noqa: E501
                 # the session dir was renamed with the log file inside it,
                 # so we don't need to rename the log file
                 pass
@@ -1362,7 +1367,7 @@ def _do_run_server(script_file:str, cmdline,
     if not check_xvfb():
         return ExitCode.VFB_ERROR
 
-    if ROOT and (uid!=0 or gid!=0):
+    if ROOT and (uid != 0 or gid != 0):
         log("root: switching to uid=%i, gid=%i", uid, gid)
         setuidgid(uid, gid)
         os.environ.update({
@@ -1384,7 +1389,7 @@ def _do_run_server(script_file:str, cmdline,
         os.chdir(osexpand(opts.chdir))
 
     dbus_pid = 0
-    dbus_env : dict[str,str] = {}
+    dbus_env: dict[str, str] = {}
     if not shadowing and POSIX and not OSX:
         dbuslog = Logger("dbus")
         dbus_pid, dbus_env = reload_dbus_attributes(display_name)
@@ -1404,7 +1409,7 @@ def _do_run_server(script_file:str, cmdline,
                 if dbus_env:
                     dbuslog(f"started new dbus instance: {dbus_env}")
                     write_session_file("dbus.pid", f"{dbus_pid}")
-                    dbus_env_data = "\n".join("{}={}".format(k, v) for k,v in dbus_env.items())+"\n"
+                    dbus_env_data = "\n".join("{}={}".format(k, v) for k, v in dbus_env.items()) + "\n"
                     write_session_file("dbus.env", dbus_env_data.encode("utf8"))
         if dbus_env:
             os.environ.update(dbus_env)
@@ -1427,32 +1432,33 @@ def _do_run_server(script_file:str, cmdline,
                 r = verify_display(xvfb, display_name, shadowing)
                 if r:
                     return r
-        #on win32, this ensures that we get the correct screen size to shadow:
+        # on win32, this ensures that we get the correct screen size to shadow:
         from xpra.platform.gui import init as gui_init
         log("gui_init()")
         gui_init()
 
     def init_local_sockets():
         progress(60, "initializing local sockets")
-        #setup unix domain socket:
+        # setup unix domain socket:
         netlog = get_network_logger()
         local_sockets = setup_local_sockets(
-            opts.bind,                                          # noqa: F821
-            opts.socket_dir, opts.socket_dirs, session_dir,     # noqa: F821
-            display_name, clobber,                              # noqa: F821
-            opts.mmap_group, opts.socket_permissions,           # noqa: F821
+            opts.bind,  # noqa: F821
+            opts.socket_dir, opts.socket_dirs, session_dir,  # noqa: F821
+            display_name, clobber,  # noqa: F821
+            opts.mmap_group, opts.socket_permissions,  # noqa: F821
             username, uid, gid)
         netlog(f"setting up local sockets: {local_sockets}")
         sockets.update(local_sockets)
         if POSIX and (starting or upgrading or starting_desktop):
-            #all unix domain sockets:
-            ud_paths = [sockpath for stype, _, sockpath, _ in local_sockets if stype=="socket"]
-            forward_xdg_open = bool(opts.forward_xdg_open) or (                             # noqa: F821
-                opts.forward_xdg_open is None and mode.find("desktop")<0 and mode.find("monitor")<0)       # noqa: F821
+            # all unix domain sockets:
+            ud_paths = [sockpath for stype, _, sockpath, _ in local_sockets if stype == "socket"]
+            forward_xdg_open = bool(opts.forward_xdg_open) or (  # noqa: F821
+                opts.forward_xdg_open is None and mode.find("desktop") < 0 and mode.find("monitor") < 0
+            )  # noqa: F821
             if ud_paths:
                 os.environ["XPRA_SERVER_SOCKET"] = ud_paths[0]
                 if forward_xdg_open and os.path.exists("/usr/libexec/xpra/xdg-open"):
-                    os.environ["PATH"] = "/usr/libexec/xpra"+os.pathsep+os.environ.get("PATH", "")
+                    os.environ["PATH"] = "/usr/libexec/xpra" + os.pathsep + os.environ.get("PATH", "")
             else:
                 log.warn("Warning: no local server sockets,")
                 if forward_xdg_open:
@@ -1480,11 +1486,12 @@ def _do_run_server(script_file:str, cmdline,
                     return prop_get(xid, prop, "u32")
                 except Exception:
                     return None
+
             xvfb_pid = _get_int(b"XPRA_XVFB_PID") or _get_int(b"_XPRA_SERVER_PID") or 0
 
     progress(80, "initializing server")
     if shadowing:
-        app = make_shadow_server(display_name, multi_window=mode=="shadow")
+        app = make_shadow_server(display_name, multi_window=mode == "shadow")
     elif proxying:
         app = make_proxy_server()
     elif expanding:
@@ -1505,8 +1512,8 @@ def _do_run_server(script_file:str, cmdline,
         # as we may have switched to "starting=True"
         # if the existing server has exited as we requested
         if mode.startswith("upgrade") or use_display:
-            #something abnormal occurred,
-            #don't kill the vfb on exit:
+            # something abnormal occurred,
+            # don't kill the vfb on exit:
             from xpra.server import EXITING_CODE
             app._upgrading = EXITING_CODE
         app.cleanup()
@@ -1572,18 +1579,18 @@ def _do_run_server(script_file:str, cmdline,
         app.cleanup()
         r = -128
     else:
-        if r>0:
+        if r > 0:
             r = 0
     return r
 
 
 def attach_client(options, defaults):
     from xpra.platform.paths import get_xpra_command
-    cmd = get_xpra_command()+["attach"]
+    cmd = get_xpra_command() + ["attach"]
     display_name = os.environ.get("DISPLAY")
     if display_name:
         cmd += [display_name]
-    #options has been "fixed up", make sure this has too:
+    # options has been "fixed up", make sure this has too:
     fixup_options(defaults)
     for x in CLIENT_OPTIONS:
         f = x.replace("-", "_")
@@ -1593,8 +1600,8 @@ def attach_client(options, defaults):
         except Exception as e:
             warn(f"error on {f}: {e}")
             continue
-        if c!=d:
-            if OPTION_TYPES.get(x)==list:
+        if c != d:
+            if OPTION_TYPES.get(x) == list:
                 v = ",".join(str(i) for i in c)
             else:
                 v = str(c)
@@ -1614,7 +1621,7 @@ def verify_gdk_display(display_name):
         raise InitException(f"failed to open display {display_name!r}")
     manager = Gdk.DisplayManager.get()
     default_display = manager.get_default_display()
-    if default_display is not None and default_display!=display:
+    if default_display is not None and default_display != display:
         default_display.close()
     manager.set_default_display(display)
     return display
