@@ -33,9 +33,6 @@ from libc.stdlib cimport free
 cdef extern from *:
     ctypedef unsigned long size_t
 
-cdef extern from "Python.h":
-    object PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
-
 
 AVIF_PIXEL_FORMAT = {
     AVIF_PIXEL_FORMAT_NONE      : "NONE",
