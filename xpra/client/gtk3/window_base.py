@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -121,9 +121,10 @@ if use_x11_bindings():
                 workspacelog.estr(e)
         CAN_SET_WORKSPACE = can_set_workspace()
 elif WIN32:
+    from _ctypes import COMError
     try:
         from pyvda.pyvda import get_virtual_desktops
-    except ImportError as e:
+    except (ImportError, COMError) as e:
         workspacelog(f"no workspace support: {e}")
     else:
         CAN_SET_WORKSPACE = len(get_virtual_desktops())>0
