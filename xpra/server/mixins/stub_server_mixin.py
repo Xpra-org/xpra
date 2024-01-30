@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -31,7 +31,7 @@ class StubServerMixin:
         Initialize state attributes.
         """
 
-    def add_init_thread_callback(self, callback:Callable) -> None:
+    def add_init_thread_callback(self, callback: Callable) -> None:
         """
         Adds a callback that will be executed
         after the init thread has completed.
@@ -68,13 +68,13 @@ class StubServerMixin:
         Prepare to handle connections from the given sockets.
         """
 
-    def get_caps(self, _source) -> dict[str,Any]:
+    def get_caps(self, _source) -> dict[str, Any]:
         """
         Capabilities provided by this mixin.
         """
         return {}
 
-    def get_server_features(self, _source) -> dict[str,Any]:
+    def get_server_features(self, _source) -> dict[str, Any]:
         """
         Features provided by this mixin.
         (the difference with capabilities is that those will only
@@ -88,7 +88,7 @@ class StubServerMixin:
         this method will be called.
         """
 
-    def get_info(self, _proto) -> dict[str,Any]:
+    def get_info(self, _proto) -> dict[str, Any]:
         """
         Runtime information on this mixin, includes state and settings.
         Somewhat overlaps with the capabilities and features,
@@ -96,7 +96,7 @@ class StubServerMixin:
         """
         return {}
 
-    def get_ui_info(self, proto, client_uuids=None, *args) -> dict[str,Any]:
+    def get_ui_info(self, proto, client_uuids=None, *args) -> dict[str, Any]:
         """
         Runtime information on this mixin,
         unlike get_info() this method will be called
@@ -109,17 +109,17 @@ class StubServerMixin:
         Register the packet types that this mixin can handle.
         """
 
-    def parse_hello(self, ss, caps: typedict, send_ui : bool) -> None:
+    def parse_hello(self, ss, caps: typedict, send_ui: bool) -> None:
         """
         Parse capabilities from a new connection.
         """
 
-    def add_new_client(self, ss, c, send_ui, share_count : int) -> None:
+    def add_new_client(self, ss, c, send_ui, share_count: int) -> None:
         """
         A new client is being handled, take any action needed.
         """
 
-    def send_initial_data(self, ss, caps, send_ui, share_count : int) -> None:
+    def send_initial_data(self, ss, caps, send_ui, share_count: int) -> None:
         """
         A new connection has been accepted, send initial data.
         """
@@ -130,24 +130,24 @@ class StubServerMixin:
         (to clean up / free up resources associated with a specific client or connection)
         """
 
-    def get_child_env(self) -> dict[str,str]:
+    def get_child_env(self) -> dict[str, str]:
         return os.environ.copy()
 
-    def get_full_child_command(self, cmd, _use_wrapper : bool=True) -> list[str]:
-        #make sure we have it as a list:
+    def get_full_child_command(self, cmd, _use_wrapper: bool = True) -> list[str]:
+        # make sure we have it as a list:
         if isinstance(cmd, (list, tuple)):
             return list(cmd)
-        if WIN32:   #pragma: no cover
+        if WIN32:  # pragma: no cover
             return [cmd]
         return shlex.split(str(cmd))
 
-    def get_http_scripts(self) -> dict[str,Callable]:
+    def get_http_scripts(self) -> dict[str, Callable]:
         return {}
 
-    def add_packet_handler(self, packet_type : str, handler : ServerPacketHandlerType, main_thread=True) -> None:
+    def add_packet_handler(self, packet_type: str, handler: ServerPacketHandlerType, main_thread=True) -> None:
         """ register a packet handler """
 
-    def add_packet_handlers(self, defs : dict[str,ServerPacketHandlerType], main_thread=True) -> None:
+    def add_packet_handlers(self, defs: dict[str, ServerPacketHandlerType], main_thread=True) -> None:
         """ register multiple packet handlers """
 
     def get_server_source(self, proto):

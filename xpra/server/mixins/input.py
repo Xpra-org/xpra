@@ -1,9 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-#pylint: disable-msg=E1101
+# pylint: disable-msg=E1101
 
 from time import monotonic
 from typing import Any
@@ -35,16 +35,16 @@ class InputServer(StubServerMixin):
 
         self.mod_meanings = {}
         self.keyboard_config = None
-        self.keymap_changing_timer = 0  #to ignore events when we know we are changing the configuration
+        self.keymap_changing_timer = 0  # to ignore events when we know we are changing the configuration
         self.key_repeat = None
-        #ugly: we're duplicating the value pair from "key_repeat" here:
+        # ugly: we're duplicating the value pair from "key_repeat" here:
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
-        #store list of currently pressed keys
-        #(using a dict only so we can display their names in debug messages)
-        self.keys_pressed : dict[int,str] = {}
-        self.keys_timedout : dict[int,float] = {}
-        #timers for cancelling key repeat when we get jitter
+        # store list of currently pressed keys
+        # (using a dict only so we can display their names in debug messages)
+        self.keys_pressed: dict[int, str] = {}
+        self.keys_timedout: dict[int, float] = {}
+        # timers for cancelling key repeat when we get jitter
         self.key_repeat_timer = 0
 
         self.last_mouse_user = None
@@ -71,42 +71,42 @@ class InputServer(StubServerMixin):
     def last_client_exited(self) -> None:
         self.clear_keys_pressed()
 
-    def get_info(self, _proto) -> dict[str,Any]:
-        return {"keyboard" : self.get_keyboard_info()}
+    def get_info(self, _proto) -> dict[str, Any]:
+        return {"keyboard": self.get_keyboard_info()}
 
-    def get_server_features(self, _source=None) -> dict[str,Any]:
+    def get_server_features(self, _source=None) -> dict[str, Any]:
         return {
-            "input-devices"         : self.input_devices,
-            "pointer.relative"      : True,         #assumed available in 5.0.3
+            "input-devices": self.input_devices,
+            "pointer.relative": True,  # assumed available in 5.0.3
         }
 
-    def get_caps(self, _source) -> dict[str,Any]:
+    def get_caps(self, _source) -> dict[str, Any]:
         if not self.key_repeat:
             return {}
         return {
-            "key_repeat"           : self.key_repeat,
-            "key_repeat_modifiers" : True,
+            "key_repeat": self.key_repeat,
+            "key_repeat_modifiers": True,
         }
 
-    def parse_hello(self, ss, caps:typedict, send_ui:bool) -> None:
+    def parse_hello(self, ss, caps: typedict, send_ui: bool) -> None:
         if send_ui:
             self.parse_hello_ui_keyboard(ss, caps)
 
     def watch_keymap_changes(self) -> None:
         """ GTK servers will start listening for the 'keys-changed' signal """
 
-    def parse_hello_ui_keyboard(self, ss, c:typedict) -> None:
-        other_ui_clients: list[str] = [s.uuid for s in self._server_sources.values() if s!=ss and s.ui_client]
+    def parse_hello_ui_keyboard(self, ss, c: typedict) -> None:
+        other_ui_clients: list[str] = [s.uuid for s in self._server_sources.values() if s != ss and s.ui_client]
         kb_client = hasattr(ss, "keyboard_config")
         if not kb_client:
             return
-        ss.keyboard_config = self.get_keyboard_config(c)     # pylint: disable=assignment-from-none
+        ss.keyboard_config = self.get_keyboard_config(c)  # pylint: disable=assignment-from-none
 
         if not other_ui_clients:
-            #so only activate this feature afterwards:
+            # so only activate this feature afterwards:
             self.key_repeat = c.intpair("key_repeat") or (0, 0)
             self.set_keyboard_repeat(self.key_repeat)
-            #always clear modifiers before setting a new keymap
+            # always clear modifiers before setting a new keymap
             ss.make_keymask_match(c.strtupleget("modifiers"))
         else:
             self.set_keyboard_repeat(None)
@@ -114,27 +114,27 @@ class InputServer(StubServerMixin):
         self.key_repeat_delay, self.key_repeat_interval = self.key_repeat
         self.set_keymap(ss)
 
-    def get_keyboard_info(self) -> dict[str,Any]:
+    def get_keyboard_info(self) -> dict[str, Any]:
         start = monotonic()
         info = {
             "repeat": {
-                "delay"      : self.key_repeat_delay,
-                "interval"   : self.key_repeat_interval,
+                "delay": self.key_repeat_delay,
+                "interval": self.key_repeat_interval,
             },
-            "keys_pressed"     : tuple(self.keys_pressed.values()),
-            "modifiers"        : self.mod_meanings,
+            "keys_pressed": tuple(self.keys_pressed.values()),
+            "modifiers": self.mod_meanings,
         }
         kc = self.keyboard_config
         if kc:
             info.update(kc.get_info())
-        keylog("get_keyboard_info took %ims", (monotonic()-start)*1000)
+        keylog("get_keyboard_info took %ims", (monotonic() - start) * 1000)
         return info
 
     def _process_layout(self, proto, packet: PacketType) -> None:
         if self.readonly:
             return
         layout, variant = packet[1:3]
-        if len(packet)>=4:
+        if len(packet) >= 4:
             options = packet[3]
         else:
             options = ""
@@ -150,7 +150,7 @@ class InputServer(StubServerMixin):
         if ss is None:
             return
         keylog("received new keymap from client")
-        other_ui_clients = [s.uuid for s in self._server_sources.values() if s!=ss and s.ui_client]
+        other_ui_clients = [s.uuid for s in self._server_sources.values() if s != ss and s.ui_client]
         if other_ui_clients:
             keylog.warn("Warning: ignoring keymap change as there are %i other clients", len(other_ui_clients))
             return
@@ -162,7 +162,7 @@ class InputServer(StubServerMixin):
             ss.make_keymask_match(modifiers)
 
     def set_keyboard_layout_group(self, grp: int) -> None:
-        #only actually implemented in X11ServerBase
+        # only actually implemented in X11ServerBase
         pass
 
     def _process_key_action(self, proto, packet: PacketType) -> None:
@@ -178,14 +178,14 @@ class InputServer(StubServerMixin):
         self.set_ui_driver(ss)
         keycode, group = self.get_keycode(ss, client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
         keylog("process_key_action(%s) server keycode=%s, group=%i", packet, keycode, group)
-        if group>=0 and keycode>=0:
+        if group >= 0 and keycode >= 0:
             self.set_keyboard_layout_group(group)
-        #currently unused: (group, is_modifier) = packet[8:10]
+        # currently unused: (group, is_modifier) = packet[8:10]
         self._focus(ss, wid, None)
         ss.make_keymask_match(modifiers, keycode, ignored_modifier_keynames=[keyname])
-        #negative keycodes are used for key events without a real keypress/unpress
-        #for example, used by win32 to send Caps_Lock/Num_Lock changes
-        if keycode>=0:
+        # negative keycodes are used for key events without a real keypress/unpress
+        # for example, used by win32 to send Caps_Lock/Num_Lock changes
+        if keycode >= 0:
             try:
                 is_mod = ss.is_modifier(keyname, keycode)
                 self._handle_key(wid, pressed, keyname, keyval, keycode, modifiers, is_mod, ss.keyboard_config.sync)
@@ -213,7 +213,7 @@ class InputServer(StubServerMixin):
         if pressed and wid and wid not in self._id_to_window:
             keylog("window %s is gone, ignoring key press", wid)
             return
-        if keycode<0:
+        if keycode < 0:
             keylog.warn("ignoring invalid keycode=%s", keycode)
             return
         if keycode in self.keys_timedout:
@@ -229,13 +229,14 @@ class InputServer(StubServerMixin):
             if keycode in self.keys_pressed:
                 del self.keys_pressed[keycode]
             self.fake_key(keycode, False)
+
         if pressed:
             if keycode not in self.keys_pressed:
                 press()
                 if not sync and not is_mod:
-                    #keyboard is not synced: client manages repeat so unpress
-                    #it immediately unless this is a modifier key
-                    #(as modifiers are synced via many packets: key, focus and mouse events)
+                    # keyboard is not synced: client manages repeat so unpress
+                    # it immediately unless this is a modifier key
+                    # (as modifiers are synced via many packets: key, focus and mouse events)
                     unpress()
             else:
                 keylog("handle keycode %s: key %s was already pressed, ignoring", keycode, name)
@@ -244,7 +245,7 @@ class InputServer(StubServerMixin):
                 unpress()
             else:
                 keylog("handle keycode %s: key %s was already unpressed, ignoring", keycode, name)
-        if not is_mod and sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
+        if not is_mod and sync and self.key_repeat_delay > 0 and self.key_repeat_interval > 0:
             self._key_repeat(wid, pressed, name, keyval, keycode, modifiers, is_mod, self.key_repeat_delay)
 
     def cancel_key_repeat_timer(self) -> None:
@@ -253,8 +254,8 @@ class InputServer(StubServerMixin):
             self.key_repeat_timer = 0
             self.source_remove(krt)
 
-    def _key_repeat(self, wid: int, pressed:bool, keyname:str, keyval: int, keycode: int,
-                    modifiers:list, is_mod:bool, delay_ms: int=0) -> None:
+    def _key_repeat(self, wid: int, pressed: bool, keyname: str, keyval: int, keycode: int,
+                    modifiers: list, is_mod: bool, delay_ms: int = 0) -> None:
         """ Schedules/cancels the key repeat timeouts """
         self.cancel_key_repeat_timer()
         if pressed:
@@ -264,8 +265,8 @@ class InputServer(StubServerMixin):
             self.key_repeat_timer = self.timeout_add(delay_ms, self._key_repeat_timeout,
                                                      now, delay_ms, wid, keyname, keyval, keycode, modifiers, is_mod)
 
-    def _key_repeat_timeout(self, when, delay_ms: int, wid: int, keyname:str, keyval: int, keycode: int,
-                            modifiers:list, is_mod:bool) -> None:
+    def _key_repeat_timeout(self, when, delay_ms: int, wid: int, keyname: str, keyval: int, keycode: int,
+                            modifiers: list, is_mod: bool) -> None:
         self.key_repeat_timer = 0
         now = monotonic()
         keylog("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s",
@@ -283,26 +284,26 @@ class InputServer(StubServerMixin):
         keyname = bytestostr(keyname)
         modifiers = [bytestostr(x) for x in modifiers]
         group = 0
-        if len(packet)>=7:
+        if len(packet) >= 7:
             group = packet[6]
         keystr = ""
         keycode, group = ss.get_keycode(client_keycode, keyname, modifiers, keyval, keystr, group)
-        if group>=0:
+        if group >= 0:
             self.set_keyboard_layout_group(group)
-        #key repeat uses modifiers from a pointer event, so ignore mod_pointermissing:
+        # key repeat uses modifiers from a pointer event, so ignore mod_pointermissing:
         ss.make_keymask_match(modifiers)
         if not ss.keyboard_config.sync:
-            #this check should be redundant: clients should not send key-repeat without
-            #having keyboard_sync enabled
+            # this check should be redundant: clients should not send key-repeat without
+            # having keyboard_sync enabled
             return
         if keycode not in self.keys_pressed:
-            #the key is no longer pressed, has it timed out?
+            # the key is no longer pressed, has it timed out?
             when_timedout = self.keys_timedout.get(keycode, None)
             if when_timedout:
                 del self.keys_timedout[keycode]
             now = monotonic()
-            if when_timedout and (now-when_timedout)<30:
-                #not so long ago, just re-press it now:
+            if when_timedout and (now - when_timedout) < 30:
+                # not so long ago, just re-press it now:
                 keylog("key %s/%s, had timed out, re-pressing it", keycode, keyname)
                 self.keys_pressed[keycode] = keyname
                 self.fake_key(keycode, True)
@@ -360,14 +361,16 @@ class InputServer(StubServerMixin):
                 if mapped_at and pos:
                     wx, wy = pos
                     cx, cy = mapped_at[:2]
-                    if wx!=cx or wy!=cy:
-                        dx, dy = wx-cx, wy-cy
-                        if dx!=0 or dy!=0:
+                    if wx != cx or wy != cy:
+                        dx, dy = wx - cx, wy - cy
+                        if dx != 0 or dy != 0:
                             px, py = pointer[:2]
-                            ax, ay = px+dx, py+dy
-                            mouselog("client %2i: server window position: %12s, client window position: %24s, pointer=%s, adjusted: %s",    # noqa: E501
-                                     ss.counter, pos, mapped_at, pointer, (ax, ay))
-                            return [ax, ay]+list(pointer[2:])
+                            ax, ay = px + dx, py + dy
+                            mouselog(
+                                "client %2i: server window position: %12s, client window position: %24s, pointer=%s, adjusted: %s",
+                                # noqa: E501
+                                ss.counter, pos, mapped_at, pointer, (ax, ay))
+                            return [ax, ay] + list(pointer[2:])
         return pointer
 
     def process_mouse_common(self, proto, device_id: int, wid: int, opointer, props=None):
@@ -392,9 +395,9 @@ class InputServer(StubServerMixin):
         self.last_mouse_user = ss.uuid
         self.set_ui_driver(ss)
         device_id, seq, wid, button, pressed, pointer, props = packet[1:8]
-        if device_id>=0:
-            #highest_seq = self.pointer_sequence.get(device_id, 0)
-            #if INPUT_SEQ_NO and 0<=seq<=highest_seq:
+        if device_id >= 0:
+            # highest_seq = self.pointer_sequence.get(device_id, 0)
+            # if INPUT_SEQ_NO and 0<=seq<=highest_seq:
             #    mouselog(f"dropped outdated sequence {seq}, latest is {highest_seq}")
             #    return
             self.pointer_sequence[device_id] = seq
@@ -413,9 +416,9 @@ class InputServer(StubServerMixin):
         wid, button, pressed, pointer, modifiers = packet[1:6]
         device_id = 0
         props = {
-            "modifiers" : modifiers,
+            "modifiers": modifiers,
         }
-        if len(packet)>=7:
+        if len(packet) >= 7:
             props["buttons"] = 6
         self.do_process_button_action(proto, device_id, wid, button, pressed, pointer, props)
 
@@ -426,7 +429,7 @@ class InputServer(StubServerMixin):
         """ servers subclasses may change the modifiers state """
 
     def _process_pointer(self, proto, packet: PacketType) -> None:
-        #v5 packet format
+        # v5 packet format
         mouselog("_process_pointer(%s, %s) readonly=%s, ui_driver=%s",
                  proto, packet, self.readonly, self.ui_driver)
         if self.readonly:
@@ -435,17 +438,17 @@ class InputServer(StubServerMixin):
         if not hasattr(ss, "update_mouse"):
             return
         device_id, seq, wid, pdata, props = packet[1:6]
-        if device_id>=0:
+        if device_id >= 0:
             highest_seq = self.pointer_sequence.get(device_id, 0)
-            if INPUT_SEQ_NO and 0<=seq<=highest_seq:
+            if INPUT_SEQ_NO and 0 <= seq <= highest_seq:
                 mouselog(f"dropped outdated sequence {seq}, latest is {highest_seq}")
                 return
             self.pointer_sequence[device_id] = seq
         pointer = pdata[:2]
-        if len(pdata)>=4:
+        if len(pdata) >= 4:
             ss.mouse_last_relative_position = pdata[2:4]
         ss.mouse_last_position = pointer
-        if self.ui_driver and self.ui_driver!=ss.uuid:
+        if self.ui_driver and self.ui_driver != ss.uuid:
             return
         ss.user_event()
         self.last_mouse_user = ss.uuid
@@ -464,16 +467,16 @@ class InputServer(StubServerMixin):
             return
         wid, pdata, modifiers = packet[1:4]
         pointer = pdata[:2]
-        if len(pdata)>=4:
+        if len(pdata) >= 4:
             ss.mouse_last_relative_position = pdata[2:4]
         ss.mouse_last_position = pointer
-        if self.ui_driver and self.ui_driver!=ss.uuid:
+        if self.ui_driver and self.ui_driver != ss.uuid:
             return
         ss.user_event()
         self.last_mouse_user = ss.uuid
-        props : dict[str,Any] = {}
+        props: dict[str, Any] = {}
         device_id = -1
-        if len(packet)>=6:
+        if len(packet) >= 6:
             device_id = packet[5]
         if self.process_mouse_common(proto, device_id, wid, pdata, props):
             self._update_modifiers(proto, wid, modifiers)
@@ -497,16 +500,16 @@ class InputServer(StubServerMixin):
     def init_packet_handlers(self) -> None:
         self.add_packet_handlers({
             # keyboard:
-            "set-keyboard-sync-enabled" : self._process_keyboard_sync_enabled_status,
-            "key-action"                : self._process_key_action,
-            "key-repeat"                : self._process_key_repeat,
-            "layout-changed"            : self._process_layout,
-            "keymap-changed"            : self._process_keymap,
+            "set-keyboard-sync-enabled": self._process_keyboard_sync_enabled_status,
+            "key-action": self._process_key_action,
+            "key-repeat": self._process_key_repeat,
+            "layout-changed": self._process_layout,
+            "keymap-changed": self._process_keymap,
             # mouse:
-            "pointer-button"            : self._process_pointer_button,     #v5
-            "button-action"             : self._process_button_action,      #pre v5
-            "pointer"                   : self._process_pointer,            #v5
-            "pointer-position"          : self._process_pointer_position,   #pre v5
+            "pointer-button": self._process_pointer_button,  # v5
+            "button-action": self._process_button_action,  # pre v5
+            "pointer": self._process_pointer,  # v5
+            "pointer-position": self._process_pointer_position,  # pre v5
             # setup:
-            "input-devices"             : self._process_input_devices,
+            "input-devices": self._process_input_devices,
         })

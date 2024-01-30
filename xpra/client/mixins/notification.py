@@ -1,8 +1,8 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-#pylint: disable-msg=E1101
+# pylint: disable-msg=E1101
 
 from typing import Any
 
@@ -107,7 +107,7 @@ class NotificationClient(StubClientMixin):
         return get_native_notifier_classes()
 
     def do_notify(self, nid, summary, body, actions=(),
-                  hints=None, expire_timeout=10*1000, icon_name=None, callback=None):
+                  hints=None, expire_timeout=10 * 1000, icon_name=None, callback=None):
         log("do_notify%s client_supports_notifications=%s, notifier=%s",
             (nid, summary, body, actions, hints, expire_timeout, icon_name),
             self.client_supports_notifications, self.notifier)
@@ -115,7 +115,7 @@ class NotificationClient(StubClientMixin):
             self.callbacks[nid] = callback
         n = self.notifier
         if not self.client_supports_notifications or not n:
-            #just log it instead:
+            # just log it instead:
             log.info("%s", summary)
             if body:
                 for x in body.splitlines():
@@ -134,6 +134,7 @@ class NotificationClient(StubClientMixin):
                 log.error("Error: cannot show notification")
                 log.error(" '%s'", summary)
                 log.estr(e)
+
         if THREADED_NOTIFICATIONS:
             show_notification()
         else:
@@ -154,17 +155,17 @@ class NotificationClient(StubClientMixin):
         expire_timeout = int(packet[8])
         icon = None
         actions, hints = [], {}
-        if len(packet)>=10:
+        if len(packet) >= 10:
             icon = packet[9]
-        if len(packet)>=12:
+        if len(packet) >= 12:
             actions, hints = packet[10], packet[11]
-        #note: if the server doesn't support notification forwarding,
-        #it can still send us the messages (via xpra control or the dbus interface)
+        # note: if the server doesn't support notification forwarding,
+        # it can still send us the messages (via xpra control or the dbus interface)
         log("_process_notify_show(%s) notifier=%s, server_notifications=%s",
             repr_ellipsized(packet), self.notifier, self.server_notifications)
         log("notification actions=%s, hints=%s", actions, hints)
         assert self.notifier
-        #this one of the few places where we actually do care about character encoding:
+        # this one of the few places where we actually do care about character encoding:
         tray = self.get_tray_window(app_name, hints)
         log("get_tray_window(%s)=%s", app_name, tray)
         self.notifier.show_notify(dbus_id, tray, nid,
@@ -180,5 +181,5 @@ class NotificationClient(StubClientMixin):
         self.notifier.close_notify(nid)
 
     def get_tray_window(self, _app_name, _hints):
-        #overridden in subclass to use the correct window if we can find it
+        # overridden in subclass to use the correct window if we can find it
         return self.tray

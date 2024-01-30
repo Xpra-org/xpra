@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -62,7 +62,7 @@ def load_shadow_x11() -> type | None:
 
 
 def ShadowServer(display_name: str = "", multi_window: bool = True):
-    c  : type | None = None
+    c: type | None = None
     if display_name.startswith("wayland-") or os.path.isabs(display_name):
         c = load_shadow_wayland(display_name)
     elif display_name.startswith(":"):

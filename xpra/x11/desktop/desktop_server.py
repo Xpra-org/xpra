@@ -47,7 +47,7 @@ class XpraDesktopServer(DesktopServerBase):
         if len(res) > 1:
             log.warn(f"Warning: cannot set desktop resolution to {res}")
             log.warn(" multi monitor mode is not enabled")
-            res = (res[0], )
+            res = (res[0],)
             log.warn(f" using {res!r}")
         with xlog:
             set_initial_resolution(res, self.dpi or self.default_dpi)

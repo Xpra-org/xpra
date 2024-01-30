@@ -1,8 +1,8 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-#pylint: disable-msg=E1101
+# pylint: disable-msg=E1101
 
 import sys
 import logging
@@ -27,29 +27,30 @@ class LoggingServer(StubServerMixin):
     """
 
     def __init__(self):
-        self.remote_logging_send : bool = False
-        self.remote_logging_receive : bool = False
-        self.logging_lock : Lock = Lock()
-        self.log_both : bool = False
-        self.in_remote_logging : bool = False
-        self.local_logging : Callable | None = None
-        self.logging_clients : dict[Any,float] = {}
+        self.remote_logging_send: bool = False
+        self.remote_logging_receive: bool = False
+        self.logging_lock: Lock = Lock()
+        self.log_both: bool = False
+        self.in_remote_logging: bool = False
+        self.local_logging: Callable | None = None
+        self.logging_clients: dict[Any, float] = {}
 
     def init(self, opts) -> None:
-        self.log_both = (opts.remote_logging or "").lower()=="both"
+        self.log_both = (opts.remote_logging or "").lower() == "both"
         if opts.remote_logging.lower() not in FALSE_OPTIONS:
             self.remote_logging_send = opts.remote_logging.lower() in ("allow", "send", "both")
-            #"yes" is here for backwards compatibility:
-            self.remote_logging_receive = opts.remote_logging.lower() in ["allow", "receive", "both"]+list(TRUE_OPTIONS)
+            # "yes" is here for backwards compatibility:
+            self.remote_logging_receive = opts.remote_logging.lower() in ["allow", "receive", "both"] + list(
+                TRUE_OPTIONS)
 
     def cleanup(self) -> None:
         self.stop_capturing_logging()
 
-    def get_server_features(self, _source=None) -> dict[str,Any]:
+    def get_server_features(self, _source=None) -> dict[str, Any]:
         return {
-            "remote-logging"            : {
-                "receive"       : self.remote_logging_receive,
-                "send"          : self.remote_logging_send,
+            "remote-logging": {
+                "receive": self.remote_logging_receive,
+                "send": self.remote_logging_send,
             },
         }
 
@@ -70,7 +71,7 @@ class LoggingServer(StubServerMixin):
             return
         log.info("sending log output to %s", protocol)
         self.logging_clients[protocol] = monotonic()
-        if n==0:
+        if n == 0:
             self.start_capturing_logging()
 
     def start_capturing_logging(self) -> None:
@@ -83,8 +84,8 @@ class LoggingServer(StubServerMixin):
             self.local_logging = None
             set_global_logging_handler(ll)
 
-    def remote_logging_handler(self, log, level:int, msg, *args, **kwargs) -> None:
-        #prevent loops (if our send call ends up firing another logging call):
+    def remote_logging_handler(self, log, level: int, msg, *args, **kwargs) -> None:
+        # prevent loops (if our send call ends up firing another logging call):
         if self.in_remote_logging:
             return
         ll = self.local_logging
@@ -116,6 +117,7 @@ class LoggingServer(StubServerMixin):
                         local_warn(v)
             except Exception:
                 pass
+
         self.in_remote_logging = True
         try:
             try:
@@ -131,8 +133,8 @@ class LoggingServer(StubServerMixin):
                 if not source:
                     continue
                 try:
-                    dtime = int(1000*(monotonic() - start_time))
-                    if len(data)>=32:
+                    dtime = int(1000 * (monotonic() - start_time))
+                    if len(data) >= 32:
                         try:
                             data = source.compressed_wrapper("text", data.encode("utf8"), level=1)
                         except Exception:
@@ -163,9 +165,9 @@ class LoggingServer(StubServerMixin):
 
     def _process_logging_control(self, proto, packet: PacketType) -> None:
         action = bytestostr(packet[1])
-        if action=="start":
+        if action == "start":
             self.add_logging_client(proto)
-        elif action=="stop":
+        elif action == "stop":
             self.remove_logging_client(proto)
         else:
             log.warn("Warning: unknown logging-control action '%r'", action)
@@ -178,23 +180,24 @@ class LoggingServer(StubServerMixin):
         level, msg = packet[1:3]
         prefix = "client "
         counter = getattr(ss, "counter", 0)
-        if counter>0:
+        if counter > 0:
             prefix += "%3i " % counter
-        if len(packet)>=4:
+        if len(packet) >= 4:
             dtime = packet[3]
-            prefix += "@%02i.%03i " % ((dtime//1000) % 60, dtime % 1000)
+            prefix += "@%02i.%03i " % ((dtime // 1000) % 60, dtime % 1000)
 
         def decode(v) -> str:
             if isinstance(v, str):
                 return v
             return memoryview_to_bytes(v).decode("utf8")
+
         try:
             if isinstance(msg, (tuple, list)):
                 dmsg = " ".join(decode(x) for x in msg)
             else:
                 dmsg = decode(msg)
             for l in dmsg.splitlines():
-                self.do_log(level, prefix+l)
+                self.do_log(level, prefix + l)
         except Exception as e:
             log("log message decoding error", exc_info=True)
             log.error("Error: failed to parse logging message:")

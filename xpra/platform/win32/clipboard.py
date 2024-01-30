@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -46,32 +46,32 @@ GMEM_MOVEABLE = 0x0002
 WM_CLIPBOARDUPDATE = 0x031D
 
 CLIPBOARD_EVENTS = {
-    win32con.WM_CLEAR               : "CLEAR",
-    win32con.WM_CUT                 : "CUT",
-    win32con.WM_COPY                : "COPY",
-    win32con.WM_PASTE               : "PASTE",
-    win32con.WM_ASKCBFORMATNAME     : "ASKCBFORMATNAME",
-    win32con.WM_CHANGECBCHAIN       : "CHANGECBCHAIN",
-    WM_CLIPBOARDUPDATE              : "CLIPBOARDUPDATE",
-    win32con.WM_DESTROYCLIPBOARD    : "DESTROYCLIPBOARD",
-    win32con.WM_DRAWCLIPBOARD       : "DRAWCLIPBOARD",
-    win32con.WM_HSCROLLCLIPBOARD    : "HSCROLLCLIPBOARD",
-    win32con.WM_PAINTCLIPBOARD      : "PAINTCLIPBOARD",
-    win32con.WM_RENDERALLFORMATS    : "RENDERALLFORMATS",
-    win32con.WM_RENDERFORMAT        : "RENDERFORMAT",
-    win32con.WM_SIZECLIPBOARD       : "SIZECLIPBOARD",
-    win32con.WM_VSCROLLCLIPBOARD    : "WM_VSCROLLCLIPBOARD",
+    win32con.WM_CLEAR: "CLEAR",
+    win32con.WM_CUT: "CUT",
+    win32con.WM_COPY: "COPY",
+    win32con.WM_PASTE: "PASTE",
+    win32con.WM_ASKCBFORMATNAME: "ASKCBFORMATNAME",
+    win32con.WM_CHANGECBCHAIN: "CHANGECBCHAIN",
+    WM_CLIPBOARDUPDATE: "CLIPBOARDUPDATE",
+    win32con.WM_DESTROYCLIPBOARD: "DESTROYCLIPBOARD",
+    win32con.WM_DRAWCLIPBOARD: "DRAWCLIPBOARD",
+    win32con.WM_HSCROLLCLIPBOARD: "HSCROLLCLIPBOARD",
+    win32con.WM_PAINTCLIPBOARD: "PAINTCLIPBOARD",
+    win32con.WM_RENDERALLFORMATS: "RENDERALLFORMATS",
+    win32con.WM_RENDERFORMAT: "RENDERFORMAT",
+    win32con.WM_SIZECLIPBOARD: "SIZECLIPBOARD",
+    win32con.WM_VSCROLLCLIPBOARD: "WM_VSCROLLCLIPBOARD",
 }
 
 CLIPBOARD_FORMATS = {
-    win32con.CF_BITMAP      : "CF_BITMAP",
-    win32con.CF_DIB         : "CF_DIB",
-    win32con.CF_DIBV5       : "CF_DIBV5",
-    win32con.CF_ENHMETAFILE : "CF_ENHMETAFILE",
+    win32con.CF_BITMAP: "CF_BITMAP",
+    win32con.CF_DIB: "CF_DIB",
+    win32con.CF_DIBV5: "CF_DIBV5",
+    win32con.CF_ENHMETAFILE: "CF_ENHMETAFILE",
     win32con.CF_METAFILEPICT: "CF_METAFILEPICT",
-    win32con.CF_OEMTEXT     : "CF_OEMTEXT",
-    win32con.CF_TEXT        : "CF_TEXT",
-    win32con.CF_UNICODETEXT : "CF_UNICODETEXT",
+    win32con.CF_OEMTEXT: "CF_OEMTEXT",
+    win32con.CF_TEXT: "CF_TEXT",
+    win32con.CF_UNICODETEXT: "CF_UNICODETEXT",
 }
 
 BI_RGB = 0x0000
@@ -84,15 +84,15 @@ BI_CMYK = 0x000B
 BI_CMYKRLE8 = 0x000C
 BI_CMYKRLE4 = 0x000D
 BI_FORMATS = {
-    BI_RGB : "RGB",
-    BI_RLE8 : "RLE8",
-    BI_RLE4 : "RLE4",
-    BI_BITFIELDS : "BITFIELDS",
-    BI_JPEG : "JPEG",
-    BI_PNG : "PNG",
-    BI_CMYK : "CMYK",
-    BI_CMYKRLE8 : "CMYKRLE8",
-    BI_CMYKRLE4 : "CMYKRLE4",
+    BI_RGB: "RGB",
+    BI_RLE8: "RLE8",
+    BI_RLE4: "RLE4",
+    BI_BITFIELDS: "BITFIELDS",
+    BI_JPEG: "JPEG",
+    BI_PNG: "PNG",
+    BI_CMYK: "CMYK",
+    BI_CMYKRLE8: "CMYKRLE8",
+    BI_CMYKRLE4: "CMYKRLE4",
 }
 
 LCS_CALIBRATED_RGB = 0x00000000
@@ -101,11 +101,11 @@ LCS_WINDOWS_COLOR_SPACE = 0x57696E20
 PROFILE_LINKED = 3
 PROFILE_EMBEDDED = 4
 COLOR_PROFILES = {
-    LCS_CALIBRATED_RGB  : "CALIBRATED_RGB",
-    LCS_sRGB            : "sRGB",
-    LCS_WINDOWS_COLOR_SPACE : "WINDOWS",
-    PROFILE_LINKED      : "PROFILE_LINKED",
-    PROFILE_EMBEDDED    : "PROFILE_EMBEDDED",
+    LCS_CALIBRATED_RGB: "CALIBRATED_RGB",
+    LCS_sRGB: "sRGB",
+    LCS_WINDOWS_COLOR_SPACE: "WINDOWS",
+    PROFILE_LINKED: "PROFILE_LINKED",
+    PROFILE_EMBEDDED: "PROFILE_EMBEDDED",
 }
 
 RETRY = envint("XPRA_CLIPBOARD_RETRY", 5)
@@ -113,6 +113,8 @@ DELAY = envint("XPRA_CLIPBOARD_INITIAL_DELAY", 10)
 CONVERT_LINE_ENDINGS = envbool("XPRA_CONVERT_LINE_ENDINGS", True)
 log("win32 clipboard: RETRY=%i, DELAY=%i, CONVERT_LINE_ENDINGS=%s",
     RETRY, DELAY, CONVERT_LINE_ENDINGS)
+
+
 # can be used to blacklist problematic clipboard peers:
 # ie: VBoxTray.exe
 
@@ -131,11 +133,11 @@ CLIPBOARD_WINDOW_CLASS_NAME = "XpraWin32Clipboard"
 
 
 def is_blacklisted(owner_info):
-    return any(owner_info.find(x)>=0 for x in BLACKLISTED_CLIPBOARD_CLIENTS)
+    return any(owner_info.find(x) >= 0 for x in BLACKLISTED_CLIPBOARD_CLIENTS)
 
 
 def is_syncdelay(owner_info):
-    return any(owner_info.find(x)>=0 for x in SYNCDELAY_CLIPBOARD_CLIENTS)
+    return any(owner_info.find(x) >= 0 for x in SYNCDELAY_CLIPBOARD_CLIENTS)
 
 
 # initialize the window we will use
@@ -144,7 +146,7 @@ def is_syncdelay(owner_info):
 def get_owner_info(owner, our_window):
     if not owner:
         return "unknown"
-    if owner==our_window:
+    if owner == our_window:
         return "our window (hwnd=%#x)" % our_window
     pid = DWORD(0)
     GetWindowThreadProcessId(owner, byref(pid))
@@ -156,7 +158,7 @@ def get_owner_info(owner, our_window):
         return "pid %i (hwnd=%#x)" % (pid.value, owner)
     try:
         size = DWORD(256)
-        process_name = create_string_buffer(size.value+1)
+        process_name = create_string_buffer(size.value + 1)
         if not QueryFullProcessImageNameA(proc_handle, 0, process_name, byref(size)):
             return "pid %i" % pid.value
         return "'%s' with pid %s (hwnd=%#x)" % (bytestostr(process_name.value), pid.value, owner)
@@ -180,12 +182,12 @@ def with_clipboard_lock(window, success_callback, failure_callback, retries=RETR
     e = WinError(GetLastError())
     owner = GetClipboardOwner()
     log("OpenClipboard(%#x)=%s, current owner: %s", window, e, get_owner_info(owner, window))
-    if retries<=0:
+    if retries <= 0:
         failure_callback("OpenClipboard: too many failed attempts, giving up")
         return
-    #try again later:
+    # try again later:
     GLib.timeout_add(delay, with_clipboard_lock,
-                     window, success_callback, failure_callback, retries-1, delay+5)
+                     window, success_callback, failure_callback, retries - 1, delay + 5)
 
 
 def format_name(fmt):
@@ -193,10 +195,10 @@ def format_name(fmt):
     if name:
         return name
     ulen = 128
-    buf = LPCSTR(b" "*ulen)
-    r = GetClipboardFormatNameA(fmt, buf, ulen-1)
+    buf = LPCSTR(b" " * ulen)
+    r = GetClipboardFormatNameA(fmt, buf, ulen - 1)
     value = buf.value
-    if r==0 or not value:
+    if r == 0 or not value:
         return str(fmt)
     return value[:r].decode("latin1")
 
@@ -221,15 +223,15 @@ def get_clipboard_formats():
 def w_to_utf8(data):
     wstr = cast(data, LPCWSTR)
     ulen = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, None, 0, None, None)
-    if ulen>MAX_CLIPBOARD_PACKET_SIZE:
+    if ulen > MAX_CLIPBOARD_PACKET_SIZE:
         raise ValueError("unicode data is too large: %i bytes" % ulen)
     buftype = c_char * ulen
     buf = buftype()
     l = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, byref(buf), ulen, None, None)
-    if l==0:
+    if l == 0:
         raise ValueError("failed to convert to UTF8: %s" % FormatError(get_last_error()))
-    if buf.raw[l-1:l]==b"\0":
-        b = buf.raw[:l-1]
+    if buf.raw[l - 1:l] == b"\0":
+        b = buf.raw[:l - 1]
     else:
         b = buf.raw[:l]
     log("got %i UTF8 bytes: %s", len(b), ellipsizer(b))
@@ -279,6 +281,7 @@ class Win32Clipboard(ClipboardTimeoutHelper):
     """
         Use Native win32 API to access the clipboard
     """
+
     def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
         self.init_window()
         super().__init__(send_packet_cb, progress_cb, **kwargs)
@@ -293,9 +296,9 @@ class Win32Clipboard(ClipboardTimeoutHelper):
         self.wndclass.lpszClassName = CLIPBOARD_WINDOW_CLASS_NAME
         self.wndclass_handle = RegisterClassExW(byref(self.wndclass))
         log("RegisterClassExA(%s)=%#x", self.wndclass.lpszClassName, self.wndclass_handle)
-        if self.wndclass_handle==0:
+        if self.wndclass_handle == 0:
             raise WinError()
-        style = win32con.WS_CAPTION   #win32con.WS_OVERLAPPED
+        style = win32con.WS_CAPTION  # win32con.WS_OVERLAPPED
         self.window = CreateWindowExW(0, self.wndclass_handle, "Clipboard", style,
                                       0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT,
                                       win32con.HWND_MESSAGE, 0, self.wndclass.hInstance, None)
@@ -313,14 +316,14 @@ class Win32Clipboard(ClipboardTimeoutHelper):
         owner = GetClipboardOwner()
         log("clipboard event: %s, current owner: %s",
             CLIPBOARD_EVENTS.get(msg), get_owner_info(owner, self.window))
-        if msg==WM_CLIPBOARDUPDATE and owner!=self.window:
+        if msg == WM_CLIPBOARDUPDATE and owner != self.window:
             owner = GetClipboardOwner()
             owner_info = get_owner_info(owner, self.window)
             if is_blacklisted(owner_info):
                 # ie: don't try to sync from VirtualBox
                 log("CLIPBOARDUPDATE coming from '%s' ignored", owner_info)
                 return r
-            min_delay = 500*int(is_syncdelay(owner_info))
+            min_delay = 500 * int(is_syncdelay(owner_info))
             log("CLIPBOARDUPDATE coming from '%s', min_delay=%i", owner_info, min_delay)
             for proxy in self._clipboard_proxies.values():
                 if not proxy._block_owner_change:
@@ -355,12 +358,12 @@ class Win32Clipboard(ClipboardTimeoutHelper):
     # (we use them internally as strings)
     ############################################################################
     def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data):
-        if encoding=="atoms":
+        if encoding == "atoms":
             return _filter_targets(data)
         return super()._munge_wire_selection_to_raw(encoding, dtype, dformat, data)
 
     def _munge_raw_selection_to_wire(self, target, dtype, dformat, data):
-        if dtype=="ATOM":
+        if dtype == "ATOM":
             assert isinstance(data, (tuple, list))
             return "atoms", _filter_targets(data)
         return super()._munge_raw_selection_to_wire(target, dtype, dformat, data)
@@ -400,11 +403,12 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             # send just the token
             self.send_clipboard_token_handler(self)
             return
+
         # greedy clients want data with the token,
         # so we have to get the clipboard lock
 
         def send_token(formats):
-            #default target:
+            # default target:
             target = "UTF8_STRING"
             if formats:
                 tnames = format_names(formats)
@@ -418,6 +422,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             def got_contents(dtype, dformat, data):
                 packet_data = ([target], (target, dtype, dformat, data))
                 self.send_clipboard_token_handler(self, packet_data)
+
             self.get_contents(target, got_contents)
 
         def got_clipboard_lock():
@@ -429,11 +434,12 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         def errback(errmsg=None):
             # nothing we can do!
             log("not sending the token since we failed to get the clipboard lock: %s", errmsg)
+
         self.with_clipboard_lock(got_clipboard_lock, errback)
 
     def get_contents(self, target, got_contents):
         log("get_contents%s", (target, got_contents))
-        if target=="TARGETS":
+        if target == "TARGETS":
             def got_clipboard_lock():
                 formats = get_clipboard_formats()
                 fnames = format_names(formats)
@@ -452,17 +458,20 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             def lockerror(_message):
                 # assume text:
                 got_contents("ATOM", 32, ["TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"])
+
             self.with_clipboard_lock(got_clipboard_lock, lockerror)
             return
 
         def nodata(*args):
             log("nodata%s", args)
             got_contents(target, 8, b"")
+
         if target in ("image/png", "image/jpeg"):
             def got_image(img_data, trusted=False):
                 log("got_image(%i bytes)", len(img_data))
                 img_data = self.filter_data(dtype=target, dformat=8, data=img_data, trusted=trusted)
                 got_contents(target, 8, img_data)
+
             img_format = target.split("/")[-1].upper()  # ie: "PNG" or "JPEG"
             self.get_clipboard_image(img_format, got_image, nodata)
             return
@@ -482,13 +491,14 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 log.warn("Warning: failed to get clipboard data as text")
                 log.warn(" %s", error_text)
             got_contents(target, 8, b"")
-        utf8 = target.lower().find("utf")>=0
+
+        utf8 = target.lower().find("utf") >= 0
         self.get_clipboard_text(utf8, got_text, errback)
 
     def get_clipboard_image(self, img_format, got_image, errback):
         def got_clipboard_lock():
             if COMPRESSED_IMAGES:
-                fmt_name = LPCSTR(img_format.upper().encode("latin1")+b"\0")   #ie: "PNG"
+                fmt_name = LPCSTR(img_format.upper().encode("latin1") + b"\0")  # ie: "PNG"
                 fmt = RegisterClipboardFormatA(fmt_name)
                 if fmt:
                     data_handle = GetClipboardData(fmt)
@@ -499,7 +509,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                             img_format.upper(), data_handle, size, data)
                         if data and size:
                             try:
-                                cdata = (c_char*size).from_address(data)
+                                cdata = (c_char * size).from_address(data)
                             finally:
                                 GlobalUnlock(data)
                             got_image(bytes(cdata), False)
@@ -525,22 +535,22 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 if header.bV5Compression != BI_RGB:
                     errback("cannot handle %r compression yet" % BI_FORMATS.get(header.bV5Compression, "unknown"))
                     return True
-                if bits==24:
+                if bits == 24:
                     save_format = "RGB"
                     rgb_format = "BGR"
-                    stride = roundup(w*3, 4)
-                elif bits==32:
+                    stride = roundup(w * 3, 4)
+                elif bits == 32:
                     save_format = "RGBA"
                     rgb_format = "BGRA"
-                    stride = w*4
+                    stride = w * 4
                 else:
                     errback("cannot handle image data with %i bits per pixel yet" % bits)
                     return True
-                img_size = stride*h
-                rgb_data = (c_char*img_size).from_address(data+offset)
+                img_size = stride * h
+                rgb_data = (c_char * img_size).from_address(data + offset)
                 from PIL import Image, ImageOps
                 img = Image.frombytes(save_format, (w, h), rgb_data, "raw", rgb_format, stride, 1)
-                if header.bV5Height>0:
+                if header.bV5Height > 0:
                     img = ImageOps.flip(img)
                 buf = BytesIO()
                 img.save(buf, format=save_format)
@@ -550,6 +560,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 return True
             finally:
                 GlobalUnlock(data)
+
         self.with_clipboard_lock(got_clipboard_lock, errback)
 
     def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False) -> None:
@@ -584,19 +595,19 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
     def got_contents(self, target, dtype=None, dformat=None, data=None):
         # if this is the special target 'TARGETS', cache the result:
-        if target=="TARGETS" and dtype=="ATOM" and dformat==32:
+        if target == "TARGETS" and dtype == "ATOM" and dformat == 32:
             self.targets = _filter_targets(data)
-            #TODO: tell system what targets we have
+            # TODO: tell system what targets we have
             log("got_contents: tell OS we have %s", csv(self.targets))
             image_formats = tuple(x for x in ("image/png", "image/jpeg") if x in self.targets)
             if image_formats:
                 # request it:
                 self.send_clipboard_request_handler(self, self._selection, image_formats[0])
-        elif dformat==8 and dtype in TEXT_TARGETS:
+        elif dformat == 8 and dtype in TEXT_TARGETS:
             log("we got a byte string: %s", ellipsizer(data))
             self.set_clipboard_text(bytestostr(data))
-        elif dformat==8 and dtype.startswith("image/"):
-            img_format = dtype.split("/")[-1]   #ie: 'png'
+        elif dformat == 8 and dtype.startswith("image/"):
+            img_format = dtype.split("/")[-1]  # ie: 'png'
             self.set_clipboard_image(img_format, data)
         else:
             log("no handling: target=%s, dtype=%s, dformat=%s, data=%s",
@@ -606,11 +617,11 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         image_formats = {}
         if COMPRESSED_IMAGES:
             # first save it as binary compressed data:
-            fmt_name = LPCSTR(img_format.upper().encode("latin1")+b"\0")   #ie: "PNG"
+            fmt_name = LPCSTR(img_format.upper().encode("latin1") + b"\0")  # ie: "PNG"
             fmt = RegisterClipboardFormatA(fmt_name)
             if fmt:
                 l = len(img_data)
-                buftype = c_char*l
+                buftype = c_char * l
                 buf = buftype()
                 buf.value = img_data
                 pbuf = cast(byref(buf), c_void_p)
@@ -648,6 +659,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
         def nolock(*_args):
             log.warn("Warning: failed to copy image data to the clipboard")
+
         self.with_clipboard_lock(got_clipboard_lock, nolock)
 
     def get_clipboard_text(self, utf8, callback, errback):
@@ -681,7 +693,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 return False
             log("got data handle lock %#x for format '%s'", data, format_name(fmt))
             try:
-                if fmt==win32con.CF_UNICODETEXT:
+                if fmt == win32con.CF_UNICODETEXT:
                     try:
                         v = w_to_utf8(data)
                     except Exception as e:
@@ -697,7 +709,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                     s = s.replace("\r\n", "\n")
                 b = s.encode("latin1")
                 ulen = len(b)
-                if ulen>MAX_CLIPBOARD_PACKET_SIZE:
+                if ulen > MAX_CLIPBOARD_PACKET_SIZE:
                     errback("text data is too large: %i characters" % ulen)
                     return True
                 log("got %i bytes of TEXT data: %s", len(b), ellipsizer(b))
@@ -705,6 +717,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 return True
             finally:
                 GlobalUnlock(data)
+
         self.with_clipboard_lock(get_text, errback)
 
     def set_clipboard_text(self, text):
@@ -717,8 +730,8 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             set_err("failed to prepare to convert to wide char")
             return True
         log("MultiByteToWideChar wlen=%i", wlen)
-        #allocate some memory for it:
-        l = (wlen+1)*2
+        # allocate some memory for it:
+        l = (wlen + 1) * 2
         buf = GlobalAlloc(GMEM_MOVEABLE, l)
         if not buf:
             set_err("failed to allocate %i bytes of global memory" % l)
@@ -745,7 +758,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         self._block_owner_change = long_timeout
 
         def cleanup():
-            if self._block_owner_change==long_timeout:
+            if self._block_owner_change == long_timeout:
                 # now safe to re-schedule and run now in the UI thread:
                 self.cancel_unblock()
                 self._block_owner_change = GLib.idle_add(self.remove_block)
@@ -771,6 +784,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 log.warn("Warning: failed to set clipboard data")
                 log.warn(" %s", error_text)
             cleanup()
+
         self.with_clipboard_lock(set_clipboard_data, set_clipboard_error)
 
     def __repr__(self):

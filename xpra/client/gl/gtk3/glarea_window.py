@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2023-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -21,7 +21,7 @@ GObject = gi_import("GObject")
 GLib = gi_import("GLib")
 
 
-def GLArea(alpha:bool) -> Gtk.GLArea:
+def GLArea(alpha: bool) -> Gtk.GLArea:
     glarea = Gtk.GLArea()
     glarea.set_use_es(True)
     glarea.set_auto_render(False)
@@ -34,8 +34,8 @@ def GLArea(alpha:bool) -> Gtk.GLArea:
 
 class GLAreaBacking(GLWindowBackingBase):
 
-    def __init__(self, wid: int, window_alpha: bool, pixel_depth: int=0):
-        self.on_realize_cb: list[tuple[Callable,tuple[Any,...]]] = []
+    def __init__(self, wid: int, window_alpha: bool, pixel_depth: int = 0):
+        self.on_realize_cb: list[tuple[Callable, tuple[Any, ...]]] = []
         super().__init__(wid, window_alpha, pixel_depth)
 
     def __repr__(self):
@@ -80,7 +80,7 @@ class GLAreaBacking(GLWindowBackingBase):
             with log.trap_error("Error calling realize callback %s", ellipsizer(x)):
                 x(gl_context, *xargs)
 
-    def with_gl_context(self, cb:Callable, *args):
+    def with_gl_context(self, cb: Callable, *args):
         da = self._backing
         if da and da.get_mapped():
             gl_context = self.gl_context()
@@ -117,6 +117,7 @@ class GLAreaBacking(GLWindowBackingBase):
 
         def noscale():
             return 1
+
         glcontext.get_scale_factor = noscale
         self.do_present_fbo(glcontext)
         return True
@@ -127,7 +128,7 @@ class GLClientWindow(GLClientWindowBase):
     def get_backing_class(self):
         return GLAreaBacking
 
-    def repaint(self, x:int, y:int, w:int, h:int) -> None:
+    def repaint(self, x: int, y: int, w: int, h: int) -> None:
         widget = self.drawing_area
         log(f"repaint%s {widget=}", (x, y, w, h))
         if widget:

@@ -1,8 +1,8 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-#pylint: disable-msg=E1101
+# pylint: disable-msg=E1101
 
 import os.path
 from typing import Any
@@ -27,8 +27,8 @@ class WebcamServer(StubServerMixin):
     def __init__(self):
         self.webcam_device = ""
         self.webcam_encodings: tuple[str, ...] = ()
-        self.webcam_enabled : bool = False
-        self.webcam_virtual_video_devices : int = 0
+        self.webcam_enabled: bool = False
+        self.webcam_virtual_video_devices: int = 0
 
     def init(self, opts) -> None:
         self.webcam_enabled = opts.webcam.lower() not in FALSE_OPTIONS
@@ -36,26 +36,26 @@ class WebcamServer(StubServerMixin):
             self.webcam_device = opts.webcam
 
     def init_state(self) -> None:
-        #duplicated
+        # duplicated
         self.readonly = False
 
     def threaded_setup(self) -> None:
         self.init_webcam()
 
-    def get_server_features(self, _source) -> dict[str,Any]:
+    def get_server_features(self, _source) -> dict[str, Any]:
         return {
-            "webcam" : {
-                "enabled" : self.webcam_enabled,
-                "encodings" : self.webcam_encodings,
-                "devices" : self.webcam_virtual_video_devices,
+            "webcam": {
+                "enabled": self.webcam_enabled,
+                "encodings": self.webcam_encodings,
+                "devices": self.webcam_virtual_video_devices,
             },
-            #pre v6, v5.0.2
+            # pre v6, v5.0.2
             "webcam.encodings": self.webcam_encodings,
             "virtual-video-devices": self.webcam_virtual_video_devices,
         }
 
-    def get_info(self, _proto) -> dict[str,Any]:
-        info : dict[str,Any] = {
+    def get_info(self, _proto) -> dict[str, Any]:
+        info: dict[str, Any] = {
             "enabled": self.webcam_enabled,
         }
         if self.webcam_enabled:
@@ -89,7 +89,7 @@ class WebcamServer(StubServerMixin):
             self.webcam_virtual_video_devices = 1
         else:
             self.webcam_virtual_video_devices = self.init_virtual_video_devices()
-            if self.webcam_virtual_video_devices==0:
+            if self.webcam_virtual_video_devices == 0:
                 self.webcam_enabled = False
 
     def init_virtual_video_devices(self) -> int:
@@ -134,7 +134,7 @@ class WebcamServer(StubServerMixin):
         if not ss:
             log.warn("Warning: invalid client source for webcam start")
             return
-        device_id, message = (list(packet)+[""])[1:3]
+        device_id, message = (list(packet) + [""])[1:3]
         ss.stop_virtual_webcam(device_id, message)
 
     def _process_webcam_frame(self, proto, packet: PacketType) -> None:
@@ -150,7 +150,7 @@ class WebcamServer(StubServerMixin):
     def init_packet_handlers(self) -> None:
         if self.webcam_enabled:
             self.add_packet_handlers({
-                "webcam-start"  : self._process_webcam_start,
-                "webcam-stop"   : self._process_webcam_stop,
-                "webcam-frame"  : self._process_webcam_frame,
+                "webcam-start": self._process_webcam_start,
+                "webcam-stop": self._process_webcam_stop,
+                "webcam-frame": self._process_webcam_frame,
             }, False)

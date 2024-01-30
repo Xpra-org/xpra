@@ -126,7 +126,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
     def update_wm_name(self) -> bool:
         wm_name = ""
         with xlog:
-            wm_name = get_wm_name()     # pylint: disable=assignment-from-none
+            wm_name = get_wm_name()  # pylint: disable=assignment-from-none
         iconlog("update_wm_name() wm-name=%s", wm_name)
         return self._updateprop("wm-name", wm_name)
 
@@ -135,7 +135,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         wm_name = self.get_property("wm-name")
         if not wm_name:
             return False
-        icon_name = get_icon_filename(wm_name.lower()+".png")
+        icon_name = get_icon_filename(wm_name.lower() + ".png")
         if not icon_name:
             return False
         try:
@@ -147,7 +147,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         if not icon_data:
             raise ValueError(f"failed to load icon {icon_name!r}")
         try:
-            img = open_only(icon_data, types=("png", ))
+            img = open_only(icon_data, types=("png",))
             w, h = img.size
             img.close()
         except OSError:
@@ -164,7 +164,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         return bool(self._xshm_handle)
 
     def get_default_window_icon(self, _size: int = 48) -> tuple[int, int, str, bytes] | None:
-        icon_name = get_generic_os_name()+".png"
+        icon_name = get_generic_os_name() + ".png"
         icon = get_icon(icon_name)
         if not icon:
             return None
@@ -173,7 +173,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
     def get_title(self) -> str:
         return self.get_property("wm-name") or "xpra desktop"
 
-    def get_property(self, prop:str) -> Any:
+    def get_property(self, prop: str) -> Any:
         if prop == "depth":
             return self._depth
         if prop == "title":
@@ -198,7 +198,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
     def do_xpra_motion_event(self, event) -> None:
         self.emit("motion", event)
 
-    def resize(self, w:int, h:int):
+    def resize(self, w: int, h: int):
         geomlog("resize(%i, %i)", w, h)
         if not RandR.has_randr():
             geomlog.error("Error: cannot honour resize request,")

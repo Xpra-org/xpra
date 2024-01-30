@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2023-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -108,7 +108,6 @@ void main()
 }}
 """
 
-
 OVERLAY_SHADER = f"""
 #version {GLSL_VERSION}
 layout(origin_upper_left) in vec4 gl_FragCoord;
@@ -125,7 +124,6 @@ void main()
     }}
 }}
 """
-
 
 SOURCE = {
     "vertex": VERTEX_SHADER,

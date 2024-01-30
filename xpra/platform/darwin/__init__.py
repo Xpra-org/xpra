@@ -27,8 +27,8 @@ def do_init_env():
     bundle_contents = os.environ.get("GST_BUNDLE_CONTENTS")
     if bundle_contents:
         rsc_dir = os.path.join(bundle_contents, "Resources")
-        os.environ["GST_PLUGIN_PATH"]       = os.path.join(rsc_dir, "lib", "gstreamer-1.0")
-        os.environ["GST_PLUGIN_SCANNER"]    = os.path.join(rsc_dir, "libexec", "gstreamer-1.0", "gst-plugin-scanner")
+        os.environ["GST_PLUGIN_PATH"] = os.path.join(rsc_dir, "lib", "gstreamer-1.0")
+        os.environ["GST_PLUGIN_SCANNER"] = os.path.join(rsc_dir, "libexec", "gstreamer-1.0", "gst-plugin-scanner")
 
 
 def default_gtk_main_exit():
@@ -37,7 +37,7 @@ def default_gtk_main_exit():
     gtk.main_quit()
 
 
-exit_cb : Callable = default_gtk_main_exit
+exit_cb: Callable = default_gtk_main_exit
 
 
 def quit_handler(*_args):
@@ -45,7 +45,7 @@ def quit_handler(*_args):
     return True
 
 
-def set_exit_cb(ecb : Callable):
+def set_exit_cb(ecb: Callable):
     global exit_cb
     assert ecb is not None
     exit_cb = ecb
@@ -67,14 +67,15 @@ def get_OSXApplication():
 # workaround for Big Sur dylib cache mess:
 # https://stackoverflow.com/a/65599706/428751
 def patch_find_library():
-    from ctypes import util   # pylint: disable=import-outside-toplevel
+    from ctypes import util  # pylint: disable=import-outside-toplevel
     orig_util_find_library = util.find_library
 
     def new_util_find_library(name):
         res = orig_util_find_library(name)
         if res:
             return res
-        return '/System/Library/Frameworks/'+name+'.framework/'+name
+        return '/System/Library/Frameworks/' + name + '.framework/' + name
+
     util.find_library = new_util_find_library
 
 

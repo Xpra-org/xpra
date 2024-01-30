@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2021-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2021-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,7 +13,7 @@ from xpra.log import Logger
 log = Logger("encoder")
 
 
-def get_version() -> tuple[int,int]:
+def get_version() -> tuple[int, int]:
     return 6, 0
 
 
@@ -21,14 +21,14 @@ def get_type() -> str:
     return "rgb"
 
 
-def get_encodings() -> tuple[str,...]:
+def get_encodings() -> tuple[str, ...]:
     return "rgb24", "rgb32"
 
 
-def get_info() -> dict[str,Any]:
+def get_info() -> dict[str, Any]:
     return {
-        "version"       : get_version(),
-        "encodings"     : get_encodings(),
+        "version": get_version(),
+        "encodings": get_encodings(),
     }
 
 
@@ -51,16 +51,16 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
         # get the new format:
         pixel_format = image.get_pixel_format()
         # switch encoding if necessary:
-        if len(pixel_format)==4:
+        if len(pixel_format) == 4:
             coding = "rgb32"
-        elif len(pixel_format)==3:
+        elif len(pixel_format) == 3:
             coding = "rgb24"
         else:
             raise ValueError(f"invalid pixel format {pixel_format!r}")
     # we may still want to re-stride:
     image.may_restride()
     # always tell client which pixel format we are sending:
-    client_options = {"rgb_format" : pixel_format}
+    client_options = {"rgb_format": pixel_format}
 
     # compress here and return a wrapper so network code knows it is already zlib compressed:
     pixels = image.get_pixels()
@@ -80,12 +80,12 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
         level = 0
     elif l >= 512 and (lz4 or speed < 100):
         if l >= 4096:
-            level = 1+max(0, min(7, int(100-speed)//14))
+            level = 1 + max(0, min(7, int(100 - speed) // 14))
         else:
             # fewer pixels, make it more likely we won't bother compressing
             # and use a lower level (max=3)
-            level = max(0, min(3, int(125-speed)//35))
-    if level>0:
+            level = max(0, min(3, int(125 - speed) // 35))
+    if level > 0:
         can_inline = l <= 32768
         cwrapper = compressed_wrapper(coding, pixels, level=level,
                                       lz4=lz4,
@@ -98,7 +98,7 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
             cwrapper.level = 0
         elif can_inline and isinstance(pixels, memoryview):
             assert isinstance(cwrapper, Compressed)
-            assert cwrapper.data==pixels
+            assert cwrapper.data == pixels
             # compression either did not work or was not enabled
             # and `memoryview` pixel data cannot be handled by the packet encoders,
             # so we have to convert it to bytes:
@@ -108,7 +108,7 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
         # and even if we could, the image containing those pixels may be freed by the time we get to the encoder
         algo = "not"
         cwrapper = Compressed(coding, rgb_transform.pixels_to_bytes(pixels), True)
-    if pixel_format.find("A")>=0 or pixel_format.find("X")>=0:
+    if pixel_format.find("A") >= 0 or pixel_format.find("X") >= 0:
         bpp = 32
     else:
         bpp = 24

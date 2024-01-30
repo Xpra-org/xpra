@@ -39,10 +39,10 @@ from xpra.platform.win32.constants import (
     ACL_REVISION,
     SECURITY_DESCRIPTOR_REVISION,
 )
+
 log = Logger("network", "named-pipe", "win32")
 
 UNRESTRICTED = envbool("XPRA_NAMED_PIPE_UNRESTRICTED", False)
-
 
 ERROR_INSUFFICIENT_BUFFER = 122
 
@@ -59,10 +59,10 @@ ERROR_INVALID_ACL = 1336
 ERROR_INVALID_SID = 1337
 ERROR_REVISION_MISMATCH = 1306
 ACL_ERRORS = {
-    ERROR_ALLOTTED_SPACE_EXCEEDED   : "ERROR_ALLOTTED_SPACE_EXCEEDED",
-    ERROR_INVALID_ACL               : "ERROR_INVALID_ACL",
-    ERROR_INVALID_SID               : "ERROR_INVALID_SID",
-    ERROR_REVISION_MISMATCH         : "ERROR_REVISION_MISMATCH",
+    ERROR_ALLOTTED_SPACE_EXCEEDED: "ERROR_ALLOTTED_SPACE_EXCEEDED",
+    ERROR_INVALID_ACL: "ERROR_INVALID_ACL",
+    ERROR_INVALID_SID: "ERROR_INVALID_SID",
+    ERROR_REVISION_MISMATCH: "ERROR_REVISION_MISMATCH",
 }
 
 TokenUser = 0x1
@@ -86,8 +86,8 @@ class NamedPipeListener(Thread):
         self.exit_loop = False
         super().__init__(name="NamedPipeListener-%s" % pipe_name)
         self.daemon = True
-        self.security_attributes : SECURITY_ATTRIBUTES | None = None
-        self.security_descriptor : SECURITY_DESCRIPTOR | None = None
+        self.security_attributes: SECURITY_ATTRIBUTES | None = None
+        self.security_descriptor: SECURITY_DESCRIPTOR | None = None
         self.token_process = HANDLE()
         cur_proc = GetCurrentProcess()
         log("GetCurrentProcess()=%#x", cur_proc)
@@ -131,7 +131,7 @@ class NamedPipeListener(Thread):
                 log("CreatePipeHandle()=%#x", pipe_handle)
                 if c_long(pipe_handle).value == INVALID_HANDLE_VALUE:
                     log.error("Error: invalid handle for named pipe '%s'", self.pipe_name)
-                    err : int = GetLastError()
+                    err: int = GetLastError()
                     log.error(" '%s' (%i)", FormatMessageSystem(err).rstrip("\n\r."), err)
                     return
             event = CreateEventA(None, True, False, None)
@@ -202,9 +202,10 @@ class NamedPipeListener(Thread):
             if GetLastError() != ERROR_INSUFFICIENT_BUFFER:
                 raise OSError()
         log("GetTokenInformation data size %#x", data_size.value)
-        buftype = c_char * (data_size.value+1)
+        buftype = c_char * (data_size.value + 1)
         token_data = buftype()
-        if not GetTokenInformation(self.token_process, token_type, byref(token_data), data_size.value, byref(data_size)):
+        if not GetTokenInformation(self.token_process, token_type, byref(token_data), data_size.value,
+                                   byref(data_size)):
             raise OSError()
         token = cast(token_data, POINTER(token_struct)).contents
         return token
@@ -222,7 +223,7 @@ class NamedPipeListener(Thread):
         self.security_descriptor = SD
         log("SECURITY_DESCRIPTOR=%s", SD)
         if not InitializeSecurityDescriptor(byref(SD), SECURITY_DESCRIPTOR_REVISION):
-            raise OSError()    # @UndefinedVariable
+            raise OSError()  # @UndefinedVariable
         log("InitializeSecurityDescriptor: %s", SD)
         if not SetSecurityDescriptorOwner(byref(SD), user.SID, False):
             raise OSError()
@@ -256,15 +257,15 @@ class NamedPipeListener(Thread):
         sid_size = DWORD(sizeof(SID))
         sid_type = WinWorldSid
         SECURITY_MAX_SID_SIZE = 68
-        assert sizeof(SID)>=SECURITY_MAX_SID_SIZE
+        assert sizeof(SID) >= SECURITY_MAX_SID_SIZE
         if not CreateWellKnownSid(sid_type, None, byref(sid_allow), byref(sid_size)):
             log.error("error=%s", GetLastError())
             raise OSError()
-        assert sid_size.value<=SECURITY_MAX_SID_SIZE
+        assert sid_size.value <= SECURITY_MAX_SID_SIZE
         log("CreateWellKnownSid(..) sid_allow=%s, sid_size=%s", sid_allow, sid_size)
 
         acl_size = sizeof(ACL)
-        acl_size += 2*(sizeof(ACCESS_ALLOWED_ACE) - sizeof(DWORD))
+        acl_size += 2 * (sizeof(ACCESS_ALLOWED_ACE) - sizeof(DWORD))
         acl_size += GetLengthSid(byref(sid_allow))
         acl_size += GetLengthSid(byref(user.SID.contents))
         # acl_size += GetLengthSid(user.SID)

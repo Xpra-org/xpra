@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -27,7 +27,7 @@ def exec_command(username, args, exe, cwd, env):
         Popen,
         CREATIONINFO, CREATION_TYPE_TOKEN, STARTF_USESHOWWINDOW,
         LOGON_WITH_PROFILE, CREATE_NEW_PROCESS_GROUP, STARTUPINFO,
-        )
+    )
     creation_info = CREATIONINFO()
     creation_info.dwCreationType = CREATION_TYPE_TOKEN
     creation_info.dwLogonFlags = LOGON_WITH_PROFILE
@@ -36,7 +36,7 @@ def exec_command(username, args, exe, cwd, env):
     log("creation_info=%s", creation_info)
     startupinfo = STARTUPINFO()
     startupinfo.dwFlags = STARTF_USESHOWWINDOW
-    startupinfo.wShowWindow = 0     #aka win32.con.SW_HIDE
+    startupinfo.wShowWindow = 0  # aka win32.con.SW_HIDE
     startupinfo.lpDesktop = "WinSta0\\Default"
     startupinfo.lpTitle = "Xpra-Shadow"
 
@@ -61,11 +61,11 @@ class ProxyServer(_ProxyServer):
         from xpra.platform.win32.wtsapi import find_session
         session_info = find_session(username)
         if not session_info:
-            #first, Logon:
+            # first, Logon:
             with log.trap_error(f"Error: failed to logon as {username!r}"):
                 from xpra.platform.win32.desktoplogon_lib import Logon
                 Logon(strtobytes(username), strtobytes(password))
-        #hwinstaold = set_window_station("winsta0")
+        # hwinstaold = set_window_station("winsta0")
         app_dir = get_app_dir()
         shadow_command = os.path.join(app_dir, "Xpra-Shadow.exe")
         paexec = os.path.join(app_dir, "paexec.exe")
@@ -73,16 +73,16 @@ class ProxyServer(_ProxyServer):
         cmd = []
         exe = shadow_command
 
-        #use paexec to access the GUI session:
+        # use paexec to access the GUI session:
         if envbool("XPRA_PAEXEC", True) and os.path.exists(paexec) and os.path.isfile(paexec):
-            #find the session-id to shadow:
+            # find the session-id to shadow:
             if not session_info:
                 session_info = find_session(username)
             if session_info:
                 cmd = [
                     "paexec.exe",
                     "-i", str(session_info["SessionID"]), "-s",
-                    ]
+                ]
                 exe = paexec
             else:
                 log.warn("Warning: session not found for username '%s'", username)
@@ -92,9 +92,9 @@ class ProxyServer(_ProxyServer):
         cmd += [
             shadow_command,
             f"--bind={named_pipe}",
-            #"--tray=no",
-            ]
-        #unless explicitly stated otherwise, exit with client:
+            # "--tray=no",
+        ]
+        # unless explicitly stated otherwise, exit with client:
         if new_session_dict.get("exit-with-client", None) is not False:
             cmd.append("--exit-with-client=yes")
         from xpra.log import debug_enabled_categories
@@ -102,7 +102,7 @@ class ProxyServer(_ProxyServer):
             cmd += ["-d", ",".join(tuple(debug_enabled_categories))]
         env = self.get_proxy_env()
         env["XPRA_REDIRECT_OUTPUT"] = "1"
-        #env["XPRA_LOG_FILENAME"] = "E:\\Shadow-Instance.log"
+        # env["XPRA_LOG_FILENAME"] = "E:\\Shadow-Instance.log"
         proc = exec_command(username, cmd, exe, app_dir, env)
         from xpra.platform.win32.dotxpra import DotXpra
         dotxpra = DotXpra()
@@ -115,14 +115,14 @@ class ProxyServer(_ProxyServer):
                     log("stderr=%s", proc.stderr.read())
                 except (OSError, AttributeError):
                     log("failed to read stdout / stderr of subprocess", exc_info=True)
-                if r!=0:
+                if r != 0:
                     raise RuntimeError(f"shadow subprocess failed with exit code {r}")
                 raise RuntimeError("shadow subprocess has already terminated")
-            if t>=4:
+            if t >= 4:
                 state = dotxpra.get_display_state(named_pipe)
                 log("get_display_state(%s)=%s", state)
-                if state==SocketState.LIVE:
-                    #TODO: test the named pipe
+                if state == SocketState.LIVE:
+                    # TODO: test the named pipe
                     sleep(2)
                     break
         self.child_reaper.add_process(proc, f"server-{username}", "xpra shadow", True, True)

@@ -1,8 +1,8 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-#pylint: disable-msg=E1101
+# pylint: disable-msg=E1101
 
 from time import monotonic
 from threading import RLock
@@ -19,7 +19,6 @@ from xpra.util.env import envint, envbool, OSEnvContext
 from xpra.common import NotificationID
 from xpra.client.base.stub_client_mixin import StubClientMixin
 
-
 log = Logger("webcam")
 
 WEBCAM_ALLOW_VIRTUAL = envbool("XPRA_WEBCAM_ALLOW_VIRTUAL", False)
@@ -35,7 +34,7 @@ class WebcamForwarder(StubClientMixin):
 
     def __init__(self):
         super().__init__()
-        #webcam:
+        # webcam:
         self.webcam_option = ""
         self.webcam_forwarding = False
         self.webcam_device = None
@@ -45,13 +44,13 @@ class WebcamForwarder(StubClientMixin):
         self.webcam_send_timer = 0
         self.webcam_lock = RLock()
         self.server_webcam = False
-        self.server_webcam_encodings: tuple[str,...] = ()
+        self.server_webcam_encodings: tuple[str, ...] = ()
         self.server_virtual_video_devices = 0
-        #duplicated from encodings mixin:
-        self.server_encodings: tuple[str,...] = ()
+        # duplicated from encodings mixin:
+        self.server_encodings: tuple[str, ...] = ()
         if not hasattr(self, "server_ping_latency"):
             from collections import deque
-            self.server_ping_latency : deque[tuple[float,float]] = deque(maxlen=1000)
+            self.server_ping_latency: deque[tuple[float, float]] = deque(maxlen=1000)
 
     def cleanup(self):
         self.stop_sending_webcam()
@@ -76,7 +75,7 @@ class WebcamForwarder(StubClientMixin):
                     self.webcam_forwarding = False
         log("webcam forwarding: %s", self.webcam_forwarding)
 
-    def get_caps(self) -> dict[str,Any]:
+    def get_caps(self) -> dict[str, Any]:
         if not self.webcam_forwarding:
             return {}
         return {"webcam": True}
@@ -95,8 +94,8 @@ class WebcamForwarder(StubClientMixin):
             self.server_virtual_video_devices = c.intget("virtual-video-devices")
         log("webcam server support: %s (%i devices, encodings: %s)",
             self.server_webcam, self.server_virtual_video_devices, csv(self.server_webcam_encodings))
-        if self.webcam_forwarding and self.server_webcam and self.server_virtual_video_devices>0:
-            if self.webcam_option=="on" or self.webcam_option.find("/dev/video")>=0:
+        if self.webcam_forwarding and self.server_webcam and self.server_virtual_video_devices > 0:
+            if self.webcam_option == "on" or self.webcam_option.find("/dev/video") >= 0:
                 self.start_sending_webcam()
         return True
 
@@ -116,8 +115,8 @@ class WebcamForwarder(StubClientMixin):
         try:
             from xpra.platform.webcam import get_virtual_video_devices, get_all_video_devices
             virt_devices = get_virtual_video_devices()
-            all_video_devices = get_all_video_devices()      # pylint: disable=assignment-from-none
-            non_virtual = {k:v for k,v in all_video_devices.items() if k not in virt_devices}
+            all_video_devices = get_all_video_devices()  # pylint: disable=assignment-from-none
+            non_virtual = {k: v for k, v in all_video_devices.items() if k not in virt_devices}
             log("virtual video devices=%s", virt_devices)
             log("all_video_devices=%s", all_video_devices)
             log("found %s known non-virtual video devices: %s", len(non_virtual), non_virtual)
@@ -133,10 +132,10 @@ class WebcamForwarder(StubClientMixin):
                 device = int(device_str)
             except ValueError:
                 p = device_str.find("video")
-                if p>=0:
+                if p >= 0:
                     try:
                         log("device_str: %s", device_str[p:])
-                        device = int(device_str[p+len("video"):])
+                        device = int(device_str[p + len("video"):])
                     except ValueError:
                         device = 0
         if device in virt_devices:
@@ -151,23 +150,23 @@ class WebcamForwarder(StubClientMixin):
         log("do_start_sending_webcam(%s) device=%i", device_str, device)
         self.webcam_frame_no = 0
         try:
-            #test capture:
-            webcam_device = cv2.VideoCapture(device)        #0 -> /dev/video0 @UndefinedVariable
+            # test capture:
+            webcam_device = cv2.VideoCapture(device)  # 0 -> /dev/video0 @UndefinedVariable
             ret, frame = webcam_device.read()
             log("test capture using %s: %s, %s", webcam_device, ret, frame is not None)
             assert ret, "no device or permission"
             assert frame is not None, "no data"
-            assert frame.ndim==3, "unexpected  number of dimensions: %s" % frame.ndim
+            assert frame.ndim == 3, "unexpected  number of dimensions: %s" % frame.ndim
             h, w, Bpp = frame.shape
-            assert Bpp==3, "unexpected number of bytes per pixel: %s" % Bpp
-            assert frame.size==w*h*Bpp
+            assert Bpp == 3, "unexpected number of bytes per pixel: %s" % Bpp
+            assert frame.size == w * h * Bpp
             self.webcam_device_no = device
             self.webcam_device = webcam_device
             self.send("webcam-start", device, w, h)
             self.webcam_state_changed()
             log("webcam started")
             if self.send_webcam_frame():
-                delay = 1000//WEBCAM_TARGET_FPS
+                delay = 1000 // WEBCAM_TARGET_FPS
                 log("webcam timer with delay=%ims for %i fps target)", delay, WEBCAM_TARGET_FPS)
                 self.cancel_webcam_send_timer()
                 self.webcam_send_timer = self.timeout_add(delay, self.may_send_webcam_frame)
@@ -189,7 +188,7 @@ class WebcamForwarder(StubClientMixin):
     def webcam_check_acks(self, ack=0):
         self.webcam_ack_check_timer = 0
         log("check_acks: webcam_last_ack=%s", self.webcam_last_ack)
-        if self.webcam_last_ack<ack:
+        if self.webcam_last_ack < ack:
             log.warn("Warning: no acknowledgements received from the server for frame %i, stopping webcam", ack)
             self.stop_sending_webcam()
 
@@ -219,17 +218,17 @@ class WebcamForwarder(StubClientMixin):
 
     def may_send_webcam_frame(self):
         self.webcam_send_timer = 0
-        if self.webcam_device_no<0 or not self.webcam_device:
+        if self.webcam_device_no < 0 or not self.webcam_device:
             return False
-        not_acked = self.webcam_frame_no-1-self.webcam_last_ack
-        #not all frames have been acked
+        not_acked = self.webcam_frame_no - 1 - self.webcam_last_ack
+        # not all frames have been acked
         latency = 100
-        spl = tuple(x for _,x in self.server_ping_latency)
+        spl = tuple(x for _, x in self.server_ping_latency)
         if spl:
             latency = int(1000 * sum(spl) / len(spl))
-        #how many frames should be in flight
-        n = max(1, latency // (1000//WEBCAM_TARGET_FPS))    #20fps -> 50ms target between frames
-        if not_acked>0 and not_acked>n:
+        # how many frames should be in flight
+        n = max(1, latency // (1000 // WEBCAM_TARGET_FPS))  # 20fps -> 50ms target between frames
+        if not_acked > 0 and not_acked > n:
             log("may_send_webcam_frame() latency=%i, not acked=%i, target=%i - will wait for next ack",
                 latency, not_acked, n)
             return False
@@ -241,7 +240,7 @@ class WebcamForwarder(StubClientMixin):
             return False
         log("send_webcam_frame() webcam_device=%s", self.webcam_device)
         try:
-            assert self.webcam_device_no>=0, "device number is not set"
+            assert self.webcam_device_no >= 0, "device number is not set"
             assert self.webcam_device, "no webcam device to capture from"
             from xpra.codecs.pillow.encoder import get_encodings
             client_webcam_encodings = get_encodings()
@@ -261,12 +260,12 @@ class WebcamForwarder(StubClientMixin):
             import cv2
             ret, frame = self.webcam_device.read()
             assert ret, "capture failed"
-            assert frame.ndim==3, "invalid frame data"
+            assert frame.ndim == 3, "invalid frame data"
             h, w, Bpp = frame.shape
-            assert Bpp==3 and frame.size==w*h*Bpp
+            assert Bpp == 3 and frame.size == w * h * Bpp
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # @UndefinedVariable
             end = monotonic()
-            log("webcam frame capture took %ims", (end-start)*1000)
+            log("webcam frame capture took %ims", (end - start) * 1000)
             start = monotonic()
             from PIL import Image  # @UnresolvedImport
             from io import BytesIO
@@ -276,13 +275,13 @@ class WebcamForwarder(StubClientMixin):
             data = buf.getvalue()
             buf.close()
             end = monotonic()
-            log("webcam frame compression to %s took %ims", encoding, (end-start)*1000)
+            log("webcam frame compression to %s took %ims", encoding, (end - start) * 1000)
             frame_no = self.webcam_frame_no
             self.webcam_frame_no += 1
             self.send("webcam-frame", self.webcam_device_no, frame_no, encoding,
                       w, h, compression.Compressed(encoding, data))
             self.cancel_webcam_check_ack_timer()
-            self.webcam_ack_check_timer = self.timeout_add(10*1000, self.webcam_check_acks)
+            self.webcam_ack_check_timer = self.timeout_add(10 * 1000, self.webcam_check_acks)
             return True
         except Exception as e:
             log.error("webcam frame %i failed", self.webcam_frame_no, exc_info=True)
@@ -290,14 +289,14 @@ class WebcamForwarder(StubClientMixin):
             self.stop_sending_webcam()
             summary = "Webcam forwarding has failed"
             body = "The system encountered the following error:\n" + \
-                ("%s\n" % e)
-            self.may_notify(NotificationID.WEBCAM, summary, body, expire_timeout=10*1000, icon_name="webcam")
+                   ("%s\n" % e)
+            self.may_notify(NotificationID.WEBCAM, summary, body, expire_timeout=10 * 1000, icon_name="webcam")
             return False
         finally:
             self.webcam_lock.release()
 
     ######################################################################
-    #packet handlers
+    # packet handlers
     def _process_webcam_stop(self, packet: PacketType):
         device_no = packet[1]
         if device_no != self.webcam_device_no:
@@ -312,7 +311,7 @@ class WebcamForwarder(StubClientMixin):
                 self.webcam_last_ack = frame_no
                 if self.may_send_webcam_frame():
                     self.cancel_webcam_send_timer()
-                    delay = 1000//WEBCAM_TARGET_FPS
+                    delay = 1000 // WEBCAM_TARGET_FPS
                     log("new webcam timer with delay=%ims for %i fps target)", delay, WEBCAM_TARGET_FPS)
                     self.webcam_send_timer = self.timeout_add(delay, self.may_send_webcam_frame)
 

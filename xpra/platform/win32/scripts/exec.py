@@ -11,13 +11,12 @@
 import sys
 from xpra.platform import program_context
 
-
 with program_context("xpra-python-exec", "Xpra Python Exec"):
-    if len(sys.argv)<2:
+    if len(sys.argv) < 2:
         print("you must specify python commands to run!")
         sys.exit(1)
 
     for arg in sys.argv[1:]:
-        exec(arg)   # pylint: disable=exec-used
+        exec(arg)  # pylint: disable=exec-used
 
 sys.exit(0)

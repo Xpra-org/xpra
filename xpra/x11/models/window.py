@@ -40,22 +40,22 @@ X11Window = X11WindowBindings()
 IconicState = constants["IconicState"]
 NormalState = constants["NormalState"]
 
-CWX             = constants["CWX"]
-CWY             = constants["CWY"]
-CWWidth         = constants["CWWidth"]
-CWHeight        = constants["CWHeight"]
-CWBorderWidth   = constants["CWBorderWidth"]
-CWSibling       = constants["CWSibling"]
-CWStackMode     = constants["CWStackMode"]
+CWX = constants["CWX"]
+CWY = constants["CWY"]
+CWWidth = constants["CWWidth"]
+CWHeight = constants["CWHeight"]
+CWBorderWidth = constants["CWBorderWidth"]
+CWSibling = constants["CWSibling"]
+CWStackMode = constants["CWStackMode"]
 CONFIGURE_GEOMETRY_MASK = CWX | CWY | CWWidth | CWHeight
 CW_MASK_TO_NAME = {
-    CWX              : "X",
-    CWY              : "Y",
-    CWWidth          : "Width",
-    CWHeight         : "Height",
-    CWSibling        : "Sibling",
-    CWStackMode      : "StackMode",
-    CWBorderWidth    : "BorderWidth",
+    CWX: "X",
+    CWY: "Y",
+    CWWidth: "Width",
+    CWHeight: "Height",
+    CWSibling: "Sibling",
+    CWStackMode: "StackMode",
+    CWBorderWidth: "BorderWidth",
 }
 
 
@@ -66,7 +66,7 @@ def configure_bits(value_mask):
 FORCE_XSETINPUTFOCUS = envbool("XPRA_FORCE_XSETINPUTFOCUS", False)
 VALIDATE_CONFIGURE_REQUEST = envbool("XPRA_VALIDATE_CONFIGURE_REQUEST", False)
 CLAMP_OVERLAP = envint("XPRA_WINDOW_CLAMP_OVERLAP", 20)
-assert CLAMP_OVERLAP>=0
+assert CLAMP_OVERLAP >= 0
 
 
 def calc_constrained_size(width: int, height: int, hints):
@@ -99,7 +99,7 @@ def calc_constrained_size(width: int, height: int, hints):
     if min_height > 0:
         height = max(min_height, height)
 
-    max_width, max_height = getintpair("maximum-size", 2**16-1, 2**16-1)
+    max_width, max_height = getintpair("maximum-size", 2 ** 16 - 1, 2 ** 16 - 1)
     if max_width > 0:
         width = min(max_width, width)
     if max_height > 0:
@@ -119,16 +119,16 @@ def calc_constrained_size(width: int, height: int, hints):
     if "min_aspect" in hints:
         min_aspect = hints.get("min_aspect")
         assert min_aspect > 0
-        if width/height < min_aspect:
-            height = ceil(width*min_aspect)
+        if width / height < min_aspect:
+            height = ceil(width * min_aspect)
             if increment_y > 1 or base_height > 0:
                 e_height = max(height - base_height, 0)
                 height += increment_y - (e_height % increment_y)
     if "max_aspect" in hints:
         max_aspect = hints.get("max_aspect")
         assert max_aspect > 0
-        if width/height > max_aspect:
-            height = floor(width*max_aspect)
+        if width / height > max_aspect:
+            height = floor(width * max_aspect)
             if increment_y > 1 or base_height > 0:
                 e_height = max(height - base_height, 0)
                 height = max(1, height - e_height % increment_y)
@@ -222,7 +222,7 @@ class WindowModel(BaseWindowModel):
             -1, 65535, -1,
             GObject.ParamFlags.READABLE,
         ),
-        "children" : (
+        "children": (
             GObject.TYPE_PYOBJECT,
             "Sub-windows", None,
             GObject.ParamFlags.READABLE,
@@ -230,12 +230,12 @@ class WindowModel(BaseWindowModel):
     }
     __gsignals__ = dict(BaseWindowModel.__common_signals__)
     __gsignals__ |= {
-        "child-map-request-event"       : one_arg_signal,
-        "child-configure-request-event" : one_arg_signal,
-        "xpra-destroy-event"            : one_arg_signal,
+        "child-map-request-event": one_arg_signal,
+        "child-configure-request-event": one_arg_signal,
+        "xpra-destroy-event": one_arg_signal,
     }
 
-    _property_names         = BaseWindowModel._property_names + [
+    _property_names = BaseWindowModel._property_names + [
         "size-hints", "icon-title", "icons", "decorations",
         "modal", "set-initial-position", "requested-position",
         "iconic",
@@ -248,7 +248,7 @@ class WindowModel(BaseWindowModel):
         "WM_ICON_NAME", "_NET_WM_ICON_NAME", "_NET_WM_ICON",
         "_NET_WM_STRUT", "_NET_WM_STRUT_PARTIAL",
     ]
-    _internal_property_names = BaseWindowModel._internal_property_names+["children"]
+    _internal_property_names = BaseWindowModel._internal_property_names + ["children"]
     _MODELTYPE = "Window"
 
     def __init__(self, parking_window_xid: int, xid: int, desktop_geometry, size_constraints=None):
@@ -344,14 +344,14 @@ class WindowModel(BaseWindowModel):
     def _clamp_to_desktop(self, x: int, y: int, w: int, h: int) -> tuple[int, int]:
         if self.desktop_geometry:
             dw, dh = self.desktop_geometry
-            if x+w < 0:
-                x = min(0, CLAMP_OVERLAP-w)
+            if x + w < 0:
+                x = min(0, CLAMP_OVERLAP - w)
             elif x >= dw:
-                x = max(0, dw-CLAMP_OVERLAP)
-            if y+h < 0:
-                y = min(0, CLAMP_OVERLAP-h)
+                x = max(0, dw - CLAMP_OVERLAP)
+            if y + h < 0:
+                y = min(0, CLAMP_OVERLAP - h)
             elif y > dh:
-                y = max(0, dh-CLAMP_OVERLAP)
+                y = max(0, dh - CLAMP_OVERLAP)
         return x, y
 
     def update_desktop_geometry(self, width: int, height: int) -> None:
@@ -367,6 +367,7 @@ class WindowModel(BaseWindowModel):
 
     def _read_initial_X11_properties(self) -> None:
         metalog("read_initial_X11_properties() window")
+
         # WARNING: have to handle _NET_WM_STATE before we look at WM_HINTS;
         # WM_HINTS assumes that our "state" property is already set.  This is
         # because there are four ways a window can get its urgency
@@ -392,6 +393,7 @@ class WindowModel(BaseWindowModel):
             except TypeError:
                 pass
             self._internal_set_property(propname, value)
+
         # "decorations" needs to be set before reading the X11 properties
         # because handle_wm_normal_hints_change reads it:
         set_if_unset("decorations", -1)
@@ -439,7 +441,7 @@ class WindowModel(BaseWindowModel):
                 with xswallow:
                     if self.client_reparented:
                         X11Window.Reparent(self.xid, X11Window.get_root_xid(), 0, 0)
-                    if self.saved_events!=-1:
+                    if self.saved_events != -1:
                         with xswallow:
                             X11Window.setEventMask(self.xid, self.saved_events)
             self.client_reparented = False
@@ -494,7 +496,7 @@ class WindowModel(BaseWindowModel):
     #########################################
 
     def do_xpra_property_notify_event(self, event) -> None:
-        if event.delivered_to==self.corral_xid:
+        if event.delivered_to == self.corral_xid:
             return
         super().do_xpra_property_notify_event(event)
 
@@ -510,9 +512,9 @@ class WindowModel(BaseWindowModel):
 
     def do_xpra_unmap_event(self, event) -> None:
         log(f"do_xpra_unmap_event({event}) corral_xid={self.corral_xid:x}")
-        if not self.corral_xid or event.delivered_to==self.corral_xid:
+        if not self.corral_xid or event.delivered_to == self.corral_xid:
             return
-        assert event.window==self.xid
+        assert event.window == self.xid
         # The client window got unmapped.  The question is, though, was that
         # because it was withdrawn/destroyed, or was it because we unmapped it
         # going into `IconicState`?
@@ -526,9 +528,9 @@ class WindowModel(BaseWindowModel):
 
     def do_xpra_destroy_event(self, event) -> None:
         log(f"do_xpra_destroy_event({event}) corral_xid={self.corral_xid:x}")
-        if not self.corral_xid or event.delivered_to==self.corral_xid:
+        if not self.corral_xid or event.delivered_to == self.corral_xid:
             return
-        assert event.window==self.xid
+        assert event.window == self.xid
         super().do_xpra_destroy_event(event)
 
     #########################################
@@ -624,14 +626,14 @@ class WindowModel(BaseWindowModel):
             geom = X11Window.getGeometry(xid)
             if not geom:
                 continue
-            if geom[2]==geom[3]==1:
+            if geom[2] == geom[3] == 1:
                 # skip 1x1 windows, as those are usually just event windows
                 continue
-            if geom[0]==geom[1]==0 and geom[2]==ww and geom[3]==wh:
+            if geom[0] == geom[1] == 0 and geom[2] == ww and geom[3] == wh:
                 # exact same geometry as the window itself
                 continue
             # record xid and geometry:
-            children.append([xid]+list(geom))
+            children.append([xid] + list(geom))
         self._internal_set_property("children", children)
 
     def resize_corral_window(self, x: int, y: int, w: int, h: int) -> None:
@@ -642,8 +644,8 @@ class WindowModel(BaseWindowModel):
         hints = self.get_property("size-hints")
         w, h = self.calc_constrained_size(w, h, hints)
         cx, cy, cw, ch = self.get_property("geometry")
-        resized = cow!=w or coh!=h
-        moved = x!=0 or y!=0
+        resized = cow != w or coh != h
+        moved = x != 0 or y != 0
         geomlog("resize_corral_window%s hints=%s, constrained size=%s, geometry=%s, resized=%s, moved=%s",
                 (x, y, w, h), hints, (w, h), (cx, cy, cw, ch), resized, moved)
         if moved:
@@ -725,19 +727,19 @@ class WindowModel(BaseWindowModel):
                 hints = self.get_property("size-hints")
                 w, h = self.calc_constrained_size(w, h, hints)
                 geomlog("_NET_MOVERESIZE_WINDOW on %s (data=%s, current geometry=%s, new geometry=%s)",
-                        self, event.data, geom, (x,y,w,h))
+                        self, event.data, geom, (x, y, w, h))
                 X11Window.configureAndNotify(self.xid, x, y, w, h)
             return True
         return super().process_client_message_event(event)
 
-    def calc_constrained_size(self, w, h, hints) -> tuple[int,int]:
+    def calc_constrained_size(self, w, h, hints) -> tuple[int, int]:
         mhints = typedict(hints)
         cw, ch = calc_constrained_size(w, h, mhints)
         geomlog("calc_constrained_size%s=%s (size_constraints=%s)", (w, h, mhints), (cw, ch), self.size_constraints)
         return cw, ch
 
-    def update_size_constraints(self, minw: int=0, minh: int=0,
-                                maxw: int=MAX_WINDOW_SIZE, maxh: int=MAX_WINDOW_SIZE) -> None:
+    def update_size_constraints(self, minw: int = 0, minh: int = 0,
+                                maxw: int = MAX_WINDOW_SIZE, maxh: int = MAX_WINDOW_SIZE) -> None:
         if self.size_constraints == (minw, minh, maxw, maxh):
             geomlog("update_size_constraints%s unchanged", (minw, minh, maxw, maxh))
             return  # no need to do anything
@@ -766,11 +768,11 @@ class WindowModel(BaseWindowModel):
         motif_hints = self.prop_get("_MOTIF_WM_HINTS", "motif-hints", ignore_errors=False, raise_xerrors=True)
         metalog("_MOTIF_WM_HINTS=%s", motif_hints)
         if motif_hints:
-            if motif_hints.flags & (2**MotifWMHints.DECORATIONS_BIT):
+            if motif_hints.flags & (2 ** MotifWMHints.DECORATIONS_BIT):
                 if self._updateprop("decorations", motif_hints.decorations):
                     # we may need to clamp the window size:
                     self._handle_wm_normal_hints_change()
-            if motif_hints.flags & (2**MotifWMHints.INPUT_MODE_BIT):
+            if motif_hints.flags & (2 ** MotifWMHints.INPUT_MODE_BIT):
                 self._updateprop("modal", int(motif_hints.input_mode))
 
     def _handle_wm_normal_hints_change(self) -> None:
@@ -783,15 +785,15 @@ class WindowModel(BaseWindowModel):
         hints = {}
         if size_hints:
             TRANSLATED_NAMES = {
-                "position"          : "position",
-                "size"              : "size",
-                "base_size"         : "base-size",
-                "resize_inc"        : "increment",
-                "win_gravity"       : "gravity",
-                "min_aspect_ratio"  : "minimum-aspect-ratio",
-                "max_aspect_ratio"  : "maximum-aspect-ratio",
+                "position": "position",
+                "size": "size",
+                "base_size": "base-size",
+                "resize_inc": "increment",
+                "win_gravity": "gravity",
+                "min_aspect_ratio": "minimum-aspect-ratio",
+                "max_aspect_ratio": "maximum-aspect-ratio",
             }
-            for k,v in size_hints.items():
+            for k, v in size_hints.items():
                 trans_name = TRANSLATED_NAMES.get(k)
                 if trans_name:
                     hints[trans_name] = v
@@ -802,7 +804,7 @@ class WindowModel(BaseWindowModel):
         hmaxw, hmaxh = mhints.inttupleget("max_size", (MAX_WINDOW_SIZE, MAX_WINDOW_SIZE), 2, 2)
         d: int = self.get("decorations", -1)
         decorated = d == -1 or any(
-            (d & 2**b) for b in (
+            (d & 2 ** b) for b in (
                 MotifWMHints.ALL_BIT,
                 MotifWMHints.TITLE_BIT,
                 MotifWMHints.MINIMIZE_BIT,
@@ -822,9 +824,9 @@ class WindowModel(BaseWindowModel):
         if 0 < cmaxh < hmaxh:
             hmaxh = cmaxh
         # if the values mean something, expose them:
-        if hminw>0 or hminh>0:
+        if hminw > 0 or hminh > 0:
             hints["minimum-size"] = hminw, hminh
-        if hmaxw<MAX_WINDOW_SIZE or hmaxh<MAX_WINDOW_SIZE:
+        if hmaxw < MAX_WINDOW_SIZE or hmaxh < MAX_WINDOW_SIZE:
             hints["maximum-size"] = hmaxw, hmaxh
         sanitize_size_hints(hints)
         # we don't use the "size" attribute for anything yet,
@@ -846,11 +848,11 @@ class WindowModel(BaseWindowModel):
 
     _x11_property_handlers = dict(BaseWindowModel._x11_property_handlers)
     _x11_property_handlers |= {
-        "WM_ICON_NAME"                  : _handle_icon_title_change,
-        "_NET_WM_ICON_NAME"             : _handle_icon_title_change,
-        "_MOTIF_WM_HINTS"               : _handle_motif_wm_hints_change,
-        "WM_NORMAL_HINTS"               : _handle_wm_normal_hints_change,
-        "_NET_WM_ICON"                  : _handle_net_wm_icon_change,
+        "WM_ICON_NAME": _handle_icon_title_change,
+        "_NET_WM_ICON_NAME": _handle_icon_title_change,
+        "_MOTIF_WM_HINTS": _handle_motif_wm_hints_change,
+        "WM_NORMAL_HINTS": _handle_wm_normal_hints_change,
+        "_NET_WM_ICON": _handle_net_wm_icon_change,
     }
 
     def get_default_window_icon(self, size: int = 48):

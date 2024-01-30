@@ -82,7 +82,7 @@ def load_icon_from_file(filename: str, max_size: int = MAX_ICON_SIZE) -> tuple:
         if pngdata:
             log(f"reduced size of SVG icon {filename}, from {size} bytes to {len(pngdata)} bytes as PNG")
             icondata = pngdata
-            filename = filename[:-3]+"png"
+            filename = filename[:-3] + "png"
     log("got icon data from '%s': %i bytes", filename, len(icondata))
     if 0 < max_size < len(icondata) and first_time(f"icon-size-warning-{filename}"):
         large_icons.append((filename, len(icondata)))
@@ -113,7 +113,7 @@ def svg_to_png(filename: str, icondata, w: int = 128, h: int = 128) -> bytes:
         else:
             with SilenceWarningsContext():
                 dim = handle.get_dimensions()
-                ctx.scale(w/dim.width, h/dim.height)
+                ctx.scale(w / dim.width, h / dim.height)
                 handle.render_cairo(ctx)
         del handle
         img.flush()

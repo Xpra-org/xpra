@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -21,9 +21,9 @@ class KeyboardBase:
         self.init_vars()
 
     def init_vars(self) -> None:
-        self.modifier_keys : dict[str,str] = {}
-        self.modifier_names : dict[str,str] = {}
-        self.modifier_keycodes : dict[str,list[int]] = {}
+        self.modifier_keys: dict[str, str] = {}
+        self.modifier_names: dict[str, str] = {}
+        self.modifier_keycodes: dict[str, list[int]] = {}
         self.modifier_mappings = {}
         # FIXME: this only allows a single modifier per mask
         # and in some cases we want to allow other modifier names
@@ -37,21 +37,21 @@ class KeyboardBase:
         return False
 
     def _add_modifier_mapping(self, a, b, modifier) -> None:
-        #log.info("%s (%s), %s (%s)", keycode, type(keycode), keyname, type(keyname))
+        # log.info("%s (%s), %s (%s)", keycode, type(keycode), keyname, type(keyname))
         if isinstance(a, int) and isinstance(b, (bytes, str)):
             self._do_add_modifier_mapping((b,), a, modifier)
-        elif isinstance(a, (str,bytes)) and isinstance(b, int):
-            #level = b
+        elif isinstance(a, (str, bytes)) and isinstance(b, int):
+            # level = b
             self._do_add_modifier_mapping((a,), 0, modifier)
-        elif isinstance(a, (bytes,str)) and isinstance(b, (bytes,str)):
+        elif isinstance(a, (bytes, str)) and isinstance(b, (bytes, str)):
             self._do_add_modifier_mapping((a, b), 0, modifier)
-        elif isinstance(a, (tuple,list)) and isinstance(b, (bytes,str)):
-            #ie: a=(57, 'CapsLock'), b='CapsLock'
-            if len(a)==2:
+        elif isinstance(a, (tuple, list)) and isinstance(b, (bytes, str)):
+            # ie: a=(57, 'CapsLock'), b='CapsLock'
+            if len(a) == 2:
                 self._add_modifier_mapping(a[0], a[1], modifier)
             self._add_modifier_mapping((b,), 0, modifier)
-        elif isinstance(a, (tuple,list)) and isinstance(b, int):
-            #ie: a=('CapsLock'), b=0
+        elif isinstance(a, (tuple, list)) and isinstance(b, int):
+            # ie: a=('CapsLock'), b=0
             self._do_add_modifier_mapping(a, 0, modifier)
         else:
             log.warn(f"Warning: unexpected key definition: {type(a)}, {type(b)}")
@@ -89,10 +89,10 @@ class KeyboardBase:
         """
         return {}, [], ["lock"]
 
-    def get_keymap_spec(self) -> dict[str,Any]:
+    def get_keymap_spec(self) -> dict[str, Any]:
         return {}
 
-    def get_x11_keymap(self) -> dict[int,list[str]]:
+    def get_x11_keymap(self) -> dict[int, list[str]]:
         return {}
 
     def get_layout_spec(self) -> tuple[str, list[str], str, list[str], str]:
@@ -105,6 +105,6 @@ class KeyboardBase:
         log(f"update_modifier_map({display}, {mod_meanings})")
         self.modifier_map = MODIFIER_MAP
 
-    def process_key_event(self, send_key_action_cb:Callable, wid:int, key_event:KeyEvent):
-        #default is to just send it as-is:
+    def process_key_event(self, send_key_action_cb: Callable, wid: int, key_event: KeyEvent):
+        # default is to just send it as-is:
         send_key_action_cb(wid, key_event)

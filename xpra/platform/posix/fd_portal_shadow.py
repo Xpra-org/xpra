@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2023-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -31,7 +31,7 @@ from xpra.log import Logger
 
 log = Logger("shadow")
 
-session_counter : int = random.randint(0, 2**24)
+session_counter: int = random.randint(0, 2 ** 24)
 
 VIDEO_MODE = envbool("XPRA_PIPEWIRE_VIDEO_MODE", True)
 VIDEO_MODE_ENCODINGS = os.environ.get("XPRA_PIPEWIRE_VIDEO_ENCODINGS", "h264,vp8,vp9,av1").split(",")
@@ -40,7 +40,7 @@ VIDEO_MODE_ENCODINGS = os.environ.get("XPRA_PIPEWIRE_VIDEO_ENCODINGS", "h264,vp8
 class PipewireWindowModel(RootWindowModel):
     __slots__ = ("pipewire_id", "pipewire_props")
 
-    def __init__(self, root_window, capture, title:str, geometry, node_id: int, props:typedict):
+    def __init__(self, root_window, capture, title: str, geometry, node_id: int, props: typedict):
         super().__init__(root_window=root_window, capture=capture, title=title, geometry=geometry)
         self.pipewire_id = node_id
         self.pipewire_props = props
@@ -51,10 +51,10 @@ class PortalShadow(GTKShadowServerBase):
         GTKShadowServerBase.__init__(self, multi_window=multi_window)
         self.session = None
         self.session_type = "portal desktop"
-        self.session_path : str = ""
-        self.session_handle : str = ""
+        self.session_path: str = ""
+        self.session_handle: str = ""
         self.authenticating_client = None
-        self.capture : Capture | None = None
+        self.capture: Capture | None = None
         self.portal_interface = get_portal_interface()
         self.input_devices = 0
         log(f"setup_capture() self.portal_interface={self.portal_interface}")
@@ -79,7 +79,7 @@ class PortalShadow(GTKShadowServerBase):
     def client_auth_error(self, message: str) -> None:
         self.disconnect_authenticating_client(ConnectionMessage.AUTHENTICATION_FAILED, message)
 
-    def disconnect_authenticating_client(self, reason : ConnectionMessage, message : str) -> None:
+    def disconnect_authenticating_client(self, reason: ConnectionMessage, message: str) -> None:
         ac = self.authenticating_client
         if ac:
             self.authenticating_client = None
@@ -133,8 +133,8 @@ class PortalShadow(GTKShadowServerBase):
         session_counter += 1
         token = f"u{session_counter}"
         self.session_path = f"/org/freedesktop/portal/desktop/session/{dbus_sender_name}/{token}"
-        options : dict[str, Any] = {
-            "session_handle_token"  : token,
+        options: dict[str, Any] = {
+            "session_handle_token": token,
         }
         log(f"create_session() session_counter={session_counter}")
         remotedesktop_dbus_call(
@@ -167,7 +167,7 @@ class PortalShadow(GTKShadowServerBase):
     def select_devices(self) -> None:
         log("select_devices()")
         options = {
-            "types" : UInt32(AvailableDeviceTypes.KEYBOARD + AvailableDeviceTypes.POINTER),
+            "types": UInt32(AvailableDeviceTypes.KEYBOARD + AvailableDeviceTypes.POINTER),
         }
         remotedesktop_dbus_call(
             self.portal_interface.SelectDevices,
@@ -188,8 +188,8 @@ class PortalShadow(GTKShadowServerBase):
 
     def select_sources(self) -> None:
         options = {
-            "multiple"  : self.multi_window,
-            "types"     : UInt32(AvailableSourceTypes.WINDOW | AvailableSourceTypes.MONITOR),
+            "multiple": self.multi_window,
+            "types": UInt32(AvailableSourceTypes.WINDOW | AvailableSourceTypes.MONITOR),
         }
         log(f"calling SelectSources with options={options}")
         screenscast_dbus_call(
@@ -243,9 +243,9 @@ class PortalShadow(GTKShadowServerBase):
 
     def create_capture_pipeline(self, fd: int, node_id: int, w: int, h: int) -> Capture:
         el = get_element_str("pipewiresrc", {
-            "fd" : fd,
-            "path" : str(node_id),
-            "do-timestamp" : True,
+            "fd": fd,
+            "path": str(node_id),
+            "do-timestamp": True,
         })
         c = self.authenticating_client
         if VIDEO_MODE:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,14 +8,14 @@ from collections.abc import Callable
 from ctypes import (
     sizeof, byref,
     WinError, get_last_error,  # @UnresolvedImport
-    )
+)
 
 from xpra.util.env import envbool
 from xpra.platform.win32.wtsapi import (
     NOTIFY_FOR_THIS_SESSION,
     WM_WTSSESSION_CHANGE, WM_DWMNCRENDERINGCHANGED, WM_DWMCOMPOSITIONCHANGED,
     WTSRegisterSessionNotification, WTSUnRegisterSessionNotification,
-    )
+)
 from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import (
@@ -25,11 +25,10 @@ from xpra.platform.win32.common import (
     UnregisterClassW, DefWindowProcW,
     GetModuleHandleA,
     GetStockObject,
-    )
+)
 from xpra.log import Logger
 
 log = Logger("events", "win32")
-
 
 KNOWN_EVENTS = {}
 POWER_EVENTS = {}
@@ -42,61 +41,60 @@ for x in dir(win32con):
         POWER_EVENTS[v] = x
 
 IGNORE_EVENTS = {
-            win32con.WM_ACTIVATEAPP         : "WM_ACTIVATEAPP",
-            win32con.WM_TIMECHANGE          : "WM_TIMECHANGE",
-            win32con.WM_DESTROY             : "WM_DESTROY",
-            win32con.WM_COMMAND             : "WM_COMMAND",
-            win32con.WM_DEVICECHANGE        : "WM_DEVICECHANGE",
-            win32con.WM_DISPLAYCHANGE       : "WM_DISPLAYCHANGE",       #already taken care of by gtk event
-            win32con.WM_NCCALCSIZE          : "WM_NCCALCSIZE",          #happens after resume too?
-            win32con.WM_WINDOWPOSCHANGED    : "WM_WINDOWPOSCHANGED",    #happens after resume too?
-            win32con.WM_WININICHANGE        : "WM_WININICHANGE",        #happens after resume too?
-            win32con.WM_WINDOWPOSCHANGING   : "WM_WINDOWPOSCHANGING",
-            win32con.WM_GETMINMAXINFO       : "WM_GETMINMAXINFO",
-            win32con.WM_SYSCOLORCHANGE      : "WM_SYSCOLORCHANGE",
-            WM_WTSSESSION_CHANGE            : "WM_WTSSESSION_CHANGE",
-            WM_DWMNCRENDERINGCHANGED        : "WM_DWMNCRENDERINGCHANGED",
-            800                             : "screen background changed",  #I can't find this definition anywhere
-            win32con.WM_SIZE                : "WM_SIZE: screen resized",    #we get a GTK signal for this
-            }
+    win32con.WM_ACTIVATEAPP: "WM_ACTIVATEAPP",
+    win32con.WM_TIMECHANGE: "WM_TIMECHANGE",
+    win32con.WM_DESTROY: "WM_DESTROY",
+    win32con.WM_COMMAND: "WM_COMMAND",
+    win32con.WM_DEVICECHANGE: "WM_DEVICECHANGE",
+    win32con.WM_DISPLAYCHANGE: "WM_DISPLAYCHANGE",  # already taken care of by gtk event
+    win32con.WM_NCCALCSIZE: "WM_NCCALCSIZE",  # happens after resume too?
+    win32con.WM_WINDOWPOSCHANGED: "WM_WINDOWPOSCHANGED",  # happens after resume too?
+    win32con.WM_WININICHANGE: "WM_WININICHANGE",  # happens after resume too?
+    win32con.WM_WINDOWPOSCHANGING: "WM_WINDOWPOSCHANGING",
+    win32con.WM_GETMINMAXINFO: "WM_GETMINMAXINFO",
+    win32con.WM_SYSCOLORCHANGE: "WM_SYSCOLORCHANGE",
+    WM_WTSSESSION_CHANGE: "WM_WTSSESSION_CHANGE",
+    WM_DWMNCRENDERINGCHANGED: "WM_DWMNCRENDERINGCHANGED",
+    800: "screen background changed",  # I can't find this definition anywhere
+    win32con.WM_SIZE: "WM_SIZE: screen resized",  # we get a GTK signal for this
+}
 LOG_EVENTS = {
-            win32con.WM_POWERBROADCAST      : "WM_POWERBROADCAST: power management event",
-            win32con.WM_TIMECHANGE          : "WM_TIMECHANGE: time change event",
-            win32con.WM_INPUTLANGCHANGE     : "WM_INPUTLANGCHANGE: input language changed",
-            WM_DWMCOMPOSITIONCHANGED        : "WM_DWMCOMPOSITIONCHANGED: Desktop Window Manager composition has been enabled or disabled",
-            }
+    win32con.WM_POWERBROADCAST: "WM_POWERBROADCAST: power management event",
+    win32con.WM_TIMECHANGE: "WM_TIMECHANGE: time change event",
+    win32con.WM_INPUTLANGCHANGE: "WM_INPUTLANGCHANGE: input language changed",
+    WM_DWMCOMPOSITIONCHANGED: "WM_DWMCOMPOSITIONCHANGED: Desktop Window Manager composition has been enabled or disabled",
+}
 KNOWN_WM_EVENTS = IGNORE_EVENTS.copy()
 KNOWN_WM_EVENTS.update(WNDPROC_EVENT_NAMES)
-NIN_BALLOONSHOW         = win32con.WM_USER + 2
-NIN_BALLOONHIDE         = win32con.WM_USER + 3
-NIN_BALLOONTIMEOUT      = win32con.WM_USER + 4
-NIN_BALLOONUSERCLICK    = win32con.WM_USER + 5
+NIN_BALLOONSHOW = win32con.WM_USER + 2
+NIN_BALLOONHIDE = win32con.WM_USER + 3
+NIN_BALLOONTIMEOUT = win32con.WM_USER + 4
+NIN_BALLOONUSERCLICK = win32con.WM_USER + 5
 BALLOON_EVENTS = {
-            NIN_BALLOONSHOW             : "NIN_BALLOONSHOW",
-            NIN_BALLOONHIDE             : "NIN_BALLOONHIDE",
-            NIN_BALLOONTIMEOUT          : "NIN_BALLOONTIMEOUT",
-            NIN_BALLOONUSERCLICK        : "NIN_BALLOONUSERCLICK",
-          }
+    NIN_BALLOONSHOW: "NIN_BALLOONSHOW",
+    NIN_BALLOONHIDE: "NIN_BALLOONHIDE",
+    NIN_BALLOONTIMEOUT: "NIN_BALLOONTIMEOUT",
+    NIN_BALLOONUSERCLICK: "NIN_BALLOONUSERCLICK",
+}
 KNOWN_WM_EVENTS.update(BALLOON_EVENTS)
 
-#anything else we don't have yet:
+# anything else we don't have yet:
 for x in dir(win32con):
     if x.startswith("WM_") and x not in KNOWN_WM_EVENTS:
         v = getattr(win32con, x)
         KNOWN_WM_EVENTS[v] = x
 
-
-
 WINDOW_EVENTS = envbool("XPRA_WIN32_WINDOW_EVENTS", True)
 
-EVENT_CALLBACK_TYPE = Callable[[int,int],None]
+EVENT_CALLBACK_TYPE = Callable[[int, int], None]
+
 
 class Win32Eventlistener:
 
     def __init__(self):
         assert singleton is None
         self.hwnd = None
-        self.event_callbacks : dict[int,list[EVENT_CALLBACK_TYPE]] = {}
+        self.event_callbacks: dict[int, list[EVENT_CALLBACK_TYPE]] = {}
         self.ignore_events = IGNORE_EVENTS
         self.log_events = LOG_EVENTS
 
@@ -105,7 +103,7 @@ class Win32Eventlistener:
 
         self.wc = WNDCLASSEX()
         self.wc.cbSize = sizeof(WNDCLASSEX)
-        self.wc.style =  win32con.CS_GLOBALCLASS|win32con.CS_VREDRAW|win32con.CS_HREDRAW
+        self.wc.style = win32con.CS_GLOBALCLASS | win32con.CS_VREDRAW | win32con.CS_HREDRAW
         self.wc.lpfnWndProc = WNDPROC(self.WndProc)
         self.wc.cbClsExtra = 0
         self.wc.cbWndExtra = 0
@@ -118,24 +116,23 @@ class Win32Eventlistener:
         self.wc.hIconSm = 0
         self.wc.hbrBackground = win32con.COLOR_WINDOW
         self.wc_atom = RegisterClassExW(byref(self.wc))
-        if self.wc_atom==0:
+        if self.wc_atom == 0:
             raise WinError(get_last_error())
 
         self.hwnd = CreateWindowExA(0, self.wc_atom, "For xpra event listener only",
-            win32con.WS_CAPTION,
-            0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT,
-            0, 0, self.wc.hInstance, None)
-        if self.hwnd==0:
+                                    win32con.WS_CAPTION,
+                                    0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT,
+                                    0, 0, self.wc.hInstance, None)
+        if self.hwnd == 0:
             raise WinError(get_last_error())
 
-        #register our interest in session events:
-        #http://timgolden.me.uk/python/win32_how_do_i/track-session-events.html#isenslogon
-        #http://stackoverflow.com/questions/365058/detect-windows-logout-in-python
-        #http://msdn.microsoft.com/en-us/library/aa383841.aspx
-        #http://msdn.microsoft.com/en-us/library/aa383828.aspx
+        # register our interest in session events:
+        # http://timgolden.me.uk/python/win32_how_do_i/track-session-events.html#isenslogon
+        # http://stackoverflow.com/questions/365058/detect-windows-logout-in-python
+        # http://msdn.microsoft.com/en-us/library/aa383841.aspx
+        # http://msdn.microsoft.com/en-us/library/aa383828.aspx
         WTSRegisterSessionNotification(self.hwnd, NOTIFY_FOR_THIS_SESSION)
         log("Win32Eventlistener created with hwnd=%s", self.hwnd)
-
 
     def cleanup(self):
         log("Win32Eventlistener.cleanup()")
@@ -158,21 +155,19 @@ class Win32Eventlistener:
                 log.error("Error during cleanup of event window class:")
                 log.estr(e)
 
-
-    def add_event_callback(self, event:int, callback:EVENT_CALLBACK_TYPE):
+    def add_event_callback(self, event: int, callback: EVENT_CALLBACK_TYPE):
         self.event_callbacks.setdefault(event, []).append(callback)
 
-    def remove_event_callback(self, event:int, callback:EVENT_CALLBACK_TYPE):
+    def remove_event_callback(self, event: int, callback: EVENT_CALLBACK_TYPE):
         l = self.event_callbacks.get(event)
         if l and callback in l:
             l.remove(callback)
 
-
-    def WndProc(self, hWnd:int, msg:int, wParam:int, lParam:int):
+    def WndProc(self, hWnd: int, msg: int, wParam: int, lParam: int):
         callbacks = self.event_callbacks.get(msg)
         event_name = KNOWN_WM_EVENTS.get(msg, hex(msg))
         log("callbacks for event %s: %s", event_name, callbacks)
-        if hWnd==self.hwnd:
+        if hWnd == self.hwnd:
             if callbacks:
                 for c in callbacks:
                     with log.trap_error("Error on event callback %s", c):
@@ -183,19 +178,19 @@ class Win32Eventlistener:
                 log.info("%s: %s / %s", self.log_events.get(msg), wParam, lParam)
             else:
                 l = log.warn
-                if 0<=msg<=win32con.WM_USER or msg>0xFFFF:
+                if 0 <= msg <= win32con.WM_USER or msg > 0xFFFF:
                     ut = "reserved system"
-                elif win32con.WM_USER<=msg<=0x7FFF:
+                elif win32con.WM_USER <= msg <= 0x7FFF:
                     ut = "WM_USER"
-                elif 0x8000<=msg<=0xBFFF:
+                elif 0x8000 <= msg <= 0xBFFF:
                     ut = "WM_APP"
-                elif 0xC000<=msg<=0xFFFF:
+                elif 0xC000 <= msg <= 0xFFFF:
                     ut = "string"
                     l = log.debug
                 else:
                     ut = "/ unexpected"
                 l("unknown %s message: %s / %#x / %#x", ut, event_name, int(wParam), int(lParam))
-            if msg==win32con.WM_DESTROY:
+            if msg == win32con.WM_DESTROY:
                 self.cleanup()
         elif self.hwnd and hWnd:
             log.warn("invalid hwnd: %s (expected %s)", hWnd, self.hwnd)
@@ -203,7 +198,10 @@ class Win32Eventlistener:
         log("DefWindowProc%s=%s", (hWnd, msg, wParam, lParam), r)
         return r
 
-singleton : Win32Eventlistener | None = None
+
+singleton: Win32Eventlistener | None = None
+
+
 def get_win32_event_listener(create=True) -> Win32Eventlistener | None:
     global singleton
     if not singleton and create:

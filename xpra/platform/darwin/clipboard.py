@@ -26,7 +26,7 @@ log = Logger("clipboard", "osx")
 GLib = gi_import("GLib")
 
 TARGET_TRANS = {
-    NSStringPboardType : "STRING",
+    NSStringPboardType: "STRING",
 }
 
 IMAGE_FORMATS = ["image/png", "image/jpeg", "image/tiff"]
@@ -92,7 +92,8 @@ class OSXClipboardProxy(ClipboardProxyCore):
     def get_targets(self) -> list[str]:
         types = self.pasteboard.types()
         targets = []
-        if any(t in (NSStringPboardType, NSPasteboardTypeURL, "public.utf8-plain-text", "public.html", "TEXT") for t in types):
+        if any(t in (NSStringPboardType, NSPasteboardTypeURL, "public.utf8-plain-text", "public.html", "TEXT") for t in
+               types):
             targets += ["TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"]
         if any(t in (NSTIFFPboardType, NSPasteboardTypePNG) for t in types):
             targets += IMAGE_FORMATS
@@ -194,9 +195,9 @@ class OSXClipboardProxy(ClipboardProxyCore):
             self.set_image_data(dtype, data)
 
     def set_image_data(self, dtype, data):
-        img_type = dtype.split("/")[1]      # ie: "png"
+        img_type = dtype.split("/")[1]  # ie: "png"
         from xpra.codecs.pillow.decoder import open_only
-        img = open_only(data, (img_type, ))
+        img = open_only(data, (img_type,))
         for img_type, macos_types in {
             "png": [NSPasteboardTypePNG, "image/png"],
             "tiff": [NSTIFFPboardType, "image/tiff"],
@@ -204,7 +205,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
         }.items():
             try:
                 save_img = img
-                if img_type=="jpeg" and img.mode=="RGBA":
+                if img_type == "jpeg" and img.mode == "RGBA":
                     save_img = img.convert("RGB")
                 buf = BytesIO()
                 save_img.save(buf, img_type)
@@ -259,7 +260,7 @@ class OSXClipboardProtocolHelper(ClipboardTimeoutHelper):
     # (we use them internally as strings)
     ############################################################################
     def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data) -> bytes | str:
-        if encoding=="atoms":
+        if encoding == "atoms":
             data = _filter_targets(data)
         return super()._munge_wire_selection_to_raw(encoding, dtype, dformat, data)
 
@@ -280,6 +281,7 @@ def main():
 
         def nosend(*args):
             log("nosend%s", args)
+
         proxy = OSXClipboardProxy("CLIPBOARD", pasteboard, nosend, nosend)
         log.info("current change count=%s", proxy.change_count)
         clipboard = gtk.Clipboard(selection="CLIPBOARD")

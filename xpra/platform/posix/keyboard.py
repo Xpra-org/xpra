@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -42,7 +42,7 @@ class Keyboard(KeyboardBase):
         super().init_vars()
         self.keymap_modifiers = None
         self.keyboard_bindings = None
-        self.__input_sources : dict[str,int] = {}
+        self.__input_sources: dict[str, int] = {}
         try:
             self.__dbus_helper = DBusHelper()
         except ImportError as e:
@@ -59,7 +59,7 @@ class Keyboard(KeyboardBase):
             layout = layout_variant.split("+", 1)[0]
             self.__input_sources[layout] = index
 
-    def _dbus_gnome_shell_eval_ism(self, cmd, callback=None) ->None:
+    def _dbus_gnome_shell_eval_ism(self, cmd, callback=None) -> None:
         ism = "imports.ui.status.keyboard.getInputSourceManager()"
 
         def ok_cb(success, res) -> None:
@@ -85,7 +85,7 @@ class Keyboard(KeyboardBase):
             err_cb,
         )
 
-    def set_platform_layout(self, layout:str) -> None:
+    def set_platform_layout(self, layout: str) -> None:
         index = self.__input_sources.get(layout)
         log("set_platform_layout(%s): index=%s", layout, index)
         if index is None:
@@ -112,13 +112,13 @@ class Keyboard(KeyboardBase):
         with xlog:
             mod_mappings = self.keyboard_bindings.get_modifier_mappings()
             if mod_mappings:
-                #ie: {"shift" : ["Shift_L", "Shift_R"], "mod1" : "Meta_L", ...]}
+                # ie: {"shift" : ["Shift_L", "Shift_R"], "mod1" : "Meta_L", ...]}
                 log("modifier mappings=%s", mod_mappings)
                 meanings = {}
-                for modifier,keys in mod_mappings.items():
-                    for _,keyname in keys:
+                for modifier, keys in mod_mappings.items():
+                    for _, keyname in keys:
                         meanings[keyname] = modifier
-                #probably a GTK bug? but easier to put here
+                # probably a GTK bug? but easier to put here
                 mod_missing = []
                 numlock_mod = meanings.get("Num_Lock", [])
                 if numlock_mod:
@@ -135,7 +135,7 @@ class Keyboard(KeyboardBase):
         return {}
 
     def get_locale_status(self) -> dict[str, str]:
-        #parse the output into a dictionary:
+        # parse the output into a dictionary:
         # $ localectl status
         # System Locale: LANG=en_GB.UTF-8
         # VC Keymap: gb
@@ -147,12 +147,12 @@ class Keyboard(KeyboardBase):
         locale = {}
         for line in bytestostr(out).splitlines():
             parts = line.lstrip(" ").split(": ")
-            if len(parts)==2:
-                locale[parts[0]]=parts[1]
+            if len(parts) == 2:
+                locale[parts[0]] = parts[1]
         log("locale(%s)=%s", out, locale)
         return locale
 
-    def get_keymap_spec(self) -> dict[str,str]:
+    def get_keymap_spec(self) -> dict[str, str]:
         log("get_keymap_spec() keyboard_bindings=%s", self.keyboard_bindings)
         if is_Wayland() or not self.keyboard_bindings:
             locale = self.get_locale_status()
@@ -168,8 +168,8 @@ class Keyboard(KeyboardBase):
         log("get_keymap_spec()=%r", query_struct)
         return query_struct
 
-    def get_xkb_rules_names_property(self) -> tuple[str,...]:
-        #parses the "_XKB_RULES_NAMES" X11 property
+    def get_xkb_rules_names_property(self) -> tuple[str, ...]:
+        # parses the "_XKB_RULES_NAMES" X11 property
         if not is_X11():
             return ()
         xkb_rules_names: list[str] = []
@@ -179,24 +179,24 @@ class Keyboard(KeyboardBase):
         with xlog:
             prop = get_X11_root_property("_XKB_RULES_NAMES", "STRING")
             log("get_xkb_rules_names_property() _XKB_RULES_NAMES=%s", prop)
-            #ie: 'evdev\x00pc104\x00gb,us\x00,\x00\x00'
+            # ie: 'evdev\x00pc104\x00gb,us\x00,\x00\x00'
             if prop:
                 xkb_rules_names = bytestostr(prop).split("\0")
-            #ie: ['evdev', 'pc104', 'gb,us', ',', '', '']
+            # ie: ['evdev', 'pc104', 'gb,us', ',', '', '']
         log("get_xkb_rules_names_property()=%s", xkb_rules_names)
         return tuple(xkb_rules_names)
 
-    def get_all_x11_layouts(self) -> dict[str,str]:
+    def get_all_x11_layouts(self) -> dict[str, str]:
         repository = "/usr/share/X11/xkb/rules/base.xml"
         if os.path.exists(repository):
             try:
-                import lxml.etree   # pylint: disable=import-outside-toplevel
+                import lxml.etree  # pylint: disable=import-outside-toplevel
             except ImportError:
                 log("cannot parse xml", exc_info=True)
             else:
                 try:
                     with open(repository, encoding="latin1") as f:
-                        tree = lxml.etree.parse(f)   # pylint: disable=c-extension-no-member @UndefinedVariable
+                        tree = lxml.etree.parse(f)  # pylint: disable=c-extension-no-member @UndefinedVariable
                 except Exception:
                     log.error(f"Error parsing {repository}", exc_info=True)
                 else:
@@ -204,16 +204,16 @@ class Keyboard(KeyboardBase):
                     for layout in tree.xpath("//layout"):
                         layout = layout.xpath("./configItem/name")[0].text
                         x11_layouts[layout] = layout
-                        #for variant in layout.xpath("./variantlist/variant/configItem/name"):
+                        # for variant in layout.xpath("./variantlist/variant/configItem/name"):
                         #    variant_name = variant.text
                     return x11_layouts
-        from subprocess import Popen, PIPE   # pylint: disable=import-outside-toplevel
+        from subprocess import Popen, PIPE  # pylint: disable=import-outside-toplevel
         try:
             proc = Popen(["localectl", "list-x11-keymap-layouts"], stdout=PIPE, stderr=PIPE)
             out = proc.communicate()[0]
             log("get_all_x11_layouts() proc=%s", proc)
             log("get_all_x11_layouts() returncode=%s", proc.returncode)
-            if proc.wait()==0:
+            if proc.wait() == 0:
                 x11_layouts = {}
                 for line in out.splitlines():
                     layout = line.decode().split("/")[-1]
@@ -222,7 +222,7 @@ class Keyboard(KeyboardBase):
                 return x11_layouts
         except OSError:
             log("get_all_x11_layouts()", exc_info=True)
-        return {"us" : "English"}
+        return {"us": "English"}
 
     def get_layout_spec(self):
         def s(v) -> str:
@@ -230,6 +230,7 @@ class Keyboard(KeyboardBase):
                 return v.decode("latin1")
             except Exception:
                 return str(v)
+
         layout = ""
         layouts = []
         variant = ""
@@ -244,22 +245,22 @@ class Keyboard(KeyboardBase):
             locale = self.get_locale_status()
             v = s(locale.get("X11 Layout", ""))
         if not v:
-            #fallback:
+            # fallback:
             props = self.get_xkb_rules_names_property()
-            #ie: ['evdev', 'pc104', 'gb,us', ',', '', '']
-            if props and len(props)>=3:
+            # ie: ['evdev', 'pc104', 'gb,us', ',', '', '']
+            if props and len(props) >= 3:
                 v = s(props[2])
         if v:
             layouts = v.split(",")
             layout = v
         return layout, [x for x in layouts], variant, [], options
 
-    def get_keyboard_repeat(self) -> tuple[int,int] | None:
+    def get_keyboard_repeat(self) -> tuple[int, int] | None:
         if self.keyboard_bindings:
             try:
                 v = self.keyboard_bindings.get_key_repeat_rate()
                 if v:
-                    assert len(v)==2
+                    assert len(v) == 2
                     log("get_keyboard_repeat()=%s", v)
                     return v[0], v[1]
             except Exception as e:
@@ -274,11 +275,11 @@ class Keyboard(KeyboardBase):
             self.modifier_map = grok_modifier_map(display, mod_meanings)
         except ImportError:
             self.modifier_map = MODIFIER_MAP
-        #force re-query on next call:
+        # force re-query on next call:
         self.keymap_modifiers = None
         try:
             classname = type(display).__name__
-            dn = f"{classname} "+display.get_name()
+            dn = f"{classname} " + display.get_name()
         except Exception:
             dn = str(display)
         log(f"update_modifier_map({dn}, {mod_meanings}) modifier_map={self.modifier_map}")

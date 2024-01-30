@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -154,14 +154,14 @@ def slabel(text="", tooltip="", font="") -> Gtk.Label:
 def title_box(label_str: str, tooltip="") -> Gtk.EventBox:
     eb = Gtk.EventBox()
     lbl = slabel(label_str, tooltip=tooltip)
-    modify_fg(lbl, Gdk.Color(red=48*256, green=0, blue=0))
+    modify_fg(lbl, Gdk.Color(red=48 * 256, green=0, blue=0))
     al = Gtk.Alignment(xalign=0.0, yalign=0.5, xscale=0.0, yscale=0.0)
     al.set_margin_start(10)
     al.set_margin_end(10)
     al.add(lbl)
     eb.add(al)
     with IgnoreWarningsContext():
-        eb.modify_bg(Gtk.StateType.NORMAL, Gdk.Color(red=219*256, green=226*256, blue=242*256))
+        eb.modify_bg(Gtk.StateType.NORMAL, Gdk.Color(red=219 * 256, green=226 * 256, blue=242 * 256))
     return eb
 
 

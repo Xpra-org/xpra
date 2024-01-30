@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
@@ -33,13 +33,13 @@ bandwidthlog = Logger("bandwidth")
 
 SSH_AGENT: bool = envbool("XPRA_SSH_AGENT", True)
 FAKE_BROKEN_CONNECTION: int = envint("XPRA_FAKE_BROKEN_CONNECTION")
-PING_TIMEOUT : int = envint("XPRA_PING_TIMEOUT", 60)
-MIN_PING_TIMEOUT : int = envint("XPRA_MIN_PING_TIMEOUT", 2)
-MAX_PING_TIMEOUT : int = envint("XPRA_MAX_PING_TIMEOUT", 10)
-SWALLOW_PINGS : bool = envbool("XPRA_SWALLOW_PINGS", False)
+PING_TIMEOUT: int = envint("XPRA_PING_TIMEOUT", 60)
+MIN_PING_TIMEOUT: int = envint("XPRA_MIN_PING_TIMEOUT", 2)
+MAX_PING_TIMEOUT: int = envint("XPRA_MAX_PING_TIMEOUT", 10)
+SWALLOW_PINGS: bool = envbool("XPRA_SWALLOW_PINGS", False)
 # LOG_INFO_RESPONSE = ("^window.*position", "^window.*size$")
 LOG_INFO_RESPONSE: str = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
-AUTO_BANDWIDTH_PCT : int = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
+AUTO_BANDWIDTH_PCT: int = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
 assert 1 < AUTO_BANDWIDTH_PCT <= 100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 
 
@@ -58,30 +58,30 @@ class NetworkState(StubClientMixin):
         super().__init__()
         self.server_start_time: float = -1
         # legacy:
-        self.compression_level : int = 0
+        self.compression_level: int = 0
 
         # setting:
-        self.pings : bool = False
+        self.pings: bool = False
 
         # bandwidth
-        self.bandwidth_limit : int = 0
-        self.bandwidth_detection : bool = False
-        self.server_bandwidth_limit : int = 0
+        self.bandwidth_limit: int = 0
+        self.bandwidth_detection: bool = False
+        self.server_bandwidth_limit: int = 0
         self.server_session_name: str = ""
 
         # info requests
-        self.server_last_info : dict = {}
-        self.info_request_pending : bool = False
+        self.server_last_info: dict = {}
+        self.info_request_pending: bool = False
 
         # network state:
         self.server_packet_encoders: tuple[str, ...] = ()
-        self.server_ping_latency : deque[tuple[float, float]] = deque(maxlen=1000)
+        self.server_ping_latency: deque[tuple[float, float]] = deque(maxlen=1000)
         self.server_load = (0, 0, 0)
-        self.client_ping_latency : deque[tuple[float, float]] = deque(maxlen=1000)
-        self._server_ok : bool = True
+        self.client_ping_latency: deque[tuple[float, float]] = deque(maxlen=1000)
+        self._server_ok: bool = True
         self.last_ping_echoed_time = 0
-        self.ping_timer : int = 0
-        self.ping_echo_timers : dict[int,int] = {}
+        self.ping_timer: int = 0
+        self.ping_echo_timers: dict[int, int] = {}
         self.ping_echo_timeout_timer = 0
 
     def init(self, opts) -> None:
@@ -95,19 +95,19 @@ class NetworkState(StubClientMixin):
         self.cancel_ping_echo_timers()
         self.cancel_ping_echo_timeout_timer()
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         return {
-            "network" : {
-                "pings"                 : self.pings,
-                "bandwidth-limit"       : self.bandwidth_limit,
-                "bandwidth-detection"   : self.bandwidth_detection,
-                "server-ok"             : self._server_ok,
+            "network": {
+                "pings": self.pings,
+                "bandwidth-limit": self.bandwidth_limit,
+                "bandwidth-detection": self.bandwidth_detection,
+                "server-ok": self._server_ok,
             }
         }
 
-    def get_caps(self) -> dict[str,Any]:
+    def get_caps(self) -> dict[str, Any]:
         caps: dict[str, Any] = {
-            "network-state" : True,
+            "network-state": True,
         }
         ssh_auth_sock = os.environ.get("SSH_AUTH_SOCK")
         if SSH_AGENT and ssh_auth_sock and os.path.isabs(ssh_auth_sock):
@@ -130,6 +130,7 @@ class NetworkState(StubClientMixin):
 
         def device_value(attr: str, conv: Callable = str, default_value: Any = ""):
             return get_device_value(coptions, device_info, attr, conv, default_value)
+
         device_name = device_info.get("name", "")
         log("get_caps() found device name=%s", device_name)
         default_adapter_type = guess_adapter_type(get_NM_adapter_type(device_name) or device_name)
@@ -155,11 +156,11 @@ class NetworkState(StubClientMixin):
         if bandwidth_limit is None:
             if socket_speed:
                 # auto: use 80% of socket speed if we have it:
-                bandwidth_limit = socket_speed*AUTO_BANDWIDTH_PCT//100 or 0
+                bandwidth_limit = socket_speed * AUTO_BANDWIDTH_PCT // 100 or 0
             else:
                 bandwidth_limit = guess_bandwidth_limit(adapter_type)
         bandwidthlog("bandwidth-limit capability=%s", bandwidth_limit)
-        if bandwidth_limit>0:
+        if bandwidth_limit > 0:
             caps["bandwidth-limit"] = bandwidth_limit
         caps["bandwidth-detection"] = self.bandwidth_detection
         caps["ping-echo-sourceid"] = True
@@ -176,8 +177,8 @@ class NetworkState(StubClientMixin):
 
     def process_ui_capabilities(self, caps: typedict) -> None:
         self.send_ping()
-        if self.pings>0:
-            self.ping_timer = GLib.timeout_add(1000*self.pings, self.send_ping)
+        if self.pings > 0:
+            self.ping_timer = GLib.timeout_add(1000 * self.pings, self.send_ping)
 
     def cancel_ping_timer(self) -> None:
         pt = self.ping_timer
@@ -223,12 +224,12 @@ class NetworkState(StubClientMixin):
             return False
         last = self._server_ok
         self._server_ok = self.last_ping_echoed_time >= ping_sent_time
-        if FAKE_BROKEN_CONNECTION>0:
-            fakeit = (int(monotonic()) % FAKE_BROKEN_CONNECTION) <= FAKE_BROKEN_CONNECTION//2
+        if FAKE_BROKEN_CONNECTION > 0:
+            fakeit = (int(monotonic()) % FAKE_BROKEN_CONNECTION) <= FAKE_BROKEN_CONNECTION // 2
             self._server_ok = self._server_ok and fakeit
         if not self._server_ok:
             if not self.ping_echo_timeout_timer:
-                self.ping_echo_timeout_timer = GLib.timeout_add(PING_TIMEOUT*1000,
+                self.ping_echo_timeout_timer = GLib.timeout_add(PING_TIMEOUT * 1000,
                                                                 self.check_echo_timeout, ping_sent_time)
         else:
             self.cancel_ping_echo_timeout_timer()
@@ -260,16 +261,16 @@ class NetworkState(StubClientMixin):
         if not p or p.TYPE not in ("xpra", "websocket"):
             self.ping_timer = 0
             return False
-        now_ms = int(1000.0*monotonic())
+        now_ms = int(1000.0 * monotonic())
         self.send("ping", now_ms)
-        wait = 1000*MIN_PING_TIMEOUT
+        wait = 1000 * MIN_PING_TIMEOUT
         aspl = tuple(self.server_ping_latency)
         if aspl:
-            spl: tuple[float,...] = tuple(x[1] for x in aspl)
+            spl: tuple[float, ...] = tuple(x[1] for x in aspl)
             avg = sum(spl) / len(spl)
-            wait = max(1000*MIN_PING_TIMEOUT, min(1000*MAX_PING_TIMEOUT, round(1000+avg*2000)))
+            wait = max(1000 * MIN_PING_TIMEOUT, min(1000 * MAX_PING_TIMEOUT, round(1000 + avg * 2000)))
             log("send_ping() timestamp=%s, average server latency=%ims, using max wait %ims",
-                now_ms, round(1000*avg), wait)
+                now_ms, round(1000 * avg), wait)
         t = GLib.timeout_add(wait, self.check_server_echo, now_ms)
         self.ping_echo_timers[now_ms] = t
         return True
@@ -278,11 +279,11 @@ class NetworkState(StubClientMixin):
         echoedtime, l1, l2, l3, cl = packet[1:6]
         self.last_ping_echoed_time = echoedtime
         self.check_server_echo(0)
-        server_ping_latency = monotonic()-echoedtime/1000.0
+        server_ping_latency = monotonic() - echoedtime / 1000.0
         self.server_ping_latency.append((monotonic(), server_ping_latency))
         self.server_load = l1, l2, l3
         if cl >= 0:
-            self.client_ping_latency.append((monotonic(), cl/1000.0))
+            self.client_ping_latency.append((monotonic(), cl / 1000.0))
         log("ping echo server load=%s, measured client latency=%sms", self.server_load, cl)
 
     def _process_ping(self, packet: PacketType) -> None:
@@ -294,7 +295,7 @@ class NetworkState(StubClientMixin):
         if POSIX:
             try:
                 (fl1, fl2, fl3) = os.getloadavg()
-                l1, l2, l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
+                l1, l2, l3 = int(fl1 * 1000), int(fl2 * 1000), int(fl3 * 1000)
             except (OSError, AttributeError):
                 pass
         try:
@@ -303,7 +304,7 @@ class NetworkState(StubClientMixin):
             sl = -1
         if SWALLOW_PINGS > 0:
             return
-        self.send("ping_echo", echotime, l1, l2, l3, int(1000.0*sl), sid)
+        self.send("ping_echo", echotime, l1, l2, l3, int(1000.0 * sl), sid)
 
     ######################################################################
     def send_bandwidth_limit(self) -> None:

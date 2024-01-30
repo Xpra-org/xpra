@@ -57,7 +57,7 @@ class SystemTrayWindowModel(CoreX11WindowModel):
         # force a refresh:
         event = TrayGeometryChanged()
         event.x = event.y = 0
-        event.width , event.height = self.get_dimensions()
+        event.width, event.height = self.get_dimensions()
         self.emit("client-contents-changed", event)
 
 

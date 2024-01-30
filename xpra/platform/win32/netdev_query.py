@@ -1,9 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.log import Logger
+
 log = Logger("network", "util", "win32")
 
 
@@ -13,19 +14,19 @@ def get_interface_info(_fd, iface):
     try:
         with CIMV2_Query(query) as res:
             log("ExecQuery(%s) returned %i rows", query, res.Count)
-            if res.Count==1:
+            if res.Count == 1:
                 for r in res:
                     props = {}
-                    for k,ik,conv in (
-                        ("AdapterType", "adapter-type", str),
-                        ("Caption",     "caption",      str),
-                        ("Description", "description",  str),
-                        ("DeviceID",    "id",           int),
-                        ("GUID",        "GUID",         str),
-                        ("Index",       "index",        int),
-                        ("Name",        "name",         str),
-                        ("ProductName", "product-name", str),
-                        ("Speed",       "speed",        int),
+                    for k, ik, conv in (
+                            ("AdapterType", "adapter-type", str),
+                            ("Caption", "caption", str),
+                            ("Description", "description", str),
+                            ("DeviceID", "id", int),
+                            ("GUID", "GUID", str),
+                            ("Index", "index", int),
+                            ("Name", "name", str),
+                            ("ProductName", "product-name", str),
+                            ("Speed", "speed", int),
                     ):
                         try:
                             v = conv(r.Properties_[k].Value)
@@ -45,7 +46,7 @@ def get_interface_info(_fd, iface):
     return {}
 
 
-def get_tcp_info(_sock):   # pylint: disable=unused-argument
+def get_tcp_info(_sock):  # pylint: disable=unused-argument
     """
     #not implemented yet!
     #the functions below would require administrator privileges:

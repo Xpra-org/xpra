@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2021-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2021-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -24,11 +24,11 @@ class RFBClientProtocol(RFBProtocol):
         self.rectangles = 0
         self.position = 0, 0
         # translate xpra packets into rfb packets:
-        self._rfb_converters : dict[str,Callable] = {
-            "pointer-position"  : self.send_pointer_position,
-            "button-action"     : self.send_button_action,
-            "key-action"        : self.send_key_action,
-            "configure-window"  : self.track_window,
+        self._rfb_converters: dict[str, Callable] = {
+            "pointer-position": self.send_pointer_position,
+            "button-action": self.send_button_action,
+            "key-action": self.send_key_action,
+            "configure-window": self.track_window,
         }
         self.send_lock = RLock()
         super().__init__(scheduler, conn, process_packet_cb)
@@ -73,8 +73,8 @@ class RFBClientProtocol(RFBProtocol):
         buttons = packet[4]
         button_mask = 0
         for i in range(8):
-            if i+1 in buttons:
-                button_mask |= 2**i
+            if i + 1 in buttons:
+                button_mask |= 2 ** i
         self.do_send_pointer_event(button_mask, x, y)
 
     def send_button_action(self, packet):
@@ -88,18 +88,18 @@ class RFBClientProtocol(RFBProtocol):
         x, y = packet[4]
         button_mask = 0
         if pressed:
-            button_mask |= 2**button
-        if len(packet)>=7:
+            button_mask |= 2 ** button
+        if len(packet) >= 7:
             buttons = packet[6]
             for i in range(8):
-                if i+1 in buttons:
-                    button_mask |= 2**i
+                if i + 1 in buttons:
+                    button_mask |= 2 ** i
         self.do_send_pointer_event(button_mask, x, y)
 
     def do_send_pointer_event(self, button_mask, x, y):
         # adjust for window position:
         wx, wy = self.position
-        self.send_struct(b"!BBHH", RFBClientMessage.PointerEvent, button_mask, x-wx, y-wy)
+        self.send_struct(b"!BBHH", RFBClientMessage.PointerEvent, button_mask, x - wx, y - wy)
 
     def send_key_action(self, packet):
         log("send_key_action(%s)", packet)
@@ -107,7 +107,7 @@ class RFBClientProtocol(RFBProtocol):
             return
         # ["key-action", "wid", "keyname", "pressed", "modifiers", "keyval", "string", "keycode", "group"]
         keyname = packet[2]
-        if len(keyname)==1:
+        if len(keyname) == 1:
             keysym = ord(keyname[0])
         else:
             keysym = RFB_KEYS.get(keyname.lower())
@@ -151,10 +151,10 @@ class RFBClientProtocol(RFBProtocol):
     def _parse_security_handshake(self, packet):
         log("parse_security_handshake(%s)", hexstr(packet))
         n = struct.unpack(b"B", packet[:1])[0]
-        if n==0:
+        if n == 0:
             self._internal_error("cannot parse security handshake " + hexstr(packet))
             return 0
-        security_types = struct.unpack(b"B"*n, packet[1:])
+        security_types = struct.unpack(b"B" * n, packet[1:])
         st = []
         for v in security_types:
             try:
@@ -174,10 +174,10 @@ class RFBClientProtocol(RFBProtocol):
             self._internal_error("no supported security types in %r" % csv(AUTH_STR.get(v, v) for v in st))
             return 0
         self.send_struct(b"B", auth_type)
-        return 1+n
+        return 1 + n
 
     def _parse_vnc_security_challenge(self, packet):
-        if len(packet)<16:
+        if len(packet) < 16:
             return 0
         challenge = packet[:16]
         log("parse_vnc_security_challenge(%s)", packet)
@@ -192,14 +192,14 @@ class RFBClientProtocol(RFBProtocol):
     def send_challenge_reply(self, challenge_response):
         log("send_challenge_reply(%s)", challenge_response)
         self._packet_parser = self._parse_security_result
-        import binascii     # pylint: disable=import-outside-toplevel
+        import binascii  # pylint: disable=import-outside-toplevel
         self.send(binascii.unhexlify(challenge_response))
 
     def _parse_security_result(self, packet):
-        if len(packet)<4:
+        if len(packet) < 4:
             return 0
         r = struct.unpack(b"I", packet[:4])[0]
-        if r!=0:
+        if r != 0:
             self._internal_error(f"authentication denied, server returned {r}")
             return 0
         log("parse_security_result(%s) success", hexstr(packet))
@@ -211,17 +211,17 @@ class RFBClientProtocol(RFBProtocol):
     def _parse_client_init(self, packet):
         log("_parse_client_init(%s)", packet)
         ci_size = struct.calcsize(CLIENT_INIT)
-        if len(packet)<ci_size:
+        if len(packet) < ci_size:
             return 0
         # the last item in client init is the length of the session name:
         client_init = struct.unpack(CLIENT_INIT, packet[:ci_size])
         name_size = client_init[-1]
         # do we have enough to parse that too?
-        if len(packet)<ci_size+name_size:
+        if len(packet) < ci_size + name_size:
             return 0
         # w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift = client_init[:12]
         w, h, bpp, depth, bigendian, truecolor = client_init[:6]
-        sn = packet[ci_size:ci_size+name_size]
+        sn = packet[ci_size:ci_size + name_size]
         try:
             session_name = sn.decode("utf8")
         except UnicodeDecodeError:
@@ -233,34 +233,36 @@ class RFBClientProtocol(RFBProtocol):
             return 0
         # simulate hello:
         self._process_packet_cb(self, ["hello", {
-            "session-name"  : session_name,
-            "desktop_size"  : (w, h),
-            "protocol"      : "rfb",
+            "session-name": session_name,
+            "desktop_size": (w, h),
+            "protocol": "rfb",
         }])
         # simulate an xpra window packet:
         metadata = {
-            "title" : session_name,
-            "size-constraints" : {
-                "maximum-size" : (w, h),
-                "minimum-size" : (w, h),
+            "title": session_name,
+            "size-constraints": {
+                "maximum-size": (w, h),
+                "minimum-size": (w, h),
             },
-            #"set-initial-position" : False,
-            "window-type" : ("NORMAL",),
-            "has-alpha" : False,
-            #"decorations" : True,
-            "content-type" : "desktop",
+            # "set-initial-position" : False,
+            "window-type": ("NORMAL",),
+            "has-alpha": False,
+            # "decorations" : True,
+            "content-type": "desktop",
         }
         client_properties = {}
         self._process_packet_cb(self, ["new-window", WID, 0, 0, w, h, metadata, client_properties])
         self._packet_parser = self._parse_rfb_packet
         self.send_set_encodings()
+
         # self.send_refresh_request(0, 0, 0, w, h)
 
         def request_refresh():
             self.send_refresh_request(0, 0, 0, w, h)
             return True
+
         self.timeout_add(1000, request_refresh)
-        return ci_size+name_size
+        return ci_size + name_size
 
     def send_set_encodings(self):
         self.send_struct("!BBHi", RFBClientMessage.SetEncodings, 0, 1, RFBEncoding.RAW)
@@ -270,35 +272,35 @@ class RFBClientProtocol(RFBProtocol):
 
     def _parse_rfb_packet(self, packet):
         log("parse_rfb_packet(%s)", repr_ellipsized(packet))
-        if len(packet)<=4:
+        if len(packet) <= 4:
             return 0
-        if packet[:2]!=struct.pack(b"!BB", 0, 0):
+        if packet[:2] != struct.pack(b"!BB", 0, 0):
             self.invalid("unknown packet", packet)
             return 0
         self.rectangles = struct.unpack(b"!H", packet[2:4])[0]
         log("%i rectangles coming up", self.rectangles)
-        if self.rectangles>0:
+        if self.rectangles > 0:
             self._packet_parser = self._parse_rectangle
         return 4
 
     def _parse_rectangle(self, packet):
         header_size = struct.calcsize(b"!HHHHi")
-        if len(packet)<=header_size:
+        if len(packet) <= header_size:
             return 0
         x, y, w, h, encoding = struct.unpack(b"!HHHHi", packet[:header_size])
-        if encoding!=RFBEncoding.RAW:
+        if encoding != RFBEncoding.RAW:
             self.invalid(f"invalid encoding: {encoding}", packet)
             return 0
-        if len(packet)<header_size + w*h*4:
+        if len(packet) < header_size + w * h * 4:
             return 0
         log("screen update: %s", (x, y, w, h))
-        pixels = packet[header_size:header_size + w*h*4]
-        draw = ["draw", WID, x, y, w, h, "rgb32", pixels, 0, w*4, {}]
+        pixels = packet[header_size:header_size + w * h * 4]
+        draw = ["draw", WID, x, y, w, h, "rgb32", pixels, 0, w * 4, {}]
         self._process_packet_cb(self, draw)
         self.rectangles -= 1
-        if self.rectangles==0:
+        if self.rectangles == 0:
             self._packet_parser = self._parse_rfb_packet
-        return header_size + w*h*4
+        return header_size + w * h * 4
 
     def send_struct(self, fmt, *args):
         packet = struct.pack(fmt, *args)

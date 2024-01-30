@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -42,27 +42,27 @@ def get_wm_info() -> dict[str, Any]:
         X11Window = X11WindowBindings()
         root_xid = X11Window.get_root_xid()
         info = {
-            "root"      : root_xid,
-            "WM_S0"     : X11Window.XGetSelectionOwner(WM_S0) or 0,
-            "_NEW_WM_CM_S0" : X11Window.XGetSelectionOwner(_NEW_WM_CM_S0) or 0,
+            "root": root_xid,
+            "WM_S0": X11Window.XGetSelectionOwner(WM_S0) or 0,
+            "_NEW_WM_CM_S0": X11Window.XGetSelectionOwner(_NEW_WM_CM_S0) or 0,
         }
     ewmh_xid = get_ewmh_xid()
     if ewmh_xid:
         info["_NET_SUPPORTING_WM_CHECK"] = ewmh_xid
         with xlog:
-            wm_name  = prop_get(ewmh_xid, "_NET_WM_NAME", "utf8", ignore_errors=True)
+            wm_name = prop_get(ewmh_xid, "_NET_WM_NAME", "utf8", ignore_errors=True)
             if not wm_name:
                 wm_name = prop_get(root_xid, "_NET_WM_NAME", "utf8", ignore_errors=True)
             if wm_name:
                 info["wmname"] = wm_name
     for name, prop_name, prop_type in (
-        ("xpra-server-pid",     "XPRA_SERVER_PID",              "u32"),
-        ("xpra-vfb-pid",        "XPRA_XVFB_PID",                "u32"),
-        ("xpra-server-version", "XPRA_SERVER",                  "latin1"),
-        ("xpra-server-mode",    "XPRA_SERVER_MODE",             "latin1"),
-        ("dbus-address",        "DBUS_SESSION_BUS_ADDRESS",     "latin1"),
-        ("dbus-pid",            "DBUS_SESSION_BUS_PID",         "u32"),
-        ("dbus-window",         "DBUS_SESSION_BUS_WINDOW_ID",   "u32"),
+            ("xpra-server-pid", "XPRA_SERVER_PID", "u32"),
+            ("xpra-vfb-pid", "XPRA_XVFB_PID", "u32"),
+            ("xpra-server-version", "XPRA_SERVER", "latin1"),
+            ("xpra-server-mode", "XPRA_SERVER_MODE", "latin1"),
+            ("dbus-address", "DBUS_SESSION_BUS_ADDRESS", "latin1"),
+            ("dbus-pid", "DBUS_SESSION_BUS_PID", "u32"),
+            ("dbus-window", "DBUS_SESSION_BUS_WINDOW_ID", "u32"),
     ):
         v = prop_get(root_xid, prop_name, prop_type, ignore_errors=True, raise_xerrors=False)
         if v is not None:

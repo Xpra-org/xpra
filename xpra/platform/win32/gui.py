@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -66,7 +66,6 @@ SCREENSAVER_LISTENER_POLL_DELAY = envint("XPRA_SCREENSAVER_LISTENER_POLL_DELAY",
 APP_ID = os.environ.get("XPRA_WIN32_APP_ID", "Xpra")
 MONITOR_DPI = envbool("XPRA_WIN32_MONITOR_DPI", True)
 
-
 PyCapsule_GetPointer = pythonapi.PyCapsule_GetPointer
 PyCapsule_GetPointer.restype = HGDIOBJ
 PyCapsule_GetPointer.argtypes = [py_object]
@@ -81,11 +80,11 @@ gdk_win32_window_get_handle.argtypes = [HGDIOBJ]
 gdk_win32_window_get_handle.restype = HWND
 log("gdkdll=%s", gdkdll)
 
-
 shell32 = WinDLL("shell32", use_last_error=True)
-set_window_group : Callable = noop
+set_window_group: Callable = noop
 try:
     from xpra.platform.win32 import propsys
+
     set_window_group = propsys.set_window_group
 except ImportError as e:
     log("propsys missing", exc_info=True)
@@ -93,21 +92,19 @@ except ImportError as e:
     log.warn(" %s", e)
     log.warn(" window grouping is not available")
 
-
 DwmGetWindowAttribute: Callable = noop
 try:
     dwmapi = WinDLL("dwmapi", use_last_error=True)
     DwmGetWindowAttribute = dwmapi.DwmGetWindowAttribute
 except Exception:
-    #win XP:
+    # win XP:
     pass
-
 
 WINDOW_HOOKS = envbool("XPRA_WIN32_WINDOW_HOOKS", True)
 GROUP_LEADER = WINDOW_HOOKS and envbool("XPRA_WIN32_GROUP_LEADER", True)
 UNDECORATED_STYLE = WINDOW_HOOKS and envbool("XPRA_WIN32_UNDECORATED_STYLE", True)
 CLIP_CURSOR = WINDOW_HOOKS and envbool("XPRA_WIN32_CLIP_CURSOR", True)
-#GTK3 is fixed, so we don't need this hook:
+# GTK3 is fixed, so we don't need this hook:
 MAX_SIZE_HINT = WINDOW_HOOKS and envbool("XPRA_WIN32_MAX_SIZE_HINT", False)
 LANGCHANGE = WINDOW_HOOKS and envbool("XPRA_WIN32_LANGCHANGE", True)
 POLL_LAYOUT = envint("XPRA_WIN32_POLL_LAYOUT", 10)
@@ -115,7 +112,7 @@ POLL_LAYOUT = envint("XPRA_WIN32_POLL_LAYOUT", 10)
 FORWARD_WINDOWS_KEY = envbool("XPRA_FORWARD_WINDOWS_KEY", True)
 WHEEL = envbool("XPRA_WHEEL", True)
 WHEEL_DELTA = envint("XPRA_WIN32_WHEEL_DELTA", 120)
-assert WHEEL_DELTA>0
+assert WHEEL_DELTA > 0
 
 log("win32 gui settings: CONSOLE_EVENT_LISTENER=%s, USE_NATIVE_TRAY=%s, WINDOW_HOOKS=%s, GROUP_LEADER=%s",
     CONSOLE_EVENT_LISTENER, USE_NATIVE_TRAY, WINDOW_HOOKS, GROUP_LEADER)
@@ -157,14 +154,14 @@ def use_stdin() -> bool:
         hstdin = GetStdHandle(STD_INPUT_HANDLE)
         if not_a_console(hstdin):
             return False
-        return get_console_position(hstdin)!=(-1, -1)
+        return get_console_position(hstdin) != (-1, -1)
     except Exception:
         pass
     return True
 
 
 def get_clipboard_native_class() -> str:
-    #"xpra.clipboard.translated_clipboard.TranslatedClipboardProtocolHelper"
+    # "xpra.clipboard.translated_clipboard.TranslatedClipboardProtocolHelper"
     return "xpra.platform.win32.clipboard.Win32Clipboard"
 
 
@@ -224,14 +221,14 @@ def get_monitor_workarea_for_window(handle: int):
         # (all relative to 0,0 being top left)
         wx1, wy1, wx2, wy2 = mi['Work']
         mx1, my1, mx2, my2 = mi['Monitor']
-        assert mx1<mx2 and my1<my2, "invalid monitor coordinates"
+        assert mx1 < mx2 and my1 < my2, "invalid monitor coordinates"
         # clamp to monitor, and make it all relative to monitor:
-        rx1 = max(0, min(mx2-mx1, wx1-mx1))
-        ry1 = max(0, min(my2-my1, wy1-my1))
-        rx2 = max(0, min(mx2-mx1, wx2-mx1))
-        ry2 = max(0, min(my2-my1, wy2-my1))
-        assert rx1<rx2 and ry1<ry2, "invalid relative workarea coordinates"
-        return rx1, ry1, rx2-rx1, ry2-ry1
+        rx1 = max(0, min(mx2 - mx1, wx1 - mx1))
+        ry1 = max(0, min(my2 - my1, wy1 - my1))
+        rx2 = max(0, min(mx2 - mx1, wx2 - mx1))
+        ry2 = max(0, min(my2 - my1, wy2 - my1))
+        assert rx1 < rx2 and ry1 < ry2, "invalid relative workarea coordinates"
+        return rx1, ry1, rx2 - rx1, ry2 - ry1
     except Exception as e:
         log.warn("failed to query workareas: %s", e)
         return None
@@ -258,7 +255,7 @@ def get_desktop_name() -> str:
         if desktop:
             buf = create_string_buffer(128)
             r = GetUserObjectInformationA(desktop, win32con.UOI_NAME, buf, len(buf), None)
-            if r!=0:
+            if r != 0:
                 desktop_name = buf.value.decode("latin1")
                 return desktop_name
             CloseDesktop(desktop)
@@ -275,12 +272,13 @@ def get_session_type() -> str:
         log("get_session_type() DwmIsCompositionEnabled()=%s (retcode=%s)", b.value, retcode)
         if retcode == 0 and b.value:
             return "aero"
-    except (AttributeError, OSError):      # @UndefinedVariable
+    except (AttributeError, OSError):  # @UndefinedVariable
         # No windll, no dwmapi or no DwmIsCompositionEnabled function.
         log("get_session_type() failed to query DwmIsCompositionEnabled", exc_info=True)
     return ""
 
-#alternative code:
+
+# alternative code:
 #    try:
 #        # Vista & 7 stuff
 #        hwnd = GetDesktopWindow()
@@ -322,36 +320,36 @@ def win32_propsys_set_group_leader(self, leader):
         log.estr(e)
 
 
-WS_NAMES : dict[int, str] = {
-    win32con.WS_BORDER              : "BORDER",
-    win32con.WS_CAPTION             : "CAPTION",
-    win32con.WS_CHILD               : "CHILD",
-    win32con.WS_CHILDWINDOW         : "CHILDWINDOW",
-    win32con.WS_CLIPCHILDREN        : "CLIPCHILDREN",
-    win32con.WS_CLIPSIBLINGS        : "CLIPSIBLINGS",
-    win32con.WS_DISABLED            : "DISABLED",
-    win32con.WS_DLGFRAME            : "DLGFRAME",
-    win32con.WS_GROUP               : "GROUP",
-    win32con.WS_HSCROLL             : "HSCROLL",
-    win32con.WS_ICONIC              : "ICONIC",
-    win32con.WS_MAXIMIZE            : "MAXIMIZE",
-    win32con.WS_MAXIMIZEBOX         : "MAXIMIZEBOX",
-    win32con.WS_MINIMIZE            : "MINIMIZE",
-    win32con.WS_MINIMIZEBOX         : "MINIMIZEBOX",
-    win32con.WS_OVERLAPPED          : "OVERLAPPED",
-    win32con.WS_POPUP               : "POPUP",
-    win32con.WS_SIZEBOX             : "SIZEBOX",
-    win32con.WS_SYSMENU             : "SYSMENU",
-    win32con.WS_TABSTOP             : "TABSTOP",
-    win32con.WS_THICKFRAME          : "THICKFRAME",
-    win32con.WS_TILED               : "TILED",
-    win32con.WS_VISIBLE             : "VISIBLE",
-    win32con.WS_VSCROLL             : "VSCROLL",
+WS_NAMES: dict[int, str] = {
+    win32con.WS_BORDER: "BORDER",
+    win32con.WS_CAPTION: "CAPTION",
+    win32con.WS_CHILD: "CHILD",
+    win32con.WS_CHILDWINDOW: "CHILDWINDOW",
+    win32con.WS_CLIPCHILDREN: "CLIPCHILDREN",
+    win32con.WS_CLIPSIBLINGS: "CLIPSIBLINGS",
+    win32con.WS_DISABLED: "DISABLED",
+    win32con.WS_DLGFRAME: "DLGFRAME",
+    win32con.WS_GROUP: "GROUP",
+    win32con.WS_HSCROLL: "HSCROLL",
+    win32con.WS_ICONIC: "ICONIC",
+    win32con.WS_MAXIMIZE: "MAXIMIZE",
+    win32con.WS_MAXIMIZEBOX: "MAXIMIZEBOX",
+    win32con.WS_MINIMIZE: "MINIMIZE",
+    win32con.WS_MINIMIZEBOX: "MINIMIZEBOX",
+    win32con.WS_OVERLAPPED: "OVERLAPPED",
+    win32con.WS_POPUP: "POPUP",
+    win32con.WS_SIZEBOX: "SIZEBOX",
+    win32con.WS_SYSMENU: "SYSMENU",
+    win32con.WS_TABSTOP: "TABSTOP",
+    win32con.WS_THICKFRAME: "THICKFRAME",
+    win32con.WS_TILED: "TILED",
+    win32con.WS_VISIBLE: "VISIBLE",
+    win32con.WS_VSCROLL: "VSCROLL",
 }
 
 
 def style_str(style) -> str:
-    return csv(s for c,s in WS_NAMES.items() if (c & style)==c)
+    return csv(s for c, s in WS_NAMES.items() if (c & style) == c)
 
 
 def pointer_grab(window, *args) -> bool:
@@ -361,15 +359,16 @@ def pointer_grab(window, *args) -> bool:
         window._client.pointer_grabbed = None
         return False
     wrect = RECT()
-    GetWindowRect(hwnd, byref(wrect))       # NOSONAR
+    GetWindowRect(hwnd, byref(wrect))  # NOSONAR
     grablog("GetWindowRect(%i)=%s", hwnd, wrect)
     if DwmGetWindowAttribute != noop:
         # Vista & 7 stuff
         rect = RECT()
         DWMWA_EXTENDED_FRAME_BOUNDS = 9
-        DwmGetWindowAttribute(HWND(hwnd), DWORD(DWMWA_EXTENDED_FRAME_BOUNDS), byref(rect), sizeof(rect))      # NOSONAR
+        DwmGetWindowAttribute(HWND(hwnd), DWORD(DWMWA_EXTENDED_FRAME_BOUNDS), byref(rect), sizeof(rect))  # NOSONAR
         # wx1,wy1,wx2,wy2 = rect.left, rect.top, rect.right, rect.bottom
-        grablog("DwmGetWindowAttribute: DWMWA_EXTENDED_FRAME_BOUNDS(%i)=%s", hwnd, (rect.left, rect.top, rect.right, rect.bottom))
+        grablog("DwmGetWindowAttribute: DWMWA_EXTENDED_FRAME_BOUNDS(%i)=%s", hwnd,
+                (rect.left, rect.top, rect.right, rect.bottom))
     bx = GetSystemMetrics(win32con.SM_CXSIZEFRAME)
     by = GetSystemMetrics(win32con.SM_CYSIZEFRAME)
     top = by
@@ -377,7 +376,7 @@ def pointer_grab(window, *args) -> bool:
     if style & win32con.WS_CAPTION:
         top += GetSystemMetrics(win32con.SM_CYCAPTION)
     grablog(" window style=%s, SIZEFRAME=%s, top=%i", style_str(style), (bx, by), top)
-    coords = wrect.left+bx, wrect.top+top, wrect.right-bx, wrect.bottom-by
+    coords = wrect.left + bx, wrect.top + top, wrect.right - bx, wrect.bottom - by
     clip = RECT(*coords)
     r = ClipCursor(clip)
     grablog("ClipCursor%s=%s", coords, r)
@@ -422,7 +421,7 @@ def fixup_window_style(self, *_args) -> None:
         # because GTK would then get confused
         # and paint the window contents at the wrong offset
         # hints = metadata.get("size-constraints")
-        if style!=cur_style:
+        if style != cur_style:
             log("fixup_window_style() using %s (%#x) instead of %s (%#x) on window %#x with metadata=%s",
                 style_str(style), style, style_str(cur_style), cur_style, hwnd, metadata)
             SetWindowLongA(hwnd, win32con.GWL_STYLE, style)
@@ -434,12 +433,13 @@ def fixup_window_style(self, *_args) -> None:
         cur_ws_visible = getattr(self, "_ws_visible", True)
         iconified = getattr(self, "_iconified", False)
         been_mapped = getattr(self, "_been_mapped", False)
-        log("fixup_window_style() ws_visible=%s (was %s), iconified=%s, been_mapped=%s", ws_visible, cur_ws_visible, iconified, been_mapped)
-        if client and been_mapped and not iconified and ws_visible!=cur_ws_visible:
+        log("fixup_window_style() ws_visible=%s (was %s), iconified=%s, been_mapped=%s", ws_visible, cur_ws_visible,
+            iconified, been_mapped)
+        if client and been_mapped and not iconified and ws_visible != cur_ws_visible:
             log("window changed visibility to: %s", ws_visible)
             setattr(self, "_ws_visible", ws_visible)
             if ws_visible:
-                #with opengl, we need to re-create the window (PITA):
+                # with opengl, we need to re-create the window (PITA):
                 if REINIT_VISIBLE_WINDOWS:
                     client.reinit_window(self.wid, self)
                 self.send_control_refresh(False)
@@ -452,7 +452,7 @@ def fixup_window_style(self, *_args) -> None:
 def set_decorated(self, decorated: bool) -> None:
     """ override method which ensures that we call
         fixup_window_style whenever decorations are toggled """
-    self.__set_decorated(decorated)         # call the original saved method
+    self.__set_decorated(decorated)  # call the original saved method
     self.fixup_window_style()
 
 
@@ -484,7 +484,7 @@ def apply_maxsize_hints(window, hints: dict[str, Any]):
     maxh = thints.intget("max_height", 0)
     if workw > 0 and workh > 0:
         # clamp to workspace for undecorated windows:
-        if maxw>0 and maxh>0:
+        if maxw > 0 and maxh > 0:
             maxw = min(workw, maxw)
             maxh = min(workh, maxh)
         else:
@@ -510,10 +510,10 @@ def apply_maxsize_hints(window, hints: dict[str, Any]):
     window_state_updated(window)
 
 
-def apply_geometry_hints(self, hints:dict):
+def apply_geometry_hints(self, hints: dict):
     log("apply_geometry_hints(%s)", hints)
     apply_maxsize_hints(self, hints)
-    return self.__apply_geometry_hints(hints)   # call the original saved method
+    return self.__apply_geometry_hints(hints)  # call the original saved method
 
 
 def cache_pointer_offset(self, event):
@@ -521,9 +521,9 @@ def cache_pointer_offset(self, event):
     # so we can cache the GTK position offset for synthetic wheel events
     gtk_x, gtk_y = event.x_root, event.y_root
     pos = POINT()
-    GetCursorPos(addressof(pos))            # NOSONAR
+    GetCursorPos(addressof(pos))  # NOSONAR
     x, y = pos.x, pos.y
-    self.win32_pointer_offset = gtk_x-x, gtk_y-y
+    self.win32_pointer_offset = gtk_x - x, gtk_y - y
     return gtk_x, gtk_y
 
 
@@ -598,6 +598,7 @@ def add_window_hooks(window) -> None:
             def inputlangchange(_hwnd, _event, wParam, lParam):
                 keylog("WM_INPUTLANGCHANGE: character set: %i, input locale identifier: %i", wParam, lParam)
                 window.keyboard_layout_changed("WM_INPUTLANGCHANGE", wParam, lParam)
+
             win32hooks.add_window_event_handler(win32con.WM_INPUTLANGCHANGE, inputlangchange)
 
         if WHEEL:
@@ -606,17 +607,18 @@ def add_window_hooks(window) -> None:
 
             def handle_wheel(orientation, wParam, lParam):
                 distance = wParam >> 16
-                if distance > 2**15:
+                if distance > 2 ** 15:
                     # ie: 0xFF88 -> 0x78 (120)
-                    distance = distance-2**16
+                    distance = distance - 2 ** 16
                 keys = wParam & 0xFFFF
                 y = lParam >> 16
                 x = lParam & 0xFFFF
                 units = distance / WHEEL_DELTA
                 client = getattr(window, "_client")
                 wid = getattr(window, "_id", 0)
-                mouselog("win32 mousewheel: orientation=%s, distance=%i, wheel-delta=%s, units=%.3f, new value=%.1f, keys=%#x, x=%i, y=%i, client=%s, wid=%i",
-                         orientation, distance, WHEEL_DELTA, units, distance, keys, x, y, client, wid)
+                mouselog(
+                    "win32 mousewheel: orientation=%s, distance=%i, wheel-delta=%s, units=%.3f, new value=%.1f, keys=%#x, x=%i, y=%i, client=%s, wid=%i",
+                    orientation, distance, WHEEL_DELTA, units, distance, keys, x, y, client, wid)
                 if client and wid > 0:
                     if orientation == VERTICAL:
                         deltax = 0
@@ -635,6 +637,7 @@ def add_window_hooks(window) -> None:
             def mousehwheel(_hwnd, _event, wParam, lParam):
                 handle_wheel(HORIZONTAL, wParam, lParam)
                 return 0
+
             win32hooks.add_window_event_handler(win32con.WM_MOUSEWHEEL, mousewheel)
             win32hooks.add_window_event_handler(win32con.WM_MOUSEHWHEEL, mousehwheel)
 
@@ -667,23 +670,23 @@ def get_ydpi() -> int:
 
 
 # those constants aren't found in win32con:
-SPI_GETFONTSMOOTHING            = 0x004A
-SPI_GETFONTSMOOTHINGCONTRAST    = 0x200C
+SPI_GETFONTSMOOTHING = 0x004A
+SPI_GETFONTSMOOTHINGCONTRAST = 0x200C
 SPI_GETFONTSMOOTHINGORIENTATION = 0x2012
-FE_FONTSMOOTHINGORIENTATIONBGR  = 0x0000
-FE_FONTSMOOTHINGORIENTATIONRGB  = 0x0001
+FE_FONTSMOOTHINGORIENTATIONBGR = 0x0000
+FE_FONTSMOOTHINGORIENTATIONRGB = 0x0001
 FE_FONTSMOOTHINGORIENTATIONVBGR = 0x0002
 FE_FONTSMOOTHINGORIENTATIONVRGB = 0x0003
-SPI_GETFONTSMOOTHINGTYPE        = 0x200A
-FE_FONTSMOOTHINGCLEARTYPE       = 0x0002
-FE_FONTSMOOTHINGDOCKING         = 0x8000
-FE_ORIENTATION_STR : dict[int, str] = {
-    FE_FONTSMOOTHINGORIENTATIONBGR    : "BGR",
-    FE_FONTSMOOTHINGORIENTATIONRGB    : "RGB",
-    FE_FONTSMOOTHINGORIENTATIONVBGR   : "VBGR",
-    FE_FONTSMOOTHINGORIENTATIONVRGB   : "VRGB",
+SPI_GETFONTSMOOTHINGTYPE = 0x200A
+FE_FONTSMOOTHINGCLEARTYPE = 0x0002
+FE_FONTSMOOTHINGDOCKING = 0x8000
+FE_ORIENTATION_STR: dict[int, str] = {
+    FE_FONTSMOOTHINGORIENTATIONBGR: "BGR",
+    FE_FONTSMOOTHINGORIENTATIONRGB: "RGB",
+    FE_FONTSMOOTHINGORIENTATIONVBGR: "VBGR",
+    FE_FONTSMOOTHINGORIENTATIONVRGB: "VRGB",
 }
-FE_FONTSMOOTHING_STR : dict[int, str] = {
+FE_FONTSMOOTHING_STR: dict[int, str] = {
     0: "Normal",
     FE_FONTSMOOTHINGCLEARTYPE: "ClearType",
 }
@@ -706,12 +709,14 @@ def get_antialias_info() -> dict[str, Any]:
 
         def orientation(v) -> str:
             return FE_ORIENTATION_STR.get(v, "unknown")
+
         _add_SPI(info, SPI_GETFONTSMOOTHINGORIENTATION, "orientation", orientation)
 
         def smoothing_type(v):
             return FE_FONTSMOOTHING_STR.get(v & FE_FONTSMOOTHINGCLEARTYPE, "unknown")
+
         _add_SPI(info, SPI_GETFONTSMOOTHINGTYPE, "type", smoothing_type)
-        _add_SPI(info, SPI_GETFONTSMOOTHINGTYPE, "hinting", lambda v : bool(v & 0x2))
+        _add_SPI(info, SPI_GETFONTSMOOTHINGTYPE, "hinting", lambda v: bool(v & 0x2))
     except Exception as e:
         log.warn("failed to query antialias info: %s", e)
     return info
@@ -736,12 +741,12 @@ def get_mouse_config() -> dict[str, Any]:
     # rate for each direction:
     _add_SPI(wheel_info, SPI_GETWHEELSCROLLLINES, "lines", int, 3)
     _add_SPI(wheel_info, SPI_GETWHEELSCROLLCHARS, "chars", int, 3)
-    info : dict[str, Any] = {
-        "present"       : bool(GetSystemMetrics(SM_MOUSEPRESENT)),
-        "wheel"         : wheel_info,
-        "buttons"       : GetSystemMetrics(SM_CMOUSEBUTTONS),
-        "swap"          : bool(GetSystemMetrics(SM_SWAPBUTTON)),
-        "drag"          : {
+    info: dict[str, Any] = {
+        "present": bool(GetSystemMetrics(SM_MOUSEPRESENT)),
+        "wheel": wheel_info,
+        "buttons": GetSystemMetrics(SM_CMOUSEBUTTONS),
+        "swap": bool(GetSystemMetrics(SM_SWAPBUTTON)),
+        "drag": {
             "x": GetSystemMetrics(SM_CXDRAG),
             "y": GetSystemMetrics(SM_CYDRAG),
         },
@@ -766,27 +771,29 @@ def get_workarea() -> tuple:
         maxmx = max(x[2] for x in monitors)
         maxmy = max(x[3] for x in monitors)
         screenlog("get_workarea() absolute total monitor area: %s", (minmx, minmy, maxmx, maxmy))
-        screenlog(" total monitor dimensions: %s", (maxmx-minmx, maxmy-minmy))
+        screenlog(" total monitor dimensions: %s", (maxmx - minmx, maxmy - minmy))
         workareas = []
         for m in EnumDisplayMonitors():
             mi = GetMonitorInfo(m)
             # absolute workarea / monitor coordinates:
             wx1, wy1, wx2, wy2 = mi['Work']
             workareas.append((wx1, wy1, wx2, wy2))
-        assert len(workareas)>0
+        assert len(workareas) > 0
         minwx = min(w[0] for w in workareas)
         minwy = min(w[1] for w in workareas)
         maxwx = max(w[2] for w in workareas)
         maxwy = max(w[3] for w in workareas)
         # sanity checks:
-        assert minwx>=minmx and minwy>=minmy and maxwx<=maxmx and maxwy<=maxmy, "workspace %s is outside monitor space %s" % ((minwx, minwy, maxwx, maxwy), (minmx, minmy, maxmx, maxmy))
+        assert minwx >= minmx and minwy >= minmy and maxwx <= maxmx and maxwy <= maxmy, "workspace %s is outside monitor space %s" % (
+            (minwx, minwy, maxwx, maxwy), (minmx, minmy, maxmx, maxmy)
+        )
         # now make it relative to the monitor space:
         wx1 = minwx - minmx
         wy1 = minwy - minmy
         wx2 = maxwx - minmx
         wy2 = maxwy - minmy
-        assert wx1<wx2 and wy1<wy2, "invalid workarea coordinates: %s" % ((wx1, wy1, wx2, wy2),)
-        return wx1, wy1, wx2-wx1, wy2-wy1
+        assert wx1 < wx2 and wy1 < wy2, "invalid workarea coordinates: %s" % ((wx1, wy1, wx2, wy2),)
+        return wx1, wy1, wx2 - wx1, wy2 - wy1
     except Exception as e:
         screenlog.warn("failed to query workareas: %s", e)
         return ()
@@ -808,12 +815,12 @@ def get_workareas() -> list[tuple[int, int, int, int]]:
             mx1, my1, mx2, my2 = mi['Monitor']
             assert mx1 < mx2 and my1 < my2, "invalid monitor coordinates"
             # clamp to monitor, and make it all relative to monitor:
-            rx1 = max(0, min(mx2-mx1, wx1-mx1))
-            ry1 = max(0, min(my2-my1, wy1-my1))
-            rx2 = max(0, min(mx2-mx1, wx2-mx1))
-            ry2 = max(0, min(my2-my1, wy2-my1))
+            rx1 = max(0, min(mx2 - mx1, wx1 - mx1))
+            ry1 = max(0, min(my2 - my1, wy1 - my1))
+            rx2 = max(0, min(mx2 - mx1, wx2 - mx1))
+            ry2 = max(0, min(my2 - my1, wy2 - my1))
             assert rx1 < rx2 and ry1 < ry2, "invalid relative workarea coordinates"
-            geom = rx1, ry1, rx2-rx1, ry2-ry1
+            geom = rx1, ry1, rx2 - rx1, ry2 - ry1
             # GTK will return the PRIMARY monitor first,
             # so we have to do the same thing:
             if mi['Flags'] & MONITORINFOF_PRIMARY:
@@ -879,7 +886,7 @@ def get_fixed_cursor_size() -> tuple[int, int]:
 
 def get_cursor_size() -> int:
     w, h = get_fixed_cursor_size()
-    return (w+h)//2
+    return (w + h) // 2
 
 
 def get_window_min_size() -> tuple[int, int]:
@@ -907,15 +914,15 @@ def get_window_frame_sizes() -> dict[str, Any]:
         # caption:
         c = GetSystemMetrics(win32con.SM_CYCAPTION)
         return {
-            "normal"    : (rx, ry),
-            "fixed"     : (fx, fy),
-            "minimum"   : (mx, my),
-            "menu-bar"  : m,
-            "border"    : b,
-            "caption"   : c,
-            "offset"    : (rx, ry+c),
+            "normal": (rx, ry),
+            "fixed": (fx, fy),
+            "minimum": (mx, my),
+            "menu-bar": m,
+            "border": b,
+            "caption": c,
+            "offset": (rx, ry + c),
             # left, right, top, bottom:
-            "frame"     : (rx, rx, ry+c, ry),
+            "frame": (rx, rx, ry + c, ry),
         }
     except Exception as e:
         log.warn("failed to get window frame size information: %s", e)
@@ -941,8 +948,8 @@ def take_screenshot():
 
 def show_desktop(b) -> None:
     # not defined in win32con..
-    MIN_ALL         = 419
-    MIN_ALL_UNDO    = 416
+    MIN_ALL = 419
+    MIN_ALL_UNDO = 416
     if bool(b):
         v = MIN_ALL
     else:
@@ -975,7 +982,7 @@ def get_monitors_info(xscale=1, yscale=1) -> dict[int, Any]:
                 # find this monitor entry in the gtk info:
                 mmatch = None
                 for monitor_info in monitors_info.values():
-                    if monitor_info.get("manufacturer")==manufacturer and monitor_info.get("model")==model:
+                    if monitor_info.get("manufacturer") == manufacturer and monitor_info.get("model") == model:
                         mmatch = monitor_info
                         break
                 if mmatch:
@@ -988,8 +995,8 @@ def get_monitors_info(xscale=1, yscale=1) -> dict[int, Any]:
                         mmatch.update({
                             "dpi-x": dpix,
                             "dpi-y": dpiy,
-                            "width-mm": round(width*25.4/dpix),
-                            "height-mm": round(height*25.4/dpiy),
+                            "width-mm": round(width * 25.4 / dpix),
+                            "height-mm": round(height * 25.4 / dpiy),
                         })
                 index += 1
     return monitors_info
@@ -1041,24 +1048,24 @@ def set_window_progress(window, pct: int) -> None:
 
 
 WM_WTSSESSION_CHANGE = 0x02b1
-WTS_CONSOLE_CONNECT         = 0x1
-WTS_CONSOLE_DISCONNECT      = 0x2
-WTS_REMOTE_CONNECT          = 0x3
-WTS_REMOTE_DISCONNECT       = 0x4
-WTS_SESSION_LOGON           = 0x5
-WTS_SESSION_LOGOFF          = 0x6
-WTS_SESSION_LOCK            = 0x7
-WTS_SESSION_UNLOCK          = 0x8
-WTS_SESSION_REMOTE_CONTROL  = 0x9
+WTS_CONSOLE_CONNECT = 0x1
+WTS_CONSOLE_DISCONNECT = 0x2
+WTS_REMOTE_CONNECT = 0x3
+WTS_REMOTE_DISCONNECT = 0x4
+WTS_SESSION_LOGON = 0x5
+WTS_SESSION_LOGOFF = 0x6
+WTS_SESSION_LOCK = 0x7
+WTS_SESSION_UNLOCK = 0x8
+WTS_SESSION_REMOTE_CONTROL = 0x9
 WTS_SESSION_EVENTS: dict[int, str] = {
-    WTS_CONSOLE_CONNECT       : "CONSOLE CONNECT",
-    WTS_CONSOLE_DISCONNECT    : "CONSOLE_DISCONNECT",
-    WTS_REMOTE_CONNECT        : "REMOTE_CONNECT",
-    WTS_REMOTE_DISCONNECT     : "REMOTE_DISCONNECT",
-    WTS_SESSION_LOGON         : "SESSION_LOGON",
-    WTS_SESSION_LOGOFF        : "SESSION_LOGOFF",
-    WTS_SESSION_LOCK          : "SESSION_LOCK",
-    WTS_SESSION_UNLOCK        : "SESSION_UNLOCK",
+    WTS_CONSOLE_CONNECT: "CONSOLE CONNECT",
+    WTS_CONSOLE_DISCONNECT: "CONSOLE_DISCONNECT",
+    WTS_REMOTE_CONNECT: "REMOTE_CONNECT",
+    WTS_REMOTE_DISCONNECT: "REMOTE_DISCONNECT",
+    WTS_SESSION_LOGON: "SESSION_LOGON",
+    WTS_SESSION_LOGOFF: "SESSION_LOGOFF",
+    WTS_SESSION_LOCK: "SESSION_LOCK",
+    WTS_SESSION_UNLOCK: "SESSION_UNLOCK",
     WTS_SESSION_REMOTE_CONTROL: "SESSION_REMOTE_CONTROL",
 }
 
@@ -1071,18 +1078,19 @@ class ClientExtras:
         self._screensaver_state = False
         self._screensaver_timer = 0
         self._exit = False
-        if SCREENSAVER_LISTENER_POLL_DELAY>0:
+        if SCREENSAVER_LISTENER_POLL_DELAY > 0:
             def log_screensaver():
                 v = bool(GetIntSystemParametersInfo(win32con.SPI_GETSCREENSAVERRUNNING))
                 log("SPI_GETSCREENSAVERRUNNING=%s", v)
-                if self._screensaver_state!=v:
+                if self._screensaver_state != v:
                     self._screensaver_state = v
                     if v:
                         self.client.suspend()
                     else:
                         self.client.resume()
                 return True
-            self._screensaver_timer = client.timeout_add(SCREENSAVER_LISTENER_POLL_DELAY*1000, log_screensaver)
+
+            self._screensaver_timer = client.timeout_add(SCREENSAVER_LISTENER_POLL_DELAY * 1000, log_screensaver)
         if CONSOLE_EVENT_LISTENER:
             self._console_handler_added = setup_console_event_listener(self.handle_console_event, True)
         from xpra.platform.win32.events import get_win32_event_listener
@@ -1101,8 +1109,8 @@ class ClientExtras:
             log.error("Error: cannot register focus and power callbacks:")
             log.estr(e)
         self.keyboard_hook_id = None
-        self.keyboard_poll_timer : int = 0
-        self.keyboard_id : int = self.get_keyboard_layout_id()
+        self.keyboard_poll_timer: int = 0
+        self.keyboard_id: int = self.get_keyboard_layout_id()
         if FORWARD_WINDOWS_KEY and features.windows:
             from xpra.util.thread import start_thread
             start_thread(self.init_keyboard_listener, "keyboard-listener", daemon=True)
@@ -1152,7 +1160,7 @@ class ClientExtras:
     def poll_layout(self) -> None:
         self.keyboard_poll_timer = 0
         klid = self.get_keyboard_layout_id()
-        if klid and klid!=self.keyboard_id:
+        if klid and klid != self.keyboard_id:
             self.keyboard_id = klid
             self.client.window_keyboard_layout_changed()
 
@@ -1169,7 +1177,7 @@ class ClientExtras:
                 return f"KBDLLHOOKSTRUCT({self.vk_code}, {self.scan_code}, {self.flags:x}, {self.time})"
 
         DOWN = [win32con.WM_KEYDOWN, win32con.WM_SYSKEYDOWN]
-        #UP = [win32con.WM_KEYUP, win32con.WM_SYSKEYUP]
+        # UP = [win32con.WM_KEYUP, win32con.WM_SYSKEYUP]
         ALL_KEY_EVENTS = {
             win32con.WM_KEYDOWN: "KEYDOWN",
             win32con.WM_SYSKEYDOWN: "SYSKEYDOWN",
@@ -1181,7 +1189,7 @@ class ClientExtras:
             log("WH_KEYBOARD_LL: %s", (nCode, wParam, lParam))
             kh = getattr(self.client, "keyboard_helper", None)
             locked = getattr(kh, "locked", False)
-            if POLL_LAYOUT and self.keyboard_poll_timer==0 and not locked:
+            if POLL_LAYOUT and self.keyboard_poll_timer == 0 and not locked:
                 self.keyboard_poll_timer = GLib.timeout_add(POLL_LAYOUT, self.poll_layout)
             if nCode < 0:
                 # docs say we should not process this event:
@@ -1214,10 +1222,10 @@ class ClientExtras:
                                     break
                                 except ValueError:
                                     pass
-                            if keycode>0:
+                            if keycode > 0:
                                 break
                     else:
-                        keycode = vk_code           # true for non-modifier keys only!
+                        keycode = vk_code  # true for non-modifier keys only!
                     for vk, modkeynames in {
                         win32con.VK_NUMLOCK: ["Num_Lock"],
                         win32con.VK_CAPITAL: ["Caps_Lock"],
@@ -1230,9 +1238,10 @@ class ClientExtras:
                                 if mod:
                                     modifiers.append(mod)
                                     break
-                    #keylog.info("keyboard helper=%s, modifier keycodes=%s", kh, modifier_keycodes)
-                    grablog("vk_code=%s, scan_code=%s, event=%s, keyname=%s, keycode=%s, modifiers=%s, focused=%s", vk_code, scan_code, ALL_KEY_EVENTS.get(wParam), keyname, keycode, modifiers, focused)
-                    if keycode>0:
+                    # keylog.info("keyboard helper=%s, modifier keycodes=%s", kh, modifier_keycodes)
+                    grablog("vk_code=%s, scan_code=%s, event=%s, keyname=%s, keycode=%s, modifiers=%s, focused=%s",
+                            vk_code, scan_code, ALL_KEY_EVENTS.get(wParam), keyname, keycode, modifiers, focused)
+                    if keycode > 0:
                         key_event = KeyEvent()
                         key_event.keyname = keyname
                         key_event.pressed = wParam in DOWN
@@ -1243,12 +1252,13 @@ class ClientExtras:
                         key_event.group = 0
                         grablog("detected '%s' key, sending %s", keyname, key_event)
                         self.client.keyboard_helper.send_key_action(focused, key_event)
-                        #swallow this event:
+                        # swallow this event:
                         return 1
             except Exception as e:
                 keylog.error("Error: low level keyboard hook failed")
                 keylog.estr(e)
             return CallNextHookEx(0, nCode, wParam, lParam)
+
         # Our low level handler signature.
         CMPFUNC = CFUNCTYPE(c_int, WPARAM, LPARAM, POINTER(KBDLLHOOKSTRUCT))
         # Convert the Python handler into C pointer.
@@ -1258,7 +1268,7 @@ class ClientExtras:
         # Register to remove the hook when the interpreter exits:
         keylog("init_keyboard_listener() hook_id=%#x", keyboard_hook_id)
         msg = MSG()
-        lpmsg = byref(msg)   # NOSONAR
+        lpmsg = byref(msg)  # NOSONAR
         while not self._exit:
             ret = GetMessageA(lpmsg, 0, 0, 0)
             keylog("keyboard listener: GetMessage()=%s", ret)
@@ -1287,7 +1297,7 @@ class ClientExtras:
             return
         ENDSESSION_CLOSEAPP = 0x1
         ENDSESSION_CRITICAL = 0x40000000
-        ENDSESSION_LOGOFF   = 0x80000000
+        ENDSESSION_LOGOFF = 0x80000000
         if (wParam & ENDSESSION_CLOSEAPP) and wParam:
             reason = "restart manager request"
         elif wParam & ENDSESSION_CRITICAL:
@@ -1343,11 +1353,11 @@ class ClientExtras:
         c = self.client
         log("WM_POWERBROADCAST: %s/%s client=%s", POWER_EVENTS.get(wParam, wParam), lParam, c)
         # maybe also "PBT_APMQUERYSUSPEND" and "PBT_APMQUERYSTANDBY"?
-        if wParam==win32con.PBT_APMSUSPEND and c:
+        if wParam == win32con.PBT_APMSUSPEND and c:
             c.suspend()
         # According to the documentation:
         # The system always sends a PBT_APMRESUMEAUTOMATIC message whenever the system resumes.
-        elif wParam==win32con.PBT_APMRESUMEAUTOMATIC and c:
+        elif wParam == win32con.PBT_APMRESUMEAUTOMATIC and c:
             c.resume()
 
     def handle_console_event(self, event: int) -> int:
@@ -1391,6 +1401,7 @@ def main():
 
         def signal_quit(*_args):
             loop.quit()
+
         fake_client.signal_disconnect_and_quit = signal_quit
         ClientExtras(fake_client, None)
 

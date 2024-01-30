@@ -43,7 +43,7 @@ log(f"encoder: {get_type()} {get_version()}, {init_module}, {cleanup_module}")
 PACKED_RGB_FORMATS = ("RGBA", "BGRA", "ARGB", "ABGR", "RGB", "BGR", "BGRX", "XRGB", "XBGR")
 
 assert get_type()  # all codecs must define this function
-COLORSPACES : dict[str, dict[str, list[str]]] = {}
+COLORSPACES: dict[str, dict[str, list[str]]] = {}
 
 
 def get_encodings() -> tuple[str, ...]:
@@ -68,11 +68,13 @@ def get_output_colorspaces(encoding: str, input_colorspace: str) -> tuple[str, .
 def ElementEncoderClass(element: str):
     class ElementEncoder(Encoder):
         pass
+
     ElementEncoder.encoder_element = element
     return ElementEncoder
 
 
-def make_spec(element: str, encoding: str, cs_in: str, css_out: tuple[str, ...], cpu_cost: int=50, gpu_cost: int=50):
+def make_spec(element: str, encoding: str, cs_in: str, css_out: tuple[str, ...], cpu_cost: int = 50,
+              gpu_cost: int = 50):
     # use a metaclass so all encoders are gstreamer.encoder.Encoder subclasses,
     # each with different pipeline arguments based on the make_spec parameters:
     if cs_in in PACKED_RGB_FORMATS:
@@ -93,7 +95,7 @@ def make_spec(element: str, encoding: str, cs_in: str, css_out: tuple[str, ...],
     return spec
 
 
-SPECS : dict[str, dict[str, list[VideoSpec]]] = {}
+SPECS: dict[str, dict[str, list[VideoSpec]]] = {}
 
 
 def get_specs(encoding: str, colorspace: str) -> VideoSpec | None:
@@ -106,11 +108,11 @@ def get_specs(encoding: str, colorspace: str) -> VideoSpec | None:
 def init_all_specs(*exclude) -> None:
     # by default, try to enable everything
     # the self-tests should disable what isn't available / doesn't work
-    specs : dict[str,dict[str,list]] = {}
-    colorspaces : dict[str,dict[str,list]] = {}
+    specs: dict[str, dict[str, list]] = {}
+    colorspaces: dict[str, dict[str, list]] = {}
     missing: list[str] = []
 
-    def add(element:str, encoding:str, cs_in:str, css_out, *args):
+    def add(element: str, encoding: str, cs_in: str, css_out, *args):
         if element in missing:
             return
         if encoding not in FORMATS:
@@ -122,7 +124,7 @@ def init_all_specs(*exclude) -> None:
             missing.append(element)
             return
         # add spec:
-        css_out = css_out or (cs_in, )
+        css_out = css_out or (cs_in,)
         spec = make_spec(element, encoding, cs_in, css_out, *args)
         specs.setdefault(encoding, {}).setdefault(cs_in, []).append(spec)
         # update colorspaces map (add new output colorspaces - if any):
@@ -130,6 +132,7 @@ def init_all_specs(*exclude) -> None:
         for v in css_out:
             if v not in cur:
                 cur.append(v)
+
     vaapi = VAAPI
     if VAAPI and not NVIDIA_VAAPI:
         try:
@@ -139,24 +142,24 @@ def init_all_specs(*exclude) -> None:
             pass
     log(f"init_all_specs try vaapi? {vaapi}")
     if vaapi:
-        add("vaapih264enc", "h264", "NV12", ("YUV420P", ), 20, 100)
-        add("vaapih265enc", "hevc", "NV12", ("YUV420P", ), 20, 100)
+        add("vaapih264enc", "h264", "NV12", ("YUV420P",), 20, 100)
+        add("vaapih265enc", "hevc", "NV12", ("YUV420P",), 20, 100)
     if NVD3D11:
-        add("nvd3d11h264enc", "h264", "YUV420P", ("YUV420P", ), 20, 100)
-        add("nvd3d11h265enc", "hevc", "YUV420P", ("YUV420P", ), 20, 100)
+        add("nvd3d11h264enc", "h264", "YUV420P", ("YUV420P",), 20, 100)
+        add("nvd3d11h265enc", "hevc", "YUV420P", ("YUV420P",), 20, 100)
     if NVENC:
-        add("nvh264enc", "h264", "YUV420P", ("YUV420P", ), 20, 100)
-        add("nvh265enc", "hevc", "YUV420P", ("YUV420P", ), 20, 100)
+        add("nvh264enc", "h264", "YUV420P", ("YUV420P",), 20, 100)
+        add("nvh265enc", "hevc", "YUV420P", ("YUV420P",), 20, 100)
     if not (OSX or WIN32):
-        add("amfh264enc", "h264", "NV12", ("YUV420P", ), 20, 100)
-        add("amfh265enc", "hevc", "NV12", ("YUV420P", ), 20, 100)
-    add("x264enc", "h264", "YUV420P", ("YUV420P", ), 100, 0)
-    add("x264enc", "h264", "YUV444P", ("YUV444P", ), 100, 0)
-    add("vp8enc", "vp8", "YUV420P", ("YUV420P", ), 100, 0)
-    add("vp9enc", "vp9", "YUV444P", ("YUV444P", ), 100, 0)
+        add("amfh264enc", "h264", "NV12", ("YUV420P",), 20, 100)
+        add("amfh265enc", "hevc", "NV12", ("YUV420P",), 20, 100)
+    add("x264enc", "h264", "YUV420P", ("YUV420P",), 100, 0)
+    add("x264enc", "h264", "YUV444P", ("YUV444P",), 100, 0)
+    add("vp8enc", "vp8", "YUV420P", ("YUV420P",), 100, 0)
+    add("vp9enc", "vp9", "YUV444P", ("YUV444P",), 100, 0)
     if not OSX:
-        add("av1enc", "av1", "YUV420P", ("YUV420P", ), 100, 0)
-        add("av1enc", "av1", "YUV444P", ("YUV444P", ), 100, 0)
+        add("av1enc", "av1", "YUV420P", ("YUV420P",), 100, 0)
+        add("av1enc", "av1", "YUV444P", ("YUV444P",), 100, 0)
     # svt encoders error out:
     # add("svtav1enc", "av1", "YUV420P", ("YUV420P", ), 100, 0)
     # add("svtvp9enc", "vp9", "YUV420P", ("YUV420P", ), 100, 0)
@@ -168,7 +171,7 @@ def init_all_specs(*exclude) -> None:
     log("init_all_specs%s COLORSPACES=%s", exclude, COLORSPACES)
     if missing and first_time("gstreamer-encoder-missing-elements"):
         log.info("some GStreamer elements are missing or unavailable on this system:")
-        log.info(" "+csv(missing))
+        log.info(" " + csv(missing))
 
 
 class Encoder(VideoPipeline):
@@ -183,21 +186,22 @@ class Encoder(VideoPipeline):
     """
     Dispatch video encoding to a gstreamer pipeline
     """
+
     def create_pipeline(self, options: typedict):
         if self.encoding not in get_encodings():
             raise ValueError(f"invalid encoding {self.encoding!r}")
         self.dst_formats = options.strtupleget("dst-formats")
         gst_rgb_format = get_gst_rgb_format(self.colorspace)
-        vcaps: dict[str,Any] = {
+        vcaps: dict[str, Any] = {
             "width": self.width,
             "height": self.height,
             "format": gst_rgb_format,
-            "framerate": (60,1),
+            "framerate": (60, 1),
             "interlace": "progressive",
             "colorimetry": "bt709",
         }
         CAPS = get_caps_str("video/x-raw", vcaps)
-        self.profile = self.get_profile(options)        # ie: "high"
+        self.profile = self.get_profile(options)  # ie: "high"
         eopts = get_video_encoder_options(self.encoder_element, self.profile, options)
         vcaps = get_video_encoder_caps(self.encoder_element)
         self.extra_client_info = vcaps.copy()
@@ -206,13 +210,13 @@ class Encoder(VideoPipeline):
             self.extra_client_info["profile"] = self.profile
         appsrc_opts = get_default_appsrc_attributes()
         appsrc_opts |= {
-            "is-live"       : True,
-            "do-timestamp"  : True,
-            "format"        : BUFFER_FORMAT,
-            "caps"          : CAPS,
+            "is-live": True,
+            "do-timestamp": True,
+            "format": BUFFER_FORMAT,
+            "caps": CAPS,
             # "leaky-type"    : 0,        # default is 0 and this is not available before GStreamer 1.20
         }
-        gst_encoding = get_gst_encoding(self.encoding)   # ie: "hevc" -> "video/x-h265"
+        gst_encoding = get_gst_encoding(self.encoding)  # ie: "hevc" -> "video/x-h265"
         elements = [
             get_element_str("appsrc", appsrc_opts),
             get_element_str(self.encoder_element, eopts),
@@ -235,7 +239,7 @@ class Encoder(VideoPipeline):
     def get_src_format(self) -> str:
         return self.colorspace
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         info = super().get_info()
         if self.dst_formats:
             info["dst_formats"] = self.dst_formats
@@ -262,18 +266,18 @@ class Encoder(VideoPipeline):
             if duration >= 0:
                 client_info["duration"] = duration
             qs = self.frame_queue.qsize()
-            if qs>0:
+            if qs > 0:
                 client_info["delayed"] = qs
             self.frame_queue.put((data, client_info))
             log(f"added data to frame queue, client_info={client_info}")
         return GST_FLOW_OK
 
-    def compress_image(self, image:ImageWrapper, options=None):
-        if image.get_planes()==ImageWrapper.PACKED:
+    def compress_image(self, image: ImageWrapper, options=None):
+        if image.get_planes() == ImageWrapper.PACKED:
             data = image.get_pixels()
             rowstride = image.get_rowstride()
-            want_rowstride = roundup(self.width, 2)*len(self.colorspace)
-            if rowstride!=want_rowstride and not image.restride(want_rowstride):
+            want_rowstride = roundup(self.width, 2) * len(self.colorspace)
+            if rowstride != want_rowstride and not image.restride(want_rowstride):
                 raise RuntimeError(f"failed to restride image from {rowstride}to {want_rowstride}")
         else:
             # merge all planes into a single buffer:

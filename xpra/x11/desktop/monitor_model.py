@@ -88,14 +88,14 @@ class MonitorDesktopModel(DesktopModelBase):
         monitor_damaged_area = damaged_area.intersection(x, y, width, height)
         if monitor_damaged_area:
             # use an event relative to this monitor's coordinates:
-            mod_event = MonitorDamageNotify(monitor_damaged_area.x-x, monitor_damaged_area.y-y,
+            mod_event = MonitorDamageNotify(monitor_damaged_area.x - x, monitor_damaged_area.y - y,
                                             monitor_damaged_area.width, monitor_damaged_area.height)
             self.emit("client-contents-changed", mod_event)
 
     def get_image(self, x, y, width, height):
         # adjust the coordinates with the monitor's position:
         mx, my = self.monitor_geometry[:2]
-        image = super().get_image(mx+x, my+y, width, height)
+        image = super().get_image(mx + x, my + y, width, height)
         if image:
             image.set_target_x(x)
             image.set_target_y(y)
@@ -106,7 +106,7 @@ class MonitorDesktopModel(DesktopModelBase):
         x, y, saved_width, saved_height = self.monitor_geometry
         width, height = self.resize_value
         self.monitor_geometry = (x, y, width, height)
-        self.resize_delta = width-saved_width, height-saved_height
+        self.resize_delta = width - saved_width, height - saved_height
         self.emit("resized")
 
 

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
@@ -27,26 +27,27 @@ class WindowServer(StubServerMixin):
     def __init__(self):
         # Window id 0 is reserved for "not a window"
         self._max_window_id = 1
-        self._window_to_id : dict[Any,int] = {}
-        self._id_to_window : dict[int,Any] = {}
+        self._window_to_id: dict[Any, int] = {}
+        self._id_to_window: dict[int, Any] = {}
         self.window_filters = []
         self.window_min_size = 0, 0
-        self.window_max_size = 2**15-1, 2**15-1
+        self.window_max_size = 2 ** 15 - 1, 2 ** 15 - 1
 
     def init(self, opts) -> None:
         def parse_window_size(v, default_value=(0, 0)):
             try:
-                #split on "," or "x":
+                # split on "," or "x":
                 pv = tuple(int(x.strip()) for x in v.replace(",", "x").split("x", 1))
-                assert len(pv)==2
+                assert len(pv) == 2
                 w, h = pv
-                if w<=0 or h<=0 or w>=32768 or h>=32768:
+                if w <= 0 or h <= 0 or w >= 32768 or h >= 32768:
                     raise ValueError(f"invalid window size {w}x{h}")
                 return w, h
             except Exception:
                 return default_value
+
         self.window_min_size = parse_window_size(opts.min_size, (0, 0))
-        self.window_max_size = parse_window_size(opts.max_size, (2**15-1, 2**15-1))
+        self.window_max_size = parse_window_size(opts.max_size, (2 ** 15 - 1, 2 ** 15 - 1))
         minw, minh = self.window_min_size
         maxw, maxh = self.window_max_size
         self.update_size_constraints(minw, minh, maxw, maxh)
@@ -58,13 +59,13 @@ class WindowServer(StubServerMixin):
     def cleanup(self) -> None:
         for window in tuple(self._window_to_id.keys()):
             window.unmanage()
-        #this can cause errors if we receive packets during shutdown:
-        #self._window_to_id = {}
-        #self._id_to_window = {}
+        # this can cause errors if we receive packets during shutdown:
+        # self._window_to_id = {}
+        # self._id_to_window = {}
 
     def reinit_window_encoders(self) -> None:
-        #any window mapped before the threaded init completed
-        #may need to re-initialize its list of encoders:
+        # any window mapped before the threaded init completed
+        # may need to re-initialize its list of encoders:
         log("reinit_window_encoders()")
         for ss in self._server_sources.values():
             if isinstance(ss, WindowsMixin):
@@ -73,18 +74,18 @@ class WindowServer(StubServerMixin):
     def last_client_exited(self) -> None:
         self._focus(None, 0, [])
 
-    def get_server_features(self, _source) -> dict[str,Any]:
+    def get_server_features(self, _source) -> dict[str, Any]:
         return {}
 
-    def get_info(self, _proto) -> dict[str,Any]:
+    def get_info(self, _proto) -> dict[str, Any]:
         return {
             "state": {
                 "windows": sum(int(window.is_managed()) for window in tuple(self._id_to_window.values())),
             },
-            "filters": tuple((uuid,repr(f)) for uuid, f in self.window_filters),
+            "filters": tuple((uuid, repr(f)) for uuid, f in self.window_filters),
         }
 
-    def get_ui_info(self, _proto, _client_uuids=None, wids=None, *_args) -> dict[str,Any]:
+    def get_ui_info(self, _proto, _client_uuids=None, wids=None, *_args) -> dict[str, Any]:
         """ info that must be collected from the UI thread
             (ie: things that query the display)
         """
@@ -109,41 +110,41 @@ class WindowServer(StubServerMixin):
             cmaxw, cmaxh = ss.window_max_size
             minw = max(minw, cminw)
             minh = max(minh, cminh)
-            if cmaxw>0:
+            if cmaxw > 0:
                 maxw = min(maxw, cmaxw)
-            if cmaxh>0:
+            if cmaxh > 0:
                 maxh = min(maxh, cmaxh)
         maxw = max(1, maxw)
         maxh = max(1, maxh)
-        if minw>0 and minw>maxw:
+        if minw > 0 and minw > maxw:
             maxw = minw
-        if minh>0 and minh>maxh:
+        if minh > 0 and minh > maxh:
             maxh = minh
         self.update_size_constraints(minw, minh, maxw, maxh)
 
-    def update_size_constraints(self, minw:int, minh:int, maxw:int, maxh:int) -> None:
-        #subclasses may update the window models
+    def update_size_constraints(self, minw: int, minh: int, maxw: int, maxh: int) -> None:
+        # subclasses may update the window models
         pass
 
-    def send_initial_data(self, ss, caps, send_ui:bool, share_count:int) -> None:
+    def send_initial_data(self, ss, caps, send_ui: bool, share_count: int) -> None:
         if not send_ui:
             return
         if not isinstance(ss, WindowsMixin):
             return
-        self.send_initial_windows(ss, share_count>0)
-        self.send_initial_cursors(ss, share_count>0)
+        self.send_initial_windows(ss, share_count > 0)
+        self.send_initial_cursors(ss, share_count > 0)
 
     def is_shown(self, _window) -> bool:
         return True
 
     def get_window_id(self, _gdkwindow) -> int:
-        #the X11 server can find the model from the window's xid
+        # the X11 server can find the model from the window's xid
         return 0
 
     def reset_window_filters(self) -> None:
         self.window_filters = []
 
-    def get_windows_info(self, window_ids) -> dict[int,dict[str,Any]]:
+    def get_windows_info(self, window_ids) -> dict[int, dict[str, Any]]:
         info = {}
         for wid, window in self._id_to_window.items():
             if window_ids is not None and wid not in window_ids:
@@ -151,11 +152,11 @@ class WindowServer(StubServerMixin):
             info[wid] = self.get_window_info(window)
         return info
 
-    def get_window_info(self, window) -> dict[str,Any]:
+    def get_window_info(self, window) -> dict[str, Any]:
         from xpra.server.window.metadata import make_window_metadata
         info = {}
         for prop in window.get_property_names():
-            if prop=="icons" or prop is None:
+            if prop == "icons" or prop is None:
                 continue
             metadata = make_window_metadata(window, prop)
             info.update(metadata)
@@ -163,9 +164,9 @@ class WindowServer(StubServerMixin):
             metadata = make_window_metadata(window, prop)
             info.update(metadata)
         info.update({
-            "override-redirect"    : window.is_OR(),
-            "tray"                 : window.is_tray(),
-            "size"                 : window.get_dimensions(),
+            "override-redirect": window.is_OR(),
+            "tray": window.is_tray(),
+            "size": window.get_dimensions(),
         })
         wid = self._window_to_id.get(window)
         if wid:
@@ -178,7 +179,7 @@ class WindowServer(StubServerMixin):
         metalog("updating metadata on %s: %s", window, pspec)
         wid = self._window_to_id.get(window)
         if not wid:
-            return  #window is already gone
+            return  # window is already gone
         for ss in self._server_sources.values():
             if isinstance(ss, WindowsMixin):
                 ss.window_metadata(wid, window, pspec.name)
@@ -202,8 +203,8 @@ class WindowServer(StubServerMixin):
         self.do_add_new_window_common(wid, window)
         return wid
 
-    def do_add_new_window_common(self, wid:int, window) -> None:
-        self._max_window_id = max(self._max_window_id, wid+1)
+    def do_add_new_window_common(self, wid: int, window) -> None:
+        self._max_window_id = max(self._max_window_id, wid + 1)
         props = window.get_dynamic_property_names()
         metalog("add_new_window_common(%s) watching for dynamic properties: %s", window, props)
         for prop in props:
@@ -218,7 +219,7 @@ class WindowServer(StubServerMixin):
                 continue
             wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
             x, y, w, h = geometry
-            #adjust if the transient-for window is not mapped in the same place by the client we send to:
+            # adjust if the transient-for window is not mapped in the same place by the client we send to:
             if "transient-for" in window.get_property_names():
                 transient_for = window.get_property("transient-for")
                 if transient_for:
@@ -232,8 +233,8 @@ class WindowServer(StubServerMixin):
                         if mapped_at:
                             wx, wy = pos
                             cx, cy = mapped_at[:2]
-                            if wx!=cx or wy!=cy:
-                                dx, dy = cx-wx, cy-wy
+                            if wx != cx or wy != cy:
+                                dx, dy = cx - wx, cy - wy
                                 if dx or dy:
                                     geomlog("adjusting new window position for client window offset: %s", (dx, dy))
                                     x += dx
@@ -242,7 +243,7 @@ class WindowServer(StubServerMixin):
 
     def _process_damage_sequence(self, proto, packet: PacketType) -> None:
         packet_sequence, wid, width, height, decode_time = packet[1:6]
-        if len(packet)>=7:
+        if len(packet) >= 7:
             message = packet[6]
         else:
             message = ""
@@ -264,30 +265,30 @@ class WindowServer(StubServerMixin):
     def _process_buffer_refresh(self, proto, packet: PacketType) -> None:
         """ can be used for requesting a refresh, or tuning batch config, or both """
         wid, _, qual = packet[1:4]
-        if len(packet)>=6:
+        if len(packet) >= 6:
             options = typedict(packet[4])
             client_properties = packet[5]
         else:
             options = typedict({})
             client_properties = {}
-        if wid==-1:
+        if wid == -1:
             wid_windows = self._id_to_window
         elif wid in self._id_to_window:
-            wid_windows = {wid : self._id_to_window.get(wid)}
+            wid_windows = {wid: self._id_to_window.get(wid)}
         else:
-            #may have been destroyed since the request was made
+            # may have been destroyed since the request was made
             log("invalid window specified for refresh: %s", wid)
             return
         log("process_buffer_refresh for windows: %s options=%s, client_properties=%s",
             wid_windows, options, client_properties)
         batch_props = options.dictget("batch", {})
         if batch_props or client_properties:
-            #change batch config and/or client properties
+            # change batch config and/or client properties
             self.update_batch_config(proto, wid_windows, typedict(batch_props), client_properties)
-        #default to True for backwards compatibility:
+        # default to True for backwards compatibility:
         if options.get("refresh-now", True):
-            refresh_opts = {"quality"           : qual,
-                            "override_options"  : True}
+            refresh_opts = {"quality": qual,
+                            "override_options": True}
             self._refresh_windows(proto, wid_windows, refresh_opts)
 
     def update_batch_config(self, proto, wid_windows, batch_props, client_properties) -> None:
@@ -322,13 +323,13 @@ class WindowServer(StubServerMixin):
             if not isinstance(ss, WindowsMixin):
                 self.do_refresh_windows(ss, self._id_to_window)
 
-    def get_window_position(self, _window) -> tuple[int,int] | None:
-        #where the window is actually mapped on the server screen:
+    def get_window_position(self, _window) -> tuple[int, int] | None:
+        # where the window is actually mapped on the server screen:
         return None
 
-    def _window_mapped_at(self, proto, wid:int, window, coords=None) -> None:
-        #record where a window is mapped by a client
-        #(in order to support multiple clients and different offsets)
+    def _window_mapped_at(self, proto, wid: int, window, coords=None) -> None:
+        # record where a window is mapped by a client
+        # (in order to support multiple clients and different offsets)
         ss = self.get_server_source(proto)
         if not ss:
             return
@@ -349,7 +350,7 @@ class WindowServer(StubServerMixin):
     def _process_configure_window(self, proto, packet: PacketType) -> None:
         log.info("_process_configure_window(%s, %s)", proto, packet)
 
-    def _get_window_dict(self, wids) -> dict[int,Any]:
+    def _get_window_dict(self, wids) -> dict[int, Any]:
         wd = {}
         for wid in wids:
             window = self._id_to_window.get(wid)
@@ -386,24 +387,24 @@ class WindowServer(StubServerMixin):
             return
         wid = packet[1]
         focuslog("process_focus: wid=%s", wid)
-        if len(packet)>=3:
+        if len(packet) >= 3:
             modifiers = packet[2]
         else:
             modifiers = None
         ss = self.get_server_source(proto)
         if ss:
             self._focus(ss, wid, modifiers)
-            #if the client focused one of our windows, count this as a user event:
-            if wid>0:
+            # if the client focused one of our windows, count this as a user event:
+            if wid > 0:
                 ss.user_event()
 
     def _focus(self, _server_source, wid, modifiers) -> None:
         focuslog("_focus(%s,%s)", wid, modifiers)
 
     def get_focus(self) -> int:
-        #can be overridden by subclasses that do manage focus
-        #(ie: not shadow servers which only have a single window)
-        #default: no focus
+        # can be overridden by subclasses that do manage focus
+        # (ie: not shadow servers which only have a single window)
+        # default: no focus
         return -1
 
     def init_packet_handlers(self) -> None:

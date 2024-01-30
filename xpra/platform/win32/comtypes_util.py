@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -25,10 +25,10 @@ def comtypes_init() -> None:
     CoInitialize()
 
 
-def find_tlb_file(filename:str="DirectShow.tlb") -> str:
-    #try to load tlb files from various directories,
-    #depending on how xpra was packaged, installed locally,
-    #or even run from the source directory:
+def find_tlb_file(filename: str = "DirectShow.tlb") -> str:
+    # try to load tlb files from various directories,
+    # depending on how xpra was packaged, installed locally,
+    # or even run from the source directory:
     from xpra.platform.paths import get_app_dir  # pylint: disable=import-outside-toplevel
     app_dir = get_app_dir()
     dirs = [
@@ -37,7 +37,7 @@ def find_tlb_file(filename:str="DirectShow.tlb") -> str:
         os.path.join(app_dir, "share", "xpra"),
         os.path.join(os.environ.get("MINGW_PREFIX", ""), "share", "xpra"),
     ]
-    #ie: "DirectShow.tlb" -> "XPRA_DIRECTSHOW_TLB"
+    # ie: "DirectShow.tlb" -> "XPRA_DIRECTSHOW_TLB"
     env_name = "XPRA_" + filename.replace(".", "_").upper()
     filenames = [os.environ.get(env_name)] + [os.path.join(d, filename) for d in dirs]
     for f in filenames:
@@ -51,7 +51,7 @@ class QuietenLogging:
     def __init__(self, *_args):
         self.loggers = [logging.getLogger(x) for x in ("comtypes.client._code_cache", "comtypes.client._generate")]
         self.saved_levels = [x.getEffectiveLevel() for x in self.loggers]
-        self._generate : Any = None
+        self._generate: Any = None
 
     def __enter__(self):
         if not SILENCE_COMTYPES:
@@ -59,7 +59,7 @@ class QuietenLogging:
         for logger in self.loggers:
             logger.setLevel(logging.WARNING)
         self.verbose = None
-        from comtypes import client   # pylint: disable=import-outside-toplevel
+        from comtypes import client  # pylint: disable=import-outside-toplevel
         gen = getattr(client, "_generate", None)
         self._generate = gen
         if gen:
@@ -85,7 +85,7 @@ class CIMV2_Query(QuietenLogging):
 
     def __enter__(self):
         super().__enter__()
-        from comtypes.client import CreateObject   # pylint: disable=import-outside-toplevel
+        from comtypes.client import CreateObject  # pylint: disable=import-outside-toplevel
         o = CreateObject("WbemScripting.SWbemLocator")
         s = o.ConnectServer(".", "root\\cimv2")
         return s.ExecQuery(self.query)

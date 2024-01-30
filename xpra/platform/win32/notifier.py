@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -19,7 +19,7 @@ if GTK_NOTIFIER:
 
 
 def do_notify(*args):
-    #if GLib is loaded, use it to ensure we use the UI thread:
+    # if GLib is loaded, use it to ensure we use the UI thread:
     GLib = sys.modules.get("gi.repository.GLib", None)
     if GLib:
         GLib.idle_add(notify, *args)
@@ -44,16 +44,17 @@ class Win32_Notifier(NotifierBase):
                 log("failed to load GTK Notifier fallback", exc_info=True)
         return self.gtk_notifier
 
-    def show_notify(self, dbus_id, tray, nid:int|NotificationID,
-                    app_name:str, replaces_nid:int|NotificationID,
-                    app_icon, summary:str, body:str, actions, hints, expire_timeout:int, icon):
+    def show_notify(self, dbus_id, tray, nid: int | NotificationID,
+                    app_name: str, replaces_nid: int | NotificationID,
+                    app_icon, summary: str, body: str, actions, hints, expire_timeout: int, icon):
         getHWND = getattr(tray, "getHWND", None)
         if GTK_NOTIFIER and (actions or not getHWND):
             log("show_notify(..) using gtk fallback, GTK_NOTIFIER=%s, tray=%s, getHWND=%s, actions=%s",
                 GTK_NOTIFIER, tray, getHWND, actions)
             gtk_notifier = self.get_gtk_notifier()
             if gtk_notifier:
-                gtk_notifier.show_notify(dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
+                gtk_notifier.show_notify(dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions,
+                                         hints, expire_timeout, icon)
                 self.gtk_notifications.add(nid)
                 return
         if not getHWND:
@@ -64,8 +65,10 @@ class Win32_Notifier(NotifierBase):
             return
         hwnd = getHWND()
         app_id = tray.app_id
-        log("show_notify%s hwnd=%#x, app_id=%i", (dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon), hwnd, app_id)
-        #FIXME: remove handles when notification is closed
+        log("show_notify%s hwnd=%#x, app_id=%i",
+            (dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon),
+            hwnd, app_id)
+        # FIXME: remove handles when notification is closed
         self.notification_handles[nid] = (hwnd, app_id)
         do_notify(hwnd, app_id, summary, body, expire_timeout, icon)
 

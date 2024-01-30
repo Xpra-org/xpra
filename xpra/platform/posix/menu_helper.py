@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -24,15 +24,15 @@ from xpra.log import Logger
 
 log = Logger("exec", "menu")
 
-LOAD_FROM_RESOURCES : bool = envbool("XPRA_XDG_LOAD_FROM_RESOURCES", True)
-LOAD_FROM_PIXMAPS : bool = envbool("XPRA_XDG_LOAD_FROM_PIXMAPS", True)
-LOAD_FROM_THEME : bool = envbool("XPRA_XDG_LOAD_FROM_THEME", True)
-LOAD_GLOB : bool = envbool("XPRA_XDG_LOAD_GLOB", False)
+LOAD_FROM_RESOURCES: bool = envbool("XPRA_XDG_LOAD_FROM_RESOURCES", True)
+LOAD_FROM_PIXMAPS: bool = envbool("XPRA_XDG_LOAD_FROM_PIXMAPS", True)
+LOAD_FROM_THEME: bool = envbool("XPRA_XDG_LOAD_FROM_THEME", True)
+LOAD_GLOB: bool = envbool("XPRA_XDG_LOAD_GLOB", False)
 
-EXPORT_ICONS : bool = envbool("XPRA_XDG_EXPORT_ICONS", True)
+EXPORT_ICONS: bool = envbool("XPRA_XDG_EXPORT_ICONS", True)
 DEBUG_COMMANDS: list[str] = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
-EXPORT_TERMINAL_APPLICATIONS : bool = envbool("XPRA_XDG_EXPORT_TERMINAL_APPLICATIONS", False)
-EXPORT_SELF : bool = envbool("XPRA_XDG_EXPORT_SELF", False)
+EXPORT_TERMINAL_APPLICATIONS: bool = envbool("XPRA_XDG_EXPORT_TERMINAL_APPLICATIONS", False)
+EXPORT_SELF: bool = envbool("XPRA_XDG_EXPORT_SELF", False)
 LOAD_APPLICATIONS: list[str] = os.environ.get(
     "XPRA_MENU_LOAD_APPLICATIONS",
     f"{sys.prefix}/share/applications"
@@ -47,9 +47,9 @@ def isvalidtype(v) -> bool:
     return isinstance(v, (bytes, str, bool, int))
 
 
-def export(entry, properties : tuple[str, ...]) -> dict[str,Any]:
+def export(entry, properties: tuple[str, ...]) -> dict[str, Any]:
     name = entry.getName()
-    props : dict[str,Any] = {}
+    props: dict[str, Any] = {}
     if any(x and name.lower().find(x.lower()) >= 0 for x in DEBUG_COMMANDS):
         l = log.info
     else:
@@ -76,28 +76,29 @@ def export(entry, properties : tuple[str, ...]) -> dict[str,Any]:
     return props
 
 
-MAX_THEMES : int = 8
-IconTheme : type | None = None
-Config : type | None = None
-themes : dict[str, Any] = {}
-IconLoadingContext : type = nullcontext
+MAX_THEMES: int = 8
+IconTheme: type | None = None
+Config: type | None = None
+themes: dict[str, Any] = {}
+IconLoadingContext: type = nullcontext
 if LOAD_FROM_THEME:
     try:
         from xdg import IconTheme as IT, Config as C
+
         IconTheme = IT
         Config = C
     except (ImportError, AttributeError):
         log("python xdg is missing", exc_info=True)
     else:
         class KeepCacheLoadingContext:
-            __slots__ = ("cache_time", )
+            __slots__ = ("cache_time",)
 
             def __enter__(self):
-                self.cache_time : int = Config.cache_time
+                self.cache_time: int = Config.cache_time
                 Config.cache_time = 9999
 
             def __exit__(self, *_args):
-                if self.cache_time!=9999:
+                if self.cache_time != 9999:
                     Config.cache_time = self.cache_time
 
             def __repr__(self):
@@ -118,6 +119,7 @@ if LOAD_FROM_THEME:
                 for theme in get_themes(name):  # pylint: disable=not-callable
                     if theme and theme.name not in themes:
                         themes[theme.name] = theme
+
             addtheme(Config.icon_theme)
             addtheme(get_saved_env().get("XDG_MENU_PREFIX"))
             addtheme(get_saved_env().get("XDG_SESSION_DESKTOP"))
@@ -126,9 +128,10 @@ if LOAD_FROM_THEME:
                     parts = x.split(os.path.sep)
                     name = parts[-2]
                     addtheme(name)
-                    if len(themes)>MAX_THEMES:
+                    if len(themes) > MAX_THEMES:
                         break
             log(f"icon themes={themes}")
+
         init_themes()
 
 EXTENSIONS: tuple[str, ...] = ("png", "svg", "xpm")
@@ -157,7 +160,7 @@ def clear_cache() -> None:
     IconTheme.icon_cache = {}
 
 
-def load_entry_icon(props : dict):
+def load_entry_icon(props: dict):
     names = []
     for x in ("Icon", "Name", "GenericName"):
         name = props.get(x)
@@ -240,7 +243,7 @@ def find_glob_icon(*names, category: str = "categories"):
     icondirs = getattr(IconTheme, "icondirs", [])
     if not icondirs:
         return None
-    dirnames = (category, )
+    dirnames = (category,)
     pathnames = []
     for name in names:
         for dn in dirnames:
@@ -262,15 +265,15 @@ def find_glob_icon(*names, category: str = "categories"):
     return None
 
 
-def noicondata(d:dict) -> dict:
-    return {k : v for k, v in d.items() if k and v and k != "IconData"}
+def noicondata(d: dict) -> dict:
+    return {k: v for k, v in d.items() if k and v and k != "IconData"}
 
 
-def load_xdg_entry(de) -> dict[str,Any]:
+def load_xdg_entry(de) -> dict[str, Any]:
     # not exposed:
     # * `MimeType` is a `re`
     # * `Version` is a `float`
-    props : dict[str, Any] = export(de, (
+    props: dict[str, Any] = export(de, (
         "Type", "VersionString", "Name", "GenericName", "NoDisplay",
         "Comment", "Icon", "Hidden", "OnlyShowIn", "NotShowIn",
         "Exec", "TryExec", "Path", "Terminal", "MimeTypes",
@@ -304,8 +307,8 @@ def load_xdg_entry(de) -> dict[str,Any]:
     return props
 
 
-def load_xdg_menu(submenu) -> dict[str,Any]:
-    submenu_data : dict[str,Any] = export(submenu, (
+def load_xdg_menu(submenu) -> dict[str, Any]:
+    submenu_data: dict[str, Any] = export(submenu, (
         "Name", "GenericName", "Comment",
         "Path", "Icon",
     ))
@@ -337,6 +340,7 @@ def load_xdg_menu(submenu) -> dict[str,Any]:
             elif isinstance(entry, Menu):
                 # merge up:
                 add_entries(entry.Entries)
+
     add_entries(submenu.getEntries())
     if not entries_data:
         return {}
@@ -368,13 +372,13 @@ def load_menu():
     if xdg_menu_data:
         l = sum(len(x) for x in xdg_menu_data.values())
         submenus = len(xdg_menu_data)
-        elapsed = end-start
+        elapsed = end - start
         log.info(f"loaded {l} start menu entries from {submenus} sub-menus in {elapsed:.1f} seconds")
     n_large = len(icon_util.large_icons)
     if n_large:
         log.warn(f"Warning: found {n_large} large icons:")
         for filename, size in icon_util.large_icons:
-            log.warn(f" {filename!r} ({size//1024} KB)")
+            log.warn(f" {filename!r} ({size // 1024} KB)")
         log.warn(" more bandwidth will be used by the start menu data")
     return xdg_menu_data
 
@@ -419,11 +423,11 @@ def load_xdg_menu_data():
                 prefixes.append(prefix)
             desktop = os.environ.get("XDG_SESSION_DESKTOP", "")
             if desktop:
-                prefixes.append(f"{desktop}-")      # ie: "gnome-"
+                prefixes.append(f"{desktop}-")  # ie: "gnome-"
             for d in config_dirs:
                 for path in glob.glob(f"{d}/menus/*applications.menu"):
-                    filename = os.path.basename(path)               # ie: "gnome-applications.menu"
-                    prefix = filename[:-len("applications.menu")]   # ie: "gnome-"
+                    filename = os.path.basename(path)  # ie: "gnome-applications.menu"
+                    prefix = filename[:-len("applications.menu")]  # ie: "gnome-"
                     if prefix not in prefixes:
                         prefixes.append(prefix)
             log(f"load_xdg_menu_data() will try prefixes {prefixes} from config directories {config_dirs}")
@@ -484,14 +488,14 @@ def load_xdg_menu_data():
             app_menu.setdefault("Entries", {}).update(entries)
         else:
             menu_data["Applications"] = {
-                "Name" : "Applications",
-                "Entries" : entries,
+                "Name": "Applications",
+                "Entries": entries,
             }
     return menu_data
 
 
 def load_applications(menu_data=None):
-    entries : dict[str,Any] = {}
+    entries: dict[str, Any] = {}
     if not LOAD_APPLICATIONS:
         return entries
 
@@ -502,6 +506,7 @@ def load_applications(menu_data=None):
             if name in menu_category.get("Entries", {}):
                 return True
         return False
+
     from xdg.Menu import MenuEntry  # pylint: disable=import-outside-toplevel
     for d in LOAD_APPLICATIONS:
         if not os.path.exists(d):
@@ -525,7 +530,7 @@ def load_applications(menu_data=None):
 
 
 def load_desktop_sessions() -> dict[str, Any]:
-    xsessions : dict[str,Any] = {}
+    xsessions: dict[str, Any] = {}
     if not check_xdg():
         return xsessions
     xsessions_dir = f"{sys.prefix}/share/xsessions"
@@ -557,18 +562,18 @@ def load_desktop_sessions() -> dict[str, Any]:
     return xsessions
 
 
-def get_icon_names_for_session(name:str) -> list[str]:
+def get_icon_names_for_session(name: str) -> list[str]:
     aliases = {
-        "deepin"    : ["deepin-launcher", "deepin-show-desktop"],
-        "xfce"      : ["org.xfce.xfdesktop", ]
+        "deepin": ["deepin-launcher", "deepin-show-desktop"],
+        "xfce": ["org.xfce.xfdesktop", ]
     }
-    names = [name]+aliases.get(name, [])
+    names = [name] + aliases.get(name, [])
     for split in (" on ", " session", "-session", " classic"):
-        if name.find(split) > 0:     # ie: "gnome on xorg"
+        if name.find(split) > 0:  # ie: "gnome on xorg"
             short_name = name.split(split)[0]
             names += [
                 short_name,
                 f"{short_name}-session",
                 f"{short_name}-desktop",
-            ] + aliases.get(short_name, [])   # -> "gnome"
+            ] + aliases.get(short_name, [])  # -> "gnome"
     return names

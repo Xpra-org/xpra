@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -25,7 +25,7 @@ class Handler:
     def get_digest() -> str:
         return "gss"
 
-    def handle(self, challenge:str, digest, prompt:str):  # pylint: disable=unused-argument
+    def handle(self, challenge: str, digest, prompt: str):  # pylint: disable=unused-argument
         if not digest.startswith("gss:"):
             # not a gss challenge
             log("%s is not a gss challenge", digest)
@@ -37,7 +37,7 @@ class Handler:
             if OSX:
                 # this is a workaround for `py2app`,
                 # to ensure it includes all the modules we need:
-                from gssapi.raw import cython_converters, cython_types, oids    # @UnresolvedImport
+                from gssapi.raw import cython_converters, cython_types, oids  # @UnresolvedImport
                 assert cython_converters and cython_types and oids
         except ImportError as e:
             log.warn("Warning: cannot use gss authentication handler")

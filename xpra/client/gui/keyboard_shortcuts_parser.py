@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -19,10 +19,10 @@ def get_modifier_names(mod_meanings) -> dict[str, str]:
     # but the user expects the name of the key to be used, ie: "alt" or "super"
     # whereas at best, we keep "Alt_L" : "mod1" mappings... (posix)
     # so generate a map from one to the other:
-    modifier_names : dict[str,str] = {}
+    modifier_names: dict[str, str] = {}
     meanings = mod_meanings or DEFAULT_MODIFIER_MEANINGS
     DEFAULT_MODIFIER_IGNORE_KEYNAMES = ["Caps_Lock", "Num_Lock", "Scroll_Lock"]
-    for pub_name,mod_name in meanings.items():
+    for pub_name, mod_name in meanings.items():
         if mod_name in DEFAULT_MODIFIER_NUISANCE or pub_name in DEFAULT_MODIFIER_IGNORE_KEYNAMES:
             continue
         # just hope that xxx_L is mapped to the same modifier as xxx_R!
@@ -49,12 +49,13 @@ def parse_shortcut_modifiers(s, modifier_names=()) -> list[str]:
         if POSIX:
             # gnome intercepts too many of the Alt+Shift shortcuts,
             # so use control with gnome:
-            if os.environ.get("XDG_CURRENT_DESKTOP")=="GNOME":
+            if os.environ.get("XDG_CURRENT_DESKTOP") == "GNOME":
                 mods = ["control", "shift"]
         return mods
-    if shortcut_modifiers==["auto"]:
+
+    if shortcut_modifiers == ["auto"]:
         shortcut_modifiers = mod_defaults()
-    elif shortcut_modifiers==["none"]:
+    elif shortcut_modifiers == ["none"]:
         shortcut_modifiers = []
     else:
         r = []
@@ -73,7 +74,7 @@ def parse_shortcut_modifiers(s, modifier_names=()) -> list[str]:
     return shortcut_modifiers
 
 
-def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> dict[str,list]:
+def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> dict[str, list]:
     """
     if none are defined, add this as default
     it would be nicer to specify it via OptionParser in main,
@@ -83,36 +84,36 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> dict[s
     if not strs:
         strs = ["meta+shift+F4:quit"]
     log("parse_shortcuts(%s)", strs)
-    shortcuts : dict[str,list] = {}
+    shortcuts: dict[str, list] = {}
     # figure out the default shortcut modifiers
     # accept "," or "+" as delimiter:
     for s in strs:
-        if s=="none":
+        if s == "none":
             continue
-        if s=="clear":
+        if s == "clear":
             shortcuts = {}
             continue
         # example for s: Control+F8:some_action()
-        if s.find("=")>s.find(":"):
+        if s.find("=") > s.find(":"):
             parts = s.split("=", 1)
         else:
             parts = s.split(":", 1)
-        if len(parts)!=2:
+        if len(parts) != 2:
             log.error("Error: invalid key shortcut '%s'", s)
             continue
-        #example for action: "quit"
+        # example for action: "quit"
         action = parts[1].strip()
         args = []
-        if action.find("(")>0 and action.endswith(")"):
+        if action.find("(") > 0 and action.endswith(")"):
             try:
                 action, all_args = action[:-1].split("(", 1)
                 for x in all_args.split(","):
                     x = x.strip()
                     if not x:
                         continue
-                    if (x[0]=='"' and x[-1]=='"') or (x[0]=="'" and x[-1]=="'"):
+                    if (x[0] == '"' and x[-1] == '"') or (x[0] == "'" and x[-1] == "'"):
                         args.append(x[1:-1])
-                    elif x=="None":
+                    elif x == "None":
                         args.append(None)
                     elif x.find(".") != -1:
                         args.append(float(x))
@@ -126,27 +127,27 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> dict[s
                 log.warn("Warning: failed to parse arguments of shortcut:")
                 log.warn(" '%s': %s", s, e)
                 continue
-        action = action.replace("-", "_")       #must be an object attribute
+        action = action.replace("-", "_")  # must be an object attribute
         log("action(%s)=%s%s", s, action, args)
-        #example for keyspec: ["Alt", "F8"]
+        # example for keyspec: ["Alt", "F8"]
         keyspec = parts[0].split("+")
         modifiers = []
-        if len(keyspec)>1:
+        if len(keyspec) > 1:
             valid = True
-            #ie: ["Alt"]
-            for mod in keyspec[:len(keyspec)-1]:
+            # ie: ["Alt"]
+            for mod in keyspec[:len(keyspec) - 1]:
                 mod = mod.lower()
-                if mod=="none":
+                if mod == "none":
                     continue
-                if mod=="#":
-                    #this is the placeholder for the list of shortcut modifiers:
+                if mod == "#":
+                    # this is the placeholder for the list of shortcut modifiers:
                     for x in shortcut_modifiers:
                         imod = modifier_names.get(x)
                         if imod:
                             modifiers.append(imod)
                     continue
-                #find the real modifier for this name:
-                #ie: "alt_l" -> "mod1"
+                # find the real modifier for this name:
+                # ie: "alt_l" -> "mod1"
                 imod = modifier_names.get(mod)
                 if not imod:
                     log.warn("Warning: invalid modifier '%s' in keyboard shortcut '%s'", mod, s)
@@ -156,12 +157,12 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> dict[s
                 modifiers.append(imod)
             if not valid:
                 continue
-        #should we be validating the keyname?
-        keyname = keyspec[len(keyspec)-1]
+        # should we be validating the keyname?
+        keyname = keyspec[len(keyspec) - 1]
         key_shortcuts = shortcuts.get(keyname, [])
-        #remove any existing action using the same modifiers:
-        key_shortcuts = [x for x in key_shortcuts if x[0]!=modifiers]
-        if action!="_":
+        # remove any existing action using the same modifiers:
+        key_shortcuts = [x for x in key_shortcuts if x[0] != modifiers]
+        if action != "_":
             key_shortcuts.append((modifiers, action, tuple(args)))
         shortcuts[keyname] = key_shortcuts
         log("shortcut(%s)=%s", s, csv((modifiers, action, args)))

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2023-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -36,8 +36,8 @@ class AvailableSourceTypes(IntEnum):
     VIRTUAL = 4
 
 
-dbus_sender_name : str = (bus.get_unique_name()[1:]).replace(".", "_")
-request_counter : int = 0
+dbus_sender_name: str = (bus.get_unique_name()[1:]).replace(".", "_")
+request_counter: int = 0
 
 
 def screenscast_dbus_call(method, callback: Callable, *args, options=None) -> None:
@@ -48,7 +48,7 @@ def remotedesktop_dbus_call(method, callback: Callable, *args, options=None) -> 
     dbus_desktop_call(REMOTEDESKTOP_IFACE, method, callback, *args, options=options)
 
 
-def dbus_desktop_call(interface:str, method, callback: Callable, *args, options=None) -> None:
+def dbus_desktop_call(interface: str, method, callback: Callable, *args, options=None) -> None:
     # generate a new token and path:
     options = options or {}
     global request_counter
@@ -63,7 +63,7 @@ def dbus_desktop_call(interface:str, method, callback: Callable, *args, options=
                             request_path)
     options["handle_token"] = request_token
     log(f"calling {method} with args={args}, options={options}")
-    method(*(args + (options, )), dbus_interface=interface)
+    method(*(args + (options,)), dbus_interface=interface)
 
 
 def get_portal_interface():

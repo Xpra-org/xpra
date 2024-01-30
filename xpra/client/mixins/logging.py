@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -37,7 +37,7 @@ class RemoteLogging(StubClientMixin):
 
     def init(self, opts):
         self.remote_logging = opts.remote_logging
-        self.log_both = (opts.remote_logging or "").lower()=="both"
+        self.log_both = (opts.remote_logging or "").lower() == "both"
 
     def cleanup(self):
         ll = self.local_logging
@@ -55,7 +55,7 @@ class RemoteLogging(StubClientMixin):
             receive = c.boolget("receive")
             send = c.boolget("send")
         if self.remote_logging.lower() in ("send", "both", "yes", "true", "on") and receive:
-            #check for debug:
+            # check for debug:
             from xpra.log import is_debug_enabled
             conflict = tuple(v for v in ("network", "crypto", "websocket", "quic") if is_debug_enabled(v))
             if conflict:
@@ -66,13 +66,13 @@ class RemoteLogging(StubClientMixin):
             if not self.log_both:
                 log.info(" see server log file for further output")
             self.local_logging = set_global_logging_handler(self.remote_logging_handler)
-        elif self.remote_logging.lower()=="receive":
+        elif self.remote_logging.lower() == "receive":
             self.request_server_log = send
             if not self.request_server_log:
                 log.warn("Warning: cannot receive log output from the server")
                 log.warn(" the feature is not enabled or not supported by the server")
             else:
-                self.after_handshake(self.start_receiving_logging)   # pylint: disable=no-member
+                self.after_handshake(self.start_receiving_logging)  # pylint: disable=no-member
         return True
 
     def start_receiving_logging(self) -> None:
@@ -84,27 +84,27 @@ class RemoteLogging(StubClientMixin):
         level = int(packet[1])
         msg = packet[2]
         prefix = "server: "
-        if len(packet)>=4:
+        if len(packet) >= 4:
             dtime = packet[3]
-            prefix += "@%02i.%03i " % ((dtime//1000) % 60, dtime % 1000)
+            prefix += "@%02i.%03i " % ((dtime // 1000) % 60, dtime % 1000)
         try:
             if isinstance(msg, (tuple, list)):
                 dmsg = " ".join(str(x) for x in msg)
             else:
                 dmsg = str(msg)
             for l in dmsg.splitlines():
-                self.do_log(level, prefix+l)
+                self.do_log(level, prefix + l)
         except Exception as e:
             log("log message decoding error", exc_info=True)
             log.error("Error: failed to parse logging message:")
             log.error(" %s", repr_ellipsized(msg))
             log.estr(e)
 
-    def do_log(self, level:int, line) -> None:
+    def do_log(self, level: int, line) -> None:
         with self.logging_lock:
             log.log(level, line)
 
-    def remote_logging_handler(self, logger_log, level:int, msg:str, *args, **kwargs) -> None:
+    def remote_logging_handler(self, logger_log, level: int, msg: str, *args, **kwargs) -> None:
         # prevent loops (if our send call ends up firing another logging call):
         if self.in_remote_logging:
             return
@@ -114,13 +114,14 @@ class RemoteLogging(StubClientMixin):
         def local_warn(*args):
             if ll:
                 ll(logger_log, logging.WARNING, *args)
+
         try:
-            dtime = int(1000*(monotonic() - self.monotonic_start_time))
+            dtime = int(1000 * (monotonic() - self.monotonic_start_time))
             if args:
                 data = msg % args
             else:
                 data = msg
-            if len(data)>=32:
+            if len(data) >= 32:
                 try:
                     data = self.compressed_wrapper("text", data.encode("utf8"), level=1)
                 except Exception:
@@ -141,7 +142,7 @@ class RemoteLogging(StubClientMixin):
                 ll(logger_log, level, msg, *args, **kwargs)
         except Exception as e:
             if self.exit_code is not None:
-                #errors can happen during exit, don't care
+                # errors can happen during exit, don't care
                 return
             local_warn("Warning: failed to send logging packet:")
             local_warn(f" {e}")

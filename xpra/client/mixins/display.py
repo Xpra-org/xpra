@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -109,7 +109,7 @@ class DisplayClient(StubClientMixin):
             "show-desktop": True,
             "vrefresh": self.get_vrefresh(),
         }
-        if FULL_INFO>0:
+        if FULL_INFO > 0:
             wm_name = get_wm_name()
             if wm_name:
                 caps["wm_name"] = wm_name
@@ -127,15 +127,15 @@ class DisplayClient(StubClientMixin):
 
         log.info(" desktop size is %sx%s:", u_root_w, u_root_h)
         log_screen_sizes(u_root_w, u_root_h, ss)
-        if self.xscale!=1 or self.yscale!=1:
+        if self.xscale != 1 or self.yscale != 1:
             caps["screen_sizes.unscaled"] = ss
             caps["desktop_size.unscaled"] = u_root_w, u_root_h
             root_w, root_h = self.cp(u_root_w, u_root_h)
             if fequ(self.xscale, self.yscale):
-                sinfo = "%i%%" % round(self.xscale*100)
+                sinfo = "%i%%" % round(self.xscale * 100)
             else:
-                sinfo = "%i%% x %i%%" % (round(self.xscale*100), round(self.yscale*100))
-            scaled_up = u_root_w>root_w or u_root_h>root_h
+                sinfo = "%i%% x %i%%" % (round(self.xscale * 100), round(self.yscale * 100))
+            scaled_up = u_root_w > root_w or u_root_h > root_h
             log.info(" %sscaled to %s, virtual screen size: %ix%i",
                      "up" if scaled_up else "down", sinfo, root_w, root_h)
             log_screen_sizes(root_w, root_h, sss)
@@ -153,19 +153,19 @@ class DisplayClient(StubClientMixin):
         # command line (or config file) override supplied:
         caps = {}
         dpi = 0
-        if self.dpi>0:
+        if self.dpi > 0:
             # scale it:
-            dpi = round((self.cx(self.dpi) + self.cy(self.dpi))/2.0)
+            dpi = round((self.cx(self.dpi) + self.cy(self.dpi)) / 2.0)
         else:
             # not supplied, use platform detection code:
             # platforms may also provide per-axis dpi (later win32 versions do)
             xdpi = self.get_xdpi()
             ydpi = self.get_ydpi()
             log("xdpi=%i, ydpi=%i", xdpi, ydpi)
-            if xdpi>0 and ydpi>0:
+            if xdpi > 0 and ydpi > 0:
                 xdpi = self.cx(xdpi)
                 ydpi = self.cy(ydpi)
-                dpi = round((xdpi+ydpi) / 2.0)
+                dpi = round((xdpi + ydpi) / 2.0)
                 caps = {
                     "x": xdpi,
                     "y": ydpi,
@@ -178,18 +178,18 @@ class DisplayClient(StubClientMixin):
     def get_scaling_caps(self) -> dict[str, Any]:
         return {
             "": True,
-            "enabled": self.xscale!=1 or self.yscale!=1,
-            "values": (int(1000*self.xscale), int(1000*self.yscale)),
+            "enabled": self.xscale != 1 or self.yscale != 1,
+            "values": (int(1000 * self.xscale), int(1000 * self.yscale)),
         }
 
     def get_vrefresh(self) -> int:
         return get_vrefresh()
 
-    def get_screen_caps(self) -> dict[str,Any]:
+    def get_screen_caps(self) -> dict[str, Any]:
         caps = {
             "vrefresh": self.get_vrefresh(),
             "cursor": {
-                "size": int(2*get_cursor_size() / (self.xscale+self.yscale)),
+                "size": int(2 * get_cursor_size() / (self.xscale + self.yscale)),
             },
         }
         aa = get_antialias_info()
@@ -201,7 +201,7 @@ class DisplayClient(StubClientMixin):
         self.server_display = c.strget("display")
         self.server_desktop_size = c.intpair("desktop_size")
         log("server desktop size=%s", self.server_desktop_size)
-        self.server_max_desktop_size = c.intpair("max_desktop_size", (2**15, 2**15))
+        self.server_max_desktop_size = c.intpair("max_desktop_size", (2 ** 15, 2 ** 15))
         self.server_actual_desktop_size = c.intpair("actual_desktop_size")
         log("server actual desktop size=%s", self.server_actual_desktop_size)
         self.server_randr = c.boolget("resize_screen")
@@ -217,15 +217,15 @@ class DisplayClient(StubClientMixin):
         self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop") or c.boolget("monitor")
         log("process_ui_capabilities(%s) desktop=%s, monitor=%s", c, c.boolget("desktop"), c.boolget("monitor"))
         if not c.boolget("monitor"):
-            skip_vfb_size_check = False           # if we decide not to use scaling, skip warnings
+            skip_vfb_size_check = False  # if we decide not to use scaling, skip warnings
             if not fequ(self.xscale, 1.0) or not fequ(self.yscale, 1.0):
                 # scaling is used, make sure that we need it and that the server can support it
                 # (without rounding support, size-hints can cause resize loops)
                 if self.server_is_desktop and not self.desktop_fullscreen:
                     # don't honour auto mode in this case
-                    if self.desktop_scaling=="auto":
+                    if self.desktop_scaling == "auto":
                         log.info(" not scaling a %s server", c.strget("type", "shadow"))
-                        skip_vfb_size_check = self.xscale>1 or self.yscale>1
+                        skip_vfb_size_check = self.xscale > 1 or self.yscale > 1
                         self.scale_change_embargo = 0
                         self.scalingoff()
             if self.can_scale:
@@ -235,9 +235,9 @@ class DisplayClient(StubClientMixin):
                 root_w, root_h = self.get_root_size()
                 log("validating server_max_desktop_size=%s vs root size=%s",
                     self.server_max_desktop_size, (root_w, root_h))
-                if self.cx(root_w)!=root_w or self.cy(root_h)!=root_h:
+                if self.cx(root_w) != root_w or self.cy(root_h) != root_h:
                     log(" root size scaled to %s", (self.cx(root_w), self.cy(root_h)))
-                if self.cx(root_w)>(avail_w+1) or self.cy(root_h)>(avail_h+1):
+                if self.cx(root_w) > (avail_w + 1) or self.cy(root_h) > (avail_h + 1):
                     log.warn("Server's virtual screen is too small")
                     log.warn(" server: %sx%s vs client: %sx%s", avail_w, avail_h, self.cx(root_w), self.cy(root_h))
                     log.warn(" you may see strange behavior,")
@@ -255,14 +255,14 @@ class DisplayClient(StubClientMixin):
             if icc or dicc:
                 self.send("configure-display", {
                     "icc": {
-                        "global"    : icc,
-                        "display"   : dicc,
+                        "global": icc,
+                        "display": dicc,
                     },
                 })
 
     def set_max_packet_size(self) -> None:
         p = self._protocol
-        if not p or p.TYPE!="xpra":
+        if not p or p.TYPE != "xpra":
             return
         root_w, root_h = self.cp(*self.get_root_size())
         maxw, maxh = root_w, root_h
@@ -283,8 +283,8 @@ class DisplayClient(StubClientMixin):
         # a full screen RGBX (32 bits) uncompressed image
         # also with enough headroom for some metadata (4k)
         # we can't assume to have a real ClientConnection object:
-        p.max_packet_size = max(MAX_PACKET_SIZE, maxw*maxh*4 + 4*1024)
-        p.abs_max_packet_size = maxw*maxh*4*4 + 4*1024
+        p.max_packet_size = max(MAX_PACKET_SIZE, maxw * maxh * 4 + 4 * 1024)
+        p.abs_max_packet_size = maxw * maxh * 4 * 4 + 4 * 1024
         log("maximum packet size set to %i", p.max_packet_size)
 
     def has_transparency(self) -> bool:
@@ -319,38 +319,41 @@ class DisplayClient(StubClientMixin):
             # don't try to make it fit
             return
         assert self.can_scale
-        max_w, max_h = self.server_max_desktop_size             # ie: server limited to 8192x4096?
-        w, h = self.get_root_size()                             # ie: 5760, 2160
-        sw, sh = self.cp(w, h)                                  # ie: upscaled to: 11520x4320
+        max_w, max_h = self.server_max_desktop_size  # ie: server limited to 8192x4096?
+        w, h = self.get_root_size()  # ie: 5760, 2160
+        sw, sh = self.cp(w, h)  # ie: upscaled to: 11520x4320
         scalinglog("may_adjust_scaling() server max desktop size=%s, server actual desktop size=%s",
                    self.server_max_desktop_size, self.server_actual_desktop_size)
         scalinglog("may_adjust_scaling() client root size=%s", self.get_root_size())
         scalinglog(" scaled client root size using %sx%s: %s", self.xscale, self.yscale, (sw, sh))
+
         # server size is too small for the client screen size with the current scaling value,
         # calculate the minimum scaling to fit it:
 
         def clamp(v) -> int | float:
             return max(MIN_SCALING, min(MAX_SCALING, v))
+
         if self.desktop_fullscreen:
             sw, sh = self.server_actual_desktop_size
-            x = clamp(w/sw)
-            y = clamp(h/sh)
+            x = clamp(w / sw)
+            y = clamp(h / sh)
         else:
-            if sw < (max_w+1) and sh < (max_h+1):
+            if sw < (max_w + 1) and sh < (max_h + 1):
                 # no change needed
                 return
-            x = clamp(w/max_w)
-            y = clamp(h/max_h)
+            x = clamp(w / max_w)
+            y = clamp(h / max_h)
             # avoid wonky scaling:
-            if not 0.75<x/y<1.25:
+            if not 0.75 < x / y < 1.25:
                 x = y = min(x, y)
 
         def mint(v) -> int | float:
             # prefer int over float,
             # and even tolerate a 0.1% difference to get it:
-            if round(v)*1000==round(v*1000):
+            if round(v) * 1000 == round(v * 1000):
                 return int(v)
             return v
+
         self.xscale = mint(x)
         self.yscale = mint(y)
         scalinglog(" xscale=%s, yscale=%s", self.xscale, self.yscale)
@@ -374,11 +377,11 @@ class DisplayClient(StubClientMixin):
     # screen scaling:
     def fsx(self, v) -> float:
         """ convert X coordinate from server to client """
-        return v*self.xscale
+        return v * self.xscale
 
     def fsy(self, v) -> float:
         """ convert Y coordinate from server to client """
-        return v*self.yscale
+        return v * self.yscale
 
     def sx(self, v) -> int:
         """ convert X coordinate from server to client """
@@ -398,11 +401,11 @@ class DisplayClient(StubClientMixin):
 
     def cx(self, v) -> int:
         """ convert X coordinate from client to server """
-        return round(v/self.xscale)
+        return round(v / self.xscale)
 
     def cy(self, v) -> int:
         """ convert Y coordinate from client to server """
-        return round(v/self.yscale)
+        return round(v / self.yscale)
 
     def crect(self, x, y, w, h) -> tuple[int, int, int, int]:
         """ convert rectangle coordinates from client to server """
@@ -434,8 +437,8 @@ class DisplayClient(StubClientMixin):
         delay = 1000
         # if we are suspending, wait longer:
         # (better chance that the suspend-resume cycle will have completed)
-        if self._suspended_at>0 and self._suspended_at-monotonic()<5*1000:
-            delay = 5*1000
+        if self._suspended_at > 0 and self._suspended_at - monotonic() < 5 * 1000:
+            delay = 5 * 1000
         self.screen_size_change_timer = self.timeout_add(delay, self.do_process_screen_size_change)
 
     def do_process_screen_size_change(self) -> None:
@@ -443,7 +446,7 @@ class DisplayClient(StubClientMixin):
         self.update_screen_size()
         log("do_process_screen_size_change() MONITOR_CHANGE_REINIT=%s, REINIT_WINDOWS=%s",
             MONITOR_CHANGE_REINIT, REINIT_WINDOWS)
-        if MONITOR_CHANGE_REINIT and MONITOR_CHANGE_REINIT=="0":
+        if MONITOR_CHANGE_REINIT and MONITOR_CHANGE_REINIT == "0":
             return
         if MONITOR_CHANGE_REINIT or REINIT_WINDOWS:
             log.info("screen size change: will reinit the windows")
@@ -458,7 +461,7 @@ class DisplayClient(StubClientMixin):
         ndesktops = get_number_of_desktops()
         desktop_names = get_desktop_names()
         log("get_screen_settings() sizes=%s, %s desktops: %s", sss, ndesktops, desktop_names)
-        if self.dpi>0:
+        if self.dpi > 0:
             # use command line value supplied, but scale it:
             xdpi = ydpi = self.dpi
             log("get_screen_settings() dpi=%s", self.dpi)
@@ -472,8 +475,8 @@ class DisplayClient(StubClientMixin):
         log("get_screen_settings() scaled: xdpi=%s, ydpi=%s", xdpi, ydpi)
         vrefresh = self.get_vrefresh()
         rrate = -1
-        if vrefresh>0:
-            rrate = (get_refresh_rate_for_value(self.refresh_rate, vrefresh) or 0)//1000
+        if vrefresh > 0:
+            rrate = (get_refresh_rate_for_value(self.refresh_rate, vrefresh) or 0) // 1000
         log("get_screen_settings() vrefresh=%s (from %s)", rrate, vrefresh)
         monitors = self.get_monitors_info()
         return root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi, rrate, monitors
@@ -483,7 +486,7 @@ class DisplayClient(StubClientMixin):
         screen_settings = self.get_screen_settings()
         log("update_screen_size()     new settings=%s", screen_settings)
         log("update_screen_size() current settings=%s", self._last_screen_settings)
-        if self._last_screen_settings==screen_settings:
+        if self._last_screen_settings == screen_settings:
             log("screen size unchanged")
             return
         root_w, root_h, sss = screen_settings[:3]
@@ -496,10 +499,10 @@ class DisplayClient(StubClientMixin):
             xdpi, ydpi = screen_settings[7:9]
             rrate, monitors = screen_settings[9:11]
             attrs = {
-                "desktop-size"          : (root_w, root_h),
-                "desktop-size-unscaled" : (u_root_w, u_root_h),
-                "monitors"              : monitors,
-                "dpi"                   : {"x" : xdpi, "y" : ydpi},
+                "desktop-size": (root_w, root_h),
+                "desktop-size-unscaled": (u_root_w, u_root_h),
+                "monitors": monitors,
+                "dpi": {"x": xdpi, "y": ydpi},
             }
             icc = self.get_icc_info()
             dicc = self.get_display_icc_info()
@@ -541,9 +544,9 @@ class DisplayClient(StubClientMixin):
 
     def _scaleto(self, new_scaling) -> None:
         scaling = max(self.xscale, self.yscale)
-        scalinglog("_scaleto(%s) current value=%s", r4cmp(new_scaling, 1000)/1000.0, r4cmp(scaling, 1000)/1000.0)
-        if new_scaling>0:
-            self.scale_change(new_scaling/scaling, new_scaling/scaling)
+        scalinglog("_scaleto(%s) current value=%s", r4cmp(new_scaling, 1000) / 1000.0, r4cmp(scaling, 1000) / 1000.0)
+        if new_scaling > 0:
+            self.scale_change(new_scaling / scaling, new_scaling / scaling)
 
     def scalingoff(self) -> None:
         self.scaleset(1, 1)
@@ -553,7 +556,7 @@ class DisplayClient(StubClientMixin):
 
     def scaleset(self, xscale=1.0, yscale=1.0) -> None:
         scalinglog("scaleset(%s, %s) current scaling: %s, %s", xscale, yscale, self.xscale, self.yscale)
-        self.scale_change(xscale/self.xscale, yscale/self.yscale)
+        self.scale_change(xscale / self.xscale, yscale / self.yscale)
 
     def scale_change(self, xchange=1.0, ychange=1.0) -> None:
         scalinglog("scale_change(%s, %s)", xchange, ychange)
@@ -566,15 +569,16 @@ class DisplayClient(StubClientMixin):
         if self.screen_size_change_timer:
             scalinglog("scale_change(%s, %s) screen size change is already pending", xchange, ychange)
             return
-        if monotonic()<self.scale_change_embargo:
+        if monotonic() < self.scale_change_embargo:
             scalinglog("scale_change(%s, %s) screen size change not permitted during embargo time - try again",
                        xchange, ychange)
             return
 
         def clamp(v) -> int | float:
             return max(MIN_SCALING, min(MAX_SCALING, v))
-        xscale = clamp(self.xscale*xchange)
-        yscale = clamp(self.yscale*ychange)
+
+        xscale = clamp(self.xscale * xchange)
+        yscale = clamp(self.yscale * ychange)
         scalinglog("scale_change xscale: clamp(%s*%s)=%s", self.xscale, xchange, xscale)
         scalinglog("scale_change yscale: clamp(%s*%s)=%s", self.yscale, ychange, yscale)
         if fequ(xscale, self.xscale) and fequ(yscale, self.yscale):
@@ -590,11 +594,11 @@ class DisplayClient(StubClientMixin):
         sh = int(root_h / yscale)
         scalinglog("scale_change root size=%s x %s, scaled to %s x %s", root_w, root_h, sw, sh)
         scalinglog("scale_change max server desktop size=%s x %s", maxw, maxh)
-        if not self.server_is_desktop and (sw>(maxw+1) or sh>(maxh+1)):
+        if not self.server_is_desktop and (sw > (maxw + 1) or sh > (maxh + 1)):
             # would overflow..
             summary = "Invalid Scale Factor"
             messages = [
-                "cannot scale by %i%% x %i%% or lower" % (round(100*xscale), round(100*yscale)),
+                "cannot scale by %i%% x %i%% or lower" % (round(100 * xscale), round(100 * yscale)),
                 "the scaled client screen %i x %i -> %i x %i" % (root_w, root_h, sw, sh),
                 " would overflow the server's screen: %i x %i" % (maxw, maxh),
             ]
@@ -610,11 +614,11 @@ class DisplayClient(StubClientMixin):
 
     def scale_reinit(self, xchange=1.0, ychange=1.0) -> None:
         # wait at least one second before changing again:
-        self.scale_change_embargo = monotonic()+SCALING_EMBARGO_TIME
+        self.scale_change_embargo = monotonic() + SCALING_EMBARGO_TIME
         if fequ(self.xscale, self.yscale):
-            scalinglog.info("setting scaling to %i%%:", round(100*self.xscale))
+            scalinglog.info("setting scaling to %i%%:", round(100 * self.xscale))
         else:
-            scalinglog.info("setting scaling to %i%% x %i%%:", round(100*self.xscale), round(100*self.yscale))
+            scalinglog.info("setting scaling to %i%% x %i%%:", round(100 * self.xscale), round(100 * self.yscale))
         self.update_screen_size()
         # re-initialize all the windows with their new size
         for win in self._id_to_window.values():
@@ -625,9 +629,10 @@ class DisplayClient(StubClientMixin):
 
         def new_size_fn(w, h) -> tuple[int, int]:
             minx, miny = 16384, 16384
-            if self.max_window_size!=(0, 0):
+            if self.max_window_size != (0, 0):
                 minx, miny = self.max_window_size
-            return max(1, min(minx, round(w*xchange))), max(1, min(miny, round(h*ychange)))
+            return max(1, min(minx, round(w * xchange))), max(1, min(miny, round(h * ychange)))
+
         self.resize_windows(new_size_fn)
         self.reinit_window_icons()
         self.emit("scaling-changed")

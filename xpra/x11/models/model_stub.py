@@ -23,6 +23,7 @@ class AutoPropGObjectMixin:
 
     Make sure this is the first entry on your parent list, so super().__init__
     will work right."""
+
     def __init__(self):
         self._gproperties = {}
 
@@ -59,7 +60,7 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
     def __init__(self):
         AutoPropGObjectMixin.__init__(self)
         GObject.GObject.__init__(self)
-        self._setup_done: bool = False            # so we can ignore notify() events during setup
+        self._setup_done: bool = False  # so we can ignore notify() events during setup
         self._managed: bool = False
         self._managed_handlers: list[int] = []
 
@@ -125,7 +126,7 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
         """
         l = self.get_logger(name)
         cur = self._gproperties.get(name, None)
-        if name not in self._gproperties or cur!=value:
+        if name not in self._gproperties or cur != value:
             l("updateprop(%s, %s) previous value=%s", name, value, cur)
             self._gproperties[name] = value
             if self._setup_done and self._managed:

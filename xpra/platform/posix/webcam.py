@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -76,10 +76,10 @@ def get_virtual_video_devices(capture_only=True) -> dict[int, dict]:
         dev_info = query_video_device(dev_file)
         if CHECK_VIRTUAL_CAPTURE and capture_only and not _can_capture_video(dev_file, dev_info):
             continue
-        info = {"device" : dev_file}
+        info = {"device": dev_file}
         info.update(dev_info)
         if "card" not in dev_info:
-            #look up the name from the v4l2 virtual dir:
+            # look up the name from the v4l2 virtual dir:
             dev_dir = os.path.join(v4l2_virtual_dir, f)
             if not os.path.isdir(dev_dir):
                 continue
@@ -96,9 +96,9 @@ def get_virtual_video_devices(capture_only=True) -> dict[int, dict]:
     return devices
 
 
-def get_all_video_devices(capture_only=True) -> dict[int,dict[str,Any]]:
+def get_all_video_devices(capture_only=True) -> dict[int, dict[str, Any]]:
     contents = os.listdir("/dev")
-    devices : dict[int,dict[str,Any]] = {}
+    devices: dict[int, dict[str, Any]] = {}
     device_paths = set()
     for f in contents:
         if not f.startswith("video"):
@@ -114,13 +114,13 @@ def get_all_video_devices(capture_only=True) -> dict[int,dict[str,Any]]:
         try:
             no_str = f[len("video"):]
             no = int(no_str)
-            assert no>=0
+            assert no >= 0
         except (TypeError, ValueError, AssertionError):
             continue
         dev_info = query_video_device(dev_file)
         if capture_only and not _can_capture_video(dev_file, dev_info):
             continue
-        info = {"device" : dev_file}
+        info = {"device": dev_file}
         info.update(dev_info)
         devices[no] = info
     return devices
@@ -135,7 +135,7 @@ def _video_device_file_filter(event) -> bool:
     return not event.pathname.startswith("/dev/video")
 
 
-def add_video_device_change_callback(callback:Callable) -> None:
+def add_video_device_change_callback(callback: Callable) -> None:
     # pylint: disable=import-outside-toplevel
     from xpra.platform.webcam import _video_device_change_callbacks, _fire_video_device_change
     global _watch_manager, _notifier
@@ -156,7 +156,7 @@ def add_video_device_change_callback(callback:Callable) -> None:
                 _fire_video_device_change(False, event.pathname)
 
         _watch_manager = pyinotify.WatchManager()
-        mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE  #@UndefinedVariable
+        mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE  # @UndefinedVariable
         handler = EventHandler(pevent=_video_device_file_filter)
         _notifier = pyinotify.ThreadedNotifier(_watch_manager, handler)
         _notifier.daemon = True
@@ -169,7 +169,7 @@ def add_video_device_change_callback(callback:Callable) -> None:
     # notifier.loop()
 
 
-def remove_video_device_change_callback(callback:Callable) -> None:
+def remove_video_device_change_callback(callback: Callable) -> None:
     # pylint: disable=import-outside-toplevel
     from xpra.platform.webcam import _video_device_change_callbacks
     global _watch_manager, _notifier

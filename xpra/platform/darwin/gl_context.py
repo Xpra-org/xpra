@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -24,7 +24,7 @@ log = Logger("opengl")
 
 class AGLWindowContext:
 
-    def __init__(self, gl_context:NSOpenGLContext, nsview: int):
+    def __init__(self, gl_context: NSOpenGLContext, nsview: int):
         self.gl_context = gl_context
         self.nsview = nsview
         log("%s", self)
@@ -78,7 +78,7 @@ class AGLContext:
             # NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
             NSOpenGLPFAAlphaSize, 8,
             NSOpenGLPFABackingStore,
-            NSOpenGLPFAColorSize, 32,       # for high bit depth, we should switch to 64 and NSOpenGLPFAColorFloat
+            NSOpenGLPFAColorSize, 32,  # for high bit depth, we should switch to 64 and NSOpenGLPFAColorFloat
             NSOpenGLPFADepthSize, 24,
         ]
         self.pixel_format = NSOpenGLPixelFormat.alloc().initWithAttributes_(attrs)
@@ -90,8 +90,8 @@ class AGLContext:
     def check_support(self, force_enable: bool = False) -> dict[str, Any]:
         # map our names (based on GTK's) to apple's constants:
         attr_name = {
-            "rgba"              : (bool,    NSOpenGLPFAAlphaSize),
-            "depth"             : (int,     NSOpenGLPFAColorSize),
+            "rgba": (bool, NSOpenGLPFAAlphaSize),
+            "depth": (int, NSOpenGLPFAColorSize),
             # "red-size"          : ?
             # "green-size"        : ?
             # "blue-size"         : ?
@@ -102,33 +102,33 @@ class AGLContext:
             # "accum-red-size"    : ?
             # "accum-green-size"  : ?
             # "accum-blue-size"   : ?
-            "alpha-size"        : (int,     NSOpenGLPFAAlphaSize),
-            "accum-size"        : (int,     NSOpenGLPFAAccumSize),
-            "depth-size"        : (int,     NSOpenGLPFADepthSize),
-            "stencil-size"      : (int,     NSOpenGLPFAStencilSize),
-            "aux-buffers"       : (int,     NSOpenGLPFAAuxBuffers),
+            "alpha-size": (int, NSOpenGLPFAAlphaSize),
+            "accum-size": (int, NSOpenGLPFAAccumSize),
+            "depth-size": (int, NSOpenGLPFADepthSize),
+            "stencil-size": (int, NSOpenGLPFAStencilSize),
+            "aux-buffers": (int, NSOpenGLPFAAuxBuffers),
             # "visible-mask"      : ?
-            "double-buffered"   : (int,     NSOpenGLPFADoubleBuffer)
+            "double-buffered": (int, NSOpenGLPFADoubleBuffer)
         }
         major, minor = NSOpenGLGetVersion(None, None)
         log(f"NSOpenGLGetVersion()={major},{minor}")
         nscreens = self.pixel_format.numberOfVirtualScreens()
         i = {
             # "pixel-format"      : self.pixel_format,
-            "virtual-screens"   : nscreens,
+            "virtual-screens": nscreens,
         }
         for name, vdef in attr_name.items():
-            conv, const_val = vdef              # ie (bool, NSOpenGLPFAAlphaSize)
-            v = self._get_apfa(const_val)       # ie: NSOpenGLPFAAlphaSize=8
-            i[name] = conv(v)                   # ie: bool(8)
+            conv, const_val = vdef  # ie (bool, NSOpenGLPFAAlphaSize)
+            v = self._get_apfa(const_val)  # ie: NSOpenGLPFAAlphaSize=8
+            i[name] = conv(v)  # ie: bool(8)
         # do it again but for each screen:
-        if nscreens>1:
+        if nscreens > 1:
             for screen in range(nscreens):
                 si = i.setdefault("screen-%i" % screen, {})
                 for name, vdef in attr_name.items():
-                    conv, const_val = vdef                  # ie (bool, NSOpenGLPFAAlphaSize)
-                    v = self._get_pfa(const_val, screen)    # ie: NSOpenGLPFAAlphaSize=8
-                    si[name] = conv(v)                      # ie: bool(8)
+                    conv, const_val = vdef  # ie (bool, NSOpenGLPFAAlphaSize)
+                    v = self._get_pfa(const_val, screen)  # ie: NSOpenGLPFAAlphaSize=8
+                    si[name] = conv(v)  # ie: bool(8)
         Gdk = gi_import("Gdk")
         tmp = GDKWindow(window_type=Gdk.WindowType.TEMP, title="tmp-opengl-check")
         with self.get_paint_context(tmp):

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -24,6 +24,7 @@ Image.init()
 try:
     # pylint: disable=ungrouped-imports
     from PIL.Image import Palette, Resampling
+
     ADAPTIVE = Palette.ADAPTIVE
     WEB = Palette.WEB
     NEAREST = Resampling.NEAREST
@@ -32,8 +33,8 @@ try:
     LANCZOS = Resampling.LANCZOS
 except ImportError:
     # location for older versions:
-    from PIL.Image import ADAPTIVE, WEB         # type: ignore
-    from PIL.Image import NEAREST, BILINEAR, BICUBIC, LANCZOS   # type: ignore
+    from PIL.Image import ADAPTIVE, WEB  # type: ignore
+    from PIL.Image import NEAREST, BILINEAR, BICUBIC, LANCZOS  # type: ignore
 
 
 def get_version() -> str:
@@ -63,10 +64,10 @@ def get_encodings() -> tuple[str, ...]:
 ENCODINGS: tuple[str, ...] = do_get_encodings()
 
 
-def get_info() -> dict[str,Any]:
+def get_info() -> dict[str, Any]:
     return {
-        "version"       : get_version(),
-        "encodings"     : get_encodings(),
+        "version": get_version(),
+        "encodings": get_encodings(),
     }
 
 
@@ -84,13 +85,13 @@ def encode(coding: str, image, options=None) -> tuple[str, Compressed, dict[str,
     w: int = image.get_width()
     h: int = image.get_height()
     rgb: str = {
-        "RLE8"  : "P",
-        "XRGB"  : "RGB",
-        "BGRX"  : "RGB",
-        "RGBX"  : "RGB",
-        "RGBA"  : "RGBA",
-        "BGRA"  : "RGBA",
-        "BGR"   : "RGB",
+        "RLE8": "P",
+        "XRGB": "RGB",
+        "BGRX": "RGB",
+        "RGBX": "RGB",
+        "RGBA": "RGBA",
+        "BGRA": "RGBA",
+        "BGR": "RGB",
     }.get(pixel_format, pixel_format)
     bpp = 32
     pixels = image.get_pixels()
@@ -102,24 +103,24 @@ def encode(coding: str, image, options=None) -> tuple[str, Compressed, dict[str,
         stride = image.get_rowstride()
         from xpra.codecs.argb.argb import r210_to_rgba, r210_to_rgb  # pylint: disable=import-outside-toplevel
         if supports_transparency:
-            pixels = r210_to_rgba(pixels, w, h, stride, w*4)
+            pixels = r210_to_rgba(pixels, w, h, stride, w * 4)
             pixel_format = "RGBA"
             rgb = "RGBA"
         else:
-            image.set_rowstride(image.get_rowstride()*3//4)
-            pixels = r210_to_rgb(pixels, w, h, stride, w*3)
+            image.set_rowstride(image.get_rowstride() * 3 // 4)
+            pixels = r210_to_rgb(pixels, w, h, stride, w * 3)
             pixel_format = "RGB"
             rgb = "RGB"
             bpp = 24
     elif pixel_format == "BGR565":
         from xpra.codecs.argb.argb import bgr565_to_rgbx, bgr565_to_rgb  # pylint: disable=import-outside-toplevel
         if supports_transparency:
-            image.set_rowstride(image.get_rowstride()*2)
+            image.set_rowstride(image.get_rowstride() * 2)
             pixels = bgr565_to_rgbx(pixels)
             pixel_format = "RGBA"
             rgb = "RGBA"
         else:
-            image.set_rowstride(image.get_rowstride()*3//2)
+            image.set_rowstride(image.get_rowstride() * 3 // 2)
             pixels = bgr565_to_rgb(pixels)
             pixel_format = "RGB"
             rgb = "RGB"
@@ -178,7 +179,7 @@ def encode(coding: str, image, options=None) -> tuple[str, Compressed, dict[str,
         raise
     scaled_width = options.intget("scaled-width", w)
     scaled_height = options.intget("scaled-height", h)
-    client_options : dict[str,Any] = {}
+    client_options: dict[str, Any] = {}
     if scaled_width != w or scaled_height != h:
         if speed >= 95:
             resample = NEAREST
@@ -192,20 +193,20 @@ def encode(coding: str, image, options=None) -> tuple[str, Compressed, dict[str,
         client_options["resample"] = resample
     if coding in ("jpeg", "webp"):
         # newer versions of pillow require explicit conversion to non-alpha:
-        if pixel_format.find("A")>=0 and coding=="jpeg":
+        if pixel_format.find("A") >= 0 and coding == "jpeg":
             im = im.convert("RGB")
         q = int(min(100, max(1, quality)))
         kwargs = dict(im.info)
         kwargs["quality"] = q
-        if coding=="webp":
-            kwargs["method"] = int(speed<10)
+        if coding == "webp":
+            kwargs["method"] = int(speed < 10)
             client_options["quality"] = q
         else:
             client_options["quality"] = min(99, q)
-        if coding=="jpeg" and speed<50:
+        if coding == "jpeg" and speed < 50:
             # (optimizing jpeg is pretty cheap and worth doing)
             kwargs["optimize"] = True
-        elif coding=="webp" and q>=100:
+        elif coding == "webp" and q >= 100:
             kwargs["lossless"] = 1
             kwargs["quality"] = 0
         pil_fmt = coding.upper()
@@ -216,6 +217,7 @@ def encode(coding: str, image, options=None) -> tuple[str, Compressed, dict[str,
             # we use the last channel because we know it is RGBA,
             # otherwise we should do: alpha_index= image.getbands().index('A')
             alpha = im.split()[-1]
+
             # convert to simple on or off mask:
             # set all pixel values below 128 to 255, and the rest to 0
 
@@ -223,6 +225,7 @@ def encode(coding: str, image, options=None) -> tuple[str, Compressed, dict[str,
                 if a <= 128:
                     return 255
                 return 0
+
             mask = Image.eval(alpha, mask_value)
         else:
             # no transparency
@@ -253,7 +256,7 @@ def encode(coding: str, image, options=None) -> tuple[str, Compressed, dict[str,
         # 76-100   -> 1
         # 51-76    -> 2
         # etc
-        level = max(1, min(5, (100-speed)//25))
+        level = max(1, min(5, (100 - speed) // 25))
         kwargs["compress_level"] = level
         # no need to expose to the client:
         # client_options["compress_level"] = level
@@ -275,7 +278,7 @@ def selftest(full=False) -> None:
     # pylint: disable=import-outside-toplevel
     from xpra.codecs.checks import make_test_image
     img = make_test_image("BGRA", 128, 128)
-    vrange: tuple[int, ...] = (50, )
+    vrange: tuple[int, ...] = (50,)
     if full:
         vrange = (0, 50, 100)
     for encoding in tuple(ENCODINGS):
@@ -286,9 +289,9 @@ def selftest(full=False) -> None:
                 for s in vrange:
                     for alpha in (True, False):
                         v = encode(encoding, img, {
-                            "quality" : q,
-                            "speed" : s,
-                            "alpha" : alpha})
+                            "quality": q,
+                            "speed": s,
+                            "alpha": alpha})
                         assert v, "encode output was empty!"
                         cdata = v[1].data
                         log("encode(%s)=%s", (encoding, img, q, s, alpha), hexstr(cdata))

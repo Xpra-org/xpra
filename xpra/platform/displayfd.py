@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,12 +17,12 @@ def write_displayfd(w_pipe, display, timeout=10):
     import select
     import errno
     buf = ("%s\n" % display).encode("ascii")
-    limit = monotonic()+timeout
+    limit = monotonic() + timeout
     log = Logger("util")
     log("write_displayfd%s", (w_pipe, display, timeout))
-    while buf and monotonic()<limit:
+    while buf and monotonic() < limit:
         try:
-            timeout = max(0.0, limit-monotonic())
+            timeout = max(0.0, limit - monotonic())
             if POSIX:
                 w = select.select([], [w_pipe], [], timeout)[1]
                 log("select.select(..) writeable=%s", w)
@@ -33,19 +33,19 @@ def write_displayfd(w_pipe, display, timeout=10):
                 buf = buf[count:]
                 log("wrote %i bytes, remains %s", count, buf)
         except OSError as e:
-            if e.errno!=errno.EINTR:
+            if e.errno != errno.EINTR:
                 raise
     if not buf:
         try:
             os.fsync(w_pipe)
         except OSError:
             log("os.fsync(%i)", w_pipe, exc_info=True)
-        if w_pipe>2:
+        if w_pipe > 2:
             try:
                 os.close(w_pipe)
             except OSError:
                 log("os.close(%i)", w_pipe, exc_info=True)
-    return len(buf)==0
+    return len(buf) == 0
 
 
 def read_displayfd(r_pipe, timeout=DISPLAY_FD_TIMEOUT, proc=None):
@@ -53,11 +53,11 @@ def read_displayfd(r_pipe, timeout=DISPLAY_FD_TIMEOUT, proc=None):
     import errno
     # Read the display number from the pipe we gave to Xvfb
     # waiting up to 10 seconds for it to show up
-    limit = monotonic()+timeout
+    limit = monotonic() + timeout
     buf = b""
     log = Logger("util")
     log("read_displayfd%s", (r_pipe, timeout, proc))
-    while monotonic()<limit and len(buf)<8 and (proc is None or proc.poll() is None):
+    while monotonic() < limit and len(buf) < 8 and (proc is None or proc.poll() is None):
         try:
             timeout = 1
             if POSIX:
@@ -69,10 +69,10 @@ def read_displayfd(r_pipe, timeout=DISPLAY_FD_TIMEOUT, proc=None):
                 v = os.read(r_pipe, 8)
                 buf += v
                 log("read=%s", v)
-                if buf and (buf.endswith(b'\n') or len(buf)>=8):
+                if buf and (buf.endswith(b'\n') or len(buf) >= 8):
                     break
         except OSError as e:
-            if e.errno!=errno.EINTR:
+            if e.errno != errno.EINTR:
                 raise
     return buf
 
@@ -90,6 +90,6 @@ def parse_displayfd(buf, err):
     except ValueError:
         err("display number is not a valid number: %s" % buf)
         return -1
-    if n<0 or n>=2**16:
+    if n < 0 or n >= 2 ** 16:
         err("provided an invalid display number: %s" % n)
     return n

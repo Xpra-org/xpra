@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -47,7 +47,6 @@ LOG_NESTED_XTRAP = envbool("XPRA_LOG_NESTED_XTRAP", False)
 log = Logger("x11", "util")
 elog = Logger("x11", "util", "error")
 
-
 if not VERIFY_MAIN_THREAD:
     def verify_main_thread():
         return
@@ -57,6 +56,7 @@ else:
             import threading
             log.error("Error: invalid access from thread %s", threading.current_thread())
             traceback.print_stack()
+
     verify_main_thread()
 
 
@@ -69,7 +69,7 @@ class XError(Exception):
         return "XError: %s" % self.msg
 
 
-xerror_to_name : dict[int,str] = {}
+xerror_to_name: dict[int, str] = {}
 
 
 def get_X_error(xerror) -> str:
@@ -80,8 +80,8 @@ def get_X_error(xerror) -> str:
         from xpra.x11.bindings.window import constants
         if not xerror_to_name:
             xerror_to_name[0] = "OK"
-            for name,code in constants.items():  # @UndefinedVariable
-                if name=="Success" or name.startswith("Bad"):
+            for name, code in constants.items():  # @UndefinedVariable
+                if name == "Success" or name.startswith("Bad"):
                     xerror_to_name[code] = name
             log("get_X_error(..) initialized error names: %s", xerror_to_name)
         if xerror in xerror_to_name:
@@ -103,7 +103,7 @@ class _ErrorManager:
         Gdk.error_trap_push()
         if XPRA_LOG_SYNC:
             log("X11trap.enter at level %i", self.depth)
-        if LOG_NESTED_XTRAP and self.depth>0:
+        if LOG_NESTED_XTRAP and self.depth > 0:
             for x in traceback.extract_stack():
                 log("%s", x)
         self.depth += 1
@@ -240,7 +240,7 @@ xlog = XLogContext()
 
 
 def verify_sync(*args):
-    if trap.depth<=0:
+    if trap.depth <= 0:
         log.error("Error: unmanaged X11 context")
         if args:
             log.error(" %s" % args[0], *(args[1:]))

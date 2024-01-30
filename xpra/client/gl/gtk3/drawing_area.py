@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -25,8 +25,8 @@ GLib = gi_import("GLib")
 
 class GLDrawingArea(GLWindowBackingBase):
 
-    def __init__(self, wid: int, window_alpha: bool, pixel_depth: int=0):
-        self.on_realize_cb: list[tuple[Callable,tuple[Any,...]]] = []
+    def __init__(self, wid: int, window_alpha: bool, pixel_depth: int = 0):
+        self.on_realize_cb: list[tuple[Callable, tuple[Any, ...]]] = []
         super().__init__(wid, window_alpha, pixel_depth)
 
     def __repr__(self):
@@ -36,7 +36,7 @@ class GLDrawingArea(GLWindowBackingBase):
         GLib.idle_add(*args, **kwargs)
 
     def init_gl_config(self) -> None:
-        self.context = GLContext(self._alpha_enabled)   # pylint: disable=not-callable
+        self.context = GLContext(self._alpha_enabled)  # pylint: disable=not-callable
         self.window_context = None
 
     def is_double_buffered(self) -> bool:
@@ -45,10 +45,10 @@ class GLDrawingArea(GLWindowBackingBase):
     def init_backing(self) -> None:
         da = Gtk.DrawingArea()
         da.connect_after("realize", self.on_realize)
-        #da.connect('configure_event', self.on_configure_event)
-        #da.connect('draw', self.on_draw)
-        #double-buffering is enabled by default anyway, so this is redundant:
-        #da.set_double_buffered(True)
+        # da.connect('configure_event', self.on_configure_event)
+        # da.connect('draw', self.on_draw)
+        # double-buffering is enabled by default anyway, so this is redundant:
+        # da.set_double_buffered(True)
         da.set_size_request(*self.size)
         da.set_events(da.get_events() | Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.POINTER_MOTION_HINT_MASK)
         da.show()
@@ -64,7 +64,7 @@ class GLDrawingArea(GLWindowBackingBase):
                 with log.trap_error("Error calling realize callback %s", ellipsizer(x)):
                     x(gl_context, *args)
 
-    def with_gl_context(self, cb:Callable, *args):
+    def with_gl_context(self, cb: Callable, *args):
         da = self._backing
         if da and da.get_mapped():
             gl_context = self.gl_context()
@@ -98,7 +98,7 @@ class GLDrawingArea(GLWindowBackingBase):
             log("%s.do_gl_show(%s) swapping buffers now", rect_count, self)
             self.window_context.swap_buffers()
         else:
-            #glFlush was enough
+            # glFlush was enough
             pass
 
     def close_gl_config(self) -> None:

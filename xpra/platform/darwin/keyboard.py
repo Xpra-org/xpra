@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,62 +13,61 @@ from xpra.platform.darwin.menu import getOSXMenuHelper
 
 Gdk = gi_import("Gdk")
 
-NUM_LOCK_KEYCODE = 71           # HARDCODED!
+NUM_LOCK_KEYCODE = 71  # HARDCODED!
 # a key and the keys we want to translate it into when swapping keys
 # (in a list with the best options first)
-KEYS_TRANSLATION_OPTIONS : dict[str, list[str]] = {
+KEYS_TRANSLATION_OPTIONS: dict[str, list[str]] = {
     # try to swap with "Meta" first, fallback to "Alt":
-    "Control_L"     : ["Meta_L", "Meta_R", "Alt_L", "Alt_R"],
-    "Control_R"     : ["Meta_R", "Meta_L", "Alt_R", "Alt_L"],
+    "Control_L": ["Meta_L", "Meta_R", "Alt_L", "Alt_R"],
+    "Control_R": ["Meta_R", "Meta_L", "Alt_R", "Alt_L"],
     # "Meta" always swapped with "Control"
-    "Meta_L"        : ["Control_L", "Control_R"],
-    "Meta_R"        : ["Control_R", "Control_L"],
+    "Meta_L": ["Control_L", "Control_R"],
+    "Meta_R": ["Control_R", "Control_L"],
     # "Alt" to "Super" (or "Hyper") so we can distinguish it from "Meta":
-    "Alt_L"         : ["Super_L", "Super_R", "Hyper_L", "Hyper_R"],
-    "Alt_R"         : ["Super_R", "Super_L", "Hyper_R", "Hyper_L"],
-    }
+    "Alt_L": ["Super_L", "Super_R", "Hyper_L", "Hyper_R"],
+    "Alt_R": ["Super_R", "Super_L", "Hyper_R", "Hyper_L"],
+}
 # keys we always want to swap,
 # irrespective of the swap-keys option:
-ALWAYS_SWAP : list[str] = os.environ.get("XPRA_MACOS_KEYS_ALWAYS_SWAP", "Alt_L,Alt_R").split(",")
-
+ALWAYS_SWAP: list[str] = os.environ.get("XPRA_MACOS_KEYS_ALWAYS_SWAP", "Alt_L,Alt_R").split(",")
 
 # data extracted from:
 # https://support.apple.com/en-us/HT201794
 # "How to identify keyboard localizations"
 # maps Apple's names into standard X11 keyboard identifiers
 
-APPLE_LAYOUTS : dict[str, str] = {
-    "Arabic"    : "ar",
-    "Belgian"   : "be",
-    "Bulgarian" : "bg",
-    "Croatian"  : "cr",
-    "Czech"     : "cz",
-    "Danish"    : "dk",
-    "Dutch"     : "nl",
-    "British"   : "gb",
-    "US"        : "us",
-    "Finnish"   : "fi",
-    "Swedish"   : "se",
-    "French"    : "fr",
-    "German"    : "de",
-    "Greek"     : "gr",
-    "Hungarian" : "hu",
+APPLE_LAYOUTS: dict[str, str] = {
+    "Arabic": "ar",
+    "Belgian": "be",
+    "Bulgarian": "bg",
+    "Croatian": "cr",
+    "Czech": "cz",
+    "Danish": "dk",
+    "Dutch": "nl",
+    "British": "gb",
+    "US": "us",
+    "Finnish": "fi",
+    "Swedish": "se",
+    "French": "fr",
+    "German": "de",
+    "Greek": "gr",
+    "Hungarian": "hu",
     # "Icelandic" : "is",
-    "Israel"    : "il",
-    "Italian"   : "it",
-    "Japanese"  : "jp",
-    "Korean"    : "ko",
-    "Norwegian" : "no",
-    "Portugese" : "po",
-    "Romanian"  : "ro",
-    "Russian"   : "ru",
-    "Slovak"    : "sl",
-    "Spanish"   : "es",
+    "Israel": "il",
+    "Italian": "it",
+    "Japanese": "jp",
+    "Korean": "ko",
+    "Norwegian": "no",
+    "Portugese": "po",
+    "Romanian": "ro",
+    "Russian": "ru",
+    "Slovak": "sl",
+    "Spanish": "es",
     # "Swiss"     : "ch",
-    "Taiwanese" : "tw",
-    "Thai"      : "th",
-    "Turkey"    : "tr",
-    }
+    "Taiwanese": "tw",
+    "Thai": "th",
+    "Turkey": "tr",
+}
 
 
 class Keyboard(KeyboardBase):
@@ -86,13 +85,13 @@ class Keyboard(KeyboardBase):
         self.num_lock_modifier = ""
         self.num_lock_state = True
         self.num_lock_keycode = NUM_LOCK_KEYCODE
-        self.key_translations : dict[str,tuple[int,str]] = {}
+        self.key_translations: dict[str, tuple[int, str]] = {}
 
     def __repr__(self):
         return "darwin.Keyboard"
 
     def get_all_x11_layouts(self) -> dict[str, str]:
-        x11_layouts : dict[str, str] = {}
+        x11_layouts: dict[str, str] = {}
         for name, layout in APPLE_LAYOUTS.items():
             x11_layouts[layout] = name
         return x11_layouts
@@ -139,7 +138,7 @@ class Keyboard(KeyboardBase):
             Override superclass so we can tell the server
             that 'control' will also be missing from non key events modifiers
         """
-        return  {}, [], ["lock", "control"]
+        return {}, [], ["lock", "control"]
 
     def set_modifier_mappings(self, mappings) -> None:
         super().set_modifier_mappings(mappings)
@@ -170,9 +169,9 @@ class Keyboard(KeyboardBase):
                 continue
             # ie: [(55, 'Alt_L'), (58, 'Alt_L'), 'Alt_L']
             for keycode_def in keycodes_defs:
-                if isinstance(keycode_def, str):      # ie: 'Alt_L'
+                if isinstance(keycode_def, str):  # ie: 'Alt_L'
                     # no keycode found, but better than nothing:
-                    new_def = 0, keycode_def    # ie: (0, 'Alt_L')
+                    new_def = 0, keycode_def  # ie: (0, 'Alt_L')
                     continue
                 # an int alone is the keycode:
                 if isinstance(keycode_def, int):
@@ -194,7 +193,7 @@ class Keyboard(KeyboardBase):
                     new_def = keycode_def
                     continue
                 # found a valid keycode, use this one:
-                return keycode_def              # ie: (55, 'Alt_L')
+                return keycode_def  # ie: (55, 'Alt_L')
         return new_def
 
     def mask_to_names(self, mask) -> list[str]:
@@ -205,13 +204,13 @@ class Keyboard(KeyboardBase):
             meta = self.meta_modifier
             control = self.control_modifier
         modmap = {
-            Gdk.ModifierType.SHIFT_MASK      : "shift",
-            Gdk.ModifierType.LOCK_MASK       : "lock",
-            Gdk.ModifierType.SUPER_MASK      : self.super_modifier,
-            Gdk.ModifierType.HYPER_MASK      : self.hyper_modifier,
-            Gdk.ModifierType.META_MASK       : meta,
-            Gdk.ModifierType.CONTROL_MASK    : control,
-            }
+            Gdk.ModifierType.SHIFT_MASK: "shift",
+            Gdk.ModifierType.LOCK_MASK: "lock",
+            Gdk.ModifierType.SUPER_MASK: self.super_modifier,
+            Gdk.ModifierType.HYPER_MASK: self.hyper_modifier,
+            Gdk.ModifierType.META_MASK: meta,
+            Gdk.ModifierType.CONTROL_MASK: control,
+        }
         names = []
         for modmask, modname in modmap.items():
             if (mask & modmask) and modname:
@@ -226,7 +225,7 @@ class Keyboard(KeyboardBase):
             mask, names, self.swap_keys, modmap, self.num_lock_state, self.num_lock_modifier)
         return names
 
-    def process_key_event(self, send_key_action_cb:Callable, wid:int, key_event) -> None:
+    def process_key_event(self, send_key_action_cb: Callable, wid: int, key_event) -> None:
         if self.swap_keys or key_event.keyname in ALWAYS_SWAP:
             trans = self.key_translations.get(key_event.keyname)
             if trans:

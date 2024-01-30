@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -179,14 +179,14 @@ class SeamlessRootWindowModel(RootWindowModel):
                 return True
             # skipping IsWindowEnabled check
             length = GetWindowTextLengthW(hwnd)
-            buf = create_unicode_buffer(length+1)
-            if GetWindowTextW(hwnd, buf, length+1)>0:
+            buf = create_unicode_buffer(length + 1)
+            if GetWindowTextW(hwnd, buf, length + 1) > 0:
                 window_title = buf.value
             else:
                 window_title = ''
             l("get_shape_rectangles() found window '%s' with pid=%i and thread id=%i", window_title, pid, thread_id)
             rect = RECT()
-            if GetWindowRect(hwnd, byref(rect)) == 0:           # NOSONAR
+            if GetWindowRect(hwnd, byref(rect)) == 0:  # NOSONAR
                 l("GetWindowRect failure")
                 return True
             left, top, right, bottom = int(rect.left), int(rect.top), int(rect.right), int(rect.bottom)
@@ -216,8 +216,8 @@ class SeamlessRootWindowModel(RootWindowModel):
             # if ti.rgstate[0] & win32con.STATE_SYSTEM_INVISIBLE:
             #    log("skipped system invisible window")
             #    return True
-            w = right-left
-            h = bottom-top
+            w = right - left
+            h = bottom - top
             l("shape(%s - %#x)=%s", window_title, hwnd, (left, top, w, h))
             if w <= 0 and h <= 0:
                 l("skipped invalid window size: %ix%i", w, h)
@@ -235,6 +235,7 @@ class SeamlessRootWindowModel(RootWindowModel):
                 h = bottom
             rectangles.append((left, top, w, h))
             return True
+
         EnumWindows(EnumWindowsProc(enum_windows_cb), 0)
         l("get_shape_rectangles()=%s", rectangles)
         return sorted(rectangles)
@@ -272,7 +273,7 @@ class ShadowServer(GTKShadowServerBase):
         self.cursor_handle = None
         self.cursor_data = None
         self.cursor_errors = [0.0, 0]
-        if GetSystemMetrics(win32con.SM_SAMEDISPLAYFORMAT)==0:
+        if GetSystemMetrics(win32con.SM_SAMEDISPLAYFORMAT) == 0:
             raise InitException("all the monitors must use the same display format")
         el = get_win32_event_listener()
         # TODO: deal with those messages?
@@ -281,10 +282,10 @@ class ShadowServer(GTKShadowServerBase):
         # these are bound to callbacks in the client,
         # but on the server we just ignore them:
         el.ignore_events.update({
-            win32con.WM_ACTIVATEAPP        : "WM_ACTIVATEAPP",
-            win32con.WM_MOVE               : "WM_MOVE",
-            win32con.WM_INPUTLANGCHANGE    : "WM_INPUTLANGCHANGE",
-            win32con.WM_WININICHANGE       : "WM_WININICHANGE",
+            win32con.WM_ACTIVATEAPP: "WM_ACTIVATEAPP",
+            win32con.WM_MOVE: "WM_MOVE",
+            win32con.WM_INPUTLANGCHANGE: "WM_INPUTLANGCHANGE",
+            win32con.WM_WININICHANGE: "WM_WININICHANGE",
         })
 
     def init(self, opts) -> None:
@@ -300,7 +301,7 @@ class ShadowServer(GTKShadowServerBase):
             for source in self._server_sources.values():
                 source.may_notify(NotificationID.IDLE, "Server Suspending",
                                   "This Xpra server is going to suspend,\nthe connection is likely to be interrupted soon.",
-                                  expire_timeout=10*1000, icon_name="shutdown")
+                                  expire_timeout=10 * 1000, icon_name="shutdown")
         elif wParam == win32con.PBT_APMRESUMEAUTOMATIC:
             log.info("WM_POWERBROADCAST: PBT_APMRESUMEAUTOMATIC")
 
@@ -352,7 +353,7 @@ class ShadowServer(GTKShadowServerBase):
                 log("skipped our own window %#x, thread id=%#x", hwnd, thread_id)
                 return True
             rect = RECT()
-            if GetWindowRect(hwnd, byref(rect)) == 0:       # NOSONAR
+            if GetWindowRect(hwnd, byref(rect)) == 0:  # NOSONAR
                 log("GetWindowRect failure")
                 return True
             if hwnd == taskbar:
@@ -360,14 +361,14 @@ class ShadowServer(GTKShadowServerBase):
                 return True
             # skipping IsWindowEnabled check
             length = GetWindowTextLengthW(hwnd)
-            buf = create_unicode_buffer(length+1)
-            if GetWindowTextW(hwnd, buf, length+1)>0:
+            buf = create_unicode_buffer(length + 1)
+            if GetWindowTextW(hwnd, buf, length + 1) > 0:
                 window_title = buf.value
             else:
                 window_title = ''
             left, top, right, bottom = int(rect.left), int(rect.top), int(rect.right), int(rect.bottom)
-            w = right-left
-            h = bottom-top
+            w = right - left
+            h = bottom - top
             if left <= -32000 or top <= -32000:
                 log("%r is not visible: %s", window_title, (left, top, w, h))
             if w <= 0 and h <= 0:
@@ -375,6 +376,7 @@ class ShadowServer(GTKShadowServerBase):
                 return True
             windows[hwnd] = (window_title, (left, top, w, h))
             return True
+
         EnumWindows(EnumWindowsProc(enum_windows_cb), 0)
         log("makeDynamicWindowModels() windows=%s", windows)
         models = []
@@ -383,6 +385,7 @@ class ShadowServer(GTKShadowServerBase):
             model = Win32ShadowModel(self.root, self.capture, title=title, geometry=geometry)
             model.hwnd = hwnd
             models.append(model)
+
         for m in self.window_matches:
             window = None
             try:
@@ -410,9 +413,9 @@ class ShadowServer(GTKShadowServerBase):
         for i, monitor in enumerate(get_monitors()):
             geom = monitor["Monitor"]
             x1, y1, x2, y2 = geom
-            assert x1<x2 and y1<y2
+            assert x1 < x2 and y1 < y2
             plug_name = monitor["Device"].lstrip("\\\\.\\")
-            monitors.append((plug_name, x1, y1, x2-x1, y2-y1, 1))
+            monitors.append((plug_name, x1, y1, x2 - x1, y2 - y1, 1))
             screenlog("monitor %i: %10s coordinates: %s", i, plug_name, geom)
         log("get_shadow_monitors()=%s", monitors)
         return monitors
@@ -434,7 +437,7 @@ class ShadowServer(GTKShadowServerBase):
             # cursorlog("do_get_cursor_data() cursor not shown")
             return None
         handle = int(ci.hCursor)
-        if handle==self.cursor_handle and self.last_cursor_data:
+        if handle == self.cursor_handle and self.last_cursor_data:
             # cursorlog("do_get_cursor_data() cursor handle unchanged")
             return self.last_cursor_data
         self.cursor_handle = handle
@@ -447,12 +450,12 @@ class ShadowServer(GTKShadowServerBase):
         w, h = get_fixed_cursor_size()
         return (
             cd,
-            ((w,h), [(w,h), ]),
+            ((w, h), [(w, h), ]),
         )
 
     def get_pointer_position(self) -> tuple[int, int]:
         pos = POINT()
-        GetPhysicalCursorPos(byref(pos))            # NOSONAR
+        GetPhysicalCursorPos(byref(pos))  # NOSONAR
         return pos.x, pos.y
 
     def do_process_mouse_common(self, proto, device_id, wid: int, pointer, props) -> bool:
@@ -467,13 +470,13 @@ class ShadowServer(GTKShadowServerBase):
             # rate limit the warnings:
             start, count = self.cursor_errors
             now = monotonic()
-            elapsed = now-start
+            elapsed = now - start
             if count == 0 or (count > 1 and elapsed > 10):
                 log.warn("Warning: cannot move cursor")
-                log.warn(" (%i events)", count+1)
+                log.warn(" (%i events)", count + 1)
                 self.cursor_errors = [now, 1]
             else:
-                self.cursor_errors[1] = count+1
+                self.cursor_errors[1] = count + 1
         except Exception as e:
             log("SetPhysicalCursorPos%s failed", pointer, exc_info=True)
             log.error("Error: failed to move the cursor:")
@@ -481,7 +484,7 @@ class ShadowServer(GTKShadowServerBase):
         return False
 
     def clear_keys_pressed(self) -> None:
-        keystate = (BYTE*256)()
+        keystate = (BYTE * 256)()
         if GetKeyboardState(keystate):
             vknames = {}
             for vkconst in (x for x in dir(win32con) if x.startswith("VK_")):
@@ -492,10 +495,10 @@ class ShadowServer(GTKShadowServerBase):
                     pressed.append(vknames.get(i, i))
             keylog("keys still pressed: %s", csv(pressed))
             for x in (
-                win32con.VK_LSHIFT, win32con.VK_RSHIFT, win32con.VK_SHIFT,
-                win32con.VK_LCONTROL, win32con.VK_RCONTROL, win32con.VK_CONTROL,
-                win32con.VK_LMENU, win32con.VK_RMENU, win32con.VK_MENU,
-                win32con.VK_LWIN, win32con.VK_RWIN,
+                    win32con.VK_LSHIFT, win32con.VK_RSHIFT, win32con.VK_SHIFT,
+                    win32con.VK_LCONTROL, win32con.VK_RCONTROL, win32con.VK_CONTROL,
+                    win32con.VK_LMENU, win32con.VK_RMENU, win32con.VK_MENU,
+                    win32con.VK_LWIN, win32con.VK_RWIN,
             ):
                 keystate[x] = 0
             SetKeyboardState(keystate)
@@ -503,7 +506,7 @@ class ShadowServer(GTKShadowServerBase):
     def get_keyboard_config(self, _props=None) -> KeyboardConfig:
         return KeyboardConfig()
 
-    def fake_key(self, keycode:int, press:bool) -> None:
+    def fake_key(self, keycode: int, press: bool) -> None:
         fake_key(keycode, press)
 
     def do_process_button_action(self, proto, device_id, wid: int, button: int, pressed: bool, pointer, props) -> None:
@@ -539,9 +542,9 @@ class ShadowServer(GTKShadowServerBase):
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {
             "pixel-depth": self.pixel_depth,
-            "type"       : "Python/gtk2/win32-shadow",
-            "tray"       : self.tray,
-            "tray-icon"  : self.tray_icon or ""
+            "type": "Python/gtk2/win32-shadow",
+            "tray": self.tray,
+            "tray-icon": self.tray_icon or ""
         })
         return info
 
@@ -552,7 +555,7 @@ def main():
         rwm = RootWindowModel(None)
         pngdata = rwm.take_screenshot()
         filename = "screenshot.png"
-        with open(filename , "wb") as f:
+        with open(filename, "wb") as f:
             f.write(pngdata[4])
         print(f"saved screenshot as {filename}")
 

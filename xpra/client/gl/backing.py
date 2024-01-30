@@ -90,84 +90,83 @@ ALWAYS_RGBA = envbool("XPRA_OPENGL_ALWAYS_RGBA", False)
 
 CURSOR_IDLE_TIMEOUT: int = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 
-
-PIXEL_FORMAT_TO_CONSTANT : dict[str, IntConstant] = {
-    "r210"  : GL_BGRA,
-    "R210"  : GL_RGBA,
-    "BGR"   : GL_BGR,
-    "RGB"   : GL_RGB,
-    "BGRA"  : GL_BGRA,
-    "BGRX"  : GL_BGRA,
-    "RGBA"  : GL_RGBA,
-    "RGBX"  : GL_RGBA,
+PIXEL_FORMAT_TO_CONSTANT: dict[str, IntConstant] = {
+    "r210": GL_BGRA,
+    "R210": GL_RGBA,
+    "BGR": GL_BGR,
+    "RGB": GL_RGB,
+    "BGRA": GL_BGRA,
+    "BGRX": GL_BGRA,
+    "RGBA": GL_RGBA,
+    "RGBX": GL_RGBA,
     "BGR565": GL_RGB,
     "RGB565": GL_RGB,
 }
-PIXEL_INTERNAL_FORMAT : dict[str, tuple[IntConstant, ...]] = {
+PIXEL_INTERNAL_FORMAT: dict[str, tuple[IntConstant, ...]] = {
     # defaults to: GL_R8, GL_R8, GL_R8
     # (meaning: 3 planes, 8 bits each)
     # override for formats that use 16 bit per channel:
-    "NV12" : (GL_LUMINANCE, GL_LUMINANCE_ALPHA),
-    "GBRP" : (GL_LUMINANCE, GL_LUMINANCE, GL_LUMINANCE),    # invalid according to the spec! (only value that works)
-    "GBRP16" : (GL_R16, GL_R16, GL_R16),
-    "YUV444P10" : (GL_R16, GL_R16, GL_R16),
-    "YUV444P16" : (GL_R16, GL_R16, GL_R16),
+    "NV12": (GL_LUMINANCE, GL_LUMINANCE_ALPHA),
+    "GBRP": (GL_LUMINANCE, GL_LUMINANCE, GL_LUMINANCE),  # invalid according to the spec! (only value that works)
+    "GBRP16": (GL_R16, GL_R16, GL_R16),
+    "YUV444P10": (GL_R16, GL_R16, GL_R16),
+    "YUV444P16": (GL_R16, GL_R16, GL_R16),
 }
-PIXEL_DATA_FORMAT : dict[str, tuple[IntConstant, ...]] = {
+PIXEL_DATA_FORMAT: dict[str, tuple[IntConstant, ...]] = {
     # defaults to: (GL_RED, GL_RED, GL_RED))
     # (meaning: uploading one channel at a time)
-    "NV12"  : (GL_LUMINANCE, GL_LUMINANCE_ALPHA),  # Y is one channel, UV contains two channels
+    "NV12": (GL_LUMINANCE, GL_LUMINANCE_ALPHA),  # Y is one channel, UV contains two channels
 }
-PIXEL_UPLOAD_FORMAT : dict[str, Any] = {
-    "r210"  : GL_UNSIGNED_INT_2_10_10_10_REV,
-    "R210"  : GL_UNSIGNED_INT_10_10_10_2,
+PIXEL_UPLOAD_FORMAT: dict[str, Any] = {
+    "r210": GL_UNSIGNED_INT_2_10_10_10_REV,
+    "R210": GL_UNSIGNED_INT_10_10_10_2,
     "RGB565": GL_UNSIGNED_SHORT_5_6_5,
     "BGR565": GL_UNSIGNED_SHORT_5_6_5,
-    "BGR"   : GL_UNSIGNED_BYTE,
-    "RGB"   : GL_UNSIGNED_BYTE,
-    "BGRA"  : GL_UNSIGNED_BYTE,
-    "BGRX"  : GL_UNSIGNED_BYTE,
-    "RGBA"  : GL_UNSIGNED_BYTE,
-    "RGBX"  : GL_UNSIGNED_BYTE,
+    "BGR": GL_UNSIGNED_BYTE,
+    "RGB": GL_UNSIGNED_BYTE,
+    "BGRA": GL_UNSIGNED_BYTE,
+    "BGRX": GL_UNSIGNED_BYTE,
+    "RGBA": GL_UNSIGNED_BYTE,
+    "RGBX": GL_UNSIGNED_BYTE,
     # planar formats:
-    "NV12"  : (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
-    "YUV420P" : (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
-    "YUV422P" : (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
-    "YUV444P" : (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
-    "GBRP"  : (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
-    "GBRP16" : (GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT),
-    "YUV444P10" : (GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT),
-    "YUV444P16" : (GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT),
+    "NV12": (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
+    "YUV420P": (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
+    "YUV422P": (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
+    "YUV444P": (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
+    "GBRP": (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
+    "GBRP16": (GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT),
+    "YUV444P10": (GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT),
+    "YUV444P16": (GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT),
 }
-CONSTANT_TO_PIXEL_FORMAT : dict[IntConstant, str] = {
-    GL_BGR   : "BGR",
-    GL_RGB   : "RGB",
-    GL_BGRA  : "BGRA",
-    GL_RGBA  : "RGBA",
+CONSTANT_TO_PIXEL_FORMAT: dict[IntConstant, str] = {
+    GL_BGR: "BGR",
+    GL_RGB: "RGB",
+    GL_BGRA: "BGRA",
+    GL_RGBA: "RGBA",
 }
-INTERNAL_FORMAT_TO_STR : dict[IntConstant, str] = {
-    GL_RGB10_A2     : "RGB10_A2",
-    GL_RGBA8        : "RGBA8",
-    GL_RGB8         : "RGB8",
-    GL_RGB565       : "RGB565",
-    GL_RGB5_A1      : "RGB5_A1",
-    GL_RGBA4        : "RGBA4",
-    GL_RGBA16       : "GL_RGBA16",
+INTERNAL_FORMAT_TO_STR: dict[IntConstant, str] = {
+    GL_RGB10_A2: "RGB10_A2",
+    GL_RGBA8: "RGBA8",
+    GL_RGB8: "RGB8",
+    GL_RGB565: "RGB565",
+    GL_RGB5_A1: "RGB5_A1",
+    GL_RGBA4: "RGBA4",
+    GL_RGBA16: "GL_RGBA16",
 }
-DATATYPE_TO_STR : dict[IntConstant, str] = {
-    GL_UNSIGNED_INT_2_10_10_10_REV  : "UNSIGNED_INT_2_10_10_10_REV",
-    GL_UNSIGNED_INT_10_10_10_2      : "UNSIGNED_INT_10_10_10_2",
-    GL_UNSIGNED_BYTE                : "UNSIGNED_BYTE",
-    GL_UNSIGNED_SHORT               : "UNSIGNED_SHORT",
-    GL_UNSIGNED_SHORT_5_6_5         : "UNSIGNED_SHORT_5_6_5",
+DATATYPE_TO_STR: dict[IntConstant, str] = {
+    GL_UNSIGNED_INT_2_10_10_10_REV: "UNSIGNED_INT_2_10_10_10_REV",
+    GL_UNSIGNED_INT_10_10_10_2: "UNSIGNED_INT_10_10_10_2",
+    GL_UNSIGNED_BYTE: "UNSIGNED_BYTE",
+    GL_UNSIGNED_SHORT: "UNSIGNED_SHORT",
+    GL_UNSIGNED_SHORT_5_6_5: "UNSIGNED_SHORT_5_6_5",
 }
 
 paint_context_manager: AbstractContextManager = nullcontext()
 if POSIX and not OSX and not is_Wayland():
     # pylint: disable=ungrouped-imports
     from xpra.gtk.error import xsync
-    paint_context_manager = xsync
 
+    paint_context_manager = xsync
 
 # Texture number assignment
 # The first four are used to update the FBO,
@@ -176,7 +175,7 @@ TEX_Y = 0
 TEX_U = 1
 TEX_V = 2
 TEX_RGB = 3
-TEX_FBO = 4         # FBO texture (guaranteed up-to-date window contents)
+TEX_FBO = 4  # FBO texture (guaranteed up-to-date window contents)
 TEX_TMP_FBO = 5
 TEX_CURSOR = 6
 TEX_FPS = 7
@@ -209,8 +208,8 @@ class GLWindowBackingBase(WindowBackingBase):
         self.planar_pixel_format: str = ""
         self.internal_format = GL_RGBA8
         self.textures = None  # OpenGL texture IDs
-        self.shaders : dict[str, GLuint] = {}
-        self.programs : dict[str, GLuint] = {}
+        self.shaders: dict[str, GLuint] = {}
+        self.programs: dict[str, GLuint] = {}
         self.texture_size: tuple[int, int] = (0, 0)
         self.gl_setup = False
         self.debug_setup = False
@@ -245,9 +244,9 @@ class GLWindowBackingBase(WindowBackingBase):
         info = super().get_info()
         tif = self.internal_format
         info |= {
-            "type"                  : "OpenGL",
-            "bit-depth"             : self.bit_depth,
-            "internal-format"       : INTERNAL_FORMAT_TO_STR.get(tif) or str(tif),
+            "type": "OpenGL",
+            "bit-depth": self.bit_depth,
+            "internal-format": INTERNAL_FORMAT_TO_STR.get(tif) or str(tif),
         }
         return info
 
@@ -341,8 +340,8 @@ class GLWindowBackingBase(WindowBackingBase):
         sx, sy, dx, dy, w, h = self.gravity_copy_coords(oldw, oldh, bw, bh)
         context.update_geometry()
         # invert Y coordinates for OpenGL:
-        sy = (oldh-h)-sy
-        dy = (bh-h)-dy
+        sy = (oldh - h) - sy
+        dy = (bh - h) - dy
         # re-init our OpenGL context with the new size,
         # but leave offscreen fbo with the old size
         self.gl_init(context, True)
@@ -361,8 +360,9 @@ class GLWindowBackingBase(WindowBackingBase):
             def redraw(glcontext):
                 if not glcontext:
                     return
-                self.pending_fbo_paint = ((0, 0, bw, bh), )
+                self.pending_fbo_paint = ((0, 0, bw, bh),)
                 self.do_present_fbo(glcontext)
+
             glib.timeout_add(FBO_RESIZE_DELAY, self.with_gl_context, redraw)
 
     def gl_init_textures(self) -> None:
@@ -504,7 +504,7 @@ class GLWindowBackingBase(WindowBackingBase):
     def get_init_magfilter(self) -> IntConstant:
         rw, rh = self.render_size
         w, h = self.size
-        if rw/w != rw//w or rh/h != rh//h:
+        if rw / w != rw // w or rh / h != rh // h:
             # non integer scaling, use linear magnification filter:
             return GL_LINEAR
         return GL_NEAREST
@@ -574,6 +574,7 @@ class GLWindowBackingBase(WindowBackingBase):
         def fail(msg):
             log.error("Error: %s", msg)
             fire_paint_callbacks(callbacks, False, msg)
+
         bw, bh = self.size
         self.copy_fbo(bw, bh)
 
@@ -593,31 +594,31 @@ class GLWindowBackingBase(WindowBackingBase):
             # these should be errors,
             # but desktop-scaling can cause a mismatch between the backing size
             # and the real window size server-side... so we clamp the dimensions instead
-            if x+w > bw:
-                w = bw-x
-            if y+h > bh:
-                h = bh-y
-            if x+w+xdelta > bw:
-                w = bw-x-xdelta
+            if x + w > bw:
+                w = bw - x
+            if y + h > bh:
+                h = bh - y
+            if x + w + xdelta > bw:
+                w = bw - x - xdelta
                 if w <= 0:
-                    continue        # nothing left!
-            if y+h+ydelta > bh:
-                h = bh-y-ydelta
+                    continue  # nothing left!
+            if y + h + ydelta > bh:
+                h = bh - y - ydelta
                 if h <= 0:
-                    continue        # nothing left!
-            if x+xdelta < 0:
+                    continue  # nothing left!
+            if x + xdelta < 0:
                 rect = (x, y, w, h)
                 fail(f"horizontal scroll by {xdelta} rectangle {rect} overflows the backing buffer size {self.size}")
                 continue
-            if y+ydelta < 0:
+            if y + ydelta < 0:
                 rect = (x, y, w, h)
                 fail(f"vertical scroll by {ydelta} rectangle {rect} overflows the backing buffer size {self.size}")
                 continue
             # opengl buffer is upside down, so we must invert Y coordinates: bh-(..)
-            glBlitFramebuffer(x, bh-y, x+w, bh-(y+h),
-                              x+xdelta, bh-(y+ydelta), x+w+xdelta, bh-(y+h+ydelta),
+            glBlitFramebuffer(x, bh - y, x + w, bh - (y + h),
+                              x + xdelta, bh - (y + ydelta), x + w + xdelta, bh - (y + h + ydelta),
                               GL_COLOR_BUFFER_BIT, GL_NEAREST)
-            self.paint_box("scroll", x+xdelta, y+ydelta, x+w+xdelta, y+h+ydelta)
+            self.paint_box("scroll", x + xdelta, y + ydelta, x + w + xdelta, y + h + ydelta)
             glFlush()
 
         self.swap_fbos()
@@ -648,8 +649,8 @@ class GLWindowBackingBase(WindowBackingBase):
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, target, self.textures[TEX_TMP_FBO], 0)
         glDrawBuffer(GL_COLOR_ATTACHMENT1)
 
-        glBlitFramebuffer(sx, sy, sx+w, sy+h,
-                          dx, dy, dx+w, dy+h,
+        glBlitFramebuffer(sx, sy, sx + w, sy + h,
+                          dx, dy, dx + w, dy + h,
                           GL_COLOR_BUFFER_BIT, GL_NEAREST)
 
     def swap_fbos(self) -> None:
@@ -706,7 +707,7 @@ class GLWindowBackingBase(WindowBackingBase):
         rect_count = len(self.pending_fbo_paint)
         if self.is_double_buffered() or self.size != self.render_size:
             # refresh the whole window:
-            rectangles = ((0, 0, bw, bh), )
+            rectangles = ((0, 0, bw, bh),)
         else:
             # paint just the rectangles we have accumulated:
             rectangles = self.pending_fbo_paint
@@ -720,14 +721,14 @@ class GLWindowBackingBase(WindowBackingBase):
         ww, wh = self.render_size
         scale = context.get_scale_factor()
         left, top, right, bottom = self.offsets
-        glViewport(0, 0, int((left+ww+right)*scale), int((top+wh+bottom)*scale))
+        glViewport(0, 0, int((left + ww + right) * scale), int((top + wh + bottom) * scale))
         if left or top or right or bottom:
             alpha = 0.0 if self._alpha_enabled else 1.0
             glClearColor(0.0, 0.0, 0.0, alpha)
             glClear(GL_COLOR_BUFFER_BIT)
 
         # from now on, take the offsets and scaling into account:
-        viewport = int(left*scale), int(top*scale), int(ww*scale), int(wh*scale)
+        viewport = int(left * scale), int(top * scale), int(ww * scale), int(wh * scale)
         log(f"window viewport for {self.render_size=} and {self.offsets} with scale factor {scale}: {viewport}")
         glViewport(*viewport)
         target = GL_TEXTURE_RECTANGLE
@@ -770,7 +771,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def draw_pointer(self) -> None:
         px, py, _, _, _, start_time = self.pointer_overlay
-        elapsed = monotonic()-start_time
+        elapsed = monotonic() - start_time
         log("pointer_overlay=%s, elapsed=%.1f, timeout=%s, cursor-data=%s",
             self.pointer_overlay, elapsed, CURSOR_IDLE_TIMEOUT, (self.cursor_data or [])[:7])
         if elapsed >= CURSOR_IDLE_TIMEOUT:
@@ -783,8 +784,8 @@ class GLWindowBackingBase(WindowBackingBase):
         h = self.cursor_data[4]
         xhot = self.cursor_data[5]
         yhot = self.cursor_data[6]
-        x = px-xhot
-        y = py-yhot
+        x = px - xhot
+        y = py - yhot
         texture = int(self.textures[TEX_CURSOR])
         self.overlay_texture(texture, x, y, w, h)
 
@@ -797,14 +798,14 @@ class GLWindowBackingBase(WindowBackingBase):
 
         wh = self.render_size[1]
         # the region we're updating (reversed):
-        glViewport(x, wh-y-h, w, h)
+        glViewport(x, wh - y - h, w, h)
 
         program = self.programs["overlay"]
         glUseProgram(program)
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(target, texture)
         tex_loc = glGetUniformLocation(program, "rgba")
-        glUniform1i(tex_loc, 0)         # 0 -> TEXTURE_0
+        glUniform1i(tex_loc, 0)  # 0 -> TEXTURE_0
 
         viewport_pos = glGetUniformLocation(program, "viewport_pos")
         glUniform2f(viewport_pos, x, y)
@@ -827,7 +828,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def draw_border(self) -> None:
         bw, bh = self.size
-        rgba = tuple(round(v*256) for v in (self.border.red, self.border.green, self.border.blue, self.border.alpha))
+        rgba = tuple(round(v * 256) for v in (self.border.red, self.border.green, self.border.blue, self.border.alpha))
 
         self.draw_rectangle(0, 0, bw, bh, self.border.size, *rgba)
 
@@ -846,7 +847,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glViewport(0, 0, bw, bh)
 
         color = get_paint_box_color(encoding)
-        rgba = tuple(round(v*256) for v in color)
+        rgba = tuple(round(v * 256) for v in color)
         self.draw_rectangle(x, y, w, h, self.paint_box_line_width, *rgba)
 
     def draw_rectangle(self, x: int, y: int, w: int, h: int, size=1, red=0, green=0, blue=0, alpha=0) -> None:
@@ -868,12 +869,12 @@ class GLWindowBackingBase(WindowBackingBase):
 
         for rx, ry, rw, rh in (
                 (x, y, size, h),
-                (x+w-size, y, size, h),
-                (x+size, y, w-2*size, size),
-                (x+size, y+h-size, w-2*size, size),
+                (x + w - size, y, size, h),
+                (x + size, y, w - 2 * size, size),
+                (x + size, y + h - size, w - 2 * size, size),
         ):
             glBlitFramebuffer(0, 0, 1, 1,
-                              rx, bh-ry, rx + rw, bh-(ry + rh),
+                              rx, bh - ry, rx + rw, bh - (ry + rh),
                               GL_COLOR_BUFFER_BIT, GL_NEAREST)
 
     def update_fps_buffer(self, width, height, pixels) -> None:
@@ -898,6 +899,7 @@ class GLWindowBackingBase(WindowBackingBase):
             if context:
                 self.update_fps()
                 self.managed_present_fbo(context)
+
         self.fps_refresh_timer = glib.timeout_add(1000, self.with_gl_context, refresh_screen)
 
     def validate_cursor(self) -> bool:
@@ -905,7 +907,7 @@ class GLWindowBackingBase(WindowBackingBase):
         cw: int = cursor_data[3]
         ch: int = cursor_data[4]
         pixels = cursor_data[8]
-        blen = cw*ch*4
+        blen = cw * ch * 4
         if len(pixels) != blen:
             log.error("Error: invalid cursor pixel buffer for %ix%i", cw, ch)
             log.error(" expected %i bytes but got %i (%s)", blen, len(pixels), type(pixels))
@@ -923,7 +925,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 w = h = 32
                 xhot = yhot = 16
                 serial = 0
-                pixels = b"d"*w*h*4
+                pixels = b"d" * w * h * 4
                 name = "fake"
                 cursor_data = ("raw", x, y, w, h, xhot, yhot, serial, pixels, name)
         self.cursor_data = cursor_data
@@ -939,6 +941,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 texture = int(self.textures[TEX_CURSOR])
                 glActiveTexture(GL_TEXTURE0)
                 upload_rgba_texture(texture, cw, ch, pixels)
+
         self.with_gl_context(gl_upload_cursor)
 
     def paint_jpeg(self, img_data, x: int, y: int, width: int, height: int,
@@ -955,11 +958,13 @@ class GLWindowBackingBase(WindowBackingBase):
             if self.nvjpeg_decoder and NVJPEG:
                 def paint_nvjpeg(gl_context):
                     self.paint_nvjpeg(gl_context, encoding, img_data, x, y, width, height, options, callbacks)
+
                 self.idle_add(self.with_gl_context, paint_nvjpeg)
                 return
             if self.nvdec_decoder and NVDEC and encoding in self.nvdec_decoder.get_encodings():
                 def paint_nvdec(gl_context):
                     self.paint_nvdec(gl_context, encoding, img_data, x, y, width, height, options, callbacks)
+
                 self.idle_add(self.with_gl_context, paint_nvdec)
                 return
         if JPEG_YUV and width >= 2 and height >= 2 and encoding == "jpeg":
@@ -987,12 +992,12 @@ class GLWindowBackingBase(WindowBackingBase):
         # must be called with an active cuda context, and from the UI thread
         self.gl_init(gl_context)
         pbo = glGenBuffers(1)
-        size = rowstride*height
+        size = rowstride * height
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo)
         glBufferData(GL_PIXEL_UNPACK_BUFFER, size, None, GL_STREAM_DRAW)
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
         # pylint: disable=import-outside-toplevel
-        from pycuda.driver import Memcpy2D   # pylint: disable=no-name-in-module
+        from pycuda.driver import Memcpy2D  # pylint: disable=no-name-in-module
         from pycuda.gl import RegisteredBuffer, graphics_map_flags  # @UnresolvedImport
         cuda_pbo = RegisteredBuffer(int(pbo), graphics_map_flags.WRITE_DISCARD)
         log("RegisteredBuffer%s=%s", (pbo, graphics_map_flags.WRITE_DISCARD), cuda_pbo)
@@ -1026,7 +1031,7 @@ class GLWindowBackingBase(WindowBackingBase):
             img = self.nvdec_decoder.decompress_with_device(encoding, img_data, width, height, options)
             log("paint_nvdec: gl_context=%s, img=%s, downloading buffer to pbo", context, img)
             pixel_format = img.get_pixel_format()
-            if pixel_format not in ("NV12", ):
+            if pixel_format not in ("NV12",):
                 raise ValueError(f"unexpected pixel format {pixel_format}")
             # `pixels` is a cuda buffer with 2 planes: Y then UV
             cuda_buffer = img.get_pixels()
@@ -1080,7 +1085,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glTexImage2D(target, 0, self.internal_format, width, height, 0, pformat, GL_UNSIGNED_BYTE, None)
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
 
-        set_alignment(width, width*len(rgb_format), rgb_format)
+        set_alignment(width, width * len(rgb_format), rgb_format)
 
         glBindFramebuffer(GL_READ_FRAMEBUFFER, self.tmp_fbo)
         glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_RGB], 0)
@@ -1147,7 +1152,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def gl_paint_rgb(self, context, rgb_format: str, img_data,
                      x: int, y: int, width: int, height: int, render_width: int, render_height: int, rowstride: int,
-                     options: typedict, callbacks : Iterable[Callable]) -> None:
+                     options: typedict, callbacks: Iterable[Callable]) -> None:
         log("%s.gl_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d, options=%s)",
             self, rgb_format, len(img_data), x, y, width, height, rowstride, options)
         x, y = self.gravity_adjust(x, y, options)
@@ -1202,7 +1207,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
             rh = self.render_size[1]
             glBlitFramebuffer(0, 0, width, height,
-                              x, rh-y, x + render_width, rh - y - render_height,
+                              x, rh - y, x + render_width, rh - y - render_height,
                               GL_COLOR_BUFFER_BIT, GL_NEAREST)
 
             glBindTexture(target, 0)
@@ -1232,7 +1237,7 @@ class GLWindowBackingBase(WindowBackingBase):
         pixel_format = img.get_pixel_format()
         if FORCE_VIDEO_PIXEL_FORMAT:
             cd = self.make_csc(enc_width, enc_height, pixel_format,
-                               width, height, (FORCE_VIDEO_PIXEL_FORMAT, ))
+                               width, height, (FORCE_VIDEO_PIXEL_FORMAT,))
             img = cd.convert_image(img)
             pixel_format = img.get_pixel_format()
             log.warn(f"converting to {pixel_format} using {cd}")
@@ -1324,8 +1329,8 @@ class GLWindowBackingBase(WindowBackingBase):
 
                 iformat = internal_formats[index]
                 dformat = data_formats[index]
-                uformat = upload_formats[index]     # upload format: ie: UNSIGNED_BYTE
-                glTexImage2D(target, 0, iformat, width//div_w, height//div_h, 0, dformat, uformat, None)
+                uformat = upload_formats[index]  # upload format: ie: UNSIGNED_BYTE
+                glTexImage2D(target, 0, iformat, width // div_w, height // div_h, 0, dformat, uformat, None)
                 # glBindTexture(target, 0)        #redundant: we rebind below:
 
         gl_marker("updating planar textures: %sx%s %s", width, height, pixel_format)
@@ -1338,17 +1343,17 @@ class GLWindowBackingBase(WindowBackingBase):
             # "GBRP16" -> ("GG", "BB", "RR")
             # "NV12" -> ("Y", "UV")
             tex_name = get_plane_name(pixel_format, index) * bytespp
-            dformat = data_formats[index]       # data format: ie: GL_RED
-            uformat = upload_formats[index]     # upload format: ie: UNSIGNED_BYTE
+            dformat = data_formats[index]  # data format: ie: GL_RED
+            uformat = upload_formats[index]  # upload format: ie: UNSIGNED_BYTE
             rowstride = rowstrides[index]
             div_w, div_h = divs[index]
-            w = width//div_w
+            w = width // div_w
             if dformat == GL_LUMINANCE_ALPHA:
                 # uploading 2 components
                 w //= 2
             elif dformat not in (GL_RED, GL_LUMINANCE):
                 raise RuntimeError(f"unexpected data format {dformat} for {pixel_format}")
-            h = height//div_h
+            h = height // div_h
             if w == 0 or h == 0:
                 log.error(f"Error: zero dimension {w}x{h} for {pixel_format} planar texture {tex_name}")
                 log.error(f" screen update {width}x{height} dropped, div={div_w}x{div_h}")
@@ -1363,7 +1368,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 upload = "pbo"
                 glBindBuffer(GL_PIXEL_UNPACK_BUFFER, plane)
                 pixel_data = None
-                size = rowstride*h
+                size = rowstride * h
             else:
                 upload, pixel_data = pixels_for_upload(plane)
                 size = len(pixel_data)
@@ -1401,6 +1406,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glDrawBuffer(GL_COLOR_ATTACHMENT0)
 
         ww, wh = self.render_size
+
         # the region we're updating:
 
         def clampx(v: int) -> int:
@@ -1409,7 +1415,7 @@ class GLWindowBackingBase(WindowBackingBase):
         def clampy(v: int) -> int:
             return min(wh, max(0, v))
 
-        viewport = clampx(rx), clampy(wh-ry-height), clampx(width), clampy(height)
+        viewport = clampx(rx), clampy(wh - ry - height), clampx(width), clampy(height)
         glViewport(*viewport)
         log("viewport: %s for size=%s render_size=%s", viewport, self.size, self.render_size)
 
@@ -1418,9 +1424,9 @@ class GLWindowBackingBase(WindowBackingBase):
         for texture, index in textures:
             glActiveTexture(texture)
             glBindTexture(target, self.textures[index])
-            plane_name = shader[index:index+1]        # ie: "YUV_to_RGB"  0 -> "Y"
-            tex_loc = glGetUniformLocation(program, plane_name)   # ie: "Y" -> 0
-            glUniform1i(tex_loc, index)         # tell the shader where to find the texture: 0 -> TEXTURE_0
+            plane_name = shader[index:index + 1]  # ie: "YUV_to_RGB"  0 -> "Y"
+            tex_loc = glGetUniformLocation(program, plane_name)  # ie: "Y" -> 0
+            glUniform1i(tex_loc, index)  # tell the shader where to find the texture: 0 -> TEXTURE_0
 
         # no need to call glGetAttribLocation(program, "position")
         # since we specify the location in the shader:
@@ -1449,9 +1455,9 @@ class GLWindowBackingBase(WindowBackingBase):
         start = monotonic()
         self.do_gl_show(rect_count)
         end = monotonic()
-        flush_elapsed = end-self.last_flush
+        flush_elapsed = end - self.last_flush
         self.last_flush = end
-        fpslog("gl_show after %3ims took %2ims, %2i updates", flush_elapsed*1000, (end-start)*1000, rect_count)
+        fpslog("gl_show after %3ims took %2ims, %2i updates", flush_elapsed * 1000, (end - start) * 1000, rect_count)
 
     def gl_expose_rect(self, rect=None) -> None:
         if not self.paint_screen:
@@ -1464,4 +1470,5 @@ class GLWindowBackingBase(WindowBackingBase):
             if context:
                 self.gl_init(context)
                 self.present_fbo(context, *rect)
+
         self.with_gl_context(expose)

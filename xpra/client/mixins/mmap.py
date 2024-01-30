@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -37,8 +37,8 @@ class MmapClient(StubClientMixin):
         self.mmap_size: int = 0
         self.mmap_group: str = ""
         self.mmap_tempfile = None
-        self.mmap_delete : bool = False
-        self.mmap_supported : bool = True
+        self.mmap_delete: bool = False
+        self.mmap_supported: bool = True
 
     def init(self, opts) -> None:
         self.mmap_group = opts.mmap_group
@@ -55,7 +55,7 @@ class MmapClient(StubClientMixin):
         if self.mmap_supported:
             self.init_mmap(self.mmap_filename, self.mmap_group, conn.filename)
 
-    def get_root_size(self) -> tuple[int,int]:
+    def get_root_size(self) -> tuple[int, int]:
         # subclasses should provide real values
         return 1024, 1024
 
@@ -71,7 +71,7 @@ class MmapClient(StubClientMixin):
             mmap_token_index = c.intget("token_index", 0)
             mmap_token_bytes = c.intget("token_bytes", DEFAULT_TOKEN_BYTES)
             token = read_mmap_token(self.mmap, mmap_token_index, mmap_token_bytes)
-            if token!=mmap_token:
+            if token != mmap_token:
                 log.error("Error: mmap token verification failed!")
                 log.error(f" expected {token:x}")
                 log.error(f" found {mmap_token:x}")
@@ -79,7 +79,7 @@ class MmapClient(StubClientMixin):
                 self.quit(ExitCode.MMAP_TOKEN_FAILURE)
                 return False
             log.info("enabled fast mmap transfers using %sB shared memory area", std_unit(self.mmap_size, unit=1024))
-        #the server will have a handle on the mmap file by now, safe to delete:
+        # the server will have a handle on the mmap file by now, safe to delete:
         if not KEEP_MMAP_FILE:
             self.clean_mmap()
         return True
@@ -96,25 +96,25 @@ class MmapClient(StubClientMixin):
 
     def get_raw_caps(self) -> dict[str, Any]:
         return {
-            "file"          : self.mmap_filename,
-            "size"          : self.mmap_size,
-            "token"         : self.mmap_token,
-            "token_index"   : self.mmap_token_index,
-            "token_bytes"   : self.mmap_token_bytes,
-            "group"         : self.mmap_group or "",
+            "file": self.mmap_filename,
+            "size": self.mmap_size,
+            "token": self.mmap_token,
+            "token_index": self.mmap_token_index,
+            "token_bytes": self.mmap_token_bytes,
+            "group": self.mmap_group or "",
         }
 
     def init_mmap(self, mmap_filename, mmap_group, socket_filename) -> None:
         log("init_mmap(%s, %s, %s)", mmap_filename, mmap_group, socket_filename)
-        from xpra.net.mmap import (   # pylint: disable=import-outside-toplevel
+        from xpra.net.mmap import (  # pylint: disable=import-outside-toplevel
             init_client_mmap, write_mmap_token,
             DEFAULT_TOKEN_BYTES,
         )
         # calculate size:
         root_w, root_h = self.get_root_size()
         # at least 256MB, or 8 fullscreen RGBX frames:
-        mmap_size : int = max(512*1024*1024, root_w*root_h*4*8)
-        mmap_size = min(2048*1024*1024, mmap_size)
+        mmap_size: int = max(512 * 1024 * 1024, root_w * root_h * 4 * 8)
+        mmap_size = min(2048 * 1024 * 1024, mmap_size)
         self.mmap_enabled, self.mmap_delete, self.mmap, self.mmap_size, self.mmap_tempfile, self.mmap_filename = \
             init_client_mmap(mmap_group, socket_filename or "", mmap_size, self.mmap_filename)
         if self.mmap_enabled:

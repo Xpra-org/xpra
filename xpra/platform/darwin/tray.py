@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -36,7 +36,6 @@ class OSXTray(TrayBase):
         self.set_dock_icon()
         set_exit_cb(self.quit)
 
-
     def get_geometry(self):
         return None
 
@@ -49,50 +48,48 @@ class OSXTray(TrayBase):
     def hide(self) -> None:
         """ Unfortunately, the dock icon cannot be hidden """
 
-
     def quit(self, *args) -> bool:
         log("quit(%s) exit_cb=%s", args, self.exit_cb)
         if self.exit_cb:
             self.exit_cb()
-            return True     #we've handled the quit request ourselves - I hope..
+            return True  # we've handled the quit request ourselves - I hope..
         return False
 
     def ready(self) -> None:
         gui_ready()
 
-    def set_tooltip(self, tooltip:str="") -> None:
-        #label cannot be set on the dock icon?
+    def set_tooltip(self, tooltip: str = "") -> None:
+        # label cannot be set on the dock icon?
         pass
 
-    def set_blinking(self, on:bool) -> None:
+    def set_blinking(self, on: bool) -> None:
         if on:
-            if self.last_attention_request_id<0:
+            if self.last_attention_request_id < 0:
                 self.last_attention_request_id = self.macapp.attention_request(INFO_REQUEST)
         else:
-            if self.last_attention_request_id>=0:
+            if self.last_attention_request_id >= 0:
                 self.macapp.cancel_attention_request(self.last_attention_request_id)
                 self.last_attention_request_id = -1
 
-    def set_icon_from_data(self, pixels, has_alpha:bool, w:int, h:int, rowstride:int, options=None) -> None:
+    def set_icon_from_data(self, pixels, has_alpha: bool, w: int, h: int, rowstride: int, options=None) -> None:
         tray_icon = get_pixbuf_from_data(pixels, has_alpha, w, h, rowstride)
         self.macapp.set_dock_icon_pixbuf(tray_icon)
         self.icon_timestamp = monotonic()
 
-    def do_set_icon_from_file(self, filename:str) -> None:
+    def do_set_icon_from_file(self, filename: str) -> None:
         if not self.macapp:
             return
         pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename=filename)
         self.macapp.set_dock_icon_pixbuf(pixbuf)
         self.icon_timestamp = monotonic()
 
-
     def set_global_menu(self) -> None:
         mh = getOSXMenuHelper()
-        if mh.build()!=self.menu:
+        if mh.build() != self.menu:
             log.error("the menu (%s) is not from the menu helper!", self.menu)
             return
-        #redundant: the menu bar has already been set during gui init
-        #using the basic the simple menu from build_menu_bar()
+        # redundant: the menu bar has already been set during gui init
+        # using the basic the simple menu from build_menu_bar()
         import warnings
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message=".*invalid cast from 'GtkMenuBar'")
@@ -101,7 +98,7 @@ class OSXTray(TrayBase):
         log("OSXTray.set_global_menu() done")
 
     def set_dock_menu(self) -> None:
-        #dock menu
+        # dock menu
         log("OSXTray.set_dock_menu()")
         Gtk = gi_import("Gtk")
         self.dock_menu = Gtk.Menu()

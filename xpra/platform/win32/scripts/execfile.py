@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2020-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,9 @@
 
 import os.path
 import sys
+
 from xpra.platform import init, clean
+
 init("Xpra-Python-Exec")
 
 
@@ -19,7 +21,7 @@ def ret(v):
     sys.exit(v)
 
 
-if len(sys.argv)<2:
+if len(sys.argv) < 2:
     print("you must specify a python script file to run!")
     ret(1)
 
@@ -35,9 +37,11 @@ with open(filename, "rb") as f:
     fdata = f.read()
 if filename.endswith(".pyc"):
     from importlib.util import MAGIC_NUMBER
+
     assert fdata.startswith(MAGIC_NUMBER), "not a python compiled file, or version mismatch"
     import marshal
+
     # 16 is the magic value for python 3.8:
     fdata = marshal.loads(fdata[16:])
-exec(fdata)   # pylint: disable=exec-used
+exec(fdata)  # pylint: disable=exec-used
 ret(0)

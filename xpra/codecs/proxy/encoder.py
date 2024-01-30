@@ -23,12 +23,12 @@ def get_type() -> str:
     return "proxy"
 
 
-def get_info() -> dict[str,Any]:
-    return {"version"   : get_version()}
+def get_info() -> dict[str, Any]:
+    return {"version": get_version()}
 
 
 def get_encodings() -> tuple[str, ...]:
-    return ("proxy", )
+    return ("proxy",)
 
 
 def init_module() -> None:
@@ -45,14 +45,14 @@ class Encoder:
         the raw pixels and the metadata that goes with it.
     """
 
-    def init_context(self, encoding:str, width:int, height:int, src_format:str, options=None) -> None:
+    def init_context(self, encoding: str, width: int, height: int, src_format: str, options=None) -> None:
         options = typedict(options or {})
         self.encoding = encoding
         self.width = width
         self.height = height
         self.src_format = src_format
         self.dst_formats = options.strtupleget("dst-formats")
-        self.last_frame_times : deque[float] = deque(maxlen=200)
+        self.last_frame_times: deque[float] = deque(maxlen=200)
         self.frames = 0
         self.time = 0
         self.first_frame_timestamp = 0
@@ -60,29 +60,29 @@ class Encoder:
     def is_ready(self) -> bool:
         return True
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         info = get_info()
         if self.src_format is None:
             return info
         info.update({
-            "frames"    : self.frames,
-            "width"     : self.width,
-            "height"    : self.height,
-            "encoding"  : self.encoding,
+            "frames": self.frames,
+            "width": self.width,
+            "height": self.height,
+            "encoding": self.encoding,
             "src_format": self.src_format,
-            "dst_formats" : self.dst_formats,
+            "dst_formats": self.dst_formats,
         })
         # calculate fps:
         now = monotonic()
         last_time = now
-        cut_off = now-10.0
+        cut_off = now - 10.0
         f = 0
         for v in tuple(self.last_frame_times):
-            if v>cut_off:
+            if v > cut_off:
                 f += 1
                 last_time = min(last_time, v)
-        if f>0 and last_time<now:
-            info["fps"] = int(0.5+f/(now-last_time))
+        if f > 0 and last_time < now:
+            info["fps"] = int(0.5 + f / (now - last_time))
         return info
 
     def __repr__(self):
@@ -120,7 +120,7 @@ class Encoder:
         self.time = 0
         self.first_frame_timestamp = 0
 
-    def compress_image(self, image:ImageWrapper, options=None) -> tuple[bytes,dict]:
+    def compress_image(self, image: ImageWrapper, options=None) -> tuple[bytes, dict]:
         log("compress_image(%s, %s)", image, options)
         # pass the pixels as they are
         if image.get_planes() != ImageWrapper.PACKED:
@@ -130,15 +130,15 @@ class Encoder:
             raise RuntimeError(f"failed to get pixels from {image}")
         # info used by proxy encoder:
         client_options = {
-            "proxy"     : True,
-            "frame"     : self.frames,
-            "pts"       : image.get_timestamp()-self.first_frame_timestamp,
-            "timestamp" : image.get_timestamp(),
-            "rowstride" : image.get_rowstride(),
-            "depth"     : image.get_depth(),
+            "proxy": True,
+            "frame": self.frames,
+            "pts": image.get_timestamp() - self.first_frame_timestamp,
+            "timestamp": image.get_timestamp(),
+            "rowstride": image.get_rowstride(),
+            "depth": image.get_depth(),
             "rgb_format": image.get_pixel_format(),
             # pass-through encoder options:
-            "options"   : options or {},
+            "options": options or {},
         }
         if self.frames == 0:
             self.first_frame_timestamp = image.get_timestamp()

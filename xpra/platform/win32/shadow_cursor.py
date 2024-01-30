@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -35,7 +35,7 @@ def get_cursor_data(hCursor) -> list | None:
         ii = ICONINFO()
         ii.cbSize = sizeof(ICONINFO)
         if not GetIconInfo(hCursor, byref(ii)):
-            raise OSError()    # @UndefinedVariable
+            raise OSError()  # @UndefinedVariable
         x = ii.xHotspot
         y = ii.yHotspot
         log("get_cursor_data(%#x) hotspot at %ix%i, hbmColor=%#x, hbmMask=%#x",
@@ -46,12 +46,12 @@ def get_cursor_data(hCursor) -> list | None:
         iie = ICONINFOEXW()
         iie.cbSize = sizeof(ICONINFOEXW)
         if not GetIconInfoExW(hCursor, byref(iie)):
-            raise OSError()    # @UndefinedVariable
+            raise OSError()  # @UndefinedVariable
         name = iie.szResName[:MAX_PATH]
         log("wResID=%#x, sxModName=%s, szResName=%s", iie.wResID, iie.sxModName[:MAX_PATH], name)
         bm = Bitmap()
         if not GetObjectA(ii.hbmColor, sizeof(Bitmap), byref(bm)):
-            raise OSError()    # @UndefinedVariable
+            raise OSError()  # @UndefinedVariable
         log("cursor bitmap: type=%i, width=%i, height=%i, width bytes=%i, planes=%i, bits pixel=%i, bits=%#x",
             bm.bmType, bm.bmWidth, bm.bmHeight, bm.bmWidthBytes, bm.bmPlanes, bm.bmBitsPixel, bm.bmBits or 0)
         w = bm.bmWidth
@@ -70,9 +70,9 @@ def get_cursor_data(hCursor) -> list | None:
 
         # if not DrawIcon(memdc, 0, 0, hCursor):
         if not DrawIconEx(memdc, 0, 0, hCursor, w, h, 0, 0, win32con.DI_NORMAL):
-            raise OSError()    # @UndefinedVariable
+            raise OSError()  # @UndefinedVariable
 
-        buf_size = bm.bmWidthBytes*h
+        buf_size = bm.bmWidthBytes * h
         buftype = c_char * buf_size
         buf = buftype()
         buf.value = b""
@@ -89,16 +89,16 @@ def get_cursor_data(hCursor) -> list | None:
             pixels = bytearray(strtobytes(buf.raw))
             has_alpha = False
             has_pixels = False
-            for i in range(len(pixels)//4):
-                has_pixels = has_pixels or pixels[i*4] != 0 or pixels[i*4+1] != 0 or pixels[i*4+2] != 0
-                has_alpha = has_alpha or pixels[i*4+3] != 0
+            for i in range(len(pixels) // 4):
+                has_pixels = has_pixels or pixels[i * 4] != 0 or pixels[i * 4 + 1] != 0 or pixels[i * 4 + 2] != 0
+                has_alpha = has_alpha or pixels[i * 4 + 3] != 0
                 if has_pixels and has_alpha:
                     break
             if has_pixels and not has_alpha:
                 # generate missing alpha - don't ask me why
-                for i in range(len(pixels)//4):
-                    if pixels[i*4] != 0 or pixels[i*4+1] != 0 or pixels[i*4+2] != 0:
-                        pixels[i*4+3] = 0xff
+                for i in range(len(pixels) // 4):
+                    if pixels[i * 4] != 0 or pixels[i * 4 + 1] != 0 or pixels[i * 4 + 2] != 0:
+                        pixels[i * 4 + 3] = 0xff
         return [0, 0, w, h, x, y, hCursor, bytes(pixels), strtobytes(name)]
     except Exception as e:
         log("get_cursor_data(%#x)", hCursor, exc_info=True)

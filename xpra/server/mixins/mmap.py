@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -18,7 +18,7 @@ class MMAP_Server(StubServerMixin):
     def __init__(self):
         self.supports_mmap = False
         self.mmap_filename = None
-        self.min_mmap_size = 64*1024*1024
+        self.min_mmap_size = 64 * 1024 * 1024
 
     def init(self, opts) -> None:
         if opts.mmap and os.path.isabs(opts.mmap):
@@ -27,10 +27,10 @@ class MMAP_Server(StubServerMixin):
         else:
             self.supports_mmap = bool(parse_bool("mmap", opts.mmap.lower()))
 
-    def get_info(self, _proto=None) -> dict[str,Any]:
+    def get_info(self, _proto=None) -> dict[str, Any]:
         return {
             "mmap": {
-                "supported"     : self.supports_mmap,
-                "filename"      : self.mmap_filename or "",
+                "supported": self.supports_mmap,
+                "filename": self.mmap_filename or "",
             },
         }

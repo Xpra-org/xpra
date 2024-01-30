@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,13 +14,12 @@ from xpra.platform import platform_import
 from xpra.util.str_fn import bytestostr
 from xpra.log import Logger
 
-
 _init_done = False
 
 
 def init() -> None:
-    #warning: we currently call init() from multiple places to try
-    #to ensure we run it as early as possible..
+    # warning: we currently call init() from multiple places to try
+    # to ensure we run it as early as possible..
     global _init_done
     if not _init_done:
         _init_done = True
@@ -48,7 +47,7 @@ def do_ready() -> None:
 _default_icon = "xpra.png"
 
 
-def set_default_icon(icon_filename:str) -> None:
+def set_default_icon(icon_filename: str) -> None:
     global _default_icon
     _default_icon = icon_filename
 
@@ -72,27 +71,27 @@ def get_clipboard_native_class() -> str:
     return ""
 
 
-#defaults:
+# defaults:
 def get_native_tray_menu_helper_class() -> type | None:
-    #classes that generate menus for xpra's system tray
-    #let the toolkit classes use their own
+    # classes that generate menus for xpra's system tray
+    # let the toolkit classes use their own
     return None
 
 
 def get_native_tray_classes(*_args) -> list[type]:
-    #the classes we can use for our system tray:
-    #let the toolkit classes use their own
+    # the classes we can use for our system tray:
+    # let the toolkit classes use their own
     return []
 
 
 def get_native_system_tray_classes(*_args) -> list[type]:
-    #the classes we can use for application system tray forwarding:
-    #let the toolkit classes use their own
+    # the classes we can use for application system tray forwarding:
+    # let the toolkit classes use their own
     return []
 
 
 def system_bell(*_args) -> bool:
-    #let the toolkit classes use their own
+    # let the toolkit classes use their own
     return False
 
 
@@ -112,7 +111,7 @@ def get_ydpi() -> int:
     return -1
 
 
-def get_monitors_info(xscale=1, yscale=1) -> dict[int,Any]:
+def get_monitors_info(xscale=1, yscale=1) -> dict[int, Any]:
     from xpra.gtk.info import get_monitors_info
     return get_monitors_info(xscale, yscale)
 
@@ -120,8 +119,8 @@ def get_monitors_info(xscale=1, yscale=1) -> dict[int,Any]:
 def get_icon_size() -> int:
     xdpi = get_xdpi()
     ydpi = get_ydpi()
-    if xdpi>0 and ydpi>0:
-        dpi = round((xdpi + ydpi)/2)
+    if xdpi > 0 and ydpi > 0:
+        dpi = round((xdpi + ydpi) / 2)
     else:
         dpi = 96
     if dpi > 144:
@@ -133,36 +132,36 @@ def get_icon_size() -> int:
     return 16
 
 
-def get_antialias_info() -> dict[str,Any]:
+def get_antialias_info() -> dict[str, Any]:
     return {}
 
 
-def get_display_icc_info() -> dict[str,Any]:
-    #per display info
+def get_display_icc_info() -> dict[str, Any]:
+    # per display info
     return {}
 
 
-def get_icc_info() -> dict[str,Any]:
+def get_icc_info() -> dict[str, Any]:
     return default_get_icc_info()
 
 
-def default_get_icc_info() -> dict[str,Any]:
+def default_get_icc_info() -> dict[str, Any]:
     ENV_ICC_DATA = os.environ.get("XPRA_ICC_DATA")
     if ENV_ICC_DATA:
         return {
-            "source"    : "environment-override",
-            "data"      : binascii.unhexlify(ENV_ICC_DATA),
+            "source": "environment-override",
+            "data": binascii.unhexlify(ENV_ICC_DATA),
         }
     return get_pillow_icc_info()
 
 
-def get_pillow_icc_info() -> dict[str,Any]:
+def get_pillow_icc_info() -> dict[str, Any]:
     screenlog = Logger("screen")
     info = {}
     try:
         from PIL import ImageCms
         from PIL.ImageCms import get_display_profile
-        INTENT_STR : dict[Any, str] = {}
+        INTENT_STR: dict[Any, str] = {}
         for x in ("PERCEPTUAL", "RELATIVE_COLORIMETRIC", "SATURATION", "ABSOLUTE_COLORIMETRIC"):
             intent = getattr(ImageCms, "Intent", None)
             if intent:
@@ -183,14 +182,14 @@ def get_pillow_icc_info() -> dict[str,Any]:
                 return v.tobytes()
 
             for (k, fn, conv) in (
-                ("name",            "getProfileName",           None),
-                ("info",            "getProfileInfo",           None),
-                ("copyright",       "getProfileCopyright",      None),
-                ("manufacturer",    "getProfileManufacturer",   None),
-                ("model",           "getProfileModel",          None),
-                ("description",     "getProfileDescription",    None),
-                ("default-intent",  "getDefaultIntent",         getDefaultIntentStr),
-                ("data",            "getData",                  getData),
+                    ("name", "getProfileName", None),
+                    ("info", "getProfileInfo", None),
+                    ("copyright", "getProfileCopyright", None),
+                    ("manufacturer", "getProfileManufacturer", None),
+                    ("model", "getProfileModel", None),
+                    ("description", "getProfileDescription", None),
+                    ("default-intent", "getDefaultIntent", getDefaultIntentStr),
+                    ("data", "getData", getData),
             ):
                 m = getattr(ImageCms, fn, None)
                 if m is None:
@@ -211,12 +210,12 @@ def get_pillow_icc_info() -> dict[str,Any]:
     return info
 
 
-#global workarea for all screens
+# global workarea for all screens
 def get_workarea():
     return None
 
 
-#per monitor workareas (assuming a single screen)
+# per monitor workareas (assuming a single screen)
 def get_workareas():
     return ()
 
@@ -225,7 +224,7 @@ def get_number_of_desktops() -> int:
     return 1
 
 
-def get_desktop_names()  -> tuple[str,...]:
+def get_desktop_names() -> tuple[str, ...]:
     return ()
 
 
@@ -241,11 +240,11 @@ def get_double_click_time() -> int:
     return -1
 
 
-def get_double_click_distance() -> tuple[int,int]:
+def get_double_click_distance() -> tuple[int, int]:
     return -1, -1
 
 
-def get_fixed_cursor_size() -> tuple[int,int]:
+def get_fixed_cursor_size() -> tuple[int, int]:
     return -1, -1
 
 
@@ -253,12 +252,12 @@ def get_cursor_size() -> int:
     return -1
 
 
-def get_window_min_size() -> tuple[int,int]:
+def get_window_min_size() -> tuple[int, int]:
     return 0, 0
 
 
-def get_window_max_size() -> tuple[int,int]:
-    return 2**15-1, 2**15-1
+def get_window_max_size() -> tuple[int, int]:
+    return 2 ** 15 - 1, 2 ** 15 - 1
 
 
 def get_window_frame_size(_x, _y, _w, _h):
@@ -287,11 +286,11 @@ def show_desktop(_show) -> None:
     """ If possible, show the desktop """
 
 
-def set_fullscreen_monitors(_window, _fsm, _source_indication:int=0) -> None:
+def set_fullscreen_monitors(_window, _fsm, _source_indication: int = 0) -> None:
     """ Only overridden by posix """
 
 
-def set_shaded(_window, _shaded:bool) -> None:
+def set_shaded(_window, _shaded: bool) -> None:
     """
     GTK never exposed the 'shaded' window attribute,
     posix clients will hook it up here.
@@ -313,7 +312,7 @@ def pointer_ungrab(_window):
 
 
 def gl_check() -> str:
-    return ""     #no problem
+    return ""  # no problem
 
 
 def get_wm_name() -> str:
@@ -332,7 +331,7 @@ take_screenshot = None
 ClientExtras = None
 
 
-def get_info_base() -> dict[str,Any]:
+def get_info_base() -> dict[str, Any]:
     def fname(v):
         try:
             return v.__name__
@@ -341,43 +340,43 @@ def get_info_base() -> dict[str,Any]:
 
     def fnames(l):
         return [fname(x) for x in l]
+
     return {
-        "native-clipboard"              : get_clipboard_native_class(),
-        "native_tray_menu_helper"       : fname(get_native_tray_menu_helper_class()),
-        "native_trays"                  : fnames(get_native_tray_classes()),
-        "native_system_trays"           : fnames(get_native_system_tray_classes()),
-        "system_bell"                   : fname(system_bell),
-        "native_notifiers"              : fnames(get_native_notifier_classes()),
-        "wm_name"                       : get_wm_name() or "",
-        "workarea"                      : get_workarea() or "",
-        "workareas"                     : get_workareas(),
-        "monitors"                      : get_monitors_info(),
-        "desktops"                      : get_number_of_desktops(),
-        "desktop_names"                 : get_desktop_names(),
-        "session-type"                  : get_session_type(),
-        "vertical-refresh"              : get_vrefresh(),
-        "fixed_cursor_size"             : get_fixed_cursor_size(),
-        "cursor_size"                   : get_cursor_size(),
-        "icon_size"                     : get_icon_size(),
-        "mouse"                         : get_mouse_config(),
-        "double_click"                  : {
-            "time"       : get_double_click_time(),
-            "distance"   : get_double_click_distance(),
+        "native-clipboard": get_clipboard_native_class(),
+        "native_tray_menu_helper": fname(get_native_tray_menu_helper_class()),
+        "native_trays": fnames(get_native_tray_classes()),
+        "native_system_trays": fnames(get_native_system_tray_classes()),
+        "system_bell": fname(system_bell),
+        "native_notifiers": fnames(get_native_notifier_classes()),
+        "wm_name": get_wm_name() or "",
+        "workarea": get_workarea() or "",
+        "workareas": get_workareas(),
+        "monitors": get_monitors_info(),
+        "desktops": get_number_of_desktops(),
+        "desktop_names": get_desktop_names(),
+        "session-type": get_session_type(),
+        "vertical-refresh": get_vrefresh(),
+        "fixed_cursor_size": get_fixed_cursor_size(),
+        "cursor_size": get_cursor_size(),
+        "icon_size": get_icon_size(),
+        "mouse": get_mouse_config(),
+        "double_click": {
+            "time": get_double_click_time(),
+            "distance": get_double_click_distance(),
         },
-        "dpi"                           : {
-            "x"          : get_xdpi(),
-            "y"          : get_ydpi(),
+        "dpi": {
+            "x": get_xdpi(),
+            "y": get_ydpi(),
         },
-        "antialias"                     : get_antialias_info(),
-        "icc"                           : get_icc_info(),
-        "display-icc"                   : get_display_icc_info(),
-        "window_frame"                  : get_window_frame_sizes(),
-        "can_access_display"            : can_access_display(),
+        "antialias": get_antialias_info(),
+        "icc": get_icc_info(),
+        "display-icc": get_display_icc_info(),
+        "window_frame": get_window_frame_sizes(),
+        "can_access_display": can_access_display(),
     }
 
 
 get_info = get_info_base
-
 
 platform_import(globals(), "gui", False,
                 "do_ready",
@@ -427,7 +426,7 @@ def main() -> int:
             for x in get_all_loggers():
                 x.enable_debug()
 
-        #naughty, but how else can I hook this up?
+        # naughty, but how else can I hook this up?
         if POSIX and not OSX:
             from xpra.x11.bindings.posix_display_source import init_posix_display_source
             init_posix_display_source()

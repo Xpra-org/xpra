@@ -40,22 +40,22 @@ class Capture(Pipeline):
     __gsignals__ = Pipeline.__generic_signals__.copy()
     __gsignals__["new-image"] = n_arg_signal(3)
 
-    def __init__(self, element: str="ximagesrc", pixel_format : str="BGRX",
-                 width : int=0, height : int=0):
+    def __init__(self, element: str = "ximagesrc", pixel_format: str = "BGRX",
+                 width: int = 0, height: int = 0):
         super().__init__()
         self.capture_element = element.split(" ")[0]
-        self.pixel_format : str = pixel_format
-        self.width : int = width
-        self.height : int = height
-        self.frames : int = 0
-        self.framerate : int  = 10
-        self.image : Queue[ImageWrapper] = Queue(maxsize=1)
+        self.pixel_format: str = pixel_format
+        self.width: int = width
+        self.height: int = height
+        self.frames: int = 0
+        self.framerate: int = 10
+        self.image: Queue[ImageWrapper] = Queue(maxsize=1)
         self.sink = None
         self.extra_client_info = {}
         self.create_pipeline(element)
-        assert width>0 and height>0
+        assert width > 0 and height > 0
 
-    def create_pipeline(self, capture_element:str="ximagesrc") -> None:
+    def create_pipeline(self, capture_element: str = "ximagesrc") -> None:
         # CAPS = f"video/x-raw,width={self.width},height={self.height},
         #     format=(string){self.pixel_format},framerate={self.framerate}/1,interlace=progressive"
         elements = [
@@ -68,10 +68,11 @@ class Capture(Pipeline):
         ]
         if not self.setup_pipeline_and_bus(elements):
             raise RuntimeError("failed to setup gstreamer pipeline")
-        self.sink   = self.pipeline.get_by_name("sink")
+        self.sink = self.pipeline.get_by_name("sink")
 
         def sh(sig, handler):
             self.element_connect(self.sink, sig, handler)
+
         sh("new-sample", self.on_new_sample)
         sh("new-preroll", self.on_new_preroll)
 
@@ -84,7 +85,7 @@ class Capture(Pipeline):
             data = buf.extract_dup(0, size)
             self.frames += 1
             bytesperpixel = len(self.pixel_format)
-            rowstride = self.width*bytesperpixel
+            rowstride = self.width * bytesperpixel
             image = ImageWrapper(x=0, y=0, width=self.width, height=self.height, pixels=data,
                                  pixel_format=self.pixel_format, depth=24,
                                  rowstride=rowstride, bytesperpixel=bytesperpixel, planes=ImageWrapper.PACKED)
@@ -99,7 +100,7 @@ class Capture(Pipeline):
             except Full:
                 log("image queue is already full")
             else:
-                client_info = {"frame" : self.frames}
+                client_info = {"frame": self.frames}
                 self.emit("new-image", self.pixel_format, image, client_info)
         return GST_FLOW_OK
 
@@ -107,9 +108,9 @@ class Capture(Pipeline):
         log("new-preroll")
         return GST_FLOW_OK
 
-    def get_image(self, x:int=0, y:int=0, width:int=0, height:int=0):
+    def get_image(self, x: int = 0, y: int = 0, width: int = 0, height: int = 0):
         log("get_image%s", (x, y, width, height))
-        if self.state=="stopped":
+        if self.state == "stopped":
             return None
         try:
             return self.image.get(timeout=5)
@@ -135,7 +136,7 @@ class CaptureAndEncode(Capture):
     and encode it to a video stream
     """
 
-    def create_pipeline(self, capture_element: str="ximagesrc") -> None:
+    def create_pipeline(self, capture_element: str = "ximagesrc") -> None:
         # encode_element:str="x264enc pass=4 speed-preset=1 tune=4 byte-stream=true quantizer=51 qp-max=51 qp-min=50"):
         # encode_element="x264enc threads=8 pass=4 speed-preset=1 tune=zerolatency byte-stream=true
         #     quantizer=51 qp-max=51 qp-min=50"):
@@ -149,31 +150,31 @@ class CaptureAndEncode(Capture):
         # we are overloading "pixel_format" as "encoding":
         encoding = self.pixel_format
         encoder = {
-            "jpeg"  : "jpegenc",
-            "h264"  : "x264enc",
-            "vp8"   : "vp8enc",
-            "vp9"   : "vp9enc",
-            "av1"   : "av1enc",
+            "jpeg": "jpegenc",
+            "h264": "x264enc",
+            "vp8": "vp8enc",
+            "vp9": "vp9enc",
+            "av1": "av1enc",
         }.get(encoding)
         if not encoder:
             raise ValueError(f"no encoder defined for {encoding}")
         if encoder not in get_all_plugin_names():
             raise RuntimeError(f"encoder {encoder} is not available")
         options = typedict({
-            "speed" : 100,
-            "quality" : 100,
+            "speed": 100,
+            "quality": 100,
         })
         self.profile = get_profile(options, encoding, csc_mode="YUV444P",
-                                   default_profile="high" if encoder=="x264enc" else "")
+                                   default_profile="high" if encoder == "x264enc" else "")
         eopts = get_video_encoder_options(encoder, self.profile, options)
         vcaps = get_video_encoder_caps(encoder)
-        self.extra_client_info : dict[str,Any] = vcaps.copy()
+        self.extra_client_info: dict[str, Any] = vcaps.copy()
         if self.profile:
             vcaps["profile"] = self.profile
             self.extra_client_info["profile"] = self.profile
-        gst_encoding = get_gst_encoding(encoding)   # ie: "hevc" -> "video/x-h265"
+        gst_encoding = get_gst_encoding(encoding)  # ie: "hevc" -> "video/x-h265"
         elements = [
-            capture_element,   # ie: ximagesrc or pipewiresrc
+            capture_element,  # ie: ximagesrc or pipewiresrc
             # "videorate",
             # "video/x-raw,framerate=20/1",
             # "queue leaky=2 max-size-buffers=1",
@@ -186,10 +187,11 @@ class CaptureAndEncode(Capture):
         ]
         if not self.setup_pipeline_and_bus(elements):
             raise RuntimeError("failed to setup gstreamer pipeline")
-        self.sink : Gst.Element = self.pipeline.get_by_name("sink")
+        self.sink: Gst.Element = self.pipeline.get_by_name("sink")
 
         def sh(sig, handler):
             self.element_connect(self.sink, sig, handler)
+
         sh("new-sample", self.on_new_sample)
         sh("new-preroll", self.on_new_preroll)
 
@@ -238,6 +240,7 @@ def selftest(_full=False) -> None:
             c.stop()
             return False
         return True
+
     glib.timeout_add(500, check)
     glib.timeout_add(2000, c.stop)
     glib.timeout_add(2500, loop.quit)

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -90,7 +90,7 @@ class AudioServer(StubServerMixin):
         self.audio_init_done.wait(5)
         self.cleanup_pulseaudio()
 
-    def get_info(self, _proto) -> dict[str,Any]:
+    def get_info(self, _proto) -> dict[str, Any]:
         self.audio_init_done.wait(5)
         info = {}
         if self.pulseaudio is not False:
@@ -99,17 +99,17 @@ class AudioServer(StubServerMixin):
             info["audio"] = self.audio_properties
         return {}
 
-    def get_server_features(self, source) -> dict[str,Any]:
+    def get_server_features(self, source) -> dict[str, Any]:
         d = {
-            "av-sync" : {
-                ""          : self.av_sync,
-                "enabled"   : self.av_sync,
+            "av-sync": {
+                "": self.av_sync,
+                "enabled": self.av_sync,
             },
         }
         log("get_server_features(%s)=%s", source, d)
         return d
 
-    def get_http_scripts(self) -> dict[str,Callable]:
+    def get_http_scripts(self) -> dict[str, Callable]:
         return {}
 
     def init_pulseaudio(self) -> None:
@@ -138,7 +138,7 @@ class AudioServer(StubServerMixin):
             "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE",
             "XPRA_PULSE_SOURCE_DEVICE_NAME", "XPRA_PULSE_SINK_DEVICE_NAME",
         )
-        env = {k:v for k,v in self.get_child_env().items() if k in PA_ENV_WHITELIST}
+        env = {k: v for k, v in self.get_child_env().items() if k in PA_ENV_WHITELIST}
         # 3) use a private pulseaudio server, so each xpra
         #    session can have its own server,
         #    create a directory for each display:
@@ -154,8 +154,8 @@ class AudioServer(StubServerMixin):
                 assert xpra_rd, "bug: no xpra runtime dir"
                 display = os.environ.get("DISPLAY", "").lstrip(":")
                 if xpra_rd.find(f"/{display}/"):
-                    #this is already a per-display directory,
-                    #no need to include the display name again:
+                    # this is already a per-display directory,
+                    # no need to include the display name again:
                     pulse_dirname = "pulse"
                 else:
                     pulse_dirname = f"pulse-{display}"
@@ -198,14 +198,15 @@ class AudioServer(StubServerMixin):
             audiolog("pulseaudio_ended(%s) pulseaudio_proc=%s, returncode=%s, closing=%s",
                      proc, self.pulseaudio_proc, proc.returncode, self._closing)
             if self.pulseaudio_proc is None or self._closing:
-                #cleared by cleanup already, ignore
+                # cleared by cleanup already, ignore
                 return
-            elapsed = monotonic()-started_at
-            if elapsed<2:
+            elapsed = monotonic() - started_at
+            if elapsed < 2:
                 self.timeout_add(1000, pulseaudio_warning)
             else:
                 audiolog.warn("Warning: the pulseaudio server process has terminated after %i seconds", int(elapsed))
             self.pulseaudio_proc = None
+
         try:
             audiolog("pulseaudio cmd=%s", " ".join(cmd))
             audiolog("pulseaudio env=%s", env)
@@ -232,7 +233,8 @@ class AudioServer(StubServerMixin):
                 for i, x in enumerate(self.pulseaudio_configure_commands):
                     proc = Popen(x, env=env, shell=True)
                     self.add_process(proc, "pulseaudio-configure-command-%i" % i, x, ignore=True)
-            self.timeout_add(2*1000, configure_pulse)
+
+            self.timeout_add(2 * 1000, configure_pulse)
 
     def cleanup_pulseaudio(self) -> None:
         self.audio_init_done.wait(5)
@@ -244,31 +246,31 @@ class AudioServer(StubServerMixin):
             self.pulseaudio_proc = None
             audiolog.info("stopping pulseaudio with pid %s", proc.pid)
             try:
-                #first we try pactl (required on Ubuntu):
+                # first we try pactl (required on Ubuntu):
                 cmd = ["pactl", "exit"]
                 proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
                 self.add_process(proc, "pactl exit", cmd, True)
                 r = pollwait(proc)
-                #warning: pactl will return 0 whether it succeeds or not...
-                #but we can't kill the process because Ubuntu starts a new one
-                if r!=0 and self.is_child_alive(proc):
-                    #fallback to using SIGINT:
+                # warning: pactl will return 0 whether it succeeds or not...
+                # but we can't kill the process because Ubuntu starts a new one
+                if r != 0 and self.is_child_alive(proc):
+                    # fallback to using SIGINT:
                     proc.terminate()
             except Exception as e:
                 audiolog.warn("cleanup_pulseaudio() error stopping %s", proc, exc_info=True)
-                #only log the full stacktrace if the process failed to terminate:
+                # only log the full stacktrace if the process failed to terminate:
                 if self.is_child_alive(proc):
                     audiolog.error("Error: stopping pulseaudio: %s", e, exc_info=True)
             if self.pulseaudio_private_socket and self.is_child_alive(proc):
-                #wait for the pulseaudio process to exit,
-                #it will delete the socket:
+                # wait for the pulseaudio process to exit,
+                # it will delete the socket:
                 audiolog("pollwait()=%s", pollwait(proc))
         if self.pulseaudio_private_socket and not self.is_child_alive(proc):
-            #wait for the socket to get cleaned up
-            #(it should be removed by the pulseaudio server as it exits)
+            # wait for the socket to get cleaned up
+            # (it should be removed by the pulseaudio server as it exits)
             import time
             now = monotonic()
-            while (monotonic()-now)<1 and os.path.exists(self.pulseaudio_private_socket):
+            while (monotonic() - now) < 1 and os.path.exists(self.pulseaudio_private_socket):
                 time.sleep(0.1)
         self.clean_pulseaudio_private_dir()
         if not self.is_child_alive(proc):
@@ -286,7 +288,7 @@ class AudioServer(StubServerMixin):
                 native = os.path.join(pulse, "native")
                 dirs = []
                 dbus_dirs = glob.glob("%s/dbus-*" % self.pulseaudio_private_dir)
-                if len(dbus_dirs)==1:
+                if len(dbus_dirs) == 1:
                     dbus_dir = dbus_dirs[0]
                     if os.path.isdir(dbus_dir):
                         services_dir = os.path.join(dbus_dir, "services")
@@ -318,7 +320,8 @@ class AudioServer(StubServerMixin):
     def init_audio_options(self) -> None:
         def audio_missing(*_args):
             return []
-        parse_codecs : Callable = audio_missing
+
+        parse_codecs: Callable = audio_missing
         if self.supports_speaker or self.supports_microphone:
             try:
                 from xpra.audio.common import audio_option_or_all
@@ -345,8 +348,8 @@ class AudioServer(StubServerMixin):
             self.supports_speaker = False
         if not self.microphone_codecs:
             self.supports_microphone = False
-        #query_pulseaudio_properties may access X11,
-        #do this from the main thread:
+        # query_pulseaudio_properties may access X11,
+        # do this from the main thread:
         if bool(self.audio_properties):
             self.idle_add(self.query_pulseaudio_properties)
         self.idle_add(self.log_audio_properties)
@@ -371,10 +374,10 @@ class AudioServer(StubServerMixin):
                  self.supports_microphone, csv(self.microphone_codecs))
         audiolog("init_audio_options audio properties=%s", self.audio_properties)
 
-    def get_pulseaudio_info(self) -> dict[str,Any]:
+    def get_pulseaudio_info(self) -> dict[str, Any]:
         info = {
-            "command"               : self.pulseaudio_command,
-            "configure-commands"    : self.pulseaudio_configure_commands,
+            "command": self.pulseaudio_command,
+            "configure-commands": self.pulseaudio_configure_commands,
         }
         if self.pulseaudio_proc and self.pulseaudio_proc.poll() is None:
             info["pid"] = self.pulseaudio_proc.pid
@@ -401,6 +404,6 @@ class AudioServer(StubServerMixin):
     def init_packet_handlers(self) -> None:
         if self.supports_speaker or self.supports_microphone:
             self.add_packet_handlers({
-                "sound-control" : self._process_sound_control,
-                "sound-data"    : self._process_sound_data,
+                "sound-control": self._process_sound_control,
+                "sound-data": self._process_sound_data,
             })

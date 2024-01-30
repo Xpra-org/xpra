@@ -1,9 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import socket
+
 from xpra.platform import platform_import
 
 
@@ -11,7 +12,7 @@ def get_interface_info(*_args):
     return {}
 
 
-def get_tcp_info(_sock):   # pylint: disable=unused-argument
+def get_tcp_info(_sock):  # pylint: disable=unused-argument
     return {}
 
 
@@ -28,8 +29,8 @@ def print_address(iface, addr, defs):
         ip = d.get("addr")
         if ip:
             stype = {
-                socket.AF_INET  : "IPv4",
-                socket.AF_INET6 : "IPv6",
+                socket.AF_INET: "IPv4",
+                socket.AF_INET6: "IPv6",
             }[addr]
             print(f" * {stype}:     {ip}")
             if POSIX:
@@ -50,7 +51,7 @@ def print_iface(iface):
     from xpra.os_util import POSIX
     from xpra.net.net_util import import_netifaces
     netifaces = import_netifaces()
-    addresses = netifaces.ifaddresses(iface)     #@UndefinedVariable pylint: disable=no-member
+    addresses = netifaces.ifaddresses(iface)  # @UndefinedVariable pylint: disable=no-member
     for addr, defs in addresses.items():
         if addr in (socket.AF_INET, socket.AF_INET6):
             print_address(iface, addr, defs)

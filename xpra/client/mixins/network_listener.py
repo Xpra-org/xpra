@@ -52,6 +52,7 @@ class Networklistener(StubClientMixin):
     def init(self, opts) -> None:
         def err(msg):
             raise InitException(msg)
+
         self.sockets = create_sockets(opts, err)
         log(f"setup_local_sockets bind={opts.bind}, client_socket_dirs={opts.client_socket_dirs}")
         try:
@@ -104,14 +105,14 @@ class Networklistener(StubClientMixin):
             self.socket_options[sock] = options
             self.idle_add(self.add_listen_socket, socktype, sock, options)
 
-    def add_listen_socket(self, socktype:str, sock, options) -> None:
+    def add_listen_socket(self, socktype: str, sock, options) -> None:
         info = self.socket_info.get(sock)
         log("add_listen_socket(%s, %s, %s) info=%s", socktype, sock, options, info)
         cleanup = add_listen_socket(socktype, sock, info, None, self._new_connection, options)
         if cleanup:
             self.socket_cleanup.append(cleanup)
 
-    def _new_connection(self, socktype:str, listener, handle:int=0) -> bool:
+    def _new_connection(self, socktype: str, listener, handle: int = 0) -> bool:
         """
             Accept the new connection,
             verify that there aren't too many,
@@ -128,7 +129,7 @@ class Networklistener(StubClientMixin):
     def handle_new_connection(self, socktype, listener, handle) -> None:
         assert socktype, "cannot find socket type for %s" % listener
         socket_options = self.socket_options.get(listener, {})
-        if socktype=="named-pipe":
+        if socktype == "named-pipe":
             from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
             conn = NamedPipeConnection(listener.pipe_name, handle, socket_options)
             log.info("New %s connection received on %s", socktype, conn.target)
@@ -138,7 +139,7 @@ class Networklistener(StubClientMixin):
         if conn is None:
             return
         # limit number of concurrent network connections:
-        if len(self._potential_protocols)>=MAX_CONCURRENT_CONNECTIONS:
+        if len(self._potential_protocols) >= MAX_CONCURRENT_CONNECTIONS:
             log.error("Error: too many connections (%i)", len(self._potential_protocols))
             log.error(" ignoring new one: %s", conn.endpoint or conn)
             conn.close()
@@ -190,7 +191,7 @@ class Networklistener(StubClientMixin):
             log.info("packet '%s' is not handled by this client", packet_type)
             proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])
         # make sure the connection is closed:
-        tid = self.timeout_add(REQUEST_TIMEOUT*1000, close)
+        tid = self.timeout_add(REQUEST_TIMEOUT * 1000, close)
         self._close_timers[proto] = tid
 
     def handle_hello_request(self, proto, request: str, caps: typedict) -> None:
@@ -223,6 +224,7 @@ class Networklistener(StubClientMixin):
         if request == "detach":
             def protocol_closed() -> None:
                 self.disconnect_and_quit(ExitCode.OK, "network request")
+
             proto.send_disconnect([ConnectionMessage.DETACH_REQUEST], done_callback=protocol_closed)
             return
         if request == "version":
@@ -263,9 +265,9 @@ class Networklistener(StubClientMixin):
     def get_id_info(self) -> dict[str, Any]:
         # minimal information for identifying the session
         return {
-            "session-type"  : "client",
-            "session-name"  : self.session_name,
-            "platform"      : sys.platform,
-            "pid"           : os.getpid(),
-            "machine-id"    : get_machine_id(),
+            "session-type": "client",
+            "session-name": self.session_name,
+            "platform": sys.platform,
+            "pid": os.getpid(),
+            "machine-id": get_machine_id(),
         }

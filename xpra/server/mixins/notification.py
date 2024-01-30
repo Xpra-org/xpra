@@ -40,12 +40,12 @@ class NotificationForwarder(StubServerMixin):
             self.notifications_forwarder = None
             start_thread(nf.release, "notifier-release", daemon=True)
 
-    def get_info(self, _source=None)-> dict[str,Any]:
+    def get_info(self, _source=None) -> dict[str, Any]:
         if not self.notifications_forwarder:
             return {}
         return {"notifications": self.notifications_forwarder.get_info()}
 
-    def get_server_features(self, _source=None)-> dict[str,Any]:
+    def get_server_features(self, _source=None) -> dict[str, Any]:
         return {
             "notifications": {
                 "enabled": self.notifications,
@@ -92,7 +92,7 @@ class NotificationForwarder(StubServerMixin):
             body = "\n".join(ss.get_connect_info())
             for s in self._server_sources.values():
                 if s != ss:
-                    s.notify("", NotificationID.NEW_USER, "Xpra", 0, "", title, body, [], {}, 10*1000, icon)
+                    s.notify("", NotificationID.NEW_USER, "Xpra", 0, "", title, body, [], {}, 10 * 1000, icon)
         except Exception as e:
             log("%s(%s)", self.notify_new_user, ss, exc_info=True)
             log.error("Error: failed to show notification of user login:")
@@ -157,8 +157,8 @@ class NotificationForwarder(StubServerMixin):
                 log("notification-close nid=%s, reason=%s, text=%s, active=%s", nid, reason, text, active)
                 if active:
                     # an invalid type of the arguments can crash dbus!
-                    assert int(nid)>=0
-                    assert int(reason)>=0
+                    assert int(nid) >= 0
+                    assert int(reason) >= 0
                     self.notifications_forwarder.NotificationClosed(nid, reason)
 
     def _process_notification_action(self, proto, packet: PacketType) -> None:
@@ -184,8 +184,8 @@ class NotificationForwarder(StubServerMixin):
     def init_packet_handlers(self) -> None:
         if self.notifications:
             self.add_packet_handlers({
-                "notification-close"    : self._process_notification_close,
-                "notification-action"   : self._process_notification_action,
-                "notification-status"   : self._process_notification_status,
-                "set-notify"            : self._process_notification_status,
+                "notification-close": self._process_notification_close,
+                "notification-action": self._process_notification_action,
+                "notification-status": self._process_notification_status,
+                "set-notify": self._process_notification_status,
             })

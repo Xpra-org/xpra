@@ -52,7 +52,6 @@ XSHAPE = envbool("XPRA_XSHAPE", True)
 FRAME_EXTENTS = envbool("XPRA_FRAME_EXTENTS", True)
 OPAQUE_REGION = envbool("XPRA_OPAQUE_REGION", True)
 
-
 CurrentTime = constants["CurrentTime"]
 
 # Re-stacking:
@@ -70,22 +69,22 @@ RESTACKING_STR = {
 }
 
 # grab stuff:
-NotifyNormal        = constants["NotifyNormal"]
-NotifyGrab          = constants["NotifyGrab"]
-NotifyUngrab        = constants["NotifyUngrab"]
-NotifyWhileGrabbed  = constants["NotifyWhileGrabbed"]
+NotifyNormal = constants["NotifyNormal"]
+NotifyGrab = constants["NotifyGrab"]
+NotifyUngrab = constants["NotifyUngrab"]
+NotifyWhileGrabbed = constants["NotifyWhileGrabbed"]
 NotifyNonlinearVirtual = constants["NotifyNonlinearVirtual"]
 GRAB_CONSTANTS = {
-    NotifyNormal          : "NotifyNormal",
-    NotifyGrab            : "NotifyGrab",
-    NotifyUngrab          : "NotifyUngrab",
-    NotifyWhileGrabbed    : "NotifyWhileGrabbed",
+    NotifyNormal: "NotifyNormal",
+    NotifyGrab: "NotifyGrab",
+    NotifyUngrab: "NotifyUngrab",
+    NotifyWhileGrabbed: "NotifyWhileGrabbed",
 }
 DETAIL_CONSTANTS = {}
 for dconst in (
-    "NotifyAncestor", "NotifyVirtual", "NotifyInferior",
-    "NotifyNonlinear", "NotifyNonlinearVirtual", "NotifyPointer",
-    "NotifyPointerRoot", "NotifyDetailNone",
+        "NotifyAncestor", "NotifyVirtual", "NotifyInferior",
+        "NotifyNonlinear", "NotifyNonlinearVirtual", "NotifyPointer",
+        "NotifyPointerRoot", "NotifyDetailNone",
 ):
     DETAIL_CONSTANTS[constants[dconst]] = dconst
 grablog("pointer grab constants: %s", GRAB_CONSTANTS)
@@ -231,25 +230,25 @@ class CoreX11WindowModel(WindowModelStub):
 
     __common_signals__ = {
         # signals we emit:
-        "unmanaged"                     : one_arg_signal,
-        "restack"                       : n_arg_signal(2),
-        "initiate-moveresize"           : one_arg_signal,
-        "grab"                          : one_arg_signal,
-        "ungrab"                        : one_arg_signal,
-        "bell"                          : one_arg_signal,
-        "client-contents-changed"       : one_arg_signal,
-        "motion"                        : one_arg_signal,
+        "unmanaged": one_arg_signal,
+        "restack": n_arg_signal(2),
+        "initiate-moveresize": one_arg_signal,
+        "grab": one_arg_signal,
+        "ungrab": one_arg_signal,
+        "bell": one_arg_signal,
+        "client-contents-changed": one_arg_signal,
+        "motion": one_arg_signal,
         # x11 events we catch (and often re-emit as something else):
-        "xpra-property-notify-event"    : one_arg_signal,
-        "xpra-xkb-event"                : one_arg_signal,
-        "xpra-shape-event"              : one_arg_signal,
-        "xpra-configure-event"          : one_arg_signal,
-        "xpra-unmap-event"              : one_arg_signal,
-        "xpra-client-message-event"     : one_arg_signal,
-        "xpra-focus-in-event"           : one_arg_signal,
-        "xpra-focus-out-event"          : one_arg_signal,
-        "xpra-motion-event"             : one_arg_signal,
-        "x11-property-changed"          : one_arg_signal,
+        "xpra-property-notify-event": one_arg_signal,
+        "xpra-xkb-event": one_arg_signal,
+        "xpra-shape-event": one_arg_signal,
+        "xpra-configure-event": one_arg_signal,
+        "xpra-unmap-event": one_arg_signal,
+        "xpra-client-message-event": one_arg_signal,
+        "xpra-focus-in-event": one_arg_signal,
+        "xpra-focus-out-event": one_arg_signal,
+        "xpra-motion-event": one_arg_signal,
+        "x11-property-changed": one_arg_signal,
     }
 
     # things that we expose:
@@ -412,7 +411,7 @@ class CoreX11WindowModel(WindowModelStub):
         c = self._composite
         return c and c.has_xshm()
 
-    def get_image(self, x:int, y:int, width:int, height:int) -> ImageWrapper:
+    def get_image(self, x: int, y: int, width: int, height: int) -> ImageWrapper:
         return self._composite.get_image(x, y, width, height)
 
     def _setup_property_sync(self) -> None:
@@ -485,7 +484,7 @@ class CoreX11WindowModel(WindowModelStub):
     # XShape
     #########################################
 
-    def _read_xshape(self, x: int=0, y: int=0) -> dict[str, Any]:
+    def _read_xshape(self, x: int = 0, y: int = 0) -> dict[str, Any]:
         if not X11Window.displayHasXShape() or not XSHAPE:
             return {}
         extents = X11Window.XShapeQueryExtents(self.xid)
@@ -496,7 +495,7 @@ class CoreX11WindowModel(WindowModelStub):
         shapelog("read_shape for window %#x: extents=%s", self.xid, extents)
         bextents = extents[0]
         cextents = extents[1]
-        if bextents[0]==0 and cextents[0]==0:
+        if bextents[0] == 0 and cextents[0] == 0:
             shapelog("read_shape for window %#x: none enabled", self.xid)
             return {}
         v = {
@@ -507,7 +506,7 @@ class CoreX11WindowModel(WindowModelStub):
         }
         for kind, kind_name in SHAPE_KIND.items():  # @UndefinedVariable
             rectangles = X11Window.XShapeGetRectangles(self.xid, kind)
-            v[kind_name+".rectangles"] = rectangles
+            v[kind_name + ".rectangles"] = rectangles
         shapelog("_read_shape()=%s", v)
         return v
 
@@ -550,7 +549,7 @@ class CoreX11WindowModel(WindowModelStub):
         with xswallow:
             self.prop_set("_NET_FRAME_EXTENTS", ["u32"], v)
 
-    _py_property_handlers : dict[str,Callable] = {
+    _py_property_handlers: dict[str, Callable] = {
         "allowed-actions": _sync_allowed_actions,
         "frame": _sync_frame,
     }
@@ -583,7 +582,7 @@ class CoreX11WindowModel(WindowModelStub):
 
     def do_xpra_property_notify_event(self, event) -> None:
         # X11: PropertyNotify
-        assert event.window==self.xid
+        assert event.window == self.xid
         self._handle_property_change(str(event.atom))
 
     def _handle_property_change(self, name) -> None:
@@ -606,7 +605,7 @@ class CoreX11WindowModel(WindowModelStub):
                             value = self.prop_get(name, ptype, ignore_errors=True)
                             if value is None:
                                 # retry using scalar type:
-                                ptype = (ptype, )
+                                ptype = (ptype,)
                                 value = self.prop_get(name, ptype, ignore_errors=True)
                             metalog("_handle_property_change(%s) value=%s", name, value)
                             if value:
@@ -685,16 +684,16 @@ class CoreX11WindowModel(WindowModelStub):
         self._updateprop("opaque-region", tuple(rectangles))
 
     # these handlers must not generate X11 errors (must use XSync)
-    _x11_property_handlers: dict[str,Callable] = {
-        "_NET_WM_PID"       : _handle_pid_change,
-        "WM_CLIENT_MACHINE" : _handle_client_machine_change,
-        "WM_NAME"           : _handle_wm_name_change,
-        "_NET_WM_NAME"      : _handle_wm_name_change,
-        "WM_WINDOW_ROLE"    : _handle_role_change,
-        "WM_PROTOCOLS"      : _handle_protocols_change,
-        "WM_COMMAND"        : _handle_command_change,
-        "WM_CLASS"          : _handle_class_change,
-        "_NET_WM_OPAQUE_REGION" : _handle_opaque_region_change,
+    _x11_property_handlers: dict[str, Callable] = {
+        "_NET_WM_PID": _handle_pid_change,
+        "WM_CLIENT_MACHINE": _handle_client_machine_change,
+        "WM_NAME": _handle_wm_name_change,
+        "_NET_WM_NAME": _handle_wm_name_change,
+        "WM_WINDOW_ROLE": _handle_role_change,
+        "WM_PROTOCOLS": _handle_protocols_change,
+        "WM_COMMAND": _handle_command_change,
+        "WM_CLASS": _handle_class_change,
+        "_NET_WM_OPAQUE_REGION": _handle_opaque_region_change,
     }
 
     #########################################
@@ -707,7 +706,7 @@ class CoreX11WindowModel(WindowModelStub):
 
     def do_xpra_destroy_event(self, event) -> None:
         log("do_xpra_destroy_event(%s) xid=%s, ", event, self.xid)
-        if event.delivered_to==self.xid:
+        if event.delivered_to == self.xid:
             # This is somewhat redundant with the unmap signal, because if you
             # destroy a mapped window, then a UnmapNotify is always generated.
             # However, this allows us to catch the destruction of unmapped
@@ -724,19 +723,19 @@ class CoreX11WindowModel(WindowModelStub):
         # and maybe:
         #   _NET_RESTACK_WINDOW
         #   _NET_WM_STATE (more fully)
-        if event.message_type=="_NET_CLOSE_WINDOW":
+        if event.message_type == "_NET_CLOSE_WINDOW":
             log.info("_NET_CLOSE_WINDOW received by %s", self)
             self.request_close()
             return True
-        if event.message_type=="_NET_REQUEST_FRAME_EXTENTS":
+        if event.message_type == "_NET_REQUEST_FRAME_EXTENTS":
             framelog("_NET_REQUEST_FRAME_EXTENTS")
             self._handle_frame_changed()
             return True
-        if event.message_type=="_NET_MOVERESIZE_WINDOW":
+        if event.message_type == "_NET_MOVERESIZE_WINDOW":
             # this is overridden in WindowModel, skipped everywhere else:
             geomlog("_NET_MOVERESIZE_WINDOW skipped on %s (data=%s)", self, event.data)
             return True
-        if event.message_type=="":
+        if event.message_type == "":
             log("empty message type: %s", event)
             exid = event.window
             if first_time(f"empty-x11-window-message-type-{exid:x}"):
@@ -759,7 +758,7 @@ class CoreX11WindowModel(WindowModelStub):
     def do_xpra_shape_event(self, event) -> None:
         shapelog("shape event: %s, kind=%s", event, SHAPE_KIND.get(event.kind, event.kind))  # @UndefinedVariable
         cur_shape = self.get_property("shape")
-        if cur_shape and cur_shape.get("serial", 0)>=event.serial:
+        if cur_shape and cur_shape.get("serial", 0) >= event.serial:
             shapelog("same or older xshape serial no: %#x (current=%#x)", event.serial, cur_shape.get("serial", 0))
             return
         # remove serial before comparing dicts:
@@ -772,7 +771,7 @@ class CoreX11WindowModel(WindowModelStub):
                 v = self._read_xshape()
             else:
                 v = {}
-            if cur_shape==v:
+            if cur_shape == v:
                 shapelog("xshape unchanged")
                 return
             v["serial"] = int(event.serial)
@@ -782,7 +781,7 @@ class CoreX11WindowModel(WindowModelStub):
     def do_xpra_xkb_event(self, event) -> None:
         # X11: XKBNotify
         log("WindowModel.do_xpra_xkb_event(%r)", event)
-        if event.subtype!="bell":
+        if event.subtype != "bell":
             log("WindowModel.do_xpra_xkb_event(%r)", event, exc_info=True)
             log.error("Error: unknown xkb event type: %s", event.type)
             return
@@ -792,7 +791,7 @@ class CoreX11WindowModel(WindowModelStub):
     def do_xpra_client_message_event(self, event) -> None:
         # X11: ClientMessage
         log("do_xpra_client_message_event(%s)", event)
-        if not event.data or len(event.data)!=5:
+        if not event.data or len(event.data) != 5:
             log.warn("invalid event data: %s", event.data)
             return
         if not self.process_client_message_event(event):
@@ -802,7 +801,7 @@ class CoreX11WindowModel(WindowModelStub):
         # X11: FocusIn
         grablog("focus_in_event(%s) mode=%s, detail=%s",
                 event, GRAB_CONSTANTS.get(event.mode), DETAIL_CONSTANTS.get(event.detail, event.detail))
-        if event.mode==NotifyNormal and event.detail==NotifyNonlinearVirtual:
+        if event.mode == NotifyNormal and event.detail == NotifyNonlinearVirtual:
             self.emit("restack", Above, None)
         else:
             self.may_emit_grab(event)
@@ -814,10 +813,10 @@ class CoreX11WindowModel(WindowModelStub):
         self.may_emit_grab(event)
 
     def may_emit_grab(self, event) -> None:
-        if event.mode==NotifyGrab:
+        if event.mode == NotifyGrab:
             grablog("emitting grab on %s", self)
             self.emit("grab", event)
-        if event.mode==NotifyUngrab:
+        if event.mode == NotifyUngrab:
             grablog("emitting ungrab on %s", self)
             self.emit("ungrab", event)
 
@@ -882,7 +881,7 @@ class CoreX11WindowModel(WindowModelStub):
         localhost = gethostname()
         log("force_quit() pid=%s, machine=%s, localhost=%s", pid, machine, localhost)
         if machine is not None and machine == localhost:
-            if self._kill_count==0:
+            if self._kill_count == 0:
                 # first time around: just send a SIGINT and hope for the best
                 try:
                     os.kill(pid, signal.SIGINT)

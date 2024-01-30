@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -27,7 +27,7 @@ log = Logger("x11", "window")
 
 def _get_atom(d) -> str | None:
     unpacked = struct.unpack(b"@L", d)[0]
-    if unpacked==0:
+    if unpacked == 0:
         log.warn("Warning: invalid zero atom value")
         return None
     with xsync:
@@ -46,18 +46,18 @@ def _get_xatom(str_or_int):
         return X11WindowBindings().get_xatom(str_or_int)
 
 
-PYTHON_TYPES : dict[str,str] = {
-    "UTF8_STRING"   : "utf8",
-    "STRING"        : "latin1",
-    "ATOM"          : "atom",
-    "CARDINAL"      : "u32",
-    "INTEGER"       : "integer",
-    "VISUALID"      : "visual",
-    "WINDOW"        : "window",
+PYTHON_TYPES: dict[str, str] = {
+    "UTF8_STRING": "utf8",
+    "STRING": "latin1",
+    "ATOM": "atom",
+    "CARDINAL": "u32",
+    "INTEGER": "integer",
+    "VISUALID": "visual",
+    "WINDOW": "window",
 }
 
 
-def get_python_type(scalar_type:str) -> str:
+def get_python_type(scalar_type: str) -> str:
     # ie: get_python_type("STRING") = "latin1"
     return PYTHON_TYPES.get(scalar_type, scalar_type)
 
@@ -70,19 +70,19 @@ def _to_atom(a) -> bytes:
 PROP_TYPES["atom"] = (str, "ATOM", 32, _to_atom, _get_atom, b"")
 
 
-def prop_set(xid:int, key:str, etype, value) -> None:
+def prop_set(xid: int, key: str, etype, value) -> None:
     dtype, dformat, data = prop_encode(etype, value)
     raw_prop_set(xid, key, dtype, dformat, data)
 
 
-def raw_prop_set(xid:int, key:str, dtype, dformat, data) -> None:
+def raw_prop_set(xid: int, key: str, dtype, dformat, data) -> None:
     if not isinstance(xid, int):
         raise TypeError(f"xid must be an int, not a {type(xid)}")
     with xsync:
         X11WindowBindings().XChangeProperty(xid, key, dtype, dformat, data)
 
 
-def prop_type_get(xid:int, key:str):
+def prop_type_get(xid: int, key: str):
     try:
         return X11WindowBindings().GetWindowPropertyType(xid, key)
     except XError:
@@ -91,12 +91,12 @@ def prop_type_get(xid:int, key:str):
 
 
 # May return None.
-def prop_get(xid:int, key:str, etype, ignore_errors:bool=False, raise_xerrors:bool=False):
+def prop_get(xid: int, key: str, etype, ignore_errors: bool = False, raise_xerrors: bool = False):
     # ie: 0x4000, "_NET_WM_PID", "u32"
     if isinstance(etype, (list, tuple)):
         scalar_type = etype[0]
     else:
-        scalar_type = etype         # ie: "u32"
+        scalar_type = etype  # ie: "u32"
     type_atom = PROP_TYPES[scalar_type][1]  # ie: "CARDINAL"
     buffer_size = PROP_SIZES.get(scalar_type, 65536)
     data = raw_prop_get(xid, key, type_atom, buffer_size, ignore_errors, raise_xerrors)
@@ -156,7 +156,7 @@ def do_prop_decode(key, etype, data, ignore_errors=False):
         raise
 
 
-def prop_del(xid:int, key:str):
+def prop_del(xid: int, key: str):
     if not isinstance(xid, int):
         raise TypeError(f"xid must be an int, not a {type(xid)}")
     with xsync:

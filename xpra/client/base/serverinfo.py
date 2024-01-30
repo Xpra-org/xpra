@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -13,21 +13,22 @@ from xpra.exit_codes import ExitCode
 
 
 def get_remote_lib_versions(c: typedict,
-                            libs=("glib", "gobject", "gtk", "gdk", "cairo", "pango",
-                                  "sound.gst", "audio.gst",
-                                  "python",
-                                  )
+                            libs=(
+                                "glib", "gobject", "gtk", "gdk", "cairo", "pango",
+                                "sound.gst", "audio.gst",
+                                "python",
+                            )
                             ):
     versions = {}
     for x in libs:
         v = c.get("%s.version" % x, None)
         if v is None:
-            #fallback to structured access:
+            # fallback to structured access:
             d = c.get(x, None)
             if isinstance(d, dict):
                 v = typedict(d).get("version", None)
-            elif x.find(".")>0:
-                #recursive lookup:
+            elif x.find(".") > 0:
+                # recursive lookup:
                 parts = x.split(".")
                 while parts:
                     x = parts[0]
@@ -49,7 +50,7 @@ def get_remote_lib_versions(c: typedict,
 
 class ServerInfoMixin(StubClientMixin):
 
-    def __init__(self):   # pylint: disable=super-init-not-called
+    def __init__(self):  # pylint: disable=super-init-not-called
         super().__init__()
         self._remote_protocol = None
         self._remote_machine_id = None
@@ -69,21 +70,21 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_platform_linux_distribution = None
         self._remote_python_version = ""
         self._remote_lib_versions = {}
-        self._remote_subcommands: tuple[str,...] = ()
+        self._remote_subcommands: tuple[str, ...] = ()
         self._remote_server_log = None
         self._remote_server_mode = ""
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         p = self._protocol
-        if p.TYPE=="rfb":
-            #only the xpra protocol provides the server info
+        if p.TYPE == "rfb":
+            # only the xpra protocol provides the server info
             return True
         self._remote_machine_id = c.strget("machine_id")
         self._remote_uuid = c.strget("uuid")
         self._remote_version = parse_version(c.strget("build.version", c.strget("version")))
         self._remote_revision = c.strget("build.revision", c.strget("revision"))
         mods = c.get("build.local_modifications")
-        if mods and str(mods).find("dfsg")>=0:  # pragma: no cover
+        if mods and str(mods).find("dfsg") >= 0:  # pragma: no cover
             get_util_logger().warn("Warning: the xpra server is running a buggy Debian version")
             get_util_logger().warn(" those are usually out of date and unstable")
         else:
@@ -102,13 +103,14 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_server_log = c.strget("server-log")
         self._remote_server_mode = c.strget("server.mode", "server")
         self._remote_lib_versions = get_remote_lib_versions(c)
-        #linux distribution is a tuple of different types, ie: ('Linux Fedora' , 20, 'Heisenbug')
+        # linux distribution is a tuple of different types, ie: ('Linux Fedora' , 20, 'Heisenbug')
         pld = c.tupleget("platform.linux_distribution")
-        if pld and len(pld)==3:
+        if pld and len(pld) == 3:
             def san(v):
                 if isinstance(v, int):
                     return v
                 return bytestostr(v)
+
             self._remote_platform_linux_distribution = [san(x) for x in pld]
         verr = version_compat_check(self._remote_version)
         if verr is not None:

@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,7 @@ from xpra.log import Logger
 
 log = Logger("x11", "window")
 
-MAX_ASPECT = 2**15-1
+MAX_ASPECT = 2 ** 15 - 1
 
 
 def sanitize_size_hints(size_hints: dict[str, Any]) -> None:
@@ -38,10 +38,10 @@ def sanitize_size_hints(size_hints: dict[str, Any]) -> None:
                 f = None
             else:
                 try:
-                    f = float(v[0])/float(v[1])
+                    f = float(v[0]) / float(v[1])
                 except (ValueError, ZeroDivisionError):
                     f = None
-            if f is None or f<=0 or f>=MAX_ASPECT:
+            if f is None or f <= 0 or f >= MAX_ASPECT:
                 log.warn("Warning: clearing invalid aspect hint value for %s: %s", attr, v)
                 del size_hints[attr]
     for attr in ("maximum-size", "minimum-size", "base-size", "increment"):
@@ -68,7 +68,7 @@ def sanitize_size_hints(size_hints: dict[str, Any]) -> None:
             clamped = True
     maxs = size_hints.get("maximum-size")
     if maxs:
-        maxw,maxh = maxs
+        maxw, maxh = maxs
         if maxw <= 0 and maxh <= 0:
             # doesn't make sense!
             size_hints["maximum-size"] = None

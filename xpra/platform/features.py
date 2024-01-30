@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,53 +11,52 @@ from xpra.util.env import envbool
 from xpra.platform import platform_import
 
 # defaults which may be overridden by platform_import:
-CAN_DAEMONIZE : bool = True
-REINIT_WINDOWS : bool = False
-AUTOSTART : bool = False
+CAN_DAEMONIZE: bool = True
+REINIT_WINDOWS: bool = False
+AUTOSTART: bool = False
 
-INPUT_DEVICES : tuple[str, ...] = ("auto", )
+INPUT_DEVICES: tuple[str, ...] = ("auto",)
 
-SOURCE : tuple[str, ...] = ()
+SOURCE: tuple[str, ...] = ()
 
-SYSTEM_PROXY_SOCKET : str = os.environ.get("XPRA_SYSTEM_PROXY_SOCKET", "/run/xpra/system")
+SYSTEM_PROXY_SOCKET: str = os.environ.get("XPRA_SYSTEM_PROXY_SOCKET", "/run/xpra/system")
 
-CLIPBOARDS : tuple[str, ...] = ()
-CLIPBOARD_WANT_TARGETS : bool = envbool("XPRA_CLIPBOARD_WANT_TARGETS")
-CLIPBOARD_GREEDY : bool = envbool("XPRA_CLIPBOARD_GREEDY")
-CLIPBOARD_PREFERRED_TARGETS : tuple[str, ...] = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
+CLIPBOARDS: tuple[str, ...] = ()
+CLIPBOARD_WANT_TARGETS: bool = envbool("XPRA_CLIPBOARD_WANT_TARGETS")
+CLIPBOARD_GREEDY: bool = envbool("XPRA_CLIPBOARD_GREEDY")
+CLIPBOARD_PREFERRED_TARGETS: tuple[str, ...] = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
 
-EXECUTABLE_EXTENSION : str = ""
+EXECUTABLE_EXTENSION: str = ""
 
 OPEN_COMMAND: list[str] = []
 
-COMMAND_SIGNALS : tuple[str, ...] = ()
+COMMAND_SIGNALS: tuple[str, ...] = ()
 
-DEFAULT_START_ENV : tuple[str, ...] = ()
-DEFAULT_ENV : tuple[str, ...] = ()
+DEFAULT_START_ENV: tuple[str, ...] = ()
+DEFAULT_ENV: tuple[str, ...] = ()
 
-#DEFAULT_SSH_COMMAND = "paramiko"
-DEFAULT_SSH_COMMAND : str = "ssh -x"
-DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS : tuple[tuple[str, str, str], ...] = (
+# DEFAULT_SSH_COMMAND = "paramiko"
+DEFAULT_SSH_COMMAND: str = "ssh -x"
+DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS: tuple[tuple[str, str, str], ...] = (
     ("pactl", "set-default-sink", "Xpra-Speaker"),
     ("pactl", "set-default-source", "Xpra-Mic-Source"),
 )
 
-SOCKET_OPTIONS : tuple[str, ...] = (
+SOCKET_OPTIONS: tuple[str, ...] = (
     "SO_BROADCAST", "SO_RCVLOWAT",
     "SO_DONTROUTE", "SO_ERROR", "SO_EXCLUSIVEADDRUSE",
     "SO_KEEPALIVE", "SO_LINGER", "SO_OOBINLINE", "SO_RCVBUF",
     "SO_RCVTIMEO", "SO_REUSEADDR", "SO_REUSEPORT",
     "SO_SNDBUF", "SO_SNDTIMEO", "SO_TIMEOUT", "SO_TYPE",
 )
-IP_OPTIONS : tuple[str, ...] = (
-    #"IP_MULTICAST_IF", "IP_MULTICAST_LOOP", "IP_MULTICAST_TTL",
+IP_OPTIONS: tuple[str, ...] = (
+    # "IP_MULTICAST_IF", "IP_MULTICAST_LOOP", "IP_MULTICAST_TTL",
     "IP_DONTFRAG", "IP_OPTIONS", "IP_RECVLCLIFADDR",
     "IP_RECVPKTINFO", "IP_TOS", "IP_TTL",
 )
-TCP_OPTIONS : tuple[str, ...] = ("TCP_NODELAY", "TCP_MAXSEG", "TCP_KEEPALIVE")
+TCP_OPTIONS: tuple[str, ...] = ("TCP_NODELAY", "TCP_MAXSEG", "TCP_KEEPALIVE")
 
-
-_features_list_ : tuple[str, ...] = (
+_features_list_: tuple[str, ...] = (
     "AUTOSTART",
     "CAN_DAEMONIZE",
     "REINIT_WINDOWS",
@@ -79,7 +78,6 @@ _features_list_ : tuple[str, ...] = (
     "IP_OPTIONS",
     "TCP_OPTIONS",
 )
-
 
 platform_import(globals(), "features", False,
                 *_features_list_)

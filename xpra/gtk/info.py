@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2015-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -24,7 +24,7 @@ SHOW_ALL_VISUALS = False
 GTK_WORKAREA = envbool("XPRA_GTK_WORKAREA", True)
 
 
-def get_screen_info(display, screen) -> dict[str,Any]:
+def get_screen_info(display, screen) -> dict[str, Any]:
     info = {}
     if not WIN32:
         try:
@@ -35,7 +35,7 @@ def get_screen_info(display, screen) -> dict[str,Any]:
             pass
     info["name"] = screen.make_display_name()
     for x in ("width", "height", "width_mm", "height_mm", "resolution", "primary_monitor"):
-        fn = getattr(screen, "get_"+x)
+        fn = getattr(screen, "get_" + x)
         try:
             info[x] = int(fn())
         except Exception:
@@ -55,6 +55,7 @@ def get_screen_info(display, screen) -> dict[str,Any]:
         i = get_visual_info(v)
         if i:
             vinfo[name] = i
+
     visual("rgba", screen.get_rgba_visual())
     visual("system_visual", screen.get_system_visual())
     if SHOW_ALL_VISUALS:
@@ -68,22 +69,23 @@ def get_screen_info(display, screen) -> dict[str,Any]:
         if screen.get_setting(key, v):
             return v.get_value()
         return None
+
     sinfo = info.setdefault("settings", {})
     for x, gtype in {
         # NET:
-        "enable-event-sounds"   : GObject.TYPE_INT,
-        "icon-theme-name"       : GObject.TYPE_STRING,
-        "sound-theme-name"      : GObject.TYPE_STRING,
-        "theme-name"            : GObject.TYPE_STRING,
+        "enable-event-sounds": GObject.TYPE_INT,
+        "icon-theme-name": GObject.TYPE_STRING,
+        "sound-theme-name": GObject.TYPE_STRING,
+        "theme-name": GObject.TYPE_STRING,
         # Xft:
-        "xft-antialias" : GObject.TYPE_INT,
-        "xft-dpi"       : GObject.TYPE_INT,
-        "xft-hinting"   : GObject.TYPE_INT,
-        "xft-hintstyle" : GObject.TYPE_STRING,
-        "xft-rgba"      : GObject.TYPE_STRING,
+        "xft-antialias": GObject.TYPE_INT,
+        "xft-dpi": GObject.TYPE_INT,
+        "xft-hinting": GObject.TYPE_INT,
+        "xft-hintstyle": GObject.TYPE_STRING,
+        "xft-rgba": GObject.TYPE_STRING,
     }.items():
         try:
-            v = get_setting("gtk-"+x, gtype)
+            v = get_setting("gtk-" + x, gtype)
         except Exception:
             screenlog("failed to query screen '%s'", x, exc_info=True)
             continue
@@ -95,66 +97,66 @@ def get_screen_info(display, screen) -> dict[str,Any]:
     return info
 
 
-FONT_CONV : dict[str,dict[Any,Any]] = {
-    "antialias" : {
-        cairo.ANTIALIAS_DEFAULT     : "default",
-        cairo.ANTIALIAS_NONE        : "none",
-        cairo.ANTIALIAS_GRAY        : "gray",
-        cairo.ANTIALIAS_SUBPIXEL    : "subpixel",
+FONT_CONV: dict[str, dict[Any, Any]] = {
+    "antialias": {
+        cairo.ANTIALIAS_DEFAULT: "default",
+        cairo.ANTIALIAS_NONE: "none",
+        cairo.ANTIALIAS_GRAY: "gray",
+        cairo.ANTIALIAS_SUBPIXEL: "subpixel",
     },
-    "hint_metrics" : {
-        cairo.HINT_METRICS_DEFAULT  : "default",
-        cairo.HINT_METRICS_OFF      : "off",
-        cairo.HINT_METRICS_ON       : "on",
+    "hint_metrics": {
+        cairo.HINT_METRICS_DEFAULT: "default",
+        cairo.HINT_METRICS_OFF: "off",
+        cairo.HINT_METRICS_ON: "on",
     },
-    "hint_style" : {
-        cairo.HINT_STYLE_DEFAULT    : "default",
-        cairo.HINT_STYLE_NONE       : "none",
-        cairo.HINT_STYLE_SLIGHT     : "slight",
-        cairo.HINT_STYLE_MEDIUM     : "medium",
-        cairo.HINT_STYLE_FULL       : "full",
+    "hint_style": {
+        cairo.HINT_STYLE_DEFAULT: "default",
+        cairo.HINT_STYLE_NONE: "none",
+        cairo.HINT_STYLE_SLIGHT: "slight",
+        cairo.HINT_STYLE_MEDIUM: "medium",
+        cairo.HINT_STYLE_FULL: "full",
     },
     "subpixel_order": {
-        cairo.SUBPIXEL_ORDER_DEFAULT    : "default",
-        cairo.SUBPIXEL_ORDER_RGB        : "RGB",
-        cairo.SUBPIXEL_ORDER_BGR        : "BGR",
-        cairo.SUBPIXEL_ORDER_VRGB       : "VRGB",
-        cairo.SUBPIXEL_ORDER_VBGR       : "VBGR",
+        cairo.SUBPIXEL_ORDER_DEFAULT: "default",
+        cairo.SUBPIXEL_ORDER_RGB: "RGB",
+        cairo.SUBPIXEL_ORDER_BGR: "BGR",
+        cairo.SUBPIXEL_ORDER_VRGB: "VRGB",
+        cairo.SUBPIXEL_ORDER_VBGR: "VBGR",
     }
 }
 
 
-def get_font_info(font_options) -> dict[str,Any]:
+def get_font_info(font_options) -> dict[str, Any]:
     # pylint: disable=no-member
-    font_info : dict[str,Any] = {}
-    for x,vdict in FONT_CONV.items():
-        fn = getattr(font_options, "get_"+x)
+    font_info: dict[str, Any] = {}
+    for x, vdict in FONT_CONV.items():
+        fn = getattr(font_options, "get_" + x)
         val = fn()
         font_info[x] = vdict.get(val, val)
     return font_info
 
 
 VISUAL_NAMES = {
-    Gdk.VisualType.STATIC_GRAY      : "STATIC_GRAY",
-    Gdk.VisualType.GRAYSCALE        : "GRAYSCALE",
-    Gdk.VisualType.STATIC_COLOR     : "STATIC_COLOR",
-    Gdk.VisualType.PSEUDO_COLOR     : "PSEUDO_COLOR",
-    Gdk.VisualType.TRUE_COLOR       : "TRUE_COLOR",
-    Gdk.VisualType.DIRECT_COLOR     : "DIRECT_COLOR",
+    Gdk.VisualType.STATIC_GRAY: "STATIC_GRAY",
+    Gdk.VisualType.GRAYSCALE: "GRAYSCALE",
+    Gdk.VisualType.STATIC_COLOR: "STATIC_COLOR",
+    Gdk.VisualType.PSEUDO_COLOR: "PSEUDO_COLOR",
+    Gdk.VisualType.TRUE_COLOR: "TRUE_COLOR",
+    Gdk.VisualType.DIRECT_COLOR: "DIRECT_COLOR",
 }
 BYTE_ORDER_NAMES = {
-    Gdk.ByteOrder.LSB_FIRST   : "LSB",
-    Gdk.ByteOrder.MSB_FIRST   : "MSB",
+    Gdk.ByteOrder.LSB_FIRST: "LSB",
+    Gdk.ByteOrder.MSB_FIRST: "MSB",
 }
-VINFO_CONV : dict[str, dict[Any, str]] = {
-    "bits_per_rgb"          : {},
-    "byte_order"            : BYTE_ORDER_NAMES,
-    "colormap_size"         : {},
-    "depth"                 : {},
-    "red_pixel_details"     : {},
-    "green_pixel_details"   : {},
-    "blue_pixel_details"    : {},
-    "visual_type"           : VISUAL_NAMES,
+VINFO_CONV: dict[str, dict[Any, str]] = {
+    "bits_per_rgb": {},
+    "byte_order": BYTE_ORDER_NAMES,
+    "colormap_size": {},
+    "depth": {},
+    "red_pixel_details": {},
+    "green_pixel_details": {},
+    "blue_pixel_details": {},
+    "visual_type": VISUAL_NAMES,
 }
 
 
@@ -169,7 +171,7 @@ def get_visual_info(v) -> dict[str, Any]:
             val = getattr(v, x.replace("visual_", ""))
         except AttributeError:
             try:
-                fn = getattr(v, "get_"+x)
+                fn = getattr(v, "get_" + x)
             except AttributeError:
                 pass
             else:
@@ -180,14 +182,14 @@ def get_visual_info(v) -> dict[str, Any]:
 
 
 def get_screen_monitor_info(screen, i) -> dict[str, Any]:
-    info : dict[str, Any] = {}
+    info: dict[str, Any] = {}
     geom = screen.get_monitor_geometry(i)
     for x in ("x", "y", "width", "height"):
         info[x] = getattr(geom, x)
     if hasattr(screen, "get_monitor_plug_name"):
         info["plug_name"] = screen.get_monitor_plug_name(i) or ""
     for x in ("scale_factor", "width_mm", "height_mm", "refresh_rate"):
-        fn = getattr(screen, "get_monitor_"+x, None) or getattr(screen, "get_"+x, None)
+        fn = getattr(screen, "get_monitor_" + x, None) or getattr(screen, "get_" + x, None)
         if fn:
             info[x] = int(fn(i))
     rectangle = screen.get_monitor_workarea(i)
@@ -199,17 +201,17 @@ def get_screen_monitor_info(screen, i) -> dict[str, Any]:
 
 def get_monitors_info(xscale: float = 1.0, yscale: float = 1.0) -> dict[int, Any]:
     display = Gdk.Display.get_default()
-    info : dict[int,Any] = {}
+    info: dict[int, Any] = {}
     n = display.get_n_monitors()
     for i in range(n):
         minfo = info.setdefault(i, {})
         monitor = display.get_monitor(i)
         minfo["primary"] = monitor.is_primary()
         for attr in (
-            "geometry", "refresh-rate", "scale-factor",
-            "width-mm", "height-mm",
-            "manufacturer", "model",
-            "subpixel-layout", "workarea",
+                "geometry", "refresh-rate", "scale-factor",
+                "width-mm", "height-mm",
+                "manufacturer", "model",
+                "subpixel-layout", "workarea",
         ):
             getter = getattr(monitor, "get_%s" % attr.replace("-", "_"), None)
             if getter:
@@ -218,23 +220,23 @@ def get_monitors_info(xscale: float = 1.0, yscale: float = 1.0) -> dict[int, Any
                     continue
                 if isinstance(value, Gdk.Rectangle):
                     value = (
-                        round(xscale*value.x),
-                        round(yscale*value.y),
-                        round(xscale*value.width),
-                        round(yscale*value.height),
+                        round(xscale * value.x),
+                        round(yscale * value.y),
+                        round(xscale * value.width),
+                        round(yscale * value.height),
                     )
-                elif attr=="width-mm":
-                    value = round(xscale*value)
-                elif attr=="height-mm":
-                    value = round(yscale*value)
-                elif attr=="subpixel-layout":
+                elif attr == "width-mm":
+                    value = round(xscale * value)
+                elif attr == "height-mm":
+                    value = round(yscale * value)
+                elif attr == "subpixel-layout":
                     value = {
-                        Gdk.SubpixelLayout.UNKNOWN          : "unknown",
-                        Gdk.SubpixelLayout.NONE             : "none",
-                        Gdk.SubpixelLayout.HORIZONTAL_RGB   : "horizontal-rgb",
-                        Gdk.SubpixelLayout.HORIZONTAL_BGR   : "horizontal-bgr",
-                        Gdk.SubpixelLayout.VERTICAL_RGB     : "vertical-rgb",
-                        Gdk.SubpixelLayout.VERTICAL_BGR     : "vertical-bgr",
+                        Gdk.SubpixelLayout.UNKNOWN: "unknown",
+                        Gdk.SubpixelLayout.NONE: "none",
+                        Gdk.SubpixelLayout.HORIZONTAL_RGB: "horizontal-rgb",
+                        Gdk.SubpixelLayout.HORIZONTAL_BGR: "horizontal-bgr",
+                        Gdk.SubpixelLayout.VERTICAL_RGB: "vertical-rgb",
+                        Gdk.SubpixelLayout.VERTICAL_BGR: "vertical-bgr",
                     }.get(value, "unknown")
                 if isinstance(value, str):
                     value = value.strip()
@@ -242,24 +244,25 @@ def get_monitors_info(xscale: float = 1.0, yscale: float = 1.0) -> dict[int, Any
     return info
 
 
-def get_display_info(xscale=1, yscale=1) -> dict[str,Any]:
+def get_display_info(xscale=1, yscale=1) -> dict[str, Any]:
     display = Gdk.Display.get_default()
 
     def xy(v) -> tuple[int, int]:
-        return round(xscale*v[0]), round(yscale*v[1])
+        return round(xscale * v[0]), round(yscale * v[1])
 
     def avg(v) -> int:
-        return round((xscale*v+yscale*v)/2)
+        return round((xscale * v + yscale * v) / 2)
+
     root_size = get_root_size()
     info: dict[str, Any] = {
-        "root-size"             : xy(root_size),
-        "screens"               : display.get_n_screens(),
-        "name"                  : display.get_name(),
-        "pointer"               : xy(display.get_pointer()[-3:-1]),
-        "devices"               : len(display.list_devices()),
-        "default_cursor_size"   : avg(display.get_default_cursor_size()),
-        "maximal_cursor_size"   : xy(display.get_maximal_cursor_size()),
-        "pointer_is_grabbed"    : display.pointer_is_grabbed(),
+        "root-size": xy(root_size),
+        "screens": display.get_n_screens(),
+        "name": display.get_name(),
+        "pointer": xy(display.get_pointer()[-3:-1]),
+        "devices": len(display.list_devices()),
+        "default_cursor_size": avg(display.get_default_cursor_size()),
+        "maximal_cursor_size": xy(display.get_maximal_cursor_size()),
+        "pointer_is_grabbed": display.pointer_is_grabbed(),
     }
     if not WIN32:
         rw = get_default_root_window()
@@ -267,16 +270,16 @@ def get_display_info(xscale=1, yscale=1) -> dict[str,Any]:
             info["root"] = rw.get_geometry()
     sinfo = info.setdefault("supports", {})
     for x in ("composite", "cursor_alpha", "cursor_color", "selection_notification", "clipboard_persistence", "shapes"):
-        f = "supports_"+x
+        f = "supports_" + x
         if hasattr(display, f):
             fn = getattr(display, f)
-            sinfo[x]  = fn()
+            sinfo[x] = fn()
     info["screens"] = get_screens_info()
     info["monitors"] = get_monitors_info(xscale, yscale)
     dm = display.get_device_manager()
     for dt, name in {
-        Gdk.DeviceType.MASTER  : "master",
-        Gdk.DeviceType.SLAVE   : "slave",
+        Gdk.DeviceType.MASTER: "master",
+        Gdk.DeviceType.SLAVE: "slave",
         Gdk.DeviceType.FLOATING: "floating",
     }.items():
         dinfo = info.setdefault("device", {})
@@ -287,26 +290,27 @@ def get_display_info(xscale=1, yscale=1) -> dict[str,Any]:
     return info
 
 
-def get_screens_info() -> dict[int,dict]:
+def get_screens_info() -> dict[int, dict]:
     display = Gdk.Display.get_default()
-    info : dict[int,dict] = {}
-    assert display.get_n_screens()==1, "GTK3: The number of screens is always 1"
+    info: dict[int, dict] = {}
+    assert display.get_n_screens() == 1, "GTK3: The number of screens is always 1"
     screen = display.get_screen(0)
     info[0] = get_screen_info(display, screen)
     return info
 
 
-def get_screen_sizes(xscale:float=1, yscale:float=1):
+def get_screen_sizes(xscale: float = 1, yscale: float = 1):
     from xpra.platform.gui import get_workarea, get_workareas
 
     def xs(v):
-        return round(v/xscale)
+        return round(v / xscale)
 
     def ys(v):
-        return round(v/yscale)
+        return round(v / yscale)
 
     def swork(*workarea):
         return xs(workarea[0]), ys(workarea[1]), xs(workarea[2]), ys(workarea[3])
+
     display = Gdk.Display.get_default()
     if not display:
         return []
@@ -314,14 +318,15 @@ def get_screen_sizes(xscale:float=1, yscale:float=1):
     MAX_DPI = envint("XPRA_MIN_DPI", 500)
 
     def dpi(size_pixels, size_mm):
-        if size_mm==0:
+        if size_mm == 0:
             return 0
         return round(size_pixels * 254 / size_mm / 10)
+
     # GTK 3.22 onwards always returns just a single screen,
     # potentially with multiple monitors
     n_monitors = display.get_n_monitors()
     workareas = get_workareas()
-    if workareas and len(workareas)!=n_monitors:
+    if workareas and len(workareas) != n_monitors:
         screenlog(" workareas: %s", workareas)
         screenlog(" number of monitors does not match number of workareas!")
         workareas = []
@@ -348,16 +353,17 @@ def get_screen_sizes(xscale:float=1, yscale:float=1):
                   j, type(monitor).__name__, monitor.get_model(), monitor.get_manufacturer())
 
         def vmwx(v):
-            return v<geom.x or v>geom.x+geom.width
+            return v < geom.x or v > geom.x + geom.width
 
         def vmwy(v):
-            return v<geom.y or v>geom.y+geom.height
+            return v < geom.y or v > geom.y + geom.height
 
         def valid_workarea(work_x, work_y, work_width, work_height):
-            if vmwx(work_x) or vmwx(work_x+work_width) or vmwy(work_y) or vmwy(work_y+work_height):
+            if vmwx(work_x) or vmwx(work_x + work_width) or vmwy(work_y) or vmwy(work_y + work_height):
                 screenlog("discarding invalid workarea: %s", (work_x, work_y, work_width, work_height))
                 return []
             return list(swork(work_x, work_y, work_width, work_height))
+
         if GTK_WORKAREA and hasattr(monitor, "get_workarea"):
             rect = monitor.get_workarea()
             monitor_info += valid_workarea(rect.x, rect.y, rect.width, rect.height)
@@ -367,17 +373,18 @@ def get_screen_sizes(xscale:float=1, yscale:float=1):
     screen = display.get_default_screen()
     sw, sh = screen.get_width(), screen.get_height()
     work_x, work_y, work_width, work_height = swork(0, 0, sw, sh)
-    workarea = get_workarea()   # pylint: disable=assignment-from-none
+    workarea = get_workarea()  # pylint: disable=assignment-from-none
     screenlog(" workarea=%s", workarea)
     if workarea:
         work_x, work_y, work_width, work_height = swork(*workarea)  # pylint: disable=not-an-iterable
 
         def vwx(v):
-            return v<0 or v>sw
+            return v < 0 or v > sw
 
         def vwy(v):
-            return v<0 or v>sh
-        if vwx(work_x) or vwx(work_x+work_width) or vwy(work_y) or vwy(work_y+work_height):
+            return v < 0 or v > sh
+
+        if vwx(work_x) or vwx(work_x + work_width) or vwy(work_y) or vwy(work_y + work_height):
             screenlog(" discarding invalid workarea values: %s", workarea)
             work_x, work_y, work_width, work_height = swork(0, 0, sw, sh)
     with IgnoreWarningsContext():
@@ -385,11 +392,11 @@ def get_screen_sizes(xscale:float=1, yscale:float=1):
         hmm = screen.get_height_mm()
     xdpi = dpi(sw, wmm)
     ydpi = dpi(sh, hmm)
-    if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:
+    if xdpi < MIN_DPI or xdpi > MAX_DPI or ydpi < MIN_DPI or ydpi > MAX_DPI:
         screenlog(f"ignoring invalid DPI {xdpi},{ydpi} from screen size {wmm}x{hmm}mm")
         if os.environ.get("WAYLAND_DISPLAY"):
             screenlog(" (wayland display?)")
-        if n_monitors>0:
+        if n_monitors > 0:
             wmm = 0
             for mi in range(n_monitors):
                 monitor = display.get_monitor(mi)
@@ -401,10 +408,10 @@ def get_screen_sizes(xscale:float=1, yscale:float=1):
             hmm /= n_monitors
             xdpi = dpi(sw, wmm)
             ydpi = dpi(sh, hmm)
-        if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:
+        if xdpi < MIN_DPI or xdpi > MAX_DPI or ydpi < MIN_DPI or ydpi > MAX_DPI:
             # still invalid, generate one from DPI=96
-            wmm = round(sw*25.4/96)
-            hmm = round(sh*25.4/96)
+            wmm = round(sw * 25.4 / 96)
+            hmm = round(sh * 25.4 / 96)
         screenlog(" using %ix%i mm", wmm, hmm)
     with IgnoreWarningsContext():
         screen0 = (screen.make_display_name(), xs(sw), ys(sh),
@@ -420,10 +427,11 @@ def main() -> int:
     from xpra.util.str_fn import pver
     from xpra.util.str_fn import print_nested_dict
 
-    def print_version_dict(d:dict, vformat=pver):
+    def print_version_dict(d: dict, vformat=pver):
         for k in sorted(d.keys()):
             v = d[k]
             print("* %-48s : %r" % (str(k).replace(".version", "").ljust(12), vformat(v)))
+
     from xpra.platform import program_context
     with program_context("GTK-Version-Info", "GTK Version Info"):
         from xpra.platform.gui import init as gui_init, ready

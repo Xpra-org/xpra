@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -25,38 +25,38 @@ X11Window = X11WindowBindings()
 
 log = Logger("x11", "tray")
 
-
 XNone = constants["XNone"]
 StructureNotifyMask = constants["StructureNotifyMask"]
-
 
 XEMBED_VERSION = 0
 
 
 # XEmbed
 class XEMBED(IntEnum):
-    EMBEDDED_NOTIFY          = 0
-    WINDOW_ACTIVATE          = 1
-    WINDOW_DEACTIVATE        = 2
-    REQUEST_FOCUS            = 3
-    FOCUS_IN                 = 4
-    FOCUS_OUT                = 5
-    FOCUS_NEXT               = 6
-    FOCUS_PREV               = 7
+    EMBEDDED_NOTIFY = 0
+    WINDOW_ACTIVATE = 1
+    WINDOW_DEACTIVATE = 2
+    REQUEST_FOCUS = 3
+    FOCUS_IN = 4
+    FOCUS_OUT = 5
+    FOCUS_NEXT = 6
+    FOCUS_PREV = 7
     # 8-9 were used for XEMBED_GRAB_KEY/XEMBED_UNGRAB_KEY */
-    MODALITY_ON              = 10
-    MODALITY_OFF             = 11
-    REGISTER_ACCELERATOR     = 12
-    UNREGISTER_ACCELERATOR   = 13
-    ACTIVATE_ACCELERATOR     = 14
+    MODALITY_ON = 10
+    MODALITY_OFF = 11
+    REGISTER_ACCELERATOR = 12
+    UNREGISTER_ACCELERATOR = 13
+    ACTIVATE_ACCELERATOR = 14
+
+
 # A detail code is required for XEMBED_FOCUS_IN. The following values are valid:
 # Details for  XEMBED_FOCUS_IN:
 
 
 class XEMBED_FOCUS(IntEnum):
-    CURRENT    = 0
-    FIRST      = 1
-    LAST       = 2
+    CURRENT = 0
+    FIRST = 1
+    LAST = 2
 
 
 SELECTION = "_NET_SYSTEM_TRAY_S0"
@@ -65,8 +65,8 @@ SYSTRAY_ORIENTATION = "_NET_SYSTEM_TRAY_ORIENTATION"
 
 
 class TRAY_ORIENTATION(IntEnum):
-    HORZ   = 0
-    VERT   = 1
+    HORZ = 0
+    VERT = 1
 
 
 XPRA_TRAY_WINDOW_PROPERTY = "_xpra_tray_window_"
@@ -78,8 +78,7 @@ SYSTEM_TRAY_CANCEL_MESSAGE = 2
 TRANSPARENCY = True
 
 # Java can send this message to the tray (no idea why):
-IGNORED_MESSAGE_TYPES = ("_GTK_LOAD_ICONTHEMES", )
-
+IGNORED_MESSAGE_TYPES = ("_GTK_LOAD_ICONTHEMES",)
 
 MAX_TRAY_SIZE = envint("XPRA_MAX_TRAY_SIZE", 64)
 
@@ -88,17 +87,17 @@ def get_tray_window(tray_window) -> int:
     return getattr(tray_window, XPRA_TRAY_WINDOW_PROPERTY, 0)
 
 
-def set_tray_window(tray_window, xid:int):
+def set_tray_window(tray_window, xid: int):
     setattr(tray_window, XPRA_TRAY_WINDOW_PROPERTY, xid)
 
 
-def set_tray_visual(xid:int, gdk_visual):
+def set_tray_visual(xid: int, gdk_visual):
     xvisual = get_xvisual(gdk_visual)
     value = struct.pack(b"@L", xvisual)
     raw_prop_set(xid, SYSTRAY_VISUAL, "VISUALID", 32, value)
 
 
-def set_tray_orientation(xid:int, orientation:TRAY_ORIENTATION):
+def set_tray_orientation(xid: int, orientation: TRAY_ORIENTATION):
     prop_set(xid, SYSTRAY_ORIENTATION, "u32", int(orientation))
 
 
@@ -117,19 +116,19 @@ class SystemTray(GObject.GObject):
     def __init__(self):
         super().__init__()
         # the window where we embed all the tray icons:
-        self.tray_window : GdkX11.X11Window | None = None
+        self.tray_window: GdkX11.X11Window | None = None
         self.xid: int = 0
         # map xid to the gdk window:
-        self.window_trays : dict[int,Gdk.Window] = {}
+        self.window_trays: dict[int, Gdk.Window] = {}
         # map gdk windows to their corral window:
-        self.tray_windows : dict[GdkX11.X11Window,GdkX11.X11Window] = {}
+        self.tray_windows: dict[GdkX11.X11Window, GdkX11.X11Window] = {}
         self.setup_tray_window()
 
     def cleanup(self) -> None:
         log("SystemTray.cleanup()")
         with xlog:
             owner = X11Window.XGetSelectionOwner(SELECTION)
-            if owner==self.xid:
+            if owner == self.xid:
                 X11Window.XSetSelectionOwner(0, SELECTION)
                 owner = X11Window.XGetSelectionOwner(SELECTION)
                 log(f"SystemTray.cleanup() reset {SELECTION} selection owner to {owner:x}")
@@ -156,7 +155,7 @@ class SystemTray(GObject.GObject):
         screen = root.get_screen()
         owner = X11Window.XGetSelectionOwner(SELECTION)
         log(f"setup tray: current selection owner={owner:x}")
-        if owner!=XNone:
+        if owner != XNone:
             raise RuntimeError(f"{SELECTION} already owned by {owner}")
         visual = screen.get_system_visual()
         if TRANSPARENCY:
@@ -184,7 +183,7 @@ class SystemTray(GObject.GObject):
                 xid = X11Window.get_root_xid()
                 X11Window.sendClientMessage(xid, xid, False, event_mask, "MANAGER", time, SELECTION, self.xid)
                 owner = X11Window.XGetSelectionOwner(SELECTION)
-                if owner!=self.xid:
+                if owner != self.xid:
                     raise RuntimeError("we failed to get ownership of the tray selection")
                 add_event_receiver(self.xid, self)
                 log("setup tray: done")
@@ -193,15 +192,15 @@ class SystemTray(GObject.GObject):
             self.cleanup()
             raise
 
-    def get_pywindow(self, xid:int) -> GdkX11.X11Window:
+    def get_pywindow(self, xid: int) -> GdkX11.X11Window:
         assert self.tray_window
         display = self.tray_window.get_display()
         return GdkX11.X11Window.foreign_new_for_display(display, xid)
 
     def do_xpra_client_message_event(self, event) -> None:
-        if event.message_type=="_NET_SYSTEM_TRAY_OPCODE" and event.window==self.xid and event.format==32:
+        if event.message_type == "_NET_SYSTEM_TRAY_OPCODE" and event.window == self.xid and event.format == 32:
             opcode = event.data[1]
-            if opcode==SYSTEM_TRAY_REQUEST_DOCK:
+            if opcode == SYSTEM_TRAY_REQUEST_DOCK:
                 xid = event.data[2]
                 log("tray docking request from %#x", xid)
                 window = self.get_pywindow(xid)
@@ -210,16 +209,16 @@ class SystemTray(GObject.GObject):
                     from xpra.os_util import gi_import
                     glib = gi_import("GLib")
                     glib.idle_add(self.dock_tray, xid)
-            elif opcode==SYSTEM_TRAY_BEGIN_MESSAGE:
+            elif opcode == SYSTEM_TRAY_BEGIN_MESSAGE:
                 timeout = event.data[2]
                 mlen = event.data[3]
                 mid = event.data[4]
                 log.info("tray begin message timeout=%s, mlen=%s, mid=%s - not handled yet!", timeout, mlen, mid)
-            elif opcode==SYSTEM_TRAY_CANCEL_MESSAGE:
+            elif opcode == SYSTEM_TRAY_CANCEL_MESSAGE:
                 mid = event.data[2]
                 log.info("tray cancel message for mid=%s - not handled yet!", mid)
-        elif event.message_type=="_NET_SYSTEM_TRAY_MESSAGE_DATA":
-            assert event.format==8
+        elif event.message_type == "_NET_SYSTEM_TRAY_MESSAGE_DATA":
+            assert event.format == 8
             log.info("tray message data - not handled yet!")
         elif event.message_type in IGNORED_MESSAGE_TYPES:
             log("do_xpra_client_message_event(%s) in ignored message type list", event)
@@ -233,7 +232,7 @@ class SystemTray(GObject.GObject):
         X11Window.Unmap(xid)
         X11Window.Reparent(xid, rxid, 0, 0)
 
-    def dock_tray(self, xid:int) -> None:
+    def dock_tray(self, xid: int) -> None:
         log(f"dock_tray({xid:x})")
         try:
             with xsync:
@@ -245,7 +244,7 @@ class SystemTray(GObject.GObject):
             log.warn(f" {e}")
             log.warn(" the application may retry later")
 
-    def do_dock_tray(self, xid:int) -> None:
+    def do_dock_tray(self, xid: int) -> None:
         root = get_default_root_window()
         window = self.get_pywindow(xid)
         if window is None:
@@ -253,7 +252,7 @@ class SystemTray(GObject.GObject):
             return
         w, h = window.get_geometry()[2:4]
         log(f"tray geometry={w}x{h}")
-        if w==0 and h==0:
+        if w == 0 and h == 0:
             log(f"invalid tray geometry {w}x{h}, ignoring this request")
             return
         em = Gdk.EventMask

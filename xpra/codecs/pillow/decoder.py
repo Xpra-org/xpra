@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -34,7 +34,7 @@ WEBP_HEADER = b"WEBP"
 
 
 def is_webp(data) -> bool:
-    return data[:4]==RIFF_HEADER and data[8:12]==WEBP_HEADER
+    return data[:4] == RIFF_HEADER and data[8:12] == WEBP_HEADER
 
 
 JPEG_HEADER = struct.pack("BBB", 0xFF, 0xD8, 0xFF)
@@ -44,42 +44,42 @@ def is_jpeg(data) -> bool:
     # the jpeg header is actually more complicated than this,
     # but in practice all the data we receive from the server
     # will have this type of header
-    return data[:3]==JPEG_HEADER
+    return data[:3] == JPEG_HEADER
 
 
 def is_svg(data) -> bool:
-    return strtobytes(data[:5])==b"<?xml" or strtobytes(data[:4])==b"<svg"
+    return strtobytes(data[:5]) == b"<?xml" or strtobytes(data[:4]) == b"<svg"
 
 
 XPM_HEADER = b"/* XPM */"
 
 
 def is_xpm(data) -> bool:
-    return data[:9]==XPM_HEADER
+    return data[:9] == XPM_HEADER
 
 
 def is_tiff(data) -> bool:
-    if data[:2]==b"II":
-        return data[2]==42 and data[3]==0
-    if data[:2]==b"MM":
-        return data[2]==0 and data[3]==42
+    if data[:2] == b"II":
+        return data[2] == 42 and data[3] == 0
+    if data[:2] == b"MM":
+        return data[2] == 0 and data[3] == 42
     return False
 
 
-HEADERS : dict[Callable, str] = {
-    is_png  : "png",
-    is_webp : "webp",
-    is_jpeg : "jpeg",
-    is_svg  : "svg",
-    is_xpm  : "xpm",
-    is_tiff : "tiff",
+HEADERS: dict[Callable, str] = {
+    is_png: "png",
+    is_webp: "webp",
+    is_jpeg: "jpeg",
+    is_svg: "svg",
+    is_xpm: "xpm",
+    is_tiff: "tiff",
 }
 
 
 def get_image_type(data) -> str:
     if not data:
         return ""
-    if len(data)<32:
+    if len(data) < 32:
         return ""
     for fn, encoding in HEADERS.items():
         if fn(data):
@@ -90,7 +90,7 @@ def get_image_type(data) -> str:
 def open_only(data, types=("png", "jpeg", "webp")) -> Image:
     itype = get_image_type(data) or "unknown"
     if itype not in types:
-        raise ValueError(f"invalid data: {itype}, not recognized as {csv(types)}, header: "+hexstr(data[:64]))
+        raise ValueError(f"invalid data: {itype}, not recognized as {csv(types)}, header: " + hexstr(data[:64]))
     buf = BytesIO(data)
     return Image.open(buf)
 
@@ -115,17 +115,17 @@ def do_get_encodings() -> list[str]:
     return encodings
 
 
-def get_encodings() -> tuple[str,...]:
+def get_encodings() -> tuple[str, ...]:
     return ENCODINGS
 
 
-ENCODINGS: tuple[str,...] = tuple(do_get_encodings())
+ENCODINGS: tuple[str, ...] = tuple(do_get_encodings())
 
 
-def get_info() -> dict[str,Any]:
+def get_info() -> dict[str, Any]:
     return {
-        "version"       : get_version(),
-        "encodings"     : get_encodings(),
+        "version": get_version(),
+        "encodings": get_encodings(),
     }
 
 
@@ -138,26 +138,28 @@ def decompress(coding: str, img_data: bytes, options: typedict) -> tuple[str, by
     img = Image.open(buf)
     assert img.mode in ("L", "LA", "P", "RGB", "RGBA", "RGBX"), f"invalid image mode: {img.mode}"
     transparency = options.intget("transparency", -1)
-    if img.mode=="P":
-        if transparency>=0:
+    if img.mode == "P":
+        if transparency >= 0:
             # this deals with alpha without any extra work
             img = img.convert("RGBA")
         else:
             img = img.convert("RGB")
-    elif img.mode=="L":
-        if transparency>=0:
+    elif img.mode == "L":
+        if transparency >= 0:
             # why do we have to deal with alpha ourselves??
             def mask_value(a):
-                if a!=transparency:
+                if a != transparency:
                     return 255
                 return 0
+
             mask = Image.eval(img, mask_value)
             mask = mask.convert("L")
 
             def nomask_value(a):
-                if a!=transparency:
+                if a != transparency:
                     return a
                 return 0
+
             img = Image.eval(img, nomask_value)
             img = img.convert("RGBA")
             img.putalpha(mask)
@@ -167,30 +169,30 @@ def decompress(coding: str, img_data: bytes, options: typedict) -> tuple[str, by
         img = img.convert("RGBA")
 
     width, height = img.size
-    if img.mode=="RGB":
+    if img.mode == "RGB":
         # PIL flattens the data to a continuous straightforward RGB format:
-        rowstride = width*3
+        rowstride = width * 3
         rgb_format = options.strget("rgb_format", "")
         rgb_format = rgb_format.replace("A", "").replace("X", "")
         # the webp encoder only takes BGRX input,
         # so we have to swap things around if it was fed "RGB":
-        if rgb_format=="RGB":
+        if rgb_format == "RGB":
             rgb_format = "BGR"
         else:
             rgb_format = "RGB"
     elif img.mode in ("RGBA", "RGBX"):
-        rowstride = width*4
+        rowstride = width * 4
         rgb_format = options.strget("rgb_format", img.mode)
-        if coding=="webp":
+        if coding == "webp":
             # the webp encoder only takes BGRX input,
             # so we have to swap things around if it was fed "RGBA":
-            if rgb_format=="RGBA":
+            if rgb_format == "RGBA":
                 rgb_format = "BGRA"
-            elif rgb_format=="RGBX":
+            elif rgb_format == "RGBX":
                 rgb_format = "BGRX"
-            elif rgb_format=="BGRA":
+            elif rgb_format == "BGRA":
                 rgb_format = "RGBA"
-            elif rgb_format=="BGRX":
+            elif rgb_format == "BGRX":
                 rgb_format = "RGBX"
             else:
                 log.warn("Warning: unexpected RGB format '%s'", rgb_format)
@@ -204,7 +206,7 @@ def decompress(coding: str, img_data: bytes, options: typedict) -> tuple[str, by
 
 def selftest(_full=False) -> None:
     global ENCODINGS
-    from xpra.codecs.checks import TEST_PICTURES   # pylint: disable=import-outside-toplevel
+    from xpra.codecs.checks import TEST_PICTURES  # pylint: disable=import-outside-toplevel
     # test data generated using the encoder:
     for encoding, test_data in TEST_PICTURES.items():
         if encoding not in ENCODINGS:
@@ -221,7 +223,7 @@ def selftest(_full=False) -> None:
                     raw_data = img.tobytes("raw", img.mode)
                     assert raw_data
                     # now try with junk:
-                    cdata = b"ABCD"+cdata
+                    cdata = b"ABCD" + cdata
                     buf = BytesIO(cdata)
                     try:
                         img = PIL.Image.open(buf)
@@ -233,7 +235,7 @@ def selftest(_full=False) -> None:
                     log.error("Pillow error decoding %s with data:", encoding)
                     log.error(" %r", cdata)
                     log.error(" %s", e, exc_info=True)
-                    ENCODINGS = tuple(x for x in ENCODINGS if x!=encoding)
+                    ENCODINGS = tuple(x for x in ENCODINGS if x != encoding)
 
 
 if __name__ == "__main__":

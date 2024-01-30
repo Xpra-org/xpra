@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -35,6 +35,7 @@ nvfbc = None
 if NVFBC:
     try:
         from xpra.codecs.nvidia.nvfbc.capture import get_capture_module, get_capture_instance
+
         nvfbc = get_capture_module()
         if nvfbc:
             nvfbc.init_nvfbc_library()
@@ -110,7 +111,7 @@ def window_matches(wspec, model_class):
                         XRes = ResBindings()
                     if XRes and XRes.check_xres():
                         for xid in names:
-                            if XRes.get_pid(xid)==pid:
+                            if XRes.get_pid(xid) == pid:
                                 xids.append(xid)
             elif m.startswith("command="):
                 command = m[len("command="):]
@@ -136,7 +137,7 @@ def window_matches(wspec, model_class):
         for xid in windows:
             x, y, w, h = wb.getGeometry(xid)[:4]
             # absp = wb.get_absolute_position(xid)
-            if w>0 and h>0:
+            if w > 0 and h > 0:
                 title = names.get(xid, "unknown window")
                 model = model_class(title, (x, y, w, h))
                 models[xid] = model
@@ -157,7 +158,7 @@ def window_matches(wspec, model_class):
             if not rel_parent:
                 parent = xid
                 rel_parent = None
-                while parent>0:
+                while parent > 0:
                     parent = wb.getParent(parent)
                     rel_parent = models.get(parent)
                     if rel_parent:
@@ -167,8 +168,8 @@ def window_matches(wspec, model_class):
             # "class-instance", "client-machine", "window-type",
             if rel_parent:
                 parent_g = rel_parent.get_geometry()
-                dx = model.geometry[0]-parent_g[0]
-                dy = model.geometry[1]-parent_g[1]
+                dx = model.geometry[0] - parent_g[0]
+                dy = model.geometry[1] - parent_g[1]
                 model.relative_position = dx, dy
                 log("relative_position=%s", model.relative_position)
         log("window_matches%s models=%s", (wspec, model_class), models)
@@ -182,7 +183,7 @@ class XImageCapture:
         log("XImageCapture(%#x)", xwindow)
         self.xshm = None
         self.xwindow = xwindow
-        from xpra.x11.bindings.ximage import XImageBindings     # pylint: disable=import-outside-toplevel
+        from xpra.x11.bindings.ximage import XImageBindings  # pylint: disable=import-outside-toplevel
         self.XImage = XImageBindings()
         assert XSHM and self.XImage.has_XShm(), "no XShm support"
         if is_Wayland():
@@ -206,7 +207,7 @@ class XImageCapture:
                 xshm.cleanup()
 
     def _err(self, e, op="capture pixels") -> None:
-        if getattr(e, "msg", None)=="BadMatch":
+        if getattr(e, "msg", None) == "BadMatch":
             log("BadMatch - temporary error in %s of window #%x", op, self.xwindow, exc_info=True)
         else:
             log.warn("Warning: failed to %s of window %#x:", op, self.xwindow)
@@ -228,7 +229,7 @@ class XImageCapture:
             self._err(e, "xshm setup")
         return True
 
-    def get_image(self, x: int, y:int, width:int, height:int):
+    def get_image(self, x: int, y: int, width: int, height: int):
         log("XImageCapture.get_image%s for %#x", (x, y, width, height), self.xwindow)
         if self.xshm is None:
             log("no xshm, cannot get image")
@@ -245,7 +246,7 @@ class XImageCapture:
         finally:
             end = monotonic_ns()
             log("X11 shadow captured %s pixels at %i MPixels/s using %s",
-                width*height, (width*height/(end-start)), ["GTK", "XSHM"][XSHM])
+                width * height, (width * height / (end - start)), ["GTK", "XSHM"][XSHM])
 
 
 def setup_capture(window):
@@ -266,11 +267,11 @@ def setup_capture(window):
             from xpra.codecs.gstreamer.capture import Capture
             xid = window.get_xid()
             el = "ximagesrc"
-            if xid>=0:
+            if xid >= 0:
                 el += f" xid={xid} startx=0 starty=0"
-            if ww>0:
+            if ww > 0:
                 el += f" endx={ww}"
-            if wh>0:
+            if wh > 0:
                 el += f" endy={wh}"
             capture = Capture(el, width=ww, height=wh)
             capture.start()
@@ -323,7 +324,7 @@ class X11ShadowModel(RootWindowModel):
 # so many calls will happen twice there (__init__ and init)
 class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
-    def __init__(self, multi_window:bool=True):
+    def __init__(self, multi_window: bool = True):
         GTKShadowServerBase.__init__(self, multi_window=multi_window)
         X11ServerCore.__init__(self)
         self.session_type = "X11"
@@ -339,7 +340,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         X11ServerCore.do_init(self, opts)
         self.modify_keymap = opts.keyboard_layout.lower() in ("client", "auto")
 
-    def set_keymap(self, server_source, force:bool=False) -> None:
+    def set_keymap(self, server_source, force: bool = False) -> None:
         if self.readonly:
             return
         if self.modify_keymap:
@@ -374,6 +375,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
             model = rwmc(root, self.capture, title, geometry)
             model.dynamic_property_names.append("size-hints")
             return model
+
         return window_matches(self.window_matches, model_class)
 
     def client_startup_complete(self, ss) -> None:
@@ -393,7 +395,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
     def do_get_cursor_data(self) -> tuple[Any, Any]:
         return X11ServerCore.get_cursor_data(self)
 
-    def send_initial_data(self, ss, c, send_ui:bool, share_count:int) -> None:
+    def send_initial_data(self, ss, c, send_ui: bool, share_count: int) -> None:
         super().send_initial_data(ss, c, send_ui, share_count)
         if getattr(ss, "ui_client", True) and getattr(ss, "send_windows", True):
             self.verify_capture(ss)
@@ -405,7 +407,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
             capture = GTKImageCapture(self.root)
             bdata = capture.take_screenshot()[-1]
             title = body = ""
-            if any(b!=0 for b in bdata):
+            if any(b != 0 for b in bdata):
                 log("verify_capture(%s) succeeded", ss)
             else:
                 log.warn("Warning: shadow screen capture is blank")
@@ -421,20 +423,20 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         except Exception as e:
             ss.may_notify(nid, "Shadow Error", f"Error shadowing the display:\n{e}", icon_name="bugs")
 
-    def make_hello(self, source) -> dict[str,Any]:
+    def make_hello(self, source) -> dict[str, Any]:
         capabilities = X11ServerCore.make_hello(self, source)
         capabilities.update(GTKShadowServerBase.make_hello(self, source))
         capabilities["server_type"] = "X11 Shadow"
         return capabilities
 
-    def get_info(self, proto, *_args) -> dict[str,Any]:
+    def get_info(self, proto, *_args) -> dict[str, Any]:
         info = X11ServerCore.get_info(self, proto)
         merge_dicts(info, ShadowServerBase.get_info(self, proto))
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {})["type"] = "Python/bindings/x11-shadow"
         return info
 
-    def do_make_screenshot_packet(self) -> tuple[str,int,int,str,int,Compressed]:
+    def do_make_screenshot_packet(self) -> tuple[str, int, int, str, int, Compressed]:
         capture = GTKImageCapture(self.root)
         w, h, encoding, rowstride, data = capture.take_screenshot()
         assert encoding == "png"  # use fixed encoding for now
@@ -456,12 +458,12 @@ def snapshot(filename) -> int:
     fmt = image.get_pixel_format().replace("X", "A")
     pixels = memoryview_to_bytes(image.get_pixels())
     log(f"converting {len(pixels)} bytes in format {fmt} to RGBA")
-    if len(fmt)==3:
+    if len(fmt) == 3:
         target = "RGB"
     else:
         target = "RGBA"
     pil_image = Image.frombuffer(target, (w, h), pixels, "raw", fmt, image.get_rowstride())
-    if target!="RGB":
+    if target != "RGB":
         pil_image = pil_image.convert("RGB")
     buf = BytesIO()
     pil_image.save(buf, "png")
@@ -473,7 +475,7 @@ def snapshot(filename) -> int:
 
 
 def main(*args) -> int:
-    assert len(args)>0
+    assert len(args) > 0
     if args[0].endswith(".png"):
         return snapshot(args[0])
 
@@ -482,6 +484,7 @@ def main(*args) -> int:
         s.title = title
         s.geometry = geom
         return s
+
     from xpra.x11.gtk3 import gdk_display_source  # pylint: disable=import-outside-toplevel, no-name-in-module
     gdk_display_source.init_gdk_display_source()  # @UndefinedVariable
     for w in window_matches(args, cb):
@@ -491,7 +494,8 @@ def main(*args) -> int:
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv)==1:
+
+    if len(sys.argv) == 1:
         cmd = sys.argv[0]
         print(f"usage: {cmd} filename.png")
         print(f"usage: {cmd} windowname|windowpid")

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,6 +7,7 @@ from xpra.platform.win32.constants import WM_DEVICECHANGE
 from xpra.platform.win32.events import get_win32_event_listener
 
 from xpra.log import Logger
+
 log = Logger("webcam")
 
 
@@ -29,7 +30,7 @@ def _device_change_callback(*args):
 
 def add_video_device_change_callback(callback):
     from xpra.platform.webcam import _video_device_change_callbacks
-    if len(_video_device_change_callbacks)==0:
+    if len(_video_device_change_callbacks) == 0:
         # first callback added, register our handler:
         el = get_win32_event_listener()
         if el:
@@ -41,7 +42,7 @@ def remove_video_device_change_callback(callback):
     from xpra.platform.webcam import _video_device_change_callbacks
     if callback in _video_device_change_callbacks:
         _video_device_change_callbacks.remove(callback)
-    if len(_video_device_change_callbacks)==0:
+    if len(_video_device_change_callbacks) == 0:
         # none left, stop listening
         el = get_win32_event_listener(False)
         if el:

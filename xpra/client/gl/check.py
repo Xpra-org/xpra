@@ -18,7 +18,6 @@ log = Logger("opengl")
 
 required_extensions: tuple[str, ...] = ("GL_ARB_texture_rectangle", "GL_ARB_vertex_program")
 
-
 GL_ALPHA_SUPPORTED: bool = envbool("XPRA_ALPHA", True)
 DOUBLE_BUFFERED: bool = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", True)
 
@@ -39,12 +38,13 @@ gl_check_error = raise_error
 gl_fatal_error = raise_fatal_error
 
 
-def parse_pyopengl_version(vstr: str) -> tuple[int,...]:
+def parse_pyopengl_version(vstr: str) -> tuple[int, ...]:
     def numv(s):
         try:
             return int(s)
         except ValueError:
             return 0
+
     return tuple(numv(x) for x in vstr.split("."))
 
 
@@ -80,7 +80,7 @@ def get_array_handlers() -> tuple[str, ...]:
     return ()
 
 
-def get_max_viewport_dims() -> tuple[int,int]:
+def get_max_viewport_dims() -> tuple[int, int]:
     from OpenGL.GL import glGetIntegerv, GL_MAX_VIEWPORT_DIMS
     v = glGetIntegerv(GL_MAX_VIEWPORT_DIMS)
     max_viewport_dims = int(v[0]), int(v[1])
@@ -116,7 +116,7 @@ def _get_gl_enums(name: str, num_const: str, values_const: str) -> list[str]:
         num = glGetIntegerv(num_enum)
         for i in range(num):
             values.append(glGetStringi(values_enum, i).decode("latin1"))
-        log(f"OpenGL {name} found: "+csv(values))
+        log(f"OpenGL {name} found: " + csv(values))
     except GLError as e:
         log(f"error querying {name} using {num_const} / {values_const}: {e}")
     return values
@@ -140,11 +140,11 @@ def fixstring(v) -> str:
 def get_vendor_info() -> dict[str, str]:
     from OpenGL.GL import GL_RENDERER, GL_VENDOR, GL_SHADING_LANGUAGE_VERSION
     from OpenGL.GL import glGetString
-    info : dict[str, str] = {}
+    info: dict[str, str] = {}
     for d, s, fatal in (
-        ("vendor", GL_VENDOR, True),
-        ("renderer", GL_RENDERER, True),
-        ("shading-language-version", GL_SHADING_LANGUAGE_VERSION, False)
+            ("vendor", GL_VENDOR, True),
+            ("renderer", GL_RENDERER, True),
+            ("shading-language-version", GL_SHADING_LANGUAGE_VERSION, False)
     ):
         try:
             v = glGetString(s)
@@ -159,7 +159,7 @@ def get_vendor_info() -> dict[str, str]:
 
 
 def get_GLU_info() -> dict[str, str]:
-    props : dict[str, str] = {}
+    props: dict[str, str] = {}
     from OpenGL.GLU import gluGetString, GLU_VERSION, GLU_EXTENSIONS
     # maybe we can continue without?
     if not bool(gluGetString):
@@ -189,7 +189,7 @@ def get_context_info() -> dict[str, Any]:
     flags = glGetIntegerv(GL_CONTEXT_FLAGS)
     return {
         "core-profile": bool(glGetIntegerv(GL_CONTEXT_PROFILE_MASK) & GL_CONTEXT_CORE_PROFILE_BIT),
-        "flags" : tuple(k for k, v in {
+        "flags": tuple(k for k, v in {
             "forward-compatible": GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT,
             "debug": GL_CONTEXT_FLAG_DEBUG_BIT,
             "robust-access": GL_CONTEXT_FLAG_ROBUST_ACCESS_BIT,
@@ -212,7 +212,7 @@ def check_available(*functions) -> str:
             available.append(name)
     if missing:
         log("some functions are missing: %s", csv(missing))
-        return "missing functions: "+csv(missing)
+        return "missing functions: " + csv(missing)
     else:
         log("All the required OpenGL functions are available: %s " % csv(available))
     return ""
@@ -286,6 +286,7 @@ def check_lists(props: dict[str, Any], force_enable=False) -> bool:
                 return k, prop
             log("%s '%s' not found in %s: %s", k, prop, listname, values)
         return None
+
     blacklisted = match_list(BLACKLIST, "blacklist")
     greylisted = match_list(GREYLIST, "greylist")
     whitelisted = match_list(WHITELIST, "whitelist")
@@ -351,7 +352,7 @@ def check_PyOpenGL_support(force_enable) -> dict[str, Any]:
                 # unknown message, log it:
                 log.info(msg)
                 continue
-            format_handler = msg[p+len(strip_log_message):]
+            format_handler = msg[p + len(strip_log_message):]
             p = format_handler.find(":")
             if p > 0:
                 format_handler = format_handler[:p]
@@ -368,7 +369,7 @@ def check_PyOpenGL_support(force_enable) -> dict[str, Any]:
         missing_accelerators = []
         strip_ar_head = "Unable to load"
         strip_ar_tail = "from OpenGL_accelerate"
-        for msg in recs("arrays")+recs("converters"):
+        for msg in recs("arrays") + recs("converters"):
             if msg.startswith(strip_ar_head) and msg.endswith(strip_ar_tail):
                 m = msg[len(strip_ar_head):-len(strip_ar_tail)].strip()
                 m = m.replace("accelerators", "").replace("accelerator", "").strip()
@@ -391,7 +392,7 @@ def check_PyOpenGL_support(force_enable) -> dict[str, Any]:
 
 def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
     props: dict[str, Any] = {
-        "platform"  : sys.platform,
+        "platform": sys.platform,
     }
     try:
         from OpenGL import platform
@@ -475,10 +476,10 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
     # props["program-binary-formats"] = get_program_binary_formats()
 
     for check_fn in (
-        check_base_functions,
-        check_framebuffer_functions,
-        check_texture_functions,
-        check_shader_functions,
+            check_base_functions,
+            check_framebuffer_functions,
+            check_texture_functions,
+            check_shader_functions,
     ):
         msg: str = check_fn()
         if msg:
@@ -509,7 +510,7 @@ def main() -> int:
             log.warn("No OpenGL context implementation found")
             return 1
         log("testing %s", GLContext)
-        gl_context = GLContext()   # pylint: disable=not-callable
+        gl_context = GLContext()  # pylint: disable=not-callable
         log("GLContext=%s", gl_context)
         # replace ImportError with a log message:
         global gl_check_error, gl_fatal_error
@@ -518,6 +519,7 @@ def main() -> int:
         def log_error(msg):
             log.error("ERROR: %s", msg)
             errors.append(msg)
+
         gl_check_error = log_error
         gl_fatal_error = log_error
         try:

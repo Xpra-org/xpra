@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -18,7 +18,7 @@ USE_FAKE_BACKING = envbool("XPRA_USE_FAKE_BACKING", False)
 
 class ClientWidgetBase:
 
-    def __init__(self, client, watcher_pid:int, wid:int, has_alpha:bool):
+    def __init__(self, client, watcher_pid: int, wid: int, has_alpha: bool):
         self.wid = wid
         self.watcher_pid = watcher_pid
         # gobject-like scheduler:
@@ -35,18 +35,18 @@ class ClientWidgetBase:
         self._backing = None
         self.pixel_depth = 24
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         info = {
-            "has-alpha"     : self._has_alpha,
-            "window-alpha"  : self._window_alpha,
-            "pixel-depth"   : self.pixel_depth,
+            "has-alpha": self._has_alpha,
+            "window-alpha": self._window_alpha,
+            "pixel-depth": self.pixel_depth,
         }
         b = self._backing
         if b:
             info["backing"] = b.get_info()
         return info
 
-    def make_new_backing(self, backing_class:Callable, ww: int, wh: int, bw: int, bh: int):
+    def make_new_backing(self, backing_class: Callable, ww: int, wh: int, bw: int, bh: int):
         # size of the backing, which should be the same as the server's window source:
         bw = max(1, bw)
         bh = max(1, bh)
@@ -79,20 +79,20 @@ class ClientWidgetBase:
         Subclasses may resume normal operation that were suspended by freeze()
         """
 
-    def workspace_changed(self) -> None:            # pragma: no cover
+    def workspace_changed(self) -> None:  # pragma: no cover
         pass
 
-    def set_cursor_data(self, cursor_data) -> None:     # pragma: no cover
+    def set_cursor_data(self, cursor_data) -> None:  # pragma: no cover
         pass
 
-    def new_backing(self, w:int, h:int):          # pragma: no cover
+    def new_backing(self, w: int, h: int):  # pragma: no cover
         raise NotImplementedError
 
-    def is_OR(self) -> bool:                        # pragma: no cover
+    def is_OR(self) -> bool:  # pragma: no cover
         return False
 
-    def is_tray(self) -> bool:                      # pragma: no cover
+    def is_tray(self) -> bool:  # pragma: no cover
         return False
 
-    def is_GL(self) -> bool:                        # pragma: no cover
+    def is_GL(self) -> bool:  # pragma: no cover
         return False

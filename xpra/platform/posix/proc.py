@@ -7,13 +7,15 @@
 from typing import Optional
 from collections.abc import Callable
 
-get_parent_pid : Optional[Callable] = None
+get_parent_pid: Optional[Callable] = None
 try:
     from xpra.platform.posix import proc_libproc
+
     get_parent_pid = proc_libproc.get_parent_pid
 except (ImportError, AttributeError):
     try:
         from xpra.platform.posix import proc_procps
+
         get_parent_pid = proc_procps.get_parent_pid
     except (ImportError, AttributeError):
         pass
@@ -42,4 +44,5 @@ def main(argv) -> int:
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main(sys.argv))

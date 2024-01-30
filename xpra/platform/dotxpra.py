@@ -103,7 +103,7 @@ class DotXpra:
         saved_sockpath = sockpath
         if sockpath.startswith("@"):
             assert POSIX
-            sockpath = "\0"+sockpath[1:]
+            sockpath = "\0" + sockpath[1:]
         elif not os.path.exists(sockpath):
             return SocketState.DEAD
         sock = socket.socket(socket.AF_UNIX)
@@ -186,7 +186,7 @@ class DotXpra:
             # when not using a session directory,
             # add the prefix to prevent clashes on NFS:
             # ie: "~/.xpra/HOSTNAME-10"
-            sockpath = os.path.join(d, PREFIX+strip_display_prefix(display))
+            sockpath = os.path.join(d, PREFIX + strip_display_prefix(display))
             state = self.is_socket_match(sockpath)
             if state is SocketState.LIVE:
                 return state
@@ -194,7 +194,7 @@ class DotXpra:
 
     # find the matching sockets, and return:
     # (state, local_display, sockpath) for each socket directory we probe
-    def socket_details(self, check_uid=None, matching_state=None, matching_display=None)\
+    def socket_details(self, check_uid=None, matching_state=None, matching_display=None) \
             -> dict[str, list[tuple[SocketState, str, str]]]:
         sd: dict[str, list[tuple[SocketState, str, str]]] = {}
         debug("socket_details%s sockdir=%s, sockdirs=%s",
@@ -208,7 +208,7 @@ class DotXpra:
         def local(display: str) -> str:
             if display.startswith("wayland-"):
                 return display
-            return DISPLAY_PREFIX+strip_display_prefix(display)
+            return DISPLAY_PREFIX + strip_display_prefix(display)
 
         def add_session_dir(session_dir: str, display: str) -> None:
             if not os.path.exists(session_dir):
@@ -256,11 +256,11 @@ class DotXpra:
                     add_result(d, (state, display, sockpath))
         return sd
 
-    def is_socket_match(self, sockpath:str, check_uid=None, matching_state=None) -> SocketState | None:
+    def is_socket_match(self, sockpath: str, check_uid=None, matching_state=None) -> SocketState | None:
         if not is_socket(sockpath, check_uid):
             return None
         state = self.get_server_state(sockpath)
-        if matching_state and state!=matching_state:
+        if matching_state and state != matching_state:
             debug("is_socket_match%s state '%s' does not match", (sockpath, check_uid, matching_state), state)
             return None
         return state

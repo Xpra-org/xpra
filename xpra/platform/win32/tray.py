@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -62,7 +62,7 @@ class Win32Tray(TrayBase):
         log("Win32Tray.cleanup() ended")
 
     def calculate_offset(self, *_args):
-        #GTK returns coordinates as unsigned ints, but win32 can give us negative coordinates!
+        # GTK returns coordinates as unsigned ints, but win32 can give us negative coordinates!
         self.offset_x = 0
         self.offset_y = 0
         try:

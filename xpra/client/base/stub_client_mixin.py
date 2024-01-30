@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,7 +14,6 @@ from xpra.net.common import PacketHandlerType
 
 
 class StubClientMixin:
-
     __signals__: list[str] = []
 
     def __init__(self):
@@ -33,7 +32,7 @@ class StubClientMixin:
         run the main loop.
         """
 
-    def quit(self, exit_code: int | ExitCode) -> None:      # pragma: no cover
+    def quit(self, exit_code: int | ExitCode) -> None:  # pragma: no cover
         """
         Terminate the client with the given exit code.
         (the exit code is ignored if we already have one)
@@ -67,19 +66,19 @@ class StubClientMixin:
         Prepare to run using this connection to the server.
         """
 
-    def get_caps(self) -> dict[str,Any]:
+    def get_caps(self) -> dict[str, Any]:
         """
         Return the capabilities provided by this mixin.
         """
         return {}
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         """
         Information contained in this mixin
         """
         return {}
 
-    def parse_server_capabilities(self, c: typedict) -> bool:   # pylint: disable=unused-argument
+    def parse_server_capabilities(self, c: typedict) -> bool:  # pylint: disable=unused-argument
         """
         Parse server attributes specified in the hello capabilities.
         This runs in a non-UI thread.
@@ -108,10 +107,10 @@ class StubClientMixin:
         """
 
     def add_packet_handler(self, packet_type: str, handler: PacketHandlerType,
-                           main_thread=True) -> None:   # pragma: no cover
+                           main_thread=True) -> None:  # pragma: no cover
         raise NotImplementedError()
 
-    def add_packet_handlers(self, defs : dict[str,PacketHandlerType], main_thread=True) -> None:  # pragma: no cover
+    def add_packet_handlers(self, defs: dict[str, PacketHandlerType], main_thread=True) -> None:  # pragma: no cover
         raise NotImplementedError()
 
     def show_progress(self, pct, text="") -> None:

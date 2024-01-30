@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -117,7 +117,7 @@ def do_get_ssl_cert_dirs() -> list[str]:
 
 
 def do_get_ssh_conf_dirs() -> list[str]:
-    if platform.architecture()[0]=="32bit":
+    if platform.architecture()[0] == "32bit":
         system32 = "SysNative"
     else:
         system32 = "System32"
@@ -130,8 +130,8 @@ def do_get_ssh_conf_dirs() -> list[str]:
             continue
         d = os.path.join(fpath, "SSH")
         dirs.append(d)
-    dirs += do_get_default_conf_dirs()+[
-        openssh_dir,        # ie: C:\Windows\system32\OpenSSH
+    dirs += do_get_default_conf_dirs() + [
+        openssh_dir,  # ie: C:\Windows\system32\OpenSSH
         "~/.ssh",
         "~/ssh",
     ]
@@ -177,7 +177,7 @@ def do_get_desktop_background_paths() -> list[str]:
         key_path = "Control Panel\\Desktop"
         key = OpenKey(HKEY_CURRENT_USER, key_path, 0, KEY_READ)
         wallpaper = QueryValueEx(key, 'WallPaper')[0]
-        return [wallpaper,]
+        return [wallpaper, ]
     except Exception:
         log = get_util_logger()
         log("do_get_desktop_background_paths()", exc_info=True)
@@ -210,13 +210,12 @@ def do_get_socket_dirs() -> list[str]:
     return []
 
 
-APP_DIR : str = ""
-
+APP_DIR: str = ""
 
 if getattr(sys, 'frozen', False) is True:
     # cx_freeze = sys.frozen == True
     APP_DIR = os.path.dirname(sys.executable)
-    if len(APP_DIR)>3 and APP_DIR[1]==":" and APP_DIR[2]=="/":
+    if len(APP_DIR) > 3 and APP_DIR[1] == ":" and APP_DIR[2] == "/":
         # it seems that mingw builds can get confused about the correct value for os.pathsep:
         APP_DIR = APP_DIR.replace("/", "\\")
     try:
@@ -233,22 +232,22 @@ def do_get_app_dir() -> str:
     global APP_DIR
     if APP_DIR:
         return APP_DIR
-    from xpra.platform.paths import default_get_app_dir   # imported here to prevent import loop
+    from xpra.platform.paths import default_get_app_dir  # imported here to prevent import loop
     return default_get_app_dir()
 
 
 def do_get_nodock_command() -> list[str]:
     return _get_xpra_exe_command(
-        "Xpra",             # executable without a shell
-        "Xpra_cmd",         # we should never end up using this one
+        "Xpra",  # executable without a shell
+        "Xpra_cmd",  # we should never end up using this one
     )
 
 
 def do_get_audio_command() -> list[str]:
     return _get_xpra_exe_command(
-        "Xpra_Audio",       # executable without a shell, and with a nicer name
-        "Xpra",             # executable without a shell
-        "Xpra_cmd",         # we should never end up using this one
+        "Xpra_Audio",  # executable without a shell, and with a nicer name
+        "Xpra",  # executable without a shell
+        "Xpra_cmd",  # we should never end up using this one
     )
 
 

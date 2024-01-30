@@ -22,7 +22,6 @@ with numpy_import_context("OpenGL", True):
 
 log = Logger("opengl")
 
-
 ARB_CONTEXT = envbool("XPRA_OPENGL_ARB_CONTEXT", True)
 CORE_PROFILE = envbool("XPRA_OPENGL_CORE_PROFILE", True)
 DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", True)
@@ -30,28 +29,27 @@ SCALE_FACTOR = envfloat("XPRA_OPENGL_SCALE_FACTOR", 1)
 if SCALE_FACTOR <= 0 or SCALE_FACTOR > 10:
     raise ValueError(f"invalid scale factor {SCALE_FACTOR}")
 
-
-GLX_ATTRIBUTES : dict[Any,str] = {
-    GLX.GLX_ACCUM_RED_SIZE      : "accum-red-size",
-    GLX.GLX_ACCUM_GREEN_SIZE    : "accum-green-size",
-    GLX.GLX_ACCUM_BLUE_SIZE     : "accum-blue-size",
-    GLX.GLX_ACCUM_ALPHA_SIZE    : "accum-alpha-size",
-    GLX.GLX_RED_SIZE            : "red-size",
-    GLX.GLX_GREEN_SIZE          : "green-size",
-    GLX.GLX_BLUE_SIZE           : "blue-size",
-    GLX.GLX_ALPHA_SIZE          : "alpha-size",
-    GLX.GLX_DEPTH_SIZE          : "depth-size",
-    GLX.GLX_STENCIL_SIZE        : "stencil-size",
-    GLX.GLX_BUFFER_SIZE         : "buffer-size",
-    GLX.GLX_AUX_BUFFERS         : "aux-buffers",
-    GLX.GLX_DOUBLEBUFFER        : "double-buffered",
-    GLX.GLX_LEVEL               : "level",
-    GLX.GLX_STEREO              : "stereo",
-    GLX.GLX_RGBA                : "rgba",
+GLX_ATTRIBUTES: dict[Any, str] = {
+    GLX.GLX_ACCUM_RED_SIZE: "accum-red-size",
+    GLX.GLX_ACCUM_GREEN_SIZE: "accum-green-size",
+    GLX.GLX_ACCUM_BLUE_SIZE: "accum-blue-size",
+    GLX.GLX_ACCUM_ALPHA_SIZE: "accum-alpha-size",
+    GLX.GLX_RED_SIZE: "red-size",
+    GLX.GLX_GREEN_SIZE: "green-size",
+    GLX.GLX_BLUE_SIZE: "blue-size",
+    GLX.GLX_ALPHA_SIZE: "alpha-size",
+    GLX.GLX_DEPTH_SIZE: "depth-size",
+    GLX.GLX_STENCIL_SIZE: "stencil-size",
+    GLX.GLX_BUFFER_SIZE: "buffer-size",
+    GLX.GLX_AUX_BUFFERS: "aux-buffers",
+    GLX.GLX_DOUBLEBUFFER: "double-buffered",
+    GLX.GLX_LEVEL: "level",
+    GLX.GLX_STEREO: "stereo",
+    GLX.GLX_RGBA: "rgba",
 }
 
 
-def c_attrs(props:dict):
+def c_attrs(props: dict):
     attrs = []
     for k, v in props.items():
         if v is None:
@@ -70,7 +68,7 @@ def get_xdisplay() -> int:
     return cast(ptr, POINTER(struct__XDisplay))
 
 
-def get_extensions(xdisplay:int) -> tuple[str,...]:
+def get_extensions(xdisplay: int) -> tuple[str, ...]:
     bext = GLX.glXQueryExtensionsString(xdisplay, 0)
     if not bext:
         return ()
@@ -78,13 +76,13 @@ def get_extensions(xdisplay:int) -> tuple[str,...]:
     return tuple(x for x in str_ext.strip().split(" ") if x)
 
 
-def get_fbconfig_attributes(xdisplay:int, fbconfig) -> dict[str,int]:
-    fb_attrs : dict[str,int] = {}
+def get_fbconfig_attributes(xdisplay: int, fbconfig) -> dict[str, int]:
+    fb_attrs: dict[str, int] = {}
     for name, attr in {
         "fbconfig-id": GLX.GLX_FBCONFIG_ID,
         "level": GLX.GLX_LEVEL,
-        "double-buffer" : GLX.GLX_DOUBLEBUFFER,
-        "stereo" : GLX.GLX_STEREO,
+        "double-buffer": GLX.GLX_DOUBLEBUFFER,
+        "stereo": GLX.GLX_STEREO,
         "aux-buffers": GLX.GLX_AUX_BUFFERS,
         "red-size": GLX.GLX_RED_SIZE,
         "green-size": GLX.GLX_GREEN_SIZE,
@@ -120,11 +118,11 @@ def get_fbconfig_attributes(xdisplay:int, fbconfig) -> dict[str,int]:
 
 class GLXWindowContext(AbstractContextManager):
 
-    def __init__(self, glx_context, xid : int):
+    def __init__(self, glx_context, xid: int):
         self.context = glx_context
         self.xid = xid
-        self.xdisplay : int = get_xdisplay()
-        self.valid : bool = False
+        self.xdisplay: int = get_xdisplay()
+        self.valid: bool = False
 
     def __enter__(self):
         log("glXMakeCurrent: xid=%#x, context=%s", self.xid, self.context)
@@ -160,10 +158,10 @@ class GLXWindowContext(AbstractContextManager):
 class GLXContext:
 
     def __init__(self, alpha=False):
-        self.props : dict[str, Any] = {}
-        self.xdisplay : int = 0
+        self.props: dict[str, Any] = {}
+        self.xdisplay: int = 0
         self.context = None
-        self.bit_depth : int = 0
+        self.bit_depth: int = 0
         Gdk = gi_import("Gdk")
         display = Gdk.Display.get_default()
         if not display:
@@ -186,18 +184,18 @@ class GLXContext:
         # find a framebuffer config we can use:
         bpc = 8
         pyattrs = {
-            GLX.GLX_X_RENDERABLE    : True,
-            GLX.GLX_DRAWABLE_TYPE   : GLX.GLX_WINDOW_BIT,
-            GLX.GLX_RENDER_TYPE     : GLX.GLX_RGBA_BIT,
-            GLX.GLX_X_VISUAL_TYPE   : GLX.GLX_TRUE_COLOR,
-            GLX.GLX_RED_SIZE        : bpc,
-            GLX.GLX_GREEN_SIZE      : bpc,
-            GLX.GLX_BLUE_SIZE       : bpc,
-            GLX.GLX_DEPTH_SIZE      : 24,
-            GLX.GLX_STENCIL_SIZE    : 8,
+            GLX.GLX_X_RENDERABLE: True,
+            GLX.GLX_DRAWABLE_TYPE: GLX.GLX_WINDOW_BIT,
+            GLX.GLX_RENDER_TYPE: GLX.GLX_RGBA_BIT,
+            GLX.GLX_X_VISUAL_TYPE: GLX.GLX_TRUE_COLOR,
+            GLX.GLX_RED_SIZE: bpc,
+            GLX.GLX_GREEN_SIZE: bpc,
+            GLX.GLX_BLUE_SIZE: bpc,
+            GLX.GLX_DEPTH_SIZE: 24,
+            GLX.GLX_STENCIL_SIZE: 8,
         }
         if alpha:
-            pyattrs[GLX.GLX_ALPHA_SIZE] = int(alpha)*bpc
+            pyattrs[GLX.GLX_ALPHA_SIZE] = int(alpha) * bpc
         if DOUBLE_BUFFERED:
             pyattrs[GLX.GLX_DOUBLEBUFFER] = True
         attrs = c_attrs(pyattrs)
@@ -218,7 +216,7 @@ class GLXContext:
         extensions = get_extensions(self.xdisplay)
         log(f"{extensions=}")
 
-        def getconfig(attr:int) -> int:
+        def getconfig(attr: int) -> int:
             value = c_int()
             r = GLX.glXGetConfig(self.xdisplay, xvinfo, attr, byref(value))
             if r:
@@ -241,7 +239,7 @@ class GLXContext:
         # self.props["has-depth-buffer"] = getconfig(GLX.GLX_DEPTH_SIZE)>0
         # self.props["has-stencil-buffer"] = getconfig(GLX.GLX_STENCIL_SIZE)>0
         # self.props["has-alpha"] = getconfig(GLX.GLX_ALPHA_SIZE)>0
-        for attrib,name in GLX_ATTRIBUTES.items():
+        for attrib, name in GLX_ATTRIBUTES.items():
             v = getconfig(attrib)
             if name in ("stereo", "double-buffered", "rgba"):
                 v = bool(v)
@@ -254,7 +252,7 @@ class GLXContext:
             display_mode.append("ALPHA")
         if getconfig(GLX.GLX_DOUBLEBUFFER):
             display_mode.append("DOUBLE")
-        else:   # pragma: no cover
+        else:  # pragma: no cover
             display_mode.append("SINGLE")
         self.props["display_mode"] = display_mode
         if ARB_CONTEXT and "GLX_ARB_create_context" in extensions:
@@ -296,20 +294,21 @@ class GLXContext:
                 if result and isinstance(result, str):
                     return result
                 raise
+
         self.props["vendor"] = getstr(GL_VENDOR)
         self.props["renderer"] = getstr(GL_RENDERER)
         from xpra.client.gl.check import get_context_info
         self.props.update(get_context_info())
         log("GLXContext(%s) context=%s, props=%s", alpha, self.context, self.props)
 
-    def check_support(self, force_enable=False) -> dict[str,Any]:
+    def check_support(self, force_enable=False) -> dict[str, Any]:
         i = self.props
         if not self.xdisplay:
             return {
-                "success"   : False,
-                "safe"      : False,
-                "enabled"   : False,
-                "message"   : "cannot access X11 display",
+                "success": False,
+                "safe": False,
+                "enabled": False,
+                "message": "cannot access X11 display",
             }
         Gtk = gi_import("Gtk")
         tmp = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
@@ -352,7 +351,7 @@ class GLXContext:
 GLContext = GLXContext
 
 
-def check_support() -> dict[str,Any]:
+def check_support() -> dict[str, Any]:
     ptr = get_display_ptr()
     if not ptr:
         from xpra.x11.gtk3.display_source import init_gdk_display_source

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -39,8 +39,8 @@ RED = 3
 EXIT_KEYS = (ord("q"), ord("Q"))
 PAUSE_KEYS = (ord("p"), ord("P"))
 SIGNAL_KEYS = {
-    3 : signal.SIGINT,
-    26 : signal.SIGSTOP,
+    3: signal.SIGINT,
+    26: signal.SIGSTOP,
 }
 
 
@@ -84,31 +84,31 @@ def curses_err(stdscr, e):
     stdscr.addstr(0, 0, str(e))
     for i, l in enumerate(traceback.format_exc().split("\n")):
         try:
-            stdscr.addstr(i+1, 0, l)
+            stdscr.addstr(i + 1, 0, l)
         except Exception:
             pass
 
 
 def box(stdscr, x: int, y: int, w: int, h: int, ul, ur, ll, lr):
-    stdscr.hline(y, x, curses.ACS_HLINE, w-1)               # @UndefinedVariable
-    stdscr.hline(y + h - 1, x, curses.ACS_HLINE, w - 1)     # @UndefinedVariable
-    stdscr.vline(y, x, curses.ACS_VLINE, h)                 # @UndefinedVariable
-    stdscr.vline(y, x + w -1, curses.ACS_VLINE, h)          # @UndefinedVariable
+    stdscr.hline(y, x, curses.ACS_HLINE, w - 1)  # @UndefinedVariable
+    stdscr.hline(y + h - 1, x, curses.ACS_HLINE, w - 1)  # @UndefinedVariable
+    stdscr.vline(y, x, curses.ACS_VLINE, h)  # @UndefinedVariable
+    stdscr.vline(y, x + w - 1, curses.ACS_VLINE, h)  # @UndefinedVariable
     stdscr.addch(y, x, ul)
     stdscr.addch(y, x + w - 1, ur)
     stdscr.addch(y + h - 1, x, ll)
     stdscr.addch(y + h - 1, x + w - 1, lr)
 
 
-def get_display_id_info(path:str) -> dict[str, str]:
+def get_display_id_info(path: str) -> dict[str, str]:
     d = {}
     try:
-        cmd = get_nodock_command()+["id", f"socket://{path}"]
+        cmd = get_nodock_command() + ["id", f"socket://{path}"]
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE, text=True)
         out, err = proc.communicate()
         for line in (out or err).splitlines():
             try:
-                k,v = line.split("=", 1)
+                k, v = line.split("=", 1)
                 d[k] = v
             except ValueError:
                 continue
@@ -125,10 +125,11 @@ def get_window_info(wi: typedict) -> tuple[tuple[str, int], ...]:
     sc = wi.dictget("size-constraints")
     if sc:
         def sc_str(k, v):
-            if k=="gravity":
+            if k == "gravity":
                 v = GravityStr(v)
             return f"{k}={v}"
-        g_str += " - %s" % csv(sc_str(k, v) for k,v in sc.items())
+
+        g_str += " - %s" % csv(sc_str(k, v) for k, v in sc.items())
     line1 = ""
     pid = wi.intget("pid", 0)
     if pid:
@@ -180,7 +181,7 @@ class TopClient:
         return self.exit_code
 
     def signal_handler(self, signum, *_args):
-        self.exit_code = 128+signum
+        self.exit_code = 128 + signum
 
     def setup(self):
         self.stdscr = curses_init()
@@ -197,22 +198,22 @@ class TopClient:
     def update_loop(self):
         while self.exit_code is None:
             self.update_screen()
-            elapsed = int(1000*monotonic()-self.last_getch)
-            delay = max(100, min(1000, 1000-elapsed))//100
+            elapsed = int(1000 * monotonic() - self.last_getch)
+            delay = max(100, min(1000, 1000 - elapsed)) // 100
             curses.halfdelay(delay)
             try:
                 v = self.stdscr.getch()
             except Exception:
                 v = -1
-            self.last_getch = int(1000*monotonic())
+            self.last_getch = int(1000 * monotonic())
             if v in EXIT_KEYS:
                 self.exit_code = 0
             if v in SIGNAL_KEYS:
-                self.exit_code = 128+SIGNAL_KEYS[v]
-            if v == 258:      # down arrow
+                self.exit_code = 128 + SIGNAL_KEYS[v]
+            if v == 258:  # down arrow
                 self.position += 1
-            elif v == 259:    # up arrow
-                self.position = max(self.position-1, 0)
+            elif v == 259:  # up arrow
+                self.position = max(self.position - 1, 0)
             elif v == 10 and self.selected_session:
                 self.show_selected_session()
             elif v in (ord("s"), ord("S")):
@@ -236,15 +237,15 @@ class TopClient:
             exit_code = proc.wait()
             txt = "top subprocess terminated"
             attr = 0
-            if exit_code!=0:
+            if exit_code != 0:
                 attr = curses.color_pair(RED)
                 txt += f" with error code {exit_code}"
                 try:
                     estr = ExitCode(exit_code).name
                     txt += f" ({estr})"
                 except ValueError:
-                    if (exit_code-128) in SIGNAMES:   # pylint: disable=superfluous-parens
-                        txt += f" ({SIGNAMES[exit_code-128]})"
+                    if (exit_code - 128) in SIGNAMES:  # pylint: disable=superfluous-parens
+                        txt += f" ({SIGNAMES[exit_code - 128]})"
             self.message = monotonic(), txt, attr
         finally:
             self.setup()
@@ -253,7 +254,7 @@ class TopClient:
         return self.do_run_subcommand(subcommand, stdout=DEVNULL, stderr=DEVNULL)
 
     def do_run_subcommand(self, subcommand, **kwargs):
-        cmd = get_nodock_command()+[subcommand, self.selected_session]
+        cmd = get_nodock_command() + [subcommand, self.selected_session]
         try:
             return Popen(cmd, **kwargs)
         except Exception:
@@ -268,17 +269,17 @@ class TopClient:
         return True
 
     def do_update_screen(self):
-        #c = self.stdscr.getch()
-        #if c==curses.KEY_RESIZE:
+        # c = self.stdscr.getch()
+        # if c==curses.KEY_RESIZE:
         height, width = self.stdscr.getmaxyx()
         # log.info("update_screen() %ix%i", height, width)
         title = get_title()
-        x = max(0, width//2-len(title)//2)
+        x = max(0, width // 2 - len(title) // 2)
         try:
             hpos = 0
             self.stdscr.addstr(hpos, x, title, curses.A_BOLD)
             hpos += 1
-            if height<=hpos:
+            if height <= hpos:
                 return
             sd = self.dotxpra.socket_details()
             # group them by display instead of socket dir:
@@ -290,36 +291,36 @@ class TopClient:
             self.position = min(len(displays), self.position)
             self.selected_session = None
             hpos += 1
-            if height<=hpos:
+            if height <= hpos:
                 return
             if self.message:
                 ts, txt, attr = self.message
-                if monotonic()-ts<10:
+                if monotonic() - ts < 10:
                     self.stdscr.addstr(hpos, 0, txt, attr)
                     hpos += 1
-                    if height<=hpos:
+                    if height <= hpos:
                         return
                 else:
                     self.message = None
             n = len(displays)
             for i, (display, state_paths) in enumerate(displays.items()):
-                if height<=hpos:
+                if height <= hpos:
                     return
                 info = self.get_display_info(display, state_paths)
                 l = len(info)
-                if height<=hpos+l+2:
+                if height <= hpos + l + 2:
                     break
-                self.box(1, hpos, width-2, l+2, open_top=i>0, open_bottom=i<n-1)
+                self.box(1, hpos, width - 2, l + 2, open_top=i > 0, open_bottom=i < n - 1)
                 hpos += 1
-                if i==self.position:
+                if i == self.position:
                     self.selected_session = display
                     attr = curses.A_REVERSE
                 else:
                     attr = 0
                 for s in info:
-                    if len(s)>=width-4:
-                        s = s[:width-6]+".."
-                    s = s.ljust(width-4)
+                    if len(s) >= width - 4:
+                        s = s[:width - 6] + ".."
+                    s = s.ljust(width - 4)
                     self.stdscr.addstr(hpos, 2, s, attr)
                     hpos += 1
         except Exception as e:
@@ -336,14 +337,14 @@ class TopClient:
                 from grp import getgrgid
                 try:
                     stat = os.stat(path)
-                    #if stat.st_uid!=os.getuid():
+                    # if stat.st_uid!=os.getuid():
                     sinfo += "  uid=" + getpwuid(stat.st_uid).pw_name
-                    #if stat.st_gid!=os.getgid():
+                    # if stat.st_gid!=os.getgid():
                     sinfo += "  gid=" + getgrgid(stat.st_gid).gr_name
                 except Exception as e:
                     sinfo += f"(stat error: {e})"
             info.append(sinfo)
-            if state==SocketState.LIVE:
+            if state == SocketState.LIVE:
                 valid_path = path
         if valid_path:
             d = get_display_id_info(valid_path)
@@ -357,7 +358,7 @@ class TopClient:
                 info[0] = f"{display}  {name}"
                 info.insert(1, f"uuid={uuid}, type={stype}")
             machine_id = d.get("machine-id")
-            if machine_id is None or machine_id==get_machine_id():
+            if machine_id is None or machine_id == get_machine_id():
                 try:
                     pid = int(d.get("pid"))
                 except (ValueError, TypeError):
@@ -366,7 +367,7 @@ class TopClient:
                     try:
                         process = self.psprocess.get(pid)
                         if not process:
-                            import psutil     # pylint: disable=import-outside-toplevel
+                            import psutil  # pylint: disable=import-outside-toplevel
                             process = psutil.Process(pid)
                             self.psprocess[pid] = process
                         else:
@@ -441,10 +442,10 @@ class TopSessionClient(InfoTimerClient):
         lf = self.log_file
         if lf:
             now = datetime.now()
-            #we log from multiple threads,
-            #so the file may have been closed
-            #by the time we get here:
-            noerr(lf.write, (now.strftime("%Y/%m/%d %H:%M:%S.%f")+" "+message+"\n").encode())
+            # we log from multiple threads,
+            # so the file may have been closed
+            # by the time we get here:
+            noerr(lf.write, (now.strftime("%Y/%m/%d %H:%M:%S.%f") + " " + message + "\n").encode())
             noerr(lf.flush)
 
     def err(self, e):
@@ -497,7 +498,7 @@ class TopSessionClient(InfoTimerClient):
                 break
             if v in SIGNAL_KEYS:
                 self.log(f"exit on signal key {v!r}")
-                self.quit(128+SIGNAL_KEYS[v])
+                self.quit(128 + SIGNAL_KEYS[v])
                 break
             if v in PAUSE_KEYS:
                 self.paused = not self.paused
@@ -511,8 +512,8 @@ class TopSessionClient(InfoTimerClient):
         sli = self.server_last_info
 
         def _addstr(pad, y, x, s, *args):
-            if len(s)+x>=width-pad:
-                s = s[:max(0, width-x-2-pad)]+".."
+            if len(s) + x >= width - pad:
+                s = s[:max(0, width - x - 2 - pad)] + ".."
             self.stdscr.addstr(y, x, s, *args)
 
         def addstr_main(y, x, s, *args):
@@ -520,8 +521,9 @@ class TopSessionClient(InfoTimerClient):
 
         def addstr_box(y, x, s, *args):
             _addstr(2, y, x, s, *args)
+
         try:
-            x = max(0, width//2-len(title)//2)
+            x = max(0, width // 2 - len(title) // 2)
             addstr_main(0, x, title, curses.A_BOLD)
             if height <= 1:
                 return
@@ -531,7 +533,7 @@ class TopSessionClient(InfoTimerClient):
             mode = server_info.strget("mode", "server")
             python_info = self.td(server_info.dictget("python", {}))
             bits = python_info.intget("bits", 0)
-            bitsstr = "" if bits==0 else f" {bits}-bit"
+            bitsstr = "" if bits == 0 else f" {bits}-bit"
             server_str = f"Xpra {mode} server version {vstr}{bitsstr}"
             proxy_info = self.slidictget("proxy")
             if proxy_info:
@@ -559,8 +561,8 @@ class TopSessionClient(InfoTimerClient):
             nclients = clients_info.intget("")
             load_average = ""
             load = sli.inttupleget("load")
-            if load and len(load)==3:
-                float_load = tuple(v/1000.0 for v in load)
+            if load and len(load) == 3:
+                float_load = tuple(v / 1000.0 for v in load)
                 load_average = ", load average: %1.2f, %1.2f, %1.2f" % float_load
             addstr_main(2, 0, "xpra top - %s%s, %2i users%s" % (
                 now.strftime("%H:%M:%S"), uptime, nclients, load_average))
@@ -573,7 +575,7 @@ class TopSessionClient(InfoTimerClient):
             if server_pid:
                 rinfo += f", pid {server_pid}"
                 machine_id = server_info.get("machine-id")
-                if machine_id is None or machine_id==get_machine_id():
+                if machine_id is None or machine_id == get_machine_id():
                     try:
                         process = self.psprocess.get(server_pid)
                         if not process:
@@ -588,17 +590,17 @@ class TopSessionClient(InfoTimerClient):
             cpuinfo = self.slidictget("cpuinfo")
             if cpuinfo:
                 rinfo += ", " + cpuinfo.strget("hz_actual")
-            elapsed = monotonic()-self.server_last_info_time
+            elapsed = monotonic() - self.server_last_info_time
             color = WHITE
-            if self.server_last_info_time==0:
+            if self.server_last_info_time == 0:
                 rinfo += " - no server data"
-            elif elapsed>2:
+            elif elapsed > 2:
                 rinfo += f" - last updated {elapsed} seconds ago"
                 color = RED
             addstr_main(3, 0, rinfo, curses.color_pair(color))
-            if height<=4:
+            if height <= 4:
                 return
-            #display:
+            # display:
             dinfo = []
             server = self.slidictget("server")
             rws = server.intpair("root_window_size", None)
@@ -607,7 +609,7 @@ class TopSessionClient(InfoTimerClient):
                 rww, rwh = rws
                 sinfo = f"{rww}x{rwh}"
                 depth = display_info.intget("depth")
-                if depth>0:
+                if depth > 0:
                     sinfo += f" {depth}-bit"
                 sinfo += " display"
                 mds = server.intpair("max_desktop_size")
@@ -623,7 +625,7 @@ class TopSessionClient(InfoTimerClient):
             if pid:
                 dinfo.append(f"pid {pid}")
             addstr_main(4, 0, csv(dinfo))
-            if height<=5:
+            if height <= 5:
                 return
             hpos = 5
             gl_info = self.get_gl_info(display_info.dictget("opengl"))
@@ -631,7 +633,7 @@ class TopSessionClient(InfoTimerClient):
                 addstr_main(5, 0, gl_info)
                 hpos += 1
 
-            #filter clients, only show GUI clients:
+            # filter clients, only show GUI clients:
             client_info = self.slidictget("client")
             gui_clients = []
             nclients = 0
@@ -641,19 +643,19 @@ class TopSessionClient(InfoTimerClient):
                     break
                 ci = self.td(ci)
                 session_id = ci.strget("session-id")
-                if session_id!=self.session_id and ci.boolget("windows", True) and ci.strget("type")!="top":
+                if session_id != self.session_id and ci.boolget("windows", True) and ci.strget("type") != "top":
                     gui_clients.append(nclients)
                 nclients += 1
 
             ngui = 0
-            if hpos<height-3:
+            if hpos < height - 3:
                 hpos += 1
-                if nclients==0:
+                if nclients == 0:
                     clients_str = "no clients connected"
                 else:
                     ngui = len(gui_clients)
                     clients_str = f"{nclients} clients connected, "
-                    if ngui==0:
+                    if ngui == 0:
                         clients_str += "no gui clients"
                     else:
                         clients_str += f"{ngui} gui clients:"
@@ -664,20 +666,20 @@ class TopSessionClient(InfoTimerClient):
                 assert ci
                 ci = self.get_client_info(self.td(ci))
                 l = len(ci)
-                if hpos+2+l>height:
-                    if hpos<height:
-                        more = ngui-client_index
+                if hpos + 2 + l > height:
+                    if hpos < height:
+                        more = ngui - client_index
                         addstr_box(hpos, 0, f"{more} clients not shown", curses.A_BOLD)
                     break
-                self.box(1, hpos, width-2, 2+l)
+                self.box(1, hpos, width - 2, 2 + l)
                 for i, info in enumerate(ci):
                     info_text, color = info
                     cpair = curses.color_pair(color)
-                    addstr_box(hpos+i+1, 2, info_text, cpair)
-                hpos += 2+l
+                    addstr_box(hpos + i + 1, 2, info_text, cpair)
+                hpos += 2 + l
 
             windows = self.slidictget("windows")
-            if hpos<height-3:
+            if hpos < height - 3:
                 hpos += 1
                 addstr_main(hpos, 0, f"{len(windows)} windows:")
                 hpos += 1
@@ -686,19 +688,19 @@ class TopSessionClient(InfoTimerClient):
             for win_no, win in enumerate(wins):
                 wi = get_window_info(self.td(win))
                 l = len(wi)
-                if hpos+2+l>height:
-                    if hpos<height:
-                        more = nwindows-win_no
+                if hpos + 2 + l > height:
+                    if hpos < height:
+                        more = nwindows - win_no
                         addstr_main(hpos, 0,
                                     f"terminal window is too small: {more} windows not shown",
                                     curses.A_BOLD)
                     break
-                self.box(1, hpos, width-2, 2+l)
+                self.box(1, hpos, width - 2, 2 + l)
                 for i, info in enumerate(wi):
                     info_text, color = info
                     cpair = curses.color_pair(color)
-                    addstr_box(hpos+i+1, 2, info_text, cpair)
-                hpos += 2+l
+                    addstr_box(hpos + i + 1, 2, info_text, cpair)
+                hpos += 2 + l
         except Exception as e:
             self.err(e)
 
@@ -726,29 +728,29 @@ class TopSessionClient(InfoTimerClient):
             conn_info += "using %s %s" % (cinfo.strget("type"), cinfo.strget("protocol-type"))
             conn_info += ", with %s and %s" % (cinfo.strget("encoder"), cinfo.strget("compressor"))
         gl_info = self.get_gl_info(ci.dictget("opengl"))
-        #audio
+        # audio
         audio_info = []
         for mode in ("speaker", "microphone"):
             audio_info.append(self._audio_info(ci, mode))
         audio_info.append(self._avsync_info(ci))
-        #batch delay / latency:
+        # batch delay / latency:
         b_info = self.td(ci.dictget("batch", {}))
         bi_info = self.td(b_info.dictget("delay", {}))
         bcur = bi_info.intget("cur")
         bavg = bi_info.intget("avg")
         batch_info = f"batch delay: {bcur} ({bavg})"
-        #client latency:
+        # client latency:
         pl = self.dictget(ci, "connection", "client", "ping_latency")
         lcur = pl.intget("cur")
         lavg = pl.intget("avg")
         lmin = pl.intget("min")
         bl_color = GREEN
-        if bcur>50 or (lcur>20 and lcur>2*lmin):
+        if bcur > 50 or (lcur > 20 and lcur > 2 * lmin):
             bl_color = YELLOW
-        elif bcur>100 or (lcur>20 and lcur>3*lmin):
+        elif bcur > 100 or (lcur > 20 and lcur > 3 * lmin):
             bl_color = RED
-        batch_latency = batch_info.ljust(24)+f"latency: {lcur} ({lavg})"
-        #speed / quality:
+        batch_latency = batch_info.ljust(24) + f"latency: {lcur} ({lavg})"
+        # speed / quality:
         edict = self.td(ci.dictget("encoding") or {})
         qs_info = ""
         qs_color = GREEN
@@ -764,9 +766,9 @@ class TopSessionClient(InfoTimerClient):
                 cur = qinfo.intget("cur")
                 avg = qinfo.intget("avg")
                 qs_info += f"quality: {cur}% (avg: {avg}%)"
-                if avg<70:
+                if avg < 70:
                     qs_color = YELLOW
-                if avg<50:
+                if avg < 50:
                     qs_color = RED
         str_color = [
             (title, WHITE),
@@ -776,7 +778,7 @@ class TopSessionClient(InfoTimerClient):
             (batch_latency, bl_color),
             (qs_info, qs_color),
         ]
-        return tuple((s, c) for s,c in str_color if s)
+        return tuple((s, c) for s, c in str_color if s)
 
     def _audio_info(self, ci, mode="speaker"):
         minfo = self.dictget(ci, "audio", mode) or self.dictget(ci, "sound", mode)
@@ -796,7 +798,7 @@ class TopSessionClient(InfoTimerClient):
             return "av-sync: not supported by server"
         if not avsf.boolget("enabled", False):
             return "av-sync: disabled by server"
-        #client specific attributes:
+        # client specific attributes:
         avsi = self.dictget(ci, "av-sync")
         if not avsi.boolget("", False):
             return "av-sync: disabled by client"
@@ -816,6 +818,7 @@ class TopSessionClient(InfoTimerClient):
             if isinstance(v, (tuple, list)):
                 return sep.join(str(x) for x in v)
             return bytestostr(v)
+
         if not gli.boolget("enabled", True):
             return "OpenGL disabled " + gli.strget("message", "")
         gl_info = "OpenGL %s enabled: %s" % (strget("opengl", "."), gli.strget("renderer") or gli.strget("vendor"))
@@ -829,5 +832,5 @@ class TopSessionClient(InfoTimerClient):
 
     def box(self, x, y, w, h):
         box(self.stdscr, x, y, w, h,
-            ul=curses.ACS_ULCORNER, ur=curses.ACS_URCORNER,     #@UndefinedVariable
-            ll=curses.ACS_LLCORNER, lr=curses.ACS_LRCORNER)     #@UndefinedVariable
+            ul=curses.ACS_ULCORNER, ur=curses.ACS_URCORNER,  # @UndefinedVariable
+            ll=curses.ACS_LLCORNER, lr=curses.ACS_LRCORNER)  # @UndefinedVariable

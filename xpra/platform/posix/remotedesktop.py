@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2023-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -35,7 +35,7 @@ class RemoteDesktop(PortalShadow):
     def set_keymap(self, server_source, force=False) -> None:
         keylog.info("key mapping not implemented - YMMV")
 
-    def do_process_mouse_common(self, proto, device_id:int, wid:int, pointer, props) -> bool:
+    def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
         if self.readonly or not self.input_devices:
             return False
         win = self._id_to_window.get(wid)
@@ -53,15 +53,16 @@ class RemoteDesktop(PortalShadow):
             dbus_interface=REMOTEDESKTOP_IFACE)
         return True
 
-    def do_process_button_action(self, proto, device_id:int, wid:int, button:int, pressed:bool, pointer, props) -> None:
+    def do_process_button_action(self, proto, device_id: int, wid: int, button: int, pressed: bool, pointer,
+                                 props) -> None:
         options = native_to_dbus([], "{sv}")
         mouselog(f"button-action: button={button}, pressed={pressed}")
         evdev_button = {
-            1   : 0x110,    # BTN_LEFT
-            2   : 0x111,    # BTN_RIGHT
-            3   : 0x112,    # BTN_MIDDLE
+            1: 0x110,  # BTN_LEFT
+            2: 0x111,  # BTN_RIGHT
+            3: 0x112,  # BTN_MIDDLE
         }.get(button, -1)
-        if evdev_button<0:
+        if evdev_button < 0:
             mouselog.warn(f"Warning: button {button} not recognized")
             return
         self.portal_interface.NotifyPointerButton(
@@ -84,15 +85,15 @@ class RemoteDesktop(PortalShadow):
         self.set_ui_driver(ss)
         keylog(f"key: name={keyname}, keyval={keyval}, keystr={keystr}")
         options = native_to_dbus([], "{sv}")
-        #if keystr:
+        # if keystr:
         #    keysym = Gdk.KEY_0
         #    self.portal_interface.NotifyKeyboardKeysym(
         #        self.session_handle,
         #        options,
         #        Int32(keysym),
         #        UInt32(pressed))
-        #GDK code must be moved elsewhere
-        ukeyname = keyname[:1].upper()+keyname[2:]
+        # GDK code must be moved elsewhere
+        ukeyname = keyname[:1].upper() + keyname[2:]
         skeyval = getattr(Gdk, f"KEY_{keyname}", 0) or getattr(Gdk, f"KEY_{ukeyname}", 0) or keyval
         entries = self.keymap.get_entries_for_keyval(skeyval)
         keylog(f"get_entries_for_keyval({skeyval})={entries}")
@@ -100,8 +101,8 @@ class RemoteDesktop(PortalShadow):
             keylog(f"no matching entries in keymap for {skeyval}")
             return
         for keymapkey in entries[1]:
-            keycode = keymapkey.keycode-8
-            if keycode<=0:
+            keycode = keymapkey.keycode - 8
+            if keycode <= 0:
                 continue
             self.portal_interface.NotifyKeyboardKeycode(
                 self.session_handle,

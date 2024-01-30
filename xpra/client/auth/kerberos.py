@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -39,7 +39,7 @@ class Handler:
     def get_digest(self) -> str:
         return "kerberos"
 
-    def handle(self, challenge, digest:str, prompt:str):  # pylint: disable=unused-argument
+    def handle(self, challenge, digest: str, prompt: str):  # pylint: disable=unused-argument
         if not digest.startswith("kerberos:"):
             log("%s is not a kerberos challenge", digest)
             # not a kerberos challenge
@@ -62,7 +62,7 @@ class Handler:
         log("kerberos service=%s", service)
         try:
             r, ctx = kerberos.authGSSClientInit(service)  # @UndefinedVariable
-            if r!=1:
+            if r != 1:
                 log("kerberos.authGSSClientInit failed and returned %s", r)
                 return None
         except Exception as e:

@@ -41,14 +41,14 @@ class CUDAImageWrapper(ImageWrapper):
         assert self.cuda_device_buffer, "bug: no device buffer"
         start = monotonic()
         ctx.push()
-        host_buffer = pagelocked_empty(self.buffer_size, dtype=byte)   # pylint: disable=no-member
+        host_buffer = pagelocked_empty(self.buffer_size, dtype=byte)  # pylint: disable=no-member
         memcpy_dtoh_async(host_buffer, self.cuda_device_buffer, self.stream)  # pylint: disable=no-member
         self.wait_for_stream()
         self.pixels = host_buffer.tobytes()
-        elapsed = monotonic()-start
+        elapsed = monotonic() - start
         log("may_download() from %#x to %s, size=%s, elapsed=%ims - %iMB/s",
             int(self.cuda_device_buffer), host_buffer, self.buffer_size,
-            int(1000*elapsed), self.buffer_size/elapsed/1024/1024)
+            int(1000 * elapsed), self.buffer_size / elapsed / 1024 / 1024)
         self.free_cuda()
         ctx.pop()
 

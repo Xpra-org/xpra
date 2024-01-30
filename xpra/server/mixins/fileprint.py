@@ -1,10 +1,10 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-#pylint: disable-msg=E1101
+# pylint: disable-msg=E1101
 
 import os.path
 import hashlib
@@ -34,8 +34,8 @@ class FilePrintServer(StubServerMixin):
     """
 
     def __init__(self):
-        self.lpadmin : str = ""
-        self.lpinfo : str = ""
+        self.lpadmin: str = ""
+        self.lpinfo: str = ""
         self.add_printer_options = []
         self.file_transfer = FileTransferAttributes()
 
@@ -53,7 +53,7 @@ class FilePrintServer(StubServerMixin):
 
     def init_sockets(self, sockets) -> None:
         # verify we have a local socket for printing:
-        unixsockets = [info for socktype, _, info, _ in sockets if socktype=="socket"]
+        unixsockets = [info for socktype, _, info, _ in sockets if socktype == "socket"]
         printlog("local unix domain sockets we can use for printing: %s", unixsockets)
         if not unixsockets and self.file_transfer.printing:
             if not WIN32:
@@ -62,7 +62,7 @@ class FilePrintServer(StubServerMixin):
             printlog("printer forwarding disabled")
             self.file_transfer.printing = False
 
-    def get_server_features(self, _source) -> dict[str,Any]:
+    def get_server_features(self, _source) -> dict[str, Any]:
         f = self.file_transfer.get_file_transfer_features()
         f["printer.attributes"] = ("printer-info", "device-uri")
         ftf = self.file_transfer.get_file_transfer_features()
@@ -71,18 +71,18 @@ class FilePrintServer(StubServerMixin):
         f.update(ftf)
         return f
 
-    def get_info(self, _proto) -> dict[str,Any]:
+    def get_info(self, _proto) -> dict[str, Any]:
         d = {}
         if POSIX:
             d.update({
-                "lpadmin"              : self.lpadmin,
-                "lpinfo"               : self.lpinfo,
-                "add-printer-options"  : self.add_printer_options,
+                "lpadmin": self.lpadmin,
+                "lpinfo": self.lpinfo,
+                "add-printer-options": self.add_printer_options,
             })
         if self.file_transfer.printing:
             from xpra.platform.printing import get_info
             d.update(get_info())
-        info = {"printing" : d}
+        info = {"printing": d}
         if self.file_transfer.file_transfer:
             fti = self.file_transfer.get_info()
             if self.file_transfer.file_transfer:
@@ -117,7 +117,7 @@ class FilePrintServer(StubServerMixin):
         except Exception:
             printlog.error("Error: failed to set lpadmin and lpinfo commands", exc_info=True)
             printing = False
-        #verify that we can talk to the socket:
+        # verify that we can talk to the socket:
         auth_class = self.auth_classes.get("socket")
         if printing and auth_class:
             try:
@@ -139,27 +139,27 @@ class FilePrintServer(StubServerMixin):
         #           filename, mimetype, source, title, printer, no_copies, print_options]
         assert self.file_transfer.printing
         # printlog("_process_print(%s, %s)", proto, packet)
-        if len(packet)<3:
+        if len(packet) < 3:
             printlog.error("Error: invalid print packet, only %i arguments", len(packet))
             printlog.error(" %s", [repr_ellipsized(x) for x in packet])
             return
         filename = str(packet[1])
         file_data = packet[2]
         mimetype, source_uuid, title, printer, no_copies, print_options = "", "*", "unnamed document", "", 1, ""
-        if len(packet)>=4:
+        if len(packet) >= 4:
             mimetype = bytestostr(packet[3])
-        if len(packet)>=5:
+        if len(packet) >= 5:
             source_uuid = bytestostr(packet[4])
-        if len(packet)>=6:
+        if len(packet) >= 6:
             title = str(packet[5])
-        if len(packet)>=7:
+        if len(packet) >= 7:
             printer = bytestostr(packet[6])
-        if len(packet)>=8:
+        if len(packet) >= 8:
             no_copies = int(packet[7])
-        if len(packet)>=9:
+        if len(packet) >= 9:
             print_options = packet[8]
         # parse and validate:
-        if len(mimetype)>=128:
+        if len(mimetype) >= 128:
             printlog.error("Error: invalid mimetype in print packet:")
             printlog.error(" %s", repr_ellipsized(mimetype))
             return
@@ -168,7 +168,7 @@ class FilePrintServer(StubServerMixin):
             print_options = {}
             for x in s.split(" "):
                 parts = x.split("=", 1)
-                if len(parts)==2:
+                if len(parts) == 2:
                     print_options[parts[0]] = parts[1]
         printlog("process_print: %s", (filename, mimetype, "%s bytes" % len(file_data),
                                        source_uuid, title, printer, no_copies, print_options))
@@ -178,11 +178,11 @@ class FilePrintServer(StubServerMixin):
         hu.update(file_data)
         printlog("sha1 digest: %s", hu.hexdigest())
         options = {
-            "printer"    : printer,
-            "title"      : title,
-            "copies"     : no_copies,
-            "options"    : print_options,
-            "sha256"     : hu.hexdigest(),
+            "printer": printer,
+            "title": title,
+            "copies": no_copies,
+            "options": print_options,
+            "sha256": hu.hexdigest(),
         }
         printlog("parsed printer options: %s", options)
         if SAVE_PRINT_JOBS:
@@ -196,7 +196,7 @@ class FilePrintServer(StubServerMixin):
                 printlog("not sending to %s (uuid=%s, wanted uuid=%s)", ss, ss.uuid, source_uuid)
                 continue
             if not ss.printing:
-                if source_uuid!='*':
+                if source_uuid != '*':
                     printlog.warn("Warning: printing is not enabled for:")
                     printlog.warn(" %s", ss)
                 else:
@@ -212,7 +212,7 @@ class FilePrintServer(StubServerMixin):
             if ss.send_file(filename, mimetype, file_data, len(file_data), True, True, options):
                 sent += 1
         # warn if not sent:
-        if sent==0:
+        if sent == 0:
             l = printlog.warn
         else:
             l = printlog.info
@@ -300,14 +300,14 @@ class FilePrintServer(StubServerMixin):
             filelog("os.stat(%s)", filename, exc_info=True)
         else:
             file_size = stat.st_size
-            if file_size>self.file_transfer.file_size_limit or file_size>ss.file_size_limit:
+            if file_size > self.file_transfer.file_size_limit or file_size > ss.file_size_limit:
                 ss.may_notify(NotificationID.FILETRANSFER,
                               "File too large",
                               "The file requested is too large to send:\n%s\nis %s" % (argf, std_unit(file_size)),
                               icon_name="file")
                 return
         data = load_binary_file(filename)
-        ss.send_file(filename, "", data, len(data), openit=openit, options={"request-file" : (argf, openit)})
+        ss.send_file(filename, "", data, len(data), openit=openit, options={"request-file": (argf, openit)})
 
     def init_packet_handlers(self) -> None:
         # noqa: E241

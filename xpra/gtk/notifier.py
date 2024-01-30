@@ -3,7 +3,7 @@
 # gtkPopupNotify.py
 #
 # Copyright 2009 Daniel Woodhouse
-# Copyright 2013-2021 Antoine Martin <antoine@xpra.org>
+# Copyright 2013-2024 Antoine Martin <antoine@xpra.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -85,8 +85,8 @@ class GTKNotifier(NotifierBase):
         self.max_width = geom.width
         self.max_height = geom.height
         log("first monitor dimensions: %dx%d", self.max_width, self.max_height)
-        self.x = self.max_width - 20            # keep away from the edge
-        self.y = self.max_height - 64           # space for a panel
+        self.x = self.max_width - 20  # keep away from the edge
+        self.y = self.max_height - 64  # space for a panel
         log("our reduced dimensions: %dx%d", self.x, self.y)
 
     def cleanup(self):
@@ -104,7 +104,7 @@ class GTKNotifier(NotifierBase):
 
     def close_notify(self, nid):
         for x in self._notify_stack:
-            if x.nid==nid:
+            if x.nid == nid:
                 x.hide_notification()
 
     def show_notify(self, dbus_id, tray, nid: int | NotificationID,
@@ -112,9 +112,9 @@ class GTKNotifier(NotifierBase):
                     summary: str, body: str, actions, hints, timeout, icon):
         GLib.idle_add(self.new_popup, nid, summary, body, actions, icon, timeout, 0 < timeout <= 600)
 
-    def new_popup(self, nid: int, summary: str, body: str, actions:tuple, icon, timeout=10*1000, show_timeout=False):
+    def new_popup(self, nid: int, summary: str, body: str, actions: tuple, icon, timeout=10 * 1000, show_timeout=False):
         """Create a new Popup instance, or update an existing one """
-        existing = [p for p in self._notify_stack if p.nid==nid]
+        existing = [p for p in self._notify_stack if p.nid == nid]
         if existing:
             existing[0].set_content(summary, body, actions, icon)
             return
@@ -123,13 +123,14 @@ class GTKNotifier(NotifierBase):
             oldest.hide_notification()
             self.popup_closed(oldest.nid, 4)
         image = None
-        if icon and icon[0]=="png":
+        if icon and icon[0] == "png":
             img_data = icon[3]
             loader = GdkPixbuf.PixbufLoader()
             loader.write(img_data)
             loader.close()
             image = loader.get_pixbuf()
-        popup = Popup(self, nid, summary, body, actions, image=image, timeout=timeout//1000, show_timeout=show_timeout)
+        popup = Popup(self, nid, summary, body, actions, image=image, timeout=timeout // 1000,
+                      show_timeout=show_timeout)
         self._notify_stack.append(popup)
         self._offset += self._notify_stack[-1].h
         return False
@@ -246,7 +247,7 @@ class Popup(Gtk.Window):
         # remove any existing actions:
         for w in tuple(self.buttons_box.get_children()):
             self.buttons_box.remove(w)
-        while len(actions)>=2:
+        while len(actions) >= 2:
             action_id, action_text = actions[:2]
             actions = actions[2:]
             button = self.action_button(action_id, action_text)
@@ -266,20 +267,21 @@ class Popup(Gtk.Window):
             self.hide_notification()
             log("popup_cb_clicked%s for action_id=%s, action_text=%s", args, action_id, action_text)
             self.action_cb(self.nid, action_id)
+
         button.connect("clicked", popup_cb_clicked)
         return button
 
     def get_x(self, w):
-        x = self.stack.get_origin_x() - w//2
-        if (x + w) >= self.stack.max_width:    # don't overflow on the right
+        x = self.stack.get_origin_x() - w // 2
+        if (x + w) >= self.stack.max_width:  # don't overflow on the right
             x = self.stack.max_width - w
-        x = max(0, x)                          # or on the left
+        x = max(0, x)  # or on the left
         log("get_x(%s)=%s", w, x)
         return x
 
     def get_y(self, h):
         y = self.stack.get_origin_y()
-        if y >= (self.stack.max_height//2):        # if near bottom, subtract window height
+        if y >= (self.stack.max_height // 2):  # if near bottom, subtract window height
             y = y - h
         if (y + h) >= self.stack.max_height:
             y = self.stack.max_height - h
@@ -321,7 +323,7 @@ class Popup(Gtk.Window):
         if opacity <= 0:
             self.in_progress = False
             self.hide_notification()
-            self.fade_out_timer = 0   # redundant
+            self.fade_out_timer = 0  # redundant
             self.popup_closed(self.nid, 1)
             return False
         self.set_opacity(opacity)
@@ -354,7 +356,7 @@ def main():
     # example usage
     import random
     color_combos = (("red", "white"), ("white", "blue"), ("green", "black"))
-    messages: list[tuple[int,str,str,tuple]] = [
+    messages: list[tuple[int, str, str, tuple]] = [
         (1, "Hello", "This is a popup", ()),
         (2, "Actions", "This notification has 3 actions", (1, "Action 1", 2, "Action 2", 3, "Action 3")),
         (3, "Some Latin", "Quidquid latine dictum sit, altum sonatur.", ()),
@@ -362,12 +364,13 @@ def main():
         (1, "Hello Again", "Replacing the first notification", ()),
         (2, "Actions Again", "Replacing with just 1 action", (999, "Action 999")),
     ]
+
     # images = ("logo1_64.png", None)
 
     def notify_factory():
         color = random.choice(color_combos)
         nid, title, message, actions = messages.pop(0)
-        icon = None   # random.choice(images)
+        icon = None  # random.choice(images)
         notifier.bg_color = color_parse(color[0])
         notifier.fg_color = color_parse(color[1])
         notifier.show_timeout = random.choice((True, False))

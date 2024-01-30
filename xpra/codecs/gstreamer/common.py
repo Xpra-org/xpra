@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -23,13 +23,13 @@ FRAME_QUEUE_TIMEOUT = envint("XPRA_GSTREAMER_FRAME_QUEUE_TIMEOUT", 1)
 FRAME_QUEUE_INITIAL_TIMEOUT = envint("XPRA_GSTREAMER_FRAME_QUEUE_INITIAL_TIMEOUT", 3)
 
 
-def get_default_encoder_options() -> dict[str,dict[str,Any]]:
-    options : dict[str,dict[str,Any]] = {
-        "vaapih264enc" : {
-            "max-bframes"   : 0,    # int(options.boolget("b-frames", False))
+def get_default_encoder_options() -> dict[str, dict[str, Any]]:
+    options: dict[str, dict[str, Any]] = {
+        "vaapih264enc": {
+            "max-bframes": 0,  # int(options.boolget("b-frames", False))
             # "tune"          : 3,    #low-power
             # "rate-control" : 8, #qvbr
-            "compliance-mode" : 0,  # restrict-buf-alloc (1) – Restrict the allocation size of coded-buffer
+            "compliance-mode": 0,  # restrict-buf-alloc (1) – Restrict the allocation size of coded-buffer
             # "keyframe-period"   : 9999,
             # "prediction-type" : 1, #hierarchical-p (1) – Hierarchical P frame encode
             # "quality-factor" : 10,
@@ -37,72 +37,72 @@ def get_default_encoder_options() -> dict[str,dict[str,Any]]:
             # "bitrate"   : 2000,
             # "prediction-type" : 1,    #Hierarchical P frame encode
             # "keyframe-period" : 4294967295,
-            "aud"   : True,
+            "aud": True,
         },
-        "vaapih265enc" : {
-            "max-bframes"   : 0,    # int(options.boolget("b-frames", False))
+        "vaapih265enc": {
+            "max-bframes": 0,  # int(options.boolget("b-frames", False))
             # "tune"          : 3,    #low-power
             # "rate-control" : 8, #qvbr
         },
-        "amfh264enc" : {
-            "usage"    : "ultra-low-latency",
+        "amfh264enc": {
+            "usage": "ultra-low-latency",
         },
-        "amfh265enc" : {
-            "usage"    : "ultra-low-latency",
+        "amfh265enc": {
+            "usage": "ultra-low-latency",
         },
-        "x264enc" : {
-            "speed-preset"  : "ultrafast",
-            "tune"          : "zerolatency",
-            "byte-stream"   : True,
-            "threads"       : 1,
-            "key-int-max"   : 15,
-            "intra-refresh" : True,
+        "x264enc": {
+            "speed-preset": "ultrafast",
+            "tune": "zerolatency",
+            "byte-stream": True,
+            "threads": 1,
+            "key-int-max": 15,
+            "intra-refresh": True,
         },
-        "vp8enc" : {
-            "deadline"      : 1,
-            "error-resilient" : 0,
+        "vp8enc": {
+            "deadline": 1,
+            "error-resilient": 0,
         },
-        "vp9enc" : {
-            "deadline"      : 1,
-            "error-resilient" : 0,
-            "lag-in-frames" : 0,
-            "cpu-used"      : 16,
+        "vp9enc": {
+            "deadline": 1,
+            "error-resilient": 0,
+            "lag-in-frames": 0,
+            "cpu-used": 16,
         },
-        "nvh264enc" : {
-            "zerolatency"   : True,
-            "rc-mode"       : 3,    # vbr
-            "preset"        : 5,    # low latency, high performance
-            "bframes"       : 0,
-            "aud"           : True,
+        "nvh264enc": {
+            "zerolatency": True,
+            "rc-mode": 3,  # vbr
+            "preset": 5,  # low latency, high performance
+            "bframes": 0,
+            "aud": True,
         },
-        "nvh265enc" : {
-            "zerolatency"   : True,
-            "rc-mode"       : 3,    # vbr
-            "preset"        : 5,    # low latency, high performance
+        "nvh265enc": {
+            "zerolatency": True,
+            "rc-mode": 3,  # vbr
+            "preset": 5,  # low latency, high performance
             # should be in GStreamer 1.18, but somehow missing?
             # "bframes"       : 0,
-            "aud"           : True,
+            "aud": True,
         },
-        "nvd3d11h264enc" : {
-            "bframes"       : 0,
-            "aud"           : True,
-            "preset"        : 5,    # low latency, high performance
-            "zero-reorder-delay" : True,
+        "nvd3d11h264enc": {
+            "bframes": 0,
+            "aud": True,
+            "preset": 5,  # low latency, high performance
+            "zero-reorder-delay": True,
         },
-        "nvd3d11h265enc" : {
-            "bframes"       : 0,
-            "aud"           : True,
-            "preset"        : 5,    # low latency, high performance
-            "zero-reorder-delay" : True,
+        "nvd3d11h265enc": {
+            "bframes": 0,
+            "aud": True,
+            "preset": 5,  # low latency, high performance
+            "zero-reorder-delay": True,
         },
-        "svtav1enc" : {
+        "svtav1enc": {
             # "speed"         : 12,
             # "gop-size"      : 251,
-            "intra-refresh" : 1,    # open gop
+            "intra-refresh": 1,  # open gop
             # "lookahead"     : 0,
             # "rc"            : 1,    #vbr
         },
-        "svtvp9enc" : {
+        "svtvp9enc": {
         },
         # "svthevcenc" : {
         #    "b-pyramid"         : 0,
@@ -118,8 +118,8 @@ def get_default_encoder_options() -> dict[str,dict[str,Any]]:
     }
     if not OSX:
         options["av1enc"] = {
-            "cpu-used"          : 5,
-            "end-usage"         : 2,    # cq
+            "cpu-used": 5,
+            "end-usage": 2,  # cq
         }
     # now apply environment overrides:
     for element in options.keys():
@@ -132,8 +132,8 @@ def get_default_encoder_options() -> dict[str,dict[str,Any]]:
 
 
 def get_default_decoder_options() -> dict[str, dict[str, Any]]:
-    options : dict[str, dict[str, Any]] = {
-        "av1dec"    : {
+    options: dict[str, dict[str, Any]] = {
+        "av1dec": {
             "stream-format": "obu-stream",
             "alignment": "tu",
         },
@@ -149,8 +149,8 @@ def get_type() -> str:
     return "gstreamer"
 
 
-def get_info() -> dict[str,Any]:
-    return {"version"   : get_version()}
+def get_info() -> dict[str, Any]:
+    return {"version": get_version()}
 
 
 def init_module() -> None:
@@ -163,52 +163,52 @@ def cleanup_module() -> None:
 
 def get_gst_rgb_format(rgb_format: str) -> str:
     if rgb_format in (
-        "NV12",
-        "RGBA", "BGRA", "ARGB", "ABGR",
-        "RGB", "BGR",
-        "RGB15", "RGB16", "BGR15",
-        "r210",
-        "BGRP", "RGBP",
+            "NV12",
+            "RGBA", "BGRA", "ARGB", "ABGR",
+            "RGB", "BGR",
+            "RGB15", "RGB16", "BGR15",
+            "r210",
+            "BGRP", "RGBP",
     ):
         # identical name:
         return rgb_format
     # translate to gstreamer name:
     return {
-        "YUV420P"   : "I420",
-        "YUV444P"   : "Y444",
-        "BGRX"      : "BGRx",
-        "XRGB"      : "xRGB",
-        "XBGR"      : "xBGR",
-        "YUV400"    : "GRAY8",
+        "YUV420P": "I420",
+        "YUV444P": "Y444",
+        "BGRX": "BGRx",
+        "XRGB": "xRGB",
+        "XBGR": "xBGR",
+        "YUV400": "GRAY8",
         # "RGB8P"
     }[rgb_format]
 
 
-def get_video_encoder_caps(encoder:str = "x264enc") -> dict[str, Any]:
-    if encoder=="jpeg":
+def get_video_encoder_caps(encoder: str = "x264enc") -> dict[str, Any]:
+    if encoder == "jpeg":
         return {}
-    if encoder=="av1enc":
+    if encoder == "av1enc":
         return {
-            "alignment"     : "tu",
-            "stream-format" : "obu-stream",
+            "alignment": "tu",
+            "stream-format": "obu-stream",
         }
     return {
-        "alignment"     : "au",
-        "stream-format" : "byte-stream",
+        "alignment": "au",
+        "stream-format": "byte-stream",
     }
 
 
-def get_video_encoder_options(encoder: str="x264", profile: str="", options: typedict | None=None):
+def get_video_encoder_options(encoder: str = "x264", profile: str = "", options: typedict | None = None):
     eopts = get_default_encoder_options().get(encoder, {})
     eopts["name"] = "encoder"
-    if encoder=="x264enc" and options:
+    if encoder == "x264enc" and options:
         from xpra.codecs.constants import get_x264_quality, get_x264_preset
         q = get_x264_quality(options.intget("quality", 50), profile)
         s = options.intget("speed", 50)
         eopts |= {
-            "pass"  : "qual",
-            "quantizer" : q,
-            "speed-preset" : get_x264_preset(s),
+            "pass": "qual",
+            "quantizer": q,
+            "speed-preset": get_x264_preset(s),
         }
     # should check for "bframes" flag in options?
     return eopts
@@ -217,32 +217,34 @@ def get_video_encoder_options(encoder: str="x264", profile: str="", options: typ
 def get_gst_encoding(encoding: str) -> str:
     if encoding in ("jpeg", "png"):
         return f"image/{encoding}"
-    video = {"hevc" : "h265"}.get(encoding, encoding)
+    video = {"hevc": "h265"}.get(encoding, encoding)
     return f"video/x-{video}"
 
 
 class VideoPipeline(Pipeline):
-    __generic_signals__ : dict[str,tuple] = Pipeline.__generic_signals__.copy()
+    __generic_signals__: dict[str, tuple] = Pipeline.__generic_signals__.copy()
     """
     Dispatch video encoding or decoding to a gstreamer pipeline
     """
+
     def init_context(self, encoding: str, width: int, height: int, colorspace: str, options=None):
         options = typedict(options or {})
-        self.encoding : str = encoding
-        self.width : int = width
-        self.height : int = height
-        self.colorspace : str = colorspace
-        self.frames : int = 0
-        self.frame_queue : SimpleQueue[Any] = SimpleQueue()
-        self.pipeline_str : str = ""
+        self.encoding: str = encoding
+        self.width: int = width
+        self.height: int = height
+        self.colorspace: str = colorspace
+        self.frames: int = 0
+        self.frame_queue: SimpleQueue[Any] = SimpleQueue()
+        self.pipeline_str: str = ""
         self.create_pipeline(options)
-        self.src : Gst.Element = self.pipeline.get_by_name("src")
+        self.src: Gst.Element = self.pipeline.get_by_name("src")
         self.src.set_property("format", Gst.Format.TIME)
         # self.src.set_caps(Gst.Caps.from_string(CAPS))
-        self.sink : Gst.Element = self.pipeline.get_by_name("sink")
+        self.sink: Gst.Element = self.pipeline.get_by_name("sink")
 
-        def sh(sig:str, handler:Callable):
+        def sh(sig: str, handler: Callable):
             self.element_connect(self.sink, sig, handler)
+
         sh("new-sample", self.on_new_sample)
         sh("new-preroll", self.on_new_preroll)
         self.start()
@@ -251,7 +253,7 @@ class VideoPipeline(Pipeline):
         raise NotImplementedError()
 
     def on_message(self, bus, message) -> int:
-        if message.type == Gst.MessageType.NEED_CONTEXT and self.pipeline_str.find("vaapi")>=0:
+        if message.type == Gst.MessageType.NEED_CONTEXT and self.pipeline_str.find("vaapi") >= 0:
             log("vaapi is requesting a context")
             return GST_FLOW_OK
         return super().on_message(bus, message)
@@ -262,10 +264,10 @@ class VideoPipeline(Pipeline):
 
     def process_buffer(self, buf):
         r = self.src.emit("push-buffer", buf)
-        if r!=GST_FLOW_OK:
+        if r != GST_FLOW_OK:
             log.error("Error: unable to push image buffer")
             return None
-        timeout = FRAME_QUEUE_INITIAL_TIMEOUT if self.frames==0 else FRAME_QUEUE_TIMEOUT
+        timeout = FRAME_QUEUE_INITIAL_TIMEOUT if self.frames == 0 else FRAME_QUEUE_TIMEOUT
         try:
             return self.frame_queue.get(timeout=timeout)
         except Empty:
@@ -275,21 +277,21 @@ class VideoPipeline(Pipeline):
                 log.error(f" on {btype!r} of size {buf.get_size()}")
             except AttributeError:
                 pass
-            for k,v in self.get_info().items():
+            for k, v in self.get_info().items():
                 log.error(f" {k:<16}: {v}")
             return None
 
-    def get_info(self) -> dict[str,Any]:
-        info : dict[str,Any] = get_info()
+    def get_info(self) -> dict[str, Any]:
+        info: dict[str, Any] = get_info()
         if not self.colorspace:
             return info
         info |= {
-            "frames"    : self.frames,
-            "width"     : self.width,
-            "height"    : self.height,
-            "encoding"  : self.encoding,
+            "frames": self.frames,
+            "width": self.width,
+            "height": self.height,
+            "encoding": self.encoding,
             "colorspace": self.colorspace,
-            "version"   : get_version(),
+            "version": get_version(),
         }
         return info
 

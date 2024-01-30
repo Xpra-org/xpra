@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -18,7 +18,6 @@ Gdk = gi_import("Gdk")
 log = Logger("gtk", "util")
 
 CSS_OVERRIDES = envbool("XPRA_CSS_OVERRIDES", True)
-
 
 _done = False
 
@@ -65,6 +64,7 @@ def load_css(provider):
         log.error("Error: CSS parsing error on")
         log.error(" '%s'", filename)
         log.error(" %s", error)
+
     provider.connect("parsing-error", parsing_error)
     for f in sorted(os.listdir(css_dir)):
         filename = os.path.join(css_dir, f)

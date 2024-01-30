@@ -20,6 +20,7 @@ from ctypes.wintypes import (
     HINSTANCE, HMENU, ULONG, HHOOK, LPMSG,
     LCID, HKL,
 )
+
 # imported from this module but not used here:
 assert GetLastError
 
@@ -36,20 +37,20 @@ HBRUSH = HANDLE
 
 class CURSORINFO(Structure):
     _fields_ = [
-        ("cbSize",          DWORD),
-        ("flags",           DWORD),
-        ("hCursor",         HCURSOR),
-        ("ptScreenPos",     POINT),
+        ("cbSize", DWORD),
+        ("flags", DWORD),
+        ("hCursor", HCURSOR),
+        ("ptScreenPos", POINT),
     ]
 
 
 class ICONINFO(Structure):
     _fields_ = [
-        ("fIcon",           BOOL),
-        ("xHotspot",        DWORD),
-        ("yHotspot",        DWORD),
-        ("hbmMask",         HBITMAP),
-        ("hbmColor",        HBITMAP),
+        ("fIcon", BOOL),
+        ("xHotspot", DWORD),
+        ("yHotspot", DWORD),
+        ("hbmMask", HBITMAP),
+        ("hbmColor", HBITMAP),
     ]
 
 
@@ -58,15 +59,15 @@ PICONINFO = POINTER(ICONINFO)
 
 class ICONINFOEXA(Structure):
     _fields_ = [
-        ("cbSize",          DWORD),
-        ("fIcon",           BOOL),
-        ("xHotspot",        DWORD),
-        ("yHotspot",        DWORD),
-        ("hbmMask",         HBITMAP),
-        ("hbmColor",        HBITMAP),
-        ("wResID",          WORD),
-        ("sxModName",       c_char*MAX_PATH),
-        ("szResName",       c_char*MAX_PATH),
+        ("cbSize", DWORD),
+        ("fIcon", BOOL),
+        ("xHotspot", DWORD),
+        ("yHotspot", DWORD),
+        ("hbmMask", HBITMAP),
+        ("hbmColor", HBITMAP),
+        ("wResID", WORD),
+        ("sxModName", c_char * MAX_PATH),
+        ("szResName", c_char * MAX_PATH),
     ]
 
 
@@ -75,15 +76,15 @@ PICONINFOEXA = POINTER(ICONINFOEXA)
 
 class ICONINFOEXW(Structure):
     _fields_ = [
-        ("cbSize",          DWORD),
-        ("fIcon",           BOOL),
-        ("xHotspot",        DWORD),
-        ("yHotspot",        DWORD),
-        ("hbmMask",         HBITMAP),
-        ("hbmColor",        HBITMAP),
-        ("wResID",          WORD),
-        ("sxModName",       WCHAR*MAX_PATH),
-        ("szResName",       WCHAR*MAX_PATH),
+        ("cbSize", DWORD),
+        ("fIcon", BOOL),
+        ("xHotspot", DWORD),
+        ("yHotspot", DWORD),
+        ("hbmMask", HBITMAP),
+        ("hbmColor", HBITMAP),
+        ("wResID", WORD),
+        ("sxModName", WCHAR * MAX_PATH),
+        ("szResName", WCHAR * MAX_PATH),
     ]
 
 
@@ -92,13 +93,13 @@ PICONINFOEXW = POINTER(ICONINFOEXW)
 
 class Bitmap(Structure):
     _fields_ = [
-        ("bmType",          LONG),
-        ("bmWidth",         LONG),
-        ("bmHeight",        LONG),
-        ("bmWidthBytes",    LONG),
-        ("bmPlanes",        WORD),
-        ("bmBitsPixel",     WORD),
-        ("bmBits",          LPVOID)
+        ("bmType", LONG),
+        ("bmWidth", LONG),
+        ("bmHeight", LONG),
+        ("bmWidthBytes", LONG),
+        ("bmPlanes", WORD),
+        ("bmBitsPixel", WORD),
+        ("bmBits", LPVOID)
     ]
 
 
@@ -112,25 +113,25 @@ class CIEXYZ(Structure):
 
 class CIEXYZTRIPLE(Structure):
     _fields_ = [
-        ('ciexyzRed',   CIEXYZ),
-        ('ciexyzBlue',  CIEXYZ),
+        ('ciexyzRed', CIEXYZ),
+        ('ciexyzBlue', CIEXYZ),
         ('ciexyzGreen', CIEXYZ),
     ]
 
 
 class BITMAPINFOHEADER(Structure):
     _fields_ = [
-        ("biSize",          DWORD),
-        ("biWidth",         LONG),
-        ("biHeight",        LONG),
-        ("biPlanes",        WORD),
-        ("biBitCount",      WORD),
-        ("biCompression",   DWORD),
-        ("biSizeImage",     DWORD),
+        ("biSize", DWORD),
+        ("biWidth", LONG),
+        ("biHeight", LONG),
+        ("biPlanes", WORD),
+        ("biBitCount", WORD),
+        ("biCompression", DWORD),
+        ("biSizeImage", DWORD),
         ("biXPelsPerMeter", LONG),
         ("biYPelsPerMeter", LONG),
-        ("biClrUsed",       DWORD),
-        ("biClrImportant",  DWORD),
+        ("biClrUsed", DWORD),
+        ("biClrImportant", DWORD),
     ]
 
 
@@ -139,8 +140,8 @@ PBITMAPINFOHEADER = POINTER(BITMAPINFOHEADER)
 
 class BITMAPINFO(Structure):
     _fields_ = [
-        ("bmiHeader",       BITMAPINFOHEADER),
-        ("bmiColors",       DWORD),
+        ("bmiHeader", BITMAPINFOHEADER),
+        ("bmiColors", DWORD),
     ]
 
 
@@ -149,30 +150,30 @@ PBITMAPINFO = POINTER(BITMAPINFO)
 
 class BITMAPV5HEADER(Structure):
     _fields_ = [
-        ('bV5Size',             DWORD),
-        ('bV5Width',            LONG),
-        ('bV5Height',           LONG),
-        ('bV5Planes',           WORD),
-        ('bV5BitCount',         WORD),
-        ('bV5Compression',      DWORD),
-        ('bV5SizeImage',        DWORD),
-        ('bV5XPelsPerMeter',    LONG),
-        ('bV5YPelsPerMeter',    LONG),
-        ('bV5ClrUsed',          DWORD),
-        ('bV5ClrImportant',     DWORD),
-        ('bV5RedMask',          DWORD),
-        ('bV5GreenMask',        DWORD),
-        ('bV5BlueMask',         DWORD),
-        ('bV5AlphaMask',        DWORD),
-        ('bV5CSType',           DWORD),
-        ('bV5Endpoints',        CIEXYZTRIPLE),
-        ('bV5GammaRed',         DWORD),
-        ('bV5GammaGreen',       DWORD),
-        ('bV5GammaBlue',        DWORD),
-        ('bV5Intent',           DWORD),
-        ('bV5ProfileData',      DWORD),
-        ('bV5ProfileSize',      DWORD),
-        ('bV5Reserved',         DWORD),
+        ('bV5Size', DWORD),
+        ('bV5Width', LONG),
+        ('bV5Height', LONG),
+        ('bV5Planes', WORD),
+        ('bV5BitCount', WORD),
+        ('bV5Compression', DWORD),
+        ('bV5SizeImage', DWORD),
+        ('bV5XPelsPerMeter', LONG),
+        ('bV5YPelsPerMeter', LONG),
+        ('bV5ClrUsed', DWORD),
+        ('bV5ClrImportant', DWORD),
+        ('bV5RedMask', DWORD),
+        ('bV5GreenMask', DWORD),
+        ('bV5BlueMask', DWORD),
+        ('bV5AlphaMask', DWORD),
+        ('bV5CSType', DWORD),
+        ('bV5Endpoints', CIEXYZTRIPLE),
+        ('bV5GammaRed', DWORD),
+        ('bV5GammaGreen', DWORD),
+        ('bV5GammaBlue', DWORD),
+        ('bV5Intent', DWORD),
+        ('bV5ProfileData', DWORD),
+        ('bV5ProfileSize', DWORD),
+        ('bV5Reserved', DWORD),
     ]
 
 
@@ -193,9 +194,9 @@ class MONITORINFOEX(Structure):
 
 class SECURITY_ATTRIBUTES(Structure):
     _fields_ = [
-        ("nLength",                 c_int),
-        ("lpSecurityDescriptor",    c_void_p),
-        ("bInheritHandle",          c_int),
+        ("nLength", c_int),
+        ("lpSecurityDescriptor", c_void_p),
+        ("bInheritHandle", c_int),
     ]
 
 
@@ -207,14 +208,14 @@ def GetMonitorInfo(hmonitor) -> dict[str, Any]:
     info.szDevice = ""
     info.cbSize = sizeof(MONITORINFOEX)
     if not GetMonitorInfoW(hmonitor, byref(info)):
-        raise OSError()    # @UndefinedVariable
+        raise OSError()  # @UndefinedVariable
     monitor = info.rcMonitor.left, info.rcMonitor.top, info.rcMonitor.right, info.rcMonitor.bottom
     work = info.rcWork.left, info.rcWork.top, info.rcWork.right, info.rcWork.bottom
     return {
-        "Work"      : work,
-        "Monitor"   : monitor,
-        "Flags"     : info.dwFlags,
-        "Device"    : info.szDevice or "",
+        "Work": work,
+        "Monitor": monitor,
+        "Flags": info.dwFlags,
+        "Device": info.szDevice or "",
     }
 
 
@@ -232,7 +233,7 @@ GetModuleHandleA = kernel32.GetModuleHandleA
 GetModuleHandleA.restype = HMODULE
 GetModuleHandleW = kernel32.GetModuleHandleW
 GetModuleHandleW.restype = HMODULE
-GetModuleHandleExA  = kernel32.GetModuleHandleExA
+GetModuleHandleExA = kernel32.GetModuleHandleExA
 GetModuleHandleExA.argtypes = [DWORD, LPCSTR, POINTER(HMODULE)]
 GetModuleHandleExA.restype = BOOL
 ConsoleCtrlHandler = WINFUNCTYPE(BOOL, DWORD)
@@ -256,7 +257,7 @@ CloseHandle.argtypes = [HANDLE]
 CloseHandle.restype = BOOL
 GetProductInfo = kernel32.GetProductInfo
 GetProductInfo.argtypes = [DWORD, DWORD, DWORD, DWORD, PDWORD]
-GetProductInfo.restype  = BOOL
+GetProductInfo.restype = BOOL
 GetStdHandle = WINFUNCTYPE(HANDLE, DWORD)(("GetStdHandle", kernel32))
 HGLOBAL = HANDLE
 GlobalAlloc = kernel32.GlobalAlloc
@@ -405,7 +406,7 @@ GetKeyboardLayout.argtypes = [DWORD]
 GetKeyboardLayout.restype = HKL
 GetKeyboardLayoutList = user32.GetKeyboardLayoutList
 GetKeyboardLayoutList.restype = int
-GetKeyboardLayoutList.argtypes = [c_int, POINTER(HANDLE*32)]
+GetKeyboardLayoutList.argtypes = [c_int, POINTER(HANDLE * 32)]
 GetKeyboardLayoutName = user32.GetKeyboardLayoutNameA
 GetKeyboardLayoutName.restype = BOOL
 GetKeyboardLayoutName.argtypes = [LPSTR]
@@ -531,14 +532,16 @@ CreatePopupMenu.argtypes = []
 AppendMenu = user32.AppendMenuW
 AppendMenu.restype = BOOL
 AppendMenu.argtypes = [HMENU, UINT, UINT, LPCWSTR]
+
+
 # clipboard functions:
 
 
 class COPYDATASTRUCT(Structure):
     _fields_ = [
-        ("dwData",          POINTER(ULONG)),
-        ("cbData",          DWORD),
-        ("lpData",          LPVOID),
+        ("dwData", POINTER(ULONG)),
+        ("cbData", DWORD),
+        ("lpData", LPVOID),
     ]
 
 
@@ -612,10 +615,10 @@ GetWindowTextLengthW.argtypes = [HWND]
 
 class PROCESS_INFORMATION(Structure):
     _fields_ = (
-        ('_hProcess',   HANDLE),
-        ('_hThread',    HANDLE),
+        ('_hProcess', HANDLE),
+        ('_hThread', HANDLE),
         ('dwProcessId', DWORD),
-        ('dwThreadId',  DWORD),
+        ('dwThreadId', DWORD),
     )
 
 
@@ -624,24 +627,24 @@ PPROCESS_INFORMATION = POINTER(PROCESS_INFORMATION)
 
 class STARTUPINFOA(Structure):
     _fields_ = (
-        ('cb',              DWORD),
-        ('lpReserved',      LPWSTR),
-        ('lpDesktop',       LPWSTR),
-        ('lpTitle',         LPWSTR),
-        ('dwX',             DWORD),
-        ('dwY',             DWORD),
-        ('dwXSize',         DWORD),
-        ('dwYSize',         DWORD),
-        ('dwXCountChars',   DWORD),
-        ('dwYCountChars',   DWORD),
+        ('cb', DWORD),
+        ('lpReserved', LPWSTR),
+        ('lpDesktop', LPWSTR),
+        ('lpTitle', LPWSTR),
+        ('dwX', DWORD),
+        ('dwY', DWORD),
+        ('dwXSize', DWORD),
+        ('dwYSize', DWORD),
+        ('dwXCountChars', DWORD),
+        ('dwYCountChars', DWORD),
         ('dwFillAttribute', DWORD),
-        ('dwFlags',         DWORD),
-        ('wShowWindow',     WORD),
-        ('cbReserved2',     WORD),
-        ('lpReserved2',     c_void_p),
-        ('hStdInput',       HANDLE),
-        ('hStdOutput',      HANDLE),
-        ('hStdError',       HANDLE),
+        ('dwFlags', DWORD),
+        ('wShowWindow', WORD),
+        ('cbReserved2', WORD),
+        ('lpReserved2', c_void_p),
+        ('hStdInput', HANDLE),
+        ('hStdOutput', HANDLE),
+        ('hStdError', HANDLE),
     )
 
 
@@ -649,7 +652,8 @@ PSTARTUPINFOA = POINTER(STARTUPINFOA)
 advapi32 = WinDLL("advapi32")
 CreateProcessAsUserA = advapi32.CreateProcessAsUserA
 CreateProcessAsUserA.restype = BOOL
-CreateProcessAsUserA.argtypes = [HANDLE, LPCSTR, LPSTR, LPSECURITY_ATTRIBUTES, LPSECURITY_ATTRIBUTES, BOOL, DWORD, LPVOID, LPCSTR, LPCSTR, PSTARTUPINFOA, PPROCESS_INFORMATION]
+CreateProcessAsUserA.argtypes = [HANDLE, LPCSTR, LPSTR, LPSECURITY_ATTRIBUTES, LPSECURITY_ATTRIBUTES, BOOL, DWORD,
+                                 LPVOID, LPCSTR, LPCSTR, PSTARTUPINFOA, PPROCESS_INFORMATION]
 LogonUser = advapi32.LogonUserW
 LogonUser.argtypes = [LPCWSTR, LPCWSTR, LPCWSTR, DWORD, DWORD, POINTER(HANDLE)]
 LogonUser.restype = BOOL
@@ -668,7 +672,7 @@ CreateBitmap.argtypes = [INT, INT, UINT, UINT, POINTER(c_void_p)]
 CreateBitmap.restype = HBITMAP
 GetBitmapBits = gdi32.GetBitmapBits
 GetBitmapBits.argtypes = [HGDIOBJ, LONG, LPVOID]
-GetBitmapBits.restype  = LONG
+GetBitmapBits.restype = LONG
 SelectObject = gdi32.SelectObject
 SelectObject.argtypes = [HDC, HGDIOBJ]
 SelectObject.restype = HGDIOBJ
@@ -735,6 +739,7 @@ def EnumDisplayMonitors():
     def _callback(monitor, _dc, _rect, _data):
         results.append(monitor)
         return 1
+
     callback = MonitorEnumProc(_callback)
     _EnumDisplayMonitors(0, None, callback, 0)
     return results
@@ -750,18 +755,18 @@ def GetIntSystemParametersInfo(key):
 
 class WNDCLASSEX(Structure):
     _fields_ = [
-        ("cbSize",          UINT),
-        ("style",           UINT),
-        ("lpfnWndProc",     WNDPROC),
-        ("cbClsExtra",      INT),
-        ("cbWndExtra",      INT),
-        ("hInstance",       HANDLE),
-        ("hIcon",           HANDLE),
-        ("hCursor",         HANDLE),
-        ("hbrBackground",   HANDLE),
-        ("lpszMenuName",    LPCWSTR),
-        ("lpszClassName",   LPCWSTR),
-        ("hIconSm",         HANDLE),
+        ("cbSize", UINT),
+        ("style", UINT),
+        ("lpfnWndProc", WNDPROC),
+        ("cbClsExtra", INT),
+        ("cbWndExtra", INT),
+        ("hInstance", HANDLE),
+        ("hIcon", HANDLE),
+        ("hCursor", HANDLE),
+        ("hbrBackground", HANDLE),
+        ("lpszMenuName", LPCWSTR),
+        ("lpszClassName", LPCWSTR),
+        ("hIconSm", HANDLE),
     ]
 
 
@@ -773,7 +778,7 @@ class GUID(Structure):
         ('Data1', c_ulong),
         ('Data2', c_ushort),
         ('Data3', c_ushort),
-        ('Data4', c_ubyte*8),
+        ('Data4', c_ubyte * 8),
     ]
 
     def __str__(self):
@@ -788,7 +793,6 @@ class GUID(Structure):
 
 IID = GUID
 REFIID = POINTER(IID)
-
 
 ERROR_PIPE_NOT_CONNECTED = 233
 ERROR_MORE_DATA = 234
@@ -807,21 +811,21 @@ ERROR_COUNTER_TIMEOUT = 1121
 ERROR_PIPE_BUSY = 231
 
 IO_ERROR_STR = {
-    ERROR_PIPE_NOT_CONNECTED    : "PIPE_NOT_CONNECTED",
-    ERROR_MORE_DATA             : "MORE_DATA",
-    ERROR_BROKEN_PIPE           : "BROKEN_PIPE",
-    ERROR_NO_DATA               : "NO_DATA",
-    ERROR_HANDLE_EOF            : "HANDLE_EOF",
-    ERROR_IO_INCOMPLETE         : "IO_INCOMPLETE",
-    ERROR_IO_PENDING            : "IO_PENDING",
-    ERROR_CANCELLED             : "CANCELLED",
-    ERROR_ACCESS_DENIED         : "ACCESS_DENIED",
-    ERROR_INVALID_HANDLE        : "INVALID_HANDLE",
-    ERROR_OPERATION_ABORTED     : "OPERATION_ABORTED",
-    ERROR_INVALID_PARAMETER     : "INVALID_PARAMETER",
-    ERROR_SUCCESS               : "SUCCESS",
-    ERROR_COUNTER_TIMEOUT       : "COUNTER_TIMEOUT",
-    ERROR_PIPE_BUSY             : "PIPE_BUSY",
+    ERROR_PIPE_NOT_CONNECTED: "PIPE_NOT_CONNECTED",
+    ERROR_MORE_DATA: "MORE_DATA",
+    ERROR_BROKEN_PIPE: "BROKEN_PIPE",
+    ERROR_NO_DATA: "NO_DATA",
+    ERROR_HANDLE_EOF: "HANDLE_EOF",
+    ERROR_IO_INCOMPLETE: "IO_INCOMPLETE",
+    ERROR_IO_PENDING: "IO_PENDING",
+    ERROR_CANCELLED: "CANCELLED",
+    ERROR_ACCESS_DENIED: "ACCESS_DENIED",
+    ERROR_INVALID_HANDLE: "INVALID_HANDLE",
+    ERROR_OPERATION_ABORTED: "OPERATION_ABORTED",
+    ERROR_INVALID_PARAMETER: "INVALID_PARAMETER",
+    ERROR_SUCCESS: "SUCCESS",
+    ERROR_COUNTER_TIMEOUT: "COUNTER_TIMEOUT",
+    ERROR_PIPE_BUSY: "PIPE_BUSY",
 }
 
 # https://gist.github.com/EBNull/6135237

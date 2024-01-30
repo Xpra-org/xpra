@@ -36,15 +36,15 @@ X11Keyboard = X11KeyboardBindings()
 MAP_MISSING_MODIFIERS: bool = envbool("XPRA_MAP_MISSING_MODIFIERS", True)
 SHIFT_LOCK: bool = envbool("XPRA_SHIFT_LOCK", False)
 
-ALL_X11_MODIFIERS : dict[str, int] = {
-    "shift"     : 0,
-    "lock"      : 1,
-    "control"   : 2,
-    "mod1"      : 3,
-    "mod2"      : 4,
-    "mod3"      : 5,
-    "mod4"      : 6,
-    "mod5"      : 7
+ALL_X11_MODIFIERS: dict[str, int] = {
+    "shift": 0,
+    "lock": 1,
+    "control": 2,
+    "mod1": 3,
+    "mod2": 4,
+    "mod3": 5,
+    "mod4": 6,
+    "mod5": 7
 }
 
 
@@ -166,6 +166,7 @@ class KeyboardConfig(KeyboardConfigBase):
             if cv != nv:
                 setattr(self, name, nv)
                 modded[name] = nv
+
         # lists:
         parse_option("keycodes", keymap_dict.tupleget, props.tupleget)
         # dicts:
@@ -194,6 +195,7 @@ class KeyboardConfig(KeyboardConfigBase):
 
         def hashadd(v):
             m.update(("/%s" % str(v)).encode("utf8"))
+
         m.update(super().get_hash())
         for x in (self.raw, self.mod_meanings, self.mod_pointermissing, self.keycodes, self.x11_keycodes):
             hashadd(x)
@@ -434,9 +436,9 @@ class KeyboardConfig(KeyboardConfigBase):
             log("set_default_keymap: using modifier mappings=%s", mod_mappings)
             for modifier, mappings in mod_mappings.items():
                 keynames = []
-                for m in mappings:      # ie: (37, 'Control_L'), (105, 'Control_R')
+                for m in mappings:  # ie: (37, 'Control_L'), (105, 'Control_R')
                     if len(m) == 2:
-                        keynames.append(m[1])   # ie: 'Control_L'
+                        keynames.append(m[1])  # ie: 'Control_L'
                 self.keynames_for_mod[modifier] = set(keynames)
             self.compute_modifier_keynames()
             self.compute_client_modifier_keycodes()
@@ -479,7 +481,7 @@ class KeyboardConfig(KeyboardConfigBase):
         rgroup = group
 
         def klog(msg, *args):
-            kmlog(keyname, "do_get_keycode%s"+msg,
+            kmlog(keyname, "do_get_keycode%s" + msg,
                   (client_keycode, keyname, pressed, modifiers, keyval, keystr, group), *args)
 
         def kml(msg, *args):
@@ -511,7 +513,7 @@ class KeyboardConfig(KeyboardConfigBase):
             for s in (int(bool(shift)), int(not shift)):
                 # group is comparatively easier to toggle (one function call):
                 for g in (int(bool(group)), int(not group)):
-                    level = int(g)*4 + int(m)*2 + int(s)*1
+                    level = int(g) * 4 + int(m) * 2 + int(s) * 1
                     levels.append(level)
         kml("will try levels: %s", levels)
         for level in levels:
@@ -541,6 +543,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     else:
                         kml("adding '%s' to modifiers", mod)
                         modifiers.append(mod)
+
                 # keypad overrules shift state (see #2702):
                 if keyname.startswith("KP_"):
                     if numlock_modifier and not numlock:
@@ -555,7 +558,7 @@ class KeyboardConfig(KeyboardConfigBase):
                             # found mode switch modified
                             toggle_modifier(mod)
                             break
-                rgroup = level//4
+                rgroup = level // 4
                 if rgroup != group:
                     kml("switching group from %i to %i", group, rgroup)
                 break
@@ -670,7 +673,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     kdown = X11Keyboard.get_keycodes_down()
                     pressed = [x for x in keycodes if x in kdown]
                     others = [x for x in keycodes if x not in kdown]
-                    keycodes = pressed+others
+                    keycodes = pressed + others
                 for keycode in keycodes:
                     if nuisance:
                         X11Keyboard.xtest_fake_key(keycode, True)
@@ -683,7 +686,7 @@ class KeyboardConfig(KeyboardConfigBase):
                         modkeycode = keycode
                         log("change_mask(%s) %s modifier '%s' using keycode %s",
                             info, modifier_list, modifier, keycode)
-                        break   # we're done for this modifier
+                        break  # we're done for this modifier
                     log("%s %s with keycode %s did not work", info, modifier, keycode)
                     if press and not nuisance:
                         log(" trying to unpress it!")

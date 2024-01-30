@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -47,13 +47,12 @@ def get_root_size(default: None | tuple[int, int] = (1920, 1024)) -> tuple[int, 
 
 
 GRAB_STATUS_STRING = {
-    Gdk.GrabStatus.SUCCESS          : "SUCCESS",
-    Gdk.GrabStatus.ALREADY_GRABBED  : "ALREADY_GRABBED",
-    Gdk.GrabStatus.INVALID_TIME     : "INVALID_TIME",
-    Gdk.GrabStatus.NOT_VIEWABLE     : "NOT_VIEWABLE",
-    Gdk.GrabStatus.FROZEN           : "FROZEN",
+    Gdk.GrabStatus.SUCCESS: "SUCCESS",
+    Gdk.GrabStatus.ALREADY_GRABBED: "ALREADY_GRABBED",
+    Gdk.GrabStatus.INVALID_TIME: "INVALID_TIME",
+    Gdk.GrabStatus.NOT_VIEWABLE: "NOT_VIEWABLE",
+    Gdk.GrabStatus.FROZEN: "FROZEN",
 }
-
 
 dsinit: bool = False
 
@@ -72,7 +71,7 @@ def init_display_source() -> None:
         try:
             from xpra.x11.gtk3.display_source import init_gdk_display_source
             init_gdk_display_source()
-        except ImportError:     # pragma: no cover
+        except ImportError:  # pragma: no cover
             log("init_gdk_display_source()", exc_info=True)
             log.warn("Warning: the Gtk-3.0 X11 bindings are missing")
             log.warn(" some features may be degraded or unavailable")

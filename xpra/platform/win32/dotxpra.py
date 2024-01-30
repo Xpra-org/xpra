@@ -18,7 +18,7 @@ PIPE_PATH = "%s.\\pipe\\" % PIPE_ROOT
 
 
 def norm_makepath(dirpath: str, name: str):
-    return PIPE_PATH+PIPE_PREFIX+name.lstrip(":")
+    return PIPE_PATH + PIPE_PREFIX + name.lstrip(":")
 
 
 class DotXpra:
@@ -45,10 +45,10 @@ class DotXpra:
         return norm_makepath("", local_display_name)
 
     def get_display_state(self, display: str):
-        return self.get_server_state(PIPE_PREFIX+display)
+        return self.get_server_state(PIPE_PREFIX + display)
 
     def get_server_state(self, sockpath: str, _timeout=5):
-        full_path = PIPE_PATH+sockpath
+        full_path = PIPE_PATH + sockpath
         if os.path.exists(full_path):
             return SocketState.LIVE
         return SocketState.DEAD
@@ -67,7 +67,7 @@ class DotXpra:
         if not np:
             return {}
         return {
-            PIPE_PREFIX.rstrip("\\") : [
+            PIPE_PREFIX.rstrip("\\"): [
                 (SocketState.LIVE, display, pipe_name) for display, pipe_name in np.items() if (
                     matching_display is None or display in matching_display
                 )

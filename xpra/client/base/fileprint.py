@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -32,24 +32,24 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
         self.remote_request_file: bool = False
 
     def init(self, opts) -> None:
-        #printing and file transfer:
+        # printing and file transfer:
         FileTransferHandler.init_opts(self, opts)
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packet_handlers({
-            "open-url"          : self._process_open_url,
-            "send-file"         : self._process_send_file,
-            "send-data-request" : self._process_send_data_request,
+            "open-url": self._process_open_url,
+            "send-file": self._process_send_file,
+            "send-data-request": self._process_send_data_request,
             "send-data-response": self._process_send_data_response,
-            "ack-file-chunk"    : self._process_ack_file_chunk,
-            "send-file-chunk"   : self._process_send_file_chunk,
+            "ack-file-chunk": self._process_ack_file_chunk,
+            "send-file-chunk": self._process_send_file_chunk,
         }, False)
 
-    def get_caps(self) -> dict[str,Any]:
+    def get_caps(self) -> dict[str, Any]:
         return self.get_file_transfer_features()
 
     def cleanup(self) -> None:
-        #we must clean printing before FileTransferHandler, which turns the printing flag off!
+        # we must clean printing before FileTransferHandler, which turns the printing flag off!
         self.cleanup_printing()
         FileTransferHandler.cleanup(self)
 
@@ -67,11 +67,11 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             if server_printing:
                 self.printer_attributes = caps.strtupleget("printer.attributes",
                                                            ("printer-info", "device-uri"))
-                self.timeout_add(INIT_PRINTING_DELAY*1000, self.init_printing)
+                self.timeout_add(INIT_PRINTING_DELAY * 1000, self.init_printing)
 
     def init_printing(self) -> None:
         try:
-            from xpra.platform.printing import init_printing    # pylint: disable=import-outside-toplevel
+            from xpra.platform.printing import init_printing  # pylint: disable=import-outside-toplevel
             printlog("init_printing=%s", init_printing)
             init_printing(self.send_printers)
         except Exception as e:
@@ -137,8 +137,9 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
                 # filter attributes so that we only compare things that are actually used
                 if not d:
                     return d
-                return {k:v for k,v in d.items() if k in self.printer_attributes}
-            for k,v in printers.items():
+                return {k: v for k, v in d.items() if k in self.printer_attributes}
+
+            for k, v in printers.items():
                 device_uri = v.get("device-uri", "")
                 if device_uri:
                     # this is specific to the `cups` backend:
@@ -150,20 +151,20 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
                 # "3" if the destination is idle,
                 # "4" if the destination is printing a job,
                 # "5" if the destination is stopped.
-                if state==5 and SKIP_STOPPED_PRINTERS:
+                if state == 5 and SKIP_STOPPED_PRINTERS:
                     printlog("do_send_printers() skipping stopped printer=%s", k)
                     continue
                 attrs = used_attrs(v)
-                #add mimetypes:
+                # add mimetypes:
                 attrs["mimetypes"] = get_mimetypes()
                 exported_printers[k] = attrs
             if self.exported_printers is None:
-                #not been sent yet, ensure we can use the dict below:
+                # not been sent yet, ensure we can use the dict below:
                 self.exported_printers = {}
-            elif exported_printers==self.exported_printers:
+            elif exported_printers == self.exported_printers:
                 printlog("send_printers_thread() exported printers unchanged: %s", self.exported_printers)
                 return
-            #show summary of what has changed:
+            # show summary of what has changed:
             added = tuple(k for k in exported_printers if k not in self.exported_printers)
             if added:
                 printlog("send_printers_thread() new printers: %s", added)

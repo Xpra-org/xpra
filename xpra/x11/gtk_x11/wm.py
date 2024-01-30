@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -153,7 +153,6 @@ DEFAULT_SIZE_CONSTRAINTS = (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
 
 
 class Wm(GObject.GObject):
-
     __gproperties__ = {
         "windows": (GObject.TYPE_PYOBJECT,
                     "Set of managed windows (as WindowModels)", "",
@@ -181,7 +180,7 @@ class Wm(GObject.GObject):
         "xpra-xkb-event": one_arg_signal,
     }
 
-    def __init__(self, replace_other_wm:bool, wm_name:str, display=None):
+    def __init__(self, replace_other_wm: bool, wm_name: str, display=None):
         super().__init__()
 
         if display is None:
@@ -190,7 +189,7 @@ class Wm(GObject.GObject):
         self._wm_name = wm_name
         self._ewmh_window = None
 
-        self._windows : dict[int,Any] = {}
+        self._windows: dict[int, Any] = {}
         # EWMH says we have to know the order of our windows oldest to
         # youngest...
         self._windows_in_order = []
@@ -211,7 +210,7 @@ class Wm(GObject.GObject):
         # Set up the necessary EWMH properties on the root window.
         self._setup_ewmh_window()
         # Start with just one desktop:
-        self.set_desktop_list(("Main", ))
+        self.set_desktop_list(("Main",))
         self.set_current_desktop(0)
         # Start with the full display as workarea:
         root = get_default_root_window()
@@ -245,7 +244,7 @@ class Wm(GObject.GObject):
         for xid in children:
             # ignore windows we have created ourselves (ie: the world window),
             # unmapped or `OR` windows:
-            if xid==wxid:
+            if xid == wxid:
                 continue
             if X11Window.is_override_redirect(xid):
                 log("skipping %s", window_info(xid))
@@ -274,12 +273,12 @@ class Wm(GObject.GObject):
     def root_get(*args, **kwargs):
         return prop_get(X11Window.get_root_xid(), *args, **kwargs)
 
-    def set_workarea(self, x:int, y:int, width:int, height:int) -> None:
+    def set_workarea(self, x: int, y: int, width: int, height: int) -> None:
         v = [x, y, width, height]
         screenlog("_NET_WORKAREA=%s", v)
         self.root_set("_NET_WORKAREA", ["u32"], v)
 
-    def set_desktop_geometry(self, width:int, height:int) -> None:
+    def set_desktop_geometry(self, width: int, height: int) -> None:
         v = [width, height]
         screenlog("_NET_DESKTOP_GEOMETRY=%s", v)
         self.root_set("_NET_DESKTOP_GEOMETRY", ["u32"], v)
@@ -287,7 +286,8 @@ class Wm(GObject.GObject):
         for model in self._windows.values():
             model.update_desktop_geometry(width, height)
 
-    def set_size_constraints(self, minw:int=0, minh:int=0, maxw:int=MAX_WINDOW_SIZE, maxh:int=MAX_WINDOW_SIZE) -> None:
+    def set_size_constraints(self, minw: int = 0, minh: int = 0, maxw: int = MAX_WINDOW_SIZE,
+                             maxh: int = MAX_WINDOW_SIZE) -> None:
         log("set_size_constraints%s", (minw, minh, maxw, maxh))
         self.size_constraints = minw, minh, maxw, maxh
         # update all the windows:
@@ -296,7 +296,7 @@ class Wm(GObject.GObject):
 
     def set_default_frame_extents(self, v):
         framelog("set_default_frame_extents(%s)", v)
-        if not v or len(v)!=4:
+        if not v or len(v) != 4:
             v = (0, 0, 0, 0)
         self.root_set("DEFAULT_NET_FRAME_EXTENTS", ["u32"], v)
         # update the models that are using the global default value:
@@ -316,7 +316,7 @@ class Wm(GObject.GObject):
 
     # This is in some sense the key entry point to the entire WM program.  We
     # have detected a new client window, and start managing it:
-    def _manage_client(self, xid:int):
+    def _manage_client(self, xid: int):
         if xid in self._windows:
             # already managed
             return
@@ -345,7 +345,7 @@ class Wm(GObject.GObject):
             self._update_window_list()
             self.emit("new-window", win)
 
-    def _handle_client_unmanaged(self, model, wm_exiting, xid:int) -> None:
+    def _handle_client_unmanaged(self, model, wm_exiting, xid: int) -> None:
         log(f"_handle_client_unmanaged({model}, {wm_exiting}, {xid:x})")
         if xid not in self._windows:
             log.error(f"Error: gdk window {xid} not found in {self._windows}")
@@ -377,10 +377,10 @@ class Wm(GObject.GObject):
         # and maybe:
         #   _NET_WM_STATE
         log("do_xpra_client_message_event(%s)", event)
-        if event.message_type=="_NET_SHOWING_DESKTOP":
+        if event.message_type == "_NET_SHOWING_DESKTOP":
             show = bool(event.data[0])
             self.emit("show-desktop", show)
-        elif event.message_type=="_NET_REQUEST_FRAME_EXTENTS" and FRAME_EXTENTS:
+        elif event.message_type == "_NET_REQUEST_FRAME_EXTENTS" and FRAME_EXTENTS:
             # if we're here, that means the window model does not exist
             # (or it would have processed the event)
             # so this must be an unmapped window

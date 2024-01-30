@@ -78,6 +78,7 @@ def main(argv):
                     log.info("video device %s: %s", ["removed", "added"][added], device)
                 else:
                     log.info("device change")
+
             log.info("starting main loop")
             glib = gi_import("GLib")
             main_loop = glib.MainLoop()
@@ -93,4 +94,5 @@ def main(argv):
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main(sys.argv))

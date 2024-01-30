@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -43,10 +43,10 @@ if is_Wayland():
     CLIPBOARD_GREEDY = True
 CLIPBOARD_PREFERRED_TARGETS = ("UTF8_STRING", "TEXT", "STRING", "text/plain", "image/png")
 
-OPEN_COMMAND = ("/usr/bin/xdg-open", )
+OPEN_COMMAND = ("/usr/bin/xdg-open",)
 
 INPUT_DEVICES = ("auto", "xi", "uinput")
 
-SOURCE = ("/etc/profile", )
+SOURCE = ("/etc/profile",)
 
 COMMAND_SIGNALS = ("SIGINT", "SIGTERM", "SIGHUP", "SIGKILL", "SIGUSR1", "SIGUSR2")

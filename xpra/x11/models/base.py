@@ -23,27 +23,26 @@ GObject = gi_import("GObject")
 dbus_helper = None
 query_actions = None
 
-
 X11Window = X11WindowBindings()
 
 # _NET_WM_STATE:
 _NET_WM_STATE_REMOVE = 0
 _NET_WM_STATE_ADD = 1
 _NET_WM_STATE_TOGGLE = 2
-STATE_STRING : dict[int, str] = {
+STATE_STRING: dict[int, str] = {
     _NET_WM_STATE_REMOVE: "REMOVE",
     _NET_WM_STATE_ADD: "ADD",
     _NET_WM_STATE_TOGGLE: "TOGGLE",
 }
 IconicState = constants["IconicState"]
 NormalState = constants["NormalState"]
-ICONIC_STATE_STRING : dict[int, str] = {
+ICONIC_STATE_STRING: dict[int, str] = {
     IconicState: "Iconic",
     NormalState: "Normal",
 }
 
 # add user-friendly workspace logging:
-WORKSPACE_STR : dict[int, str] = {
+WORKSPACE_STR: dict[int, str] = {
     WORKSPACE_UNSET: "UNSET",
     WORKSPACE_ALL: "ALL",
 }
@@ -144,7 +143,7 @@ class BaseWindowModel(CoreX11WindowModel):
         "workspace": (
             GObject.TYPE_UINT,
             "The workspace this window is on", "",
-            0, 2**32-1, WORKSPACE_UNSET,
+            0, 2 ** 32 - 1, WORKSPACE_UNSET,
             GObject.ParamFlags.READWRITE,
         ),
         # set initially only by the window model class
@@ -243,7 +242,7 @@ class BaseWindowModel(CoreX11WindowModel):
         "skip-taskbar", "skip-pager", "sticky",
         "quality", "speed", "encoding",
     ]
-    _internal_property_names = CoreX11WindowModel._internal_property_names+["state"]
+    _internal_property_names = CoreX11WindowModel._internal_property_names + ["state"]
     _initial_x11_properties = CoreX11WindowModel._initial_x11_properties + [
         "WM_TRANSIENT_FOR",
         "_NET_WM_WINDOW_TYPE",
@@ -273,7 +272,7 @@ class BaseWindowModel(CoreX11WindowModel):
     def __init__(self, xid: int):
         super().__init__(xid)
         self.last_unmap_serial = 0
-        self._input_field = True            # The WM_HINTS input field
+        self._input_field = True  # The WM_HINTS input field
         # watch for changes to properties that are used to derive the content-type:
         for x in get_content_type_properties():
             if x in self.get_dynamic_property_names():
@@ -285,7 +284,7 @@ class BaseWindowModel(CoreX11WindowModel):
         if serial > self.last_unmap_serial:
             return True
         # the serial can wrap around:
-        if self.last_unmap_serial-serial >= 2**15:
+        if self.last_unmap_serial - serial >= 2 ** 15:
             return True
         return False
 
@@ -350,7 +349,7 @@ class BaseWindowModel(CoreX11WindowModel):
             set_state(NormalState)
             self._state_remove("_NET_WM_STATE_HIDDEN")
 
-    _py_property_handlers : dict[str, Callable] = dict(CoreX11WindowModel._py_property_handlers)
+    _py_property_handlers: dict[str, Callable] = dict(CoreX11WindowModel._py_property_handlers)
     _py_property_handlers |= {
         "state": _sync_state,
         "iconic": _sync_iconic,
@@ -471,21 +470,21 @@ class BaseWindowModel(CoreX11WindowModel):
         metalog("encoding=%s", encoding)
         self._updateprop("encoding", encoding)
 
-    _x11_property_handlers : dict[str, Callable] = CoreX11WindowModel._x11_property_handlers.copy()
+    _x11_property_handlers: dict[str, Callable] = CoreX11WindowModel._x11_property_handlers.copy()
     _x11_property_handlers |= {
-        "WM_TRANSIENT_FOR"              : _handle_transient_for_change,
-        "_NET_WM_WINDOW_TYPE"           : _handle_window_type_change,
-        "_NET_WM_DESKTOP"               : _handle_workspace_change,
-        "_NET_WM_FULLSCREEN_MONITORS"   : _handle_fullscreen_monitors_change,
-        "_NET_WM_BYPASS_COMPOSITOR"     : _handle_bypass_compositor_change,
-        "_NET_WM_STRUT"                 : _handle_wm_strut_change,
-        "_NET_WM_STRUT_PARTIAL"         : _handle_wm_strut_change,
-        "_NET_WM_WINDOW_OPACITY"        : _handle_opacity_change,
-        "WM_HINTS"                      : _handle_wm_hints_change,
-        "_XPRA_CONTENT_TYPE"            : _handle_xpra_content_type_change,
-        "_XPRA_QUALITY"                 : _handle_xpra_quality_change,
-        "_XPRA_SPEED"                   : _handle_xpra_speed_change,
-        "_XPRA_ENCODING"                : _handle_xpra_encoding_change,
+        "WM_TRANSIENT_FOR": _handle_transient_for_change,
+        "_NET_WM_WINDOW_TYPE": _handle_window_type_change,
+        "_NET_WM_DESKTOP": _handle_workspace_change,
+        "_NET_WM_FULLSCREEN_MONITORS": _handle_fullscreen_monitors_change,
+        "_NET_WM_BYPASS_COMPOSITOR": _handle_bypass_compositor_change,
+        "_NET_WM_STRUT": _handle_wm_strut_change,
+        "_NET_WM_STRUT_PARTIAL": _handle_wm_strut_change,
+        "_NET_WM_WINDOW_OPACITY": _handle_opacity_change,
+        "WM_HINTS": _handle_wm_hints_change,
+        "_XPRA_CONTENT_TYPE": _handle_xpra_content_type_change,
+        "_XPRA_QUALITY": _handle_xpra_quality_change,
+        "_XPRA_SPEED": _handle_xpra_speed_change,
+        "_XPRA_ENCODING": _handle_xpra_encoding_change,
     }
 
     #########################################
@@ -507,18 +506,18 @@ class BaseWindowModel(CoreX11WindowModel):
     #      directly by the "state" property, and reading/writing them in fact
     #      accesses the "state" set directly.  This is done by overriding
     #      do_set_property and do_get_property.
-    _state_properties : dict[str, tuple[str, ...]] = {
-        "attention-requested"   : ("_NET_WM_STATE_DEMANDS_ATTENTION", ),
-        "fullscreen"            : ("_NET_WM_STATE_FULLSCREEN", ),
-        "maximized"             : ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"),
-        "shaded"                : ("_NET_WM_STATE_SHADED", ),
-        "above"                 : ("_NET_WM_STATE_ABOVE", ),
-        "below"                 : ("_NET_WM_STATE_BELOW", ),
-        "sticky"                : ("_NET_WM_STATE_STICKY", ),
-        "skip-taskbar"          : ("_NET_WM_STATE_SKIP_TASKBAR", ),
-        "skip-pager"            : ("_NET_WM_STATE_SKIP_PAGER", ),
-        "modal"                 : ("_NET_WM_STATE_MODAL", ),
-        "focused"               : ("_NET_WM_STATE_FOCUSED", ),
+    _state_properties: dict[str, tuple[str, ...]] = {
+        "attention-requested": ("_NET_WM_STATE_DEMANDS_ATTENTION",),
+        "fullscreen": ("_NET_WM_STATE_FULLSCREEN",),
+        "maximized": ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"),
+        "shaded": ("_NET_WM_STATE_SHADED",),
+        "above": ("_NET_WM_STATE_ABOVE",),
+        "below": ("_NET_WM_STATE_BELOW",),
+        "sticky": ("_NET_WM_STATE_STICKY",),
+        "skip-taskbar": ("_NET_WM_STATE_SKIP_TASKBAR",),
+        "skip-pager": ("_NET_WM_STATE_SKIP_PAGER",),
+        "modal": ("_NET_WM_STATE_MODAL",),
+        "focused": ("_NET_WM_STATE_FOCUSED",),
     }
     _state_properties_reversed = {}
     for k, states in tuple(_state_properties.items()):
@@ -625,6 +624,7 @@ class BaseWindowModel(CoreX11WindowModel):
                     event, prop, v, STATE_STRING.get(mode, mode), current)
                 if v != current:
                     self.update_wm_state(prop, v)
+
             atom1 = get_pyatom(event.data[1])
             log("_NET_WM_STATE: %s", atom1)
             if atom1 == "_NET_WM_STATE_FULLSCREEN":
@@ -697,7 +697,7 @@ class BaseWindowModel(CoreX11WindowModel):
             log("_NET_WM_FULLSCREEN_MONITORS: %s", event)
             # TODO: we should validate the indexes instead of copying them blindly!
             # TODO: keep track of source indication so we can forward that to the client
-            N = 16      # FIXME: this is an arbitrary limit
+            N = 16  # FIXME: this is an arbitrary limit
             monitors = list(event.data[:4])
             if not all(0 <= x < N for x in monitors):
                 log.warn("Warning: invalid list of _NET_WM_FULLSCREEN_MONITORS:%s - ignored", event.data)
@@ -706,7 +706,7 @@ class BaseWindowModel(CoreX11WindowModel):
             self.prop_set("_NET_WM_FULLSCREEN_MONITORS", ["u32"], monitors)
             return True
         if event.message_type == "_NET_RESTACK_WINDOW":
-            source = {1 : "application", 2 : "pager"}.get(event.data[0], "default (%s)" % event.data[0])
+            source = {1: "application", 2: "pager"}.get(event.data[0], "default (%s)" % event.data[0])
             sibling_window = event.data[1]
             log("%s sent to window %#x for sibling %#x from %s with detail=%s",
                 event.message_type, event.window, sibling_window, source,

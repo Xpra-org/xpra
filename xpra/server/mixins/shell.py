@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2020-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
@@ -15,11 +15,12 @@ class ShellServer(StubServerMixin):
     """
     Mixin for adding `shell` support
     """
+
     def init(self, _opts) -> None:
         self.counter = 0
-        self.commands : Deque[str] = deque(maxlen=10)
+        self.commands: Deque[str] = deque(maxlen=10)
 
-    def get_info(self, _source=None) -> dict[str,Any]:
+    def get_info(self, _source=None) -> dict[str, Any]:
         return {
             "shell": {
                 "counter": self.counter,
@@ -27,7 +28,7 @@ class ShellServer(StubServerMixin):
             },
         }
 
-    def get_server_features(self, _source) -> dict[str,Any]:
+    def get_server_features(self, _source) -> dict[str, Any]:
         return {
             "shell": True,
         }
@@ -42,5 +43,5 @@ class ShellServer(StubServerMixin):
 
     def init_packet_handlers(self) -> None:
         self.add_packet_handlers({
-            "shell-exec" : self._process_shell_exec,
+            "shell-exec": self._process_shell_exec,
         }, False)

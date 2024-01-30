@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -28,7 +28,7 @@ MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
 SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 
-#we assume that any server will support at least those:
+# we assume that any server will support at least those:
 DEFAULT_ENCODINGS = os.environ.get("XPRA_DEFAULT_ENCODINGS", "rgb32,rgb24,jpeg,png").split(",")
 
 
@@ -60,7 +60,7 @@ def get_core_encodings():
     for encoding in video_decodings:
         if encoding not in core_encodings:
             core_encodings.append(encoding)
-    #remove duplicates and use preferred encoding order:
+    # remove duplicates and use preferred encoding order:
     return preforder(core_encodings)
 
 
@@ -80,11 +80,11 @@ class Encodings(StubClientMixin):
         self.video_scaling = None
         self.video_max_size = VIDEO_MAX_SIZE
 
-        self.server_encodings: tuple[str,...] = ()
-        self.server_core_encodings: tuple[str,...] = ()
-        self.server_encodings_with_speed: tuple[str,...] = ()
-        self.server_encodings_with_quality: tuple[str,...] = ()
-        self.server_encodings_with_lossless_mode: tuple[str,...] = ()
+        self.server_encodings: tuple[str, ...] = ()
+        self.server_core_encodings: tuple[str, ...] = ()
+        self.server_encodings_with_speed: tuple[str, ...] = ()
+        self.server_encodings_with_quality: tuple[str, ...] = ()
+        self.server_encodings_with_lossless_mode: tuple[str, ...] = ()
 
         # what we told the server about our encoding defaults:
         self.encoding_defaults = {}
@@ -130,31 +130,31 @@ class Encodings(StubClientMixin):
         caps = typedict(packet[1])
         self._parse_server_capabilities(caps)
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         return {
-            "encodings" : {
-                "core"          : self.get_core_encodings(),
-                "window-icon"   : self.get_window_icon_encodings(),
-                "cursor"        : self.get_cursor_encodings(),
-                "quality"       : self.quality,
-                "min-quality"   : self.min_quality,
-                "speed"         : self.speed,
-                "min-speed"     : self.min_speed,
-                "encoding"      : self.encoding or "auto",
-                "video-scaling" : self.video_scaling if self.video_scaling is not None else "auto",
+            "encodings": {
+                "core": self.get_core_encodings(),
+                "window-icon": self.get_window_icon_encodings(),
+                "cursor": self.get_cursor_encodings(),
+                "quality": self.quality,
+                "min-quality": self.min_quality,
+                "speed": self.speed,
+                "min-speed": self.min_speed,
+                "encoding": self.encoding or "auto",
+                "video-scaling": self.video_scaling if self.video_scaling is not None else "auto",
             },
-            "server-encodings"  : self.server_core_encodings,
+            "server-encodings": self.server_core_encodings,
         }
 
-    def get_caps(self) -> dict[str,Any]:
+    def get_caps(self) -> dict[str, Any]:
         caps = {
             "encodings": {
-                ""                : self.get_encodings(),
-                "all"             : self.get_encodings(),
-                "core"            : self.get_core_encodings(),
-                "window-icon"     : self.get_window_icon_encodings(),
-                "cursor"          : self.get_cursor_encodings(),
-                "packet"          : True,
+                "": self.get_encodings(),
+                "all": self.get_encodings(),
+                "core": self.get_core_encodings(),
+                "window-icon": self.get_window_icon_encodings(),
+                "cursor": self.get_cursor_encodings(),
+                "packet": True,
             },
             "batch": self.get_batch_caps(),
             "encoding": self.get_encodings_caps(),
@@ -174,14 +174,14 @@ class Encodings(StubClientMixin):
         self.server_encodings_with_lossless_mode = c.strtupleget("encodings.with_lossless_mode", ())
         e = c.strget("encoding")
         if e and not c.boolget("encodings.delayed"):
-            if self.encoding and e!=self.encoding:
+            if self.encoding and e != self.encoding:
                 if self.encoding not in self.server_core_encodings:
                     log.warn("server does not support %s encoding and has switched to %s", self.encoding, e)
                 else:
                     log.info("server is using %s encoding instead of %s", e, self.encoding)
             self.encoding = e
 
-    def get_batch_caps(self) -> dict[str,Any]:
+    def get_batch_caps(self) -> dict[str, Any]:
         # batch options:
         caps = {}
         for bprop in ("always", "min_delay", "max_delay", "delay", "max_events", "max_pixels", "time_unit"):
@@ -194,31 +194,31 @@ class Encodings(StubClientMixin):
         log("get_batch_caps()=%s", caps)
         return caps
 
-    def get_encodings_caps(self) -> dict[str,Any]:
+    def get_encodings_caps(self) -> dict[str, Any]:
         if B_FRAMES:
-            video_b_frames = ("h264", )   # only tested with dec_avcodec2
+            video_b_frames = ("h264",)  # only tested with dec_avcodec2
         else:
             video_b_frames = ()
         caps = {
-            "video_b_frames"            : video_b_frames,
-            "video_max_size"            : self.video_max_size,
-            "max-soft-expired"          : MAX_SOFT_EXPIRED,
-            "send-timestamps"           : SEND_TIMESTAMPS,
+            "video_b_frames": video_b_frames,
+            "video_max_size": self.video_max_size,
+            "max-soft-expired": MAX_SOFT_EXPIRED,
+            "send-timestamps": SEND_TIMESTAMPS,
         }
         if self.video_scaling is not None:
             caps["scaling.control"] = self.video_scaling
         if self.encoding:
             caps[""] = self.encoding
-        if FULL_INFO>1:
-            for k,v in codec_versions.items():
+        if FULL_INFO > 1:
+            for k, v in codec_versions.items():
                 caps[f"{k}.version"] = v
-        if self.quality>0:
+        if self.quality > 0:
             caps["quality"] = self.quality
-        if self.min_quality>0:
+        if self.min_quality > 0:
             caps["min-quality"] = self.min_quality
-        if self.speed>=0:
+        if self.speed >= 0:
             caps["speed"] = self.speed
-        if self.min_speed>=0:
+        if self.min_speed >= 0:
             caps["min-speed"] = self.min_speed
 
         # generic rgb compression flags:
@@ -235,11 +235,11 @@ class Encodings(StubClientMixin):
             if self.opengl_enabled:
                 full_csc_modes["webp"] = ("BGRX", "BGRA", "RGBX", "RGBA")
             else:
-                full_csc_modes["webp"] = ("BGRX", "BGRA", )
+                full_csc_modes["webp"] = ("BGRX", "BGRA",)
         if has_codec("dec_jpeg") or has_codec("dec_pillow"):
             full_csc_modes["jpeg"] = ("BGRX", "BGRA", "YUV420P")
         if has_codec("dec_jpeg"):
-            full_csc_modes["jpega"] = ("BGRA", "RGBA", )
+            full_csc_modes["jpega"] = ("BGRA", "RGBA",)
         log("supported full csc_modes=%s", full_csc_modes)
         caps["full_csc_modes"] = full_csc_modes
 
@@ -253,9 +253,9 @@ class Encodings(StubClientMixin):
             # so we don't bother specifying anything for those two.
             h264_caps = {}
             for csc_name, default_profile in (
-                ("YUV420P", "high"),
-                ("YUV422P", ""),
-                ("YUV444P", ""),
+                    ("YUV420P", "high"),
+                    ("YUV422P", ""),
+                    ("YUV444P", ""),
             ):
                 profile = os.environ.get(f"XPRA_H264_{csc_name}_PROFILE", default_profile)
                 if profile:
@@ -266,14 +266,14 @@ class Encodings(StubClientMixin):
         log("encoding capabilities: %s", caps)
         return caps
 
-    def get_encodings(self) -> tuple[str,...]:
+    def get_encodings(self) -> tuple[str, ...]:
         """
             Unlike get_core_encodings(), this method returns "rgb" for both "rgb24" and "rgb32".
             That's because although we may support both, the encoding chosen is plain "rgb",
             and the actual encoding used ("rgb24" or "rgb32") depends on the window's bit depth.
             ("rgb32" if there is an alpha channel, and if the client supports it)
         """
-        cenc = [{"rgb32" : "rgb", "rgb24" : "rgb"}.get(x, x) for x in self.get_core_encodings()]
+        cenc = [{"rgb32": "rgb", "rgb24": "rgb"}.get(x, x) for x in self.get_core_encodings()]
         if "grayscale" not in cenc and "png/L" in cenc:
             cenc.append("grayscale")
         if any(x in cenc for x in STREAM_ENCODINGS):
@@ -300,7 +300,7 @@ class Encodings(StubClientMixin):
 
     def set_encoding(self, encoding):
         log("set_encoding(%s)", encoding)
-        if encoding=="auto":
+        if encoding == "auto":
             self.encoding = ""
         else:
             encodings = self.get_encodings()
@@ -309,7 +309,7 @@ class Encodings(StubClientMixin):
             if encoding not in self.server_encodings:
                 log.error(f"Error: encoding {encoding} is not supported by the server")
                 log.error(" the only encodings allowed are:")
-                log.error(" "+csv(self.server_encodings))
+                log.error(" " + csv(self.server_encodings))
                 return
             self.encoding = encoding
         self.send("encoding", self.encoding)
@@ -317,27 +317,27 @@ class Encodings(StubClientMixin):
     def send_quality(self):
         q = self.quality
         log("send_quality() quality=%s", q)
-        if q!=-1 and (q<0 or q>100):
+        if q != -1 and (q < 0 or q > 100):
             raise ValueError(f"invalid quality: {q}")
         self.send("quality", q)
 
     def send_min_quality(self):
         q = self.min_quality
         log("send_min_quality() min-quality=%s", q)
-        if q!=-1 and (q<0 or q>100):
+        if q != -1 and (q < 0 or q > 100):
             raise ValueError(f"invalid min-quality: {q}")
         self.send("min-quality", q)
 
     def send_speed(self):
         s = self.speed
         log("send_speed() min-speed=%s", s)
-        if s!=-1 and (s<0 or s>100):
+        if s != -1 and (s < 0 or s > 100):
             raise ValueError(f"invalid speed: {s}")
         self.send("speed", s)
 
     def send_min_speed(self):
         s = self.min_speed
         log("send_min_speed() min-speed=%s", s)
-        if s!=-1 and (s<0 or s>100):
+        if s != -1 and (s < 0 or s > 100):
             raise ValueError(f"invalid min-speed: {s}")
         self.send("min-speed", s)

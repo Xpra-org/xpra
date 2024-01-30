@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -29,12 +29,13 @@ def parse_link(content):
     # skip 12 bytes (LinkInfoHeaderSize, LinkInfoFlags, and VolumeIDOffset)
     position += 0x0C
     # go to the LocalBasePath position
-    lbpos = struct.unpack('I', content[position:position+0x04])[0]
+    lbpos = struct.unpack('I', content[position:position + 0x04])[0]
     position = last_pos + lbpos
     # read the string at the given position of the determined length
-    size= (length + last_pos) - position - 0x02
-    temp = struct.unpack('c' * size, content[position:position+size])
+    size = (length + last_pos) - position - 0x02
+    temp = struct.unpack('c' * size, content[position:position + size])
     return ''.join([chr(ord(a)) for a in temp])
+
 
 def read_link(path):
     try:
@@ -42,9 +43,10 @@ def read_link(path):
             content = stream.read()
         return parse_link(content)
     except Exception as e:
-        #log("error parsing '%s'", path, exc_info=True)
+        # log("error parsing '%s'", path, exc_info=True)
         log("error parsing '%s': %s", path, e)
         return None
+
 
 def listdir(d):
     try:
@@ -55,9 +57,10 @@ def listdir(d):
         log.warn(" %s", e)
         return ()
 
+
 def load_subdir(d):
-    #recurse down directories
-    #and return a dictionary of entries
+    # recurse down directories
+    # and return a dictionary of entries
     menu = {}
     for x in listdir(d):
         if x.endswith(".ini"):
@@ -69,9 +72,10 @@ def load_subdir(d):
             exe = read_link(name)
             if exe:
                 menu[x[:-4]] = {
-                    "command" : exe,
-                    }
+                    "command": exe,
+                }
     return menu
+
 
 def load_dir(d):
     log("load_dir(%s)", d)
@@ -85,16 +89,17 @@ def load_dir(d):
             subdirmenu = load_subdir(name)
             if subdirmenu:
                 menu[x] = {
-                    "Entries" : subdirmenu,
-                    }
+                    "Entries": subdirmenu,
+                }
         elif name.endswith(".lnk"):
-            #add them to the "Shortcuts" submenu:
+            # add them to the "Shortcuts" submenu:
             exe = read_link(name)
             if exe:
                 menu.setdefault("Shortcuts", {}).setdefault("Entries", {})[x[:-4]] = {
-                    "command" : exe,
-                    }
+                    "command": exe,
+                }
     return menu
+
 
 def load_menu():
     menu = {}
@@ -102,16 +107,16 @@ def load_menu():
         d = d_fn()
         if not d:
             continue
-        #ie: "C:\ProgramData\Microsoft\Windows\Start Menu"
+        # ie: "C:\ProgramData\Microsoft\Windows\Start Menu"
         for x in listdir(d):
             subdir = os.path.join(d, x)
             if os.path.isdir(subdir):
-                #ie: "C:\ProgramData\Microsoft\Windows\Start Menu\Programs"
+                # ie: "C:\ProgramData\Microsoft\Windows\Start Menu\Programs"
                 m = load_dir(subdir)
                 if not m:
                     continue
-                #TODO: recursive merge
-                for k,v in m.items():
+                # TODO: recursive merge
+                for k, v in m.items():
                     ev = menu.get(k)
                     if isinstance(ev, dict):
                         ev.update(v)

@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2012 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -31,7 +31,7 @@ class GLClientWindowBase(ClientWindow):
     def is_GL(self) -> bool:
         return True
 
-    def spinner(self, ok:bool) -> None:
+    def spinner(self, ok: bool) -> None:
         b = self._backing
         log("spinner(%s) opengl window %s: backing=%s", ok, self.wid, b)
         if not b:
@@ -43,7 +43,7 @@ class GLClientWindowBase(ClientWindow):
             w, h = self.get_size()
             self.repaint(0, 0, w, h)
 
-    def queue_draw_area(self, x:int, y:int, w:int, h:int) -> None:
+    def queue_draw_area(self, x: int, y: int, w: int, h: int) -> None:
         b = self._backing
         if not b:
             return
@@ -54,8 +54,8 @@ class GLClientWindowBase(ClientWindow):
         super().monitor_changed(monitor)
         da = self.drawing_area
         if da and MONITOR_REINIT:
-            #re-create the drawing area,
-            #which will re-create the opengl context:
+            # re-create the drawing area,
+            # which will re-create the opengl context:
             try:
                 self.remove(da)
             except Exception:
@@ -93,7 +93,7 @@ class GLClientWindowBase(ClientWindow):
     def set_alpha(self) -> None:
         super().set_alpha()
         rgb_formats = self._client_properties.setdefault("encodings.rgb_formats", [])
-        #gl.backing supports BGR(A) too:
+        # gl.backing supports BGR(A) too:
         if "RGBA" in rgb_formats:
             rgb_formats.append("BGRA")
         if "RGB" in rgb_formats:
@@ -113,7 +113,7 @@ class GLClientWindowBase(ClientWindow):
     def init_drawing_area(self) -> None:
         self.drawing_area = None
 
-    def new_backing(self, bw:int, bh:int) -> None:
+    def new_backing(self, bw: int, bh: int) -> None:
         widget = super().new_backing(bw, bh)
         if self.drawing_area:
             self.remove(self.drawing_area)

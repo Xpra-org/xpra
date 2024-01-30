@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #  pylint: disable-msg=E1101
@@ -28,9 +28,9 @@ class TrayClient(StubClientMixin):
 
     def __init__(self):
         super().__init__()
-        #settings:
+        # settings:
         self.tray_icon = None
-        #state:
+        # state:
         self.tray = None
         self.menu_helper = None
 
@@ -65,8 +65,9 @@ class TrayClient(StubClientMixin):
                 # seems to help with buggy tray geometries,
                 # but don't do it if we have already changed the icon
                 # (ie: the dynamic window icon code may have set a new one)
-                if icon_timestamp==tray.icon_timestamp:
+                if icon_timestamp == tray.icon_timestamp:
                     tray.set_icon()
+
             GLib.timeout_add(1000, reset_icon)
 
     def cleanup(self) -> None:
@@ -92,8 +93,9 @@ class TrayClient(StubClientMixin):
         if self.menu_helper:
             self.menu_helper.activate()
 
-    def create_xpra_tray(self, tray_icon_filename:str):
+    def create_xpra_tray(self, tray_icon_filename: str):
         tray = None
+
         # this is our own tray
 
         def xpra_tray_click(button, pressed, time=0):
@@ -113,6 +115,7 @@ class TrayClient(StubClientMixin):
         def xpra_tray_geometry(*args):
             if tray:
                 log("xpra_tray_geometry%s geometry=%s", args, tray.get_geometry())
+
         menu = None
         if self.menu_helper:
             menu = self.menu_helper.build()
@@ -122,6 +125,7 @@ class TrayClient(StubClientMixin):
         if tray:
             def reset_tray_title():
                 tray.set_tooltip(self.get_tray_title())
+
             self.after_handshake(reset_tray_title)
         return tray
 

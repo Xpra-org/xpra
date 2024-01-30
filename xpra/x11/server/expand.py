@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2022-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -35,9 +35,9 @@ class EVDIModel(RootWindowModel):
         if not ld:
             return None
         bw, bh, buf = ld[:3]
-        if bw!=width or bh!=height:
+        if bw != width or bh != height:
             return None
-        return ImageWrapper(0, 0, width, height, buf, "BGRX", 24, width*4, )
+        return ImageWrapper(0, 0, width, height, buf, "BGRX", 24, width * 4, )
 
 
 class ExpandServer(GObject.GObject, ShadowX11Server):
@@ -143,7 +143,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
         return "X11 expand"
 
     def set_refresh_delay(self, v: int) -> None:
-        assert 0<v<10000
+        assert 0 < v < 10000
         self.refresh_delay = v
 
     def setup_capture(self):
@@ -160,7 +160,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
         root = get_default_root_window()
         geom = (0, 0, 800, 600)
         model = EVDIModel(root, self, "evdi", geom)
-        return (model, )
+        return (model,)
 
     def do_make_screenshot_packet(self):
         raise NotImplementedError()

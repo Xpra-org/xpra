@@ -32,16 +32,16 @@ log(f"decoder: {get_type()} {get_version()}, {init_module}, {cleanup_module}")
 FORMATS = os.environ.get("XPRA_GSTREAMER_DECODER_FORMATS", "h264,hevc,vp8,vp9,av1").split(",")
 
 
-def get_default_mappings() -> dict[str,tuple[str,...]]:
+def get_default_mappings() -> dict[str, tuple[str, ...]]:
     # should always be available:
-    m : dict[str,tuple[str,...]] = {
-        "vp8"   : ("vp8dec", ),
-        "vp9"   : ("vp9dec", ),
+    m: dict[str, tuple[str, ...]] = {
+        "vp8": ("vp8dec",),
+        "vp9": ("vp9dec",),
     }
     if WIN32:
-        m["h264"] = ("d3d11h264dec", )
+        m["h264"] = ("d3d11h264dec",)
     else:
-        m["av1"] = ("av1dec", )
+        m["av1"] = ("av1dec",)
         # enable nv decoder unless we don't find nvidia hardware:
         h264 = ["nvh264dec"]
         try:
@@ -52,16 +52,16 @@ def get_default_mappings() -> dict[str,tuple[str,...]]:
             pass
         h264.append("avdec_h264")
         m["h264"] = tuple(h264)
-        m["hevc"] = ("vaapih265dec", )
+        m["hevc"] = ("vaapih265dec",)
     return m
 
 
-def get_codecs_options() -> dict[str,tuple[str,...]]:
+def get_codecs_options() -> dict[str, tuple[str, ...]]:
     dm = os.environ.get("XPRA_GSTREAMER_DECODER_MAPPINGS")
     if not dm:
         return get_default_mappings()
     codec_options = {}
-    for mapping in dm.split(";"):   # ie: mapping="vp8:vp8dec"
+    for mapping in dm.split(";"):  # ie: mapping="vp8:vp8dec"
         try:
             enc, elements_str = mapping.split(":", 1)
         except IndexError:
@@ -72,8 +72,8 @@ def get_codecs_options() -> dict[str,tuple[str,...]]:
     return codec_options
 
 
-def find_codecs(options) -> dict[str,str]:
-    codecs : dict[str,str] = {}
+def find_codecs(options) -> dict[str, str]:
+    codecs: dict[str, str] = {}
     for encoding, elements in options.items():
         if encoding in FORMATS and elements:
             found = [x for x in elements if has_plugins(x)]
@@ -86,21 +86,21 @@ def find_codecs(options) -> dict[str,str]:
 CODECS = find_codecs(get_codecs_options())
 
 
-def get_encodings() -> tuple[str,...]:
+def get_encodings() -> tuple[str, ...]:
     return tuple(CODECS.keys())
 
 
-def get_min_size(_encoding:str):
+def get_min_size(_encoding: str):
     return 48, 16
 
 
-def get_input_colorspaces(encoding:str) -> tuple[str,...]:
+def get_input_colorspaces(encoding: str) -> tuple[str, ...]:
     if encoding not in CODECS:
         raise ValueError(f"unsupported encoding {encoding}")
-    return ("YUV420P", )
+    return ("YUV420P",)
 
 
-def get_output_colorspace(encoding:str, input_colorspace:str) -> str:
+def get_output_colorspace(encoding: str, input_colorspace: str) -> str:
     encoder = CODECS.get(encoding)
     if not encoder:
         raise ValueError(f"unsupported encoding {encoding}")
@@ -111,29 +111,30 @@ def get_output_colorspace(encoding:str, input_colorspace:str) -> str:
 
 
 class Decoder(VideoPipeline):
-    __gsignals__ : dict[str,tuple] = VideoPipeline.__generic_signals__.copy()
+    __gsignals__: dict[str, tuple] = VideoPipeline.__generic_signals__.copy()
     """
     Dispatch video decoding to a gstreamer pipeline
     """
-    def create_pipeline(self, options:typedict):
+
+    def create_pipeline(self, options: typedict):
         if self.encoding not in get_encodings():
             raise ValueError(f"invalid encoding {self.encoding!r}")
         self.dst_formats = options.strtupleget("dst-formats")
         decoder = CODECS.get(self.encoding)
         if not decoder:
             raise RuntimeError(f"invalid encoding {self.encoding}")
-        stream_attrs : dict[str,Any] = {
-            "width"     : self.width,
-            "height"    : self.height,
+        stream_attrs: dict[str, Any] = {
+            "width": self.width,
+            "height": self.height,
         }
         eopts = get_default_decoder_options().get(decoder, {})
         if not eopts:
             eopts = {
-                "profile"       : "main",
-                "stream-format" : "byte-stream",
-                "alignment"     : "au",
+                "profile": "main",
+                "stream-format": "byte-stream",
+                "alignment": "au",
             }
-        for k,v in eopts.items():
+        for k, v in eopts.items():
             stream_attrs[k] = options.strget(k, v)
         stream_caps = get_caps_str(f"video/x-{self.encoding}", stream_attrs)
         if decoder.startswith("nv"):
@@ -185,24 +186,24 @@ class Decoder(VideoPipeline):
             mem = memoryview(buf.extract_dup(0, size))
             # I420 gstreamer definition:
             Ystride = roundup(self.width, 4)
-            Ysize = Ystride*roundup(self.height, 2)
+            Ysize = Ystride * roundup(self.height, 2)
             Y = mem[:Ysize]
-            planes: tuple[memoryview,...]
-            strides: tuple[int,...]
-            if self.output_format=="YUV420P":
-                UVstride = roundup(roundup(self.width, 2)//2, 4)
-                UVsize = UVstride*roundup(self.height, 2)//2
-                total = Ysize+2*UVsize
-                if size<total:
+            planes: tuple[memoryview, ...]
+            strides: tuple[int, ...]
+            if self.output_format == "YUV420P":
+                UVstride = roundup(roundup(self.width, 2) // 2, 4)
+                UVsize = UVstride * roundup(self.height, 2) // 2
+                total = Ysize + 2 * UVsize
+                if size < total:
                     raise RuntimeError(f"I420 sample buffer is too small: expected {total} but got {size}")
-                U = mem[Ysize:Ysize+UVsize]
-                V = mem[Ysize+UVsize:total]
+                U = mem[Ysize:Ysize + UVsize]
+                V = mem[Ysize + UVsize:total]
                 planes = (Y, U, V)
                 strides = (Ystride, UVstride, UVstride)
             else:
                 UVstride = roundup(self.width, 4)
-                UVsize = UVstride*roundup(self.height, 2)//2
-                UV = mem[Ysize:Ysize+UVsize]
+                UVsize = UVstride * roundup(self.height, 2) // 2
+                UV = mem[Ysize:Ysize + UVsize]
                 planes = (Y, UV)
                 strides = (Ystride, UVstride)
             image = ImageWrapper(0, 0, self.width, self.height, planes,
@@ -234,4 +235,4 @@ def selftest(full=False):
     from xpra.codecs.checks import testdecoder
     from xpra.codecs.gstreamer import decoder
     remaining = testdecoder(decoder, full)
-    decoder.CODECS = {k:v for k,v in decoder.CODECS.items() if k in remaining}
+    decoder.CODECS = {k: v for k, v in decoder.CODECS.items() if k in remaining}

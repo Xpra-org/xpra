@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -37,10 +37,9 @@ class GTK_Clipboard(ClipboardTimeoutHelper):
 
 
 class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
-
     __gsignals__ = {
-        "send-clipboard-token"                  : one_arg_signal,
-        "send-clipboard-request"                : n_arg_signal(2),
+        "send-clipboard-token": one_arg_signal,
+        "send-clipboard-request": n_arg_signal(2),
     }
 
     def __init__(self, selection="CLIPBOARD"):
@@ -75,7 +74,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
             text_targets = tuple(x for x in targets if x in TEXT_TARGETS)
             for text_target in text_targets:
                 dtype, dformat, data = target_data.get(text_target)
-                if dformat!=8:
+                if dformat != 8:
                     continue
                 text = str(data)
                 log("setting text data %s / %s of size %i: %s",
@@ -92,6 +91,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
         def send_token(*token_data):
             self._have_token = False
             self.emit("send-clipboard-token", token_data)
+
         if not (self._want_targets or self._greedy_client):
             send_token()
             return
@@ -120,19 +120,19 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.do_owner_changed()
 
     def do_owner_changed(self):
-        elapsed = monotonic()-self._owner_change_embargo
+        elapsed = monotonic() - self._owner_change_embargo
         log("do_owner_changed() enabled=%s, elapsed=%s",
             self._enabled, elapsed)
-        if not self._enabled or elapsed<BLOCK_DELAY:
+        if not self._enabled or elapsed < BLOCK_DELAY:
             return
         self.schedule_emit_token()
 
     def get_contents(self, target, got_contents, time=0):
         log("get_contents(%s, %s, %i) have-token=%s",
             target, got_contents, time, self._have_token)
-        if target=="TARGETS":
+        if target == "TARGETS":
             r = self.clipboard.wait_for_targets()
-            if r and len(r)==2 and r[0]:
+            if r and len(r) == 2 and r[0]:
                 targets = r[1]
                 atoms = tuple(x.name() for x in targets)
                 got_contents("ATOM", 32, atoms)

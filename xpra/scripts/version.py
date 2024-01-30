@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2014-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -16,7 +16,7 @@ def main() -> int:
         print("")
         print("Platform:")
         pi = get_platform_info()
-        #ugly workaround for the fact that "sys.platform" has no key..
+        # ugly workaround for the fact that "sys.platform" has no key..
         if "" in pi:
             pi["sys"] = pi[""]
             del pi[""]
@@ -24,7 +24,7 @@ def main() -> int:
         print("")
         print("Host:")
         d = get_host_info(2)
-        #add os specific version info:
+        # add os specific version info:
         from xpra.platform.info import get_version_info as pvinfo
         d.update(pvinfo())
         print_nested_dict(d)

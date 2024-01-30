@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,7 @@ from ctypes.wintypes import HDC
 from ctypes import (
     WinDLL,  # @UnresolvedImport
     c_void_p, Structure, c_int, c_uint, c_ulong, c_char_p, cast, pointer, POINTER,
-    )
+)
 
 from xpra.util.str_fn import ellipsizer, strtobytes
 from xpra.platform.win32.common import GetDeviceCaps
@@ -21,16 +21,18 @@ from xpra.platform.win32.ctypes_printing import GDIPrinterContext, DOCINFO, Star
 LIBPDFIUMDLL = os.environ.get("XPRA_LIBPDFIUMDLL", "pdfium.dll")
 try:
     pdfium = WinDLL(LIBPDFIUMDLL, use_last_error=True)
-except OSError as e:        #@UndefinedVariable
+except OSError as e:  # @UndefinedVariable
     raise ImportError(f"cannot load {LIBPDFIUMDLL!r}: {e}") from None
+
 
 class FPDF_LIBRARY_CONFIG(Structure):
     _fields_ = [
-        ("m_pUserFontPaths",    c_void_p),
-        ("version",                c_int),
-        ("m_pIsolate",            c_void_p),
-        ("m_v8EmbedderSlot",    c_uint),
-        ]
+        ("m_pUserFontPaths", c_void_p),
+        ("version", c_int),
+        ("m_pIsolate", c_void_p),
+        ("m_v8EmbedderSlot", c_uint),
+    ]
+
 
 FPDF_DOCUMENT = c_void_p
 FPDF_PAGE = c_void_p
@@ -53,27 +55,27 @@ FPDF_LoadMemDocument.argtypes = [c_void_p, c_int, c_void_p]
 FPDF_CloseDocument = pdfium.FPDF_CloseDocument
 FPDF_CloseDocument.argtypes = [FPDF_DOCUMENT]
 
-FPDF_ERR_SUCCESS = 0    # No error.
-FPDF_ERR_UNKNOWN = 1    # Unknown error.
-FPDF_ERR_FILE = 2         # File not found or could not be opened.
-FPDF_ERR_FORMAT = 3     # File not in PDF format or corrupted.
-FPDF_ERR_PASSWORD = 4   # Password required or incorrect password.
-FPDF_ERR_SECURITY = 5   # Unsupported security scheme.
-FPDF_ERR_PAGE = 6       # Page not found or content error.
-FPDF_ERR_XFALOAD = 7    # Load XFA error.
+FPDF_ERR_SUCCESS = 0  # No error.
+FPDF_ERR_UNKNOWN = 1  # Unknown error.
+FPDF_ERR_FILE = 2  # File not found or could not be opened.
+FPDF_ERR_FORMAT = 3  # File not in PDF format or corrupted.
+FPDF_ERR_PASSWORD = 4  # Password required or incorrect password.
+FPDF_ERR_SECURITY = 5  # Unsupported security scheme.
+FPDF_ERR_PAGE = 6  # Page not found or content error.
+FPDF_ERR_XFALOAD = 7  # Load XFA error.
 FPDF_ERR_XFALAYOUT = 8  # Layout XFA error.
 
 ERROR_STR = {
-    #FPDF_ERR_SUCCESS : No error.
-    FPDF_ERR_UNKNOWN     : "Unknown error",
-    FPDF_ERR_FILE         : "File not found or could not be opened",
-    FPDF_ERR_FORMAT        : "File not in PDF format or corrupted",
-    FPDF_ERR_PASSWORD     : "Password required or incorrect password",
-    FPDF_ERR_SECURITY     : "Unsupported security scheme",
-    FPDF_ERR_PAGE         : "Page not found or content error",
-    FPDF_ERR_XFALOAD     : "Load XFA error",
-    FPDF_ERR_XFALAYOUT     : "Layout XFA error",
-    }
+    # FPDF_ERR_SUCCESS : No error.
+    FPDF_ERR_UNKNOWN: "Unknown error",
+    FPDF_ERR_FILE: "File not found or could not be opened",
+    FPDF_ERR_FORMAT: "File not in PDF format or corrupted",
+    FPDF_ERR_PASSWORD: "Password required or incorrect password",
+    FPDF_ERR_SECURITY: "Unsupported security scheme",
+    FPDF_ERR_PAGE: "Page not found or content error",
+    FPDF_ERR_XFALOAD: "Load XFA error",
+    FPDF_ERR_XFALAYOUT: "Layout XFA error",
+}
 
 FPDF_ANNOT = 0x01
 FPDF_LCD_TEXT = 0x02
@@ -89,9 +91,11 @@ FPDF_RENDER_NO_SMOOTHIMAGE = 0x2000
 FPDF_RENDER_NO_SMOOTHPATH = 0x4000
 FPDF_REVERSE_BYTE_ORDER = 0x10
 
+
 def get_error():
     v = FPDF_GetLastError()
     return ERROR_STR.get(v, v)
+
 
 def do_print_pdf(hdc, title=b"PDF Print Test", pdf_data=None):
     assert pdf_data, "no pdf data"
@@ -125,7 +129,7 @@ def do_print_pdf(hdc, title=b"PDF Print Test", pdf_data=None):
         docinfo = DOCINFO()
         docinfo.lpszDocName = LPCSTR(b"%s\0" % title)
         jobid = StartDocA(hdc, pointer(docinfo))
-        if jobid<0:
+        if jobid < 0:
             log.error("Error: StartDocA failed: %i", jobid)
             return jobid
         log("StartDocA()=%i", jobid)
@@ -144,18 +148,21 @@ def do_print_pdf(hdc, title=b"PDF Print Test", pdf_data=None):
         FPDF_DestroyLibrary()
     return jobid
 
+
 def print_pdf(printer_name, title, pdf_data):
     with GDIPrinterContext(printer_name) as hdc:
         return do_print_pdf(hdc, title, pdf_data)
 
 
 EXIT = False
-JOBS_INFO : dict[int, dict[str, Any]] = {}
+JOBS_INFO: dict[int, dict[str, Any]] = {}
+
+
 def watch_print_job_status():
     from xpra.log import Logger
     log = Logger("printing", "win32")
     log("wait_for_print_job_end()")
-    #log("wait_for_print_job_end(%i)", print_job_id)
+    # log("wait_for_print_job_end(%i)", print_job_id)
     from xpra.platform.win32.printer_notify import wait_for_print_job_info, job_status
     while not EXIT:
         info = wait_for_print_job_info(timeout=1.0)
@@ -164,7 +171,7 @@ def watch_print_job_status():
         log("wait_for_print_job_info()=%s", info)
         for nd in info:
             job_id, key, value = nd
-            if key=="job_status":
+            if key == "job_status":
                 value = job_status(value)
             log("job_id=%s, key=%s, value=%s", job_id, key, value)
             JOBS_INFO.setdefault(int(job_id), {})[key] = value
@@ -172,7 +179,7 @@ def watch_print_job_status():
 
 def main():
     # pylint: disable=import-outside-toplevel
-    if len(sys.argv)==2:
+    if len(sys.argv) == 2:
         from xpra.platform.win32.printing import get_printers
         printers = get_printers()
         printer_name = strtobytes(printers.keys()[0])
@@ -186,7 +193,7 @@ def main():
     with open(filename, "rb") as f:
         pdf_data = f.read()
 
-    if len(sys.argv)==4:
+    if len(sys.argv) == 4:
         title = strtobytes(sys.argv[3])
     else:
         title = strtobytes(os.path.basename(filename))
@@ -196,23 +203,23 @@ def main():
     from xpra.log import Logger
     log = Logger("printing", "win32")
 
-    #start a new thread before submitting the document,
-    #because otherwise the job may complete before we can get its status
+    # start a new thread before submitting the document,
+    # because otherwise the job may complete before we can get its status
     from threading import Thread
     t = Thread(target=watch_print_job_status, name="watch print job status")
     t.daemon = True
     t.start()
 
     job_id = print_pdf(printer_name, title, pdf_data)
-    if job_id<0:
+    if job_id < 0:
         return job_id
-    #wait for job to end:
-    job_status : list[str] = []
+    # wait for job to end:
+    job_status: list[str] = []
     while True:
         job_info = JOBS_INFO.get(job_id, {})
         log("job_info[%i]=%s", job_id, job_info)
         v = job_info.get("job_status")
-        if v!=job_status:
+        if v != job_status:
             log.info("print job status: %s", csv(v))
             job_status = v
             if "OFFLINE" in job_status or "DELETING" in job_status:

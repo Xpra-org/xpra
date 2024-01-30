@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -127,7 +127,7 @@ class WGLContext:
                                     0, 0, h_inst, None)
         log("check_support() CreateWindowExW()=%#x", self.hwnd or 0)
         if not self.hwnd:
-            return {"info" : "disabled: failed to create temporary window, %s" % FormatError()}
+            return {"info": "disabled: failed to create temporary window, %s" % FormatError()}
         try:
             self.context = self.create_wgl_context(self.hwnd)
             with WGLWindowContext(self.hwnd, self.hdc, self.context):
@@ -177,14 +177,14 @@ class WGLContext:
         pfd.nVersion = 1
         pfd.dwFlags = flags
         pfd.iPixelType = PFD_TYPE_RGBA
-        pfd.cColorBits = bpc*(3+int(self.alpha))
+        pfd.cColorBits = bpc * (3 + int(self.alpha))
         pfd.cRedBits = bpc
         pfd.cRedShift = 0
         pfd.cGreenBits = bpc
         pfd.cGreenShift = 0
         pfd.cBlueBits = bpc
         pfd.cBlueShift = 0
-        pfd.cAlphaBits = int(self.alpha)*8
+        pfd.cAlphaBits = int(self.alpha) * 8
         pfd.cAlphaShift = 0
         pfd.cAccumBits = 0
         pfd.cAccumRedBits = 0
@@ -205,34 +205,34 @@ class WGLContext:
         if cm.stderr:
             for line in cm.stderr.split(b"\n"):
                 try:
-                    log("gl stderr: "+line.decode("utf8"))
+                    log("gl stderr: " + line.decode("utf8"))
                 except UnicodeDecodeError:
-                    log("gl stderr: "+line.decode("latin1"))
+                    log("gl stderr: " + line.decode("latin1"))
         log(f"ChoosePixelFormat for window {hwnd:x} and {bpc=} with {self.alpha=} : {pf=}")
         if not SetPixelFormat(self.hdc, pf, byref(pfd)):
             raise RuntimeError("SetPixelFormat failed")
         if not DescribePixelFormat(self.hdc, pf, sizeof(PIXELFORMATDESCRIPTOR), byref(pfd)):
             raise RuntimeError("DescribePixelFormat failed")
         self.pixel_format_props.update({
-            "rgba"              : pfd.iPixelType == PFD_TYPE_RGBA,
-            "depth"             : pfd.cColorBits,
-            "red-size"          : pfd.cRedBits,
-            "green-size"        : pfd.cGreenBits,
-            "blue-size"         : pfd.cBlueBits,
-            "alpha-size"        : pfd.cAlphaBits,
-            "red-shift"         : pfd.cRedShift,
-            "green-shift"       : pfd.cGreenShift,
-            "blue-shift"        : pfd.cBlueShift,
-            "alpha-shift"       : pfd.cAlphaShift,
-            "accum-red-size"    : pfd.cAccumRedBits,
-            "accum-green-size"  : pfd.cAccumGreenBits,
-            "accum-blue-size"   : pfd.cAccumBlueBits,
-            "accum-size"        : pfd.cAccumBits,
-            "depth-size"        : pfd.cDepthBits,
-            "stencil-size"      : pfd.cStencilBits,
-            "aux-buffers"       : pfd.cAuxBuffers,
-            "visible-mask"      : int(pfd.dwVisibleMask),
-            "double-buffered"   : bool(pfd.dwFlags & PFD_DOUBLEBUFFER)
+            "rgba": pfd.iPixelType == PFD_TYPE_RGBA,
+            "depth": pfd.cColorBits,
+            "red-size": pfd.cRedBits,
+            "green-size": pfd.cGreenBits,
+            "blue-size": pfd.cBlueBits,
+            "alpha-size": pfd.cAlphaBits,
+            "red-shift": pfd.cRedShift,
+            "green-shift": pfd.cGreenShift,
+            "blue-shift": pfd.cBlueShift,
+            "alpha-shift": pfd.cAlphaShift,
+            "accum-red-size": pfd.cAccumRedBits,
+            "accum-green-size": pfd.cAccumGreenBits,
+            "accum-blue-size": pfd.cAccumBlueBits,
+            "accum-size": pfd.cAccumBits,
+            "depth-size": pfd.cDepthBits,
+            "stencil-size": pfd.cStencilBits,
+            "aux-buffers": pfd.cAuxBuffers,
+            "visible-mask": int(pfd.dwVisibleMask),
+            "double-buffered": bool(pfd.dwFlags & PFD_DOUBLEBUFFER)
         })
         log("DescribePixelFormat: %s", self.pixel_format_props)
         context = wglCreateContext(self.hdc)

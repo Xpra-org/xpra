@@ -31,16 +31,16 @@ def get_opengl_module_names(opengl="on") -> tuple[str, ...]:
         return ()
     arg = parts[-1]
     if arg in ("gtk", "glarea"):
-        return ("glarea", )
+        return ("glarea",)
     if arg == "native":
-        return ("native", )
+        return ("native",)
     # auto-detect:
     if os.environ.get("WAYLAND_DISPLAY") or OSX:
         return "glarea", "native"
     return "native", "glarea",
 
 
-def get_gl_client_window_module(opengl="on") -> tuple[dict,Any]:
+def get_gl_client_window_module(opengl="on") -> tuple[dict, Any]:
     module_names = get_opengl_module_names(opengl)
     log(f"get_gl_client_window_module({opengl}) module names={module_names}")
     parts = opengl.lower().split(":")
@@ -52,7 +52,7 @@ def get_gl_client_window_module(opengl="on") -> tuple[dict,Any]:
     return {}, None
 
 
-def test_window_module(module_name="glarea", force_enable=False) -> tuple[dict,Any]:
+def test_window_module(module_name="glarea", force_enable=False) -> tuple[dict, Any]:
     from importlib import import_module
     try:
         mod = import_module(f"xpra.client.gl.gtk3.{module_name}_window")
@@ -100,7 +100,7 @@ def get_test_gl_icon():
                 data = load_binary_file(gl_icon)
     if not data:
         data = bytes([0]) * stride * h
-        encoding  = "rgb32"
+        encoding = "rgb32"
     return encoding, w, h, stride, data
 
 
@@ -108,7 +108,7 @@ def no_idle_add(fn, *args, **kwargs):
     fn(*args, **kwargs)
 
 
-def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(1024, 1024), pixel_depth=24, show=False):
+def test_gl_client_window(gl_client_window_class: Callable, max_window_size=(1024, 1024), pixel_depth=24, show=False):
     # try to render using a temporary window:
     draw_result = {}
     window = None
@@ -123,9 +123,9 @@ def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(10
         border = WindowBorder()
         default_cursor_data = None
         noclient = FakeClient()
-        #test with alpha, but not on win32
-        #because we can't do alpha on win32 with opengl
-        metadata = typedict({"has-alpha" : not WIN32})
+        # test with alpha, but not on win32
+        # because we can't do alpha on win32 with opengl
+        metadata = typedict({"has-alpha": not WIN32})
 
         class NoHeaderGLClientWindow(gl_client_window_class):
 
@@ -134,7 +134,8 @@ def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(10
 
             def schedule_recheck_focus(self):
                 """ pretend to handle focus checks """
-        window = NoHeaderGLClientWindow(noclient, None, 0, 2**32-1, x, y, ww, wh, ww, wh,
+
+        window = NoHeaderGLClientWindow(noclient, None, 0, 2 ** 32 - 1, x, y, ww, wh, ww, wh,
                                         metadata, False, typedict({}),
                                         border, max_window_size, default_cursor_data, pixel_depth)
         window_backing = window._backing
@@ -144,7 +145,7 @@ def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(10
         window.realize()
         window_backing.paint_screen = True
         pixel_format = "BGRX"
-        options = typedict({"pixel_format" : pixel_format})
+        options = typedict({"pixel_format": pixel_format})
         widget = window_backing._backing
         widget.realize()
 
@@ -153,25 +154,27 @@ def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(10
             draw_result["success"] = success
             if message:
                 draw_result["message"] = message.replace("\n", " ")
+
         pix = AtomicInteger(0x7f)
-        REPAINT_DELAY = envint("XPRA_REPAINT_DELAY", int(show)*16)
+        REPAINT_DELAY = envint("XPRA_REPAINT_DELAY", int(show) * 16)
 
         coding, w, h, stride, icon_data = get_test_gl_icon()
         log("OpenGL: testing draw on %s widget %s with %s : %s", window, widget, coding, pixel_format)
 
         def draw():
             v = pix.increase()
-            img_data = bytes([v % 256]*w*4*h)
+            img_data = bytes([v % 256] * w * 4 * h)
             options["flush"] = 1
-            window.draw_region(0, 0, w, h, "rgb32", img_data, w*4, v, options, [paint_callback])
+            window.draw_region(0, 0, w, h, "rgb32", img_data, w * 4, v, options, [paint_callback])
             options["flush"] = 0
-            mx = ww//2-w//2
-            my = wh//2-h//2
-            draw_x = round(mx*(1+sin(v/100)))
-            draw_y = round(my*(1+cos(v/100)))
+            mx = ww // 2 - w // 2
+            my = wh // 2 - h // 2
+            draw_x = round(mx * (1 + sin(v / 100)))
+            draw_y = round(my * (1 + cos(v / 100)))
             log("calling draw_region for test gl icon")
             window.draw_region(draw_x, draw_y, w, h, coding, icon_data, stride, v, options, [paint_callback])
-            return REPAINT_DELAY>0
+            return REPAINT_DELAY > 0
+
         # the paint code is actually synchronous here,
         # so we can check the present_fbo() result:
         if show:
@@ -190,27 +193,27 @@ def test_gl_client_window(gl_client_window_class : Callable, max_window_size=(10
             Gtk.main()
         else:
             draw()
-            #ugly workaround for calling the paint handler
-            #when the main loop is not running:
+            # ugly workaround for calling the paint handler
+            # when the main loop is not running:
             if hasattr(window_backing, "on_realize"):
                 window_backing.on_realize()
         if window_backing.last_present_fbo_error:
             return {
-                "success" : False,
-                "message" : "failed to present FBO on screen: %s" % window_backing.last_present_fbo_error
+                "success": False,
+                "message": "failed to present FBO on screen: %s" % window_backing.last_present_fbo_error
             }
     except Exception as e:
         log(f"test_gl_client_window({gl_client_window_class}, {max_window_size}, {pixel_depth}, {show})", exc_info=True)
         msg = str(e)
-        if len(msg)>128:
+        if len(msg) > 128:
             msg = msg.split(":", 1)[0]
         draw_result.update({
-            "success" : False,
-            "safe" : False,
-            "message" : msg,
+            "success": False,
+            "safe": False,
+            "message": msg,
         })
     finally:
         if window:
             window.close()
     log("test_gl_client_window(..) draw_result=%s", draw_result)
-    return draw_result or {"success" : False, "message" : "not painted on screen"}
+    return draw_result or {"success": False, "message": "not painted on screen"}

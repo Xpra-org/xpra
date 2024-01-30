@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -107,10 +107,10 @@ class ManagerSelection(GObject.GObject):
         # data is a timestamp, X11 datatype is Time which is CARD32,
         # (which is 64 bits on 64-bit systems!)
         Lsize = calcsize("@L")
-        if len(ts_data)==Lsize:
+        if len(ts_data) == Lsize:
             ts_num = unpack("@L", ts_data[:Lsize])[0]
         else:
-            ts_num = 0      # CurrentTime=0
+            ts_num = 0  # CurrentTime=0
             log.warn("invalid data for 'TIMESTAMP': %s", tuple(hex(ord(x)) for x in ts_data))
         log("selection timestamp(%s)=%s", ts_data, ts_num)
         # Calculate the X atom for this selection:
@@ -135,7 +135,7 @@ class ManagerSelection(GObject.GObject):
                 window.set_events(window.get_events() | Gdk.EventMask.STRUCTURE_MASK)
                 log("Waiting for previous owner to exit...")
                 add_event_receiver(window.get_xid(), self)
-                self.exit_timer = GLib.timeout_add(SELECTION_EXIT_TIMEOUT*1000, self.exit_timeout)
+                self.exit_timer = GLib.timeout_add(SELECTION_EXIT_TIMEOUT * 1000, self.exit_timeout)
                 Gtk.main()
                 if self.exit_timer:
                     GLib.source_remove(self.exit_timer)
@@ -153,7 +153,7 @@ class ManagerSelection(GObject.GObject):
 
     def _owner_change(self, clipboard, event) -> None:
         log(f"owner_change({clipboard}, {event}) selection={event.selection}")
-        if str(event.selection)!=self.atom or not event.owner:
+        if str(event.selection) != self.atom or not event.owner:
             # log("_owner_change(..) not our selection: %s vs %s", event.selection, self.atom)
             return
         owner = event.owner.get_xid()

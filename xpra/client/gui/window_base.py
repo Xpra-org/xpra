@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -33,7 +33,6 @@ iconlog = Logger("icon")
 alphalog = Logger("alpha")
 scalinglog = Logger("scaling")
 
-
 SIMULATE_MOUSE_DOWN = envbool("XPRA_SIMULATE_MOUSE_DOWN", True)
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 SET_SIZE_CONSTRAINTS = envbool("XPRA_SET_SIZE_CONSTRAINTS", True)
@@ -46,7 +45,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def __init__(self, client, group_leader, watcher_pid: int, wid: int,
                  wx: int, wy: int, ww: int, wh: int, bw: int, bh: int,
-                 metadata, override_redirect:bool, client_properties,
+                 metadata, override_redirect: bool, client_properties,
                  border, max_window_size, default_cursor_data, pixel_depth: int,
                  headerbar="no"):
         log("%s%s", type(self),
@@ -85,10 +84,10 @@ class ClientWindowBase(ClientWidgetBase):
         self.default_cursor_data = default_cursor_data
         self.max_window_size = max_window_size
         self.button_state = {}
-        self.pixel_depth = pixel_depth      #0 for default
-        #window_offset is the delta between the location of the window requested by the server,
-        #and where we actually end up mapping it on the client
-        #(ie: when we reposition an OR window to ensure it is visible on screen)
+        self.pixel_depth = pixel_depth  # 0 for default
+        # window_offset is the delta between the location of the window requested by the server,
+        # and where we actually end up mapping it on the client
+        # (ie: when we reposition an OR window to ensure it is visible on screen)
         self.window_offset = None
         self.pending_refresh = []
         self.headerbar = headerbar
@@ -101,7 +100,7 @@ class ClientWindowBase(ClientWidgetBase):
     def __repr__(self):
         return f"ClientWindow({self.wid})"
 
-    def init_window(self, metadata:typedict) -> None:
+    def init_window(self, metadata: typedict) -> None:
         self._backing = None
         self._metadata = typedict()
         # used for only sending focus events *after* the window is mapped:
@@ -109,13 +108,14 @@ class ClientWindowBase(ClientWidgetBase):
 
         def wn(w):
             return WORKSPACE_NAMES.get(w, w)
+
         workspace = typedict(self._client_properties).intget("workspace", -1)
         workspacelog("init_window(..) workspace from client properties %s: %s", self._client_properties, wn(workspace))
-        if workspace>=0:
+        if workspace >= 0:
             # client properties override application specified workspace value on init only:
             metadata["workspace"] = workspace
-        self._window_workspace = WORKSPACE_UNSET        #will get set in set_metadata if present
-        self._desktop_workspace = self.get_desktop_workspace()   # pylint: disable=assignment-from-none
+        self._window_workspace = WORKSPACE_UNSET  # will get set in set_metadata if present
+        self._desktop_workspace = self.get_desktop_workspace()  # pylint: disable=assignment-from-none
         workspacelog("init_window(..) workspace=%s, current workspace=%s",
                      wn(self._window_workspace), wn(self._desktop_workspace))
         if self.max_window_size and "size-constraints" not in metadata:
@@ -130,35 +130,35 @@ class ClientWindowBase(ClientWidgetBase):
     def finalize_window(self) -> None:
         """ subclasses override this method """
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         attributes = []
         for attr in (
-            "fullscreen", "maximized",
-            "above", "below",
-            "shaded", "sticky",
-            "skip-pager", "skip-taskbar",
-            "iconified", "focused",
+                "fullscreen", "maximized",
+                "above", "below",
+                "shaded", "sticky",
+                "skip-pager", "skip-taskbar",
+                "iconified", "focused",
         ):
             if getattr(self, "_%s" % attr.replace("-", "_"), False):
                 attributes.append(attr)
         info = super().get_info()
         info |= {
-            "override-redirect"     : self._override_redirect,
+            "override-redirect": self._override_redirect,
             # "group-leader"          : self.group_leader,
-            "position"              : self._pos,
-            "size"                  : self._size,
-            "client-properties"     : self._client_properties,
-            "set-initial-position"  : self._set_initial_position,
-            "size-constraints"      : dict(self.size_constraints),
-            "geometry-hints"        : dict(self.geometry_hints),
-            "content-type"          : self.content_type,
-            "attributes"            : attributes,
-            "gravity"               : GravityStr(self.window_gravity),
+            "position": self._pos,
+            "size": self._size,
+            "client-properties": self._client_properties,
+            "set-initial-position": self._set_initial_position,
+            "size-constraints": dict(self.size_constraints),
+            "geometry-hints": dict(self.geometry_hints),
+            "content-type": self.content_type,
+            "attributes": attributes,
+            "gravity": GravityStr(self.window_gravity),
             # "border"                : self.border or "",
             # cursor_data
-            "max-size"              : self.max_window_size,
-            "button-state"          : self.button_state,
-            "offset"                : self.window_offset or (0, 0),
+            "max-size": self.max_window_size,
+            "button-state": self.button_state,
+            "offset": self.window_offset or (0, 0),
         }
         return info
 
@@ -172,11 +172,11 @@ class ClientWindowBase(ClientWidgetBase):
     # screen scaling:
     def fsx(self, v) -> float:
         """ convert X coordinate from server to client """
-        return v*self._xscale
+        return v * self._xscale
 
     def fsy(self, v) -> float:
         """ convert Y coordinate from server to client """
-        return v*self._yscale
+        return v * self._yscale
 
     def sx(self, v) -> int:
         """ convert X coordinate from server to client """
@@ -186,27 +186,27 @@ class ClientWindowBase(ClientWidgetBase):
         """ convert Y coordinate from server to client """
         return round(self.fsy(v))
 
-    def srect(self, x, y, w, h) -> tuple[int,int,int,int]:
+    def srect(self, x, y, w, h) -> tuple[int, int, int, int]:
         """ convert rectangle coordinates from server to client """
         return self.sx(x), self.sy(y), self.sx(w), self.sy(h)
 
-    def sp(self, x, y) -> tuple[int,int]:
+    def sp(self, x, y) -> tuple[int, int]:
         """ convert X,Y coordinates from server to client """
         return self.sx(x), self.sy(y)
 
     def cx(self, v) -> int:
         """ convert X coordinate from client to server """
-        return round(v/self._xscale)
+        return round(v / self._xscale)
 
     def cy(self, v) -> int:
         """ convert Y coordinate from client to server """
-        return round(v/self._yscale)
+        return round(v / self._yscale)
 
-    def crect(self, x, y, w, h) -> tuple[int,int,int,int]:
+    def crect(self, x, y, w, h) -> tuple[int, int, int, int]:
         """ convert rectangle coordinates from client to server """
         return self.cx(x), self.cy(y), self.cx(w), self.cy(h)
 
-    def cp(self, x, y) -> tuple[int,int]:
+    def cp(self, x, y) -> tuple[int, int]:
         """ convert X,Y coordinates from client to server """
         return self.cx(x), self.cy(y)
 
@@ -247,7 +247,7 @@ class ClientWindowBase(ClientWidgetBase):
             except IndexError:
                 ek = k
             dv = encoding_defaults.get(ek)
-            if dv is not None and dv==v:
+            if dv is not None and dv == v:
                 del backing_props[k]
         self._client_properties.update(backing_props)
 
@@ -278,7 +278,7 @@ class ClientWindowBase(ClientWidgetBase):
     def is_OR(self) -> bool:
         return self._override_redirect
 
-    def update_metadata(self, metadata:typedict) -> None:
+    def update_metadata(self, metadata: typedict) -> None:
         metalog("update_metadata(%s)", metadata)
         if self._client.readonly:
             metadata.update(self._force_size_constraint(*self._size))
@@ -288,7 +288,7 @@ class ClientWindowBase(ClientWidgetBase):
         except Exception:
             metalog.warn("failed to set window metadata to '%s'", metadata, exc_info=True)
 
-    def _force_size_constraint(self, *size) -> dict[str,dict[str,Any]]:
+    def _force_size_constraint(self, *size) -> dict[str, dict[str, Any]]:
         return {
             "size-constraints": {
                 "maximum-size": size,
@@ -300,7 +300,7 @@ class ClientWindowBase(ClientWidgetBase):
     def _get_window_title(self, metadata) -> str:
         try:
             title = bytestostr(self._client.title).replace("\0", "")
-            if title.find("@")<0:
+            if title.find("@") < 0:
                 return title
             # perform metadata variable substitutions:
             # full of Python 3 unicode headaches that don't need to be
@@ -311,31 +311,31 @@ class ClientWindowBase(ClientWidgetBase):
                 # ie: "1\\WinSta0\\Default" -> 1-WinSta0-Default
                 remote_display = remote_display.replace("\\", "-")
             default_values = {
-                "title"           : "<untitled window>",
-                "client-machine"  : UNKNOWN_MACHINE,
-                "windowid"       : str(self.wid),
-                "server-machine"  : std(remote_hostname) or UNKNOWN_MACHINE,
-                "server-display"  : std(remote_display) or "<unknown display>",
+                "title": "<untitled window>",
+                "client-machine": UNKNOWN_MACHINE,
+                "windowid": str(self.wid),
+                "server-machine": std(remote_hostname) or UNKNOWN_MACHINE,
+                "server-display": std(remote_display) or "<unknown display>",
             }
             metalog(f"default values: {default_values}")
 
             def validhostname(value):
                 if value in (
-                    "localhost",
-                    "localhost.localdomain",
-                    "",
-                    None,
+                        "localhost",
+                        "localhost.localdomain",
+                        "",
+                        None,
                 ):
                     return None
                 return value
 
             def getvar(var):
-                #"hostname" is magic:
-                #we try harder to find a useful value to show:
+                # "hostname" is magic:
+                # we try harder to find a useful value to show:
                 if var in ("hostname", "hostinfo"):
                     server_display = getattr(self._client, "server_display", None)
-                    if var=="hostinfo" and getattr(self._client, "mmap_enabled", False) and server_display:
-                        #this is a local connection for sure and we can specify the display directly:
+                    if var == "hostinfo" and getattr(self._client, "mmap_enabled", False) and server_display:
+                        # this is a local connection for sure and we can specify the display directly:
                         return server_display
                     import socket
                     local_hostname = validhostname(socket.gethostname())
@@ -348,12 +348,12 @@ class ClientWindowBase(ClientWidgetBase):
                             hostname = conn.info.get("host")
                             target = bytestostr(conn.target)
                             if hostname:
-                                if local_hostname==hostname and server_display:
+                                if local_hostname == hostname and server_display:
                                     return server_display
                                 return hostname
                     for m in ("client-machine", "server-machine"):
                         value = validhostname(getvar(m))
-                        if value and value!=local_hostname:
+                        if value and value != local_hostname:
                             return value
                     if server_display:
                         return server_display
@@ -366,12 +366,13 @@ class ClientWindowBase(ClientWidgetBase):
                 return str(value)
 
             def metadata_replace(match):
-                atvar = match.group(0)          # ie: '@title@'
-                var = atvar[1:len(atvar)-1]     # ie: 'title'
+                atvar = match.group(0)  # ie: '@title@'
+                var = atvar[1:len(atvar) - 1]  # ie: 'title'
                 if not var:
                     # atvar = "@@"
                     return "@"
                 return getvar(var)
+
             sub = r"@[\w\-]*@"
             replaced = re.sub(sub, metadata_replace, title)
             metalog("re.sub%s=%s", (sub, metadata_replace, title), replaced)
@@ -381,7 +382,7 @@ class ClientWindowBase(ClientWidgetBase):
             log.estr(e)
             return ""
 
-    def set_metadata(self, metadata:typedict):
+    def set_metadata(self, metadata: typedict):
         metalog("set_metadata(%s)", metadata)
         debug_props = [x for x in PROPERTIES_DEBUG if x in metadata.keys()]
         for x in debug_props:
@@ -436,10 +437,10 @@ class ClientWindowBase(ClientWidgetBase):
 
         if "opacity" in metadata:
             opacity = metadata.intget("opacity", -1)
-            if opacity<0:
+            if opacity < 0:
                 opacity = 1
             else:
-                opacity = min(1, opacity//0xffffffff)
+                opacity = min(1, opacity // 0xffffffff)
             ignorewarnings(self.set_opacity, opacity)
 
         if "has-alpha" in metadata:
@@ -456,7 +457,7 @@ class ClientWindowBase(ClientWidgetBase):
 
         if "maximized" in metadata:
             maximized = metadata.boolget("maximized")
-            if maximized!=self._maximized:
+            if maximized != self._maximized:
                 self._maximized = maximized
                 if maximized:
                     self.maximize()
@@ -465,13 +466,13 @@ class ClientWindowBase(ClientWidgetBase):
 
         if "fullscreen" in metadata:
             fullscreen = metadata.boolget("fullscreen")
-            if self._fullscreen is None or self._fullscreen!=fullscreen:
+            if self._fullscreen is None or self._fullscreen != fullscreen:
                 self._fullscreen = fullscreen
                 self.set_fullscreen(fullscreen)
 
         if "iconic" in metadata:
             iconified = metadata.boolget("iconic")
-            if self._iconified!=iconified:
+            if self._iconified != iconified:
                 self._iconified = iconified
                 if iconified:
                     self.iconify()
@@ -481,7 +482,7 @@ class ClientWindowBase(ClientWidgetBase):
         if "decorations" in metadata:
             decorated = metadata.boolget("decorations", True)
             was_decorated = self.get_decorated()
-            if WIN32 and decorated!=was_decorated:
+            if WIN32 and decorated != was_decorated:
                 log.info("decorations flag toggled, now %s, re-initializing window", decorated)
                 self.idle_add(self._client.reinit_window, self.wid, self)
             else:
@@ -490,25 +491,25 @@ class ClientWindowBase(ClientWidgetBase):
 
         if "above" in metadata:
             above = metadata.boolget("above")
-            if self._above!=above:
+            if self._above != above:
                 self._above = above
                 self.set_keep_above(above)
 
         if "below" in metadata:
             below = metadata.boolget("below")
-            if self._below!=below:
+            if self._below != below:
                 self._below = below
                 self.set_keep_below(below)
 
         if "shaded" in metadata:
             shaded = metadata.boolget("shaded")
-            if self._shaded!=shaded:
+            if self._shaded != shaded:
                 self._shaded = shaded
                 self.set_shaded(shaded)
 
         if "sticky" in metadata:
             sticky = metadata.boolget("sticky")
-            if self._sticky!=sticky:
+            if self._sticky != sticky:
                 self._sticky = sticky
                 if sticky:
                     self.stick()
@@ -517,19 +518,19 @@ class ClientWindowBase(ClientWidgetBase):
 
         if "skip-taskbar" in metadata:
             skip_taskbar = metadata.boolget("skip-taskbar")
-            if self._skip_taskbar!=skip_taskbar:
+            if self._skip_taskbar != skip_taskbar:
                 self._skip_taskbar = skip_taskbar
                 self.set_skip_taskbar_hint(skip_taskbar)
 
         if "skip-pager" in metadata:
             skip_pager = metadata.boolget("skip-pager")
-            if self._skip_pager!=skip_pager:
+            if self._skip_pager != skip_pager:
                 self._skip_pager = skip_pager
                 self.set_skip_pager_hint(skip_pager)
 
         if "opaque-region" in metadata:
             opaque_region = metadata.tupleget("opaque-region", None, 0)
-            if self._opaque_region!=opaque_region:
+            if self._opaque_region != opaque_region:
                 self._opaque_region = opaque_region
                 self.set_opaque_region(opaque_region)
 
@@ -553,7 +554,7 @@ class ClientWindowBase(ClientWidgetBase):
 
         if "x11-property" in metadata:
             attr = metadata.tupleget("x11-property")
-            if len(attr)>=4:
+            if len(attr) >= 4:
                 name, ptype, _, value = attr[:4]
                 self.set_x11_property(name, ptype, value)
 
@@ -561,43 +562,43 @@ class ClientWindowBase(ClientWidgetBase):
             self.content_type = metadata.strget("content-type")
 
     def set_x11_property(self, *x11_property) -> None:
-        pass        # see gtk client window base
+        pass  # see gtk client window base
 
     def set_command(self, command) -> None:
-        pass        # see gtk client window base
+        pass  # see gtk client window base
 
     def set_class_instance(self, wmclass_name, wmclass_class) -> None:
-        pass        # see gtk client window base
+        pass  # see gtk client window base
 
     def set_shape(self, shape) -> None:
         log("set_shape(%s) not implemented by %s", shape, type(self))
 
     def set_bypass_compositor(self, v) -> None:
-        pass        # see gtk client window base
+        pass  # see gtk client window base
 
     def set_strut(self, strut) -> None:
-        pass        # see gtk client window base
+        pass  # see gtk client window base
 
     def set_fullscreen_monitors(self, fsm) -> None:
-        pass        # see gtk client window base
+        pass  # see gtk client window base
 
     def set_shaded(self, shaded) -> None:
-        pass        # see gtk client window base
+        pass  # see gtk client window base
 
     def reset_size_constraints(self) -> None:
         self.set_size_constraints(self.size_constraints, self.max_window_size)
 
-    def set_size_constraints(self, size_constraints:typedict, max_window_size:tuple[int,int]):
+    def set_size_constraints(self, size_constraints: typedict, max_window_size: tuple[int, int]):
         if not SET_SIZE_CONSTRAINTS:
             return
         geomlog("set_size_constraints(%s, %s)", size_constraints, max_window_size)
         hints = typedict()
         client = self._client
         for (a, h1, h2) in (
-            ("maximum-size", "max_width", "max_height"),
-            ("minimum-size", "min_width", "min_height"),
-            ("base-size", "base_width", "base_height"),
-            ("increment", "width_inc", "height_inc"),
+                ("maximum-size", "max_width", "max_height"),
+                ("minimum-size", "min_width", "min_height"),
+                ("base-size", "base_width", "base_height"),
+                ("increment", "width_inc", "height_inc"),
         ):
             v = size_constraints.intpair(a)
             geomlog("intpair(%s)=%s", a, v)
@@ -616,7 +617,8 @@ class ClientWindowBase(ClientWidgetBase):
                     def closetoint(value):
                         # tolerate some rounding error:
                         # (ie: 2:3 scaling may not give an integer without a tiny bit of rounding)
-                        return abs(round(value)-value)<0.00001
+                        return abs(round(value) - value) < 0.00001
+
                     if not closetoint(fsv1) or not closetoint(fsv2):
                         # the scaled value is not close to an int,
                         # so we can't honour it:
@@ -626,13 +628,13 @@ class ClientWindowBase(ClientWidgetBase):
                 hints[h1], hints[h2] = sv1, sv2
         if not OSX:
             for (a, h) in (
-                ("minimum-aspect-ratio", "min_aspect"),
-                ("maximum-aspect-ratio", "max_aspect"),
+                    ("minimum-aspect-ratio", "min_aspect"),
+                    ("maximum-aspect-ratio", "max_aspect"),
             ):
                 v = size_constraints.intpair(a)
                 if v:
                     v1, v2 = v
-                    hints[h] = (v1*self._xscale)/(v2*self._yscale)
+                    hints[h] = (v1 * self._xscale) / (v2 * self._yscale)
         # apply max-size override if needed:
         w, h = max_window_size
         if w > 0 and h > 0 and not self._fullscreen:
@@ -668,7 +670,7 @@ class ClientWindowBase(ClientWidgetBase):
                 hints.pop(x, None)
             # bug 2214: GTK3 on win32 gets confused if we specify a large max-size,
             # and it will mess up maximizing the window
-            if not WIN32 or (maxw<32000 or maxh<32000):
+            if not WIN32 or (maxw < 32000 or maxh < 32000):
                 hints["max_width"] = maxw
                 hints["max_height"] = maxh
         try:
@@ -680,10 +682,10 @@ class ClientWindowBase(ClientWidgetBase):
             geomlog("set_size_constraints%s", (size_constraints, max_window_size), exc_info=True)
             geomlog.error("Error setting window hints:")
             geomlog.estr(e)
-            for k,v in hints.items():
+            for k, v in hints.items():
                 geomlog.error("  %s=%s", bytestostr(k), v)
             geomlog.error(" from size constraints:")
-            for k,v in size_constraints.items():
+            for k, v in size_constraints.items():
                 geomlog.error("  %s=%s", k, v)
         self.window_gravity = OVERRIDE_GRAVITY or size_constraints.intget("gravity", DEFAULT_GRAVITY)
         b = self._backing
@@ -691,29 +693,29 @@ class ClientWindowBase(ClientWidgetBase):
             b.gravity = self.window_gravity
 
     def set_window_type(self, window_types) -> None:
-        pass        # see gtk client window base
+        pass  # see gtk client window base
 
     def set_workspace(self, workspace) -> None:
-        pass        # see gtk client window base
+        pass  # see gtk client window base
 
     def set_fullscreen(self, fullscreen) -> None:
-        pass        # see gtk client window base
+        pass  # see gtk client window base
 
     def set_xid(self, xid) -> None:
-        pass        # see gtk client window base
+        pass  # see gtk client window base
 
     def toggle_debug(self, *_args) -> None:
         b = self._backing
         log.info("toggling debug on backing %s for window %i", b, self.wid)
         if not b:
             return
-        if b.paint_box_line_width>0:
+        if b.paint_box_line_width > 0:
             b.paint_box_line_width = 0
         else:
             b.paint_box_line_width = b.default_paint_box_line_width
 
     def increase_quality(self, *_args) -> None:
-        if self._client.quality>0:
+        if self._client.quality > 0:
             # change fixed quality:
             self._client.quality = min(100, self._client.quality + 10)
             self._client.send_quality()
@@ -724,7 +726,7 @@ class ClientWindowBase(ClientWidgetBase):
             log("new min-quality=%s", self._client.min_quality)
 
     def decrease_quality(self, *_args) -> None:
-        if self._client.quality>0:
+        if self._client.quality > 0:
             # change fixed quality:
             self._client.quality = max(1, self._client.quality - 10)
             self._client.send_quality()
@@ -735,7 +737,7 @@ class ClientWindowBase(ClientWidgetBase):
             log("new min-quality=%s", self._client.min_quality)
 
     def increase_speed(self, *_args) -> None:
-        if self._client.speed>0:
+        if self._client.speed > 0:
             # change fixed speed:
             self._client.speed = min(100, self._client.speed + 10)
             self._client.send_speed()
@@ -746,7 +748,7 @@ class ClientWindowBase(ClientWidgetBase):
             log("new min-speed=%s", self._client.min_speed)
 
     def decrease_speed(self, *_args) -> None:
-        if self._client.speed>0:
+        if self._client.speed > 0:
             # change fixed speed:
             self._client.speed = max(1, self._client.speed - 10)
             self._client.send_speed()
@@ -787,8 +789,8 @@ class ClientWindowBase(ClientWidgetBase):
         yscale = self._yscale
         w, h = self._size
         self._xscale = self._yscale = scaling
-        nw = round(w/xscale*self._xscale)
-        nh = round(h/yscale*self._yscale)
+        nw = round(w / xscale * self._xscale)
+        nh = round(h / yscale * self._yscale)
         self.reset_size_constraints()
         self.resize(nw, nh)
 
@@ -829,9 +831,9 @@ class ClientWindowBase(ClientWidgetBase):
         if backing.draw_needs_refresh:
             if not backing.repaint_all:
                 self.pending_refresh.append((x, y, width, height))
-            if options.intget("flush", 0)==0 or FORCE_FLUSH:
+            if options.intget("flush", 0) == 0 or FORCE_FLUSH:
                 callbacks.append(self.after_draw_refresh)
-        if coding=="void":
+        if coding == "void":
             fire_paint_callbacks(callbacks)
             return
         backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
@@ -841,7 +843,7 @@ class ClientWindowBase(ClientWidgetBase):
         plog(f"after_draw_refresh({success}, {message!r}) pending_refresh={self.pending_refresh}, {backing=}")
         if not backing:
             return
-        if backing.repaint_all or self._xscale!=1 or self._yscale!=1 or is_Wayland():
+        if backing.repaint_all or self._xscale != 1 or self._yscale != 1 or is_Wayland():
             # easy: just repaint the whole window:
             rw, rh = self.get_size()
             self.idle_add(self.repaint, 0, 0, rw, rh)
@@ -952,7 +954,7 @@ class ClientWindowBase(ClientWidgetBase):
         except AttributeError:
             return ""
 
-    def _button_action(self, button: int, event, depressed:bool, props=None) -> None:
+    def _button_action(self, button: int, event, depressed: bool, props=None) -> None:
         if self._client.readonly or self._client.server_readonly or not self._client.server_pointer:
             return
         pointer_data, modifiers, buttons = self._pointer_modifiers(event)
@@ -967,6 +969,7 @@ class ClientWindowBase(ClientWidgetBase):
             sprops = props or {}
             sprops.update(kwargs)
             self._client.send_button(device_id, wid, button, pressed, pointer_data, modifiers, buttons, sprops)
+
         pressed_state = self.button_state.get(button, False)
         if SIMULATE_MOUSE_DOWN and pressed_state is False and depressed is False:
             mouselog("button action: simulating missing mouse-down event for window %s before mouse-up", wid)

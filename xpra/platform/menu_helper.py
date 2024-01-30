@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
+
 from xpra.platform import platform_import
 
 
@@ -32,7 +33,7 @@ def main():
     from xpra.util.str_fn import print_nested_dict
     from xpra.log import Logger, add_debug_category
     log = Logger("exec", "menu")
-    from xpra.platform import program_context   # pylint: disable=import-outside-toplevel
+    from xpra.platform import program_context  # pylint: disable=import-outside-toplevel
     with program_context("Menu-Helper", "Menu Helper"):
         for x in list(sys.argv):
             if x in ("-v", "--verbose"):
@@ -42,7 +43,8 @@ def main():
 
         def icon_fmt(icondata):
             return "%i bytes" % len(icondata)
-        if len(sys.argv)>1:
+
+        if len(sys.argv) > 1:
             for x in sys.argv[1:]:
                 if os.path.isabs(x):
                     from xpra.codecs.icon_util import load_icon_from_file
@@ -53,15 +55,15 @@ def main():
             if menu:
                 print()
                 print("application menu:")
-                print_nested_dict(menu, vformat={"IconData" : icon_fmt})
+                print_nested_dict(menu, vformat={"IconData": icon_fmt})
             else:
                 print("no application menu data found")
-            #try desktop sessions:
+            # try desktop sessions:
             sessions = load_desktop_sessions()
             if sessions:
                 print()
                 print("session menu:")
-                print_nested_dict(sessions, vformat={"IconData" : icon_fmt})
+                print_nested_dict(sessions, vformat={"IconData": icon_fmt})
             else:
                 print("no session menu data found")
     return 0

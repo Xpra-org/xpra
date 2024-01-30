@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -24,34 +24,33 @@ class PlanarFormat(IntEnum):
 
 
 class ImageWrapper:
-
-    PACKED : PlanarFormat = PlanarFormat.PACKED
-    PLANAR_2 : PlanarFormat = PlanarFormat.PLANAR_2
-    PLANAR_3 : PlanarFormat = PlanarFormat.PLANAR_3
-    PLANAR_4 : PlanarFormat = PlanarFormat.PLANAR_4
+    PACKED: PlanarFormat = PlanarFormat.PACKED
+    PLANAR_2: PlanarFormat = PlanarFormat.PLANAR_2
+    PLANAR_3: PlanarFormat = PlanarFormat.PLANAR_3
+    PLANAR_4: PlanarFormat = PlanarFormat.PLANAR_4
     PLANE_OPTIONS: tuple[PlanarFormat, PlanarFormat, PlanarFormat, PlanarFormat] = (
         PACKED, PLANAR_2, PLANAR_3, PLANAR_4,
     )
 
-    def __init__(self, x : int, y : int, width : int, height : int, pixels, pixel_format, depth : int, rowstride,
-                 bytesperpixel : int=4, planes : PlanarFormat=PACKED, thread_safe : bool=True, palette=None):
-        self.x : int = x
-        self.y : int  = y
-        self.target_x : int  = x
-        self.target_y : int  = y
-        self.width : int  = width
-        self.height : int  = height
+    def __init__(self, x: int, y: int, width: int, height: int, pixels, pixel_format, depth: int, rowstride,
+                 bytesperpixel: int = 4, planes: PlanarFormat = PACKED, thread_safe: bool = True, palette=None):
+        self.x: int = x
+        self.y: int = y
+        self.target_x: int = x
+        self.target_y: int = y
+        self.width: int = width
+        self.height: int = height
         self.pixels = pixels
         self.pixel_format: str = pixel_format
-        self.depth : int  = depth
+        self.depth: int = depth
         self.rowstride = rowstride
-        self.bytesperpixel : int = bytesperpixel
-        self.planes : PlanarFormat = planes
-        self.thread_safe : bool = thread_safe
-        self.freed : bool = False
-        self.timestamp : int = int(monotonic()*1000)
+        self.bytesperpixel: int = bytesperpixel
+        self.planes: PlanarFormat = planes
+        self.thread_safe: bool = thread_safe
+        self.freed: bool = False
+        self.timestamp: int = int(monotonic() * 1000)
         self.palette = palette
-        if width<=0 or height<=0:
+        if width <= 0 or height <= 0:
             raise ValueError(f"invalid geometry {x},{y},{width},{height}")
 
     def _cn(self):
@@ -63,7 +62,7 @@ class ImageWrapper:
     def __repr__(self) -> str:
         return "%s(%s:%s:%s)" % (self._cn(), self.pixel_format, self.get_geometry(), self.planes)
 
-    def get_geometry(self) -> tuple[int,int,int,int,int]:
+    def get_geometry(self) -> tuple[int, int, int, int, int]:
         return self.x, self.y, self.width, self.height, self.depth
 
     def get_x(self) -> int:
@@ -78,10 +77,10 @@ class ImageWrapper:
     def get_target_y(self) -> int:
         return self.target_y
 
-    def set_target_x(self, target_x : int):
+    def set_target_x(self, target_x: int):
         self.target_x = target_x
 
-    def set_target_y(self, target_y : int):
+    def set_target_y(self, target_y: int):
         self.target_y = target_y
 
     def get_width(self) -> int:
@@ -131,13 +130,13 @@ class ImageWrapper:
         """ time in millis """
         return self.timestamp
 
-    def set_timestamp(self, timestamp : int):
+    def set_timestamp(self, timestamp: int):
         self.timestamp = timestamp
 
-    def set_planes(self, planes : PlanarFormat):
+    def set_planes(self, planes: PlanarFormat):
         self.planes = planes
 
-    def set_rowstride(self, rowstride : int):
+    def set_rowstride(self, rowstride: int):
         self.rowstride = rowstride
 
     def set_pixel_format(self, pixel_format):
@@ -158,15 +157,15 @@ class ImageWrapper:
         return 0
 
     def may_restride(self) -> bool:
-        newstride = roundup(self.width*self.bytesperpixel, 4)
-        if self.rowstride>newstride:
+        newstride = roundup(self.width * self.bytesperpixel, 4)
+        if self.rowstride > newstride:
             return self.restride(newstride)
         return False
 
-    def restride(self, rowstride : int) -> bool:
+    def restride(self, rowstride: int) -> bool:
         if self.freed:
             raise RuntimeError("image wrapper has already been freed")
-        if self.planes>0:
+        if self.planes > 0:
             # not supported yet for planar images
             return False
         pixels = self.pixels
@@ -175,18 +174,18 @@ class ImageWrapper:
         pos = 0
         lines = []
         for _ in range(self.height):
-            lines.append(memoryview_to_bytes(pixels[pos:pos+rowstride]))
+            lines.append(memoryview_to_bytes(pixels[pos:pos + rowstride]))
             pos += oldstride
-        if self.height>0 and oldstride<rowstride:
+        if self.height > 0 and oldstride < rowstride:
             # the last few lines may need padding if the new rowstride is bigger
             # (usually just the last line)
             # we do this here to avoid slowing down the main loop above
             # as this should be a rarer case
             for h in range(self.height):
-                i = -(1+h)
+                i = -(1 + h)
                 line = lines[i]
-                if len(line)<rowstride:
-                    lines[i] = line + b"\0"*(rowstride-len(line))
+                if len(line) < rowstride:
+                    lines[i] = line + b"\0" * (rowstride - len(line))
                 else:
                     break
         self.rowstride = rowstride
@@ -206,7 +205,7 @@ class ImageWrapper:
         planes = self.planes
         if not pixels:
             raise ValueError("no pixel data to clone")
-        if planes<0:
+        if planes < 0:
             raise ValueError(f"invalid number of planes {planes}")
         if planes == 0:
             # no planes, simple buffer:
@@ -218,32 +217,32 @@ class ImageWrapper:
             # could be a race since this can run threaded
             self.free()
 
-    def get_sub_image(self, x : int, y : int, w : int, h : int):
+    def get_sub_image(self, x: int, y: int, w: int, h: int):
         # raise NotImplementedError("no sub-images for %s" % type(self))
-        if w<=0 or h<=0:
+        if w <= 0 or h <= 0:
             raise ValueError(f"invalid sub-image size: {w}x{h}")
-        if x+w>self.width:
+        if x + w > self.width:
             raise ValueError(f"invalid sub-image width: {x}+{w} greater than image width {self.width}")
-        if y+h>self.height:
+        if y + h > self.height:
             raise ValueError(f"invalid sub-image height: {y}+{h} greater than image height {self.height}")
-        if self.planes!=ImageWrapper.PACKED:
+        if self.planes != ImageWrapper.PACKED:
             raise NotImplementedError("cannot sub-divide a planar image!")
-        if x==0 and y==0 and w==self.width and h==self.height:
+        if x == 0 and y == 0 and w == self.width and h == self.height:
             # same dimensions, use the same wrapper
             return self
         # copy to local variables:
         pixels = self.pixels
         oldstride = self.rowstride
-        pos = y*oldstride + x*self.bytesperpixel
-        newstride = w*self.bytesperpixel
+        pos = y * oldstride + x * self.bytesperpixel
+        newstride = w * self.bytesperpixel
         lines = []
         for _ in range(h):
-            lines.append(memoryview_to_bytes(pixels[pos:pos+newstride]))
+            lines.append(memoryview_to_bytes(pixels[pos:pos + newstride]))
             pos += oldstride
-        image = ImageWrapper(self.x+x, self.y+y, w, h, b"".join(lines), self.pixel_format, self.depth, newstride,
+        image = ImageWrapper(self.x + x, self.y + y, w, h, b"".join(lines), self.pixel_format, self.depth, newstride,
                              planes=self.planes, thread_safe=True, palette=self.palette)
-        image.set_target_x(self.target_x+x)
-        image.set_target_y(self.target_y+y)
+        image.set_target_x(self.target_x + x)
+        image.set_target_y(self.target_y + y)
         return image
 
     def __del__(self) -> None:

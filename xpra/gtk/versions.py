@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2009-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2009-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from typing import Any
 
-
-GTK_VERSION_INFO : dict[str, dict[str, tuple]] = {}
+GTK_VERSION_INFO: dict[str, dict[str, tuple]] = {}
 
 
 def get_gtk_version_info() -> dict[str, Any]:
@@ -32,18 +31,19 @@ def get_gtk_version_info() -> dict[str, Any]:
     # this isn't the actual version, (only shows as "3.0")
     # but still better than nothing:
     import gi
-    V("gi",         gi,         "__version__")
+    V("gi", gi, "__version__")
 
     def giv(k: str, gimod: str, attr_name: str):
         mod = gi_import(gimod)
         if mod:
             V(k, mod, attr_name)
-    giv("gobject",    "GObject",    "pygobject_version")
-    giv("gtk",        "Gtk",        "_version")
-    giv("gdk",        "Gdk",        "_version")
-    giv("gobject",    "GObject",    "_version")
-    giv("pixbuf",     "GdkPixbuf",     "_version")
-    giv("pixbuf",     "GdkPixbuf",     "PIXBUF_VERSION")
+
+    giv("gobject", "GObject", "pygobject_version")
+    giv("gtk", "Gtk", "_version")
+    giv("gdk", "Gdk", "_version")
+    giv("gobject", "GObject", "_version")
+    giv("pixbuf", "GdkPixbuf", "_version")
+    giv("pixbuf", "GdkPixbuf", "PIXBUF_VERSION")
 
     def MAJORMICROMINOR(name, module):
         try:
@@ -51,7 +51,8 @@ def get_gtk_version_info() -> dict[str, Any]:
             av(name, ".".join(str(x) for x in v))
         except Exception:
             pass
-    MAJORMICROMINOR("gtk",  gi_import("Gtk"))
+
+    MAJORMICROMINOR("gtk", gi_import("Gtk"))
     MAJORMICROMINOR("glib", gi_import("GLib"))
     import cairo
     av("cairo", parse_version(cairo.version_info))  # pylint: disable=no-member

@@ -45,7 +45,7 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
 
     def setup_connection(self, conn):
         protocol = super().setup_connection(conn)
-        protocol._log_stats  = False
+        protocol._log_stats = False
         GLib.idle_add(self.send_hello)
         return protocol
 
@@ -56,17 +56,18 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
     def init_packet_handlers(self) -> None:
         XpraClientBase.init_packet_handlers(self)
 
-        def noop_handler(packet: PacketType) -> None:    # pragma: no cover
+        def noop_handler(packet: PacketType) -> None:  # pragma: no cover
             log("ignoring packet: %s", packet)
+
         # ignore the following packet types without error:
         # (newer servers should avoid sending us any of those)
         for t in (
-            "new-window", "new-override-redirect",
-            "draw", "cursor", "bell",
-            "notify_show", "notify_close",
-            "ping", "ping_echo",
-            "window-metadata", "configure-override-redirect",
-            "lost-window",
+                "new-window", "new-override-redirect",
+                "draw", "cursor", "bell",
+                "notify_show", "notify_close",
+                "ping", "ping_echo",
+                "window-metadata", "configure-override-redirect",
+                "lost-window",
         ):
             self.add_packet_handler(t, noop_handler, False)
 
@@ -79,12 +80,12 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
         self.glib_mainloop = GLib.MainLoop()
         self.glib_mainloop.run()
 
-    def make_hello(self) -> dict[str,Any]:
+    def make_hello(self) -> dict[str, Any]:
         capabilities = XpraClientBase.make_hello(self)
         capabilities["keyboard"] = False
         return capabilities
 
-    def quit(self, exit_code: int | ExitCode=0) -> None:
+    def quit(self, exit_code: int | ExitCode = 0) -> None:
         log("quit(%s) current exit_code=%s", exit_code, self.exit_code)
         if self.exit_code is None:
             self.exit_code = exit_code

@@ -63,7 +63,7 @@ WM_CLASS_CLOSEEXIT: list[str] = os.environ.get("XPRA_WM_CLASS_CLOSEEXIT", "Xephy
 TITLE_CLOSEEXIT: list[str] = os.environ.get("XPRA_TITLE_CLOSEEXIT", "Xnest").split(",")
 
 OR_FORCE_GRAB_STR: str = os.environ.get("XPRA_OR_FORCE_GRAB", "DIALOG:sun-awt-X11")
-OR_FORCE_GRAB : dict[str, list[str]] = {}
+OR_FORCE_GRAB: dict[str, list[str]] = {}
 for s in OR_FORCE_GRAB_STR.split(","):
     if not s:
         continue
@@ -73,15 +73,15 @@ for s in OR_FORCE_GRAB_STR.split(","):
     else:
         OR_FORCE_GRAB.setdefault(parts[0], []).append(parts[1])
 
-SKIP_DUPLICATE_BUTTON_EVENTS : bool = envbool("XPRA_SKIP_DUPLICATE_BUTTON_EVENTS", True)
+SKIP_DUPLICATE_BUTTON_EVENTS: bool = envbool("XPRA_SKIP_DUPLICATE_BUTTON_EVENTS", True)
 
-DYNAMIC_TRAY_ICON : bool = envbool("XPRA_DYNAMIC_TRAY_ICON", not OSX and not is_Ubuntu())
+DYNAMIC_TRAY_ICON: bool = envbool("XPRA_DYNAMIC_TRAY_ICON", not OSX and not is_Ubuntu())
 ICON_OVERLAY: int = envint("XPRA_ICON_OVERLAY", 50)
 ICON_SHRINKAGE: int = envint("XPRA_ICON_SHRINKAGE", 75)
-SAVE_WINDOW_ICONS : bool = envbool("XPRA_SAVE_WINDOW_ICONS", False)
-SAVE_CURSORS : bool = envbool("XPRA_SAVE_CURSORS", False)
+SAVE_WINDOW_ICONS: bool = envbool("XPRA_SAVE_WINDOW_ICONS", False)
+SAVE_CURSORS: bool = envbool("XPRA_SAVE_CURSORS", False)
 
-DRAW_LOG_FMT = "process_draw: %7i %8s for window %3i, sequence %8i, %4ix%-4i at %4i,%-4i"\
+DRAW_LOG_FMT = "process_draw: %7i %8s for window %3i, sequence %8i, %4ix%-4i at %4i,%-4i" \
                " using %6s encoding with options=%s"
 
 
@@ -93,7 +93,7 @@ def find_signal_watcher_command() -> str:
         return cmd
     if cmd:
         for prefix in ("/usr", get_resources_dir()):
-            pcmd = prefix+"/libexec/xpra/"+cmd
+            pcmd = prefix + "/libexec/xpra/" + cmd
             if os.path.exists(pcmd):
                 return pcmd
     log.warn("Warning: %r not found", cmd)
@@ -102,12 +102,12 @@ def find_signal_watcher_command() -> str:
 SIGNAL_WATCHER_COMMAND = find_signal_watcher_command()
 
 FAKE_SUSPEND_RESUME: int = envint("XPRA_FAKE_SUSPEND_RESUME", 0)
-MOUSE_SCROLL_SQRT_SCALE : bool = envbool("XPRA_MOUSE_SCROLL_SQRT_SCALE", OSX)
+MOUSE_SCROLL_SQRT_SCALE: bool = envbool("XPRA_MOUSE_SCROLL_SQRT_SCALE", OSX)
 MOUSE_SCROLL_MULTIPLIER: int = envint("XPRA_MOUSE_SCROLL_MULTIPLIER", 100)
 
 SHOW_DELAY: int = envint("XPRA_SHOW_DELAY", -1)
 
-DRAW_TYPES : dict[type, str] = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
+DRAW_TYPES: dict[type, str] = {bytes: "bytes", str: "bytes", tuple: "arrays", list: "arrays"}
 
 
 def kill_signalwatcher(proc) -> None:
@@ -174,8 +174,8 @@ class WindowClient(StubClientMixin):
 
     def __init__(self):
         super().__init__()
-        self._window_to_id : dict[Any, int] = {}
-        self._id_to_window : dict[int, Any] = {}
+        self._window_to_id: dict[Any, int] = {}
+        self._id_to_window: dict[int, Any] = {}
 
         self.auto_refresh_delay: int = -1
         self.min_window_size: tuple[int, int] = (0, 0)
@@ -183,52 +183,52 @@ class WindowClient(StubClientMixin):
 
         # draw thread:
         self._draw_queue = SimpleQueue()
-        self._draw_thread : Thread | None = None
-        self._draw_counter : int = 0
+        self._draw_thread: Thread | None = None
+        self._draw_counter: int = 0
 
         # statistics and server info:
-        self.pixel_counter : deque = deque(maxlen=1000)
+        self.pixel_counter: deque = deque(maxlen=1000)
 
-        self.readonly : bool = False
-        self.windows_enabled : bool = True
-        self.pixel_depth : int = 0
+        self.readonly: bool = False
+        self.windows_enabled: bool = True
+        self.pixel_depth: int = 0
 
-        self.server_window_frame_extents : bool = False
-        self.server_is_desktop : bool = False
+        self.server_window_frame_extents: bool = False
+        self.server_is_desktop: bool = False
         self.server_window_states: tuple[str, ...] = ()
         self.server_window_signals: tuple[str, ...] = ()
 
         self.server_input_devices = None
-        self.server_precise_wheel : bool = False
+        self.server_precise_wheel: bool = False
 
         self.input_devices = "auto"
         self.border_str = "no"
 
         self.overlay_image = None
 
-        self.server_cursors : bool = False
-        self.client_supports_system_tray : bool = False
-        self.client_supports_cursors : bool = False
-        self.client_supports_bell : bool = False
-        self.cursors_enabled : bool = False
+        self.server_cursors: bool = False
+        self.client_supports_system_tray: bool = False
+        self.client_supports_cursors: bool = False
+        self.client_supports_bell: bool = False
+        self.cursors_enabled: bool = False
         self.default_cursor_data = None
-        self.server_bell : bool = False
-        self.bell_enabled : bool = False
+        self.server_bell: bool = False
+        self.bell_enabled: bool = False
 
         self.border = None
         self.window_close_action: str = "forward"
-        self.modal_windows : bool = True
+        self.modal_windows: bool = True
 
         self._pid_to_signalwatcher = {}
         self._signalwatcher_to_wids = {}
 
-        self.wheel_smooth : bool = SMOOTH_SCROLL
+        self.wheel_smooth: bool = SMOOTH_SCROLL
         self.wheel_map = {}
         self.wheel_deltax: float = 0
         self.wheel_deltay: float = 0
 
         # state:
-        self.lost_focus_timer : int = 0
+        self.lost_focus_timer: int = 0
         self._focused = None
         self._window_with_grab = None
         self.pointer_grabbed = None
@@ -280,7 +280,7 @@ class WindowClient(StubClientMixin):
             Z1 = 8
             invertall = len(mw) == 1 and mw[0] in ("invert", "invertall")
             for i in range(20):
-                btn = 4+i*2
+                btn = 4 + i * 2
                 invert = any((
                     invertall,
                     btn == UP and "inverty" in mw,
@@ -289,13 +289,13 @@ class WindowClient(StubClientMixin):
                 ))
                 if not invert:
                     self.wheel_map[btn] = btn
-                    self.wheel_map[btn+1] = btn+1
+                    self.wheel_map[btn + 1] = btn + 1
                 else:
-                    self.wheel_map[btn+1] = btn
-                    self.wheel_map[btn] = btn+1
+                    self.wheel_map[btn + 1] = btn
+                    self.wheel_map[btn] = btn + 1
         mouselog("wheel_map(%s)=%s, wheel_smooth=%s", mw, self.wheel_map, self.wheel_smooth)
 
-        if 0<ICON_OVERLAY<=100:
+        if 0 < ICON_OVERLAY <= 100:
             icon_filename = opts.tray_icon
             if icon_filename and not os.path.isabs(icon_filename):
                 icon_filename = get_icon_filename(icon_filename)
@@ -324,8 +324,8 @@ class WindowClient(StubClientMixin):
         # we decode pixel data in this thread
         self._draw_thread = start_thread(self._draw_thread_loop, "draw")
         if FAKE_SUSPEND_RESUME:
-            GLib.timeout_add(FAKE_SUSPEND_RESUME*1000, self.suspend)
-            GLib.timeout_add(FAKE_SUSPEND_RESUME*1000*2, self.resume)
+            GLib.timeout_add(FAKE_SUSPEND_RESUME * 1000, self.suspend)
+            GLib.timeout_add(FAKE_SUSPEND_RESUME * 1000 * 2, self.resume)
 
     def cleanup(self) -> None:
         log("WindowClient.cleanup()")
@@ -359,71 +359,71 @@ class WindowClient(StubClientMixin):
         raise NotImplementedError()
 
     def get_info(self) -> dict[str, Any]:
-        info : dict[Any, Any] = {
-            "count"         : len(self._window_to_id),
-            "min-size"      : self.min_window_size,
-            "max-size"      : self.max_window_size,
-            "draw-counter"  : self._draw_counter,
-            "read-only"     : self.readonly,
-            "wheel" : {
-                "delta-x"   : int(self.wheel_deltax*1000),
-                "delta-y"   : int(self.wheel_deltay*1000),
+        info: dict[Any, Any] = {
+            "count": len(self._window_to_id),
+            "min-size": self.min_window_size,
+            "max-size": self.max_window_size,
+            "draw-counter": self._draw_counter,
+            "read-only": self.readonly,
+            "wheel": {
+                "delta-x": int(self.wheel_deltax * 1000),
+                "delta-y": int(self.wheel_deltay * 1000),
             },
-            "focused"       : self._focused or 0,
-            "grabbed"       : self._window_with_grab or 0,
-            "pointer-grab"  : self.pointer_grabbed or 0,
-            "buttons"       : self._button_state,
+            "focused": self._focused or 0,
+            "grabbed": self._window_with_grab or 0,
+            "pointer-grab": self.pointer_grabbed or 0,
+            "buttons": self._button_state,
         }
         for wid, window in tuple(self._id_to_window.items()):
             info[wid] = window.get_info()
-        winfo : dict[str, Any] = {"windows" : info}
+        winfo: dict[str, Any] = {"windows": info}
         return winfo
 
     ######################################################################
     # hello:
-    def get_caps(self) -> dict[str,Any]:
+    def get_caps(self) -> dict[str, Any]:
         # FIXME: the messy bits without proper namespace:
         caps = {
             # generic server flags:
             # mouse and cursors:
-            "mouse" : {
-                "show"                : True,       # assumed available in v6
-                "initial-position"    : self.get_mouse_position(),
+            "mouse": {
+                "show": True,  # assumed available in v6
+                "initial-position": self.get_mouse_position(),
             },
-            "named_cursors"             : False,
-            "cursors"                   : self.client_supports_cursors,
-            "double_click" : {
-                "time"         : get_double_click_time(),
-                "distance"     : get_double_click_distance(),
+            "named_cursors": False,
+            "cursors": self.client_supports_cursors,
+            "double_click": {
+                "time": get_double_click_time(),
+                "distance": get_double_click_distance(),
             },
             # features:
-            "bell"                      : self.client_supports_bell,
-            "windows"                   : self.windows_enabled,
-            "auto_refresh_delay"        : int(self.auto_refresh_delay*1000),
+            "bell": self.client_supports_bell,
+            "windows": self.windows_enabled,
+            "auto_refresh_delay": int(self.auto_refresh_delay * 1000),
             # system tray forwarding:
-            "system_tray"               : self.client_supports_system_tray,
+            "system_tray": self.client_supports_system_tray,
             "window": self.get_window_caps(),
             "encoding": {
-                "eos"                       : True,
+                "eos": True,
             },
         }
         return caps
 
-    def get_window_caps(self) -> dict[str,Any]:
+    def get_window_caps(self) -> dict[str, Any]:
         return {
             # implemented in the gtk client:
-            "min-size"                  : self.min_window_size,
-            "max-size"                  : self.max_window_size,
-            "restack"                   : True,
-            "pre-map"                   : True,
+            "min-size": self.min_window_size,
+            "max-size": self.max_window_size,
+            "restack": True,
+            "pre-map": True,
         }
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_window_frame_extents = c.boolget("window.frame-extents")
-        self.server_cursors = c.boolget("cursors", True)    # added in 0.5, default to True!
+        self.server_cursors = c.boolget("cursors", True)  # added in 0.5, default to True!
         self.cursors_enabled = self.server_cursors and self.client_supports_cursors
         self.default_cursor_data = c.tupleget("cursor.default", None)
-        self.server_bell = c.boolget("bell")          # added in 0.5, default to True!
+        self.server_bell = c.boolget("bell")  # added in 0.5, default to True!
         self.bell_enabled = self.server_bell and self.client_supports_bell
         if not c.boolget("windows", True):
             log.warn("Warning: window forwarding is not enabled on this server")
@@ -452,7 +452,7 @@ class WindowClient(StubClientMixin):
         mouselog("process_pointer_position: %i,%i (%i,%i relative to wid %i) - current position is %i,%i",
                  x, y, rx, ry, wid, cx, cy)
         size = 10
-        for i,w in self._id_to_window.items():
+        for i, w in self._id_to_window.items():
             # not all window implementations have this method:
             # (but GLClientWindow does)
             show_pointer_overlay = getattr(w, "show_pointer_overlay", None)
@@ -470,7 +470,7 @@ class WindowClient(StubClientMixin):
                  (device_id, wid, button, distance, pointer, props), self.server_precise_wheel, modifiers, pointer)
         if self.server_precise_wheel:
             # send the exact value multiplied by 1000 (as an int)
-            idist = round(distance*1000)
+            idist = round(distance * 1000)
             if abs(idist) > 0:
                 packet = ["wheel-motion", wid,
                           button, idist,
@@ -481,7 +481,7 @@ class WindowClient(StubClientMixin):
         # server cannot handle precise wheel,
         # so we have to use discrete events,
         # and send a click for each step:
-        scaled_distance = abs(distance*MOUSE_SCROLL_MULTIPLIER/100)
+        scaled_distance = abs(distance * MOUSE_SCROLL_MULTIPLIER / 100)
         if MOUSE_SCROLL_SQRT_SCALE:
             scaled_distance = math.sqrt(scaled_distance)
         steps = round(scaled_distance)
@@ -491,8 +491,8 @@ class WindowClient(StubClientMixin):
         # return remainder:
         scaled_remainder: float = steps
         if MOUSE_SCROLL_SQRT_SCALE:
-            scaled_remainder = steps**2
-        scaled_remainder = scaled_remainder*(100/float(MOUSE_SCROLL_MULTIPLIER))
+            scaled_remainder = steps ** 2
+        scaled_remainder = scaled_remainder * (100 / float(MOUSE_SCROLL_MULTIPLIER))
         remain_distance = float(scaled_remainder)
         signed_remain_distance = remain_distance * (-1 if distance < 0 else 1)
         return float(distance) - signed_remain_distance
@@ -503,11 +503,11 @@ class WindowClient(StubClientMixin):
         # accumulate deltas:
         self.wheel_deltax += deltax
         self.wheel_deltay += deltay
-        button = self.wheel_map.get(6+int(self.wheel_deltax>0), 0)            # RIGHT=7, LEFT=6
-        if button>0:
+        button = self.wheel_map.get(6 + int(self.wheel_deltax > 0), 0)  # RIGHT=7, LEFT=6
+        if button > 0:
             self.wheel_deltax = self.send_wheel_delta(device_id, wid, button, self.wheel_deltax, pointer, props)
-        button = self.wheel_map.get(5-int(self.wheel_deltay>0), 0)            # UP=4, DOWN=5
-        if button>0:
+        button = self.wheel_map.get(5 - int(self.wheel_deltay > 0), 0)  # UP=4, DOWN=5
+        if button > 0:
             self.wheel_deltay = self.send_wheel_delta(device_id, wid, button, self.wheel_deltay, pointer, props)
         mouselog("wheel_event%s new deltas=%s,%s",
                  (device_id, wid, deltax, deltay), self.wheel_deltax, self.wheel_deltay)
@@ -535,9 +535,9 @@ class WindowClient(StubClientMixin):
             if modifiers is not None:
                 props["modifiers"] = modifiers
             props["buttons"] = server_buttons
-            if server_button!=button:
+            if server_button != button:
                 props["raw-button"] = button
-            if server_buttons!=buttons:
+            if server_buttons != buttons:
                 props["raw-buttons"] = buttons
             seq = self.next_pointer_sequence(device_id)
             packet = ["pointer-button", device_id, seq, wid, server_button, pressed, pointer, props]
@@ -569,7 +569,7 @@ class WindowClient(StubClientMixin):
             new_cursor = packet[1]
             setdefault = False
         else:
-            if len(packet)<9:
+            if len(packet) < 9:
                 raise ValueError(f"invalid cursor packet: only {len(packet)} items")
             # trim packet-type:
             new_cursor = list(packet[1:])
@@ -584,7 +584,7 @@ class WindowClient(StubClientMixin):
                     serial = new_cursor[7]
                     with open(f"raw-cursor-{serial:x}.png", "wb") as f:
                         f.write(pixels)
-                from xpra.codecs.pillow.decoder import open_only   # pylint: disable=import-outside-toplevel
+                from xpra.codecs.pillow.decoder import open_only  # pylint: disable=import-outside-toplevel
                 img = open_only(pixels, ("png",))
                 new_cursor[8] = img.tobytes("raw", "BGRA")
                 cursorlog("used PIL to convert png cursor to raw")
@@ -614,7 +614,7 @@ class WindowClient(StubClientMixin):
         w = max(1, self.sx(w))
         h = max(1, self.sy(h))
         metadata = typedict()
-        if len(packet)>=5:
+        if len(packet) >= 5:
             metadata = typedict(packet[4])
         traylog("tray %i metadata=%s", wid, metadata)
         assert wid not in self._id_to_window, "we already have a window %s: %s" % (wid, self._id_to_window.get(wid))
@@ -639,6 +639,7 @@ class WindowClient(StubClientMixin):
 
     def setup_system_tray(self, client, app_id, wid, w, h, metadata):
         tray_widget = None
+
         # this is a tray forwarded for a remote application
 
         def tray_click(button, pressed, event_time=0):
@@ -693,7 +694,7 @@ class WindowClient(StubClientMixin):
         mmap = getattr(self, "mmap", None)
         return ClientTray(client, wid, w, h, metadata, tray_widget, self.mmap_enabled, mmap)
 
-    def get_tray_window(self, app_name:str, hints):
+    def get_tray_window(self, app_name: str, hints):
         # try to identify the application tray that generated this notification,
         # so we can show it as coming from the correct systray icon
         # on platforms that support it (ie: win32)
@@ -707,7 +708,7 @@ class WindowClient(StubClientMixin):
                 if pid:
                     for tray in trays:
                         metadata: typedict = getattr(tray, "_metadata", typedict())
-                        if metadata.intget("pid")==pid:
+                        if metadata.intget("pid") == pid:
                             traylog("tray window: matched pid=%i", pid)
                             return tray.tray_widget
             if app_name and app_name.lower() != "xpra":
@@ -747,11 +748,11 @@ class WindowClient(StubClientMixin):
                     icon = None
                     break
             if icon:
-                has_alpha = icon.mode=="RGBA"
+                has_alpha = icon.mode == "RGBA"
                 width, height = icon.size
                 traylog("set_tray_icon() using unique %s icon: %ix%i (has-alpha=%s)",
                         icon.mode, width, height, has_alpha)
-                rowstride = width * (3+int(has_alpha))
+                rowstride = width * (3 + int(has_alpha))
                 rgb_data = icon.tobytes("raw", icon.mode)
                 self.tray.set_icon_from_data(rgb_data, has_alpha, width, height, rowstride)
                 return
@@ -777,13 +778,13 @@ class WindowClient(StubClientMixin):
         if coding == "default":
             img = self.overlay_image
         elif coding in ("BGRA", "RGBA"):
-            rowstride = width*4
-            img = Image.frombytes("RGBA", (width,height), memoryview_to_bytes(data),
+            rowstride = width * 4
+            img = Image.frombytes("RGBA", (width, height), memoryview_to_bytes(data),
                                   "raw", coding, rowstride, 1)
         else:
             # pylint: disable=import-outside-toplevel
             from xpra.codecs.pillow.decoder import open_only
-            img = open_only(data, ("png", ))
+            img = open_only(data, ("png",))
             if img.mode not in ("RGB", "RGBA"):
                 img = img.convert("RGBA")
         icon = img
@@ -792,12 +793,12 @@ class WindowClient(StubClientMixin):
             filename = "client-window-%i-icon-%i.png" % (wid, save_time)
             icon.save(filename, "png")
             iconlog("client window icon saved to %s", filename)
-        if self.overlay_image and self.overlay_image!=img:
+        if self.overlay_image and self.overlay_image != img:
             if 0 < ICON_SHRINKAGE < 100:
                 # paste the application icon in the top-left corner,
                 # shrunk by ICON_SHRINKAGE pct
-                shrunk_width = max(1, width*ICON_SHRINKAGE//100)
-                shrunk_height = max(1, height*ICON_SHRINKAGE//100)
+                shrunk_width = max(1, width * ICON_SHRINKAGE // 100)
+                shrunk_height = max(1, height * ICON_SHRINKAGE // 100)
                 icon_resized = icon.resize((shrunk_width, shrunk_height), Image.Resampling.LANCZOS)
                 icon = Image.new("RGBA", (width, height))
                 icon.paste(icon_resized, (0, 0, shrunk_width, shrunk_height))
@@ -806,11 +807,11 @@ class WindowClient(StubClientMixin):
                     icon.save(filename, "png")
                     iconlog("client shrunk window icon saved to %s", filename)
             assert 0 < ICON_OVERLAY <= 100
-            overlay_width = max(1, width*ICON_OVERLAY//100)
-            overlay_height = max(1, height*ICON_OVERLAY//100)
+            overlay_width = max(1, width * ICON_OVERLAY // 100)
+            overlay_height = max(1, height * ICON_OVERLAY // 100)
             xpra_resized = self.overlay_image.resize((overlay_width, overlay_height), Image.Resampling.LANCZOS)
             xpra_corner = Image.new("RGBA", (width, height))
-            xpra_corner.paste(xpra_resized, (width-overlay_width, height-overlay_height, width, height))
+            xpra_corner.paste(xpra_resized, (width - overlay_width, height - overlay_height, width, height))
             if SAVE_WINDOW_ICONS:
                 filename = "client-window-%i-icon-xpracorner-%i.png" % (wid, save_time)
                 xpra_corner.save(filename, "png")
@@ -870,7 +871,8 @@ class WindowClient(StubClientMixin):
         # if possible, choosing the currently focused window (if there is one..)
         pid = metadata.intget("pid", 0)
         watcher_pid = self.assign_signal_watcher_pid(wid, pid, metadata.strget("title", ""))
-        if override_redirect and pid>0 and metadata.intget("transient-for", 0)==0 and metadata.strget("role")=="popup":
+        if override_redirect and pid > 0 and metadata.intget("transient-for", 0) == 0 and metadata.strget(
+                "role") == "popup":
             tfor = None
             twid = 0
             for twid, twin in self._id_to_window.items():
@@ -942,7 +944,7 @@ class WindowClient(StubClientMixin):
             from xpra.util.child_reaper import getChildReaper
             if not title:
                 title = str(pid)
-            cmd = get_python_execfile_command()+[SIGNAL_WATCHER_COMMAND]+[f"signal watcher for {std(title)}"]
+            cmd = get_python_execfile_command() + [SIGNAL_WATCHER_COMMAND] + [f"signal watcher for {std(title)}"]
             execlog(f"assign_signal_watcher_pid({wid}, {pid}) starting {cmd}")
             try:
                 proc = Popen(cmd,
@@ -961,6 +963,7 @@ class WindowClient(StubClientMixin):
                     # this may be redundant since we also return False from signal_watcher_event
                     execlog("watcher_terminated%s", args)
                     clean_signalwatcher(proc)
+
                 getChildReaper().add_process(proc, "signal listener for remote process %s" % pid,
                                              command="xpra_signal_listener", ignore=True, forget=True,
                                              callback=watcher_terminated)
@@ -984,7 +987,7 @@ class WindowClient(StubClientMixin):
         if proc.stdout_io_watch is None:
             # no longer watched
             return False
-        if cb_condition==GLib.IOCondition.IN:
+        if cb_condition == GLib.IOCondition.IN:
             try:
                 signame = bytestostr(proc.stdout.readline()).strip("\n\r")
                 execlog("signal_watcher_event: %s", signame)
@@ -1020,7 +1023,7 @@ class WindowClient(StubClientMixin):
             if deiconify:
                 deiconify()
 
-    def resize_windows(self, new_size_fn:Callable) -> None:
+    def resize_windows(self, new_size_fn: Callable) -> None:
         for window in self._id_to_window.values():
             if window:
                 ww, wh = window._size
@@ -1048,11 +1051,12 @@ class WindowClient(StubClientMixin):
                 self.reinit_window(wid, window, new_size_fn)
         self.send_refresh_all()
 
-    def reinit_window(self, wid:int, window, new_size_fn=None) -> None:
+    def reinit_window(self, wid: int, window, new_size_fn=None) -> None:
         geomlog("reinit_window%s", (wid, window, new_size_fn))
 
         def fake_send(*args):
             log("fake_send%s", args)
+
         if window.is_tray():
             # trays are never GL enabled, so don't bother re-creating them
             # might cause problems anyway if we did
@@ -1090,10 +1094,10 @@ class WindowClient(StubClientMixin):
                     backing._decoder_lock = None
                     backing.close()
 
-            #now we can unmap it:
+            # now we can unmap it:
             self.destroy_window(wid, window)
-            #explicitly tell the server we have unmapped it:
-            #(so it will reset the video encoders, etc)
+            # explicitly tell the server we have unmapped it:
+            # (so it will reset the video encoders, etc)
             if not window.is_OR():
                 self.send("unmap-window", wid)
             self._id_to_window.pop(wid, None)
@@ -1116,11 +1120,11 @@ class WindowClient(StubClientMixin):
             if decoder_lock:
                 decoder_lock.release()
 
-    def get_group_leader(self, _wid:int, _metadata, _override_redirect) -> Any:
+    def get_group_leader(self, _wid: int, _metadata, _override_redirect) -> Any:
         # subclasses that wish to implement the feature may override this method
         return None
 
-    def get_client_window_classes(self, _w, _h, _metadata, _override_redirect) -> tuple[type,...]:
+    def get_client_window_classes(self, _w, _h, _metadata, _override_redirect) -> tuple[type, ...]:
         return (self.ClientWindowClass,)
 
     def _process_new_window(self, packet: PacketType) -> None:
@@ -1187,7 +1191,7 @@ class WindowClient(StubClientMixin):
         if len(packet) > 4:
             resize_counter = packet[4]
         window = self._id_to_window.get(wid)
-        geomlog("_process_window_resized%s resizing window %s (id=%s) to %s", packet[1:], window, wid, (aw,ah))
+        geomlog("_process_window_resized%s resizing window %s (id=%s) to %s", packet[1:], window, wid, (aw, ah))
         if window:
             window.resize(aw, ah, resize_counter)
 
@@ -1207,11 +1211,11 @@ class WindowClient(StubClientMixin):
         aw = max(1, self.sx(w))
         ah = max(1, self.sy(h))
         geomlog("_process_configure_override_redirect%s move resize window %s (id=%s) to %s",
-                packet[1:], window, wid, (ax,ay,aw,ah))
+                packet[1:], window, wid, (ax, ay, aw, ah))
         if window:
             window.move_resize(ax, ay, aw, ah, -1)
 
-    def window_close_event(self, wid:int) -> None:
+    def window_close_event(self, wid: int) -> None:
         log("window_close_event(%s) close window action=%s", wid, self.window_close_action)
         if self.window_close_action == "forward":
             self.send("close-window", wid)
@@ -1267,7 +1271,7 @@ class WindowClient(StubClientMixin):
         self.set_tray_icon()
 
     def may_reenable_modal_windows(self, window) -> None:
-        orwids = tuple(wid for wid, w in self._id_to_window.items() if w.is_OR() and w!=window)
+        orwids = tuple(wid for wid, w in self._id_to_window.items() if w.is_OR() and w != window)
         if orwids:
             # there are other OR windows left, don't do anything
             return
@@ -1286,7 +1290,7 @@ class WindowClient(StubClientMixin):
             log("destroying window %s which has grab, ungrabbing!", wid)
             self.window_ungrab()
             self._window_with_grab = None
-        if self.pointer_grabbed==wid:
+        if self.pointer_grabbed == wid:
             self.pointer_grabbed = None
         # deal with signal watchers:
         execlog("looking for window %i in %s", wid, self._signalwatcher_to_wids)
@@ -1300,7 +1304,7 @@ class WindowClient(StubClientMixin):
                     kill_signalwatcher(signalwatcher)
                     # now remove any pids that use this watcher:
                     for pid, w in tuple(self._pid_to_signalwatcher.items()):
-                        if w==signalwatcher:
+                        if w == signalwatcher:
                             del self._pid_to_signalwatcher[pid]
 
     def destroy_all_windows(self) -> None:
@@ -1336,7 +1340,7 @@ class WindowClient(StubClientMixin):
         self.send("focus", wid, self.get_current_modifiers())
 
     def has_focus(self, wid: int) -> bool:
-        return bool(self._focused) and self._focused==wid
+        return bool(self._focused) and self._focused == wid
 
     def update_focus(self, wid: int, gotit: bool) -> bool:
         focused = self._focused
@@ -1353,7 +1357,7 @@ class WindowClient(StubClientMixin):
                 if wwgrab:
                     self.do_force_ungrab(wwgrab)
                 self._window_with_grab = None
-            if wid and focused and focused!=wid:
+            if wid and focused and focused != wid:
                 # if this window lost focus, it must have had it!
                 # (catch up - makes things like OR windows work:
                 # their parent receives the focus-out event)
@@ -1417,11 +1421,11 @@ class WindowClient(StubClientMixin):
 
     def resume(self) -> None:
         elapsed = 0.0
-        if self._suspended_at>0:
-            elapsed = max(0.0, time()-self._suspended_at)
+        if self._suspended_at > 0:
+            elapsed = max(0.0, time() - self._suspended_at)
             self._suspended_at = 0
         self.send_refresh_all()
-        if elapsed<1:
+        if elapsed < 1:
             # not really suspended
             # happens on macos when switching workspace!
             return
@@ -1442,30 +1446,30 @@ class WindowClient(StubClientMixin):
         options["refresh-now"] = bool(refresh)
         if suspend_resume is True:
             options["batch"] = {
-                "reset"     : True,
-                "delay"     : 1000,
-                "locked"    : True,
-                "always"    : True,
+                "reset": True,
+                "delay": 1000,
+                "locked": True,
+                "always": True,
             }
         elif suspend_resume is False:
-            options["batch"] = {"reset"     : True}
+            options["batch"] = {"reset": True}
         else:
-            pass    # batch unchanged
+            pass  # batch unchanged
         log("sending buffer refresh: options=%s, client_properties=%s", options, client_properties)
         packet.append(options)
         packet.append(client_properties)
         self.send(*packet)
 
-    def send_refresh(self, wid:int) -> None:
+    def send_refresh(self, wid: int) -> None:
         packet = [
             "buffer-refresh", wid, 0, 100,
             {
                 # explicit refresh (should be assumed True anyway),
                 # also force a reset of batch configs:
-                "refresh-now"    : True,
-                "batch"          : {"reset" : True},
+                "refresh-now": True,
+                "batch": {"reset": True},
             },
-            {},   # no client_properties
+            {},  # no client_properties
         ]
         self.send(*packet)
 
@@ -1476,7 +1480,7 @@ class WindowClient(StubClientMixin):
     ######################################################################
     # painting windows:
     def _process_draw(self, packet: PacketType) -> None:
-        if PAINT_DELAY>=0:
+        if PAINT_DELAY >= 0:
             GLib.timeout_add(PAINT_DELAY, self._draw_queue.put, packet)
         else:
             self._draw_queue.put(packet)
@@ -1506,7 +1510,7 @@ class WindowClient(StubClientMixin):
         """ this runs from the draw thread above """
         wid = packet[1]
         window = self._id_to_window.get(wid)
-        if bytestostr(packet[0])=="eos":
+        if bytestostr(packet[0]) == "eos":
             if window:
                 window.eos()
             return
@@ -1518,21 +1522,22 @@ class WindowClient(StubClientMixin):
             # window is gone
 
             def draw_cleanup():
-                if coding=="mmap":
+                if coding == "mmap":
                     assert self.mmap_enabled
                     from xpra.net.mmap import int_from_buffer
                     # we need to ack the data to free the space!
                     data_start = int_from_buffer(self.mmap, 0)
                     offset, length = data[-1]
-                    data_start.value = offset+length
+                    data_start.value = offset + length
                     # clear the mmap area via idle_add so any pending draw requests
                     # will get a chance to run first (preserving the order)
                 self.send_damage_sequence(wid, packet_sequence, width, height, WINDOW_NOT_FOUND, "window not found")
+
             self.idle_add(draw_cleanup)
             return
         # rename old encoding aliases early:
         options = {}
-        if len(packet)>10:
+        if len(packet) > 10:
             options = packet[10]
         options = typedict(options)
         dtype = DRAW_TYPES.get(type(data), type(data))
@@ -1542,9 +1547,9 @@ class WindowClient(StubClientMixin):
         def record_decode_time(success, message=""):
             if success > 0:
                 end = monotonic()
-                decode_time = round(end*1000*1000-start*1000*1000)
-                self.pixel_counter.append((start, end, width*height))
-                dms = "%sms" % (int(decode_time/100)/10.0)
+                decode_time = round(end * 1000 * 1000 - start * 1000 * 1000)
+                self.pixel_counter.append((start, end, width * height))
+                dms = "%sms" % (int(decode_time / 100) / 10.0)
                 paintlog("record_decode_time(%s, %s) wid=%s, %s: %sx%s, %s",
                          success, message, wid, coding, width, height, dms)
             elif success == 0:
@@ -1557,6 +1562,7 @@ class WindowClient(StubClientMixin):
                 paintlog("record_decode_time(%s, %s) decoding or painting skipped on wid=%s, %s: %sx%s",
                          success, message, wid, coding, width, height)
             self.send_damage_sequence(wid, packet_sequence, width, height, decode_time, repr_ellipsized(message, 512))
+
         self._draw_counter += 1
         if PAINT_FAULT_RATE > 0 and (self._draw_counter % PAINT_FAULT_RATE) == 0:
             drawlog.warn("injecting paint fault for %s draw packet %i, sequence number=%i",
@@ -1598,11 +1604,11 @@ class WindowClient(StubClientMixin):
         """ convert Y coordinate from server to client """
         return round(v)
 
-    def srect(self, x, y, w, h) -> tuple[int,int,int,int]:
+    def srect(self, x, y, w, h) -> tuple[int, int, int, int]:
         """ convert rectangle coordinates from server to client """
         return self.sx(x), self.sy(y), self.sx(w), self.sy(h)
 
-    def sp(self, x, y) -> tuple[int,int]:
+    def sp(self, x, y) -> tuple[int, int]:
         """ convert X,Y coordinates from server to client """
         return self.sx(x), self.sy(y)
 
@@ -1616,11 +1622,11 @@ class WindowClient(StubClientMixin):
         """ convert Y coordinate from client to server """
         return round(v)
 
-    def crect(self, x, y, w, h)-> tuple[int,int,int,int]:
+    def crect(self, x, y, w, h) -> tuple[int, int, int, int]:
         """ convert rectangle coordinates from client to server """
         return self.cx(x), self.cy(y), self.cx(w), self.cy(h)
 
-    def cp(self, x, y) -> tuple[int,int]:
+    def cp(self, x, y) -> tuple[int, int]:
         """ convert X,Y coordinates from client to server """
         return self.cx(x), self.cy(y)
 
@@ -1638,24 +1644,24 @@ class WindowClient(StubClientMixin):
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packet_handlers(
             {
-                "new-window":           self._process_new_window,
-                "new-override-redirect":self._process_new_override_redirect,
-                "new-tray":             self._process_new_tray,
-                "raise-window":         self._process_raise_window,
-                "restack-window":       self._process_restack_window,
-                "initiate-moveresize":  self._process_initiate_moveresize,
-                "window-move-resize":   self._process_window_move_resize,
-                "window-resized":       self._process_window_resized,
-                "window-metadata":      self._process_window_metadata,
-                "configure-override-redirect":  self._process_configure_override_redirect,
-                "lost-window":          self._process_lost_window,
-                "window-icon":          self._process_window_icon,
-                "draw":                 self._process_draw,
-                "eos":                  self._process_eos,
-                "cursor":               self._process_cursor,
-                "bell":                 self._process_bell,
-                "pointer-position":     self._process_pointer_position,
-                "pointer-grab":         self._process_pointer_grab,
-                "pointer-ungrab":       self._process_pointer_ungrab,
+                "new-window": self._process_new_window,
+                "new-override-redirect": self._process_new_override_redirect,
+                "new-tray": self._process_new_tray,
+                "raise-window": self._process_raise_window,
+                "restack-window": self._process_restack_window,
+                "initiate-moveresize": self._process_initiate_moveresize,
+                "window-move-resize": self._process_window_move_resize,
+                "window-resized": self._process_window_resized,
+                "window-metadata": self._process_window_metadata,
+                "configure-override-redirect": self._process_configure_override_redirect,
+                "lost-window": self._process_lost_window,
+                "window-icon": self._process_window_icon,
+                "draw": self._process_draw,
+                "eos": self._process_eos,
+                "cursor": self._process_cursor,
+                "bell": self._process_bell,
+                "pointer-position": self._process_pointer_position,
+                "pointer-grab": self._process_pointer_grab,
+                "pointer-ungrab": self._process_pointer_ungrab,
             }
         )

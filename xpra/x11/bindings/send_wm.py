@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -23,7 +23,7 @@ def send_wm_take_focus(xid: int, timestamp: int = CurrentTime):
     elif timestamp > 0xFFFFFFFF:
         raise OverflowError(f"invalid time: {timestamp:x}")
     elif timestamp > 0x7FFFFFFF:
-        timestamp = int(0x100000000-timestamp)
+        timestamp = int(0x100000000 - timestamp)
         if timestamp >= 0x80000000:
             timestamp -= 0x80000000
     X11Window.sendClientMessage(xid, xid, False, 0,
@@ -39,7 +39,7 @@ def send_wm_delete_window(xid: int, timestamp: int = CurrentTime):
                                 timestamp)
 
 
-def send_wm_workspace(root_xid: int, xid: int, workspace: int=0, timestamp: int = CurrentTime):
+def send_wm_workspace(root_xid: int, xid: int, workspace: int = 0, timestamp: int = CurrentTime):
     event_mask = SubstructureNotifyMask | SubstructureRedirectMask
     X11Window.sendClientMessage(root_xid, xid, False, event_mask,
                                 "_NET_WM_DESKTOP",

@@ -13,7 +13,7 @@ X11Keyboard = X11KeyboardBindings()
 Gdk = gi_import("Gdk")
 
 
-def grok_modifier_map(display, meanings) -> dict[str,int]:
+def grok_modifier_map(display, meanings) -> dict[str, int]:
     """Return a dict mapping modifier names to corresponding X modifier
     bitmasks."""
     # is this still correct for GTK3?
@@ -37,11 +37,11 @@ def grok_modifier_map(display, meanings) -> dict[str,int]:
             keycode = keycodes[i * max_keypermod + j]
             if keycode:
                 entries = keymap.get_entries_for_keycode(keycode)
-                if entries is None:     # pragma: no cover
+                if entries is None:  # pragma: no cover
                     # This keycode has no entry in the keymap:
                     continue
                 found, _, keyvals = entries
-                if not found:           # pragma: no cover
+                if not found:  # pragma: no cover
                     continue
                 for keyval in keyvals:
                     keyval_name = Gdk.keyval_name(keyval)

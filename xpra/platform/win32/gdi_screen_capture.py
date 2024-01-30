@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -30,9 +30,9 @@ from xpra.platform.win32.common import (
 
 log = Logger("shadow", "win32")
 
-NULLREGION = 1      # The region is empty.
-SIMPLEREGION = 2    # The region is a single rectangle.
-COMPLEXREGION = 3   # The region is more than a single rectangle.
+NULLREGION = 1  # The region is empty.
+SIMPLEREGION = 2  # The region is a single rectangle.
+COMPLEXREGION = 3  # The region is more than a single rectangle.
 REGION_CONSTS: dict[int, str] = {
     NULLREGION: "the region is empty",
     SIMPLEREGION: "the region is a single rectangle",
@@ -80,21 +80,21 @@ def get_palette(dc) -> list:
     log("palette size: %s", count)
     palette = []
     if count > 0:
-        buf = (PALETTEENTRY*count)()
+        buf = (PALETTEENTRY * count)()
         r = GetSystemPaletteEntries(dc, 0, count, byref(buf))
         for i in range(min(count, r)):
             p = buf[i]
-            #we expect 16-bit values, so bit-shift them:
+            # we expect 16-bit values, so bit-shift them:
             palette.append((p.peRed << 8, p.peGreen << 8, p.peBlue << 8))
     return palette
 
 
 RGB_FORMATS = {
-    32  : "BGRX",
-    30  : "r210",
-    24  : "BGR",
-    16  : "BGR565",
-    8   : "RLE8",
+    32: "BGRX",
+    30: "r210",
+    24: "BGR",
+    16: "BGR565",
+    8: "RLE8",
 }
 
 
@@ -110,7 +110,7 @@ class GDICapture:
     def __repr__(self):
         return "GDICapture(%i-bits)" % self.bit_depth
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         return {
             "type": "gdi",
             "depth": self.bit_depth,
@@ -139,32 +139,32 @@ class GDICapture:
             self.memdc = None
             DeleteDC(memdc)
 
-    def get_capture_coords(self, x:int, y:int, width:int, height:int) -> tuple[int,int,int,int]:
+    def get_capture_coords(self, x: int, y: int, width: int, height: int) -> tuple[int, int, int, int]:
         metrics = get_virtualscreenmetrics()
-        if self.metrics is None or self.metrics!=metrics:
+        if self.metrics is None or self.metrics != metrics:
             # new metrics, start from scratch:
             self.metrics = metrics
             self.clean()
         log("get_image%s metrics=%s", (x, y, width, height), metrics)
         dx, dy, dw, dh = metrics
-        if width==0:
+        if width == 0:
             width = dw
-        if height==0:
+        if height == 0:
             height = dh
         # clamp rectangle requested to the virtual desktop size:
-        if x<dx:
-            width -= x-dx
+        if x < dx:
+            width -= x - dx
             x = dx
-        if y<dy:
-            height -= y-dy
+        if y < dy:
+            height -= y - dy
             y = dy
-        if width>dw:
+        if width > dw:
             width = dw
-        if height>dh:
+        if height > dh:
             height = dh
         return x, y, width, height
 
-    def get_image(self, x:int=0, y:int=0, width:int=0, height:int=0) -> ImageWrapper | None:
+    def get_image(self, x: int = 0, y: int = 0, width: int = 0, height: int = 0) -> ImageWrapper | None:
         start = time.time()
         x, y, width, height = self.get_capture_coords(x, y, width, height)
         if not self.dc:
@@ -193,13 +193,13 @@ class GDICapture:
             log.error("Error: cannot select bitmap object")
             return None
         select_time = time.time()
-        log("get_image up to SelectObject (%s) took %ims", REGION_CONSTS.get(r, r), (select_time-start)*1000)
+        log("get_image up to SelectObject (%s) took %ims", REGION_CONSTS.get(r, r), (select_time - start) * 1000)
         try:
-            if BitBlt(self.memdc, 0, 0, width, height, self.dc, x, y, win32con.SRCCOPY)==0:
+            if BitBlt(self.memdc, 0, 0, width, height, self.dc, x, y, win32con.SRCCOPY) == 0:
                 e = get_last_error()
                 # rate limit the error message:
                 now = time.time()
-                if now-self.bitblt_err_time>10:
+                if now - self.bitblt_err_time > 10:
                     log.error("Error: failed to blit the screen, error %i", e)
                     self.bitblt_err_time = now
                 return None
@@ -210,9 +210,9 @@ class GDICapture:
             self.clean_dc()
             return None
         bitblt_time = time.time()
-        log("get_image BitBlt took %ims", (bitblt_time-select_time)*1000)
-        rowstride = roundup(width*self.bit_depth//8, 2)
-        buf_size = rowstride*height
+        log("get_image BitBlt took %ims", (bitblt_time - select_time) * 1000)
+        rowstride = roundup(width * self.bit_depth // 8, 2)
+        buf_size = rowstride * height
         buftype = c_char * buf_size
         buf = buftype()
         buf.value = b""
@@ -222,36 +222,36 @@ class GDICapture:
             log.error("Error: failed to copy screen bitmap data")
             self.clean_dc()
             return None
-        pixels : Any = buf
-        if r!=buf_size:
+        pixels: Any = buf
+        if r != buf_size:
             log.warn("Warning: truncating pixel buffer, got %i bytes but expected %i", r, buf_size)
             pixels = buf[:r]
-        log("get_image GetBitmapBits took %ims", (time.time()-bitblt_time)*1000)
+        log("get_image GetBitmapBits took %ims", (time.time() - bitblt_time) * 1000)
         DeleteObject(bitmap)
         assert pixels, "no pixels returned from GetBitmapBits"
         rgb_format = RGB_FORMATS.get(self.bit_depth)
         if not rgb_format:
             raise ValueError("unsupported bit depth: %s" % self.bit_depth)
-        bpp = self.bit_depth//8
+        bpp = self.bit_depth // 8
         v = ImageWrapper(0, 0, width, height, pixels, rgb_format,
                          self.bit_depth, rowstride, bpp, planes=ImageWrapper.PACKED, thread_safe=True)
-        if self.bit_depth==8:
+        if self.bit_depth == 8:
             palette = get_palette(self.dc)
             v.set_palette(palette)
-        log("get_image%s=%s took %ims", (x, y, width, height), v, (time.time()-start)*1000)
+        log("get_image%s=%s took %ims", (x, y, width, height), v, (time.time() - start) * 1000)
         return v
 
-    def take_screenshot(self) -> tuple[int,int,str,int,bytes] | None:
+    def take_screenshot(self) -> tuple[int, int, str, int, bytes] | None:
         x, y, w, h = get_virtualscreenmetrics()
         image = self.get_image(x, y, w, h)
         if not image:
             return None
-        assert image.get_width()==w and image.get_height()==h
-        assert image.get_pixel_format()=="BGRX"
+        assert image.get_width() == w and image.get_height() == h
+        assert image.get_pixel_format() == "BGRX"
         img = Image.frombuffer("RGB", (w, h), image.get_pixels(), "raw", "BGRX", 0, 1)
         out = BytesIO()
         img.save(out, format="PNG")
-        screenshot = (img.width, img.height, "png", img.width*3, out.getvalue())
+        screenshot = (img.width, img.height, "png", img.width * 3, out.getvalue())
         out.close()
         return screenshot
 

@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,8 +17,8 @@ def do_get_desktop_background_paths():
         "/usr/share/backgrounds/images/default.png",
         "/usr/share/backgrounds/images/*default*.png",
         "/usr/share/backgrounds/*default*png",
-        "/usr/share/backgrounds/gnome/adwaita*.jpg",    # Debian Stretch
-        "/usr/share/backgrounds/images/*jpg",           # CentOS 7
+        "/usr/share/backgrounds/gnome/adwaita*.jpg",  # Debian Stretch
+        "/usr/share/backgrounds/images/*jpg",  # CentOS 7
     ]
 
 
@@ -33,7 +33,7 @@ def do_get_install_prefix():
         return base
     if sys.argv:
         p = sys.argv[0].find("/bin/xpra")
-        if p>0:
+        if p > 0:
             return sys.argv[0][:p]
     return sys.prefix
 
@@ -85,7 +85,7 @@ def do_get_xpra_tmp_dir():
 
 
 def do_get_script_bin_dirs():
-    #versions before 0.17 only had "~/.xpra/run-xpra"
+    # versions before 0.17 only had "~/.xpra/run-xpra"
     script_bin_dirs = []
     runtime_dir = _get_xpra_runtime_dir()
     if runtime_dir:
@@ -97,21 +97,21 @@ def do_get_system_conf_dirs():
     dirs = ["/etc/xpra", "/usr/local/etc/xpra"]
     for d in os.environ.get("XDG_CONFIG_DIRS", "/etc/xdg").split(":"):
         dirs.append(os.path.join(d, "xpra"))
-    #hope the prefix is something like "/usr/local" or "$HOME/.local":
+    # hope the prefix is something like "/usr/local" or "$HOME/.local":
     from xpra.platform.paths import get_install_prefix
     prefix = get_install_prefix()
     if prefix not in ("/usr", "/usr/local"):
         if prefix.endswith(".local"):
-            idir = os.path.join(prefix, "xpra")          #ie: ~/.local/xpra
+            idir = os.path.join(prefix, "xpra")  # ie: ~/.local/xpra
         else:
-            idir = os.path.join(prefix, "/etc/xpra/")    #ie: /someinstallpath/etc/xpra
+            idir = os.path.join(prefix, "/etc/xpra/")  # ie: /someinstallpath/etc/xpra
         if idir not in dirs:
             dirs.append(idir)
     return dirs
 
 
 def do_get_state_dir():
-    if os.getuid()>0:
+    if os.getuid() > 0:
         xdg_state = os.path.expanduser(os.environ.get("XDG_STATE_HOME", "~/.local/state"))
         state_dir = os.path.expanduser(xdg_state)
         if state_dir and os.path.exists(state_dir):
@@ -123,12 +123,12 @@ def do_get_state_dir():
 
 
 def do_get_user_conf_dirs(uid):
-    #per-user configuration location:
-    #(but never use /root/.xpra or /root/.config/xpra)
+    # per-user configuration location:
+    # (but never use /root/.xpra or /root/.config/xpra)
     if uid is None:
         uid = os.getuid()
     dirs = []
-    if uid>0:
+    if uid > 0:
         dirs += [os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"), "xpra")]
         dirs.append("~/.xpra")
     return dirs
@@ -141,7 +141,7 @@ def get_runtime_dir():
     if sys.platform.startswith("linux"):
         for d in ("/run/user", "/var/run/user"):
             if os.path.exists(d) and os.path.isdir(d):
-                runtime_dir = d+"/$UID"
+                runtime_dir = d + "/$UID"
                 break
         if not runtime_dir:
             return "$XDG_RUNTIME_DIR"
@@ -159,16 +159,16 @@ def do_get_socket_dirs():
     SOCKET_DIRS = []
     runtime_dir = _get_xpra_runtime_dir()
     if runtime_dir:
-        #private, per user: XDG_RUNTIME_DIR/xpra
+        # private, per user: XDG_RUNTIME_DIR/xpra
         # (ie: "/run/user/1000/xpra")
         SOCKET_DIRS.append(runtime_dir)
-    #for shared sockets (the 'xpra' group should own this directory):
+    # for shared sockets (the 'xpra' group should own this directory):
     if os.path.exists("/run"):
         SOCKET_DIRS.append("/run/xpra")
     elif os.path.exists("/var/run"):
         SOCKET_DIRS.append("/var/run/xpra")
-    #Debian and Ubuntu often don't create a reliable XDG_RUNTIME_DIR
-    #other distros may not create one when using "su"
+    # Debian and Ubuntu often don't create a reliable XDG_RUNTIME_DIR
+    # other distros may not create one when using "su"
     SOCKET_DIRS.append("~/.xpra")
     return SOCKET_DIRS
 
@@ -196,8 +196,8 @@ def do_get_audio_command():
 
 
 def do_get_xpra_command():
-    #try to use the same "xpra" executable that launched this server,
-    #whilst also preserving the python interpreter version:
+    # try to use the same "xpra" executable that launched this server,
+    # whilst also preserving the python interpreter version:
     if sys.argv and sys.argv[0].lower().endswith("/xpra"):
         return ["python%i.%i" % (sys.version_info.major, sys.version_info.minor), sys.argv[0]]
     return ["xpra"]

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -20,7 +20,7 @@ def get_name() -> str:
         from xpra.platform.win32.common import GetUserNameA
         max_len = 256
         size = DWORD(max_len)
-        buftype = c_char * (max_len+1)
+        buftype = c_char * (max_len + 1)
         buf = buftype()
         if not GetUserNameA(byref(buf), byref(size)):
             raise WinError(get_last_error())

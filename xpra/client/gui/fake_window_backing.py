@@ -14,7 +14,6 @@ FAKE_BACKING_DELAY = envint("XPRA_FAKE_BACKING_DELAY", 5)
 
 
 class FakeBacking:
-
     HAS_ALPHA = True
 
     def __init__(self, wid, *_args):
@@ -39,5 +38,5 @@ class FakeBacking:
 
     def get_encoding_properties(self):
         return {
-            "encodings.rgb_formats"    : ["RGBA", "RGB"],
+            "encodings.rgb_formats": ["RGBA", "RGB"],
         }

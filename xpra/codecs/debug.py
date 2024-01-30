@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,8 +14,8 @@ log = Logger("codec")
 SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 
 
-def may_save_image(coding:str, data:ByteString, now:float=0):
-    if SAVE_TO_FILE:    # pragma: no cover
+def may_save_image(coding: str, data: ByteString, now: float = 0):
+    if SAVE_TO_FILE:  # pragma: no cover
         now = now or monotonic()
         ext = coding.lower().replace("/", "-")
         filename = f"./{now}.{ext}"

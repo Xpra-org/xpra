@@ -61,5 +61,6 @@ def pixbuf_save_to_memory(pixbuf, fmt="png") -> bytes:
     def save_to_memory(data, *_args, **_kwargs):
         buf.append(data)
         return True
+
     pixbuf.save_to_callbackv(save_to_memory, None, fmt, [], [])
     return b"".join(buf)

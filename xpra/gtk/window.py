@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2015-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -18,6 +18,7 @@ def add_close_accel(window, callback: Callable) -> list[Gtk.AccelGroup]:
 
     def wa(s, cb):
         accel_groups.append(add_window_accel(window, s, cb))
+
     wa('<control>F4', callback)
     wa('<Alt>F4', callback)
     wa('Escape', callback)
@@ -27,6 +28,7 @@ def add_close_accel(window, callback: Callable) -> list[Gtk.AccelGroup]:
 def add_window_accel(window, accel, callback: Callable) -> Gtk.AccelGroup:
     def connect(ag, *args):
         ag.connect(*args)
+
     accel_group = Gtk.AccelGroup()
     key, mod = Gtk.accelerator_parse(accel)
     connect(accel_group, key, mod, Gtk.AccelFlags.LOCKED, callback)
@@ -83,7 +85,7 @@ def set_visual(window, alpha=True) -> Gdk.Visual | None:
     alphalog("set_visual(%s, %s) screen=%s, visual=%s", window, alpha, screen, visual)
     # we can't do alpha on win32 with plain GTK,
     # (though we handle it in the opengl backend)
-    l : Callable = alphalog.warn
+    l: Callable = alphalog.warn
     if WIN32 or not first_time("no-rgba"):
         l = alphalog.debug
     if alpha and visual is None or (not WIN32 and not screen.is_composited()):

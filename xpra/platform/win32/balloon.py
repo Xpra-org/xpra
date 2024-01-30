@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ import struct
 from ctypes import (
     c_void_p, sizeof, byref,
     windll,  # @UnresolvedImport
-    )
+)
 from ctypes.wintypes import BOOL, DWORD
 
 from xpra.util.str_fn import strtobytes
@@ -26,8 +26,8 @@ NIIF_INFO = 1
 NIM_MODIFY = 1
 
 
-def chop_string(command, max_len:int=100, no_nl:bool=True):
-    assert max_len>3
+def chop_string(command, max_len: int = 100, no_nl: bool = True):
+    assert max_len > 3
     if not command:
         return b""
     command = strtobytes(command)
@@ -35,30 +35,30 @@ def chop_string(command, max_len:int=100, no_nl:bool=True):
         command = command.replace(b"\n", b"").replace(b"\r", b"")
     if len(command) <= max_len:
         return command
-    return command[:max_len-3] + b"..."
+    return command[:max_len - 3] + b"..."
 
 
 class PyNOTIFYICONDATA:
     _struct_format = (
-        "I" # DWORD cbSize;
-        "I" # HWND hWnd;
-        "I" # UINT uID;
-        "I" # UINT uFlags;
-        "I" # UINT uCallbackMessage;
-        "I" # HICON hIcon;
-        "128s" # TCHAR szTip[128];
-        "I" # DWORD dwState;
-        "I" # DWORD dwStateMask;
-        "256s" # TCHAR szInfo[256];
-        "I" # union {
+        "I"  # DWORD cbSize;
+        "I"  # HWND hWnd;
+        "I"  # UINT uID;
+        "I"  # UINT uFlags;
+        "I"  # UINT uCallbackMessage;
+        "I"  # HICON hIcon;
+        "128s"  # TCHAR szTip[128];
+        "I"  # DWORD dwState;
+        "I"  # DWORD dwStateMask;
+        "256s"  # TCHAR szInfo[256];
+        "I"  # union {
         # UINT uTimeout;
         # UINT uVersion;
-        #} DUMMYUNIONNAME;
-        "64s" # TCHAR szInfoTitle[64];
-        "I" # DWORD dwInfoFlags;
+        # } DUMMYUNIONNAME;
+        "64s"  # TCHAR szInfoTitle[64];
+        "I"  # DWORD dwInfoFlags;
         # GUID guidItem;
-        "16s"# GUID guidItem;
-        "I" # HICON hBalloonIcon
+        "16s"  # GUID guidItem;
+        "I"  # HICON hBalloonIcon
     )
     _struct = struct.Struct(_struct_format)
 
@@ -79,21 +79,21 @@ class PyNOTIFYICONDATA:
 
     def pack(self):
         return self._struct.pack(
-        self._struct.size,
-        self.hWnd,
-        self.uID,
-        self.uFlags,
-        self.uCallbackMessage,
-        self.hIcon,
-        self.szTip,
-        self.dwState,
-        self.dwStateMask,
-        self.szInfo,
-        self.uTimeoutOrVersion,
-        self.szInfoTitle,
-        self.dwInfoFlags,
-        self.guidItem,
-        self.hBalloonIcon,
+            self._struct.size,
+            self.hWnd,
+            self.uID,
+            self.uFlags,
+            self.uCallbackMessage,
+            self.hIcon,
+            self.szTip,
+            self.dwState,
+            self.dwStateMask,
+            self.szInfo,
+            self.uTimeoutOrVersion,
+            self.szInfoTitle,
+            self.dwInfoFlags,
+            self.guidItem,
+            self.hBalloonIcon,
         )
 
     def __setattr__(self, name, value):
@@ -111,11 +111,11 @@ Shell_NotifyIcon.restype = BOOL
 Shell_NotifyIcon.argtypes = [DWORD, c_void_p]
 
 
-def notify(hwnd, app_id:int, title:str, message:str, timeout:int=5000, icon=None):
+def notify(hwnd, app_id: int, title: str, message: str, timeout: int = 5000, icon=None):
     log("notify%s", (hwnd, app_id, title, message, timeout, icon))
-    if timeout<=0:
+    if timeout <= 0:
         timeout = 5000
-    szInfo = chop_string(message, 255, False)    #prevent overflow
+    szInfo = chop_string(message, 255, False)  # prevent overflow
     szInfoTitle = chop_string(title, 63)
     hicon = 0
     if icon:
@@ -127,7 +127,7 @@ def notify(hwnd, app_id:int, title:str, message:str, timeout:int=5000, icon=None
             from xpra.platform.win32.NotifyIcon import image_to_ICONINFO
             iw = GetSystemMetrics(SM_CXSMICON)
             ih = GetSystemMetrics(SM_CYSMICON)
-            if w!=iw or h!=ih:
+            if w != iw or h != ih:
                 img = img.resize((iw, ih), Image.Resampling.LANCZOS)
                 log("notification icon resized to %s", img.size)
             hicon = image_to_ICONINFO(img)
@@ -162,10 +162,12 @@ def notify(hwnd, app_id:int, title:str, message:str, timeout:int=5000, icon=None
     Shell_NotifyIconA(NIM_MODIFY, byref(nid))
     log("notify using %s", Shell_NotifyIconA)
 
+
 def main():
     import sys
     from xpra.platform.win32.NotifyIcon import main as notifyicon_main
     notifyicon_main(sys.argv)
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     main()

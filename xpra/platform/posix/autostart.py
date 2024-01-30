@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2021-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,7 +13,7 @@ from xpra.platform.posix.paths import do_get_resources_dir
 
 def get_autostart_file():
     # find the 'xdg autostart' directory:
-    if os.getuid()==0:
+    if os.getuid() == 0:
         adir = None
         for cdir in (os.environ.get("XDG_CONFIG_DIRS", "") or "/etc/xdg").split(":"):
             if not cdir:
@@ -34,7 +34,7 @@ def get_autostart_file():
 def set_autostart(enabled):
     target = get_autostart_file()
     if enabled:
-        #find the file to copy there:
+        # find the file to copy there:
         autostart = os.path.join(do_get_resources_dir(), "autostart.desktop")
         if not os.path.exists(autostart):
             raise InitExit(ExitCode.FILE_NOT_FOUND, f"{autostart!r} file not found")

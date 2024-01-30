@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -167,7 +167,7 @@ def main():  # pragma: no cover
         subsubmenu = Gtk.Menu()
         sub.set_submenu(subsubmenu)
         for n in range(1, 1000):
-            subsubmenu.append(Gtk.MenuItem(label="Sub Sub Menu Item "+str(n)))
+            subsubmenu.append(Gtk.MenuItem(label="Sub Sub Menu Item " + str(n)))
         submenu.append(sub)
         sub = Gtk.MenuItem(label="Sub Menu Item 2")
         submenu.append(sub)

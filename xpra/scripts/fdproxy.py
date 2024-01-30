@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -36,11 +36,11 @@ class XpraProxy:
     def __repr__(self):
         return f"XpraProxy({self._name}: {self._client_conn} - {self._server_conn})"
 
-    def __init__(self, name, client_conn, server_conn, quit_cb: Callable | None=None):
+    def __init__(self, name, client_conn, server_conn, quit_cb: Callable | None = None):
         self._name = name
         self._client_conn = client_conn
         self._server_conn = server_conn
-        self._quit_cb : Callable = quit_cb or self.do_quit
+        self._quit_cb: Callable = quit_cb or self.do_quit
         self._closed = False
         self._to_client = threading.Thread(target=self._to_client_loop, daemon=True)
         self._to_server = threading.Thread(target=self._to_server_loop, daemon=True)
@@ -72,8 +72,8 @@ class XpraProxy:
         self._copy_loop(f"->server {self._name}", self._client_conn, self._server_conn)
         self._closed = True
 
-    def _copy_loop(self, log_name:str, from_conn, to_conn) -> None:
-        #log("XpraProxy._copy_loop(%s, %s, %s)", log_name, from_conn, to_conn)
+    def _copy_loop(self, log_name: str, from_conn, to_conn) -> None:
+        # log("XpraProxy._copy_loop(%s, %s, %s)", log_name, from_conn, to_conn)
         try:
             while not self._closed:
                 log("%s: waiting for data", log_name)
@@ -99,7 +99,7 @@ class XpraProxy:
         return not self._closed
 
     def signal_quit(self, signum, _frame=None) -> None:
-        self.exit_code = 128+signum
+        self.exit_code = 128 + signum
         self.quit()
 
     def quit(self, *args) -> None:
@@ -113,7 +113,7 @@ class XpraProxy:
             self._server_conn.close()
         except OSError:
             pass
-        quit_cb : Callable = self._quit_cb
+        quit_cb: Callable = self._quit_cb
         self._quit_cb = None
         quit_cb(self)
 

@@ -1,11 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from ctypes import WinDLL, WINFUNCTYPE, oledll, c_int, c_char, byref, cast
 from ctypes.wintypes import BOOL, LPVOID, LPCWSTR, LPCVOID, LPOLESTR
-
 
 dsound = WinDLL("dsound", use_last_error=True)
 DirectSoundEnumerateW = dsound.DirectSoundEnumerateW
@@ -35,6 +34,7 @@ def _enum_devices(fn):
                 dev = buf.value
         devices.append((dev, lpszDesc))
         return True
+
     fn(LPDSENUMCALLBACK(cb_enum), None)
     return devices
 
@@ -63,7 +63,7 @@ def main():
             log.info("* %-40s : %s", v, k)
         log.info("")
         log.info("All Devices:")
-        for guid,name in get_devices():
+        for guid, name in get_devices():
             log.info("* %-40s : %s", name, guid)
 
 

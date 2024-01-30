@@ -27,15 +27,14 @@ StructureNotifyMask = constants["StructureNotifyMask"]
 
 
 class CompositeHelper(WindowDamageHandler, GObject.GObject):
-
     __gsignals__ = WindowDamageHandler.__common_gsignals__.copy()
     __gsignals__ |= {
         # emit:
-        "contents-changed" : one_arg_signal,
+        "contents-changed": one_arg_signal,
     }
 
     # This may raise XError.
-    def __init__(self, xid:int):
+    def __init__(self, xid: int):
         WindowDamageHandler.__init__(self, xid)
         GObject.GObject.__init__(self)
         self._listening_to: list[int] = []
@@ -59,11 +58,11 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
             self._cleanup_listening(lt)
         WindowDamageHandler.invalidate_pixmap(self)
 
-    def _cleanup_listening(self, listening:list[int]) -> None:
+    def _cleanup_listening(self, listening: list[int]) -> None:
         if listening:
             for w in listening:
                 # Don't want to stop listening to our xid!:
-                if w!=self.xid:
+                if w != self.xid:
                     remove_event_receiver(w, self)
 
     def _set_pixmap(self) -> None:

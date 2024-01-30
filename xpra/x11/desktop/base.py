@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -40,7 +40,7 @@ MODIFY_GSETTINGS: bool = envbool("XPRA_MODIFY_GSETTINGS", True)
 MULTI_MONITORS: bool = envbool("XPRA_DESKTOP_MULTI_MONITORS", True)
 
 
-def get_desktop_server_base_classes() -> tuple[type,...]:
+def get_desktop_server_base_classes() -> tuple[type, ...]:
     classes: list[type] = [GObject.GObject]
     if features.rfb:
         from xpra.server.rfb.server import RFBServer
@@ -54,7 +54,7 @@ DesktopServerBaseClass = type('DesktopServerBaseClass', DESKTOPSERVER_BASES, {})
 log("DesktopServerBaseClass%s", DESKTOPSERVER_BASES)
 
 
-def do_modify_gsettings(defs:dict[str, Any], value=False) -> dict[str, Any]:
+def do_modify_gsettings(defs: dict[str, Any], value=False) -> dict[str, Any]:
     modified = {}
     schemas = Gio.Settings.list_schemas()
     for schema, attributes in defs.items():
@@ -94,7 +94,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         for c in DESKTOPSERVER_BASES:
             if c != X11ServerBase:
                 c.__init__(self)  # pylint: disable=non-parent-init-called
-        self.gsettings_modified : dict[str, Any] = {}
+        self.gsettings_modified: dict[str, Any] = {}
         self.root_prop_watcher = None
 
     def init(self, opts) -> None:
@@ -118,7 +118,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         self.root_prop_watcher = XRootPropWatcher(["WINDOW_MANAGER", "_NET_SUPPORTING_WM_CHECK"], root)
         self.root_prop_watcher.connect("root-prop-changed", self.root_prop_changed)
 
-    def root_prop_changed(self, watcher, prop:str) -> None:
+    def root_prop_changed(self, watcher, prop: str) -> None:
         iconlog("root_prop_changed(%s, %s)", watcher, prop)
         for window in self._id_to_window.values():
             window.update_wm_name()
@@ -127,9 +127,9 @@ class DesktopServerBase(DesktopServerBaseClass):
     def modify_gsettings(self) -> None:
         # try to suspend animations:
         self.gsettings_modified = do_modify_gsettings({
-            "org.mate.interface" : ("gtk-enable-animations", "enable-animations"),
-            "org.gnome.desktop.interface" : ("enable-animations",),
-            "com.deepin.wrap.gnome.desktop.interface" : ("enable-animations",),
+            "org.mate.interface": ("gtk-enable-animations", "enable-animations"),
+            "org.gnome.desktop.interface": ("enable-animations",),
+            "com.deepin.wrap.gnome.desktop.interface": ("enable-animations",),
         })
 
     def do_cleanup(self) -> None:
@@ -256,7 +256,7 @@ class DesktopServerBase(DesktopServerBaseClass):
 
     def _process_configure_window(self, proto, packet: PacketType) -> None:
         wid, x, y, w, h = (int(x) for x in packet[1:6])
-        if len(packet)>=13 and features.input_devices and not self.readonly:
+        if len(packet) >= 13 and features.input_devices and not self.readonly:
             pwid = int(packet[10])
             pointer = packet[11]
             modifiers = packet[12]
@@ -362,7 +362,7 @@ class DesktopServerBase(DesktopServerBaseClass):
             if img.get_pixel_format() not in ("RGB", "RGBA", "XRGB", "BGRX", "ARGB", "BGRA"):
                 log.warn("window pixels for window %s using an unexpected rgb format: %s", wid, img.get_pixel_format())
                 continue
-            regions.append((wid, offset_x+x, offset_y+y, img))
+            regions.append((wid, offset_x + x, offset_y + y, img))
             # tile them horizontally:
             offset_x += w
             offset_y += 0

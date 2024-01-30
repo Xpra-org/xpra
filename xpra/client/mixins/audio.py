@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -74,7 +74,7 @@ class AudioClient(StubClientMixin):
         self.av_sync_delta: int = AV_SYNC_DELTA
         self.audio_properties: typedict = typedict()
         # audio state:
-        self.on_sink_ready : Callable | None = None
+        self.on_sink_ready: Callable | None = None
         self.audio_sink = None
         self.audio_sink_sequence: int = 0
         self.server_audio_eos_sequence: bool = False
@@ -85,8 +85,8 @@ class AudioClient(StubClientMixin):
         self.server_av_sync: bool = False
         self.server_pulseaudio_id = ""
         self.server_pulseaudio_server = ""
-        self.server_audio_decoders: tuple[str,...] = ()
-        self.server_audio_encoders: tuple[str,...] = ()
+        self.server_audio_decoders: tuple[str, ...] = ()
+        self.server_audio_encoders: tuple[str, ...] = ()
         self.server_audio_receive: bool = False
         self.server_audio_send: bool = False
         self.queue_used_sent: int = 0
@@ -100,13 +100,14 @@ class AudioClient(StubClientMixin):
         mic = [x.strip() for x in opts.microphone.split(":", 1)]
         self.microphone_allowed = audio_option(mic[0]) in ("on", "off")
         self.microphone_device = None
-        if self.microphone_allowed and len(mic)==2:
+        if self.microphone_allowed and len(mic) == 2:
             self.microphone_device = mic[1]
         self.audio_source_plugin = opts.audio_source
 
-        def nooptions(*_args) -> tuple[str,...]:
+        def nooptions(*_args) -> tuple[str, ...]:
             return ()
-        audio_option_fn : Callable = nooptions
+
+        audio_option_fn: Callable = nooptions
         if self.speaker_allowed or self.microphone_allowed:
             try:
                 from xpra.audio import common
@@ -143,8 +144,8 @@ class AudioClient(StubClientMixin):
             self.speaker_allowed = False
         if not self.microphone_codecs:
             self.microphone_allowed = False
-        self.speaker_enabled = self.speaker_allowed and audio_option(opts.speaker)=="on"
-        self.microphone_enabled = self.microphone_allowed and audio_option(mic[0])=="on"
+        self.speaker_enabled = self.speaker_allowed and audio_option(opts.speaker) == "on"
+        self.microphone_enabled = self.microphone_allowed and audio_option(mic[0]) == "on"
         log("speaker: codecs=%s, allowed=%s, enabled=%s", encoders, self.speaker_allowed, csv(self.speaker_codecs))
         log("microphone: codecs=%s, allowed=%s, enabled=%s, default device=%s",
             decoders, self.microphone_allowed, csv(self.microphone_codecs), self.microphone_device)
@@ -173,10 +174,10 @@ class AudioClient(StubClientMixin):
             self.stop_receiving_audio()
 
     def get_info(self) -> dict[str, Any]:
-        info : dict[str, Any] = {
-            "speaker" : self.speaker_enabled,
-            "microphone" : self.microphone_enabled,
-            "properties" : dict(self.audio_properties),
+        info: dict[str, Any] = {
+            "speaker": self.speaker_enabled,
+            "microphone": self.microphone_enabled,
+            "properties": dict(self.audio_properties),
         }
         ss = self.audio_source
         if ss:
@@ -192,35 +193,35 @@ class AudioClient(StubClientMixin):
             "audio": self.get_audio_capabilities(),
         }
 
-    def get_audio_capabilities(self) -> dict[str,Any]:
+    def get_audio_capabilities(self) -> dict[str, Any]:
         if not self.audio_properties:
             return {}
         caps: dict[str, Any] = {
-            "decoders"   : self.speaker_codecs,
-            "encoders"   : self.microphone_codecs,
-            "send"       : self.microphone_allowed,
-            "receive"    : self.speaker_allowed,
+            "decoders": self.speaker_codecs,
+            "encoders": self.microphone_codecs,
+            "send": self.microphone_allowed,
+            "receive": self.speaker_allowed,
         }
         # make mypy happy about the type: convert typedict to dict with string keys
-        sp : dict[str,Any] = {str(k): v for k,v in self.audio_properties.items()}
-        if FULL_INFO<2:
+        sp: dict[str, Any] = {str(k): v for k, v in self.audio_properties.items()}
+        if FULL_INFO < 2:
             # only expose these specific keys:
-            sp = {k : v for k, v in sp.items() if k in (
+            sp = {k: v for k, v in sp.items() if k in (
                 "encoders", "decoders", "muxers", "demuxers",
             )}
         caps.update(sp)
         log("audio capabilities: %s", caps)
         return caps
 
-    def get_avsync_capabilities(self) -> dict[str,Any]:
+    def get_avsync_capabilities(self) -> dict[str, Any]:
         if not self.av_sync:
             return {}
         delay = max(0, DEFAULT_AV_SYNC_DELAY + AV_SYNC_DELTA)
         return {
-            ""              : True,
-            "enabled"       : True,
-            "delay.default" : delay,
-            "delay"         : delay,
+            "": True,
+            "enabled": True,
+            "delay.default": delay,
+            "delay": delay,
         }
 
     def parse_server_capabilities(self, c: typedict) -> bool:
@@ -249,7 +250,7 @@ class AudioClient(StubClientMixin):
     ######################################################################
     # audio:
 
-    def may_notify_audio(self, summary:str, body:str) -> None:
+    def may_notify_audio(self, summary: str, body: str) -> None:
         # overridden in UI client subclass
         pass
 
@@ -258,19 +259,19 @@ class AudioClient(StubClientMixin):
         if ALLOW_SOUND_LOOP:
             return True
         if self._remote_machine_id:
-            if self._remote_machine_id!=get_machine_id():
-                #not the same machine, so OK
+            if self._remote_machine_id != get_machine_id():
+                # not the same machine, so OK
                 return True
-            if self._remote_uuid!=get_user_uuid():
-                #different user, assume different pulseaudio server
+            if self._remote_uuid != get_user_uuid():
+                # different user, assume different pulseaudio server
                 return True
-        #check pulseaudio id if we have it
+        # check pulseaudio id if we have it
         pulseaudio_id = self.audio_properties.get("pulseaudio", {}).get("id")
         if not pulseaudio_id or not self.server_pulseaudio_id:
-            #not available, assume no pulseaudio so no loop?
+            # not available, assume no pulseaudio so no loop?
             return True
-        if self.server_pulseaudio_id!=pulseaudio_id:
-            #different pulseaudio server
+        if self.server_pulseaudio_id != pulseaudio_id:
+            # different pulseaudio server
             return True
         msgs = loop_warning_messages(mode)
         summary = msgs[0]
@@ -300,7 +301,7 @@ class AudioClient(StubClientMixin):
                 return
             ss = self.audio_source
             if ss:
-                if ss.get_state()=="active":
+                if ss.get_state() == "active":
                     log.error("Error: microphone forwarding is already active")
                     enabled = True
                     return
@@ -308,7 +309,7 @@ class AudioClient(StubClientMixin):
             else:
                 enabled = self.start_audio_source(device)
         finally:
-            if enabled!=self.microphone_enabled:
+            if enabled != self.microphone_enabled:
                 self.microphone_enabled = enabled
                 self.emit("microphone-changed")
             log("start_sending_audio(%s) done, microphone_enabled=%s", device, enabled)
@@ -319,6 +320,7 @@ class AudioClient(StubClientMixin):
 
         def audio_source_state_changed(*_args):
             self.emit("microphone-changed")
+
         # find the matching codecs:
         matching_codecs = get_matching_codecs(self.microphone_codecs, self.server_audio_decoders)
         log("start_audio_source(%s) matching codecs: %s", device, csv(matching_codecs))
@@ -347,9 +349,9 @@ class AudioClient(StubClientMixin):
             log.estr(e)
             return False
 
-    def new_stream(self, audio_source, codec:str):
+    def new_stream(self, audio_source, codec: str):
         log("new_stream(%s)", codec)
-        if self.audio_source!=audio_source:
+        if self.audio_source != audio_source:
             log("dropping new-stream signal (current source=%s, signal source=%s)", self.audio_source, audio_source)
             return
         codec = codec or audio_source.codec
@@ -357,8 +359,8 @@ class AudioClient(StubClientMixin):
         # tell the server this is the start:
         self.send("sound-data", codec, "",
                   {
-                      "start-of-stream"    : True,
-                      "codec"              : codec,
+                      "start-of-stream": True,
+                      "codec": codec,
                   })
 
     def stop_sending_audio(self) -> None:
@@ -374,8 +376,8 @@ class AudioClient(StubClientMixin):
             return
         # tell the server to stop:
         self.send("sound-data", ss.codec or "", "", {
-            "end-of-stream" : True,
-            "sequence"      : ss.sequence,
+            "end-of-stream": True,
+            "sequence": ss.sequence,
         })
         self.audio_source_sequence += 1
         ss.cleanup()
@@ -394,7 +396,7 @@ class AudioClient(StubClientMixin):
                 return
             if not self.audio_loop_check("speaker"):
                 return
-            #choose a codec:
+            # choose a codec:
             matching_codecs = get_matching_codecs(self.speaker_codecs, self.server_audio_encoders)
             log("start_receiving_audio() matching codecs: %s", csv(matching_codecs))
             if not matching_codecs:
@@ -407,15 +409,16 @@ class AudioClient(StubClientMixin):
                 log("sink_ready(%s) codec=%s (server codec name=%s)", args, codec, scodec)
                 self.send("sound-control", "start", scodec)
                 return False
+
             self.on_sink_ready = sink_ready
             enabled = self.start_audio_sink(codec)
         finally:
-            if self.speaker_enabled!=enabled:
+            if self.speaker_enabled != enabled:
                 self.speaker_enabled = enabled
                 self.emit("speaker-changed")
             log("start_receiving_audio() done, speaker_enabled=%s", enabled)
 
-    def stop_receiving_audio(self, tell_server:bool=True) -> None:
+    def stop_receiving_audio(self, tell_server: bool = True) -> None:
         """
             ask the server to stop sending audio
             and toggle the flag so that we ignore further packets
@@ -428,7 +431,7 @@ class AudioClient(StubClientMixin):
             self.emit("speaker-changed")
         if not ss:
             return
-        if tell_server and ss.sequence==self.audio_sink_sequence:
+        if tell_server and ss.sequence == self.audio_sink_sequence:
             self.send("sound-control", "stop", self.audio_sink_sequence)
         self.audio_sink_sequence += 1
         self.send("sound-control", "new-sequence", self.audio_sink_sequence)
@@ -437,31 +440,31 @@ class AudioClient(StubClientMixin):
         ss.cleanup()
         log("stop_receiving_audio(%s) done", tell_server)
 
-    def audio_sink_state_changed(self, audio_sink, state:str) -> None:
-        if audio_sink!=self.audio_sink:
+    def audio_sink_state_changed(self, audio_sink, state: str) -> None:
+        if audio_sink != self.audio_sink:
             log("audio_sink_state_changed(%s, %s) not the current sink, ignoring it", audio_sink, state)
             return
         log("audio_sink_state_changed(%s, %s) on_sink_ready=%s", audio_sink, state, self.on_sink_ready)
-        if bytestostr(state)=="ready" and self.on_sink_ready:
+        if bytestostr(state) == "ready" and self.on_sink_ready:
             if not self.on_sink_ready():
                 self.on_sink_ready = None
         self.emit("speaker-changed")
 
-    def audio_sink_bitrate_changed(self, audio_sink, bitrate:int) -> None:
-        if audio_sink!=self.audio_sink:
+    def audio_sink_bitrate_changed(self, audio_sink, bitrate: int) -> None:
+        if audio_sink != self.audio_sink:
             log("audio_sink_bitrate_changed(%s, %s) not the current sink, ignoring it", audio_sink, bitrate)
             return
         log("audio_sink_bitrate_changed(%s, %s)", audio_sink, bitrate)
-        #not shown in the UI, so don't bother with emitting a signal:
-        #self.emit("speaker-changed")
+        # not shown in the UI, so don't bother with emitting a signal:
+        # self.emit("speaker-changed")
 
     def audio_sink_error(self, audio_sink, error) -> None:
         log("audio_sink_error(%s, %s) exit_code=%s, current sink=%s",
             audio_sink, error, self.exit_code, self.audio_sink)
         if self.exit_code is not None:
-            #exiting
+            # exiting
             return
-        if audio_sink!=self.audio_sink:
+        if audio_sink != self.audio_sink:
             log("audio_sink_error(%s, %s) not the current sink, ignoring it", audio_sink, error)
             return
         estr = bytestostr(error).replace("gst-resource-error-quark: ", "")
@@ -472,9 +475,9 @@ class AudioClient(StubClientMixin):
 
     def audio_process_stopped(self, audio_sink, *args) -> None:
         if self.exit_code is not None:
-            #exiting
+            # exiting
             return
-        if audio_sink!=self.audio_sink:
+        if audio_sink != self.audio_sink:
             log("audio_process_stopped(%s, %s) not the current sink, ignoring it", audio_sink, args)
             return
         log.warn("Warning: the audio process has stopped")
@@ -486,7 +489,7 @@ class AudioClient(StubClientMixin):
             # exiting
             return
         ss = self.audio_sink
-        if audio_sink!=ss:
+        if audio_sink != ss:
             log("audio_sink_exit() not the current sink, ignoring it")
             return
         if ss and ss.codec:
@@ -496,7 +499,7 @@ class AudioClient(StubClientMixin):
             ss.codec = ""
         self.stop_receiving_audio()
 
-    def start_audio_sink(self, codec:str) -> bool:
+    def start_audio_sink(self, codec: str) -> bool:
         log("start_audio_sink(%s)", codec)
         assert self.audio_sink is None, "audio sink already exists!"
         try:
@@ -521,7 +524,7 @@ class AudioClient(StubClientMixin):
 
     def new_audio_buffer(self, audio_source, data, metadata, packet_metadata=()) -> None:
         log("new_audio_buffer(%s, %s, %s, %s)", audio_source, len(data or ()), metadata, packet_metadata)
-        if audio_source.sequence<self.audio_source_sequence:
+        if audio_source.sequence < self.audio_source_sequence:
             log("audio buffer dropped: old sequence number: %s (current is %s)",
                 audio_source.sequence, self.audio_source_sequence)
             return
@@ -530,7 +533,7 @@ class AudioClient(StubClientMixin):
             self.audio_out_bytecount += len(x)
         metadata["sequence"] = audio_source.sequence
         if packet_metadata:
-            #the packet metadata is already compressed:
+            # the packet metadata is already compressed:
             packet_metadata = Compressed("packet metadata", packet_metadata, can_inline=True)
         self.send_audio_data(audio_source, data, metadata, packet_metadata)
 
@@ -553,15 +556,15 @@ class AudioClient(StubClientMixin):
             self.audio_in_bytecount += len(data)
         # verify sequence number if present:
         seq = metadata.intget("sequence", -1)
-        if self.audio_sink_sequence>0 and 0<=seq<self.audio_sink_sequence:
+        if self.audio_sink_sequence > 0 and 0 <= seq < self.audio_sink_sequence:
             log("ignoring audio data with old sequence number %s (now on %s)", seq, self.audio_sink_sequence)
             return
 
         if not self.speaker_enabled:
             if metadata.boolget("start-of-stream"):
-                #server is asking us to start playing audio
+                # server is asking us to start playing audio
                 if not self.speaker_allowed:
-                    #no can do!
+                    # no can do!
                     log.warn("Warning: cannot honour the request to start the speaker")
                     log.warn(" speaker forwarding is disabled")
                     self.stop_receiving_audio(True)
@@ -583,31 +586,31 @@ class AudioClient(StubClientMixin):
             log("server sent end-of-stream for sequence %s, closing audio pipeline", seq)
             self.stop_receiving_audio(False)
             return
-        if codec!=ss.codec:
+        if codec != ss.codec:
             log.error("Error: audio codec change is not supported!")
             log.error(" stream tried to switch from %s to %s", ss.codec, codec)
             self.stop_receiving_audio()
             return
-        if ss.get_state()=="stopped":
+        if ss.get_state() == "stopped":
             log("audio data received, audio sink is stopped - telling server to stop")
             self.stop_receiving_audio()
             return
-        #the server may send packet_metadata, which is pushed before the actual audio data:
+        # the server may send packet_metadata, which is pushed before the actual audio data:
         packet_metadata = ()
-        if len(packet)>4:
+        if len(packet) > 4:
             packet_metadata = packet[4]
-        #(some packets (ie: sos, eos) only contain metadata)
+        # (some packets (ie: sos, eos) only contain metadata)
         if data or packet_metadata:
             ss.add_data(data, metadata, packet_metadata)
         if self.av_sync and self.server_av_sync:
             qinfo = typedict(ss.get_info()).dictget("queue")
             queue_used = typedict(qinfo or {}).intget("cur", -1)
-            if queue_used<0:
+            if queue_used < 0:
                 return
-            delta = (self.queue_used_sent or 0)-queue_used
-            #avsynclog("server audio sync: queue info=%s, last sent=%s, delta=%s",
+            delta = (self.queue_used_sent or 0) - queue_used
+            # avsynclog("server audio sync: queue info=%s, last sent=%s, delta=%s",
             #    dict((k,v) for (k,v) in info.items() if k.startswith("queue")), self.queue_used_sent, delta)
-            if self.queue_used_sent is None or abs(delta)>=DELTA_THRESHOLD:
+            if self.queue_used_sent is None or abs(delta) >= DELTA_THRESHOLD:
                 avsynclog("server audio sync: sending updated queue.used=%i (was %s)",
                           queue_used, (self.queue_used_sent or "unset"))
                 self.queue_used_sent = queue_used

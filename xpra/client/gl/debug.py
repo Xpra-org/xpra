@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -28,11 +28,11 @@ glStringMarkerGREMEDY: Callable = noop
 glInitFrameTerminatorGREMEDY: Callable = noop
 glFrameTerminatorGREMEDY: Callable = noop
 
-
 if OPENGL_DEBUG:
     try:
         # pylint: disable=ungrouped-imports
         from OpenGL.GL import KHR
+
         GL_DEBUG_OUTPUT = int(KHR.debug.GL_DEBUG_OUTPUT)  # @UndefinedVariable
         GL_DEBUG_OUTPUT_SYNCHRONOUS = int(KHR.debug.GL_DEBUG_OUTPUT_SYNCHRONOUS)
         from OpenGL.GL.KHR.debug import glDebugMessageControl, glDebugMessageCallback, glInitDebugKHR
@@ -41,6 +41,7 @@ if OPENGL_DEBUG:
         KHR_DEBUG = False
     try:
         from OpenGL.GL.GREMEDY import string_marker, frame_terminator
+
         glInitStringMarkerGREMEDY = string_marker.glInitStringMarkerGREMEDY
         glStringMarkerGREMEDY = string_marker.glStringMarkerGREMEDY
         glInitFrameTerminatorGREMEDY = frame_terminator.glInitFrameTerminatorGREMEDY
@@ -50,6 +51,7 @@ if OPENGL_DEBUG:
         def py_gl_debug_callback(source, error_type, error_id, severity, length, message, param):
             log.error("src %x type %x id %x severity %x length %d message %s, param=%s",
                       source, error_type, error_id, severity, length, message, param)
+
         gl_debug_callback = GLDEBUGPROC(py_gl_debug_callback)
         GREMEDY_DEBUG = all(bool(x) for x in (
             glInitStringMarkerGREMEDY,

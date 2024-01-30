@@ -29,7 +29,7 @@ class ScreenDesktopModel(DesktopModelBase):
     A desktop model covering the entire screen as a single window.
     """
     __gsignals__ = dict(DesktopModelBase.__common_gsignals__)
-    _property_names = DesktopModelBase._property_names+["xid"]
+    _property_names = DesktopModelBase._property_names + ["xid"]
     _dynamic_property_names = ["size-hints", "title", "icons"]
 
     def __init__(self, resize_exact=False):
@@ -104,6 +104,7 @@ class ScreenDesktopModel(DesktopModelBase):
                 "minimum-size": size,
                 "base-size": size,
             })
+
         if RandR.has_randr():
             if self.resize_exact:
                 # assume resize_exact is enabled
@@ -122,7 +123,7 @@ class ScreenDesktopModel(DesktopModelBase):
                         # find the maximum size supported:
                         max_size = {}
                         for tw, th in screen_sizes:
-                            max_size[tw*th] = (tw, th)
+                            max_size[tw * th] = (tw, th)
                         max_pixels = sorted(max_size.keys())[-1]
                         size_hints["maximum-size"] = max_size[max_pixels]
                         # find the best increment we can use:
@@ -131,7 +132,7 @@ class ScreenDesktopModel(DesktopModelBase):
                             hits = 0
                             for tsize in screen_sizes:
                                 tw, th = tsize
-                                if (tw+inc, th+inc) in screen_sizes:
+                                if (tw + inc, th + inc) in screen_sizes:
                                     hits += 1
                             inc_hits[inc] = hits
                         screenlog("size increment hits: %s", inc_hits)

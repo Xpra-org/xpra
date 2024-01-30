@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (c) 2016-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (c) 2016-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#@PydevCodeAnalysisIgnore
+# @PydevCodeAnalysisIgnore
 
 import time
 import errno
@@ -35,15 +35,16 @@ from xpra.platform.win32.constants import (
 )
 
 from xpra.log import Logger
+
 log = Logger("network", "named-pipe", "win32")
 
 BUFSIZE = 65536
 
 CONNECTION_CLOSED_ERRORS = {
-    ERROR_BROKEN_PIPE           : "BROKENPIPE",
-    ERROR_PIPE_NOT_CONNECTED    : "PIPE_NOT_CONNECTED",
+    ERROR_BROKEN_PIPE: "BROKENPIPE",
+    ERROR_PIPE_NOT_CONNECTED: "PIPE_NOT_CONNECTED",
 }
-#some of these may be redundant or impossible to hit? (does not hurt I think)
+# some of these may be redundant or impossible to hit? (does not hurt I think)
 for x in ("WSAENETDOWN", "WSAENETUNREACH", "WSAECONNABORTED", "WSAECONNRESET",
           "WSAENOTCONN", "WSAESHUTDOWN", "WSAETIMEDOUT", "WSAETIMEDOUT",
           "WSAEHOSTUNREACH", "WSAEDISCON"):
@@ -55,7 +56,7 @@ class NamedPipeConnection(Connection):
         log("NamedPipeConnection(%s, %#x, %s)", name, pipe_handle, options)
         super().__init__(name, "named-pipe", options=options)
         self.pipe_handle = pipe_handle
-        self.read_buffer = (c_char*BUFSIZE)()
+        self.read_buffer = (c_char * BUFSIZE)()
         self.read_buffer_ptr = cast(addressof(self.read_buffer), c_void_p)
         self.read_event = CreateEventA(None, True, False, None)
         self.read_overlapped = OVERLAPPED()
@@ -72,9 +73,9 @@ class NamedPipeConnection(Connection):
 
     def can_retry(self, e) -> bool | str:
         code = e.args[0]
-        if code==errno.WSAEWOULDBLOCK:      #@UndefinedVariable pylint: disable=no-member
+        if code == errno.WSAEWOULDBLOCK:  # @UndefinedVariable pylint: disable=no-member
             return "WSAEWOULDBLOCK"
-        #convert those to a connection closed:
+        # convert those to a connection closed:
         closed = CONNECTION_CLOSED_ERRORS.get(code)
         if closed:
             raise ConnectionClosedException(e) from None
@@ -101,7 +102,7 @@ class NamedPipeConnection(Connection):
         log("ReadFile(%i)=%i, len=%s", n, r, read.value)
         if not r and self.pipe_handle:
             e = GetLastError()
-            if e!=ERROR_IO_PENDING:
+            if e != ERROR_IO_PENDING:
                 log("ReadFile: %s", IO_ERROR_STR.get(e, e))
                 if e in CONNECTION_CLOSED_ERRORS:
                     raise ConnectionClosedException(CONNECTION_CLOSED_ERRORS[e])
@@ -115,11 +116,11 @@ class NamedPipeConnection(Connection):
                 if e in CONNECTION_CLOSED_ERRORS:
                     raise ConnectionClosedException(CONNECTION_CLOSED_ERRORS[e])
                 raise RuntimeError("overlapped read failed: %s" % IO_ERROR_STR.get(e, e))
-        if read.value==0:
+        if read.value == 0:
             data = None
         else:
             data = string_at(self.read_buffer_ptr, read.value)
-        log("pipe_read: %i bytes", len(data or ""))          #, binascii.hexlify(s))
+        log("pipe_read: %i bytes", len(data or ""))  # , binascii.hexlify(s))
         return data
 
     def write(self, buf, _packet_type):
@@ -128,20 +129,20 @@ class NamedPipeConnection(Connection):
     def _pipe_write(self, buf):
         bbuf = memoryview_to_bytes(buf)
         size = len(bbuf)
-        log("pipe_write: %i bytes", size)   #binascii.hexlify(buf))
+        log("pipe_write: %i bytes", size)  # binascii.hexlify(buf))
         written = c_ulong(0)
         r = WriteFile(self.pipe_handle, c_char_p(bbuf), size, byref(written), byref(self.write_overlapped))
         log("WriteFile(..)=%s, len=%i", r, written.value)
         if not r and self.pipe_handle:
             e = GetLastError()
-            if e!=ERROR_IO_PENDING:
+            if e != ERROR_IO_PENDING:
                 log("WriteFile: %s", IO_ERROR_STR.get(e, e))
                 if e in CONNECTION_CLOSED_ERRORS:
                     raise ConnectionClosedException(CONNECTION_CLOSED_ERRORS[e])
             r = WaitForSingleObject(self.write_event, INFINITE)
             log("WaitForSingleObject(..)=%s, len=%i", WAIT_STR.get(r, r), written.value)
             if not self.pipe_handle:
-                #closed already!
+                # closed already!
                 return written.value
             if r:
                 raise RuntimeError("failed to write buffer to named pipe handle %s" % self.pipe_handle)
@@ -152,7 +153,7 @@ class NamedPipeConnection(Connection):
             log("pipe_write: %i bytes written", written.value)
             if self.pipe_handle:
                 FlushFileBuffers(self.pipe_handle)
-        #SetFilePointer(self.pipe_handle, 0, FILE_BEGIN)
+        # SetFilePointer(self.pipe_handle, 0, FILE_BEGIN)
         return written.value
 
     def close(self):
@@ -170,6 +171,7 @@ class NamedPipeConnection(Connection):
                 fn(*args)
             except Exception as e:
                 _close_err(fn, e)
+
         logerr(SetEvent, self.read_event)
         logerr(SetEvent, self.write_event)
         logerr(FlushFileBuffers, ph)
@@ -179,7 +181,7 @@ class NamedPipeConnection(Connection):
     def __repr__(self):
         return self.target
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         d = super().get_info()
         d["type"] = "named-pipe"
         d["closed"] = self.pipe_handle is None
@@ -190,21 +192,21 @@ def connect_to_namedpipe(pipe_name, timeout=10):
     log("connect_to_namedpipe(%s, %i)", pipe_name, timeout)
     start = time.time()
     while True:
-        if time.time()-start>=timeout:
+        if time.time() - start >= timeout:
             raise RuntimeError("timeout waiting for named pipe '%s'" % pipe_name)
         pipe_handle = CreateFileA(strtobytes(pipe_name), GENERIC_READ | GENERIC_WRITE,
                                   0, None, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0)
         log("CreateFileA(%s)=%#x", pipe_name, pipe_handle)
-        if pipe_handle!=INVALID_HANDLE_VALUE:
+        if pipe_handle != INVALID_HANDLE_VALUE:
             break
         err = GetLastError()
         log("CreateFileA(..) error=%s", err)
-        if err==ERROR_PIPE_BUSY:
-            if WaitNamedPipeA(pipe_name, timeout*10000)==0:
+        if err == ERROR_PIPE_BUSY:
+            if WaitNamedPipeA(pipe_name, timeout * 10000) == 0:
                 raise RuntimeError("timeout waiting for named pipe '%s'" % pipe_name)
         else:
             raise RuntimeError("cannot open named pipe '%s': %s" % (pipe_name, FormatMessageSystem(err)))
-    #we have a valid handle!
+    # we have a valid handle!
     dw_mode = c_ulong(PIPE_READMODE_BYTE)
     r = SetNamedPipeHandleState(pipe_handle, byref(dw_mode), None, None)
     log("SetNamedPipeHandleState(..)=%i", r)

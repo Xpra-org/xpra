@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -34,12 +34,12 @@ class DisplayManager(StubServerMixin):
         self.dpi = 0
         self.xdpi = 0
         self.ydpi = 0
-        self.antialias : dict[str,Any] = {}
+        self.antialias: dict[str, Any] = {}
         self.cursor_size = 0
-        self.double_click_time  = -1
+        self.double_click_time = -1
         self.double_click_distance = -1, -1
         self.opengl = "no"
-        self.opengl_props : dict[str,Any] = {}
+        self.opengl_props: dict[str, Any] = {}
         self.refresh_rate = "auto"
 
     def init(self, opts) -> None:
@@ -56,7 +56,7 @@ class DisplayManager(StubServerMixin):
     def get_refresh_rate_for_value(self, invalue) -> int:
         return get_refresh_rate_for_value(self.refresh_rate, invalue)
 
-    def parse_hello(self, ss, caps, send_ui:bool):
+    def parse_hello(self, ss, caps, send_ui: bool):
         if send_ui:
             self.parse_screen_info(ss)
 
@@ -66,9 +66,9 @@ class DisplayManager(StubServerMixin):
     def threaded_setup(self) -> None:
         self.opengl_props = self.query_opengl()
 
-    def query_opengl(self) -> dict[str,Any]:
-        props : dict[str,Any] = {}
-        if self.opengl.lower()=="noprobe" or self.opengl.lower() in FALSE_OPTIONS:
+    def query_opengl(self) -> dict[str, Any]:
+        props: dict[str, Any] = {}
+        if self.opengl.lower() == "noprobe" or self.opengl.lower() in FALSE_OPTIONS:
             gllog("query_opengl() skipped because opengl=%s", self.opengl)
             return props
         try:
@@ -83,19 +83,19 @@ class DisplayManager(StubServerMixin):
             # pylint: disable=import-outside-toplevel
             from subprocess import Popen, PIPE
             from xpra.platform.paths import get_xpra_command
-            cmd = self.get_full_child_command(get_xpra_command()+["opengl", "--opengl=yes"])
+            cmd = self.get_full_child_command(get_xpra_command() + ["opengl", "--opengl=yes"])
             env = self.get_child_env()
-            #we want the output so we can parse it:
+            # we want the output so we can parse it:
             env["XPRA_REDIRECT_OUTPUT"] = "0"
             proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=env)
-            out,err = proc.communicate()
+            out, err = proc.communicate()
             gllog("out(%s)=%s", cmd, out)
             gllog("err(%s)=%s", cmd, err)
-            if proc.returncode==0:
-                #parse output:
+            if proc.returncode == 0:
+                # parse output:
                 for line in out.splitlines():
                     parts = bytestostr(line).split("=")
-                    if len(parts)!=2:
+                    if len(parts) != 2:
                         continue
                     k = parts[0].strip()
                     v = parts[1].strip()
@@ -139,10 +139,10 @@ class DisplayManager(StubServerMixin):
         gllog("OpenGL: %s", props)
         return props
 
-    def get_caps(self, source)  -> dict[str, Any]:
-        caps : dict[str, Any] = {
-            "bell"          : self.bell,
-            "cursors"       : self.cursors,
+    def get_caps(self, source) -> dict[str, Any]:
+        caps: dict[str, Any] = {
+            "bell": self.bell,
+            "cursors": self.cursors,
         }
         root_size = self.get_root_window_size()
         if root_size:
@@ -151,27 +151,27 @@ class DisplayManager(StubServerMixin):
             caps["opengl"] = dict_version_trim(self.opengl_props)
         return caps
 
-    def get_info(self, _proto) -> dict[str,Any]:
+    def get_info(self, _proto) -> dict[str, Any]:
         i = {
-            "randr" : self.randr,
-            "bell"  : self.bell,
-            "cursors" : {
-                ""      : self.cursors,
-                "size"  : self.cursor_size,
+            "randr": self.randr,
+            "bell": self.bell,
+            "cursors": {
+                "": self.cursors,
+                "size": self.cursor_size,
             },
-            "double-click"  : {
-                "time"      : self.double_click_time,
-                "distance"  : self.double_click_distance,
+            "double-click": {
+                "time": self.double_click_time,
+                "distance": self.double_click_distance,
             },
-            "dpi" : {
-                "default"   : self.default_dpi,
-                "value"     : self.dpi,
-                "x"         : self.xdpi,
-                "y"         : self.ydpi,
+            "dpi": {
+                "default": self.default_dpi,
+                "value": self.dpi,
+                "x": self.xdpi,
+                "y": self.ydpi,
             },
-            "antialias" : self.antialias,
-            "depth" : self.bit_depth,
-            "refresh-rate"  : self.refresh_rate,
+            "antialias": self.antialias,
+            "depth": self.bit_depth,
+            "refresh-rate": self.refresh_rate,
         }
         if self.opengl_props:
             i["opengl"] = self.opengl_props
@@ -193,19 +193,19 @@ class DisplayManager(StubServerMixin):
 
     ######################################################################
     # display / screen / root window:
-    def set_screen_geometry_attributes(self, w:int, h:int) -> None:
-        #by default, use the screen as desktop area:
+    def set_screen_geometry_attributes(self, w: int, h: int) -> None:
+        # by default, use the screen as desktop area:
         self.set_desktop_geometry_attributes(w, h)
 
-    def set_desktop_geometry_attributes(self, w:int, h:int) -> None:
+    def set_desktop_geometry_attributes(self, w: int, h: int) -> None:
         self.calculate_desktops()
         self.calculate_workarea(w, h)
         self.set_desktop_geometry(w, h)
 
-    def parse_screen_info(self, ss) -> tuple[int,int]:
+    def parse_screen_info(self, ss) -> tuple[int, int]:
         return self.do_parse_screen_info(ss, ss.desktop_size)
 
-    def do_parse_screen_info(self, ss, desktop_size) -> tuple[int,int]:
+    def do_parse_screen_info(self, ss, desktop_size) -> tuple[int, int]:
         log("do_parse_screen_info%s", (ss, desktop_size))
         dw, dh = None, None
         if desktop_size:
@@ -220,13 +220,13 @@ class DisplayManager(StubServerMixin):
         if not best:
             return desktop_size
         sw, sh = best
-        #we will tell the client about the size chosen in the hello we send back,
-        #so record this size as the current server desktop size to avoid change notifications:
+        # we will tell the client about the size chosen in the hello we send back,
+        # so record this size as the current server desktop size to avoid change notifications:
         ss.desktop_size_server = sw, sh
-        #prefer desktop size, fallback to screen size:
+        # prefer desktop size, fallback to screen size:
         w = dw or sw
         h = dh or sh
-        #clamp to max supported:
+        # clamp to max supported:
         max_size = self.get_max_screen_size()
         if max_size:
             maxw, maxh = max_size
@@ -252,13 +252,13 @@ class DisplayManager(StubServerMixin):
 
     def do_screen_changed(self, screen) -> None:
         log("do_screen_changed(%s)", screen)
-        #randr has resized the screen, tell the client (if it supports it)
+        # randr has resized the screen, tell the client (if it supports it)
         w, h = screen.get_width(), screen.get_height()
         log("new screen dimensions: %ix%i", w, h)
         self.set_screen_geometry_attributes(w, h)
         self.idle_add(self.send_updated_screen_size)
 
-    def get_root_window_size(self) -> tuple[int,int]:
+    def get_root_window_size(self) -> tuple[int, int]:
         raise NotImplementedError()
 
     def send_updated_screen_size(self) -> None:
@@ -275,35 +275,35 @@ class DisplayManager(StubServerMixin):
         count = 0
         for ss in self._server_sources.values():
             if ss.updated_desktop_size(root_w, root_h, max_w, max_h):
-                count +=1
-        if count>0:
+                count += 1
+        if count > 0:
             log.info("sent updated screen size to %s clients: %sx%s (max %sx%s)",
                      count, root_w, root_h, max_w, max_h)
 
-    def get_max_screen_size(self) -> tuple[int,int]:
+    def get_max_screen_size(self) -> tuple[int, int]:
         return self.get_root_window_size()
 
-    def _get_desktop_size_capability(self, server_source, root_w:int, root_h:int) -> tuple[int,int]:
+    def _get_desktop_size_capability(self, server_source, root_w: int, root_h: int) -> tuple[int, int]:
         client_size = server_source.desktop_size
         log("client resolution is %s, current server resolution is %sx%s", client_size, root_w, root_h)
         if not client_size:
-            #client did not specify size, just return what we have
+            # client did not specify size, just return what we have
             return root_w, root_h
         client_w, client_h = client_size
         w = min(client_w, root_w)
         h = min(client_h, root_h)
         return w, h
 
-    def configure_best_screen_size(self) -> tuple[int,int]:
+    def configure_best_screen_size(self) -> tuple[int, int]:
         return self.get_root_window_size()
 
     def apply_refresh_rate(self, ss) -> int:
         rrate = self.get_client_refresh_rate(ss)
-        if rrate>0:
+        if rrate > 0:
             self.set_window_refresh_rate(ss, rrate)
         return rrate
 
-    def set_window_refresh_rate(self, ss, rrate:int):
+    def set_window_refresh_rate(self, ss, rrate: int):
         if hasattr(ss, "all_window_sources"):
             for window_source in ss.all_window_sources():
                 bc = window_source.batch_config
@@ -312,15 +312,15 @@ class DisplayManager(StubServerMixin):
 
     def get_client_refresh_rate(self, ss) -> int:
         vrefresh = []
-        #use the refresh-rate value from the monitors
-        #(value is pre-multiplied by 1000!)
+        # use the refresh-rate value from the monitors
+        # (value is pre-multiplied by 1000!)
         if ss.monitors:
             for mdef in ss.monitors.values():
                 v = mdef.get("refresh-rate", 0)
                 if v:
                     vrefresh.append(v)
-        if not vrefresh and getattr(ss, "vrefresh", 0)>0:
-            vrefresh.append(ss.vrefresh*1000)
+        if not vrefresh and getattr(ss, "vrefresh", 0) > 0:
+            vrefresh.append(ss.vrefresh * 1000)
         if not vrefresh:
             vrefresh.append(self.DEFAULT_REFRESH_RATE)
         rrate = 0
@@ -339,39 +339,39 @@ class DisplayManager(StubServerMixin):
             return
         width, height = packet[1:3]
         ss.desktop_size = (width, height)
-        if len(packet)>=12:
+        if len(packet) >= 12:
             ss.set_monitors(packet[11])
-        elif len(packet)>=11:
-            #fallback to the older global attribute:
+        elif len(packet) >= 11:
+            # fallback to the older global attribute:
             v = packet[10]
-            if 0<v<240 and hasattr(ss, "vrefresh") and getattr(ss, "vrefresh")!=v:
+            if 0 < v < 240 and hasattr(ss, "vrefresh") and getattr(ss, "vrefresh") != v:
                 ss.vrefresh = v
-        if len(packet)>=10:
-            #added in 0.16 for scaled client displays:
+        if len(packet) >= 10:
+            # added in 0.16 for scaled client displays:
             xdpi, ydpi = packet[8:10]
-            if xdpi!=self.xdpi or ydpi!=self.ydpi:
+            if xdpi != self.xdpi or ydpi != self.ydpi:
                 self.xdpi, self.ydpi = xdpi, ydpi
                 log("new dpi: %ix%i", self.xdpi, self.ydpi)
-                self.dpi = round((self.xdpi + self.ydpi)/2)
+                self.dpi = round((self.xdpi + self.ydpi) / 2)
                 self.dpi_changed()
-        if len(packet)>=8:
-            #added in 0.16 for scaled client displays:
+        if len(packet) >= 8:
+            # added in 0.16 for scaled client displays:
             ss.desktop_size_unscaled = packet[6:8]
-        if len(packet)>=6:
+        if len(packet) >= 6:
             desktops, desktop_names = packet[4:6]
             ss.set_desktops(desktops, desktop_names)
             self.calculate_desktops()
-        if len(packet)>=4:
+        if len(packet) >= 4:
             ss.set_screen_sizes(packet[3])
         log("client requesting new size: %sx%s", width, height)
         self.set_screen_size(width, height)
-        if len(packet)>=4:
+        if len(packet) >= 4:
             log.info("received updated display dimensions")
             log.info("client display size is %sx%s", width, height)
             log_screen_sizes(width, height, ss.screen_sizes)
             self.calculate_workarea(width, height)
         self.apply_refresh_rate(ss)
-        #ensures that DPI and antialias information gets reset:
+        # ensures that DPI and antialias information gets reset:
         self.update_all_server_settings()
 
     def _process_configure_display(self, proto, packet: PacketType) -> None:
@@ -385,9 +385,9 @@ class DisplayManager(StubServerMixin):
         desktop_size_unscaled = attrs.intpair("desktop-size-unscaled")
         if desktop_size_unscaled:
             ss.desktop_size_unscaled = desktop_size_unscaled
-        #vrefresh may be overridden in 'monitors' data:
+        # vrefresh may be overridden in 'monitors' data:
         vrefresh = attrs.intget("vrefresh")
-        if 0<vrefresh<240 and hasattr(ss, "vrefresh") and getattr(ss, "vrefresh")!=vrefresh:
+        if 0 < vrefresh < 240 and hasattr(ss, "vrefresh") and getattr(ss, "vrefresh") != vrefresh:
             ss.vrefresh = vrefresh
         monitors = attrs.dictget("monitors")
         if monitors:
@@ -413,10 +413,10 @@ class DisplayManager(StubServerMixin):
             tdpi = typedict(dpi_caps)
             dpix = tdpi.intget("x", dpix)
             dpiy = tdpi.intget("y", dpiy)
-        if dpix and dpiy and (dpix!=self.xdpi or dpiy!=self.ydpi):
+        if dpix and dpiy and (dpix != self.xdpi or dpiy != self.ydpi):
             self.xdpi, self.ydpi = dpix, dpiy
             log("new dpi: %ix%i", dpix, dpiy)
-            self.dpi = round((dpix + dpiy)/2)
+            self.dpi = round((dpix + dpiy) / 2)
             self.dpi_changed()
         desktop_names = attrs.strtupleget("desktop-names")
         if desktop_names:
@@ -429,7 +429,7 @@ class DisplayManager(StubServerMixin):
             ss.display_icc = iccd.get("display", ss.display_icc)
             self.set_icc_profile()
         self.apply_refresh_rate(ss)
-        #ensures that DPI and antialias information gets reset:
+        # ensures that DPI and antialias information gets reset:
         self.update_all_server_settings()
 
     def dpi_changed(self) -> None:
@@ -441,7 +441,7 @@ class DisplayManager(StubServerMixin):
     def calculate_desktops(self):
         """ seamless servers can update the desktops """
 
-    def calculate_workarea(self, w:int, h:int):
+    def calculate_workarea(self, w: int, h: int):
         raise NotImplementedError()
 
     def set_workarea(self, workarea) -> None:
@@ -463,23 +463,23 @@ class DisplayManager(StubServerMixin):
         raise NotImplementedError("no screenshot capability in %s" % type(self))
 
     def send_screenshot(self, proto) -> None:
-        #this is a screenshot request, handle it and disconnect
+        # this is a screenshot request, handle it and disconnect
         try:
             packet = self.make_screenshot_packet()
             if not packet:
                 self.send_disconnect(proto, "screenshot failed")
                 return
             proto.send_now(packet)
-            self.timeout_add(5*1000, self.send_disconnect, proto, "screenshot sent")
+            self.timeout_add(5 * 1000, self.send_disconnect, proto, "screenshot sent")
         except Exception as e:
             log.error("failed to capture screenshot", exc_info=True)
             self.send_disconnect(proto, "screenshot failed: %s" % e)
 
     def init_packet_handlers(self) -> None:
         self.add_packet_handlers({
-            "set-cursors"           : self._process_set_cursors,
-            "set-bell"              : self._process_set_bell,
-            "desktop_size"          : self._process_desktop_size,
-            "configure-display"     : self._process_configure_display,
-            "screenshot"            : self._process_screenshot,
+            "set-cursors": self._process_set_cursors,
+            "set-bell": self._process_set_bell,
+            "desktop_size": self._process_desktop_size,
+            "configure-display": self._process_configure_display,
+            "screenshot": self._process_screenshot,
         })

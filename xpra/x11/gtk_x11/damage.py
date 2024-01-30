@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -21,21 +21,19 @@ XImage = XImageBindings()
 X11Window = X11WindowBindings()
 X11Window.ensure_XDamage_support()
 
-
 StructureNotifyMask = constants["StructureNotifyMask"]
 USE_XSHM = envbool("XPRA_XSHM", True)
 
 
 class WindowDamageHandler:
-
     XShmEnabled = USE_XSHM
     MAX_RECEIVERS = 3
 
     __common_gsignals__ = {
-        "xpra-damage-event"     : one_arg_signal,
-        "xpra-unmap-event"      : one_arg_signal,
-        "xpra-configure-event"  : one_arg_signal,
-        "xpra-reparent-event"   : one_arg_signal,
+        "xpra-damage-event": one_arg_signal,
+        "xpra-unmap-event": one_arg_signal,
+        "xpra-configure-event": one_arg_signal,
+        "xpra-reparent-event": one_arg_signal,
     }
 
     # This may raise XError.
@@ -46,8 +44,8 @@ class WindowDamageHandler:
         log("WindowDamageHandler.__init__(%#x, %s)", self.xid, use_xshm)
         self._use_xshm: bool = use_xshm
         self._damage_handle: int = 0
-        self._xshm_handle = None        # XShmWrapper instance
-        self._contents_handle = None   # PixmapWrapper instance
+        self._xshm_handle = None  # XShmWrapper instance
+        self._contents_handle = None  # PixmapWrapper instance
         self._border_width: int = 0
 
     def __repr__(self):
@@ -126,7 +124,7 @@ class WindowDamageHandler:
             if not geom:
                 return None
             ww, wh = geom[2:4]
-            if sw!=ww or sh!=wh:
+            if sw != ww or sh != wh:
                 # size has changed!
                 # make sure the current wrapper gets garbage collected:
                 self._xshm_handle.cleanup()
@@ -162,7 +160,7 @@ class WindowDamageHandler:
                 self._set_pixmap()
         return self._contents_handle
 
-    def get_image(self, x:int, y:int, width:int, height:int):
+    def get_image(self, x: int, y: int, width: int, height: int):
         handle = self.get_contents_handle()
         if handle is None:
             log("get_image(..) pixmap is None for window %#x", self.xid)
@@ -185,7 +183,7 @@ class WindowDamageHandler:
         try:
             w = min(handle.get_width(), width)
             h = min(handle.get_height(), height)
-            if w!=width or h!=height:
+            if w != width or h != height:
                 log("get_image(%s, %s, %s, %s) clamped to pixmap dimensions: %sx%s", x, y, width, height, w, h)
             with xsync:
                 return handle.get_image(x, y, w, h)

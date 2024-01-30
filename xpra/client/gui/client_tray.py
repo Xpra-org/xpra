@@ -114,11 +114,11 @@ class ClientTray(ClientWidgetBase):
         if w <= 1 or h <= 1:
             w, h = ClientTray.DEFAULT_SIZE
             geometry = x, y, w, h
-        if force_send_configure or self._geometry is None or geometry!=self._geometry:
+        if force_send_configure or self._geometry is None or geometry != self._geometry:
             self._geometry = geometry
             client_properties = {
-                "encoding.transparency" : True,
-                "encodings.rgb_formats" : ["RGBA", "RGB", "RGBX"],
+                "encoding.transparency": True,
+                "encodings.rgb_formats": ["RGBA", "RGB", "RGBX"],
             }
             if tw:
                 orientation = tw.get_orientation()
@@ -129,7 +129,7 @@ class ClientTray(ClientWidgetBase):
             log("%s.reconfigure(%s) sending configure for geometry=%s : %s",
                 self, force_send_configure, geometry, (sx, sy, sw, sh, client_properties))
             self._client.send("configure-window", self.wid, sx, sy, sw, sh, client_properties)
-        if self._size!=(w, h):
+        if self._size != (w, h):
             self.new_backing(w, h)
 
     def move_resize(self, x: int, y: int, w: int, h: int) -> None:
@@ -158,7 +158,7 @@ class ClientTray(ClientWidgetBase):
         """
 
     def draw_region(self, x: int, y: int, width: int, height: int,
-                    coding:str, img_data, rowstride: int, packet_sequence: int, options, callbacks):
+                    coding: str, img_data, rowstride: int, packet_sequence: int, options, callbacks):
         log("%s.draw_region%s", self,
             (x, y, width, height, coding, "%s bytes" % len(img_data), rowstride, packet_sequence, options, callbacks))
 
@@ -178,16 +178,17 @@ class ClientTray(ClientWidgetBase):
                 return
             self.idle_add(self.set_tray_icon, tray_data)
             self.idle_add(self.reconfigure)
+
         callbacks.append(after_draw_update_tray)
         backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
 
     def set_tray_icon(self, tray_data) -> None:
         enc, w, h, rowstride, pixels, options = tray_data
         log("%s.set_tray_icon(%s, %s, %s, %s, %s bytes)", self, enc, w, h, rowstride, len(pixels))
-        has_alpha = enc=="rgb32"
+        has_alpha = enc == "rgb32"
         tw = self.tray_widget
         if tw:
-            #some tray implementations can't deal with memoryviews..
+            # some tray implementations can't deal with memoryviews..
             if isinstance(pixels, (memoryview, bytearray)):
                 pixels = memoryview_to_bytes(pixels)
             tw.set_icon_from_data(pixels, has_alpha, w, h, rowstride, options)
@@ -213,16 +214,16 @@ class TrayBacking(WindowBackingBase):
     RGB_MODES = ("RGBA", "RGBX")
     HAS_ALPHA = True
 
-    def __init__(self, wid: int, _w: int, _h: int, _has_alpha:bool, data=None):
+    def __init__(self, wid: int, _w: int, _h: int, _has_alpha: bool, data=None):
         self.data = data
         super().__init__(wid, True)
-        self._backing = object()    #pretend we have a backing structure
+        self._backing = object()  # pretend we have a backing structure
 
-    def get_encoding_properties(self) -> dict[str,Any]:
+    def get_encoding_properties(self) -> dict[str, Any]:
         # override so we skip all csc caps:
         return {
-            "encodings.rgb_formats" : self.get_rgb_formats(),
-            "encoding.transparency" : True,
+            "encodings.rgb_formats": self.get_rgb_formats(),
+            "encoding.transparency": True,
         }
 
     def idle_add(self, *args, **kwargs) -> int:
@@ -233,7 +234,7 @@ class TrayBacking(WindowBackingBase):
 
     def _do_paint_rgb24(self, img_data, x: int, y: int, width: int, height: int,
                         render_width: int, render_height: int, rowstride: int, options) -> bool:
-        assert width==render_width and height==render_height, "tray rgb must not use scaling"
+        assert width == render_width and height == render_height, "tray rgb must not use scaling"
         self.data = ("rgb24", width, height, rowstride, img_data[:], options)
         if SAVE:
             self.save_tray_png()
@@ -241,7 +242,7 @@ class TrayBacking(WindowBackingBase):
 
     def _do_paint_rgb32(self, img_data, x: int, y: int, width: int, height: int,
                         render_width: int, render_height: int, rowstride: int, options) -> bool:
-        assert width==render_width and height==render_height, "tray rgb must not use scaling"
+        assert width == render_width and height == render_height, "tray rgb must not use scaling"
         self.data = ("rgb32", width, height, rowstride, img_data[:], options)
         if SAVE:
             self.save_tray_png()
@@ -252,15 +253,15 @@ class TrayBacking(WindowBackingBase):
         rgb_mode, width, height, _, img_data = self.data[:5]
         mode = "RGB"
         data_mode = "RGB"
-        if rgb_mode=="rgb32":
+        if rgb_mode == "rgb32":
             mode += "A"
             data_mode += "A"
         try:
-            from PIL import Image       # pylint: disable=import-outside-toplevel
+            from PIL import Image  # pylint: disable=import-outside-toplevel
         except ImportError as e:
             log(f"cannot save tray: {e}")
             return
-        img = Image.frombytes(mode, (width, height), img_data, "raw", data_mode, width*len(data_mode), 1)
+        img = Image.frombytes(mode, (width, height), img_data, "raw", data_mode, width * len(data_mode), 1)
         filename = f"./tray-{rgb_mode}-{time()}.png"
         img.save(filename, "PNG")
         log.info("tray %s update saved to %s", rgb_mode, filename)
