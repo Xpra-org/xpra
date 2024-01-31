@@ -200,38 +200,39 @@ command_to_type: dict[str, str] | None = None
 
 
 def load_command_to_type() -> dict[str, str]:
+    if not GUESS_CONTENT:
+        return {}
     global command_to_type
-    if command_to_type is None:
-        command_to_type = {}
-        if not GUESS_CONTENT:
-            return command_to_type
-        from xpra.server.menu_provider import get_menu_provider
-        xdg_menu = get_menu_provider().get_menu_data(remove_icons=True)
-        categories_to_type = load_categories_to_type()
-        log("load_command_to_type() xdg_menu=%s, categories_to_type=%s", xdg_menu, categories_to_type)
-        if xdg_menu and categories_to_type:
-            for category, category_props in xdg_menu.items():
-                log("category %s: %s", category, ellipsizer(category_props))
-                entries = category_props.get("Entries", {})
-                for name, props in entries.items():
-                    command = props.get("TryExec") or props.get("Exec")
-                    categories = props.get("Categories")
-                    log("Entry '%s': command=%s, categories=%s", name, command, categories)
-                    if command and categories:
-                        for c in categories:
-                            ctype = categories_to_type.get(c.lower())
-                            if not ctype:
-                                # try a more fuzzy match:
-                                for category_name, ct in categories_to_type.items():
-                                    if c.lower().find(category_name) >= 0:
-                                        ctype = ct
-                                        break
-                            if ctype:
-                                cmd = os.path.basename(command.split(" ")[0]).encode()
-                                if cmd:
-                                    command_to_type[cmd] = ctype
+    if command_to_type is not None:
+        return command_to_type
+    command_to_type = {}
+    from xpra.server.menu_provider import get_menu_provider
+    xdg_menu = get_menu_provider().get_menu_data(remove_icons=True)
+    categories_to_type = load_categories_to_type()
+    log("load_command_to_type() xdg_menu=%s, categories_to_type=%s", xdg_menu, categories_to_type)
+    if xdg_menu and categories_to_type:
+        for category, category_props in xdg_menu.items():
+            log("category %s: %s", category, ellipsizer(category_props))
+            entries = category_props.get("Entries", {})
+            for name, props in entries.items():
+                command = props.get("TryExec") or props.get("Exec")
+                categories = props.get("Categories")
+                log("Entry '%s': command=%s, categories=%s", name, command, categories)
+                if command and categories:
+                    for c in categories:
+                        ctype = categories_to_type.get(c.lower())
+                        if not ctype:
+                            # try a more fuzzy match:
+                            for category_name, ct in categories_to_type.items():
+                                if c.lower().find(category_name) >= 0:
+                                    ctype = ct
                                     break
-        log("load_command_to_type()=%s", command_to_type)
+                        if ctype:
+                            cmd = os.path.basename(command.split(" ")[0]).encode()
+                            if cmd:
+                                command_to_type[cmd] = ctype
+                                break
+    log("load_command_to_type()=%s", command_to_type)
     return command_to_type
 
 
