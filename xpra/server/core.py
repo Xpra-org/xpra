@@ -402,7 +402,7 @@ class ServerCore:
     def after_threaded_init(self, callback: Callable, *args) -> None:
         with self.init_thread_lock:
             if self.init_thread is None or self.init_thread.is_alive():
-                self.add_init_thread_callback((callback, args))
+                self.add_init_thread_callback(callback, args)
             else:
                 callback(*args)
 
