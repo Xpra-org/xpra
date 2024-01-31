@@ -1063,7 +1063,7 @@ class ServerCore:
         protocols = self.get_all_protocols()
         self.cleanup_protocols(protocols, reason=reason, force=force)
 
-    def get_all_protocols(self) -> tuple[SocketProtocol]:
+    def get_all_protocols(self) -> tuple[SocketProtocol, ...]:
         return tuple(self._potential_protocols)
 
     def cleanup_protocols(self, protocols, reason=None, force=False) -> None:
@@ -1939,7 +1939,7 @@ class ServerCore:
         # in which case we'll end up here parsing the hello again
         start_thread(self.verify_auth, "authenticate connection", daemon=True, args=(proto, packet, c))
 
-    def make_authenticators(self, socktype: str, remote, conn) -> tuple[Any]:
+    def make_authenticators(self, socktype: str, remote, conn) -> tuple[Any, ...]:
         authlog("make_authenticators%s socket options=%s", (socktype, remote, conn), conn.options)
         sock_options = conn.options
         sock_auth = sock_options.get("auth", "")
@@ -1987,7 +1987,7 @@ class ServerCore:
                 i += 1
         return tuple(authenticators)
 
-    def send_challenge(self, proto: SocketProtocol, salt, auth_caps: dict, digest, salt_digest,
+    def send_challenge(self, proto: SocketProtocol, salt: bytes, auth_caps: dict, digest: str, salt_digest: str,
                        prompt: str = "password") -> None:
         proto.send_now(("challenge", salt, auth_caps or {}, digest, salt_digest, prompt))
         self.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
@@ -2040,9 +2040,9 @@ class ServerCore:
 
         def send_fake_challenge() -> None:
             # fake challenge so the client will send the real hello:
-            salt = get_salt()
-            digest = choose_digest(digest_modes)
-            salt_digest = choose_digest(salt_digest_modes)
+            salt: bytes = get_salt()
+            digest: str = choose_digest(digest_modes)
+            salt_digest: str = choose_digest(salt_digest_modes)
             self.send_challenge(proto, salt, auth_caps, digest, salt_digest)
 
         # skip the authentication module we have "passed" already:
@@ -2092,7 +2092,7 @@ class ServerCore:
                 if actual_digest not in digest_modes:
                     auth_failed(f"cannot proceed without {actual_digest!r} digest support")
                     return
-                salt_digest = authenticator.choose_salt_digest(salt_digest_modes)
+                salt_digest: str = authenticator.choose_salt_digest(salt_digest_modes)
                 if salt_digest in ("xor", "des"):
                     auth_failed(f"insecure salt digest {salt_digest!r} rejected")
                     return
