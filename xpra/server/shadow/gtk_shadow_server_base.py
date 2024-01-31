@@ -416,7 +416,10 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
                 w = c(self, XPRA_APP_ID, self.tray_menu, "Xpra Shadow Server",
                       click_cb=self.tray_click_callback, exit_cb=self.tray_exit_callback)
                 if w:
+                    traylog(f"server system tray widget using {c}(..)={w}")
                     return w
+                traylog(f"{c}(..) returned None")
+                errs.append((c, "returned None"))
             except Exception as e:
                 traylog(f"{c}(..)", exc_info=True)
                 errs.append((c, e))
