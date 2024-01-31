@@ -1,21 +1,28 @@
 # Changelog
 
-## [5.0.5] 2024-01-21
+## [5.0.5] 2024-01-31
 * Major:
     * [race condition in OpenGL initialization](https://github.com/Xpra-org/xpra/commit/498b8f6c7da012bb555fb087ead26ba218701ada)
     * [http socket upgrades for slow requests](https://github.com/Xpra-org/xpra/commit/c2935630d505b11752c2851dc0f1b1590c2788eb)
+    * [socket setup failure cleanup](https://github.com/Xpra-org/xpra/commit/d6294f80efa635cfe57b492440b5c9eb30363b7b)
+    * [ensure text is always lossless](https://github.com/Xpra-org/xpra/commit/0bc563c31ea6e2ad011a6947662cfa7f9415d3c0)
     * [fixup DPI backport for Xvfb users](https://github.com/Xpra-org/xpra/commit/30c7cfa5a9f119aac300b5652d3d545f9ca799cf)
     * [window max-height nor honoured](https://github.com/Xpra-org/xpra/commit/824d488b11d78df580657181fcb10d8021c6c78d)
     * [tools and examples hang on SIGINT](https://github.com/Xpra-org/xpra/commit/6b83eab06d691adcfcf6f7d9d0618aded1d0b774)
+    * [start-gui error when specifying a port](https://github.com/Xpra-org/xpra/commit/8d01102dc2b60e6169acfb346b0f5e2af82f0fef)
+    * [broken about dialog](https://github.com/Xpra-org/xpra/commit/356dda7aa3fcba9a1ca23e2875dc6ee1c6f13009) [with shadow servers](https://github.com/Xpra-org/xpra/commit/99e227e945dd9ad309c477212621fbddb6eedaf5)
+    * [missing shadow server system tray](https://github.com/Xpra-org/xpra/commit/453dd544dc6d3efa4518e8922f1139a46cedab58)
     * [workaround missing icon size config](https://github.com/Xpra-org/xpra/commit/efcb254105600987b06539b9929c66911f9713b5)
-    * [broken about dialog](https://github.com/Xpra-org/xpra/commit/356dda7aa3fcba9a1ca23e2875dc6ee1c6f13009)
     * [workaround paramiko error with agent keys](https://github.com/Xpra-org/xpra/commit/55f2cc6787bfc6f57e1577a803a4cd33a1addbe1)
     * [incomplete desktop server startup with `Xvfb` backend](https://github.com/Xpra-org/xpra/commit/c2dfebc63caa9d85517a2b8f8e6158d1ffeb32f8)
 * Platforms and packaging:
+    * [appindicator system tray not shown](https://github.com/Xpra-org/xpra/commit/fff396758291432af40e7d26f12ef3a2615487fd)
     * (Free)BSD compatibility: [don't build pam](https://github.com/Xpra-org/xpra/commit/dd80ab2f02fbd2f4e72165c99012d072a5373952), [do build drm](https://github.com/Xpra-org/xpra/commit/4753b487a56b16d065b868ababc8a27e99e025d0)
+    * [don't expand environment variables in config files](https://github.com/Xpra-org/xpra/commit/72bd4497731089fed87393dca9d265e889c7877c)
     * [MS Windows console title was not set](https://github.com/Xpra-org/xpra/commit/70b8e54bafb2444d88c050334ce4e300d81940c1)
     * [close log files to avoid warnings on MS Windows](https://github.com/Xpra-org/xpra/commit/bb77dfc46902ee7e2626d53c688434028fc48610)
     * [only build CUDA kernels if needed](https://github.com/Xpra-org/xpra/commit/c388d6930de7d49da768fca5f27ed39b262c7013)
+    * [allow building CUDA kernels with clang](https://github.com/Xpra-org/xpra/commit/6ceb529c46e88a0712abaa8174f5f212ec89af8c)
     * [RHEL8 pycuda 2022.1 patch for compatibility with CUDA 12.x](https://github.com/Xpra-org/xpra/commit/dd3e514f92269ba9cf0c967c576aea59af23a2a0)
     * [use the correct enum type for nvfbc constants](https://github.com/Xpra-org/xpra/commit/5d962187d75bfe1c77a62e3c5971668c8f444a45)
     * [pycuda 2024.1](https://github.com/Xpra-org/xpra/commit/513d3292bd0181714d9e5778bb857ffb0a0621b2)
@@ -26,13 +33,19 @@
     * [honour client specified order of clipboard preferred targets](https://github.com/Xpra-org/xpra/commit/0da4d81741fed523e1d356f8ab3fce209cdbd221)
     * [allow `text/html` as `text` target](https://github.com/Xpra-org/xpra/commit/eaf2e5472b7a3f775d2fd3a6944804eaa833f268)
 * Minor:
+    * [ensure each socket gets its own options object](https://github.com/Xpra-org/xpra/commit/8d4521c179dce07d0ddf6009cc3efd04af26a9a4)
+    * [correctly set XImage buffers read-only](https://github.com/Xpra-org/xpra/commit/6b0c1777597ab8859605cc47a7ba0601f82ef058)
+    * [cleanup errors with RFB connections](https://github.com/Xpra-org/xpra/commit/4e047e4d388e7c532bcc2473072f289a2fbb0049)
+    * [close file descriptors of pinentry subprocess](https://github.com/Xpra-org/xpra/commit/e55c8969e8dbfc967f0c6bfbf768c562c92f8915)
     * [don't wrap our own exceptions twice](https://github.com/Xpra-org/xpra/commit/bc4a33642923ca7274971678325a1a570076b156)
+    * [don't try to print a size we don't have](https://github.com/Xpra-org/xpra/commit/93c62c9229e6faf995ac5791549d0ef55a90280e)
     * [support multiple attributes with `bind` options](https://github.com/Xpra-org/xpra/commit/eaf2e5472b7a3f775d2fd3a6944804eaa833f268)
     * [make iconify delay configurable](https://github.com/Xpra-org/xpra/commit/a9441fb82745fb6cd8e0c2f2d085a1c1a7e3fe4c)
     * [update trixie and sid libavif dependency](https://github.com/Xpra-org/xpra/commit/4ba44484eb9d8a3225d11d823f4ea57794dd08b7)
     * [simplify regex syntax](https://github.com/Xpra-org/xpra/commit/8cf8494340a26a1149ee7f273eaa27c1e62a0aab)
     * [pillow unit test failure with versions >= 10](https://github.com/Xpra-org/xpra/commit/1275e3caac610c94174a11862bf7fe61cc8b9f6c)
     * [documentation dead links](https://github.com/Xpra-org/xpra/commit/c322b77f1c3d7d2d95c9ff94362ee1c16cc3e022)
+    * [don't import X11 modules under Wayland](https://github.com/Xpra-org/xpra/commit/e896c23e73fc7b4496b66413aafa64296a72dcc5)
     * deprecation warnings: [ssl constants](https://github.com/Xpra-org/xpra/commit/111ec73e442569bc949644a0894340125f94f82e), [re.sub](https://github.com/Xpra-org/xpra/commit/119e58de1a687ba75d917da936bce33d1d4a7d63)
 
 ## [5.0.4] 2023-11-28
