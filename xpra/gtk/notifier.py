@@ -369,7 +369,7 @@ def main():
     def notify_factory():
         color = random.choice(color_combos)
         nid, title, message, actions = messages.pop(0)
-        icon = None  # random.choice(images)
+        icon = ()  # random.choice(images)
         notifier.bg_color = color_parse(color[0])
         notifier.fg_color = color_parse(color[1])
         notifier.show_timeout = random.choice((True, False))

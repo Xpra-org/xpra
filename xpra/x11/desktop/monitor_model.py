@@ -67,7 +67,7 @@ class MonitorDesktopModel(DesktopModelBase):
         return self.monitor_geometry
 
     def get_dimensions(self) -> tuple[int, int]:
-        return self.monitor_geometry[2:4]
+        return self.monitor_geometry[2], self.monitor_geometry[3]
 
     def get_definition(self) -> dict[str, Any]:
         x, y, width, height = self.monitor_geometry

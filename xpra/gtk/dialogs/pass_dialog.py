@@ -80,10 +80,14 @@ class PasswordInputDialogWindow(Gtk.Dialog):
             return self.get_password()
         return ""
 
-    def quit(self, *args):
+    def quit(self, *args) -> bool:
         log("quit%s", args)
         self.close()
         return True
+
+    def signal_quit(self, *args) -> None:
+        log("quit%s", args)
+        self.close()
 
     def cancel(self, *args):
         log("cancel%s", args)
@@ -116,7 +120,7 @@ def show_pass_dialog(argv):
     prompt = arg(1)
     icon = arg(2)
     app = PasswordInputDialogWindow(title, prompt, icon)
-    register_os_signals(app.quit, "Password Dialog")
+    register_os_signals(app.signal_quit, "Password Dialog")
     gui_ready()
     app.show()
     p = app.run()

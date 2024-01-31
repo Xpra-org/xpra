@@ -58,7 +58,7 @@ def make_ICONINFO(w: int, h: int, rgb_data, rgb_format="BGRA") -> HICON:
         return hicon
     except Exception:
         log.error("Error: failed to set tray icon", exc_info=True)
-        return 0
+        return HICON(0)
     finally:
         if mask:
             DeleteObject(mask)
