@@ -103,7 +103,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         if not features.display or not self.root:
             return
         w, h = self.root.get_geometry()[2:4]
-        dinfo = None
+        dinfo = ""
         if is_Wayland():
             wdisplay = os.environ.get("WAYLAND_DISPLAY", "").replace("wayland-", "")
             if wdisplay:
@@ -114,11 +114,15 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
                 dinfo = f"X11 display {display}"
         self.do_print_screen_info(dinfo, w, h)
 
-    def do_print_screen_info(self, display, w: int, h: int) -> None:
-        if display:
-            log.info(f" on {display} of size {w}x{h}")
-        else:
-            log.info(f" on display of size {w}x{h}")
+    def do_print_screen_info(self, display: str, w: int, h: int) -> None:
+        if display or w or h:
+            if display:
+                msg = f" on {display}"
+                if w and h:
+                    msg += f" of size {w}x{h}"
+            else:
+                msg = f" on display of size {w}x{h}"
+            log.info(msg)
         if self.window_matches:
             return
         try:
