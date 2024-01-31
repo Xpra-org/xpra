@@ -41,7 +41,7 @@ class ConfirmDialogWindow(Gtk.Dialog):
 
         def al(text, font="sans 14", xalign=0.0):
             l = label(text, font=font)
-            if label.startswith("WARNING"):
+            if text.startswith("WARNING"):
                 modify_fg(l, color_parse("red"))
             al = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
             al.add(l)
