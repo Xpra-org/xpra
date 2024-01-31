@@ -52,7 +52,7 @@ class AppindicatorTray(TrayBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        filename = get_icon_filename(self.default_icon_filename) or "xpra.png"
+        filename = get_icon_filename(self.default_icon_filename or "xpra.png") or "xpra.png"
         self._has_icon = False
         self.tmp_filename = ""
         self.tray_widget = Indicator(self.tooltip, filename, APPLICATION_STATUS)
@@ -65,9 +65,10 @@ class AppindicatorTray(TrayBase):
         if filename:
             self.set_icon_from_file(filename)
         if not self._has_icon:
-            self.tray_widget.set_label("Xpra")
+            self.tray_widget.set_label("Xpra", "")
         if self.menu:
             self.tray_widget.set_menu(self.menu)
+        self.show()
 
     def get_geometry(self):
         #no way to tell :(
@@ -88,7 +89,7 @@ class AppindicatorTray(TrayBase):
         #as with appindicator this creates a large text label
         #next to where the icon is/should be
         if not self._has_icon:
-            self.tray_widget.set_label(tooltip or "Xpra")
+            self.tray_widget.set_label(tooltip or "Xpra", "")
 
     def set_icon_from_data(self, pixels, has_alpha:bool, w:int, h:int, rowstride:int, _options=None) -> None:
         #use a temporary file (yuk)
