@@ -71,6 +71,7 @@ def create_abstract_socket(sockpath: str) -> tuple[socket.socket, Callable]:
     listener.bind(asockpath)
 
     def cleanup_socket() -> None:
+        log.info("removing abstract socket '%s'", sockpath)
         close_socket_listener(listener)
 
     return listener, cleanup_socket
