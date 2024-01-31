@@ -362,7 +362,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             if POSIX and display:
                 label = f"Xpra {display} Shadow Server"
             self.tray_menu = Gtk.Menu()
-            self.tray_menu.set_title(label)
+            with SilenceWarningsContext(DeprecationWarning):
+                self.tray_menu.set_title(label)
             title_item = Gtk.MenuItem()
             title_item.set_label(label)
             title_item.set_sensitive(False)
