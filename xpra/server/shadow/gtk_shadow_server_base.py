@@ -413,7 +413,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         errs = []
         for c in classes:
             try:
-                w = c(self, XPRA_APP_ID, self.tray, "Xpra Shadow Server",
+                w = c(self, XPRA_APP_ID, self.tray_menu, "Xpra Shadow Server",
                       click_cb=self.tray_click_callback, exit_cb=self.tray_exit_callback)
                 if w:
                     return w
