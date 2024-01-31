@@ -55,6 +55,7 @@ class AppindicatorTray(TrayBase):
         self._has_icon = False
         self.tmp_filename = ""
         self.tray_widget = Indicator(self.tooltip, filename, APPLICATION_STATUS)
+        log(f"AppindicatorTray widget={self.tray_widget} for {self.tooltip=}, {filename=}, {self.menu=}")
         if hasattr(self.tray_widget, "set_icon_theme_path"):
             self.tray_widget.set_icon_theme_path(get_icon_dir())
         try:
@@ -74,9 +75,11 @@ class AppindicatorTray(TrayBase):
         return None
 
     def hide(self) -> None:
+        log("Indicator.set_status(PASSIVE)")
         self.tray_widget.set_status(PASSIVE)
 
     def show(self) -> None:
+        log("Indicator.set_status(ACTIVE)")
         self.tray_widget.set_status(ACTIVE)
 
     def set_blinking(self, on: bool) -> None:
@@ -119,23 +122,11 @@ class AppindicatorTray(TrayBase):
         self.do_set_icon_from_file(self.tmp_filename)
 
     def do_set_icon_from_file(self, filename: str) -> None:
-        if not hasattr(self.tray_widget, "set_icon_theme_path"):
-            self.tray_widget.set_icon(filename)
+        if filename and os.path.exists(filename):
             self._has_icon = True
+            self.icon_timestamp = monotonic()
+            self.tray_widget.set_icon_full(filename, self.tooltip or "Xpra")
             return
-        head, icon_name = os.path.split(filename)
-        if head:
-            log(f"do_set_icon_from_file({filename!r}) setting icon theme path={head!r}")
-            self.tray_widget.set_icon_theme_path(head)
-        # remove extension (wtf?)
-        noext = os.path.splitext(icon_name)[0]
-        log(f"do_set_icon_from_file({filename!r}) setting icon={noext}")
-        try:
-            self.tray_widget.set_icon_full(noext, self.tooltip)
-        except AttributeError:
-            self.tray_widget.set_icon(noext)
-        self._has_icon = True
-        self.icon_timestamp = monotonic()
 
     def clean_last_tmp_icon(self) -> None:
         if self.tmp_filename and DELETE_TEMP_FILE:
@@ -176,7 +167,7 @@ def main():  # pragma: no cover
         item = Gtk.MenuItem(label="Top Menu Item 2")
         menu.append(item)
         menu.show_all()
-        a = AppindicatorTray(None, None, menu, "test", "xpra.png", None, None, None, Gtk.main_quit)
+        a = AppindicatorTray(None, None, menu, "test", icon_filename="xpra.png", exit_cb=Gtk.main_quit)
         a.show()
         register_os_signals(Gtk.main_quit)
         Gtk.main()
