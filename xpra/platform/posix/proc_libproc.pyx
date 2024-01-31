@@ -1,9 +1,7 @@
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
-from libc.string cimport memset
 
 from xpra.log import Logger
 
@@ -14,6 +12,9 @@ DEF PROC_PID = 0x1000           #process id numbers ( 0   terminated )
 
 
 cdef extern from "libproc2/pids.h":
+    ctypedef enum pids_item:
+        PIDS_ID_PPID
+
     # Opaque handle used by procps to store its buffers
     struct pids_info:
         pass
@@ -38,36 +39,25 @@ cdef extern from "libproc2/pids.h":
         pids_counts *counts
         pids_stack **stacks
 
-    # Flag used to query the parent process, part of the pids_item enum
-    int PIDS_ID_PPID
+    ctypedef enum pids_select_type:
+        PIDS_SELECT_PID
+        PIDS_SELECT_PID_THREADS
+        PIDS_SELECT_UID
+        PIDS_SELECT_UID_THREADS
 
-    # Flag used to return one value per process, part of pids_select_type enum.
-    # All we care about here is PPID which is the same for each thread within a
-    # process.
-    int PIDS_SELECT_PID
-
-    int procps_pids_new(pids_info **info, int *items, int numitems)
+    int procps_pids_new(pids_info **info, pids_item *items, int numitems)
     int procps_pids_unref(pids_info **info)
-    pids_fetch *procps_pids_select(pids_info *info, unsigned int *pids, int pidcount, int select_type)
+    pids_fetch *procps_pids_select(pids_info *info, unsigned*pids, int pidcount, int select_type)
 
-def get_parent_pid(int pid) -> int:
-    cdef pids_info *handle
-    cdef int selector
-
-    handle = NULL
-    selector = PIDS_ID_PPID
+def get_parent_pid(unsigned int pid) -> int:
+    cdef pids_info *handle = NULL
+    cdef pids_item selector = PIDS_ID_PPID
     if procps_pids_new(&handle, &selector, 1) != 0:
         return 0
 
-    cdef unsigned int upid
-    cdef pids_fetch *query
-    cdef int retval
-
-    upid = pid
-    query = procps_pids_select(handle, &upid, 1, PIDS_SELECT_PID)
-    if query == NULL or query.counts.total != 1 or query.stacks[0].head.item != PIDS_ID_PPID:
-        retval = 0
-    else:
+    cdef pids_fetch *query = procps_pids_select(handle, &pid, 1, PIDS_SELECT_PID)
+    cdef int retval = 0
+    if query != NULL and query.counts.total == 1 and query.stacks[0].head.item == PIDS_ID_PPID:
         retval = query.stacks[0].head.result.s_int
 
     procps_pids_unref(&handle)
