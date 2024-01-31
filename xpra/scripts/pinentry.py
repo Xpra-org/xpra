@@ -308,3 +308,21 @@ def input_pass(prompt: str) -> str:
         return getpass(prompt)
     except KeyboardInterrupt:
         sys.exit(128 + signal.SIGINT)
+
+
+def main():
+    from xpra.platform import program_context
+    with program_context("Pinentry-Dialog", "Pinentry Dialog"):
+        if "-v" in sys.argv:
+            from xpra.log import enable_debug_for
+            enable_debug_for("util")
+
+        try:
+            return dialog_confirm(*sys.argv[1:])
+        except KeyboardInterrupt:
+            return 1
+
+
+if __name__ == "__main__":
+    v = main()
+    sys.exit(v)
