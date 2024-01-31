@@ -10,7 +10,7 @@ from xpra.util.screen import prettify_plug_name
 from xpra.util.str_fn import csv
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.env import envbool, SilenceWarningsContext
-from xpra.common import XPRA_APP_ID
+from xpra.common import XPRA_APP_ID, noop
 from xpra.os_util import POSIX, OSX, gi_import
 from xpra.scripts.config import parse_bool
 from xpra.server import features
@@ -373,7 +373,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             def show_about(*_args):
                 from xpra.gtk.dialogs.about import about  # pylint: disable=import-outside-toplevel
                 about()
-            self.tray_menu.append(self.traymenuitem("About Xpra", "information.png", None, show_about))
+
+            self.tray_menu.append(self.traymenuitem("About Xpra", "information.png", cb=show_about))
             if features.windows:
                 def readonly_toggled(menuitem):
                     log("readonly_toggled(%s)", menuitem)
@@ -384,8 +385,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
                 readonly_menuitem = self.checkitem("Read-only", cb=readonly_toggled, active=self.readonly)
                 self.tray_menu.append(readonly_menuitem)
-            self.tray_menu.append(self.traymenuitem("Exit", "quit.png", None, self.tray_exit_callback))
-            self.tray_menu.append(self.traymenuitem("Close Menu", "close.png", None, self.close_tray_menu))
+            self.tray_menu.append(self.traymenuitem("Exit", "quit.png", cb=self.tray_exit_callback))
+            self.tray_menu.append(self.traymenuitem("Close Menu", "close.png", cb=self.close_tray_menu))
             # maybe add: session info, clipboard, sharing, etc
             # control: disconnect clients
             self.tray_menu.connect("deactivate", self.tray_menu_deactivated)
@@ -417,6 +418,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         for c in classes:
             try:
                 w = c(self, XPRA_APP_ID, self.tray_menu, "Xpra Shadow Server",
+                      icon_filename="server-notconnected.png",
                       click_cb=self.tray_click_callback, exit_cb=self.tray_exit_callback)
                 if w:
                     traylog(f"server system tray widget using {c}(..)={w}")
@@ -440,7 +442,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             traylog.warn("Warning: failed to set tray icon to %s", filename)
             traylog.warn(" %s", e)
 
-    def traymenuitem(self, title: str, icon_name=None, tooltip=None, cb=None) -> Gtk.ImageMenuItem:
+    def traymenuitem(self, title: str, icon_name="", tooltip="", cb=noop) -> Gtk.ImageMenuItem:
         """ Utility method for easily creating an ImageMenuItem """
         # pylint: disable=import-outside-toplevel
         from xpra.gtk.widget import menuitem
@@ -451,7 +453,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             image = self.get_image(icon_name, icon_size)
         return menuitem(title, image, tooltip, cb)
 
-    def checkitem(self, title: str, cb=None, active=False) -> Gtk.CheckMenuItem:
+    def checkitem(self, title: str, cb=noop, active=False) -> Gtk.CheckMenuItem:
         check_item = Gtk.CheckMenuItem(label=title)
         check_item.set_active(active)
         if cb:
