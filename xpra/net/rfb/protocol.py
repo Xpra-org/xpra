@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,6 +7,7 @@ import os
 import struct
 from time import monotonic
 from socket import error as socket_error
+from collections.abc import Callable
 from queue import Queue
 
 from xpra.util.str_fn import repr_ellipsized, hexstr
@@ -57,19 +58,19 @@ class RFBProtocol:
             # pylint: disable=consider-using-with
             self.log = open(RFB_LOG, "w", encoding="utf8")
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         return self._closed
 
-    def is_sending_encrypted(self):
+    def is_sending_encrypted(self) -> bool:
         return False
 
-    def send_protocol_handshake(self):
+    def send_protocol_handshake(self) -> None:
         self.send(b"RFB 003.008\n")
 
-    def _parse_invalid(self, packet):
+    def _parse_invalid(self, packet) -> int:
         return len(packet)
 
-    def _parse_protocol_handshake(self, packet):
+    def _parse_protocol_handshake(self, packet) -> int:
         log(f"parse_protocol_handshake({packet})")
         if len(packet) < 12:
             return 0
@@ -99,7 +100,7 @@ class RFBProtocol:
     def _parse_security_result(self, packet):
         raise NotImplementedError
 
-    def _parse_rfb(self, packet):
+    def _parse_rfb(self, packet) -> int:
         try:
             ptype = ord(packet[0])
         except TypeError:
@@ -143,30 +144,30 @@ class RFBProtocol:
     def __repr__(self):
         return f"RFBProtocol({self._conn})"
 
-    def get_threads(self):
+    def get_threads(self) -> tuple:
         return tuple(x for x in (self._write_thread, self._read_thread) if x is not None)
 
-    def get_info(self, *_args):
-        info = {"protocol": PROTOCOL_VERSION}
+    def get_info(self, *_args) -> dict[str, tuple | dict]:
+        info: dict[str, tuple | dict] = {"protocol": PROTOCOL_VERSION}
         for t in self.get_threads():
             info.setdefault("thread", {})[t.name] = t.is_alive()
         return info
 
-    def start(self):
+    def start(self) -> None:
         def start_network_read_thread():
             if not self._closed:
                 self._read_thread.start()
 
         self.idle_add(start_network_read_thread)
 
-    def send_disconnect(self, *_args, **_kwargs):
+    def send_disconnect(self, *_args, **_kwargs) -> None:
         # no such packet in RFB, just close
         self.close()
 
-    def queue_size(self):
+    def queue_size(self) -> int:
         return self._write_queue.qsize()
 
-    def send(self, packet):
+    def send(self, packet) -> None:
         if self._closed:
             log("connection is closed already, not sending packet")
             return
@@ -180,11 +181,11 @@ class RFBProtocol:
             self.start_write_thread()
         self._write_queue.put(packet)
 
-    def start_write_thread(self):
+    def start_write_thread(self) -> None:
         log("rfb: starting write thread")
         self._write_thread = start_thread(self._write_thread_loop, "write", daemon=True)
 
-    def _io_thread_loop(self, name, callback):
+    def _io_thread_loop(self, name: str, callback: Callable) -> None:
         try:
             log(f"io_thread_loop({name}, {callback}) loop starting")
             while not self._closed and callback():
@@ -204,10 +205,10 @@ class RFBProtocol:
                 log.error(f"Error: {name} on {self._conn} failed: {type(e)}", exc_info=True)
                 self.close()
 
-    def _write_thread_loop(self):
+    def _write_thread_loop(self) -> None:
         self._io_thread_loop("write", self._write)
 
-    def _write(self):
+    def _write(self) -> bool:
         buf = self._write_queue.get()
         # Used to signal that we should exit:
         if buf is None:
@@ -225,13 +226,13 @@ class RFBProtocol:
         self.output_packetcount += 1
         return True
 
-    def _read_thread_loop(self):
+    def _read_thread_loop(self) -> None:
         self._io_thread_loop("read", self._read)
 
-    def _read(self):
+    def _read(self) -> bool:
         c = self._conn
         if not c:
-            return None
+            return False
         buf = c.read(READ_BUFFER_SIZE)
         # log("read()=%i bytes (%s)", len(buf or b""), type(buf))
         if not buf:
@@ -252,7 +253,7 @@ class RFBProtocol:
             self._buffer = self._buffer[consumed:]
         return True
 
-    def _internal_error(self, message="", exc=None, exc_info=False):
+    def _internal_error(self, message="", exc=None, exc_info=False) -> None:
         # log exception info with last log message
         if self._closed:
             return
@@ -264,12 +265,12 @@ class RFBProtocol:
             log.error(f" {exc}", exc_info=exc_info)
         self.idle_add(self._connection_lost, message)
 
-    def _connection_lost(self, message="", exc_info=False):
+    def _connection_lost(self, message="", exc_info=False) -> bool:
         log(f"connection lost: {message}", exc_info=exc_info)
         self.close()
         return False
 
-    def invalid(self, msg, data):
+    def invalid(self, msg, data) -> None:
         log("invalid(%s, %r)", msg, data)
         self._packet_parser = self._parse_invalid
         self.idle_add(self._process_packet_cb, self, [INVALID, msg, data])
@@ -277,22 +278,22 @@ class RFBProtocol:
         self.timeout_add(1000, self._connection_lost, msg)
 
     # delegates to invalid_header()
-    def invalid_header(self, proto, data, msg=""):
+    def invalid_header(self, proto, data, msg="") -> None:
         log("invalid_header%s", (proto, data, msg))
         self._invalid_header(proto, data, msg)
 
-    def _invalid_header(self, _proto, data, msg="invalid packet header"):
+    def _invalid_header(self, _proto, data, msg="invalid packet header") -> None:
         self._packet_parser = self._parse_invalid
         err = f"{msg}: {hexstr(data[:8])!r}"
         if len(data) > 1:
             err += f" read buffer={repr_ellipsized(data)} ({len(data)} bytes)"
         self.invalid(err, data)
 
-    def gibberish(self, msg, data):
+    def gibberish(self, msg, data) -> None:
         log(f"gibberish({msg}, {data!r})")
         self.close()
 
-    def close(self):
+    def close(self) -> None:
         c = self._conn
         log(f"RFBProtocol.close() closed={self._closed}, connection={self._conn}")
         if self._closed:
@@ -315,13 +316,13 @@ class RFBProtocol:
             l.close()
         log("RFBProtocol.close() done")
 
-    def clean(self):
+    def clean(self) -> None:
         # clear all references to ensure we can get garbage collected quickly:
         self._write_thread = None
         self._read_thread = None
         self._process_packet_cb = None
 
-    def terminate_queue_threads(self):
+    def terminate_queue_threads(self) -> None:
         log("terminate_queue_threads()")
         # make all the queue based threads exit by adding the empty marker:
         owq = self._write_queue
