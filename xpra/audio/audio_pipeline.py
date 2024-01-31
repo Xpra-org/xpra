@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -25,7 +25,6 @@ KNOWN_TAGS = {"bitrate", "codec", "audio-codec", "mode", "container-format", "en
 
 
 class AudioPipeline(Pipeline):
-
     generation = AtomicInteger()
     __generic_signals__ = Pipeline.__generic_signals__.copy()
 
@@ -43,46 +42,46 @@ class AudioPipeline(Pipeline):
         self.byte_count = 0
         self.emit_info_timer = 0
         self.volume = None
-        self.info : dict[str, Any] = {
-            "codec"        : self.codec,
-            "state"        : self.state,
+        self.info: dict[str, Any] = {
+            "codec": self.codec,
+            "state": self.state,
         }
 
-    def init_file(self, codec:str) -> None:
+    def init_file(self, codec: str) -> None:
         gen = self.generation.increase()
         log("init_file(%s) generation=%s, SAVE_AUDIO=%s", codec, gen, SAVE_AUDIO)
         if SAVE_AUDIO is not None:
             parts = codec.split("+")
-            if len(parts)>1:
-                filename = SAVE_AUDIO+str(gen)+"-"+parts[0]+".%s" % parts[1]
+            if len(parts) > 1:
+                filename = SAVE_AUDIO + str(gen) + "-" + parts[0] + ".%s" % parts[1]
             else:
-                filename = SAVE_AUDIO+str(gen)+".%s" % codec
+                filename = SAVE_AUDIO + str(gen) + ".%s" % codec
             self.file = open(filename, 'wb')
             log.info(f"saving {codec} stream to {filename!r}")
 
-    def update_bitrate(self, new_bitrate:int):
-        if new_bitrate==self.bitrate:
+    def update_bitrate(self, new_bitrate: int):
+        if new_bitrate == self.bitrate:
             return
         self.bitrate = new_bitrate
         log("new bitrate: %s", self.bitrate)
         self.info["bitrate"] = new_bitrate
 
-    def inc_buffer_count(self, inc:int=1) -> None:
+    def inc_buffer_count(self, inc: int = 1) -> None:
         self.buffer_count += inc
         self.info["buffer_count"] = self.buffer_count
 
-    def inc_byte_count(self, count:int) -> None:
+    def inc_byte_count(self, count: int) -> None:
         self.byte_count += count
-        self.info["bytes"]  = self.byte_count
+        self.info["bytes"] = self.byte_count
 
-    def set_volume(self, volume:int=100) -> None:
+    def set_volume(self, volume: int = 100) -> None:
         if self.volume:
-            self.volume.set_property("volume", volume/100.0)
-            self.info["volume"]  = volume
+            self.volume.set_property("volume", volume / 100.0)
+            self.info["volume"] = volume
 
     def get_volume(self) -> int:
         if self.volume:
-            return int(self.volume.get_property("volume")*100)
+            return int(self.volume.get_property("volume") * 100)
         return GST_FLOW_OK
 
     def start(self) -> None:
@@ -101,13 +100,14 @@ class AudioPipeline(Pipeline):
         # so we synthesize a codec event to get the log message in all cases:
         parts = self.codec.split("+")
         self.timeout_add(1000, self.new_codec_description, parts[0])
-        if len(parts)>1 and parts[1]!=self.stream_compressor:
+        if len(parts) > 1 and parts[1] != self.stream_compressor:
             self.timeout_add(1000, self.new_container_description, parts[1])
         elif self.container_format:
             self.timeout_add(1000, self.new_container_description, self.container_format)
         if self.stream_compressor:
             def logsc():
                 self.gstloginfo(f"using stream compression {self.stream_compressor}")
+
             self.timeout_add(1000, logsc)
         log("AudioPipeline.start() done")
 
@@ -159,7 +159,7 @@ class AudioPipeline(Pipeline):
                 gstlog("audio-codec: %s", desc[1])
         if "mode" in tags:
             mode = taglist.get_string("mode")
-            if mode[0] is True and self.codec_mode!=mode[1]:
+            if mode[0] is True and self.codec_mode != mode[1]:
                 gstlog("mode: %s", mode[1])
                 self.codec_mode = mode[1]
                 self.info["codec_mode"] = self.codec_mode
@@ -183,10 +183,10 @@ class AudioPipeline(Pipeline):
         if dl == "wav" and self.codec_description:
             return
         cdl = self.codec_description.lower()
-        if not cdl or (cdl!=dl and dl.find(cdl)<0 and cdl.find(dl)<0):
+        if not cdl or (cdl != dl and dl.find(cdl) < 0 and cdl.find(dl) < 0):
             self.gstloginfo("using '%s' audio codec", dl)
         self.codec_description = dl
-        self.info["codec_description"]  = dl
+        self.info["codec_description"] = dl
 
     def new_container_description(self, desc) -> None:
         log("new_container_description(%s) current container description=%s", desc, self.container_description)
@@ -194,10 +194,10 @@ class AudioPipeline(Pipeline):
             return
         cdl = self.container_description.lower()
         dl = {
-            "mka" : "matroska",
-            "mpeg4" : "iso fmp4",
+            "mka": "matroska",
+            "mpeg4": "iso fmp4",
         }.get(desc.lower(), desc.lower())
-        if not cdl or (cdl!=dl and dl.find(cdl)<0 and cdl.find(dl)<0):
+        if not cdl or (cdl != dl and dl.find(cdl) < 0 and cdl.find(dl) < 0):
             self.gstloginfo("using '%s' container format", dl)
         self.container_description = dl
-        self.info["container_description"]  = dl
+        self.info["container_description"] = dl

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2015-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,7 @@ import sys
 from typing import Any
 
 from xpra.log import Logger
+
 log = Logger("audio")
 
 
@@ -43,14 +44,14 @@ def get_pactl_server() -> str:
     return ""
 
 
-def get_pa_device_options(*_args) -> dict[str,Any]:
+def get_pa_device_options(*_args) -> dict[str, Any]:
     return {}
 
 
-def get_info() -> dict[str,Any]:
+def get_info() -> dict[str, Any]:
     return {
         "pulseaudio.wrapper": "none",
-        "pulseaudio.found"  : has_pa(),
+        "pulseaudio.found": has_pa(),
     }
 
 

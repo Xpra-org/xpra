@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,8 +15,8 @@ from xpra.util.io import which
 from xpra.util.str_fn import strtobytes, bytestostr
 
 from xpra.log import Logger
-log = Logger("audio")
 
+log = Logger("audio")
 
 pactl_bin = None
 has_pulseaudio = None
@@ -78,20 +78,20 @@ def has_pa() -> bool:
 def set_source_mute(device, mute=False) -> bool:
     code, out, err = pactl_output(True, "set-source-mute", device, str(int(mute)))
     log("set_source_mute: output=%s, err=%s", out, err)
-    return code==0
+    return code == 0
 
 
 def set_sink_mute(device, mute=False) -> bool:
     code, out, err = pactl_output(True, "set-sink-mute", device, str(int(mute)))
     log("set_sink_mute: output=%s, err=%s", out, err)
-    return code==0
+    return code == 0
 
 
 def get_pactl_info_line(prefix) -> str:
     if not has_pa():
         return ""
     code, out, err = pactl_output(False, "info")
-    if code!=0:
+    if code != 0:
         log.warn("Warning: failed to query pulseaudio using 'pactl info'")
         if err:
             for x in err.splitlines():
@@ -143,14 +143,13 @@ def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=
     if WIN32 or OSX:
         return {}
     status, out, _ = pactl_output(False, "list")
-    if status!=0 or not out:
+    if status != 0 or not out:
         return {}
     return do_get_pa_device_options(out, monitors, input_or_output, ignored_devices)
 
 
 def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=None,
                              ignored_devices=("bell-window-system",)):
-
     def are_properties_acceptable(name: Optional[str], device_class: Optional[str],
                                   monitor_of_sink: Optional[str]) -> bool:
         if (name is None) or (device_class is None and monitor_of_sink is None):
@@ -175,13 +174,13 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
                 return False
         return True
 
-    name : Optional[str] = None
-    device_class : Optional[str] = None
-    monitor_of_sink : Optional[str] = None
-    device_description : Optional[str] = None
-    devices : dict[str,str] = {}
+    name: Optional[str] = None
+    device_class: Optional[str] = None
+    monitor_of_sink: Optional[str] = None
+    device_description: Optional[str] = None
+    devices: dict[str, str] = {}
     for line in bytestostr(pactl_list_output).splitlines():
-        if not line.startswith(" ") and not line.startswith("\t"):        # clear vars when we encounter a new section
+        if not line.startswith(" ") and not line.startswith("\t"):  # clear vars when we encounter a new section
             if are_properties_acceptable(name, device_class, monitor_of_sink):
                 assert isinstance(name, str)
                 if not device_description:
@@ -203,26 +202,26 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
     return devices
 
 
-def get_info() -> dict[str,Any]:
+def get_info() -> dict[str, Any]:
     i = 0
     dinfo = {}
     status, out, _ = pactl_output(False, "list")
-    if status==0 and out:
+    if status == 0 and out:
         for monitors in (True, False):
             for io in (True, False):
                 devices = do_get_pa_device_options(out, monitors, io)
-                for d,name in devices.items():
+                for d, name in devices.items():
                     dinfo[bytestostr(d)] = bytestostr(name)
                     i += 1
     info = {
-        "device"        : dinfo,
-        "devices"       : i,
-        "pulseaudio"    : {
-            "wrapper"   : "pactl",
-            "found"     : bool(has_pa()),
-            "id"        : get_pulse_id(),
-            "server"    : get_pulse_server(False),
-            "cookie-hash" : get_pulse_cookie_hash(),
+        "device": dinfo,
+        "devices": i,
+        "pulseaudio": {
+            "wrapper": "pactl",
+            "found": bool(has_pa()),
+            "id": get_pulse_id(),
+            "server": get_pulse_server(False),
+            "cookie-hash": get_pulse_cookie_hash(),
         }
     }
     log("pulseaudio_pactl_util.get_info()=%s", info)
@@ -235,7 +234,7 @@ def main():
     if "-v" in sys.argv:
         log.enable_debug()
         sys.argv.remove("-v")
-    if len(sys.argv)>1:
+    if len(sys.argv) > 1:
         for filename in sys.argv[1:]:
             if not os.path.exists(filename):
                 log.warn("file argument '%s' does not exist, ignoring", filename)

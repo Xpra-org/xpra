@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2015 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,6 +9,7 @@ import os.path
 
 from xpra.os_util import WIN32, OSX
 from xpra.log import Logger
+
 log = Logger("audio")
 
 default_icon_path = None
@@ -19,7 +20,7 @@ def set_icon_path(v) -> None:
     default_icon_path = v
 
 
-def add_audio_tagging_env(env_dict:dict=os.environ, icon_path:str="") -> None:
+def add_audio_tagging_env(env_dict: dict = os.environ, icon_path: str = "") -> None:
     """
         This is called audio-tagging in PulseAudio, see:
         http://pulseaudio.org/wiki/ApplicationProperties
@@ -27,10 +28,10 @@ def add_audio_tagging_env(env_dict:dict=os.environ, icon_path:str="") -> None:
     """
     from xpra.util.version import XPRA_VERSION
     env_dict |= {
-        "PULSE_PROP_application.name"      : "xpra",
-        "PULSE_PROP_application.id"        : "xpra",
-        "PULSE_PROP_application.version"   : XPRA_VERSION,
-        "PULSE_PROP_media.role"            : "music",
+        "PULSE_PROP_application.name": "xpra",
+        "PULSE_PROP_application.id": "xpra",
+        "PULSE_PROP_application.version": XPRA_VERSION,
+        "PULSE_PROP_media.role": "music",
     }
     if not icon_path:
         icon_path = default_icon_path
@@ -51,16 +52,16 @@ except ImportError as e:
     del e
     from xpra.audio.pulseaudio import none_impl as _pulseaudio_util
 
-get_info                = _pulseaudio_util.get_info
-has_pa                  = _pulseaudio_util.has_pa
-get_pa_device_options   = _pulseaudio_util.get_pa_device_options
-get_default_sink        = _pulseaudio_util.get_default_sink
-get_pulse_server        = _pulseaudio_util.get_pulse_server
-get_pulse_id            = _pulseaudio_util.get_pulse_id
-get_pulse_cookie_hash   = _pulseaudio_util.get_pulse_cookie_hash
-get_pactl_server        = _pulseaudio_util.get_pactl_server
-set_source_mute         = _pulseaudio_util.set_source_mute
-set_sink_mute           = _pulseaudio_util.set_sink_mute
+get_info = _pulseaudio_util.get_info
+has_pa = _pulseaudio_util.has_pa
+get_pa_device_options = _pulseaudio_util.get_pa_device_options
+get_default_sink = _pulseaudio_util.get_default_sink
+get_pulse_server = _pulseaudio_util.get_pulse_server
+get_pulse_id = _pulseaudio_util.get_pulse_id
+get_pulse_cookie_hash = _pulseaudio_util.get_pulse_cookie_hash
+get_pactl_server = _pulseaudio_util.get_pactl_server
+set_source_mute = _pulseaudio_util.set_source_mute
+set_sink_mute = _pulseaudio_util.set_sink_mute
 
 
 def main():

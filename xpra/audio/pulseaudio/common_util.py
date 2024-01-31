@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,10 +10,11 @@ import sys
 from xpra.util.env import envbool, first_time
 from xpra.util.str_fn import bytestostr
 from xpra.log import Logger
+
 log = Logger("audio")
 
 
-def get_x11_property(atom_name:str) -> bytes:
+def get_x11_property(atom_name: str) -> bytes:
     from xpra.os_util import OSX, POSIX
     if envbool("XPRA_NOX11", not POSIX or OSX):
         return b""

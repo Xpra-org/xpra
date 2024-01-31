@@ -37,16 +37,16 @@ gstlog = Logger("gstreamer")
 
 GObject = gi_import("GObject")
 
-SINK_SHARED_DEFAULT_ATTRIBUTES : dict[str,Any] = {
-    "sync"    : False,
+SINK_SHARED_DEFAULT_ATTRIBUTES: dict[str, Any] = {
+    "sync": False,
 }
-NON_AUTO_SINK_ATTRIBUTES : dict[str,Any] = {
-    "async"     : True,
-    "qos"       : True,
+NON_AUTO_SINK_ATTRIBUTES: dict[str, Any] = {
+    "async": True,
+    "qos": True,
 }
 
 SINK_DEFAULT_ATTRIBUTES = {
-    "pulsesink"  : {"client-name" : "Xpra"},
+    "pulsesink": {"client-name": "Xpra"},
 }
 
 QUEUE_SILENT = envbool("XPRA_QUEUE_SILENT", False)
@@ -62,10 +62,9 @@ CLOCK_SYNC = envbool("XPRA_CLOCK_SYNC", False)
 
 
 class AudioSink(AudioPipeline):
-
     __gsignals__ = AudioPipeline.__generic_signals__.copy()
     __gsignals__ |= {
-        "eos"       : one_arg_signal,
+        "eos": one_arg_signal,
     }
 
     def __init__(self, sink_type=None, sink_options=None, codecs=(), codec_options=None, volume=1.0):
@@ -88,9 +87,9 @@ class AudioSink(AudioPipeline):
             self.container_format, self.stream_compressor, self.sink_type)
         self.levels = deque(maxlen=100)
         self.volume = None
-        self.src    = None
-        self.sink   = None
-        self.queue  = None
+        self.src = None
+        self.sink = None
+        self.queue = None
         self.normal_volume = volume
         self.target_volume = volume
         self.volume_timer = 0
@@ -113,16 +112,16 @@ class AudioSink(AudioPipeline):
             pipeline_els.append(decoder_str)
         pipeline_els.append("audioconvert")
         pipeline_els.append("audioresample")
-        if QUEUE_TIME>0:
+        if QUEUE_TIME > 0:
             pipeline_els.append(get_element_str("queue", {
-                "name"                  : "queue",
-                "min-threshold-time"    : 0,
-                "max-size-buffers"      : 0,
-                "max-size-bytes"        : 0,
-                "max-size-time"         : QUEUE_TIME,
-                "leaky"                 : QUEUE_LEAK,
+                "name": "queue",
+                "min-threshold-time": 0,
+                "max-size-buffers": 0,
+                "max-size-bytes": 0,
+                "max-size-time": QUEUE_TIME,
+                "leaky": QUEUE_LEAK,
             }))
-        pipeline_els.append(get_element_str("volume", {"name" : "volume", "volume" : 0}))
+        pipeline_els.append(get_element_str("volume", {"name": "volume", "volume": 0}))
         if CLOCK_SYNC:
             if not has_plugins("clocksync"):
                 log.warn("Warning: cannot enable clocksync, element not found")
@@ -140,16 +139,16 @@ class AudioSink(AudioPipeline):
         if sink_options:
             sink_attributes.update(sink_options)
         sink_attributes["name"] = "sink"
-        if sink_type!="autoaudiosink":
+        if sink_type != "autoaudiosink":
             sink_attributes.update(NON_AUTO_SINK_ATTRIBUTES)
         sink_str = plugin_str(sink_type, sink_attributes)
         pipeline_els.append(sink_str)
         if not self.setup_pipeline_and_bus(pipeline_els):
             return
         self.volume = self.pipeline.get_by_name("volume")
-        self.src    = self.pipeline.get_by_name("src")
-        self.sink   = self.pipeline.get_by_name("sink")
-        self.queue  = self.pipeline.get_by_name("queue")
+        self.src = self.pipeline.get_by_name("src")
+        self.sink = self.pipeline.get_by_name("sink")
+        self.queue = self.pipeline.get_by_name("queue")
         if self.queue:
             if QUEUE_SILENT:
                 self.queue.set_property("silent", False)
@@ -173,14 +172,14 @@ class AudioSink(AudioPipeline):
         super().start()
         self.timeout_add(UNMUTE_DELAY, self.start_adjust_volume)
 
-    def start_adjust_volume(self, interval: int=100) -> bool:
-        if self.volume_timer!=0:
+    def start_adjust_volume(self, interval: int = 100) -> bool:
+        if self.volume_timer != 0:
             self.source_remove(self.volume_timer)
         self.volume_timer = self.timeout_add(interval, self.adjust_volume)
         return False
 
     def cancel_volume_timer(self) -> None:
-        if self.volume_timer!=0:
+        if self.volume_timer != 0:
             self.source_remove(self.volume_timer)
             self.volume_timer = 0
 
@@ -189,11 +188,11 @@ class AudioSink(AudioPipeline):
             self.volume_timer = 0
             return False
         cv = self.volume.get_property("volume")
-        delta = self.target_volume-cv
+        delta = self.target_volume - cv
         from math import sqrt, copysign
-        change = copysign(sqrt(abs(delta)), delta)/15.0
+        change = copysign(sqrt(abs(delta)), delta) / 15.0
         gstlog("adjust_volume current volume=%.2f, change=%.2f", cv, change)
-        self.volume.set_property("volume", max(0, cv+change))
+        self.volume.set_property("volume", max(0, cv + change))
         if abs(delta) < 0.01:
             self.volume_timer = 0
             return False
@@ -213,18 +212,18 @@ class AudioSink(AudioPipeline):
 
     def queue_underrun(self, *_args) -> Literal[True]:
         now = monotonic()
-        if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
+        if self.queue_state == "starting" or 1000 * (now - self.start_time) < GRACE_PERIOD:
             gstlog("ignoring underrun during startup")
             return True
         self.underruns += 1
         gstlog("queue_underrun")
         self.queue_state = "underrun"
-        if now-self.last_underrun>5:
+        if now - self.last_underrun > 5:
             # only count underruns when we're back to no min time:
-            qmin = self.queue.get_property("min-threshold-time")//MS_TO_NS
-            clt = self.queue.get_property("current-level-time")//MS_TO_NS
+            qmin = self.queue.get_property("min-threshold-time") // MS_TO_NS
+            clt = self.queue.get_property("current-level-time") // MS_TO_NS
             gstlog("queue_underrun level=%3i, min=%3i", clt, qmin)
-            if qmin==0 and clt<10:
+            if qmin == 0 and clt < 10:
                 self.last_underrun = now
                 self.refill = True
                 self.set_max_level()
@@ -234,26 +233,26 @@ class AudioSink(AudioPipeline):
 
     def get_level_range(self, mintime=2, maxtime=10) -> int:
         now = monotonic()
-        filtered = [v for t,v in tuple(self.levels) if mintime<=(now-t)<=maxtime]
-        if len(filtered)>=10:
+        filtered = [v for t, v in tuple(self.levels) if mintime <= (now - t) <= maxtime]
+        if len(filtered) >= 10:
             maxl = max(filtered)
             minl = min(filtered)
             # range of the levels recorded:
-            return maxl-minl
+            return maxl - minl
         return 0
 
     def queue_overrun(self, *_args) -> Literal[True]:
         now = monotonic()
-        if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
+        if self.queue_state == "starting" or 1000 * (now - self.start_time) < GRACE_PERIOD:
             gstlog("ignoring overrun during startup")
             return True
-        clt = self.queue.get_property("current-level-time")//MS_TO_NS
+        clt = self.queue.get_property("current-level-time") // MS_TO_NS
         log("queue_overrun level=%ims", clt)
         now = monotonic()
         # grace period of recording overruns:
         # (because when we record an overrun, we lower the max-time,
         # which causes more overruns!)
-        if now-self.last_overrun>2:
+        if now - self.last_overrun > 2:
             self.last_overrun = now
             self.set_max_level()
             self.overrun_events.append(now)
@@ -264,30 +263,30 @@ class AudioSink(AudioPipeline):
         if not self.queue:
             return
         now = monotonic()
-        elapsed = now-self.last_min_update
+        elapsed = now - self.last_min_update
         lrange = self.get_level_range()
         log("set_min_level() lrange=%i, elapsed=%i", lrange, elapsed)
-        if elapsed<1:
+        if elapsed < 1:
             # not more than once a second
             return
         if self.refill:
             # need to have a gap between min and max,
             # so we cannot go higher than mst-50:
-            mst = self.queue.get_property("max-size-time")//MS_TO_NS
-            mrange = max(lrange+100, UNDERRUN_MIN_LEVEL)
-            mtt = min(mst-50, mrange)
+            mst = self.queue.get_property("max-size-time") // MS_TO_NS
+            mrange = max(lrange + 100, UNDERRUN_MIN_LEVEL)
+            mtt = min(mst - 50, mrange)
             gstlog("set_min_level mtt=%3i, max-size-time=%3i, lrange=%s, mrange=%s (UNDERRUN_MIN_LEVEL=%s)",
                    mtt, mst, lrange, mrange, UNDERRUN_MIN_LEVEL)
         else:
             mtt = 0
-        cmtt = self.queue.get_property("min-threshold-time")//MS_TO_NS
-        if cmtt==mtt:
+        cmtt = self.queue.get_property("min-threshold-time") // MS_TO_NS
+        if cmtt == mtt:
             return
         if not self.level_lock.acquire(False):
             gstlog("cannot get level lock for setting min-threshold-time")
             return
         try:
-            self.queue.set_property("min-threshold-time", mtt*MS_TO_NS)
+            self.queue.set_property("min-threshold-time", mtt * MS_TO_NS)
             gstlog("set_min_level min-threshold-time=%s", mtt)
             self.last_min_update = now
         finally:
@@ -297,23 +296,23 @@ class AudioSink(AudioPipeline):
         if not self.queue:
             return
         now = monotonic()
-        elapsed = now-self.last_max_update
-        if elapsed<1:
+        elapsed = now - self.last_max_update
+        if elapsed < 1:
             # not more than once a second
             return
         lrange = self.get_level_range(mintime=0)
         log("set_max_level lrange=%3i, elapsed=%is", lrange, int(elapsed))
-        cmst = self.queue.get_property("max-size-time")//MS_TO_NS
+        cmst = self.queue.get_property("max-size-time") // MS_TO_NS
         # overruns in the last minute:
-        olm = len([x for x in tuple(self.overrun_events) if now-x<60])
+        olm = len([x for x in tuple(self.overrun_events) if now - x < 60])
         # increase target if we have more than 5 overruns in the last minute:
-        target_mst = lrange*(100 + MARGIN + min(100, olm*20))//100
+        target_mst = lrange * (100 + MARGIN + min(100, olm * 20)) // 100
         # from 100% down to 0% in 2 seconds after underrun:
-        pct = max(0, int((self.last_overrun+2-now)*50))
+        pct = max(0, int((self.last_overrun + 2 - now) * 50))
         # use this last_overrun percentage value to temporarily decrease the target
         # (causes overruns that drop packets and lower the buffer level)
-        target_mst = max(50, int(target_mst - pct*lrange//100))
-        mst = (cmst + target_mst)//2
+        target_mst = max(50, int(target_mst - pct * lrange // 100))
+        mst = (cmst + target_mst) // 2
         if self.refill:
             # temporarily raise max level during underruns,
             # so set_min_level has more room for manoeuver:
@@ -322,14 +321,14 @@ class AudioSink(AudioPipeline):
         mst = min(mst, 1000)
         log("set_max_level overrun count=%-2i, margin=%3i, pct=%2i, cmst=%3i, target=%3i, mst=%3i",
             olm, MARGIN, pct, cmst, target_mst, mst)
-        if abs(cmst-mst)<=max(50, lrange//2):
+        if abs(cmst - mst) <= max(50, lrange // 2):
             # not enough difference
             return
         if not self.level_lock.acquire(False):
             gstlog("cannot get level lock for setting max-size-time")
             return
         try:
-            self.queue.set_property("max-size-time", mst*MS_TO_NS)
+            self.queue.set_property("max-size-time", mst * MS_TO_NS)
             log("set_max_level max-size-time=%s", mst)
             self.last_max_update = now
         finally:
@@ -342,20 +341,20 @@ class AudioSink(AudioPipeline):
         self.cleanup()
         return GST_FLOW_OK
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         info = super().get_info()
-        if QUEUE_TIME>0 and self.queue:
+        if QUEUE_TIME > 0 and self.queue:
             clt = self.queue.get_property("current-level-time")
             qmax = self.queue.get_property("max-size-time")
             qmin = self.queue.get_property("min-threshold-time")
             info["queue"] = {
-                "min"          : qmin//MS_TO_NS,
-                "max"          : qmax//MS_TO_NS,
-                "cur"          : clt//MS_TO_NS,
-                "pct"          : min(QUEUE_TIME, clt)*100//qmax,
-                "overruns"     : self.overruns,
-                "underruns"    : self.underruns,
-                "state"        : self.queue_state,
+                "min": qmin // MS_TO_NS,
+                "max": qmax // MS_TO_NS,
+                "cur": clt // MS_TO_NS,
+                "pct": min(QUEUE_TIME, clt) * 100 // qmax,
+                "overruns": self.overruns,
+                "underruns": self.underruns,
+                "state": self.queue_state,
             }
         info["sink"] = self.get_element_properties(
             self.sink,
@@ -386,7 +385,7 @@ class AudioSink(AudioPipeline):
         compress = metadata.get("compress")
         if not compress:
             return data
-        if compress!="lz4":
+        if compress != "lz4":
             raise ValueError(f"unsupported compresssion {compress!r}")
         v = decompress_by_name(data, compress)
         # log("decompressed %s data: %i bytes into %i bytes", compress, len(data), len(v))
@@ -404,10 +403,10 @@ class AudioSink(AudioPipeline):
             self.set_min_level()
             # drop back down quickly if the level has reached min:
             if self.refill:
-                clt = self.queue.get_property("current-level-time")//MS_TO_NS
-                qmin = self.queue.get_property("min-threshold-time")//MS_TO_NS
+                clt = self.queue.get_property("current-level-time") // MS_TO_NS
+                qmin = self.queue.get_property("min-threshold-time") // MS_TO_NS
                 gstlog("add_data: refill=%s, level=%i, min=%i", self.refill, clt, qmin)
-                if 0<qmin<clt:
+                if 0 < qmin < clt:
                     self.refill = False
         self.emit_info()
 
@@ -425,9 +424,9 @@ class AudioSink(AudioPipeline):
             d = metadata.get("duration")
             if d is not None:
                 d = normv(d)
-                if d>0:
+                if d > 0:
                     buf.duration = normv(d)
-        if self.push_buffer(buf)==GST_FLOW_OK:
+        if self.push_buffer(buf) == GST_FLOW_OK:
             self.inc_buffer_count()
             self.inc_byte_count(len(data))
             return True
@@ -437,7 +436,7 @@ class AudioSink(AudioPipeline):
         q = self.queue
         if not q:
             return
-        clt = q.get_property("current-level-time")//MS_TO_NS
+        clt = q.get_property("current-level-time") // MS_TO_NS
         log("pushed %5i bytes, new buffer level: %3ims, queue state=%s", len(data), clt, self.queue_state)
         now = monotonic()
         self.levels.append((now, clt))
@@ -452,7 +451,7 @@ class AudioSink(AudioPipeline):
         r = self.src.emit("push-buffer", buf)
         if r == GST_FLOW_OK:
             return r
-        if self.queue_state!="error":
+        if self.queue_state != "error":
             log.error("Error pushing buffer: %s", r)
             self.update_state("error")
             self.emit('error', "push-buffer error: %s" % r)
@@ -478,7 +477,7 @@ def main() -> int:
             print("file %s does not exist" % filename)
             return 2
         decoders = get_decoders()
-        if len(args)==3:
+        if len(args) == 3:
             codec = args[2]
             if codec not in decoders:
                 print("invalid codec: %s" % codec)
@@ -488,7 +487,7 @@ def main() -> int:
         else:
             codec = None
             parts = filename.split(".")
-            if len(parts)>1:
+            if len(parts) > 1:
                 extension = parts[-1]
                 if extension.lower() in decoders:
                     codec = extension.lower()
@@ -511,6 +510,7 @@ def main() -> int:
         def eos(*args):
             print("eos%s" % (args,))
             glib.idle_add(glib_mainloop.quit)
+
         ss.connect("eos", eos)
         ss.start()
 
@@ -524,19 +524,22 @@ def main() -> int:
 
             def force_quit(_sig, _frame):
                 sys.exit()
+
             signal.signal(signal.SIGINT, force_quit)
             signal.signal(signal.SIGTERM, force_quit)
+
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
 
         def check_for_end(*_args):
-            qtime = ss.queue.get_property("current-level-time")//MS_TO_NS
-            if qtime<=0:
+            qtime = ss.queue.get_property("current-level-time") // MS_TO_NS
+            if qtime <= 0:
                 log.info("underrun (end of stream)")
                 start_thread(ss.stop, "stop", daemon=True)
                 glib.timeout_add(500, glib_mainloop.quit)
                 return False
             return True
+
         glib.timeout_add(1000, check_for_end)
         glib.idle_add(ss.add_data, data)
 
