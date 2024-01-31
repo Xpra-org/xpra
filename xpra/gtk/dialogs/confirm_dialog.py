@@ -61,13 +61,17 @@ class ConfirmDialogWindow(Gtk.Dialog):
             btn = self.add_button(text, code)
             btn.set_size_request(100, 48)
 
-    def quit(self, *args):
+    def quit(self, *args) -> bool:
         log("quit%s", args)
         self.close()
         return True
 
+    def signal_quit(self, *args) -> None:
+        log("signal_quit%s", args)
+        self.close()
 
-def show_confirm_dialog(argv):
+
+def show_confirm_dialog(argv) -> int:
     from xpra.platform.gui import ready as gui_ready, init as gui_init, set_default_icon
 
     set_default_icon("information.png")
@@ -96,7 +100,7 @@ def show_confirm_dialog(argv):
         buttons.append((text, code))
         n += 2
     app = ConfirmDialogWindow(title, prompt, info, icon, buttons)
-    register_os_signals(app.quit, "Dialog")
+    register_os_signals(app.signal_quit, "Dialog")
     gui_ready()
     force_focus()
     app.show_all()
