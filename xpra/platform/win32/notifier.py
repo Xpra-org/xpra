@@ -6,8 +6,7 @@
 import sys
 
 from xpra.util.env import envbool
-from xpra.common import NotificationID
-from xpra.notifications.notifier_base import NotifierBase, log
+from xpra.notifications.notifier_base import NotifierBase, log, NID
 from xpra.platform.win32.balloon import notify
 
 GTK_NOTIFIER = envbool("XPRA_WIN32_GTK_NOTIFIER", False)
@@ -44,8 +43,8 @@ class Win32_Notifier(NotifierBase):
                 log("failed to load GTK Notifier fallback", exc_info=True)
         return self.gtk_notifier
 
-    def show_notify(self, dbus_id, tray, nid: int | NotificationID,
-                    app_name: str, replaces_nid: int | NotificationID,
+    def show_notify(self, dbus_id, tray, nid: NID,
+                    app_name: str, replaces_nid: NID,
                     app_icon, summary: str, body: str, actions, hints, expire_timeout: int, icon):
         getHWND = getattr(tray, "getHWND", None)
         if GTK_NOTIFIER and (actions or not getHWND):
@@ -69,17 +68,17 @@ class Win32_Notifier(NotifierBase):
             (dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon),
             hwnd, app_id)
         # FIXME: remove handles when notification is closed
-        self.notification_handles[nid] = (hwnd, app_id)
+        self.notification_handles[int(nid)] = (hwnd, app_id)
         do_notify(hwnd, app_id, summary, body, expire_timeout, icon)
 
-    def close_notify(self, nid):
+    def close_notify(self, nid: NID):
         try:
-            self.gtk_notifications.remove(nid)
+            self.gtk_notifications.remove(int(nid))
             if self.gtk_notifier:
                 self.gtk_notifier.close_notify(nid)
         except KeyError:
             try:
-                hwnd, app_id = self.notification_handles.pop(nid)
+                hwnd, app_id = self.notification_handles.pop(int(nid))
             except KeyError:
                 return
             log("close_notify(%i) hwnd=%i, app_id=%i", nid, hwnd, app_id)

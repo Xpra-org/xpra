@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,15 +8,14 @@ import sys
 from typing import Any
 import notify2
 
-from xpra.notifications.notifier_base import NotifierBase
-from xpra.common import NotificationID
+from xpra.notifications.notifier_base import NotifierBase, NID
 
 
 class PyNotify_Notifier(NotifierBase):
     CACHE: dict[int, Any] = {}
 
-    def show_notify(self, dbus_id, tray, nid: int | NotificationID,
-                    app_name: str, replaces_nid: int | NotificationID, app_icon,
+    def show_notify(self, dbus_id, tray, nid: NID,
+                    app_name: str, replaces_nid: NID, app_icon,
                     summary: str, body: str, actions, hints, timeout: int, icon) -> None:
         if not self.dbus_check(dbus_id):
             return
@@ -24,13 +23,13 @@ class PyNotify_Notifier(NotifierBase):
         if not notify2.is_initted():
             notify2.init(app_name or "Xpra", "glib")
         n = notify2.Notification(summary, body, icon_string)
-        PyNotify_Notifier.CACHE[nid] = n
+        PyNotify_Notifier.CACHE[int(nid)] = n
         n.set_urgency(notify2.URGENCY_LOW)
         n.set_timeout(timeout)
         n.show()
         if icon_string:
             def notification_closed(*_args):
-                self.clean_notification(nid)
+                self.clean_notification(int(nid))
 
             n.connect("closed", notification_closed)
 
@@ -38,8 +37,8 @@ class PyNotify_Notifier(NotifierBase):
         PyNotify_Notifier.CACHE.pop(nid, None)
         super().clean_notification(nid)
 
-    def close_notify(self, nid: int) -> None:
-        n = PyNotify_Notifier.CACHE.pop(nid, None)
+    def close_notify(self, nid: NID) -> None:
+        n = PyNotify_Notifier.CACHE.pop(int(nid), None)
         if n:
             n.close()
 

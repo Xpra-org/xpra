@@ -36,10 +36,10 @@ from Foundation import (
 )
 
 from xpra.os_util import gi_import
-from xpra.common import roundup, NotificationID
+from xpra.common import roundup
 from xpra.util.env import envint, envbool
 from xpra.util.io import CaptureStdErr
-from xpra.notifications.notifier_base import NotifierBase
+from xpra.notifications.notifier_base import NotifierBase, NID
 from xpra.platform.darwin import get_OSXApplication
 from xpra.log import Logger
 
@@ -124,8 +124,8 @@ class OSX_Notifier(NotifierBase):
         self.notification_center = NSUserNotificationCenter.defaultUserNotificationCenter()
         assert self.notification_center
 
-    def show_notify(self, dbus_id, tray, nid: int | NotificationID,
-                    app_name: str, replaces_nid: int | NotificationID, app_icon,
+    def show_notify(self, dbus_id, tray, nid: NID,
+                    app_name: str, replaces_nid: NID, app_icon,
                     summary: str, body: str, actions, hints, expire_timeout: int, icon):
         GTK_NOTIFIER = envbool("XPRA_OSX_GTK_NOTIFIER", True)
         if actions and GTK_NOTIFIER:
@@ -143,8 +143,8 @@ class OSX_Notifier(NotifierBase):
         GLib.idle_add(self.do_show_notify, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions,
                       hints, expire_timeout, icon)
 
-    def do_show_notify(self, dbus_id, tray, nid: int | NotificationID, app_name: str,
-                       replaces_nid: int | NotificationID, app_icon,
+    def do_show_notify(self, dbus_id, tray, nid: NID, app_name: str,
+                       replaces_nid: NID, app_icon,
                        summary: str, body: str, actions, hints, expire_timeout: int, icon):
         notification = NSUserNotification.alloc()
         notification.init()
@@ -154,19 +154,19 @@ class OSX_Notifier(NotifierBase):
         # enable sound:
         notification.setSoundName_(NSUserNotificationDefaultSoundName)
         notifylog("do_show_notify(..) nid=%s, %s(%s)", nid, self.notification_center.deliverNotification_, notification)
-        self.notifications[nid] = notification
+        self.notifications[int(nid)] = notification
         self.notification_center.deliverNotification_(notification)
 
-    def close_notify(self, nid):
+    def close_notify(self, nid: NID):
         try:
-            self.gtk_notifications.remove(nid)
+            self.gtk_notifications.remove(int(nid))
         except KeyError:
-            notification = self.notifications.get(nid)
+            notification = self.notifications.get(int(nid))
             notifylog("close_notify(..) notification[%i]=%s", nid, notification)
             if notification:
                 GLib.idle_add(self.notification_center.removeDeliveredNotification_, notification)
         else:
-            self.gtk_notifier.close_notify(nid)
+            self.gtk_notifier.close_notify(int(nid))
 
     def cleanup(self):
         super().cleanup()

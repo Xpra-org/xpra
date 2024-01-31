@@ -19,11 +19,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from xpra.os_util import OSX, gi_import
-from xpra.common import NotificationID
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label, modify_fg, color_parse
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.notifications.notifier_base import NotifierBase, log
+from xpra.notifications.notifier_base import NotifierBase, log, NID
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
@@ -107,10 +106,10 @@ class GTKNotifier(NotifierBase):
             if x.nid == nid:
                 x.hide_notification()
 
-    def show_notify(self, dbus_id, tray, nid: int | NotificationID,
-                    app_name: str, replaces_nid: int | NotificationID, app_icon,
+    def show_notify(self, dbus_id, tray, nid: NID,
+                    app_name: str, replaces_nid: NID, app_icon,
                     summary: str, body: str, actions, hints, timeout, icon):
-        GLib.idle_add(self.new_popup, nid, summary, body, actions, icon, timeout, 0 < timeout <= 600)
+        GLib.idle_add(self.new_popup, int(nid), summary, body, actions, icon, timeout, 0 < timeout <= 600)
 
     def new_popup(self, nid: int, summary: str, body: str, actions: tuple, icon, timeout=10 * 1000, show_timeout=False):
         """Create a new Popup instance, or update an existing one """

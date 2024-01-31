@@ -4,16 +4,15 @@
 # later version. See the file COPYING for details.
 
 from xpra.os_util import gi_import
-from xpra.common import NotificationID
-from xpra.notifications.notifier_base import NotifierBase
+from xpra.notifications.notifier_base import NotifierBase, NID
 
 Notify = gi_import("Notify")
 
 
 class GINotifier(NotifierBase):
 
-    def show_notify(self, dbus_id, tray, nid: int | NotificationID,
-                    app_name: str, replaces_nid: int | NotificationID, app_icon,
+    def show_notify(self, dbus_id, tray, nid: NID,
+                    app_name: str, replaces_nid: NID, app_icon,
                     summary: str, body: str, actions, hints, timeout: int, icon):
         if not self.dbus_check(dbus_id):
             return
@@ -27,7 +26,7 @@ class GINotifier(NotifierBase):
         n.connect("closed", closed)
         n.show()
 
-    def close_notify(self, nid: int) -> None:
+    def close_notify(self, nid: NID) -> None:
         self.clean_notification(nid)
 
     def cleanup(self) -> None:

@@ -5,12 +5,15 @@
 
 import os
 import tempfile
+from typing import TypeAlias
 
 from xpra.util.env import osexpand
 from xpra.log import Logger
 from xpra.common import NotificationID
 
 log = Logger("notify")
+
+NID: TypeAlias = int | NotificationID
 
 
 class NotifierBase:
@@ -30,12 +33,12 @@ class NotifierBase:
             for nid in self.temp_files:
                 self.clean_notification(nid)
 
-    def show_notify(self, dbus_id, tray, nid: int | NotificationID,
-                    app_name: str, replaces_nid: int | NotificationID, app_icon,
+    def show_notify(self, dbus_id, tray, nid: NID,
+                    app_name: str, replaces_nid: NID, app_icon,
                     summary: str, body: str, actions, hints, timeout: int, icon) -> None:
         raise NotImplementedError()
 
-    def get_icon_string(self, nid: int | NotificationID, app_icon, icon) -> str:
+    def get_icon_string(self, nid: NID, app_icon, icon) -> str:
         if app_icon and not os.path.isabs(app_icon):
             # safe to use
             return app_icon
@@ -61,7 +64,7 @@ class NotifierBase:
             return temp.name
         return ""
 
-    def clean_notification(self, nid: int | NotificationID) -> None:
+    def clean_notification(self, nid: NID) -> None:
         temp_file = self.temp_files.pop(int(nid), "")
         log("clean_notification(%s) temp_file=%s", nid, temp_file)
         if temp_file:

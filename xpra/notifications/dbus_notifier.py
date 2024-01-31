@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,8 +9,7 @@ from typing import Any
 from xpra.util.str_fn import csv, ellipsizer, bytestostr
 from xpra.os_util import gi_import
 from xpra.dbus.helper import native_to_dbus
-from xpra.common import NotificationID
-from xpra.notifications.notifier_base import NotifierBase, log
+from xpra.notifications.notifier_base import NotifierBase, log, NID
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop, threads_init
 from dbus.exceptions import DBusException
@@ -67,8 +66,8 @@ class DBUS_Notifier(NotifierBase):
             self.do_close(nid, actual_id)
         super().cleanup()
 
-    def show_notify(self, dbus_id, tray, nid: int | NotificationID,
-                    app_name: str, replaces_nid: int | NotificationID, app_icon,
+    def show_notify(self, dbus_id, tray, nid: NID,
+                    app_name: str, replaces_nid: NID, app_icon,
                     summary: str, body: str, actions, hints, timeout: int, icon) -> None:
         if not self.dbus_check(dbus_id):
             return
@@ -91,7 +90,7 @@ class DBUS_Notifier(NotifierBase):
 
             def NotifyReply(notification_id):
                 log("NotifyReply(%s) for nid=%i", notification_id, nid)
-                self.actual_notification_id[nid] = int(notification_id)
+                self.actual_notification_id[int(nid)] = int(notification_id)
 
             dbus_hints = self.parse_hints(hints)
             log("calling %s%s", self.dbusnotify.Notify,
@@ -100,12 +99,12 @@ class DBUS_Notifier(NotifierBase):
                                    reply_handler=NotifyReply,
                                    error_handler=self.NotifyError)
 
-    def _find_nid(self, actual_id):
+    def _find_nid(self, actual_id) -> int:
         aid = int(actual_id)
         for k, v in self.actual_notification_id.items():
             if v == aid:
                 return k
-        return None
+        return 0
 
     def noparse_hints(self, h) -> dict:
         return h
@@ -183,19 +182,19 @@ class DBUS_Notifier(NotifierBase):
         log.estr(dbus_error)
         return False
 
-    def close_notify(self, nid: int) -> None:
-        actual_id = self.actual_notification_id.get(nid)
+    def close_notify(self, nid: NID) -> None:
+        actual_id = self.actual_notification_id.get(int(nid))
         if actual_id is None:
             log("close_notify(%i) actual notification not found, already closed?", nid)
             return
         log("close_notify(%i) actual id=%s", nid, actual_id)
         self.do_close(nid, actual_id)
 
-    def do_close(self, nid: int, actual_id: int) -> None:
+    def do_close(self, nid: NID, actual_id: int) -> None:
         log("do_close_notify(%i)", actual_id)
 
         def CloseNotificationReply():
-            self.actual_notification_id.pop(nid, None)
+            self.actual_notification_id.pop(actual_id, None)
 
         def CloseNotificationError(dbus_error, *_args):
             log.warn("Error: error closing notification:")
