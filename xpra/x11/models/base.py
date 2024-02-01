@@ -337,18 +337,18 @@ class BaseWindowModel(CoreX11WindowModel):
         with xlog:
             self.prop_set("_NET_WM_STATE", ["atom"], state)
 
-    def _sync_iconic(self, *_args) -> None:
-        def set_state(state):
-            log("_handle_iconic_update: set_state(%s)", state)
-            with xlog:
-                self.prop_set("WM_STATE", "state", state)
+    def set_wm_state(self, state):
+        metalog("set_wm_state(%s)", state)
+        with xlog:
+            self.prop_set("WM_STATE", "state", state)
 
+    def _sync_iconic(self, *_args) -> None:
         if self.get("iconic"):
-            set_state(IconicState)
-            self._state_add("_NET_WM_STATE_HIDDEN")
+            self.set_wm_state(IconicState)
+            self._state_update(add=("_NET_WM_STATE_HIDDEN", ), remove=("_NET_WM_STATE_FOCUSED", ))
         else:
-            set_state(NormalState)
-            self._state_remove("_NET_WM_STATE_HIDDEN")
+            self.set_wm_state(NormalState)
+            self._state_update(remove=("_NET_WM_STATE_HIDDEN", ))
 
     _py_property_handlers: dict[str, Callable] = dict(CoreX11WindowModel._py_property_handlers)
     _py_property_handlers |= {
@@ -525,27 +525,18 @@ class BaseWindowModel(CoreX11WindowModel):
         for x in states:
             _state_properties_reversed[x] = k
 
-    def _state_add(self, *state_names) -> None:
+    def _state_update(self, add=(), remove=()) -> None:
         curr = set(self.get_property("state"))
-        add = [s for s in state_names if s not in curr]
-        if add:
-            for x in add:
-                curr.add(x)
+        added = set(add) - curr
+        curr |= added
+        removed = set(remove) - curr
+        curr -= removed
+        if added or removed:
             # note: _sync_state will update _NET_WM_STATE here:
             self._internal_set_property("state", frozenset(curr))
-            self._state_notify(add)
+            self._state_notify(added | removed)
 
-    def _state_remove(self, *state_names) -> None:
-        curr = set(self.get_property("state"))
-        discard = [s for s in state_names if s in curr]
-        if discard:
-            for x in discard:
-                curr.discard(x)
-            # note: _sync_state will update _NET_WM_STATE here:
-            self._internal_set_property("state", frozenset(curr))
-            self._state_notify(discard)
-
-    def _state_notify(self, state_names) -> None:
+    def _state_notify(self, state_names: set) -> None:
         notify_props = set()
         for x in state_names:
             if x in self._state_properties_reversed:
@@ -581,9 +572,9 @@ class BaseWindowModel(CoreX11WindowModel):
         if not state_names:
             raise ValueError(f"invalid window state {prop}")
         if b:
-            self._state_add(*state_names)
+            self._state_update(add=state_names)
         else:
-            self._state_remove(*state_names)
+            self._state_update(remove=state_names)
 
     def get_wm_state(self, prop) -> bool:
         state_names = self._state_properties.get(prop)
