@@ -914,7 +914,7 @@ def unexpand(path: str) -> str:
     return path
 
 
-def unexpand_all(paths: list[str]) -> list[str]:
+def unexpand_all(paths):
     return [unexpand(x) for x in paths]
 
 
