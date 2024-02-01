@@ -843,11 +843,10 @@ class XpraServer(GObject.GObject, X11ServerBase):
             "below", "fullscreen",
             "sticky", "shaded",
             "skip-pager", "skip-taskbar", "focused",
-            ):
-            #metadatalog.info("window.get_property=%s", window.get_property)
-            new_state = nws.boolget(k, None)
-            if new_state is None:
+        ):
+            if k not in nws:
                 continue
+            new_state = nws.boolget(k)
             cur_state = bool(window.get_property(k))
             #metadatalog.info("set window state for '%s': current state=%s, new state=%s", k, cur_state, new_state)
             if cur_state!=new_state:
