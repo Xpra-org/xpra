@@ -299,7 +299,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def _adjust_pointer(self, proto, device_id, wid: int, opointer) -> list[int] | None:
         window = self._id_to_window.get(wid)
-        if not window:
+        if wid > 0 and not window:
             self.suspend_cursor(proto)
             return None
         pointer = super()._adjust_pointer(proto, device_id, wid, opointer)
