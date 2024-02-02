@@ -303,13 +303,14 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             self.suspend_cursor(proto)
             return None
         pointer = super()._adjust_pointer(proto, device_id, wid, opointer)
-        # the window may be at an offset (multi-window for multi-monitor):
-        wx, wy, ww, wh = window.get_geometry()
-        # or maybe the pointer is off-screen:
-        x, y = pointer[:2]
-        if x < 0 or x >= ww or y < 0 or y >= wh:
-            self.suspend_cursor(proto)
-            return None
+        if window:
+            # the window may be at an offset (multi-window for multi-monitor):
+            wx, wy, ww, wh = window.get_geometry()
+            # or maybe the pointer is off-screen:
+            x, y = pointer[:2]
+            if x < 0 or x >= ww or y < 0 or y >= wh:
+                self.suspend_cursor(proto)
+                return None
         self.restore_cursor(proto)
         # note: with x11 shadow servers,
         # X11ServerCore._get_pointer_abs_coordinates() will recalculate
