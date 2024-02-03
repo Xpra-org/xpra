@@ -13,7 +13,7 @@ from subprocess import Popen, PIPE
 from threading import Thread
 from typing import Any
 
-from xpra.os_util import POSIX, LINUX, OSX, WIN32, no_idle
+from xpra.os_util import POSIX, LINUX, OSX, WIN32
 from xpra.util.env import _saved_env
 from xpra.util.thread import main_thread
 from xpra.util.io import load_binary_file, get_util_logger
@@ -33,6 +33,10 @@ def set_proc_title(title) -> None:
         setproctitle.setproctitle(title)  # @UndefinedVariable pylint: disable=c-extension-no-member
     except ImportError as e:
         get_util_logger().debug("setproctitle is not installed: %s", e)
+
+
+def no_idle(fn, *args, **kwargs):
+    fn(*args, **kwargs)
 
 
 def register_SIGUSR_signals(idle_add=no_idle) -> None:

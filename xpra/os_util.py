@@ -164,7 +164,3 @@ def get_user_uuid() -> str:
 # here so we can override it when needed
 def force_quit(status=1) -> None:
     os._exit(int(status))  # pylint: disable=protected-access
-
-
-def no_idle(fn, *args, **kwargs):
-    fn(*args, **kwargs)
