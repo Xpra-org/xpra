@@ -36,7 +36,7 @@ class AutoPropGObjectMixin:
     # Exposed for subclasses that wish to set readonly properties --
     # .set_property (the public api) will fail, but the property can still be
     # modified via this method.
-    def _internal_set_property(self, name, value):
+    def _internal_set_property(self, name: str, value):
         setter = "do_set_property_" + name.replace("-", "_")
         if hasattr(self, setter):
             getattr(self, setter)(name, value)

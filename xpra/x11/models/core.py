@@ -60,7 +60,7 @@ Below = 1
 TopIf = 2
 BottomIf = 3
 Opposite = 4
-RESTACKING_STR = {
+RESTACKING_STR: dict[int, str] = {
     Above: "Above",
     Below: "Below",
     TopIf: "TopIf",
@@ -74,13 +74,13 @@ NotifyGrab = constants["NotifyGrab"]
 NotifyUngrab = constants["NotifyUngrab"]
 NotifyWhileGrabbed = constants["NotifyWhileGrabbed"]
 NotifyNonlinearVirtual = constants["NotifyNonlinearVirtual"]
-GRAB_CONSTANTS = {
+GRAB_CONSTANTS: dict[int, str] = {
     NotifyNormal: "NotifyNormal",
     NotifyGrab: "NotifyGrab",
     NotifyUngrab: "NotifyUngrab",
     NotifyWhileGrabbed: "NotifyWhileGrabbed",
 }
-DETAIL_CONSTANTS = {}
+DETAIL_CONSTANTS: dict[int, str] = {}
 for dconst in (
         "NotifyAncestor", "NotifyVirtual", "NotifyInferior",
         "NotifyNonlinear", "NotifyNonlinearVirtual", "NotifyPointer",
@@ -105,7 +105,7 @@ X11PROPERTY_SYNC_BLACKLIST = os.environ.get("XPRA_X11PROPERTY_SYNC_BLACKLIST",
                                             "_GTK,WM_,_NET,Xdnd").split(",")
 
 
-def sanestr(s):
+def sanestr(s: str) -> str:
     return (s or "").strip("\0").replace("\0", " ")
 
 

@@ -37,18 +37,18 @@ GLib = gi_import("GLib")
 
 X11Window = X11WindowBindings()
 
-IconicState = constants["IconicState"]
-NormalState = constants["NormalState"]
+IconicState: int = constants["IconicState"]
+NormalState: int = constants["NormalState"]
 
-CWX = constants["CWX"]
-CWY = constants["CWY"]
-CWWidth = constants["CWWidth"]
-CWHeight = constants["CWHeight"]
-CWBorderWidth = constants["CWBorderWidth"]
-CWSibling = constants["CWSibling"]
-CWStackMode = constants["CWStackMode"]
-CONFIGURE_GEOMETRY_MASK = CWX | CWY | CWWidth | CWHeight
-CW_MASK_TO_NAME = {
+CWX: int = constants["CWX"]
+CWY: int = constants["CWY"]
+CWWidth: int = constants["CWWidth"]
+CWHeight: int = constants["CWHeight"]
+CWBorderWidth: int = constants["CWBorderWidth"]
+CWSibling: int = constants["CWSibling"]
+CWStackMode: int = constants["CWStackMode"]
+CONFIGURE_GEOMETRY_MASK: int = CWX | CWY | CWWidth | CWHeight
+CW_MASK_TO_NAME: dict[int, str] = {
     CWX: "X",
     CWY: "Y",
     CWWidth: "Width",
@@ -59,7 +59,7 @@ CW_MASK_TO_NAME = {
 }
 
 
-def configure_bits(value_mask):
+def configure_bits(value_mask: int) -> str:
     return "|".join(v for k, v in CW_MASK_TO_NAME.items() if k & value_mask)
 
 
@@ -69,11 +69,11 @@ CLAMP_OVERLAP = envint("XPRA_WINDOW_CLAMP_OVERLAP", 20)
 assert CLAMP_OVERLAP >= 0
 
 
-def calc_constrained_size(width: int, height: int, hints):
+def calc_constrained_size(width: int, height: int, hints) -> tuple[int, int]:
     if not hints:
         return width, height
 
-    def getintpair(key, dv1: int, dv2: int):
+    def getintpair(key: str, dv1: int, dv2: int):
         v = hints.get(key)
         if v:
             try:
@@ -733,7 +733,7 @@ class WindowModel(BaseWindowModel):
             return True
         return super().process_client_message_event(event)
 
-    def calc_constrained_size(self, w, h, hints) -> tuple[int, int]:
+    def calc_constrained_size(self, w: int, h: int, hints: dict) -> tuple[int, int]:
         mhints = typedict(hints)
         cw, ch = calc_constrained_size(w, h, mhints)
         geomlog("calc_constrained_size%s=%s (size_constraints=%s)", (w, h, mhints), (cw, ch), self.size_constraints)
@@ -785,7 +785,7 @@ class WindowModel(BaseWindowModel):
         # so rename the fields:
         hints = {}
         if size_hints:
-            TRANSLATED_NAMES = {
+            TRANSLATED_NAMES: dict[str, str] = {
                 "position": "position",
                 "size": "size",
                 "base_size": "base-size",
