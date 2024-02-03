@@ -768,10 +768,13 @@ fi
 
 
 %changelog
-* Wed Jan 31 2024 Antoine Martin <antoine@xpra.org> 5.0.5-10
+* Sat Feb 03 2024 Antoine Martin <antoine@xpra.org> 5.0.5-10
 - Major:
    race condition in OpenGL initialization
    http socket upgrades for slow requests
+   window state attributes wrongly set to False
+   window geometry not updated
+   handle pointer events missing the shadow window id more gracefully
    socket setup failure cleanup
    ensure text is always lossless
    fixup DPI backport for Xvfb users
@@ -792,6 +795,7 @@ fi
    only build CUDA kernels if needed
    allow building CUDA kernels with clang
    RHEL8 pycuda 2022.1 patch for compatibility with CUDA 12.x
+   libproc module compatibility with GCC 14
    use the correct enum type for nvfbc constants
    pycuda 2024.1
    Cython 3.0.8
@@ -815,6 +819,7 @@ fi
    documentation dead links
    don't import X11 modules under Wayland
    deprecation warnings: ssl constants, re.sub
+   skip test failing on CI
 
 
 * Tue Nov 28 2023 Antoine Martin <antoine@xpra.org> 5.0.4-10

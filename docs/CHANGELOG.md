@@ -1,9 +1,12 @@
 # Changelog
 
-## [5.0.5] 2024-01-31
+## [5.0.5] 2024-02-03
 * Major:
     * [race condition in OpenGL initialization](https://github.com/Xpra-org/xpra/commit/498b8f6c7da012bb555fb087ead26ba218701ada)
     * [http socket upgrades for slow requests](https://github.com/Xpra-org/xpra/commit/c2935630d505b11752c2851dc0f1b1590c2788eb)
+    * [window state attributes wrongly set to False](https://github.com/Xpra-org/xpra/commit/e46192fb428ac1b32c3f113fc40e0cf7cf69ad7b)
+    * [window geometry not updated](https://github.com/Xpra-org/xpra/commit/5feb4058d954e501f39175f90ed1236d847e3767)
+    * [handle pointer events missing the shadow window id more gracefully](https://github.com/Xpra-org/xpra/commit/98f38bd8105ca7ec17e39872915542aa305c0cec)
     * [socket setup failure cleanup](https://github.com/Xpra-org/xpra/commit/d6294f80efa635cfe57b492440b5c9eb30363b7b)
     * [ensure text is always lossless](https://github.com/Xpra-org/xpra/commit/0bc563c31ea6e2ad011a6947662cfa7f9415d3c0)
     * [fixup DPI backport for Xvfb users](https://github.com/Xpra-org/xpra/commit/30c7cfa5a9f119aac300b5652d3d545f9ca799cf)
@@ -24,6 +27,7 @@
     * [only build CUDA kernels if needed](https://github.com/Xpra-org/xpra/commit/c388d6930de7d49da768fca5f27ed39b262c7013)
     * [allow building CUDA kernels with clang](https://github.com/Xpra-org/xpra/commit/6ceb529c46e88a0712abaa8174f5f212ec89af8c)
     * [RHEL8 pycuda 2022.1 patch for compatibility with CUDA 12.x](https://github.com/Xpra-org/xpra/commit/dd3e514f92269ba9cf0c967c576aea59af23a2a0)
+    * [libproc module compatibility with GCC 14](https://github.com/Xpra-org/xpra/commit/ffb5abfce7217b49ddd8045e4e83275c34c136c4)
     * [use the correct enum type for nvfbc constants](https://github.com/Xpra-org/xpra/commit/5d962187d75bfe1c77a62e3c5971668c8f444a45)
     * [pycuda 2024.1](https://github.com/Xpra-org/xpra/commit/513d3292bd0181714d9e5778bb857ffb0a0621b2)
     * [Cython 3.0.8](https://github.com/Xpra-org/xpra/commit/3b77de331d8978c5c999c2115dd3fcd75d22632f)
@@ -47,6 +51,7 @@
     * [documentation dead links](https://github.com/Xpra-org/xpra/commit/c322b77f1c3d7d2d95c9ff94362ee1c16cc3e022)
     * [don't import X11 modules under Wayland](https://github.com/Xpra-org/xpra/commit/e896c23e73fc7b4496b66413aafa64296a72dcc5)
     * deprecation warnings: [ssl constants](https://github.com/Xpra-org/xpra/commit/111ec73e442569bc949644a0894340125f94f82e), [re.sub](https://github.com/Xpra-org/xpra/commit/119e58de1a687ba75d917da936bce33d1d4a7d63)
+    * [skip test failing on CI](https://github.com/Xpra-org/xpra/commit/0bea6b21193cceecddb892e9f2ab2caa4dce13bd)
 
 ## [5.0.4] 2023-11-28
 * Major:

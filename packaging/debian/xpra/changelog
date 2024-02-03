@@ -2,6 +2,9 @@ xpra (5.0.5-1) UNRELEASED; urgency=low
   * Major:
    - race condition in OpenGL initialization
    - http socket upgrades for slow requests
+   - window state attributes wrongly set to False
+   - window geometry not updated
+   - handle pointer events missing the shadow window id more gracefully
    - socket setup failure cleanup
    - ensure text is always lossless
    - fixup DPI backport for Xvfb users
@@ -22,6 +25,7 @@ xpra (5.0.5-1) UNRELEASED; urgency=low
    - only build CUDA kernels if needed
    - allow building CUDA kernels with clang
    - RHEL8 pycuda 2022.1 patch for compatibility with CUDA 12.x
+   - libproc module compatibility with GCC 14
    - use the correct enum type for nvfbc constants
    - pycuda 2024.1
    - Cython 3.0.8
@@ -45,8 +49,9 @@ xpra (5.0.5-1) UNRELEASED; urgency=low
     - documentation dead links
     - don't import X11 modules under Wayland
     - deprecation warnings: ssl constants, re.sub
+    - skip test failing on CI
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 31 Jan 2024 18:52:05 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sat, 03 Feb 2024 22:02:27 +0700
 
 xpra (5.0.4-1) UNRELEASED; urgency=low
   * Major:
