@@ -7,6 +7,7 @@
 import os
 import socket
 from typing import Any
+from collections.abc import Callable
 
 from xpra.util.io import get_util_logger
 from xpra.common import WORKSPACE_UNSET
@@ -14,9 +15,9 @@ from xpra.common import WORKSPACE_UNSET
 SKIP_METADATA = os.environ.get("XPRA_SKIP_METADATA", "").split(",")
 
 
-def make_window_metadata(window, propname, get_window_id=None, skip_defaults=False) -> dict[str, Any]:
+def make_window_metadata(window, propname: str, get_window_id: Callable = None, skip_defaults=False) -> dict[str, Any]:
     try:
-        return do_make_window_metadata(window, propname, get_window_id, skip_defaults)
+        return _make_window_metadata(window, propname, get_window_id, skip_defaults)
     except (ValueError, TypeError) as e:
         log = get_util_logger()
         log("make_window_metadata%s",
@@ -28,7 +29,7 @@ def make_window_metadata(window, propname, get_window_id=None, skip_defaults=Fal
         return {}
 
 
-def do_make_window_metadata(window, propname, get_window_id=None, skip_defaults=False) -> dict[str, Any]:
+def _make_window_metadata(window, propname: str, get_window_id: Callable = None, skip_defaults=False) -> dict[str, Any]:
     if propname in SKIP_METADATA:
         return {}
 
@@ -46,10 +47,10 @@ def do_make_window_metadata(window, propname, get_window_id=None, skip_defaults=
             return {propname: ""}
         return {propname: v}
     if propname in (
-            "pid", "ppid", "wm-pid",
-            "workspace",
-            "bypass-compositor", "depth", "opacity",
-            "quality", "speed",
+        "pid", "ppid", "wm-pid",
+        "workspace",
+        "bypass-compositor", "depth", "opacity",
+        "quality", "speed",
     ):
         v = raw()
         assert v is not None, "%s is None!" % propname
