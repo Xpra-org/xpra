@@ -302,27 +302,29 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             self.refresh_window(window)
 
 
-    def _adjust_pointer(self, proto, device_id, wid:int, opointer) -> Optional[List]:
+    def _adjust_pointer(self, proto, device_id, wid: int, opointer) -> Optional[List]:
         window = self._id_to_window.get(wid)
-        if not window:
+        if wid > 0 and not window:
             self.suspend_cursor(proto)
             return None
         pointer = super()._adjust_pointer(proto, device_id, wid, opointer)
-        #the window may be at an offset (multi-window for multi-monitor):
-        wx, wy, ww, wh = window.get_geometry()
-        #or maybe the pointer is off-screen:
-        x, y = pointer[:2]
-        if x<0 or x>=ww or y<0 or y>=wh:
-            self.suspend_cursor(proto)
-            return None
+        ax = x = int(pointer[0])
+        ay = y = int(pointer[1])
+        if window:
+            # the window may be at an offset (multi-window for multi-monitor):
+            wx, wy, ww, wh = window.get_geometry()
+            # or maybe the pointer is off-screen:
+            if x < 0 or x >= ww or y < 0 or y >= wh:
+                self.suspend_cursor(proto)
+                return None
+            # note: with x11 shadow servers,
+            # X11ServerCore._get_pointer_abs_coordinates() will recalculate
+            # the absolute coordinates from the relative ones,
+            # and it should end up with the same values we calculated here
+            ax = x + wx
+            ay = y + wy
         self.restore_cursor(proto)
-        #note: with x11 shadow servers,
-        # X11ServerCore._get_pointer_abs_coordinates() will recalculate
-        # the absolute coordinates from the relative ones,
-        # and it should end up with the same values we calculated here
-        ax = x+wx
-        ay = y+wy
-        return [ax, ay]+list(pointer[2:])
+        return [ax, ay] + list(pointer[2:])
 
     def get_pointer_position(self):
         return self.root.get_pointer()[-3:-1]
