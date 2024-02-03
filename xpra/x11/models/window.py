@@ -560,7 +560,7 @@ class WindowModel(BaseWindowModel):
         if moved:
             self._internal_set_property("requested-position", (x, y))
             self._internal_set_property("set-initial-position", True)
-        if not moved or resized:
+        if not (moved or resized):
             return
         X11Window.MoveResizeWindow(self.corral_xid, x, y, w, h)
         if moved:
