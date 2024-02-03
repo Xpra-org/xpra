@@ -562,7 +562,10 @@ class WindowModel(BaseWindowModel):
         geometry = self.get_property("client-geometry")
         if geometry is not None:
             geomlog("_update_client_geometry: using client-geometry=%s", geometry)
+            x, y, w, h = geometry
             self._internal_set_property("set-initial-position", True)
+            self._internal_set_property("requested-position", (x, y))
+            self._internal_set_property("requested-size", (w, h))
         elif not self._setup_done:
             # try to honour initial size and position requests during setup:
             w, h = self.get_property("requested-size")
@@ -650,8 +653,10 @@ class WindowModel(BaseWindowModel):
         geomlog("resize_corral_window%s hints=%s, constrained size=%s, geometry=%s, resized=%s, moved=%s",
                 (x, y, w, h), hints, (w, h), (cx, cy, cw, ch), resized, moved)
         if moved:
-            self._internal_set_property("requested-position", (x, y))
             self._internal_set_property("set-initial-position", True)
+            self._internal_set_property("requested-position", (x, y))
+        if resized:
+            self._internal_set_property("requested-size", (w, h))
         if not (moved or resized):
             return
         X11Window.MoveResizeWindow(self.corral_xid, x, y, w, h)
