@@ -255,7 +255,7 @@ class Networklistener(StubClientMixin):
                 except Exception as e:
                     code = ExitCode.FAILURE
                     response = str(e)
-                hello_reply({"command_response": (code, response)})
+                hello_reply({"command_response": (int(code), response)})
 
             self.idle_add(process_control)
             return
