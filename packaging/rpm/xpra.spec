@@ -768,12 +768,12 @@ fi
 
 
 %changelog
-* Sat Feb 03 2024 Antoine Martin <antoine@xpra.org> 5.0.5-10
+* Mon Feb 05 2024 Antoine Martin <antoine@xpra.org> 5.0.5-10
 - Major:
    race condition in OpenGL initialization
    http socket upgrades for slow requests
    window state attributes wrongly set to False
-   window geometry not updated
+   window geometry not updated, not restored
    handle pointer events missing the shadow window id more gracefully
    socket setup failure cleanup
    ensure text is always lossless
@@ -786,6 +786,7 @@ fi
    workaround missing icon size config
    workaround paramiko error with agent keys
    incomplete desktop server startup with `Xvfb` backend
+   packet encoding error on client control command
 - Platforms and packaging:
    appindicator system tray not shown
    (Free)BSD compatibility: don't build pam, do build drm
@@ -805,6 +806,7 @@ fi
    honour client specified order of clipboard preferred targets
    allow `text/html` as `text` target
 - Minor:
+   restore chosen window size
    ensure each socket gets its own options object
    correctly set XImage buffers read-only
    cleanup errors with RFB connections

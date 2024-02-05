@@ -1,11 +1,11 @@
 # Changelog
 
-## [5.0.5] 2024-02-03
+## [5.0.5] 2024-02-05
 * Major:
     * [race condition in OpenGL initialization](https://github.com/Xpra-org/xpra/commit/498b8f6c7da012bb555fb087ead26ba218701ada)
     * [http socket upgrades for slow requests](https://github.com/Xpra-org/xpra/commit/c2935630d505b11752c2851dc0f1b1590c2788eb)
     * [window state attributes wrongly set to False](https://github.com/Xpra-org/xpra/commit/e46192fb428ac1b32c3f113fc40e0cf7cf69ad7b)
-    * [window geometry not updated](https://github.com/Xpra-org/xpra/commit/5feb4058d954e501f39175f90ed1236d847e3767)
+    * [window geometry not updated](https://github.com/Xpra-org/xpra/commit/5feb4058d954e501f39175f90ed1236d847e3767), [not restored](https://github.com/Xpra-org/xpra/commit/e1509849ec63ff24d6ce2222ec1323046a71b972)
     * [handle pointer events missing the shadow window id more gracefully](https://github.com/Xpra-org/xpra/commit/98f38bd8105ca7ec17e39872915542aa305c0cec)
     * [socket setup failure cleanup](https://github.com/Xpra-org/xpra/commit/d6294f80efa635cfe57b492440b5c9eb30363b7b)
     * [ensure text is always lossless](https://github.com/Xpra-org/xpra/commit/0bc563c31ea6e2ad011a6947662cfa7f9415d3c0)
@@ -18,6 +18,7 @@
     * [workaround missing icon size config](https://github.com/Xpra-org/xpra/commit/efcb254105600987b06539b9929c66911f9713b5)
     * [workaround paramiko error with agent keys](https://github.com/Xpra-org/xpra/commit/55f2cc6787bfc6f57e1577a803a4cd33a1addbe1)
     * [incomplete desktop server startup with `Xvfb` backend](https://github.com/Xpra-org/xpra/commit/c2dfebc63caa9d85517a2b8f8e6158d1ffeb32f8)
+    * [packet encoding error on client control command](https://github.com/Xpra-org/xpra/commit/8f02457af98ab3d45845fa8d6dea23e0d577f5bc)
 * Platforms and packaging:
     * [appindicator system tray not shown](https://github.com/Xpra-org/xpra/commit/fff396758291432af40e7d26f12ef3a2615487fd)
     * (Free)BSD compatibility: [don't build pam](https://github.com/Xpra-org/xpra/commit/dd80ab2f02fbd2f4e72165c99012d072a5373952), [do build drm](https://github.com/Xpra-org/xpra/commit/4753b487a56b16d065b868ababc8a27e99e025d0)
@@ -37,6 +38,7 @@
     * [honour client specified order of clipboard preferred targets](https://github.com/Xpra-org/xpra/commit/0da4d81741fed523e1d356f8ab3fce209cdbd221)
     * [allow `text/html` as `text` target](https://github.com/Xpra-org/xpra/commit/eaf2e5472b7a3f775d2fd3a6944804eaa833f268)
 * Minor:
+    * [restore chosen window size](https://github.com/Xpra-org/xpra/commit/fc18ad92f3b37d1adf35411fb7ffb2f97bf4a132)
     * [ensure each socket gets its own options object](https://github.com/Xpra-org/xpra/commit/8d4521c179dce07d0ddf6009cc3efd04af26a9a4)
     * [correctly set XImage buffers read-only](https://github.com/Xpra-org/xpra/commit/6b0c1777597ab8859605cc47a7ba0601f82ef058)
     * [cleanup errors with RFB connections](https://github.com/Xpra-org/xpra/commit/4e047e4d388e7c532bcc2473072f289a2fbb0049)
