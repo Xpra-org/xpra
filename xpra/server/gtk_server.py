@@ -49,9 +49,9 @@ class GTKServerBase(ServerBase):
         self.idle_add = GLib.idle_add
         self.timeout_add = GLib.timeout_add
         self.source_remove = GLib.source_remove
-        self.cursor_suspended : bool = False
+        self.cursor_suspended: bool = False
         self.ui_watcher = None
-        self.keymap_changing_timer : int = 0
+        self.keymap_changing_timer: int = 0
         self.cursor_sizes = self.get_cursor_sizes()
         super().__init__()
 
@@ -62,6 +62,7 @@ class GTKServerBase(ServerBase):
             log.warn("Warning: no default Gdk Display!")
             return
         keymap = Gdk.Keymap.get_for_display(display)
+
         # this event can fire many times in succession
         # throttle how many times we call self._keys_changed()
 
@@ -72,7 +73,9 @@ class GTKServerBase(ServerBase):
             def do_keys_changed():
                 self._keys_changed()
                 self.keymap_changing_timer = 0
+
             self.keymap_changing_timer = self.timeout_add(500, do_keys_changed)
+
         keymap.connect("keys-changed", keys_changed)
 
     def stop_keymap_timer(self) -> None:
@@ -81,8 +84,8 @@ class GTKServerBase(ServerBase):
             self.keymap_changing_timer = 0
             self.source_remove(kct)
 
-    def install_signal_handlers(self, callback:Callable) -> None:
-        sstr = self.get_server_mode()+" server"
+    def install_signal_handlers(self, callback: Callable) -> None:
+        sstr = self.get_server_mode() + " server"
         register_os_signals(callback, sstr)
         register_SIGUSR_signals(sstr)
 
@@ -90,7 +93,7 @@ class GTKServerBase(ServerBase):
         log("do_quit: calling Gtk.main_quit")
         Gtk.main_quit()
         log("do_quit: Gtk.main_quit done")
-        #from now on, we can't rely on the main loop:
+        # from now on, we can't rely on the main loop:
         from xpra.util.system import register_SIGUSR_signals
         register_SIGUSR_signals()
 
@@ -112,8 +115,8 @@ class GTKServerBase(ServerBase):
         # Close our display(s) first, so the server dying won't kill us.
         # (if gtk has been loaded)
         gdk_mod = sys.modules.get("gi.repository.Gdk")
-        #bug 2328: python3 shadow server segfault on Ubuntu 16.04
-        #also crashes on Ubuntu 20.04
+        # bug 2328: python3 shadow server segfault on Ubuntu 16.04
+        # also crashes on Ubuntu 20.04
         close = envbool("XPRA_CLOSE_GTK_DISPLAY", False)
         log("close_gtk_display() close=%s, gdk_mod=%s",
             close, gdk_mod)
@@ -141,22 +144,22 @@ class GTKServerBase(ServerBase):
         Gtk.main()
         log("do_run() end of gtk.main()")
 
-    def make_hello(self, source) -> dict[str,Any]:
+    def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)
         if "display" in source.wants:
             display = Gdk.Display.get_default()
             if display:
                 max_size = tuple(display.get_maximal_cursor_size())
                 capabilities |= {
-                    "display"               : display.get_name(),
-                    "cursor.default_size"   : display.get_default_cursor_size(),
-                    "cursor.max_size"       : max_size,
+                    "display": display.get_name(),
+                    "cursor.default_size": display.get_default_cursor_size(),
+                    "cursor.max_size": max_size,
                 }
-        if "versions" in source.wants and FULL_INFO>=2:
+        if "versions" in source.wants and FULL_INFO >= 2:
             capabilities.setdefault("versions", {}).update(get_gtk_version_info())
         return capabilities
 
-    def get_ui_info(self, proto, *args) -> dict[str,Any]:
+    def get_ui_info(self, proto, *args) -> dict[str, Any]:
         info = super().get_ui_info(proto, *args)
         display = Gdk.Display.get_default()
         if display:
@@ -183,7 +186,7 @@ class GTKServerBase(ServerBase):
             ss.send_empty_cursor()
 
     def restore_cursor(self, proto) -> None:
-        #see suspend_cursor
+        # see suspend_cursor
         if not self.cursor_suspended:
             return
         self.cursor_suspended = False
@@ -191,7 +194,7 @@ class GTKServerBase(ServerBase):
         if ss:
             ss.send_cursor()
 
-    def get_cursor_sizes(self) -> tuple[int,int]:
+    def get_cursor_sizes(self) -> tuple[int, int]:
         display = Gdk.Display.get_default()
         if not display:
             return 0, 0
@@ -202,7 +205,7 @@ class GTKServerBase(ServerBase):
         cursorlog("send_initial_cursors() cursor_sizes=%s", self.cursor_sizes)
         ss.send_cursor()
 
-    def get_ui_cursor_info(self) -> dict[str,Any]:
+    def get_ui_cursor_info(self) -> dict[str, Any]:
         # (from UI thread)
         # now cursor size info:
         display = Gdk.Display.get_default()
@@ -210,7 +213,7 @@ class GTKServerBase(ServerBase):
             return {}
         with SilenceWarningsContext(DeprecationWarning):
             pos = display.get_default_screen().get_root_window().get_pointer()
-        cinfo = {"position" : (pos.x, pos.y)}
+        cinfo = {"position": (pos.x, pos.y)}
         for prop, size in {
             "default": display.get_default_cursor_size(),
             "max": tuple(display.get_maximal_cursor_size()),
@@ -220,25 +223,25 @@ class GTKServerBase(ServerBase):
             cinfo[f"{prop}_size"] = size
         return cinfo
 
-    def do_get_info(self, proto, *args) -> dict[str,Any]:
+    def do_get_info(self, proto, *args) -> dict[str, Any]:
         start = monotonic()
         info = super().do_get_info(proto, *args)
         vi = dict_version_trim(get_gtk_version_info())
         vi["type"] = "Python/gtk"
         info.setdefault("server", {}).update(vi)
-        log("GTKServerBase.do_get_info took %ims", (monotonic()-start)*1000)
+        log("GTKServerBase.do_get_info took %ims", (monotonic() - start) * 1000)
         return info
 
-    def get_root_window_size(self) -> tuple[int,int]:
+    def get_root_window_size(self) -> tuple[int, int]:
         return get_root_size(None)
 
-    def get_max_screen_size(self) -> tuple[int,int]:
+    def get_max_screen_size(self) -> tuple[int, int]:
         return get_root_size(None)
 
-    def configure_best_screen_size(self)-> tuple[int,int]:
+    def configure_best_screen_size(self) -> tuple[int, int]:
         return self.get_root_window_size()
 
-    def calculate_workarea(self, maxw:int, maxh:int) -> None:
+    def calculate_workarea(self, maxw: int, maxh: int) -> None:
         screenlog("calculate_workarea(%s, %s)", maxw, maxh)
         workarea = Gdk.Rectangle()
         workarea.width = maxw
@@ -253,7 +256,7 @@ class GTKServerBase(ServerBase):
                 if not display or not isinstance(display, (list, tuple)):
                     continue
                 # display: [':0.0', 2560, 1600, 677, 423, [['DFP2', 0, 0, 2560, 1600, 646, 406]], 0, 0, 2560, 1574]
-                if len(display)>=10:
+                if len(display) >= 10:
                     work_x, work_y, work_w, work_h = display[6:10]
                     display_workarea = Gdk.Rectangle()
                     display_workarea.x = work_x
@@ -267,7 +270,7 @@ class GTKServerBase(ServerBase):
                         log.warn(" as intersection of %s and %s", (maxw, maxh), (work_x, work_y, work_w, work_h))
         # sanity checks:
         screenlog("calculate_workarea(%s, %s) workarea=%s", maxw, maxh, workarea)
-        if workarea.width==0 or workarea.height==0 or workarea.width>=32768-8192 or workarea.height>=32768-8192:
+        if workarea.width == 0 or workarea.height == 0 or workarea.width >= 32768 - 8192 or workarea.height >= 32768 - 8192:
             screenlog.warn("Warning: failed to calculate a common workarea")
             screenlog.warn(" using the full display area: %ix%i", maxw, maxh)
             workarea = Gdk.Rectangle()
