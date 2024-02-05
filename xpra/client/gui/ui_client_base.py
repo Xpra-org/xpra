@@ -660,6 +660,7 @@ class UIXpraClient(ClientBaseClass):
             from xpra.log import (
                 add_debug_category, add_disabled_category,
                 enable_debug_for, disable_debug_for,
+                add_backtrace, remove_backtrace,
                 get_all_loggers,
             )
             log_cmd = bytestostr(args[0])
@@ -672,12 +673,17 @@ class UIXpraClient(ClientBaseClass):
                 else:
                     log.info("logging is not enabled for any loggers")
                 return
-            log_cmd = bytestostr(args[0])
+            if len(args) < 2:
+                log.warn(f"not enough arguments for {log_cmd!r} debug control command")
+                return
+            if log_cmd == "add-backtrace":
+                add_backtrace(*args[1:])
+                return
+            if log_cmd == "remove-backtrace":
+                remove_backtrace(*args[1:])
+                return
             if log_cmd not in ("enable", "disable"):
                 log.warn("invalid debug control mode: '%s' (must be 'enable' or 'disable')", log_cmd)
-                return
-            if len(args) < 2:
-                log.warn("not enough arguments for '%s' debug control command" % log_cmd)
                 return
             loggers = []
             # each argument is a group

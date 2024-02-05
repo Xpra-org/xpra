@@ -29,6 +29,10 @@ logging.root.setLevel(logging.INFO)
 
 debug_enabled_categories: set[str] = set()
 debug_disabled_categories: set[str] = set()
+backtrace_expressions: set[str] = set()
+
+
+MODULE_FILE = os.path.join(os.sep, "xpra", "log.py")        # ie: "/xpra/log.py"
 
 
 def get_debug_args() -> list[str]:
@@ -91,6 +95,21 @@ def remove_disabled_category(*cat) -> None:
     for c in cat:
         if c in debug_disabled_categories:
             debug_disabled_categories.remove(c)
+
+
+def add_backtrace(*expressions) -> None:
+    import re
+    for e in expressions:
+        backtrace_expressions.add(re.compile(e))
+
+
+def remove_backtrace(*expressions) -> None:
+    import re
+    for e in expressions:
+        try:
+            backtrace_expressions.remove(re.compile(e))
+        except KeyError:
+            pass
 
 
 default_level: int = logging.DEBUG
@@ -429,13 +448,25 @@ class Logger:
         self.level_override = logging.CRITICAL if enable else 0
 
     def log(self, level, msg: str, *args, **kwargs):
-        if kwargs.get("exc_info") is True:
+        exc_info = kwargs.pop("exc_info", None)
+        if exc_info is True:
             ei = sys.exc_info()
-            if ei!=(None, None, None):
+            if ei != (None, None, None):
+                exc_info = False
                 kwargs["exc_info"] = ei
         if LOG_PREFIX:
             msg = LOG_PREFIX+msg
         global_logging_handler(self._logger.log, self.level_override or level, msg, *args, **kwargs)
+        if backtrace_expressions and not exc_info and any(exp.match(msg) for exp in backtrace_expressions):
+            import traceback
+            tb = traceback.extract_stack()
+            count = len(tb)
+            for i, frame in enumerate(tb):
+                if frame.filename.endswith(MODULE_FILE) and i >= (count - 3):
+                    # skip the logger's own calls
+                    break
+                for rec in tb.format_frame_summary(frame).splitlines():
+                    global_logging_handler(self._logger.log, self.level_override or level, rec)
 
     def __call__(self, msg: str, *args, **kwargs):
         self.debug(msg, *args, **kwargs)
