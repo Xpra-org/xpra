@@ -349,7 +349,11 @@ class win32NotifyIcon:
         icon_h = GetSystemMetrics(win32con.SM_CYSMICON)
         if w != icon_w or h != icon_h:
             log("resizing tray icon to %ix%i", icon_w, icon_h)
-            img = img.resize((icon_w, icon_h), Image.Resampling.LANCZOS)
+            try:
+                LANCZOS = Image.Resampling.LANCZOS
+            except AttributeError:
+                LANCZOS = Image.Resampling.LANCZOS
+            img = img.resize((icon_w, icon_h), LANCZOS)
             rowstride = w * 4
         hicon = image_to_ICONINFO(img, TRAY_ALPHA) or FALLBACK_ICON
         self.do_set_icon(hicon, DestroyIcon)

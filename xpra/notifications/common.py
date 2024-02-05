@@ -121,7 +121,11 @@ def get_notification_icon(icon_string: str) -> IconData | None:
     if not img:
         return None
     if w > MAX_SIZE or h > MAX_SIZE:
-        img = img.resize((MAX_SIZE, MAX_SIZE), Image.Resampling.LANCZOS)
+        try:
+            LANCZOS = Image.Resampling.LANCZOS
+        except AttributeError:
+            LANCZOS = Image.Resampling.LANCZOS
+        img = img.resize((MAX_SIZE, MAX_SIZE), LANCZOS)
         w = h = MAX_SIZE
     buf = BytesIO()
     img.save(buf, "PNG")

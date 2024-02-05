@@ -131,7 +131,11 @@ class ServerCommandsWindow:
                             log("icons: %s", icons)
                             if icons:
                                 from PIL import Image  # @UnresolvedImport pylint: disable=import-outside-toplevel
-                                img = icons[0].resize((24, 24), Image.Resampling.LANCZOS)
+                                try:
+                                    LANCZOS = Image.Resampling.LANCZOS
+                                except AttributeError:
+                                    LANCZOS = Image.Resampling.LANCZOS
+                                img = icons[0].resize((24, 24), LANCZOS)
                                 has_alpha = img.mode == "RGBA"
                                 width, height = img.size
                                 rowstride = width * (3 + int(has_alpha))
