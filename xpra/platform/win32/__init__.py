@@ -16,7 +16,7 @@ from ctypes import WINFUNCTYPE, WinDLL, POINTER, byref, c_int, wintypes, create_
 from ctypes.wintypes import BOOL, HANDLE, DWORD, LPWSTR, LPCWSTR, LPVOID, POINT, WORD, SMALL_RECT
 from typing import Union
 
-from xpra.util import envbool
+from xpra.util import envbool, noerr
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import (
     GetStdHandle,
