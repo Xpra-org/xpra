@@ -1,7 +1,7 @@
 %define _disable_source_fetch 0
 
 Name:           openh264
-Version:        2.4.0
+Version:        2.4.1
 Release:        1
 Summary:        H.264 codec library
 License:        BSD
@@ -28,7 +28,7 @@ developing applications that use %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "a44d1ccc348a790f9a272bba2d1c2eb9a9bbd0302e4e9b655d709e1c32f92691" ]; then
+if [ "${sha256}" != "8ffbe944e74043d0d3fb53d4a2a14c94de71f58dbea6a06d0dc92369542958ea" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -64,6 +64,9 @@ rm $RPM_BUILD_ROOT%{_libdir}/*.a
 %{_libdir}/pkgconfig/openh264.pc
 
 %changelog
+* Mon Feb 05 2024 Antoine Martin <antoine@xpra.org> - 2.4.1-1
+- new upstream release
+
 * Fri Nov 24 2023 Antoine Martin <antoine@xpra.org> - 2.4.0-1
 - new upstream release
 
