@@ -41,6 +41,18 @@ def get_opengl_module_names(opengl="on") -> tuple[str, ...]:
 
 
 def get_gl_client_window_module(opengl="on") -> tuple[dict, Any]:
+    from importlib import import_module
+    try:
+        opengl = import_module("OpenGL")
+        log(f"{opengl=}")
+    except ImportError as e:
+        log("cannot import the OpenGL module", exc_info=True)
+        log.warn("Warning: cannot import the 'OpenGL' module")
+        log.warn(" %s", e)
+        return {
+            "success": False,
+            "message": str(e),
+        }, None
     module_names = get_opengl_module_names(opengl)
     log(f"get_gl_client_window_module({opengl}) module names={module_names}")
     parts = opengl.lower().split(":")
@@ -61,12 +73,18 @@ def test_window_module(module_name="glarea", force_enable=False) -> tuple[dict, 
         log(f"cannot import opengl window module {module_name}", exc_info=True)
         log.warn(f"Warning: cannot import OpenGL window module {module_name}")
         log.warn(" %s", e)
-        return {}, None
+        return {
+            "success": False,
+            "message": str(e),
+        }, None
     opengl_props = mod.check_support(force_enable)
     log(f"{mod}.check_support({force_enable})={opengl_props}")
     if opengl_props:
         return opengl_props, mod
-    return {}, None
+    return {
+        "success": False,
+        "message": "no valid OpenGL backend found",
+    }, None
 
 
 def get_test_gl_icon():
