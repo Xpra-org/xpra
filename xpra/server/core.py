@@ -675,16 +675,16 @@ class ServerCore:
         if www_dir:
             self._www_dir = str(www_dir)
         else:
-            dirs = [
-                (get_resources_dir(), "html5"),
-                (get_resources_dir(), "www"),
-                (get_app_dir(), "www"),
-            ]
+            dirs: dict[str, str] = {
+                get_resources_dir(): "html5",
+                get_resources_dir(): "www",
+                get_app_dir(): "www",
+            }
             if POSIX:
                 for d in ("/usr/share/xpra", "/usr/local/share/xpra"):
-                    dirs.append((d, "www"))
-                dirs.append(("/var/www/xpra", "www"))
-            for ad, d in dirs:
+                    dirs[d] = "www"
+                dirs["/var/www/xpra"] = "www"
+            for ad, d in dirs.items():
                 self._www_dir = os.path.abspath(os.path.join(ad, d))
                 if os.path.exists(self._www_dir):
                     httplog("found html5 client in '%s'", self._www_dir)
