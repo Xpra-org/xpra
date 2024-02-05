@@ -631,7 +631,7 @@ class ServerCore:
     def init_html_proxy(self, opts) -> None:
         httplog(f"init_html_proxy(..) options: html={opts.html!r}")
         # opts.html can contain a boolean, "auto" or the path to the webroot
-        www_dir = None
+        www_dir = ""
         html = opts.html or ""
         if html and os.path.isabs(html):
             www_dir = html
@@ -675,6 +675,8 @@ class ServerCore:
         if www_dir:
             self._www_dir = str(www_dir)
         else:
+            # this is the default value which will be shown in the warning if we don't find a valid one:
+            self._www_dir = os.path.abspath(os.path.join(get_resources_dir(), "www"))
             dirs: dict[str, str] = {
                 get_resources_dir(): "html5",
                 get_resources_dir(): "www",
@@ -685,9 +687,10 @@ class ServerCore:
                     dirs[d] = "www"
                 dirs["/var/www/xpra"] = "www"
             for ad, d in dirs.items():
-                self._www_dir = os.path.abspath(os.path.join(ad, d))
-                if os.path.exists(self._www_dir):
-                    httplog("found html5 client in '%s'", self._www_dir)
+                www_dir = os.path.abspath(os.path.join(ad, d))
+                if os.path.exists(www_dir):
+                    self._www_dir = www_dir
+                    httplog("found html5 client in '%s'", www_dir)
                     break
         if not os.path.exists(self._www_dir) and self._html:
             httplog.error("Error: cannot find the html web root")
