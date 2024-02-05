@@ -652,13 +652,13 @@ class WindowModel(BaseWindowModel):
         moved = x != 0 or y != 0
         geomlog("resize_corral_window%s hints=%s, constrained size=%s, geometry=%s, resized=%s, moved=%s",
                 (x, y, w, h), hints, (w, h), (cx, cy, cw, ch), resized, moved)
+        if not (moved or resized):
+            return
         if moved:
             self._internal_set_property("set-initial-position", True)
             self._internal_set_property("requested-position", (x, y))
         if resized:
             self._internal_set_property("requested-size", (w, h))
-        if not (moved or resized):
-            return
         X11Window.MoveResizeWindow(self.corral_xid, x, y, w, h)
         if moved:
             # always keep it in the top corner:
