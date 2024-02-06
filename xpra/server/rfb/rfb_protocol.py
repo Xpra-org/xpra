@@ -6,7 +6,7 @@
 import struct
 from socket import error as socket_error
 
-from xpra.os_util import Queue, hexstr, strtobytes
+from xpra.os_util import Queue, hexstr, strtobytes, monotonic_time
 from xpra.util import repr_ellipsized, envint, nonl
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.protocol import force_flush_queue, exit_queue
@@ -30,6 +30,7 @@ class RFBProtocol(object):
         """
         assert scheduler is not None
         assert conn is not None
+        self.start_time = monotonic_time()
         self.timeout_add = scheduler.timeout_add
         self.idle_add = scheduler.idle_add
         self._conn = conn
