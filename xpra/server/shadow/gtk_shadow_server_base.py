@@ -229,8 +229,12 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             title_item.set_sensitive(False)
             title_item.show()
             self.tray_menu.append(title_item)
-            from xpra.gtk_common.about import about
-            self.tray_menu.append(self.traymenuitem("About Xpra", "information.png", None, about))
+
+            def show_about(*_args):
+                from xpra.gtk.dialogs.about import about  # pylint: disable=import-outside-toplevel
+                about()
+
+            self.tray_menu.append(self.traymenuitem("About Xpra", "information.png", cb=show_about))
             if server_features.windows:
                 def readonly_toggled(menuitem):
                     log("readonly_toggled(%s)", menuitem)
