@@ -371,7 +371,8 @@ def get_screen_sizes(xscale: float = 1, yscale: float = 1):
             monitor_info += valid_workarea(*workareas[j])
         monitors.append(tuple(monitor_info))
     screen = display.get_default_screen()
-    sw, sh = screen.get_width(), screen.get_height()
+    with IgnoreWarningsContext:
+        sw, sh = screen.get_width(), screen.get_height()
     work_x, work_y, work_width, work_height = swork(0, 0, sw, sh)
     workarea = get_workarea()  # pylint: disable=assignment-from-none
     screenlog(" workarea=%s", workarea)
