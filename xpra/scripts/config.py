@@ -831,6 +831,20 @@ def get_default_pulseaudio_command():
     return cmd
 
 
+def unexpand(path):
+    xrd = os.environ.get("XDG_RUNTIME_DIR", "")
+    if POSIX and xrd and path.startswith(xrd):
+        return "$XDG_RUNTIME_DIR/" + path[len(xrd):].lstrip("/")
+    home = os.environ.get("HOME", "")
+    if POSIX and home and path.startswith(home):
+        return "~/" + path[len(home):].lstrip("/")
+    return path
+
+
+def unexpand_all(paths):
+    return [unexpand(x) for x in paths]
+
+
 GLOBAL_DEFAULTS = None
 #lowest common denominator here
 #(the xpra.conf file shipped is generally better tuned than this - especially for 'xvfb')
@@ -1027,7 +1041,7 @@ def get_defaults():
                     "bandwidth-detection" : True,
                     "ssh-upgrade"       : True,
                     "pulseaudio-configure-commands"  : [" ".join(x) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS],
-                    "socket-dirs"       : get_socket_dirs(),
+                    "socket-dirs"       : unexpand_all(get_socket_dirs()),
                     "remote-xpra"       : get_remote_run_xpra_scripts(),
                     "encodings"         : ["all"],
                     "proxy-video-encoders" : [],

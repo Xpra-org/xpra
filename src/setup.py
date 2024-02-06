@@ -830,9 +830,10 @@ def build_xpra_conf(install_dir):
     from xpra.scripts.config import (
         get_default_key_shortcuts, get_default_systemd_run, get_default_pulseaudio_command,
         DEFAULT_POSTSCRIPT_PRINTER, DEFAULT_PULSEAUDIO,
+        unexpand_all,
         )
     #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
-    socket_dirs = get_socket_dirs()
+    socket_dirs = unexpand_all(get_socket_dirs())
     if WIN32:
         bind = "Main"
     else:
