@@ -21,7 +21,7 @@
 %global modname numpy
 
 Name:           numpy
-Version:        1.26.3
+Version:        1.26.4
 Release:        1%{?dist}
 Epoch:          1
 Summary:        A fast multidimensional array facility for Python
@@ -29,7 +29,7 @@ Summary:        A fast multidimensional array facility for Python
 # Everything is BSD except for class SafeEval in numpy/lib/utils.py which is Python
 License:        BSD-3-Clause AND Apache-2.0
 URL:            http://www.numpy.org/
-Source0:        https://files.pythonhosted.org/packages/d0/b0/13e2b50c95bfc1d5ee04925eb5c105726c838f922d0aaddd57b7c8be0f8b/numpy-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/65/6e/09db70a523a96d25e115e71cc56a6f9031e7b8cd166c1ac8438307c14058/numpy-%{version}.tar.gz
 
 %description
 NumPy is a general-purpose array-processing package designed to
@@ -94,7 +94,7 @@ This package provides the complete documentation for NumPy.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "697df43e2b6310ecc9d95f05d5ef20eacc09c7c4ecc9da3f235d39e71b7da1e4" ]; then
+if [ "${sha256}" != "2a02aba9ed12e4ac4eb3ea9421c420301a0c6460d9830d74a9df87efa4912010" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -172,6 +172,9 @@ chrpath --delete %{buildroot}%{python3_sitearch}/numpy/core/_multiarray_umath.*.
 
 
 %changelog
+* Tue Feb 06 2024 Antoine Martin <antoine@xpra.org> - 1.26.4-1
+- new upstream release
+
 * Wed Jan 03 2024 Antoine Martin <antoine@xpra.org> - 1.26.3-1
 - new upstream release
 
