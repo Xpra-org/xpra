@@ -274,7 +274,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         errs = []
         for c in classes:
             try:
-                w = c(self, XPRA_APP_ID, self.tray, "Xpra Shadow Server",
+                w = c(self, XPRA_APP_ID, self.tray_menu, "Xpra Shadow Server",
                       None, None, self.tray_click_callback, mouseover_cb=None, exit_cb=self.tray_exit_callback)
                 return w
             except Exception as e:
