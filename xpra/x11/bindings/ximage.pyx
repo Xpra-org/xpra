@@ -385,7 +385,8 @@ cdef class XImageWrapper(object):
         cdef void *pix_ptr = self.get_pixels_ptr()
         if pix_ptr==NULL:
             return None
-        return memory_as_pybuffer(pix_ptr, self.get_size(), False)
+        # only read-write if we own the pixel buffer:
+        return memory_as_pybuffer(pix_ptr, self.get_size(), self.pixels==NULL)
 
     def get_sub_image(self, unsigned int x, unsigned int y, unsigned int w, unsigned int h):
         assert w>0 and h>0, "invalid sub-image size: %ix%i" % (w, h)
