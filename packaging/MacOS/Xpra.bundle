@@ -127,7 +127,7 @@
 	</binary>
 
 	<binary dest="${bundle}/Contents/Resources/libexec/gstreamer-1.0/gst-plugin-scanner">
-		${prefix}/libexec/gstreamer-1.0/gst-plugin-scanner
+		${prefix}/bin/gst-plugin-scanner
 	</binary>
 	<binary dest="${bundle}/Contents/Resources/bin/gst-launch-1.0">
 		${prefix}/bin/gst-launch-1.0
