@@ -2012,7 +2012,6 @@ class WindowSource(WindowIconSource):
             else:
                 text_hint = self.content_type.find("text") >= 0
                 quality = TEXT_QUALITY if text_hint else self._current_quality
-                quality = self._current_quality
                 if packets_backlog is None:
                     packets_backlog = self.get_packets_backlog()
                 now = monotonic()
