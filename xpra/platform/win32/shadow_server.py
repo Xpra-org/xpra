@@ -393,7 +393,11 @@ class ShadowServer(GTKShadowServerBase):
 
 
     def print_screen_info(self):
-        w, h = self.get_root_window_size()
+        size = self.get_root_window_size()
+        if not size:
+            # we probably don't have access to the screen
+            return
+        w, h = size
         try:
             display = prettify_plug_name(self.root.get_screen().get_display().get_name())
         except:
