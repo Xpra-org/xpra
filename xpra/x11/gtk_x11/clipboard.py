@@ -357,13 +357,14 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         log("set_selection_response(%s, %s, %s, %s, %s, %r, %i)",
             requestor, target, prop, dtype, dformat, ellipsizer(data), time)
         # answer the selection request:
+        if not prop:
+            log.warn("Warning: cannot set clipboard response")
+            log.warn(" property is unset for requestor %s", self.get_wininfo(requestor))
+            return
         try:
-            if not prop:
-                log.warn("Warning: cannot set clipboard response")
-                log.warn(" property is unset for requestor %s", self.get_wininfo(requestor))
-                return
             with xsync:
                 if data is not None:
+
                     X11Window.XChangeProperty(requestor, prop, dtype, dformat, memoryview_to_bytes(data))
                 else:
                     # maybe even delete the property?
