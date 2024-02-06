@@ -31,7 +31,7 @@ URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
-Source0:        https://files.pythonhosted.org/packages/3f/50/dd356c8afe228baecaf0259b9579121dd869c5ace07a296158c39ac5065a/pycuda-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/source/p/pycuda/pycuda-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       %{python3}-pycuda
 

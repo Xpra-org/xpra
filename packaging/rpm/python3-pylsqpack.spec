@@ -15,7 +15,7 @@ Summary:        pylsqpack is a wrapper around the ls-qpack library
 Group:          Development/Languages
 License:        MIT
 URL:            https://github.com/aiortc/pylsqpack
-Source0:        https://files.pythonhosted.org/packages/93/1d/3f400f2e7413caec3cd58a9718bcab97d6e66ffb037af79cb45f06ac8813/pylsqpack-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/source/p/pylsqpack/pylsqpack-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-setuptools

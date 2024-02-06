@@ -19,7 +19,7 @@ Release: 2%{?dist}
 
 License: MIT
 URL:     http://www.freedesktop.org/wiki/Software/DBusBindings/
-Source0: https://files.pythonhosted.org/packages/c1/d3/6be85a9c772d6ebba0cc3ab37390dd6620006dcced758667e0217fb13307/dbus-python-%{version}.tar.gz
+Source0: https://files.pythonhosted.org/packages/source/d/dbus-python/dbus-python-%{version}.tar.gz
 
 BuildRequires: dbus-devel
 BuildRequires: dbus-glib-devel

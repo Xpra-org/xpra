@@ -22,7 +22,7 @@ Summary:        Python image processing library
 # License: see http://www.pythonware.com/products/pil/license.htm
 License:        MIT
 URL:            http://python-pillow.github.io/
-Source0:        https://files.pythonhosted.org/packages/f8/3e/32cbd0129a28686621434cbf17bb64bf1458bfb838f1f668262fefce145c/pillow-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/source/p/pillow/pillow-%{version}.tar.gz
 
 BuildRequires:  freetype-devel
 BuildRequires:  gcc

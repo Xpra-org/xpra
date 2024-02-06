@@ -16,7 +16,7 @@ Summary:        A collection of tools for python
 Group:          Development/Languages
 License:        MIT
 URL:            http://pypi.python.org/pypi/pytools
-Source0:        https://files.pythonhosted.org/packages/02/a0/e4bba94fdbdd7ee5b46a954e6ecdce98ee8ba167a02d82599fc0d5c1f97f/pytools-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/source/p/pytools/pytools-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Provides:		%{python3}-pytools = %{version}-%{release}
 BuildArch:      noarch

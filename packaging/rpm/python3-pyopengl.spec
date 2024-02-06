@@ -23,8 +23,8 @@ Release:        4%{?dist}
 Summary:        Python 3 bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
-Source0:        https://files.pythonhosted.org/packages/72/b6/970868d44b619292f1f54501923c69c9bd0ab1d2d44cf02590eac2706f4f/%{srcname}-%{version}.tar.gz
-Source1:        https://files.pythonhosted.org/packages/93/09/d08b3d07dbd88258276496a47273778f330f5ccf8390cb21b16b29d660de/%{srcname}-accelerate-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/source/P/%{srcname}/%{srcname}-%{version}.tar.gz
+Source1:        https://files.pythonhosted.org/packages/source/P/%{srcname}-accelerate/%{srcname}-accelerate-%{version}.tar.gz
 Patch0:         pyopengl-egl-open-warning.patch
 
 BuildRequires:  %{python3}-devel

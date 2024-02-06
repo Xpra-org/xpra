@@ -15,7 +15,7 @@ Release:        1%{?dist}
 Summary:		Python2 library to access freedesktop.org standards
 License:        LGPLv2
 URL:            http://freedesktop.org/Software/pyxdg
-Source0:        https://files.pythonhosted.org/packages/b0/25/7998cd2dec731acbd438fbf91bc619603fc5188de0a9a17699a781840452/pyxdg-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/source/p/pyxdg/pyxdg-%{version}.tar.gz
 # https://gitlab.freedesktop.org/xdg/pyxdg/merge_requests/2
 BuildArch:      noarch
 BuildRequires:	hicolor-icon-theme

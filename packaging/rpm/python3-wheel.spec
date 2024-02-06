@@ -19,11 +19,10 @@ Name:           %{python3}-%{pypi_name}
 Release:        2%{?dist}
 %if 0%{python3_minor} < 7
 Version:        0.33.6
-Source0:        https://files.pythonhosted.org/packages/59/b0/11710a598e1e148fb7cbf9220fd2a0b82c98e94efbdecb299cb25e7f0b39/%{pypi_name}-%{version}.tar.gz
 %else
 Version:        0.41.3
-Source0:        https://files.pythonhosted.org/packages/fb/d0/0b4c18a0b85c20233b0c3bc33f792aefd7f12a5832b4da77419949ff6fd9/%{pypi_name}-%{version}.tar.gz
 %endif
+Source0:        https://files.pythonhosted.org/packages/source/w/%{pypi_name}/%{pypi_name}-%{version}.tar.gz
 Summary:        Built-package format for Python
 Provides:       bundled(python3dist(packaging)) = 20.9
 BuildRequires:  %{python3}-devel

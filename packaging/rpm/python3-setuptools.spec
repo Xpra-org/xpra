@@ -15,7 +15,7 @@ Release:        1%{?dist}
 Summary:        The blessed package to manage your versions by scm tags
 License:        MIT
 URL:            http://pypi.python.org/pypi/%{srcname}
-Source0:        https://files.pythonhosted.org/packages/ef/cc/93f7213b2ab5ed383f98ce8020e632ef256b406b8569606c3f160ed8e1c9/%{srcname}-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/source/s/%{srcname}/%{srcname}-%{version}.tar.gz
 BuildArch:      noarch
 BuildRequires:  %{python3}-devel
 Requires:       %{python3}
