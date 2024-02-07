@@ -7,6 +7,7 @@
 from collections.abc import Callable
 
 from xpra.os_util import gi_import
+from xpra.util.env import first_time
 from xpra.common import WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.gtk.error import xsync, xlog
 from xpra.x11.models.core import CoreX11WindowModel, Above, RESTACKING_STR
@@ -652,6 +653,9 @@ class BaseWindowModel(CoreX11WindowModel):
                 update_wm_state("modal")
             elif atom1 == "_NET_WM_STATE_DEMANDS_ATTENTION":
                 update_wm_state("attention-requested")
+            elif atom1 == "_KDE_NET_WM_STATE_SKIP_SWITCHER":
+                if first_time(f"KDE-WM_STATE-{self.xid}"):
+                    log.info(f"invalid KDE specific request {atom1} ignored, will not be logged again")
             else:
                 log.info(f"Unhandled _NET_WM_STATE request: {atom1!r}")
                 log.info(f" event {event!r}")
