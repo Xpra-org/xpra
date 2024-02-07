@@ -110,7 +110,7 @@ class AppindicatorTray(TrayBase):
     def do_set_icon_from_file(self, filename):
         if filename and os.path.exists(filename) and hasattr(self.tray_widget, "set_icon_full"):
             self._has_icon = True
-            self.icon_timestamp = monotonic()
+            self.icon_timestamp = monotonic_time()
             self.tray_widget.set_icon_full(filename, self.tooltip or "Xpra")
             return
         if not hasattr(self.tray_widget, "set_icon_theme_path"):
