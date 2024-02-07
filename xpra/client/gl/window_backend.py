@@ -26,6 +26,18 @@ def get_opengl_backends(option_str):
     return ("native", "gtk")
 
 def get_gl_client_window_module(backends, force_enable=False):
+    from importlib import import_module
+    try:
+        opengl = import_module("OpenGL")
+        log("opengl=%s", opengl)
+    except ImportError as e:
+        log("cannot import the OpenGL module", exc_info=True)
+        log.warn("Warning: cannot import the 'OpenGL' module")
+        log.warn(" %s", e)
+        return {
+            "success": False,
+            "message": str(e),
+        }, None
     gl_client_window_module = None
     for impl in backends:
         log("attempting to load '%s' OpenGL backend", impl)
@@ -45,7 +57,10 @@ def get_gl_client_window_module(backends, force_enable=False):
         if opengl_props:
             return opengl_props, gl_client_window_module
     log("get_gl_client_window_module(%s, %s) no match found", backends, force_enable)
-    return {}, None
+    return {
+        "success": False,
+        "message": "no valid OpenGL backend found",
+    }, None
 
 def noop(*_args):
     pass
