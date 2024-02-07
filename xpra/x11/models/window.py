@@ -485,10 +485,10 @@ class WindowModel(BaseWindowModel):
                 return self.get_property("geometry")[2:4]
             def window_position(_w, _h):
                 return self.get_property("geometry")[:2]
-        self._do_update_client_geometry(window_size, window_position)
+        self._do_update_client_geometry(window_size, window_position, owner)
 
 
-    def _do_update_client_geometry(self, window_size_cb, window_position_cb):
+    def _do_update_client_geometry(self, window_size_cb, window_position_cb, owner=None):
         allocated_w, allocated_h = window_size_cb()
         geomlog("_do_update_client_geometry: allocated %ix%i (from %s)", allocated_w, allocated_h, window_size_cb)
         hints = self.get_property("size-hints")
@@ -500,6 +500,10 @@ class WindowModel(BaseWindowModel):
         self._updateprop("geometry", (x, y, w, h))
         with xswallow:
             X11Window.configureAndNotify(self.xid, 0, 0, w, h)
+        if owner:
+            self._internal_set_property("set-initial-position", True)
+            self._internal_set_property("requested-position", (x, y))
+            self._internal_set_property("requested-size", (w, h))
 
     def do_xpra_configure_event(self, event):
         cxid = get_xwindow(self.corral_window)
