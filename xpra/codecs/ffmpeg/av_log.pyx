@@ -77,7 +77,7 @@ cdef av_error_str(int errnum):
 
 DEF MAX_LOG_SIZE = 4096
 
-cdef void log_callback_override(void *avcl, int level, const char *fmt, va_list vl) nogil:
+cdef void log_callback_override(void *avcl, int level, const char *fmt, va_list vl) noexcept nogil:
     if level>DEBUG_LEVEL and not LIBAV_TRACE:
         return
 

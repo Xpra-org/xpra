@@ -215,7 +215,7 @@ cdef inline unsigned short clamp10(const long v) nogil:
 
 cdef inline void r210_to_BGR48_copy(unsigned short *bgr48, const unsigned int *r210,
                                     unsigned int w, unsigned int h,
-                                    unsigned int src_stride, unsigned int dst_stride) nogil:
+                                    unsigned int src_stride, unsigned int dst_stride) noexcept nogil:
     cdef unsigned int y
     cdef unsigned int i
     cdef unsigned int v
@@ -231,7 +231,7 @@ cdef inline void r210_to_BGR48_copy(unsigned short *bgr48, const unsigned int *r
 
 cdef inline void gbrp10_to_r210_copy(uintptr_t r210, uintptr_t[3] gbrp10,
                                      unsigned int width, unsigned int height,
-                                     unsigned int src_stride, unsigned int dst_stride) nogil:
+                                     unsigned int src_stride, unsigned int dst_stride) noexcept nogil:
     cdef unsigned int x, y
     cdef unsigned short *b
     cdef unsigned short *g
@@ -248,7 +248,7 @@ cdef inline void gbrp10_to_r210_copy(uintptr_t r210, uintptr_t[3] gbrp10,
 cdef inline void r210_to_YUV444P10_copy(unsigned short *Y, unsigned short *U, unsigned short *V, uintptr_t r210data,
                                         unsigned int width, unsigned int height,
                                         unsigned int Ystride, unsigned int Ustride, unsigned int Vstride,
-                                        unsigned int r210_stride) nogil:
+                                        unsigned int r210_stride) noexcept nogil:
     cdef const unsigned int *r210_row
     cdef unsigned int r210
     cdef unsigned int R, G, B
@@ -271,7 +271,7 @@ cdef inline void r210_to_YUV444P10_copy(unsigned short *Y, unsigned short *U, un
 cdef inline void YUV444P10_to_r210_copy(uintptr_t r210data, const unsigned short *Ybuf, const unsigned short *Ubuf, const unsigned short *Vbuf,
                                         unsigned int width, unsigned int height,
                                         unsigned int r210_stride,
-                                        unsigned int Ystride, unsigned int Ustride, unsigned int Vstride) nogil:
+                                        unsigned int Ystride, unsigned int Ustride, unsigned int Vstride) noexcept nogil:
         cdef unsigned short *Yrow
         cdef unsigned short *Urow
         cdef unsigned short *Vrow
