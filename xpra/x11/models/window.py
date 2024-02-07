@@ -838,6 +838,10 @@ class WindowModel(BaseWindowModel):
         # we don't use the "size" attribute for anything yet,
         # and changes to this property could send us into a loop
         hints.pop("size", None)
+        if self.get_property("client-geometry"):
+            # if we have a client geometry,
+            # the position set in the hints is no longer irrelevant
+            hints.pop("position", None)
         # Don't send out notify and ConfigureNotify events when this property
         # gets no-op updated -- some apps like FSF Emacs 21 like to update
         # their properties every time they see a ConfigureNotify, and this
