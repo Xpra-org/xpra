@@ -65,7 +65,10 @@ else:
     def strtobytes(x):
         if isinstance(x, bytes):
             return x
-        return str(x).encode("latin1")
+        try:
+            return str(x).encode("latin1")
+        except UnicodeEncodeError:
+            return str(x).encode("utf8")
     def bytestostr(x):
         if isinstance(x, bytes):
             return x.decode("latin1")
