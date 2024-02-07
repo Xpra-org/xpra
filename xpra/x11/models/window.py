@@ -650,8 +650,8 @@ class WindowModel(BaseWindowModel):
         cx, cy, cw, ch = self.get_property("geometry")
         resized = cow != w or coh != h
         moved = x != 0 or y != 0
-        geomlog.warn("resize_corral_window%s hints=%s, constrained size=%s, geometry=%s, resized=%s, moved=%s",
-                     (x, y, w, h), hints, (w, h), (cx, cy, cw, ch), resized, moved)
+        geomlog("resize_corral_window%s hints=%s, constrained size=%s, geometry=%s, resized=%s, moved=%s",
+                (x, y, w, h), hints, (w, h), (cx, cy, cw, ch), resized, moved)
         if not (moved or resized):
             return
         if moved:
