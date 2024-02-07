@@ -20,6 +20,18 @@ log = Logger("opengl", "paint")
 
 
 def get_gl_client_window_module(force_enable=False) -> Tuple[Dict,Any]:
+    from importlib import import_module
+    try:
+        opengl = import_module("OpenGL")
+        log(f"{opengl=}")
+    except ImportError as e:
+        log("cannot import the OpenGL module", exc_info=True)
+        log.warn("Warning: cannot import the 'OpenGL' module")
+        log.warn(" %s", e)
+        return {
+            "success": False,
+            "message": str(e),
+        }, None
     log("get_gl_client_window_module()")
     try:
         from xpra.client.gl.gtk3 import nativegl_client_window
@@ -27,12 +39,18 @@ def get_gl_client_window_module(force_enable=False) -> Tuple[Dict,Any]:
         log("cannot import opengl window module", exc_info=True)
         log.warn("Warning: cannot import native OpenGL module")
         log.warn(" %s", e)
-        return {}, None
+        return {
+            "success": False,
+            "message": str(e),
+        }, None
     opengl_props = nativegl_client_window.check_support(force_enable)
     log("check_support(%s)=%s", force_enable, opengl_props)
     if opengl_props:
         return opengl_props, nativegl_client_window
-    return {}, None
+    return {
+        "success": False,
+        "message": "no valid OpenGL backend found",
+    }, None
 
 
 def get_test_gl_icon():
