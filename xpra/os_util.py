@@ -125,7 +125,10 @@ def get_sysconfig_info() -> Dict[str,Any]:
 def strtobytes(x) -> bytes:
     if isinstance(x, bytes):
         return x
-    return str(x).encode("latin1")
+    try:
+        return str(x).encode("latin1")
+    except UnicodeEncodeError:
+        return str(x).encode("utf8")
 def bytestostr(x) -> str:
     if isinstance(x, (bytes, bytearray)):
         return x.decode("latin1")
