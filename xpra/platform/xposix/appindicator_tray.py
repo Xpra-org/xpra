@@ -63,7 +63,7 @@ class AppindicatorTray(TrayBase):
         if filename:
             self.set_icon_from_file(filename)
         if not self._has_icon:
-            self.tray_widget.set_label("Xpra")
+            self.tray_widget.set_label("Xpra", "")
         if self.menu:
             self.tray_widget.set_menu(self.menu)
 
@@ -86,7 +86,7 @@ class AppindicatorTray(TrayBase):
         #as with appindicator this creates a large text label
         #next to where the icon is/should be
         if not self._has_icon:
-            self.tray_widget.set_label(tooltip or "Xpra")
+            self.tray_widget.set_label(tooltip or "Xpra", "")
 
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, _options=None):
         self.clean_last_tmp_icon()
