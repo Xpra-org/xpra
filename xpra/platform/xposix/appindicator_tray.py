@@ -66,6 +66,7 @@ class AppindicatorTray(TrayBase):
             self.tray_widget.set_label("Xpra", "")
         if self.menu:
             self.tray_widget.set_menu(self.menu)
+        self.show()
 
     def get_geometry(self):
         #no way to tell :(
