@@ -635,7 +635,7 @@ class BaseWindowModel(CoreX11WindowModel):
             #if event.data[0] in ACTIVE_WINDOW_SOURCE:
             log("_NET_ACTIVE_WINDOW: %s", event)
             self.set_active()
-            self.emit("restack", Above, None)
+            self.emit("restack", Above, 0)
             return True
         if event.message_type=="_NET_WM_DESKTOP":
             workspace = int(event.data[0])

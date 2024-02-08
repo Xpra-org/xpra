@@ -772,7 +772,7 @@ class CoreX11WindowModel(WindowModelStub):
         grablog("focus_in_event(%s) mode=%s, detail=%s",
             event, GRAB_CONSTANTS.get(event.mode), DETAIL_CONSTANTS.get(event.detail, event.detail))
         if event.mode==NotifyNormal and event.detail==NotifyNonlinearVirtual:
-            self.emit("restack", Above, None)
+            self.emit("restack", Above, 0)
         else:
             self.may_emit_grab(event)
 
