@@ -19,7 +19,7 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.server.window.window_source import (
     WindowSource, DelayedRegions,
     STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, LOSSLESS_WINDOW_TYPES,
-    DOWNSCALE_THRESHOLD, DOWNSCALE,
+    DOWNSCALE_THRESHOLD, DOWNSCALE, TEXT_QUALITY,
     COMPRESS_FMT_PREFIX, COMPRESS_FMT_SUFFIX, COMPRESS_FMT,
     LOG_ENCODERS,
     )
@@ -1160,7 +1160,7 @@ class WindowVideoSource(WindowSource):
             return
         if (self.encoding not in ("auto", "grayscale") and self.encoding not in self.common_video_encodings) or \
             self.full_frames_only or STRICT_MODE or not self.non_video_encodings or not self.common_video_encodings or \
-            (self.content_type.find("text")>=0 and TEXT_USE_VIDEO) or \
+            (self.content_type.find("text")>=0 and not TEXT_USE_VIDEO) or \
             self._mmap_size>0:
             #cannot use video subregions
             #FIXME: small race if a refresh timer is due when we change encoding - meh
@@ -1562,6 +1562,8 @@ class WindowVideoSource(WindowSource):
         if self.statistics.damage_events_count<=50:
             #not enough data yet:
             return mrs(info="waiting for more events, using minimum")
+        if self.content_type.find("text") >= 0 and TEXT_QUALITY > 90:
+            return mrs(info="not downscaling text")
 
         #use heuristics to choose the best scaling ratio:
         mvsub = self.matches_video_subregion(width, height)
