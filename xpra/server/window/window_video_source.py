@@ -1911,7 +1911,9 @@ class WindowVideoSource(WindowSource):
 
     def get_video_encoder_options(self, encoding, width, height) -> Dict[str,Any]:
         #tweaks for "real" video:
-        opts = {"cuda-device-context" : self.cuda_device_context}
+        opts = {}
+        if self.cuda_device_context:
+            options["cuda-device-context"] = self.cuda_device_context
         if not self._fixed_quality and not self._fixed_speed and self._fixed_min_quality<50:
             #only allow bandwidth to drive video encoders
             #when we don't have strict quality or speed requirements:
