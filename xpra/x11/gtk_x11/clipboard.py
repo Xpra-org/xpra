@@ -46,7 +46,10 @@ sizeof_long = struct.calcsize(b'@L')
 
 MAX_DATA_SIZE: int = 4 * 1024 * 1024
 
-BLACKLISTED_CLIPBOARD_CLIENTS: list[str] = os.environ.get("XPRA_BLACKLISTED_CLIPBOARD_CLIENTS", "clipit").split(",")
+BLACKLISTED_CLIPBOARD_CLIENTS: list[str] = os.environ.get(
+    "XPRA_BLACKLISTED_CLIPBOARD_CLIENTS",
+    "clipit,Software,gnome-shell"
+).split(",")
 log("BLACKLISTED_CLIPBOARD_CLIENTS=%s", BLACKLISTED_CLIPBOARD_CLIENTS)
 
 
@@ -364,7 +367,6 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         try:
             with xsync:
                 if data is not None:
-
                     X11Window.XChangeProperty(requestor, prop, dtype, dformat, memoryview_to_bytes(data))
                 else:
                     # maybe even delete the property?
@@ -390,8 +392,8 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             (target, dtype, dformat, ellipsizer(data)), csv(pending))
         for requestor, actual_target, prop, time in pending:
             if log.is_debug_enabled():
-                log("setting response %s as '%s' on property '%s' of window %s as %s",
-                    ellipsizer(data), actual_target, prop, self.get_wininfo(requestor), dtype)
+                log("setting response %s: %s as '%s' on property '%s' of window %s as %s",
+                    type(data), ellipsizer(data), actual_target, prop, self.get_wininfo(requestor), dtype)
             if actual_target != target and dtype == target:
                 dtype = actual_target
             self.set_selection_response(requestor, actual_target, prop, dtype, dformat, data, time)
