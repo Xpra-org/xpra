@@ -1126,7 +1126,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def _process_restack_window(self, packet: PacketType) -> None:
         wid, detail, other_wid = packet[1:4]
-        above = bool(detail == 0)
+        above = int(detail == 0)
         window = self._id_to_window.get(wid)
         other_window = self._id_to_window.get(other_wid)
         focuslog("restack window %s - %s %s %s",
