@@ -23,7 +23,7 @@ def get_gl_client_window_module(force_enable=False) -> Tuple[Dict,Any]:
     from importlib import import_module
     try:
         opengl = import_module("OpenGL")
-        log(f"{opengl=}")
+        log(f"opengl=%s", opengl)
     except ImportError as e:
         log("cannot import the OpenGL module", exc_info=True)
         log.warn("Warning: cannot import the 'OpenGL' module")
