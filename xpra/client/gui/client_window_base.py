@@ -38,6 +38,10 @@ OVERRIDE_GRAVITY = envint("XPRA_OVERRIDE_GRAVITY", 0)
 FORCE_FLUSH = envbool("XPRA_FORCE_FLUSH", False)
 
 
+def is_wm_property(name: str):
+    return name.startswith("_MOTIF") or name.startswith("WM_") or name.startswith("_NET_WM") or name.startswith("_GTK_")
+
+
 class ClientWindowBase(ClientWidgetBase):
 
     def __init__(self, client, group_leader, watcher_pid:int, wid:int,
@@ -549,7 +553,8 @@ class ClientWindowBase(ClientWidgetBase):
             attr = metadata.tupleget("x11-property")
             if len(attr)>=4:
                 name, ptype, _, value = attr[:4]
-                self.set_x11_property(name, ptype, value)
+                if not is_wm_property(name):
+                    self.set_x11_property(name, ptype, value)
 
         if "content-type" in metadata:
             self.content_type = metadata.strget("content-type")
