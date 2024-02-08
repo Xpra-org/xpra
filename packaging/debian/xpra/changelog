@@ -1,3 +1,8 @@
+xpra (5.0.6-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 08 Feb 2024 21:03:56 +0700
+
 xpra (5.0.5-1) UNRELEASED; urgency=low
   * Major:
    - race condition in OpenGL initialization

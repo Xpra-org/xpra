@@ -1,5 +1,8 @@
 # Changelog
 
+## [5.0.6] 2024-02-08
+* TODO
+
 ## [5.0.5] 2024-02-05
 * Major:
     * [race condition in OpenGL initialization](https://github.com/Xpra-org/xpra/commit/498b8f6c7da012bb555fb087ead26ba218701ada)
