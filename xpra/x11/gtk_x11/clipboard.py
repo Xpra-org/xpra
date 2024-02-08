@@ -48,7 +48,10 @@ sizeof_long = struct.calcsize(b'@L')
 
 MAX_DATA_SIZE : int = 4*1024*1024
 
-BLACKLISTED_CLIPBOARD_CLIENTS : List[str] = os.environ.get("XPRA_BLACKLISTED_CLIPBOARD_CLIENTS", "clipit").split(",")
+BLACKLISTED_CLIPBOARD_CLIENTS: list[str] = os.environ.get(
+    "XPRA_BLACKLISTED_CLIPBOARD_CLIENTS",
+    "clipit,Software,gnome-shell"
+).split(",")
 log("BLACKLISTED_CLIPBOARD_CLIENTS=%s", BLACKLISTED_CLIPBOARD_CLIENTS)
 def parse_translated_targets(v:str) -> Dict[str,List[str]]:
     trans : Dict[str,List[str]] = {}
