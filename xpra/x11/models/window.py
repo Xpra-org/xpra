@@ -568,8 +568,10 @@ class WindowModel(BaseWindowModel):
             self._internal_set_property("requested-size", (w, h))
         elif not self._setup_done:
             # try to honour initial size and position requests during setup:
-            w, h = self.get_property("requested-size")
-            x, y = self.get_property("requested-position")
+            with xsync:
+                x, y, w, h = X11Window.getGeometry(self.xid)[:4]
+            x, y = self.get_property("requested-position") or (x, y)
+            w, h = self.get_property("requested-size") or (w, h)
             geometry = x, y, w, h
             geomlog("_update_client_geometry: using initial geometry=%s", geometry)
         else:
@@ -835,21 +837,22 @@ class WindowModel(BaseWindowModel):
         if hmaxw < MAX_WINDOW_SIZE or hmaxh < MAX_WINDOW_SIZE:
             hints["maximum-size"] = hmaxw, hmaxh
         sanitize_size_hints(hints)
-        # we don't use the "size" attribute for anything yet,
-        # and changes to this property could send us into a loop
-        hints.pop("size", None)
-        if self.get_property("client-geometry"):
-            # if we have a client geometry,
-            # the position set in the hints is no longer irrelevant
-            hints.pop("position", None)
+
+        # size and position are stored as properties, not as hints:
+        pos = hints.pop("position", None)
+        if pos is not None:
+            self._internal_set_property("requested-position", pos)
+        size = hints.pop("size", None)
+        if size is not None:
+            self._internal_set_property("requested-size", size)
+
         # Don't send out notify and ConfigureNotify events when this property
         # gets no-op updated -- some apps like FSF Emacs 21 like to update
         # their properties every time they see a ConfigureNotify, and this
         # reduces the chance for us to get caught in loops:
         if self._updateprop("size-hints", hints):
             metalog("updated: size-hints=%s", hints)
-            if self._setup_done and self.get_property("shown"):
-                self._update_client_geometry()
+            self._update_client_geometry()
 
     def _handle_net_wm_icon_change(self) -> None:
         iconlog("_NET_WM_ICON changed on %#x, re-reading", self.xid)
