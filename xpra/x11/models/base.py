@@ -7,7 +7,7 @@
 from typing import Dict, List, Tuple, Callable
 from gi.repository import GObject
 
-from xpra.util import WORKSPACE_UNSET, WORKSPACE_ALL
+from xpra.util import WORKSPACE_UNSET, WORKSPACE_ALL, first_time
 from xpra.x11.models.core import CoreX11WindowModel, xswallow, Above, RESTACKING_STR
 from xpra.x11.bindings.window import X11WindowBindings, constants      #@UnresolvedImport
 from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties
@@ -610,6 +610,9 @@ class BaseWindowModel(CoreX11WindowModel):
                 update_wm_state("modal")
             elif atom1=="_NET_WM_STATE_DEMANDS_ATTENTION":
                 update_wm_state("attention-requested")
+            elif atom1 == "_KDE_NET_WM_STATE_SKIP_SWITCHER":
+                if first_time(f"KDE-WM_STATE-{self.xid}"):
+                    log.info(f"invalid KDE specific request {atom1} ignored, will not be logged again")
             else:
                 log.info(f"Unhandled _NET_WM_STATE request: {atom1!r}")
                 log.info(f" event {event!r}")
