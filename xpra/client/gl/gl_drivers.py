@@ -26,7 +26,7 @@ WHITELIST : GL_MATCH_LIST = {
 #Chipsets from these vendors will trigger warnings,
 #but OpenGL will still be enabled:
 GREYLIST : GL_MATCH_LIST = {
-    "vendor"    : ("Intel", )
+    #"vendor"    : ("Intel", )
 }
 
 #Versions older than this will trigger warnings:
