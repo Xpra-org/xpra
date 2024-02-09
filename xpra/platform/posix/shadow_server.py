@@ -61,6 +61,7 @@ def load_x11() -> type | None:
 
 
 def load_auto(display: str = "") -> type | None:
+    c: type | None = None
     if display.startswith("wayland-") or os.path.isabs(display):
         c = load_wayland(display)
     elif display.startswith(":"):
