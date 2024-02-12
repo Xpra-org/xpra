@@ -328,10 +328,13 @@ class WindowModel(BaseWindowModel):
         self._updateprop("geometry", (nx, ny, nw, nh))
         geomlog("setup() resizing windows to %sx%s, moving to %i,%i", nw, nh, nx, ny)
         # don't trigger a move or resize unless we have to:
-        if ox != nx or oy != ny or ow != nw or oh != nh:
+        moved = ox != nx or oy != ny
+        resized = ow != nw or oh != nh
+        if moved and resized:
             X11Window.MoveResizeWindow(self.corral_xid, nx, ny, nw, nh)
-        if ow != nw or oh != nh:
             X11Window.MoveResizeWindow(self.xid, 0, 0, nw, nh)
+        elif moved:
+            X11Window.MoveWindow(self.corral_xid, nx, ny)
         if not X11Window.is_mapped(self.xid):
             X11Window.MapWindow(self.xid)
         # this is here to trigger X11 errors if any are pending
@@ -363,7 +366,7 @@ class WindowModel(BaseWindowModel):
         nx, ny = self._clamp_to_desktop(x, y, w, h)
         if nx != x or ny != y:
             log("update_desktop_geometry(%i, %i) adjusting corral window to new location: %i,%i", width, height, nx, ny)
-            X11Window.MoveResizeWindow(self.corral_xid, nx, ny, w, h)
+            X11Window.MoveWindow(self.corral_xid, nx, ny)
 
     def _read_initial_X11_properties(self) -> None:
         metalog("read_initial_X11_properties() window")
@@ -669,7 +672,12 @@ class WindowModel(BaseWindowModel):
             self._internal_set_property("requested-position", (x, y))
         if resized:
             self._internal_set_property("requested-size", (w, h))
-        X11Window.MoveResizeWindow(self.corral_xid, x, y, w, h)
+        if moved and resized:
+            X11Window.MoveResizeWindow(self.corral_xid, x, y, w, h)
+        elif moved:
+            X11Window.MoveWindow(self.corral_xid, x, y)
+        elif resized:
+            X11Window.ResizeWindow(self.corral_xid, w, h)
         if moved:
             # always keep it in the top corner:
             X11Window.MoveResizeWindow(self.xid, 0, 0, w, h)

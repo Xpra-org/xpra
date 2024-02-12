@@ -22,7 +22,8 @@ from xpra.x11.bindings.xlib cimport (
     NextRequest, XSendEvent, XSelectInput, XAddToSaveSet, XRemoveFromSaveSet,
     XGetWindowAttributes, XGetWindowProperty, XDeleteProperty, XChangeProperty,
     XGetWMNormalHints, XSetWMNormalHints, XGetWMHints, XGetWMProtocols,
-    XGetGeometry, XTranslateCoordinates, XConfigureWindow, XMoveResizeWindow,
+    XGetGeometry, XTranslateCoordinates, XConfigureWindow,
+    XMoveResizeWindow, XMoveWindow, XResizeWindow,
     XGetInputFocus, XSetInputFocus,
     XAllocClassHint, XAllocSizeHints, XGetClassHint, XSetClassHint,
     XAllocIconSize, XIconSize, XSetIconSizes,
@@ -955,6 +956,14 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     def MoveResizeWindow(self, Window xwindow, int x, int y, int width, int height):
         self.context_check("MoveResizeWindow")
         return bool(XMoveResizeWindow(self.display, xwindow, x, y, width, height))
+
+    def ResizeWindow(self, Window xwindow, int width, int height):
+        self.context_check("ResizeWindow")
+        return bool(XResizeWindow(self.display, xwindow, width, height))
+
+    def MoveWindow(self, Window xwindow, int x, int y):
+        self.context_check("MoveWindow")
+        return bool(XMoveWindow(self.display, xwindow, x, y))
 
     def addDefaultEvents(self, Window xwindow):
         self.context_check("addDefaultEvents")
