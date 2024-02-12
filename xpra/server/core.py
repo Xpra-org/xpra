@@ -1387,8 +1387,12 @@ class ServerCore:
                         return False
             return True
 
-        return make_ssh_server_connection(conn, socket_options,
-                                          none_auth=none_auth, password_auth=ssh_password_authenticate)
+        return make_ssh_server_connection(
+            conn, socket_options,
+            none_auth=none_auth,
+            password_auth=ssh_password_authenticate,
+            display_name=self.display_name,
+        )
 
     def try_upgrade_to_rfb(self, proto) -> bool:
         self.cancel_upgrade_to_rfb_timer(proto)
