@@ -110,10 +110,11 @@ def check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
             redirected_loggers[name] = (logger, list(logger.handlers), logger.propagate)
             logger.handlers = [CaptureHandler()]
             logger.propagate = False
-        import OpenGL
-        props["pyopengl"] = OpenGL.__version__  # @UndefinedVariable
-        from OpenGL.GL import GL_VERSION, GL_EXTENSIONS
-        from OpenGL.GL import glGetString, glGetIntegerv
+        with numpy_import_lock:
+            import OpenGL
+            props["pyopengl"] = OpenGL.__version__  # @UndefinedVariable
+            from OpenGL.GL import GL_VERSION, GL_EXTENSIONS
+            from OpenGL.GL import glGetString, glGetIntegerv
         gl_version_str = glGetString(GL_VERSION)
         if gl_version_str is None and not force_enable:
             raise_fatal_error("OpenGL version is missing - cannot continue")
