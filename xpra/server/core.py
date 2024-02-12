@@ -915,6 +915,7 @@ class ServerCore:
     def can_upgrade(self, socktype: str, tosocktype: str, options: dict[str, str]):
         to_option_str = options.get(tosocktype, "")
         to_option = to_option_str.lower() in TRUE_OPTIONS
+        netlog(f"can_upgrade%s {to_option_str=}, {to_option}", (socktype, tosocktype, options))
         if tosocktype in ("ws", "wss") and not has_websocket_handler():
             return False
         if tosocktype == "rfb":
