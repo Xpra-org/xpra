@@ -364,20 +364,19 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0) -> dict[Any, dict]:
     # (which may not be ours to kill at that point)
     ssh_upgrades = opts.ssh_upgrade
     if ssh_upgrades:
+        err = ""
         try:
             with SilenceWarningsContext(DeprecationWarning):
                 if not find_spec("paramiko"):
-                    from xpra.log import Logger
-                    sshlog = Logger("ssh")
-                    sshlog.warn("Warning: cannot enable SSH socket upgrades")
-                    sshlog.warn(" `paramiko` module not found")
-                    opts.ssh_upgrades = False
+                    err = "`paramiko` module not found"
         except Exception as e:
+            err = e
+        if err:
             from xpra.log import Logger
             sshlog = Logger("ssh")
             sshlog("import paramiko", exc_info=True)
             sshlog.error("Error: cannot enable SSH socket upgrades")
-            sshlog.estr(e)
+            sshlog.estr(err)
             opts.ssh_upgrades = False
     log = get_network_logger()
     # prepare tcp socket definitions:
