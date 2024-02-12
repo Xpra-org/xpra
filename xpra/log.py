@@ -456,8 +456,9 @@ class Logger:
                 kwargs["exc_info"] = ei
         if LOG_PREFIX:
             msg = LOG_PREFIX+msg
+        backtrace = kwargs.pop("backtrace", None)
         global_logging_handler(self._logger.log, self.level_override or level, msg, *args, **kwargs)
-        if backtrace_expressions and not exc_info and any(exp.match(msg) for exp in backtrace_expressions):
+        if backtrace or backtrace_expressions and not exc_info and any(exp.match(msg) for exp in backtrace_expressions):
             import traceback
             tb = traceback.extract_stack()
             count = len(tb)
