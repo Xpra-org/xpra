@@ -377,7 +377,7 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0) -> dict[Any, dict]:
             sshlog("import paramiko", exc_info=True)
             sshlog.error("Error: cannot enable SSH socket upgrades")
             sshlog.estr(err)
-            opts.ssh_upgrades = False
+            opts.ssh_upgrade = False
     log = get_network_logger()
     # prepare tcp socket definitions:
     tcp_defs = []
