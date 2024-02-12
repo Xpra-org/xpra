@@ -177,6 +177,8 @@ def get_GLU_info() -> dict[str, str]:
 
 
 def get_context_info() -> dict[str, Any]:
+    with numpy_import_context("OpenGL", True):
+        from OpenGL.GL import glGetIntegerv
     from OpenGL.GL import (
         GL_CONTEXT_PROFILE_MASK, GL_CONTEXT_CORE_PROFILE_BIT,
         GL_CONTEXT_FLAGS,
@@ -185,7 +187,6 @@ def get_context_info() -> dict[str, Any]:
         GL_CONTEXT_FLAG_DEBUG_BIT,
         GL_CONTEXT_FLAG_NO_ERROR_BIT,
     )
-    from OpenGL.GL import glGetIntegerv
     flags = glGetIntegerv(GL_CONTEXT_FLAGS)
     return {
         "core-profile": bool(glGetIntegerv(GL_CONTEXT_PROFILE_MASK) & GL_CONTEXT_CORE_PROFILE_BIT),

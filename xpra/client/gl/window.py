@@ -13,7 +13,7 @@ from collections.abc import Callable
 from xpra.common import noop
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.types import AtomicInteger, typedict
-from xpra.util.env import envint
+from xpra.util.env import envint, numpy_import_context
 from xpra.os_util import WIN32, OSX, gi_import
 from xpra.util.io import load_binary_file
 from xpra.log import Logger
@@ -41,18 +41,19 @@ def get_opengl_module_names(opengl="on") -> tuple[str, ...]:
 
 
 def get_gl_client_window_module(opengl="on") -> tuple[dict, Any]:
-    from importlib import import_module
-    try:
-        opengl_module = import_module("OpenGL")
-        log(f"{opengl_module=}")
-    except ImportError as e:
-        log("cannot import the OpenGL module", exc_info=True)
-        log.warn("Warning: cannot import the 'OpenGL' module")
-        log.warn(" %s", e)
-        return {
-            "success": False,
-            "message": str(e),
-        }, None
+    with numpy_import_context("OpenGL", True):
+        from importlib import import_module
+        try:
+            opengl_module = import_module("OpenGL")
+            log(f"{opengl_module=}")
+        except ImportError as e:
+            log("cannot import the OpenGL module", exc_info=True)
+            log.warn("Warning: cannot import the 'OpenGL' module")
+            log.warn(" %s", e)
+            return {
+                "success": False,
+                "message": str(e),
+            }, None
     module_names = get_opengl_module_names(opengl)
     log(f"get_gl_client_window_module({opengl}) module names={module_names}")
     parts = opengl.lower().split(":")
