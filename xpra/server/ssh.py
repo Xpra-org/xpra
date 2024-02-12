@@ -215,7 +215,7 @@ class SSHServer(paramiko.ServerInterface):
         log(f"check_channel_shell_request({channel})")
         return False
 
-    def check_channel_exec_request(self, channel, command: ByteString) -> int:
+    def check_channel_exec_request(self, channel, command: ByteString) -> bool:
         def fail(*messages) -> bool:
             for m in messages:
                 log.warn(m)
