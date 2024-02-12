@@ -586,12 +586,16 @@ class WindowModel(BaseWindowModel):
         w, h = self.calc_constrained_size(allocated_w, allocated_h, hints)
         geomlog("_do_update_client_geometry: size(%s)=%ix%i", hints, w, h)
         with xlog:
-            cx, cy, cw, ch = X11Window.getGeometry(self.corral_xid)[:4]
-            if cx != x or cy != y or cw != w or ch != h:
-                X11Window.MoveResizeWindow(self.corral_xid, x, y, w, h)
-                X11Window.configureAndNotify(self.xid, 0, 0, w, h)
+            if self.corral_xid:
+                cx, cy, cw, ch = X11Window.getGeometry(self.corral_xid)[:4]
+                if cx != x or cy != y or cw != w or ch != h:
+                    X11Window.MoveResizeWindow(self.corral_xid, x, y, w, h)
+                    X11Window.configureAndNotify(self.xid, 0, 0, w, h)
+                else:
+                    X11Window.sendConfigureNotify(self.xid)
             else:
-                X11Window.sendConfigureNotify(self.xid)
+                # corral window hasn't been created yet
+                X11Window.configureAndNotify(self.xid, x, y, w, h)
             self._updateprop("geometry", (x, y, w, h))
 
     def do_xpra_configure_event(self, event) -> None:
