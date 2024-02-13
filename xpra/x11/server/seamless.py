@@ -523,7 +523,6 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         geometry = window.get_property("geometry")
         log("Discovered new ordinary window: %s (geometry=%s)", window, geometry)
         window.managed_connect("notify::geometry", self._window_resized_signaled)
-        window.send_configure_notify()
         self._send_new_window_packet(window)
         if PRE_MAP:
             # pre-map the window if any client will be showing it
