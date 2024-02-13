@@ -626,7 +626,7 @@ class WindowModel(BaseWindowModel):
                     geomlog(f"WindowModel.do_xpra_configure_event: client window {self.xid:x} is not visible")
                     return
                 # event.border_width unused
-                self.resize_corral_window(event.x, event.y, event.width, event.height)
+                self.configure_geometry(event.x, event.y, event.width, event.height)
                 self.update_children()
         except XError as e:
             geomlog("do_xpra_configure_event(%s)", event, exc_info=True)
@@ -655,7 +655,7 @@ class WindowModel(BaseWindowModel):
             children.append([xid] + list(geom))
         self._internal_set_property("children", children)
 
-    def resize_corral_window(self, x: int, y: int, w: int, h: int) -> None:
+    def configure_geometry(self, x: int, y: int, w: int, h: int) -> None:
         # the client window may have been resized or moved (generally programmatically)
         # so we may need to update the corral_window to match
         cow, coh = X11Window.getGeometry(self.corral_xid)[2:4]
@@ -665,7 +665,7 @@ class WindowModel(BaseWindowModel):
         cx, cy, cw, ch = self.get_property("geometry")
         resized = cow != w or coh != h
         moved = x != 0 or y != 0
-        geomlog("resize_corral_window%s hints=%s, constrained size=%s, corral=%s, geometry=%s, resized=%s, moved=%s",
+        geomlog("configure_geometry%s hints=%s, constrained size=%s, corral=%s, geometry=%s, resized=%s, moved=%s",
                 (x, y, w, h), hints, (w, h), (cow, coh), (cx, cy, cw, ch), resized, moved)
         if not (moved or resized):
             return
