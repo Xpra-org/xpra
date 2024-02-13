@@ -126,7 +126,6 @@ class AppindicatorTray(TrayBase):
             self._has_icon = True
             self.icon_timestamp = monotonic()
             self.tray_widget.set_icon_full(filename, self.tooltip or "Xpra")
-            return
 
     def clean_last_tmp_icon(self) -> None:
         if self.tmp_filename and DELETE_TEMP_FILE:
