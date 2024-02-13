@@ -305,15 +305,15 @@ cdef init_x11_events(Display *display):
 x_event_signals : Dict[int,tuple] = {}
 
 
-def add_x_event_signal(event, mapping):
+def add_x_event_signal(event: int, mapping: tuple) -> None:
     x_event_signals[event] = mapping
 
 
-def add_x_event_signals(event_signals:Dict[int,tuple]):
+def add_x_event_signals(event_signals: Dict[int,tuple]) -> None:
     x_event_signals.update(event_signals)
 
 
-def get_x_event_signals(event) -> tuple:
+def get_x_event_signals(event: int) -> tuple:
     return x_event_signals.get(event)
 
 
@@ -321,12 +321,12 @@ x_event_type_names : Dict[int,str] = {}
 names_to_event_type : Dict[str,int] = {}
 
 
-def add_x_event_type_name(event, name):
+def add_x_event_type_name(event: int, name: str) -> None:
     x_event_type_names[event] = name
     names_to_event_type[name] = event
 
 
-def add_x_event_type_names(event_type_names):
+def add_x_event_type_names(event_type_names: Dict[int, str]) -> None:
     x_event_type_names.update(event_type_names)
     for k,v in event_type_names.items():
         names_to_event_type[v] = k
@@ -335,11 +335,11 @@ def add_x_event_type_names(event_type_names):
     verbose("names_to_event_type=%s", names_to_event_type)
 
 
-def get_x_event_type_name(event):
-    return x_event_type_names.get(event)
+def get_x_event_type_name(event: int) -> str:
+    return x_event_type_names.get(event, "")
 
 
-def set_debug_events():
+def set_debug_events() -> None:
     global debug_route_events
     XPRA_X11_DEBUG_EVENTS = os.environ.get("XPRA_X11_DEBUG_EVENTS", "")
     debug_set = set()
@@ -374,21 +374,21 @@ def set_debug_events():
 x_event_parsers : Dict[int,Callable] = {}
 
 
-def add_x_event_parser(extension_opcode: int, parser : Callable):
+def add_x_event_parser(extension_opcode: int, parser : Callable) -> None:
     x_event_parsers[extension_opcode] = parser
 
 
 cdef atom_str(Display *display, Atom atom):
     if not atom:
-        return None
+        return ""
     cdef char* atom_name = NULL
     try:
         with xsync:
             atom_name = XGetAtomName(display, atom)
     except XError:
         log.error(f"Error: invalid atom {atom:x}")
-        return None
-    r = None
+        return ""
+    r = ""
     if atom_name!=NULL:
         r = bytestostr(atom_name)
         XFree(atom_name)
@@ -417,16 +417,18 @@ cdef parse_xevent(Display *d, XEvent *e):
         global x_event_parsers
         parser = x_event_parsers.get(e.xcookie.extension)
         if parser:
-            #log("calling %s%s", parser, (d, <uintptr_t> &e.xcookie))
+            log("calling GenericEvent parser %s(%s)", parser, <uintptr_t> &e.xcookie)
             return parser(<uintptr_t> &e.xcookie)
+        log("no GenericEvent parser for extension %s", e.xcookie.extension)
         return None
 
     cdef object event_args = x_event_signals.get(etype)
-    log("parse_xevent event=%s/%s window=%#x", event_args, event_type, e.xany.window)
     if event_args is None:
+        log("no signal handler for %s", event_type)
         return None
+    log("parse_xevent event=%s/%s window=%#x", event_args, event_type, e.xany.window)
 
-    def atom(Atom v):
+    def atom(Atom v) -> str:
         return atom_str(d, v)
 
     cdef object pyev = X11Event(event_type)
