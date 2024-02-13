@@ -453,7 +453,8 @@ class Wm(GObject.GObject):
             if event.value_mask & (CWX | CWY | CWWidth | CWHeight):
                 log("updated window geometry for window %#x from %s to %s",
                     xid, X11Window.getGeometry(xid)[:4], (x, y, w, h))
-            X11Window.configureAndNotify(xid, x, y, w, h, event.value_mask)
+            X11Window.configure(xid, x, y, w, h, event.value_mask)
+            X11Window.sendConfigureNotify(xid)
 
     def do_xpra_focus_in_event(self, event) -> None:
         # The purpose of this function is to detect when the focus mode has

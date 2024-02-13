@@ -470,8 +470,8 @@ class WindowModel(BaseWindowModel):
         super().do_unmanaged(wm_exiting)
 
     def send_configure_notify(self) -> None:
-        with xswallow:
-            X11Window.sendConfigureNotify(self.xid)
+        with xlog:
+            return X11Window.sendConfigureNotify(self.xid)
 
     #########################################
     # Actions specific to WindowModel
@@ -593,12 +593,14 @@ class WindowModel(BaseWindowModel):
                 cx, cy, cw, ch = X11Window.getGeometry(self.corral_xid)[:4]
                 if cx != x or cy != y or cw != w or ch != h:
                     X11Window.MoveResizeWindow(self.corral_xid, x, y, w, h)
-                    X11Window.configureAndNotify(self.xid, 0, 0, w, h)
+                    X11Window.configure(self.xid, 0, 0, w, h)
+                    X11Window.sendConfigureNotify(self.xid)
                 else:
                     X11Window.sendConfigureNotify(self.xid)
             else:
                 # corral window hasn't been created yet
-                X11Window.configureAndNotify(self.xid, x, y, w, h)
+                X11Window.configure(self.xid, x, y, w, h)
+                X11Window.sendConfigureNotify(self.xid)
             self._updateprop("geometry", (x, y, w, h))
 
     def do_xpra_configure_event(self, event) -> None:
@@ -724,8 +726,9 @@ class WindowModel(BaseWindowModel):
         geomlog("do_child_configure_request_event updated requested geometry from %s to  %s", ogeom, (x, y, w, h))
         # As per ICCCM 4.1.5, even if we ignore the request
         # send back a synthetic ConfigureNotify telling the client that nothing has happened.
-        with xswallow:
-            X11Window.configureAndNotify(self.xid, x, y, w, h, event.value_mask)
+        with xlog:
+            X11Window.configure(self.xid, x, y, w, h, event.value_mask)
+            X11Window.sendConfigureNotify(self.xid)
         # FIXME: consider handling attempts to change stacking order here.
         # (In particular, I believe that a request to jump to the top is
         # meaningful and should perhaps even be respected.)
@@ -752,7 +755,8 @@ class WindowModel(BaseWindowModel):
                 w, h = self.calc_constrained_size(w, h, hints)
                 geomlog("_NET_MOVERESIZE_WINDOW on %s (data=%s, current geometry=%s, new geometry=%s)",
                         self, event.data, geom, (x, y, w, h))
-                X11Window.configureAndNotify(self.xid, x, y, w, h)
+                X11Window.configure(self.xid, x, y, w, h)
+                X11Window.sendConfigureNotify(self.xid)
             return True
         return super().process_client_message_event(event)
 

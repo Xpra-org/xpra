@@ -931,7 +931,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         changes.stack_mode = stack_mode
         XConfigureWindow(self.display, xwindow, value_mask, &changes)
 
-    def configureAndNotify(self, Window xwindow, x, y, width, height, fields=None):
+    def configure(self, Window xwindow, x, y, width, height, fields=None):
         # Reconfigure the window.  We have to use XConfigureWindow directly
         # instead of GdkWindow.resize, because GDK does not give us any way to
         # squash the border.
@@ -941,7 +941,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         # of a ConfigureRequest (along with the other arguments they are passing
         # to us).  This also means we need to be careful to zero out any bits
         # besides these, because they could be set to anything.
-        self.context_check("configureAndNotify")
+        self.context_check("configure")
         cdef int geom_flags = CWX | CWY | CWWidth | CWHeight
         if fields is None:
             fields = geom_flags
@@ -950,8 +950,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         # But we always unconditionally squash the border to zero.
         fields = fields | CWBorderWidth
         self.ConfigureWindow(xwindow, x, y, width, height, value_mask=fields)
-        # Tell the client.
-        self.sendConfigureNotify(xwindow)
 
     def MoveResizeWindow(self, Window xwindow, int x, int y, int width, int height):
         self.context_check("MoveResizeWindow")
