@@ -16,7 +16,7 @@ from xpra.util.io import get_proc_cmdline
 from xpra.util.str_fn import bytestostr
 from xpra.x11.common import Unmanageable
 from xpra.gtk.gobject import one_arg_signal, n_arg_signal
-from xpra.gtk.error import XError, xsync, xswallow
+from xpra.gtk.error import XError, xsync, xswallow, xlog
 from xpra.codecs.image import ImageWrapper
 from xpra.platform.posix.proc import get_parent_pid
 from xpra.x11.bindings.window import X11WindowBindings, constants, SHAPE_KIND
@@ -51,6 +51,7 @@ FORCE_QUIT = envbool("XPRA_FORCE_QUIT", True)
 XSHAPE = envbool("XPRA_XSHAPE", True)
 FRAME_EXTENTS = envbool("XPRA_FRAME_EXTENTS", True)
 OPAQUE_REGION = envbool("XPRA_OPAQUE_REGION", True)
+DELETE_DESTROY = envbool("XPRA_DELETE_DESTROY", True)
 
 CurrentTime = constants["CurrentTime"]
 
@@ -865,6 +866,10 @@ class CoreX11WindowModel(WindowModelStub):
             X11Window.XKillClient(self.xid)
 
     def force_quit(self) -> None:
+        if DELETE_DESTROY:
+            with xlog:
+                X11Window.DestroyWindow(self.xid)
+                return
         machine = self.get_property("client-machine")
         pid = self.get_property("pid")
         if pid <= 0:
