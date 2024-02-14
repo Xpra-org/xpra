@@ -1092,6 +1092,7 @@ class SocketProtocol:
                     log(" data: %s", repr_ellipsized(data_str))
                     log(f" packet_index={packet_index}, payload_size={payload_size}, buffer size={bl}")
                     log(" full data: %s", hexstr(data_str))
+                    self.may_log_stats()
                     self.gibberish(f"failed to parse {etype} packet", data)
                     return
 
@@ -1246,19 +1247,28 @@ class SocketProtocol:
             with log.trap_error("Error closing %s", c):
                 log("Protocol.close(%s) calling %s", message, c.close)
                 c.close()
-                if self._log_stats is None and c.input_bytecount == 0 and c.output_bytecount == 0:
-                    # no data sent or received, skip logging of stats:
-                    self._log_stats = False
-                if self._log_stats:
-                    # pylint: disable=import-outside-toplevel
-                    from xpra.util.stats import std_unit, std_unit_dec
-                    log.info("connection closed after %s packets received (%s bytes) and %s packets sent (%s bytes)",
-                             std_unit(self.input_packetcount), std_unit_dec(c.input_bytecount),
-                             std_unit(self.output_packetcount), std_unit_dec(c.output_bytecount)
-                             )
+            self.may_log_stats()
         self.terminate_queue_threads()
         self.idle_add(self.clean)
         log("Protocol.close(%s) done", message)
+
+    def may_log_stats(self, log_fn: Callable = log.info):
+        icount = self.input_packetcount
+        ocount = self.output_packetcount
+        if self._log_stats is None and icount == ocount == 0:
+            # no data sent or received, skip logging of stats:
+            return
+        if self._log_stats is not False:
+            # pylint: disable=import-outside-toplevel
+            from xpra.util.stats import std_unit, std_unit_dec
+
+            def log_count(ptype="received", count: int = 0, bytecount: int = -1):
+                msg = std_unit(count) + f" packets {ptype}"
+                if bytecount > 0:
+                    msg += " (%s bytes)" % std_unit_dec(bytecount)
+                log_fn(msg)
+            log_count("received", icount, getattr(self._conn, "input_bytecount", -1))
+            log_count("sent", ocount, getattr(self._conn, "output_bytecount", -1))
 
     def steal_connection(self, read_callback: Callable | None = None):
         # so we can re-use this connection somewhere else
