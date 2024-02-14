@@ -24,6 +24,8 @@ if os.name != "posix" or os.getuid() != 0:
 NOPREFIX_FORMAT: str = "%(message)s"
 
 
+BACKTRACE_LEVEL = int(os.environ.get("XPRA_LOG_BACKTRACE_LEVEL", logging.CRITICAL))
+
 logging.basicConfig(format=LOG_FORMAT)
 logging.root.setLevel(logging.INFO)
 
@@ -456,9 +458,11 @@ class Logger:
                 kwargs["exc_info"] = ei
         if LOG_PREFIX:
             msg = LOG_PREFIX+msg
-        backtrace = kwargs.pop("backtrace", None)
+        backtrace = kwargs.pop("backtrace", level >= BACKTRACE_LEVEL)
         global_logging_handler(self._logger.log, self.level_override or level, msg, *args, **kwargs)
-        if backtrace or backtrace_expressions and not exc_info and any(exp.match(msg) for exp in backtrace_expressions):
+        if exc_info:
+            return
+        if backtrace or (backtrace_expressions and any(exp.match(msg) for exp in backtrace_expressions)):
             import traceback
             tb = traceback.extract_stack()
             count = len(tb)
