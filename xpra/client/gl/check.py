@@ -179,24 +179,24 @@ def get_GLU_info() -> dict[str, str]:
 def get_context_info() -> dict[str, Any]:
     with numpy_import_context("OpenGL", True):
         from OpenGL.GL import glGetIntegerv
-    from OpenGL.GL import (
-        GL_CONTEXT_PROFILE_MASK, GL_CONTEXT_CORE_PROFILE_BIT,
-        GL_CONTEXT_FLAGS,
-        GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT,
-        GL_CONTEXT_FLAG_ROBUST_ACCESS_BIT,
-        GL_CONTEXT_FLAG_DEBUG_BIT,
-        GL_CONTEXT_FLAG_NO_ERROR_BIT,
-    )
-    flags = glGetIntegerv(GL_CONTEXT_FLAGS)
-    return {
-        "core-profile": bool(glGetIntegerv(GL_CONTEXT_PROFILE_MASK) & GL_CONTEXT_CORE_PROFILE_BIT),
-        "flags": tuple(k for k, v in {
-            "forward-compatible": GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT,
-            "debug": GL_CONTEXT_FLAG_DEBUG_BIT,
-            "robust-access": GL_CONTEXT_FLAG_ROBUST_ACCESS_BIT,
-            "no-error": GL_CONTEXT_FLAG_NO_ERROR_BIT,
-        }.items() if flags & v),
-    }
+        from OpenGL.GL import (
+            GL_CONTEXT_PROFILE_MASK, GL_CONTEXT_CORE_PROFILE_BIT,
+            GL_CONTEXT_FLAGS,
+            GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT,
+            GL_CONTEXT_FLAG_ROBUST_ACCESS_BIT,
+            GL_CONTEXT_FLAG_DEBUG_BIT,
+            GL_CONTEXT_FLAG_NO_ERROR_BIT,
+        )
+        flags = glGetIntegerv(GL_CONTEXT_FLAGS)
+        return {
+            "core-profile": bool(glGetIntegerv(GL_CONTEXT_PROFILE_MASK) & GL_CONTEXT_CORE_PROFILE_BIT),
+            "flags": tuple(k for k, v in {
+                "forward-compatible": GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT,
+                "debug": GL_CONTEXT_FLAG_DEBUG_BIT,
+                "robust-access": GL_CONTEXT_FLAG_ROBUST_ACCESS_BIT,
+                "no-error": GL_CONTEXT_FLAG_NO_ERROR_BIT,
+            }.items() if flags & v),
+        }
 
 
 def check_available(*functions) -> str:
