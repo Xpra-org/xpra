@@ -71,7 +71,7 @@ DEFAULT_SCALING_OPTIONS = (1, 10), (1, 5), (1, 4), (1, 3), (1, 2), (2, 3), (1, 1
 
 def parse_scaling_options_str(scaling_options_str: str) -> tuple:
     if not scaling_options_str:
-        return DEFAULT_SCALING_OPTIONS
+        return ()
     # parse 1/10,1/5,1/4,1/3,1/2,2/3,1/1
     # or even: 1:10, 1:5, ...
     vs_options = []
@@ -90,10 +90,10 @@ def parse_scaling_options_str(scaling_options_str: str) -> tuple:
             scalinglog.warn("Warning: invalid scaling string '%s'", option.strip())
     if vs_options:
         return tuple(vs_options)
-    return DEFAULT_SCALING_OPTIONS
+    return ()
 
 
-SCALING_OPTIONS = parse_scaling_options_str(os.environ.get("XPRA_SCALING_OPTIONS", ""))
+SCALING_OPTIONS = parse_scaling_options_str(os.environ.get("XPRA_SCALING_OPTIONS", "")) or DEFAULT_SCALING_OPTIONS
 scalinglog("scaling options: SCALING=%s, HARDCODED=%s, PPS_TARGET=%i, MIN_PPS=%i, OPTIONS=%s",
            SCALING, SCALING_HARDCODED, SCALING_PPS_TARGET, SCALING_MIN_PPS, SCALING_OPTIONS)
 
