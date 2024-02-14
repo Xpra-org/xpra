@@ -50,7 +50,7 @@ def load_wayland(display: str = "") -> type | None:
     return c
 
 
-def load_x11() -> type | None:
+def load_x11(display: str = "") -> type | None:
     try:
         os.environ["GDK_BACKEND"] = "x11"
         from xpra.x11.server import shadow
