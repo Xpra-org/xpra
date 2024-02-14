@@ -349,10 +349,12 @@ class SocketProtocol:
         self.source_has_more = shm.set
         shm.set()
         # start the format thread:
-        if not self._write_format_thread and not self._closed:
-            with self._threading_lock:
-                assert not self._write_format_thread, "write format thread already started"
-                self._write_format_thread = start_thread(self.write_format_thread_loop, "format", daemon=True)
+        if self._write_format_thread or self._closed:
+            return
+        with self._threading_lock:
+            if self._write_format_thread or self._closed:
+                return
+            self._write_format_thread = start_thread(self.write_format_thread_loop, "format", daemon=True)
 
     def write_format_thread_loop(self) -> None:
         log("write_format_thread_loop starting")
