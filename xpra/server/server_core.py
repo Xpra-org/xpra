@@ -907,9 +907,13 @@ class ServerCore:
                     continue
             mdnslog("mdns_publish() info=%s, socktypes(%s)=%s", info, socktype, socktypes)
             for st in socktypes:
+                if st == "socket":
+                    continue
                 recs = mdns_recs.setdefault(st, [])
                 if socktype=="socket":
-                    assert st=="ssh"
+                    if not st != "ssh":
+                        log.error(f"Error: unexpected {st!r} socket type for {socktype}")
+                        continue
                     host = "*"
                     iport = get_ssh_port()
                     if not iport:
