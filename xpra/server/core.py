@@ -889,7 +889,7 @@ class ServerCore:
                     continue
                 recs = mdns_recs.setdefault(st, [])
                 if socktype == "socket":
-                    if not st != "ssh":
+                    if st != "ssh":
                         log.error(f"Error: unexpected {st!r} socket type for {socktype}")
                         continue
                     host = "*"
