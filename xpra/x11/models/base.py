@@ -334,12 +334,12 @@ class BaseWindowModel(CoreX11WindowModel):
 
     def _sync_state(self, *_args) -> None:
         state = self.get_property("state")
-        metalog("sync_state: setting _NET_WM_STATE=%s on %#x", state, self.xid)
         if "_NET_WM_STATE_HIDDEN" in state and "_NET_WM_STATE_FOCUSED" in state:
             # a window should not be focused and hidden at the same time:
             state = set(state)
             state.remove("_NET_WM_STATE_HIDDEN")
             state = frozenset(state)
+        metalog("sync_state: setting _NET_WM_STATE=%s on %#x", state, self.xid)
         with xlog:
             self.prop_set("_NET_WM_STATE", ["atom"], state)
 
