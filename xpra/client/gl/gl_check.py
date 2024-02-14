@@ -89,6 +89,11 @@ def get_max_texture_size() -> int:
 
 
 def check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
+    from xpra.util import numpy_import_lock
+    with numpy_import_lock:
+        return do_check_PyOpenGL_support(force_enable)
+
+def do_check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
     props : Dict[str,Any] = {
         "platform"  : sys.platform,
         }
@@ -110,11 +115,10 @@ def check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
             redirected_loggers[name] = (logger, list(logger.handlers), logger.propagate)
             logger.handlers = [CaptureHandler()]
             logger.propagate = False
-        with numpy_import_lock:
-            import OpenGL
-            props["pyopengl"] = OpenGL.__version__  # @UndefinedVariable
-            from OpenGL.GL import GL_VERSION, GL_EXTENSIONS
-            from OpenGL.GL import glGetString, glGetIntegerv
+        import OpenGL
+        props["pyopengl"] = OpenGL.__version__  # @UndefinedVariable
+        from OpenGL.GL import GL_VERSION, GL_EXTENSIONS
+        from OpenGL.GL import glGetString, glGetIntegerv
         gl_version_str = glGetString(GL_VERSION)
         if gl_version_str is None and not force_enable:
             raise_fatal_error("OpenGL version is missing - cannot continue")
