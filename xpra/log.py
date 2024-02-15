@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ import sys
 import logging
 import weakref
 import itertools
-from typing import Any
+from typing import Any, Final
 from collections.abc import Callable
 from contextlib import AbstractContextManager
 # This module is used by non-GUI programs and thus must not import gtk.
@@ -21,7 +21,7 @@ if os.name != "posix" or os.getuid() != 0:
     LOG_FORMAT = os.environ.get("XPRA_LOG_FORMAT", LOG_FORMAT)
     LOG_PREFIX = os.environ.get("XPRA_LOG_PREFIX", LOG_PREFIX)
     DEBUG_MODULES = tuple(x.strip() for x in os.environ.get("XPRA_DEBUG_MODULES", "").split(",") if x.strip())
-NOPREFIX_FORMAT: str = "%(message)s"
+NOPREFIX_FORMAT: Final[str] = "%(message)s"
 
 
 BACKTRACE_LEVEL = int(os.environ.get("XPRA_LOG_BACKTRACE_LEVEL", logging.CRITICAL))

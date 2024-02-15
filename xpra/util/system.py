@@ -19,6 +19,7 @@ from xpra.util.thread import main_thread
 from xpra.util.io import load_binary_file, get_util_logger
 from xpra.util.str_fn import bytestostr
 
+
 SIGNAMES: dict[int, str] = {}
 for signame in (sig for sig in dir(signal) if sig.startswith("SIG") and not sig.startswith("SIG_")):
     try:

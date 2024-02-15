@@ -6,6 +6,7 @@
 import binascii
 import os
 from enum import Enum, IntEnum
+from typing import Final
 from collections.abc import Callable
 
 try:
@@ -44,14 +45,14 @@ def get_default_video_max_size() -> tuple[int, int]:
 VIDEO_MAX_SIZE = get_default_video_max_size()
 
 
-XPRA_APP_ID = 0
-XPRA_GUID1 = 0x67b3efa2
-XPRA_GUID2 = 0xe470
-XPRA_GUID3 = 0x4a5f
-XPRA_GUID4 = (0xb6, 0x53, 0x6f, 0x6f, 0x98, 0xfe, 0x60, 0x81)
-XPRA_GUID_STR = "67B3EFA2-E470-4A5F-B653-6F6F98FE6081"
-XPRA_GUID_BYTES = binascii.unhexlify(XPRA_GUID_STR.replace("-",""))
-XPRA_NOTIFICATIONS_OFFSET = 2**24
+XPRA_APP_ID: Final[int] = 0
+XPRA_GUID1: Final[int] = 0x67b3efa2
+XPRA_GUID2: Final[int] = 0xe470
+XPRA_GUID3: Final[int] = 0x4a5f
+XPRA_GUID4: Final[tuple[int, ...]] = (0xb6, 0x53, 0x6f, 0x6f, 0x98, 0xfe, 0x60, 0x81)
+XPRA_GUID_STR: Final[str] = "67B3EFA2-E470-4A5F-B653-6F6F98FE6081"
+XPRA_GUID_BYTES: Final[bytes] = binascii.unhexlify(XPRA_GUID_STR.replace("-",""))
+XPRA_NOTIFICATIONS_OFFSET: Final[int] = 2**24
 
 
 class SocketState(StrEnum):
@@ -166,10 +167,10 @@ MOVERESIZE_DIRECTION_STRING = {
     MoveResize.MOVE_KEYBOARD     : "MOVE_KEYBOARD",
     MoveResize.CANCEL            : "CANCEL",
 }
-SOURCE_INDICATION_UNSET     = 0
-SOURCE_INDICATION_NORMAL    = 1
-SOURCE_INDICATION_PAGER     = 2
-SOURCE_INDICATION_STRING    = {
+SOURCE_INDICATION_UNSET: Final = 0
+SOURCE_INDICATION_NORMAL: Final = 1
+SOURCE_INDICATION_PAGER: Final = 2
+SOURCE_INDICATION_STRING: Final = {
     SOURCE_INDICATION_UNSET      : "UNSET",
     SOURCE_INDICATION_NORMAL     : "NORMAL",
     SOURCE_INDICATION_PAGER      : "PAGER",
@@ -177,8 +178,8 @@ SOURCE_INDICATION_STRING    = {
 
 
 # magic value for "workspace" window property, means unset
-WORKSPACE_UNSET = 65535
-WORKSPACE_ALL = 0xffffffff
+WORKSPACE_UNSET: Final = 65535
+WORKSPACE_ALL: Final = 0xffffffff
 WORKSPACE_NAMES = {
     WORKSPACE_UNSET  : "unset",
     WORKSPACE_ALL    : "all",
@@ -230,9 +231,9 @@ def noop(*_args, **_kwargs) -> None:
     """ do nothing """
 
 
-WINDOW_DECODE_SKIPPED: int = 0
-WINDOW_DECODE_ERROR: int = -1
-WINDOW_NOT_FOUND: int = -2
+WINDOW_DECODE_SKIPPED: Final[int] = 0
+WINDOW_DECODE_ERROR: Final[int] = -1
+WINDOW_NOT_FOUND: Final[int] = -2
 
 
 ScreenshotData = tuple[int,int,str,int,bytes]

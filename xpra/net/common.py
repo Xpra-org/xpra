@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,7 +7,7 @@ import os
 import socket
 import struct
 import threading
-from typing import Any, Union, TypeAlias
+from typing import Any, Union, TypeAlias, Final
 from collections.abc import Callable, ByteString
 
 from xpra.net.compression import Compressed, Compressible, LargeStructure
@@ -28,7 +28,7 @@ def get_logger():
     return logger
 
 
-DEFAULT_PORT: int = 14500
+DEFAULT_PORT: Final[int] = 14500
 
 DEFAULT_PORTS: dict[str, int] = {
     "ws": 80,

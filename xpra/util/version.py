@@ -8,7 +8,7 @@ import sys
 import os
 import socket
 import platform
-from typing import Any
+from typing import Any, Final
 
 import xpra
 from xpra.util.types import typedict
@@ -18,8 +18,8 @@ from xpra.util.io import get_util_logger
 from xpra.util.system import get_linux_distribution, platform_release, platform_name
 from xpra.common import FULL_INFO
 
-XPRA_VERSION = xpra.__version__
-XPRA_NUMERIC_VERSION = xpra.__version_info__
+XPRA_VERSION: Final[str] = xpra.__version__
+XPRA_NUMERIC_VERSION: Final[tuple[int, ...]] = xpra.__version_info__
 
 CHECK_SSL: bool = envbool("XPRA_VERSION_CHECK_SSL", True)
 SSL_CAFILE: str = ""
