@@ -1242,12 +1242,12 @@ class SocketProtocol:
         if message:
             packet.append(message)
         self.idle_add(self._process_packet_cb, self, packet)
+        self.may_log_stats()
         if c:
             self._conn = None
             with log.trap_error("Error closing %s", c):
                 log("Protocol.close(%s) calling %s", message, c.close)
                 c.close()
-            self.may_log_stats()
         self.terminate_queue_threads()
         self.idle_add(self.clean)
         log("Protocol.close(%s) done", message)
