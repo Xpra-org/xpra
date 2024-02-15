@@ -839,7 +839,6 @@ class CoreX11WindowModel(WindowModelStub):
     ################################
 
     def request_close(self) -> bool:
-        log.error("request_close()")
         if "WM_DELETE_WINDOW" in self.get_property("protocols"):
             self.send_delete()
             return True

@@ -27,8 +27,6 @@
 # superfast connections to the X server, everything running on fast
 # computers... does being this careful to avoid sync's actually matter?)
 
-import traceback
-
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.util.thread import is_main_thread
@@ -54,8 +52,7 @@ else:
     def verify_main_thread():
         if not is_main_thread():
             import threading
-            log.error("Error: invalid access from thread %s", threading.current_thread())
-            traceback.print_stack()
+            log.error("Error: invalid access from thread %s", threading.current_thread(), backtrace=True)
 
     verify_main_thread()
 
@@ -104,8 +101,7 @@ class _ErrorManager:
         if XPRA_LOG_SYNC:
             log("X11trap.enter at level %i", self.depth)
         if LOG_NESTED_XTRAP and self.depth > 0:
-            for x in traceback.extract_stack():
-                log("%s", x)
+            log("Xenter", backtrace=True)
         self.depth += 1
 
     def Xexit(self, need_sync=True):
@@ -242,12 +238,6 @@ xlog = XLogContext()
 
 def verify_sync(*args):
     if trap.depth <= 0:
-        log.error("Error: unmanaged X11 context")
+        log.error("Error: unmanaged X11 context", backtrace=True)
         if args:
             log.error(" %s" % args[0], *(args[1:]))
-        stack = traceback.extract_stack()[:-1]
-        s = traceback.format_list(stack)
-        for x in s:
-            for v in x.splitlines():
-                log.error(" %s", v)
-        # raise Exception("unmanaged context")

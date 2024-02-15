@@ -2,9 +2,9 @@
 # Copyright (C) 2019-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
 import os
 import sys
-import traceback
 from collections.abc import Callable
 
 from xpra.util.io import get_util_logger
@@ -38,10 +38,7 @@ def dump_frames(frames, logger=None) -> None:
                 fidstr = hex(fid)
             except TypeError:
                 fidstr = str(fid)
-        logger("%i: %s %s:", i, fidstr, frame)
-        for x in traceback.format_stack(frame):
-            for l in x.splitlines():
-                logger("%s", l)
+        logger("%i: %s %s:", i, fidstr, frame, backtrace=True)
 
 
 def detect_leaks() -> Callable[[], bool]:

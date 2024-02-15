@@ -30,7 +30,7 @@ class X11Event:
         for k, v in self.__dict__.items():
             if k in ("name", "display", "type"):
                 continue
-            if k in ("serial", "window", "delivered_to", "above", "below") and isinstance(v, int):
+            if k in ("serial", "window", "delivered_to", "above", "below", "damage", "time") and isinstance(v, int):
                 d[k] = hex(v)
             elif k == "send_event" and v is False:
                 continue

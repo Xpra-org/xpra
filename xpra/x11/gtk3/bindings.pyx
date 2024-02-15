@@ -1,10 +1,9 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import traceback
 from time import monotonic
 from collections.abc import Callable
 from typing import Dict, Set
@@ -24,7 +23,7 @@ Gtk = gi_import("Gtk")
 from xpra.x11.bindings.xlib cimport (
     Display, Window, Visual, Atom,
     XEvent, XGetErrorText, XGetAtomName, XFree,
-    )
+)
 from xpra.x11.bindings.events cimport parse_xevent, init_x11_events
 from xpra.x11.bindings.events import get_x_event_signals, get_x_event_type_name
 
@@ -209,22 +208,7 @@ cdef _get_pyatom(display, int xatom):
 #      GDK at all.  (In particular, the SubstructureRedirect events.)
 # To do this, we use two different hooks in GDK:
 #   gdk_window_add_filter: This allows us to snoop on all events before they
-#     are converted into GDK events.  We use this to capture:
-#       MapRequest
-#       ConfigureRequest
-#       FocusIn
-#       FocusOut
-#       ClientMessage
-#     (We could get ClientMessage from PyGTK using the API below, but
-#     PyGTK's ClientMessage handling is annoying -- see bug #466990.)
-#   gdk_event_handler_set: This allows us to snoop on all events after they
-#     have gone through the GDK event handling machinery, just before they
-#     enter GTK.  Everything that we catch in this manner could just as well
-#     be caught by the gdk_window_add_filter technique, but waiting until here
-#     lets us write less binding gunk.  We use this to catch:
-#       PropertyNotify
-#       Unmap
-#       Destroy
+#     are converted into GDK events.
 # Our hooks in any case use the "xpra-route-events-to" GObject user data
 # field of the gdk.Window's involved.  For the SubstructureRedirect
 # events, we use this field of either the window that is making the request,
@@ -238,6 +222,7 @@ cdef _get_pyatom(display, int xatom):
 #   -- Call addXSelectInput or its convenience wrappers, substructureRedirect
 #      and selectFocusChange.
 #   -- Receive interesting signals on 'obj'.
+
 
 cdef extern from "gtk-3.0/gdk/gdkevents.h":
     ctypedef enum GdkFilterReturn:
@@ -274,8 +259,7 @@ def add_event_receiver(xid: int, receiver:callable, max_receivers: int=3) -> Non
         from xpra.x11.window_info import window_info
         log.warn("Warning: already too many event receivers")
         log.warn(f" for {window_info(xid)!r}: {len(receivers)}")
-        log.warn(f" adding {receiver!r} to {receivers}")
-        traceback.print_stack()
+        log.warn(f" adding {receiver!r} to {receivers}", backtrace=True)
     receivers.add(receiver)
 
 def remove_event_receiver(xid: int, receiver:callable) -> None:

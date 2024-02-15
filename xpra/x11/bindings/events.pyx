@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import traceback
 from time import monotonic
 from typing import Dict
 from collections.abc import Callable

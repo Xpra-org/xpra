@@ -1,12 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import time
 import operator
-import traceback
 from math import sqrt, ceil
 from functools import reduce
 from time import monotonic
@@ -366,9 +365,7 @@ class WindowVideoSource(WindowSource):
         ve = self._video_encoder
         if csce or ve:
             if DEBUG_VIDEO_CLEAN:
-                log.warn("video_context_clean() for wid %i: %s and %s", self.wid, csce, ve)
-                for x in traceback.extract_stack():
-                    log.warn(" %s", x)
+                log.warn("video_context_clean() for wid %i: %s and %s", self.wid, csce, ve, backtrace=True)
             self._csc_encoder = None
             self._video_encoder = None
 
