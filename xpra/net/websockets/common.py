@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,6 +10,7 @@ from hashlib import sha1
 from base64 import b64encode
 from urllib.parse import quote
 from typing import Any
+from enum import IntEnum
 from collections.abc import Callable
 
 from xpra.util.str_fn import strtobytes, bytestostr
@@ -23,20 +24,23 @@ READ_CHUNK_SIZE = 4096
 
 HEADERS_MODULES = os.environ.get("XPRA_WEBSOCKET_HEADERS_MODULES", "default").split(",")
 
-OPCODE_CONTINUE = 0
-OPCODE_TEXT = 1
-OPCODE_BINARY = 2
-OPCODE_CLOSE = 8
-OPCODE_PING = 9
-OPCODE_PONG = 10
 
-OPCODES: dict[int, str] = {
-    OPCODE_CONTINUE: "CONTINUE",
-    OPCODE_TEXT: "TEXT",
-    OPCODE_BINARY: "BINARY",
-    OPCODE_CLOSE: "CLOSE",
-    OPCODE_PING: "PING",
-    OPCODE_PONG: "PONG",
+class OPCODE(IntEnum):
+    CONTINUE = 0
+    TEXT = 1
+    BINARY = 2
+    CLOSE = 8
+    PING = 9
+    PONG = 10
+
+
+OPCODE_STR: dict[int, str] = {
+    OPCODE.CONTINUE: "CONTINUE",
+    OPCODE.TEXT: "TEXT",
+    OPCODE.BINARY: "BINARY",
+    OPCODE.CLOSE: "CLOSE",
+    OPCODE.PING: "PING",
+    OPCODE.PONG: "PONG",
 }
 
 

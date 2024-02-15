@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # This file is based on websockify/websocket.py from the websockify project
-# Copyright 2019-2023 Antoine Martin <antoine@xpra.org>
+# Copyright 2019-2024 Antoine Martin <antoine@xpra.org>
 # Copyright 2011 Joel Martin
 # Copyright 2016 Pierre Ossman
 # Licensed under LGPL version 3 (see docs/LICENSE.LGPL-3)
@@ -8,7 +8,7 @@
 import struct
 from collections.abc import ByteString
 
-from xpra.net.websockets.common import OPCODE_CLOSE
+from xpra.net.websockets.common import OPCODE
 from xpra.net.websockets.mask import hybi_unmask
 
 
@@ -17,7 +17,7 @@ def close_packet(code: int = 1000, reason: str = "") -> bytes:
     if reason:
         # should validate that encoded data length is less than 125, meh
         data += reason.encode("utf-8")
-    header = encode_hybi_header(OPCODE_CLOSE, len(data), has_mask=False, fin=True)
+    header = encode_hybi_header(OPCODE.CLOSE, len(data), has_mask=False, fin=True)
     return header + data
 
 

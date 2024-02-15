@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,10 +9,7 @@ from collections.abc import ByteString, Callable
 
 from xpra.net.websockets.mask import hybi_mask
 from xpra.net.websockets.header import encode_hybi_header, decode_hybi, close_packet
-from xpra.net.websockets.common import (
-    OPCODES,
-    OPCODE_BINARY, OPCODE_CONTINUE, OPCODE_TEXT, OPCODE_CLOSE, OPCODE_PING, OPCODE_PONG,
-)
+from xpra.net.websockets.common import OPCODE, OPCODE_STR
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.util.env import envbool, first_time
 from xpra.util.str_fn import hexstr, memoryview_to_bytes
@@ -53,7 +50,7 @@ class WebSocketProtocol(SocketProtocol):
 
     def make_wsframe_header(self, packet_type, items) -> ByteString:
         payload_len = sum(len(item) for item in items)
-        header = encode_hybi_header(OPCODE_BINARY, payload_len, self.ws_mask)
+        header = encode_hybi_header(OPCODE.BINARY, payload_len, self.ws_mask)
         log("make_wsframe_header(%s, %i items) %i bytes, ws_mask=%s, header=0x%s (%i bytes)",
             packet_type, len(items), payload_len, self.ws_mask, hexstr(header), len(header))
         if self.ws_mask:
@@ -87,8 +84,8 @@ class WebSocketProtocol(SocketProtocol):
             opcode, payload, processed, fin = parsed
             ws_data = ws_data[processed:]
             log("parse_ws_frame(%i bytes) payload=%i bytes, processed=%i, remaining=%i, opcode=%s, fin=%s",
-                len(buf), len(payload), processed, len(ws_data), OPCODES.get(opcode, opcode), fin)
-            if opcode == OPCODE_CONTINUE:
+                len(buf), len(payload), processed, len(ws_data), OPCODE_STR.get(opcode, opcode), fin)
+            if opcode == OPCODE.CONTINUE:
                 assert self.ws_payload_opcode and self.ws_payload, "continuation frame does not follow a partial frame"
                 self.ws_payload.append(payload)
                 if not fin:
@@ -101,12 +98,12 @@ class WebSocketProtocol(SocketProtocol):
                 self.ws_payload_opcode = 0
             else:
                 if self.ws_payload and self.ws_payload_opcode:
-                    op = OPCODES.get(opcode, opcode)
+                    op = OPCODE_STR.get(opcode, opcode)
                     raise ValueError(f"expected a continuation frame not {op}")
                 full_payload = payload
                 if not fin:
-                    if opcode not in (OPCODE_BINARY, OPCODE_TEXT):
-                        op = OPCODES.get(opcode, opcode)
+                    if opcode not in (OPCODE.BINARY, OPCODE.TEXT):
+                        op = OPCODE_STR.get(opcode, opcode)
                         log(f"invalid opcode {opcode} from {buf}")
                         log(f"parsed as {parsed}")
                         raise RuntimeError(f"cannot handle fragmented {op} frames")
@@ -114,25 +111,25 @@ class WebSocketProtocol(SocketProtocol):
                     self.ws_payload_opcode = opcode
                     self.ws_payload.append(payload)
                     continue
-            if opcode == OPCODE_BINARY:
+            if opcode == OPCODE.BINARY:
                 self._read_queue_put(full_payload)
-            elif opcode == OPCODE_TEXT:
+            elif opcode == OPCODE.TEXT:
                 if first_time(f"ws-text-frame-from-{self._conn}"):
                     log.warn("Warning: handling text websocket frame as binary")
                 self._read_queue_put(full_payload)
-            elif opcode == OPCODE_CLOSE:
+            elif opcode == OPCODE.CLOSE:
                 self._process_ws_close(full_payload)
-            elif opcode == OPCODE_PING:
+            elif opcode == OPCODE.PING:
                 self._process_ws_ping(full_payload)
-            elif opcode == OPCODE_PONG:
+            elif opcode == OPCODE.PONG:
                 self._process_ws_pong(full_payload)
             else:
-                log.warn("Warning unhandled websocket opcode '%s'", OPCODES.get(opcode, f"{opcode:x}"))
+                log.warn("Warning unhandled websocket opcode '%s'", OPCODE_STR.get(opcode, f"{opcode:x}"))
                 log("payload=%r", payload)
 
     def _process_ws_ping(self, payload: ByteString) -> None:
         log("_process_ws_ping(%r)", payload)
-        item = encode_hybi_header(OPCODE_PONG, len(payload)) + memoryview_to_bytes(payload)
+        item = encode_hybi_header(OPCODE.PONG, len(payload)) + memoryview_to_bytes(payload)
         items = (item,)
         with self._write_lock:
             self.raw_write("ws-ping", items)
