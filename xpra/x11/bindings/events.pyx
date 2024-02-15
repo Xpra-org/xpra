@@ -35,6 +35,8 @@ from libc.stdint cimport uintptr_t
 DEF XNone = 0
 
 cdef extern from "X11/Xlib.h":
+    int NotifyNormal
+
     int BadWindow
     int MapRequest
     int ConfigureRequest
@@ -540,7 +542,7 @@ cdef parse_xevent(Display *d, XEvent *e):
         pyev.override_redirect = bool(e.xmap.override_redirect)
     elif etype == UnmapNotify:
         pyev.window = e.xunmap.window
-        pyev.from_configure = e.xunmap.from_configure
+        pyev.from_configure = bool(e.xunmap.from_configure)
     elif etype == DestroyNotify:
         pyev.window = e.xdestroywindow.window
     elif etype == PropertyNotify:
@@ -555,7 +557,7 @@ cdef parse_xevent(Display *d, XEvent *e):
         pyev.height = e.xconfigure.height
         pyev.border_width = e.xconfigure.border_width
         pyev.above = e.xconfigure.above
-        pyev.override_redirect = e.xconfigure.override_redirect
+        pyev.override_redirect = bool(e.xconfigure.override_redirect)
     elif etype == CirculateNotify:
         pyev.window = e.xcirculaterequest.window
         pyev.place = e.xcirculaterequest.place
@@ -580,7 +582,7 @@ cdef parse_xevent(Display *d, XEvent *e):
         pyev.x_root = e.xmotion.x_root
         pyev.y_root = e.xmotion.y_root
         pyev.state = e.xmotion.state
-        pyev.is_hint = e.xmotion.is_hint
+        pyev.is_hint = e.xmotion.is_hint != NotifyNormal
         #pyev.same_screen = bool(e.xmotion.same_screen)
     elif etype == ShapeNotify:
         shape_e = <XShapeEvent*> e
@@ -590,7 +592,7 @@ cdef parse_xevent(Display *d, XEvent *e):
         pyev.y = shape_e.y
         pyev.width = shape_e.width
         pyev.height = shape_e.height
-        pyev.shaped = shape_e.shaped
+        pyev.shaped = bool(shape_e.shaped)
     elif etype == XKBNotify:
         # note we could just cast directly to XkbBellNotifyEvent
         # but this would be dirty, and we may want to catch
