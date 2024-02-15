@@ -151,16 +151,11 @@ constants = {
     "Button1"           : Button1,
     "Button2"           : Button2,
     "Button3"           : Button3,
-    "NoEventMask"       : NoEventMask,
     "SelectionNotify"   : SelectionNotify,
     "ConfigureNotify"   : ConfigureNotify,
-    "StructureNotifyMask" : StructureNotifyMask,
     "CWBorderWidth"     : CWBorderWidth,
     "CWSibling"         : CWSibling,
     "CWStackMode"       : CWStackMode,
-    "SubstructureNotifyMask"   : SubstructureNotifyMask,
-    "SubstructureRedirectMask" : SubstructureRedirectMask,
-    "FocusChangeMask"   : FocusChangeMask,
     "AnyPropertyType"   : AnyPropertyType,
     "Success"           : Success,
     "PropModeReplace"   : PropModeReplace,
@@ -198,7 +193,51 @@ constants = {
     "NotifyPointer"     : NotifyPointer,
     "NotifyPointerRoot" : NotifyPointerRoot,
     "NotifyDetailNone"  : NotifyDetailNone,
+
+    "NoEventMask"       : NoEventMask,
+    "StructureNotifyMask" : StructureNotifyMask,
+    "SubstructureNotifyMask"   : SubstructureNotifyMask,
+    "SubstructureRedirectMask" : SubstructureRedirectMask,
+    "FocusChangeMask"   : FocusChangeMask,
+    "KeyPressMask"      : KeyPressMask,
+    "KeyReleaseMask"    : KeyReleaseMask,
+    "ButtonPress"       : ButtonPressMask,
+    "ButtonReleaseMask" : ButtonReleaseMask,
+    "EnterWindowMask"   : EnterWindowMask,
+    "LeaveWindowMask"   : LeaveWindowMask,
+    "PointerMotionMask" : PointerMotionMask,
+    "PointerMotionHintMask": PointerMotionHintMask,
+    "Button1MotionMask" : Button1MotionMask,
+    "Button2MotionMask" : Button2MotionMask,
+    "Button3MotionMask" : Button3MotionMask,
+    "Button4MotionMask" : Button4MotionMask,
+    "Button5MotionMask" : Button5MotionMask,
+    "ButtonMotionMask"  : ButtonMotionMask,
+    "KeymapStateMask"   : KeymapStateMask,
+    "ExposureMask"      : ExposureMask,
+    "VisibilityChangeMask": VisibilityChangeMask,
+    "StructureNotifyMask": StructureNotifyMask,
+    "ResizeRedirectMask": ResizeRedirectMask,
+    "SubstructureNotifyMask": SubstructureNotifyMask,
+    "SubstructureRedirectMask": SubstructureRedirectMask,
+    "FocusChangeMask"   : FocusChangeMask,
+    "PropertyChangeMask": PropertyChangeMask,
+    "ColormapChangeMask": ColormapChangeMask,
+    "OwnerGrabButtonMask": OwnerGrabButtonMask,
 }
+
+MASKS = {}
+for name, constant in constants.items():
+    if name.endswith("Mask") and constant>0:
+        MASKS[constant] = name[:-4]
+
+
+def get_mask_strs(int mask):
+    masks = []
+    for constant, name in MASKS.items():
+        if mask & constant:
+            masks.append(name)
+    return masks
 
 
 ###################################
@@ -962,6 +1001,12 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     def MoveWindow(self, Window xwindow, int x, int y):
         self.context_check("MoveWindow")
         return bool(XMoveWindow(self.display, xwindow, x, y))
+
+    def get_event_mask_strs(self, Window xwindow):
+        self.context_check("get_event_mask_strs")
+        cdef XWindowAttributes curr
+        XGetWindowAttributes(self.display, xwindow, &curr)
+        return get_mask_strs(curr.your_event_mask)
 
     def addDefaultEvents(self, Window xwindow):
         self.context_check("addDefaultEvents")
