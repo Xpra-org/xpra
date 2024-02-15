@@ -759,6 +759,7 @@ def _do_run_server(script_file:str, cmdline,
 
     has_child_arg = (
             opts.start_child or
+            opts.start_child_late or
             opts.start_child_on_connect or
             opts.start_child_after_connect or
             opts.start_child_on_last_client_exit
