@@ -968,12 +968,11 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         ADDMASK = StructureNotifyMask | PropertyChangeMask | FocusChangeMask | PointerMotionMask | PointerMotionHintMask | ButtonMotionMask
         self.addXSelectInput(xwindow, ADDMASK)
 
-    def addXSelectInput(self, Window xwindow, add_mask):
+    def addXSelectInput(self, Window xwindow, long add_mask):
         self.context_check("addXSelectInput")
         cdef XWindowAttributes curr
         XGetWindowAttributes(self.display, xwindow, &curr)
-        mask = curr.your_event_mask
-        mask = mask | add_mask
+        cdef long mask = curr.your_event_mask | add_mask
         XSelectInput(self.display, xwindow, mask)
 
     def substructureRedirect(self, Window xwindow):
