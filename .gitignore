@@ -133,6 +133,7 @@ tests/unittests/test-file*
 /xpra/net/*.c
 /xpra/notifications/*.c
 /xpra/platform/*/*.c
+/xpra/platform/*/*.cpp
 /xpra/platform/*.c
 /xpra/scripts/*.c
 /xpra/server/*/*.c
