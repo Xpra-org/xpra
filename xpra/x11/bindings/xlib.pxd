@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -25,11 +25,13 @@ ctypedef CARD32 VisualID
 ctypedef CARD32 Time
 ctypedef XID KeySym
 
+
 cdef extern from "X11/X.h":
     unsigned long NoSymbol
     unsigned long AnyPropertyType
     unsigned int PropModeReplace
     unsigned int PropertyNotify
+
 
 cdef extern from "X11/Xutil.h":
     ctypedef struct aspect:
@@ -55,6 +57,7 @@ cdef extern from "X11/Xutil.h":
         int icon_x, icon_y          #initial position of icon
         Pixmap icon_mask            #pixmap to be used as mask for icon_pixmap
         XID window_group            #id of related window group
+
 
 cdef extern from "X11/Xlib.h":
     int CurrentTime
@@ -479,6 +482,7 @@ cdef extern from "X11/Xlib.h":
         Bool override_redirect
     ctypedef struct XUnmapEvent:
         Window window
+        Bool from_configure
     ctypedef struct XDestroyWindowEvent:
         Window window
     ctypedef struct XPropertyEvent:
@@ -486,7 +490,8 @@ cdef extern from "X11/Xlib.h":
         Atom atom
         Time time
     ctypedef struct XKeyEvent:
-        unsigned int keycode, state
+        unsigned int state
+        unsigned int keycode
 
     ctypedef union XEvent:
         int type

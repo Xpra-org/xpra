@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -16,7 +16,7 @@ class Unmanageable(Exception):
     pass
 
 
-REPR_FUNCTIONS : dict[type, Callable] = {}
+REPR_FUNCTIONS: dict[type, Callable] = {}
 
 
 # Just to make it easier to pass around and have a helpful debug logging.
@@ -30,8 +30,8 @@ class X11Event:
         for k, v in self.__dict__.items():
             if k in ("name", "display", "type"):
                 continue
-            if k in ("serial", "window", "delivered_to"):
-                d[k] = f"{v:x}"
+            if k in ("serial", "window", "delivered_to", "above", "below") and isinstance(v, int):
+                d[k] = hex(v)
             elif k == "send_event" and v is False:
                 continue
             else:
@@ -95,8 +95,8 @@ def get_icc_data() -> dict[str, Any]:
             log("get_icc_info() found _ICC_PROFILE_IN_X_VERSION=%s, _ICC_PROFILE=%s",
                 hexstr(version or ""), hexstr(data))
             icc |= {
-                "source"    : "_ICC_PROFILE",
-                "data"      : data,
+                "source": "_ICC_PROFILE",
+                "data": data,
             }
             if version:
                 try:
@@ -255,7 +255,7 @@ def get_xsettings():
 
 
 def xsettings_to_dict(v) -> dict[str, tuple[int, Any]]:
-    d : dict[str, tuple[int, Any]] = {}
+    d: dict[str, tuple[int, Any]] = {}
     if v:
         _, values = v
         for setting_type, prop_name, value, _ in values:
@@ -284,7 +284,7 @@ def get_xresources() -> dict[str, str] | None:
         if value is None:
             return None
         # parse the resources into a dict:
-        values : dict[str, str] = {}
+        values: dict[str, str] = {}
         options = bytestostr(value).split("\n")
         for option in options:
             if not option:

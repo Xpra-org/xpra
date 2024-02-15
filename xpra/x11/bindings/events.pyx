@@ -540,6 +540,7 @@ cdef parse_xevent(Display *d, XEvent *e):
         pyev.override_redirect = bool(e.xmap.override_redirect)
     elif etype == UnmapNotify:
         pyev.window = e.xunmap.window
+        pyev.from_configure = e.xunmap.from_configure
     elif etype == DestroyNotify:
         pyev.window = e.xdestroywindow.window
     elif etype == PropertyNotify:
@@ -554,6 +555,7 @@ cdef parse_xevent(Display *d, XEvent *e):
         pyev.height = e.xconfigure.height
         pyev.border_width = e.xconfigure.border_width
         pyev.above = e.xconfigure.above
+        pyev.override_redirect = e.xconfigure.override_redirect
     elif etype == CirculateNotify:
         pyev.window = e.xcirculaterequest.window
         pyev.place = e.xcirculaterequest.place
