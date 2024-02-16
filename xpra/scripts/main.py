@@ -1169,17 +1169,23 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
                 except Exception as e:
                     get_logger().debug(f"failed to connect using {sock.connect}({sockpath})", exc_info=True)
                     noerr(sock.close)
+                    sock = None
                     raise InitExit(ExitCode.CONNECTION_FAILED, f"failed to connect to {sockpath!r}:\n {e}") from None
-        sock.settimeout(None)
-        conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype)
-        conn.timeout = SOCKET_TIMEOUT
-        target = "socket://"
-        username = display_desc.get("username")
-        if username:
-            target += f"{username}@"
-        target += sockpath
-        conn.target = target
-        return conn
+        try:
+            sock.settimeout(None)
+            conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype)
+            conn.timeout = SOCKET_TIMEOUT
+            target = "socket://"
+            username = display_desc.get("username")
+            if username:
+                target += f"{username}@"
+            target += sockpath
+            conn.target = target
+            return conn
+        except OSError:
+            noerr(sock.close)
+            sock = None
+            raise
 
     if dtype == "named-pipe":  # pragma: no cover
         pipe_name = display_desc["named-pipe"]
@@ -1468,7 +1474,8 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
         try:
             log("do_setup_connection() display_desc=%s", display_desc)
             conn = connect_or_fail(display_desc, opts)
-            assert conn
+            if not conn:
+                raise RuntimeError("not connected")
             log("do_setup_connection() conn=%s", conn)
             # UGLY warning: connect_or_fail() will parse the display string,
             # which may change the username and password..
