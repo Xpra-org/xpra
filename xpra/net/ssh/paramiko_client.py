@@ -931,14 +931,14 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
         except SSHException as e:
             log("open_session", exc_info=True)
             raise InitExit(ExitCode.SSH_FAILURE, f"failed to open SSH session: {e}") from None
-        else:
-            agent_option = str((paramiko_config or {}).get("agent", SSH_AGENT)) or "no"
-            log(f"paramiko {agent_option=}")
-            if agent_option.lower() in TRUE_OPTIONS:
-                log.info("paramiko SSH agent forwarding enabled")
-                from paramiko.agent import AgentRequestHandler
-                AgentRequestHandler(chan)
-            log(f"channel exec_command({cmd!r})")
-            chan.exec_command(cmd)
-            return chan
+        agent_option = str((paramiko_config or {}).get("agent", SSH_AGENT)) or "no"
+        log(f"paramiko {agent_option=}")
+        if agent_option.lower() in TRUE_OPTIONS:
+            log.info("paramiko SSH agent forwarding enabled")
+            from paramiko.agent import AgentRequestHandler
+            AgentRequestHandler(chan)
+        log(f"channel exec_command({cmd!r})")
+        chan.exec_command(cmd)
+        log("exec_command sent, returning channel for service")
+        return chan
     raise RuntimeError("all SSH remote proxy commands have failed - is xpra installed on the remote host?")
