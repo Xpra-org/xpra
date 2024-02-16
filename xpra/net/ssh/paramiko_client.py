@@ -371,6 +371,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
     conn.target = host_target_string("ssh", username, host, port, display)
     conn.timeout = SOCKET_TIMEOUT
     conn.start_stderr_reader()
+    log(f"paramiko_client.connect_to({display_desc})={conn}")
     return conn
 
 
