@@ -138,7 +138,7 @@ def _etypestr(etype) -> str:
     return str(etype)
 
 
-def do_prop_decode(key, etype, data, ignore_errors=False):
+def do_prop_decode(key: str, etype, data, ignore_errors=False):
     try:
         with XSyncContext():
             return prop_decode(etype, data)

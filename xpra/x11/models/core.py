@@ -569,16 +569,16 @@ class CoreX11WindowModel(WindowModelStub):
             ignore_errors = True
         return prop_get(self.xid, key, ptype, ignore_errors=bool(ignore_errors), raise_xerrors=raise_xerrors)
 
-    def prop_del(self, key) -> None:
+    def prop_del(self, key: str) -> None:
         prop_del(self.xid, key)
 
-    def prop_set(self, key, ptype, value) -> None:
+    def prop_set(self, key: str, ptype, value) -> None:
         prop_set(self.xid, key, ptype, value)
 
-    def root_prop_get(self, key, ptype, ignore_errors=True) -> object:
+    def root_prop_get(self, key: str, ptype, ignore_errors=True) -> object:
         return prop_get(X11Window.get_root_xid(), key, ptype, ignore_errors=ignore_errors)
 
-    def root_prop_set(self, key, ptype, value) -> None:
+    def root_prop_set(self, key: str, ptype, value) -> None:
         prop_set(X11Window.get_root_xid(), key, ptype, value)
 
     def do_xpra_property_notify_event(self, event) -> None:

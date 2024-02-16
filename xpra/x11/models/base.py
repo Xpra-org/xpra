@@ -36,11 +36,13 @@ STATE_STRING: dict[int, str] = {
     _NET_WM_STATE_ADD: "ADD",
     _NET_WM_STATE_TOGGLE: "TOGGLE",
 }
-IconicState = constants["IconicState"]
-NormalState = constants["NormalState"]
-ICONIC_STATE_STRING: dict[int, str] = {
+WithdrawnState: int = constants["WithdrawnState"]
+IconicState: int = constants["IconicState"]
+NormalState: int = constants["NormalState"]
+WM_STATE_NAME: dict[int, str] = {
     IconicState: "Iconic",
     NormalState: "Normal",
+    WithdrawnState: "Withdrawn",
 }
 
 # add user-friendly workspace logging:
@@ -343,7 +345,7 @@ class BaseWindowModel(CoreX11WindowModel):
         with xlog:
             self.prop_set("_NET_WM_STATE", ["atom"], state)
 
-    def set_wm_state(self, state):
+    def set_wm_state(self, state: int):
         metalog("set_wm_state(%s)", state)
         with xlog:
             self.prop_set("WM_STATE", "state", state)
@@ -542,7 +544,7 @@ class BaseWindowModel(CoreX11WindowModel):
             self._internal_set_property("state", frozenset(curr))
             self._state_notify(added | removed)
 
-    def _state_notify(self, state_names: set) -> None:
+    def _state_notify(self, state_names: set[str]) -> None:
         notify_props = set()
         for x in state_names:
             if x in self._state_properties_reversed:
@@ -550,7 +552,7 @@ class BaseWindowModel(CoreX11WindowModel):
         for x in tuple(notify_props):
             self.notify(x)
 
-    def _state_isset(self, state_name) -> bool:
+    def _state_isset(self, state_name: str) -> bool:
         return state_name in self.get_property("state")
 
     def _read_wm_state(self) -> list[str]:
@@ -582,7 +584,7 @@ class BaseWindowModel(CoreX11WindowModel):
         else:
             self._state_update(remove=state_names)
 
-    def get_wm_state(self, prop) -> bool:
+    def get_wm_state(self, prop: str) -> bool:
         state_names = self._state_properties.get(prop)
         if not state_names:
             raise ValueError(f"invalid window state {prop}")
@@ -663,7 +665,7 @@ class BaseWindowModel(CoreX11WindowModel):
         if event.message_type == "WM_CHANGE_STATE":
             iconic = event.data[0]
             log("WM_CHANGE_STATE: %s, serial=%s, last unmap serial=%#x",
-                ICONIC_STATE_STRING.get(iconic, iconic), event.serial, self.last_unmap_serial)
+                WM_STATE_NAME.get(iconic, iconic), event.serial, self.last_unmap_serial)
             valid = iconic in (IconicState, NormalState)
             if valid and self.serial_after_last_unmap(event.serial) and not self.is_OR() and not self.is_tray():
                 self._updateprop("iconic", iconic == IconicState)

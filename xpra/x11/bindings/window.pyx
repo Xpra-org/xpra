@@ -122,6 +122,7 @@ cdef extern from "X11/Xlib.h":
     int IconMaskHint
     int WindowGroupHint
     int XUrgencyHint
+    int WithdrawnState
     int IconicState
     int NormalState
     int NotifyNormal
@@ -179,6 +180,7 @@ constants = {
     "IconMaskHint"      : IconMaskHint,
     "WindowGroupHint"   : WindowGroupHint,
     "XUrgencyHint"      : XUrgencyHint,
+    "WithdrawnState"    : WithdrawnState,
     "IconicState"       : IconicState,
     "NormalState"       : NormalState,
     "NotifyNormal"      : NotifyNormal,
