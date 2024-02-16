@@ -1994,10 +1994,6 @@ def get_start_new_session_dict(opts, mode, extra_args) -> dict[str, Any]:
     return sns
 
 
-def shellquote(s: str) -> str:
-    return '"' + s.replace('"', '\\"') + '"'
-
-
 def strip_defaults_start_child(start_child, defaults_start_child):
     if start_child and defaults_start_child:
         # ensure we don't pass start / start-child commands

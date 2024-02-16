@@ -7,10 +7,11 @@ import os
 import re
 import socket
 import sys
+import shlex
 from time import sleep, monotonic
 from typing import Any
 
-from xpra.scripts.main import InitException, InitExit, shellquote, host_target_string
+from xpra.scripts.main import InitException, InitExit, host_target_string
 from xpra.platform.paths import get_ssh_known_hosts_files
 from xpra.platform.info import get_username
 from xpra.scripts.config import parse_bool, TRUE_OPTIONS
@@ -183,11 +184,11 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
     if "proxy_host" in display_desc:
         display_desc.setdefault("proxy_username", get_username())
     password: str = display_desc.get("password", "")
-    remote_xpra = display_desc["remote_xpra"]
-    proxy_command = display_desc["proxy_command"]  # ie: "_proxy_start"
+    remote_xpra: list[str] = display_desc["remote_xpra"]
+    proxy_command: list[str] = display_desc["proxy_command"]  # ie: ["_proxy_start"]
     socket_dir: str = display_desc.get("socket_dir", "")
     display: str = display_desc.get("display", "")
-    display_as_args: list[str] = display_desc["display_as_args"]  # ie: "--start=xterm :10"
+    display_as_args: list[str] = display_desc["display_as_args"]  # ie: ["--start=xterm", ":10"]
     paramiko_config: dict = display_desc.copy()
     paramiko_config.update(display_desc.get("paramiko-config", {}))
     socket_info: dict[str, Any] = {
@@ -813,8 +814,8 @@ def run_test_command(transport, cmd: str) -> tuple[list[str], list[str], int]:
     return out, err, code
 
 
-def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
-                    socket_dir=None, display_as_args=None, paramiko_config=None):
+def run_remote_xpra(transport, xpra_proxy_command: list[str] = [], remote_xpra: list[str]=[],
+                    socket_dir="", display_as_args: list[str] = [], paramiko_config=None):
     log("run_remote_xpra%s", (transport, xpra_proxy_command, remote_xpra,
                               socket_dir, display_as_args, paramiko_config))
     from paramiko import SSHException
@@ -915,13 +916,12 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
             continue
         log(f"adding {xpra_cmd=!r}")
         tried.add(xpra_cmd)
-        cmd = '"' + xpra_cmd + '" ' + ' '.join(shellquote(x) for x in xpra_proxy_command)
+        cmd = [xpra_cmd] + xpra_proxy_command
         if socket_dir:
-            cmd += f" \"--socket-dir={socket_dir}\""
+            cmd.append(f"--socket-dir={socket_dir}")
         if display_as_args:
-            cmd += " "
-            cmd += " ".join(shellquote(x) for x in display_as_args)
-        log(f"cmd({xpra_proxy_command}, {display_as_args})={cmd}")
+            cmd += display_as_args
+        log(f"cmd({xpra_cmd}, {xpra_proxy_command}, {socket_dir}, {display_as_args})={cmd}")
 
         # see https://github.com/paramiko/paramiko/issues/175
         # WINDOW_SIZE = 2097152
@@ -938,8 +938,9 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
             log.info("paramiko SSH agent forwarding enabled")
             from paramiko.agent import AgentRequestHandler
             AgentRequestHandler(chan)
-        log(f"channel exec_command({cmd!r})")
-        chan.exec_command(cmd)
+        cmd_str = " ".join(shlex.quote(c) for c in cmd)
+        log(f"channel exec_command({cmd_str!r})")
+        chan.exec_command(cmd_str)
         log("exec_command sent, returning channel for service")
         return chan
     raise RuntimeError("all SSH remote proxy commands have failed - is xpra installed on the remote host?")

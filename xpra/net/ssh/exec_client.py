@@ -8,7 +8,7 @@ import os
 import shlex
 from subprocess import PIPE, Popen
 
-from xpra.scripts.main import InitException, InitExit, shellquote, host_target_string
+from xpra.scripts.main import InitException, InitExit, host_target_string
 from xpra.net.bytestreams import ConnectionClosedException
 from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode
@@ -79,7 +79,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
                 pc = [f'{check} command -v "{x}" > /dev/null 2>&1; then']
             else:
                 pc = [f'{check} [ -x {x} ]; then']
-            pc += [x] + proxy_command + [shellquote(x) for x in display_as_args]
+            pc += [x] + proxy_command + [shlex.quote(x) for x in display_as_args]
             if socket_dir:
                 pc.append(f"--socket-dir={socket_dir}")
             remote_cmd += " ".join(pc)+";"
