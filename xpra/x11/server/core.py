@@ -81,7 +81,7 @@ class XTestPointerDevice:
     def move_pointer(x: int, y: int, props=None) -> None:
         mouselog("xtest_fake_motion%s", (x, y, props))
         with xsync:
-            X11Keyboard.xtest_fake_motion(-1, x, y)
+            X11Keyboard.xtest_fake_motion(x, y)
 
     @staticmethod
     def click(button: int, pressed: bool, props) -> None:

@@ -32,6 +32,8 @@ from libc.stdlib cimport free, malloc
 DEF PATH_MAX = 1024
 DEF DFLT_XKB_RULES_FILE = b"base"
 
+DEF screen_number = 0
+
 ###################################
 # Headers, python magic
 ###################################
@@ -1026,11 +1028,11 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         self.context_check("xtest_fake_button")
         return XTestFakeButtonEvent(self.display, button, is_press, 0)
 
-    def xtest_fake_motion(self, int screen, int x, int y, int delay=0):
+    def xtest_fake_motion(self, int x, int y, int delay=0):
         if not self.hasXTest():
             return False
         self.context_check("xtest_fake_motion")
-        return XTestFakeMotionEvent(self.display, screen, x, y, delay)
+        return XTestFakeMotionEvent(self.display, screen_number, x, y, delay)
 
     def xtest_fake_relative_motion(self, int x, int y, int delay=0):
         if not self.hasXTest():

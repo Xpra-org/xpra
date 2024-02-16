@@ -46,6 +46,7 @@ log = Logger("x11", "bindings", "window")
 
 DEF XNone = 0
 
+DEF screen_number = 0
 
 cdef extern from "X11/Xlib.h":
     int CWX
@@ -463,7 +464,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         self.context_check("MapRaised")
         XMapRaised(self.display, xwindow)
 
-    def Withdraw(self, Window xwindow, int screen_number=0):
+    def Withdraw(self, Window xwindow):
         self.context_check("Withdraw")
         return XWithdrawWindow(self.display, xwindow, screen_number)
 
@@ -471,7 +472,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         self.context_check("Reparent")
         XReparentWindow(self.display, xwindow, xparent, x, y)
 
-    def Iconify(self, Window xwindow, int screen_number=0):
+    def Iconify(self, Window xwindow):
         self.context_check("Iconify")
         return XIconifyWindow(self.display, xwindow, screen_number)
 
