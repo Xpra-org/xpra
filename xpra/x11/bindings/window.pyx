@@ -46,6 +46,8 @@ log = Logger("x11", "bindings", "window")
 
 DEF XNone = 0
 
+DEF isUnmapped = 0
+
 DEF screen_number = 0
 
 cdef extern from "X11/Xlib.h":
@@ -534,12 +536,15 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
 
     # Mapped status
     def is_mapped(self, Window xwindow):
-        self.context_check("is_mapped")
+        return self.get_map_state(xwindow) != IsUnmapped
+
+    def get_map_state(self, Window xwindow):
+        self.context_check("get_map_state")
         cdef XWindowAttributes attrs
         cdef Status status = XGetWindowAttributes(self.display, xwindow, &attrs)
         if status==0:
-            return False
-        return attrs.map_state != IsUnmapped
+            return isUnmapped
+        return attrs.map_state
 
     # Override-redirect status
     def is_override_redirect(self, Window xwindow):
