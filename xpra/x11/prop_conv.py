@@ -39,7 +39,10 @@ def unsupported(*_args):
     raise RuntimeError("unsupported")
 
 
-def _force_length(name, data, length, noerror_length=None):
+sizeof_long = struct.calcsize(b"@L")
+
+
+def _force_length(name: str, data, length: int, noerror_length: int = -1):
     if len(data) == length:
         return data
     if len(data) != noerror_length:
@@ -80,7 +83,6 @@ class MotifWMHints:
 
     def __init__(self, data):
         # some applications use the wrong size (ie: blender uses 16) so pad it:
-        sizeof_long = struct.calcsize(b"@L")
         pdata = _force_length("_MOTIF_WM_HINTS", data, sizeof_long*5, sizeof_long*4)
         self.flags, self.functions, self.decorations, self.input_mode, self.status = \
             struct.unpack(b"@LLLlL", pdata)
@@ -273,6 +275,15 @@ def _from_long(v: bytes) -> int:
     return struct.unpack(b"@L", v)[0]
 
 
+def _to_state(v: int) -> bytes:
+    return struct.pack(b"@LL", v, 0)
+
+
+def _from_state(v: bytes) -> int:
+    wm_state = _force_length("WM_STATE", v, sizeof_long*2, sizeof_long)
+    return struct.unpack(b"@LL", wm_state)[0]
+
+
 PROP_TYPES = {
     # Python type, X type Atom, formatbits, serializer, deserializer, list terminator
     "utf8": (str, "UTF8_STRING", 8, _to_utf8, _from_utf8, b"\0"),
@@ -280,7 +291,7 @@ PROP_TYPES = {
     # am not sufficiently clever to deal with COMPOUNT_TEXT.  Even knowing
     # that Xutf8TextPropertyToTextlist exists.
     "latin1": (str, "STRING", 8, _to_latin1, _from_latin1, b"\0"),
-    "state": (int, "WM_STATE", 32, _to_long, _from_long, b""),
+    "state": (int, "WM_STATE", 32, _to_state, _from_state, b""),
     "u32": (int, "CARDINAL", 32, _to_long, _from_long, b""),
     "integer": (int, "INTEGER", 32, _to_long, _from_long, b""),
     "strut": (NetWMStrut, "CARDINAL", 32, unsupported, NetWMStrut, None),
