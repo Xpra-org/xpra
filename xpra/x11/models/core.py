@@ -51,7 +51,9 @@ FORCE_QUIT = envbool("XPRA_FORCE_QUIT", True)
 XSHAPE = envbool("XPRA_XSHAPE", True)
 FRAME_EXTENTS = envbool("XPRA_FRAME_EXTENTS", True)
 OPAQUE_REGION = envbool("XPRA_OPAQUE_REGION", True)
-DELETE_DESTROY = envbool("XPRA_DELETE_DESTROY", True)
+DELETE_DESTROY = envbool("XPRA_DELETE_DESTROY", False)
+DELETE_KILL_PID = envbool("XPRA_DELETE_KILL_PID", True)
+DELETE_XKILL = envbool("XPRA_DELETE_XKILL", True)
 
 CurrentTime = constants["CurrentTime"]
 
@@ -885,7 +887,7 @@ class CoreX11WindowModel(WindowModelStub):
             return
         localhost = gethostname()
         log("force_quit() pid=%s, machine=%s, localhost=%s", pid, machine, localhost)
-        if pid and machine is not None and machine == localhost:
+        if DELETE_KILL_PID and pid and machine is not None and machine == localhost:
             if self._kill_count == 0:
                 # first time around: just send a SIGINT and hope for the best
                 try:
@@ -903,4 +905,5 @@ class CoreX11WindowModel(WindowModelStub):
                 self.XKill()
             self._kill_count += 1
             return
-        self.XKill()
+        if DELETE_XKILL:
+            self.XKill()
