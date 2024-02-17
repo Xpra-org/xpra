@@ -37,9 +37,6 @@ GLib = gi_import("GLib")
 
 X11Window = X11WindowBindings()
 
-IconicState: int = constants["IconicState"]
-NormalState: int = constants["NormalState"]
-
 CWX: int = constants["CWX"]
 CWY: int = constants["CWY"]
 CWWidth: int = constants["CWWidth"]
@@ -517,7 +514,9 @@ class WindowModel(BaseWindowModel):
         log(f"do_xpra_unmap_event({event}) corral_xid={self.corral_xid:x}")
         if not self.corral_xid or event.delivered_to == self.corral_xid:
             return
-        assert event.window == self.xid
+        if event.window != self.xid:
+            log.warn(f"Warning: unexpected unmap event for window {event.window:x}")
+            return
         # The client window got unmapped.  The question is, though, was that
         # because it was withdrawn/destroyed, or was it because we unmapped it
         # going into `IconicState`?
