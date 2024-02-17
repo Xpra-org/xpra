@@ -880,13 +880,12 @@ class CoreX11WindowModel(WindowModelStub):
             pid = self.get_property("wm-pid")
             if pid > 0:
                 log.warn(" _NET_WM_PID=%s", pid)
-            return
         if pid == os.getpid():
             log.warn("Warning: force_quit is refusing to kill ourselves!")
             return
         localhost = gethostname()
         log("force_quit() pid=%s, machine=%s, localhost=%s", pid, machine, localhost)
-        if machine is not None and machine == localhost:
+        if pid and machine is not None and machine == localhost:
             if self._kill_count == 0:
                 # first time around: just send a SIGINT and hope for the best
                 try:
