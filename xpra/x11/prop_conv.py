@@ -40,9 +40,9 @@ def unsupported(*_args):
 
 
 def _force_length(name, data, length, noerror_length=None):
-    if len(data)==length:
+    if len(data) == length:
         return data
-    if len(data)!=noerror_length:
+    if len(data) != noerror_length:
         log.warn("Odd-lengthed property %s: wanted %s bytes, got %s: %r"
                  % (name, length, len(data), data))
     # Zero-pad data
@@ -56,7 +56,7 @@ class NetWMStrut:
         # given a _NET_WM_STRUT instead of a _NET_WM_STRUT_PARTIAL, then it
         # will be only length 4 instead of 12, we just don't define the other values
         # and let the client deal with it appropriately
-        if len(data)==16:
+        if len(data) == 16:
             self.left, self.right, self.top, self.bottom = struct.unpack(b"@LLLL", data)
         else:
             data = _force_length("_NET_WM_STRUT or _NET_WM_STRUT_PARTIAL", data, 4 * 12)
@@ -166,11 +166,11 @@ class MotifWMHints:
         TEAROFF_WINDOW : "tearoff",
     }
 
-    def bits_to_strs(self, int_val, flag_bit, dict_str):
+    def bits_to_strs(self, int_val: int, flag_bit: int, dict_str: dict):
         if flag_bit and not self.flags & (2**flag_bit):
             # the bit is not set, ignore this attribute
             return ()
-        return tuple(v for k,v in dict_str.items() if int_val & (2**k))
+        return tuple(v for k, v in dict_str.items() if int_val & (2**k))
 
     def flags_strs(self):
         return self.bits_to_strs(self.flags,
@@ -199,11 +199,11 @@ class MotifWMHints:
 
     def __str__(self):
         attrs = {
-            "flags"         : self.flags_strs(),
-            "functions"     : self.functions_strs(),
-            "decorations"   : self.decorations_strs(),
-            "input_mode"    : self.input_strs(),
-            "status"        : self.status_strs(),
+            "flags": self.flags_strs(),
+            "functions": self.functions_strs(),
+            "decorations": self.decorations_strs(),
+            "input_mode": self.input_strs(),
+            "status": self.status_strs(),
         }
         return f"MotifWMHints({attrs})"
 
@@ -249,19 +249,19 @@ def NetWMIcons(data):
     return icons
 
 
-def _to_latin1(v:str) -> bytes:
+def _to_latin1(v: str) -> bytes:
     return v.encode("latin1")
 
 
-def _from_latin1(v:bytes) -> str:
+def _from_latin1(v: bytes) -> str:
     return v.decode("latin1")
 
 
-def _to_utf8(v:str) -> bytes:
+def _to_utf8(v: str) -> bytes:
     return v.encode("UTF-8")
 
 
-def _from_utf8(v:bytes) -> str:
+def _from_utf8(v: bytes) -> str:
     return v.decode("UTF-8")
 
 
@@ -269,13 +269,12 @@ def _to_long(v: int) -> bytes:
     return struct.pack(b"@L", v)
 
 
-def _from_long(v:bytes) -> int:
+def _from_long(v: bytes) -> int:
     return struct.unpack(b"@L", v)[0]
 
 
 PROP_TYPES = {
-    # Python type, X type Atom, formatbits, serializer, deserializer, list
-    # terminator
+    # Python type, X type Atom, formatbits, serializer, deserializer, list terminator
     "utf8": (str, "UTF8_STRING", 8, _to_utf8, _from_utf8, b"\0"),
     # In theory, there should be something clever about COMPOUND_TEXT here.  I
     # am not sufficiently clever to deal with COMPOUNT_TEXT.  Even knowing
@@ -302,13 +301,13 @@ def prop_encode(etype, value):
     return _prop_encode_scalar(etype, value)
 
 
-def _prop_encode_scalar(etype, value):
+def _prop_encode_scalar(etype: str, value):
     pytype, atom, formatbits, serialize = PROP_TYPES[etype][:4]
     assert isinstance(value, pytype), "value for atom %s is not a %s: %s" % (atom, pytype, type(value))
     return atom, formatbits, serialize(value)
 
 
-def _prop_encode_list(etype, value):
+def _prop_encode_list(etype: str, value):
     _, atom, formatbits, _, _, terminator = PROP_TYPES[etype]
     value = tuple(value)
     serialized = tuple(_prop_encode_scalar(etype, v)[2] for v in value)
@@ -317,26 +316,26 @@ def _prop_encode_list(etype, value):
     return atom, formatbits, terminator.join(x for x in serialized if x is not None)
 
 
-def prop_decode(etype, data):
+def prop_decode(etype: str, data):
     if isinstance(etype, (list, tuple)):
         return _prop_decode_list(etype[0], data)
     return _prop_decode_scalar(etype, data)
 
 
-def _prop_decode_scalar(etype, data):
+def _prop_decode_scalar(etype: str, data):
     pytype, _, _, _, deserialize, _ = PROP_TYPES[etype]
     value = deserialize(data)
     assert value is None or isinstance(value, pytype), "expected a %s but value is a %s" % (pytype, type(value))
     return value
 
 
-def _prop_decode_list(etype, data):
+def _prop_decode_list(etype: str, data):
     _, _, formatbits, _, _, terminator = PROP_TYPES[etype]
     if terminator:
         datums = data.split(terminator)
     else:
         datums = []
-        if formatbits==32:
+        if formatbits == 32:
             nbytes = struct.calcsize("@L")
         else:
             nbytes = formatbits // 8
