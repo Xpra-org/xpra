@@ -292,6 +292,8 @@ cdef extern from "X11/Xlib.h":
     Status XReconfigureWMWindow(Display * display, Window w, int screen_number,
                                 unsigned int value_mask, XWindowChanges *values)
     int XMoveResizeWindow(Display * display, Window w, int x, int y, int width, int height)
+    int XMoveWindow(Display * display, Window w, int x, int y)
+    int XResizeWindow(Display * display, Window w, int width, int height)
 
     Bool XTranslateCoordinates(Display * display,
                                Window src_w, Window dest_w,

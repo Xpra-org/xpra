@@ -22,12 +22,13 @@ from xpra.x11.bindings.xlib cimport (
     NextRequest, XSendEvent, XSelectInput, XAddToSaveSet, XRemoveFromSaveSet,
     XGetWindowAttributes, XGetWindowProperty, XDeleteProperty, XChangeProperty,
     XGetWMNormalHints, XSetWMNormalHints, XGetWMHints, XGetWMProtocols,
-    XGetGeometry, XTranslateCoordinates, XConfigureWindow, XMoveResizeWindow,
+    XGetGeometry, XTranslateCoordinates, XConfigureWindow,
+    XMoveResizeWindow, XResizeWindow, XMoveWindow,
     XGetInputFocus, XSetInputFocus,
     XAllocClassHint, XAllocSizeHints, XGetClassHint, XSetClassHint,
     XQueryTree,
     XKillClient,
-    )
+)
 from libc.stdlib cimport free, malloc       #pylint: disable=syntax-error
 from libc.string cimport memset
 
@@ -934,7 +935,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         changes.stack_mode = stack_mode
         XConfigureWindow(self.display, xwindow, value_mask, &changes)
 
-    def configureAndNotify(self, Window xwindow, x, y, width, height, fields=None):
+    def configure(self, Window xwindow, x, y, width, height, fields=None):
         # Reconfigure the window.  We have to use XConfigureWindow directly
         # instead of GdkWindow.resize, because GDK does not give us any way to
         # squash the border.
@@ -953,6 +954,9 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         # But we always unconditionally squash the border to zero.
         fields = fields | CWBorderWidth
         self.ConfigureWindow(xwindow, x, y, width, height, value_mask=fields)
+
+    def configureAndNotify(self, Window xwindow, x, y, width, height, fields=None):
+        self.configure(xwindow, x, y, width, height, fields)
         # Tell the client.
         self.sendConfigureNotify(xwindow)
 
@@ -960,6 +964,13 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         self.context_check("MoveResizeWindow")
         return bool(XMoveResizeWindow(self.display, xwindow, x, y, width, height))
 
+    def ResizeWindow(self, Window xwindow, int width, int height):
+        self.context_check("ResizeWindow")
+        return bool(XResizeWindow(self.display, xwindow, width, height))
+
+    def MoveWindow(self, Window xwindow, int x, int y):
+        self.context_check("MoveWindow")
+        return bool(XMoveWindow(self.display, xwindow, x, y))
 
     def addDefaultEvents(self, Window xwindow):
         self.context_check("addDefaultEvents")
