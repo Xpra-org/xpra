@@ -24,11 +24,12 @@ AUTHORIZED_KEYS_HASHES = os.environ.get("XPRA_AUTHORIZED_KEYS_HASHES", "md5,sha1
 
 
 class SSHServer(paramiko.ServerInterface):
-    def __init__(self, none_auth=False, pubkey_auth=True, password_auth=None):
+    def __init__(self, none_auth=False, pubkey_auth=True, password_auth=None, display_name=""):
         self.event = Event()
         self.none_auth = none_auth
         self.pubkey_auth = pubkey_auth
         self.password_auth = password_auth
+        self.display_name = display_name
         self.proxy_channel = None
 
     def get_allowed_auths(self, username):
@@ -236,9 +237,9 @@ class SSHServer(paramiko.ServerInterface):
         return False
 
 
-def make_ssh_server_connection(conn, none_auth=False, password_auth=None):
+def make_ssh_server_connection(conn, none_auth=False, password_auth=None, display_name=""):
     log("make_ssh_server_connection%s", (conn, none_auth, password_auth))
-    ssh_server = SSHServer(none_auth=none_auth, password_auth=password_auth)
+    ssh_server = SSHServer(none_auth=none_auth, password_auth=password_auth, display_name=display_name)
     DoGSSAPIKeyExchange = False
     sock = conn._socket
     t = None
