@@ -49,6 +49,7 @@ AUTO_REFRESH_SPEED = envint("XPRA_AUTO_REFRESH_SPEED", 50)
 
 INITIAL_QUALITY = envint("XPRA_INITIAL_QUALITY", 65)
 INITIAL_SPEED = envint("XPRA_INITIAL_SPEED", 40)
+TEXT_QUALITY = envint("XPRA_TEXT_QUALITY", 100)
 
 LOCKED_BATCH_DELAY = envint("XPRA_LOCKED_BATCH_DELAY", 1000)
 
@@ -1176,6 +1177,10 @@ class WindowSource(WindowIconSource):
         if quality>=0:
             self._current_quality = capr(quality)
             self._encoding_quality_info = {"hint" : True}
+            return
+        if self.content_type.find("text") >= 0:
+            self._current_quality = TEXT_QUALITY
+            self._encoding_quality_info = {"text-mode" : True}
             return
         quality = self._fixed_quality
         if quality>=0:

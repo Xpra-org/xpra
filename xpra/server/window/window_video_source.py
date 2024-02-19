@@ -15,7 +15,7 @@ from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
 from xpra.server.window.window_source import (
     WindowSource, DelayedRegions,
-    STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, MAX_RGB,
+    STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, MAX_RGB, TEXT_QUALITY,
     )
 from xpra.rectangle import rectangle, merge_all          #@UnresolvedImport
 from xpra.server.window.motion import ScrollData                    #@UnresolvedImport
@@ -1063,7 +1063,8 @@ class WindowVideoSource(WindowSource):
             if (self.encoding!="auto" and self.encoding not in self.common_video_encodings) or \
                 self.full_frames_only or STRICT_MODE or not self.non_video_encodings or not self.common_video_encodings or \
                 self.content_type=="text" or \
-                (self._mmap and self._mmap_size>0):
+                (self._mmap and self._mmap_size>0) or \
+                (self.content_type.find("text")>=0 and not TEXT_USE_VIDEO):
                 #cannot use video subregions
                 #FIXME: small race if a refresh timer is due when we change encoding - meh
                 vs.reset()
@@ -1417,6 +1418,9 @@ class WindowVideoSource(WindowSource):
             scaling = get_min_required_scaling(self.actual_scaling)
         elif self.statistics.damage_events_count<=50:
             #not enough data yet:
+            scaling = get_min_required_scaling()
+        elif self.content_type.find("text") >= 0 and TEXT_QUALITY > 90:
+            #never downscale text:
             scaling = get_min_required_scaling()
         else:
             #use heuristics to choose the best scaling ratio:
