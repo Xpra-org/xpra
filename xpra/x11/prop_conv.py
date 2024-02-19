@@ -40,6 +40,8 @@ InputHint       = constants["InputHint"]
 def unsupported(*_args):
     raise Exception("unsupported")
 
+sizeof_long = struct.calcsize(b"@L")
+
 def _force_length(name, data, length, noerror_length=None):
     if len(data)==length:
         return data
@@ -79,7 +81,6 @@ class NetWMStrut(object):
 class MotifWMHints(object):
     def __init__(self, _disp, data):
         #some applications use the wrong size (ie: blender uses 16) so pad it:
-        sizeof_long = struct.calcsize(b"@L")
         pdata = _force_length("_MOTIF_WM_HINTS", data, sizeof_long*5, sizeof_long*4)
         self.flags, self.functions, self.decorations, self.input_mode, self.status = \
             struct.unpack(b"@LLLlL", pdata)
@@ -252,6 +253,12 @@ def _to_utf8(_disp, v):
 def _from_utf8(_disp, v):
     return v.decode("UTF-8")
 
+def _to_state(v: int) -> bytes:
+    return struct.pack(b"@LL", v, 0)
+
+def _from_state(v: bytes) -> int:
+    wm_state = _force_length("WM_STATE", v, sizeof_long*2, sizeof_long)
+    return struct.unpack(b"@LL", wm_state)[0]
 
 
 PROP_TYPES = {
@@ -262,10 +269,7 @@ PROP_TYPES = {
     # am not sufficiently clever to deal with COMPOUNT_TEXT.  Even knowing
     # that Xutf8TextPropertyToTextList exists.
     "latin1": (unicode, "STRING", 8, _to_latin1, _from_latin1, b"\0"),
-    "state": ((int, long), "WM_STATE", 32,
-            lambda _disp, c: struct.pack(b"@L", c),
-            lambda _disp, d: struct.unpack(b"@L", d)[0],
-            b""),
+    "state": ((int, long), "WM_STATE", 32, _to_state, _from_state, b""),
     "u32": ((int, long), "CARDINAL", 32,
             lambda _disp, c: struct.pack(b"@L", c),
             lambda _disp, d: struct.unpack(b"@L", d)[0],
