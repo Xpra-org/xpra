@@ -33,6 +33,10 @@ DEFAULT_GRAVITY = envint("XPRA_DEFAULT_GRAVITY", 0)
 OVERRIDE_GRAVITY = envint("XPRA_OVERRIDE_GRAVITY", 0)
 
 
+def is_wm_property(name):
+    return name.startswith("_MOTIF") or name.startswith("WM_") or name.startswith("_NET_WM") or name.startswith("_GTK_")
+
+
 class ClientWindowBase(ClientWidgetBase):
 
     #(overriden in subclasses)
@@ -431,7 +435,8 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_command(metadata.strget("command"))
 
         if b"x11-property" in metadata:
-            self.set_x11_property(*metadata.listget("x11-property"))
+            if not is_wm_property(name):
+                self.set_x11_property(*metadata.listget("x11-property"))
 
 
     def set_x11_property(self, *x11_property):
