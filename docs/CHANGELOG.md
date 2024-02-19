@@ -1,7 +1,33 @@
 # Changelog
 
-## [5.0.6] 2024-02-08
-* TODO
+## [5.0.6] 2024-02-19
+* Major:
+    * [windows misplaced on screen, moving unexpectedly](https://github.com/Xpra-org/xpra/commit/bb25b6c8ac4195ab140d7772dba2b05cbe272791)
+    * [windows wm-state synchronization issue](https://github.com/Xpra-org/xpra/commit/479f8bea673058fc607d5428de8a80c1a0810dad)
+    * [lossy text due to downscaling](https://github.com/Xpra-org/xpra/commit/fc89e36c0b11bb9cc5cb7a28706787e66ee911fb), [faulty commit](https://github.com/Xpra-org/xpra/commit/1aaf6ca3a95390cf3a521b08b2298ded8f96026d)
+    * [X11 properties clash](https://github.com/Xpra-org/xpra/commit/53208fcd6ca5dc4c2951ad3f417a16e3abb87c80)
+    * [try harder to handle unexpected clipboard data formats](https://github.com/Xpra-org/xpra/commit/2e84b222886b75ebfd7eb813e4de8d2fea077943)
+    * [`run_scaled` and `attach=yes` errors in virtual envs](https://github.com/Xpra-org/xpra/commit/eda6327a6aee64e03c3be84374c3f4dc1f9e1459)
+* Platforms and packaging:
+    * [updated service file for DEB packages](https://github.com/Xpra-org/xpra/commit/915b2e699999e36e0120ed69fb6a3af413cfa64b)
+    * [remove duplicated systemd service and socket files in DEB packages](https://github.com/Xpra-org/xpra/commit/3692506a7288637e007933a6a234cfb179a18281)
+    * [enable OpenGL with Intel drivers](https://github.com/Xpra-org/xpra/commit/2a699ce0a51d762acaf6b12c20b4ee0498f0f9af)
+* Minor:
+    * [OpenGL error due to numpy import race condition](https://github.com/Xpra-org/xpra/commit/06bba8c7c179595bf15b1388dba915ef7f134649)
+    * [`start-child-late` cannot be used alone](https://github.com/Xpra-org/xpra/commit/3049d0b7e7e6be7d951f841eea851d5b4c7af32c)
+    * [builtin ssh server connection errors when display is specified](https://github.com/Xpra-org/xpra/commit/eb2d15e7e681478dca239e729e00d32c532880b1)
+    * [ssh upgrade errors when unavailable](https://github.com/Xpra-org/xpra/commit/7cd8a6363fa99aededdeaf9cddda068b6e179bba)
+    * [blacklist some more greedy clipboard applications](https://github.com/Xpra-org/xpra/commit/38b1b48b630fd748cde02810d8da139b1fb9d224)
+    * [pixel buffers we allocate are read-write](https://github.com/Xpra-org/xpra/commit/20007f166aec707cefc4e0492d4ee8830f6a4113)
+* Cosmetic:
+    * [OpenGL probe error messages](https://github.com/Xpra-org/xpra/commit/925d8a04cec82a780fe366760346c51a0cddab06)
+    * [Cython3 warnings](https://github.com/Xpra-org/xpra/commit/ca70ab859050a9b405382f35efd339d0105dadc2)
+    * [avoid mDNS errors, log message instead](https://github.com/Xpra-org/xpra/commit/933917d2f03dea31d680baa05b5096841e717f02)
+    * [use the expected data type](https://github.com/Xpra-org/xpra/commit/8843b7db531b1f018fa7de1038710937a71b9a0a)
+    * [remove unused device context](https://github.com/Xpra-org/xpra/commit/9656a14a46e323e5bf3b6cbf73532b02b5002d5a)
+    * [silence spurious messages sent by wine applications](https://github.com/Xpra-org/xpra/commit/962ad206d3efed56169883a4f06ce2fcf503e3ec)
+    * [gst-plugin-scanner packaging for MacOS](https://github.com/Xpra-org/xpra/commit/28c380c941b5b5da205acafe6b1e09bf574342f8)
+
 
 ## [5.0.5] 2024-02-05
 * Major:

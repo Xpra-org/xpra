@@ -769,7 +769,33 @@ fi
 
 %changelog
 * Thu Feb 08 2024 Antoine Martin <antoine@xpra.org> 5.0.6-10
-- TODO
+- Major:
+   windows misplaced on screen, moving unexpectedly
+   windows wm-state synchronization issue
+   lossy text due to downscaling
+   X11 properties clash
+   try harder to handle unexpected clipboard data formats
+   `run_scaled` and `attach=yes` errors in virtual envs
+- Platforms and packaging:
+   updated service file for DEB packages
+   remove duplicated systemd service and socket files in DEB packages
+   enable OpenGL with Intel drivers
+- Minor:
+   OpenGL error due to numpy import race condition
+   `start-child-late` cannot be used alone
+   builtin ssh server connection errors when display is specified
+   ssh upgrade errors when unavailable
+   blacklist some more greedy clipboard applications
+   pixel buffers we allocate are read-write
+- Cosmetic:
+   OpenGL probe error messages
+   Cython3 warnings
+   avoid mDNS errors, log message instead
+   use the expected data type
+   remove unused device context
+   silence spurious messages sent by wine applications
+   gst-plugin-scanner packaging for MacOS
+
 * Mon Feb 05 2024 Antoine Martin <antoine@xpra.org> 5.0.5-10
 - Major:
    race condition in OpenGL initialization
