@@ -284,6 +284,8 @@ cdef extern from "X11/Xlib.h":
     Status XReconfigureWMWindow(Display * display, Window w, int screen_number,
                                 unsigned int value_mask, XWindowChanges *values)
     int XMoveResizeWindow(Display * display, Window w, int x, int y, int width, int height)
+    int XMoveWindow(Display * display, Window w, int x, int y)
+    int XResizeWindow(Display * display, Window w, int width, int height)
 
     ctypedef struct XSetWindowAttributes:
         Pixmap background_pixmap            # background, None, or ParentRelative
@@ -1097,7 +1099,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         changes.stack_mode = stack_mode
         XConfigureWindow(self.display, xwindow, value_mask, &changes)
 
-    def configureAndNotify(self, Window xwindow, x, y, width, height, fields=None):
+    def configure(self, Window xwindow, x, y, width, height, fields=None):
         # Reconfigure the window.  We have to use XConfigureWindow directly
         # instead of GdkWindow.resize, because GDK does not give us any way to
         # squash the border.
@@ -1116,6 +1118,9 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         # But we always unconditionally squash the border to zero.
         fields = fields | CWBorderWidth
         self.ConfigureWindow(xwindow, x, y, width, height, value_mask=fields)
+
+    def configureAndNotify(self, Window xwindow, x, y, width, height, fields=None):
+        self.configure(xwindow, x, y, width, height, fields)
         # Tell the client.
         self.sendConfigureNotify(xwindow)
 

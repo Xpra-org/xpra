@@ -567,23 +567,26 @@ class WindowModel(BaseWindowModel):
         cx, cy, cw, ch = self.get_property("geometry")
         resized = cow!=w or coh!=h
         moved = x!=0 or y!=0
-        if resized:
-            if moved:
-                self._internal_set_property("set-initial-position", True)
-                geomlog("resize_corral_window() move and resize from %s to %s", (cox, coy, cow, coh), (x, y, w, h))
-                self.corral_window.move_resize(x, y, w, h)
-                self.client_window.move(0, 0)
-                self._updateprop("geometry", (x, y, w, h))
-            else:
-                geomlog("resize_corral_window() resize from %s to %s", (cow, coh), (w, h))
-                self.corral_window.resize(w, h)
-                self._updateprop("geometry", (cx, cy, w, h))
-        elif moved:
+        if not (moved or resized):
+            return
+        if moved:
             self._internal_set_property("set-initial-position", True)
-            geomlog("resize_corral_window() moving corral window from %s to %s", (cox, coy), (x, y))
+            self._internal_set_property("requested-position", (x, y))
+        if resized:
+            self._internal_set_property("requested-size", (w, h))
+        if moved and resized:
+            self.corral_window.move_resize(x, y, w, h)
+            self.client_window.move(0, 0)
+        elif moved:
+            # ICCCM 4.2.3
             self.corral_window.move(x, y)
             self.client_window.move(0, 0)
-            self._updateprop("geometry", (x, y, cw, ch))
+            self.send_configure_notify()
+        elif resized:
+            self.corral_window.resize(w, h)
+            x = cx
+            y = cy
+        self._updateprop("geometry", (x, y, w, h))
 
     def do_child_configure_request_event(self, event):
         cxid = get_xwindow(self.corral_window)
@@ -594,6 +597,7 @@ class WindowModel(BaseWindowModel):
             geomlog(" restack above=%s, detail=%s", event.above, event.detail)
         # Also potentially update our record of what the app has requested:
         ogeom = self.get_property("geometry")
+        ox, oy, ow, oh = ogeom[:4]
         x, y, w, h = ogeom[:4]
         rx, ry = self.get_property("requested-position")
         if event.value_mask & CWX:
@@ -620,12 +624,26 @@ class WindowModel(BaseWindowModel):
             w, h = self.calc_constrained_size(w, h, hints)
         #update the geometry now, as another request may come in
         #before we've had a chance to process the ConfigureNotify that the code below will generate
-        self._updateprop("geometry", (x, y, w, h))
-        geomlog("do_child_configure_request_event updated requested geometry from %s to  %s", ogeom, (x, y, w, h))
-        # As per ICCCM 4.1.5, even if we ignore the request
-        # send back a synthetic ConfigureNotify telling the client that nothing has happened.
-        with xswallow:
-            X11Window.configureAndNotify(self.xid, x, y, w, h, event.value_mask)
+        if not self._updateprop("geometry", (x, y, w, h)):
+            # As per ICCCM 4.1.5, even if we ignore the request
+            # send back a synthetic ConfigureNotify telling the client that nothing has happened.
+            geomlog("geometry unchanged: %s", (x, y, w, h))
+            with xlog:
+                X11Window.sendConfigureNotify(self.xid)
+            return
+        geomlog("do_child_configure_request_event updated requested geometry from %s to %s",
+                (ox, oy, ow, oh), (x, y, w, h))
+        mask = 0
+        if ox != x:
+            mask |= CWX
+        if oy != y:
+            mask |= CWY
+        if ow != w:
+            mask |= CWWidth
+        if oh != h:
+            mask |= CWHeight
+        with xlog:
+            X11Window.configure(self.xid, x, y, w, h, mask)
         # FIXME: consider handling attempts to change stacking order here.
         # (In particular, I believe that a request to jump to the top is
         # meaningful and should perhaps even be respected.)
