@@ -8,7 +8,7 @@
 import sys
 import logging
 
-from xpra.util import envbool, envint, csv
+from xpra.util import envbool, envint, csv, numpy_import_lock
 from xpra.os_util import POSIX, OSX, WIN32, PYTHON3, bytestostr
 from xpra.log import Logger, CaptureHandler
 from xpra.client.gl.gl_drivers import WHITELIST, GREYLIST, VERSION_REQ, BLACKLIST, OpenGLFatalError
@@ -106,6 +106,10 @@ def get_max_texture_size():
         log("Texture size GL_MAX_RECTANGLE_TEXTURE_SIZE=%s", rect_texture_size)
     return int(min(rect_texture_size, texture_size))
 
+
+def check_PyOpenGL_support(force_enable):
+    with numpy_import_lock:
+        return do_check_PyOpenGL_support(force_enable)
 
 def check_PyOpenGL_support(force_enable):
     props = {}
