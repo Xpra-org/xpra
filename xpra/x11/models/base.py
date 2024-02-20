@@ -11,6 +11,7 @@ from xpra.util import WORKSPACE_UNSET, WORKSPACE_ALL, first_time
 from xpra.x11.models.core import CoreX11WindowModel, xswallow, Above, RESTACKING_STR
 from xpra.x11.bindings.window import X11WindowBindings, constants      #@UnresolvedImport
 from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties
+from xpra.server.background_worker import add_work_item
 from xpra.x11.gtk3.gdk_bindings import get_pywindow, get_pyatom              #@UnresolvedImport
 from xpra.log import Logger
 
@@ -395,16 +396,24 @@ class BaseWindowModel(CoreX11WindowModel):
         self._update_content_type()
 
     def _update_content_type(self) -> None:
-        #watch for changes to properties that are used to derive the content-type:
-        content_type = self.prop_get("_XPRA_CONTENT_TYPE", "latin1", True)
-        #the _XPRA_CONTENT_TYPE property takes precedence
+        # watch for changes to properties that are used to derive the content-type:
+        content_type = self.prop_get("_XPRA_CONTENT_TYPE", "latin1", True) or ""
+        # the _XPRA_CONTENT_TYPE property takes precedence
         if not content_type:
-            content_type = guess_content_type(self)
-            if not content_type and self.is_tray():
-                content_type = "picture"
+            # guess_content_type can take a while as it will load the xdg menu data
+            # so call it as a work item.
+            # multiple callers can be added to the sequential work queue,
+            # the menu loader also has a lock.
+            add_work_item(self.guess_content_type)
         metalog("_update_content_type() %s", content_type)
         self._updateprop("content-type", content_type)
 
+    def guess_content_type(self) -> None:
+        content_type = guess_content_type(self)
+        if not content_type and self.is_tray():
+            content_type = "picture"
+        metalog(f"guess_content_type() {content_type=}")
+        self._updateprop("content-type", content_type)
 
     def _handle_xpra_quality_change(self) -> None:
         quality = self.prop_get("_XPRA_QUALITY", "u32", True) or -1
