@@ -164,9 +164,9 @@ class MenuProvider:
         if self.load_lock.acquire(wait):  # pylint: disable=consider-using-with
             menu_data = self.menu_data
             try:
-                if self.menu_data is None or force_reload:
+                if menu_data is None or force_reload:
                     from xpra.platform.menu_helper import load_menu  #pylint: disable=import-outside-toplevel
-                    self.menu_data = load_menu()
+                    menu_data = self.menu_data = load_menu()
                     add_work_item(self.got_menu_data)
             finally:
                 self.load_lock.release()
