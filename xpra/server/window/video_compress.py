@@ -1455,12 +1455,13 @@ class WindowVideoSource(WindowSource):
                     max_h = min(encoder_spec.max_h, vmh)
                     if (csc_spec and csc_spec.can_scale) or encoder_spec.can_scale:
                         scaling = self.calculate_scaling(width, height, max_w, max_h)
-                        if scaling != (1, 1) and text_hint:
-                            continue
                     else:
                         scaling = (1, 1)
+                    lossy_csc = enc_in_format in ("NV12", "YUV420P", "YUV422P")
+                    if text_hint and (scaling != (1, 1) or lossy_csc):
+                        continue
                     score_delta = encoding_score_delta
-                    if self.is_shadow and enc_in_format in ("NV12", "YUV420P", "YUV422P") and scaling == (1, 1):
+                    if self.is_shadow and enc_in_format in lossy_csc and scaling == (1, 1):
                         # avoid subsampling with shadow servers:
                         score_delta -= 40
                     vs = self.video_subregion
