@@ -1396,7 +1396,11 @@ class WindowVideoSource(WindowSource):
                 scorelog("raising quality for video encoding of non-video region")
         scorelog("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)",
                  (encodings, width, height, src_format), target_s, min_s, target_q, min_q)
-        vmw, vmh = self.video_max_size
+        text_hint = self.content_type.find("text") >= 0
+        if text_hint:
+            vmw = vmh = 16384
+        else:
+            vmw, vmh = self.video_max_size
         ffps = self.get_video_fps(width, height)
         scores = []
         for encoding in encodings:
@@ -1436,6 +1440,8 @@ class WindowVideoSource(WindowSource):
                     max_h = min(encoder_spec.max_h, vmh)
                     if (csc_spec and csc_spec.can_scale) or encoder_spec.can_scale:
                         scaling = self.calculate_scaling(width, height, max_w, max_h)
+                        if scaling != (1, 1) and text_hint:
+                            continue
                     else:
                         scaling = (1, 1)
                     score_delta = encoding_score_delta
