@@ -1274,7 +1274,11 @@ class WindowVideoSource(WindowSource):
                 scorelog("raising quality for video encoding of non-video region")
         scorelog("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)",
                  (encodings, width, height, src_format), target_s, min_s, target_q, min_q)
-        vmw, vmh = self.video_max_size
+        text_hint = self.content_type.find("text") >= 0
+        if text_hint:
+            vmw = vmh = 16384
+        else:
+            vmw, vmh = self.video_max_size
         ffps = self.get_video_fps(width, height)
         scores = []
         for encoding in encodings:
@@ -1306,8 +1310,11 @@ class WindowVideoSource(WindowSource):
                     max_w = min(encoder_spec.max_w, vmw)
                     max_h = min(encoder_spec.max_h, vmh)
                     scaling = self.calculate_scaling(width, height, max_w, max_h)
+                    lossy_csc = enc_in_format in ("NV12", "YUV420P", "YUV422P")
+                    if text_hint and (scaling != (1, 1) or lossy_csc):
+                        continue
                     score_delta = encoding_score_delta
-                    if self.is_shadow and enc_in_format in ("YUV420P", "YUV422P") and scaling==(1, 1):
+                    if self.is_shadow and lossy and scaling==(1, 1):
                         #avoid subsampling with shadow servers:
                         score_delta -= 40
                     vs = self.video_subregion
