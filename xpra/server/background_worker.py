@@ -92,7 +92,7 @@ def get_worker(create: bool = True) -> Worker_Thread | None:
     return singleton
 
 
-def add_work_item(item, allow_duplicates: bool = False, daemon: bool = True) -> None:
+def add_work_item(item: Callable, allow_duplicates: bool = False, daemon: bool = True) -> None:
     w = get_worker(True)
     log("add_work_item(%s, %s, %s) worker=%s", item, allow_duplicates, daemon, w)
     assert w is not None
@@ -138,6 +138,6 @@ def quit_worker(callback: Callable) -> None:
                     pass
         callback()
 
-    GLib = gi_import("GLib")
-    GLib.timeout_add(250, quit_timer)
+    glib = gi_import("GLib")
+    glib.timeout_add(250, quit_timer)
     log("clean_quit(..) quit timer scheduled, worker=%s", w)
