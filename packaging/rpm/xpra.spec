@@ -768,11 +768,11 @@ fi
 
 
 %changelog
-* Thu Feb 08 2024 Antoine Martin <antoine@xpra.org> 5.0.6-10
+* Tue Feb 20 2024 Antoine Martin <antoine@xpra.org> 5.0.6-10
 - Major:
    windows misplaced on screen, moving unexpectedly
    windows wm-state synchronization issue
-   lossy text due to downscaling
+   blurry text due to downscaling, faulty commit, video size constraints, colorspace subsampling
    X11 properties clash
    try harder to handle unexpected clipboard data formats
    `run_scaled` and `attach=yes` errors in virtual envs

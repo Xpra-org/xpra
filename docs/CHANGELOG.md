@@ -1,10 +1,10 @@
 # Changelog
 
-## [5.0.6] 2024-02-19
+## [5.0.6] 2024-02-20
 * Major:
     * [windows misplaced on screen, moving unexpectedly](https://github.com/Xpra-org/xpra/commit/bb25b6c8ac4195ab140d7772dba2b05cbe272791)
     * [windows wm-state synchronization issue](https://github.com/Xpra-org/xpra/commit/479f8bea673058fc607d5428de8a80c1a0810dad)
-    * [lossy text due to downscaling](https://github.com/Xpra-org/xpra/commit/fc89e36c0b11bb9cc5cb7a28706787e66ee911fb), [faulty commit](https://github.com/Xpra-org/xpra/commit/1aaf6ca3a95390cf3a521b08b2298ded8f96026d)
+    * [blurry text due to downscaling](https://github.com/Xpra-org/xpra/commit/fc89e36c0b11bb9cc5cb7a28706787e66ee911fb), [faulty commit](https://github.com/Xpra-org/xpra/commit/1aaf6ca3a95390cf3a521b08b2298ded8f96026d), [video size constraints](https://github.com/Xpra-org/xpra/commit/1c532fa30582276ac03f8bea51727446cda47d72), [colorspace subsampling](https://github.com/Xpra-org/xpra/commit/142df20cbc0e0d3eca8c53eb1d96d89b9c8f1b3a)
     * [X11 properties clash](https://github.com/Xpra-org/xpra/commit/53208fcd6ca5dc4c2951ad3f417a16e3abb87c80)
     * [try harder to handle unexpected clipboard data formats](https://github.com/Xpra-org/xpra/commit/2e84b222886b75ebfd7eb813e4de8d2fea077943)
     * [`run_scaled` and `attach=yes` errors in virtual envs](https://github.com/Xpra-org/xpra/commit/eda6327a6aee64e03c3be84374c3f4dc1f9e1459)

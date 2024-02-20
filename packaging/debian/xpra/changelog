@@ -2,7 +2,7 @@ xpra (5.0.6-1) UNRELEASED; urgency=low
   * Major:
    - windows misplaced on screen, moving unexpectedly
    - windows wm-state synchronization issue
-   - lossy text due to downscaling
+   - blurry text due to downscaling, faulty commit, video size constraints, colorspace subsampling
    - X11 properties clash
    - try harder to handle unexpected clipboard data formats
    - `run_scaled` and `attach=yes` errors in virtual envs
@@ -26,7 +26,7 @@ xpra (5.0.6-1) UNRELEASED; urgency=low
    - silence spurious messages sent by wine applications
    - gst-plugin-scanner packaging for MacOS
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 19 Feb 2024 22:39:04 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 20 Feb 2024 15:59:49 +0700
 
 xpra (5.0.5-1) UNRELEASED; urgency=low
   * Major:
