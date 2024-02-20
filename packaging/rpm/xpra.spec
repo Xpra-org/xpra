@@ -773,6 +773,8 @@ fi
    windows misplaced on screen, moving unexpectedly
    windows wm-state synchronization issue
    blurry text due to downscaling, faulty commit, video size constraints, colorspace subsampling
+   window model setup delays
+   empty menu data
    X11 properties clash
    try harder to handle unexpected clipboard data formats
    `run_scaled` and `attach=yes` errors in virtual envs
