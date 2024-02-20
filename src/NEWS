@@ -1,9 +1,10 @@
-v3.1.7 (2024-01-08)
+v3.1.7 (2024-02-20)
 	-- major fixes:
 		- windows misplaced on screen, moving unexpectedly
 		- windows wm-state synchronization issue
 		- window geometry not updated or preserved
-		- lossy or downscaled text screen updates
+		- window model setup delays
+		- lossy, downscaled or subsampled text screen updates
 		- X11 properties clash
 		- http socket upgrades for slow requests
 		- size constraint calculation for max size
@@ -41,6 +42,7 @@ v3.1.7 (2024-01-08)
 		- ssh upgrade errors when unavailable
 		- blacklist some more greedy clipboard applications
 		- rfb cleanup errors
+		- better rencode compatibility for XSettings
 	-- cosmetic:
 		- avoid mDNS errors, log message instead
 		- Python 3.12 SyntaxWarning

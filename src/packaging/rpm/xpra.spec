@@ -917,19 +917,57 @@ fi
 
 
 %changelog
-* Mon Jan 08 2024 Antoine Martin <antoine@xpra.org> 3.1.7-10.1xpra1
+* Tue Feb 20 2024 Antoine Martin <antoine@xpra.org> 3.1.7-10.1xpra1
 - major fixes:
-    http socket upgrades for slow requests
-    size constraint calculation for max size
-    workaround paramiko error with some agent keys
+     windows misplaced on screen, moving unexpectedly
+     windows wm-state synchronization issue
+     window geometry not updated or preserved
+     window model setup delays
+     lossy, downscaled or subsampled text screen updates
+     X11 properties clash
+     http socket upgrades for slow requests
+     size constraint calculation for max size
+     workaround paramiko error with some agent keys
+     `run_scaled` and `attach=yes` errors in virtual envs
+     XImage pixel buffers are read-only
+     python buffers wrongly allowing writes
+- clipboard:
+     honour client specified order of clipboard preferred targets
+     try harder to handle unexpected clipboard data formats
+     allow 'text/html' clipboard transfers
+- OpenGL:
+     numpy race condition in OpenGL initialization
+     OpenGL probe error messages
+- system tray:
+     appindicator system tray not shown
+     shadow servers system tray missing, errors showing 'about' information
+     try harder to find an icon to use
 - build, packaging and platforms:
-    make it easier to build DEBs
-    pycuda 2020.1 patch for compatibility between RHEL 8 and newer CUDA SDKs
-    always build python rencode and python lz4 for RHEL 9
-    newer libyuv snapshot
-    Cython 0.29.37.1 / 3.0.7
+     make it easier to build DEBs
+     pycuda 2020.1 patch for compatibility between RHEL 8 and newer CUDA SDKs
+     build CUDA kernels with clang
+     always build python rencode and python lz4 for RHEL 9
+     newer libyuv snapshot
+     install Cython via pip for DEB builds
+     Cython 0.29.37.1 / 3.0.8
+     ffmpeg 6.1.1
+     libvpx 1.14.0
+     nvfbc compilation warnings
+     don't expand environment variables in config files
+     close log files to avoid warnings on MS Windows
+     missing console title on MS Windows
+- minor:
+     builtin ssh server connection errors when display is specified
+     ssh upgrade errors when unavailable
+     blacklist some more greedy clipboard applications
+     rfb cleanup errors
+     better rencode compatibility for XSettings
 - cosmetic:
-    Python 3.12 SyntaxWarning
+     avoid mDNS errors, log message instead
+     Python 3.12 SyntaxWarning
+     don't try to print a display size we don't have
+     gst-plugin-scanner packaging for MacOS
+     deprecation warnings
 
 * Mon Nov 27 2023 Antoine Martin <antoine@xpra.org> 3.1.6-10.1xpra1
 - major fixes:
