@@ -5,6 +5,7 @@
 
 import os
 from time import monotonic
+from collections.abc import Callable
 
 from xpra.log import Logger
 from xpra.os_util import POSIX
@@ -13,7 +14,7 @@ from xpra.util.env import envint
 DISPLAY_FD_TIMEOUT = envint("XPRA_DISPLAY_FD_TIMEOUT", 20)
 
 
-def write_displayfd(w_pipe, display, timeout=10):
+def write_displayfd(w_pipe, display, timeout: int = 10) -> int:
     import select
     import errno
     buf = ("%s\n" % display).encode("ascii")
@@ -48,7 +49,7 @@ def write_displayfd(w_pipe, display, timeout=10):
     return len(buf) == 0
 
 
-def read_displayfd(r_pipe, timeout=DISPLAY_FD_TIMEOUT, proc=None):
+def read_displayfd(r_pipe, timeout=DISPLAY_FD_TIMEOUT, proc=None) -> bytes:
     import select
     import errno
     # Read the display number from the pipe we gave to Xvfb
@@ -77,13 +78,13 @@ def read_displayfd(r_pipe, timeout=DISPLAY_FD_TIMEOUT, proc=None):
     return buf
 
 
-def parse_displayfd(buf, err):
+def parse_displayfd(buf: bytes, err: Callable) -> int:
     if not buf:
         err("did not provide a display number using displayfd")
-        return None
+        return -1
     if not buf.endswith(b"\n"):
         err("output not terminated by newline: '%s'" % buf)
-        return None
+        return -1
     buf = buf.rstrip(b"\n\r")
     try:
         n = int(buf)

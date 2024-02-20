@@ -326,6 +326,8 @@ def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth: int, display_name:str, cwd,
                 osclose(r_pipe)
                 osclose(w_pipe)
             n = parse_displayfd(buf, displayfd_err)
+            if n < 0:
+                displayfd_err(f"failed to parse displayfd output {buf!r}")
             new_display_name = f":{n}"
             log(f"Using display number provided by {xvfb_executable}: {new_display_name}")
             if tmp_xorg_log_file:

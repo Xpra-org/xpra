@@ -2864,7 +2864,7 @@ def start_server_subprocess(script_file, args, mode, opts,
                 log.error(f" {msg}")
 
             n = parse_displayfd(buf, displayfd_err)
-            if n is not None:
+            if n>=0:
                 matching_display = f":{n}"
                 log(f"displayfd={matching_display}")
     socket_path, display = identify_new_socket(proc, dotxpra, existing_sockets,
