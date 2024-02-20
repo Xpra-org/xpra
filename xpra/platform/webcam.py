@@ -23,12 +23,12 @@ def get_all_video_devices():
     return None
 
 
-def add_video_device_change_callback(_callback: Callable):
+def add_video_device_change_callback(_callback: Callable) -> None:
     # not implemented here
     pass
 
 
-def remove_video_device_change_callback(_callback: Callable):
+def remove_video_device_change_callback(_callback: Callable) -> None:
     # not implemented here
     pass
 
@@ -36,7 +36,7 @@ def remove_video_device_change_callback(_callback: Callable):
 _video_device_change_callbacks: list[Callable] = []
 
 
-def _fire_video_device_change(create=None, pathname=None):
+def _fire_video_device_change(create=None, pathname=None) -> None:
     for x in _video_device_change_callbacks:
         try:
             x(create, pathname)
@@ -53,7 +53,7 @@ platform_import(globals(), "webcam", False,
                 "remove_video_device_change_callback")
 
 
-def main(argv):
+def main(argv) -> int:
     # pylint: disable=import-outside-toplevel
     if "-v" in argv or "--verbose" in argv:
         from xpra.log import add_debug_category, enable_debug_for

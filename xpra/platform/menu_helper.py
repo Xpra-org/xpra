@@ -9,15 +9,15 @@ import sys
 from xpra.platform import platform_import
 
 
-def load_menu():
+def load_menu() -> dict:
     return {}
 
 
-def load_desktop_sessions():
+def load_desktop_sessions() -> dict:
     return {}
 
 
-def clear_cache():
+def clear_cache() -> None:
     """ the Posix override has a cache to clear """
 
 

@@ -52,7 +52,7 @@ DEFAULT_MIMETYPES = ["application/pdf", "application/postscript"]
 MIMETYPES: list[str] | None = None
 
 
-def get_mimetypes():
+def get_mimetypes() -> list[str]:
     global MIMETYPES
     if MIMETYPES is None:
         v = os.environ.get("XPRA_PRINTING_MIMETYPES", )

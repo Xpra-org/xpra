@@ -6,13 +6,13 @@
 from xpra.platform import platform_import
 
 
-def set_autostart(_enabled):
+def set_autostart(_enabled: bool) -> None:
     """
     win32 and posix platforms will override this function
     """
 
 
-def get_status():
+def get_status() -> str:
     return ""
 
 

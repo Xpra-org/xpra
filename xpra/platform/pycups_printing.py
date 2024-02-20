@@ -76,17 +76,17 @@ log("DEFAULT_CUPS_OPTIONS=%s", DEFAULT_CUPS_OPTIONS)
 
 
 # allows us to inject the lpadmin and lpinfo commands from the config file
-def set_lpadmin_command(lpadmin):
+def set_lpadmin_command(lpadmin: str):
     global LPADMIN
     LPADMIN = lpadmin
 
 
-def set_add_printer_options(options):
+def set_add_printer_options(options: list[str]):
     global ADD_OPTIONS
     ADD_OPTIONS = options
 
 
-def set_lpinfo_command(lpinfo):
+def set_lpinfo_command(lpinfo: str):
     global LPINFO
     LPINFO = lpinfo
 
@@ -111,7 +111,7 @@ def find_ppd_file(short_name: str, filename: str):
     return None
 
 
-def get_lpinfo_drv(make_and_model) -> str:
+def get_lpinfo_drv(make_and_model: str) -> str:
     if not LPINFO:
         log.error("Error: lpinfo command is not defined")
         return ""
@@ -169,7 +169,7 @@ def get_lpinfo_drv(make_and_model) -> str:
     return ""
 
 
-UNPROBED_PRINTER_DEFS = {}
+UNPROBED_PRINTER_DEFS: dict[str, list[str]] = {}
 
 
 def add_printer_def(mimetype: str, definition: str) -> None:
@@ -185,11 +185,11 @@ def add_printer_def(mimetype: str, definition: str) -> None:
         log.warn(" '%s' is not a valid driver or ppd file", definition)
 
 
-PRINTER_DEF = None
+PRINTER_DEF: dict[str, list[str]] | None = None
 PRINTER_DEF_LOCK = Lock()
 
 
-def get_printer_definitions():
+def get_printer_definitions() -> dict[str, list[str]]:
     global PRINTER_DEF
     with PRINTER_DEF_LOCK:
         if PRINTER_DEF is not None:
@@ -242,12 +242,10 @@ def get_printer_definition(mimetype: str) -> str:
     return v[1]  # ie: /usr/share/ppd/cupsfilters/Generic-PDF_Printer-PDF.ppd
 
 
-def validate_setup():
+def validate_setup() -> bool:
     # very simple check: at least one ppd file exists
     defs = get_printer_definitions()
-    if not defs:
-        return False
-    return defs
+    return bool(defs)
 
 
 def exec_lpadmin(args, success_cb: Callable = None):
@@ -535,7 +533,7 @@ def main():
     from xpra.log import enable_color
     with program_context("PyCUPS Printing"):
         enable_color()
-        validate_setup()
+        log.info("validation: %s", validate_setup())
         log.info("")
         log.info("printer definitions:")
         for k, v in get_printer_definitions().items():

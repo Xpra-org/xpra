@@ -4,15 +4,16 @@
 # later version. See the file COPYING for details.
 
 import socket
+from typing import Any
 
 from xpra.platform import platform_import
 
 
-def get_interface_info(*_args):
+def get_interface_info(*_args) -> dict[str, Any]:
     return {}
 
 
-def get_tcp_info(_sock):  # pylint: disable=unused-argument
+def get_tcp_info(_sock) -> dict[str, Any]:  # pylint: disable=unused-argument
     return {}
 
 
@@ -22,7 +23,7 @@ platform_import(globals(), "netdev_query", False,
                 )
 
 
-def print_address(iface, addr, defs):
+def print_address(iface, addr, defs) -> None:
     from xpra.os_util import POSIX
     from xpra.util.str_fn import print_nested_dict
     for d in defs:

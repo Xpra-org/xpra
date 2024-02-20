@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+from typing import Any
 from collections.abc import Callable
 
 from xpra.platform import platform_import
@@ -11,7 +12,7 @@ from xpra.platform import platform_import
 GLContext: Callable | None = None
 
 
-def check_support():
+def check_support() -> dict[str, Any]:
     if not GLContext:
         raise RuntimeError("no GLContext available")
     return GLContext().check_support()  # pylint: disable=not-callable

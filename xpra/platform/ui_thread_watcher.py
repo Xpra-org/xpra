@@ -50,7 +50,7 @@ class UI_thread_watcher:
         self.ui_wakeup_timer: int = 0
         self.exit: Event = Event()
 
-    def start(self):
+    def start(self) -> None:
         if self.last_UI_thread_time > 0:
             log.warn("UI thread watcher already started!")
             return
@@ -73,22 +73,22 @@ class UI_thread_watcher:
     def stop(self) -> None:
         self.exit.set()
 
-    def add_fail_callback(self, cb: Callable):
+    def add_fail_callback(self, cb: Callable) -> None:
         self.fail_callbacks.append(cb)
 
-    def add_resume_callback(self, cb: Callable):
+    def add_resume_callback(self, cb: Callable) -> None:
         self.resume_callbacks.append(cb)
 
-    def add_alive_callback(self, cb: Callable):
+    def add_alive_callback(self, cb: Callable) -> None:
         self.alive_callbacks.append(cb)
 
-    def remove_fail_callback(self, cb: Callable):
+    def remove_fail_callback(self, cb: Callable) -> None:
         self.fail_callbacks.remove(cb)
 
-    def remove_resume_callback(self, cb: Callable):
+    def remove_resume_callback(self, cb: Callable) -> None:
         self.resume_callbacks.remove(cb)
 
-    def remove_alive_callback(self, cb: Callable):
+    def remove_alive_callback(self, cb: Callable) -> None:
         self.alive_callbacks.remove(cb)
 
     @staticmethod
