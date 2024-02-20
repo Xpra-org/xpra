@@ -12,7 +12,7 @@ from xpra.common import WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.gtk.error import xsync, xlog
 from xpra.x11.models.core import CoreX11WindowModel, Above, RESTACKING_STR
 from xpra.x11.bindings.window import X11WindowBindings, constants
-from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties
+from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties, GUESS_CONTENT
 from xpra.server.background_worker import add_work_item
 from xpra.x11.gtk3.bindings import get_pywindow, get_pyatom
 from xpra.log import Logger
@@ -278,10 +278,11 @@ class BaseWindowModel(CoreX11WindowModel):
         super().__init__(xid)
         self.last_unmap_serial = 0
         self._input_field = True  # The WM_HINTS input field
-        # watch for changes to properties that are used to derive the content-type:
-        for x in get_content_type_properties():
-            if x in self.get_dynamic_property_names():
-                self.connect(f"notify::{x}", self._content_type_related_property_change)
+        if GUESS_CONTENT:
+            # watch for changes to properties that are used to derive the content-type:
+            for x in get_content_type_properties():
+                if x in self.get_dynamic_property_names():
+                    self.connect(f"notify::{x}", self._content_type_related_property_change)
 
     def serial_after_last_unmap(self, serial) -> bool:
         # "The serial member is set from the serial number reported in the protocol
@@ -458,7 +459,7 @@ class BaseWindowModel(CoreX11WindowModel):
         # watch for changes to properties that are used to derive the content-type:
         content_type = self.prop_get("_XPRA_CONTENT_TYPE", "latin1", True) or ""
         # the _XPRA_CONTENT_TYPE property takes precedence
-        if not content_type:
+        if not content_type and GUESS_CONTENT:
             # guess_content_type can take a while as it will load the xdg menu data
             # so call it as a work item.
             # multiple callers can be added to the sequential work queue,
