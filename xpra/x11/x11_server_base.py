@@ -395,9 +395,9 @@ class X11ServerBase(X11ServerCore):
                         log.warn("error setting double click distance from %s: %s", double_click_distance, e)
 
             if k not in old_settings or v != old_settings[k]:
-                if k == b"xsettings-blob":
+                if strtobytes(k) == b"xsettings-blob":
                     self.set_xsettings(v)
-                elif k == b"resource-manager":
+                elif strtobytes(k) == b"resource-manager":
                     from xpra.x11.gtk_x11.prop import prop_set
                     p = "RESOURCE_MANAGER"
                     log("server_settings: setting %s to %s", nonl(p), nonl(v))
