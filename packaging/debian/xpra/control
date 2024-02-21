@@ -25,12 +25,14 @@ Build-Depends: debhelper (>= 8)
 #jammy:              ,libavif-dev
 #lunar:              ,libavif-dev
 #mantic:              ,libavif-dev
+#noble:              ,libavif-dev
 #bookworm:              ,libavif-dev
 #trixie:              ,libavif-dev
 #sid:              ,libavif-dev
 #jammy:              ,libyuv-dev
 #lunar:              ,libyuv-dev
 #mantic:              ,libyuv-dev
+#noble:              ,libyuv-dev
 #bookworm:              ,libyuv-dev
 #trixie:              ,libyuv-dev
 #sid:              ,libyuv-dev
@@ -40,6 +42,7 @@ Build-Depends: debhelper (>= 8)
               ,libturbojpeg-dev
 #lunar:              ,libspng-dev
 #mantic:              ,libspng-dev
+#noble:              ,libspng-dev
 #bookworm:              ,libspng-dev
 #trixie:              ,libspng-dev
 #sid:              ,libspng-dev
@@ -275,18 +278,21 @@ Depends: xpra-common (= ${binary:Version})
         ,${python3:Depends}
 #lunar:              ,libspng0
 #mantic:              ,libspng0
+#noble:              ,libspng0
 #bookworm:              ,libspng0
 #trixie:              ,libspng0
 #sid:              ,libspng0
 #jammy:              ,libavif13
 #lunar:              ,libavif15
 #mantic:              ,libavif15
+#noble:              ,libavif16
 #bookworm:              ,libavif15
 #trixie:              ,libavif16
 #sid:              ,libavif16
 #jammy:              ,libyuv0
 #lunar:              ,libyuv0
 #mantic:              ,libyuv0
+#noble:              ,libyuv0
 #bookworm:              ,libyuv0
 #trixie:              ,libyuv0
 #sid:              ,libyuv0
