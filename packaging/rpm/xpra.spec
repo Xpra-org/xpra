@@ -857,32 +857,43 @@ fi
 
 
 %changelog
-* Tue Oct 17 2023 Antoine Martin <antoine@xpra.org> 6.0-10
+* Wed Feb 21 2023 Antoine Martin <antoine@xpra.org> 6.0-10
 - Platforms, build and packaging:
    require and take advantage of Python 3.10+
-   cythonize everything
+   cythonize everything and build test on git push
    workaround for distributions incompatible with CUDA
    add `xpra-client-gnome` package
    use the system provided xxHash library
    riscv64 builds
+   PEP 517: pyproject.toml
 - Features:
+   OpenGL core profile
    `xpra configure` tool
    faster `mmap`
    make it easier to disable almost everything
    remove legacy compatibility
    try harder to locate the correct xauth file
    honour MacOS backing scale factor with OpenGL
+   workspace support for MS Windows 10
+   readonly memoryviews
 - Network:
+   abstract sockets
+   wait for local server sockets to become available
    enable websocket upgrades without the html5 client
    update ssh agent to active user
    use libnm to access network information
    ssl auto upgrade
+   honour `/etc/ssh/ssh_config`
+   `xpra list-clients`
 - Cosmetic:
-   silence warnings: #4023, #2177, #3988
+   silence warnings: #4023, #2177, #3988, #4028
+   easier call tracing
+   PEP 8: code style
 - Documentation:
    ivshmem
    subsystems
    authentication handlers
+   record some SBOM data
 
 * Sat Aug 19 2023 Antoine Martin <antoine@xpra.org> 5.0-10
 - Major improvements:
