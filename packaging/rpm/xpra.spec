@@ -198,6 +198,7 @@ Summary:			Extra picture and video codecs for xpra clients and servers.
 #before switching to EPEL / rpmfusion, we were using private libraries:
 #Conflicts:			x264-xpra
 #Conflicts:			ffmpeg-xpra
+Requires:			xpra-codecs = %{version}-%{release}
 %ifnarch riscv64
 Recommends:			x264
 Recommends:			libavutil-free
@@ -326,6 +327,7 @@ BuildRequires:		pkgconfig(xdamage)
 BuildRequires:		pkgconfig(xres)
 BuildRequires:		pkgconfig(xfixes)
 BuildRequires:		pkgconfig(xrandr)
+Requires:			xpra-common = %{version}-%{release}
 Requires:			libxkbfile
 Requires:			libXtst
 Requires:			libXcomposite
