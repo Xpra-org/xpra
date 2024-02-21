@@ -857,7 +857,7 @@ fi
 
 
 %changelog
-* Wed Feb 21 2023 Antoine Martin <antoine@xpra.org> 6.0-10
+* Wed Feb 21 2024 Antoine Martin <antoine@xpra.org> 6.0-10
 - Platforms, build and packaging:
    require and take advantage of Python 3.10+
    cythonize everything and build test on git push
