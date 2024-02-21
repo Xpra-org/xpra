@@ -787,9 +787,11 @@ fi
    try harder to handle unexpected clipboard data formats
    `run_scaled` and `attach=yes` errors in virtual envs
 - Platforms and packaging:
+   missing ffmpeg RPM dependencies and stricter submodule dependencies
    updated service file for DEB packages
    remove duplicated systemd service and socket files in DEB packages
    enable OpenGL with Intel drivers
+   add Ubuntu Noble
 - Minor:
    OpenGL error due to numpy import race condition
    `start-child-late` cannot be used alone
@@ -805,6 +807,7 @@ fi
    remove unused device context
    silence spurious messages sent by wine applications
    gst-plugin-scanner packaging for MacOS
+   ffmpeg decoder error handler could fail during self tests
 
 * Mon Feb 05 2024 Antoine Martin <antoine@xpra.org> 5.0.5-10
 - Major:

@@ -11,9 +11,11 @@
     * [try harder to handle unexpected clipboard data formats](https://github.com/Xpra-org/xpra/commit/2e84b222886b75ebfd7eb813e4de8d2fea077943)
     * [`run_scaled` and `attach=yes` errors in virtual envs](https://github.com/Xpra-org/xpra/commit/eda6327a6aee64e03c3be84374c3f4dc1f9e1459)
 * Platforms and packaging:
+    * [missing ffmpeg RPM dependencies](https://github.com/Xpra-org/xpra/commit/c6cfb44002509286ac0e3bed772041db5047b276) and [stricter submodule dependencies](https://github.com/Xpra-org/xpra/commit/5abff5310795bfbc357420854db0570e96fc225c)
     * [updated service file for DEB packages](https://github.com/Xpra-org/xpra/commit/915b2e699999e36e0120ed69fb6a3af413cfa64b)
     * [remove duplicated systemd service and socket files in DEB packages](https://github.com/Xpra-org/xpra/commit/3692506a7288637e007933a6a234cfb179a18281)
     * [enable OpenGL with Intel drivers](https://github.com/Xpra-org/xpra/commit/2a699ce0a51d762acaf6b12c20b4ee0498f0f9af)
+    * [add Ubuntu Noble](https://github.com/Xpra-org/xpra/commit/86a214b69a6b5db0e7a167e9c7b63b9994383e05)
 * Minor:
     * [OpenGL error due to numpy import race condition](https://github.com/Xpra-org/xpra/commit/06bba8c7c179595bf15b1388dba915ef7f134649)
     * [`start-child-late` cannot be used alone](https://github.com/Xpra-org/xpra/commit/3049d0b7e7e6be7d951f841eea851d5b4c7af32c)
@@ -29,6 +31,7 @@
     * [remove unused device context](https://github.com/Xpra-org/xpra/commit/9656a14a46e323e5bf3b6cbf73532b02b5002d5a)
     * [silence spurious messages sent by wine applications](https://github.com/Xpra-org/xpra/commit/962ad206d3efed56169883a4f06ce2fcf503e3ec)
     * [gst-plugin-scanner packaging for MacOS](https://github.com/Xpra-org/xpra/commit/28c380c941b5b5da205acafe6b1e09bf574342f8)
+    * [ffmpeg decoder error handler could fail during self tests](https://github.com/Xpra-org/xpra/commit/46e9d6fd12aa1ba011ffe2e002cc492dc38a07dd)
 
 
 ## [5.0.5] 2024-02-05
