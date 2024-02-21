@@ -538,7 +538,7 @@ cdef class Decoder:
         free(padded_buf)
         av_packet_free(&avpkt)
         if ret==-errno.EAGAIN:
-            d = options.intget("delayed", 0)
+            d = options.get("delayed", 0)
             if d>0:
                 log("avcodec_receive_frame %i delayed pictures", d)
                 return None
