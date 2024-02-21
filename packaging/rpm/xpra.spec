@@ -200,12 +200,18 @@ Summary:			Extra picture and video codecs for xpra clients and servers.
 #Conflicts:			ffmpeg-xpra
 %ifnarch riscv64
 Recommends:			x264
+Recommends:			libavutil-free
+Recommends:			libavcodec-free
+Recommends:			libavcodec-freeworld
+Recommends:			libavformat
+Recommends:			libswscale-free
 BuildRequires:		pkgconfig(x264)
 %endif
 Recommends:			ffmpeg
 BuildRequires:		pkgconfig(libavutil)
 BuildRequires:		pkgconfig(libavformat)
 BuildRequires:		pkgconfig(libavcodec)
+BuildRequires:		pkgconfig(libswscale)
 #for gstreamer video encoder and decoder:
 Recommends:			gstreamer1
 #appsrc, videoconvert:
