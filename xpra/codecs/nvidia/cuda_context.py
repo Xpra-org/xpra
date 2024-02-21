@@ -13,7 +13,6 @@ from time import monotonic
 from threading import RLock
 from typing import Tuple, Dict, Any, Optional, List
 
-from xpra.codecs.nvidia.nv_util import numpy_import_lock
 from xpra.codecs.codec_constants import TransientCodecException
 from xpra.util import engs, print_nested_dict, envint, envbool, csv, first_time, typedict, numpy_import_lock
 from xpra.platform.paths import (
