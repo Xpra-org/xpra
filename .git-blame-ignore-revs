@@ -1,0 +1,14 @@
+# .git-blame-ignore-revs
+# See also https://docs.github.com/en/repositories/working-with-files/using-files/viewing-a-file#ignore-commits-in-the-blame-view
+
+# Date: Thu Jan 11 15:52:30 2024 +0700
+# Subject: [PATCH] cosmetic pep8 fixes
+db1cfaa80ab6a62048baa24efeef3d743a739086
+
+# Date: Tue, 30 Jan 2024 18:35:35 +0700
+# Subject: [PATCH] cosmetic: reformat
+34bedd5dc1cd6850b81c6d7d16506ffd02df5449
+
+# Date: Wed, 31 Jan 2024 10:45:27 +0700
+# Subject: [PATCH] cosmetic: reformat
+476b5fe79f89460240f5e9ca435ba5e5154e09e5
