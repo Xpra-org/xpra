@@ -778,7 +778,7 @@ class ServerCore(object):
                 recs = mdns_recs.setdefault(st, [])
                 if socktype in ("unix-domain", "socket"):
                     if st != "ssh":
-                        log.error(f"Error: unexpected {st!r} socket type for {socktype}")
+                        log.error("Error: unexpected %r socket type for {socktype}", st)
                         continue
                     host = "*"
                     iport = get_ssh_port()
