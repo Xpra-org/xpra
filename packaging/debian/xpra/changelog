@@ -30,8 +30,9 @@ xpra (5.0.6-1) UNRELEASED; urgency=low
    - silence spurious messages sent by wine applications
    - gst-plugin-scanner packaging for MacOS
    - ffmpeg decoder error handler could fail during self tests
+   - notification errors during shutdown
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 20 Feb 2024 22:00:32 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 22 Feb 2024 21:26:45 +0700
 
 xpra (5.0.5-1) UNRELEASED; urgency=low
   * Major:

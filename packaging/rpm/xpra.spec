@@ -776,7 +776,7 @@ fi
 
 
 %changelog
-* Tue Feb 20 2024 Antoine Martin <antoine@xpra.org> 5.0.6-10
+* Thu Feb 22 2024 Antoine Martin <antoine@xpra.org> 5.0.6-10
 - Major:
    windows misplaced on screen, moving unexpectedly
    windows wm-state synchronization issue
@@ -808,6 +808,7 @@ fi
    silence spurious messages sent by wine applications
    gst-plugin-scanner packaging for MacOS
    ffmpeg decoder error handler could fail during self tests
+   notification errors during shutdown
 
 * Mon Feb 05 2024 Antoine Martin <antoine@xpra.org> 5.0.5-10
 - Major:

@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.6] 2024-02-20
+## [5.0.6] 2024-02-22
 * Major:
     * [windows misplaced on screen, moving unexpectedly](https://github.com/Xpra-org/xpra/commit/bb25b6c8ac4195ab140d7772dba2b05cbe272791)
     * [windows wm-state synchronization issue](https://github.com/Xpra-org/xpra/commit/479f8bea673058fc607d5428de8a80c1a0810dad)
@@ -32,6 +32,7 @@
     * [silence spurious messages sent by wine applications](https://github.com/Xpra-org/xpra/commit/962ad206d3efed56169883a4f06ce2fcf503e3ec)
     * [gst-plugin-scanner packaging for MacOS](https://github.com/Xpra-org/xpra/commit/28c380c941b5b5da205acafe6b1e09bf574342f8)
     * [ffmpeg decoder error handler could fail during self tests](https://github.com/Xpra-org/xpra/commit/46e9d6fd12aa1ba011ffe2e002cc492dc38a07dd)
+    * [notification errors during shutdown](https://github.com/Xpra-org/xpra/commit/ba74801e3c4acb815b8eeee64b423d48589ed6ec)
 
 
 ## [5.0.5] 2024-02-05
