@@ -412,7 +412,7 @@ class BaseWindowModel(CoreX11WindowModel):
         content_type = guess_content_type(self)
         if not content_type and self.is_tray():
             content_type = "picture"
-        metalog(f"guess_content_type() {content_type=}")
+        metalog("guess_content_type() content_type=%s", content_type)
         self._updateprop("content-type", content_type)
 
     def _handle_xpra_quality_change(self) -> None:
