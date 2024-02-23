@@ -1,3 +1,9 @@
+xpra (5.0.7-1) UNRELEASED; urgency=low
+  * typo causing CUDA codecs error
+  * f-string incompatible with Python versions older than 3.8
+
+ -- Antoine Martin <antoine@xpra.org>  Fri, 23 Feb 2024 19:03:20 +0700
+
 xpra (5.0.6-1) UNRELEASED; urgency=low
   * Major:
    - windows misplaced on screen, moving unexpectedly

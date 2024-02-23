@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 5.0.6
+%define version 5.0.7
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild
@@ -776,6 +776,10 @@ fi
 
 
 %changelog
+* Fri Feb 23 2024 Antoine Martin <antoine@xpra.org> 5.0.7-10
+- typo causing CUDA codecs error
+- f-string incompatible with Python versions older than 3.8
+
 * Thu Feb 22 2024 Antoine Martin <antoine@xpra.org> 5.0.6-10
 - Major:
    windows misplaced on screen, moving unexpectedly

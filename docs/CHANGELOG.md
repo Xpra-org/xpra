@@ -1,5 +1,10 @@
 # Changelog
 
+## [5.0.7] 2024-02-23
+* Regressions:
+    * [typo causing CUDA codecs error](https://github.com/Xpra-org/xpra/commit/062be135cbe8298ba775582b70e5731e04a16d3f)
+    * [f-string incompatible with Python versions older than 3.8](https://github.com/Xpra-org/xpra/commit/8141bcfa20df314f11f7b60d770ee3c6a22aeacd)
+
 ## [5.0.6] 2024-02-22
 * Major:
     * [windows misplaced on screen, moving unexpectedly](https://github.com/Xpra-org/xpra/commit/bb25b6c8ac4195ab140d7772dba2b05cbe272791)
