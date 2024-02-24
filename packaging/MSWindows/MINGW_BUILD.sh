@@ -178,7 +178,7 @@ if [ "${DO_CLEAN}" == "1" ]; then
 		exit 1
 	fi
 	#clean comtypes cache - it should not be included!
-	python $MINGW_PREFIX/bin/clear_comtypes_cache.py -y
+	clear_comtypes_cache.exe -y
 fi
 
 if [ "${DO_SERVICE}" == "1" ]; then
