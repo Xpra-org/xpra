@@ -159,10 +159,10 @@ class FileTransferAttributes:
         filelog("file transfer: init_attributes%s",
                 (file_transfer, file_size_limit, printing, open_files, open_url, open_command, can_ask))
 
-        def pbool(name, v):
+        def pbool(name, v) -> bool:
             return parse_bool(name, v, True)
 
-        def pask(v):
+        def pask(v) -> bool:
             return v.lower() in ("ask", "auto")
 
         fta = pask(file_transfer)
