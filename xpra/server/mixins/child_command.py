@@ -148,7 +148,7 @@ class ChildCommandServer(StubServerMixin):
             return caps
         # don't assume we have a real ClientConnection object:
         wants = getattr(source, "wants", [])
-        if "feature" in wants and getattr(source, "ui_client", False):
+        if "features" in wants and getattr(source, "ui_client", False):
             caps["xdg-menu"] = {}
             caps["subcommands"] = get_subcommands()
         return caps
