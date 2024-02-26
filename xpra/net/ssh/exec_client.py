@@ -66,11 +66,11 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             }
         elif not display_desc.get("exit_ssh", False) and not OSX:
             kwargs["start_new_session"] = True
-        remote_xpra = display_desc["remote_xpra"]
+        remote_xpra: list[str] = display_desc["remote_xpra"]
         assert remote_xpra
         socket_dir = display_desc.get("socket_dir")
-        proxy_command = display_desc["proxy_command"]      # ie: ["_proxy_start"]
-        display_as_args = display_desc["display_as_args"]  # ie: ["--start=xterm", "--env=SSH_AGENT_UUID={uuid}", ":10"]
+        proxy_command: list[str] = display_desc["proxy_command"]      # ie: ["_proxy_start"]
+        display_as_args: list[str] = display_desc["display_as_args"]  # ie: ["--start=xterm", "--env=SSH_AGENT_UUID={uuid}", ":10"]
         remote_cmd = ""
         for x in remote_xpra:
             check = "if" if not remote_cmd else "elif"
