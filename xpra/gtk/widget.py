@@ -101,12 +101,11 @@ def setfont(widget, font=""):
 def choose_files(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_button=Gtk.STOCK_OPEN,
                  callback=None, file_filter=None, multiple=True):
     log("choose_files%s", (parent_window, title, action, action_button, callback, file_filter))
-    chooser = Gtk.FileChooserDialog(title,
-                                    parent=parent_window, action=action,
-                                    buttons=(
-                                        Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                                        action_button, Gtk.ResponseType.OK,
-                                    ))
+    chooser = Gtk.FileChooserDialog(title=title, parent=parent_window, action=action)
+    chooser.add_buttons(
+        Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+        action_button, Gtk.ResponseType.OK,
+    )
     chooser.set_select_multiple(multiple)
     chooser.set_default_response(Gtk.ResponseType.OK)
     if file_filter:
