@@ -364,6 +364,8 @@ class ServerBaseControlCommands(StubServerMixin):
         if not sources:
             raise ControlError(f"no clients found matching: {client_uuids!r}")
 
+        filelog = Logger("command", "file")
+
         def checksize(file_size):
             if file_size > self.file_transfer.file_size_limit:
                 raise ControlError("file '%s' is too large: %sB (limit is %sB)" % (
@@ -373,9 +375,9 @@ class ServerBaseControlCommands(StubServerMixin):
         actual_filename = os.path.abspath(os.path.expanduser(filename))
         try:
             stat = os.stat(actual_filename)
-            log("os.stat(%s)=%s", actual_filename, stat)
+            filelog("os.stat(%s)=%s", actual_filename, stat)
         except os.error:
-            log("os.stat(%s)", actual_filename, exc_info=True)
+            filelog("os.stat(%s)", actual_filename, exc_info=True)
         else:
             checksize(stat.st_size)
         if not os.path.exists(actual_filename):
@@ -392,18 +394,19 @@ class ServerBaseControlCommands(StubServerMixin):
             if not getattr(ss, source_flag_name, False):
                 # skip the warning if the client is not interactive
                 # (for now just check for 'top' client):
-                if ss.client_type == "top":
-                    l = log
+                if not hasattr(ss, source_flag_name) or ss.client_type == "top":
+                    l = filelog
                 else:
-                    l = log.warn
+                    l = filelog.warn
                 l(f"Warning: cannot {command_type} {filename!r} to {ss.client_type} client")
                 l(f" client {ss.uuid} does not support this feature")
+                l(f" flag={source_flag_name}")
             elif file_size > ss.file_size_limit:
-                log.warn(f"Warning: cannot {command_type} {filename!r}")
-                log.warn(" client %s file size limit is %sB (file is %sB)",
-                         ss, std_unit(ss.file_size_limit), std_unit(file_size))
+                filelog.warn(f"Warning: cannot {command_type} {filename!r}")
+                filelog.warn(" client %s file size limit is %sB (file is %sB)",
+                             ss, std_unit(ss.file_size_limit), std_unit(file_size))
             else:
-                log(f"sending {filename} to {ss}")
+                filelog(f"sending {filename} to {ss}")
                 ss.send_file(filename, "", data, file_size, *send_file_args)
         return f"{command_type} of {filename!r} to {client_uuids} initiated"
 
