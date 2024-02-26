@@ -22,7 +22,7 @@ from xpra.util.env import envint, restore_script_env
 from xpra.net.common import PacketType
 from xpra.util.thread import start_thread
 from xpra.scripts.parsing import parse_env, get_subcommands
-from xpra.server.util import source_env
+from xpra.server.util import source_env, write_pid
 from xpra.server.menu_provider import get_menu_provider
 from xpra.server import EXITING_CODE
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -279,6 +279,16 @@ class ChildCommandServer(StubServerMixin):
             if not ignore:
                 self.children_count += 1
             self.children_started.append(procinfo)
+            session_dir = os.environ.get("XPRA_SESSION_DIR")
+            if session_dir and not procinfo.dead:
+                pidname = name.split(" ")[0]
+                if pidname.find(os.sep) >= 0:
+                    pidname = pidname.split(os.sep)[-1]
+                pidfile = os.path.join(session_dir, f"{pidname}.pid")
+                if not os.path.exists(pidfile):
+                    procinfo.pidfile = pidfile
+                    procinfo.pidinode = write_pid(pidfile, procinfo.pid)
+                log(f"pidfile({name})={pidfile}, inode={procinfo.pidinode}, pid={procinfo.pid}")
             return proc
         except (OSError, ValueError) as e:
             log("start_command%s", (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs), exc_info=True)

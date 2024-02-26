@@ -24,11 +24,14 @@ log = Logger("server", "util", "exec")
 
 class ProcInfo:
     __slots__ = (
-        "pid", "name", "command", "ignore",
+        "pid", "pidfile", "pidinode",
+        "name", "command", "ignore",
         "forget", "dead", "returncode",
         "callback", "process",
     )
     pid: int
+    pidfile: str
+    pidinode: int
     name: str
     command: Any
     ignore: bool
@@ -51,6 +54,8 @@ class ProcInfo:
             # not base types:
             # callback, process
             "dead": self.dead,
+            "pidfile": self.pidfile,
+            "pidinode": self.pidinode,
         }
         if self.returncode is not None:
             info["returncode"] = self.returncode
@@ -100,9 +105,12 @@ class ChildReaper:
 
     def add_process(self, process, name: str, command, ignore=False, forget=False, callback=None) -> ProcInfo:
         pid = process.pid
-        assert pid > 0, "process has no pid!"
+        if pid <= 0:
+            raise RuntimeError(f"process {process} has no pid!")
         procinfo = ProcInfo()
         procinfo.pid = pid
+        procinfo.pidfile = ""
+        procinfo.pidinode = 0
         procinfo.name = name
         procinfo.command = command
         procinfo.ignore = ignore
@@ -187,6 +195,9 @@ class ChildReaper:
         if process and cb:
             procinfo.callback = None
             GLib.idle_add(cb, process)
+        if procinfo.pidfile and procinfo.pidinode:
+            from xpra.server.util import rm_pidfile
+            rm_pidfile(procinfo.pidfile, procinfo.pidinode)
         # once it's dead, clear the reference to the process:
         # this should free up some resources
         # and also help to ensure we don't end up here again
