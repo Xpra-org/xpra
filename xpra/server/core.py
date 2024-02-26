@@ -1015,6 +1015,9 @@ class ServerCore:
             self.socket_options[sock] = options
             self.idle_add(self.add_listen_socket, socktype, sock, options)
             if socktype == "socket" and info:
+                if info.startswith("@"):
+                    # abstract sockets can't be 'touch'ed
+                    continue
                 try:
                     p = os.path.abspath(info)
                     self.unix_socket_paths.append(p)
