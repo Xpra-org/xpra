@@ -23,7 +23,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        return bool(caps.boolget("file-transfer") or caps.boolget("printing"))
+        return bool(caps.boolget("file") or caps.boolget("file-transfer") or caps.boolget("printing"))
 
     def init_state(self) -> None:
         self.printers: dict[str, dict] = {}
