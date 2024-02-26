@@ -327,7 +327,7 @@ def _prop_encode_list(etype: str, value):
     return atom, formatbits, terminator.join(x for x in serialized if x is not None)
 
 
-def prop_decode(etype: str, data):
+def prop_decode(etype: str | list | tuple, data):
     if isinstance(etype, (list, tuple)):
         return _prop_decode_list(etype[0], data)
     return _prop_decode_scalar(etype, data)

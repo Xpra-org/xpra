@@ -109,7 +109,7 @@ X11PROPERTY_SYNC_BLACKLIST = os.environ.get("XPRA_X11PROPERTY_SYNC_BLACKLIST",
 
 
 def sanestr(s: str) -> str:
-    return (s or "").strip("\0").replace("\0", " ")
+    return s.strip("\0").replace("\0", " ")
 
 
 class CoreX11WindowModel(WindowModelStub):
@@ -645,7 +645,7 @@ class CoreX11WindowModel(WindowModelStub):
         if name is None:
             name = self.prop_get("WM_NAME", "latin1", True)
             metalog("WM_NAME=%s", name)
-        if self._updateprop("title", sanestr(name)):
+        if self._updateprop("title", sanestr(name or "")):
             metalog("wm_name changed")
 
     def _handle_role_change(self) -> None:

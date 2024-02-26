@@ -807,7 +807,7 @@ class WindowModel(BaseWindowModel):
         if icon_name is None:
             icon_name = self.prop_get("WM_ICON_NAME", "latin1", True)
             iconlog("WM_ICON_NAME=%s", icon_name)
-        self._updateprop("icon-title", sanestr(icon_name))
+        self._updateprop("icon-title", sanestr(icon_name or ""))
 
     def _handle_motif_wm_hints_change(self) -> None:
         motif_hints = self.prop_get("_MOTIF_WM_HINTS", "motif-hints", ignore_errors=False, raise_xerrors=True)
