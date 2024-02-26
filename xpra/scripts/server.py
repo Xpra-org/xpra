@@ -24,6 +24,7 @@ from xpra.scripts.main import (
     validate_encryption, parse_env, configure_env,
     stat_display_socket, get_xpra_sessions,
     make_progress_process,
+    load_pid,
     X11_SOCKET_DIR,
 )
 from xpra.scripts.config import (
@@ -606,11 +607,8 @@ def apply_config(opts, mode: str, cmdline: str) -> str:
 def reload_dbus_attributes(display_name: str) -> tuple[int, dict[str, str]]:
     from xpra.log import Logger
     dbuslog = Logger("dbus")
-    try:
-        dbus_pid = int(load_session_file("dbus.pid") or 0)
-        dbuslog(f"reload_dbus_attributes({display_name}) found dbus_pid={dbus_pid}")
-    except ValueError:
-        dbus_pid = 0
+    session_dir = os.environ.get("XPRA_SESSION_DIR")
+    dbus_pid = load_pid(session_dir, "dbus.pid")
     try:
         dbus_env_data = load_session_file("dbus.env").decode("utf8")
         dbuslog(f"reload_dbus_attributes({display_name}) dbus_env_data={dbus_env_data}")
@@ -1143,8 +1141,11 @@ def _do_run_server(script_file: str, cmdline,
         if IBUS_DAEMON_COMMAND and not (any(x.find("ibus-daemon") >= 0 for x in opts.start) or any(
             x.find("ibus-daemon") >= 0 for x in opts.start_late)
         ):
-            log("adding ibus-daemon to late startup")
-            opts.start_late.insert(0, IBUS_DAEMON_COMMAND)
+            # maybe we are inheriting one from a dead session?
+            ibus_daemon_pid = load_pid(session_dir, "ibus-daemon.pid")
+            if not ibus_daemon_pid or not os.path.exists("/proc") or not os.path.exists(f"/proc/{ibus_daemon_pid}"):
+                log("adding ibus-daemon to late startup")
+                opts.start_late.insert(0, IBUS_DAEMON_COMMAND)
 
     # Start the Xvfb server first to get the display_name if needed
     odisplay_name = display_name

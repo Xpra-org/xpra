@@ -3387,6 +3387,29 @@ def run_list_mdns(error_cb, extra_args) -> ExitValue:
     return 0
 
 
+def kill_pid(pid: int, procname: str):
+    if pid:
+        try:
+            if pid and pid > 1 and pid != os.getpid():
+                os.kill(pid, signal.SIGTERM)
+        except OSError as e:
+            error("Error sending SIGTERM signal to %r pid %i %s" % (procname, pid, e))
+
+
+def load_pid(session_dir: str, pid_filename: str):
+    if not session_dir or not pid_filename:
+        return 0
+    pid_file = os.path.join(session_dir, pid_filename)  # ie: "/run/user/1000/xpra/7/dbus.pid"
+    if not os.path.exists(pid_file):
+        return 0
+    try:
+        with open(pid_file, "rb") as f:
+            return int(f.read().rstrip(b"\n\r"))
+    except (ValueError, OSError) as e:
+        error(f"failed to read {pid_file!r}: {e}")
+        return 0
+
+
 def run_clean(opts, args: Iterable[str]) -> ExitValue:
     no_gtk()
     try:
@@ -3422,25 +3445,6 @@ def run_clean(opts, args: Iterable[str]) -> ExitValue:
                 clean[x] = d
         kill_displays = False
 
-    def kill_pid(pid: int):
-        if pid:
-            try:
-                if pid and pid > 1 and pid != os.getpid():
-                    os.kill(pid, signal.SIGTERM)
-            except OSError as e:
-                error("Error sending SIGTERM signal to %r %i %s" % (pid_filename, pid, e))
-
-    def load_pid(session_dir: str, pid_filename: str):
-        pid_file = os.path.join(session_dir, pid_filename)  # ie: "/run/user/1000/xpra/7/dbus.pid"
-        if not os.path.exists(pid_file):
-            return 0
-        try:
-            with open(pid_file, "rb") as f:
-                return int(f.read().rstrip(b"\n\r"))
-        except (ValueError, OSError) as e:
-            error(f"failed to read {pid_file!r}: {e}")
-            return 0
-
     # also clean client sockets?
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
     for display, session_dir in clean.items():
@@ -3472,7 +3476,7 @@ def run_clean(opts, args: Iterable[str]) -> ExitValue:
                 # so the X11 server may still be running
                 xvfb_pid = load_pid(session_dir, "xvfb.pid")
                 if xvfb_pid and kill_displays:
-                    kill_pid(xvfb_pid)
+                    kill_pid(xvfb_pid, "xvfb")
                 else:
                     print(f"X11 server :{dno} is still running ")
                     if xvfb_pid:
@@ -3483,7 +3487,7 @@ def run_clean(opts, args: Iterable[str]) -> ExitValue:
         # print("session_dir: %s : %s" % (session_dir, state))
         for pid_filename in ("dbus.pid", "pulseaudio.pid",):
             pid = load_pid(session_dir, pid_filename)  # ie: "/run/user/1000/xpra/7/dbus.pid"
-            kill_pid(pid)
+            kill_pid(pid, pid_filename.split(".")[0])
         try:
             session_files = os.listdir(session_dir)
         except OSError as e:
@@ -3777,7 +3781,7 @@ def get_x11_display_info(display, sessions_dir=None) -> dict[str, Any]:
                 with OSEnvContext(XPRA_SESSION_DIR=session_dir):
                     log(f"get_x11_display_info({display}, {sessions_dir}) using session directory {session_dir}")
                     try:
-                        xvfb_pid = int(load_session_file("xvfb.pid") or b"0")
+                        xvfb_pid = load_pid(session_dir, "xvfb.pid")
                         log(f"xvfb.pid({display})={xvfb_pid}")
                         if xvfb_pid and os.path.exists("/proc") and not os.path.exists(f"/proc/{xvfb_pid}"):
                             display_info["state"] = "UNKNOWN"
