@@ -771,6 +771,7 @@ def get_usage() -> list[str]:
         "control DISPLAY command [arg1] [arg2]..",
         "print DISPLAY filename",
         "shell [DISPLAY]",
+        "send-file",
         "configure",
         "showconfig",
         "list",
