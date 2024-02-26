@@ -152,7 +152,7 @@ class ChildCommandServer(StubServerMixin):
             return caps
         #don't assume we have a real ClientConnection object:
         wants = getattr(source, "wants", [])
-        if "feature" in wants and getattr(source, "ui_client", False):
+        if "features" in wants and getattr(source, "ui_client", False):
             caps["xdg-menu"] = {}
             if not source.xdg_menu_update:
                 log.warn("Warning: outdated client does not support xdg-menu update")
