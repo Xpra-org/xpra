@@ -343,7 +343,7 @@ class WindowSource(WindowIconSource):
             self.enc_nvjpeg = get_codec("enc_nvjpeg")
             if self.enc_nvjpeg:
                 self._encoders["jpeg"] = self.nvjpeg_encode
-        if self._mmap and self._mmap_size>0:
+        if self._mmap_size>0:
             self._encoders["mmap"] = self.mmap_encode
         self.full_csc_modes = typedict()
         self.parse_csc_modes(self.encoding_options.dictget("full_csc_modes", default_value=None))
@@ -514,7 +514,7 @@ class WindowSource(WindowIconSource):
                                            },
                 "encodings"             : esinfo,
                 "rgb_threshold"         : self._rgb_auto_threshold,
-                "mmap"                  : bool(self._mmap) and (self._mmap_size>0),
+                "mmap"                  : self._mmap_size>0,
                 "last_used"             : self.encoding_last_used or "",
                 "full-frames-only"      : self.full_frames_only,
                 "supports-transparency" : self.supports_transparency,
@@ -855,7 +855,7 @@ class WindowSource(WindowIconSource):
             return self.encoding_is_hint
         #choose which method to use for selecting an encoding
         #first the easy ones (when there is no choice):
-        if self._mmap and self._mmap_size>0:
+        if self._mmap_size>0:
             return self.encoding_is_mmap
         elif self.encoding=="png/L":
             #(png/L would look awful if we mixed it with something else)
@@ -1108,13 +1108,13 @@ class WindowSource(WindowIconSource):
 
     def update_speed(self):
         statslog("update_speed() suspended=%s, mmap=%s, current=%i, hint=%i, fixed=%i, encoding=%s, sequence=%i",
-                 self.suspended, bool(self._mmap),
+                 self.suspended, self._mmap_size>0,
                  self._current_speed, self._speed_hint, self._fixed_speed,
                  self.encoding, self._sequence)
         if self.suspended:
             self._encoding_speed_info = {"suspended" : True}
             return
-        if self._mmap:
+        if self._mmap_size>0:
             self._encoding_speed_info = {"mmap" : True}
             return
         speed = self._speed_hint
@@ -1164,13 +1164,13 @@ class WindowSource(WindowIconSource):
 
     def update_quality(self):
         statslog("update_quality() suspended=%s, mmap=%s, current=%i, hint=%i, fixed=%i, encoding=%s, sequence=%i",
-                 self.suspended, bool(self._mmap),
+                 self.suspended, self._mmap_size>0,
                  self._current_quality, self._quality_hint, self._fixed_quality,
                  self.encoding, self._sequence)
         if self.suspended:
             self._encoding_quality_info = {"suspended" : True}
             return
-        if self._mmap:
+        if self._mmap_size>0:
             self._encoding_quality_info = {"mmap" : True}
             return
         quality = self._quality_hint
@@ -1977,7 +1977,7 @@ class WindowSource(WindowIconSource):
         if not w or not w.is_managed():
             #window is gone
             return False
-        if self.auto_refresh_delay<=0 or self.is_cancelled() or not self.auto_refresh_encodings or self._mmap:
+        if self.auto_refresh_delay<=0 or self.is_cancelled() or not self.auto_refresh_encodings or self._mmap_size>0:
             #can happen during cleanup
             return False
         return True
