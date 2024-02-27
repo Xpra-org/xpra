@@ -391,7 +391,10 @@ class ServerBaseControlCommands(StubServerMixin):
         # send it to each client:
         for ss in sources:
             # ie: ServerSource.file_transfer (found in FileTransferAttributes)
-            if not getattr(ss, source_flag_name, False):
+            #     and ServerSource.remote_file_transfer (found in FileTransferHandler)
+            server_support = getattr(ss, source_flag_name, False)
+            client_support = getattr(ss, f"remote_{source_flag_name}", False)
+            if not (server_support and client_support):
                 # skip the warning if the client is not interactive
                 # (for now just check for 'top' client):
                 if not hasattr(ss, source_flag_name) or ss.client_type == "top":
@@ -399,8 +402,11 @@ class ServerBaseControlCommands(StubServerMixin):
                 else:
                     l = filelog.warn
                 l(f"Warning: cannot {command_type} {filename!r} to {ss.client_type} client")
-                l(f" client {ss.uuid} does not support this feature")
-                l(f" flag={source_flag_name}")
+                l(f" feature flag {source_flag_name!r}")
+                if not server_support:
+                    l(" this feature is not supported by the server connection")
+                if not client_support:
+                    l(f" client {ss.uuid} does not support this feature")
             elif file_size > ss.file_size_limit:
                 filelog.warn(f"Warning: cannot {command_type} {filename!r}")
                 filelog.warn(" client %s file size limit is %sB (file is %sB)",
