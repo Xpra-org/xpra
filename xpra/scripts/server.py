@@ -309,7 +309,7 @@ def set_server_features(opts) -> None:
     features.mmap = b(opts.mmap)
     features.input_devices = not opts.readonly and impcheck("keyboard")
     features.commands = envbool("XPRA_RUN_COMMANDS", True)
-    features.dbus = impcheck("dbus", "server.dbus")
+    features.dbus = not OSX and impcheck("dbus", "server.dbus")
     features.encoding = impcheck("codecs")
     features.logging = b(opts.remote_logging)
     # features.network_state   = ??

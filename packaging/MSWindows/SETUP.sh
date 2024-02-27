@@ -21,6 +21,8 @@ $PACMAN --noconfirm --needed -S ${XPKG}python ${XPKG}libnotify ${XPKG}gtk3
 $PACMAN --noconfirm --needed -S ${XPKG}libavif ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
 #network layer libraries:
 $PACMAN --noconfirm --needed -S ${XPKG}lz4 ${XPKG}xxhash heimdal-libs openssh sshpass ${XPKG}libsodium ${XPKG}qrencode ${XPKG}pinentry
+#not strictly needed:
+$PACMAN --noconfirm --needed -S ${XPKG}dbus-glib
 #python GStreamer bindings:
 $PACMAN --noconfirm --needed -S ${XPKG}gst-python
 #development tools and libs for building extra packages:

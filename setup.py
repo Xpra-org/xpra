@@ -270,7 +270,7 @@ def has_header_file(name, isdir=False):
 x11_ENABLED = DEFAULT and not WIN32 and not OSX
 xinput_ENABLED = x11_ENABLED
 uinput_ENABLED = x11_ENABLED
-dbus_ENABLED = DEFAULT and x11_ENABLED and not (OSX or WIN32)
+dbus_ENABLED = DEFAULT and x11_ENABLED and not OSX
 gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk3_ENABLED = DEFAULT and client_ENABLED
 opengl_ENABLED = DEFAULT and client_ENABLED
@@ -1490,7 +1490,7 @@ if WIN32:
         if gtk3_ENABLED:
             add_DLLs(
                 'atk',
-                #'dbus', 'dbus-glib',
+                'dbus', 'dbus-glib',
                 'gdk', 'gdk_pixbuf', 'gtk',
                 'cairo-gobject', 'cairo', 'pango', 'pangocairo', 'pangoft2', 'pangowin32',
                 'harfbuzz', 'harfbuzz-gobject',
@@ -1991,7 +1991,7 @@ else:
                     copytodir("fs/etc/init.d/xpra", "/etc/init.d")
             if sd_listen_ENABLED:
                 copytodir("fs/lib/systemd/system/xpra.socket", systemd_dir)
-            if dbus_ENABLED and proxy_ENABLED:
+            if POSIX and dbus_ENABLED and proxy_ENABLED:
                 copytodir("fs/etc/dbus-1/system.d/xpra.conf", "/etc/dbus-1/system.d")
 
             if docs_ENABLED:
