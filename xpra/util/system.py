@@ -138,7 +138,7 @@ def get_linux_distribution() -> tuple[str, str, str]:
         # so we use our own code first:
         cmd = ["lsb_release", "-a"]
         try:
-            p = Popen(cmd, stdout=PIPE, stderr=PIPE)
+            p = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
             out = p.communicate()[0]
             assert p.returncode == 0 and out
         except Exception:
@@ -149,7 +149,7 @@ def get_linux_distribution() -> tuple[str, str, str]:
                 _linux_distribution = ("unknown", "unknown", "unknown")
         else:
             d = {}
-            for line in bytestostr(out).splitlines():
+            for line in out.splitlines():
                 parts = line.rstrip("\n\r").split(":", 1)
                 if len(parts) == 2:
                     d[parts[0].lower().replace(" ", "_")] = parts[1].strip()
