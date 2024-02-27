@@ -237,8 +237,9 @@ def get_platform_name() -> str:
     try:
         from xpra.util.system import get_linux_distribution
         ld = get_linux_distribution()
-        if ld:
-            return "Linux %s" % (" ".join(ld))
+        ldvalid = tuple(x for x in ld if x not in ("", "unknown", "n/a"))
+        if ldvalid:
+            return "Linux %s" % (" ".join(ldvalid))
     except Exception:
         pass
     return sys.platform
