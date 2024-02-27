@@ -84,8 +84,8 @@ class ShadowServer(GTKShadowServerBase):
         super().__init__(multi_window)
         # sanity check:
         check_display()
-        image = CG.CGWindowlistCreateImage(CG.CGRectInfinite,
-                                           CG.kCGWindowlistOptionOnScreenOnly,
+        image = CG.CGWindowListCreateImage(CG.CGRectInfinite,
+                                           CG.kCGWindowListOptionOnScreenOnly,
                                            CG.kCGNullWindowID,
                                            CG.kCGWindowImageDefault)
         if image is None:
