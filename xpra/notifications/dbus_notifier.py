@@ -162,7 +162,7 @@ class DBUS_Notifier(NotifierBase):
 
     def NotifyError(self, dbus_error, *_args) -> bool:
         if not self.dbusnotify:
-            return
+            return False
         try:
             if isinstance(dbus_error, DBusException):
                 message = dbus_error.get_dbus_message()
