@@ -112,6 +112,7 @@ Requires:			python3-typing-extensions
 BuildRequires:		python3-dataclasses
 Requires:			python3-dataclasses
 %endif
+Recommends:			lsb_release
 Recommends:			python3-pillow
 Recommends:			python3-cryptography
 Recommends:			python3-rencode
