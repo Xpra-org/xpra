@@ -161,10 +161,9 @@ class WindowVideoSource(WindowSource):
     """
 
     def __init__(self, *args):
-        self.supports_scrolling : bool = False
+        self.supports_scrolling: bool = False
         # this will call init_vars():
         super().__init__(*args)
-        self.supports_scrolling : bool = False
         self.scroll_min_percent: int = self.encoding_options.intget("scrolling.min-percent", SCROLL_MIN_PERCENT)
         self.scroll_preference: int = self.encoding_options.intget("scrolling.preference", 100)
         self.supports_video_b_frames : tuple[str,...] = self.encoding_options.strtupleget("video_b_frames", ())
