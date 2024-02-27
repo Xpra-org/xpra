@@ -13,7 +13,7 @@ from typing import Any, Final
 import xpra
 from xpra.util.types import typedict
 from xpra.util.env import envbool
-from xpra.os_util import BITS, POSIX, WIN32
+from xpra.os_util import BITS, POSIX, WIN32, OSX
 from xpra.util.io import get_util_logger
 from xpra.util.system import get_linux_distribution, platform_release, platform_name
 from xpra.common import FULL_INFO
@@ -262,9 +262,11 @@ def do_get_platform_info() -> dict[str, Any]:
         return pp.processor()
 
     info: dict[str, Any] = {}
-    ld = get_linux_distribution()
-    if ld:
-        info["linux_distribution"] = ld
+    if POSIX and not OSX:
+        ld = get_linux_distribution()
+        ldvalid = tuple(x for x in ld if x not in ("", "unknown", "n/a"))
+        if ldvalid:
+            info["linux_distribution"] = ld
     try:
         release = platform_release(pp.release())
     except OSError:
