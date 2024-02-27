@@ -41,6 +41,7 @@ class DBUS_Notifier(NotifierBase):
         self.app_name_format = NOTIFICATION_APP_NAME
         self.last_notification = None
         self.actual_notification_id = {}
+        self.dbusnotify = None
         self.setup_dbusnotify()
         self.handles_actions = True
 
@@ -65,10 +66,13 @@ class DBUS_Notifier(NotifierBase):
         for nid, actual_id in nids:
             self.do_close(nid, actual_id)
         NotifierBase.cleanup(self)
+        self.dbusnotify = None
 
 
     def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):
         if not self.dbus_check(dbus_id):
+            return
+        if not self.dbusnotify:
             return
         self.may_retry = True
         try:
@@ -155,6 +159,8 @@ class DBUS_Notifier(NotifierBase):
                 self.action_cb(nid, str(action))
 
     def NotifyError(self, dbus_error, *_args):
+        if not self.dbusnotify:
+            return False
         try:
             if isinstance(dbus_error, dbus.exceptions.DBusException):
                 message = dbus_error.get_dbus_message()
@@ -190,6 +196,8 @@ class DBUS_Notifier(NotifierBase):
 
     def do_close(self, nid, actual_id):
         log("do_close_notify(%i)", actual_id)
+        if not self.dbusnotify:
+            return
         def CloseNotificationReply():
             try:
                 self.actual_notification_id.pop(nid)
