@@ -13,7 +13,7 @@ from typing import Any, Dict, Tuple, Optional
 #tricky: use xpra.scripts.config to get to the python "platform" module
 import xpra
 from xpra.util import envbool, typedict, get_util_logger
-from xpra.os_util import get_linux_distribution, BITS, POSIX, WIN32
+from xpra.os_util import get_linux_distribution, BITS, POSIX, WIN32, OSX
 from xpra.common import FULL_INFO
 
 XPRA_VERSION = xpra.__version__     #@UndefinedVariable
@@ -241,9 +241,10 @@ def do_get_platform_info() -> Dict[str, Any]:
                     return re.sub(".*model name.*:", "", line, count=1).strip()
         return pp.processor()
     info : Dict[str, Any] = {}
-    ld = get_linux_distribution()
-    if ld:
-        info["linux_distribution"] = ld
+    if POSIX and not OSX:
+        ld = get_linux_distribution()
+        if ld:
+            info["linux_distribution"] = ld
     try:
         release = platform_release(pp.release())
     except OSError:
