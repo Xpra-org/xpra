@@ -12,7 +12,7 @@ import socket
 import xpra
 from xpra.scripts.config import python_platform
 from xpra.util import updict, envbool, get_util_logger
-from xpra.os_util import get_linux_distribution, PYTHON3, BITS, POSIX, WIN32
+from xpra.os_util import get_linux_distribution, PYTHON3, BITS, POSIX, WIN32, OSX
 
 XPRA_VERSION = xpra.__version__     #@UndefinedVariable
 
@@ -171,9 +171,10 @@ def do_get_platform_info():
                     return re.sub(".*model name.*:", "", line, count=1).strip()
         return pp.processor()
     info = {}
-    ld = get_linux_distribution()
-    if ld:
-        info["linux_distribution"] = ld
+    if POSIX and not OSX:
+        ld = get_linux_distribution()
+        if ld:
+            info["linux_distribution"] = ld
     try:
         release = platform_release(pp.release())
     except OSError:
