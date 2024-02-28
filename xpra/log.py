@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import re
 import sys
 import logging
 import weakref
@@ -25,6 +26,10 @@ NOPREFIX_FORMAT: Final[str] = "%(message)s"
 
 
 BACKTRACE_LEVEL = int(os.environ.get("XPRA_LOG_BACKTRACE_LEVEL", logging.CRITICAL))
+BACKTRACE_REGEXES: tuple[str, ...] = tuple(
+    x for x in os.environ.get("XPRA_LOG_BACKTRACE_REGEXES", "").split("|") if x
+)
+
 
 logging.basicConfig(format=LOG_FORMAT)
 logging.root.setLevel(logging.INFO)
@@ -100,18 +105,19 @@ def remove_disabled_category(*cat) -> None:
 
 
 def add_backtrace(*expressions) -> None:
-    import re
     for e in expressions:
         backtrace_expressions.add(re.compile(e))
 
 
 def remove_backtrace(*expressions) -> None:
-    import re
     for e in expressions:
         try:
             backtrace_expressions.remove(re.compile(e))
         except KeyError:
             pass
+
+
+add_backtrace(*BACKTRACE_REGEXES)
 
 
 default_level: int = logging.DEBUG
@@ -342,6 +348,8 @@ def get_info() -> dict[str, Any]:
             "enabled"   : tuple(debug_enabled_categories),
             "disabled"  : tuple(debug_disabled_categories),
         },
+        "backtrace-level": BACKTRACE_LEVEL,
+        "backtrace-expressions": tuple(bt.pattern for bt in backtrace_expressions),
         "handler"   : getattr(global_logging_handler, "__name__", "<unknown>"),
         "prefix"    : LOG_PREFIX,
         "format"    : LOG_FORMAT,
