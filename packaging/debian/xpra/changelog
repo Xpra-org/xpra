@@ -7,6 +7,7 @@ xpra (5.0.7-1) UNRELEASED; urgency=low
    - installation path for manual pages on FreeBSD
    - comtypes clear cache script executable was moved
    - missing RPM soft dependency
+   - MacOS builds missing libxxhash
   * Major bugs:
    - missing feature flags
    - client wrongly claiming file download is not available
@@ -17,7 +18,7 @@ xpra (5.0.7-1) UNRELEASED; urgency=low
    - potential undesirable side-effects
    - method signature consistency
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 28 Feb 2024 19:09:23 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 28 Feb 2024 21:07:30 +0700
 
 xpra (5.0.6-1) UNRELEASED; urgency=low
   * Major:

@@ -786,6 +786,7 @@ fi
    installation path for manual pages on FreeBSD
    comtypes clear cache script executable was moved
    missing RPM soft dependency
+   MacOS builds missing libxxhash
 - Major bugs:
    missing feature flags
    client wrongly claiming file download is not available

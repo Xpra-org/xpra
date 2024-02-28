@@ -9,6 +9,7 @@
     * [installation path for manual pages on FreeBSD](https://github.com/Xpra-org/xpra/commit/94b0acb64b7bf0a5a866c1c10eb30ff7f9e36fec)
     * [comtypes clear cache script executable was moved](https://github.com/Xpra-org/xpra/commit/21736d6616fbb6d9743d266873498343958af78d)
     * [missing RPM soft dependency](https://github.com/Xpra-org/xpra/commit/43ffeeaed02438e4d3556028feb07f18e28ce179)
+    * [MacOS builds missing libxxhash](https://github.com/Xpra-org/xpra/commit/ae7a4e4c55fcda3ccc584ef8517fe55d3091b24e)
 * Major bugs:
     * [missing feature flags](https://github.com/Xpra-org/xpra/commit/ddeb2f8e64b5fb31bd850e3f8616450f145ad436)
     * [client wrongly claiming file download is not available](https://github.com/Xpra-org/xpra/commit/a0642cc106c5f2a8b852bcd117e47cb558600c47)
