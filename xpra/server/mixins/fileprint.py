@@ -103,7 +103,7 @@ class FilePrintServer(StubServerMixin):
                 pycups_printing.add_printer_def("application/postscript", self.postscript_printer)
             if self.pdf_printer:
                 pycups_printing.add_printer_def("application/pdf", self.pdf_printer)
-            printer_definitions = pycups_printing.validate_setup()
+            printer_definitions = pycups_printing.get_printer_definitions()
             printing = bool(printer_definitions)
             if printing:
                 printlog.info("printer forwarding enabled using %s", " and ".join(

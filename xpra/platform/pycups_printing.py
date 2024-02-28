@@ -242,12 +242,6 @@ def get_printer_definition(mimetype: str) -> str:
     return v[1]  # ie: /usr/share/ppd/cupsfilters/Generic-PDF_Printer-PDF.ppd
 
 
-def validate_setup() -> bool:
-    # very simple check: at least one ppd file exists
-    defs = get_printer_definitions()
-    return bool(defs)
-
-
 def exec_lpadmin(args, success_cb: Callable = None):
     # pylint: disable=import-outside-toplevel
     command = shlex.split(LPADMIN) + args
@@ -533,10 +527,11 @@ def main():
     from xpra.log import enable_color
     with program_context("PyCUPS Printing"):
         enable_color()
-        log.info("validation: %s", validate_setup())
+        defs = get_printer_definitions()
+        log.info("validation: %s", bool(defs))
         log.info("")
         log.info("printer definitions:")
-        for k, v in get_printer_definitions().items():
+        for k, v in defs.items():
             log.info("* %-32s: %s", k, v)
         log.info("")
         log.info("local printers:")
