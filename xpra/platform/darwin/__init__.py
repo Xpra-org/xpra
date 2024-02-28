@@ -27,8 +27,10 @@ def do_init_env():
     bundle_contents = os.environ.get("GST_BUNDLE_CONTENTS")
     if bundle_contents:
         rsc_dir = os.path.join(bundle_contents, "Resources")
-        os.environ["GST_PLUGIN_PATH"] = os.path.join(rsc_dir, "lib", "gstreamer-1.0")
-        os.environ["GST_PLUGIN_SCANNER"] = os.path.join(rsc_dir, "bin", "gst-plugin-scanner")
+        if "GST_PLUGIN_PATH" not in os.environ:
+            os.environ["GST_PLUGIN_PATH"] = os.path.join(rsc_dir, "lib", "gstreamer-1.0")
+        if "GST_PLUGIN_SCANNER" not in os.environ:
+            os.environ["GST_PLUGIN_SCANNER"] = os.path.join(rsc_dir, "bin", "gst-plugin-scanner")
 
 
 def default_gtk_main_exit():
