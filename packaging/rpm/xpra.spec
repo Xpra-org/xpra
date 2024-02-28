@@ -777,9 +777,24 @@ fi
 
 
 %changelog
-* Fri Feb 23 2024 Antoine Martin <antoine@xpra.org> 5.0.7-10
-- typo causing CUDA codecs error
-- f-string incompatible with Python versions older than 3.8
+* Wed Feb 28 2024 Antoine Martin <antoine@xpra.org> 5.0.7-10
+- Regressions:
+   typo causing CUDA codecs error
+   window content-type guessing broken with Python < 3.8
+   X11 clipboard backend broken with Python < 3.9
+- Platforms and packaging:
+   installation path for manual pages on FreeBSD
+   comtypes clear cache script executable was moved
+   missing RPM soft dependency
+- Major bugs:
+   missing feature flags
+   client wrongly claiming file download is not available
+   desktop geometry changes can't clamp windows to display area
+- Minor and cosmetic bugs:
+   don't try to query the Linux distributions on MacOS or MS Windows
+   use namespaced capabilities check
+   potential undesirable side-effects
+   method signature consistency
 
 * Thu Feb 22 2024 Antoine Martin <antoine@xpra.org> 5.0.6-10
 - Major:

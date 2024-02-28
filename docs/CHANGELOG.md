@@ -1,9 +1,24 @@
 # Changelog
 
-## [5.0.7] 2024-02-23
+## [5.0.7] 2024-02-28
 * Regressions:
     * [typo causing CUDA codecs error](https://github.com/Xpra-org/xpra/commit/062be135cbe8298ba775582b70e5731e04a16d3f)
-    * [f-string incompatible with Python versions older than 3.8](https://github.com/Xpra-org/xpra/commit/8141bcfa20df314f11f7b60d770ee3c6a22aeacd)
+    * [window content-type guessing broken with Python < 3.8](https://github.com/Xpra-org/xpra/commit/8141bcfa20df314f11f7b60d770ee3c6a22aeacd)
+    * [X11 clipboard backend broken with Python < 3.9](https://github.com/Xpra-org/xpra/commit/0ca51f1848e7d1ce5eaa99f2b6937b45555083b6)
+* Platforms and packaging:
+    * [installation path for manual pages on FreeBSD](https://github.com/Xpra-org/xpra/commit/94b0acb64b7bf0a5a866c1c10eb30ff7f9e36fec)
+    * [comtypes clear cache script executable was moved](https://github.com/Xpra-org/xpra/commit/21736d6616fbb6d9743d266873498343958af78d)
+    * [missing RPM soft dependency](https://github.com/Xpra-org/xpra/commit/43ffeeaed02438e4d3556028feb07f18e28ce179)
+* Major bugs:
+    * [missing feature flags](https://github.com/Xpra-org/xpra/commit/ddeb2f8e64b5fb31bd850e3f8616450f145ad436)
+    * [client wrongly claiming file download is not available](https://github.com/Xpra-org/xpra/commit/a0642cc106c5f2a8b852bcd117e47cb558600c47)
+    * [desktop geometry changes can't clamp windows to display area](https://github.com/Xpra-org/xpra/commit/80a82f1962d4b6b1f7f4899fc75b42e5ecf24e29)
+* Minor and cosmetic bugs:
+    * [don't try to query the Linux distributions on MacOS or MS Windows](https://github.com/Xpra-org/xpra/commit/742ee0eedd9b639cf4e63b4c3a2c9a7114587543)
+    * [use namespaced capabilities check](https://github.com/Xpra-org/xpra/commit/337452695f39e1cf865095c17ffe2a84b9c0f58e)
+    * [potential undesirable side-effects](https://github.com/Xpra-org/xpra/commit/f124abd66095335442cc1c90eba3f3550ce33bfe)
+    * [method signature consistency](https://github.com/Xpra-org/xpra/commit/797ec70749b2efe261a41234103e0bf6757c0e01)
+
 
 ## [5.0.6] 2024-02-22
 * Major:
