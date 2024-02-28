@@ -190,10 +190,11 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             else:
                 screenlog("scale factor for monitor %i: %i", i, scale_factor)
             plug_name = None
-            try:
-                plug_name = screen.get_monitor_plug_name(i)
-            except Exception:
-                pass
+            with SilenceWarningsContext(DeprecationWarning):
+                try:
+                    plug_name = screen.get_monitor_plug_name(i)
+                except Exception:
+                    pass
             if not plug_name:
                 plug_name = m.get_model()
             monitors.append((plug_name, geom.x, geom.y, geom.width, geom.height, scale_factor))
