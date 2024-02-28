@@ -113,6 +113,9 @@
 		${prefix}/lib/liblz4*.dylib
 	</binary>
 	<binary>
+		${prefix}/lib/xxhash*.dylib
+	</binary>
+	<binary>
 		${prefix}/lib/libssl*.dylib
 	</binary>
 	<binary>
