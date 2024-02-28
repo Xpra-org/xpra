@@ -360,10 +360,10 @@ class WindowModel(BaseWindowModel):
         self.desktop_geometry = (width, height)
         with xsync:
             x, y, w, h = X11Window.getGeometry(self.corral_xid)[:4]
-        nx, ny = self._clamp_to_desktop(x, y, w, h)
-        if nx != x or ny != y:
-            log("update_desktop_geometry(%i, %i) adjusting corral window to new location: %i,%i", width, height, nx, ny)
-            X11Window.MoveWindow(self.corral_xid, nx, ny)
+            nx, ny = self._clamp_to_desktop(x, y, w, h)
+            if nx != x or ny != y:
+                log("update_desktop_geometry(%i, %i) adjusting corral window to new location: %i,%i", width, height, nx, ny)
+                X11Window.MoveWindow(self.corral_xid, nx, ny)
 
     def _read_initial_X11_properties(self) -> None:
         metalog("read_initial_X11_properties() window")
