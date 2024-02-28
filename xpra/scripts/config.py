@@ -125,6 +125,7 @@ def get_Xdummy_command(xorg_cmd="Xorg",
         xorg_cmd,
         "-noreset", "-novtswitch",
         "-nolisten", "tcp",
+        "-nolisten", "local",
         "+extension", "GLX",
         "+extension", "RANDR",
         "+extension", "RENDER",
@@ -145,6 +146,7 @@ def get_Xvfb_command(width=8192, height=4096, dpi=96) -> list[str]:
         "-screen", "0", f"{width}x{height}x24+32",
         # better than leaving to vfb after a resize?
         "-nolisten", "tcp",
+        "-nolisten", "local",
         "-noreset",
         "-auth", "$XAUTHORITY",
     ]
