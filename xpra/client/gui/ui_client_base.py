@@ -381,7 +381,7 @@ class UIXpraClient(ClientBaseClass):
         caps = XpraClientBase.make_hello(self)
         # don't try to find the server uuid if this platform cannot run servers..
         # (doing so causes lockups on win32 and startup errors on osx)
-        if POSIX and not is_Wayland():
+        if POSIX and not (OSX or is_Wayland()):
             # we may be running inside another server!
             try:
                 from xpra.x11.server.server_uuid import get_uuid, get_mode  # pylint: disable=import-outside-toplevel
