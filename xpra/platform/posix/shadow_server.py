@@ -51,11 +51,14 @@ def load_wayland(display: str = "") -> type | None:
 
 
 def load_x11(display: str = "") -> type | None:
+    gdkb = os.environ.get("GDK_BACKEND")
     try:
         os.environ["GDK_BACKEND"] = "x11"
         from xpra.x11.server import shadow
         return shadow.ShadowX11Server
     except ImportError as e:
+        if gdkb:
+            os.environ["GDK_BACKEND"] = gdkb
         warn("Warning: unable to load x11 shadow server", f" {e}")
     return None
 
