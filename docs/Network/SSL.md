@@ -1,5 +1,7 @@
 # SSL
 
+SSL is the colloquial term which refers to both `SSL` and `TLS` socket encryption.
+
 For step by step instructions, expand this:
 <details>
   <summary>Basic Example</summary>
