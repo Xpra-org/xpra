@@ -71,8 +71,8 @@ class GTKServerBase(ServerBase):
                 return
 
             def do_keys_changed():
-                self._keys_changed()
                 self.keymap_changing_timer = 0
+                self._keys_changed()
 
             self.keymap_changing_timer = self.timeout_add(500, do_keys_changed)
 
