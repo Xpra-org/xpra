@@ -35,6 +35,7 @@ X11Keyboard = X11KeyboardBindings()
 
 MAP_MISSING_MODIFIERS: bool = envbool("XPRA_MAP_MISSING_MODIFIERS", True)
 SHIFT_LOCK: bool = envbool("XPRA_SHIFT_LOCK", False)
+VERIFY_MODIFIERS: bool = envbool("XPRA_VERIFY_MODIFIERS", True)
 
 ALL_X11_MODIFIERS: dict[str, int] = {
     "shift": 0,
@@ -679,8 +680,11 @@ class KeyboardConfig(KeyboardConfigBase):
                         X11Keyboard.xtest_fake_key(keycode, False)
                     else:
                         X11Keyboard.xtest_fake_key(keycode, press)
-                    new_mask = self.get_current_mask()
-                    success = (modifier in new_mask) == press
+                    if VERIFY_MODIFIERS:
+                        new_mask = self.get_current_mask()
+                        success = (modifier in new_mask) == press
+                    else:
+                        success = True
                     if success:
                         modkeycode = keycode
                         log("change_mask(%s) %s modifier '%s' using keycode %s",
