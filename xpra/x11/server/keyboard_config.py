@@ -653,11 +653,10 @@ class KeyboardConfig(KeyboardConfigBase):
                             if name == keyname:
                                 log("found the key pressed for %s: %s", modifier, name)
                                 keycodes.insert(0, keycode)
-                    keycodes_for_keyname = self.keycodes_for_modifier_keynames.get(keyname)
-                    if keycodes_for_keyname:
-                        for keycode in keycodes_for_keyname:
-                            if keycode not in keycodes:
-                                keycodes.append(keycode)
+                    keycodes_for_keyname = self.keycodes_for_modifier_keynames.get(keyname, [])
+                    for keycode in keycodes_for_keyname:
+                        if keycode not in keycodes:
+                            keycodes.append(keycode)
                 if ignored_modifier_keycode is not None and ignored_modifier_keycode in keycodes:
                     log("modifier '%s' ignored (ignored keycode=%s)", modifier, ignored_modifier_keycode)
                     continue
