@@ -918,7 +918,7 @@ fi
 
 
 %changelog
-* Tue Feb 20 2024 Antoine Martin <antoine@xpra.org> 3.1.7-10.1xpra1
+* Fri Mar 01 2024 Antoine Martin <antoine@xpra.org> 3.1.7-10.1xpra1
 - major fixes:
      windows misplaced on screen, moving unexpectedly
      windows wm-state synchronization issue
@@ -947,6 +947,7 @@ fi
      make it easier to build DEBs
      pycuda 2020.1 patch for compatibility between RHEL 8 and newer CUDA SDKs
      build CUDA kernels with clang
+     missing `lsb_release` soft dependency in RPMs
      always build python rencode and python lz4 for RHEL 9
      newer libyuv snapshot
      install Cython via pip for DEB builds
@@ -963,7 +964,11 @@ fi
      blacklist some more greedy clipboard applications
      rfb cleanup errors
      better rencode compatibility for XSettings
+     codec self test error handler bug
 - cosmetic:
+     notification errors during shutdown
+     don't query 'linux_distribution' on MacOS or MS Windows
+     avoid potential mmap checks side-effects
      avoid mDNS errors, log message instead
      Python 3.12 SyntaxWarning
      don't try to print a display size we don't have
