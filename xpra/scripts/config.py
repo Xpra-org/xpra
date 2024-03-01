@@ -889,8 +889,13 @@ def get_defaults():
     else:
         bind_dirs = ["auto"]
 
-    ssl_protocol = "TLSv1_2"
-    if sys.version_info<(2, 7, 9):
+    try:
+        import ssl
+        if hasattr(ssl, "PROTOCOL_TLS"):
+            ssl_protocol = "TLS"
+        else:
+            ssl_protocol = "TLSv1_2"
+    except ImportError:
         ssl_protocol = "SSLv23"
 
     if POSIX and not OSX and not (is_Debian() or is_Ubuntu()):
