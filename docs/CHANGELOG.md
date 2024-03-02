@@ -1,5 +1,8 @@
 # Changelog
 
+## [5.0.8] 2024-03-02
+* TODO
+
 ## [5.0.7] 2024-02-28
 * Regressions:
     * [typo causing CUDA codecs error](https://github.com/Xpra-org/xpra/commit/062be135cbe8298ba775582b70e5731e04a16d3f)
