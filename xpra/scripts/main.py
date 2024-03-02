@@ -655,7 +655,7 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
         return run_autostart(script_file, args)
     if mode=="encoding":
         from xpra.codecs import loader
-        return loader.main(args)
+        return loader.main([script_file] + args)
     if mode in ("applications-menu", "sessions-menu"):
         from xpra.server.menu_provider import MenuProvider
         if mode=="applications-menu":
