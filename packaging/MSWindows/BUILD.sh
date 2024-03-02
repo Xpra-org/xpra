@@ -7,33 +7,27 @@
 
 ARGS=$@
 DO_CLEAN=${DO_CLEAN:-1}
-DO_CUDA=${DO_CUDA:-1}
 DO_ZIP=${DO_ZIP:-0}
 DO_INSTALLER=${DO_INSTALLER:-1}
 DO_VERPATCH=${DO_VERPATCH:-1}
-DO_DOC=${DO_DOC:-1}
-CLIENT_ONLY=${CLIENT_ONLY:-0}
+DO_FULL=${DO_FULL:-1}
 RUN_INSTALLER=${RUN_INSTALLER:-1}
 DO_MSI=${DO_MSI:-0}
 DO_SIGN=${DO_SIGN:-1}
-BUNDLE_PUTTY=${BUNDLE_PUTTY:-1}
-if [ "${CLIENT_ONLY}" == "1" ]; then
-	BUNDLE_OPENSSH=${BUNDLE_OPENSSH:-0}
-	BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-0}
-	BUNDLE_PAEXEC=${BUNDLE_PAEXEC:-0}
-	BUNDLE_DESKTOPLOGON=${BUNDLE_DESKTOPLOGON:-0}
-	DO_TESTS=${DO_TESTS:-0}
-	DO_SERVICE=${DO_SERVICE:-0}
-	DO_NUMPY=${DO_NUMPY:-0}
-else
-	BUNDLE_OPENSSH=${BUNDLE_OPENSSH:-1}
-	BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
-	BUNDLE_PAEXEC=${BUNDLE_PAEXEC:-1}
-	BUNDLE_DESKTOPLOGON=${BUNDLE_DESKTOPLOGON:-1}
-	DO_TESTS=${DO_TESTS:-1}
-	DO_SERVICE=${DO_SERVICE:-1}
-	DO_NUMPY=${DO_NUMPY:-$DO_CUDA}
-fi
+DO_TESTS=${DO_TESTS:-0}
+
+# these are only enabled for "full" builds:
+DO_CUDA=${DO_CUDA:-$DO_FULL}
+DO_SERVICE=${DO_SERVICE:-$DO_FULL}
+DO_DOC=${DO_DOC:-$DO_FULL}
+BUNDLE_HTML5=${BUNDLE_HTML5:-$DO_FULL}
+BUNDLE_MANUAL=${BUNDLE_MANUAL:-$DO_FULL}
+BUNDLE_PUTTY=${BUNDLE_PUTTY:-$DO_FULL}
+BUNDLE_OPENSSH=${BUNDLE_OPENSSH:-$DO_FULL}
+BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-$DO_FULL}
+BUNDLE_PAEXEC=${BUNDLE_PAEXEC:-$DO_FULL}
+BUNDLE_NUMPY=${BUNDLE_NUMPY:-$DO_CUDA}
+BUNDLE_DESKTOPLOGON=${BUNDLE_DESKTOPLOGON:-$DO_FULL}
 ZIP_MODULES=${ZIP_MODULES:-1}
 
 PYTHON=python3
@@ -41,8 +35,17 @@ PYTHON=python3
 KEY_FILE="E:\\xpra.pfx"
 DIST="./dist"
 
-if [ "${CLIENT_ONLY}" == "1" ]; then
-	BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_x264 --without-nvenc --without-nvfbc"
+if [ "${DO_FULL}" == "0" ]; then
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-shadow --without-server --without-proxy"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-dbus"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_proxy --without-enc_x264 --without-openh264_encoder --without-webp_encoder --without-spng_encoder --without-jpeg_encoder --without-avif"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvenc --without-nvfbc --without-cuda_kernels"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-csc_cython"
+	# gstreamer?
+	# BUILD_OPTIONS="${BUILD_OPTIONS} --without-example"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-webcam"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-win32_tools"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-docs"
 	shift
 fi
 if [ "${DO_CUDA}" == "0" ]; then
@@ -71,9 +74,11 @@ fi
 
 PROGRAMFILES_X86="C:\\Program Files (x86)"
 
-if [ "${CLIENT_ONLY}" == "1" ]; then
+if [ "${DO_FULL}" == "0" ]; then
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-server --without-shadow --without-proxy --without-rfb"
-else
+fi
+
+if [ "${BUNDLE_HTML5}" == "1" ]; then
 	# Make sure we have the HTML5 client
 	if [ ! -d "xpra-html5" ]; then
 		echo "html5 client not found"
@@ -131,9 +136,8 @@ if [ "${LOCAL_MODIFICATIONS}" != "0" ]; then
 	FULL_VERSION="${FULL_VERSION}M"
 fi
 EXTRA_VERSION=""
-if [ "${CLIENT_ONLY}" == "1" ]; then
-	EXTRA_VERSION="-Client"
-	DO_CUDA="0"
+if [ "${DO_FULL}" == "0" ]; then
+	EXTRA_VERSION="-Minimal"
 fi
 echo
 echo -n "Xpra${EXTRA_VERSION} ${FULL_VERSION}"
@@ -356,7 +360,8 @@ else
   #keep cuda bits at top level:
   mv lib/cuda* lib/nvjpeg* ./
 fi
-if [ "${DO_NUMPY}" == "0" ]; then
+
+if [ "${BUNDLE_NUMPY}" == "0" ]; then
 	rm -fr ./lib/numpy
 else
 	rm -fr ./lib/numpy/_pyinstaller
@@ -393,10 +398,32 @@ for x in `ls *dll`; do
 	find ./ -mindepth 2 -name "${x}" -exec rm {} \;
 done
 
+rm -f ./libjasper* ./libjbig*
+# Python modules:
+rm -fr ./lib2to3* ./xdg* ./olefile* ./pygtkcompat* keyring/testing ./jaraco* ./p11-kit*
 #remove codecs we don't need:
-rm -f ./libSvt*
-rm -f ./libx265*
-
+rm -f ./libSvt* ./libx265* ./libjxl* ./libLerc* ./libde265* ./libkvazaar* ./libopenjp2*
+if [ "${DO_FULL}" == "0" ]; then
+	# kerberos / gss libs:
+	rm -f ./libshishi* ./libgss*
+	# no dbus:
+	rm -f ./libdbus*
+	# no AV1:
+    rm -f ./libaom* ./rav1e* ./libdav1d* ./libheif*
+    # no avif:
+    rm -f ./libavif*
+    # remove h264 encoder:
+	rm -f ./libx264*
+	# should not be needed:
+	rm -f ./libsqlite* ./libp11-kit* ./libsharpyuv*
+	# extra audio codecs (we just keep vorbis and opus):
+	rm -f ./libmp3* ./libwavpack* ./libmpdec* ./libspeex* ./libFLAC* ./libmpg123* ./libfaad* ./libfaac*
+	# matching gstreamer modules:
+	pushd ./gstreamer-1.0
+	rm -f ./libgstflac* ./libgstaom* ./libgstwavpack* ./libgstspeex* ./libgstwinscreencap* ./libgstwavenc* ./libgstlame* ./libgstmpg123* ./libgstfaac* ./libgstfaad* ./libgstx264*
+	popd
+	# libgstvideo?
+fi
 
 #remove PIL loaders we don't use:
 echo "* removing unnecessary PIL plugins:"
@@ -420,6 +447,7 @@ popd
 #remove test bits we don't need:
 rm -fr ./future/backports/test ./comtypes/test/ ./ctypes/macholib/fetch_macholib* ./distutils/tests ./distutils/command ./enum/doc ./websocket/tests ./email/test/
 rm -fr ./Crypto/SelfTest/*
+
 #remove source:
 find xpra -name "*.pyx" -exec rm {} \;
 find xpra -name "*.c" -exec rm {} \;
@@ -430,23 +458,38 @@ find xpra -name "*.h" -exec rm {} \;
 find xpra -name "*.html" -exec rm {} \;
 find xpra -name "*.pxd" -exec rm {} \;
 find xpra -name "*.cu" -exec rm {} \;
+
 #remove empty directories:
 rmdir xpra/*/*/* 2> /dev/null
 rmdir xpra/*/* 2> /dev/null
 rmdir xpra/* 2> /dev/null
+
 #zip up some modules:
 if [ "${ZIP_MODULES}" == "1" ]; then
 	#these modules contain native code or data files,
 	#so they will require special treatment:
 	#xpra numpy cryptography PIL nacl cffi gtk rencode gobject glib > /dev/null
-	zip --move -ur library.zip OpenGL test encodings unittest ldap3 future paramiko html \
-			pyasn1 distutils comtypes asn1crypto ldap email multiprocessing \
-			pkg_resources pyu2f pycparser idna ctypes json \
-			http enum sqlite3 winreg copyreg _thread _dummythread builtins importlib \
-			logging queue urllib xml xmlrpc pyasn1_modules concurrent pynvml collections > /dev/null
+	if [ "${DO_FULL}" == "0" ]; then
+		rm -fr test unittest gssapi pynvml ldap ldap3 pyasn1 asn1crypto pyu2f sqlite3
+	else
+		zip --move -ur library.zip test unittest gssapi pynvml ldap ldap3 pyasn1 asn1crypto pyu2f sqlite3
+	fi
+	zip --move -ur library.zip OpenGL encodings future paramiko html \
+			distutils comtypes email multiprocessing \
+			pkg_resources pycparser idna ctypes json \
+			http enum winreg copyreg _thread _dummythread builtins importlib \
+			logging queue urllib xml xmlrpc pyasn1_modules concurrent collections > /dev/null
 fi
 #leave ./lib
 popd > /dev/null
+
+rm -f etc/pkcs11
+if [ "${DO_FULL}" == "0" ]; then
+	# remove extra bits that take up a lot of space:
+	rm -fr share/icons/Adwaita/cursors
+	rm -fr share/fonts/gsfonts share/fonts/adobe* share/fonts/cantarell
+fi
+
 #remove empty icon directories
 for i in `seq 4`; do
 	find share/icons -type d -exec rmdir {} \; 2> /dev/null
@@ -457,9 +500,14 @@ popd > /dev/null
 
 
 echo "* Adding manifest"
-for exe in Bug_Report GTK_info NativeGUI_info Screenshot Xpra-Launcher Xpra-Shadow Xpra Xpra_cmd; do
+for exe in Bug_Report Xpra-Launcher Xpra Xpra_cmd; do
   cp packaging/MSWindows/exe.manifest ./dist/${exe}.exe.manifest
 done
+if [ "${DO_FULL}" == "1" ]; then
+	for exe in GTK_info NativeGUI_info Screenshot Xpra-Shadow; do
+	  cp packaging/MSWindows/exe.manifest ./dist/${exe}.exe.manifest
+	done
+fi
 
 
 echo "* Generating gdk pixbuf loaders.cache"
@@ -469,10 +517,12 @@ for itheme in `ls dist/share/icons/`; do
 	gtk-update-icon-cache.exe -t -i "dist/share/icons/${itheme}"
 done
 
-echo "* Generating HTML Manual Page"
-groff.exe -mandoc -Thtml < ./fs/share/man/man1/xpra.1 > ${DIST}/manual.html
+if [ "${BUNDLE_MANUAL}" == "1" ]; then
+	echo "* Generating HTML Manual Page"
+	groff.exe -mandoc -Thtml < ./fs/share/man/man1/xpra.1 > ${DIST}/manual.html
+fi
 
-if [ "${CLIENT_ONLY}" != "1" ]; then
+if [ "${BUNDLE_HTML5}" == "1" ]; then
 	echo "* Installing the HTML5 client"
 	pushd "xpra-html5"
 	python3 ./setup.py install ../${DIST}/www/
@@ -537,8 +587,10 @@ if [ "${DO_VERPATCH}" == "1" ]; then
 		verpatch $exe				//s desc "Xpra $tool_name"		//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2020" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
 	done
 	verpatch dist/Xpra_cmd.exe		//s desc "Xpra command line"	//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2020" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
-	verpatch dist/Xpra-Proxy.exe	//s desc "Xpra Proxy Server"	//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2020" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
 	verpatch dist/Xpra.exe			//s desc "Xpra"					//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2020" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
+	if [ "${DO_FULL}" == "1" ]; then
+		verpatch dist/Xpra-Proxy.exe	//s desc "Xpra Proxy Server"	//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2020" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
+	fi
 fi
 
 ################################################################################
