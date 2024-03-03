@@ -59,7 +59,8 @@ class GUI(BaseGUIWindow):
             else:
                 tooltip = "This build of Xpra does not support starting shadow sessions"
             self.ib("Shadow", "server-connected.png", tooltip, self.shadow, sensitive=has_shadow)
-            tooltip = "Start a new %sxpra session" % (" remote" if (WIN32 or OSX) else "")
+        if has_client():
+            tooltip = "Start a new %sxpra session" % (" remote" if not has_server() else "")
             self.ib("Start", "windows.png", tooltip, self.start)
         grid = Gtk.Grid()
         grid.set_row_homogeneous(True)
