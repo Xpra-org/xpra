@@ -46,6 +46,7 @@ if [ "${DO_FULL}" == "0" ]; then
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-webcam"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-win32_tools"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-docs"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --with-Os"
 	shift
 fi
 if [ "${DO_CUDA}" == "0" ]; then
@@ -137,7 +138,7 @@ if [ "${LOCAL_MODIFICATIONS}" != "0" ]; then
 fi
 EXTRA_VERSION=""
 if [ "${DO_FULL}" == "0" ]; then
-	EXTRA_VERSION="-Minimal"
+	EXTRA_VERSION="-Light"
 fi
 echo
 echo -n "Xpra${EXTRA_VERSION} ${FULL_VERSION}"
@@ -341,11 +342,20 @@ rm -fr "${DIST}/lib/comtypes/gen"
 pushd ${DIST} > /dev/null
 #why is it shipping those files??
 find lib/ -name "*dll.a" -exec rm {} \;
+
 #only keep the actual loaders, not all the other crap cx_Freeze put there:
 mkdir lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp
 mv lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-*.dll lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp/
 rm -fr lib/gdk-pixbuf-2.0/2.10.0/loaders
 mv lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp lib/gdk-pixbuf-2.0/2.10.0/loaders
+if [ "${DO_FULL}" == "0" ]; then
+	pushd lib/gdk-pixbuf-2.0/2.10.0/loaders
+	# we only want to keep: jpeg, png, xpm and svg
+	for fmt in xbm gif jxl tiff ico tga bmp	ani pnm avif qtif icns heif; do
+		rm -f libpixbufloader-${fmt}.dll
+	done
+	popd
+fi
 #move libs that are likely to be common to the lib dir:
 for prefix in lib avcodec avformat avutil swscale swresample zlib1 xvidcore; do
 	find lib/Xpra -name "${prefix}*dll" -exec mv {} ./lib/ \;
@@ -386,6 +396,9 @@ mv ./lib/gstreamer-1.0/libgstreamer*.dll ./lib/
 mv ./lib/gstreamer-1.0/libgst*-1.0-*.dll ./lib/gstreamer-1.0/libwavpack* ./lib/
 #gstreamer modules don't have "-" in the DLL name:
 mv ./lib/gstreamer-1.0/lib*-?.dll ./lib/
+#not needed at all for now:
+rm ./lib/libgstbasecamerabinsrc* libgstphotography*
+
 #move most DLLs to /lib
 mv *dll lib/
 #but keep the core DLLs (python, gcc, etc):
@@ -400,7 +413,7 @@ done
 
 rm -f ./libjasper* ./libjbig*
 # Python modules:
-rm -fr ./lib2to3* ./xdg* ./olefile* ./pygtkcompat* keyring/testing ./jaraco* ./p11-kit*
+rm -fr ./lib2to3* ./xdg* ./olefile* ./pygtkcompat* keyring/testing ./jaraco* ./p11-kit* ./lz4
 #remove codecs we don't need:
 rm -f ./libSvt* ./libx265* ./libjxl* ./libLerc* ./libde265* ./libkvazaar* ./libopenjp2*
 if [ "${DO_FULL}" == "0" ]; then
@@ -420,9 +433,10 @@ if [ "${DO_FULL}" == "0" ]; then
 	rm -f ./libmp3* ./libwavpack* ./libmpdec* ./libspeex* ./libFLAC* ./libmpg123* ./libfaad* ./libfaac*
 	# matching gstreamer modules:
 	pushd ./gstreamer-1.0
-	rm -f ./libgstflac* ./libgstaom* ./libgstwavpack* ./libgstspeex* ./libgstwinscreencap* ./libgstwavenc* ./libgstlame* ./libgstmpg123* ./libgstfaac* ./libgstfaad* ./libgstx264*
+	rm -f ./libgstflac* ./libgstwavpack* ./libgstspeex* ./libgstwavenc* ./libgstlame* ./libgstmpg123* ./libgstfaac* ./libgstfaad* ./libgstwav*
+	rm -f ./libgstaom* ./libgstwinscreencap* ./libgstx264* ./libgstvpx* ./libgstvideo* ./libgstopenh264*
+	rm -f ./libgstgdp*
 	popd
-	# libgstvideo?
 fi
 
 #remove PIL loaders we don't use:
@@ -445,10 +459,18 @@ echo " kept: ${KMP}"
 popd
 
 #remove test bits we don't need:
-rm -fr ./future/backports/test ./comtypes/test/ ./ctypes/macholib/fetch_macholib* ./distutils/tests ./distutils/command ./enum/doc ./websocket/tests ./email/test/
+rm -fr ./future/backports/test ./comtypes/test/ ./ctypes/macholib/fetch_macholib* ./distutils/tests ./distutils/command ./enum/doc ./websocket/tests ./email/test/ ./psutil/tests
 rm -fr ./Crypto/SelfTest/*
 
+#no runtime type checks:
+find xpra -name "py.typed" -exec rm {} \;
+
+#not building:
+rm -fr cairo/include
+
 #remove source:
+find xpra -name "*.bak" -exec rm {} \;
+find xpra -name "*.orig" -exec rm {} \;
 find xpra -name "*.pyx" -exec rm {} \;
 find xpra -name "*.c" -exec rm {} \;
 find xpra -name "*.cpp" -exec rm {} \;
@@ -468,14 +490,18 @@ rmdir xpra/* 2> /dev/null
 if [ "${ZIP_MODULES}" == "1" ]; then
 	#these modules contain native code or data files,
 	#so they will require special treatment:
-	#xpra numpy cryptography PIL nacl cffi gtk rencode gobject glib > /dev/null
+	#xpra numpy cryptography PIL nacl cffi gtk object glib > /dev/null
 	if [ "${DO_FULL}" == "0" ]; then
-		rm -fr test unittest gssapi pynvml ldap ldap3 pyasn1 asn1crypto pyu2f sqlite3
+		rm -fr test unittest gssapi pynvml ldap ldap3 pyasn1 asn1crypto pyu2f sqlite3 psutil
 	else
-		zip --move -ur library.zip test unittest gssapi pynvml ldap ldap3 pyasn1 asn1crypto pyu2f sqlite3
+		zip --move -ur library.zip test unittest gssapi pynvml ldap ldap3 pyasn1 asn1crypto pyu2f sqlite3 psutil
 	fi
 	zip --move -ur library.zip OpenGL encodings future paramiko html \
-			distutils comtypes email multiprocessing \
+			aioquic pylsqpack async_timeout \
+			nacl certifi OpenSSL pkcs11 keyring
+			ifaddr pyaes browser_cookie3 zeroconf service_identity\
+			re platformdirs attr setproctitle pyvda zipp \
+			distutils comtypes email multiprocessing packaging \
 			pkg_resources pycparser idna ctypes json \
 			http enum winreg copyreg _thread _dummythread builtins importlib \
 			logging queue urllib xml xmlrpc pyasn1_modules concurrent collections > /dev/null
@@ -483,7 +509,6 @@ fi
 #leave ./lib
 popd > /dev/null
 
-rm -f etc/pkcs11
 if [ "${DO_FULL}" == "0" ]; then
 	# remove extra bits that take up a lot of space:
 	rm -fr share/icons/Adwaita/cursors

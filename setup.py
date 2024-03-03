@@ -344,6 +344,7 @@ pandoc_lua_ENABLED      = DEFAULT
 annotate_ENABLED        = False
 warn_ENABLED            = True
 strict_ENABLED          = False
+Os_ENABLED              = False
 PIC_ENABLED             = not WIN32     # ming32 moans that it is always enabled already
 debug_ENABLED           = False
 verbose_ENABLED         = False
@@ -384,7 +385,7 @@ SWITCHES = [
     "audio", "opengl", "printing", "webcam", "notifications", "keyboard",
     "rebuild",
     "docs", "pandoc_lua",
-    "annotate", "warn", "strict",
+    "annotate", "warn", "strict", "Os",
     "shadow", "proxy", "rfb", "quic", "http", "ssh",
     "debug", "PIC",
     "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests",
@@ -889,10 +890,12 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         for d in INCLUDE_DIRS:
             add_to_keywords(kw, 'extra_compile_args', "-I", d)
     optimize = kw.pop("optimize", None)
+    if Os_ENABLED:
+        optimize = "s"
     if optimize and not debug_ENABLED and not cython_tracing_ENABLED:
         if isinstance(optimize, bool):
             optimize = int(optimize)*3
-        add_to_keywords(kw, 'extra_compile_args', "-O%i" % optimize)
+        add_to_keywords(kw, 'extra_compile_args', f"-O{optimize}")
     ignored_flags = kw.pop("ignored_flags", [])
     ignored_tokens = kw.pop("ignored_tokens", [])
 
@@ -1512,7 +1515,7 @@ if WIN32:
                 'tiff',
             )
         if gtk3_ENABLED:
-            add_dir('etc', ["fonts", "gtk-3.0", "pkcs11"])     # add "dbus-1"?
+            add_dir('etc', ["fonts", "gtk-3.0"])     # add "dbus-1"?
             add_dir('lib', ["gdk-pixbuf-2.0", "gtk-3.0",
                             "p11-kit", "pkcs11"])
             add_dir('share',
@@ -1670,14 +1673,15 @@ if WIN32:
         # UI applications (detached from shell: no text output if ran from cmd.exe)
         if (client_ENABLED or server_ENABLED) and gtk3_ENABLED:
             add_gui_exe("fs/bin/xpra",                         "xpra.ico",         "Xpra")
-            add_gui_exe("xpra/platform/win32/scripts/shadow_server.py",       "server-notconnected.ico", "Xpra-Shadow")
             add_gui_exe("fs/bin/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
             if win32_tools_ENABLED:
                 add_console_exe("fs/bin/xpra_launcher",            "xpra.ico",         "Xpra-Launcher-Debug")
                 add_gui_exe("xpra/gtk/dialogs/view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
             add_gui_exe("xpra/gtk/dialogs/bug_report.py",           "bugs.ico",         "Bug_Report")
             add_gui_exe("xpra/gtk/configure/main.py",        "directory.ico",         "Configure")
-            if shadow_ENABLED:
+        if shadow_ENABLED:
+            add_gui_exe("xpra/platform/win32/scripts/shadow_server.py",       "server-notconnected.ico", "Xpra-Shadow")
+            if win32_tools_ENABLED:
                 add_gui_exe("xpra/platform/win32/gdi_screen_capture.py", "screenshot.ico", "Screenshot")
         if win32_tools_ENABLED and server_ENABLED:
             add_gui_exe("fs/libexec/xpra/auth_dialog",          "authentication.ico", "Auth_Dialog")
@@ -1746,11 +1750,21 @@ if WIN32:
         # building etc files in-place:
         if data_ENABLED:
             build_xpra_conf("./fs")
-            add_data_files(
-                "etc/xpra",
-                glob("fs/etc/xpra/*conf") + glob("fs/etc/xpra/nvenc*.keys") + glob("fs/etc/xpra/nvfbc*.keys")
-            )
-            add_data_files('etc/xpra/conf.d', glob("fs/etc/xpra/conf.d/*conf"))
+            conf_files = ["xpra.conf"]
+            if shadow_ENABLED and nvfbc_ENABLED:
+                conf_files += ["nvfbc.keys"]
+            if shadow_ENABLED and nvenc_ENABLED:
+                conf_files += ["nvenc.keys"]
+            add_data_files("etc/xpra", conf_files)
+            prefixes = ["0", "1", "2", "3", "4"]
+            if shadow_ENABLED or proxy_ENABLED:
+                prefixes.append("50_server_network")
+            if proxy_ENABLED:
+                prefixes.append("65_proxy")
+            conf_d_files = []
+            for prefix in prefixes:
+                conf_d_files += glob(f"fs/etc/xpra/conf.d/{prefix}*conf")
+            add_data_files('etc/xpra/conf.d', conf_d_files)
 
     if data_ENABLED:
         add_data_files("", [
@@ -1820,7 +1834,7 @@ if WIN32:
                 if not isinstance(e, WindowsError) or ("already exists" not in str(e)):  # @UndefinedVariable
                     raise
 
-    if data_ENABLED:
+    if data_ENABLED and shadow_ENABLED:
         add_data_files("share/metainfo",      ["fs/share/metainfo/xpra.appdata.xml"])
         for d in ("http-headers", "content-type", "content-categories", "content-parent"):
             add_data_files(f"etc/xpra/{d}", glob(f"fs/etc/xpra/{d}/*"))
