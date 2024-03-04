@@ -1859,6 +1859,7 @@ def run_opengl_probe():
     def probe_message() -> str:
         err = props.get("error", "")
         msg = props.get("message", "")
+        warning = props.get("warning", "").split(":")[0]
         if err:
             return f"error:{err}"
         if r == 1:
@@ -1870,7 +1871,7 @@ def run_opengl_probe():
         if r != 0:
             return "failed:%s" % SIGNAMES.get(0 - r, 0 - r)
         if props.get("success", "False").lower() in FALSE_OPTIONS:
-            return "error:%s" % (err or msg)
+            return "error:%s" % (err or msg or warning)
         if props.get("safe", "False").lower() in FALSE_OPTIONS:
             return "warning:%s" % (err or msg)
         return "success"
