@@ -279,7 +279,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         add(password_input, 10)
         dialog.vbox.show_all()
         dialog.password_input = password_input
+        replies = []
         def handle_response(dialog, response):
+            if replies:
+                return
             if OSX:
                 from xpra.platform.darwin.gui import disable_focus_workaround
                 disable_focus_workaround()
@@ -289,6 +292,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if response!=RESPONSE_ACCEPT or not password:
                 self.quit(EXIT_PASSWORD_REQUIRED)
                 return
+            replies.append(response)
             self.send_challenge_reply(packet, password)
         def password_activate(*_args):
             handle_response(dialog, RESPONSE_ACCEPT)
