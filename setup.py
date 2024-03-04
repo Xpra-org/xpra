@@ -306,6 +306,7 @@ openh264_encoder_ENABLED = openh264_ENABLED
 # crashes on 32-bit windows:
 pillow_ENABLED          = DEFAULT
 argb_ENABLED            = DEFAULT
+argb_encoder_ENABLED    = argb_ENABLED
 spng_decoder_ENABLED    = DEFAULT and pkg_config_version("0.6", "spng")
 spng_encoder_ENABLED    = DEFAULT and pkg_config_version("0.7", "spng")
 webp_ENABLED            = DEFAULT and pkg_config_version("0.5", "libwebp")
@@ -365,7 +366,7 @@ CODEC_SWITCHES = [
     "pillow",
     "spng_decoder", "spng_encoder",
     "jpeg_encoder", "jpeg_decoder",
-    "avif", "argb",
+    "avif", "argb", "argb_encoder",
     "v4l2", "evdi", "drm",
     "csc_cython", "csc_libyuv", "gstreamer",
 ]
@@ -394,6 +395,7 @@ SWITCHES = [
 # some switches can control multiple switches:
 SWITCH_ALIAS = {
     "codecs": ["codecs"] + CODEC_SWITCHES,
+    "argb" : ("argb_encoder", ),
     "vpx" : ("vpx_encoder", "vpx_decoder"),
     "webp" : ("webp_encoder", "webp_decoder"),
     "openh264": ("openh264", "openh264_decoder", "openh264_encoder"),
@@ -1751,20 +1753,23 @@ if WIN32:
         if data_ENABLED:
             build_xpra_conf("./fs")
             conf_files = ["xpra.conf"]
-            if shadow_ENABLED and nvfbc_ENABLED:
-                conf_files += ["nvfbc.keys"]
-            if shadow_ENABLED and nvenc_ENABLED:
-                conf_files += ["nvenc.keys"]
-            add_data_files("etc/xpra", conf_files)
-            prefixes = ["0", "1", "2", "3", "4"]
+            if shadow_ENABLED:
+                if nvidia_ENABLED:
+                    conf_files.append("cuda.conf")
+                if nvfbc_ENABLED:
+                    conf_files.append("nvfbc.keys")
+                if nvenc_ENABLED:
+                    conf_files.append("nvenc.keys")
+            add_data_files("etc/xpra", [f"fs/etc/xpra/{conf_file}" for conf_file in conf_files])
+            prefixes = ["0*", "1*", "2*", "3*", "4*"]
             if shadow_ENABLED or proxy_ENABLED:
                 prefixes.append("50_server_network")
             if proxy_ENABLED:
                 prefixes.append("65_proxy")
             conf_d_files = []
             for prefix in prefixes:
-                conf_d_files += glob(f"fs/etc/xpra/conf.d/{prefix}*conf")
-            add_data_files('etc/xpra/conf.d', conf_d_files)
+                conf_d_files += glob(f"fs/etc/xpra/conf.d/{prefix}.conf")
+            add_data_files("etc/xpra/conf.d", conf_d_files)
 
     if data_ENABLED:
         add_data_files("", [
@@ -2357,6 +2362,7 @@ tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc")
 tace(nvdec_ENABLED, "xpra.codecs.nvidia.nvdec.decoder", "nvdec,cuda")
 
 toggle_packages(argb_ENABLED, "xpra.codecs.argb")
+toggle_packages(argb_encoder_ENABLED, "xpra.codecs.argb.encoder")
 tace(argb_ENABLED, "xpra.codecs.argb.argb", optimize=3)
 toggle_packages(evdi_ENABLED, "xpra.codecs.evdi")
 

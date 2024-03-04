@@ -38,7 +38,7 @@ DIST="./dist"
 if [ "${DO_FULL}" == "0" ]; then
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-shadow --without-server --without-proxy"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-dbus"
-	BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_proxy --without-enc_x264 --without-openh264_encoder --without-webp_encoder --without-spng_encoder --without-jpeg_encoder --without-avif"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_proxy --without-enc_x264 --without-openh264_encoder --without-webp_encoder --without-spng_encoder --without-jpeg_encoder --without-vpx_encoder --without-avif --without-argb_encoder"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvenc --without-nvfbc --without-cuda_kernels"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-csc_cython"
 	# gstreamer?
@@ -402,7 +402,7 @@ rm ./lib/libgstbasecamerabinsrc* libgstphotography*
 #move most DLLs to /lib
 mv *dll lib/
 #but keep the core DLLs (python, gcc, etc):
-cp lib/msvcrt*dll lib/libpython*dll lib/libgcc*dll lib/libwinpthread*dll ./
+mv lib/msvcrt*dll lib/libpython*dll lib/libgcc*dll lib/libwinpthread*dll ./
 #and keep pdfium:
 mv lib/*pdfium*.dll ./
 pushd lib > /dev/null
@@ -462,12 +462,12 @@ popd
 rm -fr ./future/backports/test ./comtypes/test/ ./ctypes/macholib/fetch_macholib* ./distutils/tests ./distutils/command ./enum/doc ./websocket/tests ./email/test/ ./psutil/tests
 rm -fr ./Crypto/SelfTest/*
 
-#no runtime type checks:
-find xpra -name "py.typed" -exec rm {} \;
 
 #not building:
 rm -fr cairo/include
 
+#no runtime type checks:
+find xpra -name "py.typed" -exec rm {} \;
 #remove source:
 find xpra -name "*.bak" -exec rm {} \;
 find xpra -name "*.orig" -exec rm {} \;
@@ -498,7 +498,7 @@ if [ "${ZIP_MODULES}" == "1" ]; then
 	fi
 	zip --move -ur library.zip OpenGL encodings future paramiko html \
 			aioquic pylsqpack async_timeout \
-			nacl certifi OpenSSL pkcs11 keyring
+			nacl certifi OpenSSL pkcs11 keyring \
 			ifaddr pyaes browser_cookie3 zeroconf service_identity\
 			re platformdirs attr setproctitle pyvda zipp \
 			distutils comtypes email multiprocessing packaging \
