@@ -1693,6 +1693,7 @@ if WIN32:
         add_gui_exe("xpra/platform/win32/scripts/exec.py",     "python.ico", "Python_exec_gui")
         if audio_ENABLED:
             add_data_files("", (shutil.which("gst-launch-1.0.exe"), ))
+            add_console_exe("fs/bin/xpra", "speaker.ico", "Xpra_Audio")
         if printing_ENABLED:
             add_console_exe("xpra/platform/win32/pdfium.py",    "printer.ico",     "PDFIUM_Print")
             do_add_DLLs("", "pdfium")
@@ -1728,7 +1729,6 @@ if WIN32:
                 add_console_exe("xpra/platform/win32/gui.py",       "loop.ico",         "Events_Test")
             if audio_ENABLED:
                 add_console_exe("xpra/audio/gstreamer_util.py",     "gstreamer.ico",    "GStreamer_info")
-                add_console_exe("fs/bin/xpra",                     "speaker.ico",      "Xpra_Audio")
                 add_console_exe("xpra/platform/win32/directsound.py", "speaker.ico",      "Audio_Devices")
                 # add_console_exe("xpra/audio/src.py",                "microphone.ico",   "Audio_Record")
                 # add_console_exe("xpra/audio/sink.py",               "speaker.ico",      "Audio_Play")
