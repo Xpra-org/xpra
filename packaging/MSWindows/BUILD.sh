@@ -411,11 +411,11 @@ for x in `ls *dll`; do
 	find ./ -mindepth 2 -name "${x}" -exec rm {} \;
 done
 
-rm -f ./libjasper* ./libjbig*
+rm -f ./libjasper*
 # Python modules:
 rm -fr ./lib2to3* ./xdg* ./olefile* ./pygtkcompat* keyring/testing ./jaraco* ./p11-kit* ./lz4
 #remove codecs we don't need:
-rm -f ./libSvt* ./libx265* ./libjxl* ./libLerc* ./libde265* ./libkvazaar*
+rm -f ./libSvt* ./libx265* ./libjxl* ./libde265* ./libkvazaar*
 if [ "${DO_FULL}" == "0" ]; then
 	# kerberos / gss libs:
 	rm -f ./libshishi* ./libgss*
