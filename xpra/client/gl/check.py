@@ -21,6 +21,8 @@ required_extensions: tuple[str, ...] = ("GL_ARB_texture_rectangle", "GL_ARB_vert
 GL_ALPHA_SUPPORTED: bool = envbool("XPRA_ALPHA", True)
 DOUBLE_BUFFERED: bool = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", True)
 
+MIN_SIZE = envint("XPRA_OPENGL_MIN_SIZE", 4 * 1024)
+
 CRASH: bool = envbool("XPRA_OPENGL_FORCE_CRASH", False)
 TIMEOUT: int = envint("XPRA_OPENGL_FORCE_TIMEOUT", 0)
 

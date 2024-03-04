@@ -1275,9 +1275,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 opengllog.warn(" %s", msg)
                 self.opengl_enabled = False
 
-            if min(self.gl_max_viewport_dims) < 4 * 1024:
+            from xpra.client.gl.check import MIN_SIZE
+            if min(self.gl_max_viewport_dims) < MIN_SIZE:
                 disablewarn("the maximum viewport size is too low: %s" % (self.gl_max_viewport_dims,))
-            elif self.gl_texture_size_limit < 4 * 1024:
+            elif self.gl_texture_size_limit < MIN_SIZE:
                 disablewarn("the texture size limit is too low: %s" % (self.gl_texture_size_limit,))
             elif driver_info.startswith("SVGA3D") and os.environ.get("WAYLAND_DISPLAY"):
                 disablewarn("SVGA3D driver is buggy under Wayland")
