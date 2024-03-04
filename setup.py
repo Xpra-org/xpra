@@ -336,6 +336,8 @@ cuda_kernels_ENABLED    = nvidia_ENABLED and (nvenc_ENABLED or nvjpeg_encoder_EN
 cuda_rebuild_ENABLED    = None if (nvidia_ENABLED and not WIN32) else False
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
 gstreamer_ENABLED       = DEFAULT
+gstreamer_audio_ENABLED = gstreamer_ENABLED
+gstreamer_video_ENABLED = gstreamer_ENABLED
 example_ENABLED         = DEFAULT
 win32_tools_ENABLED     = WIN32 and DEFAULT
 
@@ -368,7 +370,8 @@ CODEC_SWITCHES = [
     "jpeg_encoder", "jpeg_decoder",
     "avif", "argb", "argb_encoder",
     "v4l2", "evdi", "drm",
-    "csc_cython", "csc_libyuv", "gstreamer",
+    "csc_cython", "csc_libyuv",
+    "gstreamer", "gstreamer_audio", "gstreamer_video",
 ]
 SWITCHES = [
     "cython", "cython_tracing", "cythonize_more",
@@ -400,6 +403,7 @@ SWITCH_ALIAS = {
     "webp" : ("webp_encoder", "webp_decoder"),
     "openh264": ("openh264", "openh264_decoder", "openh264_encoder"),
     "nvidia": ("nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder", "cuda_kernels", "cuda_rebuild"),
+    "gstreamer": ("gstreamer_audio", "gstreamer_video"),
     "cython": (
         "cython", "codecs",
         "server", "client", "shadow",
@@ -2398,7 +2402,8 @@ tace(csc_cython_ENABLED, "xpra.codecs.csc_cython.converter", optimize=3)
 toggle_packages(vpx_encoder_ENABLED or vpx_decoder_ENABLED, "xpra.codecs.vpx")
 tace(vpx_encoder_ENABLED, "xpra.codecs.vpx.encoder", "vpx")
 tace(vpx_decoder_ENABLED, "xpra.codecs.vpx.decoder", "vpx")
-toggle_packages(gstreamer_ENABLED, "xpra.codecs.gstreamer", "xpra.gstreamer")
+toggle_packages(gstreamer_ENABLED, "xpra.gstreamer")
+toggle_packages(gstreamer_video_ENABLED, "xpra.codecs.gstreamer")
 
 toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
 tace(v4l2_ENABLED, "xpra.codecs.v4l2.virtual")
