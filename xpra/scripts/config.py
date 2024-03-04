@@ -709,6 +709,11 @@ OPTION_TYPES = {
     "env"               : list,
 }
 
+# options removed in v6,
+# don't show warnings when running with older config files:
+OLD_OPTIONS: list[str] = ["fake-xinerama", "dbus-proxy"]
+
+
 # in the options list, available in session files,
 # but not on the command line:
 NON_COMMAND_LINE_OPTIONS : list[str] = [
@@ -1303,6 +1308,8 @@ def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dic
     option_types.update(extras_types)
     nd : dict[str, Any] = {}
     for k, v in d.items():
+        if k in OLD_OPTIONS:
+            continue
         if k in discard:
             warn(f"Warning: option {k!r} is not allowed in configuration files")
             continue
