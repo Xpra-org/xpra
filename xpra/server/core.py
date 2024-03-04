@@ -2041,7 +2041,7 @@ class ServerCore:
                 proto.authenticators = self.make_authenticators(socktype, remote, conn)
             except Exception as e:
                 authlog(f"instantiating authenticator for {socktype}", exc_info=True)
-                authlog.error(f"Error instantiating authenticators for {proto.socket_type}:")
+                authlog.error(f"Error instantiating authenticators for {proto.socket_type} connection:")
                 authlog.estr(e)
                 auth_failed(str(e))
                 return
@@ -2116,7 +2116,7 @@ class ServerCore:
                 countinfo = ""
                 if len(proto.authenticators) > 1:
                     countinfo += f" ({index + 1} of {len(proto.authenticators)})"
-                authlog.info(f"Authentication required by {authenticator} authenticator module{countinfo}")
+                authlog.info(f"Authentication required by {authenticator!r} authenticator module{countinfo}")
                 authlog.info(
                     f" sending challenge using {actual_digest!r} digest over {conn.socktype_wrapped} connection")  # noqa: E501
                 if actual_digest not in digest_modes:
