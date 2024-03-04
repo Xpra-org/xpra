@@ -382,6 +382,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         dialog.password_input = password_input
 
         def handle_response(dialog, response):
+            if values:
+                return
             if OSX:
                 from xpra.platform.darwin.gui import disable_focus_workaround
                 disable_focus_workaround()
