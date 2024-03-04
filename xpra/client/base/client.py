@@ -244,6 +244,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if body:
             for x in body.splitlines():
                 notifylog.info(" %s", x)
+        self.show_progress(100, f"notification: {summary}")
 
     def handle_deadly_signal(self, signum, _frame=None):
         stderr_print("\ngot deadly signal %s, exiting" % SIGNAMES.get(signum, signum))
