@@ -1298,7 +1298,7 @@ def fixup_debug_option(value):
     return value
 
 def _csvstr(value):
-    if isinstance(value, (tuple, list)):
+    if isinstance(value, (tuple, list, set, dict)):
         return ",".join(str(x).lower().strip() for x in value if x)
     if isinstance(value, str):
         return value.strip().lower()
