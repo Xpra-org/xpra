@@ -353,6 +353,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return values[0]
 
     def do_process_challenge_prompt_dialog(self, values: list, wait: Event, prompt="password") -> None:
+        authlog = Logger("auth")
         # pylint: disable=import-outside-toplevel
         title = self.get_server_authentication_string()
         dialog = Gtk.Dialog(title=title,
@@ -392,11 +393,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             dialog.close()
             response_str = {getattr(Gtk.ResponseType, k, ""): k for k in (
                 "ACCEPT", "APPLY", "CANCEL", "CLOSE", "DELETE_EVENT", "HELP", "NO", "NONE", "OK", "REJECT", "YES")}
-            log(f"handle_response({dialog}, {response}) response={response_str.get(response)}")
+            authlog(f"handle_response({dialog}, {response}) response={response_str.get(response)}")
             if response != Gtk.ResponseType.ACCEPT or not password:
                 values.append(None)
                 # for those responses, we assume that the user wants to abort authentication:
                 if response in (Gtk.ResponseType.CLOSE, Gtk.ResponseType.REJECT, Gtk.ResponseType.DELETE_EVENT):
+                    authlog(f"exiting with response {Gtk.ResponseType(response)}")
                     self.disconnect_and_quit(ExitCode.PASSWORD_REQUIRED, "password entry was cancelled")
             else:
                 values.append(password)
@@ -410,6 +412,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if OSX:
             from xpra.platform.darwin.gui import enable_focus_workaround
             enable_focus_workaround()
+        authlog("showing challenge prompt dialog")
         dialog.show()
 
     def setup_connection(self, conn):
