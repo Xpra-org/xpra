@@ -415,7 +415,7 @@ rm -f ./libjasper* ./libjbig*
 # Python modules:
 rm -fr ./lib2to3* ./xdg* ./olefile* ./pygtkcompat* keyring/testing ./jaraco* ./p11-kit* ./lz4
 #remove codecs we don't need:
-rm -f ./libSvt* ./libx265* ./libjxl* ./libLerc* ./libde265* ./libkvazaar* ./libopenjp2*
+rm -f ./libSvt* ./libx265* ./libjxl* ./libLerc* ./libde265* ./libkvazaar*
 if [ "${DO_FULL}" == "0" ]; then
 	# kerberos / gss libs:
 	rm -f ./libshishi* ./libgss*
