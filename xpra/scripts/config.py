@@ -1414,7 +1414,7 @@ def fixup_debug_option(value:str) -> str:
 
 
 def csvstr(value) -> str:
-    if isinstance(value, (tuple, list)):
+    if isinstance(value, (list, tuple, set, dict)):
         return ",".join(str(x).strip() for x in value if x)
     if isinstance(value, str):
         return value.strip()
