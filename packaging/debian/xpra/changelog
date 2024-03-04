@@ -1,7 +1,17 @@
 xpra (5.0.8-1) UNRELEASED; urgency=low
-  * TODO
+  * Platforms, build and packaging:
+   - typo in MacOS bundle file
+   - force include all brotli dylibs in MacOS builds
+   - spng encoder build switch not honoured
+  * Major:
+   - client exit with password dialog (MS Windows and MacOS)
+  * Minor and cosmetic bugs:
+   - socket authentication errors with malformed socket options
+   - avoid encryption errors during authentication
+   - support arguments with `xpra encoding` subcommand
+   - more tolerant option parsing
 
- -- Antoine Martin <antoine@xpra.org>  Sat, 02 Mar 2024 23:47:49 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 04 Mar 2024 22:08:33 +0700
 
 xpra (5.0.7-1) UNRELEASED; urgency=low
   * Regressions:

@@ -777,8 +777,19 @@ fi
 
 
 %changelog
-* Sat Mar 02 2024 Antoine Martin <antoine@xpra.org> 5.0.8-10
-- TODO
+* Mon Mar 04 2024 Antoine Martin <antoine@xpra.org> 5.0.8-10
+- Platforms, build and packaging:
+   typo in MacOS bundle file
+   force include all brotli dylibs in MacOS builds
+   spng encoder build switch not honoured
+- Major:
+   client exit with password dialog (MS Windows and MacOS)
+- Minor and cosmetic bugs:
+   socket authentication errors with malformed socket options
+   avoid encryption errors during authentication
+   support arguments with `xpra encoding` subcommand
+   more tolerant option parsing
+
 * Wed Feb 28 2024 Antoine Martin <antoine@xpra.org> 5.0.7-10
 - Regressions:
    typo causing CUDA codecs error

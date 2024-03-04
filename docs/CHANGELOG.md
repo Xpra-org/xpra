@@ -1,7 +1,17 @@
 # Changelog
 
-## [5.0.8] 2024-03-02
-* TODO
+## [5.0.8] 2024-03-04
+* Platforms, build and packaging:
+    * [typo in MacOS bundle file](https://github.com/Xpra-org/xpra/commit/526b6fba3ac3398f810a400a78a5dae1f7df27a2)
+    * [force include all brotli dylibs in MacOS builds](https://github.com/Xpra-org/xpra/commit/8a245ebb28ab6132e2c16b049ca35f5738521ab2)
+    * [spng encoder build switch not honoured](https://github.com/Xpra-org/xpra/commit/d491e1689c2fc4c2cdcb67d9e9e6f996e0d8cc3d)
+* Major:
+    * [client exit with password dialog (MS Windows and MacOS)](https://github.com/Xpra-org/xpra/commit/7bb55a06a18ef92c24fabe83a15e995fd5ea2438)
+* Minor and cosmetic bugs:
+    * [socket authentication errors with malformed socket options](https://github.com/Xpra-org/xpra/commit/ffd8fa55b897362757d56863922f6484a6036c4d)
+    * [avoid encryption errors during authentication](https://github.com/Xpra-org/xpra/commit/8a35b469fa09d44f15b7ef1c4382e298992b4cc3)
+    * [support arguments with `xpra encoding` subcommand](https://github.com/Xpra-org/xpra/commit/99d8f739bdd6edf11c356649dc0299a32382b935)
+    * [more tolerant option parsing](https://github.com/Xpra-org/xpra/commit/c9a9ff97e487ba1214d88a1e36542b3575021f99)
 
 ## [5.0.7] 2024-02-28
 * Regressions:
