@@ -22,6 +22,14 @@ def has_client() -> bool:
         return False
 
 
+def has_mdns() -> bool:
+    try:
+        from xpra.net.mdns import util
+        return bool(util)
+    except ImportError:
+        return False
+
+
 def has_server() -> bool:
     try:
         from xpra.server import util
@@ -46,22 +54,36 @@ class GUI(BaseGUIWindow):
         super().__init__(header_bar=(True, True, True))
 
     def populate(self):
-        if has_client():
-            self.ib("Browse", "browse.png", "Browse and connect to local and mDNS sessions", self.browse)
-            self.ib("Connect", "connect.png", "Connect to an existing session\nover the network", self.show_launcher)
-        if has_server():
-            if has_shadow():
-                tooltip = "\n".join((
-                    "Start a shadow server,",
-                    "making this desktop accessible to others",
-                    "(authentication required)",
-                ))
-            else:
-                tooltip = "This build of Xpra does not support starting shadow sessions"
-            self.ib("Shadow", "server-connected.png", tooltip, self.shadow, sensitive=has_shadow)
-        if has_client():
-            tooltip = "Start a new %sxpra session" % (" remote" if not has_server() else "")
-            self.ib("Start", "windows.png", tooltip, self.start)
+        def browse_tooltip() -> str:
+            if not has_client():
+                return "the client is not installed"
+            if not has_mdns():
+                return "the mdns module is not installed"
+            return "Browse and connect to local and mDNS sessions"
+        self.ib("Browse", "browse.png", browse_tooltip(), self.browse, sensitive=has_client() and has_mdns())
+
+        def connect_tooltip() -> str:
+            if not has_client():
+                return "the client is not installed"
+            return "Connect to an existing session\nover the network"
+        self.ib("Connect", "connect.png", connect_tooltip(), self.show_launcher, sensitive=has_client())
+
+        def shadow_tooltip() -> str:
+            if not has_shadow():
+                return "the shadow server feature is not installed"
+            return "\n".join((
+                "Start a shadow server,",
+                "making this desktop accessible to others",
+                "(authentication required)",
+            ))
+        self.ib("Shadow", "server-connected.png", shadow_tooltip(), self.shadow, sensitive=has_shadow())
+
+        def start_tooltip() -> str:
+            if not has_client():
+                return "the client is not installed"
+            return "Start a new %sxpra session" % ("remote " if not has_server() else "")
+        self.ib("Start", "windows.png", start_tooltip(), self.start, sensitive=has_client())
+
         grid = Gtk.Grid()
         grid.set_row_homogeneous(True)
         grid.set_column_homogeneous(True)
