@@ -12,6 +12,8 @@ xpra (3.1.7-1) UNRELEASED; urgency=low
    - `run_scaled` and `attach=yes` errors in virtual envs
    - XImage pixel buffers are read-only
    - python buffers wrongly allowing writes
+   - use TLS ssl protocol constant if available
+   - client exit with password dialog (MS Windows and MacOS)
   * clipboard:
    - honour client specified order of clipboard preferred targets
    - try harder to handle unexpected clipboard data formats
@@ -54,8 +56,9 @@ xpra (3.1.7-1) UNRELEASED; urgency=low
    - don't try to print a display size we don't have
    - gst-plugin-scanner packaging for MacOS
    - deprecation warnings
+   - consistency: accept more iterables
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 01 Mar 2024 19:16:57 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 04 Mar 2024 22:12:49 +0700
 
 xpra (3.1.6-1) UNRELEASED; urgency=low
   * major fixes:

@@ -918,7 +918,7 @@ fi
 
 
 %changelog
-* Fri Mar 01 2024 Antoine Martin <antoine@xpra.org> 3.1.7-10.1xpra1
+* Mon Mar 04 2024 Antoine Martin <antoine@xpra.org> 3.1.7-10.1xpra1
 - major fixes:
      windows misplaced on screen, moving unexpectedly
      windows wm-state synchronization issue
@@ -932,6 +932,8 @@ fi
      `run_scaled` and `attach=yes` errors in virtual envs
      XImage pixel buffers are read-only
      python buffers wrongly allowing writes
+     use TLS ssl protocol constant if available
+     client exit with password dialog (MS Windows and MacOS)
 - clipboard:
      honour client specified order of clipboard preferred targets
      try harder to handle unexpected clipboard data formats
@@ -974,6 +976,7 @@ fi
      don't try to print a display size we don't have
      gst-plugin-scanner packaging for MacOS
      deprecation warnings
+     consistency: accept more iterables
 
 * Mon Nov 27 2023 Antoine Martin <antoine@xpra.org> 3.1.6-10.1xpra1
 - major fixes:
