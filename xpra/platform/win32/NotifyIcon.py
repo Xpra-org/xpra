@@ -298,7 +298,7 @@ class win32NotifyIcon:
             nii.uID = self.app_id
             # nii.guidItem = XPRA_GUID
             rect = RECT()
-            if Shell_NotifyIconGetRect(byref(nii), addressof(rect)) == 0:  # NOSONAR
+            if Shell_NotifyIconGetRect(byref(nii), byref(rect)) == 0:  # NOSONAR
                 geom = (rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top)
                 geomlog("Shell_NotifyIconGetRect: %s", geom)
                 return geom
