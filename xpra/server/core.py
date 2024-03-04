@@ -1974,7 +1974,7 @@ class ServerCore:
             # per socket authentication option:
             # ie: --bind-tcp=0.0.0.0:10000,auth=hosts,auth=file:filename=pass.txt:foo=bar
             # -> sock_auth = ["hosts", "file:filename=pass.txt:foo=bar"]
-            if not isinstance(sock_auth, list):
+            if not isinstance(sock_auth, (list, dict)):
                 sock_auth = sock_auth.split(",")
             auth_classes = self.get_auth_modules(conn.socktype, sock_auth)
         else:
