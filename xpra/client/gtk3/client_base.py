@@ -355,18 +355,20 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def do_process_challenge_prompt_dialog(self, values: list, wait: Event, prompt="password") -> None:
         # pylint: disable=import-outside-toplevel
         title = self.get_server_authentication_string()
-        dialog = Gtk.Dialog(title,
-                            None,
-                            Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT)
+        dialog = Gtk.Dialog(title=title,
+                            transient_for=None,
+                            modal=True,
+                            destroy_with_parent=True)
         dialog.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.REJECT)
         dialog.add_button(Gtk.STOCK_OK, Gtk.ResponseType.ACCEPT)
 
         def add(widget, padding=0):
-            a = Gtk.Alignment()
-            a.set(0.5, 0.5, 1, 1)
-            a.add(widget)
-            a.set_padding(padding, padding, padding, padding)
-            dialog.vbox.pack_start(a)
+            widget.set_halign(Gtk.Align.CENTER)
+            widget.set_margin_start(padding)
+            widget.set_margin_end(padding)
+            widget.set_margin_top(padding)
+            widget.set_margin_bottom(padding)
+            dialog.vbox.pack_start(widget)
 
         title = label(title, "sans 14")
         add(title, 16)
