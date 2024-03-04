@@ -114,7 +114,7 @@ def get_hardware_encoders(names=HARDWARE_ENCODER_OPTIONS) -> list[str]:
 
 def filt(prefix: str, name: str, inlist, all_fn: Callable, all_options: tuple[str, ...]) -> list[str]:
     # log("filt%s", (prefix, name, inlist, all_fn, all_list))
-    instr = csvstrl(inlist or ()).strip(",")
+    instr = csvstrl(set(inlist or ())).strip(",")
     if instr == "none":
         return []
 
