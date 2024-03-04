@@ -9,5 +9,5 @@ MSWINDOWS_DIR=`dirname $(readlink -f $0)`
 
 for DO_FULL in 1 0; do
 	echo "********************************************************************************"
-	DO_FULLL=${DO_FULL} DO_ZIP=${DO_ZIP} DO_INSTALLER=${DO_INSTALLER} RUN_INSTALLER=${RUN_INSTALLER} DO_MSI=${DO_MSI} sh ${MSWINDOWS_DIR}/BUILD.sh /silent
+	DO_FULL=${DO_FULL} DO_ZIP=${DO_ZIP} DO_INSTALLER=${DO_INSTALLER} RUN_INSTALLER=${RUN_INSTALLER} DO_MSI=${DO_MSI} sh ${MSWINDOWS_DIR}/BUILD.sh /silent
 done
