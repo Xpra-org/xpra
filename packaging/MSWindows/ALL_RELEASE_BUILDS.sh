@@ -7,7 +7,7 @@ DO_MSI=${DO_MSI:-1}
 
 MSWINDOWS_DIR=`dirname $(readlink -f $0)`
 
-for CLIENT_ONLY in 0 1; do
+for DO_FULL in 1 0; do
 	echo "********************************************************************************"
-	CLIENT_ONLY=${CLIENT_ONLY} DO_ZIP=${DO_ZIP} DO_INSTALLER=${DO_INSTALLER} RUN_INSTALLER=${RUN_INSTALLER} DO_MSI=${DO_MSI} PYTHON=python3 sh ${MSWINDOWS_DIR}/MINGW_BUILD.sh /silent
+	DO_FULL=${DO_FULL} DO_ZIP=${DO_ZIP} DO_INSTALLER=${DO_INSTALLER} RUN_INSTALLER=${RUN_INSTALLER} DO_MSI=${DO_MSI} PYTHON=python3 sh ${MSWINDOWS_DIR}/MINGW_BUILD.sh /silent
 done

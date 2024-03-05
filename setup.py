@@ -253,14 +253,21 @@ openh264_decoder_ENABLED = openh264_ENABLED
 openh264_encoder_ENABLED = openh264_ENABLED
 #crashes on 32-bit windows:
 pillow_ENABLED          = DEFAULT
+pillow_encoder_ENABLED  = pillow_ENABLED
+pillow_decoder_ENABLED  = pillow_ENABLED
 argb_ENABLED            = DEFAULT
+argb_encoder_ENABLED    = argb_ENABLED
 spng_decoder_ENABLED    = DEFAULT and pkg_config_version("0.6", "spng")
 spng_encoder_ENABLED    = DEFAULT and pkg_config_version("0.7", "spng")
 webp_ENABLED            = DEFAULT and pkg_config_version("0.5", "libwebp")
+webp_encoder_ENABLED    = webp_ENABLED
+webp_decoder_ENABLED    = webp_ENABLED
 jpeg_encoder_ENABLED    = DEFAULT and pkg_config_version("1.2", "libturbojpeg")
 jpeg_decoder_ENABLED    = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
 avif_ENABLED            = DEFAULT and pkg_config_version("0.9", "libavif") and not OSX
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.7", "vpx") and BITS==64
+vpx_encoder_ENABLED     = vpx_ENABLED
+vpx_decoder_ENABLED     = vpx_ENABLED
 ffmpeg_ENABLED          = DEFAULT and BITS==64
 enc_ffmpeg_ENABLED      = ffmpeg_ENABLED and pkg_config_version("58.18", "libavcodec")
 #opencv currently broken on 32-bit windows (crashes on load):
@@ -284,7 +291,10 @@ cuda_kernels_ENABLED    = nvidia_ENABLED and (nvenc_ENABLED or nvjpeg_encoder_EN
 cuda_rebuild_ENABLED    = cuda_kernels_ENABLED and not WIN32
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
 gstreamer_ENABLED       = DEFAULT
+gstreamer_audio_ENABLED = gstreamer_ENABLED
+gstreamer_video_ENABLED = gstreamer_ENABLED
 example_ENABLED         = DEFAULT
+win32_tools_ENABLED     = WIN32 and DEFAULT
 
 #Cython / gcc / packaging build options:
 docs_ENABLED            = DEFAULT
@@ -307,13 +317,16 @@ CODEC_SWITCHES = [
     "cuda_kernels", "cuda_rebuild",
     "openh264", "openh264_decoder", "openh264_encoder",
     "nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder",
-    "vpx", "webp", "pillow",
+    "vpx", "vpx_encoder", "vpx_decoder",
+    "webp", "webp_decoder", "webp_encoder",
+    "pillow",
     "spng_decoder", "spng_encoder",
     "jpeg_encoder", "jpeg_decoder",
-    "avif", "argb",
+    "avif", "argb", "argb_encoder",
     "v4l2", "evdi", "drm",
     "ffmpeg", "dec_avcodec2", "csc_swscale", "enc_ffmpeg",
-    "csc_cython", "csc_libyuv", "gstreamer",
+    "csc_cython", "csc_libyuv",
+    "gstreamer", "gstreamer_audio", "gstreamer_video",
     ]
 SWITCHES = [
     "cython", "cython_tracing",
@@ -335,12 +348,18 @@ SWITCHES = [
     "shadow", "proxy", "rfb", "quic", "http", "ssh",
     "debug", "PIC",
     "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests",
+    "win32_tools",
     ]
 #some switches can control multiple switches:
 SWITCH_ALIAS = {
     "codecs"    : ["codecs"] + CODEC_SWITCHES,
+    "argb"      : ("argb_encoder", ),
+    "pillow"    : ("pillow_encoder", "pillow_decoder"),
+    "vpx"       : ("vpx_encoder", "vpx_decoder"),
+    "webp"      : ("webp_encoder", "webp_decoder"),
     "openh264"  : ("openh264", "openh264_decoder", "openh264_encoder"),
     "nvidia"    : ("nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder", "cuda_kernels", "cuda_rebuild"),
+    "gstreamer" : ("gstreamer_audio", "gstreamer_video"),
     "ffmpeg"    : ("ffmpeg", "dec_avcodec2", "csc_swscale", "enc_ffmpeg"),
     "cython"    : ("cython", "codecs",
                    "server", "client", "shadow",
@@ -1442,7 +1461,7 @@ if WIN32:
                      )
 
         if gtk3_ENABLED:
-            add_dir('etc', ["fonts", "gtk-3.0", "pkcs11"])     #add "dbus-1"?
+            add_dir('etc', ["fonts", "gtk-3.0"])     #add "dbus-1"?
             add_dir('lib', ["gdk-pixbuf-2.0", "gtk-3.0",
                             "p11-kit", "pkcs11"])
             add_dir('share', ["fontconfig", "fonts", "glib-2.0",        #add "dbus-1"?
@@ -1581,71 +1600,78 @@ if WIN32:
         def add_service_exe(script, icon, base_name):
             add_exe(script, icon, base_name, base="Win32Service")
 
-        #UI applications (detached from shell: no text output if ran from cmd.exe)
+        # UI applications (detached from shell: no text output if ran from cmd.exe)
         if (client_ENABLED or server_ENABLED) and gtk3_ENABLED:
-            add_gui_exe("fs/bin/xpra",                         "xpra.ico",         "Xpra")
-            add_gui_exe("xpra/platform/win32/scripts/shadow_server.py",       "server-notconnected.ico", "Xpra-Shadow")
-            add_gui_exe("fs/bin/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
-            add_console_exe("fs/bin/xpra_launcher",            "xpra.ico",         "Xpra-Launcher-Debug")
-            add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
-            add_gui_exe("xpra/scripts/bug_report.py",           "bugs.ico",         "Bug_Report")
-            add_gui_exe("xpra/platform/win32/gdi_screen_capture.py", "screenshot.ico", "Screenshot")
-        if server_ENABLED:
-            add_gui_exe("fs/libexec/xpra/auth_dialog",          "authentication.ico", "Auth_Dialog")
-        #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
-        add_console_exe("fs/bin/xpra",                     "xpra_txt.ico",     "Xpra_cmd")
-        add_console_exe("xpra/scripts/version.py",          "information.ico",  "Version_info")
-        add_console_exe("xpra/net/net_util.py",             "network.ico",      "Network_info")
-        if gtk3_ENABLED:
-            add_console_exe("xpra/scripts/gtk_info.py",         "gtk.ico",          "GTK_info")
-            add_console_exe("xpra/gtk_common/keymap.py",        "keymap.ico",       "Keymap_info")
-            add_console_exe("xpra/platform/keyboard.py",        "keymap.ico",       "Keyboard_info")
-            add_gui_exe("xpra/client/gtk3/example/tray.py", "xpra.ico",         "SystemTray_Test")
-            add_gui_exe("xpra/client/gtk3/u2f_tool.py",     "authentication.ico", "U2F_Tool")
-        if client_ENABLED or server_ENABLED:
-            add_console_exe("xpra/platform/win32/scripts/exec.py",     "python.ico", "Python_exec_cmd")
-            add_gui_exe("xpra/platform/win32/scripts/exec.py",     "python.ico", "Python_exec_gui")
-            add_console_exe("xpra/platform/win32/scripts/execfile.py", "python.ico", "Python_execfile_cmd")
-            add_gui_exe("xpra/platform/win32/scripts/execfile.py", "python.ico", "Python_execfile_gui")
-            add_console_exe("xpra/scripts/config.py",           "gears.ico",        "Config_info")
-        if server_ENABLED:
-            add_console_exe("xpra/server/auth/sqlite_auth.py",  "sqlite.ico",        "SQLite_auth_tool")
-            add_console_exe("xpra/server/auth/sql_auth.py",     "sql.ico",           "SQL_auth_tool")
-            add_console_exe("xpra/server/auth/win32_auth.py",   "authentication.ico", "System-Auth-Test")
-            add_console_exe("xpra/server/auth/ldap_auth.py",    "authentication.ico", "LDAP-Auth-Test")
-            add_console_exe("xpra/server/auth/ldap3_auth.py",   "authentication.ico", "LDAP3-Auth-Test")
-            add_console_exe("xpra/platform/win32/scripts/proxy.py", "xpra_txt.ico",     "Xpra-Proxy_cmd")
-            add_gui_exe("xpra/platform/win32/scripts/proxy.py", "xpra.ico",         "Xpra-Proxy")
-            add_console_exe("xpra/platform/win32/lsa_logon_lib.py", "xpra_txt.ico",     "System-Logon-Test")
-        if client_ENABLED:
-            add_console_exe("xpra/codecs/loader.py",            "encoding.ico",     "Encoding_info")
-            add_console_exe("xpra/platform/paths.py",           "directory.ico",    "Path_info")
-            add_console_exe("xpra/platform/features.py",        "features.ico",     "Feature_info")
-        if client_ENABLED:
-            add_console_exe("xpra/platform/gui.py",             "browse.ico",       "NativeGUI_info")
-            add_console_exe("xpra/platform/win32/gui.py",       "loop.ico",         "Events_Test")
+            add_gui_exe("fs/bin/xpra", "xpra.ico", "Xpra")
+            add_gui_exe("fs/bin/xpra_launcher", "xpra.ico", "Xpra-Launcher")
+            if win32_tools_ENABLED:
+                add_console_exe("fs/bin/xpra_launcher", "xpra.ico", "Xpra-Launcher-Debug")
+                add_gui_exe("xpra/gtk/dialogs/view_keyboard.py", "keyboard.ico", "GTK_Keyboard_Test")
+            add_gui_exe("xpra/scripts/bug_report.py", "bugs.ico", "Bug_Report")
+        if shadow_ENABLED:
+            add_gui_exe("xpra/platform/win32/scripts/shadow_server.py", "server-notconnected.ico", "Xpra-Shadow")
+            if win32_tools_ENABLED:
+                add_gui_exe("xpra/platform/win32/gdi_screen_capture.py", "screenshot.ico", "Screenshot")
+        if win32_tools_ENABLED and server_ENABLED:
+            add_gui_exe("fs/libexec/xpra/auth_dialog", "authentication.ico", "Auth_Dialog")
+        # Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
+        add_console_exe("fs/bin/xpra", "xpra_txt.ico", "Xpra_cmd")
+        add_console_exe("xpra/platform/win32/scripts/exec.py", "python.ico", "Python_exec_cmd")
+        add_gui_exe("xpra/platform/win32/scripts/exec.py", "python.ico", "Python_exec_gui")
         if audio_ENABLED:
-            add_console_exe("xpra/audio/gstreamer_util.py",     "gstreamer.ico",    "GStreamer_info")
-            add_console_exe("fs/bin/xpra",                     "speaker.ico",      "Xpra_Audio")
-            add_console_exe("xpra/platform/win32/directsound.py", "speaker.ico",      "Audio_Devices")
-            #add_console_exe("xpra/audio/src.py",                "microphone.ico",   "Audio_Record")
-            #add_console_exe("xpra/audio/sink.py",               "speaker.ico",      "Audio_Play")
-            add_data_files("", (shutil.which("gst-launch-1.0.exe"), ))
-        if opengl_ENABLED:
-            add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
-        if webcam_ENABLED:
-            add_console_exe("xpra/platform/webcam.py",          "webcam.ico",    "Webcam_info")
-            add_console_exe("xpra/scripts/show_webcam.py",          "webcam.ico",    "Webcam_Test")
+            add_data_files("", (shutil.which("gst-launch-1.0.exe"),))
+            add_console_exe("fs/bin/xpra", "speaker.ico", "Xpra_Audio")
         if printing_ENABLED:
-            add_console_exe("xpra/platform/printing.py",        "printer.ico",     "Print")
-            add_console_exe("xpra/platform/win32/pdfium.py",    "printer.ico",     "PDFIUM_Print")
+            add_console_exe("xpra/platform/win32/pdfium.py", "printer.ico", "PDFIUM_Print")
             do_add_DLLs("", "pdfium")
-        if nvenc_ENABLED or nvdec_ENABLED:
-            add_console_exe("xpra/codecs/nvidia/nv_util.py",                   "nvidia.ico",   "NVidia_info")
-        if nvfbc_ENABLED:
-            add_console_exe("xpra/codecs/nvidia/nvfbc/capture.py",             "nvidia.ico",   "NvFBC_capture")
-        if nvfbc_ENABLED or nvenc_ENABLED or nvdec_ENABLED or nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED:
-            add_console_exe("xpra/codecs/nvidia/cuda_context.py",  "cuda.ico",     "CUDA_info")
+        # extra tools:
+        if win32_tools_ENABLED:
+            add_console_exe("xpra/scripts/version.py", "information.ico", "Version_info")
+            add_console_exe("xpra/net/net_util.py", "network.ico", "Network_info")
+            if gtk3_ENABLED:
+                add_console_exe("xpra/scripts/gtk_info.py", "gtk.ico", "GTK_info")
+                add_console_exe("xpra/gtk_common/keymap.py", "keymap.ico", "Keymap_info")
+                add_console_exe("xpra/platform/keyboard.py", "keymap.ico", "Keyboard_info")
+                add_gui_exe("xpra/client/gtk3/example/tray.py", "xpra.ico", "SystemTray_Test")
+                add_gui_exe("xpra/client/gtk3/u2f_tool.py", "authentication.ico", "U2F_Tool")
+            if client_ENABLED or server_ENABLED:
+                add_console_exe("xpra/platform/win32/scripts/execfile.py", "python.ico", "Python_execfile_cmd")
+                add_gui_exe("xpra/platform/win32/scripts/execfile.py", "python.ico", "Python_execfile_gui")
+                add_console_exe("xpra/scripts/config.py", "gears.ico", "Config_info")
+            if server_ENABLED:
+                add_console_exe("xpra/server/auth/sqlite_auth.py", "sqlite.ico", "SQLite_auth_tool")
+                add_console_exe("xpra/server/auth/sql_auth.py", "sql.ico", "SQL_auth_tool")
+                add_console_exe("xpra/server/auth/win32_auth.py", "authentication.ico", "System-Auth-Test")
+                add_console_exe("xpra/server/auth/ldap_auth.py", "authentication.ico", "LDAP-Auth-Test")
+                add_console_exe("xpra/server/auth/ldap3_auth.py", "authentication.ico", "LDAP3-Auth-Test")
+                add_console_exe("xpra/platform/win32/scripts/proxy.py", "xpra_txt.ico", "Xpra-Proxy_cmd")
+                add_gui_exe("xpra/platform/win32/scripts/proxy.py", "xpra.ico", "Xpra-Proxy")
+                add_console_exe("xpra/platform/win32/lsa_logon_lib.py", "xpra_txt.ico", "System-Logon-Test")
+            if client_ENABLED:
+                add_console_exe("xpra/codecs/loader.py", "encoding.ico", "Encoding_info")
+                add_console_exe("xpra/platform/paths.py", "directory.ico", "Path_info")
+                add_console_exe("xpra/platform/features.py", "features.ico", "Feature_info")
+            if client_ENABLED:
+                add_console_exe("xpra/platform/gui.py", "browse.ico", "NativeGUI_info")
+                add_console_exe("xpra/platform/win32/gui.py", "loop.ico", "Events_Test")
+            if audio_ENABLED:
+                add_console_exe("xpra/audio/gstreamer_util.py", "gstreamer.ico", "GStreamer_info")
+                add_console_exe("xpra/platform/win32/directsound.py", "speaker.ico", "Audio_Devices")
+                # add_console_exe("xpra/audio/src.py",                "microphone.ico",   "Audio_Record")
+                # add_console_exe("xpra/audio/sink.py",               "speaker.ico",      "Audio_Play")
+            if opengl_ENABLED:
+                add_console_exe("xpra/client/gl/gl_check.py", "opengl.ico", "OpenGL_check")
+            if webcam_ENABLED:
+                add_console_exe("xpra/platform/webcam.py", "webcam.ico", "Webcam_info")
+                add_console_exe("xpra/scripts/show_webcam.py", "webcam.ico", "Webcam_Test")
+            if printing_ENABLED:
+                add_console_exe("xpra/platform/printing.py", "printer.ico", "Print")
+            if nvenc_ENABLED or nvdec_ENABLED:
+                add_console_exe("xpra/codecs/nvidia/nv_util.py", "nvidia.ico", "NVidia_info")
+            if nvfbc_ENABLED:
+                add_console_exe("xpra/codecs/nvidia/nvfbc/capture.py", "nvidia.ico", "NvFBC_capture")
+            if nvfbc_ENABLED or nvenc_ENABLED or nvdec_ENABLED or nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED:
+                add_console_exe("xpra/codecs/nvidia/cuda_context.py", "cuda.ico", "CUDA_info")
 
     if ("install_exe" in sys.argv) or ("install" in sys.argv):
         #FIXME: how do we figure out what target directory to use?
@@ -1663,9 +1689,10 @@ if WIN32:
     if data_ENABLED:
         add_data_files("", [
             "packaging/MSWindows/website.url",
-            "packaging/MSWindows/DirectShow.tlb",
             "packaging/MSWindows/TaskbarLib.tlb",
             ])
+    if webcam_ENABLED:
+        add_data_files("", ["packaging/MSWindows/DirectShow.tlb"])
 
     remove_packages(*external_excludes)
     external_includes += [
@@ -1730,7 +1757,7 @@ if WIN32:
                 if not isinstance(e, WindowsError) or ("already exists" not in str(e)): #@UndefinedVariable
                     raise
 
-    if data_ENABLED:
+    if data_ENABLED and shadow_ENABLED:
         add_data_files("share/metainfo",      ["fs/share/metainfo/xpra.appdata.xml"])
         for d in ("http-headers", "content-type", "content-categories", "content-parent"):
             add_data_files(f"etc/xpra/{d}", glob.glob(f"fs/etc/xpra/{d}/*"))
@@ -2015,7 +2042,7 @@ if WIN32 or OSX:
     external_includes += ["ssl", "_ssl"]
     #socks proxy support:
     add_packages("socks")
-    if pillow_ENABLED:
+    if pillow_encoder_ENABLED or pillow_decoder_ENABLED:
         external_includes += ["PIL", "PIL.Image", "PIL.WebPImagePlugin"]
     if crypto_ENABLED or OSX:
         external_includes += ["cffi", "_cffi_backend"]
@@ -2353,6 +2380,7 @@ tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc",
 tace(nvdec_ENABLED, "xpra.codecs.nvidia.nvdec.decoder", "nvdec,cuda")
 
 toggle_packages(argb_ENABLED, "xpra.codecs.argb")
+toggle_packages(argb_encoder_ENABLED, "xpra.codecs.argb.encoder")
 tace(argb_ENABLED, "xpra.codecs.argb.argb", optimize=3)
 toggle_packages(evdi_ENABLED, "xpra.codecs.evdi")
 
@@ -2364,10 +2392,12 @@ tace(enc_x264_ENABLED, "xpra.codecs.x264.encoder", "x264")
 toggle_packages(openh264_ENABLED, "xpra.codecs.openh264")
 tace(openh264_decoder_ENABLED, "xpra.codecs.openh264.decoder", "openh264", language="c++")
 tace(openh264_encoder_ENABLED, "xpra.codecs.openh264.encoder", "openh264", language="c++")
-toggle_packages(pillow_ENABLED, "xpra.codecs.pillow")
-toggle_packages(webp_ENABLED, "xpra.codecs.webp")
-tace(webp_ENABLED, "xpra.codecs.webp.encoder", "libwebp")
-tace(webp_ENABLED, "xpra.codecs.webp.decoder", "libwebp")
+toggle_packages(pillow_encoder_ENABLED or pillow_decoder_ENABLED, "xpra.codecs.pillow")
+toggle_packages(pillow_encoder_ENABLED, "xpra.codecs.pillow.encoder")
+toggle_packages(pillow_decoder_ENABLED, "xpra.codecs.pillow.decoder")
+toggle_packages(webp_encoder_ENABLED or webp_decoder_ENABLED, "xpra.codecs.webp")
+tace(webp_encoder_ENABLED, "xpra.codecs.webp.encoder", "libwebp")
+tace(webp_decoder_ENABLED, "xpra.codecs.webp.decoder", "libwebp")
 toggle_packages(spng_decoder_ENABLED or spng_encoder_ENABLED, "xpra.codecs.spng")
 tace(spng_decoder_ENABLED, "xpra.codecs.spng.decoder", "spng")
 tace(spng_encoder_ENABLED, "xpra.codecs.spng.encoder", "spng")
@@ -2391,10 +2421,12 @@ toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.libyuv")
 tace(csc_libyuv_ENABLED, "xpra.codecs.libyuv.colorspace_converter", "libyuv", language="c++")
 toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
 tace(csc_cython_ENABLED, "xpra.codecs.csc_cython.colorspace_converter", optimize=3)
-toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
-tace(vpx_ENABLED, "xpra.codecs.vpx.encoder", "vpx")
-tace(vpx_ENABLED, "xpra.codecs.vpx.decoder", "vpx")
-toggle_packages(gstreamer_ENABLED, "xpra.codecs.gstreamer")
+toggle_packages(vpx_encoder_ENABLED or vpx_decoder_ENABLED, "xpra.codecs.vpx")
+tace(vpx_encoder_ENABLED, "xpra.codecs.vpx.encoder", "vpx")
+tace(vpx_decoder_ENABLED, "xpra.codecs.vpx.decoder", "vpx")
+toggle_packages(gstreamer_ENABLED, "xpra.gst_pipeline")
+toggle_packages(gstreamer_ENABLED, "xpra.gst_common")
+toggle_packages(gstreamer_video_ENABLED, "xpra.codecs.gstreamer")
 
 toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
 tace(v4l2_ENABLED, "xpra.codecs.v4l2.pusher")

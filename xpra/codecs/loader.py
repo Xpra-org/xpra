@@ -127,9 +127,7 @@ def codec_import_check(name:str, description:str, top_module, class_module, clas
             return ic
         except ImportError as e:
             codec_errors[name] = str(e)
-            l = log.error
-            if name in NOWARN:
-                l = log.debug
+            l = log.error if should_warn(name) else log.debug
             l(f"Error importing {name} ({description})")
             l(f" {e}")
             log("", exc_info=True)
@@ -235,6 +233,20 @@ if OSX or WIN32:
     #these sources can only be used on Linux
     #(and maybe on some BSDs?)
     NOLOAD += ["v4l2", "evdi", "drm"]
+
+
+def should_warn(name):
+    if name in NOWARN:
+        return False
+    if name in ("csc_cython", "dec_avif") or name.find("enc") >= 0 or name.startswith("nv"):
+        try:
+            from importlib import import_module
+            import_module("xpra.server")
+        except ImportError:
+            # no server support,
+            # probably a 'Light' build
+            return False
+    return True
 
 
 def load_codec(name:str):
@@ -462,7 +474,8 @@ def main(args) -> int:
                         log(f"{mod}", exc_info=True)
                         log.error(f"error getting extra information on {name}: {e}")
             elif name in codec_errors:
-                out.error(f"* {name.ljust(20)} : {codec_errors[name]}")
+                write = out.error if should_warn(name) else out.debug
+                write(f"* {name.ljust(20)} : {codec_errors[name]}")
         out("")
         out.info("codecs versions:")
         def forcever(v):
