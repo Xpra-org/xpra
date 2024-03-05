@@ -253,10 +253,10 @@ def _to_utf8(_disp, v):
 def _from_utf8(_disp, v):
     return v.decode("UTF-8")
 
-def _to_state(v) -> bytes:
+def _to_state(v):
     return struct.pack(b"@LL", v, 0)
 
-def _from_state(v) -> int:
+def _from_state(v):
     wm_state = _force_length("WM_STATE", v, sizeof_long*2, sizeof_long)
     return struct.unpack(b"@LL", wm_state)[0]
 
