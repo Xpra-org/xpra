@@ -305,6 +305,8 @@ openh264_decoder_ENABLED = openh264_ENABLED
 openh264_encoder_ENABLED = openh264_ENABLED
 # crashes on 32-bit windows:
 pillow_ENABLED          = DEFAULT
+pillow_encoder_ENABLED  = pillow_ENABLED
+pillow_decoder_ENABLED  = pillow_ENABLED
 argb_ENABLED            = DEFAULT
 argb_encoder_ENABLED    = argb_ENABLED
 spng_decoder_ENABLED    = DEFAULT and pkg_config_version("0.6", "spng")
@@ -365,7 +367,7 @@ CODEC_SWITCHES = [
     "nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder",
     "vpx", "vpx_encoder", "vpx_decoder",
     "webp", "webp_encoder", "webp_decoder",
-    "pillow",
+    "pillow", "pillow_encoder", "pillow_decoder",
     "spng_decoder", "spng_encoder",
     "jpeg_encoder", "jpeg_decoder",
     "avif", "argb", "argb_encoder",
@@ -399,6 +401,7 @@ SWITCHES = [
 SWITCH_ALIAS = {
     "codecs": ["codecs"] + CODEC_SWITCHES,
     "argb" : ("argb_encoder", ),
+    "pillow": ("pillow_encoder", "pillow_decoder"),
     "vpx" : ("vpx_encoder", "vpx_decoder"),
     "webp" : ("webp_encoder", "webp_decoder"),
     "openh264": ("openh264", "openh264_decoder", "openh264_encoder"),
@@ -2128,7 +2131,7 @@ if WIN32 or OSX:
     external_includes += ["ssl", "_ssl"]
     # socks proxy support:
     add_packages("socks")
-    if pillow_ENABLED:
+    if pillow_encoder_ENABLED or pillow_decoder_ENABLED:
         external_includes += ["PIL", "PIL.Image", "PIL.WebPImagePlugin"]
     if crypto_ENABLED or OSX:
         external_includes += ["cffi", "_cffi_backend"]
@@ -2378,7 +2381,9 @@ tace(enc_x264_ENABLED, "xpra.codecs.x264.encoder", "x264")
 toggle_packages(openh264_ENABLED, "xpra.codecs.openh264")
 tace(openh264_decoder_ENABLED, "xpra.codecs.openh264.decoder", "openh264", language="c++")
 tace(openh264_encoder_ENABLED, "xpra.codecs.openh264.encoder", "openh264", language="c++")
-toggle_packages(pillow_ENABLED, "xpra.codecs.pillow")
+toggle_packages(pillow_encoder_ENABLED or pillow_decoder_ENABLED, "xpra.codecs.pillow")
+toggle_packages(pillow_encoder_ENABLED, "xpra.codecs.pillow.encoder")
+toggle_packages(pillow_decoder_ENABLED, "xpra.codecs.pillow.decoder")
 toggle_packages(webp_encoder_ENABLED or webp_decoder_ENABLED, "xpra.codecs.webp")
 tace(webp_encoder_ENABLED, "xpra.codecs.webp.encoder", "libwebp")
 tace(webp_decoder_ENABLED, "xpra.codecs.webp.decoder", "libwebp")
