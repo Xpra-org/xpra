@@ -41,28 +41,36 @@ if OSX:
     SKIP_LIST = ("avif", "nvenc", "nvdec", "nvjpeg")
 
 
+def autoprefix(prefix:str, name: str) -> str:
+    return (name if (name.startswith(prefix) or name.endswith(prefix)) else f"{prefix}_{name}").replace("-", "_")
+
+
 def filt(*values) -> tuple[str,...]:
     return tuple(x for x in values if all(x.find(s)<0 for s in SKIP_LIST))
 
 
-CSC_CODECS: tuple[str,...] = filt(
-    "csc_cython", "csc_libyuv",
+def gfilt(generator) -> tuple[str,...]:
+    return filt(*generator)
+
+
+CSC_CODECS: tuple[str,...] = gfilt(f"csc_{x}" for x in ("cython", "libyuv"))
+ENCODER_CODECS: tuple[str,...] = gfilt(f"enc_{x}" for x in (
+    "rgb", "pillow", "spng", "webp", "jpeg", "nvjpeg", "avif",
+    )
 )
-ENCODER_CODECS: tuple[str,...] = filt(
-    "enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg", "enc_avif",
+ENCODER_VIDEO_CODECS: tuple[str,...] = gfilt(autoprefix("enc", x) for x in (
+    "vpx", "x264", "openh264", "nvenc", "gstreamer",
+    )
 )
-ENCODER_VIDEO_CODECS: tuple[str,...] = filt(
-    "enc_vpx", "enc_x264", "enc_openh264", "nvenc", "enc_gstreamer",
+DECODER_CODECS: tuple[str,...] = gfilt(f"dec_{x}" for x in (
+    "pillow", "spng", "webp", "jpeg", "nvjpeg", "avif", "gstreamer",
+    )
 )
-DECODER_CODECS: tuple[str,...] = filt(
-    "dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_nvjpeg", "dec_avif", "dec_gstreamer",
+DECODER_VIDEO_CODECS: tuple[str,...] = gfilt(autoprefix("dec", x) for x in (
+    "vpx", "openh264", "nvdec",
+    )
 )
-DECODER_VIDEO_CODECS: tuple[str,...] = filt(
-    "dec_vpx", "dec_openh264", "nvdec",
-)
-SOURCES: tuple[str,...] = filt(
-    "v4l2", "evdi", "drm", "nvfbc",
-)
+SOURCES: tuple[str,...] = filt("v4l2", "evdi", "drm", "nvfbc")
 
 ALL_CODECS: tuple[str,...] = filt(*set(
     CSC_CODECS + ENCODER_CODECS + ENCODER_VIDEO_CODECS + DECODER_CODECS + DECODER_VIDEO_CODECS + SOURCES)
@@ -71,6 +79,20 @@ ALL_CODECS: tuple[str,...] = filt(*set(
 
 codec_errors : dict[str, str] = {}
 codecs : dict[str, ModuleType] = {}
+
+
+def should_warn(name:str) -> bool:
+    if name in NOWARN:
+        return False
+    if name in ("csc_cython", "dec_avif") or name.find("enc") >= 0 or name.startswith("nv"):
+        try:
+            from importlib import import_module
+            import_module("xpra.server")
+        except ImportError:
+            # no server support,
+            # probably a 'Light' build
+            return False
+    return True
 
 
 def codec_import_check(name: str, description: str, top_module, class_module, classnames):
@@ -144,9 +166,7 @@ def codec_import_check(name: str, description: str, top_module, class_module, cl
             return ic
         except ImportError as e:
             codec_errors[name] = str(e)
-            l = log.error
-            if name in NOWARN:
-                l = log.debug
+            l = log.error if should_warn(name) else log.debug
             l(f"Error importing {name} ({description})")
             l(f" {e}")
             log("", exc_info=True)
@@ -468,7 +488,7 @@ def main(args) -> int:
                 # don't show codecs from the NOLOAD list
                 continue
             if mod:
-                out(f"* {name.ljust(20)} : {f}")
+                out.info(f"* {name.ljust(20)} : {f}")
                 if verbose:
                     try:
                         if name.find("csc")>=0:
@@ -489,13 +509,14 @@ def main(args) -> int:
                         log(f"{mod}", exc_info=True)
                         log.error(f"error getting extra information on {name}: {e}")
             elif name in codec_errors:
-                out.error(f"* {name.ljust(20)} : {codec_errors[name]}")
+                write = out.error if should_warn(name) else out.debug
+                write(f"* {name.ljust(20)} : {codec_errors[name]}")
         out("")
         out.info("codecs versions:")
 
         def forcever(v):
             return pver(v, numsep=".", strsep=".").lstrip("v")
-        print_nested_dict(codec_versions, vformat=forcever, print_fn=out)
+        print_nested_dict(codec_versions, vformat=forcever, print_fn=out.info)
     return 0
 
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,7 @@ from typing import Any
 from collections.abc import Callable, Iterable
 
 from xpra.scripts.config import csvstrl
-from xpra.codecs.loader import load_codec, get_codec, get_codec_error
+from xpra.codecs.loader import load_codec, get_codec, get_codec_error, autoprefix
 from xpra.util.str_fn import csv, print_nested_dict
 from xpra.log import Logger
 
@@ -47,10 +47,6 @@ def has_codec_module(module_name: str) -> bool:
     except Exception as e:
         log("codec module %s cannot be loaded: %s", module_name, e)
         return False
-
-
-def autoprefix(prefix:str, name: str) -> str:
-    return (name if (name.startswith(prefix) or name.endswith(prefix)) else f"{prefix}_{name}").replace("-", "_")
 
 
 def try_import_modules(prefix: str, *codec_names) -> list[str]:
