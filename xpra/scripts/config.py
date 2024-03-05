@@ -82,6 +82,42 @@ def has_audio_support():
     return _has_audio_support
 
 
+def find_html5_path() -> str:
+    from xpra.platform.paths import get_resources_dir, get_app_dir
+    page = "connect.html"
+    return valid_html_path(
+        os.path.join(get_resources_dir(), "html5", page),
+        os.path.join(get_resources_dir(), "www", page),
+        os.path.join(get_app_dir(), "www", page),
+    )
+
+
+def find_docs_path() -> str:
+    from xpra.platform.paths import get_resources_dir, get_app_dir
+    paths = []
+    prefixes = {get_resources_dir(), get_app_dir()}
+    if POSIX:
+        prefixes.add("/usr/share")
+        prefixes.add("/usr/local/share")
+    for prefix in prefixes:
+        for parts in (
+                ("doc", "xpra", "index.html"),
+                ("xpra", "doc", "index.html"),
+                ("doc", "index.html"),
+                ("doc", "index.html"),
+        ):
+            paths.append(os.path.join(prefix, *parts))
+    return valid_html_path(*paths)
+
+
+def valid_html_path(*path_options: str) -> str:
+    for f in path_options:
+        af = os.path.abspath(f)
+        if os.path.exists(af) and os.path.isfile(af):
+            return af
+    return ""
+
+
 def get_xorg_bin() -> str:
     xorg = os.environ.get("XPRA_XORG_BIN")
     if xorg:

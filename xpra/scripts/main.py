@@ -52,6 +52,7 @@ from xpra.scripts.config import (
     START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V5, OPTIONS_COMPAT_NAMES,
     InitException, InitInfo, InitExit,
     fixup_options,
+    find_docs_path, find_html5_path,
     dict_to_validated_config, get_xpra_defaults_dirs, get_defaults, read_xpra_conf,
     make_defaults_struct, parse_bool, has_audio_support, name_to_field,
 )
@@ -3219,46 +3220,26 @@ def run_session_info(error_cb, options, args, cmdline) -> ExitValue:
 
 
 def run_docs() -> ExitValue:
-    from xpra.platform.paths import get_resources_dir, get_app_dir
-    paths = []
-    prefixes = {get_resources_dir(), get_app_dir()}
-    if POSIX:
-        prefixes.add("/usr/share")
-        prefixes.add("/usr/local/share")
-    for prefix in prefixes:
-        for parts in (
-                ("doc", "xpra", "index.html"),
-                ("xpra", "doc", "index.html"),
-                ("doc", "index.html"),
-                ("doc", "index.html"),
-        ):
-            paths.append(os.path.join(prefix, *parts))
-    return _browser_open("documentation", *paths)
+    path = find_docs_path()
+    if not path:
+        raise InitExit(ExitCode.FILE_NOT_FOUND, "documentation not found!")
+    return _browser_open_file(path)
 
 
-def run_html5(url_options=None) -> ExitValue:
-    from xpra.platform.paths import get_resources_dir, get_app_dir
-    page = "connect.html"
+def run_html5(url_options: str | dict = "") -> ExitValue:
+    path = find_html5_path(url_options)
+    if not path:
+        raise InitExit(ExitCode.FILE_NOT_FOUND, "html5 client not found!")
     if url_options:
         from urllib.parse import urlencode
-        page += "#" + urlencode(url_options)
-    return _browser_open(
-        "html5 client",
-        os.path.join(get_resources_dir(), "html5", page),
-        os.path.join(get_resources_dir(), "www", page),
-        os.path.join(get_app_dir(), "www", page),
-    )
+        path += "#" + urlencode(url_options)
+    return _browser_open_file(path)
 
 
-def _browser_open(what, *path_options) -> ExitValue:
-    for f in path_options:
-        af = os.path.abspath(f)
-        nohash = af.split("#", 1)[0]
-        if os.path.exists(nohash) and os.path.isfile(nohash):
-            import webbrowser
-            webbrowser.open_new_tab("file://%s" % af)
-            return 0
-    raise InitExit(ExitCode.FAILURE, "%s not found!" % what)
+def _browser_open_file(file_path) -> ExitValue:
+    import webbrowser
+    webbrowser.open_new_tab(f"file://{file_path}")
+    return 0
 
 
 def run_desktop_greeter() -> ExitValue:

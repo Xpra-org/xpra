@@ -15,6 +15,7 @@ import optparse
 from urllib import parse
 from typing import Any
 from collections.abc import Callable
+from importlib.util import find_spec
 
 from xpra.util.str_fn import csv
 from xpra.util.version import full_version_str
@@ -28,6 +29,7 @@ from xpra.scripts.config import (
     OPTION_TYPES, TRUE_OPTIONS,
     InitException, InitInfo, InitExit,
     fixup_debug_option, fixup_options,
+    find_docs_path, find_html5_path,
     make_defaults_struct, parse_bool, parse_number, print_number,
     validate_config, name_to_field,
 )
@@ -732,19 +734,36 @@ def supports_x11_server() -> bool:
         return False
 
 
+def supports_client() -> bool:
+    return bool(find_spec("xpra.client"))
+
+
+def supports_gtk3_client() -> bool:
+    return bool(find_spec("xpra.client.gtk3"))
+
+
+def supports_server() -> bool:
+    return bool(find_spec("xpra.server"))
+
+
+def supports_shadow() -> bool:
+    return bool(find_spec("xpra.server.shadow"))
+
+
 def get_subcommands() -> tuple[str, ...]:
     return tuple(x.split(" ")[0] for x in get_usage())
 
 
 def get_usage() -> list[str]:
     RDISPLAY = "REMOTE-DISPLAY" if not supports_x11_server() else "DISPLAY"
+    SDISPLAY = "REMOTE-DISPLAY" if not supports_shadow() else "DISPLAY"
     command_options = [
         "",
         f"start [{RDISPLAY}]",
         f"start-desktop [{RDISPLAY}]",
         f"start-monitor [{RDISPLAY}]",
-        "shadow [DISPLAY]",
-        "shadow-screen [DISPLAY]",
+        f"shadow [{SDISPLAY}]",
+        f"shadow-screen [{SDISPLAY}]",
     ]
     if supports_x11_server():
         command_options += [
@@ -752,46 +771,59 @@ def get_usage() -> list[str]:
             "upgrade-desktop [DISPLAY]",
             "upgrade-monitor [DISPLAY]",
         ]
-    command_options += [
-        "upgrade-shadow [DISPLAY]",
-    ]
+    if supports_shadow():
+        command_options += [
+            "upgrade-shadow [DISPLAY]",
+        ]
 
+    if supports_gtk3_client():
+        command_options += [
+            "attach [DISPLAY]",
+            "sessions",
+            "launcher",
+            "gui",
+            "start-gui",
+            "bug-report",
+            "toolbox",
+            "about",
+            "example",
+        ]
+    if supports_client():
+        command_options += [
+            "detach [DISPLAY]",
+            "info [DISPLAY]",
+            "id [DISPLAY]",
+            "version [DISPLAY]",
+            "stop [DISPLAY]",
+            "exit [DISPLAY]",
+            "screenshot filename [DISPLAY]",
+            "control DISPLAY command [arg1] [arg2]..",
+            "print DISPLAY filename",
+            "shell [DISPLAY]",
+            "send-file",
+            "configure",
+        ]
+    if supports_server():
+        command_options += [
+            "clean [DISPLAY1] [DISPLAY2]..",
+            "clean-sockets [DISPLAY]",
+            "clean-displays [DISPLAY]",
+            "autostart",
+        ]
     command_options += [
-        "attach [DISPLAY]",
-        "detach [DISPLAY]",
-        "info [DISPLAY]",
-        "id [DISPLAY]",
-        "version [DISPLAY]",
-        "stop [DISPLAY]",
-        "exit [DISPLAY]",
-        "clean [DISPLAY1] [DISPLAY2]..",
-        "clean-sockets [DISPLAY]",
-        "clean-displays [DISPLAY]",
-        "screenshot filename [DISPLAY]",
-        "control DISPLAY command [arg1] [arg2]..",
-        "print DISPLAY filename",
-        "shell [DISPLAY]",
-        "send-file",
-        "configure",
         "showconfig",
         "list",
         "list-sessions",
         "list-windows",
-        "sessions",
-        "launcher",
-        "gui",
-        "start-gui",
-        "bug-report",
-        "toolbox",
         "displays",
-        "about",
-        "docs",
-        "html5",
-        "autostart",
         "encoding",
-        "example",
         "path-info",
     ]
+    if find_html5_path():
+        command_options += ["html5"]
+    if find_docs_path():
+        command_options += ["docs"]
+
     try:
         from xpra.net import mdns
         assert mdns
