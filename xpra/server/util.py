@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import sys
 import json
 import shlex
@@ -14,7 +13,6 @@ from typing import Any
 from xpra.util.env import envbool, shellsub, osexpand
 from xpra.os_util import OSX, POSIX
 from xpra.util.io import umask_context, which, get_util_logger
-from xpra.log import Logger
 from xpra.platform.dotxpra import norm_makepath
 from xpra.platform.paths import get_python_exec_command
 from xpra.scripts.config import InitException, FALSE_OPTIONS
@@ -64,6 +62,7 @@ def decode_json(out):
 # credit: https://stackoverflow.com/a/47080959/428751
 # returns a dictionary of the environment variables resulting from sourcing a file
 def env_from_sourcing(file_to_source_path: str, include_unexported_variables: bool = False) -> dict[str, str]:
+    from xpra.log import Logger
     log = Logger("exec")
     cmd: list[str] = shlex.split(file_to_source_path)
 
