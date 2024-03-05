@@ -417,6 +417,7 @@ rm -fr ./lib2to3* ./xdg* ./olefile* ./pygtkcompat* keyring/testing ./jaraco* ./p
 #remove codecs we don't need:
 rm -f ./libSvt* ./libx265* ./libjxl* ./libde265* ./libkvazaar*
 if [ "${DO_FULL}" == "0" ]; then
+	rm -fr *.dist-info
 	# kerberos / gss libs:
 	rm -f ./libshishi* ./libgss*
 	# no dbus:
@@ -428,7 +429,7 @@ if [ "${DO_FULL}" == "0" ]; then
     # remove h264 encoder:
 	rm -f ./libx264*
 	# should not be needed:
-	rm -f ./libsqlite* ./libp11-kit* ./libsharpyuv*
+	rm -f ./libsqlite* ./libp11-kit*
 	# extra audio codecs (we just keep vorbis and opus):
 	rm -f ./libmp3* ./libwavpack* ./libmpdec* ./libspeex* ./libFLAC* ./libmpg123* ./libfaad* ./libfaac*
 	# matching gstreamer modules:
@@ -509,6 +510,9 @@ fi
 #leave ./lib
 popd > /dev/null
 
+rm -fr share/xml
+rm -fr share/glib-2.0/codegen share/glib-2.0/gdb share/glib-2.0/gettext
+rm -fr share/themes/Default/gtk-2.0*
 if [ "${DO_FULL}" == "0" ]; then
 	# remove extra bits that take up a lot of space:
 	rm -fr share/icons/Adwaita/cursors
@@ -519,7 +523,7 @@ fi
 for i in `seq 4`; do
 	find share/icons -type d -exec rmdir {} \; 2> /dev/null
 done
-rm -fr share/xml
+
 #leave ./dist
 popd > /dev/null
 
