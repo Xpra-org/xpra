@@ -1794,12 +1794,10 @@ if WIN32:
             add_data_files("etc/xpra/conf.d", conf_d_files)
 
     if data_ENABLED:
-        add_data_files("", [
-            "packaging/MSWindows/website.url",
-            "packaging/MSWindows/TaskbarLib.tlb",
-        ])
+        add_data_files("", ["packaging/MSWindows/website.url"])
+        add_data_files("lib/tlb", ["packaging/MSWindows/TaskbarLib.tlb"])
         if webcam_ENABLED:
-            add_data_files("", ["packaging/MSWindows/DirectShow.tlb"])
+            add_data_files("lib/tlb", ["packaging/MSWindows/DirectShow.tlb"])
 
     remove_packages(*external_excludes)
     external_includes += [

@@ -33,6 +33,7 @@ def find_tlb_file(filename: str = "DirectShow.tlb") -> str:
     app_dir = get_app_dir()
     dirs = [
         app_dir,
+        os.path.join(app_dir, "lib", "tlb"),
         os.path.join(app_dir, "win32"),
         os.path.join(app_dir, "share", "xpra"),
         os.path.join(os.environ.get("MINGW_PREFIX", ""), "share", "xpra"),
