@@ -43,6 +43,7 @@ if [ "${DO_FULL}" == "0" ]; then
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_proxy --without-enc_x264 --without-openh264_encoder --without-webp_encoder --without-spng_encoder --without-jpeg_encoder --without-avif --without-vpx_encoder --without-argb_encoder --without-gstreamer_video"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvenc --without-nvfbc --without-cuda_kernels"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-csc_cython"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-ffmpeg"
 	# gstreamer?
 	# BUILD_OPTIONS="${BUILD_OPTIONS} --without-example"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-webcam"
@@ -418,10 +419,10 @@ if [ "${DO_FULL}" == "0" ]; then
 	# no dbus:
 	rm -f ./libdbus*
 	# no AV1:
-  rm -f ./libaom* ./rav1e* ./libdav1d* ./libheif*
-  # no avif:
-  rm -f ./libavif*
-  # remove h264 encoder:
+	rm -f ./libaom* ./rav1e* ./libdav1d* ./libheif*
+	# no avif:
+	rm -f ./libavif*
+	# remove h264 encoder:
 	rm -f ./libx264*
 	# should not be needed:
 	rm -f ./libsqlite* ./libp11-kit*
