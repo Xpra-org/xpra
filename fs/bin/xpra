@@ -5,8 +5,11 @@ import sys
 try:
     import xpra
 except ImportError as e:
-    sys.stderr.write("Error: xpra is not installed or you are using the wrong python interpreter\n")
-    sys.stderr.write(" Python %s: %s\n" % (".".join(str(x) for x in sys.version_info[:3]), e))
+    stderr = sys.stderr
+    if stderr:
+        stderr.write("Error: xpra is not installed or you are using the wrong python interpreter\n")
+        stderr.write(" Python %s: %s\n" % (".".join(str(x) for x in sys.version_info[:3]), e))
+        stderr.flush()
     sys.exit(1)
 
 from xpra.platform import init, set_default_name
