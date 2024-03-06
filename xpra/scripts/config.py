@@ -19,7 +19,13 @@ from xpra.os_util import (
     )
 
 def warn(msg):
-    sys.stderr.write(msg+"\n")
+    stderr = sys.stderr
+    if stderr:
+        try:
+            stderr.write(msg+"\n")
+            stderr.flush()
+        except:
+            pass
 
 def nodebug(*_args):
     #can be overriden
