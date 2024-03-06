@@ -131,6 +131,8 @@ class MMAP_Connection(StubSourceMixin):
         sep = "." if self.mmap_client_namespace else "_"
         mmap_caps : Dict[str, Any] = {}
         caps : Dict [str, Any] = {"mmap" : mmap_caps}
+        if self.mmap_size<=0:
+            return caps
         def mmapattr(name:str, value) -> None:
             #easy: just send both for now
             mmap_caps[name] = value
