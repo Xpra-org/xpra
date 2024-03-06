@@ -108,15 +108,15 @@ class MMAP_Connection(StubSourceMixin):
             log.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
 
     def get_caps(self) -> dict[str, Any]:
-        mmap_caps: dict[str, Any] = {
-            "enabled": self.mmap_size > 0,
-        }
-        if self.mmap_client_token:
-            mmap_caps.update({
-                "token": self.mmap_client_token,
-                "token_index": self.mmap_client_token_index,
-                "token_bytes": self.mmap_client_token_bytes,
-            })
+        mmap_caps: dict[str, Any] = {}
+        if self.mmap_size > 0:
+            mmap_caps["enabled"] = True
+            if self.mmap_client_token:
+                mmap_caps.update({
+                    "token": self.mmap_client_token,
+                    "token_index": self.mmap_client_token_index,
+                    "token_bytes": self.mmap_client_token_bytes,
+                })
         return {"mmap": mmap_caps}
 
     def get_info(self) -> dict[str, Any]:
