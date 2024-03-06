@@ -387,28 +387,6 @@ CODEC_SWITCHES = ENCODER_SWITCHES + DECODER_SWITCHES + [
     "csc_cython", "csc_libyuv",
     "gstreamer", "gstreamer_audio", "gstreamer_video",
 ]
-SWITCHES = [
-    "cython", "cython_tracing", "cythonize_more",
-    "modules", "data",
-    "codecs",
-] + CODEC_SWITCHES + [
-    "brotli", "qrencode",
-    "vsock", "netdev", "proc", "mdns", "lz4",
-    "clipboard",
-    "scripts",
-    "server", "client", "dbus", "x11", "xinput", "uinput", "sd_listen",
-    "gtk_x11", "service",
-    "gtk3", "example",
-    "pam", "xdg_open",
-    "audio", "opengl", "printing", "webcam", "notifications", "keyboard",
-    "rebuild",
-    "docs", "pandoc_lua",
-    "annotate", "warn", "strict", "Os",
-    "shadow", "proxy", "rfb", "quic", "http", "ssh",
-    "debug", "PIC",
-    "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests",
-    "win32_tools",
-]
 # some switches can control multiple switches:
 SWITCH_ALIAS = {
     "codecs": ["codecs"] + CODEC_SWITCHES,
@@ -427,10 +405,39 @@ SWITCH_ALIAS = {
         "server", "client", "shadow",
         "rencodeplus", "brotli", "qrencode", "websockets", "netdev", "vsock",
         "lz4",
-        "bindings", "x11", "gtk_x11",
+        "x11", "gtk_x11",
         "pam", "sd_listen", "proc",
     ),
 }
+
+SWITCHES = []
+# add the ones we have aliases for:
+for sw, deps in SWITCH_ALIAS.items():
+    SWITCHES += [sw] + list(deps)
+for sw in CODEC_SWITCHES:
+    if sw not in SWITCHES:
+        SWITCHES.append(sw)
+
+SWITCHES += [
+    "cython_tracing", "cythonize_more",
+    "modules", "data",
+    "brotli", "qrencode",
+    "vsock", "netdev", "proc", "mdns", "lz4",
+    "clipboard",
+    "scripts",
+    "server", "client", "dbus", "x11", "xinput", "uinput", "sd_listen",
+    "gtk_x11", "service",
+    "gtk3", "example",
+    "pam", "xdg_open",
+    "audio", "opengl", "printing", "webcam", "notifications", "keyboard",
+    "rebuild",
+    "docs", "pandoc_lua",
+    "annotate", "warn", "strict", "Os",
+    "shadow", "proxy", "rfb", "quic", "http", "ssh",
+    "debug", "PIC",
+    "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests",
+    "win32_tools",
+]
 
 
 def show_help():
