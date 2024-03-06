@@ -23,7 +23,7 @@ class MMAP_Connection(StubSourceMixin):
 
     def __init__(self):
         self.supports_mmap = False
-        self.mmap_filename = None
+        self.mmap_filename = ""
         self.min_mmap_size = 0
 
     def init_from(self, _protocol, server) -> None:
@@ -125,6 +125,6 @@ class MMAP_Connection(StubSourceMixin):
                 "supported": self.supports_mmap,
                 "enabled": self.mmap is not None,
                 "size": self.mmap_size,
-                "filename": self.mmap_filename or "",
+                "filename": self.mmap_filename,
             },
         }
