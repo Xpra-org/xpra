@@ -734,20 +734,27 @@ def supports_x11_server() -> bool:
         return False
 
 
+def has_module(name:str):
+    try:
+        return bool(find_spec(name))
+    except (ModuleNotFoundError, ValueError):
+        return False
+
+
 def supports_client() -> bool:
-    return bool(find_spec("xpra.client"))
+    return has_module("xpra.client")
 
 
 def supports_gtk3_client() -> bool:
-    return bool(find_spec("xpra.client.gtk3"))
+    return has_module("xpra.client.gtk3")
 
 
 def supports_server() -> bool:
-    return bool(find_spec("xpra.server"))
+    return has_module("xpra.server")
 
 
 def supports_shadow() -> bool:
-    return bool(find_spec("xpra.server.shadow"))
+    return has_module("xpra.server.shadow")
 
 
 def get_subcommands() -> tuple[str, ...]:
