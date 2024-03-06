@@ -34,6 +34,9 @@ class Win32_Notifier(NotifierBase):
         return self.gtk_notifier
 
     def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):
+        if not tray:
+            log("cannot show notifications without a tray")
+            return
         getHWND = getattr(tray, "getHWND", None)
         if GTK_NOTIFIER and (actions or not getHWND):
             gtk_notifier = self.get_gtk_notifier()
