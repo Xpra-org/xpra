@@ -7,19 +7,28 @@
 
 ARGS=$@
 DO_CLEAN=${DO_CLEAN:-1}
-DO_CUDA=${DO_CUDA:-1}
 DO_ZIP=${DO_ZIP:-0}
 DO_INSTALLER=${DO_INSTALLER:-1}
 DO_TESTS=${DO_TESTS:-1}
 DO_VERPATCH=${DO_VERPATCH:-1}
-DO_SERVICE=${DO_SERVICE:-0}
-CLIENT_ONLY=${CLIENT_ONLY:-0}
+DO_FULL=${DO_FULL:-1}
 RUN_INSTALLER=${RUN_INSTALLER:-1}
 DO_MSI=${DO_MSI:-0}
 DO_SIGN=${DO_SIGN:-1}
-BUNDLE_PUTTY=${BUNDLE_PUTTY:-1}
-BUNDLE_OPENSSH=${BUNDLE_OPENSSH:-0}
-BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
+DO_TESTS=${DO_TESTS:-0}
+
+# these are only enabled for "full" builds:
+DO_CUDA=${DO_CUDA:-$DO_FULL}
+DO_SERVICE=${DO_SERVICE:-$DO_FULL}
+DO_DOC=${DO_DOC:-$DO_FULL}
+BUNDLE_HTML5=${BUNDLE_HTML5:-$DO_FULL}
+BUNDLE_MANUAL=${BUNDLE_MANUAL:-$DO_FULL}
+BUNDLE_PUTTY=${BUNDLE_PUTTY:-$DO_FULL}
+BUNDLE_OPENSSH=${BUNDLE_OPENSSH:-$DO_FULL}
+BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-$DO_FULL}
+BUNDLE_PAEXEC=${BUNDLE_PAEXEC:-$DO_FULL}
+BUNDLE_NUMPY=${BUNDLE_NUMPY:-$DO_CUDA}
+BUNDLE_DESKTOPLOGON=${BUNDLE_DESKTOPLOGON:-$DO_FULL}
 ZIP_MODULES=${ZIP_MODULES:-1}
 
 PYTHON=${PYTHON:-python3}
@@ -29,23 +38,25 @@ KEY_FILE="E:\\xpra.pfx"
 DIST="./dist"
 BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_x265 --without-cuda_rebuild"
 
-if [ "${CLIENT_ONLY}" == "1" ]; then
-	DO_TESTS="0"
-	DO_SERVICE="0"
-	BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_x264 --without-nvenc --without-nvfbc"
+if [ "${DO_FULL}" == "0" ]; then
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-server --without-shadow --without-proxy --without-rfb"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-dbus"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_proxy --without-enc_x264 --without-enc_ffmpeg --without-webp_encoder --without-jpeg_encoder --without-vpx_encoder --without-argb_encoder"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-csc_swscale --without-dec_avcodec2"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-webcam"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-win32_tools"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-html5"
 	shift
 fi
 if [ "${DO_CUDA}" == "0" ]; then
-	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvjpeg --without-nvenc --without-nvfbc"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvjpeg --without-nvenc --without-nvfbc --without-cuda_kernels"
 fi
 
 ################################################################################
 # get paths and compilation options:
 PROGRAMFILES_X86="C:\\Program Files (x86)"
 
-if [ "${CLIENT_ONLY}" == "1" ]; then
-	BUILD_OPTIONS="${BUILD_OPTIONS} --without-server --without-shadow --without-proxy --without-html5 --without-rfb"
-else
+if [ "${BUNDLE_HTML5}" == "1" ]; then
 	# Find a java interpreter we can use for the html5 minifier
 	$JAVA -version >& /dev/null
 	if [ "$?" != "0" ]; then
@@ -96,8 +107,8 @@ if [ "${LOCAL_MODIFICATIONS}" != "0" ]; then
 	FULL_VERSION="${FULL_VERSION}M"
 fi
 EXTRA_VERSION=""
-if [ "${CLIENT_ONLY}" == "1" ]; then
-	EXTRA_VERSION="-Client"
+if [ "${DO_FULL}" == "0" ]; then
+	EXTRA_VERSION="-Light"
 	DO_CUDA="0"
 fi
 echo
@@ -264,6 +275,7 @@ rm -fr "${DIST}/lib/comtypes/gen"
 pushd ${DIST} > /dev/null
 #why is it shipping those files??
 find lib/ -name "*dll.a" -exec rm {} \;
+
 if [ "${BITS}" == "32" ]; then
 	#no idea why this is needed on x86 only
 	cp lib/libgdk-*dll ./
@@ -276,13 +288,22 @@ mkdir lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp
 mv lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-*.dll lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp/
 rm -fr lib/gdk-pixbuf-2.0/2.10.0/loaders
 mv lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp lib/gdk-pixbuf-2.0/2.10.0/loaders
+if [ "${DO_FULL}" == "0" ]; then
+	pushd lib/gdk-pixbuf-2.0/2.10.0/loaders
+	# we only want to keep: jpeg, png, xpm and svg
+	for fmt in xbm gif jxl tiff ico tga bmp	ani pnm avif qtif icns heif; do
+		rm -f libpixbufloader-${fmt}.dll
+	done
+	popd
+fi
 #move libs that are likely to be common to the lib dir:
 for prefix in lib avcodec avformat avutil swscale swresample zlib1 xvidcore; do
 	#just in case they were not included yet by cx_Freeze:
 	cp $MINGW_PREFIX/bin/${prefix}*.dll ./lib/
 	find lib/Xpra -name "${prefix}*.dll" -exec mv {} ./lib/ \;
 done
-if [ "${CLIENT_ONLY}" ]; then
+
+if [ "${BUNDLE_NUMPY}" == "0" ]; then
 	rm -fr ./lib/numpy
 else
 	for x in openblas gfortran quadmath; do
@@ -297,7 +318,8 @@ else
 	done
 	popd > /dev/null
 fi
-rm lib/libx265*.dll
+
+pwd
 mv lib/nacl/libsodium*dll ./lib/
 #start my moving everything out:
 mv ./lib/gstreamer-1.0/* ./lib/
@@ -307,10 +329,22 @@ mv ./lib/libgst*.dll ./lib/gstreamer-1.0/
 mv ./lib/gstreamer-1.0/libgstreamer*.dll ./lib/
 #and the gstreamer support libraries look like plugins but those are actual DLLs:
 mv ./lib/gstreamer-1.0/libgst*-1.0-*.dll ./lib/
-GST_DLLS="audioconvert audioparsers audiorate audioresample audiotestsrc cutter directsound directsoundsrc faac faad flac isomp4 lame matroska mpg123 ogg opus opusparse speex volume vorbis wasapi wavenc wavpack wavparse"
+#not needed at all for now:
+rm ./lib/libgstbasecamerabinsrc* libgstphotography*
+
+GST_DLLS="audioconvert audioparsers audiorate audioresample audiotestsrc cutter directsound directsoundsrc lame mpg123 ogg opus opusparse volume vorbis wasapi"
+SKIP_GST_DLLS="faac faad flac isomp4 matroska speex wavenc wavpack wavparse"
+if [ "${DO_FULL}" == "1" ]; then
+	GST_DLLS="${GST_DLLS} ${SKIP_GST_DLLS}"
+	SKIP_GST_DLLS=""
+fi
 for x in ${GST_DLLS}; do
 	cp $MINGW_PREFIX/lib/gstreamer-1.0/libgst$x*.dll ./lib/gstreamer-1.0/
 done
+for x in ${SKIP_GST_DLLS}; do
+	rm ./lib/gstreamer-1.0/libgst$x*.dll
+done
+
 if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
 	#move most DLLs to /lib
 	mv *dll lib/
@@ -342,12 +376,49 @@ mv ./lib/*pdfium*.dll ./
 #liblz4 ends up in the wrong place and duplicated,
 #keep just one copy in ./lib
 find lib/lz4 -name "liblz4.dll" -exec mv {} ./lib/ \;
-popd > /dev/null
 
-pushd ${DIST}/lib > /dev/null
+pushd lib > /dev/null
+pwd
+rm -f libicuind* libicudtd* libicudt* libicuucd*
+if [ "${BUNDLE_NUMPY}" == "0" ]; then
+	rm libLLVM* libclang* libgfortran* libPyImath*
+	rm -fr libopenblas* libgraphblas* libquadmath*
+fi
+if [ "${DO_FULL}" == "0" ]; then
+	rm -f libopencv* libleptonica*
+	rm -f libGLES*
+	# ffmpeg:
+	rm -f libx265* avcodec* avutil* avformat* swresample* swscale*
+	rm -f libaom* libassimp* libshaderc* libSvt* libfftw* xvidcore* libde265* libkvazaar* libvpl* libavif*
+	rm -f libprotoc* libhwy* rav1e* libSPIRV* libspirv*
+	rm -f libMagick*
+	rm -f libisl* libx264* libdav1d* libraw* libheif* libumfpack* libmng* libdvd* libtheora* libmpeg2*
+	rm -f libfaad* libfaac* libspeex* libcdio* libwavpack* libdca* lib*amrw* liba52*
+	rm -f libdjvulibre* libfdk* libopenal*
+	rm -f libBullet* libopenvr*
+	rm -f libplacebo* libbluray*
+	rm -f libsqlite*
+	rm -f libwebrtc*
+	# gstreamer:
+	rm -f libgstcuda*
+fi
+if [ "${PYTHON}" == "python3" ]; then
+	rm -f libpython2*
+fi
+
+
 #remove test bits we don't need:
-rm -fr ./future/backports/test ./comtypes/test/ ./ctypes/macholib/fetch_macholib* ./distutils/tests ./distutils/command ./enum/doc ./websocket/tests ./email/test/
+rm -fr ./future/backports/test ./comtypes/test/ ./ctypes/macholib/fetch_macholib* ./distutils/tests ./distutils/command ./enum/doc ./websocket/tests ./email/test/ ./psutil/tests
+rm -fr ./Crypto/SelfTest/*
+
+#not building:
+rm -fr cairo/include
+
+#no runtime type checks:
+find xpra -name "py.typed" -exec rm {} \;
 #remove source:
+find xpra -name "*.bak" -exec rm {} \;
+find xpra -name "*.orig" -exec rm {} \;
 find xpra -name "*.pyx" -exec rm {} \;
 find xpra -name "*.c" -exec rm {} \;
 find xpra -name "*.cpp" -exec rm {} \;
@@ -357,6 +428,7 @@ find xpra -name "*.h" -exec rm {} \;
 find xpra -name "*.html" -exec rm {} \;
 find xpra -name "*.pxd" -exec rm {} \;
 find xpra -name "*.cu" -exec rm {} \;
+
 #remove empty directories:
 rmdir xpra/*/*/* 2> /dev/null
 rmdir xpra/*/* 2> /dev/null
@@ -365,30 +437,50 @@ rmdir xpra/* 2> /dev/null
 if [ "${PYTHON_MAJOR_VERSION}" != "3" ]; then
 	rm -fr gtk-3.0 lib2to3
 fi
+# unused modules:
 if [ "${ZIP_MODULES}" == "1" ]; then
 	#these modules contain native code or data files,
 	#so they will require special treatment:
 	#xpra numpy cryptography PIL nacl cffi gtk rencode gobject glib > /dev/null
-	zip --move -ur library.zip OpenGL test encodings unittest ldap3 future paramiko html \
-			pyasn1 distutils comtypes asn1crypto ldap email websocket multiprocessing \
-			pkg_resources pyu2f pycparser idna ctypes websockify json pygtkcompat \
-			http enum sqlite3 winreg copyreg _thread _dummythread builtins importlib \
-			logging queue urllib xml xmlrpc pyasn1_modules concurrent pynvml collections > /dev/null
+	if [ "${DO_FULL}" == "0" ]; then
+		rm -fr test unittest gssapi pynvml ldap ldap3 pyasn1 asn1crypto pyu2f sqlite3 psutil xdg cpuinfo
+	else
+		zip --move -ur library.zip test unittest gssapi pynvml ldap ldap3 pyasn1 asn1crypto pyu2f sqlite3 psutil xdg cpuinfo
+	fi
+	zip --move -ur library.zip OpenGL encodings paramiko html \
+			async_timeout \
+			certifi pkcs11 \
+			ifaddr zeroconf yaml \
+			re platformdirs \
+			distutils comtypes email multiprocessing packaging \
+			pkg_resources pycparser idna ctypes json \
+			http importlib \
+			logging queue urllib xml xmlrpc concurrent collections
 fi
 popd > /dev/null
+
+rm -fr share/xml
+rm -fr share/glib-2.0/codegen share/glib-2.0/gdb share/glib-2.0/gettext
+rm -fr share/themes/Default/gtk-2.0*
+if [ "${DO_FULL}" == "0" ]; then
+	# remove extra bits that take up a lot of space:
+	rm -fr share/icons/Adwaita/cursors
+	rm -fr share/fonts/gsfonts share/fonts/adobe* share/fonts/cantarell
+fi
+popd > /dev/null
+
 #remove empty icon directories
 for i in `seq 4`; do
 	find dist/share/icons -type d -exec rmdir {} \; 2> /dev/null
 done
-rm -fr dist/share/xml
-#leave ./dist
-
 
 echo "* Generating gdk pixbuf loaders.cache"
 gdk-pixbuf-query-loaders.exe "dist/lib/gdk-pixbuf-2.0/2.10.0/loaders/*" | sed 's+".*dist/+"+g' > dist/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
 
-echo "* Generating HTML Manual Page"
-groff.exe -mandoc -Thtml < man/xpra.1 > ${DIST}/manual.html
+if [ "${BUNDLE_MANUAL}" == "1" ]; then
+  echo "* Generating HTML Manual Page"
+  groff.exe -mandoc -Thtml < man/xpra.1 > ${DIST}/manual.html
+fi
 
 if [ "${BUNDLE_PUTTY}" == "1" ]; then
 	echo "* Adding TortoisePlink"
@@ -437,8 +529,10 @@ if [ "${DO_VERPATCH}" == "1" ]; then
 		verpatch $exe				//s desc "Xpra $tool_name"		//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2020" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
 	done
 	verpatch dist/Xpra_cmd.exe 		//s desc "Xpra command line"	//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2020" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
-	verpatch dist/Xpra-Proxy.exe	//s desc "Xpra Proxy Server"	//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2020" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
 	verpatch dist/Xpra.exe 			//s desc "Xpra" 				//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2020" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
+  if [ "${DO_FULL}" == "1" ]; then
+  	verpatch dist/Xpra-Proxy.exe	//s desc "Xpra Proxy Server"	//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2020" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
+  fi
 fi
 
 ################################################################################

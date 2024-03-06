@@ -25,6 +25,21 @@ CODEC_FAIL_SELFTEST = os.environ.get("XPRA_CODEC_FAIL_SELFTEST", "").split(",")
 log("codec loader settings: SELFTEST=%s, FULL_SELFTEST=%s, CODEC_FAIL_IMPORT=%s, CODEC_FAIL_SELFTEST=%s",
         SELFTEST, FULL_SELFTEST, CODEC_FAIL_IMPORT, CODEC_FAIL_SELFTEST)
 
+
+def should_warn(name):
+    if name in NOWARN:
+        return False
+    if name in ("csc_cython", "dec_avif") or name.find("enc") >= 0 or name.startswith("nv"):
+        try:
+            from importlib import import_module
+            import_module("xpra.server")
+        except ImportError:
+            # no server support,
+            # probably a 'Light' build
+            return False
+    return True
+
+
 codec_errors = {}
 codecs = {}
 def codec_import_check(name, description, top_module, class_module, classnames):
@@ -86,9 +101,7 @@ def codec_import_check(name, description, top_module, class_module, classnames):
             return ic
         except ImportError as e:
             codec_errors[name] = str(e)
-            l = log.error
-            if name in NOWARN:
-                l = log.debug
+            l = log.error if should_warn(name) else log.debug
             l("Error importing %s (%s)", description, name)
             l(" %s", e)
             log("", exc_info=True)
@@ -163,6 +176,7 @@ CODEC_OPTIONS = {
     "dec_vpx"       : ("vpx decoder",       "vpx",          "decoder", "Decoder"),
     "dec_avcodec2"  : ("avcodec2 decoder",  "dec_avcodec2", "decoder", "Decoder"),
     }
+
 
 def load_codec(name):
     if has_codec(name):
