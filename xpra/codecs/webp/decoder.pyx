@@ -233,7 +233,7 @@ def decompress(data, has_alpha, rgb_format=None, rgb_formats=[]):
     config.output.is_external_memory = 1
 
     cdef VP8StatusCode ret = 0
-    cdef Py_ssize_t data_len
+    cdef Py_ssize_t data_len = 0
     cdef const uint8_t* data_buf
     assert object_as_buffer(data, <const void**> &data_buf, &data_len)==0, "unable to convert %s to a buffer" % type(data)
     with nogil:
@@ -295,7 +295,7 @@ def decompress_yuv(data, has_alpha=False):
     log("WebPDecode: image size %ix%i : buffer=%#x, strides=%s",
         w, h, <uintptr_t> buf, strides)
     cdef VP8StatusCode ret = 0
-    cdef Py_ssize_t data_len
+    cdef Py_ssize_t data_len = 0
     cdef const uint8_t* data_buf
     assert object_as_buffer(data, <const void**> &data_buf, &data_len)==0, "unable to convert %s to a buffer" % type(data)
     with nogil:
