@@ -74,8 +74,11 @@ class MmapClient(StubClientMixin):
                 log.error(" expected '%#x'", token)
                 log.error(" found '%#x'", mmap_token)
                 self.mmap_enabled = False
-                self.quit(EXIT_MMAP_TOKEN_FAILURE)
-                return
+                if token:
+                    self.quit(EXIT_MMAP_TOKEN_FAILURE)
+                    return False
+                log.error(" mmap is disabled")
+                return True
             log.info("enabled fast mmap transfers using %sB shared memory area", std_unit(self.mmap_size, unit=1024))
         #the server will have a handle on the mmap file by now, safe to delete:
         if not KEEP_MMAP_FILE:
