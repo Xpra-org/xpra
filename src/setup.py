@@ -2329,7 +2329,8 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
                 print(stderr or "")
                 sys.exit(1)
         add_data_files(CUDA_BIN, ["xpra/codecs/cuda_common/%s.fatbin" % x for x in kernels])
-add_data_files(CUDA_BIN, ["xpra/codecs/cuda_common/README.md"])
+if not WIN32 or OSX:
+    add_data_files(CUDA_BIN, ["xpra/codecs/cuda_common/README.md"])
 
 if nvenc_ENABLED:
     nvencmodule = "nvenc"
