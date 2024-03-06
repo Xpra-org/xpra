@@ -298,6 +298,8 @@ mdns_ENABLED            = DEFAULT
 websockets_ENABLED      = DEFAULT
 
 codecs_ENABLED          = DEFAULT
+encoders_ENABLED        = codecs_ENABLED
+decoders_ENABLED        = codecs_ENABLED
 enc_proxy_ENABLED       = DEFAULT
 enc_x264_ENABLED        = DEFAULT and pkg_config_version("0.155", "x264")
 openh264_ENABLED        = DEFAULT and pkg_config_version("2.0", "openh264")
@@ -317,6 +319,8 @@ webp_decoder_ENABLED    = webp_ENABLED
 jpeg_encoder_ENABLED    = DEFAULT and pkg_config_version("1.2", "libturbojpeg")
 jpeg_decoder_ENABLED    = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
 avif_ENABLED            = DEFAULT and pkg_config_version("0.9", "libavif") and not OSX
+avif_encoder_ENABLED    = avif_ENABLED
+avif_decoder_ENABLED    = avif_ENABLED
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.7", "vpx") and BITS==64
 vpx_encoder_ENABLED     = vpx_ENABLED
 vpx_decoder_ENABLED     = vpx_ENABLED
@@ -359,18 +363,26 @@ rebuild_ENABLED         = not skip_build
 
 
 # allow some of these flags to be modified on the command line:
-CODEC_SWITCHES = [
-    "enc_x264",
+ENCODER_SWITCHES = [
     "enc_proxy",
+    "enc_x264", "openh264_encoder", "nvenc", "nvjpeg_encoder",
+    "vpx_encoder", "webp_encoder", "pillow_encoder",
+    "spng_decoder", "jpeg_encoder", "avif_encoder",
+    "argb_encoder",
+]
+DECODER_SWITCHES = [
+    "openh264_decoder",
+    "nvdec", "nvjpeg_decoder",
+    "vpx_decoder", "webp_decoder", "pillow_decoder",
+    "spng_encoder", "jpeg_decoder", "avif_decoder",
+]
+CODEC_SWITCHES = ENCODER_SWITCHES + DECODER_SWITCHES + [
     "cuda_kernels", "cuda_rebuild",
-    "openh264", "openh264_decoder", "openh264_encoder",
-    "nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder",
-    "vpx", "vpx_encoder", "vpx_decoder",
-    "webp", "webp_encoder", "webp_decoder",
-    "pillow", "pillow_encoder", "pillow_decoder",
-    "spng_decoder", "spng_encoder",
-    "jpeg_encoder", "jpeg_decoder",
-    "avif", "argb", "argb_encoder",
+    "nvidia", "nvfbc",
+    "openh264",
+    "vpx", "webp",
+    "pillow",
+    "avif", "argb",
     "v4l2", "evdi", "drm",
     "csc_cython", "csc_libyuv",
     "gstreamer", "gstreamer_audio", "gstreamer_video",
@@ -400,10 +412,13 @@ SWITCHES = [
 # some switches can control multiple switches:
 SWITCH_ALIAS = {
     "codecs": ["codecs"] + CODEC_SWITCHES,
+    "encoders": ENCODER_SWITCHES,
+    "decoders": DECODER_SWITCHES,
     "argb" : ("argb_encoder", ),
     "pillow": ("pillow_encoder", "pillow_decoder"),
     "vpx" : ("vpx_encoder", "vpx_decoder"),
     "webp" : ("webp_encoder", "webp_decoder"),
+    "avif": ("avif_encoder", "avif_decoder"),
     "openh264": ("openh264", "openh264_decoder", "openh264_encoder"),
     "nvidia": ("nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder", "cuda_kernels", "cuda_rebuild"),
     "gstreamer": ("gstreamer_audio", "gstreamer_video"),
@@ -2398,8 +2413,8 @@ toggle_packages(jpeg_decoder_ENABLED or jpeg_encoder_ENABLED, "xpra.codecs.jpeg"
 tace(jpeg_encoder_ENABLED, "xpra.codecs.jpeg.encoder", "libturbojpeg")
 tace(jpeg_decoder_ENABLED, "xpra.codecs.jpeg.decoder", "libturbojpeg")
 toggle_packages(avif_ENABLED, "xpra.codecs.avif")
-tace(avif_ENABLED, "xpra.codecs.avif.encoder", "libavif")
-tace(avif_ENABLED, "xpra.codecs.avif.decoder", "libavif")
+tace(avif_encoder_ENABLED, "xpra.codecs.avif.encoder", "libavif")
+tace(avif_decoder_ENABLED, "xpra.codecs.avif.decoder", "libavif")
 toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.libyuv")
 tace(csc_libyuv_ENABLED, "xpra.codecs.libyuv.converter", "libyuv", language="c++")
 toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")

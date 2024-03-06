@@ -38,11 +38,9 @@ DIST="./dist"
 if [ "${DO_FULL}" == "0" ]; then
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-shadow --without-server --without-proxy"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-dbus"
-	BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_proxy --without-enc_x264 --without-openh264_encoder --without-webp_encoder --without-spng_encoder --without-jpeg_encoder --without-vpx_encoder --without-avif --without-argb_encoder --without-gstreamer_video --without-pillow_encoder"
-	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvenc --without-nvfbc --without-cuda_kernels"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-encoders --without-avif --without-gstreamer_video"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvfbc --without-cuda_kernels"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-csc_cython"
-	# gstreamer?
-	# BUILD_OPTIONS="${BUILD_OPTIONS} --without-example"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-webcam"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-win32_tools"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-docs"
