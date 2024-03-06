@@ -717,7 +717,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
             eifd = []
         for eif in eifd:
             add_to_keywords(kw, 'extra_compile_args', eif)
-    if sys.version_info>=(3,7):
+    if sys.version_info[0] >= 3:
         #we'll switch to the "new" buffer interface after we drop support for Python 2.7
         #until then, silence those deprecation warnings:
         add_to_keywords(kw, 'extra_compile_args', "-Wno-error=deprecated-declarations")
