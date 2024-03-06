@@ -319,7 +319,7 @@ CODEC_SWITCHES = [
     "nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder",
     "vpx", "vpx_encoder", "vpx_decoder",
     "webp", "webp_decoder", "webp_encoder",
-    "pillow",
+    "pillow", "pillow_encoder", "pillow_decoder",
     "spng_decoder", "spng_encoder",
     "jpeg_encoder", "jpeg_decoder",
     "avif", "argb", "argb_encoder",
