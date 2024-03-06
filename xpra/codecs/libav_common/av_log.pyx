@@ -65,7 +65,7 @@ cdef av_error_str(int errnum):
 
 DEF MAX_LOG_SIZE = 4096
 
-cdef void log_callback_override(void *avcl, int level, const char *fmt, va_list vl) with gil:
+cdef void log_callback_override(void *avcl, int level, const char *fmt, va_list vl) noexcept with gil:
     if level<=ERROR_LEVEL:
         l = log.error
     elif level<=WARNING_LEVEL:
