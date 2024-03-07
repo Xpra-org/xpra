@@ -199,7 +199,7 @@ def load_categories_to_type() -> dict:
 command_to_type: dict[str, str] | None = None
 
 
-def load_command_to_type() -> dict[bytes, str]:
+def load_command_to_type() -> dict[str, str]:
     if not GUESS_CONTENT:
         return {}
     global command_to_type

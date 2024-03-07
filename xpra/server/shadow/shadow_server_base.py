@@ -33,7 +33,6 @@ NOTIFY_STARTUP = envbool("XPRA_SHADOW_NOTIFY_STARTUP", True)
 SHADOWSERVER_BASE_CLASS: type = object
 if features.rfb:
     from xpra.server.rfb.server import RFBServer
-
     SHADOWSERVER_BASE_CLASS = RFBServer
 
 

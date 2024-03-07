@@ -649,7 +649,7 @@ def normalize_local_display_name(local_display_name: str) -> str:
 def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                         display_name: str, clobber,
                         mmap_group: str = "auto", socket_permissions: str = "600", username: str = "",
-                        uid: int = 0, gid: int = 0) -> dict[Any, Callable]:
+                        uid: int = 0, gid: int = 0) -> dict[Any, dict]:
     log = get_network_logger()
     log("setup_local_sockets%s",
         (bind, socket_dir, socket_dirs, session_dir, display_name, clobber, mmap_group,

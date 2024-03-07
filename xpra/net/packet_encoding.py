@@ -29,7 +29,7 @@ class Encoding:
     name: str
     flag: int
     version: str
-    encode: Callable[[Any], ByteString]
+    encode: Callable[[Any], tuple[ByteString, int]]
     decode: Callable[[ByteString], Any]
 
 
@@ -47,8 +47,8 @@ def init_rencodeplus() -> Encoding:
 
 
 def init_none() -> Encoding:
-    def encode(data: ByteString) -> tuple[bytes, int]:
-        # just send data as a string for clients that don't understand xpra packet format:
+    def none_encode(data: ByteString) -> tuple[bytes, int]:
+        # just send data as a byte string for clients that don't understand xpra packet format:
         import codecs
 
         def b(x):
@@ -58,10 +58,10 @@ def init_none() -> Encoding:
 
         return b(": ".join(str(x) for x in data) + "\n"), FLAGS_NOHEADER
 
-    def decode(data: ByteString) -> ByteString:
+    def none_decode(data: ByteString) -> ByteString:
         return data
 
-    return Encoding("none", FLAGS_NOHEADER, "0", encode, decode)
+    return Encoding("none", FLAGS_NOHEADER, "0", none_encode, none_decode)
 
 
 def init_encoders(*names) -> None:

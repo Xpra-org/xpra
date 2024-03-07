@@ -55,7 +55,7 @@ class WindowPerformanceStatistics:
         self.encoding_stats: Deque[tuple[float, str, int, int, int, float]] = deque(maxlen=NRECS)
         # records how long it took for a damage request to be sent
         # last NRECS: (sent_time, no of pixels, actual batch delay, damage_latency)
-        self.damage_in_latency: Deque[tuple[float, int, int, float]] = deque(maxlen=NRECS)
+        self.damage_in_latency: Deque[tuple[float, int, float, float]] = deque(maxlen=NRECS)
         # records how long it took for a damage request to be processed
         # last NRECS: (processed_time, no of pixels, actual batch delay, damage_latency)
         self.damage_out_latency: Deque[tuple[float, int, float, float]] = deque(maxlen=NRECS)

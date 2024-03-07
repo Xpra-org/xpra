@@ -506,7 +506,7 @@ class FileTransferHandler(FileTransferAttributes):
         openit = bool(packet[4])
         filesize = int(packet[5])
         file_data: bytes = packet[6]
-        options: dict = typedict(packet[7])
+        options: typedict = typedict(packet[7])
         send_id = ""
         if len(packet) >= 9:
             send_id = str(packet[8])

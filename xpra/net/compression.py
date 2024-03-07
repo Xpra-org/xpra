@@ -38,9 +38,8 @@ def init_lz4() -> Compression:
     # pylint: disable=redefined-outer-name
     from xpra.net.lz4.lz4 import compress, decompress, get_version  # @UnresolvedImport
     from xpra.net.protocol.header import LZ4_FLAG
-    from xpra.net.common import PacketType
 
-    def lz4_compress(packet: PacketType, level: int) -> tuple[int, memoryview | None]:
+    def lz4_compress(packet: ByteString, level: int) -> tuple[int, memoryview | None]:
         flag = min(15, level) | LZ4_FLAG
         return flag, compress(packet, acceleration=max(0, 5 - level // 3))
 
@@ -53,7 +52,6 @@ def init_lz4() -> Compression:
 def init_brotli() -> Compression:
     # pylint: disable=import-outside-toplevel
     # pylint: disable=redefined-outer-name
-    from xpra.net.common import PacketType
     from xpra.net.protocol.header import BROTLI_FLAG
     from xpra.net.brotli.compressor import compress, get_version  # @UnresolvedImport
     from xpra.net.brotli.decompressor import decompress  # @UnresolvedImport
@@ -61,7 +59,7 @@ def init_brotli() -> Compression:
     brotli_compress = compress
     brotli_version = get_version()
 
-    def brotli_compress_shim(packet: PacketType, level: int) -> tuple[int, memoryview]:
+    def brotli_compress_shim(packet: ByteString, level: int) -> tuple[int, memoryview]:
         if len(packet) > 1024 * 1024:
             level = min(9, level)
         else:
@@ -74,10 +72,9 @@ def init_brotli() -> Compression:
 
 
 def init_none() -> Compression:
-    from xpra.net.common import PacketType
     from xpra.util.str_fn import strtobytes
 
-    def nocompress(packet: PacketType, _level) -> tuple[int, ByteString]:
+    def nocompress(packet: ByteString, _level) -> tuple[int, ByteString]:
         if not isinstance(packet, bytes):
             packet = bytes(str(packet), 'UTF-8')
         return 0, strtobytes(packet)

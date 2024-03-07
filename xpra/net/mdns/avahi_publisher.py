@@ -286,7 +286,7 @@ def main():
     add(XPRA_UDP_MDNS_TYPE)
     loop = glib.MainLoop()
 
-    def exit_loop(*args):
+    def exit_loop(*_args):
         loop.quit()
     signal.signal(signal.SIGTERM, exit_loop)
     loop.run()

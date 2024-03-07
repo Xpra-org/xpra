@@ -19,7 +19,7 @@ def std(v, extras="-,./: ") -> str:
     return "".join(filter(f, bytestostr(v or "")))
 
 
-def alnum(v) -> str:
+def alnum(v: str | bytes) -> str:
     return "".join(v for v in filter(str.isalnum, bytestostr(v)))
 
 
@@ -36,7 +36,7 @@ def obsc(v) -> str:
     return v
 
 
-def csv(v) -> str:
+def csv(v: Iterable) -> str:
     try:
         return ", ".join(str(x) for x in v)
     except Exception:

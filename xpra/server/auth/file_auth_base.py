@@ -25,7 +25,7 @@ def stat_filetime(full_path) -> float:
 
 class FileAuthenticatorBase(SysAuthenticator):
     def __init__(self, **kwargs):
-        password_file = kwargs.pop("filename", None)
+        password_file = kwargs.pop("filename", "")
         log("FileAuthenticatorBase password_file=%s", password_file)
         if not password_file:
             log.warn("Warning: %r authentication module is missing the 'filename' option", self)

@@ -13,7 +13,7 @@ from xpra.log import Logger
 log = Logger("encoding")
 
 
-def noswap(image, rgb_formats, supports_transparency):
+def noswap(image, rgb_formats, _supports_transparency):
     pixel_format = image.get_pixel_format()
     raise RuntimeError(f"cannot convert from {pixel_format} to {csv(rgb_formats)} without the argb module")
 

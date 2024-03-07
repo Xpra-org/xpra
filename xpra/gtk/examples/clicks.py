@@ -35,8 +35,8 @@ class TestForm:
         self.show_click_settings()
         GLib.timeout_add(1000, self.show_click_settings)
         vbox.pack_start(self.info, False, False, 0)
-        self.label = label("Ready")
-        vbox.pack_start(self.label, False, False, 0)
+        self.event_label = label("Ready")
+        vbox.pack_start(self.event_label, False, False, 0)
 
         self.eventbox = Gtk.EventBox()
         self.eventbox.connect('button-press-event', self.button_press_event)
@@ -77,13 +77,13 @@ class TestForm:
         # nothing we can do about the "_" prefixed names that Gdk uses
         # noinspection PyProtectedMember
         if event.type == Gdk.EventType._3BUTTON_PRESS:  # pylint: disable=protected-access
-            self.label.set_text("Triple Click!")
+            self.event_label.set_text("Triple Click!")
         elif event.type == Gdk.EventType._2BUTTON_PRESS:  # pylint: disable=protected-access
-            self.label.set_text("Double Click!")
+            self.event_label.set_text("Double Click!")
         elif event.type == Gdk.EventType.BUTTON_PRESS:
-            self.label.set_text("Click")
+            self.event_label.set_text("Click")
         else:
-            self.label.set_text("Unexpected event: %s" % event)
+            self.event_label.set_text("Unexpected event: %s" % event)
 
 
 def main():

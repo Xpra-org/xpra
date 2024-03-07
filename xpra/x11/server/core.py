@@ -705,33 +705,34 @@ class X11ServerCore(GTKServerBase):
                     msg += f" (best match for {desired_w}x{desired_h})"
                 screenlog.info(msg)
 
-            def show_dpi():
-                wmm, hmm = RandR.get_screen_size_mm()  # ie: (1280, 1024)
-                screenlog("RandR.get_screen_size_mm=%s,%s", wmm, hmm)
-                actual_xdpi = round(root_w * 25.4 / wmm)
-                actual_ydpi = round(root_h * 25.4 / hmm)
-                if abs(actual_xdpi - xdpi) <= 1 and abs(actual_ydpi - ydpi) <= 1:
-                    screenlog.info("DPI set to %s x %s", actual_xdpi, actual_ydpi)
-                    screenlog("wanted: %s x %s", xdpi, ydpi)
-                else:
-                    # should this be a warning:
-                    l = screenlog.info
-                    maxdelta = max(abs(actual_xdpi - xdpi), abs(actual_ydpi - ydpi))
-                    if maxdelta >= 10:
-                        l = log.warn
-                    messages = [
-                        f"DPI set to {actual_xdpi} x {actual_ydpi} (wanted {xdpi} x {ydpi})",
-                    ]
-                    if maxdelta >= 10:
-                        messages.append("you may experience scaling problems, such as huge or small fonts, etc")
-                        messages.append("to fix this issue, try the dpi switch, or use a patched Xorg dummy driver")
-                        self.notify_dpi_warning("\n".join(messages))
-                    for i, message in enumerate(messages):
-                        l("%s%s", ["", " "][i > 0], message)
-
             # show dpi via idle_add so server has time to change the screen size (mm)
-            self.idle_add(show_dpi)
+            self.idle_add(self.show_dpi, xdpi, ydpi)
         return root_w, root_h
+
+    def show_dpi(self, xdpi: int, ydpi: int):
+        root_w, root_h = self.root_window.get_geometry()[2:4]
+        wmm, hmm = RandR.get_screen_size_mm()  # ie: (1280, 1024)
+        screenlog("RandR.get_screen_size_mm=%s,%s", wmm, hmm)
+        actual_xdpi = round(root_w * 25.4 / wmm)
+        actual_ydpi = round(root_h * 25.4 / hmm)
+        if abs(actual_xdpi - xdpi) <= 1 and abs(actual_ydpi - ydpi) <= 1:
+            screenlog.info("DPI set to %s x %s", actual_xdpi, actual_ydpi)
+            screenlog("wanted: %s x %s", xdpi, ydpi)
+        else:
+            # should this be a warning:
+            l = screenlog.info
+            maxdelta = max(abs(actual_xdpi - xdpi), abs(actual_ydpi - ydpi))
+            if maxdelta >= 10:
+                l = log.warn
+            messages = [
+                f"DPI set to {actual_xdpi} x {actual_ydpi} (wanted {xdpi} x {ydpi})",
+            ]
+            if maxdelta >= 10:
+                messages.append("you may experience scaling problems, such as huge or small fonts, etc")
+                messages.append("to fix this issue, try the dpi switch, or use a patched Xorg dummy driver")
+                self.notify_dpi_warning("\n".join(messages))
+            for i, message in enumerate(messages):
+                l("%s%s", ["", " "][i > 0], message)
 
     def mirror_client_monitor_layout(self) -> dict[int, Any]:
         with xsync:

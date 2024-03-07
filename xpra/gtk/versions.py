@@ -6,7 +6,7 @@
 
 from typing import Any
 
-GTK_VERSION_INFO: dict[str, dict[str, tuple]] = {}
+GTK_VERSION_INFO: dict[str, tuple] = {}
 
 
 def get_gtk_version_info() -> dict[str, Any]:
@@ -17,15 +17,13 @@ def get_gtk_version_info() -> dict[str, Any]:
     if GTK_VERSION_INFO:
         return GTK_VERSION_INFO.copy()
 
-    def av(k, v):
+    def av(k, v) -> None:
         GTK_VERSION_INFO[k] = parse_version(v)
 
-    def V(k, module, attr_name):
+    def V(k, module, attr_name) -> None:
         v = getattr(module, attr_name, None)
         if v is not None:
             av(k, v)
-            return True
-        return False
 
     from xpra.os_util import gi_import
     # this isn't the actual version, (only shows as "3.0")
@@ -33,7 +31,7 @@ def get_gtk_version_info() -> dict[str, Any]:
     import gi
     V("gi", gi, "__version__")
 
-    def giv(k: str, gimod: str, attr_name: str):
+    def giv(k: str, gimod: str, attr_name: str) -> None:
         mod = gi_import(gimod)
         if mod:
             V(k, mod, attr_name)

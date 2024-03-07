@@ -179,7 +179,7 @@ class UIXpraClient(ClientBaseClass):
         self.menu_helper = None
 
         # state:
-        self._on_handshake: list[Callable] = []
+        self._on_handshake: list[tuple[Callable, tuple[Any]]] | None = []
         self._on_server_setting_changed: dict[str, list[Callable]] = {}
 
     def init(self, opts) -> None:

@@ -354,7 +354,7 @@ class BugReport:
         file_filter.add_pattern("*.zip")
         choose_file(self.window, "Save Bug Report Data", Gtk.FileChooserAction.SAVE, Gtk.STOCK_SAVE, self.do_save)
 
-    def do_save(self, filename):
+    def do_save(self, filename: str):
         log("do_save(%s)", filename)
         if not filename.lower().endswith(".zip"):
             filename = filename + ".zip"
@@ -366,7 +366,7 @@ class BugReport:
             zf = zipfile.ZipFile(filename, mode='w', compression=zipfile.ZIP_DEFLATED)
             for title, tooltip, dtype, s in data:
                 cfile = os.path.join(basenoext, title.replace(" ", "_") + "." + dtype)
-                info = zipfile.ZipInfo(cfile, date_time=time.localtime(time.time()))
+                info = zipfile.ZipInfo(cfile, date_time=tuple(time.localtime(time.time())))
                 info.compress_type = zipfile.ZIP_DEFLATED
                 # very poorly documented:
                 info.external_attr = 0o644 << 16

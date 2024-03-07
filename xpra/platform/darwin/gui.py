@@ -562,13 +562,13 @@ def register_URL_handler(handler: Callable) -> None:
 class AppDelegate(NSObject):
 
     def init(self) -> None:
-        self = objc.super(AppDelegate, self).init()
+        objc_self = objc.super(AppDelegate, self).init()
         if self is None:
             return None
-        self.callbacks: dict[str, Callable] = {}
-        self.workspace = None
-        self.notificationCenter = None
-        return self
+        objc_self.callbacks: dict[str, Callable] = {}
+        objc_self.workspace = None
+        objc_self.notificationCenter = None
+        return objc_self
 
     @objc.python_method
     def wheel_event_handler(self, nsview, deltax, deltay, precise):

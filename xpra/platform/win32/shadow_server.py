@@ -381,7 +381,7 @@ class ShadowServer(GTKShadowServerBase):
         log("makeDynamicWindowModels() windows=%s", windows)
         models = []
 
-        def add_model(hwnd, title, geometry):
+        def add_model(hwnd: int, title: str, geometry):
             model = Win32ShadowModel(self.root, self.capture, title=title, geometry=geometry)
             model.hwnd = hwnd
             models.append(model)
