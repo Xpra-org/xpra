@@ -225,12 +225,6 @@ class Keyboard(KeyboardBase):
         return {"us": "English"}
 
     def get_layout_spec(self):
-        def s(v) -> str:
-            try:
-                return v.decode("latin1")
-            except Exception:
-                return str(v)
-
         layout = ""
         layouts = []
         variant = ""
@@ -238,18 +232,18 @@ class Keyboard(KeyboardBase):
         if self.keyboard_bindings:
             with xsync:
                 props = self.keyboard_bindings.getXkbProperties()
-            v = s(props.get("layout"))
-            variant = s(props.get("variant", ""))
-            options = s(props.get("options", ""))
+            v = props.get("layout")
+            variant = props.get("variant", "")
+            options = props.get("options", "")
         else:
             locale = self.get_locale_status()
-            v = s(locale.get("X11 Layout", ""))
+            v = locale.get("X11 Layout", "")
         if not v:
             # fallback:
             props = self.get_xkb_rules_names_property()
             # ie: ['evdev', 'pc104', 'gb,us', ',', '', '']
             if props and len(props) >= 3:
-                v = s(props[2])
+                v = props[2]
         if v:
             layouts = v.split(",")
             layout = v
