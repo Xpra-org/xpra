@@ -648,9 +648,15 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 	if [ "${MSYSTEM_CARCH}" == "x86_64" ]; then
 		cat "packaging/MSWindows/xpra.iss" | sed '/\(ArchitecturesInstallIn64BitMode\|ArchitecturesInstallIn64BitMode\)/ s/=.*/=x64/g' | sed '/\(AppName=\|AppVerName=\|DefaultGroupName=\)/ s/\r$/ (64-bit)\r/g' | sed 's/ArchitecturesAllowed=.*/ArchitecturesAllowed=x64/g' > "xpra.iss"
 	fi
-	if [ "${CLIENT_ONLY}" == "1" ]; then
+	if [ "${DO_FULL}" == "0" ]; then
+	  #don't run post-install openssl:
+	  sed -i"" "s/    PostInstall();/Log('skipped post-install');/g" xpra.iss
 		#remove shadow start menu entry
 		sed -i"" "s/.*Xpra Shadow Server.*//g" xpra.iss
+  fi
+  if [ "${DO_DOC}" == "0" ]; then
+    # remove link to the manual:
+	  sed -i"" "s/.*Command Manual.*//g" xpra.iss
 	fi
 	sed -i"" "s/AppId=.*/AppId=${APPID}/g" xpra.iss
 	sed -i"" "s/AppName=.*/AppName=Xpra ${VERSION_BITS}/g" xpra.iss
