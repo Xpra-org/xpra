@@ -51,6 +51,7 @@ class Handler:
         key = model.RegisteredKey(key_handle)
         # use server salt as challenge directly
         log.info("activate your U2F device for authentication")
+        log.info(f"prompt: {prompt!r}")
         response = dev.Authenticate(self.app_id, challenge, [key])
         sig = response.signature_data
         client_data = response.client_data
