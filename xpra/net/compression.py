@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -10,7 +10,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from xpra.util.env import envbool
-from xpra.net.common import PacketType
 from xpra.common import MIN_COMPRESS_SIZE, MAX_DECOMPRESSED_SIZE
 
 # all the compressors we know about:
@@ -39,12 +38,13 @@ def init_lz4() -> Compression:
     # pylint: disable=redefined-outer-name
     from xpra.net.lz4.lz4 import compress, decompress, get_version  # @UnresolvedImport
     from xpra.net.protocol.header import LZ4_FLAG
+    from xpra.net.common import PacketType
 
-    def lz4_compress(packet, level) -> tuple[int, memoryview | None]:
+    def lz4_compress(packet: PacketType, level: int) -> tuple[int, memoryview | None]:
         flag = min(15, level) | LZ4_FLAG
         return flag, compress(packet, acceleration=max(0, 5 - level // 3))
 
-    def lz4_decompress(data) -> ByteString:
+    def lz4_decompress(data: ByteString) -> ByteString:
         return decompress(data, max_size=MAX_DECOMPRESSED_SIZE)
 
     return Compression("lz4", get_version(), lz4_compress, lz4_decompress)
@@ -53,6 +53,7 @@ def init_lz4() -> Compression:
 def init_brotli() -> Compression:
     # pylint: disable=import-outside-toplevel
     # pylint: disable=redefined-outer-name
+    from xpra.net.common import PacketType
     from xpra.net.protocol.header import BROTLI_FLAG
     from xpra.net.brotli.compressor import compress, get_version  # @UnresolvedImport
     from xpra.net.brotli.decompressor import decompress  # @UnresolvedImport
@@ -73,12 +74,15 @@ def init_brotli() -> Compression:
 
 
 def init_none() -> Compression:
-    def nocompress(packet, _level):
+    from xpra.net.common import PacketType
+    from xpra.util.str_fn import strtobytes
+
+    def nocompress(packet: PacketType, _level) -> tuple[int, ByteString]:
         if not isinstance(packet, bytes):
             packet = bytes(str(packet), 'UTF-8')
-        return 0, packet
+        return 0, strtobytes(packet)
 
-    def nodecompress(v):
+    def nodecompress(v: ByteString) -> ByteString:
         return v
 
     return Compression("none", "0", nocompress, nodecompress)
