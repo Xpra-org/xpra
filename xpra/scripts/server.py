@@ -69,7 +69,7 @@ def get_rand_chars(l=16, chars=b"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJK
     return b"".join(chars[random.randint(0, len(chars) - 1):][:1] for _ in range(l))
 
 
-def deadly_signal(signum):
+def deadly_signal(signum, _frame=None):
     signame = SIGNAMES.get(signum, signum)
     info(f"got deadly signal {signame}, exiting\n")
     # This works fine in tests, but for some reason if I use it here, then I
@@ -1256,7 +1256,7 @@ def _do_run_server(script_file: str, cmdline,
         use_uinput = not (shadowing or proxying) and opts.input_devices.lower() in ("uinput", "auto") and has_uinput()
         if start_vfb:
             progress(40, "starting a virtual display")
-            from xpra.x11.vfb_util import start_Xvfb, parse_resolutions
+            from xpra.x11.vfb_util import start_Xvfb, parse_resolutions, xauth_add
             assert not proxying and xauth_data
             pixel_depth = validate_pixel_depth(opts.pixel_depth, starting_desktop)
             if use_uinput:
