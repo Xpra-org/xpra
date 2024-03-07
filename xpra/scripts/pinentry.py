@@ -35,12 +35,12 @@ def get_pinentry_command(setting: str = "yes"):
     if setting.lower() in FALSE_OPTIONS:
         return None
 
-    def find_pinentry_bin():
+    def find_pinentry_bin() -> str:
         if is_gnome():
             return which("pinentry-gnome3")
         if is_kde():
             return which("pinentry-qt")
-        return None
+        return ""
 
     if setting.lower() in TRUE_OPTIONS:
         return find_pinentry_bin() or which("pinentry")

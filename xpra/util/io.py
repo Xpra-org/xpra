@@ -303,13 +303,13 @@ def get_which_impl() -> Callable[[str], str]:
         return find_in_PATH
 
 
-def which(command: str) -> str | None:
+def which(command: str) -> str:
     find_executable = get_which_impl()
     try:
-        return find_executable(command)
-    except Exception:
+        return find_executable(command) or ""
+    except OSError:
         get_util_logger().debug(f"find_executable({command})", exc_info=True)
-        return None
+        return ""
 
 
 def get_status_output(*args, **kwargs) -> tuple[int, Any, Any]:

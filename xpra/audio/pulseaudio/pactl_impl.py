@@ -28,7 +28,7 @@ def get_pactl_bin() -> str:
         if WIN32 or OSX:
             pactl_bin = ""
         else:
-            pactl_bin = which("pactl") or ""
+            pactl_bin = which("pactl")
     return pactl_bin
 
 
