@@ -199,7 +199,7 @@ def load_categories_to_type() -> dict:
 command_to_type: dict[str, str] | None = None
 
 
-def load_command_to_type() -> dict[str, str]:
+def load_command_to_type() -> dict[bytes, str]:
     if not GUESS_CONTENT:
         return {}
     global command_to_type
@@ -230,7 +230,7 @@ def load_command_to_type() -> dict[str, str]:
                         if ctype:
                             cmd = os.path.basename(command.split(" ")[0]).encode()
                             if cmd:
-                                command_to_type[cmd] = ctype
+                                command_to_type[cmd] = str(ctype)
                                 break
     log("load_command_to_type()=%s", command_to_type)
     return command_to_type

@@ -284,8 +284,12 @@ def main():
 
     add(XPRA_TCP_MDNS_TYPE)
     add(XPRA_UDP_MDNS_TYPE)
-    signal.signal(signal.SIGTERM, exit)
-    glib.MainLoop().run()
+    loop = glib.MainLoop()
+
+    def exit_loop(*args):
+        loop.quit()
+    signal.signal(signal.SIGTERM, exit_loop)
+    loop.run()
 
 
 if __name__ == "__main__":

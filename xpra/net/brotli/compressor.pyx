@@ -1,10 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from libc.stdint cimport uint8_t, uint32_t
 from xpra.buffers.membuf cimport MemBuf, getbuf
+from typing import Tuple
 
 from xpra.log import Logger
 log = Logger("brotli")
@@ -66,7 +67,7 @@ cdef extern from "brotli/encode.h":
     BROTLI_BOOL BrotliEncoderHasMoreOutput(BrotliEncoderState* state)
 
 
-def get_version():
+def get_version() -> Tuple[int, int, int]:
     cdef uint32_t bv = BrotliEncoderVersion()
     cdef unsigned int major = bv >> 24
     cdef unsigned int minor = (bv >> 12) & 0xFFF
@@ -104,4 +105,4 @@ def compress(data, int quality=1):
         PyBuffer_Release(&in_buf)
     if not r:
         raise ValueError(f"brotli compression failed: {r}")
-    return out[:out_size]
+    return memoryview(out[:out_size]).toreadonly()

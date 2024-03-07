@@ -498,7 +498,7 @@ class FileTransferHandler(FileTransferAttributes):
         openit = bool(packet[4])
         filesize = int(packet[5])
         file_data: bytes = packet[6]
-        options: dict = packet[7]
+        options: dict = typedict(packet[7])
         send_id = ""
         if len(packet) >= 9:
             send_id = str(packet[8])
@@ -516,7 +516,6 @@ class FileTransferHandler(FileTransferAttributes):
             return
         # accept_data can override the flags:
         printit, openit = r
-        options = typedict(options)
         if printit:
             log = printlog
             assert self.printing
@@ -542,7 +541,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.file_descriptors.add(fd)
         digest: hashlib._Hash | None = None
         for hash_fn in ("sha512", "sha384", "sha256", "sha224", "sha1"):
-            if options.get(hash_fn):
+            if options.strget(hash_fn):
                 digest = getattr(hashlib, hash_fn)()
                 break
         if chunk_id:

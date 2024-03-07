@@ -82,7 +82,7 @@ class ClientConnection(StubSourceMixin):
         # the functions should add the packets they generate to the 'packet_queue'
         self.encode_work_queue: SimpleQueue[None | tuple[bool, Callable, tuple[Any, ...]]] = SimpleQueue()
         self.encode_thread = None
-        self.ordinary_packets: list[tuple[PacketType, bool, Callable, Callable]] = []
+        self.ordinary_packets: list[tuple[PacketType, bool, Callable, bool]] = []
         self.socket_dir = socket_dir
         self.unix_socket_paths = unix_socket_paths
         self.log_disconnect = log_disconnect
@@ -304,7 +304,7 @@ class ClientConnection(StubSourceMixin):
 
     ######################################################################
     # network:
-    def next_packet(self):
+    def next_packet(self) -> tuple[PacketType, Callable, Callable, Callable, bool, bool, bool]:
         """ Called by protocol.py when it is ready to send the next packet """
         packet, start_send_cb, end_send_cb, fail_cb = None, None, None, None
         synchronous, have_more, will_have_more = True, False, False

@@ -31,7 +31,7 @@ def get_default_printer() -> str:
     return ""
 
 
-def print_files(printer: dict, filenames, title: str, options):
+def print_files(printer: str, filenames, title: str, options):
     raise RuntimeError("no print implementation available")
 
 

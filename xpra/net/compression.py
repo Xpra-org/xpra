@@ -10,6 +10,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from xpra.util.env import envbool
+from xpra.net.common import PacketType
 from xpra.common import MIN_COMPRESS_SIZE, MAX_DECOMPRESSED_SIZE
 
 # all the compressors we know about:
@@ -26,7 +27,7 @@ PERFORMANCE_COMPRESSION: tuple[str, ...] = ("lz4", "brotli")
 class Compression:
     name: str
     version: str
-    compress: Callable[[ByteString, int], ByteString]
+    compress: Callable[[ByteString, int], [int, ByteString]]
     decompress: Callable[[ByteString], ByteString]
 
 
@@ -39,11 +40,11 @@ def init_lz4() -> Compression:
     from xpra.net.lz4.lz4 import compress, decompress, get_version  # @UnresolvedImport
     from xpra.net.protocol.header import LZ4_FLAG
 
-    def lz4_compress(packet, level):
+    def lz4_compress(packet, level) -> tuple[int, memoryview | None]:
         flag = min(15, level) | LZ4_FLAG
         return flag, compress(packet, acceleration=max(0, 5 - level // 3))
 
-    def lz4_decompress(data):
+    def lz4_decompress(data) -> memoryview:
         return decompress(data, max_size=MAX_DECOMPRESSED_SIZE)
 
     return Compression("lz4", get_version(), lz4_compress, lz4_decompress)
@@ -59,7 +60,7 @@ def init_brotli() -> Compression:
     brotli_compress = compress
     brotli_version = get_version()
 
-    def brotli_compress_shim(packet, level):
+    def brotli_compress_shim(packet: PacketType, level: int) -> tuple[int, memoryview]:
         if len(packet) > 1024 * 1024:
             level = min(9, level)
         else:
@@ -80,7 +81,7 @@ def init_none() -> Compression:
     def nodecompress(v):
         return v
 
-    return Compression("none", None, nocompress, nodecompress)
+    return Compression("none", "0", nocompress, nodecompress)
 
 
 def init_compressors(*names) -> None:

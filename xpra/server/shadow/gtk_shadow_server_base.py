@@ -386,8 +386,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
                         self.readonly = ro
                         self.setting_changed("readonly", ro)
 
-                readonly_menuitem = self.checkitem("Read-only", cb=readonly_toggled, active=self.readonly)
-                self.tray_menu.append(readonly_menuitem)
+                self.tray_menu.append(self.checkitem("Read-only", cb=readonly_toggled, active=self.readonly))
             self.tray_menu.append(self.traymenuitem("Exit", "quit.png", cb=self.tray_exit_callback))
             self.tray_menu.append(self.traymenuitem("Close Menu", "close.png", cb=self.close_tray_menu))
             # maybe add: session info, clipboard, sharing, etc

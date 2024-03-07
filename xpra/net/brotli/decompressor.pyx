@@ -1,10 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from libc.stdint cimport uint8_t, uint32_t
 from xpra.buffers.membuf cimport MemBuf, getbuf
+from typing import Tuple
 
 from xpra.common import MAX_DECOMPRESSED_SIZE
 from xpra.log import Logger
@@ -61,14 +62,14 @@ RESULT_STR = {
     BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT : "needs-more-output",
     }
 
-def get_version():
+def get_version() -> Tuple[int, int, int]:
     cdef uint32_t bv = BrotliDecoderVersion()
     cdef unsigned int major = bv >> 24
     cdef unsigned int minor = (bv >> 12) & 0xFFF
     cdef unsigned int patch = bv & 0xFFF
     return (major, minor, patch)
 
-def decompress(data, maxsize=MAX_DECOMPRESSED_SIZE):
+def decompress(data, maxsize=MAX_DECOMPRESSED_SIZE) -> bytes:
     cdef const uint8_t *in_ptr = NULL
     cdef size_t available_in = 0
     cdef MemBuf out_buf = getbuf(512*1024, True)
