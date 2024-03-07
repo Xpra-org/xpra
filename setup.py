@@ -367,14 +367,14 @@ ENCODER_SWITCHES = [
     "enc_proxy",
     "enc_x264", "openh264_encoder", "nvenc", "nvjpeg_encoder",
     "vpx_encoder", "webp_encoder", "pillow_encoder",
-    "spng_decoder", "jpeg_encoder", "avif_encoder",
+    "spng_encoder", "jpeg_encoder", "avif_encoder",
     "argb_encoder",
 ]
 DECODER_SWITCHES = [
     "openh264_decoder",
     "nvdec", "nvjpeg_decoder",
     "vpx_decoder", "webp_decoder", "pillow_decoder",
-    "spng_encoder", "jpeg_decoder", "avif_decoder",
+    "spng_decoder", "jpeg_decoder", "avif_decoder",
 ]
 CODEC_SWITCHES = ENCODER_SWITCHES + DECODER_SWITCHES + [
     "cuda_kernels", "cuda_rebuild",
