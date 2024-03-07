@@ -452,7 +452,7 @@ class TopSessionClient(InfoTimerClient):
         lf = self.log_file
         if lf:
             noerr(lf.write, b"%s\n" % e)
-            noerr(lf.write(traceback.format_exc().encode()))
+            noerr(lf.write, traceback.format_exc().encode())
         else:
             curses_err(self.stdscr, e)
 
