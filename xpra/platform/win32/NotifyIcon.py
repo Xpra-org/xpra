@@ -176,7 +176,7 @@ class win32NotifyIcon:
     instances: dict[int, Any] = {}
 
     def __init__(self, app_id: int = 0, title: str = "",
-                 move_callbacks: Callable = noop,
+                 move_callback: Callable = noop,
                  click_callback: Callable = noop,
                  exit_callback: Callable = noop,
                  command_callback: Callable = noop,
@@ -186,7 +186,7 @@ class win32NotifyIcon:
         self.title = title
         self.current_icon = None
         self.destroy_icon = None
-        self.move_callback = move_callbacks
+        self.move_callback = move_callback
         self.click_callback = click_callback
         self.exit_callback = exit_callback
         self.command_callback = command_callback
@@ -559,7 +559,7 @@ def main(args):
         ipath = os.path.abspath(os.path.join(idir, "xpra.ico"))
         if os.path.exists(ipath):
             break
-    tray = win32NotifyIcon(999, "test", move_callbacks=noop, click_callback=click_callback, exit_callback=win32_quit,
+    tray = win32NotifyIcon(999, "test", move_callback=noop, click_callback=click_callback, exit_callback=win32_quit,
                            command_callback=command_callback, iconPathName=ipath)
     import signal
     signal.signal(signal.SIGINT, win32_quit)
