@@ -48,7 +48,7 @@ def add_cleanup(f):
     _cleanups.append(f)
 
 
-def deadly_signal(signum):
+def deadly_signal(signum, frame=None):
     info("got deadly signal %s, exiting\n" % SIGNAMES.get(signum, signum))
     run_cleanups()
     # This works fine in tests, but for some reason if I use it here, then I
