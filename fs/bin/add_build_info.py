@@ -288,7 +288,7 @@ def record_build_info() -> None:
                 if len(parts) != 2:
                     continue
                 pkg_name, version = parts
-                pkg_name = pkg_name.replace("-", "_")
+                pkg_name = pkg_name.replace("-", "_").replace(".", "_")
                 set_prop(props, f"lib_{pkg_name}", version)
     elif sys.platform == "darwin":
         returncode, out, _ = get_status_output(["jhbuild", "list", "-a", "-r"])
