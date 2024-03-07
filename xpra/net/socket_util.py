@@ -785,6 +785,7 @@ def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
                         del e
     except Exception:
         for sock_def in defs.keys():
+            sock = str(sock_def)
             try:
                 sock = f"{sock_def[0]} {sock_def[2]!r}"
                 cleanup_socket = sock_def[-1]
