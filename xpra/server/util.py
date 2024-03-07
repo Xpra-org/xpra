@@ -353,7 +353,6 @@ def write_pid(pidfile: str, pid: int) -> int:
             try:
                 fd = f.fileno()
                 inode = os.fstat(fd).st_ino
-                log.info(f"inode({fd})={inode}")
             except OSError as e:
                 log.error(f"Error accessing inode of {pidfile!r}: {e}")
                 inode = 0
@@ -411,13 +410,13 @@ def get_uinput_device_path(device) -> str:
         # this magic value was calculated using the C macros:
         l = fcntl.ioctl(fd, 2148554028, buf)
         if 0 < l < 16:
-            virt_dev_path = buf.raw[:l].rstrip(b"\0")
+            virt_dev_path = (buf.raw[:l].rstrip(b"\0")).decode()
             log("UI_GET_SYSNAME(%s)=%s", fd, virt_dev_path)
-            uevent_path = b"/sys/devices/virtual/input/%s" % virt_dev_path
-            event_dirs = [x for x in os.listdir(uevent_path) if x.startswith(b"event")]
+            uevent_path = "/sys/devices/virtual/input/%s" % virt_dev_path
+            event_dirs = [x for x in os.listdir(uevent_path) if x.startswith("event")]
             log("event dirs(%s)=%s", uevent_path, event_dirs)
             for d in event_dirs:
-                uevent_filename = os.path.join(uevent_path, d, b"uevent")
+                uevent_filename = os.path.join(uevent_path, d, "uevent")
                 uevent_conf = open(uevent_filename, "rb").read()
                 for line in uevent_conf.splitlines():
                     if line.find(b"=") > 0:
