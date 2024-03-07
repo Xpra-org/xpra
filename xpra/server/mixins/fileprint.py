@@ -281,9 +281,12 @@ class FilePrintServer(StubServerMixin):
     def _process_request_file(self, proto, packet: PacketType) -> None:
         ss = self.get_server_source(proto)
         if not ss:
-            printlog.warn("Warning: invalid client source for send-data-response packet")
+            filelog.warn("Warning: invalid client source for send-data-response packet")
             return
         argf = str(packet[1])
+        if argf == "${XPRA_SERVER_LOG}" and not os.environ.get("XPRA_SERVER_LOG"):
+            filelog("no server log to send")
+            return
         openit = packet[2]
         filename = os.path.abspath(osexpand(argf))
         if not os.path.exists(filename):
