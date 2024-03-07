@@ -81,9 +81,9 @@ class NamedPipeConnection(Connection):
             raise ConnectionClosedException(e) from None
         return False
 
-    def untilConcludes(self, fn, *args, **kwargs):
+    def untilConcludes(self, fn, *args):
         try:
-            return super().untilConcludes(fn, *args, **kwargs)
+            return super().untilConcludes(fn, *args)
         except Exception as e:
             code = GetLastError()
             log("untilConcludes(%s, ) exception: %s, error code=%s", fn, e, code, exc_info=True)
