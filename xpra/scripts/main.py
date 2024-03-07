@@ -3228,7 +3228,7 @@ def run_docs() -> ExitValue:
 
 
 def run_html5(url_options: str | dict = "") -> ExitValue:
-    path = find_html5_path(url_options)
+    path = find_html5_path()
     if not path:
         raise InitExit(ExitCode.FILE_NOT_FOUND, "html5 client not found!")
     if url_options:
