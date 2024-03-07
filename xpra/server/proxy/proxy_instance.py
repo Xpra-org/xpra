@@ -659,7 +659,7 @@ class ProxyInstance:
             if wid not in self.lost_windows:
                 self.queue_client_packet(packet)
 
-        def passthrough(strip_alpha=True) -> bool:
+        def passthrough(strip_alpha=True) -> None:
             enclog("proxy draw: %s passthrough (rowstride: %s vs %s, strip alpha=%s)",
                    rgb_format, rowstride, client_options.intget("rowstride", 0), strip_alpha)
             updated = packet
@@ -669,7 +669,7 @@ class ProxyInstance:
                 if Xindex>=0 and len(rgb_format)==4:
                     #force clear alpha (which may be garbage):
                     newdata = bytearray(pixels)
-                    c = chr(255)
+                    c = 255
                     for i in range(len(pixels)//4):
                         newdata[i*4+Xindex] = c
                     updated = self.replace_packet_item(packet, 9, client_options.intget("rowstride", 0))
