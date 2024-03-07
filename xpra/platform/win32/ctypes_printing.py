@@ -256,7 +256,7 @@ def main(argv):
             return r
         x, y = 100, 100
         s = "Test Page printed at %s" % (datetime.datetime.now())
-        if not TextOutA(hdc, x, y, LPCSTR(s), len(s)):
+        if not TextOutA(hdc, x, y, LPCSTR(s.encode()), len(s)):
             log.error("TextOutA failed")
             return 1
         r = EndPage(hdc)
