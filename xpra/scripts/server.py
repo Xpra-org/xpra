@@ -58,7 +58,7 @@ IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
 SHARED_XAUTHORITY = envbool("XPRA_SHARED_XAUTHORITY", True)
 
 
-def deadly_signal(signum):
+def deadly_signal(signum, _frame=None):
     signame = SIGNAMES.get(signum, signum)
     info(f"got deadly signal {signame}, exiting\n")
     # This works fine in tests, but for some reason if I use it here, then I
