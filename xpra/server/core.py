@@ -1167,7 +1167,7 @@ class ServerCore:
         except Exception as e:
             netlog("error sending %r: %s", packet_data, e)
 
-    def handle_new_connection(self, conn, socket_info, socket_options) -> None:
+    def handle_new_connection(self, conn, socket_info, socket_options: dict) -> None:
         """
             Use peek to decide what sort of connection this is,
             and start the appropriate handler for it.

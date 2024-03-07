@@ -258,7 +258,7 @@ def find_lib(libname: str) -> str:
     # it would be better to rely on dlopen to find the paths,
     # but I cannot find a way of getting ctypes to tell us the path
     # it found the library in
-    libpaths = os.environ.get("LD_LIBRARY_PATH", "").split(":")
+    libpaths: list[str] = os.environ.get("LD_LIBRARY_PATH", "").split(":")
     if sys.platlibdir not in libpaths:
         libpaths.append(str(sys.platlibdir))
     for libpath in libpaths:

@@ -69,7 +69,7 @@ class ClientWebSocketConnection(XpraQuicConnection):
         finally:
             self.write_buffer = None
 
-    def write(self, buf, packet_type=None):
+    def write(self, buf, packet_type: str = "") -> int:
         log(f"write(%s, %s) {len(buf)} bytes", ellipsizer(buf), packet_type)
         if self.write_buffer is not None:
             # buffer it until we are connected and call flush_writes()

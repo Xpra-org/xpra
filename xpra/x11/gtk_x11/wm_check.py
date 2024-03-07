@@ -32,8 +32,6 @@ def get_ewmh_xid() -> int:
                 return ewmh_xid
             except Exception as e:
                 log(f"getGeometry({ewmh_xid:x}) {e}")
-                # invalid
-                ewmh_xid = 0
     return 0
 
 

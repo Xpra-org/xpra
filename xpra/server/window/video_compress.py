@@ -25,7 +25,7 @@ from xpra.server.window.compress import (
 from xpra.util.rectangle import rectangle, merge_all
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
-from xpra.codecs.constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER, preforder
+from xpra.codecs.constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER, preforder, CSCSpec
 from xpra.codecs.loader import has_codec
 from xpra.common import roundup
 from xpra.util.parsing import parse_scaling_value
@@ -1437,7 +1437,7 @@ class WindowVideoSource(WindowSource):
             encoding_score_delta = self.encoding_options.get(f"{encoding}.score-delta", encoding_score_delta)
             no_match = []
 
-            def add_scores(info, csc_spec, enc_in_format):
+            def add_scores(info, csc_spec: CSCSpec | None, enc_in_format):
                 # find encoders that take 'enc_in_format' as input:
                 colorspace_specs = encoder_specs.get(enc_in_format)
                 if not colorspace_specs:

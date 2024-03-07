@@ -66,11 +66,12 @@ class ThreadedAsyncioLoop:
         if self.loop is None:
             raise RuntimeError("no asyncio main loop")
 
-    def call(self, f: Callable) -> None:
+    def call(self, f: Callable | Coroutine | Generator) -> None:
         log(f"call({f})")
         if not self.loop:
             raise RuntimeError("no main loop")
         if isinstance(f, (Coroutine, Generator)):
+
             def tsafe():
                 log(f"creating task for {f}")
                 assert self.loop

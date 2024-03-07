@@ -44,7 +44,7 @@ def init_lz4() -> Compression:
         flag = min(15, level) | LZ4_FLAG
         return flag, compress(packet, acceleration=max(0, 5 - level // 3))
 
-    def lz4_decompress(data) -> memoryview:
+    def lz4_decompress(data) -> ByteString:
         return decompress(data, max_size=MAX_DECOMPRESSED_SIZE)
 
     return Compression("lz4", get_version(), lz4_compress, lz4_decompress)

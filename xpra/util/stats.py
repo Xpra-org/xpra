@@ -66,11 +66,11 @@ def values_to_scaled_values(data,
     if scale == 1:
         return scale, data
     sdata: list[float | None] = []
-    for x in data:
-        if x is None:
+    for value in data:
+        if value is None:
             sdata.append(None)
         else:
-            sdata.append(x / scale)
+            sdata.append(value / scale)
     return scale, sdata
 
 

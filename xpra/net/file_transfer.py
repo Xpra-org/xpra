@@ -227,6 +227,25 @@ class FileTransferAttributes:
         }
 
 
+def digest_mismatch(filename: str, digest, expected_digest) -> None:
+    filelog.error(f"Error: data does not match, invalid {digest.name} file digest")
+    filelog.error(f" for {filename!r}")
+    filelog.error(f" received {digest.hexdigest()}")
+    filelog.error(f" expected {expected_digest}")
+    try:
+        if os.path.exists(filename):
+            os.unlink(filename)
+    except OSError:
+        filelog.error(f"Error: failed to delete uploaded file {filename}")
+
+
+def get_open_env() -> dict[str, str]:
+    env = os.environ.copy()
+    # prevent loops:
+    env["XPRA_XDG_OPEN"] = "1"
+    return env
+
+
 class FileTransferHandler(FileTransferAttributes):
     """
         Utility class for receiving files and optionally printing them,
@@ -315,17 +334,6 @@ class FileTransferHandler(FileTransferAttributes):
         }
         return info
 
-    def digest_mismatch(self, filename: str, digest, expected_digest) -> None:
-        filelog.error(f"Error: data does not match, invalid {digest.name} file digest")
-        filelog.error(f" for {filename!r}")
-        filelog.error(f" received {digest.hexdigest()}")
-        filelog.error(f" expected {expected_digest}")
-        try:
-            if os.path.exists(filename):
-                os.unlink(filename)
-        except OSError:
-            filelog.error(f"Error: failed to delete uploaded file {filename}")
-
     def _check_chunk_receiving(self, chunk_id: str, chunk_no: int) -> None:
         chunk_state = self.receive_chunks_in_progress.get(chunk_id)
         filelog("_check_chunk_receiving(%s, %s) chunk_state=%s", chunk_id, chunk_no, chunk_state)
@@ -398,8 +406,8 @@ class FileTransferHandler(FileTransferAttributes):
             return
 
         def progress(position, error=None):
-            elapsed = monotonic() - chunk_state.start
-            self.transfer_progress_update(False, chunk_state.send_id, elapsed, position, chunk_state.filesize, error)
+            s_elapsed = monotonic() - chunk_state.start
+            self.transfer_progress_update(False, chunk_state.send_id, s_elapsed, position, chunk_state.filesize, error)
 
         fd = chunk_state.fd
         if chunk_state.chunk + 1 != chunk:
@@ -450,7 +458,7 @@ class FileTransferHandler(FileTransferAttributes):
             expected_digest = options.strget(chunk_state.digest.name)  # ie: "sha256"
             if expected_digest and chunk_state.digest.hexdigest() != expected_digest:
                 progress(-1, "checksum mismatch")
-                self.digest_mismatch(filename, chunk_state.digest, expected_digest)
+                digest_mismatch(filename, chunk_state.digest, expected_digest)
                 return
             filelog("%s digest matches: %s", chunk_state.digest.name, expected_digest)
         # check file size and digest then process it:
@@ -571,7 +579,7 @@ class FileTransferHandler(FileTransferAttributes):
             digest.update(file_data)
             expected_digest = options.strget(digest.name)  # ie: "sha256"
             if expected_digest and digest.hexdigest() != expected_digest:
-                self.digest_mismatch(basefilename, digest, expected_digest)
+                digest_mismatch(basefilename, digest, expected_digest)
                 return
             log("%s digest matches: %s", digest.name, expected_digest)
         try:
@@ -676,12 +684,6 @@ class FileTransferHandler(FileTransferAttributes):
             # check every 10 seconds:
             self.timeout_add(10000, check_printing_finished)
 
-    def get_open_env(self) -> dict[str, str]:
-        env = os.environ.copy()
-        # prevent loops:
-        env["XPRA_XDG_OPEN"] = "1"
-        return env
-
     def _open_file(self, url: str) -> None:
         filelog("_open_file(%s)", url)
         self.exec_open_command(url)
@@ -708,7 +710,7 @@ class FileTransferHandler(FileTransferAttributes):
         filelog("exec_open_command(%s) command=%s", url, command)
         try:
             # pylint: disable=consider-using-with
-            proc = subprocess.Popen(command, env=self.get_open_env(), shell=WIN32)
+            proc = subprocess.Popen(command, env=get_open_env(), shell=WIN32)
         except Exception as e:
             filelog("exec_open_command(%s)", url, exc_info=True)
             filelog.error("Error: cannot open '%s': %s", url, e)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,8 @@ from xpra.util.types import typedict
 from xpra.net.file_transfer import (
     basename, safe_open_download_file,
     FileTransferAttributes, FileTransferHandler,
-    )
+    get_open_env,
+)
 
 
 class TestVersionUtilModule(unittest.TestCase):
@@ -23,7 +24,6 @@ class TestVersionUtilModule(unittest.TestCase):
         t("hello", "hello")
         t("/path/to/foo", "foo")
         t("\\other\\path\\bar", "bar")
-
 
     def test_safe_open(self):
         filename, fd = safe_open_download_file("hello", "application/pdf")
@@ -38,7 +38,6 @@ class TestVersionUtilModule(unittest.TestCase):
         finally:
             os.unlink(filename)
 
-
     def test_file_transfer_attributes(self):
         fta = FileTransferAttributes()
         assert fta.get_file_transfer_features()
@@ -47,7 +46,7 @@ class TestVersionUtilModule(unittest.TestCase):
     def test_file_transfer_handler(self):
         fth = FileTransferHandler()
         fth.init_attributes()
-        assert fth.get_open_env()
+        assert get_open_env()
         caps = typedict()
         fth.parse_file_transfer_caps(caps)
         assert fth.get_info()
@@ -56,6 +55,7 @@ class TestVersionUtilModule(unittest.TestCase):
 
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()

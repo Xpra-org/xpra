@@ -189,12 +189,12 @@ def get_loaded_kernel_modules(*modlist):
 def is_WSL() -> bool:
     if not POSIX:
         return False
-    r = None
+    r = b""
     for f in ("/proc/sys/kernel/osrelease", "/proc/version"):
         r = load_binary_file(f)
         if r:
             break
-    return r is not None and r.find(b"Microsoft") >= 0
+    return r.find(b"Microsoft") >= 0
 
 
 def get_generic_os_name() -> str:

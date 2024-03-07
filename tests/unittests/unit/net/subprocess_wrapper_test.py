@@ -23,10 +23,13 @@ class fake_subprocess():
     """ defined just so the protocol layer can call terminate() on it """
     def __init__(self):
         self.returncode = None
+
     def terminate(self):
         self.returncode = 1
+
     def poll(self):
         return self.returncode
+
 
 class loopback_connection(Connection):
     """ a fake connection which just writes back whatever is sent to it """
@@ -36,10 +39,10 @@ class loopback_connection(Connection):
 
     def read(self, _n):
         self.may_abort("read")
-        #FIXME: we don't handle n...
+        # FIXME: we don't handle n...
         return self.queue.get(True)
 
-    def write(self, buf, packet_type=None):
+    def write(self, buf, packet_type: str = ""):
         self.may_abort("write")
         self.queue.put(buf)
         return len(buf)
@@ -50,6 +53,7 @@ class loopback_connection(Connection):
 
     def may_abort(self, _action):
         assert self.active
+
 
 def loopback_protocol(process_packet_cb, get_packet_cb):
     conn = loopback_connection("fake", "fake")
@@ -63,6 +67,7 @@ class loopback_process(subprocess_caller):
     """ a fake subprocess which uses the loopback connection """
     def exec_subprocess(self):
         return fake_subprocess()
+
     def make_protocol(self):
         return loopback_protocol(self.process_packet, self.get_packet)
 
@@ -76,7 +81,8 @@ class loopback_callee(subprocess_callee):
 class TestCallee(GObject.GObject):
     __gsignals__ = {
         "test-signal": one_arg_signal,
-        }
+    }
+
 
 GObject.type_register(TestCallee)
 
@@ -95,18 +101,22 @@ class SubprocessWrapperTest(unittest.TestCase):
         mainloop = GLib.MainLoop()
         lp = loopback_process()
         readback = []
+
         def record_packet(_lp, *args):
             readback.append(args)
         lp.connect("foo", record_packet)
+
         def stop():
             #this may deadlock on win32..
             lp.stop_protocol()
             lp.stop_process()
             GLib.idle_add(mainloop.quit)
+
         def end(*_args):
             stop()
         lp.connect("end", end)
         self.timeout = False
+
         def timeout_error():
             self.timeout = True
             stop()
@@ -116,7 +126,7 @@ class SubprocessWrapperTest(unittest.TestCase):
         GLib.idle_add(lp.send, "bar", b"hello bar")
         GLib.idle_add(lp.send, "end")
         lp.stop = stop
-        #run!
+        # run!
         lp.start()
         mainloop.run()
         assert len(readback)==1, "expected 1 record in loopback but got %s" % len(readback)
@@ -128,18 +138,20 @@ class SubprocessWrapperTest(unittest.TestCase):
         mainloop = GLib.MainLoop()
         callee = TestCallee()
         lc = loopback_callee(wrapped_object=callee, method_whitelist=["test_signal", "loop_stop", "unused"])
-        #this will cause the "test-signal" to be sent via the loopback connection
+        # this will cause the "test-signal" to be sent via the loopback connection
         lc.connect_export("test-signal")
         readback = []
+
         def test_signal_function(*args):
             log("test_signal_function%s", args)
             readback.append(args)
             GLib.idle_add(lc.send, "loop_stop")
-        #hook up a function which will be called when the wrapper converts the packet into a method call:
+        # hook up a function which will be called when the wrapper converts the packet into a method call:
         callee.test_signal = test_signal_function
-        #lc.connect_export("test-signal", hello)
+        # lc.connect_export("test-signal", hello)
         self.timeout = False
         callee.timeout_fn = None
+
         def loop_stop(*args):
             log("loop_stop%s timeout_fn=%s", args, callee.timeout_fn)
             if callee.timeout_fn:
@@ -147,6 +159,7 @@ class SubprocessWrapperTest(unittest.TestCase):
                 callee.timeout_fn = None
             lc.stop()
             GLib.idle_add(mainloop.quit)
+
         def timeout_error():
             log.warn("timeout_error")
             callee.timeout_fn = None
@@ -155,9 +168,9 @@ class SubprocessWrapperTest(unittest.TestCase):
         callee.timeout_fn = GLib.timeout_add(TEST_TIMEOUT, timeout_error)
         signal_string = b"hello foo"
         GLib.idle_add(callee.emit, "test-signal", signal_string)
-        #hook up a stop function call which ends this test cleanly
+        # hook up a stop function call which ends this test cleanly
         callee.loop_stop = loop_stop
-        #run!
+        # run!
         lc.start()
         mainloop.run()
         lc.stop()
@@ -168,8 +181,10 @@ class SubprocessWrapperTest(unittest.TestCase):
         assert rss== signal_string, "expected signal string '%s' but got '%s'" % (signal_string, rss)
         assert self.timeout is False, "the test did not exit cleanly (not received the 'end' packet?)"
 
+
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()

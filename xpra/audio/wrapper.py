@@ -321,7 +321,7 @@ class AudioSubprocessWrapper(subprocess_caller):
 
 class SourceSubprocessWrapper(AudioSubprocessWrapper):
 
-    def __init__(self, plugin, options, codecs, volume, element_options):
+    def __init__(self, plugin, _options, codecs, volume, element_options):
         super().__init__("audio capture")
         self.large_packets = ["new-buffer"]
         self.command = get_full_audio_command() + [

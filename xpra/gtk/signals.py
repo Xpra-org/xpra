@@ -16,7 +16,7 @@ _glib_unix_signals: dict[int, int] = {}
 def quit_on_signals(commandtype: str = ""):
     gtk = gi_import("Gtk")
 
-    def signal_handler(signum: int):
+    def signal_handler(_signum: int):
         gtk.main_quit()
 
     register_os_signals(signal_handler, commandtype)
@@ -75,12 +75,12 @@ def register_SIGUSR_signals(commandtype: str = "Server"):
     from xpra.util.pysystem import dump_all_frames, dump_gc_frames
     log = get_util_logger()
 
-    def sigusr1(_sig):
+    def sigusr1(_sig: int):
         log.info("SIGUSR1")
         dump_all_frames(log.info)
         return True
 
-    def sigusr2(*_args):
+    def sigusr2(_sig: int):
         log.info("SIGUSR2")
         dump_gc_frames(log.info)
         return True

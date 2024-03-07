@@ -511,7 +511,7 @@ def create_udp_socket(host: str, iport: int, family=socket.AF_INET) -> socket.so
     return listener
 
 
-def setup_quic_socket(host: str, port: int) -> socket.socket:
+def setup_quic_socket(host: str, port: int) -> tuple[str, socket.socket, tuple[str, int], Callable]:
     try:
         from xpra.net.quic import common
         import aioquic
@@ -669,7 +669,7 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
     dotxpra = DotXpra(socket_dir or socket_dirs[0], socket_dirs, username, uid, gid)
     if display_name is not None and not WIN32:
         display_name = normalize_local_display_name(display_name)
-    defs: dict[Any, Callable] = {}
+    defs: dict[Any, dict] = {}
     try:
         sockpaths = {}
         log(f"setup_local_sockets: bind={bind}, dotxpra={dotxpra}")

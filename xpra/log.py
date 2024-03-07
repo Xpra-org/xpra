@@ -36,7 +36,7 @@ logging.root.setLevel(logging.INFO)
 
 debug_enabled_categories: set[str] = set()
 debug_disabled_categories: set[str] = set()
-backtrace_expressions: set[str] = set()
+backtrace_expressions: set[re.Pattern] = set()
 
 
 MODULE_FILE = os.path.join(os.sep, "xpra", "log.py")        # ie: "/xpra/log.py"
@@ -104,12 +104,12 @@ def remove_disabled_category(*cat) -> None:
             debug_disabled_categories.remove(c)
 
 
-def add_backtrace(*expressions) -> None:
+def add_backtrace(*expressions: str) -> None:
     for e in expressions:
         backtrace_expressions.add(re.compile(e))
 
 
-def remove_backtrace(*expressions) -> None:
+def remove_backtrace(*expressions: str) -> None:
     for e in expressions:
         try:
             backtrace_expressions.remove(re.compile(e))

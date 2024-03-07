@@ -1138,6 +1138,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         def sockpathfail_cb(msg):
             raise InitException(msg)
 
+        sockpath = ""
         sock = None
         if display_name and not display_desc.get("socket_path") and AUTO_ABSTRACT_SOCKET:
             # see if we can just connect to the abstract socket if one exists:

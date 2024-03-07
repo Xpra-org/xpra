@@ -63,9 +63,10 @@ class WebTransportHandler(XpraQuicConnection):
         self.connection.send_datagram(flow_id=self.stream_id, data=data)
         self.transmit()
 
-    def write(self, stream_id: int, data: bytes) -> None:
+    def write(self, stream_id: int, data: bytes) -> int:
         self.connection._quic.send_stream_data(stream_id=stream_id, data=data)
         self.transmit()
+        return len(data)
 
     def read(self, n):
         log("WebTransportHandler.read(%s)", n)

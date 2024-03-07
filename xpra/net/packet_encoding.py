@@ -40,14 +40,14 @@ def init_rencodeplus() -> Encoding:
     from xpra.net.rencodeplus import rencodeplus  # type: ignore[attr-defined]
     rencodeplus_dumps = rencodeplus.dumps  # @UndefinedVariable
 
-    def do_rencodeplus(v):
+    def do_rencodeplus(v) -> tuple[ByteString, int]:
         return rencodeplus_dumps(v), FLAGS_RENCODEPLUS
 
     return Encoding("rencodeplus", FLAGS_RENCODEPLUS, rencodeplus.__version__, do_rencodeplus, rencodeplus.loads)
 
 
 def init_none() -> Encoding:
-    def encode(data):
+    def encode(data: ByteString) -> tuple[bytes, int]:
         # just send data as a string for clients that don't understand xpra packet format:
         import codecs
 
@@ -58,7 +58,7 @@ def init_none() -> Encoding:
 
         return b(": ".join(str(x) for x in data) + "\n"), FLAGS_NOHEADER
 
-    def decode(data):
+    def decode(data: ByteString) -> ByteString:
         return data
 
     return Encoding("none", FLAGS_NOHEADER, "0", encode, decode)

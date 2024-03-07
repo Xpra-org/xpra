@@ -286,7 +286,7 @@ class VideoSubregion:
         return rects
 
     def identify_video_subregion(self, ww: int, wh: int, damage_events_count, last_damage_events,
-                                 starting_at=0, children=None):
+                                 starting_at=0.0, children=None):
         if not self.enabled or not self.supported:
             self.novideoregion("disabled")
             return

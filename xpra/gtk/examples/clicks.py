@@ -54,6 +54,7 @@ class TestForm:
         root = Gdk.get_default_root_window()
         screen = root.get_screen()
         # use undocumented constants found in source:
+        t = ""
         try:
             val = GObject.Value()
             val.init(GObject.TYPE_INT)
@@ -61,6 +62,7 @@ class TestForm:
                 t = val.get_int()
         except Exception:
             t = ""
+        d = ""
         try:
             val = GObject.Value()
             val.init(GObject.TYPE_INT)

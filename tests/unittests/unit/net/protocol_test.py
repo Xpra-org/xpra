@@ -50,7 +50,7 @@ class FastMemoryConnection(Connection):
         self.read_buffers[0] = b[n:]
         return b[:n]
 
-    def write(self, buf, packet_type=None):
+    def write(self, buf, packet_type: str = ""):
         self.write_data.append(buf)
         return len(buf)
 
@@ -113,11 +113,14 @@ class ProtocolTest(unittest.TestCase):
 
     def test_verify_packet(self):
         verify_packet = check.verify_packet
+
         def nok(packet):
             assert verify_packet(packet) is False, f"packet {packet} should fail verification"
+
         def ok(packet):
             assert verify_packet(packet) is True, f"packet {packet} should not fail verification"
-        #packets are iterable, so this should fail:
+
+        # packets are iterable, so this should fail:
         for x in (True, 1, "hello", {}, None):
             nok(x)
         ok(("foo", 1))
@@ -140,6 +143,7 @@ class ProtocolTest(unittest.TestCase):
     def do_test_invalid_data(self, data):
         errs = []
         proto = self.make_memory_protocol(data)
+
         def check_failed():
             if not proto.is_closed():
                 errs.append("protocol not closed")
@@ -177,19 +181,21 @@ class ProtocolTest(unittest.TestCase):
             total_elapsed += elapsed
             n_packets += n
         print("%-9s incoming packet processing speed:\t%iMB/s" % (
-                 self.protocol_class.TYPE, total_size/total_elapsed//1024//1024))
+            self.protocol_class.TYPE, total_size/total_elapsed//1024//1024)
+        )
         print("%-9s packets parsed per second:\t\t%i" % (
-                 self.protocol_class.TYPE, n_packets/elapsed))
-
+            self.protocol_class.TYPE, n_packets/elapsed)
+        )
 
     def do_test_read_speed(self, pixel_data_size=2**18, N=100):
-        #prepare some packets to parse:
+        # prepare some packets to parse:
         p = self.make_memory_protocol()
-        #use optimal setup:
+        # use optimal setup:
         p.enable_encoder("rencodeplus")
         p.enable_compressor("lz4")
-        #catch network packets before we write them:
+        # catch network packets before we write them:
         data = []
+
         def raw_write(_packet_type, items, *_args):
             for item in items:
                 data.append(item)
@@ -199,15 +205,16 @@ class ProtocolTest(unittest.TestCase):
             p._add_packet_to_queue(packet)
         ldata = self.repeat_list(data, N)
         total_size = sum(len(item) for item in ldata)
-        #catch parsed packets:
+        # catch parsed packets:
         parsed_packets = []
+
         def process_packet_cb(proto, packet):
-            #log.info("process_packet_cb%s", packet[0])
+            # log.info("process_packet_cb%s", packet[0])
             if packet[0]==CONNECTION_LOST:
                 loop.quit()
             else:
                 parsed_packets.append(packet[0])
-        #run the protocol on this data:
+        # run the protocol on this data:
         loop = GLib.MainLoop()
         GLib.timeout_add(TIMEOUT*1000, loop.quit)
         proto = self.make_memory_protocol(ldata, read_buffer_size=65536, process_packet_cb=process_packet_cb)
@@ -226,7 +233,7 @@ class ProtocolTest(unittest.TestCase):
             ("test", 1, 2, 3),
             ("ping", 100, 200, 300, 0),
             ("draw", 100, 100, 640, 480, Compressed("pixel-data", pixel_data), {}),
-            )
+        )
 
     def repeat_list(self, items, N=100):
         #repeat the same pattern N times:
@@ -241,6 +248,7 @@ class ProtocolTest(unittest.TestCase):
         packets = self.make_test_packets()
         N = 1000
         many = self.repeat_list(packets, N)
+
         def get_packet_cb():
             #log.info("get_packet_cb")
             try:
@@ -249,6 +257,7 @@ class ProtocolTest(unittest.TestCase):
             except IndexError:
                 proto.close()
                 return (None, )
+
         def process_packet_cb(proto, packet):
             if packet[0]==CONNECTION_LOST:
                 GLib.timeout_add(1000, loop.quit)
@@ -279,6 +288,7 @@ class ProtocolTest(unittest.TestCase):
 
 try:
     from xpra.net.websockets.protocol import WebSocketProtocol
+
     class WebsocketProtocolTest(ProtocolTest):
         protocol_class = WebSocketProtocol
 except ImportError as e:

@@ -849,7 +849,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             pos = window.get_property("geometry")
             if not pos:
                 return None
-        return tuple(pos[:2])
+        return tuple(pos[0], pos[1])
 
     def client_configure_window(self, win, geometry, resize_counter: int = 0) -> None:
         log("client_configure_window(%s, %s, %s)", win, geometry, resize_counter)

@@ -532,7 +532,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     break
 
                 def toggle_modifier(mod):
-                    keynames = self.keynames_for_mod.get(mod, ())
+                    keynames = self.keynames_for_mod.get(mod, set())
                     if keyname in keynames:
                         kml("not toggling '%s' since '%s' should deal with it", mod, keyname)
                         # the keycode we're returning is for this modifier,
@@ -636,11 +636,11 @@ class KeyboardConfig(KeyboardConfigBase):
             failed = []
             for modifier in modifiers:
                 modifier = bytestostr(modifier)
-                keynames = self.keynames_for_mod.get(modifier, None)
-                if keynames is None:
+                if modifier not in self.keynames_for_mod:
                     log.error(f"Error: unknown modifier {modifier!r}")
                     log.error(" known modifiers: %s", csv(self.keynames_for_mod.keys()))
                     continue
+                keynames = self.keynames_for_mod.get(modifier, ())
                 if not keynames:
                     log.warn("Warning: found no keynames for '%s'", modifier)
                     continue

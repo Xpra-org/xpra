@@ -412,7 +412,7 @@ class SSHServer(paramiko.ServerInterface):
         channel.proxy_process = proc
 
 
-def make_ssh_server_connection(conn, socket_options,
+def make_ssh_server_connection(conn, socket_options: dict,
                                none_auth: bool = False,
                                password_auth: Callable | None = None,
                                display_name: str=""):
@@ -446,7 +446,7 @@ def make_ssh_server_connection(conn, socket_options,
         SUFFIX = "_key"
         host_keys = {}
 
-        def add_host_key(fd, f) -> bool:
+        def add_host_key(fd: str, f: str) -> bool:
             ff = os.path.join(fd, f)
             keytype = f[len(PREFIX):-len(SUFFIX)]
             keyclass = get_keyclass(keytype)
@@ -469,7 +469,7 @@ def make_ssh_server_connection(conn, socket_options,
                 log.estr(e)
             return False
 
-        host_key = socket_options.get("ssh-host-key")
+        host_key: str = socket_options.get("ssh-host-key", "")
         if host_key:
             d, f = os.path.split(host_key)
             if f.startswith(PREFIX) and f.endswith(SUFFIX):
