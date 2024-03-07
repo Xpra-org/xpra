@@ -8,10 +8,12 @@
 import os
 import weakref
 from time import monotonic
+from collections.abc import Callable
 from subprocess import Popen, PIPE
 from threading import Event
 from typing import Any
 
+from xpra.common import noop
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized, pver, strtobytes, bytestostr, hexstr, memoryview_to_bytes
 from xpra.util.env import envint, envbool, osexpand, first_time, IgnoreWarningsContext, ignorewarnings
@@ -593,10 +595,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.file_size_dialog = None
             fsd.close()
 
-    def download_server_log(self, callback=None):
+    def download_server_log(self, callback: Callable = noop):
         filename = "${XPRA_SERVER_LOG}"
-        if callback:
-            self.file_request_callback[filename] = callback
+        self.file_request_callback[filename] = callback
         self.send_request_file(filename, self.open_files)
 
     def send_download_request(self, *_args):
