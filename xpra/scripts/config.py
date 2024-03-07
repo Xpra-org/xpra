@@ -476,16 +476,17 @@ def read_xpra_defaults(username: str | None = None, uid=None, gid=None):
 def get_xpra_defaults_dirs(username: str | None = None, uid=None, gid=None):
     from xpra.platform.paths import get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs
     # load config files in this order (the later ones override earlier ones):
-    # * application defaults   (ie: "/Volumes/Xpra/Xpra.app/Contents/Resources/" on OSX)
-    #                          (ie: "C:\Program Files\Xpra\" on win32)
-    #                          (ie: None on others)
-    # * system defaults        (ie: "/etc/xpra" on Posix - not on OSX)
-    #                          (ie: "/Library/Application Support/Xpra" on OSX)
-    #                          (ie: "C:\Documents and Settings\All Users\Application Data\Xpra" with XP)
-    #                          (ie: "C:\ProgramData\Xpra" with Vista onwards)
-    # * user config            (ie: "~/.xpra/" on all Posix, including OSX)
-    #                          (ie: "C:\Documents and Settings\Username\Application Data\Xpra" with XP)
-    #                          (ie: "C:\Users\<user name>\AppData\Roaming" with Visa onwards)
+    # * application defaults, ie:
+    #   "/Volumes/Xpra/Xpra.app/Contents/Resources/" on OSX
+    #   "C:\Program Files\Xpra\" on win32
+    #   None on others
+    # * system defaults, ie:
+    #   "/etc/xpra" on Posix - not on OSX
+    #   "/Library/Application Support/Xpra" on OSX
+    #   "C:\ProgramData\Xpra" with Vista onwards
+    # * user config, ie:
+    #   "~/.xpra/" on all Posix, including OSX
+    #   "C:\Users\<user name>\AppData\Roaming" with Visa onwards
     dirs = get_default_conf_dirs() + get_system_conf_dirs() + get_user_conf_dirs(uid)
     defaults_dirs = []
     for d in dirs:

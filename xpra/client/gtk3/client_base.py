@@ -906,7 +906,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         }
         capabilities.setdefault("window", {})["frame_sizes"] = self.get_window_frame_sizes()
         capabilities.setdefault("encoding", {})["icons"] = {
-            "greedy": True,  # we don't set a default window icon any more
+            "greedy": True,  # we don't set a default window icon anymore
             "size": (64, 64),  # size we want
             "max_size": (128, 128),  # limit
         }

@@ -547,7 +547,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.have_more()
 
     def send_positional(self, packet) -> None:
-        # packets that include the mouse position in them
+        # packets that include the mouse position data
         # we can cancel the pending position packets
         self._ordinary_packets.append(packet)
         self._mouse_position = None

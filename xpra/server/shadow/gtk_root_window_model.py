@@ -26,10 +26,10 @@ def get_rgb_rawdata(window, x: int, y: int, width: int, height: int) \
     pixmap_w, pixmap_h = window.get_geometry()[2:4]
     # Just in case we somehow end up with damage larger than the pixmap,
     # we don't want to start requesting random chunks of memory (this
-    # could happen if a window is resized but we don't throw away our
+    # could happen if a window is resized, but we don't throw away our
     # existing damage map):
-    assert x >= 0
-    assert y >= 0
+    if x < 0 or y < 0:
+        raise ValueError(f"invalid position {x},{y}")
     if x + width > pixmap_w:
         width = pixmap_w - x
     if y + height > pixmap_h:

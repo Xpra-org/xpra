@@ -54,7 +54,7 @@ def get_enabled_mixins() -> tuple[type, ...]:
     if features.windows:
         from xpra.server.source.windows import WindowsMixin
         mixins.append(WindowsMixin)
-        # must be after windows mixin so it can assume "self.send_windows" is set
+        # must be after windows mixin, so that it can assume "self.send_windows" is set
         if features.encoding:
             from xpra.server.source.encodings import EncodingsMixin
             mixins.append(EncodingsMixin)

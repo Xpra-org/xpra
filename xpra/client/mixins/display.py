@@ -348,7 +348,7 @@ class DisplayClient(StubClientMixin):
                 x = y = min(x, y)
 
         def mint(v) -> int | float:
-            # prefer int over float,
+            # prefer `int` to `float`,
             # and even tolerate a 0.1% difference to get it:
             if round(v) * 1000 == round(v * 1000):
                 return int(v)

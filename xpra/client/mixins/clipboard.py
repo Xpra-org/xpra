@@ -180,7 +180,7 @@ class ClipboardClient(StubClientMixin):
         ct = self.client_clipboard_type
         if ct and ct.lower() in FALSE_OPTIONS:
             return []
-        # first add the platform specific one, (may be None):
+        # first add the platform specific one, (which may be None):
         clipboard_options = [
             CLIPBOARD_CLASS,
             get_clipboard_native_class(),
@@ -266,17 +266,17 @@ class ClipboardClient(StubClientMixin):
 
     def setup_clipboard_helper(self, helperClass):
         log("setup_clipboard_helper(%s)", helperClass)
-        #first add the platform specific one, (may be None):
+        # first add the platform specific one, (which may be None):
         kwargs= {
-            #all the local clipboards supported:
+            # all the local clipboards supported:
             "clipboards.local": CLIPBOARDS,
-            #all the remote clipboards supported:
+            # all the remote clipboards supported:
             "clipboards.remote"    : self.server_clipboards,
             "can-send"             : self.client_clipboard_direction in ("to-server", "both"),
             "can-receive"          : self.client_clipboard_direction in ("to-client", "both"),
-            #the local clipboard we want to sync to (with the translated clipboard only):
+            # the local clipboard we want to sync to (with the translated clipboard only):
             "clipboard.local"      : self.local_clipboard,
-            #the remote clipboard we want to we sync to (with the translated clipboard only):
+            # the remote clipboard we want to we sync to (with the translated clipboard only):
             "clipboard.remote"     : self.remote_clipboard
         }
         log("setup_clipboard_helper() kwargs=%s", kwargs)

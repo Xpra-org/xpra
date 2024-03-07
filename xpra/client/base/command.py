@@ -73,7 +73,7 @@ class CommandConnectClient(GObjectXpraClient):
         # "command clients" are meant to exit quickly by losing the connection
         p = self._protocol
         if p and p.input_packetcount == 0:
-            # never got any data back so we have never connected,
+            # never got any data back, so we have never connected,
             # try to give feedback to the user as to why that is:
             details = ""
             if len(packet) > 1:
@@ -134,7 +134,7 @@ class HelloRequestClient(SendCommandConnectClient):
         self.quit(ExitCode.OK)
 
     def _process_disconnect(self, packet: PacketType) -> None:
-        # overridden method so we can avoid printing a warning,
+        # overridden method, so we can avoid printing a warning,
         # we haven't received the hello back from the server
         # but that's fine for a request client
         info = tuple(nonl(x) for x in packet[1:])

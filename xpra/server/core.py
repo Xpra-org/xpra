@@ -1278,7 +1278,7 @@ class ServerCore:
 
         if socktype in ("tcp", "socket", "named-pipe") and peek_data:
             # see if the packet data is actually xpra or something else
-            # that we need to handle via an ssl wrapper or the websocket adapter:
+            # that we need to handle via a SSL wrapper or the websocket adapter:
             try:
                 cont, conn, peek_data = self.may_wrap_socket(conn, socktype, socket_info, socket_options, peek_data)
                 netlog("may_wrap_socket(..)=(%s, %s, %r)", cont, conn, ellipsizer(peek_data))

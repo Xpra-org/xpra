@@ -123,8 +123,8 @@ class EncodingsMixin(StubSourceMixin):
             self.print_encoding_info()
 
     def recalculate_delays(self) -> None:
-        """ calls update_averages() on ServerSource.statistics (GlobalStatistics)
-            and WindowSource.statistics (WindowPerformanceStatistics) for each window id in calculate_window_ids,
+        """ calls update_averages() on `ServerSource.statistics` (`GlobalStatistics`)
+            and `WindowSource.statistics` (`WindowPerformanceStatistics`) for each window id in calculate_window_ids,
             this runs in the worker thread.
         """
         self.calculate_timer = 0
