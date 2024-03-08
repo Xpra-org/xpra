@@ -17,9 +17,6 @@ from xpra.log import Logger
 
 log = Logger("util")
 
-GLib = gi_import("GLib")
-Gtk = gi_import("Gtk")
-
 
 DISCLAIMER = """
 IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
@@ -102,6 +99,7 @@ def with_config(cb: Callable) -> None:
     # then run the callback in the UI thread
     def load_config():
         defaults = make_defaults_struct()
+        GLib = gi_import("GLib")
         GLib.idle_add(cb, defaults)
 
     start_thread(load_config, "load-config", daemon=True)
@@ -120,6 +118,7 @@ def run_gui(gui_class) -> int:
         install_signal_handlers("xpra-configure-gui", gui.app_signal)
         ready()
         gui.show()
+        Gtk = gi_import("Gtk")
         Gtk.main()
         log("do_main() gui.exit_code=%i", gui.exit_code)
         return 0

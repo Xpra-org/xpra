@@ -6,52 +6,16 @@
 import os.path
 from importlib import import_module
 
-from xpra.gtk.configure.common import get_user_config_file, run_gui
+from xpra.platform import program_context
+from xpra.gtk.configure.common import get_user_config_file
 from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.os_util import LINUX
-from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
-from xpra.gtk.widget import label
-
-
-class ConfigureGUI(BaseGUIWindow):
-
-    def __init__(self):
-        super().__init__(
-            "Configure Xpra",
-            "toolbox.png",
-            wm_class=("xpra-configure-gui", "Xpra Configure GUI"),
-            default_size=(480, 300),
-            header_bar=(False, False),
-        )
-        self.dialogs: dict[str, BaseGUIWindow] = {}
-
-    def populate(self):
-        self.vbox.add(label("Configure Xpra", font="sans 20"))
-        self.vbox.add(label("Tune your xpra configuration:", font="sans 14"))
-        if LINUX:
-            self.sub("Packages", "package.png", "Install or remove xpra packages", "packages")
-        self.sub("Features", "features.png", "Enable or disable feature groups", "features")
-        self.sub("Picture compression", "encoding.png", "Encodings, speed and quality", "encodings")
-        self.sub("GStreamer", "gstreamer.png", "Configure the GStreamer codecs", "gstreamer")
-        self.sub("OpenGL acceleration", "opengl.png", "Test and validate OpenGL renderer", "opengl")
-
-    def sub(self, title="", icon_name="browse.png", tooltip="", configure: str = "") -> None:
-
-        def callback(_btn):
-            dialog = self.dialogs.get(configure)
-            if dialog is None:
-                mod = import_module(f"xpra.gtk.configure.{configure}")
-                dialog = mod.ConfigureGUI(self)
-                self.dialogs[configure] = dialog
-            dialog.show()
-        self.ib(title, icon_name, tooltip, callback=callback)
 
 
 def main(args) -> ExitValue:
-    if args:
+    with program_context("Configure", "Configure"):
         conf = get_user_config_file()
-        subcommand = args[0]
+        subcommand = args[0] if args else "home"
         if subcommand == "reset":
             import datetime
             now = datetime.datetime.now()
@@ -81,7 +45,6 @@ def main(args) -> ExitValue:
             if not mod:
                 raise InitExit(ExitCode.FILE_NOT_FOUND, f"unknown configure subcommand {subcommand!r}")
             return mod.main(args[1:])
-    return run_gui(ConfigureGUI)
 
 
 if __name__ == "__main__":
