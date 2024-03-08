@@ -777,18 +777,30 @@ fi
 
 
 %changelog
-* Mon Mar 04 2024 Antoine Martin <antoine@xpra.org> 5.0.8-10
+* Fri Mar 08 2024 Antoine Martin <antoine@xpra.org> 5.0.8-10
 - Platforms, build and packaging:
+   MS Windows 'Light' builds
    typo in MacOS bundle file
    force include all brotli dylibs in MacOS builds
    spng encoder build switch not honoured
+   Cython 3.0.9
 - Major:
    client exit with password dialog (MS Windows and MacOS)
+   mmap compatibility fix for older clients
+   mmap client token errors should not be fatal
+   proxy draw passthrough stripping of unused alpha channels
+   MS Windows system tray initial icon may be lost
+   `xpra top` client failures recording backtraces
 - Minor and cosmetic bugs:
+   proxy instances signal handlers not firing
+   log the prompt with u2f handler
+   handle missing stderr more gracefully
+   socket setup error handler logging incorrect, now extra safe
    socket authentication errors with malformed socket options
    avoid encryption errors during authentication
    support arguments with `xpra encoding` subcommand
    more tolerant option parsing
+   avoid sending a warning notification for missing server log
 
 * Wed Feb 28 2024 Antoine Martin <antoine@xpra.org> 5.0.7-10
 - Regressions:

@@ -2,16 +2,28 @@
 
 ## [5.0.8] 2024-03-04
 * Platforms, build and packaging:
+    * [MS Windows 'Light' builds](https://github.com/Xpra-org/xpra/issues/4100)
     * [typo in MacOS bundle file](https://github.com/Xpra-org/xpra/commit/526b6fba3ac3398f810a400a78a5dae1f7df27a2)
     * [force include all brotli dylibs in MacOS builds](https://github.com/Xpra-org/xpra/commit/8a245ebb28ab6132e2c16b049ca35f5738521ab2)
     * [spng encoder build switch not honoured](https://github.com/Xpra-org/xpra/commit/d491e1689c2fc4c2cdcb67d9e9e6f996e0d8cc3d)
+    * [Cython 3.0.9](https://github.com/Xpra-org/xpra/commit/6469e52b2ecf37c8a22c4bf0906e20b5e82f8ea9)
 * Major:
     * [client exit with password dialog (MS Windows and MacOS)](https://github.com/Xpra-org/xpra/commit/7bb55a06a18ef92c24fabe83a15e995fd5ea2438)
+    * [mmap compatibility fix for older clients](https://github.com/Xpra-org/xpra/commit/e968d7f66c3065e47bd0ab87655a6d35202c553c)
+    * [mmap client token errors should not be fatal](https://github.com/Xpra-org/xpra/commit/8ef274e97c3532d37948279c98eefadf173b0f2a)
+    * [proxy draw passthrough stripping of unused alpha channels](https://github.com/Xpra-org/xpra/commit/7514d88e057b74e8f1ccab5e3ca5f8ff4c079b42)
+    * [MS Windows system tray initial icon may be lost](https://github.com/Xpra-org/xpra/commit/662c83816e18d55e0725bedb1afe18bce20f56f7)
+    * [`xpra top` client failures recording backtraces](https://github.com/Xpra-org/xpra/commit/7be1883c232c35ae7b899c126b03e137bf6d1395)
 * Minor and cosmetic bugs:
+    * [proxy instances signal handlers not firing](https://github.com/Xpra-org/xpra/commit/0cdb7a5427e1b8ebef70117ceb6686616aa558ff)
+    * [log the prompt with u2f handler](https://github.com/Xpra-org/xpra/commit/154534049b8795e9a4a4fa9659ae56ca0b07076f)
+    * [handle missing stderr more gracefully](https://github.com/Xpra-org/xpra/commit/f700a631ab3c8fae8e87c35f2edd7ba6253499e6)
+    * [socket setup error handler logging incorrect](https://github.com/Xpra-org/xpra/commit/72664f72c8289e0a80bdef478870e9d018b4f512), [now extra safe](https://github.com/Xpra-org/xpra/commit/7b7b2f9405d4283b5bce764370ff10ec4d033cc5)
     * [socket authentication errors with malformed socket options](https://github.com/Xpra-org/xpra/commit/ffd8fa55b897362757d56863922f6484a6036c4d)
     * [avoid encryption errors during authentication](https://github.com/Xpra-org/xpra/commit/8a35b469fa09d44f15b7ef1c4382e298992b4cc3)
     * [support arguments with `xpra encoding` subcommand](https://github.com/Xpra-org/xpra/commit/99d8f739bdd6edf11c356649dc0299a32382b935)
     * [more tolerant option parsing](https://github.com/Xpra-org/xpra/commit/c9a9ff97e487ba1214d88a1e36542b3575021f99)
+    * [avoid sending a warning notification for missing server log](https://github.com/Xpra-org/xpra/commit/3cf9ac8053d5e9eb6f756d34b854c96fcb5ad3ec)
 
 ## [5.0.7] 2024-02-28
 * Regressions:

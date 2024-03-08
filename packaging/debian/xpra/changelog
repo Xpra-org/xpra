@@ -1,17 +1,29 @@
 xpra (5.0.8-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
+   - MS Windows 'Light' builds
    - typo in MacOS bundle file
    - force include all brotli dylibs in MacOS builds
    - spng encoder build switch not honoured
+   - Cython 3.0.9
   * Major:
    - client exit with password dialog (MS Windows and MacOS)
+   - mmap compatibility fix for older clients
+   - mmap client token errors should not be fatal
+   - proxy draw passthrough stripping of unused alpha channels
+   - MS Windows system tray initial icon may be lost
+   - `xpra top` client failures recording backtraces
   * Minor and cosmetic bugs:
+   - proxy instances signal handlers not firing
+   - log the prompt with u2f handler
+   - handle missing stderr more gracefully
+   - socket setup error handler logging incorrect, now extra safe
    - socket authentication errors with malformed socket options
    - avoid encryption errors during authentication
    - support arguments with `xpra encoding` subcommand
    - more tolerant option parsing
+   - avoid sending a warning notification for missing server log
 
- -- Antoine Martin <antoine@xpra.org>  Mon, 04 Mar 2024 22:08:33 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 08 Mar 2024 20:44:49 +0700
 
 xpra (5.0.7-1) UNRELEASED; urgency=low
   * Regressions:
