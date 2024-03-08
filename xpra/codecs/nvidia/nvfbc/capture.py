@@ -19,11 +19,11 @@ USE_NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", False)
 
 def get_capture_module():
     if WIN32:
-        from xpra.codecs.nvidia.nvfbc import fbc_capture_win
-        return fbc_capture_win
+        from xpra.codecs.nvidia.nvfbc import capture_win
+        return capture_win
     if LINUX:
-        from xpra.codecs.nvidia.nvfbc import fbc_capture_linux  # @Reimport
-        return fbc_capture_linux
+        from xpra.codecs.nvidia.nvfbc import capture_linux  # @Reimport
+        return capture_linux
     return None
 
 
