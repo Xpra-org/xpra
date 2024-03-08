@@ -498,7 +498,6 @@ def main() -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.platform.gui import init as gui_init
-    from xpra.gtk.util import init_display_source
     from xpra.log import enable_color
     with program_context("OpenGL-Check"):
         gui_init()
@@ -506,6 +505,7 @@ def main() -> int:
         verbose = "-v" in sys.argv or "--verbose" in sys.argv
         if verbose:
             log.enable_debug()
+        from xpra.gtk.util import init_display_source
         init_display_source()
         force_enable = "-f" in sys.argv or "--force" in sys.argv
         from xpra.platform.gl_context import GLContext
