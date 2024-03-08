@@ -1669,6 +1669,7 @@ if WIN32:
         if nvenc_ENABLED or nvdec_ENABLED or nvfbc_ENABLED:
             external_includes.append("numpy")
             external_includes.append("pycuda")
+            external_includes.append("pynvml")
             add_packages("numpy.core._methods", "numpy.lib.format")
         else:
             remove_packages(
@@ -1707,13 +1708,13 @@ if WIN32:
             add_gui_exe("fs/bin/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
             if win32_tools_ENABLED:
                 add_console_exe("fs/bin/xpra_launcher",            "xpra.ico",         "Xpra-Launcher-Debug")
-                add_gui_exe("xpra/gtk/dialogs/view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
-            add_gui_exe("xpra/gtk/dialogs/bug_report.py",           "bugs.ico",         "Bug_Report")
+                add_gui_exe("packaging/MSWindows/tools/gtk_keyboard_test.py", "keyboard.ico",     "GTK_Keyboard_Test")
+            add_gui_exe("packaging/MSWindows/tools/bug_report.py",           "bugs.ico",         "Bug_Report")
             add_gui_exe("xpra/gtk/configure/main.py",        "directory.ico",         "Configure")
         if shadow_ENABLED:
             add_gui_exe("xpra/platform/win32/scripts/shadow_server.py",       "server-notconnected.ico", "Xpra-Shadow")
             if win32_tools_ENABLED:
-                add_gui_exe("xpra/platform/win32/gdi_screen_capture.py", "screenshot.ico", "Screenshot")
+                add_gui_exe("packaging/MSWindows/tools/screenshot.py", "screenshot.ico", "Screenshot")
         if win32_tools_ENABLED and server_ENABLED:
             add_gui_exe("fs/libexec/xpra/auth_dialog",          "authentication.ico", "Auth_Dialog")
         # Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
@@ -1731,10 +1732,10 @@ if WIN32:
             add_console_exe("xpra/scripts/version.py",          "information.ico",  "Version_info")
             add_console_exe("xpra/net/net_util.py",             "network.ico",      "Network_info")
             if gtk3_ENABLED:
-                add_console_exe("xpra/gtk/info.py",         "gtk.ico",          "GTK_info")
+                add_console_exe("packaging/MSWindows/tools/gtk_info.py",         "gtk.ico",          "GTK_info")
                 add_console_exe("xpra/gtk/keymap.py",        "keymap.ico",       "Keymap_info")
                 add_console_exe("xpra/platform/keyboard.py",        "keymap.ico",       "Keyboard_info")
-                add_gui_exe("xpra/gtk/examples/tray.py", "xpra.ico",         "SystemTray_Test")
+                add_gui_exe("packaging/MSWindows/tools/systemtray_test.py", "xpra.ico",         "SystemTray_Test")
                 add_gui_exe("xpra/gtk/dialogs/u2f_tool.py",     "authentication.ico", "U2F_Tool")
             if client_ENABLED or server_ENABLED:
                 add_console_exe("xpra/platform/win32/scripts/execfile.py", "python.ico", "Python_execfile_cmd")
@@ -1828,6 +1829,9 @@ if WIN32:
         external_includes.append("cv2")
     else:
         remove_packages("cv2")
+
+    if client_ENABLED:
+        external_includes.append("pyvda")
 
     external_includes.append("cairo")
     external_includes.append("certifi")
