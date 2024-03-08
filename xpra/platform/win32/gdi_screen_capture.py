@@ -256,11 +256,10 @@ class GDICapture:
         return screenshot
 
 
-def main():
+def main(argv):
     # pylint: disable=import-outside-toplevel
-    import sys
     import os.path
-    if "-v" in sys.argv or "--verbose" in sys.argv:
+    if "-v" in argv or "--verbose" in argv:
         log.enable_debug()
 
     from xpra.platform import program_context
@@ -276,4 +275,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    main(sys.argv)
