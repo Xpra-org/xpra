@@ -1719,6 +1719,8 @@ if WIN32:
 
     if nvenc_ENABLED or nvdec_ENABLED or nvfbc_ENABLED:
         external_includes.append("numpy")
+        external_includes.append("pycuda")
+        external_includes.append("pynvml")
     else:
         remove_packages("unittest", "difflib",  #avoid numpy warning (not an error)
                         "pydoc")
@@ -2229,7 +2231,6 @@ if cuda_kernels_ENABLED:
     from xpra.util import sorted_nicely  # pylint: disable=import-outside-toplevel
     path_options = os.environ.get("PATH", "").split(os.path.pathsep)
     if WIN32:
-        external_includes.append("pycuda")
         nvcc_exe = "nvcc.exe"
         CUDA_DIR = os.environ.get("CUDA_DIR", "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA")
         path_options += ["./cuda/bin/"]+list(reversed(sorted_nicely(glob.glob(f"{CUDA_DIR}\\*\\bin"))))
