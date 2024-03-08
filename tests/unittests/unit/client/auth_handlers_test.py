@@ -17,8 +17,10 @@ from xpra.util.env import OSEnvContext
 class FakeClient:
     def __init__(self):
         self.challenge_reply_passwords = []
+
     def send_challenge_reply(self, _packet, password):
         self.challenge_reply_passwords.append(password)
+
 
 class AuthHandlersTest(unittest.TestCase):
 
@@ -34,8 +36,12 @@ class AuthHandlersTest(unittest.TestCase):
             "challenge" : server_salt,
             "digest" : digest,
             "prompt" : "test",
-            }
-        r = h.handle(**kwargs)
+        }
+        try:
+            r = h.handle(**kwargs)
+        except Exception:
+            print(f"test error on {h.handle}({kwargs})")
+            raise
         if not success:
             assert not r, f"expected {h.handle}({kwargs}) to fail but it returned {r} (handler class={handler_class})"
         else:

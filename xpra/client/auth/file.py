@@ -26,7 +26,7 @@ class Handler:
     def get_digest(self) -> str:
         return ""
 
-    def handle(self, challenge, digest: str, prompt: str) -> bytes:  # pylint: disable=unused-argument
+    def handle(self, challenge: str, digest: str, prompt: str) -> bytes:  # pylint: disable=unused-argument
         log("handle(..) password_file=%s", self.password_file)
         if not self.password_file:
             return b""

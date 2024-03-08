@@ -39,7 +39,7 @@ class Handler:
     def get_digest(self) -> str:
         return "kerberos"
 
-    def handle(self, challenge, digest: str, prompt: str):  # pylint: disable=unused-argument
+    def handle(self, challenge: str, digest: str, prompt: str):  # pylint: disable=unused-argument
         if not digest.startswith("kerberos:"):
             log("%s is not a kerberos challenge", digest)
             # not a kerberos challenge
