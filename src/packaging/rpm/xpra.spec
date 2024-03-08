@@ -918,7 +918,7 @@ fi
 
 
 %changelog
-* Mon Mar 04 2024 Antoine Martin <antoine@xpra.org> 3.1.7-10.1xpra1
+* Fri Mar 08 2024 Antoine Martin <antoine@xpra.org> 3.1.7-10.1xpra1
 - major fixes:
      windows misplaced on screen, moving unexpectedly
      windows wm-state synchronization issue
@@ -933,7 +933,11 @@ fi
      XImage pixel buffers are read-only
      python buffers wrongly allowing writes
      use TLS ssl protocol constant if available
+     proxy draw passthrough stripping of unused alpha channels
      client exit with password dialog (MS Windows and MacOS)
+     incorrect `mmap` availability check, better forward compatibility
+     MS Windows system tray initial icon may be lost
+     `xpra top` client failures recording backtraces
 - clipboard:
      honour client specified order of clipboard preferred targets
      try harder to handle unexpected clipboard data formats
@@ -946,18 +950,23 @@ fi
      shadow servers system tray missing, errors showing 'about' information
      try harder to find an icon to use
 - build, packaging and platforms:
+     MS Windows 'Light' builds
      make it easier to build DEBs
      pycuda 2020.1 patch for compatibility between RHEL 8 and newer CUDA SDKs
      build CUDA kernels with clang
      missing `lsb_release` soft dependency in RPMs
      always build python rencode and python lz4 for RHEL 9
      newer libyuv snapshot
+     explicit failure with Python 3.13 and newer
+     clang compilation warnings
      install Cython via pip for DEB builds
-     Cython 0.29.37.1 / 3.0.8
+     Cython compilation warnings
+     Cython 0.29.37.1 / 3.0.9
      ffmpeg 6.1.1
      libvpx 1.14.0
      nvfbc compilation warnings
      don't expand environment variables in config files
+     force include xxhash and brotli libraries in MacOS builds
      close log files to avoid warnings on MS Windows
      missing console title on MS Windows
 - minor:
@@ -967,6 +976,8 @@ fi
      rfb cleanup errors
      better rencode compatibility for XSettings
      codec self test error handler bug
+     proxy instances signal handlers not firing
+     handle missing stderr more gracefully
 - cosmetic:
      notification errors during shutdown
      don't query 'linux_distribution' on MacOS or MS Windows
