@@ -26,6 +26,8 @@ from xpra.util.system import is_WSL
 from xpra.util.io import load_binary_file
 from xpra.log import Logger
 
+log = Logger("cuda")
+
 if WIN32 and not os.environ.get("CUDA_PATH") and getattr(sys, "frozen", None) in ("windows_exe", "console_exe", True):
     os.environ["CUDA_PATH"] = get_app_dir()
 
@@ -33,14 +35,13 @@ with numpy_import_context("CUDA"):
     if is_WSL() and not envbool("XPRA_PYCUDA_WSL", False):
         raise ImportError("refusing to import pycuda on WSL, use XPRA_PYCUDA_WSL=1 to override")
     import pycuda
+    log(f"loaded pycuda successfully: {pycuda}")
     from pycuda.driver import (
         get_version, get_driver_version, mem_get_info,
         init,
         Device, device_attribute, ctx_flags,
         module_from_buffer, LogicError,
     )
-
-log = Logger("cuda")
 
 MIN_FREE_MEMORY = envint("XPRA_CUDA_MIN_FREE_MEMORY", 10)
 
