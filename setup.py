@@ -1606,12 +1606,12 @@ if WIN32:
             add_gui_exe("fs/bin/xpra_launcher", "xpra.ico", "Xpra-Launcher")
             if win32_tools_ENABLED:
                 add_console_exe("fs/bin/xpra_launcher", "xpra.ico", "Xpra-Launcher-Debug")
-                add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico", "GTK_Keyboard_Test")
+                add_gui_exe("packaging/MSWindows/tools/gtk_keyboard_test.py", "keyboard.ico", "GTK_Keyboard_Test")
             add_gui_exe("xpra/scripts/bug_report.py", "bugs.ico", "Bug_Report")
         if shadow_ENABLED:
             add_gui_exe("xpra/platform/win32/scripts/shadow_server.py", "server-notconnected.ico", "Xpra-Shadow")
             if win32_tools_ENABLED:
-                add_gui_exe("xpra/platform/win32/gdi_screen_capture.py", "screenshot.ico", "Screenshot")
+                add_gui_exe("packaging/MSWindows/tools/screenshot.py", "screenshot.ico", "Screenshot")
         if win32_tools_ENABLED and server_ENABLED:
             add_gui_exe("fs/libexec/xpra/auth_dialog", "authentication.ico", "Auth_Dialog")
         # Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
@@ -1632,7 +1632,7 @@ if WIN32:
                 add_console_exe("xpra/scripts/gtk_info.py", "gtk.ico", "GTK_info")
                 add_console_exe("xpra/gtk_common/keymap.py", "keymap.ico", "Keymap_info")
                 add_console_exe("xpra/platform/keyboard.py", "keymap.ico", "Keyboard_info")
-                add_gui_exe("xpra/client/gtk3/example/tray.py", "xpra.ico", "SystemTray_Test")
+                add_gui_exe("packaging/MSWindows/tools/systemtray_test.py", "xpra.ico", "SystemTray_Test")
                 add_gui_exe("xpra/client/gtk3/u2f_tool.py", "authentication.ico", "U2F_Tool")
             if client_ENABLED or server_ENABLED:
                 add_console_exe("xpra/platform/win32/scripts/execfile.py", "python.ico", "Python_execfile_cmd")
@@ -1653,7 +1653,7 @@ if WIN32:
                 add_console_exe("xpra/platform/features.py", "features.ico", "Feature_info")
             if client_ENABLED:
                 add_console_exe("xpra/platform/gui.py", "browse.ico", "NativeGUI_info")
-                add_console_exe("xpra/platform/win32/gui.py", "loop.ico", "Events_Test")
+                add_console_exe("packaging/MSWindows/tools/events_test.py", "loop.ico", "Events_Test")
             if audio_ENABLED:
                 add_console_exe("xpra/audio/gstreamer_util.py", "gstreamer.ico", "GStreamer_info")
                 add_console_exe("xpra/platform/win32/directsound.py", "speaker.ico", "Audio_Devices")

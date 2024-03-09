@@ -412,7 +412,7 @@ rm -f ./libjasper*
 # Python modules:
 rm -fr ./lib2to3* ./xdg* ./olefile* ./pygtkcompat* keyring/testing ./jaraco* ./p11-kit* ./lz4
 #remove codecs we don't need:
-rm -f ./libSvt* ./libx265* ./libjxl* ./libde265* ./libkvazaar*
+rm -f ./libde265* ./libkvazaar*
 if [ "${DO_FULL}" == "0" ]; then
 	# kerberos / gss libs:
 	rm -f ./libshishi* ./libgss*
@@ -430,6 +430,7 @@ if [ "${DO_FULL}" == "0" ]; then
 	rm -f ./libmp3* ./libwavpack* ./libmpdec* ./libspeex* ./libFLAC* ./libmpg123* ./libfaad* ./libfaac*
 	# ffmpeg:
 	rm -f ./avcodec* ./avformat* ./avutil* ./xvidcore* ./swscale* ./libzvbi* ./libbluray* ./libva*
+        rm -f ./libSvt* ./libx265* ./libjxl*
 	# matching gstreamer modules:
 	pushd ./gstreamer-1.0
   rm -f ./libgstflac* ./libgstwavpack* ./libgstspeex* ./libgstwavenc* ./libgstlame* ./libgstmpg123* ./libgstfaac* ./libgstfaad* ./libgstwav*

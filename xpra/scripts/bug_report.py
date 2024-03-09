@@ -11,10 +11,10 @@ def main(argv=()):
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.platform.gui import init, set_default_icon
-    from xpra.gtk_common.gtk_util import init_display_source
     with program_context("Xpra-Bug-Report", "Xpra Bug Report"):
         from xpra.log import enable_color
         enable_color()
+        from xpra.gtk_common.gtk_util import init_display_source
         init_display_source()
         set_default_icon("bugs.png")
         init()

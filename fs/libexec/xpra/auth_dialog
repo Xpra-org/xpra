@@ -2,5 +2,7 @@
 
 import sys
 
-from xpra.gtk_common.auth_dialog import main
-sys.exit(main())
+from xpra.platform import program_context
+with program_context("Authentication", "Authentication"):
+    from xpra.gtk_common.auth_dialog import main
+    sys.exit(main())
