@@ -31,6 +31,12 @@ def setup_ssh_auth_sock(session_dir: str) -> str:
     cur_sockpath = os.environ.pop("SSH_AUTH_SOCK", None)
     # ie: "/run/user/1000/xpra/10/ssh/agent.default"
     agent_default_sockpath = get_ssh_agent_path("agent.default")
+    if os.path.islink(agent_default_sockpath):
+        if not os.path.exists(agent_default_sockpath):
+            # remove dead symlink
+            os.unlink(agent_default_sockpath)
+    elif os.path.exists(agent_default_sockpath):
+        raise RuntimeError(f"{agent_default_sockpath!r} already exists but it is not a symbolic link")
     if cur_sockpath and cur_sockpath != agent_sockpath and not os.path.exists(agent_default_sockpath):
         # the current agent socket will be the default:
         # ie: "agent.default" -> "/run/user/1000/keyring/ssh"
