@@ -1177,6 +1177,9 @@ CLONES : Dict[str, str] = {}
 NO_FILE_OPTIONS = ("daemon", )
 
 
+IGNORE_COMPAT_OPTIONS = ("audio", "video", )
+
+
 TRUE_OPTIONS : Tuple[Any, ...] = ("yes", "true", "1", "on", True)
 FALSE_OPTIONS : Tuple[Any, ...] = ("no", "false", "0", "off", False)
 ALL_BOOLEAN_OPTIONS : Tuple[Any, ...] = tuple(list(TRUE_OPTIONS)+list(FALSE_OPTIONS))
@@ -1290,6 +1293,8 @@ def do_validate_config(d:Dict, discard, extras_types:Dict, extras_validation:Dic
             continue
         vt = option_types.get(k)
         if vt is None:
+            if vt in IGNORE_COMPAT_OPTIONS:
+                continue
             warn(f"Warning: invalid option: {k!r}")
             continue
         if vt==str:
