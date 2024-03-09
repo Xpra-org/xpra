@@ -1518,6 +1518,8 @@ if WIN32:
 
     if nvenc_ENABLED or nvfbc_ENABLED:
         external_includes.append("numpy")
+        external_includes.append("pycuda")
+        external_includes.append("pynvml")
     else:
         remove_packages("unittest", "difflib",  #avoid numpy warning (not an error)
                         "pydoc")
