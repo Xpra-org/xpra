@@ -1345,13 +1345,13 @@ def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dic
     option_types.update(extras_types)
     nd : dict[str, Any] = {}
     for k, v in d.items():
-        if k in OLD_OPTIONS:
-            continue
         if k in discard:
             warn(f"Warning: option {k!r} is not allowed in configuration files")
             continue
         vt = option_types.get(k)
         if vt is None:
+            if k in OLD_OPTIONS:
+                continue
             warn(f"Warning: invalid option: {k!r}")
             continue
         if vt == str:
