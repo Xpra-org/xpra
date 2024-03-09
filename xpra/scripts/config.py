@@ -1293,7 +1293,7 @@ def do_validate_config(d:Dict, discard, extras_types:Dict, extras_validation:Dic
             continue
         vt = option_types.get(k)
         if vt is None:
-            if vt in IGNORE_COMPAT_OPTIONS:
+            if k in IGNORE_COMPAT_OPTIONS:
                 continue
             warn(f"Warning: invalid option: {k!r}")
             continue
