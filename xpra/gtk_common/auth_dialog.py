@@ -117,11 +117,16 @@ def main():
         from xpra.platform.gui import init as gui_init
         gui_init()
         if len(sys.argv)<2:
-            stderr_print(f"usage: {sys.argv[0]} 'message' [timeout-in-seconds]")
-            sys.exit(4)
+            stderr_print("usage: %s 'message' [timeout-in-seconds]", sys.argv[0])
+            return 4
         info = sys.argv[1]
         if len(sys.argv)>=3:
-            timeout = int(sys.argv[2])
+            try:
+                timeout = int(sys.argv[2])
+            except ValueError:
+                stderr_print("invalid timeout value")
+                stderr_print("usage: %s 'message' [timeout-in-seconds]", sys.argv[0])
+                return 4
         else:
             timeout = 600
         w = AuthDialog(info=info, timeout=timeout)
