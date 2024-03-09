@@ -161,7 +161,7 @@ class KeyboardStateInfoWindow:
         self.window.present()
 
 
-def main():
+def main() -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform.gui import init, set_default_icon
     from xpra.gtk.util import init_display_source

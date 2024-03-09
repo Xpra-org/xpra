@@ -7,7 +7,7 @@
 import sys
 
 
-def main(argv=()):
+def main(argv=()) -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Xpra-Bug-Report", "Xpra Bug Report"):

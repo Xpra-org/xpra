@@ -7,7 +7,7 @@
 import sys
 
 
-def main():
+def main() -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("SystemTray-Test", "SystemTray Test"):

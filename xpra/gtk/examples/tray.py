@@ -179,12 +179,13 @@ class FakeApplication:
         Gtk.main_quit()
 
 
-def main():
+def main() -> int:
     with program_context("tray", "Tray"):
         from xpra.gtk.signals import quit_on_signals
         quit_on_signals("tray test")
         FakeApplication()
         Gtk.main()
+    return 0
 
 
 if __name__ == "__main__":

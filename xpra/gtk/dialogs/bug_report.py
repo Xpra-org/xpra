@@ -407,7 +407,7 @@ class BugReport:
                 zf.close()
 
 
-def main(argv=()):
+def main(argv=()) -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.platform.gui import init, set_default_icon
@@ -435,7 +435,7 @@ def main(argv=()):
             app.run()
         except KeyboardInterrupt:
             pass
-        return 0
+    return 0
 
 
 if __name__ == "__main__":

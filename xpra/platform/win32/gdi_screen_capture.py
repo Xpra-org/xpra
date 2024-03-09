@@ -256,7 +256,7 @@ class GDICapture:
         return screenshot
 
 
-def main(argv):
+def main(argv) -> int:
     # pylint: disable=import-outside-toplevel
     import os.path
     if "-v" in argv or "--verbose" in argv:
@@ -272,6 +272,7 @@ def main(argv):
         with open(filename, "wb") as f:
             f.write(image[4])
         capture.clean()
+    return 0
 
 
 if __name__ == "__main__":
