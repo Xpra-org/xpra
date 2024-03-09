@@ -1103,6 +1103,8 @@ CLONES = {}
 #these options should not be specified in config files:
 NO_FILE_OPTIONS = ("daemon", )
 
+IGNORE_COMPAT_OPTIONS = ("audio", "video", )
+
 
 TRUE_OPTIONS = ("yes", "true", "1", "on", True)
 FALSE_OPTIONS = ("no", "false", "0", "off", False)
@@ -1212,6 +1214,8 @@ def do_validate_config(d, discard, extras_types, extras_validation):
             continue
         vt = option_types.get(k)
         if vt is None:
+            if k in IGNORE_COMPAT_OPTIONS:
+                continue
             warn("Warning: invalid option: '%s'" % k)
             continue
         if vt==str:
