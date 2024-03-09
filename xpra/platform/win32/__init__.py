@@ -263,7 +263,7 @@ def get_console_position(handle):
         GetConsoleScreenBufferInfo(handle, byref(csbi))
         cpos = csbi.dwCursorPosition
         #wait for input if this is a brand-new console:
-        return cpos.X and cpos.Y
+        return cpos.X, cpos.Y
     except Exception:
         e = sys.exc_info()[1]
         code = -1
