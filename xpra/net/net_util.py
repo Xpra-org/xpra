@@ -6,6 +6,7 @@
 
 # taken from the code I wrote for winswitch
 
+import os.path
 import socket
 import sys
 from typing import Dict, Tuple, Any, Optional, Callable
