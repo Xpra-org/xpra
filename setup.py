@@ -1606,7 +1606,7 @@ if WIN32:
             add_gui_exe("fs/bin/xpra_launcher", "xpra.ico", "Xpra-Launcher")
             if win32_tools_ENABLED:
                 add_console_exe("fs/bin/xpra_launcher", "xpra.ico", "Xpra-Launcher-Debug")
-                add_gui_exe("xpra/gtk/dialogs/view_keyboard.py", "keyboard.ico", "GTK_Keyboard_Test")
+                add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico", "GTK_Keyboard_Test")
             add_gui_exe("xpra/scripts/bug_report.py", "bugs.ico", "Bug_Report")
         if shadow_ENABLED:
             add_gui_exe("xpra/platform/win32/scripts/shadow_server.py", "server-notconnected.ico", "Xpra-Shadow")
