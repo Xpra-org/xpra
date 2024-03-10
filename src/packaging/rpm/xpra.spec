@@ -937,6 +937,7 @@ fi
      client exit with password dialog (MS Windows and MacOS)
      incorrect `mmap` availability check, better forward compatibility
      MS Windows system tray initial icon may be lost
+     MS Windows tools not waiting for user input to close
      `xpra top` client failures recording backtraces
 - clipboard:
      honour client specified order of clipboard preferred targets
@@ -968,6 +969,8 @@ fi
      don't expand environment variables in config files
      force include xxhash and brotli libraries in MacOS builds
      close log files to avoid warnings on MS Windows
+     bundle `pynvml` with the full MS Windows builds
+     force `zeroconf` into the MS Windows bundle
      missing console title on MS Windows
 - minor:
      builtin ssh server connection errors when display is specified
@@ -979,6 +982,7 @@ fi
      proxy instances signal handlers not firing
      handle missing stderr more gracefully
 - cosmetic:
+     ignore options from newer config files
      notification errors during shutdown
      don't query 'linux_distribution' on MacOS or MS Windows
      avoid potential mmap checks side-effects
@@ -986,7 +990,7 @@ fi
      Python 3.12 SyntaxWarning
      don't try to print a display size we don't have
      gst-plugin-scanner packaging for MacOS
-     deprecation warnings
+     deprecation warnings, unused imports
      consistency: accept more iterables
 
 * Mon Nov 27 2023 Antoine Martin <antoine@xpra.org> 3.1.6-10.1xpra1
