@@ -450,13 +450,19 @@ if [ "${ZIP_MODULES}" == "1" ]; then
 	zip --move -ur library.zip OpenGL encodings paramiko html \
 			async_timeout \
 			certifi pkcs11 \
-			ifaddr zeroconf yaml \
+			ifaddr yaml \
 			re platformdirs \
 			distutils comtypes email multiprocessing packaging \
 			pkg_resources pycparser idna ctypes json \
 			http importlib \
 			logging queue urllib xml xmlrpc concurrent collections
 fi
+# workaround for zeroconf - just copy it wholesale
+# since I have no idea why cx_Freeze struggles with it:
+rm -fr zeroconf
+ZEROCONF_DIR=`$PYTHON -c "import zeroconf,os;print(os.path.dirname(zeroconf.__file__))"`
+cp -apr $ZEROCONF_DIR ./
+
 popd > /dev/null
 
 rm -fr share/xml
