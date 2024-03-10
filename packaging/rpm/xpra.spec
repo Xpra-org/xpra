@@ -777,13 +777,17 @@ fi
 
 
 %changelog
-* Fri Mar 08 2024 Antoine Martin <antoine@xpra.org> 5.0.8-10
+* Sun Mar 10 2024 Antoine Martin <antoine@xpra.org> 5.0.8-10
 - Platforms, build and packaging:
    MS Windows 'Light' builds
    typo in MacOS bundle file
    force include all brotli dylibs in MacOS builds
    spng encoder build switch not honoured
    Cython 3.0.9
+   include `pynvml` in MS Windows full builds
+   force include `zeroconf` in MS Windows builds
+   MS Windows builds not waiting for input to close
+   MS Windows tools fail to run due to incomplete environment and errors
 - Major:
    client exit with password dialog (MS Windows and MacOS)
    mmap compatibility fix for older clients
@@ -795,12 +799,15 @@ fi
    proxy instances signal handlers not firing
    log the prompt with u2f handler
    handle missing stderr more gracefully
+   handle missing timeout value more gracefully
    socket setup error handler logging incorrect, now extra safe
    socket authentication errors with malformed socket options
    avoid encryption errors during authentication
    support arguments with `xpra encoding` subcommand
    more tolerant option parsing
    avoid sending a warning notification for missing server log
+   avoid showing warnings for options from newer versions
+   missing information from `net_util` tool
 
 * Wed Feb 28 2024 Antoine Martin <antoine@xpra.org> 5.0.7-10
 - Regressions:
