@@ -1239,8 +1239,9 @@ def main():
             log.enable_debug()
             win32_event_logger.enable_debug()
 
-        from xpra.gtk_common.gobject_compat import import_gobject
+        from xpra.gtk_common.gobject_compat import import_gobject, import_glib
         gobject = import_gobject()
+        glib = import_glib()
 
         log.info("Event loop is running")
         loop = gobject.MainLoop()
@@ -1256,6 +1257,9 @@ def main():
         fake_client.suspend = suspend
         fake_client.resume = resume
         fake_client.keyboard_helper = None
+        fake_client.timeout_add = glib.timeout_add
+        fake_client.idle_add = glib.idle_add
+        fake_client.source_remove = glib.source_remove
         def signal_quit(*_args):
             loop.quit()
         fake_client.signal_disconnect_and_quit = signal_quit
