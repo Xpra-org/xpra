@@ -2022,7 +2022,6 @@ if argb_ENABLED:
     argb_pkgconfig = pkgconfig(optimize=3)
     cython_add(Extension("xpra.codecs.argb.argb",
                 ["xpra/codecs/argb/argb.pyx"], **argb_pkgconfig))
-toggle_packages(argb_ENABLED,"xpra.codecs.argb.encoder")
 
 
 #build tests, but don't install them:
