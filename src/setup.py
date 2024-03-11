@@ -1388,13 +1388,13 @@ if WIN32:
 
             if win32_tools_ENABLED:
                 add_console_exe("scripts/xpra_launcher",            "xpra.ico",         "Xpra-Launcher-Debug")
-                add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico", "GTK_Keyboard_Test")
+                add_gui_exe("win32/tools/gtk_keyboard_test.py", "keyboard.ico", "GTK_Keyboard_Test")
         if shadow_ENABLED:
             add_gui_exe("xpra/platform/win32/gdi_screen_capture.py", "screenshot.ico", "Screenshot")
             add_gui_exe("win32/service/shadow_server.py",       "server-notconnected.ico",    "Xpra-Shadow")
 
         if server_ENABLED:
-            add_gui_exe("scripts/auth_dialog",                  "authentication.ico", "Auth_Dialog")
+            add_gui_exe("win32/tools/auth_dialog.py",                  "authentication.ico", "Auth_Dialog")
         if gtk2_ENABLED and win32_tools_ENABLED:
             #these need porting..
             add_gui_exe("xpra/gtk_common/gtk_view_clipboard.py","clipboard.ico",    "GTK_Clipboard_Test")
@@ -1424,7 +1424,7 @@ if WIN32:
                 add_console_exe("xpra/scripts/gtk_info.py",         "gtk.ico",          "GTK_info")
                 add_console_exe("xpra/gtk_common/keymap.py",        "keymap.ico",       "Keymap_info")
                 add_console_exe("xpra/platform/keyboard.py",        "keymap.ico",       "Keyboard_info")
-                add_gui_exe("xpra/client/gtk_base/example/tray.py", "xpra.ico",         "SystemTray_Test")
+                add_gui_exe("win32/tools/systemtray_test.py", "xpra.ico",         "SystemTray_Test")
                 add_gui_exe("xpra/client/gtk_base/u2f_tool.py",     "authentication.ico", "U2F_Tool")
             if client_ENABLED or server_ENABLED:
                 add_console_exe("win32/python_execfile.py",         "python.ico",       "Python_execfile")
@@ -1460,15 +1460,15 @@ if WIN32:
                 add_console_exe("xpra/codecs/cuda_common/cuda_context.py",  "cuda.ico",     "CUDA_info")
 
             if example_ENABLED:
-                add_gui_exe("xpra/client/gtk_base/example/colors.py",               "encoding.ico",     "Colors")
-                add_gui_exe("xpra/client/gtk_base/example/colors_gradient.py",      "encoding.ico",     "Colors-Gradient")
+                add_gui_exe("win32/tools/colors.py",               "encoding.ico",     "Colors")
+                add_gui_exe("win32/tools//colors_gradient.py",      "encoding.ico",     "Colors-Gradient")
                 if not PYTHON3:
                     add_gui_exe("xpra/client/gtk_base/example/gl_colors_gradient.py",   "encoding.ico",     "OpenGL-Colors-Gradient")
-                add_gui_exe("xpra/client/gtk_base/example/colors_plain.py",         "encoding.ico",     "Colors-Plain")
-                add_gui_exe("xpra/client/gtk_base/example/bell.py",                 "bell.ico",         "Bell")
-                add_gui_exe("xpra/client/gtk_base/example/transparent_colors.py",   "transparent.ico",  "Transparent-Colors")
-                add_gui_exe("xpra/client/gtk_base/example/transparent_window.py",   "transparent.ico",  "Transparent-Window")
-                add_gui_exe("xpra/client/gtk_base/example/fontrendering.py",        "font.ico",         "Font-Rendering")
+                add_gui_exe("win32/tools/colors_plain.py",         "encoding.ico",     "Colors-Plain")
+                add_gui_exe("win32/tools/bell.py",                 "bell.ico",         "Bell")
+                add_gui_exe("win32/tools/transparent_colors.py",   "transparent.ico",  "Transparent-Colors")
+                add_gui_exe("win32/tools/transparent_window.py",   "transparent.ico",  "Transparent-Window")
+                add_gui_exe("win32/tools/font_rendering.py",        "font.ico",         "Font-Rendering")
 
     if ("install_exe" in sys.argv) or ("install" in sys.argv):
         #FIXME: how do we figure out what target directory to use?
