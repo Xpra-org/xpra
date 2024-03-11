@@ -210,8 +210,8 @@ if [ "${DO_SERVICE}" == "1" ]; then
 				RC="${VKIT_BIN_DIR}\\$B\\rc.exe"
 				if [ ! -e "$MC" ]; then
 					#try to find it in a versionned subdir:
-					MC=`find "${VKIT_BIN_DIR}" -name "mc.exe" | grep "$B/"`
-					RC=`find "${VKIT_BIN_DIR}" -name "rc.exe" | grep "$B/"`
+					MC=`find "${VKIT_BIN_DIR}" -name "mc.exe" | grep "$B/" | head -n 1`
+					RC=`find "${VKIT_BIN_DIR}" -name "rc.exe" | grep "$B/" | head -n 1`
 				fi
 				if [ -e "$MC" ]; then
 					echo "  using SDK $V $B found in:"
@@ -232,7 +232,7 @@ if [ "${DO_SERVICE}" == "1" ]; then
 			VSDIR="$PF\\Microsoft Visual Studio\\$VSV\\BuildTools\\VC\\Tools\\MSVC"
 			if [ -d "${VSDIR}" ]; then
 				for B in $ARCH_DIRS; do
-					LINK=`find "$VSDIR" -name "link.exe" | grep "$B/$B"`
+					LINK=`find "$VSDIR" -name "link.exe" | grep "$B/$B" | head -n 1`
 					if  [ -e "${LINK}" ]; then
 						break 3
 					fi
