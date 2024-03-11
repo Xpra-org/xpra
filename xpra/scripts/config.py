@@ -1103,7 +1103,7 @@ CLONES = {}
 #these options should not be specified in config files:
 NO_FILE_OPTIONS = ("daemon", )
 
-IGNORE_COMPAT_OPTIONS = ("audio", "video", )
+IGNORE_COMPAT_OPTIONS = ("audio", "video", "headerbar", "reconnect", "http-scripts" )
 
 
 TRUE_OPTIONS = ("yes", "true", "1", "on", True)
