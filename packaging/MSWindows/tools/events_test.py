@@ -10,7 +10,7 @@ import sys
 def main():
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
-    with program_context("GTK-Info", "GTK Info"):
+    with program_context("Events", "Events"):
         from xpra.platform.win32 import gui
         return gui.main()
 
