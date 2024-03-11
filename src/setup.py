@@ -211,7 +211,6 @@ pillow_ENABLED          = DEFAULT
 pillow_encoder_ENABLED  = pillow_ENABLED
 pillow_decoder_ENABLED  = pillow_ENABLED
 argb_ENABLED            = DEFAULT
-argb_encoder_ENABLED    = argb_ENABLED
 webp_ENABLED            = DEFAULT and pkg_config_version("0.5", "libwebp")
 webp_encoder_ENABLED    = webp_ENABLED
 webp_decoder_ENABLED    = webp_ENABLED
@@ -261,7 +260,7 @@ SWITCHES = [
     "webp", "webp_decoder", "webp_encoder",
     "pillow", "pillow_encoder", "pillow_decoder",
     "jpeg_encoder", "jpeg_decoder",
-    "argb", "argb_encoder",
+    "argb",
     "v4l2",
     "nvjpeg",
     "dec_avcodec2", "csc_swscale",
@@ -2023,7 +2022,7 @@ if argb_ENABLED:
     argb_pkgconfig = pkgconfig(optimize=3)
     cython_add(Extension("xpra.codecs.argb.argb",
                 ["xpra/codecs/argb/argb.pyx"], **argb_pkgconfig))
-toggle_packages(argb_encoder_ENABLED,"xpra.codecs.argb.encoder")
+toggle_packages(argb_ENABLED,"xpra.codecs.argb.encoder")
 
 
 #build tests, but don't install them:
