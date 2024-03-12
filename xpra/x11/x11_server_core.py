@@ -55,6 +55,7 @@ gllog = Logger("screen", "opengl")
 
 ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
 FAKE_X11_INIT_ERROR = envbool("XPRA_FAKE_X11_INIT_ERROR", False)
+DPI_WARNING_NOTIFICATION = envbool("XPRA_DPI_WARNING_NOTIFICATION", True)
 
 
 class XTestPointerDevice(object):
@@ -783,7 +784,8 @@ class X11ServerCore(GTKServerBase):
                     if maxdelta>=10:
                         messages.append("you may experience scaling problems, such as huge or small fonts, etc")
                         messages.append("to fix this issue, try the dpi switch, or use a patched Xorg dummy driver")
-                        self.notify_dpi_warning("\n".join(messages))
+                        if DPI_WARNING_NOTIFICATION:
+                            self.notify_dpi_warning("\n".join(messages))
                     for i,message in enumerate(messages):
                         l("%s%s", ["", " "][i>0], message)
             #show dpi via idle_add so server has time to change the screen size (mm)
