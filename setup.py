@@ -1667,9 +1667,11 @@ if WIN32:
         }
         # cx_Freeze v5 workarounds:
         if nvenc_ENABLED or nvdec_ENABLED or nvfbc_ENABLED:
-            external_includes.append("numpy")
-            external_includes.append("pycuda")
-            external_includes.append("pynvml")
+            external_includes += [
+                "numpy",
+                "pycuda",
+                "pynvml",
+            ]
             add_packages("numpy.core._methods", "numpy.lib.format")
         else:
             remove_packages(
