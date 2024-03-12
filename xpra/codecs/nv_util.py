@@ -198,12 +198,13 @@ def get_cards(probe=True):
 
 def is_blacklisted():
     v = get_nvidia_module_version(True)
-    try:
-        if v[0]>MIN_VERSION:
-            return False
-    except Exception as e:
-        log.warn("Warning: error checking driver version:")
-        log.warn(" %s", e)
+    if v:
+        try:
+            if v[0]>MIN_VERSION:
+                return False
+        except Exception as e:
+            log.warn("Warning: error checking driver version:")
+            log.warn(" %s", e)
     return None     #we don't know: unreleased / untested
 
 
