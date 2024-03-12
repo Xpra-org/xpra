@@ -286,6 +286,7 @@ def is_blacklisted():
             if v[0] > MIN_VERSION:
                 return False
         except Exception as e:
+            log("is_blacklisted()", exc_info=True)
             log.warn(f"Warning: error checking driver version {v!r}:")
             log.warn(" %s", e)
     return None  # we don't know: unreleased / untested
