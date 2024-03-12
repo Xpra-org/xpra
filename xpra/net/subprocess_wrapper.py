@@ -381,6 +381,8 @@ class subprocess_caller(object):
         env = exec_env()
         env["XPRA_LOG_PREFIX"] = "%s " % self.description
         env["XPRA_FIX_UNICODE_OUT"] = "0"
+        # MS Windows wrappers should never wait for input:
+        env["XPRA_WAIT_FOR_INPUT"] = "0"
         return env
 
     def cleanup(self):
