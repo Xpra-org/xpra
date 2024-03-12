@@ -918,7 +918,7 @@ fi
 
 
 %changelog
-* Fri Mar 08 2024 Antoine Martin <antoine@xpra.org> 3.1.7-10.1xpra1
+* Tue Mar 12 2024 Antoine Martin <antoine@xpra.org> 3.1.7-10.1xpra1
 - major fixes:
      windows misplaced on screen, moving unexpectedly
      windows wm-state synchronization issue
@@ -952,6 +952,8 @@ fi
      try harder to find an icon to use
 - build, packaging and platforms:
      MS Windows 'Light' builds
+     better compatibility with "Windows Kits" locations
+     remove generated file from VCS
      make it easier to build DEBs
      pycuda 2020.1 patch for compatibility between RHEL 8 and newer CUDA SDKs
      build CUDA kernels with clang
@@ -972,6 +974,7 @@ fi
      bundle `pynvml` with the full MS Windows builds
      force `zeroconf` into the MS Windows bundle
      missing console title on MS Windows
+     broken MS Windows EXE tools: missing function, use wrappers to setup environment
 - minor:
      builtin ssh server connection errors when display is specified
      ssh upgrade errors when unavailable
