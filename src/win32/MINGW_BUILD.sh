@@ -41,7 +41,7 @@ BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_x265 --without-cuda_rebuild"
 if [ "${DO_FULL}" == "0" ]; then
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-server --without-shadow --without-proxy --without-rfb"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-dbus"
-	BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_proxy --without-enc_x264 --without-enc_ffmpeg --without-webp_encoder --without-jpeg_encoder --without-vpx_encoder --without-argb_encoder"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_proxy --without-enc_x264 --without-enc_ffmpeg --without-webp_encoder --without-jpeg_encoder --without-vpx_encoder"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-csc_swscale --without-dec_avcodec2"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-webcam"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-win32_tools"
