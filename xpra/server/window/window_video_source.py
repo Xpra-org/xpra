@@ -1672,7 +1672,7 @@ class WindowVideoSource(WindowSource):
             self.csc_clean(self._csc_encoder)
             self.ve_clean(self._video_encoder)
         end = monotonic_time()
-        if not self.is_cancelled():
+        if not self.is_cancelled() and first_time("novideo-%s-%s" % (src_format, self.wid)):
             videolog("setup_pipeline(..) failed! took %.2fms", (end-start)*1000.0)
             videolog.error("Error: failed to setup a video pipeline for %s at %ix%i", src_format, width, height)
             videolog.error(" tried the following option%s", engs(scores))
