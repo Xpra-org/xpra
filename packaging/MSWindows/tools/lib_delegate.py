@@ -19,11 +19,12 @@ def main(argv=()) -> int:
     for d in (lib_dir, app_dir):
         if d not in paths:
             paths.append(d)
-    os.environ["PATH"] = os.pathsep.join(paths)
+    env = os.environ.copy()
+    env["PATH"] = os.pathsep.join(paths)
     actual_exe = os.path.join(lib_dir, exe_name)
-    from subprocess import run, STD_INPUT_HANDLE, STD_OUTPUT_HANDLE, STD_ERROR_HANDLE
+    from subprocess import run
     args = [actual_exe] + list(argv[1:])
-    return run(args, stdin=STD_INPUT_HANDLE, stdout=STD_OUTPUT_HANDLE, stderr=STD_ERROR_HANDLE).returncode
+    return run(args, stdin=None, stdout=sys.stdout, stderr=sys.stderr, shell=False, env=env).returncode
 
 
 if __name__ == "__main__":
