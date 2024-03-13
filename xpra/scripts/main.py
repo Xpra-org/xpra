@@ -1643,6 +1643,7 @@ def make_progress_process(title="Xpra") -> Optional[Popen]:
     #start the splash subprocess
     env = os.environ.copy()
     env["XPRA_LOG_PREFIX"] = "splash: "
+    env["XPRA_WAIT_FOR_INPUT"] = "0"
     from xpra.platform.paths import get_nodock_command
     cmd = get_nodock_command()+["splash"]
     try:
