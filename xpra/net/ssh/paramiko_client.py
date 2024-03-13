@@ -424,7 +424,7 @@ class IAuthHandler:
 
 
 def do_connect(chan, host: str, username: str, password: str,
-               host_config=None, keyfiles=None, paramiko_config=None, auth_modes=AUTH_MODES):
+               host_config: dict, keyfiles: list[str], paramiko_config: dict, auth_modes=AUTH_MODES):
     transport = Transport(chan)
     transport.use_compression(False)
     log("SSH transport %s", transport)
