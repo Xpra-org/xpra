@@ -626,6 +626,12 @@ if [ "${DO_VERPATCH}" == "1" ]; then
 	fi
 fi
 
+
+echo
+echo "installation disk usage:"
+du -sm "${DIST}"
+echo
+
 ################################################################################
 # packaging: ZIP / EXE / MSI
 
@@ -635,7 +641,9 @@ if [ "${DO_ZIP}" == "1" ]; then
 	mkdir "${ZIP_DIR}"
 	rsync -rplogt "${DIST}"/* "${ZIP_DIR}"
 	zip -9qmr "${ZIP_FILENAME}" "${ZIP_DIR}"
-	ls -la "${ZIP_FILENAME}"
+	echo
+	du -sm "${ZIP_FILENAME}"
+	echo
 fi
 
 if [ "${DO_INSTALLER}" == "1" ]; then
@@ -687,7 +695,9 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 			cat ${SIGNTOOL_LOG}
 		fi
 	fi
-	ls -la "${INSTALLER_FILENAME}"
+	echo
+	du -sm "${INSTALLER_FILENAME}"
+	echo
 
 	if [ "${RUN_INSTALLER}" == "1" ]; then
 		echo "* Finished - running the new installer"
@@ -722,4 +732,7 @@ if [ "${DO_MSI}" == "1" ]; then
 			cat ${SIGNTOOL_LOG}
 		fi
 	fi
+	echo
+	du -sm "${MSI_FILENAME}"
+	echo
 fi
