@@ -79,10 +79,10 @@ def show_confirm_dialog(argv) -> int:
 
     log("show_confirm_dialog(%s)", argv)
 
-    def arg(n):
-        if len(argv) <= n:
+    def arg(i: int) -> str:
+        if len(argv) <= i:
             return ""
-        return argv[n].replace("\\n\\r", "\\n").replace("\\n", "\n")
+        return argv[i].replace("\\n\\r", "\\n").replace("\\n", "\n")
 
     title = arg(0) or "Confirm Key"
     prompt = arg(1)
