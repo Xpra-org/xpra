@@ -437,6 +437,10 @@ if [ "${DO_FULL}" == "0" ]; then
 	rm -f ./libgstgdp*
 	popd
 fi
+# these started causing packaging problems with GStreamer 1.24:
+pushd ./gstreamer-1.0
+rm -f libgstd3d11.* libgstisomp4.*
+popd
 
 #remove PIL loaders we don't use:
 echo "* removing unnecessary PIL plugins:"
