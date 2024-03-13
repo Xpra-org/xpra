@@ -238,6 +238,7 @@ def do_run_dialog(dialog):
         dialog.show()
         return dialog.run()
     finally:
+        dialog.hide()
         dialog.close()
 
 
