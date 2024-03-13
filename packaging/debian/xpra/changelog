@@ -1,6 +1,7 @@
 xpra (5.0.8-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
    - MS Windows 'Light' builds
+   - compatibility with multiple "Windows Kits" locations
    - typo in MacOS bundle file
    - force include all brotli dylibs in MacOS builds
    - spng encoder build switch not honoured
@@ -10,12 +11,13 @@ xpra (5.0.8-1) UNRELEASED; urgency=low
    - MS Windows builds not waiting for input to close
    - MS Windows tools fail to run due to incomplete environment and errors
   * Major:
-   - client exit with password dialog (MS Windows and MacOS)
+   - password authentication issues with MS Windows and MacOS client: dialog hangs, client terminates
    - mmap compatibility fix for older clients
    - mmap client token errors should not be fatal
    - proxy draw passthrough stripping of unused alpha channels
    - MS Windows system tray initial icon may be lost
    - `xpra top` client failures recording backtraces
+   - never wait for input in a subprocess, or in splash process
   * Minor and cosmetic bugs:
    - proxy instances signal handlers not firing
    - log the prompt with u2f handler
@@ -29,8 +31,9 @@ xpra (5.0.8-1) UNRELEASED; urgency=low
    - avoid sending a warning notification for missing server log
    - avoid showing warnings for options from newer versions
    - missing information from `net_util` tool
+   - only warn once per window when no video options are found, same for csc
 
- -- Antoine Martin <antoine@xpra.org>  Sun, 10 Mar 2024 16:46:11 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 13 Mar 2024 20:52:44 +0700
 
 xpra (5.0.7-1) UNRELEASED; urgency=low
   * Regressions:

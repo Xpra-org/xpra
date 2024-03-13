@@ -1,8 +1,9 @@
 # Changelog
 
-## [5.0.8] 2024-03-10
+## [5.0.8] 2024-03-13
 * Platforms, build and packaging:
     * [MS Windows 'Light' builds](https://github.com/Xpra-org/xpra/issues/4100)
+    * [compatibility with multiple "Windows Kits" locations](https://github.com/Xpra-org/xpra/commit/0fed808d376bcf441140609f5d73ac8069566a91)
     * [typo in MacOS bundle file](https://github.com/Xpra-org/xpra/commit/526b6fba3ac3398f810a400a78a5dae1f7df27a2)
     * [force include all brotli dylibs in MacOS builds](https://github.com/Xpra-org/xpra/commit/8a245ebb28ab6132e2c16b049ca35f5738521ab2)
     * [spng encoder build switch not honoured](https://github.com/Xpra-org/xpra/commit/d491e1689c2fc4c2cdcb67d9e9e6f996e0d8cc3d)
@@ -11,13 +12,15 @@
     * [force include `zeroconf` in MS Windows builds](https://github.com/Xpra-org/xpra/commit/b50194dbabe6fd52c58f89963cbcd75b7386966a)
     * [MS Windows builds not waiting for input to close](https://github.com/Xpra-org/xpra/commit/cc0fc8b9cdeb8c897bf648554f13de0ff6d8d17b)
     * [MS Windows tools fail to run](https://github.com/Xpra-org/xpra/commit/1a05229c2001aa4b0cbdafd642e9b63d8b92196e) [due to incomplete environment](https://github.com/Xpra-org/xpra/commit/f6cd59c08b083b5a6189c09a3546f2dfc6354054) [and errors](https://github.com/Xpra-org/xpra/commit/2fb0e13fbb1cefcdee6e265f962eea7c20af85db)
+
 * Major:
-    * [client exit with password dialog (MS Windows and MacOS)](https://github.com/Xpra-org/xpra/commit/7bb55a06a18ef92c24fabe83a15e995fd5ea2438)
+    * password authentication issues with MS Windows and MacOS client: [dialog hangs](https://github.com/Xpra-org/xpra/commit/3698385172b03a8a56d4f95901d00728502d1d20), [client terminates](https://github.com/Xpra-org/xpra/commit/7bb55a06a18ef92c24fabe83a15e995fd5ea2438)
     * [mmap compatibility fix for older clients](https://github.com/Xpra-org/xpra/commit/e968d7f66c3065e47bd0ab87655a6d35202c553c)
     * [mmap client token errors should not be fatal](https://github.com/Xpra-org/xpra/commit/8ef274e97c3532d37948279c98eefadf173b0f2a)
     * [proxy draw passthrough stripping of unused alpha channels](https://github.com/Xpra-org/xpra/commit/7514d88e057b74e8f1ccab5e3ca5f8ff4c079b42)
     * [MS Windows system tray initial icon may be lost](https://github.com/Xpra-org/xpra/commit/662c83816e18d55e0725bedb1afe18bce20f56f7)
     * [`xpra top` client failures recording backtraces](https://github.com/Xpra-org/xpra/commit/7be1883c232c35ae7b899c126b03e137bf6d1395)
+    * [never wait for input in a subprocess](https://github.com/Xpra-org/xpra/commit/fc9e0dd459976f67eef63050e73e07a6483abaa6) [or in splash process](https://github.com/Xpra-org/xpra/commit/2c4aac4128d89c4b9ba6d0b5efb70f1ceaaa2635)
 * Minor and cosmetic bugs:
     * [proxy instances signal handlers not firing](https://github.com/Xpra-org/xpra/commit/0cdb7a5427e1b8ebef70117ceb6686616aa558ff)
     * [log the prompt with u2f handler](https://github.com/Xpra-org/xpra/commit/154534049b8795e9a4a4fa9659ae56ca0b07076f)
@@ -31,6 +34,7 @@
     * [avoid sending a warning notification for missing server log](https://github.com/Xpra-org/xpra/commit/3cf9ac8053d5e9eb6f756d34b854c96fcb5ad3ec)
     * [avoid showing warnings for options from newer versions](https://github.com/Xpra-org/xpra/commit/1ec821edf851e8f963b57bdb950cdcc5e56baa72)
     * [missing information from `net_util` tool](https://github.com/Xpra-org/xpra/commit/6b4aac358d783cf2222f4426dabf4c24ff6b59f7)
+    * [only warn once per window when no video options are found](https://github.com/Xpra-org/xpra/commit/14b9ed386d736f2460dcb810e7a39d3891a0a40d), [same for csc](https://github.com/Xpra-org/xpra/commit/e1d570cc2ff363842d0dda1b76f6c48b9e78672f)
 
 ## [5.0.7] 2024-02-28
 * Regressions:

@@ -777,9 +777,10 @@ fi
 
 
 %changelog
-* Sun Mar 10 2024 Antoine Martin <antoine@xpra.org> 5.0.8-10
+* Wed Mar 13 2024 Antoine Martin <antoine@xpra.org> 5.0.8-10
 - Platforms, build and packaging:
    MS Windows 'Light' builds
+   compatibility with multiple "Windows Kits" locations
    typo in MacOS bundle file
    force include all brotli dylibs in MacOS builds
    spng encoder build switch not honoured
@@ -789,12 +790,13 @@ fi
    MS Windows builds not waiting for input to close
    MS Windows tools fail to run due to incomplete environment and errors
 - Major:
-   client exit with password dialog (MS Windows and MacOS)
+   password authentication issues with MS Windows and MacOS client: dialog hangs, client terminates
    mmap compatibility fix for older clients
    mmap client token errors should not be fatal
    proxy draw passthrough stripping of unused alpha channels
    MS Windows system tray initial icon may be lost
    `xpra top` client failures recording backtraces
+   never wait for input in a subprocess, or in splash process
 - Minor and cosmetic bugs:
    proxy instances signal handlers not firing
    log the prompt with u2f handler
@@ -808,6 +810,7 @@ fi
    avoid sending a warning notification for missing server log
    avoid showing warnings for options from newer versions
    missing information from `net_util` tool
+   only warn once per window when no video options are found, same for csc
 
 * Wed Feb 28 2024 Antoine Martin <antoine@xpra.org> 5.0.7-10
 - Regressions:
