@@ -29,9 +29,12 @@ def register_os_signals(callback: Callable[[int], None],
         register_os_signal(callback, commandtype, signum)
 
 
-def register_os_signal(callback: Callable[[int], None], commandtype: str = "", signum: signal.Signals = signal.SIGINT):
+def register_os_signal(callback: Callable[[int], None],
+                       commandtype: str = "",
+                       signum: signal.Signals = signal.SIGINT):
     glib = gi_import("GLib")
     signame = SIGNAMES.get(signum, str(signum))
+    i_signum = int(signum)
 
     def write_signal() -> None:
         if not commandtype:
@@ -46,7 +49,7 @@ def register_os_signal(callback: Callable[[int], None], commandtype: str = "", s
             pass
 
     def do_handle_signal() -> None:
-        callback(int(signum))
+        callback(i_signum)
 
     if POSIX:
         # replace the previous definition if we had one:
@@ -59,7 +62,7 @@ def register_os_signal(callback: Callable[[int], None], commandtype: str = "", s
             glib.idle_add(do_handle_signal)
             return True
 
-        source_id = glib.unix_signal_add(glib.PRIORITY_HIGH, signum, handle_signal, signum)
+        source_id = glib.unix_signal_add(glib.PRIORITY_HIGH, i_signum, handle_signal, signum)
         _glib_unix_signals[signum] = source_id
     else:
         def os_signal(_signum, _frame) -> None:

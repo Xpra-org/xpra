@@ -84,7 +84,7 @@ class GTKServerBase(ServerBase):
             self.keymap_changing_timer = 0
             self.source_remove(kct)
 
-    def install_signal_handlers(self, callback: Callable) -> None:
+    def install_signal_handlers(self, callback: Callable[[int], None]) -> None:
         sstr = self.get_server_mode() + " server"
         register_os_signals(callback, sstr)
         register_SIGUSR_signals(sstr)

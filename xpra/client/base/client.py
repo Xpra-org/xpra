@@ -3,7 +3,7 @@
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
+import enum
 import os
 import sys
 import uuid
@@ -252,26 +252,24 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         force_quit(128 + int(signum))
 
     def handle_app_signal(self, signum: int, _frame=None):
-        try:
-            log.info("exiting")
-        except Exception:
-            pass
+        # from now on, force quit if we get another signal:
         signal.signal(signal.SIGINT, self.handle_deadly_signal)
         signal.signal(signal.SIGTERM, self.handle_deadly_signal)
+        noerr(log.info, "exiting")
         self.signal_cleanup()
         reason = "exit on signal %s" % SIGNAMES.get(signum, signum)
         self.timeout_add(0, self.signal_disconnect_and_quit, 128 + signum, reason)
 
     def install_signal_handlers(self) -> None:
 
-        def os_signal(signum, _frame=None):
+        def os_signal(signum: enum.IntEnum, _frame=None):
             if self.exit_code is None:
                 try:
                     stderr_print()
                     log.info("client got signal %s", SIGNAMES.get(signum, signum))
                 except Exception:
                     pass
-            self.handle_app_signal(signum)
+            self.handle_app_signal(int(signum))
 
         signal.signal(signal.SIGINT, os_signal)
         signal.signal(signal.SIGTERM, os_signal)

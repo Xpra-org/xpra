@@ -7,6 +7,7 @@
 
 import os
 import sys
+import enum
 import errno
 import socket
 import signal
@@ -363,8 +364,8 @@ class ServerCore:
     def do_quit(self) -> None:
         raise NotImplementedError()
 
-    def install_signal_handlers(self, callback) -> None:
-        def os_signal(signum, _frame=None):
+    def install_signal_handlers(self, callback: Callable[[int], None]) -> None:
+        def os_signal(signum: enum.IntEnum, _frame=None):
             callback(signum)
 
         signal.signal(signal.SIGINT, os_signal)

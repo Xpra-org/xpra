@@ -10,6 +10,7 @@ import time
 from time import monotonic
 from multiprocessing import Queue as MQueue, freeze_support
 from typing import Any
+from collections.abc import Callable
 
 from xpra.util.types import typedict
 from xpra.util.str_fn import csv, repr_ellipsized, print_nested_dict, bytestostr
@@ -161,9 +162,8 @@ class ProxyServer(ServerCore):
         self.control_commands["stop"] = ArgsControlCommand("stop", "stops the proxy instance on the given display",
                                                            self.handle_stop_command, min_args=1, max_args=1)
 
-    def install_signal_handlers(self, callback) -> None:
-        from xpra.gtk.signals import register_SIGUSR_signals
-        from xpra.gtk.signals import register_os_signals
+    def install_signal_handlers(self, callback: Callable[[int], None]) -> None:
+        from xpra.gtk.signals import register_SIGUSR_signals, register_os_signals
         register_os_signals(callback, "Proxy Server")
         register_SIGUSR_signals("Proxy Server")
 
