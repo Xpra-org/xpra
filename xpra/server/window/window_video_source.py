@@ -368,7 +368,7 @@ class WindowVideoSource(WindowSource):
                 exclude.append(x)
                 continue
             csc_modes = self.full_csc_modes.strlistget(x)
-            if not csc_modes or x not in self.core_encodings:
+            if (not csc_modes or x not in self.core_encodings) and first_time("nocsc-%s-%s" % (x, self.wid)):
                 exclude.append(x)
                 if not init:
                     l = log.warn
