@@ -426,7 +426,7 @@ class WindowVideoSource(WindowSource):
                 exclude.append(x)
                 continue
             csc_modes = self.full_csc_modes.strtupleget(x)
-            if not csc_modes or x not in self.core_encodings:
+            if (not csc_modes or x not in self.core_encodings) and first_time(f"nocsc-{x}-{self.wid}"):
                 exclude.append(x)
                 msg_args = ("Warning: client does not support any csc modes with %s on window %i", x, self.wid)
                 if x=="jpega" and not self.supports_transparency:
