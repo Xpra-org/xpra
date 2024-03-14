@@ -7,6 +7,7 @@ import os
 import curses
 import signal
 import traceback
+from time import sleep
 from subprocess import Popen, PIPE
 try:
     from subprocess import DEVNULL # py3k
@@ -445,6 +446,9 @@ class TopSessionClient(MonitorXpraClient):
     def input_thread(self):
         self.log("input thread: signal handlers=%s" % signal.getsignal(signal.SIGINT))
         while self.exit_code is None:
+            if not self.stdscr:
+                sleep(0.1)
+                continue
             if not self.paused and self.modified:
                 self.stdscr.erase()
                 try:
