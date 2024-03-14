@@ -7,8 +7,10 @@
 import sys
 import os
 from types import ModuleType
+from collections.abc import Callable
 from typing import Any
 
+from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
 from xpra.log import Logger
@@ -76,12 +78,12 @@ def get_default_appsrc_attributes() -> dict[str, Any]:
     }
 
 
-def wrap_buffer(data):
+def wrap_buffer(data, callback: Callable = noop):
     mf = Gst.MemoryFlags
     return Gst.Buffer.new_wrapped_full(
         mf.PHYSICALLY_CONTIGUOUS | mf.READONLY,
         data, len(data),
-        0, None, None)
+        0, None, callback)
 
 
 def make_buffer(data):
