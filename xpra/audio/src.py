@@ -166,20 +166,19 @@ class AudioSource(AudioPipeline):
             else:
                 log("latency tuning for %s, will try to set buffer-time=%i, latency-time=%i",
                     src_type, BUFFER_TIME, LATENCY_TIME)
-
-                def settime(attr, v):
-                    try:
-                        cval = self.src.get_property(attr)
-                        gstlog("default: %s=%i", attr, cval // 1000)
-                        if v >= 0:
-                            self.src.set_property(attr, v * 1000)
-                            gstlog("overriding with: %s=%i", attr, v)
-                    except Exception as e:
-                        log.warn("source %s does not support '%s': %s", self.src_type, attr, e)
-
-                settime("buffer-time", BUFFER_TIME)
-                settime("latency-time", LATENCY_TIME)
+                self.set_time("buffer-time", BUFFER_TIME)
+                self.set_time("latency-time", LATENCY_TIME)
         self.init_file(codec)
+
+    def set_time(self, attr, v):
+        try:
+            cval = self.src.get_property(attr)
+            gstlog("default: %s=%i", attr, cval // 1000)
+            if v >= 0:
+                self.src.set_property(attr, v * 1000)
+                gstlog("overriding with: %s=%i", attr, v)
+        except Exception as e:
+            log.warn("source %s does not support '%s': %s", self.src_type, attr, e)
 
     def __repr__(self):  # pylint: disable=arguments-differ
         return "AudioSource('%s' - %s)" % (self.pipeline_str, self.state)
@@ -222,14 +221,12 @@ class AudioSource(AudioPipeline):
             elif above is True:
                 self.max_timestamp = 0
                 self.min_timestamp = ts
-            if LOG_CUTTER:
-                l = gstlog.info
-            else:
-                l = gstlog
-            l("cutter message, above=%s, min-timestamp=%s, max-timestamp=%s",
-              above, self.min_timestamp, self.max_timestamp)
+            log_fn = gstlog.info if LOG_CUTTER else gstlog.debug
+            log_fn("cutter message, above=%s, min-timestamp=%s, max-timestamp=%s",
+                   above, self.min_timestamp, self.max_timestamp)
 
-    def on_new_preroll(self, _appsink) -> int:
+    @staticmethod
+    def on_new_preroll(_appsink) -> int:
         gstlog('new preroll')
         return GST_FLOW_OK
 

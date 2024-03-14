@@ -61,6 +61,19 @@ UNDERRUN_MIN_LEVEL = max(0, envint("XPRA_SOUND_UNDERRUN_MIN_LEVEL", 150))
 CLOCK_SYNC = envbool("XPRA_CLOCK_SYNC", False)
 
 
+def uncompress_data(data, metadata):
+    if not data or not metadata:
+        return data
+    compress = metadata.get("compress")
+    if not compress:
+        return data
+    if compress != "lz4":
+        raise ValueError(f"unsupported compresssion {compress!r}")
+    v = decompress_by_name(data, compress)
+    # log("decompressed %s data: %i bytes into %i bytes", compress, len(data), len(v))
+    return v
+
+
 class AudioSink(AudioPipeline):
     __gsignals__ = AudioPipeline.__generic_signals__.copy()
     __gsignals__ |= {
@@ -379,22 +392,10 @@ class AudioSink(AudioPipeline):
             return False
         return True
 
-    def uncompress_data(self, data, metadata):
-        if not data or not metadata:
-            return data
-        compress = metadata.get("compress")
-        if not compress:
-            return data
-        if compress != "lz4":
-            raise ValueError(f"unsupported compresssion {compress!r}")
-        v = decompress_by_name(data, compress)
-        # log("decompressed %s data: %i bytes into %i bytes", compress, len(data), len(v))
-        return v
-
     def add_data(self, data, metadata=None, packet_metadata=()) -> None:
         if not self.can_push_buffer():
             return
-        data = self.uncompress_data(data, metadata)
+        data = uncompress_data(data, metadata)
         for x in packet_metadata:
             self.do_add_data(x)
         if self.do_add_data(data, metadata):
