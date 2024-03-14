@@ -944,7 +944,7 @@ def connect_or_fail(display_desc, opts):
     except InitInfo:
         raise
     except Exception as e:
-        Logger("network").debug("failed to connect", exc_info=True)
+        Logger("network").debug(f"failed to connect to {display_desc}", exc_info=True)
         einfo = str(e) or type(e)
         raise InitExit(ExitCode.CONNECTION_FAILED, f"connection failed: {einfo}") from None
 
