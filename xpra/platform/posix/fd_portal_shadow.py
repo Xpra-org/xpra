@@ -11,7 +11,7 @@ from dbus.types import Dictionary
 from typing import Any
 
 from xpra.exit_codes import ExitCode
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.common import NotificationID, ConnectionMessage
 from xpra.dbus.helper import dbus_to_native

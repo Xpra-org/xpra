@@ -20,7 +20,7 @@ from xpra.audio.common import (
     MPEG4, MKA, OGG,
 )
 from xpra.os_util import WIN32, OSX, POSIX
-from xpra.util.types import reverse_dict
+from xpra.util.objects import reverse_dict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.env import envint, envbool

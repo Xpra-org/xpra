@@ -12,7 +12,7 @@ from xpra.common import SocketState
 from xpra.platform.info import get_username
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_socket_dirs
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import std, obsc, bytestostr, hexstr
 from xpra.util.env import envint
 from xpra.scripts.config import TRUE_OPTIONS

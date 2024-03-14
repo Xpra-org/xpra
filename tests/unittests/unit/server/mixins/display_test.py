@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.util.types import AdHocStruct
+from xpra.util.objects import AdHocStruct
 from unit.server.mixins.servermixintest_util import ServerMixinTest
 from unit.process_test_util import DisplayContext
 

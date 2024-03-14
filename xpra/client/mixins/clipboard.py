@@ -13,7 +13,7 @@ from xpra.platform.gui import get_clipboard_native_class
 from xpra.net.common import PacketType
 from xpra.net import compression
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.system import is_Wayland
 from xpra.util.str_fn import bytestostr
 from xpra.log import Logger

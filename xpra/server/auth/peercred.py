@@ -11,7 +11,7 @@ from xpra.util.env import osexpand
 from xpra.net.common import get_peercred
 from xpra.net.bytestreams import SocketConnection
 from xpra.scripts.config import TRUE_OPTIONS
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 
 

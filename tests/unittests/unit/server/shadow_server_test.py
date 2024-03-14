@@ -8,7 +8,7 @@ import time
 import socket
 import unittest
 
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.os_util import OSX, POSIX
 from xpra.util.io import pollwait, which
 from xpra.codecs.image import ImageWrapper

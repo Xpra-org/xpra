@@ -14,7 +14,7 @@ from threading import Event
 from typing import Any
 
 from xpra.common import noop
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized, pver, strtobytes, bytestostr, hexstr, memoryview_to_bytes
 from xpra.util.env import envint, envbool, osexpand, first_time, IgnoreWarningsContext, ignorewarnings
 from xpra.util.child_reaper import getChildReaper

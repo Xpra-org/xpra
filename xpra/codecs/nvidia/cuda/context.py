@@ -14,7 +14,7 @@ from threading import RLock
 from typing import Any
 
 from xpra.codecs.constants import TransientCodecException
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, print_nested_dict
 from xpra.util.env import envint, envbool, first_time, numpy_import_context
 from xpra.platform.paths import (

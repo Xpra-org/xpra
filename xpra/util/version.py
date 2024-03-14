@@ -11,7 +11,7 @@ import platform
 from typing import Any, Final
 
 import xpra
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.os_util import BITS, POSIX, WIN32, OSX
 from xpra.util.io import get_util_logger

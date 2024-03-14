@@ -10,7 +10,7 @@ from xpra.client.gtk3.window_menu import WindowMenuHelper
 from xpra.gtk.widget import scaled_image
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.util.system import is_gnome

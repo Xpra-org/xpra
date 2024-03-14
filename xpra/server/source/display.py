@@ -8,7 +8,7 @@ from collections.abc import Iterable, Callable
 
 from xpra.util.env import first_time
 from xpra.util.str_fn import bytestostr
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.screen import get_screen_info
 from xpra.common import MIN_DPI, MAX_DPI
 from xpra.server.source.stub_source_mixin import StubSourceMixin

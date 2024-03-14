@@ -17,7 +17,7 @@ from xpra.net.common import may_log_packet, ServerPacketHandlerType, PacketType,
 from xpra.scripts.config import parse_bool
 from xpra.os_util import WIN32
 from xpra.util.io import is_socket
-from xpra.util.types import typedict, merge_dicts
+from xpra.util.objects import typedict, merge_dicts
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envbool
 from xpra.net.bytestreams import set_socket_timeout

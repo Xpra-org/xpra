@@ -12,7 +12,7 @@ from multiprocessing import Queue as MQueue, freeze_support
 from typing import Any
 from collections.abc import Callable
 
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized, print_nested_dict, bytestostr
 from xpra.util.env import envint, envbool, envfloat
 from xpra.common import ConnectionMessage

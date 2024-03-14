@@ -23,7 +23,7 @@ from typing import Any
 from collections.abc import Callable, Iterable
 
 from xpra.common import SocketState, noerr, noop
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import nonl, csv, print_nested_dict, pver, sorted_nicely, bytestostr
 from xpra.util.env import envint, envbool, osexpand, save_env, OSEnvContext
 from xpra.util.thread import set_main_thread

@@ -16,7 +16,7 @@ from xpra.platform.features import COMMAND_SIGNALS
 from xpra.util.child_reaper import getChildReaper, ProcInfo, reaper_cleanup
 from xpra.common import noop
 from xpra.os_util import OSX, WIN32, gi_import
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, ellipsizer, bytestostr
 from xpra.util.env import envint, restore_script_env
 from xpra.net.common import PacketType

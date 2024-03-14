@@ -8,7 +8,7 @@ from typing import Any
 
 from xpra.os_util import WIN32, OSX, gi_import
 from xpra.common import roundup
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool, first_time
 from xpra.codecs.constants import VideoSpec, get_profile

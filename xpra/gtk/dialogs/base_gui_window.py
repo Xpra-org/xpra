@@ -271,7 +271,7 @@ class BaseGUIWindow(Gtk.Window):
         nc = get_native_notifier_classes()
         if not nc:
             return
-        from xpra.util.types import make_instance
+        from xpra.util.objects import make_instance
         notifier = make_instance(nc)
         if not notifier:
             return

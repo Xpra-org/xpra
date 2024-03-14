@@ -15,7 +15,7 @@ from collections.abc import Callable
 from xpra.os_util import gi_import
 from xpra.util.version import XPRA_VERSION, revision_str, make_revision_str
 from xpra.util.system import get_linux_distribution, platform_name
-from xpra.util.types import typedict, AtomicInteger
+from xpra.util.objects import typedict, AtomicInteger
 from xpra.util.screen import prettify_plug_name
 from xpra.util.str_fn import csv, strtobytes, bytestostr
 from xpra.util.env import envint

@@ -16,7 +16,7 @@ from xpra.net.common import PacketType
 from xpra.os_util import POSIX, gi_import
 from xpra.util.io import livefds
 from xpra.util.pysystem import detect_leaks
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.log import Logger
 

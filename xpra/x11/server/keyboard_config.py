@@ -8,7 +8,7 @@
 import hashlib
 from typing import Any
 
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envbool
 from xpra.os_util import gi_import

@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.os_util import gi_import
-from xpra.util.types import typedict, AtomicInteger
+from xpra.util.objects import typedict, AtomicInteger
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import IgnoreWarningsContext
 from xpra.common import GravityStr, WORKSPACE_UNSET

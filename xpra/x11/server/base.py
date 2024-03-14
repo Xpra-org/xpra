@@ -9,7 +9,7 @@ import os
 from typing import Any
 
 from xpra.util.str_fn import strtobytes, bytestostr, hexstr
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.gtk.error import xswallow, xsync, xlog
 from xpra.scripts.config import parse_bool

@@ -32,7 +32,7 @@ from xpra.util.thread import start_thread
 from xpra.util.str_fn import std, bytestostr, memoryview_to_bytes
 from xpra.os_util import OSX, POSIX, gi_import
 from xpra.util.system import is_Ubuntu
-from xpra.util.types import typedict, make_instance
+from xpra.util.objects import typedict, make_instance
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool, first_time
 from xpra.client.base.stub_client_mixin import StubClientMixin

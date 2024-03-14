@@ -18,7 +18,7 @@ from xpra.platform.paths import get_audio_command
 from xpra.common import FULL_INFO
 from xpra.os_util import WIN32, OSX, POSIX, BITS
 from xpra.util.parsing import parse_simple_dict
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.scripts.config import InitExit, InitException
 from xpra.log import Logger

@@ -7,7 +7,7 @@
 from xpra.platform.gui import get_native_tray_classes, get_native_tray_menu_helper_class
 from xpra.os_util import gi_import, WIN32, OSX
 from xpra.util.str_fn import bytestostr
-from xpra.util.types import make_instance
+from xpra.util.objects import make_instance
 from xpra.util.env import envint
 from xpra.common import XPRA_APP_ID, ConnectionMessage
 from xpra.client.base.stub_client_mixin import StubClientMixin

@@ -9,7 +9,7 @@ import binascii
 from collections.abc import Callable
 
 from xpra.common import roundup
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.log import Logger
 log = Logger("encoding")

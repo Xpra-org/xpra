@@ -7,7 +7,7 @@ from queue import Queue, Empty, Full
 from typing import Any
 
 from xpra.os_util import gi_import
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.gstreamer.common import (
     import_gst, GST_FLOW_OK, get_element_str,
     get_default_appsink_attributes, get_all_plugin_names,

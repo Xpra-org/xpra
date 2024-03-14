@@ -16,7 +16,7 @@ from xpra.gstreamer.common import GST_FLOW_OK, import_gst
 from xpra.os_util import gi_import
 from xpra.util.env import first_time
 from xpra.common import noerr
-from xpra.util.types import AtomicInteger
+from xpra.util.objects import AtomicInteger
 from xpra.gtk.gobject import one_arg_signal
 from xpra.log import Logger
 

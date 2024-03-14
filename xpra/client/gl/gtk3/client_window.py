@@ -8,7 +8,7 @@ from collections import namedtuple
 
 from xpra.client.gtk3.window import ClientWindow
 from xpra.gtk.window import set_visual
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.log import Logger
 

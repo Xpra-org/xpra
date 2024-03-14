@@ -7,7 +7,7 @@
 
 import unittest
 
-from xpra.util.types import AdHocStruct
+from xpra.util.objects import AdHocStruct
 from xpra.codecs.image import ImageWrapper
 from xpra.server.rfb.source import RFBSource
 

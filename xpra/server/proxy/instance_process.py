@@ -20,7 +20,7 @@ from xpra.util.env import osexpand
 from xpra.scripts.config import parse_bool
 from xpra.server.util import setuidgid
 from xpra.util.system import SIGNAMES, register_SIGUSR_signals, set_proc_title
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import ellipsizer, bytestostr
 from xpra.common import ConnectionMessage, SocketState, noerr
 from xpra.server.proxy.queue_scheduler import QueueScheduler

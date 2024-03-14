@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Arthur Huillet
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,7 +13,7 @@ from xpra.log import Logger
 log = Logger("csc", "libyuv")
 
 from xpra.util.str_fn import csv
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.codecs.constants import get_subsampling_divs, CSCSpec
 from xpra.codecs.image import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf, memalign, buffer_context    # pylint: disable=syntax-error

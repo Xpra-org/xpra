@@ -15,7 +15,7 @@ from queue import SimpleQueue
 
 from xpra.util.thread import start_thread
 from xpra.common import FULL_INFO, noop
-from xpra.util.types import AtomicInteger, typedict, notypedict
+from xpra.util.objects import AtomicInteger, typedict, notypedict
 from xpra.util.env import envint, envbool
 from xpra.net.common import PacketType
 from xpra.net.compression import compressed_wrapper

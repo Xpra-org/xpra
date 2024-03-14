@@ -21,7 +21,7 @@ from xpra.gtk.widget import scaled_image, imagebutton, label, modify_fg, color_p
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.signals import register_os_signals
 from xpra.net.common import DEFAULT_PORTS
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.os_util import gi_import, WIN32
 from xpra.util.env import IgnoreWarningsContext
 from xpra.util.str_fn import bytestostr

@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.util.types import AdHocStruct
+from xpra.util.objects import AdHocStruct
 
 
 class TestDBUSHelper(unittest.TestCase):

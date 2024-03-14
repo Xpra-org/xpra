@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.common import noop
-from xpra.util.types import AdHocStruct
+from xpra.util.objects import AdHocStruct
 from xpra.os_util import gi_import
 from xpra.log import Logger
 

@@ -9,7 +9,7 @@ import struct
 from xpra.common import noop
 from xpra.os_util import gi_import, WIN32
 from xpra.codecs.loader import load_codec
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.platform.paths import get_image, get_image_dir
 from xpra.util.io import load_binary_file
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow

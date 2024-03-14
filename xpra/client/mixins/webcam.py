@@ -13,7 +13,7 @@ from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net import compression
 from xpra.net.common import PacketType
 from xpra.os_util import WIN32
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, OSEnvContext
 from xpra.common import NotificationID

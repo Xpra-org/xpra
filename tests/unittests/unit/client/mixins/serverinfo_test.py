@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.util.types import typedict, AdHocStruct
+from xpra.util.objects import typedict, AdHocStruct
 from xpra.client.base.serverinfo import ServerInfoMixin
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 

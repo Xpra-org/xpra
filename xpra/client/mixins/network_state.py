@@ -16,7 +16,7 @@ from xpra.net.device_info import (
     jitter_for_adapter_type, guess_bandwidth_limit,
 )
 from xpra.os_util import gi_import, POSIX
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode

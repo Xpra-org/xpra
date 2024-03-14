@@ -8,7 +8,7 @@ import os
 import sys
 import socket
 
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import obsc, strtobytes
 from xpra.util.env import envint
 from xpra.util.io import stderr_print

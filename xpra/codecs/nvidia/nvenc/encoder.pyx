@@ -15,7 +15,7 @@ from threading import Lock
 
 from xpra.os_util import WIN32, LINUX
 from xpra.util.thread import start_thread
-from xpra.util.types import AtomicInteger, typedict
+from xpra.util.objects import AtomicInteger, typedict
 from xpra.util.str_fn import csv, pver, strtobytes
 from xpra.util.env import envint, envbool, first_time
 from xpra.codecs.nvidia.cuda.context import (

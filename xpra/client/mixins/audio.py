@@ -13,7 +13,7 @@ from xpra.net.compression import Compressed
 from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.common import FULL_INFO
 from xpra.os_util import get_machine_id, get_user_uuid, gi_import, OSX, POSIX
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint
 from xpra.client.base.stub_client_mixin import StubClientMixin

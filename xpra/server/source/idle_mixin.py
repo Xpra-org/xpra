@@ -7,7 +7,7 @@ from time import monotonic
 from typing import Any
 from collections.abc import Callable
 
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.env import envint
 from xpra.common import NotificationID, ConnectionMessage
 from xpra.server.source.stub_source_mixin import StubSourceMixin

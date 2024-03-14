@@ -9,7 +9,7 @@ import sys
 import time
 import unittest
 
-from xpra.util.types import AdHocStruct
+from xpra.util.objects import AdHocStruct
 from xpra.os_util import WIN32, OSX
 from xpra.util.env import OSEnvContext
 

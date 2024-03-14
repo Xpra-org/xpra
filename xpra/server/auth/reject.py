@@ -5,7 +5,7 @@
 
 from xpra.server.auth.sys_auth_base import SessionData
 from xpra.net.digest import get_salt, choose_digest
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 
 
 class Authenticator:

@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.server.auth.sys_auth_base import SysAuthenticator
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 
 
 class Authenticator(SysAuthenticator):

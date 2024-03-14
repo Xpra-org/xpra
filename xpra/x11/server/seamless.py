@@ -14,7 +14,7 @@ from typing import Any
 
 from xpra.os_util import gi_import
 from xpra.util.version import XPRA_VERSION
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.util.str_fn import strtobytes, bytestostr, memoryview_to_bytes
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES

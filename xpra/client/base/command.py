@@ -9,7 +9,7 @@ import sys
 from time import monotonic
 from typing import Any
 
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import nonl, csv, ellipsizer, repr_ellipsized, sorted_nicely, bytestostr, hexstr
 from xpra.util.env import envint, first_time
 from xpra.common import ConnectionMessage, disconnect_is_an_error

@@ -9,7 +9,7 @@ import sys
 from typing import Any
 
 from xpra.util.version import version_str
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envfloat
 from xpra.common import ConnectionMessage

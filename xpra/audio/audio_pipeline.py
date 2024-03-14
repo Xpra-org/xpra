@@ -9,7 +9,7 @@
 import os
 from typing import Any
 
-from xpra.util.types import AtomicInteger
+from xpra.util.objects import AtomicInteger
 from xpra.util.system import register_SIGUSR_signals
 from xpra.gstreamer.common import import_gst, GST_FLOW_OK
 from xpra.gstreamer.pipeline import Pipeline

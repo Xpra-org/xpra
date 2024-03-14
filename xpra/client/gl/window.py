@@ -12,7 +12,7 @@ from collections.abc import Callable
 
 from xpra.common import noop
 from xpra.scripts.config import FALSE_OPTIONS
-from xpra.util.types import AtomicInteger, typedict
+from xpra.util.objects import AtomicInteger, typedict
 from xpra.util.env import envint, numpy_import_context
 from xpra.os_util import WIN32, OSX, gi_import
 from xpra.util.io import load_binary_file

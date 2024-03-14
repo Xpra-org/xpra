@@ -63,7 +63,7 @@ from xpra.server.auth.auth_helper import get_auth_module
 from xpra.util.thread import start_thread
 from xpra.common import LOG_HELLO, FULL_INFO, SSH_AGENT_DISPATCH, ConnectionMessage, noerr
 from xpra.util.pysystem import dump_all_frames
-from xpra.util.types import typedict, notypedict, merge_dicts
+from xpra.util.objects import typedict, notypedict, merge_dicts
 from xpra.util.str_fn import (
     csv, ellipsizer, repr_ellipsized, print_nested_dict, nicestr, strtobytes, bytestostr, hexstr,
 )

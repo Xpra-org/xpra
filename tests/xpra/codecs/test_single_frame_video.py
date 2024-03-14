@@ -8,7 +8,7 @@ import os
 import sys
 from PIL import Image
 
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.util.str_fn import memoryview_to_bytes
 from xpra.codecs.image import ImageWrapper

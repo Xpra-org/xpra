@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.util.types import AtomicInteger, MutableInteger, typedict
+from xpra.util.objects import AtomicInteger, MutableInteger, typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.util.str_fn import std, alnum, nonl, pver
 

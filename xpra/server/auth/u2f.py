@@ -12,7 +12,7 @@ import base64
 from struct import pack, unpack
 from hashlib import sha256
 
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, strtobytes, hexstr
 from xpra.os_util import getuid, POSIX
 from xpra.util.env import osexpand

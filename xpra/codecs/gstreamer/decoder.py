@@ -19,7 +19,7 @@ from xpra.codecs.gstreamer.common import (
 )
 from xpra.os_util import WIN32, gi_import
 from xpra.common import roundup
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 

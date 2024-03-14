@@ -5,7 +5,7 @@
 
 from typing import Any
 
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.env import envint
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger

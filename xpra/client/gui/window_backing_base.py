@@ -14,7 +14,7 @@ from collections.abc import Callable, Iterable
 from xpra.net.mmap import mmap_read
 from xpra.net import compression
 from xpra.os_util import gi_import
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint, envbool, first_time
 from xpra.codecs.loader import get_codec

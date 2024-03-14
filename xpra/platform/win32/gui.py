@@ -45,7 +45,7 @@ from xpra.platform.win32.common import (
 )
 from xpra.common import KeyEvent
 from xpra.os_util import gi_import
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.util.io import get_util_logger

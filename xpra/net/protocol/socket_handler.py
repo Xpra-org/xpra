@@ -17,7 +17,7 @@ from queue import Queue, SimpleQueue
 from typing import Any
 from collections.abc import ByteString, Callable, Iterable
 
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized, strtobytes, bytestostr, hexstr, memoryview_to_bytes
 from xpra.util.env import envint, envbool
 from xpra.util.thread import make_thread, start_thread

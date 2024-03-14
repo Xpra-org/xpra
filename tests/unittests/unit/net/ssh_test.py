@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.util.types import AdHocStruct
+from xpra.util.objects import AdHocStruct
 from xpra.net.ssh.paramiko_client import keymd5
 from xpra.net.ssh.util import get_default_keyfiles
 

@@ -11,7 +11,7 @@ from typing import Any
 from xpra.x11.server.core import X11ServerCore
 from xpra.net.compression import Compressed
 from xpra.util.system import is_Wayland, get_loaded_kernel_modules
-from xpra.util.types import AdHocStruct, merge_dicts
+from xpra.util.objects import AdHocStruct, merge_dicts
 from xpra.util.env import envint, envbool
 from xpra.common import NotificationID
 from xpra.server.shadow.root_window_model import RootWindowModel

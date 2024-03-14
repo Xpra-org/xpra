@@ -29,7 +29,7 @@ from xpra.codecs.constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER,
 from xpra.codecs.loader import has_codec
 from xpra.common import roundup
 from xpra.util.parsing import parse_scaling_value
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, print_nested_dict, memoryview_to_bytes
 from xpra.util.env import envint, envbool, first_time
 from xpra.log import Logger

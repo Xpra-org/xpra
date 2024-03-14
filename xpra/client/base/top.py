@@ -12,7 +12,7 @@ from subprocess import Popen, PIPE, DEVNULL
 from datetime import datetime, timedelta
 
 from xpra.util.version import caps_to_version, full_version_str
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import std, csv, bytestostr
 from xpra.util.env import envint
 from xpra.os_util import get_machine_id, POSIX

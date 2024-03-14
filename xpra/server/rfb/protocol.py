@@ -5,7 +5,7 @@
 
 import struct
 
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import strtobytes, hexstr
 from xpra.net.rfb.protocol import RFBProtocol
 from xpra.net.rfb.const import RFBAuth, AUTH_STR, CLIENT_INIT

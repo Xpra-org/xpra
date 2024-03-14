@@ -8,7 +8,7 @@ from threading import Timer, RLock
 from typing import Any, TypeAlias
 from collections.abc import Callable
 
-from xpra.util.types import AtomicInteger
+from xpra.util.objects import AtomicInteger
 from xpra.log import Logger
 
 log = Logger("util")

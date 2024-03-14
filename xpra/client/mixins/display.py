@@ -24,7 +24,7 @@ from xpra.util.parsing import (
     parse_scaling, scaleup_value, scaledown_value, fequ, r4cmp,
     MIN_SCALING, MAX_SCALING, SCALING_EMBARGO_TIME,
 )
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.util.env import envint
 from xpra.client.base.stub_client_mixin import StubClientMixin

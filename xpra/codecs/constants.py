@@ -9,7 +9,7 @@ from weakref import WeakSet
 from dataclasses import dataclass, field, asdict
 from collections.abc import Callable
 
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.env import envint
 
 FAST_DECODE_MIN_SPEED : int = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)

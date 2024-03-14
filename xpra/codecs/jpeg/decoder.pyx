@@ -11,7 +11,7 @@ from xpra.log import Logger
 log = Logger("decoder", "jpeg")
 
 from xpra.util.env import envbool
-from xpra.util.types import reverse_dict
+from xpra.util.objects import reverse_dict
 from xpra.codecs.image import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf  # pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t, uint8_t

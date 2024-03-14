@@ -42,7 +42,7 @@ from xpra.os_util import get_machine_id, get_user_uuid, force_quit, gi_import, B
 from xpra.util.system import SIGNAMES, register_SIGUSR_signals, get_frame_info, get_env_info, get_sysconfig_info
 from xpra.util.io import filedata_nocrlf, stderr_print, use_gui_prompt
 from xpra.util.pysystem import dump_all_frames, detect_leaks
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import (
     std, nonl, obsc, csv, ellipsizer, repr_ellipsized, print_nested_dict, strtobytes,
     bytestostr, hexstr,

@@ -7,7 +7,7 @@ from typing import Any
 
 from xpra.server import features
 from xpra.util.str_fn import print_nested_dict
-from xpra.util.types import typedict, merge_dicts
+from xpra.util.objects import typedict, merge_dicts
 from xpra.common import LOG_HELLO
 from xpra.log import Logger
 

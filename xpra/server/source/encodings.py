@@ -17,7 +17,7 @@ from xpra.codecs.video import getVideoHelper
 from xpra.codecs.constants import VideoSpec
 from xpra.net.compression import use
 from xpra.server.background_worker import add_work_item
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint
 from xpra.log import Logger

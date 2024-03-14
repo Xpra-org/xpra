@@ -14,7 +14,7 @@ from xpra.scripts.config import parse_bool_or_int
 from xpra.common import FULL_INFO, VIDEO_MAX_SIZE
 from xpra.net.common import PacketType
 from xpra.net import compression
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.client.base.stub_client_mixin import StubClientMixin

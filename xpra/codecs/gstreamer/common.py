@@ -9,7 +9,7 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.util.parsing import parse_simple_dict
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.env import envint
 from xpra.os_util import OSX
 from xpra.gstreamer.common import import_gst, GST_FLOW_OK

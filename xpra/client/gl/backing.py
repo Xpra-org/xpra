@@ -53,7 +53,7 @@ from OpenGL.GL.ARB.framebuffer_object import (
 from xpra.os_util import POSIX, OSX, gi_import
 from xpra.util.str_fn import repr_ellipsized, nonl, bytestostr, hexstr
 from xpra.util.env import envint, envbool, first_time
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.system import is_Wayland
 from xpra.common import roundup
 from xpra.codecs.constants import get_subsampling_divs, get_plane_name

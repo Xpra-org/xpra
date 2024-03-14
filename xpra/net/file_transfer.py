@@ -18,7 +18,7 @@ from collections.abc import Callable
 from xpra.util.child_reaper import getChildReaper
 from xpra.os_util import POSIX, WIN32
 from xpra.util.io import umask_context
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint, envbool
 from xpra.scripts.config import parse_bool, parse_with_unit

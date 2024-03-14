@@ -5,7 +5,7 @@
 
 from typing import Any
 
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import std
 from xpra.common import FULL_INFO
 from xpra.util.version import vparts

@@ -14,7 +14,7 @@ from collections.abc import Callable
 
 from xpra.os_util import OSX, POSIX
 from xpra.util.io import pollwait
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool, osexpand, first_time
 from xpra.net.common import PacketType

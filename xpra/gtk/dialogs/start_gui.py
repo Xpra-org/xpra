@@ -20,7 +20,7 @@ from xpra.util.system import is_Wayland, platform_name
 from xpra.util.stats import std_unit_dec
 from xpra.scripts.config import get_defaults, parse_bool, OPTION_TYPES, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.client.gtk3.menu_helper import BANDWIDTH_MENU_OPTIONS
-from xpra.util.types import AtomicInteger
+from xpra.util.objects import AtomicInteger
 from xpra.util.thread import start_thread
 from xpra.platform.paths import get_xpra_command
 from xpra.log import Logger

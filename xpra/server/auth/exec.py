@@ -7,7 +7,7 @@ import os
 import shlex
 from subprocess import Popen
 
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import std, alnum, bytestostr
 from xpra.util.env import envint, shellsub, first_time
 from xpra.os_util import OSX, gi_import

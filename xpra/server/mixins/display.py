@@ -5,7 +5,7 @@
 
 from typing import Any
 
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.util.str_fn import bytestostr
 from xpra.net.common import PacketType

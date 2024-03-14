@@ -6,7 +6,7 @@
 import os
 import re
 
-from xpra.util.types import typedict, reverse_dict
+from xpra.util.objects import typedict, reverse_dict
 from xpra.util.str_fn import ellipsizer, repr_ellipsized, bytestostr
 from xpra.util.env import envbool
 from xpra.os_util import gi_import, OSX, WIN32

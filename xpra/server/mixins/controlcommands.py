@@ -9,7 +9,7 @@ import os.path
 from time import monotonic
 
 from xpra.util.parsing import parse_scaling_value, from0to100
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.common import ConnectionMessage
 from xpra.util.io import load_binary_file

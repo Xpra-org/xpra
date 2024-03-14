@@ -20,7 +20,7 @@ from xpra.os_util import (
     get_hex_uuid,
     )
 from xpra.util.str_fn import strtobytes, bytestostr
-from xpra.util.types import typedict
+from xpra.util.objects import typedict
 from xpra.net.digest import get_digests, get_digest_module, gendigest, get_salt
 
 
