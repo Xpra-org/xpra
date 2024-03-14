@@ -4,8 +4,8 @@
 Autoreq: 0
 
 Name:           python3-aioquic
-Version:        0.9.25
-Release:        2%{?dist}
+Version:        1.0.0
+Release:        1%{?dist}
 Summary:        aioquic is a library for the QUIC network protocol in Python
 Group:          Development/Languages
 License:        MIT
@@ -35,7 +35,7 @@ to read or write HTTP/3 headers compressed with QPACK.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "70795c78905326d855c2ae524072234aae586c789b81292e272d021e9b0430a3" ]; then
+if [ "${sha256}" != "ed31c2b5afa98c5b6cafa4f36149deaf1dff6c5a69701eadd27167415f9f1660" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -64,6 +64,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Mar 14 2024 Antoine Martin <antoine@xpra.org> - 1.0.0-1
+- new upstream release
+
 * Thu Jan 18 2024 Antoine Martin <antoine@xpra.org> - 0.9.25-2
 - rebuild without auto-dependencies
 
