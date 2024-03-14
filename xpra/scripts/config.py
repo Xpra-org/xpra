@@ -296,6 +296,11 @@ def get_build_info() -> list[str]:
     except Exception as e:
         warn(f"Error: could not find the source information: {e}")
     try:
+        from xpra.build_info import BUILD_TYPE
+        info.append(f"{BUILD_TYPE} build")
+    except ImportError:
+        pass
+    try:
         from xpra.build_info import (
             BUILD_DATE, BUILD_TIME, BUILD_BIT,
             CYTHON_VERSION, COMPILER_VERSION,

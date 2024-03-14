@@ -60,6 +60,13 @@ def full_version_str() -> str:
     else:
         if BRANCH == "master":
             rstr += " beta"
+    try:
+        from xpra.build_info import BUILD_TYPE
+    except ImportError:
+        pass
+    else:
+        if BUILD_TYPE.lower() == "light":
+            rstr += " (light build)"
     return rstr
 
 
@@ -186,6 +193,7 @@ def get_build_info(full: int = 1) -> dict[str, Any]:
             "time": "BUILD_TIME",
             "bit": "BUILD_BIT",
             "cpu": "BUILD_CPU",
+            "type": "BUILD_TYPE",
             "compiler": "COMPILER_VERSION",
             "nvcc": "NVCC_VERSION",
             "linker": "LINKER_VERSION",

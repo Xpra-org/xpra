@@ -269,6 +269,7 @@ def record_build_info() -> None:
     set_prop(props, "BUILD_CPU", get_cpuinfo())
     set_prop(props, "BUILD_BIT", platform.architecture()[0])
     set_prop(props, "BUILD_OS", get_platform_name())
+    set_prop(props, "BUILD_TYPE", os.environ.get("BUILD_TYPE", ""))
     try:
         from Cython import __version__ as cython_version
     except ImportError:

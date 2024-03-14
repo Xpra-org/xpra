@@ -469,6 +469,7 @@ xzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.xz | tar -xf -
 pushd xpra-%{version}
 rm -rf build install
 # set pkg_config_path for xpra video libs:
+export BUILD_TYPE="RPM"
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{python3} setup.py build \
 	-j %{nthreads} \
 	%{build_args} \
@@ -493,6 +494,7 @@ popd
 %install
 rm -rf $RPM_BUILD_ROOT
 pushd xpra-%{version}
+export BUILD_TYPE="RPM"
 %{python3} setup.py install \
 	%{build_args} \
 	--prefix /usr --skip-build --root %{buildroot}

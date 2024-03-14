@@ -36,6 +36,7 @@ KEY_FILE="E:\\xpra.pfx"
 DIST="./dist"
 
 if [ "${DO_FULL}" == "0" ]; then
+  BUILD_TYPE="Light"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-shadow --without-server --without-proxy"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-dbus"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-encoders --without-avif --without-gstreamer_video"
@@ -46,6 +47,8 @@ if [ "${DO_FULL}" == "0" ]; then
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-docs"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --with-Os"
 	shift
+else
+  BUILD_TYPE="Full"
 fi
 if [ "${DO_CUDA}" == "0" ]; then
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvidia"
@@ -117,6 +120,7 @@ fi
 
 #record in source tree:
 rm xpra/src_info.py xpra/build_info.py >& /dev/null
+export BUILD_TYPE="${BUILD_TYPE}"
 ${PYTHON} "./fs/bin/add_build_info.py" "src" "build" >& /dev/null
 if [ "$?" != "0" ]; then
 	echo "ERROR: recording build info"
@@ -141,14 +145,14 @@ fi
 echo
 echo -n "Xpra${EXTRA_VERSION} ${FULL_VERSION}"
 if [ "${MSYSTEM_CARCH}" == "i686" ]; then
-	BUILD_TYPE=""
+	BUILD_ARCH_INFO=""
 	DO_CUDA="0"
 	APPID="Xpra32bit"
 	BITS="32"
 	VERSION_BITS="${VERSION} (${BITS}-bit)"
 	echo " (32-bit)"
 else
-	BUILD_TYPE="-${MSYSTEM_CARCH}"
+	BUILD_ARCH_INFO="-${MSYSTEM_CARCH}"
 	APPID="Xpra_is1"
 	BITS="64"
 	VERSION_BITS="${VERSION}"
@@ -156,9 +160,9 @@ fi
 echo
 echo
 
-INSTALLER_FILENAME="Xpra${EXTRA_VERSION}${BUILD_TYPE}_Setup_${FULL_VERSION}.exe"
-MSI_FILENAME="Xpra${EXTRA_VERSION}${BUILD_TYPE}_${FULL_VERSION}.msi"
-ZIP_DIR="Xpra${EXTRA_VERSION}${BUILD_TYPE}_${FULL_VERSION}"
+INSTALLER_FILENAME="Xpra${EXTRA_VERSION}${BUILD_ARCH_INFO}_Setup_${FULL_VERSION}.exe"
+MSI_FILENAME="Xpra${EXTRA_VERSION}${BUILD_ARCH_INFO}_${FULL_VERSION}.msi"
+ZIP_DIR="Xpra${EXTRA_VERSION}${BUILD_ARCH_INFO}_${FULL_VERSION}"
 ZIP_FILENAME="${ZIP_DIR}.zip"
 
 

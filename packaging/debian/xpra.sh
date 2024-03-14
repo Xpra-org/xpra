@@ -56,6 +56,7 @@ MATCH=`find $REPO_ARCH_PATH/ -name "${DEB_FILENAME}" | wc -l`
 if [ "$MATCH" != "0" ]; then
 	echo "package already exists"
 else
+  BUILD_TYPE="DEB"
 	if [ `arch` == "aarch64" ]; then
 		debuild --no-lintian -us -uc -b
 	else
