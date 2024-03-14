@@ -42,7 +42,7 @@ def get_ssl_attributes(opts, server_side: bool = True, overrides: dict | None = 
     }
     for attr in SSL_ATTRIBUTES:
         v = (overrides or {}).get(attr)
-        if v is None:
+        if v is None and opts:
             fn = attr.replace("-", "_")
             ssl_attr = f"ssl_{fn}"  # ie: "ssl_ca_certs"
             v = getattr(opts, ssl_attr)
