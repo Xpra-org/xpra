@@ -78,7 +78,8 @@ def keymd5(k) -> str:
 
 class SSHSocketConnection(SocketConnection):
 
-    def __init__(self, ssh_channel, sock, sockname: str, peername, target, info=None, socket_options=None):
+    def __init__(self, ssh_channel, sock, sockname: str | tuple | list,
+                 peername, target, info=None, socket_options=None):
         self._raw_socket = sock
         super().__init__(ssh_channel, sockname, peername, target, "ssh", info, socket_options)
 
@@ -654,7 +655,12 @@ def do_connect_to(transport, host: str, username: str, password: str,
                             log("from_private_key_file", exc_info=True)
                             log.info(f"cannot load key from file {keyfile_path}:")
                             for emsg in str(ke).split(". "):
-                                log.info(" %s.", emsg)
+                                if emsg.startswith("('"):
+                                    emsg = emsg[2:]
+                                if emsg.endswith(")."):
+                                    emsg = emsg[:-2]
+                                if emsg:
+                                    log.info(" %s.", emsg)
                     break
                 except Exception:
                     log(f"auth_publickey() loading as {pkey_classname}", exc_info=True)
