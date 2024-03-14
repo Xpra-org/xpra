@@ -7,7 +7,7 @@ import os
 import curses
 import signal
 import traceback
-from time import monotonic
+from time import monotonic, sleep
 from subprocess import Popen, PIPE, DEVNULL
 from datetime import datetime, timedelta
 
@@ -474,6 +474,9 @@ class TopSessionClient(InfoTimerClient):
     def input_thread(self):
         self.log(f"input thread: signal handlers={signal.getsignal(signal.SIGINT)}")
         while self.exit_code is None:
+            if not self.stdscr:
+                sleep(0.1)
+                continue
             if not self.paused and self.modified:
                 self.stdscr.erase()
                 try:
