@@ -514,6 +514,18 @@ def clean_session_path(path) -> None:
             log(f"clean_session_path({path})", exc_info=True)
             log.error(f"Error removing session path {path}")
             log.estr(e)
+            if os.path.isdir(path):
+                files = os.listdir(path)
+                if files:
+                    log.error(" this directory still contains some files:")
+                    for file in files:
+                        finfo = repr(file)
+                        try:
+                            if os.path.islink(file):
+                                finfo += " -> "+repr(os.readlink(file))
+                        except OSError:
+                            pass
+                        log.error(f" {finfo}")
 
 
 SERVER_SAVE_SKIP_OPTIONS: tuple[str, ...] = (
