@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,7 +15,7 @@ from xpra.log import Logger
 
 log = Logger("audio", "gstreamer")
 # pylint: disable=import-outside-toplevel
-GST_FLOW_OK: int = 0     # Gst.FlowReturn.OK
+GST_FLOW_OK: int = 0  # Gst.FlowReturn.OK
 
 GST_FORMAT_BYTES: int = 2
 GST_FORMAT_TIME: int = 3
@@ -25,8 +25,7 @@ BUFFER_FORMAT: int = GST_FORMAT_BUFFERS
 GST_APP_STREAM_TYPE_STREAM: int = 0
 STREAM_TYPE: int = GST_APP_STREAM_TYPE_STREAM
 
-
-Gst : ModuleType | None = None
+Gst: ModuleType | None = None
 
 
 def get_gst_version() -> tuple[int, ...]:
@@ -41,7 +40,7 @@ def import_gst() -> ModuleType | None:
     if Gst is not None:
         return Gst
     log("GStreamer 1.x environment: %s",
-        {k:v for k,v in os.environ.items() if (k.startswith("GST") or k.startswith("GI") or k=="PATH")})
+        {k: v for k, v in os.environ.items() if (k.startswith("GST") or k.startswith("GI") or k == "PATH")})
     log("GStreamer 1.x sys.path=%s", csv(sys.path))
     try:
         Gst = gi_import("Gst")
@@ -55,25 +54,25 @@ def import_gst() -> ModuleType | None:
     return Gst
 
 
-def get_default_appsink_attributes() -> dict[str,Any]:
+def get_default_appsink_attributes() -> dict[str, Any]:
     return {
-        "name"          : "sink",
-        "emit-signals"  : True,
-        "max-buffers"   : 1,
-        "drop"          : False,
-        "sync"          : False,
-        "async"         : False,
-        "qos"           : False,
+        "name": "sink",
+        "emit-signals": True,
+        "max-buffers": 1,
+        "drop": False,
+        "sync": False,
+        "async": False,
+        "qos": False,
     }
 
 
-def get_default_appsrc_attributes() -> dict[str,Any]:
+def get_default_appsrc_attributes() -> dict[str, Any]:
     return {
-        "name"          : "src",
-        "emit-signals"  : False,
-        "block"         : False,
-        "is-live"       : False,
-        "stream-type"   : STREAM_TYPE,
+        "name": "src",
+        "emit-signals": False,
+        "block": False,
+        "is-live": False,
+        "stream-type": STREAM_TYPE,
     }
 
 
@@ -91,13 +90,13 @@ def make_buffer(data):
     return buf
 
 
-def normv(v:int) -> int:
-    if v == 2**64-1:
+def normv(v: int) -> int:
+    if v == 2 ** 64 - 1:
         return -1
     return int(v)
 
 
-all_plugin_names : list[str] = []
+all_plugin_names: list[str] = []
 
 
 def get_all_plugin_names() -> list[str]:
@@ -124,7 +123,7 @@ def has_plugins(*names) -> bool:
     return len(missing) == 0
 
 
-def get_caps_str(ctype:str = "video/x-raw", caps=None) -> str:
+def get_caps_str(ctype: str = "video/x-raw", caps=None) -> str:
     if not caps:
         return ctype
 
@@ -132,26 +131,27 @@ def get_caps_str(ctype:str = "video/x-raw", caps=None) -> str:
         if isinstance(v, str):
             return f"(string){v}"
         if isinstance(v, tuple):
-            return "/".join(str(x) for x in v)      # ie: "60/1"
+            return "/".join(str(x) for x in v)  # ie: "60/1"
         return str(v)
+
     els = [ctype]
-    for k,v in caps.items():
+    for k, v in caps.items():
         els.append(f"{k}={s(v)}")
     return ",".join(els)
 
 
-def get_element_str(element:str, eopts=None) -> str:
+def get_element_str(element: str, eopts=None) -> str:
     s = element
     if eopts:
-        s += " "+" ".join(f"{k}={v}" for k,v in eopts.items())
+        s += " " + " ".join(f"{k}={v}" for k, v in eopts.items())
     return s
 
 
 def format_element_options(options) -> str:
-    return csv(f"{k}={v}" for k,v in options.items())
+    return csv(f"{k}={v}" for k, v in options.items())
 
 
-def plugin_str(plugin, options:dict) -> str:
+def plugin_str(plugin, options: dict) -> str:
     assert plugin is not None
     s = str(plugin)
 
@@ -160,9 +160,10 @@ def plugin_str(plugin, options:dict) -> str:
         if isinstance(v, str):
             return f'"{v}"'
         return v
+
     if options:
         s += " "
-        s += " ".join([f"{k}={qstr(v)}" for k,v in options.items()])
+        s += " ".join([f"{k}={qstr(v)}" for k, v in options.items()])
     return s
 
 
@@ -178,7 +179,7 @@ def main():
         if not v:
             print("no gstreamer version information")
         else:
-            if v[-1]==0:
+            if v[-1] == 0:
                 v = v[:-1]
             gst_vinfo = ".".join(str(x) for x in v)
             print("Loaded Python GStreamer version %s for Python %s.%s" % (
