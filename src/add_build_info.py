@@ -220,6 +220,10 @@ def get_platform_name():
     return sys.platform
 
 
+def alnum(v: str | bytes) -> str:
+    return "".join(v for v in filter(str.isalnum, bytestostr(v)))
+
+
 BUILD_INFO_FILE = "./xpra/build_info.py"
 def record_build_info():
     global BUILD_INFO_FILE
@@ -267,7 +271,7 @@ def record_build_info():
                 "python3",
                 ):
         #fugly magic for turning the package atom into a legal variable name:
-        pkg_name = pkg.lstrip("lib").replace("+", "").replace("-", "_")
+        pkg_name = alnum(pkg.lstrip("lib"))
         if pkg_name.split("_")[-1].rstrip("0123456789.")=="":
             pkg_name = "_".join(pkg_name.split("_")[:-1])
         cmd = [PKG_CONFIG, "--modversion", pkg]
