@@ -220,7 +220,7 @@ def get_platform_name():
     return sys.platform
 
 
-def alnum(v: str | bytes) -> str:
+def alnum(v):
     return "".join(v for v in filter(str.isalnum, bytestostr(v)))
 
 
