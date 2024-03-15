@@ -1820,7 +1820,7 @@ class WindowVideoSource(WindowSource):
             raise RuntimeError(f"invalid dimensions: {width}x{height}")
         start = monotonic()
         if not scores:
-            if not self.is_cancelled():
+            if not self.is_cancelled() and first_time(f"no-scores-{src_format}-{self.wid}"):
                 videolog.error("Error: no video pipeline options found for %s %i-bit at %ix%i",
                                src_format, self.image_depth, width, height)
             return False
@@ -2369,7 +2369,7 @@ class WindowVideoSource(WindowSource):
             videolog.error(" encoders CSC modes: %s", csv(ecsc))
             if FORCE_CSC:
                 videolog.error(" forced csc mode: %s", FORCE_CSC_MODE)
-            return self.video_fallback(image, options, warn=True)
+            return self.video_fallback(image, options)
         ve = self._video_encoder
         if not ve:
             videolog("no video encoder instance")
