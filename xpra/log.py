@@ -470,7 +470,7 @@ class Logger:
         global_logging_handler(self._logger.log, self.level_override or level, msg, *args, **kwargs)
         if exc_info:
             return
-        if backtrace or (backtrace_expressions and any(exp.match(msg) for exp in backtrace_expressions)):
+        if backtrace or any(exp.match(msg) for exp in backtrace_expressions):
             import traceback
             tb = traceback.extract_stack()
             count = len(tb)
