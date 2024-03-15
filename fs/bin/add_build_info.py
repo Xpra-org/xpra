@@ -245,6 +245,10 @@ def get_platform_name() -> str:
     return sys.platform
 
 
+def alnum(v: str | bytes) -> str:
+    return "".join(v for v in filter(str.isalnum, bytestostr(v)))
+
+
 def record_build_info() -> None:
     props = get_properties(BUILD_INFO_FILE)
     source_epoch = os.environ.get("SOURCE_DATE_EPOCH")
@@ -289,7 +293,7 @@ def record_build_info() -> None:
                 if len(parts) != 2:
                     continue
                 pkg_name, version = parts
-                pkg_name = pkg_name.replace("-", "_").replace(".", "_").replace("+", "_")
+                pkg_name = alnum(pkg_name)
                 set_prop(props, f"lib_{pkg_name}", version)
     elif sys.platform == "darwin":
         returncode, out, _ = get_status_output(["jhbuild", "list", "-a", "-r"])
@@ -301,7 +305,7 @@ def record_build_info() -> None:
                 pkg_name, version = parts
                 if pkg_name == "Modules":
                     continue
-                pkg_name = pkg_name.replace("-", "_").replace("+", "").replace(".", "_")
+                pkg_name = alnum(pkg_name)
                 set_prop(props, f"lib_{pkg_name}", version.lstrip("(").rstrip(")"))
     else:
         for pkg in (
@@ -314,7 +318,7 @@ def record_build_info() -> None:
             "python3",
         ):
             # fugly magic for turning the package atom into a legal variable name:
-            pkg_name = pkg.lstrip("lib").replace("+", "").replace("-", "_")
+            pkg_name = alnum(pkg.lstrip("lib"))
             if pkg_name.rsplit("_", 1)[-1].rstrip("0123456789.")=="":
                 pkg_name = "_".join(pkg_name.split("_")[:-1])
             cmd = [PKG_CONFIG, "--modversion", pkg]
@@ -329,7 +333,7 @@ def record_build_info() -> None:
             if len(parts) != 2:
                 continue
             pkg_name, version = parts
-            pkg_name = pkg_name.replace("-", "_").replace(".", "_")
+            pkg_name = alnum(pkg_name)
             set_prop(props, f"lib_python_{pkg_name}", version)
 
     save_properties(props, BUILD_INFO_FILE)
