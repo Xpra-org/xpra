@@ -60,6 +60,23 @@ cdef extern from "libyuv/convert_from_argb.h" namespace "libyuv":
                    uint8_t* dst_abgr, int dst_stride_abgr,
                    int width, int height) nogil
 
+    int I420ToRGB24(const uint8_t* src_y, int src_stride_y,
+                    const uint8_t* src_u, int src_stride_u,
+                    const uint8_t* src_v, int src_stride_v,
+                    uint8_t* dst_rgb24, int dst_stride_rgb24,
+                    int width, int height) nogil
+
+    int I420ToRGBA(const uint8_t* src_y, int src_stride_y,
+                   const uint8_t* src_u, int src_stride_u,
+                   const uint8_t* src_v, int src_stride_v,
+                   uint8_t* dst_rgba, int dst_stride_rgba,
+                   int width, int height) nogil
+
+    int I420ToABGR(const uint8_t* src_y, int src_stride_y,
+                   const uint8_t* src_u, int src_stride_u,
+                   const uint8_t* src_v, int src_stride_v,
+                   uint8_t* dst_abgr, int dst_stride_abgr,
+                   int width, int height) nogil
 
 
 cdef extern from "libyuv/scale.h" namespace "libyuv":
@@ -140,16 +157,21 @@ MAX_HEIGHT = 32768
 COLORSPACES = {
     "BGRX" : ("YUV420P", "NV12"),
     "NV12" : ("RGB", "BGRX", "RGBX"),
-    }
+    "YUV420P" : ("RGB", "XBGR", "RGBX"),
+}
+
+
 def get_info() -> Dict[str,Any]:
     return {
         "version"           : get_version(),
         "formats"           : COLORSPACES,
         "max-size"          : (MAX_WIDTH, MAX_HEIGHT),
-        }
+    }
+
 
 def get_input_colorspaces():
     return tuple(COLORSPACES.keys())
+
 
 def get_output_colorspaces(input_colorspace):
     return COLORSPACES.get(input_colorspace, ())
@@ -161,7 +183,7 @@ def get_spec(in_colorspace, out_colorspace):
     return csc_spec(in_colorspace, out_colorspace,
                     ColorspaceConverter, codec_type=get_type(),
                     quality=100, speed=100,
-                    setup_cost=0, min_w=8, min_h=2, can_scale=in_colorspace!="NV12",
+                    setup_cost=0, min_w=8, min_h=2, can_scale=in_colorspace not in ("NV12", "YUV420P"),
                     max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
 
 
@@ -177,6 +199,7 @@ class YUVImageWrapper(ImageWrapper):
         super().free()
         if buf!=0:
             free(<void *> buf)
+
 
 def argb_to_gray(image):
     cdef iplanes = image.get_planes()
@@ -304,7 +327,7 @@ cdef class ColorspaceConverter:
             self.yuv_scaling = False
             self.rgb_scaling = scaling
             self.init_yuv_output()
-        elif dst_format in ("RGB", "BGRX", "RGBX"):
+        elif dst_format in ("RGB", "BGRX", "RGBX", "XBGR"):
             if scaling:
                 raise ValueError(f"cannot scale {src_format} to {dst_format}")
             self.planes = 1
@@ -434,6 +457,8 @@ cdef class ColorspaceConverter:
             return self.convert_bgrx_image(image)
         elif self.src_format=="NV12":
             return self.convert_nv12_image(image)
+        elif self.src_format=="YUV420P":
+            return self.convert_yuv420p_image(image)
         else:
             raise RuntimeError(f"invalid source format {self.src_format}")
 
@@ -447,7 +472,7 @@ cdef class ColorspaceConverter:
         if height<self.src_height:
             raise ValueError(f"invalid image height: {height} (minimum is {self.src_height})")
         if iplanes!=2:
-            raise ValueError(f"invalid plane input format: {iplanes}")
+            raise ValueError(f"invalid number of planes: {iplanes} for {self.src_format}")
         if self.dst_format not in ("RGB", "BGRX", "RGBX"):
             raise ValueError(f"invalid dst format {self.dst_format}")
         if self.rgb_scaling:
@@ -495,6 +520,74 @@ cdef class ColorspaceConverter:
             raise RuntimeError(f"libyuv NV12ToRGB failed and returned {r}")
         cdef double elapsed = monotonic()-start
         log(f"libyuv.NV12 to {self.dst_format} took %.1fms", 1000.0*elapsed)
+        self.time += elapsed
+        return ImageWrapper(0, 0, self.dst_width, self.dst_height,
+                            rgb_buffer, self.dst_format, Bpp*8, rowstride, Bpp, ImageWrapper.PACKED)
+
+    def convert_yuv420p_image(self, image):
+        cdef double start = monotonic()
+        cdef int iplanes = image.get_planes()
+        cdef int width = image.get_width()
+        cdef int height = image.get_height()
+        if width<self.src_width:
+            raise ValueError(f"invalid image width: {width} (minimum is {self.src_width})")
+        if height<self.src_height:
+            raise ValueError(f"invalid image height: {height} (minimum is {self.src_height})")
+        if iplanes!=3:
+            raise ValueError(f"invalid number of planes: {iplanes} for {self.src_format}")
+        if self.dst_format not in ("RGB", "XBGR", "RGBX"):
+            raise ValueError(f"invalid dst format {self.dst_format}")
+        if self.rgb_scaling:
+            raise ValueError(f"cannot scale {self.src_format}")
+        pixels = image.get_pixels()
+        strides = image.get_rowstride()
+        cdef int y_stride = strides[0]
+        cdef int u_stride = strides[1]
+        cdef int v_stride = strides[2]
+        cdef int Bpp = len(self.dst_format)
+        cdef int rowstride = self.dst_width*Bpp
+        cdef MemBuf rgb_buffer = getbuf(rowstride*height)
+        cdef uintptr_t y, u, v
+        cdef uint8_t *rgb
+        cdef int r = 0
+        rgb_buffer = getbuf(self.out_buffer_size)
+        if not rgb_buffer:
+            raise RuntimeError(f"failed to allocate {self.out_buffer_size} bytes for output buffer")
+        log("convert_yuv420p_image(%s) to %s", image, self.dst_format)
+        with buffer_context(pixels[0]) as y_buf:
+            y = <uintptr_t> int(y_buf)
+            with buffer_context(pixels[1]) as u_buf:
+                u = <uintptr_t> int(u_buf)
+                with buffer_context(pixels[2]) as v_buf:
+                    v = <uintptr_t> int(v_buf)
+                    rgb = <uint8_t*> rgb_buffer.get_mem()
+                    if self.dst_format=="RGB":
+                        with nogil:
+                            r = I420ToRGB24(<const uint8_t*> y, y_stride,
+                                            <const uint8_t*> u, u_stride,
+                                            <const uint8_t*> v, v_stride,
+                                            rgb, rowstride,
+                                            width, height)
+                    elif self.dst_format=="XBGR":
+                        with nogil:
+                            r = I420ToRGBA(<const uint8_t*> y, y_stride,
+                                            <const uint8_t*> u, u_stride,
+                                            <const uint8_t*> v, v_stride,
+                                            rgb, rowstride,
+                                            width, height)
+                    elif self.dst_format=="RGBX":
+                        with nogil:
+                            r = I420ToABGR(<const uint8_t*> y, y_stride,
+                                            <const uint8_t*> u, u_stride,
+                                            <const uint8_t*> v, v_stride,
+                                            rgb, rowstride,
+                                            width, height)
+                    else:
+                        raise RuntimeError(f"unexpected dst format {self.dst_format}")
+        if r!=0:
+            raise RuntimeError(f"libyuv YUV420PToRGB failed and returned {r}")
+        cdef double elapsed = monotonic()-start
+        log(f"libyuv.YUV420P to {self.dst_format} took %.1fms", 1000.0*elapsed)
         self.time += elapsed
         return ImageWrapper(0, 0, self.dst_width, self.dst_height,
                             rgb_buffer, self.dst_format, Bpp*8, rowstride, Bpp, ImageWrapper.PACKED)
