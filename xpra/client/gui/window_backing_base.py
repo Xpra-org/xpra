@@ -679,13 +679,9 @@ class WindowBackingBase:
     def make_csc(self, src_width: int, src_height: int, src_format: str,
                  dst_width: int, dst_height: int, dst_format_options, speed: int = 50):
         in_options = CSC_OPTIONS.get(src_format, {})
-        if not in_options:
-            log.error(f"Error: no csc options for {src_format!r} input, only found:")
-            for k, v in CSC_OPTIONS.items():
-                log.error(" * %-8s : %s", k, csv(v))
-            raise ValueError(f"no csc options for {src_format!r} input in " + csv(CSC_OPTIONS.keys()))
         videolog("make_csc%s",
                  (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed))
+        csc_scores = {}
         for dst_format in dst_format_options:
             specs = in_options.get(dst_format)
             videolog("make_csc specs(%s)=%s", dst_format, specs)
@@ -695,7 +691,22 @@ class WindowBackingBase:
                 v = self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height)
                 if v:
                     continue
-                options = {"speed": speed}
+                score = - (spec.quality + spec.speed + spec.score_boost)
+                csc_scores.setdefault(score, []).append((dst_format, spec))
+
+        videolog(f"csc scores: {csc_scores}")
+        if not csc_scores:
+            log.error("Error: no matching csc options")
+            log.error(f" for {src_format!r} {src_width}x{src_height} input")
+            log.error(f" to {csv(dst_format_options)} {dst_width}x{dst_height}")
+            log.error(" only found:")
+            for k, v in CSC_OPTIONS.items():
+                log.error(" * %-8s : %s", k, csv(v))
+            raise ValueError(f"no csc options for {src_format!r} input in " + csv(CSC_OPTIONS.keys()))
+
+        options = {"speed": speed}
+        for score in sorted(csc_scores):
+            for dst_format, spec in csc_scores.get(score):
                 try:
                     csc = spec.codec_class()
                     csc.init_context(src_width, src_height, src_format,
