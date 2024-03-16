@@ -468,7 +468,7 @@ class WindowBackingBase(object):
                        dst_width, dst_height, dst_format_options, speed):
         global CSC_OPTIONS
         in_options = CSC_OPTIONS.get(src_format, {})
-        assert in_options, "no csc options for '%s' input in %s" % (src_format, CSC_OPTIONS)
+        csc_scores = {}
         for dst_format in dst_format_options:
             specs = in_options.get(dst_format)
             log("make_csc%s specs=%s",
@@ -479,6 +479,21 @@ class WindowBackingBase(object):
                 v = self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height)
                 if v:
                     continue
+                score = - (spec.quality + spec.speed + spec.score_boost)
+                csc_scores.setdefault(score, []).append((dst_format, spec))
+
+        videolog("csc scores: %s", csc_scores)
+        if not csc_scores:
+            log.error("Error: no matching csc options")
+            log.error(" for %r %sx%s input", src_format, src_width, src_height)
+            log.error(" to %s %sx%s", csv(dst_format_options), dst_width, dst_height)
+            log.error(" only found:")
+            for k, v in CSC_OPTIONS.items():
+                log.error(" * %-8s : %s", k, csv(v))
+            raise ValueError("no csc options for %r input in %s" % (src_format, csv(CSC_OPTIONS.keys())))
+
+        for score in sorted(csc_scores):
+            for dst_format, spec in csc_scores.get(score):
                 try:
                     csc = spec.make_instance()
                     csc.init_context(src_width, src_height, src_format,
