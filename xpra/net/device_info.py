@@ -51,7 +51,7 @@ def get_NM_adapter_type(device_name, ignore_inactive=True) -> str:
         except IndexError as e:
             log(f"invalid device index {index}: {e}")
             return ""
-    if not nmdevice:
+    if not nmdevice or isinstance(nmdevice, int):
         return ""
     log(f"NM device {device_name!r}: {nmdevice.get_vendor()} {nmdevice.get_product()}")
     nmstate = nmdevice.get_state()
