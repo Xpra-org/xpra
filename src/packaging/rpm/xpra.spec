@@ -918,7 +918,7 @@ fi
 
 
 %changelog
-* Tue Mar 12 2024 Antoine Martin <antoine@xpra.org> 3.1.7-10.1xpra1
+* Sat Mar 16 2024 Antoine Martin <antoine@xpra.org> 3.1.7-10.1xpra1
 - major fixes:
      windows misplaced on screen, moving unexpectedly
      windows wm-state synchronization issue
@@ -938,7 +938,11 @@ fi
      incorrect `mmap` availability check, better forward compatibility
      MS Windows system tray initial icon may be lost
      MS Windows tools not waiting for user input to close
+     ensure no subprocess will wait for user input
      `xpra top` client failures recording backtraces
+     `xpra top` hanging on start
+     choose the best colorspace conversion module
+     faster video YUV to RGB for non-OpenGL rendering
 - clipboard:
      honour client specified order of clipboard preferred targets
      try harder to handle unexpected clipboard data formats
@@ -967,6 +971,7 @@ fi
      Cython 0.29.37.1 / 3.0.9
      ffmpeg 6.1.1
      libvpx 1.14.0
+     syntax errors in generated build info file
      nvfbc compilation warnings
      don't expand environment variables in config files
      force include xxhash and brotli libraries in MacOS builds
@@ -982,9 +987,11 @@ fi
      rfb cleanup errors
      better rencode compatibility for XSettings
      codec self test error handler bug
+     make it easier to load and test a single codec
      proxy instances signal handlers not firing
      handle missing stderr more gracefully
 - cosmetic:
+     prevent missing video options from spamming the logs
      ignore options from newer config files
      notification errors during shutdown
      don't query 'linux_distribution' on MacOS or MS Windows
@@ -995,6 +1002,7 @@ fi
      gst-plugin-scanner packaging for MacOS
      deprecation warnings, unused imports
      consistency: accept more iterables
+     make it possible to silence DPI warning notifications
 
 * Mon Nov 27 2023 Antoine Martin <antoine@xpra.org> 3.1.6-10.1xpra1
 - major fixes:
