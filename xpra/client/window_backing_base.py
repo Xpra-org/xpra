@@ -482,7 +482,7 @@ class WindowBackingBase(object):
                 score = - (spec.quality + spec.speed + spec.score_boost)
                 csc_scores.setdefault(score, []).append((dst_format, spec))
 
-        videolog("csc scores: %s", csc_scores)
+        log("csc scores: %s", csc_scores)
         if not csc_scores:
             log.error("Error: no matching csc options")
             log.error(" for %r %sx%s input", src_format, src_width, src_height)
