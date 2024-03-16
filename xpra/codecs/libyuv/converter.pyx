@@ -143,14 +143,18 @@ def init_module():
     #nothing to do!
     log("csc_libyuv.init_module()")
 
+
 def cleanup_module():
     log("csc_libyuv.cleanup_module()")
+
 
 def get_type() -> str:
     return "libyuv"
 
+
 def get_version() -> Tuple[int,int]:
     return (1, 0)
+
 
 #hardcoded for now:
 MAX_WIDTH = 32768
@@ -428,7 +432,6 @@ cdef class Converter:
     def get_type(self) -> str:
         return  "libyuv"
 
-
     def clean(self):
         self.src_width = 0
         self.src_height = 0
@@ -452,8 +455,14 @@ cdef class Converter:
     def is_closed(self) -> bool:
         return self.out_buffer_size==0
 
-
     def convert_image(self, image):
+        cdef int width = image.get_width()
+        cdef int height = image.get_height()
+        if width<self.src_width:
+            raise ValueError(f"invalid image width: {width} (minimum is {self.src_width})")
+        if height<self.src_height:
+            raise ValueError(f"invalid image height: {height} (minimum is {self.src_height})")
+
         if self.src_format=="BGRX":
             return self.convert_bgrx_image(image)
         elif self.src_format=="NV12":
@@ -468,10 +477,6 @@ cdef class Converter:
         cdef int iplanes = image.get_planes()
         cdef int width = image.get_width()
         cdef int height = image.get_height()
-        if width<self.src_width:
-            raise ValueError(f"invalid image width: {width} (minimum is {self.src_width})")
-        if height<self.src_height:
-            raise ValueError(f"invalid image height: {height} (minimum is {self.src_height})")
         if iplanes!=2:
             raise ValueError(f"invalid number of planes: {iplanes} for {self.src_format}")
         if self.dst_format not in ("RGB", "BGRX", "RGBX"):
@@ -530,10 +535,6 @@ cdef class Converter:
         cdef int iplanes = image.get_planes()
         cdef int width = image.get_width()
         cdef int height = image.get_height()
-        if width<self.src_width:
-            raise ValueError(f"invalid image width: {width} (minimum is {self.src_width})")
-        if height<self.src_height:
-            raise ValueError(f"invalid image height: {height} (minimum is {self.src_height})")
         if iplanes!=3:
             raise ValueError(f"invalid number of planes: {iplanes} for {self.src_format}")
         if self.dst_format not in ("RGB", "XBGR", "RGBX"):
@@ -605,10 +606,6 @@ cdef class Converter:
         cdef int height = image.get_height()
         if iplanes!=ImageWrapper.PACKED:
             raise ValueError(f"invalid plane input format: {iplanes}")
-        if width<self.src_width:
-            raise ValueError(f"invalid image width: {width} (minimum is {self.src_width})")
-        if height<self.src_height:
-            raise ValueError(f"invalid image height: {height} (minimum is {self.src_height})")
         if self.rgb_scaling:
             #first downscale:
             image = argb_scale(image, self.dst_width, self.dst_height, self.filtermode)
@@ -685,7 +682,7 @@ cdef class Converter:
         return out_image
 
 
-def selftest(full=False):
+def selftest(full = False):
     global MAX_WIDTH, MAX_HEIGHT
     from xpra.codecs.checks import testcsc, get_csc_max_size
     from xpra.codecs.libyuv import converter
