@@ -314,7 +314,7 @@ cdef class ColorspaceConverter:
         log("buffer size=%i, yuv_scaling=%s, rgb_scaling=%s, filtermode=%s",
             self.out_buffer_size, self.yuv_scaling, self.rgb_scaling, get_fiter_mode_str(self.filtermode))
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self):
         info = get_info()
         info.update({
                 "frames"    : int(self.frames),
