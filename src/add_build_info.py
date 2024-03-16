@@ -17,7 +17,7 @@ import sys
 
 
 def bytestostr(x):
-    if isinstance(x, bytes):
+    if isinstance(x, bytes) and sys.version_info[0]>=3:
         return x.decode("latin1")
     return str(x)
 
