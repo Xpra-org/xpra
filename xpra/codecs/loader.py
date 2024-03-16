@@ -308,24 +308,38 @@ def encoding_help(encoding):
 
 
 
-def main():
+def main(args):
     from xpra.platform import program_context
     from xpra.log import enable_color, LOG_FORMAT, NOPREFIX_FORMAT
     from xpra.util import print_nested_dict, pver
     with program_context("Loader", "Encoding Info"):
-        verbose = "-v" in sys.argv or "--verbose" in sys.argv
+        verbose = "-v" in sys.argv or "--verbose" in args
+        args = [x for x in args if x not in ("-v", "--verbose")]
         format_string = NOPREFIX_FORMAT
         if verbose:
             format_string = LOG_FORMAT
             log.enable_debug()
         enable_color(format_string=format_string)
 
-        load_codecs()
+        if len(args) > 1:
+            names = []
+            for x in args[1:]:
+                name = x.lower().replace("-", "_")
+                if name not in CODEC_OPTIONS:
+                    log.warn(" unknown codec %s", name)
+                    continue
+                load_codec(name)
+                names.append(name)
+            list_codecs = tuple(names)
+        else:
+            load_codecs()
+            list_codecs = tuple(ALL_CODECS)
+
         #not really a codec, but gets used by codecs, so include version info:
         add_codec_version("numpy", "numpy")
         print("codecs and csc modules found:")
         #print("codec_status=%s" % codecs)
-        for name in sorted(ALL_CODECS):
+        for name in list_codecs:
             mod = codecs.get(name, "")
             f = mod
             if mod and hasattr(mod, "__file__"):
@@ -362,4 +376,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

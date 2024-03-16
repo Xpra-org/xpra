@@ -539,7 +539,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             return run_glprobe(options, True)
         elif mode=="encoding":
             from xpra.codecs import loader
-            return loader.main()
+            return loader.main(args)
         elif mode=="webcam":
             check_display()
             from xpra.scripts import show_webcam
