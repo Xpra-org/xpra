@@ -1,4 +1,4 @@
-v3.1.7 (2024-03-16)
+v3.1.7 (2024-03-17)
 	-- major fixes:
 		- windows misplaced on screen, moving unexpectedly
 		- windows wm-state synchronization issue
@@ -23,6 +23,7 @@ v3.1.7 (2024-03-16)
 		- `xpra top` hanging on start
 		- choose the best colorspace conversion module
 		- faster video YUV to RGB for non-OpenGL rendering
+		- x11 properties forwarding not handled
 	-- clipboard:
 		- honour client specified order of clipboard preferred targets
 		- try harder to handle unexpected clipboard data formats
@@ -71,6 +72,7 @@ v3.1.7 (2024-03-16)
 		- proxy instances signal handlers not firing
 		- handle missing stderr more gracefully
 	-- cosmetic:
+		- don't try to set an invalid keymap
 		- prevent missing video options from spamming the logs
 		- ignore options from newer config files
 		- notification errors during shutdown

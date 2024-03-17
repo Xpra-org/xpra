@@ -918,7 +918,7 @@ fi
 
 
 %changelog
-* Sat Mar 16 2024 Antoine Martin <antoine@xpra.org> 3.1.7-10.1xpra1
+* Sun Mar 17 2024 Antoine Martin <antoine@xpra.org> 3.1.7-10.1xpra1
 - major fixes:
      windows misplaced on screen, moving unexpectedly
      windows wm-state synchronization issue
@@ -992,6 +992,7 @@ fi
      proxy instances signal handlers not firing
      handle missing stderr more gracefully
 - cosmetic:
+     don't try to set an invalid keymap
      prevent missing video options from spamming the logs
      ignore options from newer config files
      notification errors during shutdown

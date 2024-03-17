@@ -72,6 +72,7 @@ xpra (3.1.7-1) UNRELEASED; urgency=low
    - proxy instances signal handlers not firing
    - handle missing stderr more gracefully
   * cosmetic:
+   - don't try to set an invalid keymap
    - prevent missing video options from spamming the logs
    - ignore options from newer config files
    - notification errors during shutdown
@@ -85,7 +86,7 @@ xpra (3.1.7-1) UNRELEASED; urgency=low
    - consistency: accept more iterables
    - make it possible to silence DPI warning notifications
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 16 Mar 2024 17:04:41 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 17 Mar 2024 19:47:31 +0700
 
 xpra (3.1.6-1) UNRELEASED; urgency=low
   * major fixes:
