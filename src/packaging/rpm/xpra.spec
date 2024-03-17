@@ -943,6 +943,7 @@ fi
      `xpra top` hanging on start
      choose the best colorspace conversion module
      faster video YUV to RGB for non-OpenGL rendering
+     x11 properties forwarding not handled
 - clipboard:
      honour client specified order of clipboard preferred targets
      try harder to handle unexpected clipboard data formats
