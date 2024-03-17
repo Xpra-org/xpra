@@ -95,9 +95,11 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant, xkbmap_options,
                          if k in ("rules", "model", "layout") and v))
             if safe_setxkbmap(rules, model, layout, variant, options):
                 return
-        else:
+        elif rules and model:
             if safe_setxkbmap(rules, model, "", "", ""):
                 return
+        else:
+            log.info("the client did not provide a keymap")
     if xkbmap_print:
         #TODO: this is no longer used with any client, remove it
         log("do_set_keymap using xkbmap_print")
