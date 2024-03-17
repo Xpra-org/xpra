@@ -34,7 +34,8 @@ OVERRIDE_GRAVITY = envint("XPRA_OVERRIDE_GRAVITY", 0)
 
 
 def is_wm_property(name):
-    return name.startswith("_MOTIF") or name.startswith("WM_") or name.startswith("_NET_WM") or name.startswith("_GTK_")
+    sname = bytestostr(name)
+    return sname.startswith("_MOTIF") or sname.startswith("WM_") or sname.startswith("_NET_WM") or sname.startswith("_GTK_")
 
 
 class ClientWindowBase(ClientWidgetBase):
@@ -435,9 +436,11 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_command(metadata.strget("command"))
 
         if b"x11-property" in metadata:
-            if not is_wm_property(name):
-                self.set_x11_property(*metadata.listget("x11-property"))
-
+            attr = metadata.listget("x11-property")
+            if len(attr) >= 4:
+                name, ptype, _, value = attr[:4]
+                if not is_wm_property(name):
+                    self.set_x11_property(*metadata.listget("x11-property"))
 
     def set_x11_property(self, *x11_property):
         pass
