@@ -231,9 +231,17 @@ def find_theme_icon(*names) -> str:
     size = Config.icon_size or 32
     for name in names:
         for theme in themes.values():
-            fn = IconTheme.LookupIcon(name, size, theme=theme, extensions=EXTENSIONS)
-            if fn and os.path.exists(fn):
-                return fn
+            try:
+                fn = IconTheme.LookupIcon(name, size, theme=theme, extensions=EXTENSIONS)
+                if fn and os.path.exists(fn):
+                    return fn
+            except TypeError as e:
+                log(f"find_theme_icon({names}) error on {name=}, {size=}", exc_info=True)
+                log.warn(f"Warning: icon loop failure for {name} in {theme}")
+                log.warn(f" {e}")
+                log.warn(" this is likely to be this bug in pyxdg:")
+                log.warn(" https://github.com/takluyver/pyxdg/pull/20")
+                continue
     return ""
 
 
