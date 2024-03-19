@@ -146,7 +146,11 @@ BuildArch:			noarch
 Requires(pre):		shadow-utils
 Conflicts:			xpra < 2.1
 Conflicts:			xpra-filesystem >= 6.0
-%{Recommends}:			lsb_release
+%if 0%{?el7}
+Requires:			redhat-lsb-core
+%else
+Recommends:			lsb_release
+%endif
 BuildRequires:		libfakeXinerama
 BuildRequires:		which
 %description common
