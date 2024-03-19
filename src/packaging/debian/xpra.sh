@@ -17,14 +17,7 @@ tar -Jxf ${XPRA_TAR_XZ}
 pushd "./${dirname}"
 echo "building ${dirname} for ${CODENAME} on ${DEB_BUILD_ARCH}"
 
-echo "${CODENAME}" | egrep -q "xenial|bionic|squeeze|buster"
-if [ "$?" == "0" ]; then
-	echo "python2 and python3 builds"
-	ln -sf packaging/debian/xpra ./debian
-else
-	echo "python3 build only"
-	ln -sf packaging/debian/python3-xpra ./debian
-fi
+ln -sf packaging/debian/xpra ./debian
 
 #the control file has a few distribution specific entries
 #ie:
@@ -44,6 +37,7 @@ DEBIAN_FRONTEND=noninteractive apt-get -y remove cython3
 PIP_BREAK_SYSTEM_PACKAGES=1 pip3 install cython
 DEBIAN_FRONTEND=noninteractive apt-get -y remove cython
 DEBIAN_FRONTEND=noninteractive apt-get -y install python2
+DEBIAN_FRONTEND=noninteractive apt-get -y install wget
 wget https://bootstrap.pypa.io/pip/2.7/get-pip.py
 python2 get-pip.py
 PIP_BREAK_SYSTEM_PACKAGES=1 python2 -m pip install cython
