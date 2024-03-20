@@ -19,9 +19,9 @@ class TestDisplayUtil(ServerTestUtil):
         with OSEnvContext():
             os.environ["GDK_BACKEND"] = "x11"
             os.environ.pop("DISPLAY", None)
-            for d in (None, ""):
+            for d in ("NOTADISPLAY", ""):
                 if verify_gdk_display(d):
-                    raise RuntimeError("%s is not a valid display" % d)
+                    raise RuntimeError(f"{d!r} is not a valid display")
 
             display = self.find_free_display()
             xvfb = self.start_Xvfb(display)
