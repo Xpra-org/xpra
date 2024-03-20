@@ -211,7 +211,7 @@ class TrayBacking(WindowBackingBase):
 
     # keep it simple: only accept 32-bit RGB(X),
     # all tray implementations support alpha
-    RGB_MODES = ("RGBA", "RGBX")
+    RGB_MODES: tuple[str, ...] = ("RGBA", "RGBX")
     HAS_ALPHA = True
 
     def __init__(self, wid: int, _w: int, _h: int, _has_alpha: bool, data=None):

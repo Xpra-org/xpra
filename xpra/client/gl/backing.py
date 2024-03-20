@@ -194,11 +194,11 @@ class GLWindowBackingBase(WindowBackingBase):
     or offscreen window movement.
     """
 
-    RGB_MODES: list[str] = [
+    RGB_MODES: tuple[str, ...] = (
         "YUV420P", "YUV422P", "YUV444P", "NV12",
         "GBRP", "BGRA", "BGRX", "RGBA", "RGBX",
         "RGB", "BGR",
-    ]
+    )
     HAS_ALPHA: bool = GL_ALPHA_SUPPORTED
 
     def __init__(self, wid: int, window_alpha: bool, pixel_depth: int = 0):
@@ -272,14 +272,14 @@ class GLWindowBackingBase(WindowBackingBase):
         return pixel_depth or 24
 
     def init_formats(self) -> None:
-        self.RGB_MODES = list(GLWindowBackingBase.RGB_MODES)
+        rgb_modes = list(GLWindowBackingBase.RGB_MODES)
         if self.bit_depth > 32:
             self.internal_format: int = GL_RGBA16
-            self.RGB_MODES.append("r210")
+            rgb_modes.append("r210")
             # self.RGB_MODES.append("GBRP16")
         elif self.bit_depth == 30:
             self.internal_format = GL_RGB10_A2
-            self.RGB_MODES.append("r210")
+            rgb_modes.append("r210")
             # self.RGB_MODES.append("GBRP16")
         elif 0 < self.bit_depth <= 16:
             if self._alpha_enabled:
@@ -288,11 +288,11 @@ class GLWindowBackingBase(WindowBackingBase):
                 else:
                     self.internal_format = GL_RGB5_A1
                     # too much of a waste to enable?
-                    self.RGB_MODES.append("r210")
+                    rgb_modes.append("r210")
             else:
                 self.internal_format = GL_RGB565
-                self.RGB_MODES.append("BGR565")
-                self.RGB_MODES.append("RGB565")
+                rgb_modes.append("BGR565")
+                rgb_modes.append("RGB565")
         else:
             if self.bit_depth not in (0, 24, 32) and first_time(f"bit-depth-{self.bit_depth}"):
                 log.warn(f"Warning: invalid bit depth {self.bit_depth}, using 24")
@@ -301,6 +301,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 self.internal_format = GL_RGBA8
             else:
                 self.internal_format = GL_RGB8
+        self.RGB_MODES = tuple(rgb_modes)
         log("init_formats() internal format=%s, rgb modes=%s",
             INTERNAL_FORMAT_TO_STR.get(self.internal_format),
             self.RGB_MODES)

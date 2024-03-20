@@ -39,7 +39,7 @@ class CairoBacking(CairoBackingBase):
     This requires `cairo_bindings`.
     """
 
-    RGB_MODES = ["BGRA", "BGRX", "RGBA", "RGBX", "BGR", "RGB", "r210", "BGR565"]
+    RGB_MODES: tuple[str, ...] = ("BGRA", "BGRX", "RGBA", "RGBX", "BGR", "RGB", "r210", "BGR565")
 
     def __repr__(self):
         b = self._backing
