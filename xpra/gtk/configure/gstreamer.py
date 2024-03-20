@@ -209,9 +209,9 @@ class ConfigureGUI(BaseGUIWindow):
             options = (
                 (
                     True, "auto", "Automatic runtime detection",
-                    "this is the default behaviour",
+                    "this is the default behaviour,",
                     "this option should always find a suitable capture strategy",
-                    "it may not to use a video stream",
+                    "and it may not choose to use a video stream",
                 ),
                 (
                     has("ximagesrc"), "X11", "X11 image capture",
@@ -222,7 +222,7 @@ class ConfigureGUI(BaseGUIWindow):
                 ),
                 (
                     has("pipewiresrc"), "pipewire", "pipewire capture",
-                    "GStreamer use a pipewire source from the RemoteDesktop interface",
+                    "GStreamer pipewire source from the RemoteDesktop interface",
                     "the pixel data will be compressed using a stream encoder",
                     "eg: h264, hevc, av1, etc",
                     "your desktop sessions must support the 'RemoteDesktop' dbus interface",
@@ -277,6 +277,9 @@ class ConfigureGUI(BaseGUIWindow):
                 for button in self.buttons:
                     if button != toggled_btn:
                         button.set_active(False)
+            else:
+                if not any(button.get_active() for button in self.buttons):
+                    self.buttons[0].set_active(True)
             confirm_btn.set_sensitive(any(button.get_active() for button in self.buttons))
 
         for btn in self.buttons:

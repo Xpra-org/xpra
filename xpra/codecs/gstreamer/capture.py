@@ -130,6 +130,15 @@ class Capture(Pipeline):
 GObject.type_register(Capture)
 
 
+ENCODER_ELEMENTS: dict[str, str] = {
+    "jpeg": "jpegenc",
+    "h264": "x264enc",
+    "vp8": "vp8enc",
+    "vp9": "vp9enc",
+    "av1": "av1enc",
+}
+
+
 class CaptureAndEncode(Capture):
     """
     Uses a GStreamer pipeline to capture the screen
@@ -149,13 +158,7 @@ class CaptureAndEncode(Capture):
 
         # we are overloading "pixel_format" as "encoding":
         encoding = self.pixel_format
-        encoder = {
-            "jpeg": "jpegenc",
-            "h264": "x264enc",
-            "vp8": "vp8enc",
-            "vp9": "vp9enc",
-            "av1": "av1enc",
-        }.get(encoding)
+        encoder = ENCODER_ELEMENTS.get(encoding)
         if not encoder:
             raise ValueError(f"no encoder defined for {encoding}")
         if encoder not in get_all_plugin_names():

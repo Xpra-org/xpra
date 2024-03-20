@@ -98,15 +98,16 @@ def normv(v: int) -> int:
     return int(v)
 
 
-all_plugin_names: list[str] = []
+all_plugin_names: tuple[str, ...] = ()
 
 
-def get_all_plugin_names() -> list[str]:
+def get_all_plugin_names() -> tuple[str, ...]:
     global all_plugin_names
     if not all_plugin_names and Gst:
         registry = Gst.Registry.get()
-        all_plugin_names = [el.get_name() for el in registry.get_feature_list(Gst.ElementFactory)]
-        all_plugin_names.sort()
+        apn = [el.get_name() for el in registry.get_feature_list(Gst.ElementFactory)]
+        apn.sort()
+        all_plugin_names = tuple(apn)
         log("found the following plugins: %s", all_plugin_names)
     return all_plugin_names
 
