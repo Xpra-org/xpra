@@ -350,7 +350,7 @@ def make_expand_server():
     return ExpandServer()
 
 
-def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=True, timeout=None) -> int:
+def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=True, timeout=None) -> bool:
     # check that we can access the X11 display:
     from xpra.log import Logger
     log = Logger("screen", "x11")
@@ -359,16 +359,16 @@ def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=Tru
         if timeout is None:
             timeout = VFB_WAIT
         if not verify_display_ready(xvfb, display_name, shadowing, log_errors, timeout):
-            return 1
+            return False
         log(f"X11 display {display_name!r} is ready")
     no_gtk()
     # we're going to load gtk:
     bypass_no_gtk()
     display = verify_gdk_display(display_name)
     if not display:
-        return 1
+        return False
     log(f"GDK can access the display {display_name!r}")
-    return 0
+    return True
 
 
 def write_displayfd(display_name: str, fd: int) -> None:
@@ -1231,41 +1231,42 @@ def _do_run_server(script_file: str, cmdline,
         os.environ["XAUTHORITY"] = xauthority
         # resolve use-display='auto':
         if use_display is None or upgrading:
-            # figure out if we have to start the vfb or not:
+            # figure out if we have to start the vfb or not
+            # bail out if we need a display that is not running
             if not display_name:
                 if upgrading:
                     error_cb("no displays found to upgrade")
                 use_display = False
             else:
-
                 progress(40, "connecting to the display")
-                stat = None
-                if display_name.startswith(":"):
-                    x11_socket_path = os.path.join(X11_SOCKET_DIR, "X" + display_name[1:])
-                    stat = stat_display_socket(x11_socket_path)
-                    log(f"stat_display_socket({x11_socket_path})={stat}")
-                if not stat:
-                    if upgrading:
-                        error_cb(f"cannot access display {display_name!r}")
-                    # no X11 socket to connect to, so we have to start one:
-                    start_vfb = True
-                elif verify_display(None, display_name, log_errors=False, timeout=1) == 0:
+                if verify_display(None, display_name, log_errors=False, timeout=1):
                     # accessed OK:
+                    progress(40, "connected to the display")
                     start_vfb = False
                 else:
-                    # we can't connect to the X11 display,
-                    # but we can still `stat` its socket...
-                    # perhaps we need to re-add an xauth entry
-                    if not xauth_data:
-                        xauth_data = get_hex_uuid()
-                        if pam:
-                            pam.set_items({"XAUTHDATA": xauth_data})
-                    xauth_add(xauthority, display_name, xauth_data, uid, gid)
-                    if verify_display(None, display_name, log_errors=False, timeout=1) != 0:
-                        warn(f"display {display_name!r} is not accessible")
-                    else:
-                        # now OK!
-                        start_vfb = False
+                    stat = {}
+                    if display_name.startswith(":"):
+                        x11_socket_path = os.path.join(X11_SOCKET_DIR, "X" + display_name[1:])
+                        stat = stat_display_socket(x11_socket_path)
+                        log(f"stat_display_socket({x11_socket_path})={stat}")
+                        if not stat and (upgrading or shadowing):
+                            error_cb(f"cannot access display {display_name!r}")
+                        # no X11 socket to connect to, so we have to start one:
+                        start_vfb = True
+                    if stat:
+                        # we can't connect to the X11 display,
+                        # but we can still `stat` its socket...
+                        # perhaps we need to re-add an xauth entry
+                        if not xauth_data:
+                            xauth_data = get_hex_uuid()
+                            if pam:
+                                pam.set_items({"XAUTHDATA": xauth_data})
+                        xauth_add(xauthority, display_name, xauth_data, uid, gid)
+                        if not verify_display(None, display_name, log_errors=False, timeout=1):
+                            warn(f"display {display_name!r} is not accessible")
+                        else:
+                            # now OK!
+                            start_vfb = False
     xvfb_pid = 0
     devices = {}
     if POSIX and not OSX:
@@ -1449,9 +1450,8 @@ def _do_run_server(script_file: str, cmdline,
         if POSIX and not OSX:
             no_gtk()
             if starting or starting_desktop:
-                r = verify_display(xvfb, display_name, shadowing)
-                if r:
-                    return r
+                if not verify_display(xvfb, display_name, shadowing):
+                    return ExitCode.NO_DISPLAY
         # on win32, this ensures that we get the correct screen size to shadow:
         from xpra.platform.gui import init as gui_init
         log("gui_init()")
@@ -1637,8 +1637,7 @@ def verify_gdk_display(display_name):
     Gdk = gi_import("Gdk")
     display = Gdk.Display.open(display_name)
     if not display:
-        from xpra.scripts.config import InitException
-        raise InitException(f"failed to open display {display_name!r}")
+        return None
     manager = Gdk.DisplayManager.get()
     default_display = manager.get_default_display()
     if default_display is not None and default_display != display:

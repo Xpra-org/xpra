@@ -20,12 +20,8 @@ class TestDisplayUtil(ServerTestUtil):
             os.environ["GDK_BACKEND"] = "x11"
             os.environ.pop("DISPLAY", None)
             for d in (None, ""):
-                try:
-                    verify_gdk_display(d)
-                except Exception:
-                    pass
-                else:
-                    raise Exception("%s is not a valid display" % d)
+                if verify_gdk_display(d):
+                    raise RuntimeError("%s is not a valid display" % d)
 
             display = self.find_free_display()
             xvfb = self.start_Xvfb(display)
@@ -40,6 +36,7 @@ def main():
     #can only work with an X11 server
     if POSIX and not OSX:
         unittest.main()
+
 
 if __name__ == '__main__':
     main()
