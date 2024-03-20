@@ -2,12 +2,13 @@
 # Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
+import os
 from typing import Any
 
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.util.str_fn import bytestostr
+from xpra.util.env import OSEnvContext
 from xpra.net.common import PacketType
 from xpra.util.version import parse_version, dict_version_trim
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
@@ -72,7 +73,9 @@ class DisplayManager(StubServerMixin):
             gllog("query_opengl() skipped because opengl=%s", self.opengl)
             return props
         try:
-            from xpra.client.gl import backing
+            with OSEnvContext():
+                os.environ["XPRA_VERIFY_MAIN_THREAD"] = "0"
+                from xpra.client.gl import backing
             assert backing
         except ImportError:
             return {
