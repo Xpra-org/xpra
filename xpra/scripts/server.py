@@ -46,7 +46,7 @@ from xpra.os_util import (
 )
 from xpra.server.util import setuidgid
 from xpra.util.system import SIGNAMES
-from xpra.util.io import load_binary_file, is_writable, which
+from xpra.util.io import load_binary_file, is_writable, stderr_print, which
 from xpra.util.env import unsetenv, envbool, osexpand, get_saved_env, get_saved_env_var
 from xpra.common import GROUP
 from xpra.util.child_reaper import getChildReaper
@@ -57,6 +57,7 @@ CLEAN_SESSION_FILES = envbool("XPRA_CLEAN_SESSION_FILES", True)
 IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
                                      "ibus-daemon --xim --verbose --replace --panel=disable --desktop=xpra --daemonize")
 SHARED_XAUTHORITY = envbool("XPRA_SHARED_XAUTHORITY", True)
+PROGRESS_TO_STDERR = envbool("XPRA_PROGRESS_TO_STDERR", False)
 
 
 def get_logger():
@@ -711,10 +712,8 @@ def request_exit(uri: str) -> bool:
         p = Popen(cmd, env=env)
         p.wait()
     except OSError as e:
-        stderr = sys.stderr
-        if stderr:
-            noerr(stderr.write, "Error: failed to 'exit' the server to upgrade\n")
-            noerr(stderr.write, f" {e}\n")
+        stderr_print("Error: failed to 'exit' the server to upgrade")
+        stderr_print(f" {e}\n")
         return False
     return p.poll() in (ExitCode.OK, ExitCode.UPGRADE)
 
@@ -760,10 +759,16 @@ def do_run_server(script_file: str, cmdline, error_cb, opts, extra_args, mode: s
 
         progress = show_progress
     else:
-        def noprogressshown(*_args):
-            """ messages aren't shown """
+        if PROGRESS_TO_STDERR:
+            def progress_to_stderr(*args):
+                stderr_print(" ".join(str(x) for x in args))
 
-        progress = noprogressshown
+            progress = progress_to_stderr
+        else:
+            def noprogressshown(*_args):
+                """ messages aren't shown """
+
+            progress = noprogressshown
     progress(10, "initializing environment")
     try:
         return _do_run_server(script_file, cmdline,
@@ -1232,6 +1237,7 @@ def _do_run_server(script_file: str, cmdline,
                     error_cb("no displays found to upgrade")
                 use_display = False
             else:
+
                 progress(40, "connecting to the display")
                 stat = None
                 if display_name.startswith(":"):
