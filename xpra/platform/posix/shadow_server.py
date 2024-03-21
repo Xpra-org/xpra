@@ -6,8 +6,13 @@
 import os
 
 from xpra.log import Logger
+from xpra.util.env import envbool
 
-SHADOW_OPTIONS = ("auto", "x11", "pipewire", "screencast", "remotedesktop", "wayland")
+
+XSHM: bool = envbool("XPRA_SHADOW_XSHM", True)
+NVFBC: bool = envbool("XPRA_SHADOW_NVFBC", True)
+GSTREAMER: bool = envbool("XPRA_SHADOW_GSTREAMER", True)
+PIPEWIRE: bool = envbool("XPRA_SHADOW_PIPEWIRE", True)
 
 
 def warn(*messages) -> None:
@@ -50,7 +55,7 @@ def load_wayland(display: str = "") -> type | None:
     return c
 
 
-def load_x11(display: str = "") -> type | None:
+def load_xshm(display: str = "") -> type | None:
     gdkb = os.environ.get("GDK_BACKEND")
     try:
         os.environ["GDK_BACKEND"] = "x11"
@@ -68,8 +73,8 @@ def load_auto(display: str = "") -> type | None:
     if display.startswith("wayland-") or os.path.isabs(display):
         c = load_wayland(display)
     elif display.startswith(":"):
-        c = load_x11(display)
-    return c or load_remotedesktop(display) or load_screencast(display) or load_x11(display)
+        c = load_xshm(display)
+    return c or load_remotedesktop(display) or load_screencast(display) or load_xshm(display)
 
 
 def ShadowServer(display: str = "", multi_window: bool = True):
@@ -83,3 +88,43 @@ def ShadowServer(display: str = "", multi_window: bool = True):
     log = Logger("server", "shadow")
     log(f"ShadowServer({display}, {multi_window}) {env_setting}={shadow_server}")
     return shadow_server(multi_window)
+
+
+def check_nvfbc() -> bool:
+    return NVFBC
+
+
+def check_gstreamer() -> bool:
+    if not GSTREAMER:
+        return False
+    from xpra.gstreamer.common import has_plugins, import_gst
+    import_gst()
+    return has_plugins("ximagesrc")
+
+
+def check_pipewire() -> bool:
+    if not PIPEWIRE:
+        return False
+    from xpra.gstreamer.common import has_plugins, import_gst
+    import_gst()
+    return has_plugins("pipewiresrc")
+
+
+def check_xshm() -> bool:
+    from xpra.x11.bindings.ximage import XImageBindings  # pylint: disable=import-outside-toplevel
+    assert XImageBindings
+    return True
+
+
+def nocheck() -> bool:
+    return True
+
+
+SHADOW_OPTIONS = {
+    "auto": nocheck,
+    "nvfbc": check_nvfbc,
+    "gstreamer": check_gstreamer,
+    "pipewire": check_pipewire,
+    "xshm": check_xshm,
+    "gtk": nocheck,
+}

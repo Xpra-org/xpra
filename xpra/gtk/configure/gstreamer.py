@@ -3,17 +3,16 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 from time import sleep
 from textwrap import wrap
 
-from xpra.os_util import gi_import, POSIX, OSX, WIN32
+from xpra.os_util import gi_import, OSX, WIN32
 from xpra.util.env import envint
 from xpra.util.str_fn import csv
 from xpra.util.thread import start_thread
-from xpra.gtk.configure.common import DISCLAIMER, run_gui, get_config_env, update_config_env
+from xpra.gtk.configure.common import DISCLAIMER, run_gui
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
-from xpra.gtk.widget import label, setfont
+from xpra.gtk.widget import label
 from xpra.platform.paths import get_image
 from xpra.log import Logger
 
@@ -192,99 +191,7 @@ class ConfigureGUI(BaseGUIWindow):
         pass
 
     def configure_shadow(self, *_args) -> None:
-        self.clear_vbox()
-        self.set_box_margin()
-        self.layout = None
-        messages = (
-            "Configuring shadow mode",
-        )
-
-        def has(*els):
-            return all(el in self.elements for el in els)
-
-        backends = []
-        if POSIX and not OSX:
-            from xpra.platform.posix.shadow_server import SHADOW_OPTIONS
-            backends = SHADOW_OPTIONS
-            options = (
-                (
-                    True, "auto", "Automatic runtime detection",
-                    "this is the default behaviour,",
-                    "this option should always find a suitable capture strategy",
-                    "and it may not choose to use a video stream",
-                ),
-                (
-                    has("ximagesrc"), "X11", "X11 image capture",
-                    "GStreamer will capture the session's contents using 'ximagesrc'",
-                    "the pixel data will be compressed using a stream encoder",
-                    "eg: h264, hevc, av1, etc",
-                    "this option is only available for shadowing existing X11 sessions",
-                ),
-                (
-                    has("pipewiresrc"), "pipewire", "pipewire capture",
-                    "GStreamer pipewire source from the RemoteDesktop interface",
-                    "the pixel data will be compressed using a stream encoder",
-                    "eg: h264, hevc, av1, etc",
-                    "your desktop sessions must support the 'RemoteDesktop' dbus interface",
-                ),
-            )
-        else:
-            raise RuntimeError(f"unsupported platform {os.name}")
-        for i, message in enumerate(messages):
-            lbl = label(message, font="Sans 22")
-            self.vbox.add(lbl)
-        current_setting = get_config_env("XPRA_SHADOW_BACKEND")
-        self.buttons = []
-        for available, backend, description, *details in options:
-            btn = Gtk.CheckButton(label=description)
-            btn.set_sensitive(available)
-            btn.set_active(backend == current_setting)
-            btn._backend = backend
-            setfont(btn, font="sans 14")
-            self.vbox.add(btn)
-            for detail in details:
-                lbl = label(detail)
-                lbl.set_halign(Gtk.Align.START)
-                lbl.set_margin_start(32)
-                self.vbox.add(lbl)
-            self.buttons.append(btn)
-        btn_box = Gtk.HBox(homogeneous=True, spacing=40)
-        btn_box.set_vexpand(True)
-        btn_box.set_valign(Gtk.Align.END)
-        self.vbox.add(btn_box)
-        cancel_btn = Gtk.Button.new_with_label("Cancel")
-        cancel_btn.connect("clicked", self.dismiss)
-        btn_box.add(cancel_btn)
-        confirm_btn = Gtk.Button.new_with_label("Confirm")
-
-        def save_shadow(*_args):
-            active = [button for button in self.buttons if button.get_active()]
-            assert len(active) == 1
-            setting = active[0]._backend.lower()
-            if setting not in backends:
-                raise RuntimeError(f"invalid backend selected: {setting}")
-            log.info(f"saving XPRA_SHADOW_BACKEND={setting}")
-            update_config_env("XPRA_SHADOW_BACKEND", setting)
-            self.dismiss()
-
-        confirm_btn.connect("clicked", save_shadow)
-        confirm_btn.set_sensitive(False)
-        btn_box.add(confirm_btn)
-
-        # only enable the confirm button once an option has been chosen:
-        def option_toggled(toggled_btn, *_args):
-            if toggled_btn.get_active():
-                for button in self.buttons:
-                    if button != toggled_btn:
-                        button.set_active(False)
-            else:
-                if not any(button.get_active() for button in self.buttons):
-                    self.buttons[0].set_active(True)
-            confirm_btn.set_sensitive(any(button.get_active() for button in self.buttons))
-
-        for btn in self.buttons:
-            btn.connect("toggled", option_toggled)
-        self.vbox.show_all()
+        pass
 
 
 def main(_args) -> int:

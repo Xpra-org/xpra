@@ -60,7 +60,7 @@ class PortalShadow(GTKShadowServerBase):
         self.capture: Capture | None = None
         self.portal_interface = get_portal_interface()
         self.input_devices = 0
-        log(f"setup_capture() self.portal_interface={self.portal_interface}")
+        log(f"PortalShadow({multi_window}) portal_interface={self.portal_interface}")
 
     def get_server_mode(self) -> str:
         return "portal shadow"

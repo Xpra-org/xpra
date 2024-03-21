@@ -46,6 +46,48 @@ cursorlog = Logger("cursor")
 keylog = Logger("keyboard")
 screenlog = Logger("screen")
 
+
+SEAMLESS = envbool("XPRA_WIN32_SEAMLESS", False)
+NVFBC = envbool("XPRA_SHADOW_NVFBC", True)
+GDI = envbool("XPRA_SHADOW_GDI", True)
+GSTREAMER = envbool("XPRA_SHADOW_GSTREAMER", True)
+
+
+def check_gstreamer() -> bool:
+    if not GSTREAMER:
+        return False
+    from xpra.gstreamer.common import has_plugins, import_gst
+    import_gst()
+    return has_plugins("d3d11screencapturesrc") or has_plugins("dx9screencapsrc") or has_plugins("gdiscreencapsrc")
+
+
+def check_nvfbc() -> bool:
+    if not NVFBC:
+        return False
+    from xpra.codecs.nvidia.nvfbc.capture import get_capture_instance
+    assert get_capture_instance
+    return NVFBC
+
+
+def check_gdi() -> bool:
+    return GDI
+
+
+def check_gtk() -> bool:
+    from xpra.gtk import signals
+    assert signals
+    return True
+
+
+SHADOW_OPTIONS = {
+    "auto": lambda: True,
+    "nvfbc": check_nvfbc,
+    "gstreamer": check_gstreamer,
+    "gdi": check_gdi,
+    "gtk": check_gtk,
+}
+
+
 NOEVENT = object()
 BUTTON_EVENTS = {
     # (button,up-or-down)  : win-event-name
@@ -68,11 +110,6 @@ BUTTON_EVENTS = {
     (9, True): (win32con.MOUSEEVENTF_XDOWN, win32con.XBUTTON2),
     (9, False): (win32con.MOUSEEVENTF_XUP, win32con.XBUTTON2),
 }
-
-SEAMLESS = envbool("XPRA_WIN32_SEAMLESS", False)
-NVFBC = envbool("XPRA_SHADOW_NVFBC", True)
-GDI = envbool("XPRA_SHADOW_GDI", True)
-GSTREAMER = envbool("XPRA_SHADOW_GSTREAMER", True)
 
 
 def get_root_window_size() -> tuple[int, int]:
