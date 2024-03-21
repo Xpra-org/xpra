@@ -114,7 +114,7 @@ def sanestr(s: str) -> str:
 
 class CoreX11WindowModel(WindowModelStub):
     """
-        The utility superclass for all GTK2 / X11 window models,
+        The utility superclass for all GTK / X11 window models,
         it wraps an X11 window (the "client-window").
         Defines the common properties and signals,
         sets up the composite helper, so we get the damage events.

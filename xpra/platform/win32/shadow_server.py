@@ -570,7 +570,7 @@ class ShadowServer(GTKShadowServerBase):
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = GTKServerBase.make_hello(self, source)
         capabilities["shadow"] = True
-        capabilities["server_type"] = "Python/gtk2/win32-shadow"
+        capabilities["server_type"] = "Python/Win32-Shadow"
         return capabilities
 
     def get_info(self, proto, *_args) -> dict[str, Any]:
@@ -579,7 +579,7 @@ class ShadowServer(GTKShadowServerBase):
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {
             "pixel-depth": self.pixel_depth,
-            "type": "Python/gtk2/win32-shadow",
+            "type": "Python/Win32-Shadow",
             "tray": self.tray,
             "tray-icon": self.tray_icon or ""
         })

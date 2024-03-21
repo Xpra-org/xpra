@@ -465,7 +465,7 @@ def window_state_updated(window) -> None:
 def apply_maxsize_hints(window, hints: dict[str, Any]):
     """ extracts the max-size hints from the hints,
         and passes it to the win32hooks class which can implement it
-        (as GTK2 does not honour it properly on win32)
+        (as GTK does not honour it properly on win32)
     """
     workw, workh = 0, 0
     handle = get_window_handle(window)

@@ -115,7 +115,7 @@ def rgba_text(text: str, width: int = 64, height: int = 32, x: int = 20, y: int 
 class WindowBackingBase:
     """
     Generic superclass for all Backing code,
-    see CairoBackingBase and GTK2WindowBacking subclasses for actual implementations
+    see CairoBackingBase and GTKWindowBacking subclasses for actual implementations
     """
     RGB_MODES: tuple[str, ...] = ()
 

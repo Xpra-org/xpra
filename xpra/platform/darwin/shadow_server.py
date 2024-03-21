@@ -239,7 +239,7 @@ class ShadowServer(GTKShadowServerBase):
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = GTKServerBase.make_hello(self, source)
         capabilities["shadow"] = True
-        capabilities["server_type"] = "Python/gtk2/osx-shadow"
+        capabilities["server_type"] = "Python/MacOS-Shadow"
         return capabilities
 
     def get_info(self, proto, *_args) -> dict[str, Any]:

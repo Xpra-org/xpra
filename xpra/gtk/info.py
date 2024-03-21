@@ -165,19 +165,14 @@ def get_visual_info(v) -> dict[str, Any]:
         return {}
     vinfo: dict[str, Any] = {}
     for x, vdict in VINFO_CONV.items():
-        val = None
         try:
-            # ugly workaround for "visual_type" -> "type" for GTK2...
-            val = getattr(v, x.replace("visual_", ""))
+            fn = getattr(v, "get_" + x)
         except AttributeError:
-            try:
-                fn = getattr(v, "get_" + x)
-            except AttributeError:
-                pass
-            else:
-                val = fn()
-        if val is not None:
-            vinfo[x] = vdict.get(val, val)
+            pass
+        else:
+            val = fn()
+            if val is not None:
+                vinfo[x] = vdict.get(val, val)
     return vinfo
 
 
