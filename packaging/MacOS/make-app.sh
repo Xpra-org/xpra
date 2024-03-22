@@ -438,6 +438,17 @@ for x in `ls *dylib | grep -v libgst | sed 's+[0-9\.]*\.dylib++g' | sed 's+-$++g
 		done
 	fi
 done
+#gstreamer dylibs are easier
+#all of them look like this: libgstXYZ-1.0.0.dylib / libgstXYZ-1.0.dylib
+for x in `ls libgst*-1.0.0.dylib`; do
+  SHORT="`echo $x | sed 's/1.0.0/1.0/g'`"
+  cmp -s "$x" "$SHORT"
+  if [ "$?" == "0" ]; then
+		echo "(re)symlinking $SHORT to $x"
+		rm $SHORT
+		ln -sf $x $SHORT
+	fi
+done
 popd
 
 
