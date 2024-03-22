@@ -30,7 +30,7 @@ def do_init_env():
         if "GST_PLUGIN_PATH" not in os.environ:
             os.environ["GST_PLUGIN_PATH"] = os.path.join(rsc_dir, "lib", "gstreamer-1.0")
         if "GST_PLUGIN_SCANNER" not in os.environ:
-            os.environ["GST_PLUGIN_SCANNER"] = os.path.join(rsc_dir, "bin", "gst-plugin-scanner")
+            os.environ["GST_PLUGIN_SCANNER"] = os.path.join(rsc_dir, "libexec", "gstreamer-1.0", "gst-plugin-scanner")
 
 
 def default_gtk_main_exit():
