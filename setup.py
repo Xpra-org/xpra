@@ -1726,6 +1726,8 @@ if WIN32:
         if gstreamer_ENABLED:
             add_console_exe("packaging/MSWindows/tools/lib_delegate.py", "gstreamer.ico", "gst-launch-1.0")
             add_data_files("lib/", (shutil.which("gst-launch-1.0.exe"), ))
+            add_console_exe("packaging/MSWindows/tools/lib_delegate.py", "gstreamer.ico", "gst-inspect-1.0")
+            add_data_files("lib/", (shutil.which("gst-inspect-1.0.exe"), ))
             add_console_exe("fs/bin/xpra", "speaker.ico", "Xpra_Audio")
         if printing_ENABLED:
             add_console_exe("xpra/platform/win32/pdfium.py",    "printer.ico",     "PDFIUM_Print")
