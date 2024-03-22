@@ -12,8 +12,9 @@ def main(argv=()) -> int:
     # add `Xpra/` and `Xpra/lib` to the %PATH%
     # then call the real EXE:
     app_dir, exe_name = os.path.split(argv[0])
-    if not exe_name.lower().endswith(".exe"):
-        exe_name += ".exe"
+    exe_name = os.path.normcase(exe_name)
+    if exe_name.lower().endswith(".exe"):
+        exe_name = exe_name[:-4]
     lib_dir = os.path.join(app_dir, "lib")
     paths = os.environ.get("PATH", "").split(os.pathsep)
     for d in (lib_dir, app_dir):
@@ -21,7 +22,11 @@ def main(argv=()) -> int:
             paths.append(d)
     env = os.environ.copy()
     env["PATH"] = os.pathsep.join(paths)
-    actual_exe = os.path.join(lib_dir, exe_name)
+    # try harder to find the matching executable file:
+    for ext in (".exe", "-1.0.exe", ""):
+        actual_exe = os.path.join(lib_dir, f"{exe_name}{ext}")
+        if os.path.exists(actual_exe):
+            break
     from subprocess import run
     args = [actual_exe] + list(argv[1:])
     return run(args, stdin=None, stdout=sys.stdout, stderr=sys.stderr, shell=False, env=env).returncode
