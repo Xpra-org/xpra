@@ -9,6 +9,8 @@ from xpra.platform import platform_import
 
 SHADOW_OPTIONS: dict[str, Callable[[], bool]] = {}
 
+GSTREAMER_CAPTURE_ELEMENTS: tuple[str, ...] = ()
+
 
 def ShadowServer(*_args):  # pragma: no cover
     raise NotImplementedError()
@@ -16,4 +18,6 @@ def ShadowServer(*_args):  # pragma: no cover
 
 platform_import(globals(), "shadow_server", True,
                 "ShadowServer",
-                "SHADOW_OPTIONS")
+                "SHADOW_OPTIONS",
+                "GSTREAMER_CAPTURE_ELEMENTS",
+                )

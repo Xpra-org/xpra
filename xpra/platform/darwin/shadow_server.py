@@ -24,6 +24,8 @@ log = Logger("shadow", "osx")
 USE_TIMER = envbool("XPRA_OSX_SHADOW_USE_TIMER", False)
 GSTREAMER = envbool("XPRA_SHADOW_GSTREAMER", True)
 
+GSTREAMER_CAPTURE_ELEMENTS: tuple[str, ...] = ("avfvideosrc", )
+
 
 def check_gstreamer() -> bool:
     if not GSTREAMER:

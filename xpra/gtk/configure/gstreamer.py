@@ -6,7 +6,7 @@
 from time import sleep
 from textwrap import wrap
 
-from xpra.os_util import gi_import, OSX, WIN32
+from xpra.os_util import gi_import
 from xpra.util.env import envint
 from xpra.util.str_fn import csv
 from xpra.util.thread import start_thread
@@ -163,23 +163,28 @@ class ConfigureGUI(BaseGUIWindow):
                 add_message("some essential plugins are missing: " + csv(missing))
                 add_message("install them then you can run this tool again")
                 return
-            add_message("essential plugins found")
+            add_message("all the essential plugins have been found")
             want = {"x264enc", "vp8enc", "vp9enc", "webmmux"}
             found = tuple(want & pset)
             if not found:
+                add_message("no default encoders found,")
                 add_message("install at least one plugin from: " + csv(want))
                 add_message("then you can run this tool again")
                 return
+            try:
+                from xpra.platform.shadow_server import GSTREAMER_CAPTURE_ELEMENTS
+            except ImportError:
+                pass
+            else:
+                want |= set(GSTREAMER_CAPTURE_ELEMENTS)
             missing = tuple(want - pset)
             if missing:
                 add_message("some useful extra plugins you may want to install: " + csv(missing))
-            if not (WIN32 or OSX) and "pipewiresrc" not in pset:
-                add_message("`pipewiresrc` is missing - it is required for shadowing Wayland sessions")
 
             GLib.timeout_add(STEP_DELAY * 6, self.add_buttons,
                              ("configure shadow mode", self.configure_shadow),
-                             # ("configure encoding", self.configure_encoding),
-                             # ("configure decoding", self.configure_decoding),
+                             ("configure encoding", self.configure_encoding),
+                             ("configure decoding", self.configure_decoding),
                              )
 
         start_thread(probe_elements, "probe-elements", daemon=True)

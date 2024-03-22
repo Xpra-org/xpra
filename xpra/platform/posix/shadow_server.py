@@ -9,6 +9,8 @@ from xpra.log import Logger
 from xpra.util.env import envbool
 
 
+GSTREAMER_CAPTURE_ELEMENTS: tuple[str, ...] = ("ximagesrc", "pipewiresrc")
+
 XSHM: bool = envbool("XPRA_SHADOW_XSHM", True)
 NVFBC: bool = envbool("XPRA_SHADOW_NVFBC", True)
 GSTREAMER: bool = envbool("XPRA_SHADOW_GSTREAMER", True)

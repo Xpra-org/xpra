@@ -52,13 +52,15 @@ NVFBC = envbool("XPRA_SHADOW_NVFBC", True)
 GDI = envbool("XPRA_SHADOW_GDI", True)
 GSTREAMER = envbool("XPRA_SHADOW_GSTREAMER", True)
 
+GSTREAMER_CAPTURE_ELEMENTS: tuple[str, ...] = ("d3d11screencapturesrc", "dx9screencapsrc", "gdiscreencapsrc")
+
 
 def check_gstreamer() -> bool:
     if not GSTREAMER:
         return False
     from xpra.gstreamer.common import has_plugins, import_gst
     import_gst()
-    return has_plugins("d3d11screencapturesrc") or has_plugins("dx9screencapsrc") or has_plugins("gdiscreencapsrc")
+    return any(has_plugins(element) for element in GSTREAMER_CAPTURE_ELEMENTS)
 
 
 def check_nvfbc() -> bool:
