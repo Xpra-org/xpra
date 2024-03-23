@@ -379,7 +379,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             self.tray_menu.append(title_item)
 
             def show_about(*_args):
-                from xpra.gtk.dialogs.about import about  # pylint: disable=import-outside-toplevel
+                from xpra.gtk_common.about import about  # pylint: disable=import-outside-toplevel
                 about()
 
             self.tray_menu.append(self.traymenuitem("About Xpra", "information.png", cb=show_about))
