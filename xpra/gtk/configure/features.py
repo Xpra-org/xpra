@@ -56,16 +56,12 @@ class ConfigureGUI(BaseGUIWindow):
     def populate(self):
         self.clear_vbox()
         self.add_widget(label("Configure Xpra's Features", font="sans 20"))
-        lines = (
+        self.add_text_lines((
             "Turning off subsystems can save memory,",
             "improve security by reducing the attack surface,",
             "and also make xpra start and connect faster",
             "",
-        )
-        text = "\n".join(lines)
-        lbl = label(text, font="Sans 14")
-        lbl.set_line_wrap(True)
-        self.add_widget(lbl)
+        ))
 
         grid = Gtk.Grid()
         grid.set_margin_start(20)

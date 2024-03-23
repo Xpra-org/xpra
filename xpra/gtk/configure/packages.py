@@ -5,7 +5,6 @@
 
 import os
 import shlex
-from collections.abc import Iterable
 
 from xpra.os_util import gi_import, getuid
 from xpra.util.system import is_distribution_variant
@@ -63,13 +62,6 @@ class ConfigureGUI(BaseGUIWindow):
             header_bar=(False, False),
             parent=parent,
         )
-
-    def add_text(self, lines: Iterable[str]):
-        text = "\n".join(lines)
-        lbl = label(text, font="Sans 14")
-        lbl.set_line_wrap(True)
-        lbl.set_use_markup(True)
-        self.add_widget(lbl)
 
     def populate(self):
         self.clear_vbox()

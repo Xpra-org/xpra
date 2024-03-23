@@ -49,14 +49,9 @@ class ConfigureGUI(BaseGUIWindow):
         self.clear_vbox()
         self.add_widget(label("Configure Xpra's Picture Compression", font="sans 20"))
         url = "https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Encodings.md#tuning"
-        lines = (
+        self.add_text_lines((
             f"Please read <a href='{url}'>the documentation</a>.",
-        )
-        text = "\n".join(lines)
-        lbl = label(text, font="Sans 16")
-        lbl.set_line_wrap(True)
-        lbl.set_use_markup(True)
-        self.add_widget(lbl)
+        ))
         self.add_widget(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
         self.add_widget(label("Minimum Speed (percentage)", font="Sans 14"))
         self.add_widget(label("Increasing the speed costs bandwidth and CPU time"))

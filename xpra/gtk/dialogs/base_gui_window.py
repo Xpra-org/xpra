@@ -105,11 +105,15 @@ class BaseGUIWindow(Gtk.Window):
     def populate_form(self, lines: tuple[str, ...] = (), *buttons) -> None:
         self.clear_vbox()
         self.add_widget(label(self.get_title(), font="sans 20"))
+        self.add_text_lines(lines)
+        self.add_buttons(*buttons)
+
+    def add_text_lines(self, lines, font="Sans 14"):
         text = "\n".join(lines)
         lbl = label(text, font="Sans 14")
         lbl.set_line_wrap(True)
+        lbl.set_use_markup(True)
         self.add_widget(lbl)
-        self.add_buttons(*buttons)
 
     def add_buttons(self, *buttons) -> list[Gtk.Button]:
         hbox = Gtk.HBox()
