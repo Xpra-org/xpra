@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.8] 2024-03-13
+## [5.0.8] 2024-03-23
 * Platforms, build and packaging:
     * [MS Windows 'Light' builds](https://github.com/Xpra-org/xpra/issues/4100)
     * [compatibility with multiple "Windows Kits" locations](https://github.com/Xpra-org/xpra/commit/0fed808d376bcf441140609f5d73ac8069566a91)
@@ -8,12 +8,19 @@
     * [force include all brotli dylibs in MacOS builds](https://github.com/Xpra-org/xpra/commit/8a245ebb28ab6132e2c16b049ca35f5738521ab2)
     * [spng encoder build switch not honoured](https://github.com/Xpra-org/xpra/commit/d491e1689c2fc4c2cdcb67d9e9e6f996e0d8cc3d)
     * [Cython 3.0.9](https://github.com/Xpra-org/xpra/commit/6469e52b2ecf37c8a22c4bf0906e20b5e82f8ea9)
+    * [aioquic 1.0.0](https://github.com/Xpra-org/xpra/commit/12ba4849a47f0c1f6b5f801126bc83b1c14dc2ef)
     * [include `pynvml` in MS Windows full builds](https://github.com/Xpra-org/xpra/commit/c4760301dd95939af3ea316f2f4b966cf83ab743)
     * [force include `zeroconf` in MS Windows builds](https://github.com/Xpra-org/xpra/commit/b50194dbabe6fd52c58f89963cbcd75b7386966a)
     * [MS Windows builds not waiting for input to close](https://github.com/Xpra-org/xpra/commit/cc0fc8b9cdeb8c897bf648554f13de0ff6d8d17b)
     * [MS Windows tools fail to run](https://github.com/Xpra-org/xpra/commit/1a05229c2001aa4b0cbdafd642e9b63d8b92196e) [due to incomplete environment](https://github.com/Xpra-org/xpra/commit/f6cd59c08b083b5a6189c09a3546f2dfc6354054) [and errors](https://github.com/Xpra-org/xpra/commit/2fb0e13fbb1cefcdee6e265f962eea7c20af85db)
-
+    * [build info cannot be parsed](https://github.com/Xpra-org/xpra/commit/0ba4c924cd0d54dfb6db06f574bd48b91f46aa8b)
 * Major:
+    * [client chooses the fastest colorspace conversion option](https://github.com/Xpra-org/xpra/commit/635d0f0fb6bc4a93a228aec4698c751380625de9)
+    * [use libyuv to convert video to rgb when rendering without OpenGL](https://github.com/Xpra-org/xpra/commit/246685f1c0b6ee23c63eb90701da8e0e94afaeb4)
+    * [`xpra top` hanging on start](https://github.com/Xpra-org/xpra/commit/2be7c41fdf44b4320960fa0450911e8a60028862)
+    * [network manager unexpected datatype](https://github.com/Xpra-org/xpra/commit/d609f26301b8cd7264ab1b05d6ec1e5c192f31e1)
+    * [disable ssl auto upgrades](https://github.com/Xpra-org/xpra/commit/32f62dcdffee2013ce9db9c7746da46ea7239567)
+    * [freedesktop portal / remotedesktop should not use X11](https://github.com/Xpra-org/xpra/commit/5992663d24cbf650336c9b8560117abe0ae20dca)
     * password authentication issues with MS Windows and MacOS client: [dialog hangs](https://github.com/Xpra-org/xpra/commit/3698385172b03a8a56d4f95901d00728502d1d20), [client terminates](https://github.com/Xpra-org/xpra/commit/7bb55a06a18ef92c24fabe83a15e995fd5ea2438)
     * [mmap compatibility fix for older clients](https://github.com/Xpra-org/xpra/commit/e968d7f66c3065e47bd0ab87655a6d35202c553c)
     * [mmap client token errors should not be fatal](https://github.com/Xpra-org/xpra/commit/8ef274e97c3532d37948279c98eefadf173b0f2a)
@@ -22,6 +29,7 @@
     * [`xpra top` client failures recording backtraces](https://github.com/Xpra-org/xpra/commit/7be1883c232c35ae7b899c126b03e137bf6d1395)
     * [never wait for input in a subprocess](https://github.com/Xpra-org/xpra/commit/fc9e0dd459976f67eef63050e73e07a6483abaa6) [or in splash process](https://github.com/Xpra-org/xpra/commit/2c4aac4128d89c4b9ba6d0b5efb70f1ceaaa2635)
 * Minor and cosmetic bugs:
+    * [shadow server about dialog](https://github.com/Xpra-org/xpra/commit/328d0c4668ec981687b701888b1e2d41c25345d9)
     * [proxy instances signal handlers not firing](https://github.com/Xpra-org/xpra/commit/0cdb7a5427e1b8ebef70117ceb6686616aa558ff)
     * [log the prompt with u2f handler](https://github.com/Xpra-org/xpra/commit/154534049b8795e9a4a4fa9659ae56ca0b07076f)
     * [handle missing stderr more gracefully](https://github.com/Xpra-org/xpra/commit/f700a631ab3c8fae8e87c35f2edd7ba6253499e6)
@@ -34,7 +42,10 @@
     * [avoid sending a warning notification for missing server log](https://github.com/Xpra-org/xpra/commit/3cf9ac8053d5e9eb6f756d34b854c96fcb5ad3ec)
     * [avoid showing warnings for options from newer versions](https://github.com/Xpra-org/xpra/commit/1ec821edf851e8f963b57bdb950cdcc5e56baa72)
     * [missing information from `net_util` tool](https://github.com/Xpra-org/xpra/commit/6b4aac358d783cf2222f4426dabf4c24ff6b59f7)
-    * [only warn once per window when no video options are found](https://github.com/Xpra-org/xpra/commit/14b9ed386d736f2460dcb810e7a39d3891a0a40d), [same for csc](https://github.com/Xpra-org/xpra/commit/e1d570cc2ff363842d0dda1b76f6c48b9e78672f)
+    * [only warn once per window when no video options are found](https://github.com/Xpra-org/xpra/commit/14b9ed386d736f2460dcb810e7a39d3891a0a40d), [same for csc](https://github.com/Xpra-org/xpra/commit/e1d570cc2ff363842d0dda1b76f6c48b9e78672f) [and when there are no options to choose from](https://github.com/Xpra-org/xpra/commit/f8dfbedbd1fd9ed4e271b20511f9c7a5b50387e1)
+    * [update discord link](https://github.com/Xpra-org/xpra/commit/9ebcae3a2658fb9484f3513ab7579f93996ac05c)
+    * [more detailed connection error messages](https://github.com/Xpra-org/xpra/commit/972ed49ec4587d1614350087fa78a69ba9e9e583)
+    * [point to the pyxdg bug information when theme parsing fails](https://github.com/Xpra-org/xpra/commit/6999c96013ccb436730f9545341de2adb4dcd59a)
 
 ## [5.0.7] 2024-02-28
 * Regressions:
