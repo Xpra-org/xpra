@@ -3735,6 +3735,8 @@ def run_clean_displays(options, args) -> ExitValue:
 
 def get_displays_info(dotxpra=None, display_names=None, sessions_dir=None) -> dict[str, Any]:
     displays = get_displays(dotxpra, display_names)
+    log = Logger("util")
+    log(f"get_displays({display_names})={displays}")
     displays_info: dict[str, Any] = {}
     for display, descr in displays.items():
         # descr already contains the uid, gid
@@ -3757,8 +3759,8 @@ def get_display_info(display, sessions_dir=None) -> dict[str, Any]:
 def get_x11_display_info(display, sessions_dir=None) -> dict[str, Any]:
     log = Logger("util")
     log(f"get_x11_display_info({display}, {sessions_dir})")
-    # assume live:
-    display_info: dict[str, Any] = {"state": "LIVE"}
+    state = ""
+    display_info: dict[str, Any] = {}
     # try to load the sessions files:
     xauthority: str = ""
     if sessions_dir:
@@ -3776,7 +3778,7 @@ def get_x11_display_info(display, sessions_dir=None) -> dict[str, Any]:
                         xvfb_pid = load_pid(session_dir, "xvfb.pid")
                         log(f"xvfb.pid({display})={xvfb_pid}")
                         if xvfb_pid and os.path.exists("/proc") and not os.path.exists(f"/proc/{xvfb_pid}"):
-                            display_info["state"] = "UNKNOWN"
+                            state = "UNKNOWN"
                     except (TypeError, ValueError):
                         xvfb_pid = 0
                     xauthority = load_session_file("xauthority").decode()
@@ -3785,7 +3787,7 @@ def get_x11_display_info(display, sessions_dir=None) -> dict[str, Any]:
                     sockfile = session_file_path("socket")
                     if not os.path.exists(pidfile) and not os.path.exists(sockfile):
                         # looks like the server has exited
-                        display_info["state"] = "DEAD"
+                        state = "DEAD"
                     if xvfb_pid:
                         display_info["pid"] = xvfb_pid
     xauthority = xauthority or os.environ.get("XAUTHORITY", "")
@@ -3802,6 +3804,7 @@ def get_x11_display_info(display, sessions_dir=None) -> dict[str, Any]:
                     display_info["xwayland"] = True
             except Exception:
                 pass
+        state = state or "DEAD"
         wminfo = exec_wminfo(display)
         if wminfo:
             log(f"wminfo({display})={wminfo}")
@@ -3809,16 +3812,17 @@ def get_x11_display_info(display, sessions_dir=None) -> dict[str, Any]:
             mode = wminfo.get("xpra-server-mode", "")
             # seamless servers and non-xpra servers should have a window manager:
             if mode.find("seamless") >= 0 and not wminfo.get("_NET_SUPPORTING_WM_CHECK"):
-                display_info["state"] = "DEAD"
+                state = "DEAD"
             else:
                 wmname = wminfo.get("wmname")
                 if wmname and wmname.lower().find("xpra") >= 0:
                     # check if the xpra server process still exists:
                     pid = wminfo.get("xpra-server-pid")
                     if not pid or (os.path.exists("/proc") and not os.path.exists("/proc/%s" % pid)):
-                        display_info["state"] = "DEAD"
-        else:
-            display_info.update({"state": "UNKNOWN"})
+                        state = "DEAD"
+                elif wmname:
+                    state = "LIVE"
+    display_info["state"] = state
     return display_info
 
 
