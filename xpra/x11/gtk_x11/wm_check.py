@@ -41,9 +41,13 @@ def get_wm_info() -> dict[str, Any]:
         root_xid = X11Window.get_root_xid()
         info = {
             "root": root_xid,
-            "WM_S0": X11Window.XGetSelectionOwner(WM_S0) or 0,
-            "_NEW_WM_CM_S0": X11Window.XGetSelectionOwner(_NEW_WM_CM_S0) or 0,
         }
+        s0 = X11Window.XGetSelectionOwner(WM_S0)
+        if s0:
+            info["WM_S0"] = s0
+        s0 = X11Window.XGetSelectionOwner(_NEW_WM_CM_S0)
+        if s0:
+            info["_NEW_WM_CM_S0"] = s0
     ewmh_xid = get_ewmh_xid()
     if ewmh_xid:
         info["_NET_SUPPORTING_WM_CHECK"] = ewmh_xid
