@@ -3875,7 +3875,7 @@ def display_wm_info(args) -> dict[str, Any]:
         info = get_wm_info()
         gdk = gi_import("Gdk")
         display = gdk.Display.get_default()
-        info["display"] = display.get_name(),
+        info["display"] = display.get_name()
         return info
 
 
