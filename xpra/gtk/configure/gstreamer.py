@@ -24,7 +24,7 @@ log = Logger("gstreamer", "util")
 STEP_DELAY = envint("XPRA_CONFIGURE_STEP_DELAY", 100)
 
 
-def _set_labels_text(widgets, *messages):
+def _set_labels_text(widgets, *messages: str) -> None:
     for i, widget in enumerate(widgets):
         if i < len(messages):
             widget.set_text(messages[i])
@@ -117,13 +117,13 @@ class ConfigureGUI(BaseGUIWindow):
         )
         self.set_labels()
         self.add_buttons(("Abort and exit", self.dismiss))
-        messages = []
+        messages: list[str] = []
 
-        def update_messages():
+        def update_messages() -> None:
             sleep(STEP_DELAY / 1000)
             GLib.idle_add(self.set_labels, *messages)
 
-        def add_message(msg):
+        def add_message(msg: str) -> None:
             messages.append(msg)
             update_messages()
 
