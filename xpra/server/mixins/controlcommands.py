@@ -15,7 +15,7 @@ from xpra.common import ConnectionMessage
 from xpra.util.io import load_binary_file
 from xpra.net.common import PacketType
 from xpra.util.stats import std_unit
-from xpra.scripts.config import parse_bool, FALSE_OPTIONS, TRUE_OPTIONS
+from xpra.scripts.config import str_to_bool, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -698,13 +698,13 @@ class ServerBaseControlCommands(StubServerMixin):
             ws.unlock_batch_delay()
 
     def control_command_set_lock(self, lock) -> str:
-        self.lock = parse_bool("lock", lock)
+        self.lock = str_to_bool(lock)
         self.setting_changed("lock", lock is not False)
         self.setting_changed("lock-toggle", lock is None)
         return f"lock set to {self.lock}"
 
     def control_command_set_sharing(self, sharing) -> str:
-        sharing = parse_bool("sharing", sharing)
+        sharing = str_to_bool(sharing)
         message = f"sharing set to {self.sharing}"
         if sharing == self.sharing:
             return message

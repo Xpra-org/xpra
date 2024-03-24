@@ -28,7 +28,7 @@ from xpra.util.version import (
 from xpra.scripts.server import deadly_signal, clean_session_files, rm_session_dir
 from xpra.exit_codes import ExitValue
 from xpra.server.util import write_pidfile, rm_pidfile
-from xpra.scripts.config import parse_bool, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
+from xpra.scripts.config import str_to_bool, parse_bool_or, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import (
     SOCKET_TYPES, MAX_PACKET_SIZE, DEFAULT_PORTS, SSL_UPGRADE,
     may_log_packet, is_request_allowed, PacketType, get_ssh_port, has_websocket_handler,
@@ -638,7 +638,7 @@ class ServerCore:
             www_dir = html
             self._html = True
         elif not html or (html.lower() in FALSE_OPTIONS or html.lower() in TRUE_OPTIONS or html.lower() == "auto"):
-            self._html = parse_bool("html", html)
+            self._html = parse_bool_or("html", html)
         else:
             # assume that the html option is a request to open a browser
             self._html = True
@@ -787,7 +787,7 @@ class ServerCore:
             control = options.get("control", "yes")
         except AttributeError:
             control = "no"
-        if not parse_bool("control", control):
+        if not str_to_bool(control):
             err = "control commands are not enabled on this connection"
             log.warn(f"Warning: {err}")
             return 6, err
@@ -880,7 +880,7 @@ class ServerCore:
             socktypes = self.get_mdns_socktypes(socktype, options)
             mdns_option = options.get("mdns")
             if mdns_option:
-                v = parse_bool("mdns", mdns_option, False)
+                v = str_to_bool(mdns_option, False)
                 if not v:
                     mdnslog("mdns_publish() mdns(%s)=%s, skipped", info, mdns_option)
                     continue
@@ -1456,7 +1456,7 @@ class ServerCore:
             protocol.encryption = protocol.encryption or self.tcp_encryption
             protocol.keyfile = protocol.keyfile or self.tcp_encryption_keyfile
         enc = (protocol.encryption or "").lower()
-        if enc and not enc.startswith("aes") and not parse_bool("encryption", enc, False):
+        if enc and not enc.startswith("aes") and not str_to_bool(enc, False):
             protocol.encryption = None
         netlog("%s: encryption=%s, keyfile=%s", socktype, protocol.encryption, protocol.keyfile)
         if protocol.encryption:

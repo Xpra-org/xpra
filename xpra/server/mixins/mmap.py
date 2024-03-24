@@ -6,7 +6,7 @@
 import os.path
 from typing import Any
 
-from xpra.scripts.config import parse_bool
+from xpra.scripts.config import str_to_bool
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
 
@@ -25,7 +25,7 @@ class MMAP_Server(StubServerMixin):
             self.supports_mmap = True
             self.mmap_filename = opts.mmap
         else:
-            self.supports_mmap = bool(parse_bool("mmap", opts.mmap.lower()))
+            self.supports_mmap = str_to_bool(opts.mmap)
 
     def get_info(self, _proto=None) -> dict[str, Any]:
         return {

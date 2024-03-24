@@ -12,7 +12,7 @@ from xpra.util.parsing import parse_simple_dict
 from xpra.util.env import envbool, SilenceWarningsContext
 from xpra.common import XPRA_APP_ID, noop
 from xpra.os_util import POSIX, OSX, gi_import
-from xpra.scripts.config import parse_bool
+from xpra.scripts.config import str_to_bool
 from xpra.server import features
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.gtk_server import GTKServerBase
@@ -67,7 +67,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         ShadowServerBase.__init__(self, get_default_root_window())
         GTKServerBase.__init__(self)
         self.session_type = "shadow"
-        self.multi_window = parse_bool("multi-window", attrs.get("multi-window", True), True)
+        self.multi_window = str_to_bool(attrs.get("multi-window", True))
         # for managing the systray
         self.tray_menu = None
         self.tray_menu_shown = False
@@ -221,7 +221,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
                 self.window_matches = windows.split("/")
                 return self.makeDynamicWindowModels()
             match_str = opt_dict.get("plug")
-            self.multi_window = parse_bool("multi-window", opt_dict.get("multi-window", self.multi_window))
+            self.multi_window = str_to_bool(opt_dict.get("multi-window", self.multi_window))
             geometries_str = opt_dict.get("geometry")
             if geometries_str:
                 geometries = parse_geometries(geometries_str)

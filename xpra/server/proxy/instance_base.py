@@ -18,7 +18,7 @@ from xpra.net.digest import get_salt, gendigest
 from xpra.codecs.loader import load_codec, get_codec
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.video import getVideoHelper, PREFERRED_ENCODER_ORDER
-from xpra.scripts.config import parse_number, parse_bool
+from xpra.scripts.config import parse_number, str_to_bool
 from xpra.common import FULL_INFO, ConnectionMessage
 from xpra.os_util import get_hex_uuid
 from xpra.util.objects import typedict
@@ -242,8 +242,8 @@ class ProxyInstance:
 
         OPTION_WHITELIST: dict[str, Callable] = {
             "compression_level": number,
-            "lz4": parse_bool,
-            "rencodeplus": parse_bool,
+            "lz4": str_to_bool,
+            "rencodeplus": str_to_bool,
         }
         for k, v in options.items():
             parser = OPTION_WHITELIST.get(k)

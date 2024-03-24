@@ -18,7 +18,7 @@ from xpra.common import noop
 from xpra.os_util import POSIX, OSX, WIN32, gi_import
 from xpra.util.system import is_Wayland, platform_name
 from xpra.util.stats import std_unit_dec
-from xpra.scripts.config import get_defaults, parse_bool, OPTION_TYPES, FALSE_OPTIONS, TRUE_OPTIONS
+from xpra.scripts.config import get_defaults, str_to_bool, OPTION_TYPES, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.client.gtk3.menu_helper import BANDWIDTH_MENU_OPTIONS
 from xpra.util.objects import AtomicInteger
 from xpra.util.thread import start_thread
@@ -638,7 +638,7 @@ class StartSession(Gtk.Window):
             default_value = self.default_config.get(k)
             ot = OPTION_TYPES.get(k)
             if ot is bool:
-                value = parse_bool(k, value)
+                value = str_to_bool(value)
             if value != default_value:
                 log.info("%s=%s (%s) - not %s (%s)", k, value, type(value), default_value, type(default_value))
                 cmd.append("--{}={}".format(k, value))

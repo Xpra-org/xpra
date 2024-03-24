@@ -12,7 +12,7 @@ from xpra.util.str_fn import strtobytes, bytestostr, hexstr
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.gtk.error import xswallow, xsync, xlog
-from xpra.scripts.config import parse_bool
+from xpra.scripts.config import str_to_bool
 from xpra.server import EXITING_CODE
 from xpra.common import SYNC_ICC
 from xpra.x11.server.core import X11ServerCore, XTestPointerDevice
@@ -82,7 +82,7 @@ class X11ServerBase(X11ServerCore):
         # the server class sets the default value for 'xsettings_enabled'
         # it is overridden in the seamless server (enabled by default),
         # and we let the options have the final say here:
-        self._xsettings_enabled = parse_bool("xsettings", opts.xsettings, self._xsettings_enabled)
+        self._xsettings_enabled = str_to_bool(opts.xsettings, self._xsettings_enabled)
         log("xsettings_enabled(%s)=%s", opts.xsettings, self._xsettings_enabled)
         if self._xsettings_enabled:
             from xpra.x11.xsettings import XSettingsHelper

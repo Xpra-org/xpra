@@ -17,7 +17,7 @@ from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.socket_util import SOCKET_DIR_MODE
 from xpra.os_util import POSIX, getuid, getgid, get_username_for_uid
 from xpra.util.env import osexpand
-from xpra.scripts.config import parse_bool
+from xpra.scripts.config import str_to_bool
 from xpra.server.util import setuidgid
 from xpra.util.system import SIGNAMES, register_SIGUSR_signals, set_proc_title
 from xpra.util.objects import typedict
@@ -304,7 +304,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                     req_option = options.get(mode, "yes")
                 except AttributeError:
                     req_option = "yes"
-                return parse_bool(mode, req_option)
+                return str_to_bool(req_option)
 
             def is_req(mode):
                 return generic_request == mode or caps.boolget(f"{mode}_request")

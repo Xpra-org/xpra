@@ -13,7 +13,7 @@ from typing import Any
 from xpra.scripts.main import InitException, InitExit, shellquote, host_target_string
 from xpra.platform.paths import get_ssh_known_hosts_files
 from xpra.platform.info import get_username
-from xpra.scripts.config import parse_bool, TRUE_OPTIONS
+from xpra.scripts.config import str_to_bool, TRUE_OPTIONS
 from xpra.scripts.pinentry import input_pass, confirm
 from xpra.net.ssh.util import get_default_keyfiles
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
@@ -385,7 +385,7 @@ def get_auth_modes(paramiko_config, host_config: dict, password: str) -> list[st
         return host_config.get(key)
 
     def configbool(key: str, default_value=True) -> bool:
-        return bool(parse_bool(key, configvalue(key), default_value))
+        return str_to_bool(configvalue(key), default_value)
 
     auth_str = configvalue("auth")
     if auth_str:
@@ -450,7 +450,7 @@ def do_connect_to(transport, host: str, username: str, password: str,
         return (host_config or {}).get(key)
 
     def configbool(key: str, default_value=True) -> bool:
-        return parse_bool(key, configvalue(key), default_value)
+        return str_to_bool(configvalue(key), default_value)
 
     def configint(key: str, default_value=0) -> int:
         v = configvalue(key)

@@ -9,7 +9,7 @@ import sys
 from xpra.util.env import envbool
 from xpra.os_util import getuid
 from xpra.util.str_fn import strtobytes
-from xpra.scripts.config import parse_bool
+from xpra.scripts.config import str_to_bool
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 
 PAM_AUTH_SERVICE = os.environ.get("XPRA_PAM_AUTH_SERVICE", "login")
@@ -45,7 +45,7 @@ class Authenticator(SysAuthenticator):
 
     def __init__(self, **kwargs):
         self.service = kwargs.pop("service", PAM_AUTH_SERVICE)
-        self.check_account = bool(parse_bool("check-account", kwargs.pop("check-account", PAM_CHECK_ACCOUNT), False))
+        self.check_account = str_to_bool(kwargs.pop("check-account", PAM_CHECK_ACCOUNT))
         super().__init__(**kwargs)
 
     def check_password(self, password: str) -> bool:

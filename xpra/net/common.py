@@ -13,7 +13,7 @@ from collections.abc import Callable, ByteString
 from xpra.net.compression import Compressed, Compressible, LargeStructure
 from xpra.common import noop
 from xpra.os_util import LINUX, FREEBSD, WIN32
-from xpra.scripts.config import parse_bool
+from xpra.scripts.config import str_to_bool
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool
 
@@ -203,7 +203,7 @@ def is_request_allowed(proto, request="info", default=True) -> bool:
         req_option = options.get(request, default)
     except AttributeError:
         return default
-    r = parse_bool(request, req_option, default)
+    r = str_to_bool(req_option, default)
     get_logger().debug(f"is_request_allowed%s={r}", (proto, request, default))
     return r
 

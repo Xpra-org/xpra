@@ -24,7 +24,7 @@ from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.util.str_fn import std, csv, ellipsizer, repr_ellipsized, bytestostr
 from xpra.util.env import envint, envbool
-from xpra.scripts.config import parse_bool
+from xpra.scripts.config import str_to_bool
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.util.version import get_platform_info
 from xpra.client.gui import features
@@ -190,7 +190,7 @@ class UIXpraClient(ClientBaseClass):
 
         self.title = opts.title
         self.session_name = bytestostr(opts.session_name)
-        self.xsettings_enabled = not (OSX or WIN32) and parse_bool("xsettings", opts.xsettings, True)
+        self.xsettings_enabled = not (OSX or WIN32) and str_to_bool(opts.xsettings)
         self.readonly = opts.readonly
         self.client_supports_sharing = opts.sharing is True
         self.client_lock = opts.lock is True
@@ -235,7 +235,7 @@ class UIXpraClient(ClientBaseClass):
         if ClientExtras is not None:
             self.client_extras = ClientExtras(self, opts)  # pylint: disable=not-callable
 
-        self.start_new_commands = parse_bool("start-new-commands", opts.start_new_commands, True)
+        self.start_new_commands = str_to_bool(opts.start_new_commands)
         if self.start_new_commands and (opts.start or opts.start_child):
             from xpra.scripts.main import strip_defaults_start_child
             from xpra.scripts.config import make_defaults_struct

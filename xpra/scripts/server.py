@@ -32,7 +32,7 @@ from xpra.scripts.main import (
 from xpra.scripts.config import (
     InitException, InitInfo, InitExit,
     FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS, OPTION_TYPES, CLIENT_ONLY_OPTIONS, CLIENT_OPTIONS,
-    parse_bool,
+    parse_bool_or,
     fixup_options, make_defaults_struct, read_config, dict_to_validated_config,
 )
 from xpra.common import (
@@ -804,7 +804,7 @@ def _do_run_server(script_file: str, cmdline,
         if k.startswith("DBUS_"):
             del os.environ[k]
 
-    use_display = parse_bool("use-display", opts.use_display)
+    use_display = parse_bool_or("use-display", opts.use_display)
     starting = mode == "seamless"
     starting_desktop = mode == "desktop"
     starting_monitor = mode == "monitor"

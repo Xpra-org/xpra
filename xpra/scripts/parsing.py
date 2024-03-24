@@ -30,7 +30,7 @@ from xpra.scripts.config import (
     InitException, InitInfo, InitExit,
     fixup_debug_option, fixup_options,
     find_docs_path, find_html5_path,
-    make_defaults_struct, parse_bool, parse_number, print_number,
+    make_defaults_struct, str_to_bool, parse_number, print_number, parse_bool_or,
     validate_config, name_to_field,
 )
 
@@ -60,7 +60,7 @@ def bool_or(v, other_value, true_str, false_str, other_str):
     vs = str(v).lower()
     if vs == str(other_value).lower():
         return other_str
-    bv = parse_bool("", v)
+    bv = str_to_bool(v)
     return enabled_str(bv, true_str, false_str)
 
 
@@ -959,7 +959,7 @@ def do_parse_cmdline(cmdline, defaults):
 
     fixup_options(options)
 
-    options.sync_xvfb = parse_bool("sync-xvfb", options.sync_xvfb)
+    options.sync_xvfb = str_to_bool(options.sync_xvfb, False)
     options.dpi = parse_number(int, "dpi", options.dpi, 96)
 
     if options.min_size:
@@ -1934,7 +1934,7 @@ def parse_command_line(cmdline, defaults):
                 # some fields may be missing if they're platform specific
                 continue
             v = getattr(options, fieldname)
-            bv = parse_bool(fieldname, v)
+            bv = parse_bool_or(k, v)
             if bv != v:
                 setattr(options, fieldname, bv)
 

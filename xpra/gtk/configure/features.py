@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
-from xpra.scripts.config import parse_bool
+from xpra.scripts.config import str_to_bool
 from xpra.gtk.configure.common import update_config_attribute, with_config, run_gui
 from xpra.gtk.widget import label
 from xpra.os_util import gi_import
@@ -94,7 +94,7 @@ class ConfigureGUI(BaseGUIWindow):
         for subsystem, switch in self.subsystem_switch.items():
             value = getattr(defaults, subsystem, None)
             log(f"configure_switches: {subsystem}={value}")
-            enabled = parse_bool(subsystem, value, False)
+            enabled = str_to_bool(value, False)
             switch.set_sensitive(True)
             switch.set_state(enabled)
             switch.connect("state-set", self.toggle_subsystem, subsystem)

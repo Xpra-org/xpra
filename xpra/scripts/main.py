@@ -54,7 +54,7 @@ from xpra.scripts.config import (
     fixup_options,
     find_docs_path, find_html5_path,
     dict_to_validated_config, get_xpra_defaults_dirs, get_defaults, read_xpra_conf,
-    make_defaults_struct, parse_bool, has_audio_support, name_to_field,
+    make_defaults_struct, str_to_bool, parse_bool_or, has_audio_support, name_to_field,
 )
 from xpra.net.common import DEFAULT_PORTS, SOCKET_TYPES, AUTO_ABSTRACT_SOCKET, ABSTRACT_SOCKET_PREFIX
 from xpra.log import is_debug_enabled, Logger, get_debug_args
@@ -368,7 +368,7 @@ def check_display() -> None:
 def use_systemd_run(s) -> bool:
     if not SYSTEMD_RUN or not POSIX or OSX:
         return False  # pragma: no cover
-    systemd_run = parse_bool("systemd-run", s)
+    systemd_run = parse_bool_or("systemd-run", s)
     if systemd_run in (True, False):
         return systemd_run
     # detect if we should use it:
@@ -572,7 +572,7 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
         if display_is_remote:
             # ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
             return run_remote_server(script_file, cmdline, error_cb, options, args, mode, defaults)
-        elif args and parse_bool("attach", options.attach) is True:
+        elif args and str_to_bool(options.attach, False):
             # maybe the server is already running,
             # and we don't need to bother trying to start it:
             try:
@@ -2039,7 +2039,7 @@ def run_server(script_file, cmdline, error_cb, options, args, full_mode: str, de
             "desktop",
             "monitor",
             "expand",
-    ) and parse_bool("attach", options.attach) is True:
+    ) and str_to_bool(options.attach, False):
         if args and not display_is_remote:
             # maybe the server is already running for the display specified
             # then we don't even need to bother trying to start it:
@@ -2087,7 +2087,7 @@ def run_server(script_file, cmdline, error_cb, options, args, full_mode: str, de
 
 
 def start_server_via_proxy(script_file: str, cmdline, error_cb, options, args, mode: str) -> int | ExitCode | None:
-    start_via_proxy = parse_bool("start-via-proxy", options.start_via_proxy)
+    start_via_proxy = parse_bool_or("start-via-proxy", options.start_via_proxy)
     if start_via_proxy is False:
         return None
     if not options.daemon:
@@ -3011,7 +3011,7 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults) -> Exi
     }.get(mode, mode.replace("_proxy_", "").replace("_", "-"))
     server_mode = MODE_ALIAS.get(server_mode, server_mode)
     if mode != "_proxy" and server_mode in ("seamless", "desktop", "monitor", "shadow", "shadow-screen", "expand"):
-        attach = parse_bool("attach", opts.attach)
+        attach = parse_bool_or("attach", opts.attach, None)
         state = None
         if attach is not False:
             # maybe this server already exists?

@@ -11,7 +11,7 @@ from xpra.net.rfb.const import RFB_KEYNAMES
 from xpra.server.rfb.protocol import RFBServerProtocol
 from xpra.server.rfb.source import RFBSource
 from xpra.server import features
-from xpra.scripts.config import parse_bool, parse_number
+from xpra.scripts.config import str_to_bool, parse_number
 from xpra.log import Logger
 
 log = Logger("rfb")
@@ -41,7 +41,7 @@ class RFBServer:
                 log.warn(" some RFB keyboard events may be missing")
 
     def init(self, opts):
-        if not parse_bool("rfb-upgrade", opts.rfb_upgrade):
+        if not str_to_bool(opts.rfb_upgrade):
             self._rfb_upgrade = 0
         else:
             self._rfb_upgrade = parse_number(int, "rfb-upgrade", opts.rfb_upgrade, 0)

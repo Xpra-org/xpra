@@ -14,7 +14,7 @@ from xpra.server.core import ServerCore
 from xpra.server.background_worker import add_work_item
 from xpra.common import SSH_AGENT_DISPATCH, FULL_INFO, noop, ConnectionMessage
 from xpra.net.common import may_log_packet, ServerPacketHandlerType, PacketType, is_request_allowed
-from xpra.scripts.config import parse_bool
+from xpra.scripts.config import str_to_bool
 from xpra.os_util import WIN32
 from xpra.util.io import is_socket
 from xpra.util.objects import typedict, merge_dicts
@@ -568,7 +568,7 @@ class ServerBase(ServerBaseClass):
             info_option = options.get("info", "yes")
         except AttributeError:
             info_option = "yes"
-        if not parse_bool("info", info_option):
+        if not str_to_bool(info_option):
             err = "`info` commands are not enabled on this connection"
             log.warn(f"Warning: {err}")
             ss.send_info_response({"error": err})

@@ -20,7 +20,7 @@ from xpra.util.str_fn import csv, decode_str
 from xpra.util.env import envint, osexpand, first_time
 from xpra.os_util import getuid, WIN32, POSIX
 from xpra.util.thread import start_thread
-from xpra.scripts.config import parse_bool
+from xpra.scripts.config import str_to_bool
 from xpra.common import SSH_AGENT_DISPATCH
 from xpra.platform.paths import get_ssh_conf_dirs, get_xpra_command
 from xpra.log import Logger
@@ -291,7 +291,7 @@ class SSHServer(paramiko.ServerInterface):
             subcommand = cmd[1].strip("\"'").rstrip(";")
             log(f"ssh xpra subcommand: {subcommand}")
             if subcommand.startswith("_proxy_"):
-                proxy_start = parse_bool("proxy-start", self.options.get("proxy-start"), False)
+                proxy_start = str_to_bool(self.options.get("proxy-start"), False)
                 if not proxy_start:
                     return fail(f"Warning: received a {subcommand!r} session request",
                                 " this feature is not enabled with the builtin ssh server")
@@ -419,7 +419,7 @@ def make_ssh_server_connection(conn, socket_options: dict,
     log("make_ssh_server_connection%s", (conn, socket_options, none_auth, password_auth))
     ssh_server = SSHServer(none_auth=none_auth, password_auth=password_auth, options=socket_options,
                            display_name=display_name)
-    DoGSSAPIKeyExchange = parse_bool("ssh-gss-key-exchange", socket_options.get("ssh-gss-key-exchange", False), False)
+    DoGSSAPIKeyExchange = str_to_bool(socket_options.get("ssh-gss-key-exchange", False), False)
     sock = conn._socket
     t = None
 

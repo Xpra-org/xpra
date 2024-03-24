@@ -21,7 +21,7 @@ from xpra.util.io import umask_context
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint, envbool
-from xpra.scripts.config import parse_bool, parse_with_unit
+from xpra.scripts.config import str_to_bool, parse_with_unit
 from xpra.net.common import PacketType
 from xpra.util.stats import std_unit
 from xpra.util.thread import start_thread
@@ -159,27 +159,24 @@ class FileTransferAttributes:
         filelog("file transfer: init_attributes%s",
                 (file_transfer, file_size_limit, printing, open_files, open_url, open_command, can_ask))
 
-        def pbool(name, v) -> bool:
-            return parse_bool(name, v, True)
-
         def pask(v) -> bool:
             return v.lower() in ("ask", "auto")
 
         fta = pask(file_transfer)
         self.file_transfer_ask = fta and can_ask
-        self.file_transfer = fta or pbool("file-transfer", file_transfer)
+        self.file_transfer = fta or str_to_bool(file_transfer)
         self.file_size_limit = parse_with_unit("file-size-limit", file_size_limit, "B", min_value=0)
         self.file_chunks = FILE_CHUNKS_SIZE
         pa = pask(printing)
         self.printing_ask = pa and can_ask
-        self.printing = pa or pbool("printing", printing)
+        self.printing = pa or str_to_bool(printing)
         ofa = pask(open_files)
         self.open_files_ask = ofa and can_ask
-        self.open_files = ofa or pbool("open-files", open_files)
+        self.open_files = ofa or str_to_bool(open_files)
         # FIXME: command line options needed here:
         oua = pask(open_url)
         self.open_url_ask = oua and can_ask
-        self.open_url = oua or pbool("open-url", open_url)
+        self.open_url = oua or str_to_bool(open_url)
         self.file_ask_timeout = SEND_REQUEST_TIMEOUT
         self.open_command = open_command
         self.files_requested: dict[str, bool] = {}

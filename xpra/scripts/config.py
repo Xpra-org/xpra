@@ -1240,7 +1240,17 @@ ALL_BOOLEAN_OPTIONS: tuple[Any, ...] = tuple(list(TRUE_OPTIONS)+list(FALSE_OPTIO
 OFF_OPTIONS: tuple[str, ...] = ("off", )
 
 
-def parse_bool(k: str, v, auto=None) -> bool | None:
+def str_to_bool(v: Any, default: bool = True) -> bool:
+    if isinstance(v, str):
+        v = v.lower().strip()
+    if v in TRUE_OPTIONS:
+        return True
+    if v in FALSE_OPTIONS:
+        return False
+    return default
+
+
+def parse_bool_or(k: str, v: Any, auto: bool | None = None) -> bool | None:
     if isinstance(v, str):
         v = v.lower().strip()
     if v in TRUE_OPTIONS:
@@ -1372,7 +1382,7 @@ def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dic
             if v is None:
                 continue
         elif vt == bool:
-            v = parse_bool(k, v)
+            v = parse_bool_or(k, v)
             if v is None:
                 continue
         elif vt == list:
@@ -1606,7 +1616,7 @@ def fixup_keyboard(options) -> None:
             return []
     options.keyboard_layouts = p(options.keyboard_layouts)
     options.keyboard_variants = p(options.keyboard_variants)
-    options.keyboard_raw = parse_bool("keyboard-raw", options.keyboard_raw)
+    options.keyboard_raw = str_to_bool(options.keyboard_raw)
 
 
 def fixup_clipboard(options) -> None:
