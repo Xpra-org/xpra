@@ -2420,34 +2420,41 @@ def guess_display(dotxpra, current_display, uid: int = getuid(), gid: int = getg
     args = tuple(x for x in (uid, gid) if x is not None)
     all_displays: list[str] = []
     info_cache: dict[str, dict] = {}
+    log = Logger("util")
 
-    def dinfo(display):
-        info = info_cache.get(display)
-        if info is None:
+    def dinfo(display) -> dict:
+        if display not in info_cache:
             info = get_display_info(display, sessions_dir)
+            log(f"display_info({display})={info}")
             info_cache[display] = info
-        return info
+        return info_cache.get(display, {})
+
+    def islive(display):
+        return dinfo(display).get("state", "") == "LIVE"
+
+    def notlivexpra(display) -> bool:
+        return dinfo(display).get("state", "") != "LIVE" or dinfo(display).get("wmname").find("xpra") < 0
 
     while True:
         displays = list(find_displays(MAX_X11_DISPLAY_NO, *args).keys())
+        log(f"find_displays({MAX_X11_DISPLAY_NO}, {args})={displays}")
         if current_display and current_display not in displays:
             displays.append(current_display)
         all_displays = all_displays or displays
         if len(displays) > 1:
-            # remove xpra's own X11 displays to narrow things down:
-            results = dotxpra.sockets()
-            xpra_x11_displays = [display for _, display in results if display.startswith(":")]
-            displays = list(set(displays) - set(xpra_x11_displays))
+            # remove displays that have a LIVE xpra session:
+            displays = sorted(filter(notlivexpra, displays))
+            log(f"notlivexpra: {displays}")
         if len(displays) > 1:
-            # keep only LIVE ones (assume that they are),
-            # and skip XWayland displays:
-            displays = [display for display in displays if
-                        dinfo(display).get("state", "LIVE") == "LIVE" and not dinfo(display).get("xwayland", False)]
+            displays = sorted(filter(islive, displays))
+            log(f"live: {displays}")
         if len(displays) == 1:
             return displays[0]
         if current_display in displays:
+            log(f"using {current_display=}")
             return current_display
         if not args:
+            log(f"guess_display({current_display}, {uid}, {gid}, {sessions_dir}) {displays=}, {all_displays=}")
             if len(displays) > 1:
                 raise InitExit(1, "too many live displays to choose from: " + csv(sorted_nicely(displays)))
             if all_displays:
