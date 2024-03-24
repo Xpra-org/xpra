@@ -63,11 +63,11 @@ def parse_geometries(s) -> list:
 
 class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
-    def __init__(self, multi_window=True):
+    def __init__(self, attrs: dict[str, str]):
         ShadowServerBase.__init__(self, get_default_root_window())
         GTKServerBase.__init__(self)
         self.session_type = "shadow"
-        self.multi_window = multi_window
+        self.multi_window = parse_bool("multi-window", attrs.get("multi-window", True), True)
         # for managing the systray
         self.tray_menu = None
         self.tray_menu_shown = False

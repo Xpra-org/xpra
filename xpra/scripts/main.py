@@ -418,14 +418,16 @@ def verify_gir():
         raise InitExit(ExitCode.FAILURE, f"the python gobject introspection bindings are missing: \n{e}")
 
 
-def run_mode(script_file: str, cmdline, error_cb, options, args, mode: str, defaults) -> ExitValue:
+def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str, defaults) -> ExitValue:
+    mode_parts = full_mode.split(",")
+    mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
+
     # configure default logging handler:
     if POSIX and getuid() == options.uid == 0 and mode not in (
             "proxy", "autostart", "showconfig",
     ) and not NO_ROOT_WARNING:
         warn("\nWarning: running as root\n")
 
-    mode = MODE_ALIAS.get(mode, mode)
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "quic")
     if mode.startswith("shadow") and WIN32 and not envbool("XPRA_PAEXEC_WRAP", False):
         # are we started from a non-interactive context?
@@ -511,7 +513,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, mode: str, defa
     ) or mode.startswith("upgrade") or mode.startswith("request-"):
         options.encodings = validated_encodings(options.encodings)
     try:
-        return do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults)
+        return do_run_mode(script_file, cmdline, error_cb, options, args, full_mode, defaults)
     except KeyboardInterrupt as e:
         info(f"\ncaught {e!r}, exiting")
         return 128 + signal.SIGINT
@@ -534,8 +536,9 @@ def DotXpra(*args, **kwargs):
     return dotxpra.DotXpra(*args, **kwargs)
 
 
-def do_run_mode(script_file: str, cmdline, error_cb, options, args, mode: str, defaults) -> ExitValue:
-    mode = MODE_ALIAS.get(mode, mode)
+def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str, defaults) -> ExitValue:
+    mode_parts = full_mode.split(",", 1)
+    mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "quic")
     if args and mode in ("seamless", "desktop", "monitor"):
         # all args that aren't specifying a connection will be interpreted as a start-child command:
@@ -593,7 +596,7 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, mode: str, d
             "upgrade", "upgrade-seamless", "upgrade-desktop",
             "proxy",
     ):
-        return run_server(script_file, cmdline, error_cb, options, args, mode, defaults)
+        return run_server(script_file, cmdline, error_cb, options, args, full_mode, defaults)
     if mode in (
             "attach", "listen", "detach",
             "screenshot", "version", "info", "id",
@@ -2014,8 +2017,9 @@ def strip_defaults_start_child(start_child, defaults_start_child):
     return start_child
 
 
-def run_server(script_file, cmdline, error_cb, options, args, mode: str, defaults) -> ExitValue:
-    mode = MODE_ALIAS.get(mode, mode)
+def run_server(script_file, cmdline, error_cb, options, args, full_mode: str, defaults) -> ExitValue:
+    mode_parts = full_mode.split(",", 1)
+    mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
     if mode in (
             "seamless", "desktop", "monitor", "expand",
             "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
@@ -2068,7 +2072,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode: str, default
             if scaling == (1, 1):
                 options.resize_display = f"{root_w}x{root_h}"
 
-    r = start_server_via_proxy(script_file, cmdline, error_cb, options, args, mode)
+    r = start_server_via_proxy(script_file, cmdline, error_cb, options, args, full_mode)
     if isinstance(r, int):
         return r
 
@@ -2079,7 +2083,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode: str, default
     except ImportError:
         error_cb("`xpra-server` is not installed")
         sys.exit(1)
-    return do_run_server(script_file, cmdline, error_cb, options, args, mode, str(display or ""), defaults)
+    return do_run_server(script_file, cmdline, error_cb, options, args, full_mode, str(display or ""), defaults)
 
 
 def start_server_via_proxy(script_file: str, cmdline, error_cb, options, args, mode: str) -> int | ExitCode | None:

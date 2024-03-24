@@ -143,13 +143,13 @@ def parse_scaling(desktop_scaling: str, root_w: int, root_h: int,
     return sx, sy
 
 
-def parse_simple_dict(s: str = "", sep: str = ",") -> dict[str, str | list[str] | dict[str, str]]:
+def parse_simple_dict(s: str, sep: str = ",") -> dict[str, str | list[str] | dict[str, str]]:
     # parse the options string and add the pairs:
     d: dict[str, str | list[str]] = {}
     for el in s.split(sep):
         if not el:
             continue
-        if el.startswith("#") and el.find("=") < 0:
+        if el.startswith("#") or el.find("=") < 0:
             continue
         try:
             k, v = el.split("=", 1)
@@ -182,6 +182,17 @@ def parse_simple_dict(s: str = "", sep: str = ",") -> dict[str, str | list[str] 
             log = Logger("util")
             log.warn("Warning: failed to parse dictionary option '%s':", s)
             log.warn(" %s", e)
+    return d
+
+
+def parse_str_dict(s: str, sep: str = ",") -> dict[str, str]:
+    # parse the options string and add the pairs:
+    d: dict[str, str] = {}
+    for el in s.split(sep):
+        if not el or el.find("=") < 0:
+            continue
+        k, v = el.split("=", 1)
+        d[k.strip()] = v.strip()
     return d
 
 

@@ -47,11 +47,11 @@ class PipewireWindowModel(RootWindowModel):
 
 
 class PortalShadow(GTKShadowServerBase):
-    def __init__(self, multi_window=True):
+    def __init__(self, attrs: dict[str, str]):
         # we're not using X11, so no need for this check:
         os.environ["XPRA_UI_THREAD_CHECK"] = "0"
         os.environ["XPRA_NOX11"] = "1"
-        GTKShadowServerBase.__init__(self, multi_window=multi_window)
+        GTKShadowServerBase.__init__(self, attrs)
         self.session = None
         self.session_type = "portal desktop"
         self.session_path: str = ""
@@ -60,7 +60,7 @@ class PortalShadow(GTKShadowServerBase):
         self.capture: Capture | None = None
         self.portal_interface = get_portal_interface()
         self.input_devices = 0
-        log(f"PortalShadow({multi_window}) portal_interface={self.portal_interface}")
+        log(f"PortalShadow({attrs}) portal_interface={self.portal_interface}")
 
     def get_server_mode(self) -> str:
         return "portal shadow"

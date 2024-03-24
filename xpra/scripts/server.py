@@ -19,6 +19,8 @@ from typing import Any
 
 from xpra import __version__
 from xpra.util.io import info, warn
+from xpra.util.parsing import parse_str_dict
+from xpra.scripts.parsing import fixup_defaults, MODE_ALIAS
 from xpra.scripts.main import (
     no_gtk, bypass_no_gtk, nox,
     validate_encryption, parse_env, configure_env,
@@ -335,9 +337,9 @@ def make_seamless_server(clobber):
     return SeamlessServer(clobber)
 
 
-def make_shadow_server(display, multi_window=False):
+def make_shadow_server(display, attrs: dict[str, str]):
     from xpra.platform.shadow_server import ShadowServer
-    return ShadowServer(display, multi_window)
+    return ShadowServer(display, attrs)
 
 
 def make_proxy_server():
@@ -549,7 +551,6 @@ SERVER_LOAD_SKIP_OPTIONS: tuple[str, ...] = (
 
 
 def get_options_file_contents(opts, mode: str = "seamless") -> str:
-    from xpra.scripts.parsing import fixup_defaults
     defaults = make_defaults_struct()
     fixup_defaults(defaults)
     fixup_options(defaults)
@@ -718,7 +719,9 @@ def request_exit(uri: str) -> bool:
     return p.poll() in (ExitCode.OK, ExitCode.UPGRADE)
 
 
-def do_run_server(script_file: str, cmdline, error_cb, opts, extra_args, mode: str, display_name: str, defaults):
+def do_run_server(script_file: str, cmdline, error_cb, opts, extra_args, full_mode: str, display_name: str, defaults):
+    mode_parts = full_mode.split(",", 1)
+    mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
     assert mode in (
         "seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen",
         "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
@@ -772,7 +775,7 @@ def do_run_server(script_file: str, cmdline, error_cb, opts, extra_args, mode: s
     progress(10, "initializing environment")
     try:
         return _do_run_server(script_file, cmdline,
-                              error_cb, opts, extra_args, mode, display_name, defaults,
+                              error_cb, opts, extra_args, full_mode, display_name, defaults,
                               splash_process, progress)
     except Exception as e:
         progress(100, f"error: {e}")
@@ -780,8 +783,13 @@ def do_run_server(script_file: str, cmdline, error_cb, opts, extra_args, mode: s
 
 
 def _do_run_server(script_file: str, cmdline,
-                   error_cb, opts, extra_args, mode: str, display_name: str, defaults,
+                   error_cb, opts, extra_args, full_mode: str, display_name: str, defaults,
                    splash_process, progress):
+    mode_parts = full_mode.split(",", 1)
+    mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
+    mode_attrs: dict[str, str] = {}
+    if len(mode_parts) > 1:
+        mode_attrs = parse_str_dict(mode_parts[1])
     desktop_display = nox()
     try:
         cwd = os.getcwd()
@@ -1511,7 +1519,9 @@ def _do_run_server(script_file: str, cmdline,
 
     progress(80, "initializing server")
     if shadowing:
-        app = make_shadow_server(display_name, multi_window=mode == "shadow")
+        # "shadow" -> multi-window=True, "shadow-screen" -> multi-window=False
+        mode_attrs["multi-window"] = str(mode == "shadow")
+        app = make_shadow_server(display_name, mode_attrs)
     elif proxying:
         app = make_proxy_server()
     elif expanding:

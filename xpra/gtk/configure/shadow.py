@@ -24,9 +24,9 @@ SHADOW_BACKENDS = {
         "this option should always find a suitable capture strategy",
         "and it may choose not to use a video stream",
     ),
-    "xshm": (
-        "X11 shared memory capture",
-        "copies the X11 server's pixel data using XShm,",
+    "x11": (
+        "X11 screen capture",
+        "copies the X11 server's pixel data, preferably using XShm,",
         "this option only requires the X11 bindings",
         "Wayland displays with XWayland will look blank"
     ),

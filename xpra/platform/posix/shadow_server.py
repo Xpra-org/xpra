@@ -57,7 +57,7 @@ def load_wayland(display: str = "") -> type | None:
     return c
 
 
-def load_xshm(display: str = "") -> type | None:
+def load_x11(display: str = "") -> type | None:
     gdkb = os.environ.get("GDK_BACKEND")
     try:
         os.environ["GDK_BACKEND"] = "x11"
@@ -70,26 +70,32 @@ def load_xshm(display: str = "") -> type | None:
     return None
 
 
+load_nvfbc = load_x11
+
+
 def load_auto(display: str = "") -> type | None:
     c: type | None = None
     if display.startswith("wayland-") or os.path.isabs(display):
         c = load_wayland(display)
     elif display.startswith(":"):
-        c = load_xshm(display)
-    return c or load_remotedesktop(display) or load_screencast(display) or load_xshm(display)
+        c = load_x11(display)
+    return c or load_remotedesktop(display) or load_screencast(display) or load_x11(display)
 
 
-def ShadowServer(display: str = "", multi_window: bool = True):
-    env_setting = os.environ.get("XPRA_SHADOW_BACKEND", "auto").lower()
-    if env_setting not in SHADOW_OPTIONS:
-        raise ValueError(f"invalid 'XPRA_SHADOW_BACKEND' {env_setting!r}, use: {SHADOW_OPTIONS}")
-    load_fn = globals().get(f"load_{env_setting}")
-    shadow_server = load_fn()
-    if not shadow_server:
-        raise RuntimeError(f"shadow backend {env_setting} is not available")
+def ShadowServer(display: str, attrs: dict[str, str]):
     log = Logger("server", "shadow")
-    log(f"ShadowServer({display}, {multi_window}) {env_setting}={shadow_server}")
-    return shadow_server(multi_window)
+    setting = (attrs.get("backend", os.environ.get("XPRA_SHADOW_BACKEND", "auto"))).lower()
+    log(f"ShadowServer({display}, {attrs}) {setting=}")
+    if setting not in SHADOW_OPTIONS:
+        raise ValueError(f"invalid shadow backend {setting!r}, use: {SHADOW_OPTIONS.keys()}")
+    load_fn = globals().get(f"load_{setting}")
+    if not load_fn:
+        raise RuntimeError(f"missing shadow loader for {setting!r}")
+    shadow_server = load_fn(display)
+    if not shadow_server:
+        raise RuntimeError(f"shadow backend {setting} is not available")
+    log(f"ShadowServer({display}, {attrs}) {setting}={shadow_server}")
+    return shadow_server(attrs)
 
 
 def check_nvfbc() -> bool:
@@ -112,7 +118,7 @@ def check_pipewire() -> bool:
     return has_plugins("pipewiresrc")
 
 
-def check_xshm() -> bool:
+def check_x11() -> bool:
     from xpra.x11.bindings.ximage import XImageBindings  # pylint: disable=import-outside-toplevel
     assert XImageBindings
     return True
@@ -127,6 +133,6 @@ SHADOW_OPTIONS = {
     "nvfbc": check_nvfbc,
     "gstreamer": check_gstreamer,
     "pipewire": check_pipewire,
-    "xshm": check_xshm,
+    "x11": check_x11,
     "gtk": nocheck,
 }

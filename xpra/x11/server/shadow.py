@@ -324,8 +324,8 @@ class X11ShadowModel(RootWindowModel):
 # so many calls will happen twice there (__init__ and init)
 class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
-    def __init__(self, multi_window: bool = True):
-        GTKShadowServerBase.__init__(self, multi_window=multi_window)
+    def __init__(self, attrs: dict[str, str]):
+        GTKShadowServerBase.__init__(self, attrs)
         X11ServerCore.__init__(self)
         self.session_type = "X11"
         self.modify_keymap = False
