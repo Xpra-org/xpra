@@ -3683,7 +3683,7 @@ def display_wm_info(args) -> Dict[str,Any]:
         info = get_wm_info()
         from gi.repository import Gdk  #pylint: disable=import-outside-toplevel
         display = Gdk.Display.get_default()
-        info["display"] = display.get_name(),
+        info["display"] = display.get_name()
         return info
 
 def run_xwait(args) -> int:
