@@ -119,12 +119,15 @@ LOSSLESS_WINDOW_TYPES = set(os.environ.get(
 
 
 COMPRESS_FMT_PREFIX : str = "compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s"
+COMPRESS_RATIO      : str = " with ratio %5.1f%%  (%5iKB to %5iKB)"
 COMPRESS_FMT_SUFFIX : str = ", sequence %5i, client_options=%-50s, options=%s"
-COMPRESS_FMT        : str = COMPRESS_FMT_PREFIX+" with ratio %5.1f%%  (%5iKB to %5iKB)"+COMPRESS_FMT_SUFFIX
-
+COMPRESS_FMT        : str = COMPRESS_FMT_PREFIX + COMPRESS_RATIO + COMPRESS_FMT_SUFFIX
+COMPRESS_FMT_DIRECT : str = (
+    "compress:            %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s" + COMPRESS_RATIO + COMPRESS_FMT_SUFFIX
+)
 
 ui_context : ContextManager = nullcontext()
-if POSIX and not OSX and not is_Wayland():
+if POSIX and not OSX and not is_Wayland() and not envbool("XPRA_NOX11", False):
     from xpra.gtk.error import xlog
     ui_context = xlog
 
@@ -2760,17 +2763,23 @@ class WindowSource(WindowIconSource):
         # log("make_data_packet: returning packet=%s", packet[:7]+[".."]+packet[8:])
         return packet
 
-    def direct_queue_draw(self, coding:str, data:bytes, client_info:dict) -> None:
+    def direct_queue_draw(self, coding: str, data: bytes, client_info: dict) -> None:
         # this is a frame from a compressed stream,
         # send it to all the window sources for this window:
         cdata = Compressed(coding, data)
-        options : dict[str,Any] = {}
+        options: dict[str, Any] = {}
         x = y = 0
         w, h = self.window_dimensions
+        psize = w*h*4
+        csize = len(cdata)
         outstride = 0
         damage_time = process_damage_time = monotonic()
         log(f"direct_queue_draw({coding}, {len(data)} bytes, {client_info})")
         packet = self.make_draw_packet(x, y, w, h, coding, cdata, outstride, client_info, options)
+        compresslog(COMPRESS_FMT_DIRECT,
+                    w, h, x, y, self.wid, coding,
+                    100.0*csize/psize, ceil(psize/1024), ceil(csize/1024),
+                    self._damage_packet_sequence, client_info, options)
         self.queue_damage_packet(packet, damage_time, process_damage_time, options)
 
     def mmap_encode(self, coding : str, image : ImageWrapper, _options) -> tuple:

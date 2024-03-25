@@ -660,7 +660,7 @@ class WindowVideoSource(WindowSource):
             self.gstreamer_pipeline = None
             gp.stop()
 
-    def new_gstreamer_frame(self, _capture_pipeline, coding:str, data, client_info:dict) -> None:
+    def new_gstreamer_frame(self, _capture_pipeline, coding: str, data, client_info: dict) -> None:
         self.direct_queue_draw(coding, data, client_info)
 
     def update_window_dimensions(self, ww, wh):
