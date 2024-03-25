@@ -620,9 +620,8 @@ class WindowVideoSource(WindowSource):
         if ww >= 64 and wh >= 64 and self.encoding == "stream" and STREAM_MODE == "gstreamer" and self.common_video_encodings:  # noqa: E501
             # in this mode, we start a pipeline once
             # and let it submit packets, bypassing all the usual logic:
-            if not self.gstreamer_pipeline:
-                self.start_gstreamer_pipeline()
-            return
+            if self.gstreamer_pipeline or self.start_gstreamer_pipeline():
+                return
         vs = self.video_subregion
         if vs:
             r = vs.rectangle
@@ -631,9 +630,9 @@ class WindowVideoSource(WindowSource):
                 vs.cancel_refresh_timer()
         super().do_damage(ww, wh, x, y, w, h, options)
 
-    def start_gstreamer_pipeline(self):
+    def start_gstreamer_pipeline(self) -> bool:
         from xpra.gstreamer.common import plugin_str
-        from xpra.codecs.gstreamer.capture import CaptureAndEncode
+        from xpra.codecs.gstreamer.capture import CaptureAndEncode, choose_video_encoder
         attrs = {
             "show-pointer"  : False,
             "do-timestamp"  : True,
@@ -646,11 +645,14 @@ class WindowVideoSource(WindowSource):
         if xid:
             attrs["xid"] = xid
         element = plugin_str("ximagesrc", attrs)
-        encoding = self.common_video_encodings[0]
+        encoding = choose_video_encoder(self.common_video_encodings)
+        if not encoding:
+            return False
         w, h = self.window_dimensions
         self.gstreamer_pipeline = CaptureAndEncode(element, encoding, w, h)
         self.gstreamer_pipeline.connect("new-image", self.new_gstreamer_frame)
         self.gstreamer_pipeline.start()
+        return True
 
     def stop_gstreamer_pipeline(self):
         gp = self.gstreamer_pipeline

@@ -139,6 +139,19 @@ ENCODER_ELEMENTS: dict[str, str] = {
 }
 
 
+def choose_video_encoder(encodings: tuple[str, ...]) -> str:
+    log(f"choose_video_encoder({encodings})")
+    for encoding in encodings:
+        element = ENCODER_ELEMENTS.get(encoding, "")
+        if not element:
+            continue
+        if element not in get_all_plugin_names():
+            log(f"skipped {encoding!r} due to missing {element!r}")
+            continue
+        return encoding
+    return ""
+
+
 class CaptureAndEncode(Capture):
     """
     Uses a GStreamer pipeline to capture the screen

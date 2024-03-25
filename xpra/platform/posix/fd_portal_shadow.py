@@ -15,8 +15,8 @@ from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.common import NotificationID, ConnectionMessage
 from xpra.dbus.helper import dbus_to_native
-from xpra.codecs.gstreamer.capture import Capture, CaptureAndEncode, ENCODER_ELEMENTS
-from xpra.gstreamer.common import get_element_str, get_all_plugin_names
+from xpra.codecs.gstreamer.capture import Capture, CaptureAndEncode, choose_video_encoder
+from xpra.gstreamer.common import get_element_str
 from xpra.codecs.image import ImageWrapper
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
@@ -253,23 +253,14 @@ class PortalShadow(GTKShadowServerBase):
             encs = getattr(c, "core_encodings", ())
             common_video = tuple(x for x in VIDEO_MODE_ENCODINGS if x in encs)
             log(f"core_encodings({c})={encs}, common video encodings={common_video}")
-            available = []
-            for encoding in common_video:
-                element = ENCODER_ELEMENTS.get(encoding, "")
-                if not element:
-                    continue
-                if element not in get_all_plugin_names():
-                    log(f"skipped {encoding!r} due to missing {element!r}")
-                    continue
-                available.append(encoding)
-            if available:
-                log(f"will try the following encodings: {available}")
-                for encoding in available:
-                    try:
-                        return CaptureAndEncode(el, encoding, width=w, height=h)
-                    except (RuntimeError, ValueError) as e:
-                        log("CaptureAndEncode%s", (el, encoding, w, h), exc_info=True)
-                        log.info(f"cannot use {encoding}: {e}")
+            encoding = choose_video_encoder(common_video)
+            if encoding:
+                log(f"will try the following encoding: {encoding}")
+                try:
+                    return CaptureAndEncode(el, encoding, width=w, height=h)
+                except (RuntimeError, ValueError) as e:
+                    log("CaptureAndEncode%s", (el, encoding, w, h), exc_info=True)
+                    log.info(f"cannot use {encoding}: {e}")
             else:
                 log.warn("no video encoders available")
             log.warn("Warning: falling back to RGB capture")
