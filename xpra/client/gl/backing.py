@@ -161,12 +161,6 @@ DATATYPE_TO_STR: dict[IntConstant, str] = {
     GL_UNSIGNED_SHORT_5_6_5: "UNSIGNED_SHORT_5_6_5",
 }
 
-paint_context_manager: AbstractContextManager = nullcontext()
-if POSIX and not OSX and not is_Wayland():
-    # pylint: disable=ungrouped-imports
-    from xpra.gtk.error import xsync
-
-    paint_context_manager = xsync
 
 # Texture number assignment
 # The first four are used to update the FBO,
@@ -225,6 +219,11 @@ class GLWindowBackingBase(WindowBackingBase):
         self.bit_depth = pixel_depth
         super().__init__(wid, window_alpha and self.HAS_ALPHA)
         self.opengl_init()
+        self.paint_context_manager: AbstractContextManager = nullcontext()
+        if POSIX and not OSX and not is_Wayland():
+            # pylint: disable=ungrouped-imports
+            from xpra.gtk.error import xsync
+            self.paint_context_manager = xsync
 
     def opengl_init(self) -> None:
         self.init_gl_config()
@@ -682,7 +681,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if not context:
             raise RuntimeError("missing opengl paint context")
         try:
-            with paint_context_manager:
+            with self.paint_context_manager:
                 # Change state to target screen instead of our FBO
                 glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
 
