@@ -51,6 +51,7 @@ class Capture(Pipeline):
         self.framerate: int = 10
         self.image: Queue[ImageWrapper] = Queue(maxsize=1)
         self.sink = None
+        self.capture = None
         self.extra_client_info = {}
         self.create_pipeline(element)
         assert width > 0 and height > 0
@@ -59,7 +60,7 @@ class Capture(Pipeline):
         # CAPS = f"video/x-raw,width={self.width},height={self.height},
         #     format=(string){self.pixel_format},framerate={self.framerate}/1,interlace=progressive"
         elements = [
-            capture_element,
+            f"{capture_element} name=capture",  # ie: ximagesrc or pipewiresrc
             # f"video/x-raw,framerate={self.framerate}/1",
             "videoconvert",
             # "videorate",
@@ -69,6 +70,7 @@ class Capture(Pipeline):
         if not self.setup_pipeline_and_bus(elements):
             raise RuntimeError("failed to setup gstreamer pipeline")
         self.sink = self.pipeline.get_by_name("sink")
+        self.capture = self.pipeline.get_by_name("capture")
 
         def sh(sig, handler):
             self.element_connect(self.sink, sig, handler)
@@ -190,7 +192,7 @@ class CaptureAndEncode(Capture):
             self.extra_client_info["profile"] = self.profile
         gst_encoding = get_gst_encoding(encoding)  # ie: "hevc" -> "video/x-h265"
         elements = [
-            capture_element,  # ie: ximagesrc or pipewiresrc
+            f"{capture_element} name=capture",  # ie: ximagesrc or pipewiresrc
             # "videorate",
             # "video/x-raw,framerate=20/1",
             # "queue leaky=2 max-size-buffers=1",
@@ -204,6 +206,7 @@ class CaptureAndEncode(Capture):
         if not self.setup_pipeline_and_bus(elements):
             raise RuntimeError("failed to setup gstreamer pipeline")
         self.sink: Gst.Element = self.pipeline.get_by_name("sink")
+        self.capture = self.pipeline.get_by_name("capture")
 
         def sh(sig, handler):
             self.element_connect(self.sink, sig, handler)

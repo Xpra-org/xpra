@@ -651,9 +651,9 @@ class WindowVideoSource(WindowSource):
         from xpra.gstreamer.common import plugin_str
         from xpra.codecs.gstreamer.capture import CaptureAndEncode, choose_video_encoder
         attrs = {
-            "show-pointer"  : False,
-            "do-timestamp"  : True,
-            "use-damage"    : True,
+            "show-pointer": False,
+            "do-timestamp": True,
+            "use-damage": False,
         }
         try:
             xid = self.window.get_property("xid")
