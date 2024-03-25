@@ -57,14 +57,10 @@ class Capture(Pipeline):
         assert width > 0 and height > 0
 
     def create_pipeline(self, capture_element: str = "ximagesrc") -> None:
-        # CAPS = f"video/x-raw,width={self.width},height={self.height},
-        #     format=(string){self.pixel_format},framerate={self.framerate}/1,interlace=progressive"
         elements = [
             f"{capture_element} name=capture",  # ie: ximagesrc or pipewiresrc
             # f"video/x-raw,framerate={self.framerate}/1",
             "videoconvert",
-            # "videorate",
-            # "videoscale ! video/x-raw,width=800,height=600 ! autovideosink
             "appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false",
         ]
         if not self.setup_pipeline_and_bus(elements):
@@ -161,16 +157,6 @@ class CaptureAndEncode(Capture):
     """
 
     def create_pipeline(self, capture_element: str = "ximagesrc") -> None:
-        # encode_element:str="x264enc pass=4 speed-preset=1 tune=4 byte-stream=true quantizer=51 qp-max=51 qp-min=50"):
-        # encode_element="x264enc threads=8 pass=4 speed-preset=1 tune=zerolatency byte-stream=true
-        #     quantizer=51 qp-max=51 qp-min=50"):
-        # encode_element="vp8enc deadline=1 min-quantizer=60 max-quantizer=63 cq-level=61"):
-        #  encode_element="vp9enc deadline=1 error-resilient=1 min-quantizer=60 end-usage=2"):
-        # desktopcast does this:
-        # https://github.com/seijikun/desktopcast/blob/9ae61739cedce078d197011f770f8e94d9a9a8b2/src/stream_server.rs#LL162C18-L162C18
-        # " ! videoconvert ! queue leaky=2 ! x264enc threads={} tune=zerolatency speed-preset=2 bframes=0 !
-        #     video/x-h264,profile=high ! queue ! rtph264pay name=pay0 pt=96",
-
         # we are overloading "pixel_format" as "encoding":
         encoding = self.pixel_format
         encoder = ENCODER_ELEMENTS.get(encoding)
@@ -193,14 +179,10 @@ class CaptureAndEncode(Capture):
         gst_encoding = get_gst_encoding(encoding)  # ie: "hevc" -> "video/x-h265"
         elements = [
             f"{capture_element} name=capture",  # ie: ximagesrc or pipewiresrc
-            # "videorate",
-            # "video/x-raw,framerate=20/1",
-            # "queue leaky=2 max-size-buffers=1",
             "videoconvert",
             "queue leaky=2",
             get_element_str(encoder, eopts),
             get_caps_str(gst_encoding, vcaps),
-            # "appsink name=sink emit-signals=true max-buffers=1 drop=false sync=false async=true qos=true",
             get_element_str("appsink", get_default_appsink_attributes()),
         ]
         if not self.setup_pipeline_and_bus(elements):
