@@ -1309,32 +1309,33 @@ class WindowSource(WindowIconSource):
         self.av_sync_frame_delay = 0
         self.may_update_av_sync_delay()
 
-    def update_speed(self) -> None:
+    def update_speed(self) -> bool:
         if self.is_cancelled():
-            return
+            return False
         statslog("update_speed() suspended=%s, mmap=%s, current=%i, hint=%i, fixed=%i, encoding=%s, sequence=%i",
                  self.suspended, self._mmap_size > 0,
                  self._current_speed, self._speed_hint, self._fixed_speed,
                  self.encoding, self._sequence)
         if self.suspended:
             self._encoding_speed_info = {"suspended" : True}
-            return
+            return False
         if self._mmap_size > 0:
             self._encoding_speed_info = {"mmap" : True}
             return
+        cs = self._current_speed
         speed = self._speed_hint
         if speed >= 0:
             self._current_speed = capr(speed)
             self._encoding_speed_info = {"hint" : True}
-            return
+            return cs != self._current_speed
         speed = self._fixed_speed
         if speed >= 0:
             self._current_speed = capr(speed)
             self._encoding_speed_info = {"fixed" : True}
-            return
+            return cs != self._current_speed
         if self._sequence < 10:
             self._encoding_speed_info = {"pending" : True}
-            return
+            return False
         now = monotonic()
         # make a copy to work on:
         speed_data = list(self._encoding_speed)
@@ -1352,6 +1353,7 @@ class WindowSource(WindowIconSource):
         self._encoding_speed.append((monotonic(), speed))
         ww, wh = self.window_dimensions
         self.global_statistics.speed.append((now, ww*wh, speed))
+        return cs != self._current_speed
 
     def set_min_speed(self, min_speed:int) -> None:
         min_speed = capr(min_speed)
@@ -1374,42 +1376,43 @@ class WindowSource(WindowIconSource):
             self._current_speed = speed
             self.reconfigure(True)
 
-    def update_quality(self) -> None:
+    def update_quality(self) -> bool:
         if self.is_cancelled():
-            return
+            return False
         statslog("update_quality() suspended=%s, mmap_size=%s, current=%i, hint=%i, fixed=%i, encoding=%s, sequence=%i",
                  self.suspended, self._mmap_size,
                  self._current_quality, self._quality_hint, self._fixed_quality,
                  self.encoding, self._sequence)
         if self.suspended:
             self._encoding_quality_info = {"suspended" : True}
-            return
+            return False
         if self._mmap_size > 0:
             self._encoding_quality_info = {"mmap" : True}
-            return
+            return False
+        cq = self._current_quality
         quality = self._quality_hint
         if quality >= 0:
             self._current_quality = capr(quality)
             self._encoding_quality_info = {"hint" : True}
-            return
+            return cq != self._current_quality
         quality = self._fixed_quality
         if quality >= 0:
             self._current_quality = capr(quality)
             self._encoding_quality_info = {"fixed" : True}
-            return
+            return cq != self._current_quality
         if self.encoding in LOSSLESS_ENCODINGS:
             # the user has selected an encoding which does not use quality
             # so skip the calculations!
             self._encoding_quality_info = {"lossless" : self.encoding}
             self._current_quality = 100
-            return
+            return cq != self._current_quality
         if self._sequence < 10:
             self._encoding_quality_info = {"pending" : True}
-            return
+            return False
         if self.window_type.intersection(LOSSLESS_WINDOW_TYPES):
             self._encoding_quality_info = {"lossless-window-type" : self.window_type}
             self._current_quality = 100
-            return
+            return cq != self._current_quality
         now = monotonic()
         info, target = get_target_quality(self.window_dimensions, self.batch_config,
                                           self.global_statistics, self.statistics,
@@ -1426,6 +1429,7 @@ class WindowSource(WindowIconSource):
         self._encoding_quality.append((now, quality))
         ww, wh = self.window_dimensions
         self.global_statistics.quality.append((now, ww*wh, quality))
+        return cq != self._current_quality
 
     def set_min_quality(self, min_quality:int) -> None:
         min_quality = capr(min_quality)
@@ -1433,15 +1437,15 @@ class WindowSource(WindowIconSource):
             if min_quality > 0:
                 self._fixed_quality = 0
             self._fixed_min_quality = min_quality
-            self.update_quality()
-            self.reconfigure(True)
+            if self.update_quality():
+                self.reconfigure(True)
 
     def set_max_quality(self, max_quality:int) -> None:
         max_quality = capr(max_quality)
         if self._fixed_max_quality!=max_quality:
             self._fixed_max_quality = max_quality
-            self.update_quality()
-            self.reconfigure(True)
+            if self.update_quality():
+                self.reconfigure(True)
 
     def set_quality(self, quality:int) -> None:
         quality = capr(quality)
