@@ -45,6 +45,7 @@ scrolllog = Logger("scroll")
 compresslog = Logger("compress")
 refreshlog = Logger("refresh")
 regionrefreshlog = Logger("regionrefresh")
+gstlog = Logger("gstreamer")
 
 
 TEXT_USE_VIDEO = envbool("XPRA_TEXT_USE_VIDEO", False)
@@ -106,6 +107,7 @@ SCROLL_MIN_PERCENT = max(1, min(100, envint("XPRA_SCROLL_MIN_PERCENT", 30)))
 MIN_SCROLL_IMAGE_SIZE = envint("XPRA_MIN_SCROLL_IMAGE_SIZE", 128)
 
 STREAM_MODE = os.environ.get("XPRA_STREAM_MODE", "")
+GSTREAMER_X11_TIMEOUT = envint("XPRA_GSTREAMER_X11_TIMEOUT", 500)
 
 SAVE_VIDEO_PATH = os.environ.get("XPRA_SAVE_VIDEO_PATH", "")
 SAVE_VIDEO_STREAMS = envbool("XPRA_SAVE_VIDEO_STREAMS", False)
@@ -197,6 +199,7 @@ class WindowVideoSource(WindowSource):
         self.video_fallback_encodings : dict = {}
         self.edge_encoding : str = ""
         self.start_video_frame: int = 0
+        self.gstreamer_timer: int = 0
         self.video_encoder_timer: int = 0
         self.b_frame_flush_timer: int = 0
         self.b_frame_flush_data : tuple = ()
@@ -616,12 +619,16 @@ class WindowVideoSource(WindowSource):
             return "mmap"
         return super().do_get_auto_encoding(ww, wh, options, current_encoding or self.encoding, encoding_options)
 
-    def do_damage(self, ww: int, wh: int, x: int, y: int, w: int, h: int, options):
+    def do_damage(self, ww: int, wh: int, x: int, y: int, w: int, h: int, options) -> None:
         if ww >= 64 and wh >= 64 and self.encoding == "stream" and STREAM_MODE == "gstreamer" and self.common_video_encodings:  # noqa: E501
             # in this mode, we start a pipeline once
             # and let it submit packets, bypassing all the usual logic:
             if self.gstreamer_pipeline or self.start_gstreamer_pipeline():
-                return
+                gp = self.gstreamer_pipeline
+                self.cancel_gstreamer_timer()
+                if gp:
+                    self.gstreamer_timer = self.timeout_add(GSTREAMER_X11_TIMEOUT, self.gstreamer_nodamage)
+                    return
         vs = self.video_subregion
         if vs:
             r = vs.rectangle
@@ -629,6 +636,16 @@ class WindowVideoSource(WindowSource):
                 # the damage will take care of scheduling it again
                 vs.cancel_refresh_timer()
         super().do_damage(ww, wh, x, y, w, h, options)
+
+    def gstreamer_nodamage(self) -> None:
+        gstlog("gstreamer_nodamage() stopping")
+        self.gstreamer_timer = 0
+        self.stop_gstreamer_pipeline()
+
+    def cancel_gstreamer_timer(self) -> None:
+        gt = self.gstreamer_timer
+        if gt:
+            self.source_remove(gt)
 
     def start_gstreamer_pipeline(self) -> bool:
         from xpra.gstreamer.common import plugin_str
@@ -652,16 +669,27 @@ class WindowVideoSource(WindowSource):
         self.gstreamer_pipeline = CaptureAndEncode(element, encoding, w, h)
         self.gstreamer_pipeline.connect("new-image", self.new_gstreamer_frame)
         self.gstreamer_pipeline.start()
+        gstlog("start_gstreamer_pipeline() %s started", self.gstreamer_pipeline)
         return True
 
     def stop_gstreamer_pipeline(self):
         gp = self.gstreamer_pipeline
+        gstlog("stop_gstreamer_pipeline() gstreamer_pipeline=%s", gp)
         if gp:
             self.gstreamer_pipeline = None
             gp.stop()
 
     def new_gstreamer_frame(self, _capture_pipeline, coding: str, data, client_info: dict) -> None:
+        gstlog(f"new_gstreamer_frame: {coding}")
+        if not self.window.is_managed():
+            return
+
+        # ensures that more damage events will be emitted:
+        def continue_damage():
+            self.ui_thread_check()
+            self.window.acknowledge_changes()
         self.direct_queue_draw(coding, data, client_info)
+        self.idle_add(continue_damage)
 
     def update_window_dimensions(self, ww, wh):
         super().update_window_dimensions(ww, wh)
@@ -676,6 +704,7 @@ class WindowVideoSource(WindowSource):
         self.free_scroll_data()
         self.last_scroll_time = 0
         super().cancel_damage(limit)
+        self.cancel_gstreamer_timer()
         self.stop_gstreamer_pipeline()
         # we must clean the video encoder to ensure
         # we will resend a key frame because we may be missing a frame
