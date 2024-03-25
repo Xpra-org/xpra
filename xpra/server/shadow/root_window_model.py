@@ -173,12 +173,12 @@ class RootWindowModel:
             return get_os_icons()
         if prop == "content-type":
             return "desktop"
-        raise ValueError(f"invalid property {prop!r}")
+        raise AttributeError(f"invalid property {prop!r}")
 
     def get(self, name: str, default_value=None):
         try:
             return self.get_property(name)
-        except ValueError as e:
+        except AttributeError as e:
             log("get(%s, %s) %s on %s", name, default_value, e, self)
             return default_value
 
