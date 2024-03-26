@@ -169,8 +169,8 @@ def choose_video_encoder(encodings: Iterable[str]) -> str:
     return ""
 
 
-def choose_csc(modes: Iterable[str]) -> str:
-    prefer = "YUV420P"
+def choose_csc(modes: Iterable[str], quality=100) -> str:
+    prefer = "YUV420P" if quality < 80 else "YUV444P"
     if not modes or prefer in modes:
         return prefer
     return modes[0]
@@ -197,7 +197,7 @@ class CaptureAndEncode(Capture):
         })
         einfo = get_encoder_info(encoder)
         log(f"{encoder}: {einfo=}")
-        self.csc_mode = choose_csc(einfo.get("format", ()))
+        self.csc_mode = choose_csc(einfo.get("format", ()), options.intget("quality", 100))
         self.profile = get_profile(options, encoding, csc_mode=self.csc_mode,
                                    default_profile="high" if encoder == "x264enc" else "")
         eopts = get_video_encoder_options(encoder, self.profile, options)
