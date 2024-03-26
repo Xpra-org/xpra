@@ -209,7 +209,7 @@ class CaptureAndEncode(Capture):
         gst_encoding = get_gst_encoding(encoding)  # ie: "hevc" -> "video/x-h265"
         elements = [
             f"{capture_element} name=capture",  # ie: ximagesrc or pipewiresrc
-            "queue leaky=2",
+            "queue leaky=2 max-size-buffers=1",
             "videoconvert",
             "video/x-raw,format=%s" % get_gst_rgb_format(self.csc_mode),
             get_element_str(encoder, eopts),
