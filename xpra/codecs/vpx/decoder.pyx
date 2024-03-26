@@ -294,6 +294,15 @@ cdef class Decoder:
         if img==NULL:
             log.error("Error: vpx_codec_get_frame: %s", self.codec_error_str())
             return None
+        if img.fmt != self.pixfmt:
+            expected = self.dst_format
+            if img.fmt == VPX_IMG_FMT_I444:
+                self.dst_format = "YUV444P"
+            elif img.fmt == VPX_IMG_FMT_I420:
+                self.dst_format = "YUV420P"
+            else:
+                raise RuntimeError("unexpected image pixel format %s" % img.fmt)
+            log.warn(f"Warning: expected {expected} but got {self.dst_format}")
         strides = []
         pixels = []
         divs = get_subsampling_divs(self.get_colorspace())
