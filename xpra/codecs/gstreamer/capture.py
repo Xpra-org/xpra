@@ -9,6 +9,7 @@ from typing import Any
 
 from xpra.os_util import gi_import
 from xpra.util.env import envbool
+from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.gstreamer.common import (
     import_gst, GST_FLOW_OK, get_element_str,
@@ -139,22 +140,29 @@ GObject.type_register(Capture)
 
 
 ENCODER_ELEMENTS: dict[str, str] = {
-    "jpeg": "jpegenc",
-    "h264": "x264enc",
-    "vp8": "vp8enc",
-    "vp9": "vp9enc",
-    "av1": "av1enc",
+    "jpeg": ("jpegenc", ),
+    "h264": ("openh264enc", "x264enc"),
+    "vp8": ("vp8enc", ),
+    "vp9": ("vp9enc", ),
+    "av1": ("av1enc", ),
 }
+
+
+def choose_encoder(plugins: Iterable[str]) -> str:
+    # for now, just use the first one available:
+    for plugin in plugins:
+        if plugin in get_all_plugin_names():
+            return plugin
+    return ""
 
 
 def choose_video_encoder(encodings: Iterable[str]) -> str:
     log(f"choose_video_encoder({encodings})")
     for encoding in encodings:
-        element = ENCODER_ELEMENTS.get(encoding, "")
+        plugins = ENCODER_ELEMENTS.get(encoding, ())
+        element = choose_encoder(plugins)
         if not element:
-            continue
-        if element not in get_all_plugin_names():
-            log(f"skipped {encoding!r} due to missing {element!r}")
+            log(f"skipped {encoding!r} due to missing: {csv(plugins)}")
             continue
         log(f"selected {encoding!r}")
         return encoding
@@ -170,11 +178,12 @@ class CaptureAndEncode(Capture):
     def create_pipeline(self, capture_element: str = "ximagesrc") -> None:
         # we are overloading "pixel_format" as "encoding":
         encoding = self.pixel_format
-        encoder = ENCODER_ELEMENTS.get(encoding)
+        elements = ENCODER_ELEMENTS.get(encoding)
+        if not elements:
+            raise ValueError(f"no encoders defined for {encoding!r}")
+        encoder = choose_encoder(elements)
         if not encoder:
-            raise ValueError(f"no encoder defined for {encoding}")
-        if encoder not in get_all_plugin_names():
-            raise RuntimeError(f"encoder {encoder} is not available")
+            raise RuntimeError(f"no encoders found for {encoding!r}")
         options = typedict({
             "speed": 100,
             "quality": 100,
