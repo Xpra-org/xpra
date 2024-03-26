@@ -250,8 +250,10 @@ class PortalShadow(GTKShadowServerBase):
         })
         c = self.authenticating_client
         if VIDEO_MODE:
+            encoding = getattr(c, "encoding", "")
             encs = getattr(c, "core_encodings", ())
-            common_video = tuple(x for x in VIDEO_MODE_ENCODINGS if x in encs)
+            options = [encoding] + VIDEO_MODE_ENCODINGS
+            common_video = set(options) & set(encs)
             log(f"core_encodings({c})={encs}, common video encodings={common_video}")
             encoding = choose_video_encoder(common_video)
             if encoding:

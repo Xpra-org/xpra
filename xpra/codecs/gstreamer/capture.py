@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from queue import Queue, Empty, Full
+from collections.abc import Iterable
 from typing import Any
 
 from xpra.os_util import gi_import
@@ -137,7 +138,7 @@ ENCODER_ELEMENTS: dict[str, str] = {
 }
 
 
-def choose_video_encoder(encodings: tuple[str, ...]) -> str:
+def choose_video_encoder(encodings: Iterable[str]) -> str:
     log(f"choose_video_encoder({encodings})")
     for encoding in encodings:
         element = ENCODER_ELEMENTS.get(encoding, "")
@@ -146,6 +147,7 @@ def choose_video_encoder(encodings: tuple[str, ...]) -> str:
         if element not in get_all_plugin_names():
             log(f"skipped {encoding!r} due to missing {element!r}")
             continue
+        log(f"selected {encoding!r}")
         return encoding
     return ""
 

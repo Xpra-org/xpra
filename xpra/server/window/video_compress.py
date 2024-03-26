@@ -662,7 +662,10 @@ class WindowVideoSource(WindowSource):
         if xid:
             attrs["xid"] = xid
         element = plugin_str("ximagesrc", attrs)
-        encoding = choose_video_encoder(self.common_video_encodings)
+        # for now this doesn't do anything as we require `encoding="stream"`
+        # options = [self.encoding] + list(self.common_encodings)
+        options = self.common_encodings
+        encoding = choose_video_encoder(options)
         if not encoding:
             return False
         w, h = self.window_dimensions
