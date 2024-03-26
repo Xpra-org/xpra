@@ -11,7 +11,7 @@ from collections.abc import Callable
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.objects import typedict
 from xpra.util.env import envint
-from xpra.os_util import OSX
+from xpra.os_util import OSX, gi_import
 from xpra.gstreamer.common import import_gst, GST_FLOW_OK
 from xpra.gstreamer.pipeline import Pipeline
 from xpra.log import Logger
@@ -161,27 +161,109 @@ def cleanup_module() -> None:
     log("gstreamer.cleanup_module()")
 
 
+IDENTICAL_PIXEL_FORMATS = (
+    "NV12",
+    "RGBA", "BGRA", "ARGB", "ABGR",
+    "RGB", "BGR",
+    "RGB15", "RGB16", "BGR15",
+    "r210",
+    "BGRP", "RGBP",
+)
+XPRA_TO_GSTREAMER = {
+    "YUV420P": "I420",
+    "YUV444P": "Y444",
+    "BGRX": "BGRx",
+    "XRGB": "xRGB",
+    "XBGR": "xBGR",
+    "YUV400": "GRAY8",
+    # "RGB8P"
+}
+GSTREAMER_TO_XPRA = dict((v, k) for k, v in XPRA_TO_GSTREAMER.items())
+
+
 def get_gst_rgb_format(rgb_format: str) -> str:
-    if rgb_format in (
-            "NV12",
-            "RGBA", "BGRA", "ARGB", "ABGR",
-            "RGB", "BGR",
-            "RGB15", "RGB16", "BGR15",
-            "r210",
-            "BGRP", "RGBP",
-    ):
-        # identical name:
+    if rgb_format in IDENTICAL_PIXEL_FORMATS:
         return rgb_format
     # translate to gstreamer name:
-    return {
-        "YUV420P": "I420",
-        "YUV444P": "Y444",
-        "BGRX": "BGRx",
-        "XRGB": "xRGB",
-        "XBGR": "xBGR",
-        "YUV400": "GRAY8",
-        # "RGB8P"
-    }[rgb_format]
+    return XPRA_TO_GSTREAMER.get(rgb_format, "")
+
+
+def get_xpra_rgb_format(rgb_format: str) -> str:
+    if rgb_format in IDENTICAL_PIXEL_FORMATS:
+        return rgb_format
+    # translate to gstreamer name:
+    return GSTREAMER_TO_XPRA.get(rgb_format, "")
+
+
+def gst_to_native(value: Any) -> tuple | str:
+    if isinstance(value, Gst.ValueList):
+        return tuple(value.get_value(value, i) for i in range(value.get_size(value)))
+    if isinstance(value, Gst.IntRange):
+        return value.range.start, value.range.stop
+    if isinstance(value, Gst.FractionRange):
+
+        def preferint(v):
+            if int(v) == v:
+                return int(v)
+            return v
+
+        def numdenom(fraction):
+            return preferint(fraction.num), preferint(fraction.denom)
+        return numdenom(value.start), numdenom(value.stop)
+    # print(f"value={value} ({type(value)} - {dir(value)}")
+    return Gst.value_serialize(value)
+
+
+def get_encoder_info(element="vp8enc") -> dict:
+    """
+    Get the element's input information,
+    we only retrieve the "SINK" pad
+    if it accepts `video/x-raw`.
+    Convert Gst types into native types,
+    and convert pixel formats to the names used in xpra.
+    """
+    factory = Gst.ElementFactory.find(element)
+    if not factory:
+        return {}
+    if factory.get_num_pad_templates() == 0:
+        return {}
+    pads = factory.get_static_pad_templates()
+    info = {}
+    GLib = gi_import("GLib")
+    log(f"get_encoder_info({element}) pads={pads}")
+    for pad in pads:
+        if pad.direction != Gst.PadDirection.SINK:
+            log(f"ignoring {pad.direction}")
+            continue
+        padtemplate = pad.get()
+        caps = padtemplate.get_caps()
+        if not caps:
+            log(f"pad template {padtemplate} has no caps!")
+            continue
+        if caps.is_any():
+            continue
+        if caps.is_empty():
+            continue
+        for i in range(caps.get_size()):
+            structure = caps.get_structure(i)
+            if structure.get_name() != "video/x-raw":
+                continue
+
+            def add_cap(field, value):
+                fname = GLib.quark_to_string(field)
+                native_value = gst_to_native(value)
+                log(f"{fname}={native_value} ({type(native_value)})")
+                if fname == "format":
+                    if isinstance(native_value, str):
+                        # convert it to a tuple:
+                        native_value = native_value,
+                    if isinstance(native_value, tuple):
+                        xpra_formats = tuple(get_xpra_rgb_format(x) for x in native_value)
+                        native_value = tuple(fmt for fmt in xpra_formats if fmt)
+                info[fname] = native_value
+                return True
+            structure.foreach(add_cap)
+    return info
 
 
 def get_video_encoder_caps(encoder: str = "x264enc") -> dict[str, Any]:

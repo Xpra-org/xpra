@@ -236,6 +236,7 @@ BuildRequires:		pkgconfig(libavif)
 %endif
 #for gstreamer video encoder and decoder:
 Recommends:			gstreamer1
+Recommends:			python3-gstreamer1
 #appsrc, videoconvert:
 Recommends:			gstreamer1-plugins-base
 #vaapi:

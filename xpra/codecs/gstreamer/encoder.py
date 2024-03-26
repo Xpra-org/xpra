@@ -192,6 +192,8 @@ class Encoder(VideoPipeline):
             raise ValueError(f"invalid encoding {self.encoding!r}")
         self.dst_formats = options.strtupleget("dst-formats")
         gst_rgb_format = get_gst_rgb_format(self.colorspace)
+        if not gst_rgb_format:
+            raise ValueError(f"unable to map {self.colorspace} to a gstreamer pixel format")
         vcaps: dict[str, Any] = {
             "width": self.width,
             "height": self.height,

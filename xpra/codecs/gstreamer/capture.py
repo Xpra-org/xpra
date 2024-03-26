@@ -23,7 +23,7 @@ from xpra.codecs.gstreamer.common import (
     get_version, get_type, get_info,
     init_module, cleanup_module,
     get_video_encoder_caps, get_video_encoder_options,
-    get_gst_encoding,
+    get_gst_encoding, get_encoder_info, get_gst_rgb_format,
 )
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
@@ -169,6 +169,13 @@ def choose_video_encoder(encodings: Iterable[str]) -> str:
     return ""
 
 
+def choose_csc(modes: Iterable[str]) -> str:
+    prefer = "YUV420P"
+    if not modes or prefer in modes:
+        return prefer
+    return modes[0]
+
+
 class CaptureAndEncode(Capture):
     """
     Uses a GStreamer pipeline to capture the screen
@@ -188,7 +195,10 @@ class CaptureAndEncode(Capture):
             "speed": 100,
             "quality": 100,
         })
-        self.profile = get_profile(options, encoding, csc_mode="YUV444P",
+        einfo = get_encoder_info(encoder)
+        log(f"{encoder}: {einfo=}")
+        self.csc_mode = choose_csc(einfo.get("format", ()))
+        self.profile = get_profile(options, encoding, csc_mode=self.csc_mode,
                                    default_profile="high" if encoder == "x264enc" else "")
         eopts = get_video_encoder_options(encoder, self.profile, options)
         vcaps = get_video_encoder_caps(encoder)
@@ -199,8 +209,9 @@ class CaptureAndEncode(Capture):
         gst_encoding = get_gst_encoding(encoding)  # ie: "hevc" -> "video/x-h265"
         elements = [
             f"{capture_element} name=capture",  # ie: ximagesrc or pipewiresrc
-            "videoconvert",
             "queue leaky=2",
+            "videoconvert",
+            "video/x-raw,format=%s" % get_gst_rgb_format(self.csc_mode),
             get_element_str(encoder, eopts),
             get_caps_str(gst_encoding, vcaps),
             get_element_str("appsink", get_default_appsink_attributes()),
@@ -227,6 +238,7 @@ class CaptureAndEncode(Capture):
             self.frames += 1
             client_info = self.extra_client_info
             client_info["frame"] = self.frames
+            client_info["csc"] = self.csc_mode
             self.extra_client_info = {}
             self.emit("new-image", self.pixel_format, data, client_info)
         if SAVE_TO_FILE:
