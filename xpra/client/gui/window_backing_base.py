@@ -784,7 +784,8 @@ class WindowBackingBase:
 
             vd = self._video_decoder
             if vd:
-                if options.intget("frame", -1) == 0:
+                frame = options.intget("frame", -1)
+                if frame == 0:
                     videolog("paint_with_video_decoder: first frame of new stream")
                     self.do_clean_video_decoder()
                 elif vd.get_encoding() != coding:
@@ -799,6 +800,7 @@ class WindowBackingBase:
                     # this should only happen on encoder restart, which means this should be the first frame:
                     videolog.warn("Warning: colorspace unexpectedly changed from %s to %s",
                                   vd.get_colorspace(), input_colorspace)
+                    videolog.warn(f" decoding {coding} frame {frame} using {dectype}")
                     self.do_clean_video_decoder()
             if self._video_decoder is None:
                 videolog("paint_with_video_decoder: new %s%s",
