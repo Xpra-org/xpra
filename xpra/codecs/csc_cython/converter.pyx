@@ -60,8 +60,10 @@ log("csc_cython: byteorder(BGR)=%s", (BGR_R, BGR_G, BGR_B))
 #COLORSPACES = {"BGRX" : ["YUV420P"], "YUV420P" : ["RGB", "BGR", "RGBX", "BGRX"], "GBRP" : ["RGBX", "BGRX"] }
 def get_CS(in_cs, valid_options):
     v = os.environ.get("XPRA_CSC_CYTHON_%s_COLORSPACES" % in_cs)
-    if not v:
+    if v is None:
         return valid_options
+    if not v:
+        return ()
     env_override = []
     for cs in v.split(","):
         if cs in valid_options:
@@ -79,6 +81,7 @@ COLORSPACES = {
                "GBRP"       : get_CS("GBRP",    ["RGBX", "BGRX"]),
                "r210"       : get_CS("r210",    ["YUV420P", "BGR48", "YUV444P10"]),
                "YUV444P10"  : get_CS("YUV444P10", ["r210"]),
+               "YUV444P"    : get_CS("YUV444P",  ["BGRX", ]),
                "GBRP10"     : get_CS("GBRP10",  ["r210", ]),
                }
 
@@ -113,7 +116,7 @@ def get_spec(in_colorspace:str, out_colorspace:str) -> CSCSpec:
     assert out_colorspace in COLORSPACES.get(in_colorspace), "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, get_output_colorspaces(in_colorspace))
     can_scale = True
     width_mask = height_mask = 0xFFFF
-    if in_colorspace=="r210" or out_colorspace=="r210":
+    if in_colorspace in ("r210", "YUV444P") or out_colorspace=="r210":
         can_scale = False
     elif in_colorspace=="GBRP10":
         can_scale = False
@@ -294,6 +297,33 @@ cdef inline void YUV444P10_to_r210_copy(uintptr_t r210data, const unsigned short
                     )
 
 
+cdef inline void YUV444P_to_BGRX_copy(uintptr_t bgrxdata,
+                                     const unsigned char *Ybuf, const unsigned char *Ubuf, const unsigned char *Vbuf,
+                                     unsigned int width, unsigned int height,
+                                     unsigned int rgb_stride,
+                                     unsigned int Ystride, unsigned int Ustride, unsigned int Vstride) noexcept nogil:
+        cdef unsigned char *Yrow
+        cdef unsigned char *Urow
+        cdef unsigned char *Vrow
+        cdef short Y, U, V
+        cdef unsigned int *bgrxrow
+        cdef unsigned int x, y
+        for y in range(height):
+            Yrow = <unsigned char*> ((<uintptr_t> Ybuf) + y*Ystride)
+            Urow = <unsigned char*> ((<uintptr_t> Ubuf) + y*Ustride)
+            Vrow = <unsigned char*> ((<uintptr_t> Vbuf) + y*Vstride)
+            bgrxrow = <unsigned int*> (bgrxdata + y*rgb_stride)
+            for x in range(width):
+                Y = Yrow[x] - Yc
+                U = Urow[x] - Uc
+                V = Vrow[x] - Vc
+                bgrxrow[x] = (
+                    (clamp(RY * Y + RU * U + RV * V)<<16) |
+                    (clamp(GY * Y + GU * U + GV * V)<<8) |
+                    (clamp(BY * Y + BU * U + BV * V))
+                )
+
+
 cdef class Converter:
     cdef unsigned int src_width
     cdef unsigned int src_height
@@ -390,6 +420,10 @@ cdef class Converter:
             assert_no_scaling()
             allocate_rgb(4)
             self.convert_image_function = self.YUV444P10_to_r210
+        elif src_format=="YUV444P" and dst_format=="BGRX":
+            assert_no_scaling()
+            allocate_rgb(3)
+            self.convert_image_function = self.YUV444P_to_BGRX
         elif src_format=="GBRP10" and dst_format=="r210":
             assert_no_scaling()
             allocate_rgb(4)
@@ -719,6 +753,47 @@ cdef class Converter:
             PyBuffer_Release(&py_buf[i])
         return self.packed_image_wrapper(output_image, 30)
 
+    def YUV444P_to_BGRX(self, image) -> CythonImageWrapper:
+        self.validate_planar3_image(image)
+        planes = image.get_pixels()
+        input_strides = image.get_rowstride()
+        log("YUV444P_to_BGRX(%s) strides=%s", image, input_strides)
+
+        #copy to local variables:
+        cdef unsigned int width = self.dst_width
+        cdef unsigned int height = self.dst_height
+
+        #allocate output buffer:
+        cdef char *output_image = <char *> memalign(self.buffer_size)
+        cdef unsigned int stride = self.dst_strides[0]
+
+        cdef unsigned int YUVstrides[3]
+        cdef Py_buffer py_buf[3]
+        cdef const unsigned char * YUV[3]
+        cdef int i
+        for i in range(3):
+            YUVstrides[i] = input_strides[i]
+            if PyObject_GetBuffer(planes[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
+                raise ValueError("failed to read pixel data from %s" % type(planes[i]))
+            YUV[i] = <const unsigned char *> py_buf[i].buf
+            min_len = YUVstrides[i]*image.get_height()
+            assert py_buf.len>=min_len, "buffer for Y plane is too small: %s bytes, expected at least %s" % (py_buf.len, min_len)
+
+        if image.is_thread_safe():
+            with nogil:
+                YUV444P_to_BGRX_copy(<uintptr_t> output_image, YUV[0], YUV[1], YUV[2],
+                                   width, height,
+                                   stride,
+                                   YUVstrides[0], YUVstrides[1], YUVstrides[2])
+        else:
+            YUV444P_to_BGRX_copy(<uintptr_t> output_image, YUV[0], YUV[1], YUV[2],
+                               width, height,
+                               stride,
+                               YUVstrides[0], YUVstrides[1], YUVstrides[2])
+        for i in range(3):
+            PyBuffer_Release(&py_buf[i])
+        return self.packed_image_wrapper(output_image, 30)
+
 
     def r210_to_BGR48(self, image) -> CythonImageWrapper:
         self.validate_rgb_image(image)
@@ -751,7 +826,6 @@ cdef class Converter:
         out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, pybuf, self.dst_format, bpp, self.dst_strides[0], planes=ImageWrapper.PACKED)
         out_image.cython_buffer = <uintptr_t> buf
         return out_image
-
 
     def validate_planar3_image(self, image) -> None:
         assert image.get_planes()==ImageWrapper.PLANAR_3, "invalid input format: %s planes" % image.get_planes()
