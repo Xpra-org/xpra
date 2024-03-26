@@ -8,7 +8,8 @@ from collections.abc import Iterable
 from typing import Any
 
 from xpra.os_util import gi_import
-from xpra.util.objects import typedict
+from xpra.util.env import envbool
+from xpra.util.objects import typedict, AtomicInteger
 from xpra.gstreamer.common import (
     import_gst, GST_FLOW_OK, get_element_str,
     get_default_appsink_attributes, get_all_plugin_names,
@@ -32,6 +33,10 @@ log = Logger("encoder", "gstreamer")
 GObject = gi_import("GObject")
 
 log(f"capture: {get_type()} {get_version()}, {init_module}, {cleanup_module}")
+
+SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
+
+generation = AtomicInteger()
 
 
 class Capture(Pipeline):
@@ -121,6 +126,10 @@ class Capture(Pipeline):
 
     def clean(self) -> None:
         self.stop()
+        f = self.file
+        if f:
+            self.file = None
+            f.close()
 
     def get_type(self) -> str:
         return self.capture_element
@@ -191,6 +200,7 @@ class CaptureAndEncode(Capture):
             raise RuntimeError("failed to setup gstreamer pipeline")
         self.sink: Gst.Element = self.pipeline.get_by_name("sink")
         self.capture = self.pipeline.get_by_name("capture")
+        self.file = None
 
         def sh(sig, handler):
             self.element_connect(self.sink, sig, handler)
@@ -210,6 +220,14 @@ class CaptureAndEncode(Capture):
             client_info["frame"] = self.frames
             self.extra_client_info = {}
             self.emit("new-image", self.pixel_format, data, client_info)
+        if SAVE_TO_FILE:
+            if not self.file:
+                encoding = self.pixel_format
+                gen = generation.increase()
+                filename = "gstreamer-" + str(gen) + f".{encoding}"
+                self.file = open(filename, "wb")
+                log.info(f"saving gstreamer {encoding} stream to {filename!r}")
+            self.file.write(data)
         return GST_FLOW_OK
 
     def on_new_preroll(self, _appsink) -> int:
