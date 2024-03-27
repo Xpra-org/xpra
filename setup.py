@@ -321,7 +321,7 @@ jpeg_decoder_ENABLED    = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
 avif_ENABLED            = DEFAULT and pkg_config_version("0.9", "libavif") and not OSX
 avif_encoder_ENABLED    = avif_ENABLED
 avif_decoder_ENABLED    = avif_ENABLED
-vpx_ENABLED             = DEFAULT and pkg_config_version("1.7", "vpx") and BITS==64
+vpx_ENABLED             = DEFAULT and pkg_config_version("1.11", "vpx") and BITS==64
 vpx_encoder_ENABLED     = vpx_ENABLED
 vpx_decoder_ENABLED     = vpx_ENABLED
 # opencv currently broken on 32-bit windows (crashes on load):
