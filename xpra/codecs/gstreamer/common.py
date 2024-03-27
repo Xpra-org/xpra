@@ -214,6 +214,20 @@ def gst_to_native(value: Any) -> tuple | str:
     return Gst.value_serialize(value)
 
 
+_overrides_verified = False
+
+
+def verify_gst_overrides() -> None:
+    global _overrides_verified
+    if _overrides_verified:
+        return
+    from importlib.util import find_spec
+    if not find_spec("gi.overrides.Gst"):
+        log.warn("Warning: `python3-gstreamer` is not installed")
+        log.warn(" this will prevent the python bindings from working properly")
+    _overrides_verified = True
+
+
 def get_encoder_info(element="vp8enc") -> dict:
     """
     Get the element's input information,
@@ -227,6 +241,7 @@ def get_encoder_info(element="vp8enc") -> dict:
         return {}
     if factory.get_num_pad_templates() == 0:
         return {}
+    verify_gst_overrides()
     pads = factory.get_static_pad_templates()
     info = {}
     GLib = gi_import("GLib")
