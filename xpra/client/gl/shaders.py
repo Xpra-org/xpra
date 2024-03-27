@@ -24,6 +24,8 @@
 # G = Y - (a * e / b) * Cr - (c * d / b) * Cb
 # B = Y + d * Cb
 
+from xpra.codecs.constants import get_subsampling_divs
+
 GLSL_VERSION = "330 core"
 
 CS_MULTIPLIERS = {
@@ -33,7 +35,7 @@ CS_MULTIPLIERS = {
 }
 
 
-def gen_YUV_to_RGB(cs="bt601", full_range=True):
+def gen_YUV_to_RGB(divs: tuple[tuple[int, int], ...], cs="bt601", full_range=True):
     if cs not in CS_MULTIPLIERS:
         raise ValueError(f"unsupported colorspace {cs}")
     a, b, c, d, e = CS_MULTIPLIERS[cs]
@@ -41,9 +43,27 @@ def gen_YUV_to_RGB(cs="bt601", full_range=True):
     g = - a * e / b
     ymult = "" if full_range else " * 1.1643835616438356"
     umult = vmult = "" if full_range else " * 1.1383928571428572"
+    defines = []
+
+    def add_div(name: str, xdiv=1, ydiv=1):
+        if xdiv == ydiv:
+            # just divide by the same integer:
+            # ie: "#define Ydiv 1"
+            value = xdiv
+        else:
+            # store each component in a vector:
+            # ie: "#define Udiv vec2(2, 1)"
+            value = f"vec2({xdiv}, {ydiv})"
+        defines.append(f"{name}div {value}")
+
+    for i, div in enumerate(divs):
+        add_div("YUV"[i], *div)
+
+    defines_str = "\n".join(f"#define {define}" for define in defines)
     return f"""
 #version {GLSL_VERSION}
 layout(origin_upper_left) in vec4 gl_FragCoord;
+{defines_str}
 uniform vec2 viewport_pos;
 uniform vec2 scaling;
 uniform sampler2DRect Y;
@@ -54,9 +74,9 @@ layout(location = 0) out vec4 frag_color;
 void main()
 {{
     vec2 pos = (gl_FragCoord.xy-viewport_pos.xy)/scaling;
-    highp float y = texture(Y, pos).r {ymult};
-    highp float u = (texture(U, pos/2.0).r - 0.5) {umult};
-    highp float v = (texture(V, pos/2.0).r - 0.5) {vmult};
+    highp float y = texture(Y, pos/Ydiv).r {ymult};
+    highp float u = (texture(U, pos/Udiv).r - 0.5) {umult};
+    highp float v = (texture(V, pos/Vdiv).r - 0.5) {vmult};
 
     highp float r = y +           {e} * v;
     highp float g = y + {f} * u + {g} * v;
@@ -129,6 +149,9 @@ SOURCE = {
     "vertex": VERTEX_SHADER,
     "overlay": OVERLAY_SHADER,
     "NV12_to_RGB": gen_NV12_to_RGB(),
-    "YUV_to_RGB": gen_YUV_to_RGB(),
-    "YUV_to_RGB_FULL": gen_YUV_to_RGB(full_range=True),
 }
+
+for fmt in ("YUV420P", "YUV422P", "YUV444P"):
+    divs = get_subsampling_divs(fmt)
+    SOURCE[f"{fmt}_to_RGB"] = gen_YUV_to_RGB(divs, full_range=False)
+    SOURCE[f"{fmt}_to_RGB_FULL"] = gen_YUV_to_RGB(divs, full_range=True)

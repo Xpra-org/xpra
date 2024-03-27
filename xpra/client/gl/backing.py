@@ -380,7 +380,10 @@ class GLWindowBackingBase(WindowBackingBase):
         # Create and assign fragment programs
         from OpenGL.GL import GL_FRAGMENT_SHADER, GL_VERTEX_SHADER
         vertex_shader = self.gl_init_shader("vertex", GL_VERTEX_SHADER)
-        for name in ("YUV_to_RGB", "YUV_to_RGB_FULL", "NV12_to_RGB"):
+        from xpra.client.gl.shaders import SOURCE
+        for name, source in SOURCE.items():
+            if name in ("overlay", "vertex"):
+                continue
             fragment_shader = self.gl_init_shader(name, GL_FRAGMENT_SHADER)
             self.gl_init_program(name, vertex_shader, fragment_shader)
         overlay_shader = self.gl_init_shader("overlay", GL_FRAGMENT_SHADER)
@@ -976,7 +979,7 @@ class GLWindowBackingBase(WindowBackingBase):
             flush = options.intget("flush", 0)
             w = img.get_width()
             h = img.get_height()
-            self.idle_add(self.gl_paint_planar, "YUV_to_RGB_FULL", flush, encoding, img,
+            self.idle_add(self.gl_paint_planar, "YUV420P_to_RGB_FULL", flush, encoding, img,
                           x, y, w, h, width, height, options, callbacks)
             return
         if encoding == "jpeg":
@@ -1126,7 +1129,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 flush = options.intget("flush", 0)
                 w = img.get_width()
                 h = img.get_height()
-                self.idle_add(self.gl_paint_planar, "YUV_to_RGB", flush, "webp", img,
+                self.idle_add(self.gl_paint_planar, f"{subsampling}_to_RGB", flush, "webp", img,
                               x, y, w, h, width, height, options, callbacks)
                 return
         super().paint_webp(img_data, x, y, width, height, options, callbacks)
@@ -1140,7 +1143,7 @@ class GLWindowBackingBase(WindowBackingBase):
         w = img.get_width()
         h = img.get_height()
         if pixel_format.startswith("YUV"):
-            self.idle_add(self.gl_paint_planar, "YUV_to_RGB_FULL", flush, "avif", img,
+            self.idle_add(self.gl_paint_planar, f"{pixel_format}_to_RGB_FULL", flush, "avif", img,
                           x, y, w, h, width, height, options, callbacks)
         else:
             self.idle_add(self.do_paint_rgb, pixel_format, img.get_pixels(), x, y, w, h, width, height,
@@ -1253,7 +1256,7 @@ class GLWindowBackingBase(WindowBackingBase):
             # which will end up calling paint rgb with r210 data
             super().do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
             return
-        shader = "NV12_to_RGB" if pixel_format == "NV12" else "YUV_to_RGB"
+        shader = f"{pixel_format}_to_RGB"
         self.idle_add(self.gl_paint_planar, shader, options.intget("flush", 0), options.strget("encoding"), img,
                       x, y, enc_width, enc_height, width, height, options, callbacks)
 
@@ -1389,7 +1392,7 @@ class GLWindowBackingBase(WindowBackingBase):
         # glActiveTexture(GL_TEXTURE0)    #redundant, we always call render_planar_update afterwards
 
     def render_planar_update(self, rx: int, ry: int, rw: int, rh: int, width: int, height: int,
-                             shader="YUV_to_RGB") -> None:
+                             shader="YUV420P_to_RGB") -> None:
         log("%s.render_planar_update%s pixel_format=%s",
             self, (rx, ry, rw, rh, width, height, shader), self.planar_pixel_format)
         if self.planar_pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "NV12", "GBRP16", "YUV444P16"):
@@ -1423,14 +1426,16 @@ class GLWindowBackingBase(WindowBackingBase):
         glViewport(*viewport)
         log("viewport: %s for size=%s render_size=%s", viewport, self.size, self.render_size)
 
-        program = self.programs[shader]
+        program = self.programs.get(shader)
+        if not program:
+            raise RuntimeError(f"no {shader} found!")
         glUseProgram(program)
         for texture, tex_index in textures:
             glActiveTexture(texture)
             glBindTexture(target, self.textures[tex_index])
             # TEX_Y is 0, so effectively index==tex_index
             index = tex_index-TEX_Y
-            plane_name = shader[index:index + 1]  # ie: "YUV_to_RGB"  0 -> "Y"
+            plane_name = shader[index:index + 1]  # ie: "YUV420P_to_RGB"  0 -> "Y"
             tex_loc = glGetUniformLocation(program, plane_name)  # ie: "Y" -> 0
             glUniform1i(tex_loc, index)  # tell the shader where to find the texture: 0 -> TEXTURE_0
 
