@@ -1425,9 +1425,11 @@ class GLWindowBackingBase(WindowBackingBase):
 
         program = self.programs[shader]
         glUseProgram(program)
-        for texture, index in textures:
+        for texture, tex_index in textures:
             glActiveTexture(texture)
-            glBindTexture(target, self.textures[index])
+            glBindTexture(target, self.textures[tex_index])
+            # TEX_Y is 0, so effectively index==tex_index
+            index = tex_index-TEX_Y
             plane_name = shader[index:index + 1]  # ie: "YUV_to_RGB"  0 -> "Y"
             tex_loc = glGetUniformLocation(program, plane_name)  # ie: "Y" -> 0
             glUniform1i(tex_loc, index)  # tell the shader where to find the texture: 0 -> TEXTURE_0
