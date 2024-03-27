@@ -268,6 +268,7 @@ Depends: xpra-common (= ${binary:Version})
 #sid:              ,libopenh264-7
 #lunar:              ,libspng0
 #mantic:              ,libspng0
+#noble:              ,libspng0
 #bookworm:              ,libspng0
 #trixie:              ,libspng0
 #sid:              ,libspng0
