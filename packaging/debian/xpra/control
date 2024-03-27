@@ -259,8 +259,18 @@ Depends: xpra-common (= ${binary:Version})
         ,${codecs:Depends}
         ,${python3:Depends}
         ,libyuv0
-        ,libopenh264-7
-        ,libspng0
+#jammy:              ,libopenh264-6
+#lunar:              ,libopenh264-7
+#mantic:              ,libopenh264-7
+#noble:              ,libopenh264-7
+#bookworm:              ,libopenh264-7
+#trixie:              ,libopenh264-7
+#sid:              ,libopenh264-7
+#lunar:              ,libspng0
+#mantic:              ,libspng0
+#bookworm:              ,libspng0
+#trixie:              ,libspng0
+#sid:              ,libspng0
 Suggests: v4l2loopback-dkms
           ,xpra-codecs-nvidia (= ${binary:Version})
           ,python3-opencv
