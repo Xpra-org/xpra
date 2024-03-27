@@ -455,6 +455,10 @@ class GLWindowBackingBase(WindowBackingBase):
         infolog = glGetShaderInfoLog(shader) or "OK"
         status = glGetShaderiv(shader, GL_COMPILE_STATUS)
         if status == GL_FALSE:
+            log(f"failed shader source {name!r}:")
+            for i, line in enumerate(progstr.splitlines()):
+                log(f"{i:3}        {line}")
+            log("")
             self.fail_shader(name, infolog)
         log(f"{name} shader initialized: {infolog}")
         return shader
