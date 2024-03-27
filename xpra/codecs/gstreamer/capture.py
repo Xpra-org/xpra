@@ -18,7 +18,7 @@ from xpra.gstreamer.common import (
 )
 from xpra.gtk.gobject import n_arg_signal
 from xpra.gstreamer.pipeline import Pipeline
-from xpra.codecs.constants import get_profile
+from xpra.codecs.constants import get_profile, CSC_ALIAS
 from xpra.codecs.gstreamer.common import (
     get_version, get_type, get_info,
     init_module, cleanup_module,
@@ -238,7 +238,7 @@ class CaptureAndEncode(Capture):
             self.frames += 1
             client_info = self.extra_client_info
             client_info["frame"] = self.frames
-            client_info["csc"] = self.csc_mode
+            client_info["csc"] = CSC_ALIAS.get(self.csc_mode, self.csc_mode)
             self.extra_client_info = {}
             self.emit("new-image", self.pixel_format, data, client_info)
         if SAVE_TO_FILE:

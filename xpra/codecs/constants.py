@@ -58,6 +58,8 @@ LOSSY_PIXEL_FORMATS : dict[str, float | int] = {
     "YUV422P" : 1.5,
 }
 
+CSC_ALIAS = {"NV12": "YUV420P"}
+
 
 def get_plane_name(pixel_format: str = "YUV420P", index: int = 0) -> str:
     return {
