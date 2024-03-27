@@ -23,6 +23,7 @@ xpra (5.0.8-1) UNRELEASED; urgency=low
    - mmap compatibility fix for older clients
    - mmap client token errors should not be fatal
    - proxy draw passthrough stripping of unused alpha channels
+   - named pipe connections error
    - MS Windows system tray initial icon may be lost
    - `xpra top` client failures recording backtraces
    - never wait for input in a subprocess, or in splash process
@@ -45,8 +46,10 @@ xpra (5.0.8-1) UNRELEASED; urgency=low
    - update discord link
    - more detailed connection error messages
    - point to the pyxdg bug information when theme parsing fails
+   - typo shown in display information
+   - libvpx decoder use correct (unused) pixel format constant
 
- -- Antoine Martin <antoine@xpra.org>  Sat, 23 Mar 2024 19:52:50 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 26 Mar 2024 16:44:25 +0700
 
 xpra (5.0.7-1) UNRELEASED; urgency=low
   * Regressions:

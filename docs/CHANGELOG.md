@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.8] 2024-03-23
+## [5.0.8] 2024-03-27
 * Platforms, build and packaging:
     * [MS Windows 'Light' builds](https://github.com/Xpra-org/xpra/issues/4100)
     * [compatibility with multiple "Windows Kits" locations](https://github.com/Xpra-org/xpra/commit/0fed808d376bcf441140609f5d73ac8069566a91)
@@ -25,6 +25,7 @@
     * [mmap compatibility fix for older clients](https://github.com/Xpra-org/xpra/commit/e968d7f66c3065e47bd0ab87655a6d35202c553c)
     * [mmap client token errors should not be fatal](https://github.com/Xpra-org/xpra/commit/8ef274e97c3532d37948279c98eefadf173b0f2a)
     * [proxy draw passthrough stripping of unused alpha channels](https://github.com/Xpra-org/xpra/commit/7514d88e057b74e8f1ccab5e3ca5f8ff4c079b42)
+    * [named pipe connections error](https://github.com/Xpra-org/xpra/commit/afdd06862d66c3825c2eff95cae1085c3f267419)
     * [MS Windows system tray initial icon may be lost](https://github.com/Xpra-org/xpra/commit/662c83816e18d55e0725bedb1afe18bce20f56f7)
     * [`xpra top` client failures recording backtraces](https://github.com/Xpra-org/xpra/commit/7be1883c232c35ae7b899c126b03e137bf6d1395)
     * [never wait for input in a subprocess](https://github.com/Xpra-org/xpra/commit/fc9e0dd459976f67eef63050e73e07a6483abaa6) [or in splash process](https://github.com/Xpra-org/xpra/commit/2c4aac4128d89c4b9ba6d0b5efb70f1ceaaa2635)
@@ -46,6 +47,8 @@
     * [update discord link](https://github.com/Xpra-org/xpra/commit/9ebcae3a2658fb9484f3513ab7579f93996ac05c)
     * [more detailed connection error messages](https://github.com/Xpra-org/xpra/commit/972ed49ec4587d1614350087fa78a69ba9e9e583)
     * [point to the pyxdg bug information when theme parsing fails](https://github.com/Xpra-org/xpra/commit/6999c96013ccb436730f9545341de2adb4dcd59a)
+    * [typo shown in display information](https://github.com/Xpra-org/xpra/commit/58374bb5f5370da0b74eaf1af7b78d5bd97c4099)
+    * [libvpx decoder use correct (unused) pixel format constant](https://github.com/Xpra-org/xpra/commit/d0a03ae2b464aabe1d3abc49614e3fd242c86a76)
 
 ## [5.0.7] 2024-02-28
 * Regressions:

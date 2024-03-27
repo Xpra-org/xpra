@@ -777,7 +777,7 @@ fi
 
 
 %changelog
-* Sat Mar 23 2024 Antoine Martin <antoine@xpra.org> 5.0.8-10
+* Wed Mar 26 2024 Antoine Martin <antoine@xpra.org> 5.0.8-10
 - Platforms, build and packaging:
    MS Windows 'Light' builds
    compatibility with multiple "Windows Kits" locations
@@ -802,6 +802,7 @@ fi
    mmap compatibility fix for older clients
    mmap client token errors should not be fatal
    proxy draw passthrough stripping of unused alpha channels
+   named pipe connections error
    MS Windows system tray initial icon may be lost
    `xpra top` client failures recording backtraces
    never wait for input in a subprocess, or in splash process
@@ -823,6 +824,8 @@ fi
    update discord link
    more detailed connection error messages
    point to the pyxdg bug information when theme parsing fails
+   typo shown in display information
+   libvpx decoder use correct (unused) pixel format constant
 
 * Wed Feb 28 2024 Antoine Martin <antoine@xpra.org> 5.0.7-10
 - Regressions:
