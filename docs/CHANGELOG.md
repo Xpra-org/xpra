@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.8] 2024-03-27
+## [5.0.8] 2024-03-28
 * Platforms, build and packaging:
     * [MS Windows 'Light' builds](https://github.com/Xpra-org/xpra/issues/4100)
     * [compatibility with multiple "Windows Kits" locations](https://github.com/Xpra-org/xpra/commit/0fed808d376bcf441140609f5d73ac8069566a91)
@@ -15,6 +15,7 @@
     * [MS Windows tools fail to run](https://github.com/Xpra-org/xpra/commit/1a05229c2001aa4b0cbdafd642e9b63d8b92196e) [due to incomplete environment](https://github.com/Xpra-org/xpra/commit/f6cd59c08b083b5a6189c09a3546f2dfc6354054) [and errors](https://github.com/Xpra-org/xpra/commit/2fb0e13fbb1cefcdee6e265f962eea7c20af85db)
     * [build info cannot be parsed](https://github.com/Xpra-org/xpra/commit/0ba4c924cd0d54dfb6db06f574bd48b91f46aa8b)
 * Major:
+    * [ensure NV12 streams can be decoded properly](https://github.com/Xpra-org/xpra/commit/79803454439839657025dfb7a090ec5426999443)
     * [client chooses the fastest colorspace conversion option](https://github.com/Xpra-org/xpra/commit/635d0f0fb6bc4a93a228aec4698c751380625de9)
     * [use libyuv to convert video to rgb when rendering without OpenGL](https://github.com/Xpra-org/xpra/commit/246685f1c0b6ee23c63eb90701da8e0e94afaeb4)
     * [`xpra top` hanging on start](https://github.com/Xpra-org/xpra/commit/2be7c41fdf44b4320960fa0450911e8a60028862)
@@ -49,6 +50,7 @@
     * [point to the pyxdg bug information when theme parsing fails](https://github.com/Xpra-org/xpra/commit/6999c96013ccb436730f9545341de2adb4dcd59a)
     * [typo shown in display information](https://github.com/Xpra-org/xpra/commit/58374bb5f5370da0b74eaf1af7b78d5bd97c4099)
     * [libvpx decoder use correct (unused) pixel format constant](https://github.com/Xpra-org/xpra/commit/d0a03ae2b464aabe1d3abc49614e3fd242c86a76)
+    * [ignore dimensions rounded up in openh264 decoder](https://github.com/Xpra-org/xpra/commit/94da7c67aa77309529a5ddbb96aad1de05f7a3a0)
 
 ## [5.0.7] 2024-02-28
 * Regressions:

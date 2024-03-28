@@ -777,7 +777,7 @@ fi
 
 
 %changelog
-* Wed Mar 26 2024 Antoine Martin <antoine@xpra.org> 5.0.8-10
+* Thu Mar 28 2024 Antoine Martin <antoine@xpra.org> 5.0.8-10
 - Platforms, build and packaging:
    MS Windows 'Light' builds
    compatibility with multiple "Windows Kits" locations
@@ -792,6 +792,7 @@ fi
    MS Windows tools fail to run due to incomplete environment and errors
    build info cannot be parsed
 - Major:
+   ensure NV12 streams can be decoded properly
    client chooses the fastest colorspace conversion option
    use libyuv to convert video to rgb when rendering without OpenGL
    `xpra top` hanging on start
@@ -826,6 +827,7 @@ fi
    point to the pyxdg bug information when theme parsing fails
    typo shown in display information
    libvpx decoder use correct (unused) pixel format constant
+   ignore dimensions rounded up in openh264 decoder
 
 * Wed Feb 28 2024 Antoine Martin <antoine@xpra.org> 5.0.7-10
 - Regressions:
