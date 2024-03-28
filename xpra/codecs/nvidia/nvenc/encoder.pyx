@@ -23,7 +23,7 @@ from xpra.codecs.nvidia.cuda_context import (
     cuda_device_context, load_device,
     )
 from xpra.codecs.nvidia.cuda_errors import get_error_name
-from xpra.codecs.codec_constants import video_spec, TransientCodecException
+from xpra.codecs.codec_constants import video_spec, TransientCodecException, CSC_ALIAS
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.nvidia.nv_util import (
     get_nvidia_module_version, get_license_keys,
@@ -2662,7 +2662,7 @@ cdef class Encoder:
         self.free_memory, self.total_memory = driver.mem_get_info()
 
         client_options = {
-                    "csc"       : self.src_format,
+                    "csc"       : CSC_ALIAS.get(self.src_format, self.src_format),
                     "frame"     : int(self.frames),
                     "pts"       : int(timestamp-self.first_frame_timestamp),
                     }
