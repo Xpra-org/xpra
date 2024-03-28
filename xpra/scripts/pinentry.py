@@ -30,10 +30,10 @@ PINENTRY: bool = envbool("XPRA_SSH_PINENTRY", POSIX and not OSX)
 # pylint: disable=import-outside-toplevel
 
 
-def get_pinentry_command(setting: str = "yes"):
+def get_pinentry_command(setting: str = "yes") -> str:
     log(f"get_pinentry_command({setting})")
     if setting.lower() in FALSE_OPTIONS:
-        return None
+        return ""
 
     def find_pinentry_bin() -> str:
         if is_gnome():
@@ -48,7 +48,7 @@ def get_pinentry_command(setting: str = "yes"):
         # figure out if we should use it:
         if WIN32 or OSX:
             # not enabled by default on those platforms
-            return None
+            return ""
         return find_pinentry_bin()
     return setting
 
@@ -66,7 +66,7 @@ def popen_pinentry(pinentry_cmd: str):
         return None
 
 
-def run_pinentry(extra_args):
+def run_pinentry(extra_args) -> None:
     messages = list(extra_args)
 
     def get_input():
@@ -85,10 +85,10 @@ def run_pinentry(extra_args):
     proc = popen_pinentry(pinentry_cmd)
     if not proc:
         raise InitExit(ExitCode.UNSUPPORTED, "cannot run pinentry")
-    return do_run_pinentry(proc, get_input, process_output)
+    do_run_pinentry(proc, get_input, process_output)
 
 
-def do_run_pinentry(proc, get_input: Callable, process_output: Callable):
+def do_run_pinentry(proc, get_input: Callable, process_output: Callable) -> None:
     message = "connection"
     while proc.poll() is None:
         try:
@@ -107,10 +107,16 @@ def do_run_pinentry(proc, get_input: Callable, process_output: Callable):
             break
     if proc.poll() is None:
         proc.terminate()
+    noerr(proc.stdin.close)
+    noerr(proc.stdout.close)
+    noerr(proc.stderr.close)
+    exitcode = proc.wait(1)
+    if exitcode is None:
+        log.warn("Warning: pinentry is still running")
     log(f"pinentry ended: {proc.poll()}")
 
 
-def pinentry_getpin(pinentry_proc, title: str, description: str, pin_cb: Callable, err_cb: Callable):
+def pinentry_getpin(pinentry_proc, title: str, description: str, pin_cb: Callable, err_cb: Callable) -> None:
     from urllib.parse import quote
     messages = [
         f"SETPROMPT {quote(title)}",
@@ -140,17 +146,16 @@ def pinentry_getpin(pinentry_proc, title: str, description: str, pin_cb: Callabl
         return False
 
     do_run_pinentry(pinentry_proc, get_input, process_output)
-    return True
 
 
-def run_pinentry_getpin(pinentry_cmd: str, title: str, description: str):
+def run_pinentry_getpin(pinentry_cmd: str, title: str, description: str) -> str:
     proc = popen_pinentry(pinentry_cmd)
     if proc is None:
-        return None
-    values = []
+        return ""
+    values: list[str] = []
 
-    def rec(value=None):
-        values.append(value)
+    def rec(value=""):
+        values.append(str(value))
 
     def err(value=None):
         log("getpin error: %s", value)
@@ -160,14 +165,14 @@ def run_pinentry_getpin(pinentry_cmd: str, title: str, description: str):
     finally:
         noerr(proc.terminate)
     if not values:
-        return None
+        return ""
     return values[0]
 
 
-def run_pinentry_confirm(pinentry_cmd: str, title: str, prompt: str):
+def run_pinentry_confirm(pinentry_cmd: str, title: str, prompt: str) -> str:
     proc = popen_pinentry(pinentry_cmd)
     if proc is None:
-        return None
+        return ""
     messages = [
         # we can't use those as the response is multi-line:
         # "GETINFO flavor",
@@ -196,7 +201,7 @@ def run_pinentry_confirm(pinentry_cmd: str, title: str, prompt: str):
 
     do_run_pinentry(proc, get_input, process_output)
     if len(confirm_values) != 1:
-        return None
+        return ""
     return bytestostr(confirm_values[0])  # ie: "OK"
 
 
@@ -311,7 +316,7 @@ def input_pass(prompt: str) -> str:
         sys.exit(128 + signal.SIGINT)
 
 
-def main():
+def main() -> int:
     from xpra.platform import program_context
     with program_context("Pinentry-Dialog", "Pinentry Dialog"):
         if "-v" in sys.argv:
