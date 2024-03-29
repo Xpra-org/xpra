@@ -1,3 +1,18 @@
+v3.1.8 (2024-03-29)
+	-- major:
+		- better compatibility with python2 servers
+	-- build and packaging:
+		- centos 7 uses a vendored name for lsb_release
+		- centos 7 build fix
+		- Cython 3.x warnings
+		- Debian build scripts need `wget` for the outdated python packages workarounds
+	-- encodings:
+		- ensure NV12 encoded streams are decoded the same as YUV420P
+	-- minor and cosmetic fixes:
+		- shadow servers: missing attributes should raise a AttributeError
+		- vpx: set the correct (unused) pixel format constant
+		- unused import
+
 v3.1.7 (2024-03-17)
 	-- major fixes:
 		- windows misplaced on screen, moving unexpectedly

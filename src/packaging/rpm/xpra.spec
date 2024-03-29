@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 3.1.7
+%define version 3.1.8
 
 %{!?with_python2: %define with_python2 1}
 %{!?with_python3: %define with_python3 1}
@@ -922,6 +922,21 @@ fi
 
 
 %changelog
+* Fri Mar 29 2024 Antoine Martin <antoine@xpra.org> 3.1.8-10.1xpra1
+- major:
+     better compatibility with python2 servers
+- build and packaging:
+     centos 7 uses a vendored name for lsb_release
+     centos 7 build fix
+     Cython 3.x warnings
+     Debian build scripts need `wget` for the outdated python packages workarounds
+- encodings:
+     ensure NV12 encoded streams are decoded the same as YUV420P
+- minor and cosmetic fixes:
+     shadow servers: missing attributes should raise a AttributeError
+     vpx: set the correct (unused) pixel format constant
+     unused import
+
 * Sun Mar 17 2024 Antoine Martin <antoine@xpra.org> 3.1.7-10.1xpra1
 - major fixes:
      windows misplaced on screen, moving unexpectedly

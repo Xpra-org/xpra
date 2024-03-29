@@ -1,4 +1,21 @@
 xpra (3.1.7-1) UNRELEASED; urgency=low
+  * major:
+    - better compatibility with python2 servers
+  * build and packaging:
+    - centos 7 uses a vendored name for lsb_release
+    - centos 7 build fix
+    - Cython 3.x warnings
+    - Debian build scripts need `wget` for the outdated python packages workarounds
+  * encodings:
+    - ensure NV12 encoded streams are decoded the same as YUV420P
+  * minor and cosmetic fixes:
+    - shadow servers: missing attributes should raise a AttributeError
+    - vpx: set the correct (unused) pixel format constant
+    - unused import
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 29 Mar 2024 16:15:25 +0700
+
+xpra (3.1.7-1) UNRELEASED; urgency=low
   * major fixes:
    - windows misplaced on screen, moving unexpectedly
    - windows wm-state synchronization issue
