@@ -179,8 +179,9 @@ PACKET_KIND = {
 
 COLORSPACES = {
     "vp8": ("YUV420P", ),
-    "vp9": ("YUV420P", "YUV444P", "YUV444P10"),
 }
+if VPX_ENCODER_ABI_VERSION>=23:
+    COLORSPACES["vp9"] = ("YUV420P", "YUV444P", "YUV444P10")
 CODECS = tuple(COLORSPACES.keys())
 
 #as of libvpx 1.8:
