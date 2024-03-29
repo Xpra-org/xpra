@@ -39,6 +39,9 @@ LOSSY_PIXEL_FORMATS = {
     "YUV422P" : 1.5,
     }
 
+CSC_ALIAS = {"NV12": "YUV420P"}
+
+
 PIXEL_SUBSAMPLING = {
     "YUV420P"   : ((1, 1), (2, 2), (2, 2)),
     "YUV422P"   : ((1, 1), (2, 1), (2, 1)),
