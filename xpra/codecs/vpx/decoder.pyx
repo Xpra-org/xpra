@@ -162,6 +162,8 @@ cdef const vpx_codec_iface_t  *make_codec_dx(encoding):
     raise Exception("unsupported encoding: %s" % encoding)
 
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace):
+    if colorspace == "YUV444P":
+        return VPX_IMG_FMT_I444
     return VPX_IMG_FMT_I420
 
 
