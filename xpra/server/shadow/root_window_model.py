@@ -149,12 +149,12 @@ class RootWindowModel(object):
             return ()
         if prop=="content-type":
             return "desktop"
-        raise ValueError("invalid property: %s" % prop)
+        raise AttributeError("invalid property: %s" % prop)
 
     def get(self, name, default_value=None):
         try:
             return self.get_property(name)
-        except ValueError as e:
+        except AttributeError as e:
             log("get(%s, %s) %s on %s", name, default_value, e, self)
             return default_value
 
