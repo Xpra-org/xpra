@@ -11,6 +11,7 @@ import socket
 import sys
 from typing import Any
 from collections.abc import Callable
+from importlib import import_module
 
 from xpra.net.bytestreams import get_socket_config
 from xpra.util.version import parse_version
@@ -389,6 +390,24 @@ def get_network_caps(full_info: int = 1) -> dict[str, Any]:
     return caps
 
 
+def get_paramiko_info() -> dict[str, tuple[int, ...]]:
+    paramiko = sys.modules.get("paramiko")
+    if paramiko:
+        return {
+            "version": paramiko.__version_info__,
+        }
+    return {}
+
+
+def get_bcrypt_info() -> dict[str, str]:
+    bcrypt = sys.modules.get("bcrypt")
+    if bcrypt:
+        return {
+            "version": bcrypt.__version__,
+        }
+    return {}
+
+
 def get_info() -> dict[str, Any]:
     i = get_network_caps()
     netifaces = import_netifaces()
@@ -404,11 +423,8 @@ def get_info() -> dict[str, Any]:
         if s:
             i["system"] = s
     i["config"] = get_socket_config()
-    paramiko = sys.modules.get("paramiko")
-    if paramiko:
-        i["paramiko"] = {
-            "version": paramiko.__version_info__,
-        }
+    i["paramiko"] = get_paramiko_info()
+    i["bcrypt"] = get_bcrypt_info()
     return i
 
 
@@ -520,6 +536,22 @@ def main():  # pragma: no cover
         print("")
         print("SSL:")
         print_nested_dict(get_ssl_info(True))
+
+        print("")
+        print("SSH:")
+        try:
+            import_module("paramiko")
+        except ModuleNotFoundError:
+            pass
+        print_nested_dict(get_paramiko_info())
+
+        print("")
+        print("bcrypt:")
+        try:
+            import_module("bcrypt")
+        except ImportError:
+            pass
+        print_nested_dict(get_bcrypt_info())
 
         try:
             from xpra.net.crypto import crypto_backend_init, get_crypto_caps
