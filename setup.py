@@ -2054,7 +2054,7 @@ if WIN32 or OSX:
             add_packages("uvloop")
         #python-cryptography needs workarounds for bundling:
         external_includes += [
-            "cryptography", "idna", "idna.idnadata", "appdirs",
+            "bcrypt", "cryptography", "idna", "idna.idnadata", "appdirs",
             ]
         add_modules("cryptography.hazmat.bindings._openssl",
                     "cryptography.hazmat.bindings._constant_time",
