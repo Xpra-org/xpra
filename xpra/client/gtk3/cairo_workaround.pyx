@@ -141,7 +141,7 @@ def set_image_surface_data(object image_surface, rgb_format, object pixels, int 
                             cdata[dsti + 0] = cbuf[srci + 0]     #B
                             cdata[dsti + 1] = cbuf[srci + 1]     #G
                             cdata[dsti + 2] = cbuf[srci + 2]     #R
-                            cdata[dsti + 3] = 0                  #X
+                            cdata[dsti + 3] = 0xff               #X
             elif rgb_format=="RGB":
                 with nogil:
                     for y in range(height):
@@ -151,7 +151,7 @@ def set_image_surface_data(object image_surface, rgb_format, object pixels, int 
                             cdata[dsti + 0] = cbuf[srci + 2]     #B
                             cdata[dsti + 1] = cbuf[srci + 1]     #G
                             cdata[dsti + 2] = cbuf[srci + 0]     #R
-                            cdata[dsti + 3] = 0                  #X
+                            cdata[dsti + 3] = 0xff               #X
             elif rgb_format=="BGRX":
                 with nogil:
                     for y in range(height):
@@ -161,7 +161,7 @@ def set_image_surface_data(object image_surface, rgb_format, object pixels, int 
                             cdata[dsti + 0] = cbuf[srci + 0]     #B
                             cdata[dsti + 1] = cbuf[srci + 1]     #G
                             cdata[dsti + 2] = cbuf[srci + 2]     #R
-                            cdata[dsti + 3] = 0                  #X
+                            cdata[dsti + 3] = 0xff               #X
             elif rgb_format=="RGBX":
                 with nogil:
                     for y in range(height):
@@ -171,7 +171,7 @@ def set_image_surface_data(object image_surface, rgb_format, object pixels, int 
                             cdata[dsti + 0] = cbuf[srci + 2]     #B
                             cdata[dsti + 1] = cbuf[srci + 1]     #G
                             cdata[dsti + 2] = cbuf[srci + 0]     #R
-                            cdata[dsti + 3] = 0                  #X
+                            cdata[dsti + 3] = 0xff               #X
             else:
                 raise ValueError(f"unhandled pixel format for RGB24: {rgb_format!r}")
         elif cairo_format==CAIRO_FORMAT_ARGB32:
