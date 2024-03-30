@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -68,15 +68,17 @@ cdef extern from "pycairo/py3cairo.h":
         #PyObject *base; /* base object used to create surface, or NULL */
     ctypedef PycairoSurface PycairoImageSurface
 
+
 CAIRO_FORMAT = {
-        CAIRO_FORMAT_INVALID    : "Invalid",
-        CAIRO_FORMAT_ARGB32     : "ARGB32",
-        CAIRO_FORMAT_RGB24      : "RGB24",
-        CAIRO_FORMAT_A8         : "A8",
-        CAIRO_FORMAT_A1         : "A1",
-        CAIRO_FORMAT_RGB16_565  : "RGB16_565",
-        CAIRO_FORMAT_RGB30      : "RGB30",
-        }
+    CAIRO_FORMAT_INVALID    : "Invalid",
+    CAIRO_FORMAT_ARGB32     : "ARGB32",
+    CAIRO_FORMAT_RGB24      : "RGB24",
+    CAIRO_FORMAT_A8         : "A8",
+    CAIRO_FORMAT_A1         : "A1",
+    CAIRO_FORMAT_RGB16_565  : "RGB16_565",
+    CAIRO_FORMAT_RGB30      : "RGB30",
+}
+
 
 cdef void simple_copy(uintptr_t dst, uintptr_t src, int dst_stride, int src_stride, int height):
     cdef int stride = src_stride
@@ -91,12 +93,14 @@ cdef void simple_copy(uintptr_t dst, uintptr_t src, int dst_stride, int src_stri
                 src += src_stride
                 dst += dst_stride
 
+
 CAIRO_FORMATS = {
     CAIRO_FORMAT_RGB24  : ("RGB", "RGBX", "BGR", "BGRX"),
     CAIRO_FORMAT_ARGB32 : ("BGRX", "BGRA"),
     CAIRO_FORMAT_RGB16_565  : ("BGR565", ),
     CAIRO_FORMAT_RGB30  : ("r210", ),
-    }
+}
+
 
 def set_image_surface_data(object image_surface, rgb_format, object pixels, int width, int height, int stride):
     #convert pixel_data to a C buffer:

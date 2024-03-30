@@ -49,7 +49,7 @@ class CairoBacking(CairoBackingBase):
             binfo = "None"
         return "bindings.CairoBacking(%s : size=%s, render_size=%s)" % (binfo, self.size, self.render_size)
 
-    def _do_paint_rgb(self, cairo_format, has_alpha, img_data,
+    def _do_paint_rgb(self, cairo_format, has_alpha: bool, img_data,
                       x: int, y: int, width: int, height: int, render_width: int, render_height: int,
                       rowstride: int, options) -> bool:
         """ must be called from UI thread """
@@ -87,6 +87,6 @@ class CairoBacking(CairoBackingBase):
 
         raise ValueError(f"failed to paint {cairo_format}")
 
-    def update_fps_buffer(self, width, height, pixels) -> None:
+    def update_fps_buffer(self, width: int, height: int, pixels) -> None:
         self.fps_image = ImageSurface(FORMAT_ARGB32, width, height)
         set_image_surface_data(self.fps_image, "RGBA", pixels, width, height, width * 4)
