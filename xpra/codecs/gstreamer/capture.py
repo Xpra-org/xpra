@@ -141,7 +141,7 @@ GObject.type_register(Capture)
 
 ENCODER_ELEMENTS: dict[str, str] = {
     "jpeg": ("jpegenc", ),
-    "h264": ("vah264enc", "openh264enc", "x264enc"),
+    "h264": ("vah264enc", "vah264lpenc", "openh264enc", "x264enc"),     #"vaapih264enc" no workee?
     "h265": ("vah265enc", ),
     "vp8": ("vp8enc", ),
     "vp9": ("vp9enc", ),
