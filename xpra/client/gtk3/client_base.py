@@ -807,12 +807,14 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             try:
                 from xpra.client.gtk3.statusicon_tray import GTKStatusIconTray
                 # unlikely to work with gnome:
-                if is_gnome() or WIN32 or OSX:
-                    tray_classes.append(GTKStatusIconTray)
-                else:
+                PREFER_STATUSICON = envbool("XPRA_PREFER_STATUSICON", not (is_gnome() or WIN32 or OSX))
+                if PREFER_STATUSICON:
                     tray_classes.insert(0, GTKStatusIconTray)
+                else:
+                    tray_classes.append(GTKStatusIconTray)
             except Exception as e:
-                log.warn("failed to load StatusIcon tray: %s" % e)
+                log.warn("Warning: failed to load StatusIcon tray")
+                log.warn(" %s", e)
         return tray_classes
 
     def get_tray_classes(self) -> list[type]:
