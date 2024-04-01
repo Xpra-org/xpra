@@ -15,7 +15,7 @@
 
 
 Name:           %{package_prefix}%{srcname}
-Version:        10.2.0
+Version:        10.3.0
 Release:        1%{?dist}
 Summary:        Python image processing library
 
@@ -47,7 +47,7 @@ internal representation, and powerful image processing capabilities.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "e87f0b2c78157e12d7686b27d63c070fd65d994e8ddae6f328e0dcf4a0cd007e" ]; then
+if [ "${sha256}" != "9d2455fbf44c914840c793e89aa82d0e1763a14253a000743719ae5946814b2d" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
