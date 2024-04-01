@@ -655,9 +655,9 @@ if [ "${DO_ZIP}" == "1" ]; then
 fi
 
 if [ "${DO_INSTALLER}" == "1" ]; then
-	INNOSETUP="/c/Program Files/Inno Setup 5/ISCC.exe"
+	INNOSETUP="/c/Program Files/Inno Setup 6/ISCC.exe"
 	if [ ! -e "${INNOSETUP}" ]; then
-		INNOSETUP="/c/Program Files (x86)/Inno Setup 5/ISCC.exe"
+		INNOSETUP="/c/Program Files (x86)/Inno Setup 6/ISCC.exe"
 		if [ ! -e "${INNOSETUP}" ]; then
 			echo "cannot find InnoSetup"
 			exit 1
