@@ -32,13 +32,13 @@ for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko com
 done
 #dependencies of browser_cookie3 and pycuda,
 #best to manage them via pacman rather than have them installed via pip
-for x in pycryptodome mako markupsafe typing_extensions platformdirs; do
+for x in mako markupsafe typing_extensions platformdirs; do
 	$PACMAN --noconfirm --needed -S ${XPKG}python-${x}
 done
 $PACMAN --noconfirm --needed -S ${XPKG}cython
 
 #these need to be converted to PKGBUILD:
-$PACMAN --noconfirm --needed -S ${XPKG}python-pip ${XPKG}python-pycryptodome ${XPKG}python-keyring ${XPKG}python-idna openssl-devel
+$PACMAN --noconfirm --needed -S ${XPKG}python-pip ${XPKG}python-lz4 ${XPKG}python-cryptodome ${XPKG}python-pycryptodomex ${XPKG}python-keyring ${XPKG}python-idna openssl-devel
 for x in browser-cookie3 pylsqpack aioquic pyaes pbkdf2 pytools pyvda; do
 	pip3 install $x
 done
