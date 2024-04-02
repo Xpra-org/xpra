@@ -557,11 +557,21 @@ class GLWindowBackingBase(WindowBackingBase):
             programs = self.programs
             self.programs = {}
             for name, program in programs.items():
-                glDeleteProgram(program)
+                try:
+                    log(f"glDeleteProgram({program}) {name!r}")
+                    glDeleteProgram(program)
+                except GLError as gle:
+                    log.error(f"Error deleting {name!r} program")
+                    log.error(f" {gle}")
             shaders = self.shaders
             self.shaders = {}
             for name, shader in shaders.items():
-                glDeleteShader(shader)
+                try:
+                    log(f"glDeleteShader({shader}) {name!r}")
+                    glDeleteShader(shader)
+                except GLError as gle:
+                    log.error(f"Error deleting {name!r} shader")
+                    log.error(f" {gle}")
             vao = self.vao
             if vao:
                 self.vao = None
