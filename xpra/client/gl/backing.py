@@ -410,6 +410,8 @@ class GLWindowBackingBase(WindowBackingBase):
             GL_FALSE, GL_LINK_STATUS,
         )
         program = glCreateProgram()
+        if not program:
+            self.fail_shader(name, b"glCreateProgram error")
         for shader in shaders:
             glAttachShader(program, shader)
         glLinkProgram(program)
