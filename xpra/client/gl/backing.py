@@ -552,6 +552,8 @@ class GLWindowBackingBase(WindowBackingBase):
         super().close()
         try:
             from OpenGL.GL import glDeleteProgram, glDeleteShader
+            glBindVertexArray(0)
+            glUseProgram(0)
             programs = self.programs
             self.programs = {}
             for name, program in programs.items():
