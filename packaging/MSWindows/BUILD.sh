@@ -197,7 +197,7 @@ if [ "${DO_SERVICE}" == "1" ]; then
 	else
 		ARCH_DIRS="x86"
 	fi
-	pushd "packaging/MSWindows/service" > /dev/null
+	pushd "packaging/MSWindows/service" > /dev/null  || exit 1
 	#the proper way would be to run vsvars64.bat
 	#but we only want to locate 3 commands,
 	#so we find them "by hand":
@@ -341,7 +341,7 @@ fi
 #fixup cx freeze wrongly including an empty dir:
 rm -fr "${DIST}/lib/comtypes/gen"
 #fixup tons of duplicated DLLs, thanks cx_Freeze!
-pushd ${DIST} > /dev/null
+pushd ${DIST} > /dev/null || exit 1
 #why is it shipping those files??
 find lib/ -name "*dll.a" -exec rm {} \;
 
@@ -351,7 +351,7 @@ mv lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-*.dll lib/gdk-pixbuf-2.0/2.
 rm -fr lib/gdk-pixbuf-2.0/2.10.0/loaders
 mv lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp lib/gdk-pixbuf-2.0/2.10.0/loaders
 if [ "${DO_FULL}" == "0" ]; then
-	pushd lib/gdk-pixbuf-2.0/2.10.0/loaders
+	pushd lib/gdk-pixbuf-2.0/2.10.0/loaders || exit 1
 	# we only want to keep: jpeg, png, xpm and svg
 	for fmt in xbm gif jxl tiff ico tga bmp	ani pnm avif qtif icns heif; do
 		rm -f libpixbufloader-${fmt}.dll
@@ -382,7 +382,7 @@ else
 		mv -f ./lib/numpy/linalg/lib$x*.dll ./lib/
 	done
 	#trim tests from numpy
-	pushd ./lib/numpy > /dev/null
+	pushd ./lib/numpy > /dev/null || exit 1
 	rm -fr ./f2py/docs ./tests ./doc
 	for x in core distutils f2py lib linalg ma matrixlib oldnumeric polynomial random testing compat fft; do
 		rm -fr ./$x/tests
@@ -407,7 +407,7 @@ mv *dll lib/
 mv lib/msvcrt*dll lib/libpython*dll lib/libgcc*dll lib/libwinpthread*dll ./
 #and keep pdfium:
 mv lib/*pdfium*.dll ./
-pushd lib > /dev/null
+pushd lib > /dev/null || exit 1
 #remove all the pointless duplication:
 for x in `ls *dll`; do
 	find ./ -mindepth 2 -name "${x}" -exec rm {} \;
@@ -435,20 +435,20 @@ if [ "${DO_FULL}" == "0" ]; then
 	# extra audio codecs (we just keep vorbis and opus):
 	rm -f ./libmp3* ./libwavpack* ./libmpdec* ./libspeex* ./libFLAC* ./libmpg123* ./libfaad* ./libfaac*
 	# matching gstreamer modules:
-	pushd ./gstreamer-1.0
+	pushd ./gstreamer-1.0 || exit 1
 	rm -f ./libgstflac* ./libgstwavpack* ./libgstspeex* ./libgstwavenc* ./libgstlame* ./libgstmpg123* ./libgstfaac* ./libgstfaad* ./libgstwav*
 	rm -f ./libgstaom* ./libgstwinscreencap* ./libgstx264* ./libgstvpx* ./libgstvideo* ./libgstopenh264*
 	rm -f ./libgstgdp*
 	popd
 fi
 # these started causing packaging problems with GStreamer 1.24:
-pushd ./gstreamer-1.0
+pushd ./gstreamer-1.0 || exit 1
 rm -f libgstisomp4.*
 popd
 
 #remove PIL loaders we don't use:
 echo "* removing unnecessary PIL plugins:"
-pushd "./PIL"
+pushd "./PIL" || exit 1
 RMP=""
 KMP=""
 for file_name in `ls *Image*`; do
@@ -565,7 +565,7 @@ fi
 
 if [ "${BUNDLE_HTML5}" == "1" ]; then
 	echo "* Installing the HTML5 client"
-	pushd "xpra-html5"
+	pushd "xpra-html5" || exit 1
 	python3 ./setup.py install ../${DIST}/www/
 	popd
 fi
