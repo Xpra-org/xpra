@@ -620,8 +620,11 @@ class GLWindowBackingBase(WindowBackingBase):
         """
 
     def close(self) -> None:
+        self.with_gl_context(self.close_gl)
+        super().close()
+
+    def close_gl(self, context):
         self.free_cuda_context()
-        self.close_gl_config()
         #This seems to cause problems, so we rely
         #on destroying the context to clear textures and fbos...
         #if self.offscreen_fbo is not None:
@@ -634,8 +637,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if b:
             self._backing = None
             b.destroy()
-        super().close()
-
+        self.close_gl_config()
 
     def paint_scroll(self, scroll_data, options, callbacks) -> None:    #pylint: disable=arguments-differ, arguments-renamed
         flush = options.intget("flush", 0)
