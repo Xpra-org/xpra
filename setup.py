@@ -954,7 +954,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     add_tokens(LDFLAGS, "extra_link_args")
     #add_to_keywords(kw, 'include_dirs', '.')
     if debug_ENABLED and WIN32 and MINGW_PREFIX:
-        extra_compile_args.append("-DDEBUG")
+        add_to_keywords(kw, 'extra_compile_args', "-DDEBUG")
     if verbose_ENABLED:
         print(f"exec_pkgconfig({pkgs_options}, {ekw})={kw}")
     return kw
