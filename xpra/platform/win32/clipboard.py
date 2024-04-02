@@ -4,7 +4,9 @@
 # later version. See the file COPYING for details.
 
 import os
+from typing import Any
 from io import BytesIO
+from collections.abc import Callable
 from ctypes import (
     get_last_error, WinError, FormatError,  # @UnresolvedImport
     sizeof, byref, cast, memset, memmove, create_string_buffer, c_char, c_void_p,
@@ -407,7 +409,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         # greedy clients want data with the token,
         # so we have to get the clipboard lock
 
-        def send_token(formats):
+        def send_token(formats) -> None:
             # default target:
             target = "UTF8_STRING"
             if formats:
@@ -419,7 +421,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 elif "PNG" in tnames:
                     target = "image/png"
 
-            def got_contents(dtype, dformat, data):
+            def got_contents(dtype: str, dformat: int, data: Any) -> None:
                 packet_data = ([target], (target, dtype, dformat, data))
                 self.send_clipboard_token_handler(self, packet_data)
 
@@ -437,7 +439,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
         self.with_clipboard_lock(got_clipboard_lock, errback)
 
-    def get_contents(self, target, got_contents):
+    def get_contents(self, target, got_contents: Callable[[str, str, Any], None]):
         log("get_contents%s", (target, got_contents))
         if target == "TARGETS":
             def got_clipboard_lock():
@@ -593,7 +595,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         if self._can_receive:
             self.claim()
 
-    def got_contents(self, target, dtype=None, dformat=None, data=None):
+    def got_contents(self, target: str, dtype="", dformat=0, data=b""):
         # if this is the special target 'TARGETS', cache the result:
         if target == "TARGETS" and dtype == "ATOM" and dformat == 32:
             self.targets = _filter_targets(data)

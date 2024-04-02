@@ -3,7 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Any
 from time import monotonic
+from collections.abc import Callable
 
 from xpra.gtk.gobject import n_arg_signal, one_arg_signal
 from xpra.clipboard.core import ClipboardProxyCore, TEXT_TARGETS
@@ -127,7 +129,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
             return
         self.schedule_emit_token()
 
-    def get_contents(self, target, got_contents, time=0):
+    def get_contents(self, target: str, got_contents: Callable[[str, str, Any], None], time=0):
         log("get_contents(%s, %s, %i) have-token=%s",
             target, got_contents, time, self._have_token)
         if target == "TARGETS":
@@ -145,7 +147,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
         else:
             # data = wait_for_contents(target)?
             pass
-        got_contents(target, 0, None)
+        got_contents(target, 0, b"")
 
 
 GObject.type_register(GTKClipboardProxy)

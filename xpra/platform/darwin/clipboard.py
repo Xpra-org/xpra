@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from io import BytesIO
+from typing import Any
 from collections.abc import Callable
 
 from AppKit import (
@@ -100,7 +101,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
         log("get_targets() targets(%s)=%s", types, targets)
         return targets
 
-    def get_contents(self, target, got_contents: Callable) -> None:
+    def get_contents(self, target: str, got_contents: Callable[[str, str, Any], None]) -> None:
         log("get_contents%s", (target, got_contents))
         if target == "TARGETS":
             got_contents("ATOM", 32, self.get_targets())

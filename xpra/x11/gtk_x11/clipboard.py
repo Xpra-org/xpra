@@ -125,7 +125,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.local_requests: dict[str, dict[int, tuple[int, Callable]]] = {}
         self.local_request_counter: int = 0
         self.targets: tuple[str, ...] = ()
-        self.target_data: dict[str, tuple] = {}
+        self.target_data: dict[str, tuple[str, int, Any]] = {}
         self.reset_incr_data()
 
     def reset_incr_data(self) -> None:
@@ -441,7 +441,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 return
             target = targets[0]
 
-            def got_chosen_target(dtype, dformat, data) -> None:
+            def got_chosen_target(dtype: str, dformat: int, data: Any) -> None:
                 log("got_chosen_target(%s, %s, %s)", dtype, dformat, ellipsizer(data))
                 if not (dtype and dformat and data):
                     send_token_with_targets()
@@ -456,7 +456,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             with_targets(self.targets)
             return
 
-        def got_targets(dtype, dformat, data) -> None:
+        def got_targets(dtype: str, dformat: int, data: Any) -> None:
             assert dtype == "ATOM" and dformat == 32
             self.targets = xatoms_to_strings(data)
             log("got_targets: %s", self.targets)
@@ -498,7 +498,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.target_data = {}
         self.targets = ()
 
-    def get_contents(self, target: str, got_contents: Callable) -> None:
+    def get_contents(self, target: str, got_contents: Callable[[str, int, Any], None]) -> None:
         log("get_contents(%s, %s) owned=%s, have-token=%s",
             target, got_contents, self.owned, self._have_token)
         if target == "TARGETS":
@@ -519,7 +519,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             if self.owned:
                 # we are the clipboard owner!
                 log("we are the %s selection owner, using empty reply", self._selection)
-                got_contents(None, None, None)
+                got_contents("", 0, b"")
                 return
             request_id = self.local_request_counter
             self.local_request_counter += 1
@@ -544,7 +544,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         if target == "TARGETS":
             got_contents("ATOM", 32, b"")
         else:
-            got_contents(None, None, None)
+            got_contents("", 0, b"")
 
     def do_property_notify(self, event) -> None:
         log("do_property_notify(%s)", event)

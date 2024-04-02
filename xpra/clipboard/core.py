@@ -265,7 +265,7 @@ class ClipboardProxyCore:
 
     # This function is called by the xpra core when the peer has requested the
     # contents of this clipboard:
-    def get_contents(self, target: str, got_contents: Callable) -> None:
+    def get_contents(self, target: str, got_contents: Callable[[str, str, Any], None]) -> None:
         pass
 
     def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False) -> None:
@@ -659,7 +659,7 @@ class ClipboardProtocolHelperCore:
             log.warn("clipboard request %s dropped for testing!", request_id)
             return
 
-        def got_contents(dtype, dformat, data):
+        def got_contents(dtype="", dformat=0, data=b"") -> None:
             self.proxy_got_contents(request_id, selection, target, dtype, dformat, data)
 
         proxy.get_contents(target, got_contents)
@@ -729,7 +729,7 @@ class ClipboardProtocolHelperCore:
         log("process clipboard contents none")
         request_id = packet[1]
         assert isinstance(request_id, int)
-        self._clipboard_got_contents(request_id, "", 0, None)
+        self._clipboard_got_contents(request_id, "", 0, b"")
 
     def _clipboard_got_contents(self, request_id: int, dtype: str, dformat: int, data) -> None:
         raise NotImplementedError()

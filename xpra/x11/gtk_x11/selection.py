@@ -46,7 +46,7 @@ class ManagerSelection(GObject.GObject):
     def __str__(self):  # pylint: disable=arguments-differ
         return "ManagerSelection(%s)" % self.atom
 
-    def __init__(self, selection):
+    def __init__(self, selection: str):
         super().__init__()
         self.atom = selection
         atom = Gdk.Atom.intern(selection, False)

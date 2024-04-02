@@ -201,7 +201,7 @@ def get_vrefresh() -> int:
     return v
 
 
-def send_client_message(window, message_type, *values) -> None:
+def send_client_message(window, message_type: str, *values) -> None:
     try:
         from xpra.x11.bindings.window import constants, X11WindowBindings  # @UnresolvedImport
         X11Window = X11WindowBindings()
