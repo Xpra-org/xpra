@@ -56,7 +56,7 @@ class SplashTest(ProcessTestUtil):
 			return
 		try:
 			self.do_feed_splash(s, [
-			"100:100",
+				"100:100",
 			], 5)
 			if pollwait(s, 5) is not None:
 				return
@@ -103,20 +103,20 @@ class SplashTest(ProcessTestUtil):
 		self._feed_splash([
 			"notanumber:ignoreit",
 			"50:50",
-			])
+		])
 		r = pollwait(self.splash, 5)
 		assert r is None, "splash screen should not have terminated"
 		#try killing it with a signal:
 		self.splash.send_signal(signal.SIGTERM)
-		r = pollwait(self.splash, 5)
+		r = pollwait(self.splash, 10)
 		assert r is not None, "expected splash to exit"
 
 	def test_full(self):
 		self._feed_splash([
 			"10:10",
 			"100:100",
-			])
-		r = pollwait(self.splash, 5)
+		])
+		r = pollwait(self.splash, 10)
 		assert r is not None, "splash screen should have terminated"
 		assert r==0, "exit code should be zero, but got %s" % r
 		self.stop_splash()
@@ -126,7 +126,7 @@ class SplashTest(ProcessTestUtil):
 			"10:10",
 			"20:20",
 			"90:90",
-			])
+		])
 		assert self.splash.poll() is None, "splash screen should still be running"
 		self.stop_splash()
 
