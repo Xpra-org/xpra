@@ -85,16 +85,21 @@ cdef class X11CoreBindingsInstance:
         assert self.display
         return XDefaultRootWindow(self.display)
 
-    cdef Atom xatom(self, str_or_int):
+    cdef Atom str_to_atom(self, atomstr):
         """Returns the X atom corresponding to the given Python string or Python
         integer (assumed to already be an X atom)."""
-        self.context_check("xatom")
-        if isinstance(str_or_int, (int, long)):
-            return <Atom> str_or_int
-        bstr = strtobytes(str_or_int)
+        self.context_check("str_to_atom")
+        bstr = strtobytes(atomstr)
         cdef char* string = bstr
         assert self.display!=NULL, "display is closed"
         return XInternAtom(self.display, string, False)
+
+    cdef Atom xatom(self, str_or_int):
+        """Returns the X atom corresponding to the given Python string or Python
+        integer (assumed to already be an X atom)."""
+        if isinstance(str_or_int, int):
+            return <Atom> str_or_int
+        return self.str_to_atom(str_or_int)
 
     def intern_atoms(self, atom_names):
         cdef int count = len(atom_names)

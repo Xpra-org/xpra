@@ -990,7 +990,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         self.context_check("device_bell")
         if not self.hasXkb():
             return
-        cdef Atom name_atom = self.get_xatom(name)
+        cdef Atom name_atom = self.str_to_atom(name)
         # until (if ever) we replicate the same devices on the server,
         # use the default device:
         # deviceSpec = XkbUseCoreKbd

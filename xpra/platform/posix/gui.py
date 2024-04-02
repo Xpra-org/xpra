@@ -396,7 +396,7 @@ def pointer_ungrab(_window) -> bool:
     return False
 
 
-def _send_client_message(window, message_type, *values) -> None:
+def _send_client_message(window, message_type: str, *values) -> None:
     if not x11_bindings():
         log(f"cannot send client message {message_type} without the X11 bindings")
         return

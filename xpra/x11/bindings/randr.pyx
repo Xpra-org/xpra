@@ -994,8 +994,8 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         if output<0 or output>=rsc.noutput:
             raise ValueError(f"invalid output number {output}, only {rsc.noutput} outputs")
         cdef RROutput rro = rsc.outputs[output]
-        cdef Atom prop = self.xatom(prop_name)
-        cdef Atom ptype = self.xatom("INTEGER")
+        cdef Atom prop = self.str_to_atom(prop_name)
+        cdef Atom ptype = self.str_to_atom("INTEGER")
         data = struct.pack("@L", value)
         XRRChangeOutputProperty(self.display, rro, prop, ptype,
                                 32, PropModeReplace, data, 1)
@@ -1198,7 +1198,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
             try:
                 for mi in range(nmonitors):
-                    monitors[mi].name = self.xatom("VFB%i-%s" % (mi, monotonic()))
+                    monitors[mi].name = self.str_to_atom("VFB%i-%s" % (mi, monotonic()))
                     XRRSetMonitor(self.display, window, &monitors[mi])
             finally:
                 XRRFreeMonitors(monitors)
@@ -1223,7 +1223,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                         name += "-%i" % mi
                     x, y, width, height = m["geometry"]
                     active_names[mi] = name
-                    monitor.name = self.xatom(name)
+                    monitor.name = self.str_to_atom(name)
                     monitor.primary = m.get("primary", primary==mi)
                     monitor.automatic = m.get("automatic", True)
                     monitor.x = x
