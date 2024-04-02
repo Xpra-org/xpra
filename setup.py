@@ -438,12 +438,13 @@ SWITCHES += [
     "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests",
     "win32_tools",
 ]
+SWITCHES = list(sorted(set(SWITCHES)))
 
 
 def show_help():
     setup()
     print("Xpra specific build and install switches:")
-    for x in sorted(SWITCHES):
+    for x in SWITCHES:
         d = globals()[f"{x}_ENABLED"]
         with_str = f"  --with-{x}"
         without_str = f"  --without-{x}"
@@ -530,7 +531,7 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
         for x in SWITCHES:
             switches_info[x] = globals()[f"{x}_ENABLED"]
         print("build switches:")
-        for k in sorted(SWITCHES):
+        for k in SWITCHES:
             v = switches_info[k]
             print("* %s : %s" % (str(k).ljust(20), {None : "Auto", True : "Yes", False : "No"}.get(v, v)))
     show_switch_info()
