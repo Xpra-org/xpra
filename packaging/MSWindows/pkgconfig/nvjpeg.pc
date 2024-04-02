@@ -1,7 +1,5 @@
-cuda_prefix=./cuda
-exec_prefix=${cuda_prefix}
-libdir=${cuda_prefix}/bin
-includedir=${cuda_prefix}/include
+libdir=/mingw64/bin
+includedir=/mingw64/include
 
 Name: nvjpeg
 Description: Library for the nvjpeg GPU compression

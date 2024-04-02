@@ -1,10 +1,10 @@
-cuda_prefix=./cuda
-exec_prefix=${cuda_prefix}
-libdir=${cuda_prefix}/bin
-includedir=${cuda_prefix}/include
+cudaroot=./cuda
+libdir=${cudaroot}/bin
+includedir=${cudaroot}/include
 
-Name: CUDA
-Description: Library for the CUDA GPU toolkit
+Name: cuda
+Description: CUDA Driver Library
 Version: 12
-Cflags: -I${includedir}
-Libs: -L${libdir} -lcudart64_12
+Libs: "-L${libdir}"  "-L${cudaroot}/lib/x64" -lcuda
+#for GCC versions 8.0 and older, add: "-Wno-error=sign-compare"
+Cflags: "-I${includedir}" -Wno-error=deprecated-declarations
