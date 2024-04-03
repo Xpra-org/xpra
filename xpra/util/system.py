@@ -311,6 +311,21 @@ def get_sysconfig_info() -> dict[str, Any]:
 
 
 def platform_release(release):
+    log = get_util_logger()
+    if WIN32:
+        try:
+            import wmi
+        except ImportError:
+            log(f"platform_release({release}) no wmi", exc_info=True)
+        else:
+            try:
+                computer = wmi.WMI()
+                os_info = computer.Win32_OperatingSystem()[0]
+                return os_info.Name.split('|')[0]
+            except Exception as e:
+                log.debug("wmi query", exc_info=True)
+                log.warn("Warning: failed to query OS using wmi")
+                log.warn(f" {e}")
     if OSX:
         systemversion_plist = "/System/Library/CoreServices/SystemVersion.plist"
         try:
@@ -319,10 +334,10 @@ def platform_release(release):
                 pl = plistlib.load(f)
             return pl['ProductUserVisibleVersion']
         except Exception as e:
-            get_util_logger().debug("platform_release(%s)", release, exc_info=True)
-            get_util_logger().warn("Warning: failed to get release information")
-            get_util_logger().warn(f" from {systemversion_plist}:")
-            get_util_logger().warn(f" {e}")
+            log.debug("platform_release(%s)", release, exc_info=True)
+            log.warn("Warning: failed to get release information")
+            log.warn(f" from {systemversion_plist}:")
+            log.warn(f" {e}")
     return release
 
 
