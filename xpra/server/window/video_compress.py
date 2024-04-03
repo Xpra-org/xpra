@@ -1494,7 +1494,7 @@ class WindowVideoSource(WindowSource):
                     if text_hint and (scaling != (1, 1) or lossy_csc):
                         continue
                     score_delta = encoding_score_delta
-                    if self.is_shadow and enc_in_format in lossy_csc and scaling == (1, 1):
+                    if self.is_shadow and lossy_csc and scaling == (1, 1):
                         # avoid subsampling with shadow servers:
                         score_delta -= 40
                     vs = self.video_subregion
