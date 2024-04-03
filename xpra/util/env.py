@@ -210,6 +210,9 @@ class NumpyImportContext(AbstractContextManager):
         os.environ["XPRA_NUMPY_IMPORT"] = "1"
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        wait = envint("XPRA_NUMPY_LOCK_SLEEP", 0)
+        import time
+        time.sleep(wait)
         os.environ.pop("XPRA_NUMPY_IMPORT", None)
         numpy_import_lock.release()
 
