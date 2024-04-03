@@ -639,7 +639,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                     for ks in keysyms_strs:
                         if ks in (None, ""):
                             keysym = NoSymbol
-                        elif isinstance(ks, (long, int)):
+                        elif isinstance(ks, int):
                             keysym = ks
                         else:
                             keysym = self._parse_keysym(ks)
