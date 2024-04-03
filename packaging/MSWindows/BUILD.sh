@@ -417,7 +417,7 @@ rm -f ./libjasper*
 # Python modules:
 rm -fr ./lib2to3* ./xdg* ./olefile* ./pygtkcompat* keyring/testing ./jaraco* ./p11-kit* ./lz4
 #remove codecs we don't need:
-rm -f ./libSvt* ./libx265* ./libjxl* ./libde265* ./libkvazaar*
+rm -f ./libx265* ./libjxl* ./libde265* ./libkvazaar*
 if [ "${DO_FULL}" == "0" ]; then
 	rm -fr *.dist-info
 	# kerberos / gss libs:
@@ -427,7 +427,7 @@ if [ "${DO_FULL}" == "0" ]; then
 	# no AV1:
     rm -f ./libaom* ./rav1e* ./libdav1d* ./libheif*
     # no avif:
-    rm -f ./libavif*
+    rm -f ./libavif* ./libSvt*
     # remove h264 encoder:
 	rm -f ./libx264*
 	# should not be needed:
