@@ -939,19 +939,39 @@ class GLWindowBackingBase(WindowBackingBase):
             return False
         return True
 
+    def get_default_cursor_data(self) -> tuple:
+        # use the default cursor
+        if self.default_cursor_data:
+            return tuple(self.default_cursor_data)
+        from xpra.platform.paths import get_icon_dir
+        serial = 0
+        x = y = 0
+        w = h = 32
+        xhot = yhot = 16
+        pixels = b"d" * w * h * 4
+        name = "fake"
+        filename = os.path.join(get_icon_dir(), "cross.png")
+        log(f"get_default_cursor_data() {filename=}")
+        if os.path.exists(filename):
+            try:
+                from PIL import Image
+                img = Image.open(filename)
+                log(f"get_default_cursor_data() Image({filename=})={img}")
+                w, h = img.size
+                xhot = w // 2
+                yhot = h // 2
+                name = "cross"
+                if img.mode != "RGBA":
+                    img = img.convert("RGBA")
+                pixels = img.tobytes("raw", "BGRA")
+            except Exception:
+                log(f"Image.open({filename})", exc_info=True)
+                log.warn(f"Warning: failed to load {filename!r}")
+        return ("raw", x, y, w, h, xhot, yhot, serial, pixels, name)
+
     def set_cursor_data(self, cursor_data) -> None:
         if not cursor_data or cursor_data[0] is None:
-            # use the default cursor
-            if self.default_cursor_data:
-                cursor_data = list(self.default_cursor_data)
-            else:
-                x = y = 0
-                w = h = 32
-                xhot = yhot = 16
-                serial = 0
-                pixels = b"d" * w * h * 4
-                name = "fake"
-                cursor_data = ("raw", x, y, w, h, xhot, yhot, serial, pixels, name)
+            cursor_data = self.get_default_cursor_data()
         self.cursor_data = cursor_data
         if not self.validate_cursor():
             return
