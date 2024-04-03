@@ -56,20 +56,16 @@ def gfilt(generator) -> tuple[str,...]:
 CSC_CODECS: tuple[str,...] = gfilt(f"csc_{x}" for x in ("cython", "libyuv"))
 ENCODER_CODECS: tuple[str,...] = gfilt(f"enc_{x}" for x in (
     "rgb", "pillow", "spng", "webp", "jpeg", "nvjpeg", "avif",
-    )
-)
+))
 ENCODER_VIDEO_CODECS: tuple[str,...] = gfilt(autoprefix("enc", x) for x in (
     "vpx", "x264", "openh264", "nvenc", "gstreamer",
-    )
-)
+))
 DECODER_CODECS: tuple[str,...] = gfilt(f"dec_{x}" for x in (
     "pillow", "spng", "webp", "jpeg", "nvjpeg", "avif", "gstreamer",
-    )
-)
+))
 DECODER_VIDEO_CODECS: tuple[str,...] = gfilt(autoprefix("dec", x) for x in (
     "vpx", "openh264", "nvdec",
-    )
-)
+))
 SOURCES: tuple[str,...] = filt("v4l2", "evdi", "drm", "nvfbc")
 
 ALL_CODECS: tuple[str,...] = filt(*set(
@@ -195,7 +191,9 @@ def add_codec_version(name: str, top_module, version: str="get_version()", alt_v
             if not hasattr(module, f):
                 continue
             v = getattr(module, f)
+            log(f"{module}.{f}={v}")
             if fieldname.endswith("()") and v:
+                log(f"calling {v}")
                 v = v()
             codec_versions[name] = parse_version(v)
             # optional info:
@@ -212,7 +210,7 @@ def add_codec_version(name: str, top_module, version: str="get_version()", alt_v
         log(f" cannot import {name}: {e}")
         log("", exc_info=True)
     except Exception as e:
-        log.warn("error during codec import: %s", e)
+        log.warn(f"error during {name} codec import: %s", e)
         log.warn("", exc_info=True)
     return None
 
@@ -230,7 +228,7 @@ def xpra_codec_import(name: str, description: str, top_module, class_module, cla
 platformname = sys.platform.rstrip("0123456789")
 
 
-CODEC_OPTIONS : dict[str,tuple[str,str,str,str]] = {
+CODEC_OPTIONS : dict[str, tuple[str, str, str, str]] = {
     # encoders:
     "enc_rgb"       : ("RGB encoder",       "argb",         "encoder", "encode"),
     "enc_pillow"    : ("Pillow encoder",    "pillow",       "encoder", "encode"),
