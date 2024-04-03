@@ -537,7 +537,7 @@ cdef get_frame_grab_info(NvFBCFrameGrabInfo *grab_info):
         }
 
 def get_version():
-    return version
+    return (version, )
 
 def get_type():
     return "nvfbc"
