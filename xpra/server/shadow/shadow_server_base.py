@@ -116,7 +116,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     def do_print_screen_info(self, display: str, w: int, h: int) -> None:
         if display or w or h:
             if display:
-                msg = f" on {display}"
+                msg = f" on display {display!r}"
                 if w and h:
                     msg += f" of size {w}x{h}"
             else:

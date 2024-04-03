@@ -282,7 +282,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         blacklisted = tuple(client for client in BLACKLISTED_CLIPBOARD_CLIENTS if client in wininfo)
         if blacklisted:
             if first_time(f"clipboard-blacklisted:{blacklisted}"):
-                log.warn(f"receiving clipboard requests from blacklisted client {csv(wininfo)}")
+                log.warn(f"receiving clipboard requests from blacklisted client: {csv(wininfo)}")
                 log.warn(" all requests will be silently ignored")
             log("responding with nodata for blacklisted client '%s'", wininfo)
             return
