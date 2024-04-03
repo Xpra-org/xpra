@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,7 +7,7 @@ import os
 import math
 from collections import deque
 from time import monotonic
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from xpra.log import Logger
 log = Logger("encoder", "vpx")
@@ -200,11 +200,17 @@ def cleanup_module():
 def get_abi_version():
     return VPX_ENCODER_ABI_VERSION
 
-def get_version():
+def get_version() -> Tuple[int,...]:
     b = vpx_codec_version_str()
-    vstr = b.decode("latin1")
+    vstr = b.decode("latin1").lstrip("v")
     log("vpx_codec_version_str()=%s", vstr)
-    return vstr.lstrip("v")
+    vparts : List[int] = []
+    try:
+        for x in vstr.split("."):
+            vparts.append(int(x))
+    except Exception:
+        pass
+    return tuple(vparts)
 
 def get_type():
     return "vpx"
