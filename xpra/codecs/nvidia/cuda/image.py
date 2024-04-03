@@ -11,7 +11,9 @@ from xpra.log import Logger
 
 log = Logger("cuda")
 
-with numpy_import_context("CUDA"):
+# this module is only imported by nvfbc.capture_*
+# and it may wait for CUDA initialization to complete here:
+with numpy_import_context("CUDA", True):
     from numpy import byte  # @UnresolvedImport
     from pycuda.driver import (
         pagelocked_empty,
