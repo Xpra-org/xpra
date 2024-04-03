@@ -200,12 +200,13 @@ numpy_import_lock = RLock()
 
 class NumpyImportContext(AbstractContextManager):
 
-    def __init__(self, blocking=False):
+    def __init__(self, info: str, blocking=False):
         self.blocking = blocking
+        self.info = info
 
     def __enter__(self):
         if not numpy_import_lock.acquire(blocking=self.blocking):
-            raise RuntimeError("the numpy import lock is already held!")
+            raise RuntimeError(f"the numpy import lock is already held by {self.info}!")
         os.environ["XPRA_NUMPY_IMPORT"] = "1"
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -213,7 +214,7 @@ class NumpyImportContext(AbstractContextManager):
         numpy_import_lock.release()
 
     def __repr__(self):
-        return f"numpy_import_context({self.blocking=})"
+        return f"numpy_import_context({self.info}, {self.blocking=})"
 
 
 def numpy_import_context(subsystem: str, blocking=False) -> AbstractContextManager:
@@ -222,7 +223,9 @@ def numpy_import_context(subsystem: str, blocking=False) -> AbstractContextManag
         env_name = "XPRA_NUMPY"
     allow_numpy = envbool(env_name, True)
     if allow_numpy:
-        return NumpyImportContext(blocking=blocking)
+        import threading
+        info = subsystem+" in thread "+str(threading.current_thread().ident)
+        return NumpyImportContext(info=info, blocking=blocking)
     return nomodule_context("numpy")
 
 
