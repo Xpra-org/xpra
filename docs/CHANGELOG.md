@@ -1,11 +1,12 @@
 # Changelog
 
-## [5.0.8] 2024-03-28
+## [5.0.8] 2024-04-03
 * Platforms, build and packaging:
     * [MS Windows 'Light' builds](https://github.com/Xpra-org/xpra/issues/4100)
     * [compatibility with multiple "Windows Kits" locations](https://github.com/Xpra-org/xpra/commit/0fed808d376bcf441140609f5d73ac8069566a91)
     * [typo in MacOS bundle file](https://github.com/Xpra-org/xpra/commit/526b6fba3ac3398f810a400a78a5dae1f7df27a2)
     * [force include all brotli dylibs in MacOS builds](https://github.com/Xpra-org/xpra/commit/8a245ebb28ab6132e2c16b049ca35f5738521ab2)
+    * [missing 'bcrypt' module](https://github.com/Xpra-org/xpra/commit/5dea9ba3ba5be1de4451b7d4835427e0e3621ad7)
     * [spng encoder build switch not honoured](https://github.com/Xpra-org/xpra/commit/d491e1689c2fc4c2cdcb67d9e9e6f996e0d8cc3d)
     * [Cython 3.0.9](https://github.com/Xpra-org/xpra/commit/6469e52b2ecf37c8a22c4bf0906e20b5e82f8ea9)
     * [aioquic 1.0.0](https://github.com/Xpra-org/xpra/commit/12ba4849a47f0c1f6b5f801126bc83b1c14dc2ef)
@@ -14,7 +15,11 @@
     * [MS Windows builds not waiting for input to close](https://github.com/Xpra-org/xpra/commit/cc0fc8b9cdeb8c897bf648554f13de0ff6d8d17b)
     * [MS Windows tools fail to run](https://github.com/Xpra-org/xpra/commit/1a05229c2001aa4b0cbdafd642e9b63d8b92196e) [due to incomplete environment](https://github.com/Xpra-org/xpra/commit/f6cd59c08b083b5a6189c09a3546f2dfc6354054) [and errors](https://github.com/Xpra-org/xpra/commit/2fb0e13fbb1cefcdee6e265f962eea7c20af85db)
     * [build info cannot be parsed](https://github.com/Xpra-org/xpra/commit/0ba4c924cd0d54dfb6db06f574bd48b91f46aa8b)
+    * [debug builds on MS Windows](https://github.com/Xpra-org/xpra/commit/8d3b4edb7e3481bab3aeb6530604d02b9a7ba24f)
 * Major:
+    * [missing X11 clipboard events](https://github.com/Xpra-org/xpra/commit/5d07825aae44d7d7055ac4fbf44727c8e4c65c8b)
+    * [OpenGL cleanup from correct context](https://github.com/Xpra-org/xpra/commit/8e9c4fdb755f7108af83db408540e469989911c1)
+    * [nvfbc module loading errors](https://github.com/Xpra-org/xpra/commit/98d34bef02483fb878c813f6f1f9defa8df026c3)
     * [ensure NV12 streams can be decoded properly](https://github.com/Xpra-org/xpra/commit/79803454439839657025dfb7a090ec5426999443)
     * [client chooses the fastest colorspace conversion option](https://github.com/Xpra-org/xpra/commit/635d0f0fb6bc4a93a228aec4698c751380625de9)
     * [use libyuv to convert video to rgb when rendering without OpenGL](https://github.com/Xpra-org/xpra/commit/246685f1c0b6ee23c63eb90701da8e0e94afaeb4)
@@ -51,6 +56,7 @@
     * [typo shown in display information](https://github.com/Xpra-org/xpra/commit/58374bb5f5370da0b74eaf1af7b78d5bd97c4099)
     * [libvpx decoder use correct (unused) pixel format constant](https://github.com/Xpra-org/xpra/commit/d0a03ae2b464aabe1d3abc49614e3fd242c86a76)
     * [ignore dimensions rounded up in openh264 decoder](https://github.com/Xpra-org/xpra/commit/94da7c67aa77309529a5ddbb96aad1de05f7a3a0)
+    * [some tests can take long on a slow CI run](https://github.com/Xpra-org/xpra/commit/1d9e881b889f93757128169204e571c80917b8ce)
 
 ## [5.0.7] 2024-02-28
 * Regressions:

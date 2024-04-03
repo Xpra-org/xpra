@@ -777,12 +777,13 @@ fi
 
 
 %changelog
-* Thu Mar 28 2024 Antoine Martin <antoine@xpra.org> 5.0.8-10
+* Wed Apr 03 2024 Antoine Martin <antoine@xpra.org> 5.0.8-10
 - Platforms, build and packaging:
    MS Windows 'Light' builds
    compatibility with multiple "Windows Kits" locations
    typo in MacOS bundle file
    force include all brotli dylibs in MacOS builds
+   missing 'bcrypt' module
    spng encoder build switch not honoured
    Cython 3.0.9
    aioquic 1.0.0
@@ -791,7 +792,11 @@ fi
    MS Windows builds not waiting for input to close
    MS Windows tools fail to run due to incomplete environment and errors
    build info cannot be parsed
+   debug builds on MS Windows
 - Major:
+   missing X11 clipboard events
+   OpenGL cleanup from correct context
+   nvfbc module loading errors
    ensure NV12 streams can be decoded properly
    client chooses the fastest colorspace conversion option
    use libyuv to convert video to rgb when rendering without OpenGL
@@ -828,6 +833,7 @@ fi
    typo shown in display information
    libvpx decoder use correct (unused) pixel format constant
    ignore dimensions rounded up in openh264 decoder
+   some tests can take long on a slow CI run
 
 * Wed Feb 28 2024 Antoine Martin <antoine@xpra.org> 5.0.7-10
 - Regressions:

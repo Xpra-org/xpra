@@ -4,6 +4,7 @@ xpra (5.0.8-1) UNRELEASED; urgency=low
    - compatibility with multiple "Windows Kits" locations
    - typo in MacOS bundle file
    - force include all brotli dylibs in MacOS builds
+   - missing 'bcrypt' module
    - spng encoder build switch not honoured
    - Cython 3.0.9
    - aioquic 1.0.0
@@ -12,7 +13,11 @@ xpra (5.0.8-1) UNRELEASED; urgency=low
    - MS Windows builds not waiting for input to close
    - MS Windows tools fail to run due to incomplete environment and errors
    - build info cannot be parsed
+   - debug builds on MS Windows
   * Major:
+   - missing X11 clipboard events
+   - OpenGL cleanup from correct context
+   - nvfbc module loading errors
    - ensure NV12 streams can be decoded properly
    - client chooses the fastest colorspace conversion option
    - use libyuv to convert video to rgb when rendering without OpenGL
@@ -50,8 +55,9 @@ xpra (5.0.8-1) UNRELEASED; urgency=low
    - typo shown in display information
    - libvpx decoder use correct (unused) pixel format constant
    - ignore dimensions rounded up in openh264 decoder
+   - some tests can take long on a slow CI run
 
- -- Antoine Martin <antoine@xpra.org>  Thu, 28 Mar 2024 21:06:12 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 03 Apr 2024 21:14:24 +0700
 
 xpra (5.0.7-1) UNRELEASED; urgency=low
   * Regressions:
