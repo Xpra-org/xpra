@@ -377,6 +377,7 @@ class GLWindowBackingBase(WindowBackingBase):
             self, self.textures, self.offscreen_fbo, self.tmp_fbo)
 
     def gl_init_shaders(self) -> None:
+        self.vao = glGenVertexArrays(1)
         # Create and assign fragment programs
         from OpenGL.GL import GL_FRAGMENT_SHADER, GL_VERTEX_SHADER
         vertex_shader = self.gl_init_shader("vertex", GL_VERTEX_SHADER)
@@ -388,9 +389,8 @@ class GLWindowBackingBase(WindowBackingBase):
             self.gl_init_program(name, vertex_shader, fragment_shader)
         overlay_shader = self.gl_init_shader("overlay", GL_FRAGMENT_SHADER)
         self.gl_init_program("overlay", vertex_shader, overlay_shader)
-        self.vao = glGenVertexArrays(1)
 
-    def set_vao(self, index):
+    def set_vao(self, index=0):
         vertices = [-1, -1, 1, -1, -1, 1, 1, 1]
         c_vertices = (c_float * len(vertices))(*vertices)
         glBindVertexArray(self.vao)
@@ -421,7 +421,9 @@ class GLWindowBackingBase(WindowBackingBase):
             glDeleteProgram(program)
             self.fail_shader(name, infolog)
         log(f"{name} program linked: {infolog}")
+        self.set_vao()
         status = glValidateProgram(program)
+        glBindVertexArray(0)
         infolog = glGetProgramInfoLog(program) or "OK"
         if status == GL_FALSE:
             glDeleteProgram(program)
