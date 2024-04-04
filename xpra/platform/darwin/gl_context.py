@@ -29,10 +29,10 @@ ACCELERATED = envbool("XPRA_OPENGL_ACCELERATED", False)
 
 class AGLWindowContext:
 
-    def __init__(self, gl_context: NSOpenGLContext, nsview: int, scale_factor=1.0):
+    def __init__(self, gl_context: NSOpenGLContext, nsview: int, gdk_window):
         self.gl_context = gl_context
         self.nsview = nsview
-        self.scale_factor = scale_factor
+        self.gdk_window = gdk_window
         log("%s", self)
         self.gl_context.setView_(nsview)
 
@@ -62,14 +62,14 @@ class AGLWindowContext:
         self.destroy()
 
     def get_scale_factor(self) -> float:
-        return self.scale_factor
+        return get_backing_scale_factor(self.gdk_window)
 
     def destroy(self) -> None:
         self.gl_context = None
         self.nsview = 0
 
     def __repr__(self):
-        return f"AGLWindowContext({self.gl_context}, {self.nsview}, {self.scale_factor})"
+        return f"AGLWindowContext({self.gl_context}, {self.nsview})"
 
 
 class AGLContext:
@@ -177,8 +177,7 @@ class AGLContext:
             if self.alpha and enable_transparency:
                 self.gl_context.setValues_forParameter_([0], NSOpenGLCPSurfaceOpacity)
                 enable_transparency(gdk_window)
-            scale_factor = get_backing_scale_factor(gdk_window)
-            self.window_context = AGLWindowContext(self.gl_context, nsview, scale_factor)
+            self.window_context = AGLWindowContext(self.gl_context, nsview, gdk_window)
         return self.window_context
 
     def __del__(self):
