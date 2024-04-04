@@ -769,7 +769,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
         for x, y, w, h in rectangles:
             glBlitFramebuffer(x, y, w, h,
-                              x, y, w, h,
+                              round(x*scale), round(y*scale), round((x+w)*scale), round((y+h)*scale),
                               GL_COLOR_BUFFER_BIT, GL_NEAREST)
 
         if self.pointer_overlay:
