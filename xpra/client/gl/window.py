@@ -14,7 +14,7 @@ from xpra.common import noop
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.objects import AtomicInteger, typedict
 from xpra.util.env import envint, numpy_import_context
-from xpra.os_util import WIN32, OSX, gi_import
+from xpra.os_util import WIN32, gi_import
 from xpra.util.io import load_binary_file
 from xpra.log import Logger
 from xpra.platform.paths import get_icon_filename
@@ -35,7 +35,7 @@ def get_opengl_module_names(opengl="on") -> tuple[str, ...]:
     if arg == "native":
         return ("native",)
     # auto-detect:
-    if os.environ.get("WAYLAND_DISPLAY") or OSX:
+    if os.environ.get("WAYLAND_DISPLAY"):
         return "glarea", "native"
     return "native", "glarea",
 

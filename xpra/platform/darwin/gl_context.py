@@ -7,26 +7,32 @@ from typing import Any
 
 import objc
 from Cocoa import (
-    NSOpenGLContext, NSOpenGLPixelFormat, NSOpenGLPFAWindow,
-    NSOpenGLPFAAlphaSize, NSOpenGLPFABackingStore, NSOpenGLPFAColorSize,
+    NSOpenGLContext, NSOpenGLPixelFormat, NSOpenGLPFAAccelerated,
+    NSOpenGLPFAAlphaSize, NSOpenGLPFAColorSize,
     NSOpenGLPFADepthSize, NSOpenGLPFADoubleBuffer, NSOpenGLPFAAccumSize,
     NSOpenGLPFAStencilSize, NSOpenGLPFAAuxBuffers, NSOpenGLCPSurfaceOpacity,
     NSOpenGLGetVersion,
+    NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
 )
 from xpra.gtk.window import GDKWindow
 from xpra.client.gl.check import check_PyOpenGL_support
 from xpra.platform.darwin.gdk3_bindings import get_nsview_ptr, enable_transparency, get_backing_scale_factor
+from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
 log = Logger("opengl")
 
+# require hardware accelerated OpenGL:
+ACCELERATED = envbool("XPRA_OPENGL_ACCELERATED", False)
+
 
 class AGLWindowContext:
 
-    def __init__(self, gl_context: NSOpenGLContext, nsview: int):
+    def __init__(self, gl_context: NSOpenGLContext, nsview: int, scale_factor=1.0):
         self.gl_context = gl_context
         self.nsview = nsview
+        self.scale_factor = scale_factor
         log("%s", self)
         self.gl_context.setView_(nsview)
 
@@ -55,32 +61,39 @@ class AGLWindowContext:
     def __del__(self):
         self.destroy()
 
+    def get_scale_factor(self) -> float:
+        return self.scale_factor
+
     def destroy(self) -> None:
         self.gl_context = None
         self.nsview = 0
 
     def __repr__(self):
-        return f"AGLWindowContext({self.gl_context}, {self.nsview})"
+        return f"AGLWindowContext({self.gl_context}, {self.nsview}, {self.scale_factor})"
 
 
 class AGLContext:
 
     def __init__(self, alpha=True):
         self.alpha = alpha
-        self.scale_factor = 1.0
         self.gl_context: NSOpenGLContext | None = None
         self.nsview_ptr: int = 0
         self.window_context: AGLWindowContext | None = None
-        attrs = [
-            NSOpenGLPFAWindow,
-            # NSOpenGLPFAAccelerated,
+        attrs = []
+        if ACCELERATED:
+            attrs.append(NSOpenGLPFAAccelerated)
+        attrs += [
             NSOpenGLPFADoubleBuffer,
-            # NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
-            NSOpenGLPFAAlphaSize, 8,
-            NSOpenGLPFABackingStore,
-            NSOpenGLPFAColorSize, 32,  # for high bit depth, we should switch to 64 and NSOpenGLPFAColorFloat
             NSOpenGLPFADepthSize, 24,
+            NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
         ]
+        if alpha:
+            attrs += [
+                NSOpenGLPFAAlphaSize,
+                8,
+            ]
+        attrs.append(0)
+        log(f"AGLContext({alpha}) creating NSOpenGLPixelFormat from {attrs}")
         self.pixel_format = NSOpenGLPixelFormat.alloc().initWithAttributes_(attrs)
         assert self.pixel_format is not None, "failed to initialize NSOpenGLPixelFormat with {}".format(attrs)
         c = NSOpenGLContext.alloc().initWithFormat_shareContext_(self.pixel_format, None)
@@ -133,7 +146,7 @@ class AGLContext:
         tmp = GDKWindow(window_type=Gdk.WindowType.TEMP, title="tmp-opengl-check")
         with self.get_paint_context(tmp):
             i.update(check_PyOpenGL_support(force_enable))
-        tmp.destroy()
+        tmp.hide()
         return i
 
     def _get_pfa(self, attr, screen):
@@ -164,15 +177,12 @@ class AGLContext:
             if self.alpha and enable_transparency:
                 self.gl_context.setValues_forParameter_([0], NSOpenGLCPSurfaceOpacity)
                 enable_transparency(gdk_window)
-            self.window_context = AGLWindowContext(self.gl_context, nsview)
-            self.scale_factor = get_backing_scale_factor(gdk_window)
+            scale_factor = get_backing_scale_factor(gdk_window)
+            self.window_context = AGLWindowContext(self.gl_context, nsview, scale_factor)
         return self.window_context
 
     def __del__(self):
         self.destroy()
-
-    def get_scale_factor(self) -> float:
-        return self.scale_factor
 
     def destroy(self) -> None:
         c = self.window_context
