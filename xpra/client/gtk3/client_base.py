@@ -19,7 +19,7 @@ from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized, pver, strtobytes,
 from xpra.util.env import envint, envbool, osexpand, first_time, IgnoreWarningsContext, ignorewarnings
 from xpra.util.child_reaper import getChildReaper
 from xpra.os_util import gi_import, WIN32, OSX, POSIX
-from xpra.util.system import is_Wayland, is_gnome
+from xpra.util.system import is_Wayland
 from xpra.util.io import load_binary_file
 from xpra.net.common import PacketType
 from xpra.common import FULL_INFO, VIDEO_MAX_SIZE, NotificationID, DEFAULT_METADATA_SUPPORTED, noerr
@@ -807,7 +807,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             try:
                 from xpra.client.gtk3.statusicon_tray import GTKStatusIconTray
                 # unlikely to work with gnome:
-                PREFER_STATUSICON = envbool("XPRA_PREFER_STATUSICON", not (is_gnome() or WIN32 or OSX))
+                PREFER_STATUSICON = envbool("XPRA_PREFER_STATUSICON", False)
                 if PREFER_STATUSICON:
                     tray_classes.insert(0, GTKStatusIconTray)
                 else:
