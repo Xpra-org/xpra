@@ -73,13 +73,16 @@ class AGLContext:
         self.window_context : Optional[AGLWindowContext] = None
         self.pixel_format = NSOpenGLPixelFormat.new()
         attrs = [
-            NSOpenGLPFAWindow,
             NSOpenGLPFADoubleBuffer,
-            NSOpenGLPFAAlphaSize, 8,
-            NSOpenGLPFABackingStore,
-            NSOpenGLPFAColorSize, 32,       #for high bit depth, we should switch to 64 and NSOpenGLPFAColorFloat
             NSOpenGLPFADepthSize, 24,
+        ]
+        if alpha:
+            attrs += [
+                NSOpenGLPFAAlphaSize,
+                8,
             ]
+        attrs.append(0)
+        log(f"AGLContext({alpha}) creating NSOpenGLPixelFormat from {attrs}")
         self.pixel_format = self.pixel_format.initWithAttributes_(attrs)
         assert self.pixel_format is not None, "failed to initialize NSOpenGLPixelFormat with %s" % (attrs,)
         c = NSOpenGLContext.alloc()
