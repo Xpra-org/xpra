@@ -218,18 +218,21 @@ def get_server_revision_str(client) -> str:
 
 
 def get_glbuffering_info(opengl_props: dict) -> str:
-    display_mode = opengl_props.get("display_mode", [])
-    bit_depth = opengl_props.get("depth", 0)
     info = []
+    tprops = typedict(opengl_props)
+    display_mode = tprops.strtupleget("display_mode")
+    bit_depth = tprops.intget("depth", 0)
     if bit_depth:
         info.append("%i-bit" % bit_depth)
-    if "DOUBLE" in display_mode:
-        info.append("double buffering")
+    buffering = "unknown"
+    if "double-buffered" in tprops:
+        buffering = "double" if tprops.boolget("double-buffered") else "single"
+    elif "DOUBLE" in display_mode:
+        buffering = "double"
     elif "SINGLE" in display_mode:
-        info.append("single buffering")
-    else:
-        info.append("unknown buffering")
-    if "ALPHA" in display_mode:
+        buffering = "single"
+    info.append(f"{buffering} buffering")
+    if tprops.intget("alpha-size", 0) > 0 or "ALPHA" in display_mode:
         info.append("with transparency")
     else:
         info.append("without transparency")
