@@ -5,7 +5,7 @@
 
 from typing import Callable, Tuple
 
-from xpra.util import envbool
+from xpra.util import envbool, is_valid_hostname
 from xpra.net.websockets.common import make_websocket_accept_hash
 from xpra.net.http.http_handler import HTTPRequestHandler, AUTH_USERNAME, AUTH_PASSWORD
 from xpra.log import Logger
@@ -110,10 +110,16 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         super().do_HEAD()
 
     def do_redirect_https(self) -> None:
-        if not self.headers["Host"]:
-            self.send_error(400, "Client did not send Host: header")
-            return
         server_address = self.headers["Host"]
+        if not server_address:
+            log.warn("Warning: cannot redirect to https without a 'Host' header")
+            self.send_error(400, "Client did not send a 'Host' header")
+            return
+        if not is_valid_hostname(server_address):
+            log.warn("Warning: cannot redirect to https using an invalid hostname")
+            log.warn(f" {server_address!r}")
+            self.send_error(400, "Client specified an invalid 'Host' header")
+            return
         self.write_byte_strings(
             b"HTTP/1.1 301 Moved Permanently",
             b"Connection: close",
