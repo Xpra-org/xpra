@@ -448,7 +448,7 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
         log("OpenGL_accelerate not found")
         accel_version = ""
 
-    if accel_version is not None and pyopengl_version != accel_version:
+    if accel_version and pyopengl_version != accel_version:
         global _version_warning_shown
         if not _version_warning_shown:
             log.warn("Warning: version mismatch between PyOpenGL and PyOpenGL-accelerate")
