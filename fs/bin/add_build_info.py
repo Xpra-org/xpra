@@ -342,7 +342,7 @@ def record_build_info() -> None:
 def get_vcs_props():
     props = {
         "REVISION": "unknown",
-        "LOCAL_MODIFICATIONS": "unknown",
+        "LOCAL_MODIFICATIONS": 0,
         "BRANCH": "unknown",
         "COMMIT": "unknown"
     }
