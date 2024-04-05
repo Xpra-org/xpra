@@ -30,7 +30,8 @@ from OpenGL.GL import (
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_BASE_LEVEL,
     glActiveTexture, glTexSubImage2D,
     glViewport,
-    glGenTextures, glDisable,
+    glGenTextures, glDeleteTextures,
+    glDisable,
     glBindTexture, glPixelStorei, glFlush,
     glBindBuffer, glGenBuffers, glBufferData, glDeleteBuffers,
     glTexParameteri,
@@ -47,7 +48,7 @@ from OpenGL.GL import (
 from OpenGL.GL.ARB.framebuffer_object import (
     GL_FRAMEBUFFER, GL_DRAW_FRAMEBUFFER, GL_READ_FRAMEBUFFER,
     GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
-    glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D, glBlitFramebuffer,
+    glGenFramebuffers, glDeleteFramebuffers, glBindFramebuffer, glFramebufferTexture2D, glBlitFramebuffer,
 )
 
 from xpra.os_util import POSIX, OSX, gi_import
@@ -542,14 +543,6 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def close_gl(self, context):
         self.free_cuda_context()
-        # This seems to cause problems, so we rely
-        # on destroying the context to clear textures and fbos...
-        # if self.offscreen_fbo is not None:
-        #    glDeleteFramebuffers(1, [self.offscreen_fbo])
-        #    self.offscreen_fbo = None
-        # if self.textures is not None:
-        #    glDeleteTextures(self.textures)
-        #    self.textures = None
         try:
             from OpenGL.GL import glDeleteProgram, glDeleteShader
             glBindVertexArray(0)
@@ -576,6 +569,14 @@ class GLWindowBackingBase(WindowBackingBase):
             if vao:
                 self.vao = None
                 glDeleteVertexArrays(1, [vao])
+            ofbo = self.offscreen_fbo
+            if ofbo is not None:
+                self.offscreen_fbo = None
+                glDeleteFramebuffers(1, [ofbo])
+            textures = self.textures
+            if textures is not None:
+                self.textures = None
+                glDeleteTextures(textures)
         except Exception as e:
             log(f"{self}.close()", exc_info=True)
             log.error("Error closing OpenGL backing, some resources have not been freed")
