@@ -1,11 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from collections.abc import Callable
 
 from xpra.util.env import envbool
+from xpra.util.str_fn import is_valid_hostname
 from xpra.net.websockets.common import make_websocket_accept_hash
 from xpra.net.http.handler import HTTPRequestHandler, AUTH_USERNAME, AUTH_PASSWORD
 from xpra.log import Logger
@@ -109,10 +110,16 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         super().do_HEAD()
 
     def do_redirect_https(self) -> None:
-        if not self.headers["Host"]:
-            self.send_error(400, "Client did not send Host: header")
-            return
         server_address = self.headers["Host"]
+        if not server_address:
+            log.warn("Warning: cannot redirect to https without a 'Host' header")
+            self.send_error(400, "Client did not send a 'Host' header")
+            return
+        if not is_valid_hostname(server_address):
+            log.warn("Warning: cannot redirect to https using an invalid hostname")
+            log.warn(f" {server_address!r}")
+            self.send_error(400, "Client specified an invalid 'Host' header")
+            return
         redirect = "301 Moved Permanently" if HTTPS_REDIRECT_PERMANENT else "307 Temporary Redirect"
         self.write_byte_strings(
             f"HTTP/1.1 {redirect}".encode("utf-8"),
