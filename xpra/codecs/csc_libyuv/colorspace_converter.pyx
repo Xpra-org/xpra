@@ -400,7 +400,7 @@ cdef class ColorspaceConverter:
         if height<self.src_height:
             raise ValueError("invalid image height: %s (minimum is %s)" % (height, self.src_height))
 
-        if self.src_format=="BGRX":
+        if self.src_format in ("BGRX", "BGRA"):
             return self.convert_bgrx_image(image)
         elif self.src_format=="YUV420P":
             return self.convert_yuv420p_image(image)

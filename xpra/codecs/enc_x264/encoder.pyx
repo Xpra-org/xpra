@@ -798,7 +798,9 @@ cdef class Encoder:
 
         assert image.get_width()>=self.width
         assert image.get_height()>=self.height
-        assert image.get_pixel_format()==self.src_format, "expected %s but got %s" % (self.src_format, image.get_pixel_format())
+        pf = image.get_pixel_format().replace("A", "X")
+        if pf != self.src_format:
+            raise ValueError("expected %s but got %s" % (self.src_format, image.get_pixel_format()))
 
         if self.first_frame_timestamp==0:
             self.first_frame_timestamp = image.get_timestamp()
