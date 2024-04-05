@@ -1161,10 +1161,12 @@ class GLWindowBackingBase(WindowBackingBase):
                    options: typedict, callbacks: Iterable[Callable]) -> None:
         subsampling = options.strget("subsampling")
         has_alpha = options.boolget("has_alpha")
-        if subsampling == "YUV420P" and WEBP_YUV and self.webp_decoder and not WEBP_PILLOW:
+        webp_decoder = self.webp_decoder
+        # webp only uses 'YUV420P' at present, but we can support all of these YUV formats:
+        if subsampling in ("YUV420P", "YUV422P", "YUV444P") and WEBP_YUV and webp_decoder and not WEBP_PILLOW:
             # validate dimensions:
             if not has_alpha and width >= 2 and height >= 2:
-                img = self.webp_decoder.decompress_yuv(img_data)
+                img = webp_decoder.decompress_yuv(img_data)
                 flush = options.intget("flush", 0)
                 w = img.get_width()
                 h = img.get_height()
