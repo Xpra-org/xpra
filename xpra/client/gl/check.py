@@ -76,7 +76,7 @@ def get_max_texture_size() -> int:
 def get_array_handlers() -> tuple[str, ...]:
     from OpenGL.arrays.arraydatatype import ArrayDatatype
     try:
-        return tuple(set(ArrayDatatype.getRegistry().values()))
+        return tuple(getattr(atype, "__name__", str(atype)) for atype in set(ArrayDatatype.getRegistry().values()))
     except Exception:
         pass
     return ()
