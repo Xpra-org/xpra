@@ -1,7 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from typing import Dict, Tuple
 
 from xpra.log import Logger
 log = Logger("encoder", "webp")
@@ -129,7 +131,7 @@ cdef extern from "webp/decode.h":
     void WebPFreeDecBuffer(WebPDecBuffer* buffer)
 
 
-ERROR_TO_NAME = {
+ERROR_TO_NAME: Dict = {
 #VP8_STATUS_OK
     VP8_STATUS_OUT_OF_MEMORY        : "out of memory",
     VP8_STATUS_INVALID_PARAM        : "invalid parameter",
@@ -138,26 +140,26 @@ ERROR_TO_NAME = {
     VP8_STATUS_SUSPENDED            : "suspended",
     VP8_STATUS_USER_ABORT           : "user abort",
     VP8_STATUS_NOT_ENOUGH_DATA      : "not enough data",
-    }
+}
 
-def get_version():
+def get_version() -> Tuple[int, int, int]:
     cdef int version = WebPGetDecoderVersion()
     log("WebPGetDecoderVersion()=%#x", version)
     return (version >> 16) & 0xff, (version >> 8) & 0xff, version & 0xff
 
-def get_info():
+def get_info() -> Dict[str, Any]:
     return  {
         "version"      : get_version(),
         "encodings"    : get_encodings(),
-        }
+    }
 
-def webp_check(int ret):
+def webp_check(int ret) -> None:
     if ret==0:
         return
     err = ERROR_TO_NAME.get(ret, ret)
     raise RuntimeError("error: %s" % err)
 
-def get_encodings():
+def get_encodings() -> Tuple[str]:
     return ("webp", )
 
 cdef inline int roundup(int n, int m):
@@ -313,13 +315,13 @@ def decompress_yuv(data, has_alpha=False):
             PyMemoryView_FromMemory(<char *> YUVA.u, u_size, PyBUF_WRITE),
             PyMemoryView_FromMemory(<char *> YUVA.v, v_size, PyBUF_WRITE),
             PyMemoryView_FromMemory(<char *> YUVA.a, a_size, PyBUF_WRITE),
-            )
+        )
     else:
         planes = (
             PyMemoryView_FromMemory(<char *> YUVA.y, y_size, PyBUF_WRITE),
             PyMemoryView_FromMemory(<char *> YUVA.u, u_size, PyBUF_WRITE),
             PyMemoryView_FromMemory(<char *> YUVA.v, v_size, PyBUF_WRITE),
-            )
+        )
     img = YUVImageWrapper(0, 0, w, h, planes, "YUV420P", (3+alpha)*8, strides, 3+alpha, ImageWrapper.PLANAR_3+alpha)
     img.cython_buffer = <uintptr_t> buf
     return img
@@ -339,7 +341,7 @@ class YUVImageWrapper(ImageWrapper):
             free(<void *> buf)
 
 
-def selftest(full=False):
+def selftest(full=False) -> None:
     w, h = (24, 16)       #hard coded size of test data
     for has_alpha, hexdata in ((True, "52494646c001000057454250565038580a000000100000001700000f0000414c504881010000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000056503820180000003401009d012a1800100000004c00000f040000fef81f8000"),
                              (False, "52494646c001000057454250565038580a000000100000001700000f0000414c50488101000010ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000056503820180000003401009d012a1800100000004c00000f040000fef81f8000")):
