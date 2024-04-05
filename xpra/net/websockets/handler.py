@@ -13,6 +13,7 @@ from xpra.log import Logger
 log = Logger("network", "websocket")
 
 WEBSOCKET_ONLY_UPGRADE = envbool("XPRA_WEBSOCKET_ONLY_UPGRADE", False)
+HTTPS_REDIRECT_PERMANENT = envbool("XPRA_HTTPS_REDIRECT_PERMANENT", True)
 
 # HyBi-07 report version 7
 # HyBi-08 - HyBi-12 report version 8
@@ -112,8 +113,9 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             self.send_error(400, "Client did not send Host: header")
             return
         server_address = self.headers["Host"]
+        redirect = "301 Moved Permanently" if HTTPS_REDIRECT_PERMANENT else "307 Temporary Redirect"
         self.write_byte_strings(
-            b"HTTP/1.1 301 Moved Permanently",
+            f"HTTP/1.1 {redirect}".encode("utf-8"),
             b"Connection: close",
             b"Location: https://%s%s" % (bytes(server_address, "utf-8"), bytes(self.path, "utf-8")),
             b"",
