@@ -307,8 +307,10 @@ cdef class Encoder:
         options = options or {}
         cuda_device_context = options.get("cuda-device-context")
         assert cuda_device_context, "no cuda device context"
-        pfstr = image.get_pixel_format()
-        assert pfstr==self.src_format, "invalid pixel format %s, expected %s" % (pfstr, self.src_format)
+        pfstr = image.get_pixel_format().replace("A", "X")
+        sfmt = self.src_format.replace("A", "X")
+        if sfmt != pfstr:
+            raise ValueError("invalid pixel format %s, expected %s" % (image.get_pixel_format(), self.src_format))
         cdef nvjpegInputFormat_t input_format
         quality = options.get("quality", -1)
         if quality>=0 and abs(self.quality-quality)>10:
@@ -497,7 +499,8 @@ def get_errors():
     return errors
 
 def encode(coding, image, options=None):
-    assert coding in ("jpeg", "jpega"), "invalid encoding: %s" % coding
+    if coding not in ("jpeg", "jpega"):
+        raise ValueError("invalid encoding: %s" % coding)
     global errors
     pfstr = image.get_pixel_format()
     width = image.get_width()
@@ -509,8 +512,7 @@ def encode(coding, image, options=None):
         start = monotonic()
         oldpfstr = pfstr
         if not argb_swap(image, input_formats):
-            log("nvjpeg: argb_swap failed to convert %s to a suitable format: %s" % (
-                pfstr, input_formats))
+            log("nvjpeg: argb_swap failed to convert %s to a suitable format: %s" % (pfstr, input_formats))
             return None
         pfstr = image.get_pixel_format()
         end = monotonic()
