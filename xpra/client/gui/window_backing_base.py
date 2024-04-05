@@ -575,10 +575,6 @@ class WindowBackingBase:
             rgb_format,
         ) = self.webp_decoder.decompress(img_data, has_alpha, rgb_format, self.get_rgb_formats())
 
-        def free_buffer(*_args):
-            buffer_wrapper.free()
-
-        callbacks.append(free_buffer)
         data = buffer_wrapper.get_pixels()
         # if the backing can't handle this format,
         # ie: tray only supports RGBA
@@ -589,10 +585,15 @@ class WindowBackingBase:
             img = ImageWrapper(x, y, iwidth, iheight, data, rgb_format,
                                len(rgb_format) * 8, stride, len(rgb_format), ImageWrapper.PACKED, True, None)
             rgb_reformat(img, self.get_rgb_formats(), has_alpha and self._alpha_enabled)
+            buffer_wrapper.free()
             rgb_format = img.get_pixel_format()
             data = img.get_pixels()
             stride = img.get_rowstride()
-        # replace with the actual rgb format we get from the decoder:
+        else:
+            def free_buffer(*_args):
+                buffer_wrapper.free()
+            callbacks.append(free_buffer)
+        # replace with the actual rgb format we get from the decoder / rgb_reformat:
         options["rgb_format"] = rgb_format
         self.idle_add(self.do_paint_rgb, rgb_format, data,
                       x, y, iwidth, iheight, width, height, stride, options, callbacks)
