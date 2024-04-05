@@ -137,6 +137,8 @@ class X11Clipboard(ClipboardTimeoutHelper, gobject.GObject):
         self.cleanup_window()
 
     def make_proxy(self, selection):
+        root = get_default_root_window()
+        root_xid = get_xwindow(root)
         xid = get_xwindow(self.window)
         proxy = ClipboardProxy(xid, selection)
         proxy.set_want_targets(self._want_targets)
@@ -145,6 +147,7 @@ class X11Clipboard(ClipboardTimeoutHelper, gobject.GObject):
         proxy.connect("send-clipboard-request", self._send_clipboard_request_handler)
         with xsync:
             X11Window.selectXFSelectionInput(xid, selection)
+            X11Window.selectXFSelectionInput(root_xid, selection)
         return proxy
 
 
