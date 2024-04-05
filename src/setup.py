@@ -2040,6 +2040,7 @@ if crypto_ENABLED and (OSX or WIN32):
     external_includes.append("_ssl")
     external_includes.append("cffi")
     external_includes.append("_cffi_backend")
+    external_includes.append("bcrypt")
     external_includes.append("cryptography")
     external_includes.append("idna")
     external_includes.append("idna.idnadata")
