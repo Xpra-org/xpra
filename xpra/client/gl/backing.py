@@ -730,8 +730,9 @@ class GLWindowBackingBase(WindowBackingBase):
         # some backends render to the screen (0), otherws may render elsewhere
         # (ie: the GTK backend renders to its own buffer…)
         bw, bh = self.size
+        scale = context.get_scale_factor()
         rect_count = len(self.pending_fbo_paint)
-        if self.is_double_buffered() or self.size != self.render_size:
+        if self.is_double_buffered() or self.size != self.render_size or scale != 1:
             # refresh the whole window:
             rectangles = ((0, 0, bw, bh),)
         else:
@@ -745,7 +746,6 @@ class GLWindowBackingBase(WindowBackingBase):
 
         # viewport for clearing the whole window:
         ww, wh = self.render_size
-        scale = context.get_scale_factor()
         left, top, right, bottom = self.offsets
         glViewport(0, 0, int((left + ww + right) * scale), int((top + wh + bottom) * scale))
         if left or top or right or bottom:
