@@ -121,7 +121,8 @@ def init_all_specs(*exclude) -> None:
         if element in exclude:
             return
         if element not in get_all_plugin_names():
-            missing.append(element)
+            if element not in ("amfh264enc", "amfh265enc"):
+                missing.append(element)
             return
         # add spec:
         css_out = css_out or (cs_in,)
