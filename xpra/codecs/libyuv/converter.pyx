@@ -259,7 +259,7 @@ def argb_to_gray(image):
             result = ARGBGrayTo(src, stride,
                                 buf, dst_stride,
                                 width, height)
-    assert result==0, "libyuv BGRAToI420 failed and returned %i" % result
+    assert result==0, "libyuv ARGBGrayTo failed and returned %i" % result
     out = memoryview(output_buffer)
     gray_image = ImageWrapper(0, 0, width, height, out, image.get_pixel_format(), 24, dst_stride, image.get_bytesperpixel(), ImageWrapper.PACKED)
     log("argb_to_gray(%s)=%s", image, gray_image)
@@ -494,7 +494,7 @@ cdef class Converter:
         if height<self.src_height:
             raise ValueError(f"invalid image height: {height} (minimum is {self.src_height})")
 
-        if self.src_format=="BGRX":
+        if self.src_format in ("BGRX", "BGRA"):
             return self.convert_bgrx_image(image)
         elif self.src_format=="NV12":
             return self.convert_nv12_image(image)
