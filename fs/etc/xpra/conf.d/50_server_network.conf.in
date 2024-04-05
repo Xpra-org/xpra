@@ -88,7 +88,7 @@ ssl = auto
 html = auto
 
 # Control which HTTP scripts are available to unauthenticated
-# HTML5 clients via Xpra proxy server
+# HTML5 clients connecting to an xpra server:
 #http-scripts=no
 #http-scripts=Status,Info
 http-scripts = all
