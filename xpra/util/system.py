@@ -373,3 +373,25 @@ def is_systemd_pid1() -> bool:
         return False
     d = load_binary_file("/proc/1/cmdline")
     return d.find(b"/systemd") >= 0
+
+
+def get_processor_name() -> str:
+    import platform
+    sysname = platform.system()
+    if sysname == "Windows":
+        return platform.processor()
+    if sysname == "Darwin":
+        from xpra.util.env import OSEnvContext
+        from subprocess import check_output
+        with OSEnvContext():
+            os.environ['PATH'] = os.environ['PATH'] + os.pathsep + '/usr/sbin'
+            command = ["sysctl", "-n", "machdep.cpu.brand_string"]
+            return check_output(command, text=True).strip()
+    if sysname == "Linux":
+        with open("/proc/cpuinfo", encoding="latin1") as f:
+            data = f.read()
+        import re
+        for line in data.split("\n"):
+            if "model name" in line:
+                return re.sub(".*model name.*:", "", line, count=1).strip()
+    return platform.processor()

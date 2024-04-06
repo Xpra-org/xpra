@@ -249,26 +249,6 @@ def dict_version_trim(d, parts=FULL_INFO + 1):
 
 
 def do_get_platform_info() -> dict[str, Any]:
-    # pylint: disable=import-outside-toplevel
-    pp = sys.modules.get("../platform", platform)
-
-    def get_processor_name():
-        if pp.system() == "Windows":
-            return pp.processor()
-        if pp.system() == "Darwin":
-            os.environ['PATH'] = os.environ['PATH'] + os.pathsep + '/usr/sbin'
-            command = ["sysctl", "-n", "machdep.cpu.brand_string"]
-            from subprocess import check_output
-            return check_output(command).strip()
-        if pp.system() == "Linux":
-            with open("/proc/cpuinfo", encoding="latin1") as f:
-                data = f.read()
-            import re
-            for line in data.split("\n"):
-                if "model name" in line:
-                    return re.sub(".*model name.*:", "", line, count=1).strip()
-        return pp.processor()
-
     info: dict[str, Any] = {}
     if POSIX and not OSX:
         ld = get_linux_distribution()
@@ -276,20 +256,24 @@ def do_get_platform_info() -> dict[str, Any]:
         if ldvalid:
             info["linux_distribution"] = ld
     try:
-        release = platform_release(pp.release())
+        release = platform_release(platform.release())
     except OSError:
         log("do_get_platform_info()", exc_info=True)
         release = "unknown"
     info |= {
         "": sys.platform,
         "name": platform_name(sys.platform, info.get("linux_distribution") or release),
-        "release": pp.release(),
+        "release": platform.release(),
         "sysrelease": release,
-        "platform": pp.platform(),
-        "machine": pp.machine(),
-        "architecture": pp.architecture(),
-        "processor": get_processor_name(),
+        "platform": platform.platform(),
+        "machine": platform.machine(),
+        "architecture": platform.architecture(),
     }
+    try:
+        from xpra.util.system import get_processor_name
+        info["processor"] = get_processor_name()
+    except Exception:
+        log("failed to query processor", exc_info=True)
     return info
 
 
