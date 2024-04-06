@@ -123,9 +123,14 @@ def version_compat_check(remote_version) -> str | None:
     if rv[:2] == XPRA_NUMERIC_VERSION[:2]:
         log("identical major.minor remote version: %s", remote_version)
         return None
-    if rv[0:2] < (3, 0):
-        # this is the oldest version we support
-        msg = f"remote version {rv[:2]} is too old, sorry"
+    try:
+        if rv[0:2] < (3, 0):
+            # this is the oldest version we support
+            msg = f"remote version {rv[:2]} is too old, sorry"
+            log(msg)
+            return msg
+    except TypeError as e:
+        msg = f"invalid remote version {rv[:2]}: {e}"
         log(msg)
         return msg
     if rv[0] > 0:
@@ -225,7 +230,7 @@ def get_build_info(full: int = 1) -> dict[str, Any]:
 
 
 def parse_version(v) -> tuple[Any, ...]:
-    if isinstance(v, str):
+    if isinstance(v, str) and v:
         def maybeint(v):
             try:
                 return int(v)
