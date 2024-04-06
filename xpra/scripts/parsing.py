@@ -931,7 +931,7 @@ def do_parse_cmdline(cmdline, defaults):
         try:
             from xpra.audio.wrapper import query_audio
             source_plugins = query_audio().strtupleget("sources", ())
-            source_default = query_audio().strget("source.default", "")
+            source_default = query_audio().strget("source.default")
         except Exception as e:
             raise InitInfo(e) from None
         if source_plugins:

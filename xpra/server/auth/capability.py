@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,7 +14,7 @@ class Authenticator(SysAuthenticator):
         self.uid = -1
         self.gid = -1
         self.property = kwargs.pop("property", "display")
-        self.value = kwargs.pop("value", "")
+        self.value = str(kwargs.pop("value", ""))
         # connection = kwargs.get("connection", None)
         super().__init__(**kwargs)
 
@@ -28,7 +28,7 @@ class Authenticator(SysAuthenticator):
         return False
 
     def authenticate(self, caps: typedict) -> bool:  # pylint: disable=arguments-differ
-        value = caps.strget(self.property, None)
+        value = caps.strget(self.property, "")
         log("capability.authenticate(..) %r=%r (value required: %r)",
             self.property, value, self.value)
         return value == self.value

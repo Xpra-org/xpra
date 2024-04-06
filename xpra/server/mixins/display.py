@@ -109,7 +109,7 @@ class DisplayManager(StubServerMixin):
                 gllog("opengl props=%s", props)
                 if props:
                     glprops = typedict(props)
-                    if glprops.strget("success", "").lower() in TRUE_OPTIONS:
+                    if glprops.strget("success").lower() in TRUE_OPTIONS:
                         gllog.info(f"OpenGL is supported on display {self.display_name!r}")
                         renderer = glprops.strget("renderer").split(";")[0]
                         if renderer:

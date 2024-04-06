@@ -134,7 +134,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
     def setup_printer(self, printer, props: typedict, attributes: dict) -> None:
         from xpra.platform.pycups_printing import add_printer  # pylint: disable=import-outside-toplevel
         props = typedict(props)
-        info = props.strget("printer-info", "")
+        info = props.strget("printer-info")
         attrs = attributes.copy()
         attrs["remote-printer"] = printer
         attrs["remote-device-uri"] = props.strget("device-uri")

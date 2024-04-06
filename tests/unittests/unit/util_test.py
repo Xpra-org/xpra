@@ -32,9 +32,11 @@ class TestIntegerClasses(unittest.TestCase):
     def test_AtomicInteger_threading(self):
         a = AtomicInteger()
         N = 5000
+
         def increase():
             for _ in range(N):
                 a.increase()
+
         def decrease():
             for _ in range(N):
                 a.decrease()
@@ -42,7 +44,7 @@ class TestIntegerClasses(unittest.TestCase):
         from threading import Thread
         threads = []
         for i in range(T):
-            if i%2==0:
+            if i % 2 == 0:
                 target = increase
             else:
                 target = decrease
@@ -68,7 +70,7 @@ class TestTypedict(unittest.TestCase):
             "boolvalue" : True,
             "intpair" : (1, 2),
             "strtuple" : ["a", "b"],
-            })
+        })
         #test all accessors:
         self.assertEqual(d.strget("strkey"), "strvalue")
         self.assertEqual(d.intget(1), 1)
@@ -81,7 +83,7 @@ class TestTypedict(unittest.TestCase):
         self.assertEqual(d.boolget("invalidkey", True), True)
         self.assertEqual(d.intget("invalidkey"), 0)
         self.assertEqual(d.intget("invalidkey", 1), 1)
-        self.assertEqual(d.strget("invalidkey"), None)
+        self.assertEqual(d.strget("invalidkey"), "")
 
     def _test_values_type(self, d, getter, value_types, values_allowed=()):
         for k in d.keys():
@@ -153,6 +155,7 @@ class TestModuleFunctions(unittest.TestCase):
 
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()

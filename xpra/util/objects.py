@@ -198,7 +198,7 @@ class typedict(dict):
             self._warn(f" from {type(v)} using {conv}: {e}")
             return default
 
-    def strget(self, k, default: str | None = None) -> str:
+    def strget(self, k, default: str = "") -> str:
         return self.conv_get(k, default, bytestostr)
 
     def bytesget(self, k, default: bytes = b"") -> bytes:

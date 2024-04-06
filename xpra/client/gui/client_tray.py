@@ -35,7 +35,7 @@ class ClientTray(ClientWidgetBase):
         super().__init__(client, 0, wid, True)
         self._size = w, h
         self._metadata = metadata
-        self.title = metadata.strget("title", "")
+        self.title = metadata.strget("title")
         self.tray_widget = tray_widget
         self._geometry = None
         self._window_alpha = True

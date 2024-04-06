@@ -684,7 +684,7 @@ class WindowClient(StubClientMixin):
         def tray_exit(*args):
             traylog("tray_exit(%s)", args)
 
-        title = metadata.strget("title", "")
+        title = metadata.strget("title")
         tray_widget = self.make_system_tray(app_id, None, title, None,
                                             tray_geometry, tray_click, tray_mouseover, tray_exit)
         traylog("setup_system_tray%s tray_widget=%s", (client, app_id, wid, w, h, title), tray_widget)
@@ -874,7 +874,7 @@ class WindowClient(StubClientMixin):
         # find a "transient-for" value using the pid to find a suitable window
         # if possible, choosing the currently focused window (if there is one..)
         pid = metadata.intget("pid", 0)
-        watcher_pid = self.assign_signal_watcher_pid(wid, pid, metadata.strget("title", ""))
+        watcher_pid = self.assign_signal_watcher_pid(wid, pid, metadata.strget("title"))
         if override_redirect and pid > 0 and metadata.intget("transient-for", 0) == 0 and metadata.strget(
                 "role") == "popup":
             tfor = None
@@ -1243,7 +1243,7 @@ class WindowClient(StubClientMixin):
                 metadata = typedict(getattr(window, "_metadata", {}))
                 log("window_close_event(%i) metadata=%s", wid, metadata)
                 class_instance = metadata.strtupleget("class-instance", (None, None), 2, 2)
-                title = metadata.strget("title", "")
+                title = metadata.strget("title")
                 log("window_close_event(%i) title=%s, class-instance=%s", wid, title, class_instance)
                 matching_title_close = [x for x in TITLE_CLOSEEXIT if x and title.startswith(x)]
                 close = None

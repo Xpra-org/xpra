@@ -108,9 +108,9 @@ class AudioMixin(StubSourceMixin):
         self.wants_audio = "audio" in c.strtupleget("wants")
         audio = typedict(c.dictget("audio") or {})
         if audio:
-            self.pulseaudio_id = audio.strget("pulseaudio.id", "")
-            self.pulseaudio_cookie_hash = audio.strget("pulseaudio.cookie-hash", "")
-            self.pulseaudio_server = audio.strget("pulseaudio.server", "")
+            self.pulseaudio_id = audio.strget("pulseaudio.id")
+            self.pulseaudio_cookie_hash = audio.strget("pulseaudio.cookie-hash")
+            self.pulseaudio_server = audio.strget("pulseaudio.server")
             self.audio_decoders = audio.strtupleget("decoders", ())
             self.audio_encoders = audio.strtupleget("encoders", ())
             self.audio_receive = audio.boolget("receive")

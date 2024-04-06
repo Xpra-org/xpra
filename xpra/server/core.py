@@ -2133,7 +2133,7 @@ class ServerCore:
             if not authenticator.authenticate(c):
                 auth_failed(str(ConnectionMessage.AUTHENTICATION_FAILED))
                 return
-        client_expects_challenge = c.strget("challenge") is not None
+        client_expects_challenge = c.strget("challenge")
         if client_expects_challenge:
             authlog.warn("Warning: client expects an authentication challenge,")
             authlog.warn(" sending a fake one")

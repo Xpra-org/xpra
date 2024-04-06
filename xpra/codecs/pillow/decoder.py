@@ -172,7 +172,7 @@ def decompress(coding: str, img_data: bytes, options: typedict) -> tuple[str, by
     if img.mode == "RGB":
         # PIL flattens the data to a continuous straightforward RGB format:
         rowstride = width * 3
-        rgb_format = options.strget("rgb_format", "")
+        rgb_format = options.strget("rgb_format")
         rgb_format = rgb_format.replace("A", "").replace("X", "")
         # the webp encoder only takes BGRX input,
         # so we have to swap things around if it was fed "RGB":

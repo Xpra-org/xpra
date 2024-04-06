@@ -279,8 +279,8 @@ class SessionsGUI(Gtk.Window):
             interface, protocol, name, stype, domain, host, address, port, text = record
             td = typedict(text)
             log("populate_table: record[%i]=%s", i, record)
-            uuid = td.strget("uuid", "")
-            display = td.strget("display", "")
+            uuid = td.strget("uuid")
+            display = td.strget("display")
             if domain == "local" and host.endswith(".local"):
                 host = host[:-len(".local")]
             if uuid:
@@ -290,7 +290,7 @@ class SessionsGUI(Gtk.Window):
             log("populate_table: key[%i]=%s", i, key)
             d.setdefault(key, []).append((interface, protocol, name, stype, domain, host, address, port, text))
             td = typedict(text)
-            session_name = td.strget("name", "")
+            session_name = td.strget("name")
             if session_name:
                 session_names[key] = session_name
         for key, recs in d.items():
@@ -311,11 +311,11 @@ class SessionsGUI(Gtk.Window):
             for rec in recs:
                 td = typedict(rec[-1])
                 if not platform:
-                    platform = td.strget("platform", "")
+                    platform = td.strget("platform")
                 if not dtype:
-                    dtype = td.strget("type", "")
+                    dtype = td.strget("type")
                 if not display:
-                    display = td.strget("display", "")
+                    display = td.strget("display")
             if title in ("localhost", "localhost.localdomain", "127.0.0.1", "::1", local_host_name):
                 title = "local"
             host_label = l(title)
@@ -344,9 +344,9 @@ class SessionsGUI(Gtk.Window):
                 address, port: int, text) -> str:
         dstr = ""
         tt = typedict(text)
-        display = tt.strget("display", "")
-        username = tt.strget("username", "")
-        mode = tt.strget("mode", "")
+        display = tt.strget("display")
+        username = tt.strget("username")
+        mode = tt.strget("mode")
         if not mode:
             # guess the mode from the service name,
             # ie: "localhost.localdomain :2 (wss)" -> "wss"

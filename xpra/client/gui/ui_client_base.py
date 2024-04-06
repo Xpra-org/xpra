@@ -476,7 +476,7 @@ class UIXpraClient(ClientBaseClass):
             self.keyboard_helper.send = nosend
 
         i = platform_name(self._remote_platform,
-                          c.strtupleget("platform.linux_distribution") or c.strget("platform.release", ""))
+                          c.strtupleget("platform.linux_distribution") or c.strget("platform.release"))
         r = ".".join(str(x) for x in self._remote_version)
         if self._remote_revision:
             r += f"-r{self._remote_revision}"

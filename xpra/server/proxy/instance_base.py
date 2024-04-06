@@ -622,7 +622,7 @@ class ProxyInstance:
             return
         client_options = typedict(client_options)
         # we have a proxy video packet:
-        rgb_format = client_options.strget("rgb_format", "")
+        rgb_format = client_options.strget("rgb_format")
         enclog("proxy draw: encoding=%s, client_options=%s", encoding, client_options)
 
         def send_updated(packet: PacketType, encoding, compressed_data, updated_client_options) -> None:

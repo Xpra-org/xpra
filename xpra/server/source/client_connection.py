@@ -204,11 +204,11 @@ class ClientConnection(StubSourceMixin):
             self.bandwidth_detection = c.boolget("bandwidth-detection", False)
         self.client_connection_data = c.dictget("connection-data", {})
         ccd = typedict(self.client_connection_data)
-        self.adapter_type = ccd.strget("adapter-type", "")
+        self.adapter_type = ccd.strget("adapter-type")
         self.jitter = ccd.intget("jitter", 0)
         bandwidthlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s, detection=%s",
                      server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit, self.bandwidth_detection)
-        self.ssh_auth_sock = c.strget("ssh-auth-sock", "")
+        self.ssh_auth_sock = c.strget("ssh-auth-sock")
 
         if getattr(self, "mmap_size", 0) > 0:
             log("mmap enabled, ignoring bandwidth-limit")

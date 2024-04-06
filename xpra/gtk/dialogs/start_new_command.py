@@ -132,7 +132,7 @@ class StartNewCommand:
         if entries and command_name:
             command_props = typedict(typedict(entries).dictget(command_name, {}))
             log("command properties=%s", command_props)
-            command = typedict(command_props).strget("command", "")
+            command = typedict(command_props).strget("command")
         self.entry.set_text(command)
 
     def show(self):

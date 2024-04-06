@@ -134,7 +134,7 @@ def get_window_info(wi: typedict) -> tuple[tuple[str, int], ...]:
     pid = wi.intget("pid", 0)
     if pid:
         line1 = f"pid {pid}: "
-    title = wi.strget("title", "")
+    title = wi.strget("title")
     if title:
         line1 += f' "{title}"'
     attrs = [
@@ -823,7 +823,7 @@ class TopSessionClient(InfoTimerClient):
             return bytestostr(v)
 
         if not gli.boolget("enabled", True):
-            return "OpenGL disabled " + gli.strget("message", "")
+            return "OpenGL disabled " + gli.strget("message")
         gl_info = "OpenGL %s enabled: %s" % (strget("opengl", "."), gli.strget("renderer") or gli.strget("vendor"))
         depth = gli.intget("depth")
         if depth not in (0, 24):

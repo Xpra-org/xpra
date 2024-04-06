@@ -3323,9 +3323,9 @@ def run_list_mdns(error_cb, extra_args) -> ExitValue:
             for i, rec in enumerate(recs):
                 iface, _, _, host, address, port, text = rec
                 uuid = text.strget("uuid")
-                display = text.strget("display", "")
-                mode = text.strget("mode", "")
-                username = text.strget("username", "")
+                display = text.strget("display")
+                mode = text.strget("mode")
+                username = text.strget("username")
                 session = text.strget("session")
                 dtype = text.strget("type")
                 if i == 0:
@@ -3353,7 +3353,7 @@ def run_list_mdns(error_cb, extra_args) -> ExitValue:
                 iface = socket.if_indextoname(interface)
             except OSError:
                 pass
-        username = text.strget("username", "")
+        username = text.strget("username")
         uq = text.strget("uuid", str(len(found))), username, host
         found.setdefault(uq, []).append((iface or "", name, domain, host, address, port, text))
         GLib.timeout_add(1000, show_new_found)

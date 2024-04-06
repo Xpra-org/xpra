@@ -402,7 +402,7 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_title(title)
 
         if "icon-title" in metadata:
-            icon_title = metadata.strget("icon-title", "")
+            icon_title = metadata.strget("icon-title")
             self.set_icon_name(icon_title)
             # the DE may have reset the icon now,
             # force it to use the one we really want:

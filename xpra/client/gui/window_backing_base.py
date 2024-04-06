@@ -924,7 +924,7 @@ class WindowBackingBase:
                 self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding in ("rgb24", "rgb32"):
                 # avoid confusion over how many bytes-per-pixel we may have:
-                rgb_format = options.strget("rgb_format", "")
+                rgb_format = options.strget("rgb_format")
                 if not rgb_format:
                     rgb_format = {
                         "rgb24": "RGB",

@@ -185,8 +185,8 @@ class KeyboardConfig(KeyboardConfigBase):
         """ used by both process_hello and process_keymap """
         keymap_dict = typedict(props.dictget("keymap") or {})
         self.layout = keymap_dict.strget("layout", "us")
-        self.variant = keymap_dict.strget("variant", "")
-        self.options = keymap_dict.strget("options", "")
+        self.variant = keymap_dict.strget("variant")
+        self.options = keymap_dict.strget("options")
 
     def get_hash(self) -> str:
         """

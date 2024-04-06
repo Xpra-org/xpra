@@ -41,7 +41,7 @@ def root_prop_del(prop_name: str):
 
 
 def _get_antialias_hintstyle(antialias: typedict) -> str:
-    hintstyle = antialias.strget("hintstyle", "").lower()
+    hintstyle = antialias.strget("hintstyle").lower()
     if hintstyle in ("hintnone", "hintslight", "hintmedium", "hintfull"):
         # X11 clients can give us what we need directly:
         return hintstyle

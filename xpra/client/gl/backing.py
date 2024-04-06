@@ -1261,7 +1261,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
             glBindTexture(target, 0)
 
-            self.paint_box(options.strget("encoding", ""), x, y, render_width, render_height)
+            self.paint_box(options.strget("encoding"), x, y, render_width, render_height)
             # Present update to screen
             if not self.draw_needs_refresh:
                 self.present_fbo(context, x, y, render_width, render_height, options.intget("flush", 0))
