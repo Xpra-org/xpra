@@ -75,7 +75,7 @@ def caps_to_version(caps: typedict) -> str:
 
 
 def caps_to_revision(caps: typedict) -> str:
-    revision = caps.strget("revision")
+    revision = caps.intget("revision")
     local_modifications = caps.intget("local_modifications")
     commit = caps.strget("commit")
     branch = caps.strget("branch")
@@ -97,11 +97,11 @@ def make_revision_str(revision, local_modifications, branch, commit) -> str:
     rstr = ""
     try:
         if isinstance(revision, int):
-            rstr += "r%i" % revision
+            rstr += f"r{revision}"
         if isinstance(local_modifications, int) and local_modifications > 0:
             rstr += "M"
         if branch == "master" and commit:
-            rstr += " (%s)" % commit
+            rstr += f" ({commit})"
     except TypeError:
         get_util_logger().debug("make_revision_str%s", (revision, local_modifications, branch, commit), exc_info=True)
     return rstr
@@ -178,35 +178,44 @@ def get_version_info(full: int = 1) -> dict[str, Any]:
                     info[k] = v
         except ImportError as e:
             warn("missing some source information: %s", e)
-    if full > 1:
-        info["build"] = get_build_info()
+        info.update(get_build_info(full))
     return info
 
 
 def get_build_info(full: int = 1) -> dict[str, Any]:
     info: dict[str, Any] = {}
+
     try:
         from xpra import build_info  # pylint: disable=import-outside-toplevel
-        # rename these build info properties:
-        for k, bk in {
-            "date": "BUILD_DATE",
-            "time": "BUILD_TIME",
-            "bit": "BUILD_BIT",
-            "cpu": "BUILD_CPU",
-            "type": "BUILD_TYPE",
-            "compiler": "COMPILER_VERSION",
-            "nvcc": "NVCC_VERSION",
-            "linker": "LINKER_VERSION",
-            "python": "PYTHON_VERSION",
-            "cython": "CYTHON_VERSION",
-        }.items():
+    except ImportError:
+        return {}
+
+    def add_attrs(attrs: dict) -> None:
+        for k, bk in attrs.items():
             v = getattr(build_info, bk, None)
             if v is not None:
                 if bk.endswith("_VERSION"):
                     v = parse_version(v)
                 info[k] = v
-        # record library versions:
+
+    try:
+        add_attrs({
+            "date": "BUILD_DATE",
+            "time": "BUILD_TIME",
+        })
+        if full > 0:
+            add_attrs({
+                "bit": "BUILD_BIT",
+                "cpu": "BUILD_CPU",
+                "type": "BUILD_TYPE",
+                "compiler": "COMPILER_VERSION",
+                "nvcc": "NVCC_VERSION",
+                "linker": "LINKER_VERSION",
+                "python": "PYTHON_VERSION",
+                "cython": "CYTHON_VERSION",
+            })
         if full > 1:
+            # record library versions:
             info["lib"] = {k.lstrip("lib_"): parse_version(getattr(build_info, k))
                            for k in dir(build_info) if k.startswith("lib_")}
     except Exception as e:

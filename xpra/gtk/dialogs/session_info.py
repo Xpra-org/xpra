@@ -10,14 +10,14 @@ import platform
 from typing import Any
 from time import monotonic
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 
 from xpra.os_util import gi_import
-from xpra.util.version import XPRA_VERSION, revision_str, make_revision_str
+from xpra.util.version import XPRA_VERSION, revision_str, make_revision_str, caps_to_revision
 from xpra.util.system import get_linux_distribution, platform_name
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.util.screen import prettify_plug_name
-from xpra.util.str_fn import csv, strtobytes, bytestostr
+from xpra.util.str_fn import csv, strtobytes, bytestostr, ellipsizer
 from xpra.util.env import envint
 from xpra.common import noop
 from xpra.util.stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
@@ -157,11 +157,14 @@ def settimedeltastr(label_widget, from_time):
 def make_os_str(sys_platform, platform_release, platform_platform, platform_linux_distribution) -> str:
     s = [platform_name(sys_platform, platform_release)]
     pld = platform_linux_distribution
-    if pld and len(pld) == 3 and len(pld[0]) > 0:
-        s.append(" ".join([str(x) for x in pld]))
+
+    def remstr(values: Iterable) -> Iterable[str]:
+        return (v for v in values if v not in (None, "", "n/a"))
+    if pld and len(pld) == 3 and pld[0]:
+        s.append(" ".join(remstr(pld)))
     elif platform_platform:
         s.append(platform_platform)
-    return "\n".join(s)
+    return "\n".join(remstr(s))
 
 
 def get_server_platform_name(client) -> str:
@@ -186,10 +189,12 @@ def get_local_platform_name() -> str:
 
 
 def get_server_builddate(client) -> str:
-    def cattr(name):
-        return getattr(client, name, "")
+    build_info = client.server_last_info.get("server", {}).get("build", {})
 
-    return make_datetime(cattr("_remote_build_date"), cattr("_remote_build_time"))
+    def cattr(name):
+        return build_info.get(name, "") or getattr(client, f"_remote_build_{name}", "")
+
+    return make_datetime(cattr("date"), cattr("time"))
 
 
 def get_local_builddate() -> str:
@@ -208,6 +213,10 @@ def get_server_version(client) -> str:
 def get_server_revision_str(client) -> str:
     def cattr(name):
         return getattr(client, name, "")
+
+    build_info = client.server_last_info.get("server", {}).get("build", {})
+    if build_info:
+        return caps_to_revision(typedict(build_info))
 
     return make_revision_str(
         cattr("_remote_revision"),
@@ -567,7 +576,7 @@ class SessionInfo(Gtk.Window):
             log("cannot load audio information: %s", exc_info=True)
             props = typedict()
         gst_version = props.strtupleget("gst.version")
-        self.csrow("GStreamer", make_version_str(gst_version), server_vinfo("sound.gst") or server_vinfo("gst"))
+        self.csrow("GStreamer", make_version_str(gst_version), server_vinfo("sound.gst") or server_vinfo("gst") or "unknown")
 
         def clientgl(prop="opengl", default_value="n/a"):
             if not self.show_client:
@@ -1349,7 +1358,7 @@ class SessionInfoClient(InfoTimerClient):
 
     def update_screen(self):
         # this is called every time we get the server info back
-        # log.info("server_last_info=%s", self.server_last_info)
+        log("update_screen() server_last_info=%s", ellipsizer(self.server_last_info))
         if not self.server_last_info:
             return
         td = typedict(self.server_last_info)
