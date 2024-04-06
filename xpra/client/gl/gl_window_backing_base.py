@@ -550,7 +550,9 @@ class GLWindowBackingBase(WindowBackingBase):
         pass
 
     def close(self):
-        self.close_gl_config()
+        context = self.gl_context() or DummyContextManager()
+        with context:
+            self.close_gl_config()
         #This seems to cause problems, so we rely
         #on destroying the context to clear textures and fbos...
         #if self.offscreen_fbo is not None:
