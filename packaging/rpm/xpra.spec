@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 5.0.8
+%define version 5.0.9
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild
@@ -777,6 +777,9 @@ fi
 
 
 %changelog
+* Sat Apr 06 2024 Antoine Martin <antoine@xpra.org> 5.0.9-10
+- TODO
+
 * Wed Apr 03 2024 Antoine Martin <antoine@xpra.org> 5.0.8-10
 - Platforms, build and packaging:
    MS Windows 'Light' builds

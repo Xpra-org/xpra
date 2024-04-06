@@ -1,5 +1,24 @@
 # Changelog
 
+## [5.0.9] 2024-04-06
+* TODO
+
+## [5.0.9] 2023-04-06
+* Encodings:
+    * [video encoding errors causing missed screen updates](https://github.com/Xpra-org/xpra/commit/188e9903754e1abc8cd86ecd65bf9427000e7012)
+    * [drop alpha if requested](https://github.com/Xpra-org/xpra/commit/6e1934575cabc412782616704bb4ee24b5f36930) and [for video encoders](https://github.com/Xpra-org/xpra/commit/3cbdccbcdd9be7fdf6eabb67b322e612852f108c)
+    * [`konsole` is a text application](https://github.com/Xpra-org/xpra/commit/6c46f648ed923615de08385aa4b7e900ad4357dc)
+* Platforms, build and packaging:
+    * [saner source information defaults](https://github.com/Xpra-org/xpra/commit/79b7484c6f50275f48a3195385d80be918e2aa18)
+    * [more simple / reliable OpenGL pixel format attributes on MacOS](https://github.com/Xpra-org/xpra/commit/d95bcdb01d13ee0e363b70f281113ec88b1fadca)
+* Major:
+    * [replace dead ssh agent symlinks](https://github.com/Xpra-org/xpra/commit/37842c6b4d39185385a55df3f34cab4cfd444b0f)
+    * [validate http request hostname before sending it back](https://github.com/Xpra-org/xpra/commit/2157a0d12aef852e08d3a75da19a54d510568ee6)
+* Cosmetic:
+    * [skip warning about missing amf gstreamer elements](https://github.com/Xpra-org/xpra/commit/5bc11fc6d4498651aefebf3926c28f1907daa92a)
+    * [docstring: server configuration file applies to all servers](https://github.com/Xpra-org/xpra/commit/2a9207c5c3b1d9a654af12c90e414dbbec29300f)
+    * [remove X11 keyword from desktop files](https://github.com/Xpra-org/xpra/commit/6ddcecafa00814f87350e47baa8e9ef1410151c5)
+
 ## [5.0.8] 2024-04-03
 * Platforms, build and packaging:
     * [MS Windows 'Light' builds](https://github.com/Xpra-org/xpra/issues/4100)
