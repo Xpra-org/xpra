@@ -52,7 +52,7 @@ def err(msg):
     syslog.syslog(syslog.LOG_ERR, msg)
 
 
-def noop(msg):
+def noop(*_args):
     pass
 write_back = noop
 def init_write_back_fn():
