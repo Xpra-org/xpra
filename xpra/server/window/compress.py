@@ -1324,7 +1324,7 @@ class WindowSource(WindowIconSource):
             return False
         if self._mmap_size > 0:
             self._encoding_speed_info = {"mmap" : True}
-            return
+            return False
         cs = self._current_speed
         speed = self._speed_hint
         if speed >= 0:
