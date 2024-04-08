@@ -53,7 +53,6 @@ def get_nvcc():
         vnum = get_nvcc_version(filename)
         if vnum:
             nvcc_versions[vnum] = filename
-    nvcc_version = nvcc = None
     if not nvcc_versions:
         print("unable to find nvcc")
         sys.exit(1)
