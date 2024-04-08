@@ -21,7 +21,7 @@ CODECS = ("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_avif
 options = {
     #"quality" : 10,
     #"grayscale" : True,
-    }
+}
 
 
 def main(fmt="png", files=()):
@@ -71,8 +71,8 @@ def main(fmt="png", files=()):
                 if envbool("SAVE", False):
                     filename = f"./benchmark-{index}-{enc.get_type()}.{encoding.replace('/','-')}"
                     bdata = getattr(cdata, "data", cdata)
-                    with open(filename, "wb") as f:
-                        f.write(bdata)
+                    with open(filename, "wb") as fsave:
+                        fsave.write(bdata)
                 ratio = 100*len(cdata)/len(rgb_data)
                 mps = w*h*N/(end-start)/1024/1024
                 sizek = size*N//1024
@@ -82,6 +82,7 @@ def main(fmt="png", files=()):
                     buf = BytesIO(cdata.data)
                     img = Image.open(buf)
                     #img.show()
+
 
 if __name__ == '__main__':
     assert len(sys.argv)>1
