@@ -27,7 +27,7 @@ You can:
    xpra attach ssl://host:10000/ --ssl-ca-certs=./cert.pem
 ```
 
-### Generating a self signed certificate
+### Generating a self-signed certificate
 ```
 openssl req -new -x509 -days 365 -nodes -out cert.pem -keyout key.pem -sha256
 cat key.pem cert.pem > ssl-cert.pem

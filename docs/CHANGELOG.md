@@ -164,7 +164,7 @@
 	* [make it easier to silence OpenGL validation warnings](https://github.com/Xpra-org/xpra/issues/3380)
 	* [don't wait for printers](https://github.com/Xpra-org/xpra/issues/3170)
 	* [make it easier to autostart](https://github.com/Xpra-org/xpra/issues/3134)
-	* ['clean' subcommand](https://github.com/Xpra-org/xpra/issues/3099)
+	* [`clean` subcommand](https://github.com/Xpra-org/xpra/issues/3099)
 	* [flexible 'run_scaled' subcommand](https://github.com/Xpra-org/xpra/issues/3303)
 	* [more flexible key shortcuts configuration](https://github.com/Xpra-org/xpra/issues/3183)
 * Encodings and latency:
@@ -188,7 +188,7 @@
 	* [shadow specific areas or monitors](https://github.com/Xpra-org/xpra/issues/3320)
 	* [faster icon lookup](https://github.com/Xpra-org/xpra/issues/3326)
 	* [don't trust _NET_WM_PID](https://github.com/Xpra-org/xpra/issues/3251)
-	* [move all sessions to a sub-directory](https://github.com/Xpra-org/xpra/issues/3217)
+	* [move all sessions to a subdirectory](https://github.com/Xpra-org/xpra/issues/3217)
 	* [more reliable server cleanup](https://github.com/Xpra-org/xpra/issues/3218)
 	* [better VNC support](https://github.com/Xpra-org/xpra/issues/3256)
 	* [more seamless server upgrades](https://github.com/Xpra-org/xpra/issues/541)
@@ -427,7 +427,7 @@
 * buildbot upgrade
 * more reliable unit tests
 * fixes and workarounds for Java client applications
-* locally authenticated users can shutdown proxy servers
+* locally authenticated users can shut down proxy servers
 * restrict potential privileged information leakage
 * enhanced per-client window filtering
 * remove extra pixel copy in opengl enabled client
@@ -447,7 +447,7 @@
 * upload notification and management
 * shadow servers multi window mode
 * tighter client OS integratioin
-* client window positioning and multi-screen support
+* client window positioning and multiscreen support
 * unique application icon used as tray icon
 * multi stop or attach
 * control start commands
@@ -473,7 +473,7 @@
 * new OpenGL backends, with support for GTK3 on most platforms
 	   and window transparency on MS Windows
 * optimized webp encoding, supported in HTML5 client
-* uinput virtual pointer device for supporting fine grained scrolling
+* uinput virtual pointer device for supporting fine-grained scrolling
 * connection strings now support the standard URI format protocol://host:port/
 * rencode is now used by default for the initial packet
 * skip sending audio packets when inactive
@@ -482,16 +482,16 @@
 * clipboard support with GTK3
 * displayfd command line option
 * cosmetic system tray menu layout changes
-* dbus service for the system wide proxy server (stub)
+* dbus service for the system-wide proxy server (stub)
 * move mmap file to $XDG_RUNTIME_DIR (where applicable)
 * password prompt dialog in client
 * fixed memory leaks
 
 
 ## [2.1] 2017-07-24
-* improve system wide proxy server, logind support on, socket activation
+* improve system-wide proxy server, logind support on, socket activation
 * new authentication modules:
-    * new posix peercred authentication module (used by system wide proxy)
+    * new posix peercred authentication module (used by system-wide proxy)
     * new sqlite authentication module
 * split packages for RPM, MS Windows and Mac OS
 * digitally signed MS Windows installers
@@ -520,7 +520,7 @@
 ## [2.0] 2017-03-17
 * dropped support for outdated OS and libraries (long list)
 * 64-bit builds for MS Windows and MacOSX
-* MS Windows MSYS2 based build system with fully up to date libraries
+* MS Windows MSYS2 based build system with fully up-to-date libraries
 * MS Windows full support for named-pipe connections
 * MS Windows and MacOSX support for mmap transfers
 * more configurable mmap options to support KVM's ivshmem
@@ -830,7 +830,7 @@
 * fix sound communication errors not causing subprocess termination
 * fix Xorg path detection for Fedora 22 onwards
 * fix invalid list of output colorspaces with x264
-* fix bug report tool window so it can be used more than once
+* fix bug report tool window, so it can be used more than once
 * fix bug report tool log file error with Vista onwards
 * fix bug report screenshots on MS Windows with multiple screens
 * fix shadow mode on MS Windows with multiple screens
@@ -1012,7 +1012,7 @@
 * fix compatibility older versions of pygtk (centos5)
 * fix compatibility with python 2.4 (centos5)
 * fix AltGr workaround with win32 clients
-* fix some missing keys with 'fr' keyboard layout (win32)
+* fix some missing keys with `fr` keyboard layout (win32)
 * fix installation on systems without python-glib (centos5)
 * fix Xorg version detection for Fedora rawhide
 
@@ -1237,7 +1237,7 @@ v0.13.5-3 2014-06-14
 * server exit command, which leaves Xvfb running
 * publish session via mDNS
 * faster OSX shadow server
-* OSX client two way clipboard support
+* OSX client two-way clipboard support
 * OSX keyboard improvements, swap command and control keys
 * support for transparency with OpenGL window rendering
 * support for transparency with 8-bit PNG modes
@@ -1366,7 +1366,7 @@ v0.13.5-3 2014-06-14
 * performance: X11 shared memory (XShm) pixels transfers
 * performance: zero-copy window pixels to picture encoders
 * performance: zero copy decoded pixels to window (but not with OpenGL..)
-* performance: multi-threaded x264 encoding and decoding
+* performance: multithreaded x264 encoding and decoding
 * support for speed tuning (latency vs bandwidth) with more encodings (png, jpeg, rgb)
 * support for grayscale and palette based png encoding
 * support for window and tray transparency
@@ -1384,7 +1384,7 @@ v0.13.5-3 2014-06-14
 * support for different window layouts with custom widgets
 * basic support of OSX shadow servers
 * don't try to synchronize with clipboards that do not exist (for shadow servers mostly)
-* refactoring: move features and components to sub-modules
+* refactoring: move features and components to submodules
 * refactoring: split X11 bindings from pure gtk code
 * refactoring: codecs split encoding and decoding side
 * refactoring: move more common code to utility classes
@@ -1580,7 +1580,7 @@ v0.13.5-3 2014-06-14
 * fix modal windows support
 * fix default mouse cursor: now uses the client's default cursor
 * fix "double-apple" in menu on OSX
-* fix short lived windows: avoid doing unnecessary work, avoid re-registering handlers
+* fix short-lived windows: avoid doing unnecessary work, avoid re-registering handlers
 * fix limit the number of raw packets per client to prevent DoS via memory exhaustion
 * fix authentication: ensure salt is per connection
 * fix for ubuntu global application menus
@@ -1617,8 +1617,8 @@ v0.13.5-3 2014-06-14
 * send window icons in dedicated compressed packet (smaller new-window packets, faster)
 * detect overly large main packets
 * partial/initial Java/AWT keyboard support
-* py2exe, ebuild and distutils improvements: faster and cleaner builds, discarding unwanted modules
-* OSX and MS Windows build updates: newer py2app, gtk-mac-bundler, pywin32 and support libraries
+* `py2exe`, `ebuild` and `distutils` improvements: faster and cleaner builds, discarding unwanted modules
+* OSX and MS Windows build updates: newer `py2app`, `gtk-mac-bundler`, `pywin32` and support libraries
 * OSX command line path fix
 * updated libx264 and liba## [] on OSX
 * updated Cython to 0.17.4 for all binary builds
@@ -1674,7 +1674,7 @@ v0.13.5-3 2014-06-14
 
 ## [0.7.2] 2012-11-07
 * fix version string hiding ssh password prompt
-* fix focus handling for applications setting XWMHints.input to False (ie: Java)
+* fix focus handling for applications setting `XWMHints.input` to False (ie: Java)
 * fix ssh shared connection mode: do not kill it on Ctrl-C
 * fix sanitization of aspect ratio hints
 * fix undefined variable exception in window setup/cleanup code
@@ -1837,7 +1837,7 @@ v0.13.5-3 2014-06-14
 * fix potential double free in x264 error path
 * fix logging format error on "window dimensions have changed.." (parameter grouping was wrong)
 * fix colour bleeding with x264 (ie: green on black text)
-* remove incorrect and unnecessary callback to setup_xprops which may have caused the pulseaudio flag to use the wrong value
+* remove incorrect and unnecessary callback to `setup_xprops` which may have caused the pulseaudio flag to use the wrong value
 * delay 'check packet size' to allow the limit to be raised - important over slower links where it triggers more easily
 
 
@@ -1898,7 +1898,7 @@ v0.13.5-3 2014-06-14
 * fix Xvfb deadlock on shutdown
 * fix wrongly removing unix domain socket on startup failure
 * fix wrongly killing Xvfb on startup failure
-* fix race in network code and meta data packets
+* fix race in network code and metadata packets
 * ensure clients use raw_packets if the server supports it (fixes 'gibberish' compressed packet errors)
 * fix screen resolution reported by the server
 * fix maximum packet size check wrongly dropping valid connections
@@ -2218,7 +2218,7 @@ This release primarily contains cleanups and bugfixes for xpra.
 
 ### General:
 * Logging cleanup -- all logging now goes through the Python
-logging framework instead of using raw 'prints'.  By default
+logging framework instead of using raw 'prints'.  By default,
 debug logging is suppressed, but can be enabled in a fine- or
 coarse-grained way.
 

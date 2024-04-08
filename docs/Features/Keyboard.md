@@ -36,7 +36,8 @@ In the Xpra Keyboard Shortcuts window, the `#` placeholder is named as "Prefix:"
 
 ## Reporting Bugs
 First, please check for existing issues that may match your problem.
-Failing that, make sure to read the [reporting bugs](https://github.com/Xpra-org/xpra/wiki/Reporting-Bugs) guidelines and generally you will need to include (only those that apply):
+Failing that, make sure to read the [reporting bugs](https://github.com/Xpra-org/xpra/wiki/Reporting-Bugs) guidelines,
+and generally you will need to include (only those that apply):
 * try the keyboard debugging tool found in the `xpra toolbox`
 * active keyboard layout(s)
 * input methods
