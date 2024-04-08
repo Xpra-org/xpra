@@ -113,7 +113,7 @@ class ShadowServer(GTKShadowServerBase):
         self.refresh_count = 0
         self.refresh_rectangle_count = 0
         self.refresh_registered = False
-        super().__init__()
+        super().__init__(attrs)
 
     def init(self, opts) -> None:
         super().init(opts)
