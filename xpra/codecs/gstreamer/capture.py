@@ -139,9 +139,9 @@ class Capture(Pipeline):
 GObject.type_register(Capture)
 
 
-ENCODER_ELEMENTS: dict[str, str] = {
+ENCODER_ELEMENTS: dict[str, tuple[str, ...]] = {
     "jpeg": ("jpegenc", ),
-    "h264": ("vah264enc", "vah264lpenc", "openh264enc", "x264enc"),     #"vaapih264enc" no workee?
+    "h264": ("vah264enc", "vah264lpenc", "openh264enc", "x264enc"),     # "vaapih264enc" no workee?
     "h265": ("vah265enc", ),
     "vp8": ("vp8enc", ),
     "vp9": ("vp9enc", ),
@@ -242,14 +242,14 @@ class CaptureAndEncode(Capture):
             client_info["csc"] = CSC_ALIAS.get(self.csc_mode, self.csc_mode)
             self.extra_client_info = {}
             self.emit("new-image", self.pixel_format, data, client_info)
-        if SAVE_TO_FILE:
-            if not self.file:
-                encoding = self.pixel_format
-                gen = generation.increase()
-                filename = "gstreamer-" + str(gen) + f".{encoding}"
-                self.file = open(filename, "wb")
-                log.info(f"saving gstreamer {encoding} stream to {filename!r}")
-            self.file.write(data)
+            if SAVE_TO_FILE:
+                if not self.file:
+                    encoding = self.pixel_format
+                    gen = generation.increase()
+                    filename = "gstreamer-" + str(gen) + f".{encoding}"
+                    self.file = open(filename, "wb")
+                    log.info(f"saving gstreamer {encoding} stream to {filename!r}")
+                self.file.write(data)
         return GST_FLOW_OK
 
     def on_new_preroll(self, _appsink) -> int:
