@@ -266,6 +266,7 @@ def rgb_to_bitmap(img_data) -> HBITMAP:
     bitmapinfo = BITMAPINFO()
     bitmapinfo.bmiColors = 0
     memmove(byref(bitmapinfo.bmiHeader), byref(header), sizeof(BITMAPINFOHEADER))
+    # noinspection PyTypeChecker
     buftype = c_char * len(rgb_data)
     rgb_buf = buftype()
     rgb_buf.value = rgb_data
@@ -439,7 +440,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
         self.with_clipboard_lock(got_clipboard_lock, errback)
 
-    def get_contents(self, target, got_contents: Callable[[str, str, Any], None]):
+    def get_contents(self, target, got_contents: Callable[[str, int, Any], None]):
         log("get_contents%s", (target, got_contents))
         if target == "TARGETS":
             def got_clipboard_lock():
@@ -623,7 +624,9 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             fmt = RegisterClipboardFormatA(fmt_name)
             if fmt:
                 l = len(img_data)
+                # noinspection PyTypeChecker
                 buftype = c_char * l
+                # noinspection PyCallingNonCallable
                 buf = buftype()
                 buf.value = img_data
                 pbuf = cast(byref(buf), c_void_p)

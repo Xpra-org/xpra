@@ -109,6 +109,7 @@ GetTokenInformation.restype = BOOL
 
 
 class SID_IDENTIFIER_AUTHORITY(Structure):
+    # noinspection PyTypeChecker
     _fields_ = [
         ('Value', BYTE * 6),
     ]
@@ -121,6 +122,7 @@ PSID_IDENTIFIER_AUTHORITY = POINTER(SID_IDENTIFIER_AUTHORITY)
 
 
 class SID(Structure):
+    # noinspection PyTypeChecker
     _fields_ = [
         ('Revision', BYTE),
         ('SubAuthorityCount', BYTE),

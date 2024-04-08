@@ -393,6 +393,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def set_vao(self, index=0):
         vertices = [-1, -1, 1, -1, -1, 1, 1, 1]
+        # noinspection PyTypeChecker,PyCallingNonCallable
         c_vertices = (c_float * len(vertices))(*vertices)
         glBindVertexArray(self.vao)
         buf = glGenBuffers(1)

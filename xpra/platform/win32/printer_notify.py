@@ -175,6 +175,8 @@ class SYSTEMTIME(ctypes.Structure):
                         self.wHour, self.wMinute, self.wSecond,
                         self.wMilliseconds * 1000)
 
+
+# noinspection PyTypeChecker
 class PRINTER_NOTIFY_OPTIONS_TYPE(ctypes.Structure):
     _fields_ = (('Type',      wintypes.WORD),
                 ('Reserved0', wintypes.WORD),
@@ -390,6 +392,7 @@ def wait_for_print_job_info(fields=DEFAULT_FIELDS,
     if timeout != INFINITE:
         timeout = int(timeout * 1000)
     hPrinter = wintypes.HANDLE()
+    # noinspection PyCallingNonCallable
     fields = (wintypes.WORD * len(fields))(*fields)
     opt = PRINTER_NOTIFY_OPTIONS(
             pTypes=PRINTER_NOTIFY_OPTIONS_TYPE(

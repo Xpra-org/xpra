@@ -95,6 +95,7 @@ def rgb_to_bitmap(rgb_data, bytes_per_pixel: int, w: int, h: int) -> HBITMAP:
     log("CreateDIBSection(..) got bitmap=%#x, dataptr=%s", int(bitmap), dataptr)
     size = len(rgb_data)
     buftype = c_char * size
+    # noinspection PyCallingNonCallable
     buf = buftype()
     buf.value = rgb_data
     memmove(dataptr, byref(buf), w * h * bytes_per_pixel)

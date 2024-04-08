@@ -98,6 +98,7 @@ class PIXELFORMATDESCRIPTOR(Structure):
 
 
 class PAINTSTRUCT(Structure):
+    # noinspection PyTypeChecker
     _fields_ = [
         ('hdc', HDC),
         ('fErase', BOOL),

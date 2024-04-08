@@ -523,6 +523,7 @@ class ShadowServer(GTKShadowServerBase):
         return False
 
     def clear_keys_pressed(self) -> None:
+        # noinspection PyCallingNonCallable
         keystate = (BYTE * 256)()
         if GetKeyboardState(keystate):
             vknames = {}

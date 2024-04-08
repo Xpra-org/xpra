@@ -57,6 +57,7 @@ class ICONINFO(Structure):
 PICONINFO = POINTER(ICONINFO)
 
 
+# noinspection PyTypeChecker
 class ICONINFOEXA(Structure):
     _fields_ = [
         ("cbSize", DWORD),
@@ -74,6 +75,7 @@ class ICONINFOEXA(Structure):
 PICONINFOEXA = POINTER(ICONINFOEXA)
 
 
+# noinspection PyTypeChecker
 class ICONINFOEXW(Structure):
     _fields_ = [
         ("cbSize", DWORD),
@@ -183,6 +185,7 @@ CCHDEVICENAME = 32
 
 
 class MONITORINFOEX(Structure):
+    # noinspection PyTypeChecker
     _fields_ = [
         ('cbSize', DWORD),
         ('rcMonitor', RECT),

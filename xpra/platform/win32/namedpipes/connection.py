@@ -56,6 +56,7 @@ class NamedPipeConnection(Connection):
         log("NamedPipeConnection(%s, %#x, %s)", name, pipe_handle, options)
         super().__init__(name, "named-pipe", options=options)
         self.pipe_handle = pipe_handle
+        # noinspection PyTypeChecker,PyCallingNonCallable
         self.read_buffer = (c_char * BUFSIZE)()
         self.read_buffer_ptr = cast(addressof(self.read_buffer), c_void_p)
         self.read_event = CreateEventA(None, True, False, None)

@@ -202,6 +202,7 @@ class NamedPipeListener(Thread):
             if GetLastError() != ERROR_INSUFFICIENT_BUFFER:
                 raise OSError()
         log("GetTokenInformation data size %#x", data_size.value)
+        # noinspection PyTypeChecker
         buftype = c_char * (data_size.value + 1)
         token_data = buftype()
         if not GetTokenInformation(self.token_process, token_type, byref(token_data), data_size.value,

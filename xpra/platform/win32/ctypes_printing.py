@@ -64,6 +64,7 @@ CCHDEVICENAME = 32
 
 
 class DEVMODE(Structure):
+    # noinspection PyTypeChecker
     _fields_ = [
         ("dmDeviceName", c_char * CCHDEVICENAME),
         ("dmSpecVersion", WORD),

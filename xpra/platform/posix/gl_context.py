@@ -57,6 +57,7 @@ def c_attrs(props: dict):
         else:
             attrs += [k, v]
     attrs += [0, 0]
+    # noinspection PyTypeChecker,PyCallingNonCallable
     return (c_int * len(attrs))(*attrs)
 
 

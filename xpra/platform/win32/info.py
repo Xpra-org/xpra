@@ -21,6 +21,7 @@ def get_name() -> str:
         max_len = 256
         size = DWORD(max_len)
         buftype = c_char * (max_len + 1)
+        # noinspection PyCallingNonCallable
         buf = buftype()
         if not GetUserNameA(byref(buf), byref(size)):
             raise WinError(get_last_error())

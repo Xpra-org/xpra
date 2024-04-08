@@ -27,7 +27,9 @@ def _enum_devices(fn):
     def cb_enum(lpGUID, lpszDesc, _lpszDrvName, _):
         dev = ""
         if lpGUID is not None:
+            # noinspection PyTypeChecker
             buftype = c_char * 256
+            # noinspection PyCallingNonCallable
             buf = buftype()
             pbuf = byref(buf)
             if StringFromGUID2(lpGUID, cast(pbuf, LPOLESTR), 256):
