@@ -256,10 +256,10 @@ class KeyEvent:
         return f"KeyEvent({strattrs})"
 
 
-def get_refresh_rate_for_value(refresh_rate_str, invalue) -> int:
-    def i(v):
+def get_refresh_rate_for_value(refresh_rate_str, invalue: int) -> int:
+    def i(value) -> int:
         try:
-            return int(v)
+            return int(value)
         except ValueError:
             return invalue
     if refresh_rate_str.lower() in ("none", "auto"):
@@ -287,9 +287,9 @@ def adjust_monitor_refresh_rate(refresh_rate_str, mdef) -> dict[int,dict]:
     for i, monitor in mdef.items():
         # make a copy, don't modify in place!
         # (as this may be called multiple times on the same input dict)
-        mprops = dict(monitor)
-        if refresh_rate_str!="auto":
-            value = monitor.get("refresh-rate", DEFAULT_REFRESH_RATE)
+        mprops = monitor
+        if refresh_rate_str != "auto":
+            value = int(monitor.get("refresh-rate", DEFAULT_REFRESH_RATE))
             value = get_refresh_rate_for_value(refresh_rate_str, value)
             if value:
                 mprops["refresh-rate"] = value
@@ -316,6 +316,7 @@ DEFAULT_METADATA_SUPPORTED = (
 
 
 def noerr(fn: Callable, *args):
+    # noinspection PyBroadException
     try:
         return fn(*args)
     except Exception:
