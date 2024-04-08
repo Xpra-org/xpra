@@ -1,4 +1,4 @@
-This service is often referred to as the "system wide proxy server".
+This service is often referred to as the "system-wide proxy server".
 
 Posix packages should install this [proxy server](./Proxy-Server.md) as a system service and update the firewall rules to allow access to its IANA assigned TCP port (`14500`).
 

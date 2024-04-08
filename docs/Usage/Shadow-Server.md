@@ -49,7 +49,7 @@ Use the `-d ssh` [debug logging](./Logging.md) switch.
   <summary>Issues</summary>
 
 * [#899](https://github.com/Xpra-org/xpra/issues/899) generic shadow improvements
-* [#389](https://github.com/Xpra-org/xpra/issues/389) ms windows shadow server improvements
+* [#389](https://github.com/Xpra-org/xpra/issues/389) MS Windows shadow server improvements
 * [#558](https://github.com/Xpra-org/xpra/issues/558) nvenc support for shadowing on win32
 * [#390](https://github.com/Xpra-org/xpra/issues/390) damage events for the posix shadow server
 * [#391](https://github.com/Xpra-org/xpra/issues/391) osx shadow server improvements: mdns, keyboard support, etc

@@ -61,8 +61,7 @@ Notes:
 ## Info and Control
 When the client requests information from the server (ie: for the session info dialog or for internal use), the requests are passed through the proxy instance to the real server just like other packets, but the response is augmented with some extra information from the proxy server. (it is prefixed to prevent any interference)
 
-Just like any other xpra server instance, a proxy instance can be also be queried directly. Since proxy instances do not have their own display number, each proxy instance will create a socket using the process ID instead (ie: `:proxy-15452`), you ca
-n find their names using `xpra list`.
+Just like any other xpra server instance, a proxy instance can be also be queried directly. Since proxy instances do not have their own display number, each proxy instance will create a socket using the process ID instead (ie: `:proxy-15452`), you can find their names using `xpra list`.
 
 
 ## Stopping
@@ -127,14 +126,14 @@ What happens:
 Further notes:
 * for authentication between the proxy and the real server, just specify the username and password in the connection string
 * you can omit the uid and gid and the special user / group "nobody" will be used (Posix servers only)
-* this example uses `socket-dir=/tmp` to ensure that the proxy instances can create their sockets, no matter what user they runs as (nobody) - this is not always necessary (ie: not usually needed when running as non-root)
+* this example uses `socket-dir=/tmp` to ensure that the proxy instances can create their sockets, no matter what user they run as (nobody) - this is not always necessary (ie: not usually needed when running as non-root)
 * you can specify the uid and gid using their names (ie: uid="joe", gid="users", Posix servers only) or numerical values (ie: 1000)
 * you can specify more than one remote session string for each username and password pair using CSV format - but the client will then have to specify which one it wants on the connection URL
 </details>
 
 ## Username Matters
 The proxy server can also be used to expose all local sessions dynamically.\
-This is what the [system service](./Service.md) (aka "system wide proxy server") does.
+This is what the [system service](./Service.md) (aka "system-wide proxy server") does.
 
 In this case, the username, uid and gid are used to locate all the sessions for the user once it has authenticated, in the same way that a user can list sessions by running `xpra list`.
 This type of proxy server usually runs as root to be able to access the sessions for multiple users.

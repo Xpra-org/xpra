@@ -54,15 +54,17 @@ The client will prompt for the password, as found in the `password.txt` file and
 ***
 
 ## Network Performance
-Xpra will try to detect your network adapter and connection characteristics and it should adapt to changing network capacity and performance.
-However, it may not always get it right and you may need to turn off bandwidth detection (`bandwidth-detection` option) and / or specify your own bandwidth constraints. (`bandwidth-limit` option).
+Xpra will try to detect your network adapter and connection characteristics,
+and it should adapt to changing network capacity and performance.
+However, it may not always get it right,
+and you may need to turn off bandwidth detection (`bandwidth-detection` option) and / or
+specify your own bandwidth constraints. (`bandwidth-limit` option).
 
 You can see how much bandwidth is used and how good the picture latency is using the "Graphs" tab of the "Session Info" dialog found in Xpra's system tray menu:
 
 ![Session Info : Graphs](../images/session-info-graphs.png)
 
 More network information is available elsewhere in the "Session Info" dialog or via the "xpra info" command:
-</details>
 
 <details>
   <summary>network latency via xpra info</summary>

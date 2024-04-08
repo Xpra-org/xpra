@@ -5,7 +5,7 @@ This encoder offers [the best latency](https://xpra.org/stats/NVENC/), which is 
 # Hardware
 This encoder requires a [supported NVIDIA graphics card](https://developer.nvidia.com/nvidia-video-codec-sdk#gpulist):
 * a "professional" Quadro 4000 card (no license key required)
-* a consumer card and a license key or a [patch](https://github.com/keylase/nvidia-patch) to workaround the artificial context limit which can be debilitating
+* a consumer card and a license key or a [patch](https://github.com/keylase/nvidia-patch) to work around the artificial context limit which can be debilitating
 
 # Software Requirements
 You must have [PyCUDA](http://mathema.tician.de/software/pycuda/) installed (it is included in the official [xpra repositories](https://github.com/Xpra-org/xpra/wiki/Download)), and a recent enough version of the nvidia drivers. It is not compatible with the `nouveau` driver.

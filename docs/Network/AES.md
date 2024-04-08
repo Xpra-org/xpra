@@ -12,7 +12,7 @@ Caveats:
 * the HTML5 client currently does not support GCM mode: https://github.com/Xpra-org/xpra-html5/issues/94
 * older servers and clients only support `CBC` mode
 
-For step by step instructions on setting up AES, expand:
+For step-by-step instructions on setting up AES, expand:
 <details>
   <summary>AES Usage Example</summary>
 

@@ -14,9 +14,9 @@ make install clean
 _These instructions are incomplete and outdated - feel free to update them!_
 
 The Xvfb tool can be found in the package: `xorg-vfbserver` (not obvious!)
-Other packages you will need:
-* for running it: `xauth xkbcomp xkeyboard-config`
-* for building / downloading the source: `gcc cython subversion pkgconf`
+Other packages you will need for:
+* running it: `xauth xkbcomp xkeyboard-config`
+* building / downloading the source: `gcc cython subversion pkgconf`
 * X11 libraries: `libXrandr libXtst libXcomposite libXdamage`
 * GTK: `gobject-introspection gtk3`
 * strongly recommended addons: `py37-PyOpenGL py37-PyOpenGL-accelerate`

@@ -17,14 +17,17 @@ Xpra is _open-source_ ([GPLv2+](./COPYING)) with clients available for [many sup
 and the server includes a built-in [HTML5 client](https://github.com/Xpra-org/xpra-html5).
 Xpra is usable over a wide variety of [network protocols](./docs/Network/README.md) and does its best to adapt to any network conditions.
 
-Xpra forwards and synchronizes many extra desktop features which allows remote applications to integrate transparently into the client's desktop environment:
+Xpra forwards and synchronizes many extra desktop features which allows remote applications
+to integrate transparently into the client's desktop environment:
 [audio input and output](./docs/Features/Audio.md), [printers](./docs/Features/Printing.md), [clipboard](./docs/Features/Clipboard.md),
 [system trays](./docs/Features/System-Tray.md), [notifications](./docs/Features/Notifications.md), [webcams](./docs/Features/Webcam.md), etc
 
-It can also [open documents and URLs remotely](./docs/Features/File-Transfers.md), display [high bit depth content](./docs/Features/Image-Depth.md) and it will try honour the [display's DPI](./docs/Features/DPI.md).
+It can also [open documents and URLs remotely](./docs/Features/File-Transfers.md),
+display [high bit depth content](./docs/Features/Image-Depth.md),
+and it will try honour the [display's DPI](./docs/Features/DPI.md).
 
 Here's what a seamless session with two windows (an `xterm` and `glxspheres`)
-looks like when attached from a MS Windows 11 desktop client:
+looks like when attached from an MS Windows 11 desktop client:
 ![Windows11-client](./docs/images/screenshots/win11-glxspheres.png)
 (the windows may look like native windows, but they are running on a remote Linux server)
 
@@ -91,6 +94,6 @@ For more generic version-agnostic information, checkout [the wiki](https://githu
 
 # Help
 Make sure to check the [FAQ](https://github.com/Xpra-org/xpra/blob/master/docs/FAQ.md), your question may already be answered there.
-You can ask your questions on the [github discussions](https://github.com/orgs/Xpra-org/discussions), or on the IRC channel `#xpra` on [libera.chat](https://libera.chat)
+You can ask your questions on the [github discussions](https://github.com/orgs/Xpra-org/discussions), or on the IRC channel `#xpra` on [`libera.chat`](https://libera.chat)
 or [using discord](https://discord.gg/gjrJRy88).
 If you have hit a bug (sorry about that!), please see [reporting bugs](https://github.com/Xpra-org/xpra/wiki/Reporting-Bugs).

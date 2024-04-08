@@ -3,7 +3,7 @@
 A significant proportion of Xpra's development was sponsored by the security industry to provide a shield for users securely running applications that require network access - the xpra clients are only exposed to a tightly controlled and secure network flux,
 completely removed from the underlying protocols that those applications normally use to interact with the user.  
 
-As a result, the architecture, features and options are often directly related to the mechanisms that this fine grained control requires.  
+As a result, the architecture, features and options are often directly related to the mechanisms that this fine-grained control requires.  
 These defenses can be applied to a client protecting itself from a potentially hostile application or server and also in the opposite direction to confine users to the environment assigned to them.  
 A default xpra installation should be quite secure by default, but there are trade-offs to be made.
 
@@ -36,7 +36,8 @@ Pictures transferred using the clipboard from server to client are sanitized (re
 Very much like the clipboard, the safest way to handle audio is to not forward it at all.  
 If audio forwarding has to be enabled, not all codecs are equal from a security point of view.  
 Using a codec without a container reduces the complexity somewhat, but using a raw audio format like `wav` is the safest option since there is no parsing involved. The downside is that this is an uncompressed format, though xpra does offer the option to compress `wav` using `lz4`.
-That said, `mp3` is now over 30 years old and the libraries parsing it are very mature. Other codecs have had a few issues in more recent times (ie: [faac and faad2 security issues](https://github.com/Xpra-org/xpra/issues/2474)  
+That said, `mp3` is now over 30 years old and the libraries parsing it are very mature.
+Other codecs have had a few issues in more recent times (ie: [faac and faad2 security issues](https://github.com/Xpra-org/xpra/issues/2474))  
 xpra runs the audio processing in a separate process which does not have access to the display.
 
 ### [Encodings](./Encodings.md)
@@ -47,7 +48,7 @@ Video encodings as well as newer picture encodings (often derived from the new g
 
 ### [Printing](../Features/Printing.md)
 Printer forwarding presents security challenges for both the server and the client:
-* the server parses printer data from the client and then uses privileged commands to create an matching virtual printer. The client can also update the list of printers at any time, causing the whole setup process to be repeated.
+* the server parses printer data from the client and then uses privileged commands to create a matching virtual printer. The client can also update the list of printers at any time, causing the whole setup process to be repeated.
 * the client receives Postscript or PDF files which are sent to the real printer, this is compartively safer - though parsing bugs for these formats have been found
 
 ### [File Transfers](../Features/File-Transfers.md)
@@ -58,11 +59,11 @@ The file size and number of concurrent file transfers can also be configured.
 
 ### [System Tray](../Features/System-Tray.md) and [Notifications](../Features/Notifications.md) forwarding
 These features provide tighter desktop integration which can be seen as a security risk and can be turned off completely.  
-However, the improved usability usually makes this an acceptable trade off and these features are enabled by default.
+However, the improved usability usually makes this an acceptable trade-off and these features are enabled by default.
 
 ### [Webcam](../Features/Webcam.md)
 Although this feature is never turned on by default, it is available.  
-There are obvious privacy concerns here and it may be desirable to turn off the feature completely.
+There are obvious privacy concerns here, and it may be desirable to turn off the feature completely.
 
 ### `DBus`
 "_D-Bus is a message bus system, a simple way for applications to talk to one another_.
@@ -144,7 +145,8 @@ Some specific options have a direct impact on the security of the system:
 
 ### [Build options](../Build)
 By default, xpra is built using strict compilation options and any warning will cause the build to fail (`-Werror`).  
-Whenever needed or required (libraries missing in a specific distribution or variant thereof), the xpra project provides up to date versions of key libraries on many platforms: https://github.com/Xpra-org/xpra/tree/master/packaging/ and not just xpra. That said, binaries..
+Whenever needed or required (libraries missing in a specific distribution or variant thereof),
+the xpra project provides up-to-date versions of key libraries on many platforms: https://github.com/Xpra-org/xpra/tree/master/packaging/ and not just xpra. That said, binaries..
 
 ### Binaries - MS Windows and MacOS
 The distribution of binary bundles applies to MS Windows, MacOS builds and also on Linux when using formats like `appimage`, `flatpak`, `snap` (these formats are not currently supported, in part because of this particular problem) or - to a lesser extent - with container builds.  
@@ -170,7 +172,7 @@ The xpra server and client(s) can both be embedded with or integrated into other
 For example:
 * By using an external websocket proxy (ie: [Apache HTTP Proxy](./Apache-Proxy.md)) one can shield the xpra server from potentially hostile external traffic and add a separately configured authentication layer with only minimal latency costs (when configured properly)
 * Xpra's own [proxy server](./Proxy-Server.md) can be used to provide hardware acceleration within a different context than the one that is executing user applications.  
-* Running the [system wide proxy server](./Service.md) provides tighter integration into the system's session service, which has both pros and cons: potentially better session accounting and control, at the cost of running a privileged service
+* Running the [system-wide proxy server](./Service.md) provides tighter integration into the system's session service, which has both pros and cons: potentially better session accounting and control, at the cost of running a privileged service
 * OpenGL hardware acceleration via [WSL - Windows Subsystem for Linux](./WSL.md)
 
 ### Containers - VM

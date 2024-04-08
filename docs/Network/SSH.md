@@ -50,17 +50,17 @@ On most platforms the default external tool is the `ssh` command, but on MS Wind
 This mechanism relies on [openssh](https://www.openssh.com/) on Posix systems, optionally using [sshpass](https://sourceforge.net/projects/sshpass/) to supply passwords via the command line or connection files.
 
 ### `plink`
-On MS Windows, the installer will bundle the [tortoisesvn](https://tortoisesvn.net/) version of [PuTTY plink](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html) which includes a more user friendly GUI for host key confirmation and password input.
+On MS Windows, the installer will bundle the [tortoisesvn](https://tortoisesvn.net/) version of [PuTTY plink](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html) which includes a more user-friendly GUI for host key confirmation and password input.
 
 Since this mechanism relies on executing the ssh client program, you can use the same command line options as you normally would and / or use the openssh configuration files for using tunnels, restricting ciphers, etc.
 ie: `--ssh="ssh -x -c blowfish-cbc"`
 
-The `--exit-ssh` switch controls whether the SSH transport is killed when the client terminates, this can be useful if openssh is setup to use connection sharing. (see [#203](https://github.com/Xpra-org/xpra/issues/203) for details)
+The `--exit-ssh` switch controls whether the SSH transport is killed when the client terminates, this can be useful if openssh is set up to use connection sharing. (see [#203](https://github.com/Xpra-org/xpra/issues/203) for details)
 
 ### [paramiko](http://www.paramiko.org/)
 
 This backend is built into the client connection code and provides better diagnostics (using the `--debug=ssh` switch), and it provides a GUI for confirming host keys, entering key passphrases or passwords.\
-The downside is that since it does not use OpenSSH at all, it does not have the same flexibility, it may require re-confirmation of known hosts and it may not support all the configuration options normally used with OpenSSH.
+The downside is that since it does not use OpenSSH at all, it does not have the same flexibility, it may require re-confirmation of known hosts, and it may not support all the configuration options normally used with OpenSSH.
 
 Paramiko can accept configuration options in the command line.
 After `--ssh=paramiko`, add a double-colon `:` and then one or more of the available options:

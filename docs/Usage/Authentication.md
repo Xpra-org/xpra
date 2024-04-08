@@ -105,8 +105,8 @@ xpra attach tcp://host:port/ --challenge-handlers=file:filename=./password.txt -
 <details>
   <summary>client challenge handlers</summary>
 
-| Module                                                                                        | Behaviour and options                                                                                    |
-|-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| Module                                                                                | Behaviour and options                                                                                    |
+|---------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
 | [env](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/env.py)           | `name` specifies the environment variable containing the password<br/>defaults to `XPRA_PASSWORD`        |
 | [file](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/file.py)         | `filename` specifies the file containing the passowrd                                                    |
 | [gss](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/gss.py)           | use `gss-services` to specify the name of the security context                                           |
@@ -135,7 +135,7 @@ xpra attach tcp://username:password@host:port/
 ```
 </details>
 
-When an authentication module is used to secure a single session, many modules will completely ignore the username part and it can be omitted from the connection string.
+When an authentication module is used to secure a single session, many modules will completely ignore the username part, and it can be omitted from the connection string.
 <details>
   <summary>example: specifying the password only</summary>
 
@@ -143,7 +143,7 @@ for connecting to the `TCP` socket and specifying the password only:
 ```shell
 xpra attach tcp://:password@host:port/
 ```
-Since the username is ignored, it can also be replaced with any string of your liking, ie 'foobar':
+Since the username is ignored, it can also be replaced with any string of your liking, ie using `foobar` here:
 ```shell
 xpra attach tcp://foobar:password@host:port/
 ```

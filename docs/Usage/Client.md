@@ -15,7 +15,7 @@ These options can be loaded from and saved into a session file.
 Session files use the extension `.xpra` and record all the session settings, including the connection parameters shown in the session launcher.  
 Any command line option can be specified in this file by removing the `--` that precedes options when they're used via the command line.
 ie: `--min-quality=50` becomes just `quality=50`.  
-Double clicking a session file brings up the launcher and if the session file contains `autoconnect=true` then the connection will be made without first showing the launcher dialog.
+Double-clicking a session file brings up the launcher and if the session file contains `autoconnect=true` then the connection will be made without first showing the launcher dialog.
 The [html5 client](https://github.com/Xpra-org/xpra-html5) can also generate session files from its connection form.
 
 ## Session Browser

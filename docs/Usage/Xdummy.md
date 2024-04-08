@@ -41,7 +41,7 @@ The `-noreset` option is only needed if the window manager is not the first appl
 
 ## Configuration
 
-By default the configuration file shipped with xpra allocates 768MB of memory, and a maximum `virtual size` of `11520 6318`.  
+By default, the configuration file shipped with xpra allocates 768MB of memory, and a maximum `virtual size` of `11520 6318`.  
 You may want to increase these values to use very high resolutions or many virtual monitors.
 
 

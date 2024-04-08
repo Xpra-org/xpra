@@ -2,7 +2,7 @@
 
 SSL is the colloquial term which refers to both `SSL` and `TLS` socket encryption.
 
-For step by step instructions, expand this:
+For step-by-step instructions, expand this:
 <details>
   <summary>Basic Example</summary>
 
@@ -16,7 +16,7 @@ connect a client:
 ```
 xpra attach ssl://127.0.0.1:10001/
 ```
-To avoid this error when the server uses a self signed certificate:
+To avoid this error when the server uses a self-signed certificate:
 ```
 [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:590)
 ```
@@ -68,12 +68,12 @@ Do not assume that you can just enable SSL to make your connection secure.
 
 For detailed instructions on using your own CA, click on:
 <details>
-  <summary>Securing SSL with self signed CA and certificates</summary>
+  <summary>Securing SSL with self-signed CA and certificates</summary>
 
 See [The Most Dangerous Code in the World: Validating SSL Certificates in Non-Browser Software](https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf) and [Beware of Unverified TLS Certificates in PHP & Python](https://blog.sucuri.net/2016/03/beware-unverified-tls-certificates-php-python.html). \
 See also: [Fallout from the Python certificate verification change](https://lwn.net/Articles/666353/).
 
-Since the server certificate will not be signed by any recognized certificate authorities, you will need to send the verification data to the client via some other means... This will no be handled by xpra, it simply cannot be. (same as the AES key, at which point... you might as well use [AES](./AES)?)
+Since the server certificate will not be signed by any recognized certificate authorities, you will need to send the verification data to the client via some other means... This will not be handled by xpra, it simply cannot be. (same as the AES key, at which point... you might as well use [AES](./AES)?)
 ```
 # generate your CA key and certificate:
 openssl genrsa -out ca.key 4096
@@ -125,7 +125,7 @@ Use it directly in the xpra command:
 xpra attach ssl:localhost:10000 \
      --ssl-ca-data=2d2d2d2d2d424547494e...4452d2d2d2d2d0a
 ```
-Alternatively, place all of these in a connection file you can just double click on:
+Alternatively, place all of these in a connection file you can just double-click on:
 ```
 echo > ssl-test.xpra <<EOF
 host=localhost
@@ -135,7 +135,7 @@ mode=ssl
 ssl-ca-data=2d2d2d2d2d424547494e...4452d2d2d2d2d0a
 EOF
 ```
-The cadata can also be encoded using base64, which is more dense:
+The cadata can also be encoded using base64, which is shorter:
 ```
 $ python -c 'import sys,base64;print("base64:"+(base64.b64encode(open(sys.argv[1], "rb").read()).decode()))' ca.crt
 ```

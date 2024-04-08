@@ -24,7 +24,6 @@ You may also refer to the more generic list of [dependencies](./Dependencies.md)
 ```shell
 python3 ./setup.py install
 ```
-</details>
 
 ## ![RPM](../images/icons/rpm.png)
 The quick and easy way:

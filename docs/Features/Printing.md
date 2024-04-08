@@ -8,7 +8,7 @@ This functionality shares most of the code with the [file transfers](./File-Tran
 * MS Windows and MacOS clients should work out of the box
 * [CentOS](https://www.centos.org/) requires manual setup to support MacOS clients as the [cups-pdf](http://www.cups-pdf.de/) package is not available in the default repositories
 * Debian and Ubuntu: the dependencies are listed as "suggestions" only, so you may need to run `apt-get install cups-filters cups-common cups-pdf python3-cups` to install the missing pieces
-* you may encounter some permission issues: the user running the xpra server must be a printer administrator - whatever group that may be (if you need to add your user to a group you will also then need to logout and login again to gain the new privileges):
+* you may encounter some permission issues: the user running the xpra server must be a printer administrator - whatever group that may be (if you need to add your user to a group you will also then need to log out and login again to gain the new privileges):
     * for Fedora and centos the `sys` group: `gpasswd -a $USER sys`
     * for Debian and Ubuntu the `lpadmin` group: `usermod -a -G lpadmin $USER`
 * the cups backend installed must have `0700` permissions: `chmod 700 /usr/lib/cups/backend/xpraforwarder`
@@ -27,7 +27,7 @@ Those virtual printers are actually PDF or postscript scripts.\
 When the user sends a print job to one of those virtual printers, the script captures the rendered document and forwards it to the client who owns this particular virtual printer.
 The xpra client then sends this PDF / postscript document straight to the actual printer.
 
-The HTML5 client is written in Javascript so it does not have access to the printer device information and the PDF document is presented for printing via the standard browser's print dialog.
+The HTML5 client is written in Javascript, so it does not have access to the printer device information and the PDF document is presented for printing via the standard browser's print dialog.
 
 
 ## Debugging

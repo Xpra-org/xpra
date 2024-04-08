@@ -31,7 +31,7 @@ When choosing a window manager, be aware that the more featureful ones also tend
 
 ## Desktop Size
 
-By default the desktop size will start using a screen resolution of 1920x1080, this virtual screen can be resized at any point using regular X11 tools (ie: "xrandr").
+By default, the desktop size will start using a screen resolution of 1920x1080, this virtual screen can be resized at any point using regular X11 tools (ie: "xrandr").
 
 To change the initial desktop size:
 ```shell
@@ -40,4 +40,4 @@ xpra start-desktop --resize-display="1024x768" --start=fluxbox
 
 ## Caveats
 * to get the session to terminate when you exit the window manager, use `--start-child` with `--exit-with-children`
-* some desktop environments may show options to shutdown or reboot the system from their start menu, which may or may not be appropriate
+* some desktop environments may show options to shut down or reboot the system from their start menu, which may or may not be appropriate

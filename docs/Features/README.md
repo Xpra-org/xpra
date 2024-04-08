@@ -29,6 +29,6 @@
 * session sharing
 * advanced automatic [picture encoding](../Usage/Encodings.md)
 * hardware acceleration
-* super fast shared memory and vsock connections
+* superfast shared memory and vsock connections
 * [OpenGL accelerated rendering](../Usage/Client-OpenGL.md)
 * session broadcast via [mDNS](../Network/Multicast-DNS.md)
