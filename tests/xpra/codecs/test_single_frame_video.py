@@ -16,7 +16,7 @@ from xpra.codecs.loader import load_codec
 
 
 def main(files):
-    assert len(files)>0, "specify images to use for benchmark"
+    assert len(files) > 0, "specify images to use for benchmark"
     avcodec = load_codec("dec_avcodec2")
     assert avcodec, "dec_avcodec is required"
     encoders = []
@@ -35,7 +35,7 @@ def main(files):
                 continue
             matches = []
             for ics in enc.get_input_colorspaces(encoding):
-                if ics not in ("BGRX", "YUV420P", "YUV444P", ):
+                if ics not in ("BGRX", "YUV420P", "YUV444P",):
                     print(f"    skipping {ics}")
                     continue
                 dcs = avcodec.get_output_colorspace(encoding, ics)
@@ -50,28 +50,28 @@ def main(files):
         index += 1
         img = Image.open(f)
         print(f"{index} : {f:40} : {img}")
-        if img.mode!="RGBA":
+        if img.mode != "RGBA":
             img = img.convert("RGBA")
         pixel_format = "BGRX"
         w, h = img.size
         rgb_data = img.tobytes("raw")
         stride = w * len(pixel_format)
         source_image = ImageWrapper(0, 0, w, h,
-                             rgb_data, pixel_format, len(pixel_format)*8, stride,
-                             planes=ImageWrapper.PACKED, thread_safe=True)
+                                    rgb_data, pixel_format, len(pixel_format) * 8, stride,
+                                    planes=ImageWrapper.PACKED, thread_safe=True)
         #source_image.restride(roundup(w*4, 8))
         for encoding, colorspace, enc in encoders:
             print(f"  {enc.get_type():10} {encoding:10} {colorspace}")
             image = source_image
-            if colorspace!="BGRX":
+            if colorspace != "BGRX":
                 from xpra.codecs.libyuv.converter import Converter
                 csc = Converter()
                 csc.init_context(w, h, pixel_format,
-                                 w, h, colorspace, typedict({"speed" : 0}))
+                                 w, h, colorspace, typedict({"speed": 0}))
                 image = csc.convert_image(source_image)
             encoder = enc.Encoder()
             try:
-                encoder.init_context(encoding, w, h, image.get_pixel_format(), typedict({"quality" : 100, "speed" : 0}))
+                encoder.init_context(encoding, w, h, image.get_pixel_format(), typedict({"quality": 100, "speed": 0}))
             except ValueError:
                 print(f"  encoder rejected {w}x{h} {image.get_pixel_format()}")
                 continue
@@ -87,16 +87,16 @@ def main(files):
             print(f"r={r}")
             bdata = getattr(cdata, "data", cdata)
             if envbool("SAVE", False):
-                filename = f"./{index}-{enc.get_type()}.{encoding.replace('/','-')}"
-                with open(filename, "wb") as f:
-                    f.write(bdata)
+                filename = f"./{index}-{enc.get_type()}.{encoding.replace('/', '-')}"
+                with open(filename, "wb") as fsave:
+                    fsave.write(bdata)
             #now decode it back into an RGB picture:
             decoder = avcodec.Decoder()
             decoder.init_context(encoding, w, h, colorspace)
             decoded = decoder.decompress_image(bdata, client_options)
             dformat = decoded.get_pixel_format()
             output = decoded
-            if dformat!="BGRX":
+            if dformat != "BGRX":
                 from xpra.codecs.libyuv.converter import Converter
                 csc = Converter()
                 csc.init_context(w, h, dformat,
@@ -109,6 +109,7 @@ def main(files):
             output_image.save(filename, "PNG")
             print(f"     saved to {filename!r}")
 
+
 if __name__ == '__main__':
-    assert len(sys.argv)>1
+    assert len(sys.argv) > 1
     main(sys.argv[1:])

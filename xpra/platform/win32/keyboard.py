@@ -51,7 +51,7 @@ def x11_layouts_to_win32_hkl() -> dict[str, int]:
     layout_to_hkl: dict[str, int] = {}
     max_items = 32
     try:
-        # noinspection PyTypeChecker
+        # noinspection PyTypeChecker,PyCallingNonCallable
         handle_list = (HANDLE * max_items)()
         count = GetKeyboardLayoutList(max_items, ctypes.byref(handle_list))
         for i in range(count):

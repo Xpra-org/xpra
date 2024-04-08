@@ -19,6 +19,7 @@ except ImportError:
     rectangle, R1, R2, R3, R4, R5 = None, None, None, None, None, None
 
 
+# noinspection PyCallingNonCallable
 class TestRegion(unittest.TestCase):
 
     def test_eq(self):
@@ -99,6 +100,7 @@ def main():
         unittest.main()
     else:
         print("no rectangle class, test skipped")
+
 
 if __name__ == '__main__':
     main()

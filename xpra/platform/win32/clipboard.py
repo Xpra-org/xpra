@@ -268,6 +268,7 @@ def rgb_to_bitmap(img_data) -> HBITMAP:
     memmove(byref(bitmapinfo.bmiHeader), byref(header), sizeof(BITMAPINFOHEADER))
     # noinspection PyTypeChecker
     buftype = c_char * len(rgb_data)
+    # noinspection PyCallingNonCallable
     rgb_buf = buftype()
     rgb_buf.value = rgb_data
     pbuf = cast(byref(rgb_buf), c_void_p)

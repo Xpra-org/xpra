@@ -133,6 +133,7 @@ def EnumPrinters(flags, name=None, level=PRINTER_LEVEL):
         return []
 
     bufsize = int(pcbNeeded.value)
+    # noinspection PyCallingNonCallable
     buf = (BYTE * bufsize)()
     pPrinterEnum = cast(addressof(buf), LPBYTE)
     log("EnumPrinters into buf %s", pPrinterEnum)

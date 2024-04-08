@@ -543,6 +543,7 @@ class GLWindowBackingBase(WindowBackingBase):
         super().close()
 
     def close_gl(self, context):
+        log("close_gl(%s)", context)
         self.free_cuda_context()
         try:
             from OpenGL.GL import glDeleteProgram, glDeleteShader

@@ -18,7 +18,7 @@ ZEROCONF = envbool("XPRA_ZEROCONF", True)
 SHOW_INTERFACE = envbool("XPRA_MDNS_SHOW_INTERFACE", True)
 
 
-def get_listener_class() -> type:
+def get_listener_class() -> type | None:
     from xpra.log import Logger
     log = Logger("mdns")
     log("mdns.get_listener_class() AVAHI=%s, ZEROCONF=%s", AVAHI, ZEROCONF)
