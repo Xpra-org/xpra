@@ -8,7 +8,6 @@
 # pylint: disable=bare-except
 
 import datetime
-import timezone
 from subprocess import Popen, PIPE, STDOUT
 import socket
 import platform
@@ -255,7 +254,7 @@ def record_build_info() -> None:
     source_epoch = os.environ.get("SOURCE_DATE_EPOCH")
     if source_epoch:
         # reproducible builds:
-        build_time = datetime.datetime.fromtimestamp(int(source_epoch), tz=timezone.utc)
+        build_time = datetime.datetime.fromtimestamp(int(source_epoch), tz=datetime.timezone.utc)
         build_date = build_time.date()
     else:
         # win32, macos and older build environments:
