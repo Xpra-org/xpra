@@ -205,7 +205,7 @@ def load_command_to_type() -> dict[str, str]:
     global command_to_type
     if command_to_type is not None:
         return command_to_type
-    command_to_type: dict[str, str] = {}
+    command_to_type = {}
     from xpra.server.menu_provider import get_menu_provider
     xdg_menu = get_menu_provider().get_menu_data(remove_icons=True)
     categories_to_type = load_categories_to_type()
