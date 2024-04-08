@@ -1,16 +1,11 @@
 #!/usr/bin/python3
 
-#pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel
 
 import os
 import sys
+import shlex
 
-def join(args):
-    import shlex
-    #shlex.join() was only added in Python 3.8:
-    if hasattr(shlex, "join"):
-        return shlex.join(args)
-    return ' '.join(shlex.quote(x) for x in args)
 
 def which(pgm):
     path = os.getenv("PATH")
@@ -20,12 +15,14 @@ def which(pgm):
             return p
     return None
 
+
 def usage(msg, exit_code=1):
     if msg:
         sys.stderr.write("%s\n" % msg)
     sys.stderr.write("usage: run_scaled --scale=VALUE application [optionalarguments]\n")
     sys.stderr.write("   ie: run_scaled --scale=2     xterm +ls -fg blue\n")
     sys.exit(exit_code)
+
 
 def parse_scale(scale):
     try:
@@ -43,6 +40,7 @@ def parse_scale(scale):
     if value<0.1 or value>10:
         return usage("scale value %f is out of range" % (value,))
     return value
+
 
 def get_screen_spec():
     #figure out the dpi and vfb size to use,
@@ -67,14 +65,16 @@ def get_screen_spec():
                     dpi = (dpiv(width, screen.get_width_mm()) + dpiv(height, screen.get_height_mm()))//2
     return width, height, dpi
 
+
 xpra_cmd = which("xpra")
-if not xpra_cmd and sys.argv[0].find("run_scaled")>=0:
+if not xpra_cmd and sys.argv[0].find("run_scaled") >= 0:
     xpra_cmd = sys.argv[0].replace("run_scaled", "xpra")
 if not xpra_cmd or not os.path.exists(xpra_cmd):
     usage("cannot find 'xpra' on $PATH")
 
-def get_argv():
-    #default value:
+
+def get_argv() -> list[str]:
+    # default value:
     scale = 2
     command_argv = []
     extra_xpra_args = None
@@ -104,27 +104,28 @@ def get_argv():
     xpra_argv = [
         xpra_cmd,
         "start",
-        "--start-child=%s" % join(command_argv),
+        "--start-child=%s" % shlex.join(command_argv),
         "--attach=yes",
         "--exit-with-children=yes",
         "--desktop-scaling=%s" % scale,
         "--encodings=rgb",
         "--compress=0",
         "--systemd-run=no",
-        ]
+    ]
     if extra_xpra_args:
         xpra_argv += extra_xpra_args
 
     width, height, dpi = get_screen_spec()
-    #if found, prefer Xvfb, as it is faster to startup:
+    # if found, prefer Xvfb, as it is faster to startup:
     xvfb = which("Xvfb")
     if xvfb:
         from xpra.scripts.config import get_Xvfb_command
-        xpra_argv.append("--xvfb=%s" % join(get_Xvfb_command(width, height, dpi*scale)))
-    if width>0 and height>0:
+        xpra_argv.append("--xvfb=%s" % shlex.join(get_Xvfb_command(width, height, dpi*scale)))
+    if width > 0 and height > 0:
         xpra_argv.append("--resize-display=%ix%i" % (width//scale, height//scale))
-    if 10<dpi<1000:
+    if 10 < dpi < 1000:
         xpra_argv.append("--dpi=%i" % (dpi*scale))
     return xpra_argv
+
 
 os.execv(xpra_cmd, get_argv())
