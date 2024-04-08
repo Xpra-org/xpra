@@ -129,7 +129,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
             return
         self.schedule_emit_token()
 
-    def get_contents(self, target: str, got_contents: Callable[[str, str, Any], None], time=0):
+    def get_contents(self, target: str, got_contents: Callable[[str, int, Any], None], time=0):
         log("get_contents(%s, %s, %i) have-token=%s",
             target, got_contents, time, self._have_token)
         if target == "TARGETS":

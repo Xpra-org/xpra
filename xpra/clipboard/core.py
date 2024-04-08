@@ -265,7 +265,7 @@ class ClipboardProxyCore:
 
     # This function is called by the xpra core when the peer has requested the
     # contents of this clipboard:
-    def get_contents(self, target: str, got_contents: Callable[[str, str, Any], None]) -> None:
+    def get_contents(self, target: str, got_contents: Callable[[str, int, Any], None]) -> None:
         pass
 
     def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False) -> None:
