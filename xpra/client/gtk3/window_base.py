@@ -726,6 +726,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if UNDECORATED_TRANSIENT_IS_OR > 0:
             transient_for = metadata.intget("transient-for", -1)
             decorations = metadata.intget("decorations", 0)
+            # noinspection PyChainedComparisons
             if transient_for > 0 and decorations <= 0:
                 if UNDECORATED_TRANSIENT_IS_OR > 1:
                     metalog("forcing POPUP type for window transient-for=%s", transient_for)

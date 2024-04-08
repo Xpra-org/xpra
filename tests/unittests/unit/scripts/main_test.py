@@ -112,10 +112,10 @@ class TestMain(unittest.TestCase):
             try:
                 #silence errors since we're expecting them:
                 from xpra.scripts import main as xpra_main
+                saved_timeout = xpra_main.CONNECT_TIMEOUT
+                saved_werr = xpra_main.werr
                 try:
-                    saved_timeout = xpra_main.CONNECT_TIMEOUT
                     xpra_main.CONNECT_TIMEOUT = 5
-                    saved_werr = xpra_main.werr
                     xpra_main.werr = noop
                     conn = connect_to(d, opts)
                 finally:

@@ -34,15 +34,17 @@ def update_properties(props: dict, filename: str) -> None:
 
 
 def write_props(f, props: dict, prefix="") -> None:
-    def u(v):
+    def u(v) -> bytes:
+        if isinstance(v, bytes):
+            return v
         try:
             v = v.decode()
-        except Exception:
+        except (UnicodeDecodeError, AttributeError):
             v = str(v)
         try:
             return v.encode("utf-8")
-        except UnicodeDecodeError:
-            return v
+        except UnicodeEncodeError:
+            return v.encode("latin1")
 
     def w(v) -> None:
         f.write(u(v))
@@ -58,8 +60,7 @@ def write_props(f, props: dict, prefix="") -> None:
             w(f"{prefix}{fmt(name)}")
         else:
             w(name)
-        value = props[name]
-        w(f"={fmt(value)}\n")
+        w(f"={fmt(props[name])}\n")
 
 
 def save_properties(props: dict, filename: str) -> None:

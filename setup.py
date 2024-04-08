@@ -556,6 +556,7 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
         print(" you should enable at least one of these two video encodings")
 
 if install is None and WIN32:
+    MINGW_PREFIX = os.environ.get("MINGW_PREFIX", "")
     install = MINGW_PREFIX or sys.prefix or "dist"
 if share_xpra is None:
     share_xpra = os.path.join("share", "xpra")

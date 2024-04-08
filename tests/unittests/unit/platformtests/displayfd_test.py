@@ -32,8 +32,8 @@ class DisplayFDTest(unittest.TestCase):
 
     def test_read(self):
         display = ":999"
+        f = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".displayfd-test", delete=False)
         try:
-            f = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".displayfd-test", delete=False)
             f.write((display+"\n").encode())
             f.close()
             fd = os.open(f.name, os.O_RDONLY)

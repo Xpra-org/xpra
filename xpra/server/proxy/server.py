@@ -135,6 +135,7 @@ class ProxyServer(ServerCore):
                         mode = mode | SOCKET_DIR_MODE
                         log.warn(" changing to %s", oct(mode))
                         os.chmod(d, mode)
+                    # noinspection PyChainedComparisons
                     if xpra_group_id >= 0 and stat.st_gid != xpra_group_id:
                         import grp
                         group = grp.getgrgid(stat.st_gid)[0]

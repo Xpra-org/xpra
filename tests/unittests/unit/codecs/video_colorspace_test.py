@@ -35,7 +35,7 @@ def cmpp(p1, p2, tolerance=MAX_DELTA):
         v1 = p1[i]
         v2 = p2[i]
         if abs(v2-v1)>tolerance:
-            return (i, v1, v2)
+            return i, v1, v2
     return None
 
 def maxdelta(p1, p2):
