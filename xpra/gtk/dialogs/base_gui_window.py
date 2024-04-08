@@ -110,7 +110,7 @@ class BaseGUIWindow(Gtk.Window):
 
     def add_text_lines(self, lines, font="Sans 14"):
         text = "\n".join(lines)
-        lbl = label(text, font="Sans 14")
+        lbl = label(text, font=font)
         lbl.set_line_wrap(True)
         lbl.set_use_markup(True)
         self.add_widget(lbl)
