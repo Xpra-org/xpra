@@ -5,11 +5,11 @@ For usage related information, see [clipboard feature](../Features/Clipboard.md)
 
 ## Implementations
 
-| Component         | Link                                                             |
-|-------------------|------------------------------------------------------------------|
+| Component         | Link                                                                  |
+|-------------------|-----------------------------------------------------------------------|
 | client            | [xpra.client.mixins.clipboard](../../xpra/client/mixins/clipboard.py) |
-| client connection | [xpra.server.source.clipboard](../../xpra/server/source/clipboard.py)      |
-| server            | [xpra.server.mixins.clipboard](../../xpra/server/mixins/clipboard.py)      |
+| client connection | [xpra.server.source.clipboard](../../xpra/server/source/clipboard.py) |
+| server            | [xpra.server.mixins.clipboard](../../xpra/server/mixins/clipboard.py) |
 
 
 ## Platforms
@@ -18,12 +18,12 @@ For usage related information, see [clipboard feature](../Features/Clipboard.md)
 used by all the backends.
 It contains common features such as basic configuration, scheduling, filtering, etc.
 
-| Platform | Link                                                                              |
-|----------|-----------------------------------------------------------------------------------|
-| `x11`    | [xpra.x11.gtk_x11.clipboard](../../xpra/x11/gtk_x11/clipboard.py)                 |
-| `win32`  | [xpra.platform.win32.clipboard](../../xpra/platform/win32/clipboard.py)           |
+| Platform | Link                                                                      |
+|----------|---------------------------------------------------------------------------|
+| `x11`    | [xpra.x11.gtk_x11.clipboard](../../xpra/x11/gtk_x11/clipboard.py)         |
+| `win32`  | [xpra.platform.win32.clipboard](../../xpra/platform/win32/clipboard.py)   |
 | `MacOS`  | [xpra.platform.darwin.clipboard](../../xpra/platform/darwin/clipboard.py) |
-| others   | [xpra.gtk_common.gtk_clipboard](../../xpra/gtk/clipboard.py)           |
+| others   | [xpra.gtk_common.gtk_clipboard](../../xpra/gtk/clipboard.py)              |
 
 
 

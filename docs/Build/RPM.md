@@ -4,12 +4,12 @@
 ## Repositories
 You must enable the following repositories to be able to install all the build dependencies:
 
-| Distributions | Dependency                                        | Installation | Notes |
-|---------------|---------------------------------------------------|--------------|-------|
-|RHEL and clones| [EPEL](https://docs.fedoraproject.org/en-US/epel/) |`dnf install epel-release`|use `epel-next-release` on CentOS stream|
-|RHEL and clones| `Power Tools`                                     |`dnf config-manager --set-enabled powertools`|also known as `PowerTools` on some variants / versions|
-|RHEL 9 and clones| `CRB`                                             |`dnf config-manager --set-enabled crb`|
-|All| [rpmfusion](https://rpmfusion.org/)               |[configuration](https://rpmfusion.org/Configuration)|
+| Distributions     | Dependency                                         | Installation                                         | Notes                                                  |
+|-------------------|----------------------------------------------------|------------------------------------------------------|--------------------------------------------------------|
+| RHEL and clones   | [EPEL](https://docs.fedoraproject.org/en-US/epel/) | `dnf install epel-release`                           | use `epel-next-release` on CentOS stream               |
+| RHEL and clones   | `Power Tools`                                      | `dnf config-manager --set-enabled powertools`        | also known as `PowerTools` on some variants / versions |
+| RHEL 9 and clones | `CRB`                                              | `dnf config-manager --set-enabled crb`               |
+| All               | [rpmfusion](https://rpmfusion.org/)                | [configuration](https://rpmfusion.org/Configuration) |
 
 ## Install Build Requirements
 The spec file can be found here:

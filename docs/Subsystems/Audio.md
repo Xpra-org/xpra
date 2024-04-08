@@ -5,11 +5,11 @@ For usage related information, see [audio feature](../Features/Audio.md).
 
 ## Implementations
 
-| Component         | Link                                                             |
-|-------------------|------------------------------------------------------------------|
+| Component         | Link                                                          |
+|-------------------|---------------------------------------------------------------|
 | client            | [xpra.client.mixins.audio](../../xpra/client/mixins/audio.py) |
-| client connection | [xpra.server.source.audio](../../xpra/server/source/audio.py)      |
-| server            | [xpra.server.mixins.audio](../../xpra/server/mixins/audio.py)      |
+| client connection | [xpra.server.source.audio](../../xpra/server/source/audio.py) |
+| server            | [xpra.server.mixins.audio](../../xpra/server/mixins/audio.py) |
 
 ## Common
 
