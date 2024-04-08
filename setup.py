@@ -17,6 +17,7 @@ import os.path
 import subprocess
 from glob import glob
 from time import sleep
+from collections.abc import Sequence
 
 if sys.version_info<(3, 10):
     raise RuntimeError("xpra no longer supports Python versions older than 3.10")
@@ -147,7 +148,6 @@ def check_cython3():
         version = int(cython.__version__.split('.')[0])
     except (ValueError, ImportError):
         print("WARNING: unable to detect Cython version")
-        version = 0
     else:
         if version<3:
             print("*******************************************")
@@ -556,7 +556,7 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
         print(" you should enable at least one of these two video encodings")
 
 if install is None and WIN32:
-    install = os.environ.get("MINGW_PREFIX", sys.prefix or "dist")
+    install = MINGW_PREFIX or sys.prefix or "dist"
 if share_xpra is None:
     share_xpra = os.path.join("share", "xpra")
 
@@ -1052,7 +1052,7 @@ pkgconfig = exec_pkgconfig
 #*******************************************************************************
 
 
-def get_base_conf_dir(install_dir, stripbuildroot=True):
+def get_base_conf_dir(install_dir: str, stripbuildroot=True):
     # in some cases we want to strip the buildroot (to generate paths in the config file)
     # but in other cases we want the buildroot path (when writing out the config files)
     # and in some cases, we don't have the install_dir specified (called from detect_xorg_setup, and that's fine too)
@@ -1108,7 +1108,7 @@ def get_base_conf_dir(install_dir, stripbuildroot=True):
     return dirs
 
 
-def get_conf_dir(install_dir, stripbuildroot=True):
+def get_conf_dir(install_dir: str, stripbuildroot=True):
     dirs = get_base_conf_dir(install_dir, stripbuildroot)
     if "etc" not in dirs:
         dirs.append("etc")
@@ -1219,8 +1219,8 @@ def build_xpra_conf(install_dir):
         'headerbar'             : ["auto", "no"][OSX or WIN32],
     }
 
-    def convert_templates(subdirs):
-        dirname = os.path.join(*(["fs", "etc", "xpra"] + subdirs))
+    def convert_templates(subdirs: Sequence[str]=()):
+        dirname = os.path.join("fs", "etc", "xpra", *subdirs)
         # get conf dir for install, without stripping the build root
         target_dir = os.path.join(get_conf_dir(install_dir, stripbuildroot=False), *subdirs)
         print(f"convert_templates({subdirs}) {dirname=}, {target_dir=}")
@@ -1234,7 +1234,7 @@ def build_xpra_conf(install_dir):
                 continue
             filename = os.path.join(dirname, f)
             if os.path.isdir(filename):
-                convert_templates(subdirs+[f])
+                convert_templates(list(subdirs)+[f])
                 continue
             if not f.endswith(".in"):
                 continue
@@ -1245,7 +1245,7 @@ def build_xpra_conf(install_dir):
             with open(target_file, "w", encoding="latin1") as f_out:
                 config_data = template % SUBS
                 f_out.write(config_data)
-    convert_templates([])
+    convert_templates()
 
 
 #*******************************************************************************
@@ -1396,6 +1396,7 @@ def glob_recurse(srcdir):
 
 
 #*******************************************************************************
+MINGW_PREFIX = ""
 if WIN32:
     MINGW_PREFIX = os.environ.get("MINGW_PREFIX")
     assert MINGW_PREFIX, "you must run this build from a MINGW environment"
