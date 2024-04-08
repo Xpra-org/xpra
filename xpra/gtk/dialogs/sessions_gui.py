@@ -39,6 +39,85 @@ except OSError:
     local_host_name = "localhost"
 
 
+def get_session_info(sockpath):
+    # the lazy way using a subprocess
+    if WIN32:
+        socktype = "named-pipe"
+    else:
+        socktype = "socket"
+    cmd = get_nodock_command() + ["id", f"{socktype}:{sockpath}"]
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout = p.communicate()[0]
+    log("get_sessions_info(%s) returncode(%s)=%s", sockpath, cmd, p.returncode)
+    if p.returncode != 0:
+        return None
+    out = bytestostr(stdout)
+    info = {}
+    for line in out.splitlines():
+        parts = line.split("=", 1)
+        if len(parts) == 2:
+            info[parts[0]] = parts[1]
+    log("get_sessions_info(%s)=%s", sockpath, info)
+    return info
+
+
+def get_uri(password, interface, protocol, name: str, stype: str, domain, host: str, address, port: int, text) -> str:
+    log("get_uri%s", (password, interface, protocol, name, stype, domain, host, address, port, text))
+    dstr = ""
+    tt = typedict(text)
+    display = tt.strget("display")
+    username = tt.strget("username")
+    mode = tt.strget("mode")
+    if not mode:
+        # guess the mode from the service name,
+        # ie: "localhost.localdomain :2 (wss)" -> "wss"
+        # ie: "localhost.localdomain :2 (ssh-2)" -> "ssh"
+        pos = name.rfind("(")
+        if name.endswith(")") and pos > 0:
+            mode = name[pos + 1:-1].split("-")[0]
+            if mode not in ("tcp", "ws", "wss", "ssl", "ssh"):
+                return ""
+        else:
+            mode = "tcp"
+    if display and display.startswith(":"):
+        dstr = display[1:]
+    # append interface to IPv6 host URI for link local addresses ("fe80:"):
+    if interface and address.lower().startswith("fe80:"):
+        # ie: "fe80::c1:ac45:7351:ea69%eth1"
+        try:
+            address += "%" + socket.if_indextoname(interface)
+        except OSError:
+            pass
+    uri = f"{mode}://"
+    if username:
+        if password:
+            uri += f"{username}:{password}@{address}"
+        else:
+            uri += f"{username}@{address}"
+    else:
+        uri += address
+    if port > 0:
+        if DEFAULT_PORTS.get(mode, 0) != port:  # NOSONAR @SuppressWarnings("python:S1066")
+            uri += f":{port}"
+    if protocol not in ("socket", "named-pipe"):
+        uri += "/"
+        if dstr:
+            uri += "%s" % dstr
+    return uri
+
+
+def get_platform_icon_name(platform):
+    for p, i in {
+        "win32": "win32",
+        "darwin": "osx",
+        "linux": "linux",
+        "freebsd": "freebsd",
+    }.items():
+        if platform.startswith(p):
+            return i
+    return None
+
+
 class SessionsGUI(Gtk.Window):
 
     def __init__(self, options, title="Xpra Session Browser"):
@@ -110,7 +189,7 @@ class SessionsGUI(Gtk.Window):
         try:
             from xpra.platform.info import get_username
             username = get_username()
-        except Exception:
+        except OSError:
             username = ""
         self.local_info_cache = {}
         self.dotxpra = DotXpra(options.socket_dir, options.socket_dirs, username)
@@ -172,7 +251,7 @@ class SessionsGUI(Gtk.Window):
                 if not info:
                     # try to query it
                     try:
-                        info = self.get_session_info(sockpath)
+                        info = get_session_info(sockpath)
                         if not info:
                             log(" no data for '%s'", sockpath)
                             continue
@@ -223,27 +302,6 @@ class SessionsGUI(Gtk.Window):
         self.local_info_cache = info_cache
         return changed
 
-    def get_session_info(self, sockpath):
-        # the lazy way using a subprocess
-        if WIN32:
-            socktype = "named-pipe"
-        else:
-            socktype = "socket"
-        cmd = get_nodock_command() + ["id", f"{socktype}:{sockpath}"]
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout = p.communicate()[0]
-        log("get_sessions_info(%s) returncode(%s)=%s", sockpath, cmd, p.returncode)
-        if p.returncode != 0:
-            return None
-        out = bytestostr(stdout)
-        info = {}
-        for line in out.splitlines():
-            parts = line.split("=", 1)
-            if len(parts) == 2:
-                info[parts[0]] = parts[1]
-        log("get_sessions_info(%s)=%s", sockpath, info)
-        return info
-
     def populate_table(self):
         log("populate_table: %i records", len(self.records))
         if self.contents:
@@ -273,7 +331,6 @@ class SessionsGUI(Gtk.Window):
         session_names = {}
         address = ""
         port = 0
-        display = ""
         row = 2
         for i, record in enumerate(self.records):
             interface, protocol, name, stype, domain, host, address, port, text = record
@@ -322,7 +379,7 @@ class SessionsGUI(Gtk.Window):
             if uuid != title:
                 host_label.set_tooltip_text(uuid)
             # try to use an icon for the platform:
-            platform_icon_name = self.get_platform_icon_name(platform)
+            platform_icon_name = get_platform_icon_name(platform)
             pwidget = None
             if platform_icon_name:
                 pwidget = scaled_image(get_icon_pixbuf("%s.png" % platform_icon_name), 28)
@@ -339,50 +396,6 @@ class SessionsGUI(Gtk.Window):
         grid.show_all()
         self.contents = grid
         self.vbox.add(grid)
-
-    def get_uri(self, password, interface, protocol, name: str, stype: str, domain, host: str,
-                address, port: int, text) -> str:
-        dstr = ""
-        tt = typedict(text)
-        display = tt.strget("display")
-        username = tt.strget("username")
-        mode = tt.strget("mode")
-        if not mode:
-            # guess the mode from the service name,
-            # ie: "localhost.localdomain :2 (wss)" -> "wss"
-            # ie: "localhost.localdomain :2 (ssh-2)" -> "ssh"
-            pos = name.rfind("(")
-            if name.endswith(")") and pos > 0:
-                mode = name[pos + 1:-1].split("-")[0]
-                if mode not in ("tcp", "ws", "wss", "ssl", "ssh"):
-                    return ""
-            else:
-                mode = "tcp"
-        if display and display.startswith(":"):
-            dstr = display[1:]
-        # append interface to IPv6 host URI for link local addresses ("fe80:"):
-        if interface and address.lower().startswith("fe80:"):
-            # ie: "fe80::c1:ac45:7351:ea69%eth1"
-            try:
-                address += "%" + socket.if_indextoname(interface)
-            except OSError:
-                pass
-        uri = f"{mode}://"
-        if username:
-            if password:
-                uri += f"{username}:{password}@{address}"
-            else:
-                uri += f"{username}@{address}"
-        else:
-            uri += address
-        if port > 0:
-            if DEFAULT_PORTS.get(mode, 0) != port:  # NOSONAR @SuppressWarnings("python:S1066")
-                uri += f":{port}"
-        if protocol not in ("socket", "named-pipe"):
-            uri += "/"
-            if dstr:
-                uri += "%s" % dstr
-        return uri
 
     def attach(self, key, uri):
         self.warning.set_text("")
@@ -420,7 +433,7 @@ class SessionsGUI(Gtk.Window):
     def browser_open(self, rec):
         import webbrowser
         password = self.password_entry.get_text()
-        url = self.get_uri(password, *rec)
+        url = get_uri(password, *rec)
         if url.startswith("wss"):
             url = "https" + url[3:]
         else:
@@ -453,7 +466,7 @@ class SessionsGUI(Gtk.Window):
         if len(recs) == 1:
             # single record, single uri:
             rec = recs[0]
-            uri = self.get_uri(None, *rec)
+            uri = get_uri(None, *rec)
             bopen.set_sensitive(uri.startswith("ws"))
 
             def browser_open(*_args):
@@ -464,7 +477,7 @@ class SessionsGUI(Gtk.Window):
 
             def clicked(*_args):
                 password = self.password_entry.get_text()
-                uri = self.get_uri(password, *rec)
+                uri = get_uri(password, *rec)
                 self.attach(key, uri)
 
             btn = imagebutton("Connect", icon, clicked_callback=clicked)
@@ -492,7 +505,7 @@ class SessionsGUI(Gtk.Window):
         srecs = sorted(recs, key=cmp_key)
         has_ws = False
         for rec in srecs:
-            uri = self.get_uri(None, *rec)
+            uri = get_uri(None, *rec)
             uri_menu.append_text(uri)
             d[uri] = rec
             if uri.startswith("ws"):
@@ -502,7 +515,7 @@ class SessionsGUI(Gtk.Window):
             uri = uri_menu.get_active_text()
             rec = d[uri]
             password = self.password_entry.get_text()
-            uri = self.get_uri(password, *rec)
+            uri = get_uri(password, *rec)
             self.attach(key, uri)
 
         uri_menu.set_active(0)
@@ -529,17 +542,6 @@ class SessionsGUI(Gtk.Window):
 
         bopen.connect("clicked", browser_open_option)
         return uri_menu, btn, bopen
-
-    def get_platform_icon_name(self, platform):
-        for p, i in {
-            "win32": "win32",
-            "darwin": "osx",
-            "linux": "linux",
-            "freebsd": "freebsd",
-        }.items():
-            if platform.startswith(p):
-                return i
-        return None
 
 
 def do_main(opts):
