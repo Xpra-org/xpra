@@ -602,6 +602,7 @@ class SIGPIPEStreamHandler(logging.StreamHandler):
             pass
 
     def emit(self, record):
+        # noinspection PyBroadException
         try:
             msg = self.format(record)
             stream = self.stream

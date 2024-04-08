@@ -185,6 +185,7 @@ class BaseGUIWindow(Gtk.Window):
     def add_widget(self, widget) -> None:
         self.vbox.add(widget)
 
+    # noinspection PyMethodMayBeStatic
     def focus_in(self, window, event) -> None:
         log("focus_in(%s, %s)", window, event)
 
@@ -206,6 +207,7 @@ class BaseGUIWindow(Gtk.Window):
         log("quit%s", args)
         self.do_quit()
 
+    # noinspection PyMethodMayBeStatic
     def do_quit(self) -> None:
         log("do_quit()")
         Gtk.main_quit()

@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pylint: disable=line-too-long
+# pylint: disable=line-too-long
 
 import unittest
 
@@ -13,7 +13,8 @@ from xpra.net.digest import (
     get_digests, get_digest_module,
     choose_digest, gendigest, verify_digest,
     get_salt,
-    )
+)
+
 
 class TestDigest(unittest.TestCase):
 
@@ -28,6 +29,7 @@ class TestDigest(unittest.TestCase):
             except TypeError:
                 pass
 
+    # noinspection PyTypeChecker
     def test_all_digests(self):
         for digest in get_digests():
             if digest.startswith("hmac"):
@@ -37,6 +39,7 @@ class TestDigest(unittest.TestCase):
             password = "secret"
             d = gendigest(digest, password, salt)
             assert d is not None
+
             def nvd(password=password, salt=salt, response=d):
                 try:
                     r = verify_digest(digest, password, salt, response)
@@ -46,7 +49,7 @@ class TestDigest(unittest.TestCase):
             nvd(password=None)
             nvd(salt=None)
             nvd(response=None)
-            #truncated:
+            # truncated:
             nvd(password=password[1:])
             nvd(salt=salt[1:])
             nvd(response=d[1:])
@@ -61,6 +64,7 @@ class TestDigest(unittest.TestCase):
 
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()
