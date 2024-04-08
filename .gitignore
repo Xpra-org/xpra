@@ -106,7 +106,6 @@ tests/unittests/test-file*
 /packaging/MSWindows/service/Xpra-Service.exe
 
 # Cython files:
-*.html
 /xpra/util/*.c
 /xpra/buffers/new_buffers.c
 /xpra/buffers/membuf.c
@@ -138,7 +137,6 @@ tests/unittests/test-file*
 /xpra/scripts/*.c
 /xpra/server/*/*.c
 /xpra/server/*.c
-/xpra/util/*.c
 /xpra/x11/gtk3/bindings.c
 /xpra/x11/gtk3/display_source.c
 /xpra/x11/gtk3/gdk_display_util.c
