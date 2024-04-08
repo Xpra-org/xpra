@@ -215,7 +215,7 @@ def load_command_to_type():
                                         ctype = ct
                                         break
                             if ctype:
-                                cmd = os.path.basename(command.split(" ")[0]).encode()
+                                cmd = os.path.basename(command.split(" ")[0])
                                 if cmd:
                                     command_to_type[cmd] = ctype
                                     break
