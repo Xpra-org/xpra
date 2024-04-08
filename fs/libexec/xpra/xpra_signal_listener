@@ -26,7 +26,7 @@ def addsignalhandler(signame: str, callback: Callable):
     if not sigval:
         return
 
-    def scb(*args):
+    def scb(*_args):
         callback(signame)
     signal.signal(sigval, scb)
 

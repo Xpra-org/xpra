@@ -33,20 +33,25 @@
 #
 
 
-import sys, os, syslog
-import subprocess, traceback
+import sys
+import os
+import syslog
+import traceback
+import subprocess
 from urllib.parse import urlparse, parse_qs
 
 
 __version__ = "6.0"
 
 
-#Writes a syslog entry (msg) at the default facility:
+# Writes a syslog entry (msg) at the default facility:
 def debug(msg):
     syslog.syslog(syslog.LOG_DEBUG, msg)
 
+
 def info(msg):
     syslog.syslog(syslog.LOG_INFO, msg)
+
 
 def err(msg):
     syslog.syslog(syslog.LOG_ERR, msg)
@@ -54,7 +59,11 @@ def err(msg):
 
 def noop(*_args):
     pass
+
+
 write_back = noop
+
+
 def init_write_back_fn():
     from ctypes.util import find_library
     soname = find_library("cups")
@@ -75,6 +84,7 @@ def init_write_back_fn():
     from ctypes import c_size_t, c_char_p, c_double
     cupsBackChannelWrite.argtypes = [c_char_p, c_size_t, c_double]
     cupsBackChannelWrite.restype = c_size_t
+
     def _write_back(msg):
         bmsg = msg.encode()
         r = cupsBackChannelWrite(bmsg, len(bmsg), 1.0)
@@ -94,13 +104,14 @@ def exec_command(command, env):
         info("stderr=%s" % err)
     return proc.returncode
 
+
 def xpra_print(socket_path, socket_dir, password_file, encryption, encryption_keyfile,
-                display, filename, mimetype, source, title, printer, no_copies, print_options):
+               display, filename, mimetype, source, title, printer, no_copies, print_options):
     if socket_path:
-        #use direct connection to a given socket path:
+        # use direct connection to a given socket path:
         command = ["xpra", "print", "socket:%s" % socket_path]
     else:
-        #use the display and hope we can find its corresponding socket:
+        # use the display and hope we can find its corresponding socket:
         command = ["xpra", "print", display]
         if socket_dir:
             command.append("--socket-dir=%s" % socket_dir)
@@ -110,8 +121,8 @@ def xpra_print(socket_path, socket_dir, password_file, encryption, encryption_ke
     if password_file:
         command += ["--password-file=%s" % password_file]
     command += [filename, mimetype, source, title, printer, no_copies, print_options]
-    #in this case, running as root cannot be avoided, so skip the warning:
-    #(using "su" causes even more problems)
+    # in this case, running as root cannot be avoided, so skip the warning:
+    # (using "su" causes even more problems)
     env = os.environ.copy()
     env["XPRA_NO_ROOT_WARNING"] = "1"
     write_back("INFO: contacting xpra server")
@@ -148,7 +159,7 @@ def do_main():
     info("version %s, username: %s, title: %s, filename: %s, job_id: %s" % (__version__, username, title, filename, job_id))
     try:
         info("uid=%s, gid=%s" % (os.getresuid(), os.getresgid()))
-    except:
+    except Exception:
         #osx doesn't have getresuid or getresgid
         pass
 
@@ -157,11 +168,12 @@ def do_main():
     parsed_url = urlparse(dev_uri)
     attributes = parse_qs(parsed_url.query)
     info("parsed attributes=%s" % attributes)
+
     def aget(k, default_value=""):
-        v =  attributes.get(k)
+        v = attributes.get(k)
         if v is None:
             return default_value
-        assert len(v)==1
+        assert len(v) == 1
         return v[0]
 
     source = aget("source")
@@ -181,7 +193,7 @@ def do_main():
     info("xpra display: %s, socket-path: %s" % (display, socket_path))
 
     return xpra_print(socket_path, socket_dir, password_file, encryption, encryption_keyfile,
-                    display, filename, mimetype, source, title, printer, no_copies, print_options,)
+                      display, filename, mimetype, source, title, printer, no_copies, print_options)
 
 
 def main():
