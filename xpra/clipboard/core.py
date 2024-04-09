@@ -729,7 +729,7 @@ class ClipboardProtocolHelperCore:
         log("process clipboard contents none")
         request_id = packet[1]
         assert isinstance(request_id, int)
-        self._clipboard_got_contents(request_id, "", 0, b"")
+        self._clipboard_got_contents(request_id, "", 8, b"")
 
     def _clipboard_got_contents(self, request_id: int, dtype: str, dformat: int, data) -> None:
         raise NotImplementedError()

@@ -1140,7 +1140,8 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     def XChangeProperty(self, Window xwindow, property, dtype, int dformat, data):
         "Set a property on a window."
         self.context_check("XChangeProperty")
-        assert dformat in (8, 16, 32), "invalid format for property: %s" % dformat
+        if dformat not in (8, 16, 32):
+            raise ValueError(f"invalid format for property {property}: {dformat}")
         cdef unsigned char nbytes = dformat//8
         if dformat==32:
             nbytes = sizeof(long)
