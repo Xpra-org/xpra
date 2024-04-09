@@ -138,7 +138,7 @@ class ClientWindowBase(ClientWidgetBase):
         #ensure we clear reference to other windows:
         self.group_leader = None
         self._override_redirect_windows = []
-        self._metadata = {}
+        self._metadata = typedict()
         if self._backing:
             self._backing.close()
             self._backing = None
