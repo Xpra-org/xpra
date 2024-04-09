@@ -221,7 +221,7 @@ class ClientWindowBase(ClientWidgetBase):
     def destroy(self) -> None:
         #ensure we clear reference to other windows:
         self.group_leader = None
-        self._metadata = {}
+        self._metadata = typedict()
         if self._backing:
             self._backing.close()
             self._backing = None
