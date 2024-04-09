@@ -9,7 +9,7 @@ import os.path
 from collections import OrderedDict
 
 from xpra.util import ellipsizer
-from xpra.os_util import load_binary_file, PYTHON2, OSX, POSIX, LINUX
+from xpra.os_util import load_binary_file, PYTHON2, OSX, POSIX, LINUX, bytestostr
 from xpra.platform.paths import get_app_dir, get_user_conf_dirs
 from xpra.log import Logger
 
@@ -134,6 +134,8 @@ def guess_content_type_from_defs(window):
         if not prop_value and prop_name=="command":
             pid = getprop(window, "pid")
             prop_value = get_proc_cmdline(pid)
+        if not prop_value:
+            return None
         #some properties return lists of values,
         #in which case we try to match any of them:
         log("guess_content_type_from_defs(%s) prop(%s)=%s", window, prop_name, prop_value)
@@ -143,7 +145,7 @@ def guess_content_type_from_defs(window):
             values = [prop_value]
         for value in values:
             for regex, match_data in defs.items():
-                if regex.search(str(value)):
+                if regex.search(bytestostr(value)):
                     regex_str, content_type = match_data
                     log("guess_content_type(%s) found match: property=%s, regex=%s, content-type=%s", window, prop_name, regex_str, content_type)
                     return content_type
@@ -219,7 +221,7 @@ def load_command_to_type():
                                         ctype = ct
                                         break
                             if ctype:
-                                cmd = os.path.basename(command.split(" ")[0]).encode()
+                                cmd = os.path.basename(command.split(" ")[0])
                                 if cmd:
                                     command_to_type[cmd] = ctype
                                     break
@@ -234,6 +236,7 @@ def guess_content_type_from_command(window):
             command = get_proc_cmdline(pid)
         log("guess_content_type_from_command(%s) command=%s", window, command)
         if command:
+            command = bytestostr(command)
             ctt = load_command_to_type()
             cmd = os.path.basename(command)
             ctype = ctt.get(cmd)
