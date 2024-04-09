@@ -27,6 +27,9 @@
 # superfast connections to the X server, everything running on fast
 # computers... does being this careful to avoid sync's actually matter?)
 
+from typing import Any
+from collections.abc import Callable
+
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.util.thread import is_main_thread
@@ -94,7 +97,7 @@ class _ErrorManager:
     def __init__(self):
         self.depth = 0
 
-    def Xenter(self):
+    def Xenter(self) -> None:
         assert self.depth >= 0
         verify_main_thread()
         Gdk.error_trap_push()
@@ -104,7 +107,7 @@ class _ErrorManager:
             log("Xenter", backtrace=True)
         self.depth += 1
 
-    def Xexit(self, need_sync=True):
+    def Xexit(self, need_sync=True) -> None:
         assert self.depth >= 0
         self.depth -= 1
         if XPRA_LOG_SYNC:
@@ -116,13 +119,13 @@ class _ErrorManager:
         if error:
             raise XError(error)
 
-    def safe_x_exit(self):
+    def safe_x_exit(self) -> None:
         try:
             self.Xexit()
         except XError as e:
             log(f"Warning: '{e}' detected while already in unwind; discarding")
 
-    def _call(self, need_sync, fun, args, kwargs):
+    def _call(self, need_sync: bool, fun: Callable, args: tuple, kwargs: dict) -> Any:
         # Goal: call the function.  In all conditions, call _exit exactly once
         # on the way out.  However, if we are exiting because of an exception,
         # then probably that exception is more informative than any XError
@@ -142,10 +145,10 @@ class _ErrorManager:
         self.Xexit(need_sync)
         return value
 
-    def call_unsynced(self, fun, *args, **kwargs):
+    def call_unsynced(self, fun: Callable, *args, **kwargs) -> Any:
         return self._call(False, fun, args, kwargs)
 
-    def call_synced(self, fun, *args, **kwargs):
+    def call_synced(self, fun: Callable, *args, **kwargs) -> Any:
         return self._call(True, fun, args, kwargs)
 
     if XPRA_SYNCHRONIZE:
@@ -153,22 +156,20 @@ class _ErrorManager:
     else:
         call = call_unsynced
 
-    def swallow_unsynced(self, fun, *args, **kwargs):
+    def swallow_unsynced(self, fun: Callable, *args, **kwargs) -> bool:
         try:
             self.call_unsynced(fun, *args, **kwargs)
             return True
         except XError:
-            log("Ignoring X error on %s",
-                fun, exc_info=True)
+            log("Ignoring X error on %s", fun, exc_info=True)
             return False
 
-    def swallow_synced(self, fun, *args, **kwargs):
+    def swallow_synced(self, fun: Callable, *args, **kwargs) -> bool:
         try:
             self.call_synced(fun, *args, **kwargs)
             return True
         except XError:
-            log("Ignoring X error on %s",
-                fun, exc_info=True)
+            log("Ignoring X error on %s", fun, exc_info=True)
             return False
 
     if XPRA_SYNCHRONIZE:
@@ -176,7 +177,7 @@ class _ErrorManager:
     else:
         swallow = swallow_unsynced
 
-    def assert_out(self):
+    def assert_out(self) -> None:
         assert self.depth == 0
 
 
@@ -236,7 +237,7 @@ class XLogContext:
 xlog = XLogContext()
 
 
-def verify_sync(*args):
+def verify_sync(*args) -> None:
     if trap.depth <= 0:
         log.error("Error: unmanaged X11 context", backtrace=True)
         if args:
