@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2014-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2024 Antoine Martin <antoine@xpra.org>
 
 #runs all the files in "unit/" that end in "test.py"
 
 import sys
 import time
+import shutil
 import os.path
 import subprocess
 
+COVERAGE = os.environ.get("XPRA_TEST_COVERAGE", "1") == "1"
 
-COVERAGE = os.environ.get("XPRA_TEST_COVERAGE", "1")=="1"
 
 def getargs():
     from argparse import ArgumentParser
@@ -21,6 +22,7 @@ def getargs():
     P.add_argument('test', nargs='*', default=[])
     return P
 
+
 def main(args):
     if COVERAGE:
         # pylint: disable=import-outside-toplevel
@@ -30,18 +32,9 @@ def main(args):
         xpra_mod_dir = os.environ.get("XPRA_MODULE_DIR") or os.path.dirname(xpra.__file__)
         run_cmd = ["coverage", "run", "--parallel-mode", "--include=%s/*" % xpra_mod_dir]
         #make sure we continue to use coverage to run sub-commands:
-        def which(command):
-            try:
-                from shutil import which as find_executable
-            except ImportError:
-                from distutils.spawn import find_executable  # pylint: disable=deprecated-module
-            try:
-                return find_executable(command)
-            except Exception:
-                return command
-        xpra_cmd = os.environ.get("XPRA_COMMAND", which("xpra")) or "xpra"
-        if xpra_cmd.find("coverage")<0:
-            os.environ["XPRA_COMMAND"] = " ".join(run_cmd+[xpra_cmd])
+        xpra_cmd = os.environ.get("XPRA_COMMAND", shutil.which("xpra")) or "xpra"
+        if xpra_cmd.find("coverage") < 0:
+            os.environ["XPRA_COMMAND"] = " ".join(run_cmd + [xpra_cmd])
     else:
         run_cmd = [os.environ.get("PYTHON", "python3")]
 
@@ -54,10 +47,12 @@ def main(args):
     #ie: unittests_dir = "/path/to/Xpra/trunk/src/unittests"
     unittests_dir = os.path.dirname(unit_dir)
     sys.path.append(unittests_dir)
+
     #now look for tests to run
     def write(msg):
         sys.stdout.write(f"{msg}\n")
         sys.stdout.flush()
+
     def run_file(p):
         #ie: "~/projects/Xpra/trunk/src/tests/unit/version_util_test.py"
         tfile = os.path.join(unittests_dir, p)
@@ -65,7 +60,7 @@ def main(args):
             write(f"invalid file skipped: {p}  Expect {unittests_dir}/.../*test.py")
             return 0
         #ie: "unit.version_util_test"
-        name = p[len(unittests_dir)+1:-3].replace(os.path.sep, ".")
+        name = p[len(unittests_dir) + 1:-3].replace(os.path.sep, ".")
         if p in skip_slow or name in skip_slow:
             write(f"skipped slow test as requested: {p}")
             return 0
@@ -78,15 +73,16 @@ def main(args):
         except OSError as e:
             write(f"failed to execute {p} using {cmd}: {e}")
             v = 1
-        if v!=0 and (p in skip_fail or name in skip_fail):
+        if v != 0 and (p in skip_fail or name in skip_fail):
             write(f"ignore failure {v} as requested: {p}")
             v = 0
-        elif v!=0:
+        elif v != 0:
             write(f"failure on {name}, exit code={v}")
         # else: pass
         T1 = time.monotonic()
-        write(f"ran {name} in {T1-T0:.2f} seconds\n")
+        write(f"ran {name} in {T1 - T0:.2f} seconds\n")
         return v
+
     def add_recursive(d):
         paths = os.listdir(d)
         ret = 0
@@ -98,9 +94,10 @@ def main(args):
             elif os.path.isdir(p):
                 fp = os.path.join(d, p)
                 v = add_recursive(fp)
-            if v !=0:
+            if v != 0:
                 ret = v
         return ret
+
     write("************************************************************")
     write(f"running all the tests in {paths}")
     ret = 0
@@ -109,9 +106,10 @@ def main(args):
             r = add_recursive(x)
         else:
             r = run_file(x)
-        if r!=0:
+        if r != 0:
             ret = r
     return ret
+
 
 if __name__ == '__main__':
     sys.exit(main(getargs().parse_args()))

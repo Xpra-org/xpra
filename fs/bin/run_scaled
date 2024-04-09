@@ -5,15 +5,7 @@
 import os
 import sys
 import shlex
-
-
-def which(pgm):
-    path = os.getenv("PATH")
-    for p in path.split(os.path.pathsep):
-        p = os.path.join(p, pgm)
-        if os.path.exists(p) and os.access(p, os.X_OK):
-            return p
-    return None
+from shutil import which
 
 
 def usage(msg, exit_code=1):
@@ -66,7 +58,7 @@ def get_screen_spec():
     return width, height, dpi
 
 
-xpra_cmd = which("xpra")
+xpra_cmd = which("xpra") or ""
 if not xpra_cmd and sys.argv[0].find("run_scaled") >= 0:
     xpra_cmd = sys.argv[0].replace("run_scaled", "xpra")
 if not xpra_cmd or not os.path.exists(xpra_cmd):
@@ -117,7 +109,7 @@ def get_argv() -> list[str]:
 
     width, height, dpi = get_screen_spec()
     # if found, prefer Xvfb, as it is faster to startup:
-    xvfb = which("Xvfb")
+    xvfb = which("Xvfb") or ""
     if xvfb:
         from xpra.scripts.config import get_Xvfb_command
         xpra_argv.append("--xvfb=%s" % shlex.join(get_Xvfb_command(width, height, dpi*scale)))

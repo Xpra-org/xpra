@@ -10,7 +10,7 @@ import stat
 import sys
 from subprocess import PIPE, Popen
 from tempfile import NamedTemporaryFile
-from typing import Callable, Any
+from typing import Any
 
 from xpra.common import noerr
 from xpra.os_util import POSIX
@@ -290,23 +290,10 @@ def find_in_PATH(command: str) -> str | None:
     return None
 
 
-def get_which_impl() -> Callable[[str], str]:
+def which(command: str) -> str:
     try:
         from shutil import which
-        return which
-    except ImportError:
-        pass
-    try:
-        from distutils.spawn import find_executable  # pylint: disable=deprecated-module
-        return find_executable
-    except ImportError:
-        return find_in_PATH
-
-
-def which(command: str) -> str:
-    find_executable = get_which_impl()
-    try:
-        return find_executable(command) or ""
+        return which(command) or ""
     except OSError:
         get_util_logger().debug(f"find_executable({command})", exc_info=True)
         return ""
