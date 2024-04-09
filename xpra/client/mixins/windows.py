@@ -31,7 +31,7 @@ from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.thread import start_thread
 from xpra.util.str_fn import std, bytestostr, memoryview_to_bytes
 from xpra.os_util import OSX, POSIX, gi_import
-from xpra.util.system import is_Ubuntu
+from xpra.util.system import is_Ubuntu, is_Wayland
 from xpra.util.objects import typedict, make_instance
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool, first_time
@@ -865,8 +865,32 @@ class WindowClient(StubClientMixin):
                 wid, override_redirect, packet[2:6], (wx, wy, ww, wh), (bw, bh))
         return self.make_new_window(wid, wx, wy, ww, wh, bw, bh, metadata, override_redirect, client_properties)
 
+    def _find_pid_focused_window(self, pid: int, OR=False) -> int:
+        for twid, twin in self._id_to_window.items():
+            if twin._override_redirect != OR:
+                continue
+            if twin._metadata.intget("pid", -1) == pid:
+                if OR or twid == self._focused:
+                    return twid
+        return 0
+
+    def patch_OR_popup_transient_for(self, metadata: typedict):
+        pid = metadata.intget("pid", 0)
+        twid = metadata.intget("transient-for", 0)
+        if is_Wayland():
+            # if this is a sub-popup (ie: a submenu),
+            # then GTK-Wayland refuses to show it unless we set transient-for
+            # to point to the parent popup.
+            # Even if under X11, `WM_TRANSIENT_FOR` points to the parent / top-level window...
+            twid = self._find_pid_focused_window(pid, True)
+        # try to ensure popup windows have a transient-for:
+        if not twid:
+            twid = self._find_pid_focused_window(pid)
+        if twid:
+            metadata["transient-for"] = twid
+
     def make_new_window(self, wid: int, wx: int, wy: int, ww: int, wh: int, bw: int, bh: int,
-                        metadata, override_redirect: bool, client_properties):
+                        metadata: typedict, override_redirect: bool, client_properties):
         client_window_classes = self.get_client_window_classes(ww, wh, metadata, override_redirect)
         group_leader_window = self.get_group_leader(wid, metadata, override_redirect)
         # workaround for "popup" OR windows without a transient-for (like: google chrome popups):
@@ -875,18 +899,8 @@ class WindowClient(StubClientMixin):
         # if possible, choosing the currently focused window (if there is one..)
         pid = metadata.intget("pid", 0)
         watcher_pid = self.assign_signal_watcher_pid(wid, pid, metadata.strget("title"))
-        if override_redirect and pid > 0 and metadata.intget("transient-for", 0) == 0 and metadata.strget(
-                "role") == "popup":
-            tfor = None
-            twid = 0
-            for twid, twin in self._id_to_window.items():
-                if not twin._override_redirect and twin._metadata.intget("pid", -1) == pid:
-                    tfor = twin
-                    if twid == self._focused:
-                        break
-            if tfor:
-                log("forcing transient for=%s for new window %s", twid, wid)
-                metadata["transient-for"] = twid
+        if override_redirect and metadata.strget("role").lower() == "popup" and pid:
+            self.patch_OR_popup_transient_for(metadata)
         border = None
         if self.border:
             border = self.border.clone()
