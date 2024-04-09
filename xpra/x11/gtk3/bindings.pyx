@@ -138,7 +138,7 @@ cdef extern from "gtk-3.0/gdk/gdktypes.h":
 
 # Basic utilities:
 
-def get_pywindow(Window xwindow) -> GdkX11.X11Window:
+def get_pywindow(Window xwindow) -> GdkX11.X11Window | None:
     if xwindow==0:
         return None
     display = Gdk.get_default_root_window().get_display()
