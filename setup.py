@@ -80,8 +80,8 @@ print(" ".join(sys.argv))
 #
 data_files = []
 modules = []
-packages = []       # used by py2app
-excludes = []       # only used by cx_freeze on win32
+packages = []       # used by `py2app`
+excludes = []       # only used by `cx_Freeze` on win32
 ext_modules = []
 cmdclass = {}
 scripts = []
@@ -1821,7 +1821,7 @@ if WIN32:
         "mmap",
         "comtypes"      # used by webcam and netdev_query
     ]
-    # this is generated at runtime
+    # this is generated at runtime,
     # but we still have to remove the empty directory by hand
     # afterwards because cx_freeze does weird things (..)
     remove_packages("comtypes.gen")
@@ -1847,7 +1847,7 @@ if WIN32:
     # add subset of PyOpenGL modules (only when installing):
     if opengl_ENABLED and "install_exe" in sys.argv:
         # for this hack to work, you must add "." to the sys.path
-        # so python can load OpenGL from the install directory
+        # so python can load OpenGL from the installation directory
         #(further complicated by the fact that "." is the "frozen" path...)
         # but we re-add those two directories to the library.zip as part of the build script
         import OpenGL
@@ -1924,8 +1924,8 @@ else:
         add_data_files(f"share/{icons_dir}", glob("fs/share/icons/*.png"))
         add_data_files("share/metainfo",      ["fs/share/metainfo/xpra.appdata.xml"])
 
-    # here, we override build and install so we can
-    # generate our /etc/xpra/xpra.conf
+    # here, we override build and install,
+    # so we can generate our `/etc/xpra/xpra.conf`:
     class build_override(build):
         def run(self):
             build.run(self)
@@ -2116,7 +2116,7 @@ else:
         import py2app    #@UnresolvedImport
         assert py2app is not None
 
-        # don't use py_modules or scripts with py2app, and no cython:
+        # don't use py_modules or scripts with `py2app`, and no cython:
         del setup_options["py_modules"]
         scripts = []
 
@@ -2142,7 +2142,7 @@ else:
             "CFBundleGetInfoString" : f"{XPRA_VERSION}-{REVISION} (c) 2012-2022 https://xpra.org/",
             "CFBundleIdentifier"            : "org.xpra.xpra",
         }
-        # Note: despite our best efforts, py2app will not copy all the modules we need
+        # Note: despite our best efforts, `py2app` will not copy all the modules we need
         # so the make-app.sh script still has to hack around this problem.
         add_modules(*external_includes)
         py2app_options = {
@@ -2218,7 +2218,7 @@ if cython_ENABLED:
     add_packages("xpra.buffers")
     buffers_pkgconfig = pkgconfig(optimize=3)
     import platform
-    # this may well be sub-optimal:
+    # this may well be suboptimal:
     extra_compile_args = "-mfpmath=387" if platform.machine() == "i386" else None
     tace(cython_ENABLED, "xpra.buffers.membuf,xpra/buffers/memalign.c", optimize=3,
          extra_compile_args=extra_compile_args)
