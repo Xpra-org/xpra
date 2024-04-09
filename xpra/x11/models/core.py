@@ -25,7 +25,7 @@ from xpra.x11.bindings.send_wm import send_wm_delete_window
 from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.gtk_x11.composite import CompositeHelper
 from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del, prop_type_get, PYTHON_TYPES
-from xpra.x11.gtk3.bindings import add_event_receiver, remove_event_receiver
+from xpra.x11.gtk3.bindings import add_event_receiver, remove_event_receiver, get_pywindow
 from xpra.log import Logger
 
 log = Logger("x11", "window")
@@ -127,6 +127,11 @@ class CoreX11WindowModel(WindowModelStub):
             GObject.TYPE_INT,
             "X11 window id", "",
             -1, 65535, -1,
+            GObject.ParamFlags.READABLE,
+        ),
+        "parent": (
+            GObject.TYPE_PYOBJECT,
+            "parent window id", "",
             GObject.ParamFlags.READABLE,
         ),
         # FIXME: this is an ugly virtual property
@@ -257,6 +262,7 @@ class CoreX11WindowModel(WindowModelStub):
     # things that we expose:
     _property_names = [
         "xid", "depth", "has-alpha",
+        "parent",
         "client-machine", "pid", "ppid", "wm-pid",
         "title", "role",
         "command", "shape",
@@ -444,7 +450,11 @@ class CoreX11WindowModel(WindowModelStub):
         depth = X11Window.get_depth(self.xid)
         pid = XRes.get_pid(self.xid) if XRes else -1
         ppid = get_parent_pid(pid) if pid and get_parent_pid else 0
-        metalog("initial X11 properties: xid=%#x, depth=%i, pid=%i, ppid=%i", self.xid, depth, pid, ppid)
+        parent = X11Window.getParent(self.xid)
+        if parent == X11Window.get_root_xid():
+            parent = 0
+        metalog("initial X11 properties: xid=%#x, parent=%#x, depth=%i, pid=%i, ppid=%i",
+                self.xid, parent, depth, pid, ppid)
         self._updateprop("depth", depth)
         self._updateprop("xid", self.xid)
         self._updateprop("pid", pid)
@@ -452,6 +462,7 @@ class CoreX11WindowModel(WindowModelStub):
         self._updateprop("has-alpha", depth in (30, 32))
         self._updateprop("allowed-actions", self._DEFAULT_NET_WM_ALLOWED_ACTIONS)
         self._updateprop("shape", self._read_xshape())
+        self._updateprop("parent", get_pywindow(parent))
         # note: some of those are technically mutable,
         # but we don't export them as "dynamic" properties, so this won't be propagated
         # maybe we want to catch errors parsing _NET_WM_ICON ?
