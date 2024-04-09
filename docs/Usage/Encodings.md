@@ -34,7 +34,7 @@ You can select the pseudo-encoding using the `--encoding=ENC` switch.
 | `jpeg`   | 24                                       | fast            | easy to support                                                             |
 | `avif`   | 24                                       | average         | limited support                                                             |
 | `png`    | 24 / 32                                  | slow            | easy to support                                                             |
-| `png/P`  | 8                                        | slow            | only useful for 8-bit [desktop mode](./Start-Desktop.md)                    |
+| `png/P`  | 8                                        | slow            | only useful for 8-bit [desktop mode](./Desktop.md)                          |
 | `png/L`  | 8                                        | slow            | greyscale                                                                   |
 </details>
 <details>

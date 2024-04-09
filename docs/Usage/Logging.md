@@ -145,7 +145,7 @@ The full list of categories can be shown using `xpra -d help`, to see this list 
 | **Server:**                          |                                                                    |
 | server                               | all server code                                                    |
 | proxy                                | [proxy server](./Proxy-Server.md)                                  |
-| shadow                               | [shadow server](./Shadow-Server.md)                                |
+| shadow                               | [shadow server](./Shadow.md)                                       |
 | command                              | server control channel                                             |
 | timeout                              | server timeouts                                                    |
 | exec                                 | executing commands                                                 |

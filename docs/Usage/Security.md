@@ -87,7 +87,7 @@ This includes: the [NVENC encoder](./NVENC.md) (see also _proxy server system in
 ### Modes
 Some features are harder to implement correctly in [seamless mode](./Seamless.md) because of the inherent complexity of handling windows client side and synchronizing their state. (ie: [window resizing vs readonly mode](https://github.com/Xpra-org/xpra/issues/2137))
 By definition, shadow mode gives access to the full desktop, without any kind of restriction - for better or worse.
-For these reasons, it may be worth considering [desktop mode](./Start-Desktop.md) instead.
+For these reasons, it may be worth considering [desktop mode](./Desktop.md) instead.
 
 ### [Network](../Network) and [Authentication](./Authentication.md)
 Xpra supports natively many different types of network connections (`tcp`, `ssl`, `ws`, `wss`, `vnc`, `ssh`, `vsock`, `quic`, etc) and most of these can be [encrypted](../Network/Encryption.md) and multiplexed through a single port.

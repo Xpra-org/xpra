@@ -21,8 +21,8 @@
 * [platform support](https://github.com/Xpra-org/xpra/wiki/Platforms)
 * types of [network connections](../Network/README.md)
 * [authentication](../Usage/Authentication.md) and [encryption](../Network/Encryption.md) ([AES](../Network/AES.md), [SSL](../Network/SSL.md))
-* [seamless](../Usage/Seamless.md) or [desktop](../Usage/Start-Desktop.md) mode
-* [shadow](../Usage/Shadow-Server.md) existing displays
+* [seamless](../Usage/Seamless.md) or [desktop](../Usage/Desktop.md) mode
+* [shadow](../Usage/Shadow.md) existing displays
 * [proxy server](../Usage/Proxy-Server.md) connection multiplexing
 * running as a [system service](../Usage/Service.md)
 * [HTML5 client](https://github.com/Xpra-org/xpra-html5)

@@ -87,7 +87,7 @@ Use `machinectl shell --uid=username` instead of `su` / `sudo`.
 * "`Failed to open the uinput device: Permission denied`" - you do not have the permissions required for opening the `/dev/uinput` device
 ### "`found an existing window manager on screen ...`"
 Xpra is a window manager, you cannot run two window managers on the same X11 display at the same time.\
-If you want to forward a whole desktop, including its window manager, see [desktop mode](./Usage/Start-Desktop.md), otherwise stop the other window manager.
+If you want to forward a whole desktop, including its window manager, see [desktop mode](./Usage/Desktop.md), otherwise stop the other window manager.
 ### "`cannot register our notification forwarder ...`"
 The xpra server was started from a GUI session which already had a dbus instance and a notification daemon, notifications forwarding cannot be enabled.
 ### "DPI set to NN x NN (wanted MM x MM), you may experience scaling problems, such as huge or small fonts, etc - to fix this issue, try the dpi switch, or use a patched Xorg dummy driver"

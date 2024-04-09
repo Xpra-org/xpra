@@ -72,8 +72,8 @@ speaker=off
 
 ***
 
-## Forwarding a [full desktop](./Start-Desktop.md)
-Xpra can also forward a full desktop environment using the [start-desktop](./Start-Desktop.md) mode:
+## Forwarding a [full desktop](./Desktop.md)
+Xpra can also forward a full desktop environment using the [start-desktop](./Desktop.md) mode:
 ```shell
 xpra start-desktop --start-child=fluxbox
 ```
@@ -81,7 +81,7 @@ Just like above, you can connect via SSH, TCP or any other [supported transport]
 
 ***
 
-## Cloning / [Shadowing](./Shadow-Server.md) an existing display
+## Cloning / [Shadowing](./Shadow.md) an existing display
 This mode allows you to access an existing display remotely.\
 Simply run:
 ```shell

@@ -10,8 +10,8 @@
   <summary>Starting a session</summary>
 
 * [Seamless Session](./Usage/Seamless.md) : individual windows
-* [Desktop Session](./Usage/Start-Desktop.md) : a full desktop session
-* [Shadow Session](./Usage/Shadow-Server.md) : view an existing display
+* [Desktop Session](./Usage/Desktop.md) : a full desktop session
+* [Shadow Session](./Usage/Shadow.md) : view an existing display
 </details>
 <details>
   <summary>Configuration</summary>

@@ -16,7 +16,7 @@ This functionality shares most of the code with the [file transfers](./File-Tran
 * forwarding is only supported to a Posix server, support for MS Windows and MacOS _servers_ may be added in the future
 * do not use socket authentication on your local sockets (see [#1286])
 * MacOS clients use Postscript (#995), other clients use PDF for transport
-* MacOS [shadow server](../Usage/Shadow-Server) Support starting with version `10.10` (aka Yosemite) prevents the xpra cups backend from connecting to the xpra server, to fix this run: `sudo sh -c 'echo "Sandboxing Relaxed" >> /etc/cups/cups-files.conf';sudo launchctl stop org.cups.cupsd`
+* MacOS [shadow server](../Usage/Shadow.md) Support starting with version `10.10` (aka Yosemite) prevents the xpra cups backend from connecting to the xpra server, to fix this run: `sudo sh -c 'echo "Sandboxing Relaxed" >> /etc/cups/cups-files.conf';sudo launchctl stop org.cups.cupsd`
 
 
 ## Implementation

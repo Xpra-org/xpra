@@ -11,7 +11,7 @@ and then to disconnect from these programs and reconnect from the same or anothe
 without losing any state.
 Effectively giving you remote access to individual graphical applications.
 It can also be used to
-[access existing desktop sessions](./docs/Usage/Shadow-Server.md) and [start remote desktop sessions](./docs/Usage/Start-Desktop.md).
+[access existing desktop sessions](./docs/Usage/Shadow.md) and [start remote desktop sessions](./docs/Usage/Desktop.md).
 
 Xpra is _open-source_ ([GPLv2+](./COPYING)) with clients available for [many supported platforms](https://github.com/Xpra-org/xpra/wiki/Platforms)
 and the server includes a built-in [HTML5 client](https://github.com/Xpra-org/xpra-html5).

@@ -31,8 +31,8 @@ xpra start :20 --use-display
 
 
 * ## Shadowing
-If the GPU is driving an existing display, you can [shadow](./Shadow-Server.md) it.\
-The limitation here is that the performance of shadow sessions is inferior to [seamless](./Seamless.md) and [desktop](./Start-Desktop.md) sessions.
+If the GPU is driving an existing display, you can [shadow](./Shadow.md) it.\
+The limitation here is that the performance of shadow sessions is inferior to [seamless](./Seamless.md) and [desktop](./Desktop.md) sessions.
 
 
 * ## Taking over an existing display
