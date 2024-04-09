@@ -149,9 +149,8 @@ def _make_window_metadata(window, propname: str, get_window_id: Callable = None,
                 else:
                     p[propname] = wid
         return p
-    # the properties below are not actually exported to the client (yet?)
-    # it was just easier to handle them here
-    # (convert to a type that can be encoded for xpra info):
+    # the properties below are not all actually exported to the client
+    # but `opaque-region` is, and the others are exported via `xpra info`:
     if propname in ("state", "protocols", "opaque-region"):
         return {propname: tuple(raw() or ())}
     if propname == "allowed-actions":
