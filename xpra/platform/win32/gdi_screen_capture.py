@@ -213,6 +213,7 @@ class GDICapture:
         log("get_image BitBlt took %ims", (bitblt_time - select_time) * 1000)
         rowstride = roundup(width * self.bit_depth // 8, 2)
         buf_size = rowstride * height
+        # noinspection PyTypeChecker
         buftype = c_char * buf_size
         buf = buftype()
         buf.value = b""

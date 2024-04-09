@@ -60,6 +60,7 @@ def GetProductInfo(dwOSMajorVersion=5, dwOSMinorVersion=0, dwSpMajorVersion=0, d
 MAX_TIP_SIZE = 64
 
 
+# noinspection PyTypeChecker
 def getNOTIFYICONDATAClass(char_type=CHAR, tip_size: int = MAX_TIP_SIZE):
     class _NOTIFYICONDATA(Structure):
         _fields_ = (

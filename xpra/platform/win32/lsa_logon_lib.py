@@ -208,6 +208,7 @@ class TOKEN_GROUPS(ctypes.Structure):
 PTOKEN_GROUPS = ctypes.POINTER(TOKEN_GROUPS)
 
 class TOKEN_SOURCE(ctypes.Structure):
+    # noinspection PyTypeChecker
     _fields_ = (('SourceName', CHAR * TOKEN_SOURCE_LENGTH),
                 ('SourceIdentifier', LUID))
     def __init__(self, SourceName=None, SourceIdentifier=None):

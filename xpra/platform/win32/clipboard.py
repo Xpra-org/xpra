@@ -551,6 +551,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                     errback("cannot handle image data with %i bits per pixel yet" % bits)
                     return True
                 img_size = stride * h
+                # noinspection PyTypeChecker
                 rgb_data = (c_char * img_size).from_address(data + offset)
                 from PIL import Image, ImageOps
                 img = Image.frombytes(save_format, (w, h), rgb_data, "raw", rgb_format, stride, 1)

@@ -20,6 +20,7 @@ def get_name() -> str:
         from xpra.platform.win32.common import GetUserNameA
         max_len = 256
         size = DWORD(max_len)
+        # noinspection PyTypeChecker
         buftype = c_char * (max_len + 1)
         # noinspection PyCallingNonCallable
         buf = buftype()
