@@ -34,7 +34,7 @@ log = Logger("util")
 
 
 DEBUG_WRAPPER = envbool("XPRA_WRAPPER_DEBUG", False)
-# to make it possible to inspect files (more human readable):
+# to make it possible to inspect files (more human-readable):
 HEXLIFY_PACKETS = envbool("XPRA_HEXLIFY_PACKETS", False)
 # avoids showing a new console window on win32:
 WIN32_SHOWWINDOW = envbool("XPRA_WIN32_SHOWWINDOW", False)

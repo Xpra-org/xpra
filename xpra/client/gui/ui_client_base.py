@@ -569,7 +569,7 @@ class UIXpraClient(ClientBaseClass):
             with log.trap_error("Error processing handshake callback %s", cb):
                 cb(*args)
 
-    def after_handshake(self, cb, *args):
+    def after_handshake(self, cb: Callable, *args):
         log("after_handshake(%s, %s) on_handshake=%s", cb, args, ellipsizer(self._on_handshake))
         if self._on_handshake is None:
             # handshake has already occurred, just call it:

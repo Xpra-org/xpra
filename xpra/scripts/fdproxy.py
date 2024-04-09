@@ -20,7 +20,7 @@ SHOW_DATA = envbool("XPRA_PROXY_SHOW_DATA")
 PROXY_BUFFER_SIZE = envint("XPRA_PROXY_BUFFER_SIZE", 65536)
 
 
-def noretry(_e):
+def noretry(_e) -> bool:
     return False
 
 
@@ -90,7 +90,7 @@ class XpraProxy:
                     buf = buf[written:]
                     log("%s: written %s bytes", log_name, written)
             log("%s copy loop ended", log_name)
-        except Exception:
+        except OSError:
             log("%s", log_name, exc_info=True)
         finally:
             self.quit()

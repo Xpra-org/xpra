@@ -5,6 +5,7 @@
 
 import os
 from typing import Any
+from collections.abc import Iterable
 
 from xpra.os_util import gi_import
 from xpra.server.window import batch_config
@@ -343,13 +344,13 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         curr = self.do_get_cursor_data()  # pylint: disable=assignment-from-none
         self.last_cursor_data = curr
 
-        def cmpv(lcd):
+        def cmpv(lcd : Iterable | None) -> tuple[Any]:
             if not lcd:
-                return None
+                return ()
             v = lcd[0]
             if v and len(v) > 2:
-                return v[2:]
-            return None
+                return tuple(v[2:])
+            return ()
 
         if cmpv(prev) != cmpv(curr):
             fields = ("x", "y", "width", "height", "xhot", "yhot", "serial", "pixels", "name")

@@ -8,6 +8,7 @@ import os.path
 import glob
 import socket
 import errno
+from collections.abc import Iterator
 
 from xpra.common import SocketState
 from xpra.util.env import osexpand
@@ -150,7 +151,7 @@ class DotXpra:
                 paths.append(socket_path)
         return paths
 
-    def _unique_sock_dirs(self):
+    def _unique_sock_dirs(self) -> Iterator[str]:
         dirs = []
         if self._sockdir != "undefined":
             dirs.append(self._sockdir)

@@ -1935,7 +1935,7 @@ else:
         def run(self):
             try:
                 build_base = self.distribution.command_obj['build'].build_base
-            except Exception:
+            except (AttributeError, KeyError):
                 build_base = self.build_base
             build_xpra_conf(build_base)
 

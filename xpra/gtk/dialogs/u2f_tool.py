@@ -108,11 +108,6 @@ def main():
                 break
         with open(public_key_filename, "wb") as f:
             f.write(hexstr(pubkey).encode("latin1"))
-        # info("key handle: %s" % csv(hex40(key_handle)),
-        #     "saved to file '%s'" % key_handle_filename,
-        #     "public key: %s" % csv(hex40(pubkey)),
-        #     "saved to file '%s'" % public_key_filename,
-        #     )
         info(
             "key handle saved to file:",
             f"{key_handle_filename!r}",

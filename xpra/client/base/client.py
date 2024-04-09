@@ -12,6 +12,7 @@ import socket
 import string
 from time import monotonic
 from typing import Any
+from types import FrameType
 from collections.abc import Callable
 
 from xpra.scripts.config import InitExit
@@ -246,12 +247,12 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 notifylog.info(" %s", x)
         self.show_progress(100, f"notification: {summary}")
 
-    def handle_deadly_signal(self, signum, _frame=None):
+    def handle_deadly_signal(self, signum, _frame: FrameType=None):
         stderr_print("\ngot deadly signal %s, exiting" % SIGNAMES.get(signum, signum))
         self.cleanup()
         force_quit(128 + int(signum))
 
-    def handle_app_signal(self, signum: int, _frame=None):
+    def handle_app_signal(self, signum: int, _frame: FrameType=None):
         # from now on, force quit if we get another signal:
         signal.signal(signal.SIGINT, self.handle_deadly_signal)
         signal.signal(signal.SIGTERM, self.handle_deadly_signal)
@@ -262,7 +263,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def install_signal_handlers(self) -> None:
 
-        def os_signal(signum: enum.IntEnum, _frame=None):
+        def os_signal(signum: enum.IntEnum, _frame: FrameType=None):
             if self.exit_code is None:
                 try:
                     stderr_print()

@@ -5,6 +5,7 @@
 
 import os
 from typing import Any
+from collections.abc import Callable
 
 from xpra.util.screen import prettify_plug_name
 from xpra.util.str_fn import csv
@@ -444,7 +445,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             traylog.warn("Warning: failed to set tray icon to %s", filename)
             traylog.warn(" %s", e)
 
-    def traymenuitem(self, title: str, icon_name="", tooltip="", cb=noop) -> Gtk.ImageMenuItem:
+    def traymenuitem(self, title: str, icon_name="", tooltip="", cb: Callable=noop) -> Gtk.ImageMenuItem:
         """ Utility method for easily creating an ImageMenuItem """
         # pylint: disable=import-outside-toplevel
         from xpra.gtk.widget import menuitem

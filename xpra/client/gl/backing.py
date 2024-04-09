@@ -972,7 +972,7 @@ class GLWindowBackingBase(WindowBackingBase):
             except Exception:
                 log(f"Image.open({filename})", exc_info=True)
                 log.warn(f"Warning: failed to load {filename!r}")
-        return ("raw", x, y, w, h, xhot, yhot, serial, pixels, name)
+        return "raw", x, y, w, h, xhot, yhot, serial, pixels, name
 
     def set_cursor_data(self, cursor_data) -> None:
         if not cursor_data or cursor_data[0] is None:
