@@ -5,11 +5,11 @@ For usage related information, see [webcam feature](../Features/Webcam.md).
 
 ## Implementations
 
-| Component         | Link                                                              |
-|-------------------|-------------------------------------------------------------------|
-| client            | [xpra.client.mixins.webcam](../../xpra/client/mixins/webcam.py)   |
-| client connection | [xpra.server.source.webcam](../../xpra/server/source/webcam.py)   |
-| server            | [xpra.server.mixins.webcam](../../xpra/server/mixins/webcam.py)   |
+| Component         | Link                                                                                                   |
+|-------------------|--------------------------------------------------------------------------------------------------------|
+| client            | [xpra.client.mixins.webcam](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/webcam.py) |
+| client connection | [xpra.server.source.webcam](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/webcam.py) |
+| server            | [xpra.server.mixins.webcam](https://github.com/Xpra-org/xpra/blob/master/xpra/server/mixins/webcam.py) |
 
 
 ## Capabilities

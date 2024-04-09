@@ -5,11 +5,11 @@ For usage related information, see [notitications feature](../Features/Notificat
 
 ## Implementations
 
-| Component         | Link                                                                          |
-|-------------------|-------------------------------------------------------------------------------|
-| client            | [xpra.client.mixins.notification](../../xpra/client/mixins/notification.py)   |
-| client connection | [xpra.server.source.notification](../../xpra/server/source/notification.py)   |
-| server            | [xpra.server.mixins.notification](../../xpra/server/mixins/notification.py)   |
+| Component         | Link                                                                                                               |
+|-------------------|--------------------------------------------------------------------------------------------------------------------|
+| client            | [xpra.client.mixins.notification](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/notification.py) |
+| client connection | [xpra.server.source.notification](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/notification.py) |
+| server            | [xpra.server.mixins.notification](https://github.com/Xpra-org/xpra/blob/master/xpra/server/mixins/notification.py) |
 
 
 ## Capabilities

@@ -5,11 +5,11 @@ For usage related information, see [audio feature](../Features/Audio.md).
 
 ## Implementations
 
-| Component         | Link                                                          |
-|-------------------|---------------------------------------------------------------|
-| client            | [xpra.client.mixins.audio](../../xpra/client/mixins/audio.py) |
-| client connection | [xpra.server.source.audio](../../xpra/server/source/audio.py) |
-| server            | [xpra.server.mixins.audio](../../xpra/server/mixins/audio.py) |
+| Component         | Link                                                                                                 |
+|-------------------|------------------------------------------------------------------------------------------------------|
+| client            | [xpra.client.mixins.audio](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/audio.py) |
+| client connection | [xpra.server.source.audio](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/audio.py) |
+| server            | [xpra.server.mixins.audio](https://github.com/Xpra-org/xpra/blob/master/xpra/server/mixins/audio.py) |
 
 ## Common
 
@@ -41,7 +41,7 @@ with the `audio` prefix:
 | `receive`  | boolean         | If receiving audio is enabled                      |
 
 The lists of `decoders` and `encoders` contain strings such as: `mp3`, `opus+ogg`, `vorbis`...  
-You can run [xpra.audio.gstreamer_util](../../xpra/audio/gstreamer_util.py) to see which
+You can run [xpra.audio.gstreamer_util](https://github.com/Xpra-org/xpra/blob/master/xpra/audio/gstreamer_util.py) to see which
 encoders and decoders are available on the system.
 
 

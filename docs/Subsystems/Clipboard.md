@@ -7,9 +7,9 @@ For usage related information, see [clipboard feature](../Features/Clipboard.md)
 
 | Component         | Link                                                                  |
 |-------------------|-----------------------------------------------------------------------|
-| client            | [xpra.client.mixins.clipboard](../../xpra/client/mixins/clipboard.py) |
-| client connection | [xpra.server.source.clipboard](../../xpra/server/source/clipboard.py) |
-| server            | [xpra.server.mixins.clipboard](../../xpra/server/mixins/clipboard.py) |
+| client            | [xpra.client.mixins.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/clipboard.py) |
+| client connection | [xpra.server.source.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/clipboard.py) |
+| server            | [xpra.server.mixins.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/server/mixins/clipboard.py) |
 
 
 ## Platforms
@@ -20,10 +20,10 @@ It contains common features such as basic configuration, scheduling, filtering, 
 
 | Platform | Link                                                                      |
 |----------|---------------------------------------------------------------------------|
-| `x11`    | [xpra.x11.gtk_x11.clipboard](../../xpra/x11/gtk_x11/clipboard.py)         |
-| `win32`  | [xpra.platform.win32.clipboard](../../xpra/platform/win32/clipboard.py)   |
-| `MacOS`  | [xpra.platform.darwin.clipboard](../../xpra/platform/darwin/clipboard.py) |
-| others   | [xpra.gtk_common.gtk_clipboard](../../xpra/gtk/clipboard.py)              |
+| `x11`    | [xpra.x11.gtk_x11.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/x11/gtk_x11/clipboard.py)         |
+| `win32`  | [xpra.platform.win32.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/platform/win32/clipboard.py)   |
+| `MacOS`  | [xpra.platform.darwin.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/platform/darwin/clipboard.py) |
+| others   | [xpra.gtk_common.gtk_clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/gtk/clipboard.py)              |
 
 
 

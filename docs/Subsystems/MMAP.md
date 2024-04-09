@@ -5,11 +5,11 @@ between client and server when both reside on the same host.
 
 ## Implementations
 
-| Component         | Link                                                        |
-|-------------------|-------------------------------------------------------------|
-| client            | [xpra.client.mixins.mmap](../../xpra/client/mixins/mmap.py) |
-| client connection | [xpra.server.source.mmap](../../xpra/server/source/mmap.py) |
-| server            | [xpra.server.mixins.mmap](../../xpra/server/mixins/mmap.py) |
+| Component         | Link                                                                                               |
+|-------------------|----------------------------------------------------------------------------------------------------|
+| client            | [xpra.client.mixins.mmap](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/mmap.py) |
+| client connection | [xpra.server.source.mmap](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/mmap.py) |
+| server            | [xpra.server.mixins.mmap](https://github.com/Xpra-org/xpra/blob/master/xpra/server/mixins/mmap.py) |
 
 
 ## Capabilities
