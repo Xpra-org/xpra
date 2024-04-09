@@ -879,7 +879,7 @@ class WindowClient(StubClientMixin):
         #if possible, choosing the currently focused window (if there is one..)
         pid = metadata.intget("pid", 0)
         watcher_pid = self.assign_signal_watcher_pid(wid, pid)
-        if override_redirect and pid>0 and metadata.intget("transient-for", 0)==0 and metadata.strget("role")=="popup":
+        if override_redirect and pid>0 and metadata.intget("transient-for", 0)==0 and metadata.strget("role", "").lower()=="popup":
             tfor = None
             twid = 0
             for twid, twin in self._id_to_window.items():
