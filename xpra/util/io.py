@@ -338,6 +338,6 @@ def get_proc_cmdline(pid: int) -> tuple[str, ...]:
             cmdline = load_binary_file(proc_cmd_line).rstrip(b"\0").split(b"\0")
             try:
                 return tuple(x.decode() for x in cmdline)
-            except Exception:
+            except UnicodeDecodeError:
                 return tuple(bytestostr(x) for x in cmdline)
     return ()
