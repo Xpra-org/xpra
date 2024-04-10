@@ -1320,8 +1320,8 @@ class ServerCore:
             t = self.timeout_add(self._rfb_upgrade * 1000, self.try_upgrade_to_rfb, proto)
             self.socket_rfb_upgrade_timer[proto] = t
 
-    def get_ssl_socket_options(self, socket_options) -> dict[str, Any]:
-        ssllog("get_ssl_socket_options(%s)", socket_options)
+    def get_ssl_socket_options(self, socket_options: dict) -> dict[str, Any]:
+        ssllog(f"get_ssl_socket_options({socket_options})")
         kwargs = {k.replace("-", "_"): v for k, v in self._ssl_attributes.items()}
         for k, v in socket_options.items():
             # options use '-' but attributes and parameters use '_':
@@ -1329,6 +1329,7 @@ class ServerCore:
             if k.startswith("ssl_"):
                 k = k[4:]
                 kwargs[k] = v
+        ssllog(f"get_ssl_socket_options({socket_options})={kwargs}")
         return kwargs
 
     def _ssl_wrap_socket(self, socktype: str, sock, socket_options):
