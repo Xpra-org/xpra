@@ -42,9 +42,9 @@ class EVDIModel(RootWindowModel):
 
 class ExpandServer(GObject.GObject, ShadowX11Server):
 
-    def __init__(self):
+    def __init__(self, attrs: dict[str, str]):
         GObject.GObject.__init__(self)
-        ShadowX11Server.__init__(self)
+        ShadowX11Server.__init__(self, attrs)
         self.session_type = "expand"
         self.evdi_device = None
         self.evdi_channel = None
