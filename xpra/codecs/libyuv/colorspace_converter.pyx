@@ -183,7 +183,7 @@ def get_spec(in_colorspace, out_colorspace):
     return csc_spec(in_colorspace, out_colorspace,
                     ColorspaceConverter, codec_type=get_type(),
                     quality=100, speed=100,
-                    setup_cost=0, min_w=8, min_h=2, can_scale=in_colorspace not in ("NV12", "YUV420P"),
+                    setup_cost=0, min_w=8, min_h=2, can_scale=in_colorspace not in ("NV12", "YUV420P", "YUV444P"),
                     max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
 
 
