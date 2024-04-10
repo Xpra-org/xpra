@@ -12,8 +12,7 @@ from collections.abc import Callable
 
 from xpra.common import noerr
 from xpra.util.env import envbool
-from xpra.os_util import WIN32, OSX, POSIX, gi_import
-from xpra.util.thread import is_main_thread
+from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util.io import use_gui_prompt, which
 from xpra.util.system import is_gnome, is_kde
 from xpra.util.str_fn import bytestostr
@@ -66,7 +65,7 @@ def popen_pinentry(pinentry_cmd: str):
         return None
 
 
-def run_pinentry(extra_args) -> None:
+def run_pinentry(extra_args) -> int:
     messages = list(extra_args)
 
     def get_input():
@@ -85,10 +84,10 @@ def run_pinentry(extra_args) -> None:
     proc = popen_pinentry(pinentry_cmd)
     if not proc:
         raise InitExit(ExitCode.UNSUPPORTED, "cannot run pinentry")
-    do_run_pinentry(proc, get_input, process_output)
+    return do_run_pinentry(proc, get_input, process_output)
 
 
-def do_run_pinentry(proc, get_input: Callable, process_output: Callable) -> None:
+def do_run_pinentry(proc, get_input: Callable, process_output: Callable) -> int:
     message = "connection"
     while proc.poll() is None:
         try:
@@ -113,7 +112,9 @@ def do_run_pinentry(proc, get_input: Callable, process_output: Callable) -> None
     exitcode = proc.wait(1)
     if exitcode is None:
         log.warn("Warning: pinentry is still running")
+        return -1
     log(f"pinentry ended: {proc.poll()}")
+    return exitcode
 
 
 def pinentry_getpin(pinentry_proc, title: str, description: str, pin_cb: Callable, err_cb: Callable) -> None:
@@ -210,43 +211,6 @@ def force_focus() -> None:
     _force_focus()
 
 
-def dialog_run(run_fn: Callable):
-    Gtk = gi_import("Gtk")
-    GLib = gi_import("GLib")
-    log("dialog_run(%s) is_main_thread=%s, main_level=%i", run_fn, is_main_thread(), Gtk.main_level())
-    if is_main_thread() or Gtk.main_level() == 0:
-        return run_fn()
-    log("dialog_run(%s) main_depth=%s", run_fn, GLib.main_depth())
-    # do a little dance if we're not running in the main thread:
-    # block this thread and wait for the main thread to run the dialog
-    from threading import Event
-    e = Event()
-    code = []
-
-    def main_thread_run():
-        log("main_thread_run() calling %s", run_fn)
-        try:
-            code.append(run_fn())
-        finally:
-            e.set()
-
-    GLib.idle_add(main_thread_run)
-    log("dialog_run(%s) waiting for main thread to run", run_fn)
-    e.wait()
-    log("dialog_run(%s) code=%s", run_fn, code)
-    return code[0]
-
-
-def do_run_dialog(dialog):
-    try:
-        force_focus()
-        dialog.show()
-        return dialog.run()
-    finally:
-        dialog.hide()
-        dialog.close()
-
-
 def dialog_pass(title: str = "Password Input", prompt: str = "enter password", icon: str = "") -> str:
     log("dialog_pass%s PINENTRY=%s", (title, prompt, icon), PINENTRY)
     if PINENTRY:
@@ -254,16 +218,20 @@ def dialog_pass(title: str = "Password Input", prompt: str = "enter password", i
         if pinentry_cmd:
             return run_pinentry_getpin(pinentry_cmd, title, prompt)
 
-    def password_input_run():
+    from xpra.gtk.dialogs.util import dialog_run, do_run_dialog
+
+    def password_input_run() -> str:
         from xpra.gtk.dialogs.pass_dialog import PasswordInputDialogWindow
         dialog = PasswordInputDialogWindow(title, prompt, icon)
-        return do_run_dialog(dialog)
+        return str(do_run_dialog(dialog))
 
     return dialog_run(password_input_run)
 
 
 def dialog_confirm(title: str, prompt: str, qinfo=(), icon: str = "", buttons=(("OK", 1),)) -> int:
-    def confirm_run():
+    from xpra.gtk.dialogs.util import dialog_run, do_run_dialog
+
+    def confirm_run() -> int:
         from xpra.gtk.dialogs.confirm_dialog import ConfirmDialogWindow
         dialog = ConfirmDialogWindow(title, prompt, qinfo, icon, buttons)
         return do_run_dialog(dialog)
@@ -294,10 +262,10 @@ def confirm(info=(), title: str = "Confirm Key", prompt: str = "Are you sure you
     sys.stderr.write(os.linesep.join(info) + os.linesep + prompt)
     sys.stderr.flush()
     try:
-        v = sys.stdin.readline().rstrip(os.linesep)
+        line = sys.stdin.readline().rstrip(os.linesep)
     except KeyboardInterrupt:
         sys.exit(128 + signal.SIGINT)
-    return bool(v) and v.lower() in ("y", "yes")
+    return line.lower() in ("y", "yes")
 
 
 def input_pass(prompt: str) -> str:
