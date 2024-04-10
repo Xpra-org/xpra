@@ -29,6 +29,7 @@ def get_update_status_window():
     return _instance
 
 
+# noinspection PyTestUnpassedFixture
 class UpdateStatusWindow:
 
     def __init__(self):

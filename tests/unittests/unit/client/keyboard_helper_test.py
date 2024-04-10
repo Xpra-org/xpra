@@ -6,6 +6,7 @@
 
 import unittest
 
+from xpra.common import noop
 from xpra.util.objects import AdHocStruct
 from xpra.client.gui.keyboard_helper import KeyboardHelper
 from unit.process_test_util import DisplayContext
@@ -14,11 +15,13 @@ from unit.process_test_util import DisplayContext
 class KeyboardHelperTest(unittest.TestCase):
 
     def test_modifier(self):
-        kh = KeyboardHelper(None)
+        kh = KeyboardHelper(noop)
+
         def checkmask(mask, *modifiers):
             #print("checkmask(%s, %s)", mask, modifiers)
             mods = kh.mask_to_names(mask)
-            assert set(mods)==set(modifiers), "expected %s got %s" % (modifiers, mods)
+            assert set(mods) == set(modifiers), "expected %s got %s" % (modifiers, mods)
+
         from gi.repository import Gdk  # @UnresolvedImport
         checkmask(Gdk.ModifierType.SHIFT_MASK, "shift")
         checkmask(Gdk.ModifierType.LOCK_MASK, "lock")
@@ -30,11 +33,11 @@ class KeyboardHelperTest(unittest.TestCase):
         kh.cleanup()
 
     def test_keymap_properties(self):
-        kh = KeyboardHelper(None)
+        kh = KeyboardHelper(noop)
         kh.query_xkbmap()
         p = kh.get_keymap_properties()
         assert p, "no keymap properties returned"
-        assert len(p)>=8, "not enough keymap properties (%i): %s" % (len(p), p)
+        assert len(p) >= 8, "not enough keymap properties (%i): %s" % (len(p), p)
         kh.cleanup()
 
     def test_parse_shortcuts(self):
@@ -61,13 +64,11 @@ class KeyboardHelperTest(unittest.TestCase):
             '#+KP_Multiply:scalereset',
             '#+bar:scalereset',
             '#+question:scalingoff',
-            ]
-        kh = KeyboardHelper(None, key_shortcuts=shortcuts)
+        ]
+        kh = KeyboardHelper(noop, key_shortcuts=shortcuts)
         parsed = kh.parse_shortcuts()
         assert kh.shortcut_modifiers, "no shortcut modifiers: %s" % (kh.shortcut_modifiers,)
-        assert len(parsed)>10, "not enough shortcuts parsed: %s" % (parsed,)
-        def noop():
-            pass
+        assert len(parsed) > 10, "not enough shortcuts parsed: %s" % (parsed,)
         window = AdHocStruct()
         window.quit = noop
         modifier_names = kh.get_modifier_names()

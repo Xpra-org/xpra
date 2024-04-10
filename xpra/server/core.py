@@ -558,8 +558,8 @@ class ServerCore:
             self.save_uuid()
         log(f"server uuid is {self.uuid}")
 
-    def get_uuid(self):
-        return None
+    def get_uuid(self) -> str:
+        return ""
 
     def save_uuid(self) -> None:
         """ X11 servers use this method to save the uuid as a root window property """

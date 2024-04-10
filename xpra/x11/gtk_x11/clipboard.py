@@ -56,7 +56,7 @@ log("BLACKLISTED_CLIPBOARD_CLIENTS=%s", BLACKLISTED_CLIPBOARD_CLIENTS)
 def parse_translated_targets(v: str) -> dict[str, list[str]]:
     trans: dict[str, list[str]] = {}
     # we can't use ";" or "/" as separators
-    # because those are used in mime-types
+    # because those are used in mime-types,
     # and we use "," and ":" ourselves..
     for entry in v.split("#"):
         parts = entry.split(":", 1)

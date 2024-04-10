@@ -347,7 +347,7 @@ class ServerBase(ServerBaseClass):
             # normally these things are synchronized using xsettings, which we handle already,
             # but non-posix clients have no such thing,
             # and we don't want to expose that as an interface
-            # (it's not very nice and it is very X11 specific)
+            # (it's not very nice, and it is very X11 specific)
             # also, clients may want to override what is in their xsettings..
             # so if the client specifies what it wants to use, we patch the xsettings with it
             # (the actual xsettings part is done in `update_all_server_settings` in the X11 specific subclasses)
@@ -411,7 +411,8 @@ class ServerBase(ServerBaseClass):
         # process ui half in ui thread:
         self.idle_add(self.process_hello_ui, ss, c, auth_caps, send_ui, share_count)
 
-    def get_client_connection_class(self, caps) -> type:
+    @staticmethod
+    def get_client_connection_class(caps) -> type:
         # pylint: disable=import-outside-toplevel
         from xpra.server.source.client_connection_factory import get_client_connection_class
         return get_client_connection_class(caps)
@@ -592,11 +593,11 @@ class ServerBase(ServerBaseClass):
         self.wait_for_threaded_init()
         start = monotonic()
 
-        def cb(proto, info):
-            self.do_send_info(proto, info)
+        def cb(iproto, info):
+            self.do_send_info(iproto, info)
             end = monotonic()
             log.info("processed info request from %s in %ims",
-                     proto._conn, (end - start) * 1000)
+                     iproto._conn, (end - start) * 1000)
 
         self.get_all_info(cb, proto, None)
 

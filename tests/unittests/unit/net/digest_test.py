@@ -25,7 +25,7 @@ class TestDigest(unittest.TestCase):
             except TypeError:
                 pass
             try:
-                assert not gendigest(invalid_digest, "bar", "0"*16)
+                assert not gendigest(invalid_digest, "bar", b"0"*16)
             except TypeError:
                 pass
 

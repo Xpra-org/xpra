@@ -500,6 +500,7 @@ class WindowModel(BaseWindowModel):
             return
         super().do_xpra_property_notify_event(event)
 
+    # noinspection PyMethodMayBeStatic
     def do_child_map_request_event(self, event) -> None:
         # If we get a MapRequest then it might mean that someone tried to map
         # this window multiple times in quick succession, before we actually
@@ -847,6 +848,7 @@ class WindowModel(BaseWindowModel):
         mhints = typedict(size_hints or {})
         hminw, hminh = mhints.inttupleget("min_size", (0, 0), 2, 2)
         hmaxw, hmaxh = mhints.inttupleget("max_size", (MAX_WINDOW_SIZE, MAX_WINDOW_SIZE), 2, 2)
+        # noinspection PyTypeChecker
         d = int(self.get("decorations", -1))
         decorated = d == -1 or any(
             (d & 2 ** b) for b in (
@@ -905,6 +907,7 @@ class WindowModel(BaseWindowModel):
         "_NET_WM_ICON": _handle_net_wm_icon_change,
     }
 
+    # noinspection PyMethodMayBeStatic
     def get_default_window_icon(self, _size: int = 48):
         return None
 

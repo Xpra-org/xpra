@@ -21,7 +21,7 @@ def std(v, extras="-,./: ") -> str:
 
 def alnum(v: str | bytes) -> str:
     s = bytestostr(v)
-    return "".join(v for v in filter(str.isalnum, s))
+    return "".join(filter(str.isalnum, s))
 
 
 def nonl(x) -> str:

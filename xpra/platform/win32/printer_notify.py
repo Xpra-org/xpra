@@ -228,6 +228,8 @@ class PRINTER_NOTIFY_INFO_DATA(ctypes.Structure):
         class  _DATA(ctypes.Structure):
             _fields_ = (('cbBuf', wintypes.DWORD),
                         ('pBuf',  wintypes.LPVOID))
+
+        # noinspection PyTypeChecker
         _fields_ = (('adwData', wintypes.DWORD * 2),
                     ('Data',    _DATA))
     _fields_ = (('Type',        wintypes.WORD),
@@ -392,7 +394,7 @@ def wait_for_print_job_info(fields=DEFAULT_FIELDS,
     if timeout != INFINITE:
         timeout = int(timeout * 1000)
     hPrinter = wintypes.HANDLE()
-    # noinspection PyCallingNonCallable
+    # noinspection PyCallingNonCallable,PyTypeChecker
     fields = (wintypes.WORD * len(fields))(*fields)
     opt = PRINTER_NOTIFY_OPTIONS(
             pTypes=PRINTER_NOTIFY_OPTIONS_TYPE(

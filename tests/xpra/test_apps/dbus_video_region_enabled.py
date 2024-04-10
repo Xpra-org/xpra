@@ -6,13 +6,14 @@
 
 
 def test_dbus(display, wid=1, flag=True):
-    import dbus     #@UnresolvedImport
+    import dbus
     bus = dbus.SessionBus()
     server = 'org.xpra.Server%i' % display
     service = bus.get_object(server, "/org/xpra/Server")
     SetVideoRegionEnabled = service.get_dbus_method('SetVideoRegionEnabled', 'org.xpra.Server')
     print("calling %s.SetVideoRegionEnabled(%i, %s)" % (server, wid, flag))
     SetVideoRegionEnabled(wid, flag)
+
 
 def main():
     import sys
@@ -22,7 +23,7 @@ def main():
     DISPLAY = int(sys.argv[1])
     wid = int(sys.argv[2])
     from xpra.scripts.config import str_to_bool
-    flag = str_to_bool("flag", sys.argv[3])
+    flag = str_to_bool(sys.argv[3])
     test_dbus(DISPLAY, wid, flag)
 
 

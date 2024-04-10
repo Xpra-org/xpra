@@ -263,7 +263,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def install_signal_handlers(self) -> None:
 
-        def os_signal(signum: enum.IntEnum, _frame: FrameType=None):
+        def os_signal(signum: enum.IntEnum, _frame: FrameType | None=None):
             if self.exit_code is None:
                 try:
                     stderr_print()

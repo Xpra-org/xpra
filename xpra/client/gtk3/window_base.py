@@ -303,6 +303,7 @@ def wn(w) -> str:
     return WORKSPACE_NAMES.get(w, str(w))
 
 
+# noinspection PyTestUnpassedFixture
 class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     __gsignals__ = {
         "state-updated": no_arg_signal,
@@ -1382,6 +1383,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def set_opaque_region(self, rectangles=()):
         # gtk can only set a single region!
+        # noinspection PyArgumentList
         r = Region()
         for rect in rectangles:
             rect = RectangleInt(*self.srect(*rect))

@@ -32,12 +32,12 @@ class ServerAuthTest(ServerTestUtil):
         display = self.xvfb.display
         log("starting test server on %s", display)
         server = self.check_fast_start_server(display, f"--auth={auth}", "--use-display=yes")
-        #we should always be able to get the version:
+        # we should always be able to get the version:
         client = self.run_xpra(["version", uri_prefix+display])
-        assert pollwait(client, 5)==0, "version client failed to connect"
+        assert pollwait(client, 5) == 0, "version client failed to connect"
         if client.poll() is None:
             client.terminate()
-        #try to connect
+        # try to connect
         cmd = ["info", uri_prefix+display]
         f = None
         try:
@@ -58,7 +58,7 @@ class ServerAuthTest(ServerTestUtil):
         finally:
             sleep(2)
             self.run_xpra(["clean-sockets"])
-        if r!=exit_code:
+        if r != exit_code:
             raise RuntimeError(f"{auth!r} test error: expected info client to return {estr(exit_code)} but got {estr(r)}")
 
     def test_fail(self):
@@ -79,11 +79,13 @@ class ServerAuthTest(ServerTestUtil):
         from xpra.os_util import get_hex_uuid
         password = get_hex_uuid()
         f = self._temp_file(strtobytes(password))
-        self._test_auth("file", "", ExitCode.PASSWORD_REQUIRED)
-        self._test_auth(f"file:filename={f.name}", "", ExitCode.PASSWORD_REQUIRED)
-        self._test_auth(f"file:filename={f.name}", "", ExitCode.OK, password)
-        self._test_auth(f"file:filename={f.name}", "", ExitCode.AUTHENTICATION_FAILED, password+"A")
-        f.close()
+        try:
+            self._test_auth("file", "", ExitCode.PASSWORD_REQUIRED)
+            self._test_auth(f"file:filename={f.name}", "", ExitCode.PASSWORD_REQUIRED)
+            self._test_auth(f"file:filename={f.name}", "", ExitCode.OK, password)
+            self._test_auth(f"file:filename={f.name}", "", ExitCode.AUTHENTICATION_FAILED, password+"A")
+        finally:
+            f.close()
 
     def test_multifile(self):
         from xpra.platform.info import get_username
@@ -93,11 +95,13 @@ class ServerAuthTest(ServerTestUtil):
         displays = ""
         data = "%s|%s|%i|%i|%s||" % (username, password, os.getuid(), os.getgid(), displays)
         f = self._temp_file(strtobytes(data))
-        self._test_auth("multifile", "", ExitCode.PASSWORD_REQUIRED)
-        self._test_auth(f"multifile:filename={f.name}", "", ExitCode.PASSWORD_REQUIRED)
-        self._test_auth(f"multifile:filename={f.name}", "", ExitCode.OK, password)
-        self._test_auth(f"multifile:filename={f.name}", "", ExitCode.AUTHENTICATION_FAILED, password+"A")
-        f.close()
+        try:
+            self._test_auth("multifile", "", ExitCode.PASSWORD_REQUIRED)
+            self._test_auth(f"multifile:filename={f.name}", "", ExitCode.PASSWORD_REQUIRED)
+            self._test_auth(f"multifile:filename={f.name}", "", ExitCode.OK, password)
+            self._test_auth(f"multifile:filename={f.name}", "", ExitCode.AUTHENTICATION_FAILED, password+"A")
+        finally:
+            f.close()
 
 
 def main():

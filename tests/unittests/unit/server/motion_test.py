@@ -65,6 +65,7 @@ class TestMotion(unittest.TestCase):
             t(a1, a2, S-M, S+N-M)
             t(a2, a1, M-S, S+N-M)
 
+    # noinspection PyTypeChecker
     def test_calculate_distances(self):
         array1 = [crc32(strtobytes(x)) for x in (1234, b"abc", 99999)]
         array2 = array1[:]
@@ -107,8 +108,8 @@ class TestMotion(unittest.TestCase):
         self.do_test_detect_motion(1920, 1080)
 
     def do_test_detect_motion(self, W, H):
-        from xpra.util.env import numpy_import_lock
-        with numpy_import_lock:
+        from xpra.util.env import NumpyImportContext
+        with NumpyImportContext("detect-motion", True):
             try:
                 from numpy import random, roll
             except ImportError:

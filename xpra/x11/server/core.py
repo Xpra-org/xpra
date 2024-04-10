@@ -211,6 +211,7 @@ class X11ServerCore(GTKServerBase):
             get_default_cursor()
             X11Keyboard.selectCursorChange(True)
 
+    # noinspection PyMethodMayBeStatic
     def get_display_bit_depth(self) -> int:
         with xlog:
             return X11Window.get_depth(X11Window.get_root_xid())
@@ -295,6 +296,7 @@ class X11ServerCore(GTKServerBase):
             except Exception as e:
                 log.warn("prop_del(%s, %s) %s", root, prop, e)
 
+    # noinspection PyMethodMayBeStatic
     def get_uuid(self) -> str:
         return get_uuid()
 
@@ -1023,7 +1025,7 @@ class X11ServerCore(GTKServerBase):
                 pixels = pixels.tobytes()
             try:
                 window_image = Image.frombuffer(target_format, (w, h), pixels, "raw", pixel_format, img.get_rowstride())
-            except Exception:
+            except (ValueError, TypeError):
                 log.error("Error parsing window pixels in %s format for window %i", pixel_format, wid, exc_info=True)
                 continue
             tx = x - minx

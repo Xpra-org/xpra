@@ -54,7 +54,7 @@ try:
 
     PacketType: TypeAlias = tuple[str, Unpack[tuple[PacketElement, ...]]]
 except ImportError:  # pragma: no cover
-    PacketType: TypeAlias = tuple[str, Any, ...]
+    PacketType: TypeAlias = tuple[PacketElement, ...]
 
 # client packet handler:
 PacketHandlerType = Callable[[PacketType], None]

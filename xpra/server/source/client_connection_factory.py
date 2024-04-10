@@ -78,7 +78,7 @@ def get_needed_based_classes(caps: typedict) -> tuple[type, ...]:
     return tuple(classes)
 
 
-def get_client_connection_class(caps):
+def get_client_connection_class(caps: typedict):
     CC_BASES = get_needed_based_classes(caps)
     ClientConnectionClass = type('ClientConnectionClass', CC_BASES, {})
     log("ClientConnectionClass%s", CC_BASES)

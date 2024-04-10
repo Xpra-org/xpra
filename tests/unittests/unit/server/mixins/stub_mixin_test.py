@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import unittest
 
+from xpra.common import noop
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.util.thread import start_thread
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -23,12 +24,12 @@ class EncodingMixinTest(unittest.TestCase):
         t = start_thread(x.threaded_setup, "threaded setup")
         t.join()
         x.init_packet_handlers()
-        x.add_packet_handler("foo", self.test_mixin_methods, main_thread=True)
-        x.add_packet_handler("bar", self.test_mixin_methods, main_thread=False)
+        x.add_packet_handler("foo", noop, main_thread=True)
+        x.add_packet_handler("bar", noop, main_thread=False)
         x.add_packet_handlers({
-            "hello" : self.test_mixin_methods,
-            "world" : self.test_mixin_methods,
-            }, main_thread=True)
+            "hello": noop,
+            "world": noop,
+        }, main_thread=True)
 
         x.get_server_source(None)
 

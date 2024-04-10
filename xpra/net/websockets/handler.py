@@ -6,7 +6,7 @@
 from collections.abc import Callable
 
 from xpra.util.env import envbool
-from xpra.util.str_fn import is_valid_hostname
+from xpra.util.str_fn import is_valid_hostname, strtobytes
 from xpra.net.websockets.common import make_websocket_accept_hash
 from xpra.net.http.handler import HTTPRequestHandler, AUTH_USERNAME, AUTH_PASSWORD
 from xpra.log import Logger
@@ -59,7 +59,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         key = self.headers.get("Sec-WebSocket-Key", "")
         if not key:
             raise ValueError("Missing Sec-WebSocket-Key header")
-        accept = make_websocket_accept_hash(key)
+        accept = make_websocket_accept_hash(strtobytes(key))
         log(f"websocket hash for key {key!r} = {accept!r}")
         self.write_byte_strings(
             b"HTTP/1.1 101 Switching Protocols",

@@ -69,7 +69,7 @@ def get_argv() -> list[str]:
     # default value:
     scale = 2
     command_argv = []
-    extra_xpra_args = None
+    extra_xpra_args: list[str] = []
 
     # If "--" is present, the command is after that
     if "--" in sys.argv:
@@ -103,9 +103,7 @@ def get_argv() -> list[str]:
         "--encodings=rgb",
         "--compress=0",
         "--systemd-run=no",
-    ]
-    if extra_xpra_args:
-        xpra_argv += extra_xpra_args
+    ] + extra_xpra_args
 
     width, height, dpi = get_screen_spec()
     # if found, prefer Xvfb, as it is faster to startup:

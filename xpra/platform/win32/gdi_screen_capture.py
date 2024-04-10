@@ -215,6 +215,7 @@ class GDICapture:
         buf_size = rowstride * height
         # noinspection PyTypeChecker
         buftype = c_char * buf_size
+        # noinspection PyCallingNonCallable
         buf = buftype()
         buf.value = b""
         log("GetBitmapBits(%#x, %#x, %#x)", bitmap, buf_size, byref(buf))

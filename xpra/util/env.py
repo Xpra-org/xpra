@@ -88,11 +88,11 @@ def osexpand(s: str, actual_username="", uid=0, gid=0, subs=None) -> str:
     if not s:
         return s
 
-    def expanduser(s: str):
-        if actual_username and s.startswith("~/"):
+    def expanduser(var: str):
+        if actual_username and var.startswith("~/"):
             # replace "~/" with "~$actual_username/"
-            return os.path.expanduser("~%s/%s" % (actual_username, s[2:]))
-        return os.path.expanduser(s)
+            return os.path.expanduser("~%s/%s" % (actual_username, var[2:]))
+        return os.path.expanduser(var)
 
     d = dict(subs or {})
     d |= {

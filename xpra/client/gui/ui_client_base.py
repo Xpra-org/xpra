@@ -179,7 +179,7 @@ class UIXpraClient(ClientBaseClass):
         self.menu_helper = None
 
         # state:
-        self._on_handshake: list[tuple[Callable, tuple[Any]]] | None = []
+        self._on_handshake: list[tuple[Callable, tuple[Any, ...]]] | None = []
         self._on_server_setting_changed: dict[str, list[Callable]] = {}
 
     def init(self, opts) -> None:
@@ -202,12 +202,12 @@ class UIXpraClient(ClientBaseClass):
     def init_ui(self, opts):
         """ initialize user interface """
 
-        def noauto(v):
-            if not v:
+        def noauto(val):
+            if not val:
                 return None
-            if str(v).lower() == "auto":
+            if str(val).lower() == "auto":
                 return None
-            return v
+            return val
 
         overrides = [noauto(getattr(opts, "keyboard_%s" % x)) for x in (
             "layout", "layouts", "variant", "variants", "options",
@@ -579,6 +579,7 @@ class UIXpraClient(ClientBaseClass):
 
     ######################################################################
     # server messages:
+    # noinspection PyMethodMayBeStatic
     def _process_server_event(self, packet: PacketType):
         log(": ".join(str(x) for x in packet[1:]))
 
@@ -620,6 +621,7 @@ class UIXpraClient(ClientBaseClass):
                 log("setting_changed(%s, %s) calling %s", setting, ellipsizer(value, limit=200), cb)
                 cb(setting, value)
 
+    # noinspection PyMethodMayBeStatic
     def get_control_commands(self) -> list[str]:
         commands = ["show_session_info", "show_bug_report", "show_menu", "name", "debug"]
         for x in compression.get_enabled_compressors():

@@ -1109,7 +1109,7 @@ def get_base_conf_dir(install_dir: str, stripbuildroot=True):
     return dirs
 
 
-def get_conf_dir(install_dir: str, stripbuildroot=True):
+def get_conf_dir(install_dir: str, stripbuildroot=True) -> str:
     dirs = get_base_conf_dir(install_dir, stripbuildroot)
     if "etc" not in dirs:
         dirs.append("etc")
@@ -1136,7 +1136,7 @@ def detect_xdummy_setup(install_dir=None):
     return config.detect_xdummy_command(conf_dir, None, Xdummy_wrapper_ENABLED)
 
 
-def build_xpra_conf(install_dir):
+def build_xpra_conf(install_dir: str):
     # pylint: disable=import-outside-toplevel
     # generates an actual config file from the template
     xvfb_command = detect_xorg_setup(install_dir)

@@ -14,25 +14,25 @@ def root_xid() -> int:
     return root.get_xid()
 
 
-def save_uuid(uuid):
+def save_uuid(uuid: str) -> None:
     prop_set(root_xid(), "XPRA_SERVER_UUID", "latin1", uuid)
 
 
-def get_uuid():
-    return prop_get(root_xid(), "XPRA_SERVER_UUID", "latin1", ignore_errors=True)
+def get_uuid() -> str:
+    return prop_get(root_xid(), "XPRA_SERVER_UUID", "latin1", ignore_errors=True) or ""
 
 
-def del_uuid():
+def del_uuid() -> None:
     prop_del(root_xid(), "XPRA_SERVER_UUID")
 
 
-def save_mode(mode):
+def save_mode(mode: str) -> None:
     prop_set(root_xid(), "XPRA_SERVER_MODE", "latin1", mode)
 
 
-def get_mode():
-    return prop_get(root_xid(), "XPRA_SERVER_MODE", "latin1", ignore_errors=True)
+def get_mode() -> str:
+    return prop_get(root_xid(), "XPRA_SERVER_MODE", "latin1", ignore_errors=True) or ""
 
 
-def del_mode():
+def del_mode() -> None:
     prop_del(root_xid(), "XPRA_SERVER_MODE")

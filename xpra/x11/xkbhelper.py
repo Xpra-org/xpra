@@ -160,16 +160,27 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
         keycodes = gtk_keycodes_to_mappings(xkbmap_keycodes)
     log("set_keycode_translation(%s, %s)", xkbmap_x11_keycodes, xkbmap_keycodes)
     log(" keycodes=%s", keycodes)
-    # keycodes = {
-    #     9: set([('', 1), ('Escape', 4), ('', 3), ('Escape', 0), ('Escape', 2)]),
-    #     10: set([('onesuperior', 4), ('onesuperior', 8), ('exclam', 1), ('1', 6),
-    #              ('exclam', 3), ('1', 2), ('exclamdown', 9), ('exclamdown', 5), ('1', 0), ('exclam', 7)]),
+    """
+    Example data:
+    ```
+    keycodes = {
+        9: set([('', 1), ('Escape', 4), ('', 3), ('Escape', 0), ('Escape', 2)]),
+        10: set([('onesuperior', 4), ('onesuperior', 8), ('exclam', 1), ('1', 6),
+                 ('exclam', 3), ('1', 2), ('exclamdown', 9), ('exclamdown', 5), ('1', 0), ('exclam', 7)]),
+    ```
+    """
     x11_keycodes = get_keycode_mappings()
     log(" x11_keycodes=%s", x11_keycodes)
-    # x11_keycodes = {
-    #    8: ['Mode_switch', '', 'Mode_switch', '', 'Mode_switch'],
-    #    9: ['Escape', '', 'Escape', '', 'Escape'],
-    # for faster lookups:
+    """
+    Example:
+    ```
+    x11_keycodes = {
+       8: ['Mode_switch', '', 'Mode_switch', '', 'Mode_switch'],
+       9: ['Escape', '', 'Escape', '', 'Escape'],
+       }
+    ```
+    create faster lookup table:
+    """
     x11_keycodes_for_keysym = {}
     for keycode, keysyms in x11_keycodes.items():
         for keysym in keysyms:

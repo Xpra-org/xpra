@@ -17,7 +17,7 @@ from xpra.util.thread import start_thread
 from xpra.common import FULL_INFO, noop
 from xpra.util.objects import AtomicInteger, typedict, notypedict
 from xpra.util.env import envint, envbool
-from xpra.net.common import PacketType
+from xpra.net.common import PacketType, PacketElement
 from xpra.net.compression import compressed_wrapper
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -316,11 +316,11 @@ class ClientConnection(StubSourceMixin):
             have_more = packet is not None and bool(self.ordinary_packets or self.packet_queue)
         return packet, start_send_cb, end_send_cb, fail_cb, synchronous, have_more, will_have_more
 
-    def send(self, *parts, **kwargs):
+    def send(self, *parts : PacketElement, **kwargs):
         """ This method queues non-damage packets (higher priority) """
-        synchronous = kwargs.get("synchronous", True)
-        will_have_more = kwargs.get("will_have_more", not synchronous)
-        fail_cb = kwargs.get("fail_cb", noop)
+        synchronous = bool(kwargs.get("synchronous", True))
+        will_have_more = bool(kwargs.get("will_have_more", not synchronous))
+        fail_cb: Callable = kwargs.get("fail_cb", noop)
         p = self.protocol
         if p:
             self.ordinary_packets.append((parts, synchronous, fail_cb, will_have_more))

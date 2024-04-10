@@ -347,9 +347,9 @@ def make_proxy_server():
     return ProxyServer()
 
 
-def make_expand_server():
+def make_expand_server(attrs: dict[str, str]):
     from xpra.x11.server.expand import ExpandServer
-    return ExpandServer()
+    return ExpandServer(attrs)
 
 
 def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=True, timeout=None) -> bool:

@@ -5,7 +5,7 @@
 #  Copyright (c) 2009 by Yusuke Shinyama
 #
 
-# This is a Python rewrite of d3des.c by Richard Outerbridge.
+# This is a Python rewrite of `d3des.c` by Richard Outerbridge.
 #
 # I referred to the original VNC viewer code for the changes that
 # is necessary to maintain the exact behavior of the VNC protocol.

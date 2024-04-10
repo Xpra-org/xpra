@@ -777,6 +777,7 @@ class WNDCLASSEX(Structure):
 
 
 class GUID(Structure):
+    # noinspection PyTypeChecker
     _fields_ = [
         ('Data1', c_ulong),
         ('Data2', c_ushort),

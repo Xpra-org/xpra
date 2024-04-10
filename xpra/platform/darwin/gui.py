@@ -538,6 +538,7 @@ def register_URL_handler(handler: Callable) -> None:
     log("register_URL_handler(%s)", handler)
 
     class GURLHandler(NSObject):
+        # noinspection PyMethodMayBeStatic
         def handleEvent_withReplyEvent_(self, event, reply_event):
             log("GURLHandler.handleEvent(%s, %s)", event, reply_event)
             url = event.descriptorForKeyword_(four_char_to_int(b'----')).stringValue()
@@ -561,6 +562,7 @@ def register_URL_handler(handler: Callable) -> None:
 
 class AppDelegate(NSObject):
 
+    # noinspection PyTypeHints
     def init(self) -> None:
         objc_self = objc.super(AppDelegate, self).init()
         if self is None:

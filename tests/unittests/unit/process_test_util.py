@@ -24,6 +24,7 @@ from xpra.scripts.main import X11_SOCKET_DIR, stat_display_socket
 from xpra.scripts.config import get_defaults
 
 from xpra.log import Logger
+
 log = Logger("test")
 
 XPRA_TEST_DEBUG = envbool("XPRA_TEST_DEBUG", False)
@@ -46,8 +47,10 @@ def show_proc_pipes(proc):
                 log.error("Error: failed to read '%s': %s", fileobj.name, e)
         else:
             log.warn("no %s file", filetype)
+
     showfile(proc.stdout_file, "stdout")
     showfile(proc.stderr_file, "stderr")
+
 
 def show_proc_error(proc, msg):
     if not proc:
@@ -55,7 +58,7 @@ def show_proc_error(proc, msg):
     log.warn("%s failed:", proc.command)
     log.warn("returncode=%s", proc.poll())
     show_proc_pipes(proc)
-    raise Exception(msg+" command=%s" % proc.command)
+    raise Exception(msg + " command=%s" % proc.command)
 
 
 class DisplayContext(OSEnvContext):
@@ -63,6 +66,7 @@ class DisplayContext(OSEnvContext):
     def __init__(self):
         OSEnvContext.__init__(self)
         self.xvfb_process = None
+
     def __enter__(self):
         OSEnvContext.__enter__(self)
         if POSIX and not OSX:
@@ -82,6 +86,7 @@ class DisplayContext(OSEnvContext):
             self.stu.tearDown()
             ProcessTestUtil.tearDownClass()
         OSEnvContext.__exit__(self)
+
     def __repr__(self):
         return "DisplayContext"
 
@@ -98,15 +103,15 @@ class ProcessTestUtil(unittest.TestCase):
         cls.display_start = 100
         cls.temp_files = []
         cls.processes = []
-        cls.xauthority_temp = None #tempfile.NamedTemporaryFile(prefix="xpra-test.", suffix=".xauth", delete=False)
+        cls.xauthority_temp = None  #tempfile.NamedTemporaryFile(prefix="xpra-test.", suffix=".xauth", delete=False)
         #cls.xauthority_temp.close()
         #os.environ["XAUTHORITY"] = os.path.expanduser(cls.xauthority_temp.name)
         cls.default_env = os.environ.copy()
         cls.default_env.update({
-            "XPRA_LOG_DIR"  : tempfile.gettempdir(),
-            "XPRA_NOTTY"    : "1",
-            "XPRA_WAIT_FOR_INPUT"   : "0",
-            })
+            "XPRA_LOG_DIR": tempfile.gettempdir(),
+            "XPRA_NOTTY": "1",
+            "XPRA_WAIT_FOR_INPUT": "0",
+        })
         cls.default_config = get_defaults()
         log("setUpClass(%s) default_env=%s", cls, cls.default_env)
 
@@ -142,12 +147,14 @@ class ProcessTestUtil(unittest.TestCase):
                         pass
             except OSError:
                 log.error("failed to stop subprocess %s", x)
+
         def get_wait_for():
             return tuple(proc for proc in cls.processes if proc.poll() is None)
+
         wait_for = get_wait_for()
         start = time.monotonic()
-        while wait_for and time.monotonic()-start<5:
-            if len(wait_for)==1:
+        while wait_for and time.monotonic() - start < 5:
+            if len(wait_for) == 1:
                 pollwait(wait_for[0])
             else:
                 time.sleep(1)
@@ -157,25 +164,22 @@ class ProcessTestUtil(unittest.TestCase):
         os.environ.clear()
         os.environ.update(self.default_env)
 
-
     @classmethod
     def get_default_run_env(cls):
-        env = dict((k,v) for k,v in cls.default_env.items() if
-                k.startswith("XPRA") or k in (
-                    "HOME", "HOSTNAME", "SHELL", "TERM",
-                    "USER", "USERNAME", "PATH",
-                    "XAUTHORITY", "PWD",
-                    "PYTHONPATH", "SYSTEMROOT",
-                    "DBUS_SESSION_BUS_ADDRESS",
-                    "XDG_RUNTIME_DIR",
-                    ))
+        env = dict((k, v) for k, v in cls.default_env.items() if k.startswith("XPRA") or k in (
+            "HOME", "HOSTNAME", "SHELL", "TERM",
+            "USER", "USERNAME", "PATH",
+            "XAUTHORITY", "PWD",
+            "PYTHONPATH", "SYSTEMROOT",
+            "DBUS_SESSION_BUS_ADDRESS",
+            "XDG_RUNTIME_DIR",
+        ))
         log("get_default_run_env() env(%s)=%s", repr_ellipsized(cls.default_env), env)
         env["NO_AT_BRIDGE"] = "1"
         return env
 
     def get_run_env(self):
         return self.get_default_run_env()
-
 
     @classmethod
     def which(cls, cmd):
@@ -218,21 +222,19 @@ class ProcessTestUtil(unittest.TestCase):
         cls.processes.append(proc)
         return proc
 
-
     @classmethod
     def get_xpra_cmd(cls):
         cmd = get_xpra_command()
-        if cmd==["xpra"]:
+        if cmd == ["xpra"]:
             cmd = [bytestostr(cls.which("xpra"))]
         pyexename = os.environ.get("PYTHON", "python3")
         exe = bytestostr(cmd[0])
         if exe.endswith(".exe"):
             exe = exe[:-4]
-        if not (exe.endswith("python") or exe.endswith(pyexename) or exe=="coverage"):
+        if not (exe.endswith("python") or exe.endswith(pyexename) or exe == "coverage"):
             #prepend python / python3:
             cmd = [pyexename] + cmd
         return cmd
-
 
     @classmethod
     def show_proc_pipes(cls, proc):
@@ -242,13 +244,11 @@ class ProcessTestUtil(unittest.TestCase):
     def show_proc_error(cls, proc, msg):
         show_proc_error(proc, msg)
 
-
     @classmethod
     def get_command_output(cls, command, env=None, **kwargs):
         proc = cls.class_run_command(command, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
         out = proc.communicate()[0]
         return out
-
 
     @classmethod
     def _temp_file(cls, data=None, prefix="xpra-"):
@@ -268,7 +268,6 @@ class ProcessTestUtil(unittest.TestCase):
             os.unlink(f.name)
         except OSError as e:
             log.error("Error deleting temp file '%s': %s", f.name, e)
-
 
     @classmethod
     def find_X11_display_numbers(cls):
@@ -291,7 +290,6 @@ class ProcessTestUtil(unittest.TestCase):
     def find_X11_displays(cls):
         return ["%s%i" % (DISPLAY_PREFIX, x) for x in cls.find_X11_display_numbers()]
 
-
     @classmethod
     def find_free_display_no(cls, exclude=()):
         #X11 sockets:
@@ -311,26 +309,25 @@ class ProcessTestUtil(unittest.TestCase):
     def find_free_display(cls):
         return "%s%i" % (DISPLAY_PREFIX, cls.find_free_display_no())
 
-
     @classmethod
-    def start_Xvfb(cls, display=None, screens=((1024,768),), depth=24, extensions=("Composite", )):
+    def start_Xvfb(cls, display=None, screens=((1024, 768),), depth=24, extensions=("Composite",)) -> subprocess.Popen:
         assert POSIX
         if display is None:
             display = cls.find_free_display()
         env = {}
         for x in list(os.environ.keys()):
             if x in (
-				"LOGNAME", "USER", "PATH", "LANG", "TERM",
-				"HOME", "USERNAME", "PYTHONPATH", "HOSTNAME",
-                #"XAUTHORITY",
-				):    #DBUS_SESSION_BUS_ADDRESS
+                    "LOGNAME", "USER", "PATH", "LANG", "TERM",
+                    "HOME", "USERNAME", "PYTHONPATH", "HOSTNAME",
+                    #"XAUTHORITY",
+            ):  #DBUS_SESSION_BUS_ADDRESS
                 #keep it
                 env[x] = os.environ.get(x)
         real_display = os.environ.get("DISPLAY")
         cmd = [cls.which(TEST_XVFB_COMMAND)]
-        is_xephyr = TEST_XVFB_COMMAND.find("Xephyr")>=0
+        is_xephyr = TEST_XVFB_COMMAND.find("Xephyr") >= 0
         if is_xephyr:
-            if len(screens)>1 or not real_display:
+            if len(screens) > 1 or not real_display:
                 #we can't use Xephyr for multi-screen
                 cmd = [cls.which("Xvfb")]
             elif real_display:

@@ -335,8 +335,8 @@ class SocketProtocol:
             self._get_packet_cb = None
             if not tmp_queue:
                 raise RuntimeError("packet callback used more than once!")
-            packet = tmp_queue.pop()
-            return (packet,)
+            qpacket = tmp_queue.pop()
+            return (qpacket,)
 
         self._get_packet_cb = packet_cb
         self.source_has_more()
@@ -544,10 +544,12 @@ class SocketProtocol:
         whose index is zero.
         ie: ["blah", [large binary data], "hello", 200]
         may get converted to:
+        ```
         [
             (1, compression_level, [large binary data now lz4 compressed]),
             (0,                 0, rencoded(["blah", '', "hello", 200]))
         ]
+        ```
         """
         packets: list[NetPacketType] = []
         packet = list(packet_in)
@@ -591,7 +593,7 @@ class SocketProtocol:
                     il = 0
                     if isinstance(item, LevelCompressed):
                         # unlike `Compressed` (usually pixels, decompressed in the paint thread),
-                        # `LevelCompressed` is decompressed by the network layer
+                        # `LevelCompressed` is decompressed by the network layer,
                         # so we must tell it how to do that and using the level flag:
                         il = item.level
                     packets.append((0, i, il, item.data))
@@ -757,6 +759,7 @@ class SocketProtocol:
                     self.output_raw_packetcount += 1
         self.output_packetcount += 1
 
+    # noinspection PyMethodMayBeStatic
     def con_write(self, con, buf: ByteString, packet_type: str):
         return con.write(buf, packet_type)
 
@@ -968,9 +971,9 @@ class SocketProtocol:
                                 size_to_check, hexstr(packet_header), self.max_packet_size)
                             if size_to_check > self.max_packet_size:
                                 # pylint: disable=line-too-long
-                                msg = f"packet size requested is {size_to_check}"
-                                msg += f" but maximum allowed is {self.max_packet_size}"
-                                self.invalid(msg, packet_header)
+                                err_msg = f"packet size requested is {size_to_check}"
+                                err_msg += f" but maximum allowed is {self.max_packet_size}"
+                                self.invalid(err_msg, packet_header)
                             return False
 
                         self.timeout_add(1000, check_packet_size, payload_size, header)
@@ -1139,9 +1142,9 @@ class SocketProtocol:
             then no matter what, we close the connection and stop the threads.
         """
 
-        def closing_already(encoder, last_packet, done_callback=noop):
+        def closing_already(packet_encoder, packet_data, flush_callback=noop):
             log("flush_then_close%s had already been called, this new request has been ignored",
-                (encoder, last_packet, done_callback))
+                (packet_encoder, packet_data, flush_callback))
 
         self.flush_then_close = closing_already
         log("flush_then_close%s closed=%s", (encoder, last_packet, done_callback), self._closed)

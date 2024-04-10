@@ -350,8 +350,8 @@ class VideoHelper:
                 mod = get_csc_module_name(x)
                 load_codec(mod)
                 self.init_csc_option(mod)
-            except Exception:
-                log.warn("init_csc_options() cannot add %s csc", x, exc_info=True)
+            except ImportError:
+                log.warn(f"Warning: cannot add {x!r} csc", exc_info=True)
         log(" csc specs: %s", csv(self._csc_encoder_specs))
         for src_format, d in sorted(self._csc_encoder_specs.items()):
             log(" %s - %s options:", src_format, len(d))
@@ -386,8 +386,8 @@ class VideoHelper:
                 mod = get_decoder_module_name(x)
                 load_codec(mod)
                 self.init_video_decoder_option(mod)
-            except Exception:
-                log.warn("Warning: cannot add %s decoder", x, exc_info=True)
+            except ImportError:
+                log.warn(f"Warning: cannot add {x!r} decoder",exc_info=True)
         log("found %s video decoder formats: %s",
             len(self._video_decoder_specs), csv(self._video_decoder_specs))
         log("video decoder options: %s", self._video_decoder_specs)

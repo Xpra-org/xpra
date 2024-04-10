@@ -601,6 +601,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
     def got_contents(self, target: str, dtype="", dformat=0, data=b""):
         # if this is the special target 'TARGETS', cache the result:
         if target == "TARGETS" and dtype == "ATOM" and dformat == 32:
+
             self.targets = _filter_targets(data)
             # TODO: tell system what targets we have
             log("got_contents: tell OS we have %s", csv(self.targets))

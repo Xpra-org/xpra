@@ -48,7 +48,7 @@ class ServerTestUtil(ProcessTestUtil):
         ProcessTestUtil.setUpClass()
         tmpdir = tempfile.gettempdir()
         cls.dotxpra = DotXpra(tmpdir, [tmpdir])
-        cls.default_xpra_args : list[str] = ["--speaker=no", "--microphone=no"]
+        cls.default_xpra_args: list[str] = ["--speaker=no", "--microphone=no"]
         if not WIN32:
             cls.default_xpra_args += ["--systemd-run=no", "--pulseaudio=no"]
             for x in cls.dotxpra._sockdirs:
@@ -64,7 +64,7 @@ class ServerTestUtil(ProcessTestUtil):
             for x in list(new_displays):
                 log("stopping display %s" % x)
                 try:
-                    cmd = cls.get_xpra_cmd()+["stop", x]
+                    cmd = cls.get_xpra_cmd() + ["stop", x]
                     proc = subprocess.Popen(cmd)
                     proc.communicate(None)
                 except Exception:
@@ -76,22 +76,18 @@ class ServerTestUtil(ProcessTestUtil):
                 log.error("Error deleting '%s': %s", cls.xauthority_temp.name, e)
             cls.xauthority_temp = None
 
-
     def setUp(self):
         ProcessTestUtil.setUp(self)
         xpra_list = self.run_xpra(["list"])
         assert pollwait(xpra_list, 15) is not None, "xpra list returned %s" % xpra_list.poll()
 
-
     def run_xpra(self, xpra_args, **kwargs):
-        cmd = self.get_xpra_cmd()+list(xpra_args)
+        cmd = self.get_xpra_cmd() + list(xpra_args)
         return self.run_command(cmd, **kwargs)
-
 
     @classmethod
     def get_xpra_cmd(cls) -> list[str]:
         return ProcessTestUtil.get_xpra_cmd() + cls.default_xpra_args
-
 
     def run_server(self, *args):
         display = self.find_free_display()
@@ -99,8 +95,8 @@ class ServerTestUtil(ProcessTestUtil):
         server.display = display
         return server
 
-    def check_fast_start_server(self, display:str, *args):
-        defaults : dict[str,str] = dict((k, "no") for k in (
+    def check_fast_start_server(self, display: str, *args):
+        defaults: dict[str, str] = dict((k, "no") for k in (
             "av-sync", "remote-logging",
             "windows",
             "mdns",
@@ -110,20 +106,20 @@ class ServerTestUtil(ProcessTestUtil):
             "splash", "printing", "opengl",
             "webcam", "bell", "system-tray", "notifications",
             "clipboard", "start-new-commands",
-            ))
+        ))
         defaults.update({
-            "video-encoders"    : "none",
-            "csc-modules"       : "none",
-            "video-decoders"    : "none",
-            "encodings"         : "rgb",
-            })
-        args = [f"--{k}={v}" for k,v in defaults.items()] + list(args)
+            "video-encoders": "none",
+            "csc-modules": "none",
+            "video-decoders": "none",
+            "encodings": "rgb",
+        })
+        args = [f"--{k}={v}" for k, v in defaults.items()] + list(args)
         return self.check_server("start", display, *args)
 
-    def check_start_server(self, display:str, *args):
+    def check_start_server(self, display: str, *args):
         return self.check_server("start", display, *args)
 
-    def check_server(self, subcommand:str, display:str, *args):
+    def check_server(self, subcommand: str, display: str, *args):
         cmd = [subcommand]
         if display:
             cmd.append(display)
@@ -135,7 +131,7 @@ class ServerTestUtil(ProcessTestUtil):
             self.show_proc_error(server_proc, "server failed to start")
         if display:
             #wait until the socket shows up:
-            live : list[str] = []
+            live: list[str] = []
             for _ in range(20):
                 live = self.dotxpra.displays()
                 if display in live:
@@ -145,7 +141,7 @@ class ServerTestUtil(ProcessTestUtil):
                 self.show_proc_error(server_proc, "server terminated")
             assert display in live, "server display '%s' not found in live displays %s" % (display, live)
             #then wait a little before using it:
-            time.sleep(1)
+            time.sleep(5)
         #query it:
         version = None
         r = 0
@@ -158,22 +154,22 @@ class ServerTestUtil(ProcessTestUtil):
             r = pollwait(version, 1)
             log("version for %s returned %s", display, r)
             if r is not None:
-                if r==1:
+                if r == 1:
                     #re-run it
                     version = None
                     continue
                 break
             time.sleep(1)
-        if r!=0:
+        if r != 0:
             self.show_proc_error(version, "version check failed for %s, returned %s" % (
                 display, exit_str(r)))
         return server_proc
 
-    def stop_server(self, server_proc, subcommand:str, *connect_args) -> None:
+    def stop_server(self, server_proc, subcommand: str, *connect_args) -> None:
         assert subcommand in ("stop", "exit"), "invalid stop subcommand '%s'" % subcommand
         if server_proc.poll() is not None:
             raise Exception("cannot stop server, it has already exited, returncode=%i" % server_proc.poll())
-        cmd = [subcommand]+list(connect_args)
+        cmd = [subcommand] + list(connect_args)
         stopit = self.run_xpra(cmd)
         log("stop_server%s stopit=%s", (server_proc, subcommand, connect_args), stopit)
         if pollwait(stopit, STOP_WAIT_TIMEOUT) is None:
@@ -193,18 +189,19 @@ class ServerTestUtil(ProcessTestUtil):
             if display not in displays:
                 return
             time.sleep(1)
-        raise Exception("server socket for display %s should have been removed, but it is still found in %s" % (display, displays))
+        raise Exception(
+            "server socket for display %s should have been removed, but it is still found in %s" % (display, displays))
 
     @classmethod
-    def get_server_info(cls, display:str):
+    def get_server_info(cls, display: str):
         #wait for client to own the clipboard:
-        cmd = cls.get_xpra_cmd()+["info", display]
+        cmd = cls.get_xpra_cmd() + ["info", display]
         out = cls.get_command_output(cmd)
         #print("info=%s" % (out,))
         info = {}
         for line in out.decode().splitlines():
-            if line.find("=")>0:
-                k,v = line.split("=", 1)
+            if line.find("=") > 0:
+                k, v = line.split("=", 1)
                 info[k] = v
         #print("info=%s" % (info,))
         return info

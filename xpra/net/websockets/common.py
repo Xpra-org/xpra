@@ -44,7 +44,7 @@ OPCODE_STR: dict[int, str] = {
 }
 
 
-def make_websocket_accept_hash(key: str) -> bytes:
+def make_websocket_accept_hash(key: bytes) -> bytes:
     GUID = b"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
     accept = sha1(strtobytes(key) + GUID).digest()
     return b64encode(accept)
@@ -126,7 +126,7 @@ def parse_response_header(response: bytes):
     return headers
 
 
-def verify_response_headers(headers: dict[str, Any], key):
+def verify_response_headers(headers: dict[str, Any], key: bytes):
     log(f"verify_response_headers({headers!r}, {key!r})")
     if not headers:
         raise ValueError("no http headers found in response")
@@ -144,6 +144,6 @@ def verify_response_headers(headers: dict[str, Any], key):
     if not accept_key:
         raise ValueError("websocket accept key is missing")
     expected_key = make_websocket_accept_hash(key)
-    if bytestostr(accept_key) != bytestostr(expected_key):
+    if strtobytes(accept_key) != expected_key:
         log(f"expected {expected_key!r}, received {accept_key!r}")
         raise ValueError("websocket accept key is invalid")

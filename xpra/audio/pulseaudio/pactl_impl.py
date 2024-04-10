@@ -138,7 +138,7 @@ def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=
     set input_or_output=False to get outputs only
     set input_or_output=None to get both
     Same goes for monitors (False|True|None)
-    Returns the a dict() with the PulseAudio name as key and a description as value
+    Returns a dict() with the PulseAudio name as key and a description as value
     """
     if WIN32 or OSX:
         return {}

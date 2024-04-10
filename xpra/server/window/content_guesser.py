@@ -215,7 +215,7 @@ def load_command_to_type() -> dict[str, str]:
             log("category %s: %s", category, ellipsizer(category_props))
             entries = category_props.get("Entries", {})
             for name, props in entries.items():
-                command = props.get("TryExec") or props.get("Exec")
+                command = str(props.get("TryExec") or props.get("Exec") or "")
                 categories = props.get("Categories")
                 log("Entry '%s': command=%s, categories=%s", name, command, categories)
                 if command and categories:
