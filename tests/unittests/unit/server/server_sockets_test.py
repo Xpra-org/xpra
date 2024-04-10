@@ -24,6 +24,7 @@ CONNECT_WAIT = envint("XPRA_TEST_CONNECT_WAIT", 60)
 SUBPROCESS_WAIT = envint("XPRA_TEST_SUBPROCESS_WAIT", CONNECT_WAIT * 2)
 
 NOVERIFY = "--ssl-server-verify-mode=none"
+NOHOSTNAME = "--ssl-check-hostname=no"
 
 
 class GenSSLCertContext:
@@ -185,7 +186,9 @@ class ServerSocketsTest(ServerTestUtil):
 
     def verify_connect(self, uri, exit_code=ExitCode.OK, *client_args):
         cmd = ["info", uri] + list(client_args)
-        client = self.run_xpra(cmd)
+        env = self.get_run_env()
+        env["SSL_RETRY"] = "0"
+        client = self.run_xpra(cmd, env=env)
         r = pollwait(client, CONNECT_WAIT)
         if client.poll() is None:
             client.terminate()
@@ -222,11 +225,10 @@ class ServerSocketsTest(ServerTestUtil):
                 def tc(exit_code, *client_args):
                     self.verify_connect(f"quic://127.0.0.1:{port}/", exit_code, *client_args)
 
-                nohostname = "--ssl-check-hostname=no"
                 # asyncio makes it too difficult to emit the correct exception here:
                 # we should be getting ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE..
                 tc(ExitCode.CONNECTION_FAILED)
-                tc(ExitCode.OK, NOVERIFY, nohostname)
+                tc(ExitCode.OK, NOVERIFY, NOHOSTNAME)
             finally:
                 if server:
                     server.terminate()
@@ -248,7 +250,12 @@ class ServerSocketsTest(ServerTestUtil):
         ports_proto = dict((v, k) for k, v in proto_ports.items())
         with GenSSLCertContext() as genssl:
             try:
-                server_args = ["--ssl=on", "--html=on", f"--ssl-cert={genssl.certfile}"]
+                server_args = [
+                    "--ssl=on",
+                    "--html=on",
+                    f"--ssl-cert={genssl.certfile}",
+                    f"--ssl-key={genssl.keyfile}",
+                ]
                 for bind_mode, bind_port in proto_ports.items():
                     server_args.append(f"--bind-{bind_mode}=0.0.0.0:{bind_port},auth=allow")
                 log("starting test ssl server on %s", display)
@@ -272,16 +279,30 @@ class ServerSocketsTest(ServerTestUtil):
                     uri = f"{mode}://foo:bar@127.0.0.1:{port}/"
                     stype = ports_proto.get(port, "").rjust(5)
                     try:
-                        self.verify_connect(uri, ExitCode.OK, NOVERIFY)
+                        self.verify_connect(uri, ExitCode.OK, NOVERIFY, NOHOSTNAME)
                     except RuntimeError as e:
-                        err = f"failed to connect to {stype} port using mode {mode} with uri {uri!r} and {NOVERIFY!r}: {e}"
+                        err = f"failed to connect to {stype} port using mode {mode} with uri {uri!r} and {NOVERIFY!r} {NOHOSTNAME!r}: {e}"
                         log.error(f"Error: {err}")
                         errors.append(err)
-                    # without `NOVERIFY`, connection should fail with a SSL failure:
+                    # without `NOHOSTNAME`, connection should fail with a SSL failure:
+                    try:
+                        self.verify_connect(uri, ExitCode.SSL_FAILURE, NOVERIFY)
+                    except RuntimeError as e:
+                        err = f"connect to {stype} port using uri {uri} with {NOVERIFY!r}: {e}"
+                        log.error(f"Error: {err}")
+                        errors.append(err)
+                    # without `NOVERIFY`:
+                    try:
+                        self.verify_connect(uri, ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE, NOHOSTNAME)
+                    except RuntimeError as e:
+                        err = f"connect to {stype} port using uri {uri} with {NOHOSTNAME!r}: {e}"
+                        log.error(f"Error: {err}")
+                        errors.append(err)
+                    # without any ssl options:
                     try:
                         self.verify_connect(uri, ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE)
                     except RuntimeError as e:
-                        err = f"connect to {stype} port using uri {uri} should fail: {e}"
+                        err = f"connect to {stype} port using uri {uri}: {e}"
                         log.error(f"Error: {err}")
                         errors.append(err)
 
