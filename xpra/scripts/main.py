@@ -1143,7 +1143,10 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             from xpra.net.socket_util import ssl_wrap_socket, ssl_handshake
             #convert option names to function arguments:
             ssl_options = dict((k.replace("-", "_"), v) for k, v in display_desc.get("ssl-options", {}).items())
-            sock = ssl_wrap_socket(sock, **ssl_options)
+            try:
+                sock = ssl_wrap_socket(sock, **ssl_options)
+            except ValueError as e:
+                raise InitExit(ExitCode.SSL_FAILURE, f"ssl setup failed: {e}")
             sock = ssl_handshake(sock)
             assert sock, f"failed to wrap socket {sock}"
             conn._socket = sock
