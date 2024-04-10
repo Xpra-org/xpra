@@ -1,6 +1,6 @@
 # ![Protocol](../images/icons/connect.png) Protocol
 
-See also: [network layer](../Network/).
+See also: [network layer](../).
 
 Every packet exchanged between xpra servers and clients
 must follow exactly the same format: an 8 byte header followed by
