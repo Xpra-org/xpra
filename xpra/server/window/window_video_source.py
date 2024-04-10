@@ -2385,7 +2385,6 @@ class WindowVideoSource(WindowSource):
                 videolog.error(" csc %s:", csce.get_type())
                 print_nested_dict(csce.get_info(), prefix="   ", print_fn=videolog.error)
             return self.video_fallback(image, options, warn=False)
-            return ()
         finally:
             if image!=csc_image:
                 self.free_image_wrapper(csc_image)
@@ -2394,7 +2393,6 @@ class WindowVideoSource(WindowSource):
             if not self.is_cancelled():
                 videolog.error("Error: %s video compression failed", encoding)
             return self.video_fallback(image, options, warn=True)
-            return ()
         data, client_options = ret
         end = monotonic()
         if LOG_ENCODERS or compresslog.is_debug_enabled():
