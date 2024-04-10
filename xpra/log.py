@@ -478,8 +478,14 @@ class Logger:
                 if frame.filename.endswith(MODULE_FILE) and i >= (count - 3):
                     # skip the logger's own calls
                     break
-                for rec in tb.format_frame_summary(frame).splitlines():
-                    global_logging_handler(self._logger.log, self.level_override or level, rec)
+                try:
+                    frame_summary = tb.format_frame_summary(frame)
+                except AttributeError:
+                    # `format_frame_summary` requires Python 3.11
+                    pass
+                else:
+                    for rec in frame_summary.splitlines():
+                        global_logging_handler(self._logger.log, self.level_override or level, rec)
 
     def __call__(self, msg: str, *args, **kwargs):
         self.debug(msg, *args, **kwargs)
