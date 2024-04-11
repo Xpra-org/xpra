@@ -56,12 +56,17 @@ class ServerAuthTest(ServerTestUtil):
                 self.delete_temp_file(f)
         if client.poll() is None:
             client.terminate()
+
+        exit_code_error = r != exit_code
+        if exit_code_error:
+            self.show_proc_pipes(server)
+
         try:
             server.terminate()
         finally:
             sleep(2)
             self.run_xpra(["clean-sockets"])
-        if r != exit_code:
+        if exit_code_error:
             raise RuntimeError(f"{auth!r} test error: expected info client to return {estr(exit_code)}" +
                                f" but got {estr(r)} for server with args={server_args} and client command: {cmd}")
 
