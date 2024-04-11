@@ -20,10 +20,11 @@ from xpra.platform.dotxpra import DISPLAY_PREFIX
 from unit.server_test_util import ServerTestUtil, log, estr, log_gap
 
 
-CONNECT_WAIT = envint("XPRA_TEST_CONNECT_WAIT", 20)
-SUBPROCESS_WAIT = envint("XPRA_TEST_SUBPROCESS_WAIT", CONNECT_WAIT*2)
+CONNECT_WAIT = envint("XPRA_TEST_CONNECT_WAIT", 60)
+SUBPROCESS_WAIT = envint("XPRA_TEST_SUBPROCESS_WAIT", CONNECT_WAIT * 2)
 
 NOVERIFY = "--ssl-server-verify-mode=none"
+NOHOSTNAME = "--ssl-check-hostname=no"
 
 
 class GenSSLCertContext:
@@ -100,7 +101,8 @@ class ServerSocketsTest(ServerTestUtil):
         uri = uri_prefix + str(display_no)
         start = monotonic()
         while True:
-            client = self.run_xpra(["version", uri] + list(client_args or ()))
+            args = ["version", uri] + list(client_args or ())
+            client = self.run_xpra(args)
             r = pollwait(client, CONNECT_WAIT)
             if r==0:
                 break
@@ -109,7 +111,10 @@ class ServerSocketsTest(ServerTestUtil):
             if monotonic()-start>SUBPROCESS_WAIT:
                 if exit_code==ExitCode.CONNECTION_FAILED:
                     return
-                raise Exception(f"version client failed to connect, returned {estr(r)}")
+                err_msg = f"version client failed to connect using {args}, returned {estr(r)}"
+                log.error(err_msg)
+                log.error(f" server was started on {display=} with {server_args}")
+                raise Exception(err_msg)
         #try to connect
         cmd = ["connect-test", uri] + [x.replace("$DISPLAY_NO", str(display_no)) for x in client_args]
         f = None
@@ -130,9 +135,7 @@ class ServerSocketsTest(ServerTestUtil):
             log.error(" got %s (%s)", estr(r), r)
             log.error(" server args=%s", server_args)
             log.error(" client args=%s", client_args)
-            if r is None:
-                raise Exception("expected info client to return %s but it is still running" % (estr(exit_code),))
-            raise Exception("expected info client to return %s but got %s" % (estr(exit_code), estr(r)))
+            self.verify_exitcode(expected=exit_code, actual=r)
         pollwait(server, 10)
 
     def test_default_socket(self):
@@ -178,12 +181,21 @@ class ServerSocketsTest(ServerTestUtil):
 
     def verify_connect(self, uri, exit_code=ExitCode.OK, *client_args):
         cmd = ["info", uri] + list(client_args)
-        client = self.run_xpra(cmd)
+        env = self.get_run_env()
+        env["SSL_RETRY"] = "0"
+        client = self.run_xpra(cmd, env=env)
         r = pollwait(client, CONNECT_WAIT)
         if client.poll() is None:
             client.terminate()
-        if r!=exit_code:
-            raise RuntimeError("expected info client to return %s but got %s" % (estr(exit_code), estr(client.poll())))
+        r = client.poll()
+        self.verify_exitcode(expected=exit_code, actual=r)
+
+    def verify_exitcode(self, client="info client", expected = ExitCode.OK,
+                        actual = ExitCode.OK):
+        if actual is None:
+            raise Exception(f"expected {client} to return %s but it is still running" % (estr(expected),))
+        if actual != expected:
+            raise RuntimeError(f"expected {client} to return %s but got %s" % (estr(expected), estr(actual)))
 
     def test_quic_socket(self):
         port = get_free_tcp_port()
@@ -206,11 +218,11 @@ class ServerSocketsTest(ServerTestUtil):
                     )
                 def tc(exit_code, *client_args):
                     self.verify_connect(f"quic://127.0.0.1:{port}/", exit_code, *client_args)
-                nohostname = "--ssl-check-hostname=no"
+
                 #asyncio makes it too difficult to emit the correct exception here:
                 #we should be getting ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE..
                 tc(ExitCode.CONNECTION_FAILED)
-                tc(ExitCode.OK, NOVERIFY, nohostname)
+                tc(ExitCode.OK, NOVERIFY, NOHOSTNAME)
             finally:
                 if server:
                     server.terminate()
@@ -232,14 +244,19 @@ class ServerSocketsTest(ServerTestUtil):
         ports_proto = dict((v,k) for k,v in proto_ports.items())
         with GenSSLCertContext() as genssl:
             try:
-                server_args = ["--ssl=on", "--html=on", f"--ssl-cert={genssl.certfile}"]
+                server_args = [
+                    "--ssl=on",
+                    "--html=on",
+                    f"--ssl-cert={genssl.certfile}",
+                    f"--ssl-key={genssl.keyfile}",
+                ]
                 for bind_mode, bind_port in proto_ports.items():
                     server_args.append(f"--bind-{bind_mode}=0.0.0.0:{bind_port},auth=allow")
                 log("starting test ssl server on %s", display)
                 server = self.start_server(display, *server_args)
 
                 #test it with openssl client:
-                for verify_port in (tcp_port, ssl_port, ws_port, wss_port):
+                for mode, verify_port in proto_ports.items():
                     openssl_verify_command = (
                         "openssl", "s_client", "-connect",
                         "127.0.0.1:%i" % verify_port, "-CAfile", genssl.certfile,
@@ -247,22 +264,39 @@ class ServerSocketsTest(ServerTestUtil):
                     devnull = os.open(os.devnull, os.O_WRONLY)
                     openssl = self.run_command(openssl_verify_command, stdin=devnull, shell=True)
                     r = pollwait(openssl, 10)
-                    assert r==0, "openssl certificate verification failed, returned %s" % r
-                errors : List[str] = []
+                    if r != 0:
+                        raise RuntimeError(f"openssl certificate returned {r} for {mode} port {verify_port}")
+
+                errors: List[str] = []
+
                 def tc(mode:str, port:int):
                     uri = f"{mode}://foo:bar@127.0.0.1:{port}/"
                     stype = ports_proto.get(port, "").rjust(5)
                     try:
-                        self.verify_connect(uri, ExitCode.OK, NOVERIFY)
+                        self.verify_connect(uri, ExitCode.OK, NOVERIFY, NOHOSTNAME)
                     except RuntimeError as e:
-                        err = f"failed to connect to {stype} port using uri {uri}: {e}"
+                        err = f"failed to connect to {stype} port using mode {mode} with uri {uri!r} and {NOVERIFY!r} {NOHOSTNAME!r}: {e}"
                         log.error(f"Error: {err}")
                         errors.append(err)
-                    #without NOVERIFY, should fail with SSL failure:
+                    # without `NOHOSTNAME`, connection should fail with a SSL failure:
+                    try:
+                        self.verify_connect(uri, ExitCode.SSL_FAILURE, NOVERIFY)
+                    except RuntimeError as e:
+                        err = f"connect to {stype} port using uri {uri} with {NOVERIFY!r}: {e}"
+                        log.error(f"Error: {err}")
+                        errors.append(err)
+                    # without `NOVERIFY`:
+                    try:
+                        self.verify_connect(uri, ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE, NOHOSTNAME)
+                    except RuntimeError as e:
+                        err = f"connect to {stype} port using uri {uri} with {NOHOSTNAME!r}: {e}"
+                        log.error(f"Error: {err}")
+                        errors.append(err)
+                    # without any ssl options:
                     try:
                         self.verify_connect(uri, ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE)
                     except RuntimeError as e:
-                        err = f"connect to {stype} port using uri {uri} should fail: {e}"
+                        err = f"connect to {stype} port using uri {uri}: {e}"
                         log.error(f"Error: {err}")
                         errors.append(err)
                 #connect to ssl socket:
@@ -274,6 +308,7 @@ class ServerSocketsTest(ServerTestUtil):
                 #ws socket should upgrade to ssl:
                 tc("wss", ws_port)
                 if errors:
+                    log.error(f"{len(errors)} ssl test errors with server args: {server_args}")
                     msg = "\n* ".join(errors)
                     raise RuntimeError(f"{len(errors)} errors testing ssl sockets:\n* {msg}")
             finally:
@@ -292,7 +327,8 @@ class ServerSocketsTest(ServerTestUtil):
             "--socket-dir=%s" % tmpsocketdir1,
             "--socket-dirs=%s" % tmpsocketdir2,
             "--sessions-dir=%s" % tmpsessionsdir,
-            )
+            "--bind=noabstract",
+        )
         log_gap()
         def t(client_args=(), prefix=DISPLAY_PREFIX, exit_code=ExitCode.OK):
             self._test_connect(server_args, client_args, None, prefix, exit_code)
