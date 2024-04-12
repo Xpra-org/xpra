@@ -125,12 +125,11 @@ cdef extern from "evdi_lib.h":
     evdi_selectable evdi_get_event_ready(evdi_handle handle)
     void evdi_set_logging(evdi_logging evdi_logging)
 
-cdef extern from "evdi_compat.h":
-    void evdi_connect_compat(evdi_handle handle, const unsigned char *edid,
+    void evdi_connect(evdi_handle handle, const unsigned char *edid,
           const unsigned int edid_length,
           const uint32_t pixel_area_limit,
           const uint32_t pixel_per_second_limit)
-    void evdi_enable_cursor_events_compat(evdi_handle handle, bint enable)
+    void evdi_enable_cursor_events(evdi_handle handle, bint enable)
 
 
 
@@ -354,7 +353,7 @@ cdef class EvdiDevice:
         log("ddcci_data_handler(%#x)", ddcci_data.address)
 
     def enable_cursor_events(self, enable=True):
-        evdi_enable_cursor_events_compat(self.handle, int(enable))
+        evdi_enable_cursor_events(self.handle, int(enable))
 
 
     def connect(self, edid=DEFAULT_EDID):
