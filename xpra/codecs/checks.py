@@ -468,6 +468,7 @@ def do_testencoding(encoder_module, encoding, W:int, H:int, full:bool=False, lim
 
 
 def test_encoder_spec(encoder_class:Callable, encoding:str, cs_in:str, cs_out:str, W:int, H:int, full:bool=False, limit_w:int=TEST_LIMIT_W, limit_h:int=TEST_LIMIT_H):
+    log(f"testing {encoding} using {encoder_class}: {cs_in} to {cs_out}")
     e = None
     try:
         e = encoder_class()
