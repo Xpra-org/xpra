@@ -1,9 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: wraparound=False
+
+from typing import Dict, Tuple, Any
 
 from xpra.util.str_fn import bytestostr
 
@@ -58,10 +60,10 @@ cdef extern from "xf86drm.h":
 #    int drmIsKMS(int fd)
 
 
-def get_version():
+def get_version() -> Tuple[int, int]:
     return 4, 4
 
-def query():
+def query() -> Dict[str, Any]:
     info = {}
     cdef int count = drmGetDevices(NULL, 16)
     if count<0:
@@ -106,6 +108,6 @@ def query():
     return info
 
 
-def selftest(full=False):
+def selftest(full=False) -> None:
     info = query()
     log(f"query()={info}")
