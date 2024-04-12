@@ -399,24 +399,14 @@ class WindowModel(BaseWindowModel):
         # initial position and size, from the Window object,
         # but allow size hints to override it if specified
         x, y, w, h = geom[:4]
-        size_hints = self.get_property("size-hints")
-        ax, ay = size_hints.get("position", (0, 0))
-        if ax == ay == 0 and (x != 0 or y != 0):
-            # don't override with 0,0
-            size_hints.pop("position", None)
-            ax, ay = x, y
-        aw, ah = size_hints.get("size", (w, h))
-        geomlog("initial X11 position and size: requested(%s, %s, %s)=%s",
-                (x, y, w, h), size_hints, geom, (ax, ay, aw, ah))
+        ax, ay = self.get("requested-position") or (x, y)
+        aw, ah = self.get("requested-size") or (w, h)
+        geomlog("initial X11 position and size: requested(%s)=%s", geom, (ax, ay, aw, ah))
         set_if_unset("modal", "_NET_WM_STATE_MODAL" in net_wm_state)
-        set_if_unset("requested-position", (ax, ay))
-        set_if_unset("requested-size", (aw, ah))
-        # it may have been set already:
-        sip = self.get_property("set-initial-position")
-        if not sip and ("position" in size_hints):
+        if x != ax or y != ay:
             self._internal_set_property("set-initial-position", True)
-        elif sip is None:
-            self._internal_set_property("set-initial-position", False)
+        self._internal_set_property("requested-position", (ax, ay))
+        self._internal_set_property("requested-size", (aw, ah))
         self.update_children()
 
     def do_unmanaged(self, wm_exiting) -> None:
