@@ -881,6 +881,7 @@ class WindowModel(BaseWindowModel):
         pos = hints.pop("position", None)
         if pos is not None:
             self._internal_set_property("requested-position", pos)
+            self._internal_set_property("set-initial-position", True)
         size = hints.pop("size", None)
         if size is not None:
             self._internal_set_property("requested-size", size)
