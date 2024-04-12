@@ -888,6 +888,7 @@ class WindowSource(WindowIconSource):
             self.encoding = encoding
         else:
             self.encoding = self.common_encodings[0]
+            log.info(f"cannot select {encoding}, using {self.encoding} instead")
         log("ws.update_encoding_selection(%s, %s, %s) encoding=%s, common encodings=%s",
             encoding, exclude, init, self.encoding, self.common_encodings)
         assert self.encoding is not None
