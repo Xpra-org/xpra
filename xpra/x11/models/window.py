@@ -315,13 +315,6 @@ class WindowModel(BaseWindowModel):
         hints = self.get_property("size-hints")
         geomlog("setup() hints=%s size=%ix%i", hints, w, h)
         nw, nh = self.calc_constrained_size(w, h, hints)
-        pos = hints.get("position")
-        if pos == (0, 0) and (nx != 0 or ny != 0):
-            # never override with 0,0
-            hints.pop("position")
-            pos = None
-        if ox == 0 and oy == 0 and pos:
-            nx, ny = pos
         self._updateprop("geometry", (nx, ny, nw, nh))
         geomlog("setup() resizing windows to %sx%s, moving to %i,%i", nw, nh, nx, ny)
         # don't trigger a move or resize unless we have to:
