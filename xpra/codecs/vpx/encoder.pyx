@@ -271,7 +271,6 @@ if WIN32:
 def get_specs(encoding, colorspace):
     assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_input_colorspaces(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
-    #quality: we only handle YUV420P but this is already accounted for by the subsampling factor
     #setup cost is reasonable (usually about 5ms)
     global MAX_SIZE
     max_w, max_h = MAX_SIZE[encoding]
