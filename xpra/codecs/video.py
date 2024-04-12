@@ -11,6 +11,7 @@ from typing import Any
 from collections.abc import Callable, Iterable
 
 from xpra.scripts.config import csvstrl
+from xpra.codecs.constants import VideoSpec, CodecSpec
 from xpra.codecs.loader import load_codec, get_codec, get_codec_error, autoprefix
 from xpra.util.str_fn import csv, print_nested_dict
 from xpra.log import Logger
@@ -143,7 +144,7 @@ def filt(prefix: str, name: str, inlist, all_fn: Callable, all_options: tuple[st
     return r
 
 
-VdictEntry = dict[str, list[str]]
+VdictEntry = dict[str, list[CodecSpec]]
 Vdict = dict[str, VdictEntry]
 
 
@@ -339,7 +340,7 @@ class VideoHelper:
                     self.add_encoder_spec(encoding, colorspace, spec)
         log("video encoder options: %s", self._video_encoder_specs)
 
-    def add_encoder_spec(self, encoding: str, colorspace: str, spec):
+    def add_encoder_spec(self, encoding: str, colorspace: str, spec: VideoSpec):
         self._video_encoder_specs.setdefault(encoding, {}).setdefault(colorspace, []).append(spec)
 
     def init_csc_options(self) -> None:
@@ -423,14 +424,14 @@ class VideoHelper:
             colorspace, []
         ).append((decoder_name, decoder_module))
 
-    def get_server_full_csc_modes(self, *client_supported_csc_modes) -> dict:
+    def get_server_full_csc_modes(self, *client_supported_csc_modes) -> dict[str, list[str]]:
         """ given a list of CSC modes the client can handle,
             returns the CSC modes per encoding that the server can encode with.
             (taking into account the decoder's actual output colorspace for each encoding)
         """
         log("get_server_full_csc_modes(%s) decoder encodings=%s",
             client_supported_csc_modes, csv(self._video_decoder_specs.keys()))
-        full_csc_modes : dict[str, list[str]] = {}
+        full_csc_modes: dict[str, list[str]] = {}
         for encoding, encoding_specs in self._video_decoder_specs.items():
             assert encoding_specs is not None
             for colorspace, decoder_specs in sorted(encoding_specs.items()):
@@ -446,7 +447,7 @@ class VideoHelper:
         log("get_server_full_csc_modes(%s)=%s", client_supported_csc_modes, full_csc_modes)
         return full_csc_modes
 
-    def get_server_full_csc_modes_for_rgb(self, *target_rgb_modes) -> dict:
+    def get_server_full_csc_modes_for_rgb(self, *target_rgb_modes) -> dict[str, list[str]]:
         """ given a list of RGB modes the client can handle,
             returns the CSC modes per encoding that the server can encode with,
             this will include the RGB modes themselves too.

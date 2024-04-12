@@ -145,7 +145,7 @@ class CodecStateException(Exception):
 
 
 @dataclass(kw_only=True)
-class _codec_spec:
+class CodecSpec:
 
     codec_class     : Callable
     codec_type     : str
@@ -217,7 +217,7 @@ class _codec_spec:
 
 
 @dataclass(kw_only=True)
-class VideoSpec(_codec_spec):
+class VideoSpec(CodecSpec):
 
     encoding           : str = "invalid"
     input_colorspace   : str = "invalid"
@@ -229,7 +229,7 @@ class VideoSpec(_codec_spec):
 
 
 @dataclass(kw_only=True)
-class CSCSpec(_codec_spec):
+class CSCSpec(CodecSpec):
 
     input_colorspace: str = "invalid"
     output_colorspace: str = "invalid"
