@@ -1149,7 +1149,7 @@ class ClientExtras:
         name_buf = create_string_buffer(win32con.KL_NAMELENGTH)
         if not GetKeyboardLayoutName(name_buf):
             return 0
-        log(f"layout-name={name_buf.value}")
+        log(f"layout-name={name_buf.value!r}")
         try:
             # win32 API returns a hex string
             return int(name_buf.value, 16)

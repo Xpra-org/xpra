@@ -83,13 +83,13 @@ def parse_displayfd(buf: bytes, err: Callable) -> int:
         err("did not provide a display number using displayfd")
         return -1
     if not buf.endswith(b"\n"):
-        err("output not terminated by newline: '%s'" % buf)
+        err("output not terminated by newline: %r" % buf)
         return -1
     buf = buf.rstrip(b"\n\r")
     try:
         n = int(buf)
     except ValueError:
-        err("display number is not a valid number: %s" % buf)
+        err("display number is not a valid number: %r" % buf)
         return -1
     if n < 0 or n >= 2 ** 16:
         err("provided an invalid display number: %s" % n)
