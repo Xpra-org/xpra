@@ -465,8 +465,8 @@ def do_connect_to(transport, host: str, username: str, password: str,
         from paramiko.hostkeys import HostKeys
         host_keys = HostKeys()
         host_keys_filename = None
-        known_hosts = get_ssh_known_hosts_files()
-        for known_hosts in known_hosts:
+        known_hosts_files = get_ssh_known_hosts_files()
+        for known_hosts in known_hosts_files:
             host_keys.clear()
             try:
                 path = os.path.expanduser(known_hosts)
