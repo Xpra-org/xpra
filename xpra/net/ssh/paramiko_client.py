@@ -179,6 +179,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
     # plain socket attributes:
     host: str = display_desc["host"]
     port: int = display_desc.get("port", 22)
+    peername: tuple[str, int] | tuple[str, int, int, int] = (host, port)
     # ssh and command attributes:
     username: str = display_desc.get("username") or get_username()
     if "proxy_host" in display_desc:
@@ -307,7 +308,6 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
                                keys,
                                paramiko_config)
         chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
-        peername = (host, port)
         conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
         to_str = host_target_string("ssh", username, host, port, display)
         proxy_str = host_target_string("ssh", proxy_username, proxy_host, proxy_port, None)
@@ -322,7 +322,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
     log(f"authentication modes={auth_modes}")
     sock = None
     transport = None
-    sockname = peername = host
+    sockname = host
     while not transport:
         sock = socket_connect(host, port)
         if not sock:
@@ -625,7 +625,7 @@ def do_connect_to(transport, host: str, username: str, password: str,
             log(f"trying {keyfile_path!r}")
             key = None
             import paramiko
-            try_key_formats = ()
+            try_key_formats: tuple[str, ...] = ()
             for kf in ("RSA", "DSS", "ECDSA", "Ed25519"):
                 if keyfile_path.lower().endswith(kf.lower()):
                     try_key_formats = (kf,)

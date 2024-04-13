@@ -35,7 +35,7 @@ class KeyboardHelper:
         self.shortcut_modifiers_str = shortcut_modifiers
         self.shortcut_modifiers = ()
         self.key_shortcuts_strs = key_shortcuts
-        self.key_shortcuts = {}
+        self.key_shortcuts: dict[str, list[str]] = {}
         # command line overrides:
         self.raw = raw
         self.layout_option = layout if (layout or "").lower() not in ("client", "auto") else ""
@@ -65,7 +65,7 @@ class KeyboardHelper:
 
     def reset_state(self) -> None:
         self.keycodes: tuple[tuple[int, str, int, int, int], ...] = ()
-        self.x11_keycodes = {}
+        self.x11_keycodes: dict[int, list[str]] = {}
         self.mod_meanings: dict[str, Any] = {}
         self.mod_managed: list[str] = []
         self.mod_pointermissing: list[str] = []
@@ -75,7 +75,7 @@ class KeyboardHelper:
         self.variants: list[str] = []
         self.options = ""
         self.query = ""
-        self.query_struct = {}
+        self.query_struct: dict[str, Any] = {}
         self.layout_groups = LAYOUT_GROUPS
         self.raw = False
 

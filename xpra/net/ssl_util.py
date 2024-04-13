@@ -37,7 +37,7 @@ def get_ssl_logger():
 
 
 def get_ssl_attributes(opts, server_side: bool = True, overrides: dict | None = None) -> dict[str, Any]:
-    args = {
+    args: dict[str, Any] = {
         "server-side": server_side,
     }
     for attr in SSL_ATTRIBUTES:

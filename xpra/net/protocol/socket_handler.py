@@ -121,10 +121,10 @@ class SocketProtocol:
         # Invariant: if .source is None, then _source_has_more == False
         self._get_packet_cb: Callable | None = get_packet_cb
         # counters:
-        self.input_stats = {}
+        self.input_stats: dict[str, int] = {}
         self.input_packetcount = 0
         self.input_raw_packetcount = 0
-        self.output_stats = {}
+        self.output_stats: dict[str, int] = {}
         self.output_packetcount = 0
         self.output_raw_packetcount = 0
         # initial value which may get increased by client/server after handshake:
@@ -134,8 +134,8 @@ class SocketProtocol:
             "hello", "window-metadata", "sound-data", "notify_show", "setting-change",
             "shell-reply", "configure-display",
         ]
-        self.send_aliases = {}
-        self.receive_aliases = {}
+        self.send_aliases: dict[str, int] = {}
+        self.receive_aliases: dict[int, str] = {}
         self._log_stats = None  # None here means auto-detect
         self._closed = False
         self.encoder = "none"
@@ -246,10 +246,10 @@ class SocketProtocol:
 
     def parse_remote_caps(self, caps: typedict) -> None:
         for k, v in caps.dictget("aliases", {}).items():
-            self.send_aliases[bytestostr(k)] = v
+            self.send_aliases[bytestostr(k)] = int(v)
         set_socket_timeout(self._conn, SOCKET_TIMEOUT)
 
-    def set_receive_aliases(self, aliases: dict) -> None:
+    def set_receive_aliases(self, aliases: dict[int, str]) -> None:
         self.receive_aliases = aliases
 
     def get_info(self, alias_info: bool = True) -> dict[str, Any]:
@@ -262,19 +262,19 @@ class SocketProtocol:
             "has_more": shm and shm.is_set(),
             "receive-pending": self.receive_pending,
         }
-        c = self.compressor
-        if c:
-            info["compressor"] = c
-        e = self.encoder
-        if e:
-            info["encoder"] = e
+        comp = self.compressor
+        if comp:
+            info["compressor"] = comp
+        encoder = self.encoder
+        if encoder:
+            info["encoder"] = encoder
         if alias_info:
             info["send_alias"] = self.send_aliases
             info["receive_alias"] = self.receive_aliases
-        c = self._conn
-        if c:
-            with log.trap_error("Error collecting connection information on %s", c):
-                info.update(c.get_info())
+        conn = self._conn
+        if conn:
+            with log.trap_error("Error collecting connection information on %s", conn):
+                info.update(conn.get_info())
         # add stats to connection info:
         info.setdefault("input", {}).update(
             {
@@ -1142,7 +1142,7 @@ class SocketProtocol:
             then no matter what, we close the connection and stop the threads.
         """
 
-        def closing_already(packet_encoder, packet_data, flush_callback=noop):
+        def closing_already(packet_encoder: Callable | None, packet_data, flush_callback=noop):
             log("flush_then_close%s had already been called, this new request has been ignored",
                 (packet_encoder, packet_data, flush_callback))
 
@@ -1295,18 +1295,18 @@ class SocketProtocol:
 
     def clean(self) -> None:
         # clear all references to ensure we can get garbage collected quickly:
-        self._get_packet_cb = None
-        self._encoder = None
+        self._get_packet_cb = noop
+        self._encoder = noop
         self._write_thread = None
         self._read_thread = None
         self._read_parser_thread = None
         self._write_format_thread = None
-        self._process_packet_cb = None
-        self._process_read = None
-        self._read_queue_put = None
-        self._compress = None
+        self._process_packet_cb = noop
+        self._process_read = noop
+        self._read_queue_put = noop
+        self._compress = noop
         self._write_lock = None
-        self._source_has_more = None
+        self._source_has_more = noop
         self._conn = None  # should be redundant
         self.source_has_more = noop
 

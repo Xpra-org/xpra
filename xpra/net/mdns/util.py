@@ -21,7 +21,7 @@ def import_avahi():
 MDNS_WARNING = False
 
 
-def mdns_publish(display_name, listen_on, text_dict=None):
+def mdns_publish(display_name: str, listen_on, text_dict=None):
     global MDNS_WARNING
     if MDNS_WARNING is True:
         return ()

@@ -81,7 +81,7 @@ class RFBProtocol:
         protocol_version = tuple(int(x) for x in packet[4:11].split(b"."))
         if protocol_version != PROTOCOL_VERSION:
             msg = b"unsupported protocol version"
-            log.error(f"Error: {msg}")
+            log.error(f"Error: {msg!r}")
             self.send(struct.pack(b"!BI", 0, len(msg)) + msg)
             self.invalid(msg, packet)
             return 0
@@ -147,10 +147,12 @@ class RFBProtocol:
     def get_threads(self) -> tuple:
         return tuple(x for x in (self._write_thread, self._read_thread) if x is not None)
 
-    def get_info(self, *_args) -> dict[str, tuple | dict]:
+    def get_info(self, *_args) -> dict[str, tuple[int, ...] | dict[str, bool]]:
         info: dict[str, tuple | dict] = {"protocol": PROTOCOL_VERSION}
+        tinfo = dict[str, bool]
         for t in self.get_threads():
-            info.setdefault("thread", {})[t.name] = t.is_alive()
+            tinfo[t.name] = t.is_alive()
+        info["thread"] = tinfo
         return info
 
     def start(self) -> None:

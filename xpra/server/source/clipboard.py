@@ -132,4 +132,4 @@ class ClipboardConnection(StubSourceMixin):
         for i, item in enumerate(packet):
             if isinstance(item, Compressible):
                 packet[i] = compressed_wrapper(item.datatype, item.data, level=9, can_inline=False, brotli=True)
-        self.queue_packet(packet)
+        self.queue_packet(tuple(packet))

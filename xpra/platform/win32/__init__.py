@@ -47,8 +47,8 @@ CSIDL_COMMON_APPDATA = 35
 GetConsoleCP = kernel32.GetConsoleCP  # @UndefinedVariable
 
 # redirect output if we're not running from a console:
-FROZEN = getattr(sys, "frozen", None) in ("windows_exe", "console_exe", True)
-REDIRECT_OUTPUT = envbool("XPRA_REDIRECT_OUTPUT", FROZEN and GetConsoleCP() == 0)
+FROZEN: bool = getattr(sys, "frozen", None) in ("windows_exe", "console_exe", True)
+REDIRECT_OUTPUT: bool = envbool("XPRA_REDIRECT_OUTPUT", FROZEN and GetConsoleCP() == 0)
 
 
 def is_wine() -> bool:

@@ -74,7 +74,7 @@ def parse_shortcut_modifiers(s, modifier_names=()) -> list[str]:
     return shortcut_modifiers
 
 
-def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> dict[str, list]:
+def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> dict[str, list[str]]:
     """
     if none are defined, add this as default
     it would be nicer to specify it via OptionParser in main,
@@ -84,7 +84,7 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> dict[s
     if not strs:
         strs = ["meta+shift+F4:quit"]
     log("parse_shortcuts(%s)", strs)
-    shortcuts: dict[str, list] = {}
+    shortcuts: dict[str, list[str]] = {}
     # figure out the default shortcut modifiers
     # accept "," or "+" as delimiter:
     for s in strs:

@@ -16,7 +16,7 @@ from threading import Lock
 from collections.abc import Callable
 from cups import Connection  # @UnresolvedImport
 
-from xpra.common import DEFAULT_XDG_DATA_DIRS
+from xpra.common import DEFAULT_XDG_DATA_DIRS, noop
 from xpra.os_util import OSX
 from xpra.util.str_fn import bytestostr
 from xpra.util.parsing import parse_simple_dict
@@ -118,7 +118,7 @@ def get_lpinfo_drv(make_and_model: str) -> str:
     command = shlex.split(LPINFO) + ["--make-and-model", make_and_model, "-m"]
     log("get_lpinfo_drv(%s) command=%s", make_and_model, command)
     try:
-        proc = Popen(command, stdout=PIPE, stderr=PIPE, start_new_session=True)
+        proc = Popen(command, stdout=PIPE, stderr=PIPE, start_new_session=True, universal_newlines=True)
     except Exception as e:
         log("get_lp_info_drv(%s) lpinfo command %s failed", make_and_model, command, exc_info=True)
         log.error("Error: lpinfo command failed to run")
@@ -154,10 +154,6 @@ def get_lpinfo_drv(make_and_model: str) -> str:
         log.warn("Warning: lpinfo command failed and returned %s", proc.returncode)
         log.warn(" command used: '%s'", " ".join(command))
         return ""
-    try:
-        out = out.decode()
-    except Exception:
-        out = str(out)
     log("lpinfo out=%r", out)
     log("lpinfo err=%r", err)
     if err:
@@ -242,7 +238,7 @@ def get_printer_definition(mimetype: str) -> str:
     return v[1]  # ie: /usr/share/ppd/cupsfilters/Generic-PDF_Printer-PDF.ppd
 
 
-def exec_lpadmin(args, success_cb: Callable = None):
+def exec_lpadmin(args, success_cb: Callable = noop):
     # pylint: disable=import-outside-toplevel
     command = shlex.split(LPADMIN) + args
     log("exec_lpadmin(%s) command=%s", args, command)

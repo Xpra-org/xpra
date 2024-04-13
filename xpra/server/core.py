@@ -874,7 +874,7 @@ class ServerCore:
         if not self.mdns:
             return
         # find all the records we want to publish:
-        mdns_recs = {}
+        mdns_recs: dict[str, list[tuple[str, int]]] = {}
         for sock_def, options in self._socket_info.items():
             socktype, _, info, _ = sock_def
             socktypes = self.get_mdns_socktypes(socktype, options)
@@ -1275,7 +1275,7 @@ class ServerCore:
             conn = self.handle_ssh_connection(conn, socket_options)
             if not conn:
                 return
-            peek_data, line1, packet_type = b"", b"", None
+            peek_data, line1, packet_type = b"", b"", ""
 
         if socktype in ("tcp", "socket", "named-pipe") and peek_data:
             # see if the packet data is actually xpra or something else
@@ -1652,19 +1652,19 @@ class ServerCore:
             httplog("start_http%s", (socktype, conn, is_ssl, req_info, frominfo), exc_info=True)
             err = e.args[0]
             if err == 1 and line1 and line1[0] == 0x16:
-                l = httplog
+                log_fn = httplog.debug
             elif err in (errno.EPIPE, errno.ECONNRESET):
-                l = httplog
+                log_fn = httplog.debug
             else:
-                l = httplog.error
-                l("Error: %s request failure", req_info)
-                l(" errno=%s", err)
-            l(" for client %s:", pretty_socket(frominfo))
+                log_fn = httplog.error
+                log_fn("Error: %s request failure", req_info)
+                log_fn(" errno=%s", err)
+            log_fn(" for client %s:", pretty_socket(frominfo))
             if line1 and line1[0] >= 128 or line1[0] == 0x16:
-                l(" request as hex: '%s'", hexstr(line1))
+                log_fn(" request as hex: '%s'", hexstr(line1))
             else:
-                l(" request: %r", bytestostr(line1))
-            l(" %s", e)
+                log_fn(" request: %r", bytestostr(line1))
+            log_fn(" %s", e)
         except Exception:
             wslog.error("Error: %s request failure for client %s:",
                         req_info, pretty_socket(frominfo), exc_info=True)
@@ -1691,7 +1691,7 @@ class ServerCore:
             from xpra.codecs.icon_util import svg_to_png  # pylint: disable=import-outside-toplevel
             # call svg_to_png via the main thread,
             # and wait for it to complete via an Event:
-            icon = [icon_data, icon_type]
+            icon: list[bytes, str] = [icon_data, icon_type]
             event = threading.Event()
 
             def convert():

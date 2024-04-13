@@ -301,8 +301,7 @@ class OSXMenuHelper(GTKTrayMenu):
         def clipboard_option_changed(item):
             clipboardlog("clipboard_option_changed(%s) label=%s, callback=%s clipboard_change_pending=%s",
                          item, label, cb, self._clipboard_change_pending)
-            if cb:
-                cb(item, label)
+            cb(item, label)
 
         clipboard_item.connect("toggled", clipboard_option_changed)
         return clipboard_item

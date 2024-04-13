@@ -301,7 +301,7 @@ def looks_like_xpra_packet(data: ByteString) -> bool:
         FLAGS_RENCODE, FLAGS_YAML,
         LZ4_FLAG, BROTLI_FLAG,
     )
-    header = data.ljust(HEADER_SIZE, b"\0")
+    header = bytes(data).ljust(HEADER_SIZE, b"\0")
     _, protocol_flags, compression_level, packet_index, data_size = unpack_header(header)
     # this normally used on the first packet, so the packet index should be 0,
     # and I don't think we can make packets smaller than 8 bytes,
@@ -340,7 +340,7 @@ def guess_packet_type(data: ByteString) -> str:
         return "ssl"
     if data[:4] == b"RFB ":
         return "vnc"
-    line1 = data.splitlines()[0]
+    line1 = bytes(data).splitlines()[0]
     if line1.find(b"HTTP/") > 0 or line1.split(b" ")[0] in (b"GET", b"POST"):
         return "http"
     if line1.lower().startswith(b"<!doctype html") or line1.lower().startswith(b"<html"):
@@ -370,7 +370,7 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0) -> dict[Any, dict]:
                 if not find_spec("paramiko"):
                     err = "`paramiko` module not found"
         except Exception as e:
-            err = e
+            err = str(e)
         if err:
             from xpra.log import Logger
             sshlog = Logger("ssh")
@@ -401,13 +401,13 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0) -> dict[Any, dict]:
         if not tcp_defs:
             break
         try_list = tuple(tcp_defs)
-        tcp_defs = []
+        tcp_defs: list[tuple[str, str, int, dict, str]] = []
         for socktype, host, iport, options, _ in try_list:
             try:
                 sock = setup_tcp_socket(host, iport, socktype)
             except Exception as e:
                 log("setup_tcp_socket%s attempt=%s", (host, iport, options), attempt)
-                tcp_defs.append((socktype, host, iport, options, e))
+                tcp_defs.append((socktype, host, iport, options, str(e)))
             else:
                 sockets[sock] = options
         if tcp_defs:
@@ -448,9 +448,9 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0) -> dict[Any, dict]:
 
 def create_tcp_socket(host: str, iport: int) -> socket.socket:
     log = get_network_logger()
+    sockaddr: tuple[str, int] | tuple[str, int, int, int] = (host, iport)
     if host.find(":") < 0:
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sockaddr = (host, iport)
     else:
         if host.startswith("[") and host.endswith("]"):
             host = host[1:-1]
@@ -861,14 +861,14 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                         log.info(f" {cpath!r}")
     except Exception:
         for sock_def in defs.keys():
-            sock = str(sock_def)
+            sock_str = str(sock_def)
             try:
-                sock = f"{sock_def[0]} {sock_def[2]!r}"
+                sock_str = f"{sock_def[0]} {sock_def[2]!r}"
                 cleanup_socket = sock_def[-1]
                 cleanup_socket()
             except Exception:
-                log(f"error cleaning up socket {sock}", exc_info=True)
-                log.error(f"Error cleaning up socket {sock}:", exc_info=True)
+                log(f"error cleaning up socket {sock_str}", exc_info=True)
+                log.error(f"Error cleaning up socket {sock_str}:", exc_info=True)
                 log.error(f" using {sock_def}")
         raise
     return defs

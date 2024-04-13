@@ -19,7 +19,7 @@ GdkPixbuf = gi_import("GdkPixbuf")
 
 CAIRO_USE_PIXBUF = envbool("XPRA_CAIRO_USE_PIXBUF", False)
 set_image_surface_data = noop
-CAIRO_FORMATS = {}
+CAIRO_FORMATS: dict[int, tuple[str, ...]] = {}
 try:
     from xpra.client.gtk3 import cairo_workaround
 
