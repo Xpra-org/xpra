@@ -22,7 +22,7 @@ def get_name():
         buf = create_string_buffer(max_len + 1)
         if not GetUserNameA(byref(buf), byref(size)):
             raise WinError(get_last_error())
-        return buf.value
+        return buf.value[:size.value].decode()
     except Exception:
         return os.environ.get("USERNAME", "")
 
