@@ -94,7 +94,7 @@ def detect_ssh_stanza(cmd):
 
 def find_fingerprint(filename: str, fingerprint):
     hex_fingerprint = binascii.hexlify(fingerprint)
-    log(f"looking for key fingerprint {hex_fingerprint} in {filename!r}")
+    log(f"looking for key fingerprint {hex_fingerprint!r} in {filename!r}")
     count = 0
     with open(filename, encoding="latin1") as f:
         for line in f:
@@ -238,7 +238,7 @@ class SSHServer(paramiko.ServerInterface):
             self.event.set()
             return True
 
-        log(f"check_channel_exec_request({channel}, {command})")
+        log(f"check_channel_exec_request({channel}, {command!r})")
         cmd = shlex.split(decode_str(command))
         log(f"check_channel_exec_request: cmd={cmd}")
         if cmd[0] == "command" and len(cmd) == 1:
@@ -339,7 +339,7 @@ class SSHServer(paramiko.ServerInterface):
         log("enable_auth_gssapi()")
         return False
 
-    def proxy_start(self, channel, subcommand, args) -> None:
+    def proxy_start(self, channel, subcommand: str, args: list[str]) -> None:
         log(f"ssh proxy-start({channel}, {subcommand}, {args})")
         if subcommand == "_proxy_shadow_start":
             server_mode = "shadow"
@@ -368,7 +368,7 @@ class SSHServer(paramiko.ServerInterface):
 
         getChildReaper().add_process(proc, f"proxy-start-{subcommand}", cmd, True, True, proxy_ended)
 
-        def proc_to_channel(read, send) -> None:
+        def proc_to_channel(read: Callable[[int], ByteString], send: Callable[[ByteString], int]) -> None:
             while proc.poll() is None:
                 # log("proc_to_channel(%s, %s) waiting for data", read, send)
                 try:
@@ -378,9 +378,10 @@ class SSHServer(paramiko.ServerInterface):
                     close()
                     return
                 # log("proc_to_channel(%s, %s) %i bytes: %s", read, send, len(r or b""), ellipsizer(r))
-                if r:
+                while r:
                     try:
-                        channel.sendall(r)
+                        sent = send(r)
+                        r = r[sent:]
                     except OSError:
                         log(f"proc_to_channel({read}, {send})", exc_info=True)
                         close()
@@ -395,13 +396,13 @@ class SSHServer(paramiko.ServerInterface):
             proc_to_channel(proc.stdout.read, channel.send)
 
         def stdin_reader() -> None:
+            # read from channel, write to stdin
             stdin = proc.stdin
             while proc.poll() is None:
                 r = channel.recv(4096)
                 if not r:
                     close()
                     break
-                # log("stdin_reader() %i bytes: %s", len(r or b""), ellipsizer(r))
                 stdin.write(r)
                 stdin.flush()
 
