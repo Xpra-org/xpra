@@ -13,7 +13,7 @@ from xpra.log import Logger
 
 log = Logger("util")
 
-ScheduledItemType: TypeAlias = tuple[callable, tuple[Any, ...], dict[str, Any]]
+ScheduledItemType: TypeAlias = tuple[Callable, tuple[Any, ...], dict[str, Any]]
 
 
 # emulate the glib main loop using a single thread + queue:
