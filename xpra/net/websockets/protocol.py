@@ -66,7 +66,7 @@ class WebSocketProtocol(SocketProtocol):
             self._read_queue_put(buf)
             return
         if self.ws_data:
-            ws_data = self.ws_data + buf
+            ws_data = b"".join((self.ws_data, buf))
             self.ws_data = b""
         else:
             ws_data = buf
@@ -104,7 +104,7 @@ class WebSocketProtocol(SocketProtocol):
                 if not fin:
                     if opcode not in (OPCODE.BINARY, OPCODE.TEXT):
                         op = OPCODE_STR.get(opcode, opcode)
-                        log(f"invalid opcode {opcode} from {buf}")
+                        log(f"invalid opcode {opcode} from {buf!r}")
                         log(f"parsed as {parsed}")
                         raise RuntimeError(f"cannot handle fragmented {op} frames")
                     # fragmented, keep this payload for later
