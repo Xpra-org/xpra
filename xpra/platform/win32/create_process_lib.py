@@ -13,7 +13,7 @@ import subprocess
 from ctypes import (
     get_last_error, WinError, WinDLL,  # @UnresolvedImport
     Structure, byref, POINTER, sizeof, create_unicode_buffer,
-    )
+)
 from wintypes import BYTE, BOOL, WORD, DWORD, HANDLE, LPWSTR, LPCWSTR, LPVOID   # @UnresolvedImport
 
 kernel32 = WinDLL('kernel32', use_last_error=True)
@@ -64,15 +64,12 @@ SW_MINIMIZE        = 6
 SW_SHOWMINNOACTIVE = 7
 SW_SHOWNA          = 8
 SW_RESTORE         = 9
-SW_SHOWDEFAULT     = 10 # ~STARTUPINFO
+SW_SHOWDEFAULT     = 10  #  ~STARTUPINFO
 SW_FORCEMINIMIZE   = 11
 
 LOGON_WITH_PROFILE        = 0x00000001
 LOGON_NETCREDENTIALS_ONLY = 0x00000002
 
-STD_INPUT_HANDLE  = DWORD(-10).value
-STD_OUTPUT_HANDLE = DWORD(-11).value
-STD_ERROR_HANDLE  = DWORD(-12).value
 
 class HANDLE(HANDLE):
     __slots__ = 'closed',
@@ -96,6 +93,7 @@ class HANDLE(HANDLE):
 
     def __repr__(self):
         return "%s(%d)" % (self.__class__.__name__, int(self))
+
 
 class PROCESS_INFORMATION(Structure):
     """https://msdn.microsoft.com/en-us/library/ms684873"""
@@ -124,9 +122,11 @@ class PROCESS_INFORMATION(Structure):
         finally:
             self.hThread.Close()
 
+
 LPPROCESS_INFORMATION = POINTER(PROCESS_INFORMATION)
 
 LPBYTE = POINTER(BYTE)
+
 
 class STARTUPINFO(Structure):
     """https://msdn.microsoft.com/en-us/library/ms686331"""
@@ -153,47 +153,62 @@ class STARTUPINFO(Structure):
         self.cb = sizeof(self)
         super().__init__(**kwds)
 
+
 class PROC_THREAD_ATTRIBUTE_LIST(Structure):
     pass
 
+
 PPROC_THREAD_ATTRIBUTE_LIST = POINTER(PROC_THREAD_ATTRIBUTE_LIST)
+
 
 class STARTUPINFOEX(STARTUPINFO):
     _fields_ = (('lpAttributelist', PPROC_THREAD_ATTRIBUTE_LIST),)
 
+
 LPSTARTUPINFO = POINTER(STARTUPINFO)
 LPSTARTUPINFOEX = POINTER(STARTUPINFOEX)
 
+
 class SECURITY_ATTRIBUTES(Structure):
-    _fields_ = (('nLength',              DWORD),
-                ('lpSecurityDescriptor', LPVOID),
-                ('bInheritHandle',       BOOL))
+    _fields_ = (
+        ('nLength',              DWORD),
+        ('lpSecurityDescriptor', LPVOID),
+        ('bInheritHandle',       BOOL),
+    )
+
     def __init__(self, **kwds):
         self.nLength = sizeof(self)
         super().__init__(**kwds)
 
+
 LPSECURITY_ATTRIBUTES = POINTER(SECURITY_ATTRIBUTES)
+
 
 class HANDLE_IHV(HANDLE):
     pass
 
+
 class DWORD_IDV(DWORD):
     pass
+
 
 def _check_ihv(result, func, args):
     if result.value == INVALID_HANDLE_VALUE:
         raise WinError(get_last_error())
     return result.value
 
+
 def _check_idv(result, func, args):
     if result.value == INVALID_DWORD_VALUE:
         raise WinError(get_last_error())
     return result.value
 
+
 def _check_bool(result, func, args):
     if not result:
         raise WinError(get_last_error())
     return args
+
 
 def WIN(func, restype, *argtypes):
     func.restype = restype
@@ -206,12 +221,13 @@ def WIN(func, restype, *argtypes):
         func.errcheck = _check_bool
 
 # https://msdn.microsoft.com/en-us/library/ms724211
-WIN(kernel32.CloseHandle, BOOL,
-    HANDLE,) # _In_ HANDLE hObject
+
+
+WIN(kernel32.CloseHandle, BOOL, HANDLE)  # _In_ HANDLE hObject
+
 
 # https://msdn.microsoft.com/en-us/library/ms685086
-WIN(kernel32.ResumeThread, DWORD_IDV,
-    HANDLE,) # _In_ hThread
+WIN(kernel32.ResumeThread, DWORD_IDV,HANDLE)  # _In_ hThread
 
 # https://msdn.microsoft.com/en-us/library/ms682425
 WIN(kernel32.CreateProcessW, BOOL,
@@ -268,16 +284,19 @@ WIN(advapi32.CreateProcessWithLogonW, BOOL,
 
 
 CREATION_TYPE_NORMAL = 0
-CREATION_TYPE_LOGON  = 1
-CREATION_TYPE_TOKEN  = 2
-CREATION_TYPE_USER   = 3
+CREATION_TYPE_LOGON = 1
+CREATION_TYPE_TOKEN = 2
+CREATION_TYPE_USER = 3
+
 
 class CREATIONINFO:
-    __slots__ = ('dwCreationType',
+    __slots__ = (
+        'dwCreationType',
         'lpApplicationName', 'lpCommandLine', 'bUseShell',
         'lpProcessAttributes', 'lpThreadAttributes', 'bInheritHandles',
         'dwCreationFlags', 'lpEnvironment', 'lpCurrentDirectory',
-        'hToken', 'lpUsername', 'lpDomain', 'lpPassword', 'dwLogonFlags')
+        'hToken', 'lpUsername', 'lpDomain', 'lpPassword', 'dwLogonFlags',
+    )
 
     def __init__(self, dwCreationType=CREATION_TYPE_NORMAL,
                  lpApplicationName=None, lpCommandLine=None, bUseShell=False,
@@ -301,12 +320,14 @@ class CREATIONINFO:
         self.lpPassword = lpPassword
         self.dwLogonFlags = dwLogonFlags
 
+
 def create_environment(environ):
     if environ is not None:
         items = ['%s=%s' % (k, environ[k]) for k in sorted(environ)]
         buf = '\x00'.join(items)
         length = len(buf) + 2 if buf else 1
         return create_unicode_buffer(buf, length)
+
 
 def create_process(commandline=None, creationinfo=None, startupinfo=None):
     if creationinfo is None:
@@ -316,10 +337,10 @@ def create_process(commandline=None, creationinfo=None, startupinfo=None):
         startupinfo = STARTUPINFO()
     elif isinstance(startupinfo, subprocess.STARTUPINFO):  # @UndefinedVariable
         startupinfo = STARTUPINFO(dwFlags=startupinfo.dwFlags,
-                        hStdInput=startupinfo.hStdInput,
-                        hStdOutput=startupinfo.hStdOutput,
-                        hStdError=startupinfo.hStdError,
-                        wShowWindow=startupinfo.wShowWindow)
+                                  hStdInput=startupinfo.hStdInput,
+                                  hStdOutput=startupinfo.hStdOutput,
+                                  hStdError=startupinfo.hStdError,
+                                  wShowWindow=startupinfo.wShowWindow)
 
     si, ci, pi = startupinfo, creationinfo, PROCESS_INFORMATION()
 
@@ -330,18 +351,18 @@ def create_process(commandline=None, creationinfo=None, startupinfo=None):
         if ci.bUseShell:
             si.dwFlags |= STARTF_USESHOWWINDOW
             si.wShowWindow = SW_HIDE
-            comspec = os.environ.get("ComSpec", os.path.join(
-                        os.environ["SystemRoot"], "System32", "cmd.exe"))
+            comspec = os.environ.get("ComSpec", os.path.join(os.environ["SystemRoot"], "System32", "cmd.exe"))
             commandline = f'"{comspec}" /c "{commandline}"'
         commandline = create_unicode_buffer(commandline)
 
     dwCreationFlags = ci.dwCreationFlags | CREATE_UNICODE_ENVIRONMENT
     lpEnvironment = create_environment(ci.lpEnvironment)
 
-    if (dwCreationFlags & DETACHED_PROCESS and
-       ((dwCreationFlags & CREATE_NEW_CONSOLE) or
-        (ci.dwCreationType == CREATION_TYPE_LOGON) or
-        (ci.dwCreationType == CREATION_TYPE_TOKEN))):
+    if (dwCreationFlags & DETACHED_PROCESS and (
+            (dwCreationFlags & CREATE_NEW_CONSOLE) or
+            (ci.dwCreationType == CREATION_TYPE_LOGON) or
+            (ci.dwCreationType == CREATION_TYPE_TOKEN)
+    )):
         raise RuntimeError('DETACHED_PROCESS is incompatible with '
                            'CREATE_NEW_CONSOLE, which is implied for '
                            'the logon and token creation types')
@@ -402,8 +423,8 @@ class Popen(subprocess.Popen):
         commandline = (args if isinstance(args, str) else
                        subprocess.list2cmdline(args))
         self._common_execute_child(executable, commandline, shell,
-                close_fds, creationflags, env, cwd,
-                startupinfo, p2cread, c2pwrite, errwrite)
+                                   close_fds, creationflags, env, cwd,
+                                   startupinfo, p2cread, c2pwrite, errwrite)
 
     def _common_execute_child(self, executable, commandline, shell,
                               close_fds, creationflags, env, cwd,
@@ -433,7 +454,7 @@ class Popen(subprocess.Popen):
         default = -1
         if default not in (p2cread, c2pwrite, errwrite):
             si.dwFlags |= STARTF_USESTDHANDLES
-            si.hStdInput  = int( p2cread)
+            si.hStdInput  = int(p2cread)
             si.hStdOutput = int(c2pwrite)
             si.hStdError  = int(errwrite)
 
