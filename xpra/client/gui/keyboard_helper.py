@@ -9,7 +9,7 @@ import os
 from typing import Any
 from collections.abc import Callable
 
-from xpra.common import KeyEvent
+from xpra.keyboard.common import KeyEvent
 from xpra.client.gui.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
 from xpra.util.str_fn import std, csv, ellipsizer, bytestostr
 from xpra.util.env import envbool

@@ -15,7 +15,6 @@ try:
 except ImportError:     # pragma: no cover
     StrEnum = Enum      # type: ignore
 
-from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 
 RESOLUTION_ALIASES: dict[str, tuple[int, int]] = {
@@ -237,23 +236,6 @@ WINDOW_NOT_FOUND: Final[int] = -2
 
 
 ScreenshotData = tuple[int,int,str,int,bytes]
-
-
-class KeyEvent:
-    __slots__ = ("modifiers", "keyname", "keyval", "keycode", "group", "string", "pressed")
-
-    def __init__(self):
-        self.modifiers: list[str] = []
-        self.keyname: str = ""
-        self.keyval: int = 0
-        self.keycode: int = 0
-        self.group: int = 0
-        self.string: str = ""
-        self.pressed: bool = True
-
-    def __repr__(self):
-        strattrs = csv(f"{k}="+str(getattr(self, k)) for k in KeyEvent.__slots__)
-        return f"KeyEvent({strattrs})"
 
 
 def get_refresh_rate_for_value(refresh_rate_str, invalue: int) -> int:

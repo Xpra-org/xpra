@@ -7,7 +7,7 @@
 from typing import Any
 from collections.abc import Callable
 
-from xpra.common import KeyEvent
+from xpra.keyboard.common import KeyEvent
 from xpra.keyboard.mask import mask_to_names, MODIFIER_MAP
 from xpra.log import Logger
 from xpra.util.str_fn import bytestostr

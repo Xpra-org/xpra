@@ -43,7 +43,7 @@ from xpra.platform.win32.common import (
     GetMonitorInfo,
     GetKeyboardLayoutName,
 )
-from xpra.common import KeyEvent
+from xpra.keyboard.common import KeyEvent
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv

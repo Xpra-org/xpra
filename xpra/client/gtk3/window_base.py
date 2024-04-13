@@ -26,10 +26,11 @@ from xpra.gtk.window import set_visual
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.gtk.keymap import KEY_TRANSLATIONS
 from xpra.common import (
-    KeyEvent, MoveResize,
+    MoveResize,
     MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING, WORKSPACE_UNSET,
     WORKSPACE_ALL, WORKSPACE_NAMES,
 )
+from xpra.keyboard.common import KeyEvent
 from xpra.client.gui.window_base import ClientWindowBase
 from xpra.platform.gui import (
     set_fullscreen_monitors, set_shaded,
