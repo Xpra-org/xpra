@@ -279,14 +279,14 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
     def modifiers_for(entries) -> set[str]:
         """ entries can only point to a single modifier - verify """
         modifiers : set[str] = set()
-        l = log
+        log_fn = log.debug
         for keysym, _ in entries:
             modifier = keysym_to_modifier.get(keysym)
             if modifier:
                 modifiers.add(modifier)
             if keysym in DEBUG_KEYSYMS:
-                l = log.info
-        l("modifiers_for(%s)=%s", entries, modifiers)
+                log_fn = log.info
+        log_fn("modifiers_for(%s)=%s", entries, modifiers)
         return modifiers
 
     def filter_mappings(mappings, drop_extra_keys=False):
