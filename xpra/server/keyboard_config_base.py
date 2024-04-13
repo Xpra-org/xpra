@@ -32,8 +32,8 @@ class KeyboardConfigBase:
         self.sync = props.boolget("keyboard_sync", True)
         return int(oldsync != self.sync)
 
-    def get_hash(self) -> bytes:
-        return b""
+    def get_hash(self) -> str:
+        return ""
 
     def set_layout(self, layout, variant, options) -> None:
         """ should be overridden to configure the keyboard layout """

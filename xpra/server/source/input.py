@@ -113,12 +113,12 @@ class InputMixin(StubSourceMixin):
         kc = self.keyboard_config
         log("set_keymap%s keyboard_config=%s", (current_keyboard_config, keys_pressed, force, translate_only), kc)
         if kc and kc.enabled:
-            current_id = None
+            current_id = ""
             if current_keyboard_config and current_keyboard_config.enabled:
                 current_id = current_keyboard_config.get_hash()
             keymap_id = kc.get_hash()
             log("current keyboard id=%s, new keyboard id=%s", current_id, keymap_id)
-            if force or current_id is None or keymap_id != current_id:
+            if force or not current_id or keymap_id != current_id:
                 kc.keys_pressed = keys_pressed
                 kc.set_keymap(translate_only)
                 kc.owner = self.uuid
