@@ -9,6 +9,7 @@ from time import monotonic
 from threading import Event
 from collections.abc import Callable
 
+from xpra.common import noop
 from xpra.util.thread import start_thread
 from xpra.util.env import envint
 from xpra.log import Logger
@@ -163,9 +164,9 @@ class UI_thread_watcher:
 UI_watcher: UI_thread_watcher | None = None
 
 
-def get_UI_watcher(timeout_add: Callable = None, source_remove: Callable = None) -> UI_thread_watcher | None:
+def get_UI_watcher(timeout_add: Callable = noop, source_remove: Callable = noop) -> UI_thread_watcher | None:
     global UI_watcher
-    if UI_watcher is None and timeout_add:
+    if UI_watcher is None and timeout_add != noop:
         UI_watcher = UI_thread_watcher(timeout_add, source_remove, POLLING, ANNOUNCE_TIMEOUT)
         log("get_UI_watcher(%s)", timeout_add)
     return UI_watcher
