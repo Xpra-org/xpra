@@ -45,10 +45,10 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         super().__init__()
         self.capture = capture
         self.root = root_window
-        self.window_matches = None
+        self.window_matches: list[str] = []
         self.mapped = []
         self.pulseaudio: bool = False
-        self.sharing: bool = True
+        self.sharing: bool | None = None
         self.refresh_delay: int = 1000 // self.DEFAULT_REFRESH_RATE
         self.refresh_timer: int = 0
         self.notifications: bool = False

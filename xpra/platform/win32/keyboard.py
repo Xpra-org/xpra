@@ -19,6 +19,7 @@ from xpra.platform.win32.common import (
 )
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.keyboard_base import KeyboardBase
+from xpra.common import KeyEvent
 from xpra.keyboard.layouts import WIN32_LAYOUTS, WIN32_KEYBOARDS
 from xpra.gtk.keymap import KEY_TRANSLATIONS
 from xpra.util.str_fn import csv, bytestostr
@@ -64,7 +65,7 @@ def x11_layouts_to_win32_hkl() -> dict[str, int]:
                     if kbid in WIN32_LAYOUTS:
                         break
                 if kbid in WIN32_LAYOUTS:
-                    code, _, _, _, _layout, _variants = WIN32_LAYOUTS.get(kbid)
+                    code, _, _, _, _layout, _variants = WIN32_LAYOUTS[kbid]
                     log("found keyboard layout '%s' / %#x with variants=%s, code '%s' for kbid=%#x",
                         _layout, kbid, _variants, code, hkli)
                     if _layout not in layout_to_hkl:
@@ -88,10 +89,10 @@ class Keyboard(KeyboardBase):
 
     def init_vars(self) -> None:
         super().init_vars()
-        self.num_lock_modifier = None
-        self.altgr_modifier = None
-        self.delayed_event = None
-        self.last_layout_message = None
+        self.num_lock_modifier = ""
+        self.altgr_modifier = ""
+        self.delayed_event: tuple[Callable, int, KeyEvent] | None = None
+        self.last_layout_message = ""
         # workaround for "period" vs "KP_Decimal" with gtk2 (see ticket #586):
         # translate "period" with keyval=46 and keycode=110 to KP_Decimal:
         KEY_TRANSLATIONS[("period", 46, 110)] = "KP_Decimal"
@@ -113,7 +114,7 @@ class Keyboard(KeyboardBase):
     def __repr__(self):
         return "win32.Keyboard"
 
-    def set_modifier_mappings(self, mappings) -> None:
+    def set_modifier_mappings(self, mappings: dict[str, str]) -> None:
         super().set_modifier_mappings(mappings)
         self.num_lock_modifier = self.modifier_keys.get("Num_Lock") or ""
         log("set_modifier_mappings found 'Num_Lock' with modifier value: %s", self.num_lock_modifier)
@@ -300,7 +301,7 @@ class Keyboard(KeyboardBase):
             log.error("failed to get keyboard rate: %s", e)
         return None
 
-    def process_key_event(self, send_key_action_cb: Callable, wid: int, key_event) -> None:
+    def process_key_event(self, send_key_action_cb: Callable, wid: int, key_event: KeyEvent) -> None:
         """ Caps_Lock and Num_Lock don't work properly: they get reported more than once,
             they are reported as not pressed when the key is down, etc
             So we just ignore those and rely on the list of "modifiers" passed
@@ -315,7 +316,7 @@ class Keyboard(KeyboardBase):
         # self.modifier_keycodes = {"ISO_Level3_Shift": [108]}
         # we can only deal with 'Alt_R' and simulate AltGr (ISO_Level3_Shift)
         # if we have modifier_mappings
-        if EMULATE_ALTGR and self.altgr_modifier and len(self.modifier_mappings) > 0:
+        if EMULATE_ALTGR and self.altgr_modifier and self.modifier_mappings:
             rmenu = GetKeyState(win32con.VK_RMENU)
             if key_event.keyname == "Control_L":
                 log("process_key_event: %s pressed=%s, with GetKeyState(VK_RMENU)=%s",

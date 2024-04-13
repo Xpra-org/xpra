@@ -1080,7 +1080,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         for timer in timers:
             self.source_remove(timer)
 
-    def _set_client_properties(self, proto, wid: int, window, new_client_properties) -> None:
+    def _set_client_properties(self, proto, wid: int, window, new_client_properties: dict) -> None:
         """
         Override so we can update the workspace on the window directly,
         instead of storing it as a client property

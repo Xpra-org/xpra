@@ -84,9 +84,9 @@ class AudioPipeline(Pipeline):
             return int(self.volume.get_property("volume") * 100)
         return GST_FLOW_OK
 
-    def start(self) -> None:
+    def start(self) -> bool:
         if not super().start():
-            return
+            return False
         register_SIGUSR_signals(self.idle_add)
         log("AudioPipeline.start() codec=%s", self.codec)
         self.idle_emit("new-stream", self.codec)
@@ -110,6 +110,7 @@ class AudioPipeline(Pipeline):
 
             self.timeout_add(1000, logsc)
         log("AudioPipeline.start() done")
+        return True
 
     def stop(self) -> None:
         if self.pipeline and self.state not in ("starting", "stopped", "ready", None):

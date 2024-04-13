@@ -194,7 +194,7 @@ class KeyboardConfig(KeyboardConfigBase):
         """
         m = hashlib.sha256()
 
-        def hashadd(v):
+        def hashadd(v) -> None:
             m.update(("/%s" % str(v)).encode("utf8"))
 
         hashadd(super().get_hash())

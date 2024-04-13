@@ -43,7 +43,6 @@ class ClientTray(ClientWidgetBase):
 
         self.mmap_enabled = mmap_enabled
         self.mmap = mmap_area
-        self._backing = None
         self.new_backing(w, h)
         self.idle_add(self.reconfigure)
         # things may have settled by now
@@ -88,7 +87,7 @@ class ClientTray(ClientWidgetBase):
             return None
         return tw.get_size()
 
-    def freeze(self) -> bool:
+    def freeze(self) -> None:
         """
         System trays are small, no point in freezing anything
         """

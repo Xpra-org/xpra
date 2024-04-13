@@ -15,7 +15,7 @@ log = Logger("keyboard")
 # this allows platforms to inject keyname workarounds
 # the key is a tuple (keyname, keyval, keycode)
 # the value is the keyname override
-KEY_TRANSLATIONS: dict[tuple, str] = {}
+KEY_TRANSLATIONS: dict[tuple[str, int, int], str] = {}
 
 
 def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")) -> tuple[tuple[int, str, int, int, int], ...]:

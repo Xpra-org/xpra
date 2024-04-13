@@ -202,7 +202,7 @@ class GLWindowBackingBase(WindowBackingBase):
         # can be: "YUV420P", "YUV422P", "YUV444P", "GBRP" or None when not initialized yet.
         self.planar_pixel_format: str = ""
         self.internal_format = GL_RGBA8
-        self.textures = None  # OpenGL texture IDs
+        self.textures = []  # OpenGL texture IDs
         self.shaders: dict[str, GLuint] = {}
         self.programs: dict[str, GLuint] = {}
         self.texture_size: tuple[int, int] = (0, 0)
@@ -229,7 +229,7 @@ class GLWindowBackingBase(WindowBackingBase):
     def opengl_init(self) -> None:
         self.init_gl_config()
         self.init_backing()
-        self.bit_depth: int = self.get_bit_depth(self.bit_depth)
+        self.bit_depth = self.get_bit_depth(self.bit_depth)
         self.init_formats()
         self.draw_needs_refresh: bool = DRAW_REFRESH
         # the correct check would be this:
@@ -274,7 +274,7 @@ class GLWindowBackingBase(WindowBackingBase):
     def init_formats(self) -> None:
         rgb_modes = list(GLWindowBackingBase.RGB_MODES)
         if self.bit_depth > 32:
-            self.internal_format: int = GL_RGBA16
+            self.internal_format = GL_RGBA16
             rgb_modes.append("r210")
             # self.RGB_MODES.append("GBRP16")
         elif self.bit_depth == 30:
@@ -413,7 +413,7 @@ class GLWindowBackingBase(WindowBackingBase):
         )
         program = glCreateProgram()
         if not program:
-            self.fail_shader(name, b"glCreateProgram error")
+            self.fail_shader(name, "glCreateProgram error")
         for shader in shaders:
             glAttachShader(program, shader)
         glLinkProgram(program)
@@ -435,7 +435,7 @@ class GLWindowBackingBase(WindowBackingBase):
             glDetachShader(program, shader)
         self.programs[name] = program
 
-    def fail_shader(self, name: str, err: bytes) -> None:
+    def fail_shader(self, name: str, err: str) -> None:
         from OpenGL.GL import glDeleteShader
         err_str = bytestostr(err).strip("\n\r")
         shader = self.shaders.pop(name, None)
@@ -498,7 +498,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glDisable(GL_DITHER)
         glDisable(GL_BLEND)
 
-        if self.textures is None:
+        if not self.textures:
             self.gl_init_textures()
 
         mag_filter = self.get_init_magfilter()
@@ -576,8 +576,8 @@ class GLWindowBackingBase(WindowBackingBase):
                 self.offscreen_fbo = None
                 glDeleteFramebuffers(1, [ofbo])
             textures = self.textures
-            if textures is not None:
-                self.textures = None
+            if textures:
+                self.textures = []
                 glDeleteTextures(textures)
         except Exception as e:
             log(f"{self}.close()", exc_info=True)
@@ -1348,7 +1348,8 @@ class GLWindowBackingBase(WindowBackingBase):
         fire_paint_callbacks(callbacks, False, message)
 
     def update_planar_textures(self, width: int, height: int, img, pixel_format, scaling=False, pbo=False) -> None:
-        assert self.textures is not None, "no OpenGL textures!"
+        if not self.textures:
+            raise RuntimeError("no OpenGL textures")
         upload_formats = PIXEL_UPLOAD_FORMAT[pixel_format]
         internal_formats = PIXEL_INTERNAL_FORMAT.get(pixel_format, (GL_R8, GL_R8, GL_R8))
         data_formats = PIXEL_DATA_FORMAT.get(pixel_format, (GL_RED, GL_RED, GL_RED))

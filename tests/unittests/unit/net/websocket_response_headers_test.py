@@ -35,12 +35,13 @@ class WebsocketHeaderTest(unittest.TestCase):
            "sec-websocket-protocol" : "binary",
            "sec-websocket-accept" : "key",
            })
-        key = "somekey"
+        key = b"somekey"
         verify_response_headers({
             "upgrade" : "websocket",
             "sec-websocket-protocol" : "binary",
             "sec-websocket-accept" : make_websocket_accept_hash(key),
-            }, key)
+        }, key)
+
 
 def main():
     unittest.main()

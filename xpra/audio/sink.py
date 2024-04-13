@@ -181,9 +181,11 @@ class AudioSink(AudioPipeline):
         self.sink_type = ""
         self.src = None
 
-    def start(self) -> None:
-        super().start()
+    def start(self) -> bool:
+        if not super().start():
+            return False
         self.timeout_add(UNMUTE_DELAY, self.start_adjust_volume)
+        return True
 
     def start_adjust_volume(self, interval: int = 100) -> bool:
         if self.volume_timer != 0:

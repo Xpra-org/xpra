@@ -90,8 +90,8 @@ SHADOW_OPTIONS = {
 }
 
 
-NOEVENT = object()
-BUTTON_EVENTS = {
+NOEVENT = (0, 0)
+BUTTON_EVENTS: dict[tuple[int, bool], tuple[int, int]] = {
     # (button,up-or-down)  : win-event-name
     (1, True): (win32con.MOUSEEVENTF_LEFTDOWN, 0),
     (1, False): (win32con.MOUSEEVENTF_LEFTUP, 0),
@@ -564,7 +564,7 @@ class ShadowServer(GTKShadowServerBase):
         if event is None:
             log.warn("no matching event found for button=%s, pressed=%s", button, pressed)
             return
-        elif event is NOEVENT:
+        elif event == NOEVENT:
             return
         dwFlags, dwData = event
         x, y = pointer[:2]

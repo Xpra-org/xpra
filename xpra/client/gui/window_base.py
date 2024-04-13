@@ -87,13 +87,13 @@ class ClientWindowBase(ClientWidgetBase):
         self.cursor_data = None
         self.default_cursor_data = default_cursor_data
         self.max_window_size = max_window_size
-        self.button_state = {}
+        self.button_state: dict[int, bool] = {}
         self.pixel_depth = pixel_depth  # 0 for default
         # window_offset is the delta between the location of the window requested by the server,
         # and where we actually end up mapping it on the client
         # (ie: when we reposition an OR window to ensure it is visible on screen)
         self.window_offset = None
-        self.pending_refresh = []
+        self.pending_refresh: list[tuple[int, int, int, int]] = []
         self.headerbar = headerbar
 
         self.init_window(metadata)

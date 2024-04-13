@@ -66,7 +66,7 @@ class KeyboardBase:
                 if keycode not in keycodes:
                     keycodes.append(keycode)
 
-    def set_modifier_mappings(self, mappings) -> None:
+    def set_modifier_mappings(self, mappings: dict[str, str]) -> None:
         log("set_modifier_mappings({mappings})")
         self.modifier_mappings = mappings
         self.modifier_keys = {}

@@ -365,20 +365,19 @@ def main() -> int:
 
         from threading import Lock
         if filename == "-":
-            f = sys.stdout
+            output = sys.stdout
         else:
-            f = open(filename, "wb")
+            output = open(filename, "wb")
         ss = AudioSource(codecs=[codec])
         lock = Lock()
 
         def new_buffer(_audiosource, data, metadata, packet_metadata):
             log.info("new buffer: %s bytes (%s), metadata=%s", len(data), type(data), metadata)
             with lock:
-                if f:
-                    for x in packet_metadata:
-                        f.write(x)
-                    f.write(data)
-                    f.flush()
+                for x in packet_metadata:
+                    output.write(x)
+                output.write(data)
+                output.flush()
 
         glib = gi_import("GLib")
         glib_mainloop = glib.MainLoop()
@@ -408,12 +407,11 @@ def main() -> int:
             log.error("main loop error: %s", e)
         ss.stop()
 
-        f.flush()
-        if f != sys.stdout:
-            log.info("wrote %s bytes to %s", f.tell(), filename)
+        output.flush()
+        if output != sys.stdout:
+            log.info("wrote %s bytes to %s", output.tell(), filename)
         with lock:
-            f.close()
-            f = None
+            output.close()
         return 0
 
 

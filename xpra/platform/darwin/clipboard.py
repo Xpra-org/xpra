@@ -13,10 +13,9 @@ from AppKit import (
 )
 from CoreFoundation import NSData, CFDataGetBytes, CFDataGetLength
 
+from xpra.net.common import PacketType
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
-from xpra.clipboard.core import (
-    _filter_targets, ClipboardProxyCore, TEXT_TARGETS,
-)
+from xpra.clipboard.core import _filter_targets, ClipboardProxyCore, TEXT_TARGETS
 from xpra.platform.ui_thread_watcher import get_UI_watcher
 from xpra.util.str_fn import csv, ellipsizer, bytestostr
 from xpra.os_util import gi_import
@@ -74,7 +73,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
         self.pasteboard.clearContents()
 
     def do_emit_token(self) -> None:
-        packet_data = []
+        packet_data: PacketType = []
         if self._want_targets:
             targets = self.get_targets()
             log("do_emit_token() targets=%s", targets)

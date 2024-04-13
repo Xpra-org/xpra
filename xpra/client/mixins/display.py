@@ -105,7 +105,7 @@ class DisplayClient(StubClientMixin):
     ######################################################################
     # hello:
     def get_caps(self) -> dict[str, Any]:
-        caps = {
+        caps: dict[str, Any] = {
             "show-desktop": True,
             "vrefresh": self.get_vrefresh(),
         }

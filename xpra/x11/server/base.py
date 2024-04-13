@@ -255,12 +255,12 @@ class X11ServerBase(X11ServerCore):
             return
         icc = typedict(ui_clients[0].icc)
         for x in ("data", "icc-data", "icc-profile"):
-            data = icc.strget(x)
+            data = icc.bytesget(x)
             if data:
                 screenlog("set_icc_profile() icc data for %s: %s (%i bytes)",
-                          ui_clients[0], hexstr(data or ""), len(data or ""))
+                          ui_clients[0], hexstr(data), len(data))
                 self.icc_profile = data
-                root_prop_set("_ICC_PROFILE", ["u32"], [ord(x) for x in data])
+                root_prop_set("_ICC_PROFILE", ["u32"], data)
                 root_prop_set("_ICC_PROFILE_IN_X_VERSION", "u32", 0 * 100 + 4)  # 0.4 -> 0*100+4*1
                 return
         screenlog("no icc data found in %s", icc)

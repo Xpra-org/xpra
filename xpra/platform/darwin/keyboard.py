@@ -141,7 +141,7 @@ class Keyboard(KeyboardBase):
         """
         return {}, [], ["lock", "control"]
 
-    def set_modifier_mappings(self, mappings) -> None:
+    def set_modifier_mappings(self, mappings: dict[str, str]) -> None:
         super().set_modifier_mappings(mappings)
         self.meta_modifier = self.modifier_keys.get("Meta_L") or self.modifier_keys.get("Meta_R") or ""
         self.control_modifier = self.modifier_keys.get("Control_L") or self.modifier_keys.get("Control_R") or "control"
