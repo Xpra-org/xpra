@@ -20,13 +20,11 @@ def get_name() -> str:
         from xpra.platform.win32.common import GetUserNameA
         max_len = 256
         size = DWORD(max_len)
-        # noinspection PyTypeChecker
-        buftype = c_char * (max_len + 1)
-        # noinspection PyCallingNonCallable
-        buf = buftype()
+        # noinspection PyTypeChecker,PyCallingNonCallable
+        buf = (c_char * (max_len + 1))()
         if not GetUserNameA(byref(buf), byref(size)):
             raise WinError(get_last_error())
-        return buf.value[:size.value]
+        return buf.value[:size.value].decode()
     except Exception:
         return os.environ.get("USERNAME", "")
 
