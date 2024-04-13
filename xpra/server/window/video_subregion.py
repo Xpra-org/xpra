@@ -290,11 +290,12 @@ class VideoSubregion:
         if not self.enabled or not self.supported:
             self.novideoregion("disabled")
             return
+        from_time: float = 0
         if not self.detection:
             if not self.rectangle:
                 return
             # just update the fps:
-            from_time: float = max(starting_at, monotonic() - MAX_TIME, self.min_time)
+            from_time = max(starting_at, monotonic() - MAX_TIME, self.min_time)
             self.time = monotonic()
             lde = tuple(x for x in tuple(last_damage_events) if x[0] >= from_time)
             incount = 0
@@ -353,7 +354,7 @@ class VideoSubregion:
                   event_count, self.counter, damage_events_count)
             return
 
-        from_time: float = max(starting_at, monotonic() - MAX_TIME, self.min_time)
+        from_time = max(starting_at, monotonic() - MAX_TIME, self.min_time)
         # create a list (copy) to work on:
         lde = tuple(x for x in tuple(last_damage_events) if x[0] >= from_time)
         dc = len(lde)
