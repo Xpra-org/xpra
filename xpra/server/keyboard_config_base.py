@@ -35,8 +35,9 @@ class KeyboardConfigBase:
     def get_hash(self) -> str:
         return ""
 
-    def set_layout(self, layout, variant, options) -> None:
+    def set_layout(self, layout, variant, options) -> bool:
         """ should be overridden to configure the keyboard layout """
+        return False
 
     def set_keymap(self, translate_only=False) -> None:
         """ should be overridden to configure the keymap """
