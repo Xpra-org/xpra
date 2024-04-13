@@ -12,7 +12,7 @@ from xpra.log import Logger
 log = Logger("server", "ssh")
 
 
-def ssh_dir_path(session_dir: str = os.environ.get("XPRA_SESSION_DIR")) -> str:
+def ssh_dir_path(session_dir: str = os.environ.get("XPRA_SESSION_DIR", "")) -> str:
     return os.path.join(session_dir, "ssh")
 
 
@@ -45,7 +45,7 @@ def setup_ssh_auth_sock(session_dir: str) -> str:
     return agent_sockpath
 
 
-def get_ssh_agent_path(filename: str, session_dir: str = os.environ.get("XPRA_SESSION_DIR")) -> str:
+def get_ssh_agent_path(filename: str, session_dir: str = os.environ.get("XPRA_SESSION_DIR", "")) -> str:
     ssh_dir = ssh_dir_path(session_dir)
     if "/" in filename or ".." in filename:
         raise ValueError(f"illegal characters found in ssh agent filename {filename!r}")
@@ -90,7 +90,7 @@ def clean_agent_socket(uuid: str = "") -> None:
 def setup_proxy_ssh_socket(
         cmdline: Iterable[str],
         auth_sock: str = os.environ.get("SSH_AUTH_SOCK", ""),
-        session_dir: str = os.environ.get("XPRA_SESSION_DIR"),
+        session_dir: str = os.environ.get("XPRA_SESSION_DIR", ""),
 ) -> str:
     log(f"setup_proxy_ssh_socket({cmdline}, {auth_sock!r}")
     # this is the socket path that the ssh client wants us to use:
