@@ -197,7 +197,7 @@ class KeyboardConfig(KeyboardConfigBase):
         def hashadd(v):
             m.update(("/%s" % str(v)).encode("utf8"))
 
-        m.update(super().get_hash())
+        hashadd(super().get_hash())
         for x in (self.raw, self.mod_meanings, self.mod_pointermissing, self.keycodes, self.x11_keycodes):
             hashadd(x)
         if self.query_struct:
