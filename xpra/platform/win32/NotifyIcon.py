@@ -433,9 +433,8 @@ class win32NotifyIcon:
             cb = self.click_callback
             bm = BUTTON_MAP.get(lparam)
         log("OnTaskbarNotify%s button(s) lookup: %s, callback=%s", (hwnd, msg, wparam, lparam), bm, cb)
-        if bm is not None and cb:
-            for button_event in bm:
-                cb(*button_event)
+        for button_event in bm:
+            cb(*button_event)
         return 1
 
     def close(self) -> None:
