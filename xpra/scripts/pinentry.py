@@ -225,7 +225,7 @@ def dialog_pass(title: str = "Password Input", prompt: str = "enter password", i
         dialog = PasswordInputDialogWindow(title, prompt, icon)
         return str(do_run_dialog(dialog))
 
-    return dialog_run(password_input_run)
+    return str(dialog_run(password_input_run))
 
 
 def dialog_confirm(title: str, prompt: str, qinfo=(), icon: str = "", buttons=(("OK", 1),)) -> int:
@@ -236,7 +236,7 @@ def dialog_confirm(title: str, prompt: str, qinfo=(), icon: str = "", buttons=((
         dialog = ConfirmDialogWindow(title, prompt, qinfo, icon, buttons)
         return do_run_dialog(dialog)
 
-    return dialog_run(confirm_run)
+    return int(dialog_run(confirm_run))
 
 
 def confirm(info=(), title: str = "Confirm Key", prompt: str = "Are you sure you want to continue connecting?") -> bool:
