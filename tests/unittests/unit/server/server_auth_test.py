@@ -54,12 +54,18 @@ class ServerAuthTest(ServerTestUtil):
             if f:
                 f.close()
                 self.delete_temp_file(f)
-        if client.poll() is None:
-            client.terminate()
 
         exit_code_error = r != exit_code
         if exit_code_error:
+            log.warn("Server Process Pipes:")
+            log.warn(f" for server args={server_args}")
             self.show_proc_pipes(server)
+            log.warn("Client Process Pipes:")
+            log.warn(f" for client args={cmd}")
+            self.show_proc_pipes(client)
+
+        if client.poll() is None:
+            client.terminate()
 
         try:
             server.terminate()
