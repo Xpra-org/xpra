@@ -369,7 +369,7 @@ class CoreX11WindowModel(WindowModelStub):
 
     def uses_XShm(self) -> bool:
         c = self._composite
-        return c and c.has_xshm()
+        return bool(c) and c.has_xshm()
 
     def get_image(self, x:int, y:int, width:int, height:int) -> ImageWrapper:
         return self._composite.get_image(x, y, width, height)
