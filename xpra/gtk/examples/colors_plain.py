@@ -40,18 +40,15 @@ class ColorPlainWindow(Gtk.Window):
 
     def do_expose_event(self, *_args):
         cr = self.get_window().cairo_create()
-        self.area_draw(self, cr)
-
-    def area_draw(self, widget, cr):
         cr.set_font_size(32)
         # Clear everything:
         cr.set_operator(OPERATOR_CLEAR)
-        alloc = widget.get_allocated_size()[0]
+        alloc = self.get_allocated_size()[0]
         w, h = alloc.width, alloc.height
         cr.rectangle(0, 0, w, h)
         cr.fill()
 
-        def paint_block(x, y, w, h, R=255, G=255, B=255, label=""):
+        def paint_block(x, y, w, h, R=255, G=255, B=255, label="") -> None:
             cr.set_operator(OPERATOR_SOURCE)
             cr.set_source_rgb(R, G, B)
             cr.rectangle(x, y, w, h)

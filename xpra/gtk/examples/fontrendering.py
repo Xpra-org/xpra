@@ -58,9 +58,6 @@ class FontWindow(Gtk.Window):
 
     def do_expose_event(self, *_args):
         cr = self.get_window().cairo_create()
-        self.area_draw(self, cr)
-
-    def area_draw(self, widget, cr):
         layout = PangoCairo.create_layout(cr)
         pctx = layout.get_context()
         if envbool("XPRA_LOG_PANGO", False):
@@ -81,7 +78,7 @@ class FontWindow(Gtk.Window):
                 self.paint_pattern(cr, x, y + 2, antialias, label, WHITE, BLACK)
                 cr.restore()
 
-        alloc = widget.get_allocated_size()[0]
+        alloc = self.get_allocated_size()[0]
         w, h = alloc.width, alloc.height
         bw = w // 4
         bh = h // 4
