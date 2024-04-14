@@ -498,7 +498,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glDisable(GL_DITHER)
         glDisable(GL_BLEND)
 
-        if not self.textures:
+        if len(self.textures) == 0:
             self.gl_init_textures()
 
         mag_filter = self.get_init_magfilter()
@@ -1348,7 +1348,7 @@ class GLWindowBackingBase(WindowBackingBase):
         fire_paint_callbacks(callbacks, False, message)
 
     def update_planar_textures(self, width: int, height: int, img, pixel_format, scaling=False, pbo=False) -> None:
-        if not self.textures:
+        if len(self.textures) == 0:
             raise RuntimeError("no OpenGL textures")
         upload_formats = PIXEL_UPLOAD_FORMAT[pixel_format]
         internal_formats = PIXEL_INTERNAL_FORMAT.get(pixel_format, (GL_R8, GL_R8, GL_R8))
