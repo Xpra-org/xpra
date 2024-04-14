@@ -18,7 +18,10 @@ from typing import Any
 from collections.abc import ByteString, Callable, Iterable
 
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized, strtobytes, bytestostr, hexstr, memoryview_to_bytes
+from xpra.util.str_fn import (
+    csv, hexstr, nicestr,
+    ellipsizer, repr_ellipsized, strtobytes, bytestostr, memoryview_to_bytes,
+)
 from xpra.util.env import envint, envbool
 from xpra.util.thread import make_thread, start_thread
 from xpra.common import noop
@@ -318,7 +321,7 @@ class SocketProtocol:
             self.timeout_add(SEND_INVALID_PACKET * 1000, self.raw_write, SEND_INVALID_PACKET_DATA)
 
     def send_disconnect(self, reasons, done_callback=noop) -> None:
-        packet = ["disconnect"] + [str(x) for x in reasons]
+        packet = ["disconnect"] + [nicestr(x) for x in reasons]
         self.flush_then_close(self.encode, packet, done_callback=done_callback)
 
     def send_now(self, packet: PacketType) -> None:
