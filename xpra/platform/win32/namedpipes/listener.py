@@ -6,7 +6,7 @@
 
 
 from ctypes.wintypes import HANDLE, DWORD
-from ctypes import byref, sizeof, create_string_buffer, cast, c_char, c_void_p, c_long, pointer, POINTER
+from ctypes import byref, sizeof, create_string_buffer, cast, c_char, c_void_p, pointer, POINTER
 from threading import Thread
 from collections.abc import Callable
 
@@ -117,7 +117,7 @@ class NamedPipeListener(Thread):
         self.security_descriptor = None
 
     def do_run(self) -> None:
-        pipe_handle = None
+        pipe_handle: HANDLE = HANDLE(INVALID_HANDLE_VALUE)
         while not self.exit_loop:
             if not pipe_handle:
                 try:
@@ -129,7 +129,7 @@ class NamedPipeListener(Thread):
                     log.estr(e)
                     return
                 log("CreatePipeHandle()=%#x", pipe_handle)
-                if c_long(pipe_handle).value == INVALID_HANDLE_VALUE:
+                if pipe_handle.value == INVALID_HANDLE_VALUE:
                     log.error("Error: invalid handle for named pipe '%s'", self.pipe_name)
                     err: int = GetLastError()
                     log.error(" '%s' (%i)", FormatMessageSystem(err).rstrip("\n\r."), err)
@@ -160,20 +160,20 @@ class NamedPipeListener(Thread):
                         log.error("Error: cannot connect to named pipe '%s'", self.pipe_name)
                         log.error(" %s", WAIT_STR.get(r, r))
                         CloseHandle(pipe_handle)
-                        pipe_handle = None
+                        pipe_handle = HANDLE(INVALID_HANDLE_VALUE)
                         break
                 else:
                     log.error("Error: cannot connect to named pipe '%s'", self.pipe_name)
                     log.error(" error %s", err)
                     CloseHandle(pipe_handle)
-                    pipe_handle = None
+                    pipe_handle = HANDLE(INVALID_HANDLE_VALUE)
                 if self.exit_loop:
                     break
             # from now on, the pipe_handle will be managed elsewhere:
-            if pipe_handle:
+            if pipe_handle.value != INVALID_HANDLE_VALUE:
                 self.new_connection_cb("named-pipe", self, pipe_handle)
-                pipe_handle = None
-        if pipe_handle:
+                pipe_handle = HANDLE(INVALID_HANDLE_VALUE)
+        if pipe_handle.value != INVALID_HANDLE_VALUE:
             self.close_handle(pipe_handle)
 
     def close_handle(self, pipe_handle: HANDLE) -> None:

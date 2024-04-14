@@ -11,7 +11,7 @@ from ctypes import (
     c_void_p, sizeof, byref,
     windll,  # @UnresolvedImport
 )
-from ctypes.wintypes import BOOL, DWORD
+from ctypes.wintypes import BOOL, DWORD, HICON
 
 from xpra.util.str_fn import strtobytes
 from xpra.platform.win32.constants import SM_CXSMICON, SM_CYSMICON
@@ -117,7 +117,7 @@ def notify(hwnd, app_id: int, title: str, message: str, timeout: int = 5000, ico
         timeout = 5000
     szInfo = chop_string(message, 255, False)  # prevent overflow
     szInfoTitle = chop_string(title, 63)
-    hicon = 0
+    hicon: HICON = HICON(0)
     if icon:
         try:
             from PIL import Image
@@ -131,7 +131,7 @@ def notify(hwnd, app_id: int, title: str, message: str, timeout: int = 5000, ico
                 try:
                     LANCZOS = Image.Resampling.LANCZOS
                 except AttributeError:
-                    LANCZOS = Image.Resampling.LANCZOS
+                    LANCZOS = Image.LANCZOS
                 img = img.resize((iw, ih), LANCZOS)
                 log("notification icon resized to %s", img.size)
             hicon = image_to_ICONINFO(img)

@@ -195,11 +195,10 @@ class Encodings(StubClientMixin):
         return caps
 
     def get_encodings_caps(self) -> dict[str, Any]:
+        video_b_frames: list[str] = []
         if B_FRAMES:
-            video_b_frames = ("h264",)  # only tested with dec_avcodec2
-        else:
-            video_b_frames = ()
-        caps = {
+            video_b_frames.append("h264")  # only tested with dec_avcodec2
+        caps: dict[str, Any] = {
             "video_b_frames": video_b_frames,
             "video_max_size": self.video_max_size,
             "max-soft-expired": MAX_SOFT_EXPIRED,
@@ -232,14 +231,11 @@ class Encodings(StubClientMixin):
         # figure out which CSC modes (usually YUV) can give us those RGB modes:
         full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*rgb_formats)
         if has_codec("dec_webp"):
-            if self.opengl_enabled:
-                full_csc_modes["webp"] = ("BGRX", "BGRA", "RGBX", "RGBA")
-            else:
-                full_csc_modes["webp"] = ("BGRX", "BGRA",)
+            full_csc_modes["webp"] = ["BGRX", "BGRA", "RGBX", "RGBA"] if self.opengl_enabled else ["BGRX", "BGRA"]
         if has_codec("dec_jpeg") or has_codec("dec_pillow"):
-            full_csc_modes["jpeg"] = ("BGRX", "BGRA", "YUV420P")
+            full_csc_modes["jpeg"] = ["BGRX", "BGRA", "YUV420P"]
         if has_codec("dec_jpeg"):
-            full_csc_modes["jpega"] = ("BGRA", "RGBA",)
+            full_csc_modes["jpega"] = ["BGRA", "RGBA"]
         log("supported full csc_modes=%s", full_csc_modes)
         caps["full_csc_modes"] = full_csc_modes
 

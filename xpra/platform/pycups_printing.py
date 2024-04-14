@@ -256,7 +256,7 @@ def exec_lpadmin(args, success_cb: Callable = noop):
             log.warn(" verify that user '%s' has all the required permissions", get_username())
             log.warn(" for running: '%s'", LPADMIN)
             log.warn(" full command: %s", " ".join(f"{x!r}" for x in command))
-        elif success_cb:
+        else:
             success_cb()
 
     cr.add_process(proc, "lpadmin", command, ignore=True, forget=True, callback=check_returncode)

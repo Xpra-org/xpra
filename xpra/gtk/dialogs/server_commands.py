@@ -134,7 +134,7 @@ class ServerCommandsWindow:
                                 try:
                                     LANCZOS = Image.Resampling.LANCZOS
                                 except AttributeError:
-                                    LANCZOS = Image.Resampling.LANCZOS
+                                    LANCZOS = Image.LANCZOS
                                 img = icons[0].resize((24, 24), LANCZOS)
                                 has_alpha = img.mode == "RGBA"
                                 width, height = img.size

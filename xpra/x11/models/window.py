@@ -399,8 +399,14 @@ class WindowModel(BaseWindowModel):
         # initial position and size, from the Window object,
         # but allow size hints to override it if specified
         x, y, w, h = geom[:4]
-        ax, ay = self.get("requested-position") or (x, y)
-        aw, ah = self.get("requested-size") or (w, h)
+
+        def intpair(key: str, default: tuple[int, int]) -> tuple[int, int]:
+            value = self.get(key)
+            if value:
+                return int(value[0]), int(value[1])
+            return default
+        ax, ay = intpair("requested-position", (x, y))
+        aw, ah = intpair("requested-size", (w, h))
         geomlog("initial X11 position and size: requested(%s)=%s", geom, (ax, ay, aw, ah))
         set_if_unset("modal", "_NET_WM_STATE_MODAL" in net_wm_state)
         if x != ax or y != ay:
@@ -788,10 +794,10 @@ class WindowModel(BaseWindowModel):
     def _handle_icon_title_change(self) -> None:
         icon_name = self.prop_get("_NET_WM_ICON_NAME", "utf8", True)
         iconlog("_NET_WM_ICON_NAME=%s", icon_name)
-        if icon_name is None:
+        if not icon_name:
             icon_name = self.prop_get("WM_ICON_NAME", "latin1", True)
             iconlog("WM_ICON_NAME=%s", icon_name)
-        self._updateprop("icon-title", sanestr(icon_name or ""))
+        self._updateprop("icon-title", sanestr(str(icon_name) or ""))
 
     def _handle_motif_wm_hints_change(self) -> None:
         motif_hints = self.prop_get("_MOTIF_WM_HINTS", "motif-hints", ignore_errors=False, raise_xerrors=True)

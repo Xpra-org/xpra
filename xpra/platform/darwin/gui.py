@@ -114,7 +114,7 @@ def get_clipboard_native_class() -> str:
 
 
 def get_native_notifier_classes() -> list[type]:
-    v = []
+    v: list[type] = []
     if NATIVE_NOTIFIER:
         from Foundation import NSUserNotificationCenter
         if NSUserNotificationCenter.defaultUserNotificationCenter():

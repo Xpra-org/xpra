@@ -155,7 +155,7 @@ WM_XBUTTONDOWN = 0x020B
 WM_XBUTTONUP = 0x020C
 WM_XBUTTONDBLCLK = 0x020D
 
-BUTTON_MAP: dict[int, list] = {
+BUTTON_MAP: dict[int, list[tuple[int, int]]] = {
     win32con.WM_LBUTTONDOWN: [(1, 1)],
     win32con.WM_LBUTTONUP: [(1, 0)],
     win32con.WM_MBUTTONDOWN: [(2, 1)],
@@ -353,7 +353,7 @@ class win32NotifyIcon:
             try:
                 LANCZOS = Image.Resampling.LANCZOS
             except AttributeError:
-                LANCZOS = Image.Resampling.LANCZOS
+                LANCZOS = Image.LANCZOS
             img = img.resize((icon_w, icon_h), LANCZOS)
             rowstride = w * 4
         hicon = image_to_ICONINFO(img, TRAY_ALPHA) or FALLBACK_ICON
@@ -414,24 +414,24 @@ class win32NotifyIcon:
             log.error(f" using {rfn}")
             log.estr(e)
 
-    def OnCommand(self, hwnd, msg, wparam, lparam):
+    def OnCommand(self, hwnd: int, msg: int, wparam: int, lparam: int):
         cb = self.command_callback
         log("OnCommand%s callback=%s", (hwnd, msg, wparam, lparam), cb)
         if cb:
             cid = wparam & 0xFFFF
             cb(hwnd, cid)
 
-    def OnDestroy(self, hwnd, msg, wparam, lparam) -> None:
+    def OnDestroy(self, hwnd: int, msg: int, wparam: int, lparam: int) -> None:
         log("OnDestroy%s", (hwnd, msg, wparam, lparam))
         self.destroy()
 
-    def OnTaskbarNotify(self, hwnd, msg, wparam, lparam) -> int:
+    def OnTaskbarNotify(self, hwnd: int, msg: int, wparam: int, lparam: int) -> int:
         if lparam == win32con.WM_MOUSEMOVE:
             cb = self.move_callback
             bm = [(hwnd, int(msg), int(wparam), int(lparam))]
         else:
             cb = self.click_callback
-            bm = BUTTON_MAP.get(lparam)
+            bm = BUTTON_MAP.get(lparam, [])
         log("OnTaskbarNotify%s button(s) lookup: %s, callback=%s", (hwnd, msg, wparam, lparam), bm, cb)
         for button_event in bm:
             cb(*button_event)
@@ -446,10 +446,9 @@ class win32NotifyIcon:
         hwnd = self.hwnd
         log("destroy() hwnd=%#x, exit callback=%s", hwnd, cb)
         self.delete_tray_window()
-        if cb:
-            self.exit_callback = None
-            with log.trap_error("Error on exit callback %s", cb):
-                cb()
+        self.exit_callback = noop
+        with log.trap_error("Error on exit callback %s", cb):
+            cb()
         if hwnd:
             win32NotifyIcon.instances.pop(hwnd, None)
 

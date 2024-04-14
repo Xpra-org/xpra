@@ -145,7 +145,7 @@ def parse_scaling(desktop_scaling: str, root_w: int, root_h: int,
 
 def parse_simple_dict(s: str, sep: str = ",") -> dict[str, str | list[str] | dict[str, str]]:
     # parse the options string and add the pairs:
-    d: dict[str, str | list[str]] = {}
+    d: dict[str, str | list[str] | dict[str, str]] = {}
     for el in s.split(sep):
         if not el:
             continue

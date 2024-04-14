@@ -274,7 +274,7 @@ class WindowIconSource:
                 try:
                     LANCZOS = Image.Resampling.LANCZOS
                 except AttributeError:
-                    LANCZOS = Image.Resampling.LANCZOS
+                    LANCZOS = Image.LANCZOS
                 image = image.resize((rw, rh), LANCZOS)
             if SAVE_WINDOW_ICONS:
                 filename = f"server-window-{self.wid}-icon-{int(monotonic())}.png"

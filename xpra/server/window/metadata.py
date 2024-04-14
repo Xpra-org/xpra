@@ -15,7 +15,11 @@ from xpra.common import WORKSPACE_UNSET
 SKIP_METADATA = os.environ.get("XPRA_SKIP_METADATA", "").split(",")
 
 
-def make_window_metadata(window, propname: str, get_window_id: Callable = None, skip_defaults=False) -> dict[str, Any]:
+def make_window_metadata(window,
+                         propname: str,
+                         get_window_id: Callable[[Any], int] | None = None,
+                         skip_defaults=False,
+                         ) -> dict[str, Any]:
     try:
         return _make_window_metadata(window, propname, get_window_id, skip_defaults)
     except (ValueError, TypeError) as e:
@@ -29,7 +33,11 @@ def make_window_metadata(window, propname: str, get_window_id: Callable = None, 
         return {}
 
 
-def _make_window_metadata(window, propname: str, get_window_id: Callable = None, skip_defaults=False) -> dict[str, Any]:
+def _make_window_metadata(window,
+                          propname: str,
+                          get_window_id: Callable[[Any], int] | None = None,
+                          skip_defaults=False,
+                          ) -> dict[str, Any]:
     if propname in SKIP_METADATA:
         return {}
 

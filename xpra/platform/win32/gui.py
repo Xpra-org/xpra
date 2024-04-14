@@ -177,7 +177,7 @@ def get_native_notifier_classes() -> list[type]:
 
 
 def get_native_tray_classes() -> list[type]:
-    c = []
+    c: list[type] = []
     if USE_NATIVE_TRAY:
         try:
             from xpra.platform.win32.tray import Win32Tray

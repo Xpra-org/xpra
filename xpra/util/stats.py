@@ -48,15 +48,15 @@ def absolute_to_diff_values(in_data):
     return data
 
 
-def values_to_scaled_values(data: Sequence[float | int | None],
-                            scale_unit=10, min_scaled_value=10, num_values=20) -> tuple[float, list[float | None]]:
+def values_to_scaled_values(data: Sequence[float | int],
+                            scale_unit=10, min_scaled_value=10, num_values=20) -> tuple[float, list[float | int | None]]:
     # print("values_to_scaled_values(%s, %s, %s)" % (data, scale_unit, num_values))
     if not data:
         return 0, []
     max_v = max(data)
     # pad with None values:
     if len(data) < num_values:
-        if isinstance(data, tuple):
+        if not isinstance(data, list):
             data = list(data)
         for _ in range(num_values - len(data)):
             data.insert(0, None)

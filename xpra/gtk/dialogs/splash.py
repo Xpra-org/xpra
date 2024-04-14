@@ -190,6 +190,8 @@ class SplashScreen(Gtk.Window):
                 self.exit_code = ExitCode.FAILURE
                 self.exit()
                 return False
+        # unexpected condition - continue
+        return True
 
     def handle_stdin_line(self, line: str) -> None:
         parts = line.rstrip("\n\r").split(":", 1)

@@ -3389,7 +3389,7 @@ def run_list_mdns(error_cb, extra_args) -> ExitValue:
     return 0
 
 
-def kill_pid(pid: int, procname: str):
+def kill_pid(pid: int, procname: str) -> None:
     if pid:
         try:
             if pid and pid > 1 and pid != os.getpid():
@@ -3398,7 +3398,7 @@ def kill_pid(pid: int, procname: str):
             error("Error sending SIGTERM signal to %r pid %i %s" % (procname, pid, e))
 
 
-def load_pid(session_dir: str, pid_filename: str):
+def load_pid(session_dir: str, pid_filename: str) -> int:
     if not session_dir or not pid_filename:
         return 0
     pid_file = os.path.join(session_dir, pid_filename)  # ie: "/run/user/1000/xpra/7/dbus.pid"

@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,6 +12,8 @@ Functions for converting to and from X11 properties.
 
 import struct
 from io import BytesIO
+from collections.abc import Callable
+from typing import Any
 
 from xpra.util.str_fn import hexstr
 from xpra.x11.bindings.window import constants
@@ -284,7 +286,7 @@ def _from_state(v: bytes) -> int:
     return struct.unpack(b"@LL", wm_state)[0]
 
 
-PROP_TYPES = {
+PROP_TYPES: dict[str, tuple[type, str, int, Callable[[Any], bytes], Callable[[bytes], Any], bytes | None]] = {
     # Python type, X type Atom, formatbits, serializer, deserializer, list terminator
     "utf8": (str, "UTF8_STRING", 8, _to_utf8, _from_utf8, b"\0"),
     # In theory, there should be something clever about COMPOUND_TEXT here.  I
@@ -320,6 +322,8 @@ def _prop_encode_scalar(etype: str, value):
 
 def _prop_encode_list(etype: str, value):
     _, atom, formatbits, _, _, terminator = PROP_TYPES[etype]
+    if terminator is None:
+        raise ValueError(f"cannot encode lists of {etype!r}")
     value = tuple(value)
     serialized = tuple(_prop_encode_scalar(etype, v)[2] for v in value)
     # Strings in X really are null-separated, not null-terminated (ICCCM

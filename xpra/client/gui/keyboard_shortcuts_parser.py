@@ -14,7 +14,7 @@ from xpra.log import Logger
 log = Logger("keyboard")
 
 
-def get_modifier_names(mod_meanings) -> dict[str, str]:
+def get_modifier_names(mod_meanings: dict[str, str]) -> dict[str, str]:
     # modifier names contains the internal modifiers list, ie: "mod1", "control", ...
     # but the user expects the name of the key to be used, ie: "alt" or "super"
     # whereas at best, we keep "Alt_L" : "mod1" mappings... (posix)
@@ -39,7 +39,7 @@ def get_modifier_names(mod_meanings) -> dict[str, str]:
     return modifier_names
 
 
-def parse_shortcut_modifiers(s, modifier_names=()) -> list[str]:
+def parse_shortcut_modifiers(s: str, modifier_names: dict[str, str]) -> list[str]:
     # figure out the default shortcut modifiers
     # accept "," or "+" as delimiter:
     shortcut_modifiers = s.lower().replace(",", "+").split("+")
@@ -74,7 +74,10 @@ def parse_shortcut_modifiers(s, modifier_names=()) -> list[str]:
     return shortcut_modifiers
 
 
-def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> dict[str, list[str]]:
+def parse_shortcuts(strs: list[str],
+                    shortcut_modifiers: list[str],
+                    modifier_names: dict[str, str],
+                    ) -> dict[str, list[tuple[list[str], str, list[str | float | bool | int | None]]]]:
     """
     if none are defined, add this as default
     it would be nicer to specify it via OptionParser in main,
@@ -84,7 +87,7 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> dict[s
     if not strs:
         strs = ["meta+shift+F4:quit"]
     log("parse_shortcuts(%s)", strs)
-    shortcuts: dict[str, list[str]] = {}
+    shortcuts: dict[str, list[tuple[list[str], str, list[str | float | bool | int | None]]]] = {}
     # figure out the default shortcut modifiers
     # accept "," or "+" as delimiter:
     for s in strs:
@@ -103,7 +106,7 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> dict[s
             continue
         # example for action: "quit"
         action = parts[1].strip()
-        args = []
+        args: list[str | float | bool | int | None] = []
         if action.find("(") > 0 and action.endswith(")"):
             try:
                 action, all_args = action[:-1].split("(", 1)
@@ -159,11 +162,11 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()) -> dict[s
                 continue
         # should we be validating the keyname?
         keyname = keyspec[len(keyspec) - 1]
-        key_shortcuts = shortcuts.get(keyname, [])
+        key_shortcuts: list[tuple[list[str], str, list[str | float | bool | int | None]]] = shortcuts.get(keyname, [])
         # remove any existing action using the same modifiers:
         key_shortcuts = [x for x in key_shortcuts if x[0] != modifiers]
         if action != "_":
-            key_shortcuts.append((modifiers, action, tuple(args)))
+            key_shortcuts.append((modifiers, action, args))
         shortcuts[keyname] = key_shortcuts
         log("shortcut(%s)=%s", s, csv((modifiers, action, args)))
     log("parse_shortcuts(%s)=%s", strs, shortcuts)

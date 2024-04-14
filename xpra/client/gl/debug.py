@@ -75,7 +75,7 @@ def context_init_debug() -> None:
     global GREMEDY_DEBUG, KHR_DEBUG
     # Ask GL to send us all debug messages
     if KHR_DEBUG:
-        if GL_DEBUG_OUTPUT and gl_debug_callback and glInitDebugKHR() is True:
+        if GL_DEBUG_OUTPUT and gl_debug_callback != noop and glInitDebugKHR() is True:
             glEnable(GL_DEBUG_OUTPUT)
             glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS)
             glDebugMessageCallback(gl_debug_callback, None)
@@ -84,7 +84,7 @@ def context_init_debug() -> None:
             KHR_DEBUG = False
     # Initialize string_marker GL debugging extension if available
     if GREMEDY_DEBUG:
-        if glInitStringMarkerGREMEDY and glInitStringMarkerGREMEDY() is True:
+        if glInitStringMarkerGREMEDY() is True:
             log.info("Extension GL_GREMEDY_string_marker available.")
             log.info(" Will output detailed information about each frame.")
         else:
@@ -92,7 +92,7 @@ def context_init_debug() -> None:
             # don't bother trying again for another window:
             GREMEDY_DEBUG = False
         # Initialize frame_terminator GL debugging extension if available
-        if glInitFrameTerminatorGREMEDY and glInitFrameTerminatorGREMEDY() is True:
+        if glInitFrameTerminatorGREMEDY() is True:
             log.info("Enabling GL frame terminator debugging.")
 
 

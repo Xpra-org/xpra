@@ -31,12 +31,12 @@ BUTTON_STR = {
     REL_WHEEL    : "REL_WHEEL",
     REL_HWHEEL   : "REL_HWHEEL",
 }
-BUTTON_MAP = {
-    1   : BTN_LEFT,
-    3   : BTN_RIGHT,
-    2   : BTN_MIDDLE,
-    8   : BTN_SIDE,
-    9   : BTN_EXTRA,
+BUTTON_MAP: dict[int, tuple[int, int]] = {
+    1: BTN_LEFT,
+    3: BTN_RIGHT,
+    2: BTN_MIDDLE,
+    8: BTN_SIDE,
+    9: BTN_EXTRA,
 }
 
 

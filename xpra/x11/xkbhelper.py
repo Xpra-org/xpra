@@ -1,9 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+from typing import Any
+from collections.abc import Iterable
 
 # ensure that we use gtk as display source:
 from xpra.x11.gtk3.display_source import init_gdk_display_source
@@ -399,7 +401,8 @@ def indexed_mappings(raw_mappings):
     return indexed
 
 
-def gtk_keycodes_to_mappings(gtk_mappings) -> dict:
+def gtk_keycodes_to_mappings(gtk_mappings: Iterable[tuple[Any, str, int, int, int]]
+                             ) -> dict[int, set[tuple[str, int]]]:
     """
         Takes gtk keycodes as obtained by get_gtk_keymap, in the form:
         #[(keyval, keyname, keycode, group, level), ..]
@@ -407,7 +410,7 @@ def gtk_keycodes_to_mappings(gtk_mappings) -> dict:
         [[keysym, keycode, index], ..]
     """
     # use the keycodes supplied by gtk:
-    mappings = {}
+    mappings: dict[int, set[tuple[str, int]]] = {}
     for _, name, keycode, group, level in gtk_mappings:
         if keycode < 0:
             continue            # ignore old 'add_if_missing' client side code
@@ -416,7 +419,7 @@ def gtk_keycodes_to_mappings(gtk_mappings) -> dict:
     return mappings
 
 
-def x11_keycodes_to_list(x11_mappings):
+def x11_keycodes_to_list(x11_mappings) -> list[tuple(str, int, int)]:
     """
         Takes x11 keycodes as obtained by get_keycode_mappings(), in the form:
         #{keycode : [keysyms], ..}
@@ -429,7 +432,7 @@ def x11_keycodes_to_list(x11_mappings):
             index = 0
             for keysym in keysyms:
                 if keysym:
-                    entries.append([keysym, int(keycode), index])
+                    entries.append((keysym, int(keycode), index))
                     if keysym in DEBUG_KEYSYMS:
                         log.info("x11_keycodes_to_list: (%s, %s) : %s", keycode, keysyms, (keysym, int(keycode), index))
                 index += 1

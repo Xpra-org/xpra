@@ -33,7 +33,7 @@ class KeyboardHelper:
         self.keyboard_sync = keyboard_sync
         self.shortcuts_enabled = True
         self.shortcut_modifiers_str = shortcut_modifiers
-        self.shortcut_modifiers = ()
+        self.shortcut_modifiers: list[str] = []
         self.key_shortcuts_strs = key_shortcuts
         self.key_shortcuts: dict[str, list[str]] = {}
         # command line overrides:

@@ -50,7 +50,7 @@ def get_ssl_attributes(opts, server_side: bool = True, overrides: dict | None = 
     return args
 
 
-def find_ssl_cert(filename: str = "ssl-cert.pem"):
+def find_ssl_cert(filename: str = "ssl-cert.pem") -> str:
     ssllog = get_ssl_logger()
     # try to locate the cert file from known locations
     from xpra.platform.paths import get_ssl_cert_dirs  # pylint: disable=import-outside-toplevel
@@ -73,7 +73,7 @@ def find_ssl_cert(filename: str = "ssl-cert.pem"):
             continue
         ssllog(f"found ssl cert {f!r}")
         return f
-    return None
+    return ""
 
 
 def ssl_wrap_socket(sock, **kwargs):
@@ -161,11 +161,11 @@ def get_ssl_verify_mode(verify_mode_str: str):
     return ssl_cert_reqs
 
 
-def get_ssl_wrap_socket_context(cert=None, key=None, key_password=None, ca_certs=None, ca_data=None,
+def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", ca_data="",
                                 protocol: str = "TLS",
                                 client_verify_mode: str = "optional", server_verify_mode: str = "required",
                                 verify_flags: str = "X509_STRICT",
-                                check_hostname: bool = False, server_hostname=None,
+                                check_hostname: bool = False, server_hostname="",
                                 options: str = "ALL,NO_COMPRESSION", ciphers: str = "DEFAULT",
                                 server_side: bool = True):
     if server_side and not cert:
@@ -323,7 +323,7 @@ def do_wrap_socket(tcp_socket, context, **kwargs):
     return ssl_sock
 
 
-def ssl_retry(e, ssl_ca_certs) -> dict[str, Any] | None:
+def ssl_retry(e, ssl_ca_certs: str) -> dict[str, Any] | None:
     ssllog = get_ssl_logger()
     ssllog("ssl_retry(%s, %s) SSL_RETRY=%s", e, ssl_ca_certs, SSL_RETRY)
     if not SSL_RETRY:
@@ -427,10 +427,7 @@ def load_ssl_options(server_hostname: str, port: int) -> dict[str, Any]:
                         ssllog("Warning: unknown SSL attribute %r in %r", k, f)
                         continue
                     # some options use boolean values, convert them back:
-                    if k in ("check-hostname",):
-                        options[k] = v.lower() in TRUE_OPTIONS
-                    else:
-                        options[k] = v
+                    options[k] = (v.lower() in TRUE_OPTIONS) if k in ("check-hostname",) else v
         except OSError as e:
             ssllog.warn("Warning: failed to read %r: %s", f, e)
     ssllog("load_ssl_options%s=%s (from %r)", (server_hostname, port), options, f)

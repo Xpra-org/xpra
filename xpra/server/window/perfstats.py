@@ -71,13 +71,13 @@ class WindowPerformanceStatistics:
         # every time we get a damage event, we record: time,x,y,w,h
         self.last_damage_events: Deque[tuple[float, int, int, int, int]] = deque(maxlen=4 * NRECS)
         self.last_damage_event_time: float = 0
-        self.last_recalculate = 0
+        self.last_recalculate: float = 0
         self.damage_events_count = 0
         self.packet_count = 0
 
         self.resize_events: Deque[float] = deque(maxlen=4)  # (time)
-        self.last_resized = 0
-        self.last_packet_time = 0
+        self.last_resized: float = 0
+        self.last_packet_time: float = 0
 
         # these values are calculated from the values above (see update_averages)
         self.target_latency = self.DEFAULT_TARGET_LATENCY

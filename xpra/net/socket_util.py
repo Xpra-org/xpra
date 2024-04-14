@@ -380,7 +380,7 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0) -> dict[Any, dict]:
             opts.ssh_upgrade = False
     log = get_network_logger()
     # prepare tcp socket definitions:
-    tcp_defs = []
+    tcp_defs: list[tuple[str, str, int, dict, str]] = []
     for socktype, defs in {
         "tcp": bind_tcp,
         "ssl": bind_ssl,
@@ -394,14 +394,14 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0) -> dict[Any, dict]:
             if iport != 0 and iport < min_port:
                 error_cb(f"invalid {socktype} port number {iport} (minimum value is {min_port})")
             for h in hosts(host):
-                tcp_defs.append((socktype, h, iport, options, None))
+                tcp_defs.append((socktype, h, iport, options, ""))
 
     sockets = {}
     for attempt in range(retry + 1):
         if not tcp_defs:
             break
         try_list = tuple(tcp_defs)
-        tcp_defs: list[tuple[str, str, int, dict, str]] = []
+        tcp_defs = []
         for socktype, host, iport, options, _ in try_list:
             try:
                 sock = setup_tcp_socket(host, iport, socktype)

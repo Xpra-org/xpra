@@ -303,7 +303,7 @@ class ClipboardProxyCore:
                     try:
                         LANCZOS = Image.Resampling.LANCZOS
                     except AttributeError:
-                        LANCZOS = Image.Resampling.LANCZOS
+                        LANCZOS = Image.LANCZOS
                     overlay_resized = overlay.resize((w, h), LANCZOS)
                     composite = Image.alpha_composite(img, overlay_resized)
                     if not has_alpha and img.mode == "RGBA":
@@ -512,8 +512,8 @@ class ClipboardProtocolHelperCore:
             if len(packet) >= 8:
                 target, dtype, dformat, wire_encoding, wire_data = packet[3:8]
                 if target:
-                    assert dformat in (8, 16, 32), "invalid format '%s' for datatype=%s and wire encoding=%s" % (
-                        dformat, dtype, wire_encoding)
+                    if dformat not in (8, 16, 32):
+                        raise ValueError(f"invalid format '{dformat}' for {dtype=} and wire {wire_encoding=}")
                     target = bytestostr(target)
                     if not must_discard(target):
                         wire_encoding = bytestostr(wire_encoding)

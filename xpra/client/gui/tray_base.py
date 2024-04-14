@@ -152,5 +152,5 @@ class TrayBase:
         oldgeom = self.geometry_guess
         self.geometry_guess = max(0, minx), max(0, miny), width, height
         log("recalculate_geometry() geometry guess=%s (old guess=%s)", self.geometry_guess, oldgeom)
-        if self.size_changed_cb and self.geometry_guess != oldgeom:
+        if self.geometry_guess != oldgeom:
             self.size_changed_cb()

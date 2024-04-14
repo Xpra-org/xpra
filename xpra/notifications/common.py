@@ -124,7 +124,7 @@ def get_notification_icon(icon_string: str) -> IconData | None:
         try:
             LANCZOS = Image.Resampling.LANCZOS
         except AttributeError:
-            LANCZOS = Image.Resampling.LANCZOS
+            LANCZOS = Image.LANCZOS
         img = img.resize((MAX_SIZE, MAX_SIZE), LANCZOS)
         w = h = MAX_SIZE
     buf = BytesIO()

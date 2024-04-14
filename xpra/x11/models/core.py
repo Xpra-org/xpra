@@ -285,7 +285,7 @@ class CoreX11WindowModel(WindowModelStub):
         "_NET_WM_OPAQUE_REGION",
         "WM_COMMAND",
     ]
-    _DEFAULT_NET_WM_ALLOWED_ACTIONS = []
+    _DEFAULT_NET_WM_ALLOWED_ACTIONS: list[str] = []
     _MODELTYPE = "Core"
     _scrub_x11_properties = [
         "WM_STATE",
@@ -299,7 +299,7 @@ class CoreX11WindowModel(WindowModelStub):
             raise TypeError(f"xid must be an int, not a {type(xid)}")
         log("new window %#x", xid)
         self.xid: int = xid
-        self._composite = None
+        self._composite: CompositeHelper | None = None
         self._damage_forward_handle = None
         self._setup_done = False
         self._kill_count = 0
@@ -418,7 +418,7 @@ class CoreX11WindowModel(WindowModelStub):
 
     def uses_xshm(self) -> bool:
         c = self._composite
-        return c and c.has_xshm()
+        return bool(c) and c.has_xshm()
 
     def get_image(self, x: int, y: int, width: int, height: int) -> ImageWrapper:
         return self._composite.get_image(x, y, width, height)
@@ -619,8 +619,8 @@ class CoreX11WindowModel(WindowModelStub):
                             value = self.prop_get(name, ptype, ignore_errors=True)
                             if value is None:
                                 # retry using scalar type:
-                                ptype = (ptype,)
-                                value = self.prop_get(name, ptype, ignore_errors=True)
+                                scalar = (ptype,)
+                                value = self.prop_get(name, scalar, ignore_errors=True)
                             metalog("_handle_property_change(%s) value=%s", name, value)
                             if value:
                                 self.emit("x11-property-changed", (name, ptype, dformat, value))
@@ -653,10 +653,10 @@ class CoreX11WindowModel(WindowModelStub):
     def _handle_wm_name_change(self) -> None:
         name = self.prop_get("_NET_WM_NAME", "utf8", True)
         metalog("_NET_WM_NAME=%s", name)
-        if name is None:
+        if not name:
             name = self.prop_get("WM_NAME", "latin1", True)
             metalog("WM_NAME=%s", name)
-        if self._updateprop("title", sanestr(name or "")):
+        if self._updateprop("title", sanestr(str(name) or "")):
             metalog("wm_name changed")
 
     def _handle_role_change(self) -> None:
@@ -689,7 +689,7 @@ class CoreX11WindowModel(WindowModelStub):
 
     def _handle_opaque_region_change(self) -> None:
         rectangles = []
-        v = tuple(self.prop_get("_NET_WM_OPAQUE_REGION", ["u32"]) or [])
+        v: tuple[int, ...] = tuple(self.prop_get("_NET_WM_OPAQUE_REGION", ["u32"]) or [])
         if OPAQUE_REGION and len(v) % 4 == 0:
             while v:
                 rectangles.append(v[:4])

@@ -45,7 +45,7 @@ ALL_X11_MODIFIERS: dict[str, int] = {
     "mod2": 4,
     "mod3": 5,
     "mod4": 6,
-    "mod5": 7
+    "mod5": 7,
 }
 
 

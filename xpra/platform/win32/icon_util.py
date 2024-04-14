@@ -35,10 +35,10 @@ def image_to_ICONINFO(img, alpha=True) -> HICON:
     return make_ICONINFO(w, h, rgb_data, rgb_format=rgb_format)
 
 
-def make_ICONINFO(w: int, h: int, rgb_data, rgb_format="BGRA") -> HICON:
+def make_ICONINFO(w: int, h: int, rgb_data: bytes, rgb_format="BGRA") -> HICON:
     log("make_ICONINFO(%i, %i, %i bytes, %s)", w, h, len(rgb_data), rgb_format)
-    bitmap = 0
-    mask = 0
+    bitmap: HBITMAP = HBITMAP(0)
+    mask: HBITMAP = HBITMAP(0)
     try:
         bytes_per_pixel = len(rgb_format)
         bitmap = rgb_to_bitmap(rgb_data, bytes_per_pixel, w, h)
@@ -66,7 +66,7 @@ def make_ICONINFO(w: int, h: int, rgb_data, rgb_format="BGRA") -> HICON:
             DeleteObject(bitmap)
 
 
-def rgb_to_bitmap(rgb_data, bytes_per_pixel: int, w: int, h: int) -> HBITMAP:
+def rgb_to_bitmap(rgb_data: bytes, bytes_per_pixel: int, w: int, h: int) -> HBITMAP:
     log("rgb_to_bitmap%s", (rgb_data, bytes_per_pixel, w, h))
     assert bytes_per_pixel in (3, 4)  # only BGRA or BGR are supported
     assert w > 0 and h > 0
