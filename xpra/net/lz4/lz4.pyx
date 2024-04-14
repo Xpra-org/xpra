@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: wraparound=False
 
 import struct
+from typing import Tuple
+from collections.abc import ByteString
+
 from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport MemBuf, getbuf
 
@@ -35,7 +38,7 @@ cdef extern from "lz4_compat.h":
     int LZ4_decompress_safe(const char* src, char* dst, int compressedSize, int dstCapacity) nogil
 
 
-def get_version():
+def get_version() -> Tuple[int, int, int]:
     cdef int v = LZ4_versionNumber()
     return v//10000, (v//100) % 100, v % 100
 
@@ -46,17 +49,17 @@ cdef class compressor:
     def __init__(self):
         LZ4_resetStream_fast(&self.state)
 
-    def bound(self, int size):
+    def bound(self, int size) -> int:
         return LZ4_compressBound(size)
 
-    def compress(self, data, int acceleration=1, int max_size=0, int store_size=True) -> memoryview | None:
+    def compress(self, data: ByteString, int acceleration=1, int max_size=0, int store_size=True) -> ByteString:
         cdef Py_buffer in_buf
         if PyObject_GetBuffer(data, &in_buf, PyBUF_ANY_CONTIGUOUS):
             raise ValueError("failed to read data from %s" % type(data))
         if in_buf.len>LZ4_MAX_INPUT_SIZE:
-            log("input is too large")
             PyBuffer_Release(&in_buf)
-            return None
+            log("input is too large")
+            raise ValueError("input is too large")
         if max_size<=0:
             max_size = LZ4_compressBound(in_buf.len)
         cdef int size_header = 0
@@ -72,16 +75,17 @@ cdef class compressor:
         with nogil:
             r = LZ4_compress_fast_continue(&self.state, in_ptr, out_ptr, in_buf.len, max_size-size_header, acceleration)
         if r<=0:
-            log("LZ4_compress_fast_continue failed for input size %i and output buffer size %i", in_buf.len, max_size)
-            return None
+            msg = f"LZ4_compress_fast_continue failed for input size {in_buf.len} and output buffer size {max_size}"
+            log(msg)
+            raise ValueError(msg)
         PyBuffer_Release(&in_buf)
         return (mem[:(size_header+r)]).toreadonly()
 
-def compress(data, acceleration=1):
+def compress(data: ByteString, acceleration=1) -> ByteString:
     c = compressor()
     return c.compress(data, acceleration)
 
-def decompress(data, int max_size=0, int size=0):
+def decompress(data: ByteString, int max_size=0, int size=0) -> ByteString:
     cdef int size_header = 0
     if size==0:
         size = struct.unpack_from(b"@I", data[:4])[0]
@@ -102,6 +106,7 @@ def decompress(data, int max_size=0, int size=0):
         r = LZ4_decompress_safe(in_ptr, out_ptr, l-size_header, size)
     PyBuffer_Release(&in_buf)
     if r<=0:
-        log("LZ4_decompress_safe failed for input size %i", in_buf.len)
-        return None
+        msg = f"LZ4_decompress_safe failed for input size {in_buf.len}"
+        log(msg)
+        raise ValueError(msg)
     return (memoryview(out_buf)[:r]).toreadonly()

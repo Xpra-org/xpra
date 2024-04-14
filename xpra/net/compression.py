@@ -26,7 +26,7 @@ PERFORMANCE_COMPRESSION: tuple[str, ...] = ("lz4", "brotli")
 class Compression:
     name: str
     version: str
-    compress: Callable[[ByteString, int], [int, ByteString]]
+    compress: Callable[[ByteString, int], tuple[int, ByteString]]
     decompress: Callable[[ByteString], ByteString]
 
 
@@ -39,7 +39,7 @@ def init_lz4() -> Compression:
     from xpra.net.lz4.lz4 import compress, decompress, get_version  # @UnresolvedImport
     from xpra.net.protocol.header import LZ4_FLAG
 
-    def lz4_compress(packet: ByteString, level: int) -> tuple[int, memoryview | None]:
+    def lz4_compress(packet: ByteString, level: int) -> tuple[int, memoryview]:
         flag = min(15, level) | LZ4_FLAG
         return flag, compress(packet, acceleration=max(0, 5 - level // 3))
 
