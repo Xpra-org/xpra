@@ -593,7 +593,7 @@ class WindowClient(StubClientMixin):
                 cursorlog.warn(f"Warning: invalid cursor encoding: {encoding}")
                 return
         if setdefault:
-            cursorlog(f"setting default cursor={new_cursor}")
+            cursorlog(f"setting default cursor={new_cursor!r}")
             self.default_cursor_data = new_cursor
         else:
             self.set_windows_cursor(self._id_to_window.values(), new_cursor)
@@ -707,7 +707,7 @@ class WindowClient(StubClientMixin):
             else:
                 if pid:
                     for tray in trays:
-                        metadata: typedict = getattr(tray, "_metadata", typedict())
+                        metadata: typedict = typedict(getattr(tray, "_metadata", {}))
                         if metadata.intget("pid") == pid:
                             traylog("tray window: matched pid=%i", pid)
                             return tray.tray_widget
@@ -860,7 +860,7 @@ class WindowClient(StubClientMixin):
         bw, bh = w, h
         client_properties = {}
         if len(packet) >= 8:
-            client_properties = packet[7]
+            client_properties = dict(packet[7])
         geomlog("process_new_common: wid=%i, OR=%s, geometry(%s)=%s / %s",
                 wid, override_redirect, packet[2:6], (wx, wy, ww, wh), (bw, bh))
         return self.make_new_window(wid, wx, wy, ww, wh, bw, bh, metadata, override_redirect, client_properties)
@@ -1194,7 +1194,7 @@ class WindowClient(StubClientMixin):
         ah = max(1, self.sy(h))
         resize_counter = -1
         if len(packet) > 6:
-            resize_counter = packet[6]
+            resize_counter = int(packet[6])
         window = self._id_to_window.get(wid)
         geomlog("_process_window_move_resize%s moving / resizing window %s (id=%s) to %s",
                 packet[1:], window, wid, (ax, ay, aw, ah))
@@ -1207,7 +1207,7 @@ class WindowClient(StubClientMixin):
         ah = max(1, self.sy(h))
         resize_counter = -1
         if len(packet) > 4:
-            resize_counter = packet[4]
+            resize_counter = int(packet[4])
         window = self._id_to_window.get(wid)
         geomlog("_process_window_resized%s resizing window %s (id=%s) to %s", packet[1:], window, wid, (aw, ah))
         if window:

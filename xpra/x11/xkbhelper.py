@@ -419,7 +419,7 @@ def gtk_keycodes_to_mappings(gtk_mappings: Iterable[tuple[Any, str, int, int, in
     return mappings
 
 
-def x11_keycodes_to_list(x11_mappings) -> list[tuple(str, int, int)]:
+def x11_keycodes_to_list(x11_mappings) -> list[tuple[str, int, int]]:
     """
         Takes x11 keycodes as obtained by get_keycode_mappings(), in the form:
         #{keycode : [keysyms], ..}
