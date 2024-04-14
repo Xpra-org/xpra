@@ -21,6 +21,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized, strtobytes, bytestostr, hexstr, memoryview_to_bytes
 from xpra.util.env import envint, envbool
 from xpra.util.thread import make_thread, start_thread
+from xpra.common import noop
 from xpra.net.bytestreams import SOCKET_TIMEOUT, set_socket_timeout
 from xpra.net.protocol.header import (
     unpack_header, pack_header, find_xpra_header,
@@ -64,12 +65,8 @@ SEND_INVALID_PACKET = envint("XPRA_SEND_INVALID_PACKET", 0)
 SEND_INVALID_PACKET_DATA = strtobytes(os.environ.get("XPRA_SEND_INVALID_PACKET_DATA", b"ZZinvalid-packetZZ"))
 
 
-def noop():  # pragma: no cover
-    pass
-
-
-def exit_queue() -> SimpleQueue:
-    queue = SimpleQueue()
+def exit_queue() -> Queue[tuple | None]:
+    queue: SimpleQueue[Any] = SimpleQueue()
     for _ in range(10):  # just 2 should be enough!
         queue.put(None)
     return queue
@@ -113,7 +110,7 @@ class SocketProtocol:
         self._process_packet_cb: Callable[[PacketType], None] = process_packet_cb
         self.make_chunk_header: Callable = self.make_xpra_header
         self.make_frame_header: Callable[[str, Iterable], ByteString] = self.noframe_header
-        self._write_queue: Queue[tuple] = Queue(1)
+        self._write_queue: Queue[tuple | None] = Queue(1)
         self._read_queue: Queue[ByteString] = Queue(20)
         self._pre_read = None
         self._process_read: Callable = self.read_queue_put
@@ -148,11 +145,11 @@ class SocketProtocol:
         self.keyfile = ""
         self.keydata = b""
         self.cipher_in = None
-        self.cipher_in_name = None
+        self.cipher_in_name = ""
         self.cipher_in_block_size = 0
         self.cipher_in_padding = INITIAL_PADDING
         self.cipher_out = None
-        self.cipher_out_name = None
+        self.cipher_out_name = ""
         self.cipher_out_block_size = 0
         self.cipher_out_padding = INITIAL_PADDING
         self._threading_lock = RLock()
@@ -284,7 +281,7 @@ class SocketProtocol:
                 "raw_packetcount": self.input_raw_packetcount,
                 "count": self.input_stats,
                 "cipher": {
-                    "": self.cipher_in_name or "",
+                    "": self.cipher_in_name,
                     "padding": self.cipher_in_padding,
                 },
             }
@@ -304,9 +301,11 @@ class SocketProtocol:
                 },
             }
         )
+        thread_info: dict[str, bool] = {}
         for t in (self._write_thread, self._read_thread, self._read_parser_thread, self._write_format_thread):
             if t:
-                info.setdefault("thread", {})[t.name] = t.is_alive()
+                thread_info[t.name] = t.is_alive()
+        info["thread"] = thread_info
         return info
 
     def start(self) -> None:
@@ -331,7 +330,7 @@ class SocketProtocol:
             raise RuntimeError(f"cannot use send_now when a packet source exists! (set to {self._get_packet_cb})")
         tmp_queue = [packet]
 
-        def packet_cb():
+        def packet_cb() -> PacketType:
             self._get_packet_cb = None
             if not tmp_queue:
                 raise RuntimeError("packet callback used more than once!")
@@ -396,7 +395,8 @@ class SocketProtocol:
                 log("add_chunks_to_queue%s", (chunks, start_cb, end_cb, fail_cb), exc_info=True)
                 raise
 
-    def _add_chunks_to_queue(self, packet_type: str, chunks,
+    def _add_chunks_to_queue(self, packet_type: str | int,
+                             chunks: Iterable[NetPacketType, ...],
                              start_cb: Callable | None = None,
                              end_cb: Callable | None = None,
                              fail_cb: Callable | None = None,
@@ -460,11 +460,12 @@ class SocketProtocol:
         self.raw_write(items, packet_type, start_cb, end_cb, fail_cb, synchronous, more)
 
     @staticmethod
-    def make_xpra_header(_packet_type, proto_flags, level, index, payload_size) -> ByteString:
+    def make_xpra_header(_packet_type: str | int,
+                         proto_flags: int, level: int, index: int, payload_size: int) -> ByteString:
         return pack_header(proto_flags, level, index, payload_size)
 
     @staticmethod
-    def noframe_header(_packet_type, _items) -> ByteString:
+    def noframe_header(_packet_type: str | int, _items) -> ByteString:
         return b""
 
     def start_write_thread(self) -> None:

@@ -430,8 +430,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             w, h = model.get_dimensions()
             self.min_mmap_size = max(self.min_mmap_size, w * h * 4 * 2)
 
-    def makeRootWindowModels(self):
-        return (RootWindowModel(self.root),)
+    def makeRootWindowModels(self) -> list:
+        return [RootWindowModel(self.root)]
 
     def send_initial_windows(self, ss, sharing: bool = False) -> None:
         log("send_initial_windows(%s, %s) will send: %s", ss, sharing, self._id_to_window)

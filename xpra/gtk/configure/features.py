@@ -43,7 +43,7 @@ def plabel(text, tooltip="", sensitive=False, font="sans 12"):
 class ConfigureGUI(BaseGUIWindow):
 
     def __init__(self, parent: Gtk.Window | None = None):
-        self.subsystem_switch = {}
+        self.subsystem_switch: dict[str, Gtk.Switch] = {}
         super().__init__(
             "Configure Xpra's Features",
             "features.png",

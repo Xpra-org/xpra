@@ -1003,19 +1003,19 @@ class DisplayWindow(SessionOptions):
                        "Open Display Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
-        pixel_depths = {0: "auto"}
+        pixel_depths: dict[int, str] = {0: "auto"}
         if self.run_mode == "shadow":
-            pixel_depths[8] = 8
+            pixel_depths[8] = "8"
         for pd in (16, 24, 30, 32):
-            pixel_depths[pd] = pd
+            pixel_depths[pd] = str(pd)
         if self.run_mode == "start-desktop":
-            size_options = {
+            size_options: dict[str, str] = {
                 "yes": "auto",
             }
             for size in SCREEN_SIZES:
                 try:
                     w, h = size.split("x")
-                    size_options["{}x{}".format(w, h)] = "{} x {}".format(w, h)
+                    size_options[f"{w}x{h}"] =f"{w} x {h}"
                 except (TypeError, ValueError, IndexError):
                     size_options[size] = size
             self.combo("Screen Size", "resize-display", size_options)

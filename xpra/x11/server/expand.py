@@ -50,7 +50,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
         self.evdi_channel = None
         self.fd_source = None
         self.fd_watch = None
-        self.last_damage = None
+        self.last_damage: tuple = ()
 
     def init(self, opts) -> None:
         ShadowX11Server.init(self, opts)
@@ -155,12 +155,12 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
     def verify_capture(self, ss) -> None:
         pass
 
-    def makeRootWindowModels(self) -> tuple[EVDIModel, ...]:
+    def makeRootWindowModels(self) -> list[EVDIModel, ...]:
         # TODO: remove root window
         root = get_default_root_window()
         geom = (0, 0, 800, 600)
         model = EVDIModel(root, self, "evdi", geom)
-        return (model,)
+        return [model]
 
     def do_make_screenshot_packet(self):
         raise NotImplementedError()

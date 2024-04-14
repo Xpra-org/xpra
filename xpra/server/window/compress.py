@@ -105,10 +105,9 @@ def get_env_encodings(etype:str, valid_options:Iterable[str]=()) -> tuple[str,..
 
 
 TRANSPARENCY_ENCODINGS = get_env_encodings("TRANSPARENCY", ("webp", "png", "rgb32", "jpega"))
+LOSSLESS_ENCODINGS: tuple[str, ...] = ("rgb", "png", "png/P", "png/L", "webp", "avif", "jpeg", "jpega")
 if TRUE_LOSSLESS:
     LOSSLESS_ENCODINGS = ("rgb", "png", "png/P", "png/L", "webp", "avif")
-else:
-    LOSSLESS_ENCODINGS = ("rgb", "png", "png/P", "png/L", "webp", "avif", "jpeg", "jpega")
 LOSSLESS_ENCODINGS = get_env_encodings("LOSSLESS", LOSSLESS_ENCODINGS)
 REFRESH_ENCODINGS = get_env_encodings("REFRESH", LOSSLESS_ENCODINGS)
 
@@ -223,6 +222,7 @@ class WindowSource(WindowIconSource):
         self.server_encodings = server_encodings
         self.encoding = encoding                        # the current encoding
         self.encodings = encodings                      # all the encodings supported by the client
+        self.common_encodings: tuple[str, ...] = ()
         self.core_encodings = core_encodings            # the core encodings supported by the client
         self.picture_encodings = ()                     # non-video only
         self.rgb_formats = rgb_formats                  # supported RGB formats (RGB, RGBA, ...) - used by mmap
@@ -437,7 +437,7 @@ class WindowSource(WindowIconSource):
         self.rgb_formats = ()
         self.full_csc_modes = typedict()
         self.client_refresh_encodings = ()
-        self.encoding_options = {}
+        self.encoding_options = typedict()
         self.rgb_lz4 = False
         self.supports_transparency = False
         self.full_frames_only = False
@@ -489,7 +489,7 @@ class WindowSource(WindowIconSource):
         self._fixed_min_speed = 0
         self._fixed_max_speed = MAX_SPEED
         #
-        self._damage_delayed = None
+        self._damage_delayed: DelayedRegions | None = None
         self._sequence : int = 1
         self._damage_cancelled = MAX_SEQUENCE
         self._damage_packet_sequence : int = 1
@@ -819,7 +819,7 @@ class WindowSource(WindowIconSource):
         self.auto_refresh_delay = d
         self.update_refresh_attributes()
 
-    def set_av_sync(self, av_sync:int) -> None:
+    def set_av_sync(self, av_sync: bool) -> None:
         self.av_sync = av_sync
 
     def set_av_sync_delay(self, new_delay:int) -> None:
@@ -1303,7 +1303,7 @@ class WindowSource(WindowIconSource):
                               self.global_statistics, self.statistics, self.bandwidth_limit, self.jitter)
         # update the normalized value:
         ww, wh = self.window_dimensions
-        bc.delay_per_megapixel = int(bc.delay*1000000//max(1, (ww*wh)))
+        bc.delay_per_megapixel = round(bc.delay * 1000000 // max(1, (ww*wh)))
         self.statistics.last_recalculate = now
         self.update_av_sync_frame_delay()
 
@@ -1497,11 +1497,11 @@ class WindowSource(WindowIconSource):
             # when bandwidth is scarce, don't use lossless refresh,
             # switch to almost-lossless:
             rs = AUTO_REFRESH_SPEED//2
-            rq = 100-cv*10
+            rq = round(100-cv*10)
             if bwl > 0:
-                rq -= sqrt(1000*1000//bwl)
+                rq -= round(sqrt(1000*1000//bwl))
             rs = min(50, max(0, rs))
-            rq = min(99, max(80, int(rq), self._current_quality+30))
+            rq = min(99, max(80, rq, self._current_quality+30))
         refreshlog(f"update_refresh_attributes() wid={self.wid}, refresh quality={rq}%, refresh speed={rs}%, for cv={cv:.2f}, {bwl=}")
         self.refresh_quality = rq
         self.refresh_speed = rs
@@ -1563,7 +1563,7 @@ class WindowSource(WindowIconSource):
         self.do_damage(ww, wh, x, y, w, h, options)
         self.statistics.last_damage_event_time = now
 
-    def do_damage(self, ww : int, wh : int, x : int, y : int, w : int, h : int, options) -> None:
+    def do_damage(self, ww : int, wh : int, x : int, y : int, w : int, h : int, options: dict) -> None:
         now = monotonic()
         if self.refresh_timer and options.get("quality", self._current_quality)<self.refresh_quality:
             rr = tuple(self.refresh_regions)
@@ -1655,7 +1655,7 @@ class WindowSource(WindowIconSource):
         due = now+expire_delay/1000.0
         self.expire_timer = self.timeout_add(expire_delay, self.expire_delayed_region, due, target_delay)
 
-    def may_update_window_dimensions(self) -> tuple[int,int]:
+    def may_update_window_dimensions(self) -> tuple[int, int]:
         ww, wh = self.window.get_dimensions()
         if self.window_dimensions != (ww, wh):
             self.update_window_dimensions(ww, wh)
@@ -1913,7 +1913,7 @@ class WindowSource(WindowIconSource):
         self.do_send_regions(damage_time, regions, coding, options)
 
     def do_send_regions(self, damage_time, regions, coding : str, options,
-                        exclude_region=None, get_best_encoding:Callable=None) -> None:
+                        exclude_region=None, get_best_encoding: Callable | None=None) -> None:
         ww, wh = self.window_dimensions
         options = self.assign_sq_options(options)
         get_best_encoding = get_best_encoding or self.get_best_encoding
@@ -2674,6 +2674,7 @@ class WindowSource(WindowIconSource):
         def nodata(msg, *args) -> None:
             log("make_data_packet: no data for window %s with sequence=%s: "+msg, self.wid, sequence, *args)
             self.free_image_wrapper(image)
+            return None
         if self.is_cancelled(sequence):
             return nodata("cancelled")
         if self.suspended:

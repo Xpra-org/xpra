@@ -66,7 +66,7 @@ def get_xdisplay() -> int:
     if not ptr:
         raise RuntimeError("no X11 display registered")
     # pylint: disable=import-outside-toplevel
-    return cast(ptr, POINTER(struct__XDisplay))
+    return int(cast(ptr, POINTER(struct__XDisplay)))
 
 
 def get_extensions(xdisplay: int) -> tuple[str, ...]:

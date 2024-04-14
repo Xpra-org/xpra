@@ -17,7 +17,7 @@ log = Logger("gstreamer", "util")
 
 STEP_DELAY = envint("XPRA_CONFIGURE_STEP_DELAY", 100)
 
-SHADOW_BACKENDS = {
+SHADOW_BACKENDS: dict[str, tuple[str, ...]] = {
     "auto": (
         "Automatic runtime detection",
         "this is the default behaviour,",
@@ -70,7 +70,7 @@ def _set_labels_text(widgets, *messages):
 class ConfigureGUI(BaseGUIWindow):
 
     def __init__(self, parent: Gtk.Window | None = None):
-        self.buttons = []
+        self.buttons: list[Gtk.CheckButton] = []
         size = (800, 554)
         super().__init__(
             "Configure Xpra's Shadow Server",
@@ -98,7 +98,7 @@ class ConfigureGUI(BaseGUIWindow):
             except ImportError:
                 available = False
                 tooltip = "not installed or not available"
-            details = SHADOW_BACKENDS.get(backend, [])
+            details = SHADOW_BACKENDS.get(backend, ())
             if not details:
                 description = backend
                 tooltip = "unknown backend"

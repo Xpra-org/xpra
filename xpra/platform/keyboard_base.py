@@ -24,7 +24,7 @@ class KeyboardBase:
         self.modifier_keys: dict[str, str] = {}
         self.modifier_names: dict[str, str] = {}
         self.modifier_keycodes: dict[str, list[int]] = {}
-        self.modifier_mappings = {}
+        self.modifier_mappings: dict[str, Any] = {}
         # FIXME: this only allows a single modifier per mask
         # and in some cases we want to allow other modifier names
         # to use the same mask... (ie: META on OSX)
@@ -66,7 +66,7 @@ class KeyboardBase:
                 if keycode not in keycodes:
                     keycodes.append(keycode)
 
-    def set_modifier_mappings(self, mappings: dict[str, str]) -> None:
+    def set_modifier_mappings(self, mappings: dict[str, Any]) -> None:
         log("set_modifier_mappings({mappings})")
         self.modifier_mappings = mappings
         self.modifier_keys = {}

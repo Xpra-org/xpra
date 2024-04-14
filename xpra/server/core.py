@@ -38,7 +38,7 @@ from xpra.net.socket_util import (
     add_listen_socket, accept_connection, guess_packet_type,
     hosts, peek_connection, )
 from xpra.net.bytestreams import (
-    SSLSocketConnection, SocketConnection,
+    Connection, SSLSocketConnection, SocketConnection,
     log_new_connection, pretty_socket, SOCKET_TIMEOUT
 )
 from xpra.net.net_util import (
@@ -1118,7 +1118,7 @@ class ServerCore:
         socket_options = self.socket_options.get(listener, {})
         if socktype == "named-pipe":
             from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
-            conn = NamedPipeConnection(listener.pipe_name, handle, socket_options)
+            conn: Connection = NamedPipeConnection(listener.pipe_name, handle, socket_options)
             netlog.info("New %s connection received on %s", socktype, conn.target)
             self.make_protocol(socktype, conn, socket_options)
             return True
@@ -1708,20 +1708,20 @@ class ServerCore:
             mime_type = "application/octet-stream"
         return self.http_response(icon_data, mime_type)
 
-    def http_menu_request(self, _path: str):
+    def http_menu_request(self, _uri: str):
         xdg_menu = self.menu_provider.get_menu_data(remove_icons=True)
         return self.send_json_response(xdg_menu or "not available")
 
-    def http_desktop_menu_request(self, _path: str):
+    def http_desktop_menu_request(self, _uri: str):
         xsessions = self.menu_provider.get_desktop_sessions(remove_icons=True)
         return self.send_json_response(xsessions or "not available")
 
-    def http_menu_icon_request(self, path: str):
+    def http_menu_icon_request(self, uri: str):
         def invalid_path():
-            httplog("invalid menu-icon request path '%s'", path)
+            httplog(f"invalid menu-icon request path {uri!r}")
             return 404, None, None
 
-        parts = unquote(path).split("/MenuIcon/", 1)
+        parts = unquote(uri).split("/MenuIcon/", 1)
         # ie: "/menu-icon/a/b" -> ['', 'a/b']
         if len(parts) < 2:
             return invalid_path()
@@ -1737,22 +1737,22 @@ class ServerCore:
         icon_type, icon_data = self.menu_provider.get_menu_icon(category_name, app_name)
         return self.send_icon(icon_type, icon_data)
 
-    def http_desktop_menu_icon_request(self, path: str):
+    def http_desktop_menu_icon_request(self, uri: str):
         def invalid_path():
-            httplog("invalid desktop menu-icon request path '%s'", path)
+            httplog(f"invalid desktop menu-icon request path {uri!r}")
             return 404, None, None
 
-        parts = unquote(path).split("/DesktopMenuIcon/", 1)
+        parts = unquote(uri).split("/DesktopMenuIcon/", 1)
         # ie: "/menu-icon/wmname" -> ['', 'sessionname']
         if len(parts) < 2:
             return invalid_path()
         # in case the sessionname is followed by a slash:
         sessionname = parts[1].split("/")[0]
-        httplog("http_desktop_menu_icon_request: sessionname=%s", sessionname)
+        httplog(f"http_desktop_menu_icon_request: {sessionname=}")
         icon_type, icon_data = self.menu_provider.get_desktop_menu_icon(sessionname)
         return self.send_icon(icon_type, icon_data)
 
-    def http_displays_request(self, _path: str):
+    def http_displays_request(self, _uri: str):
         displays = self.get_displays()
         displays_info = _filter_display_dict(displays, "state", "wmname", "xpra-server-mode")
         return self.send_json_response(displays_info)
@@ -1761,7 +1761,7 @@ class ServerCore:
         from xpra.scripts.main import get_displays_info  # pylint: disable=import-outside-toplevel
         return get_displays_info(self.dotxpra)
 
-    def http_sessions_request(self, _path):
+    def http_sessions_request(self, _uri):
         sessions = self.get_xpra_sessions()
         sessions_info = _filter_display_dict(sessions, "state", "username", "session-type", "session-name", "uuid")
         return self.send_json_response(sessions_info)
@@ -1770,7 +1770,7 @@ class ServerCore:
         from xpra.scripts.main import get_xpra_sessions  # pylint: disable=import-outside-toplevel
         return get_xpra_sessions(self.dotxpra)
 
-    def http_info_request(self, _path: str):
+    def http_info_request(self, _uri: str):
         return self.send_json_response(self.get_http_info())
 
     def get_http_info(self) -> dict[str, Any]:
@@ -1780,7 +1780,7 @@ class ServerCore:
             "uuid": self.uuid,
         }
 
-    def http_status_request(self, _path: str):
+    def http_status_request(self, _uri: str):
         return self.http_response("ready")
 
     def http_response(self, content, content_type: str = "text/plain"):
@@ -2255,7 +2255,7 @@ class ServerCore:
             return auth_failed("missing encryption tokens from client")
         return {}
 
-    def get_encryption_key(self, authenticators: tuple = (), keyfile: str = None) -> bytes:
+    def get_encryption_key(self, authenticators: tuple = (), keyfile: str = "") -> bytes:
         # if we have a keyfile specified, use that:
         authlog(f"get_encryption_key({authenticators}, {keyfile})")
         if keyfile:
@@ -2264,7 +2264,7 @@ class ServerCore:
             if v:
                 return v
         KVAR = "XPRA_ENCRYPTION_KEY"
-        v = os.environ.get(KVAR)
+        v = os.environ.get(KVAR, "")
         if v:
             authlog(f"using encryption key from {KVAR!r} environment variable")
             return strtobytes(v)
@@ -2412,7 +2412,7 @@ class ServerCore:
     def do_send_info(self, proto: SocketProtocol, info: dict[str, Any]) -> None:
         proto.send_now(("hello", notypedict(info)))
 
-    def get_all_info(self, callback: Callable, proto: SocketProtocol = None, *args):
+    def get_all_info(self, callback: Callable, proto: SocketProtocol | None = None, *args):
         start = monotonic()
         ui_info: dict[str, Any] = self.get_ui_info(proto, *args)
         end = monotonic()
@@ -2549,7 +2549,7 @@ class ServerCore:
         }
 
     def get_socket_info(self) -> dict[str, Any]:
-        si = {}
+        si: dict[str, Any] = {}
 
         def add_listener(socktype: str, info):
             si.setdefault(socktype, {}).setdefault("listeners", []).append(info)

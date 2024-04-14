@@ -40,10 +40,10 @@ class ConfigureGUI(BaseGUIWindow):
         if self.warning_pixbuf:
             size = self.warning_pixbuf.get_width() + 20, self.warning_pixbuf.get_height() + 20
         self.layout = None
-        self.warning_labels = []
-        self.labels = []
-        self.buttons = []
-        self.elements = []
+        self.warning_labels: list[Gtk.Label] = []
+        self.labels: list[Gtk.Label] = []
+        self.buttons: list[Gtk.Button] = []
+        self.elements: tuple[str, ...] = []
         super().__init__(
             "Configure Xpra's GStreamer Codecs",
             "gstreamer.png",

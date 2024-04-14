@@ -8,6 +8,7 @@ import signal
 import threading
 from collections.abc import Callable
 
+from xpra.common import noop
 from xpra.net.bytestreams import untilConcludes
 from xpra.util.str_fn import repr_ellipsized, hexstr
 from xpra.util.env import envint, envbool
@@ -114,7 +115,7 @@ class XpraProxy:
         except OSError:
             pass
         quit_cb: Callable = self._quit_cb
-        self._quit_cb = None
+        self._quit_cb = noop
         quit_cb(self)
 
     def do_quit(self, _proxy) -> None:

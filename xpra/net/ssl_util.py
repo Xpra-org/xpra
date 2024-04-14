@@ -249,7 +249,7 @@ def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", c
         key_password = key_password or os.environ.get("XPRA_SSL_KEY_PASSWORD")
         ssllog("context.load_cert_chain%s", (cert or None, key or None, key_password))
         try:
-            context.load_cert_chain(certfile=cert or None, keyfile=key or None, password=key_password)
+            context.load_cert_chain(certfile=cert, keyfile=key, password=key_password)
         except ssl.SSLError as e:
             ssllog("load_cert_chain", exc_info=True)
             raise InitException(f"SSL error, failed to load certificate chain: {e}") from e

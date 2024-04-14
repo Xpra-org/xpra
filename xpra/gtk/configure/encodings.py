@@ -32,7 +32,6 @@ def make_scale(adjust, marks: dict) -> Gtk.Scale:
 class ConfigureGUI(BaseGUIWindow):
 
     def __init__(self, parent: Gtk.Window | None = None):
-        self.subsystem_switch = {}
         super().__init__(
             "Configure Xpra's Picture Compression",
             "encoding.png",

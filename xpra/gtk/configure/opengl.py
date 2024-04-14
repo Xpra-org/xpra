@@ -1,10 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2023-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os.path
 import struct
+from typing import Any
+from collections.abc import Callable
 
 from xpra.common import noop
 from xpra.os_util import gi_import, WIN32
@@ -115,7 +117,7 @@ def add_test_images():
 add_test_images()
 
 
-def create_twin_test_windows(parent: Gtk.Window):
+def create_twin_test_windows(parent: Gtk.Window) -> tuple[tuple[dict, Any], list[Gtk.Window]]:
     from xpra.gtk.window import add_close_accel
     from xpra.client.gui.fake_client import FakeClient
     from xpra.client.gui.window_border import WindowBorder
@@ -141,7 +143,7 @@ def create_twin_test_windows(parent: Gtk.Window):
     border = WindowBorder(False)
     max_window_size = None  # (1024, 1024)
     default_cursor_data = None
-    windows = []
+    windows: list[Gtk.Window] = []
     for i, window_class, title in (
         (0, gl_window_class, "OpenGL Window"),
         (1, ClientWindow, "Non-OpenGL Window"),
@@ -247,7 +249,7 @@ class ConfigureGUI(BaseGUIWindow):
 
     def paint_twin_windows(self, description: str, paint_data: tuple):
         log("paint_twin_windows() %r", description)
-        callbacks = []
+        callbacks: list[Callable] = []
         seq = 1
         for x, y, w, h, encoding, img_data, rowstride, options in paint_data:
             for window in self.windows:

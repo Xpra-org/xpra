@@ -737,7 +737,7 @@ class GLWindowBackingBase(WindowBackingBase):
         rect_count = len(self.pending_fbo_paint)
         if self.is_double_buffered() or self.size != self.render_size or scale != 1:
             # refresh the whole window:
-            rectangles = ((0, 0, bw, bh),)
+            rectangles = [(0, 0, bw, bh), ]
         else:
             # paint just the rectangles we have accumulated:
             rectangles = self.pending_fbo_paint
@@ -933,8 +933,8 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def validate_cursor(self) -> bool:
         cursor_data = self.cursor_data
-        cw: int = cursor_data[3]
-        ch: int = cursor_data[4]
+        cw = int(cursor_data[3])
+        ch = int(cursor_data[4])
         pixels = cursor_data[8]
         blen = cw * ch * 4
         if len(pixels) != blen:

@@ -137,9 +137,9 @@ class HANDLE(wintypes.HANDLE):
 class LARGE_INTEGER(wintypes.LARGE_INTEGER):
     # https://msdn.microsoft.com/en-us/library/ff553204
     ntdll.RtlSecondsSince1970ToTime.restype = None
-    _unix_epoch = wintypes.LARGE_INTEGER()
-    ntdll.RtlSecondsSince1970ToTime(0, ctypes.byref(_unix_epoch))
-    _unix_epoch = _unix_epoch.value
+    _unix_epoch_LI = wintypes.LARGE_INTEGER()
+    ntdll.RtlSecondsSince1970ToTime(0, ctypes.byref(_unix_epoch_LI))
+    _unix_epoch = _unix_epoch_LI.value
 
     def __int__(self):
         return self.value
