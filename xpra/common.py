@@ -16,6 +16,7 @@ except ImportError:     # pragma: no cover
     StrEnum = Enum      # type: ignore
 
 from xpra.util.env import envint, envbool
+from xpra.util.str_fn import nicestr
 
 RESOLUTION_ALIASES: dict[str, tuple[int, int]] = {
     "QVGA"  : (320, 240),
@@ -94,7 +95,8 @@ class ConnectionMessage(StrEnum):
 
 # convenience method based on the strings above:
 def disconnect_is_an_error(reason) -> bool:
-    return reason.find("error") >= 0 or (reason.find("timeout") >= 0 and reason != ConnectionMessage.IDLE_TIMEOUT)
+    rstr = nicestr(reason)
+    return rstr.find("error") >= 0 or (rstr.find("timeout") >= 0 and rstr != ConnectionMessage.IDLE_TIMEOUT.value)
 
 
 class NotificationID(IntEnum):

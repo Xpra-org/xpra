@@ -708,9 +708,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         log.warn(f" {reason}")
         for x in extra_info:
             log.warn(f" {x}")
-        if ConnectionMessage.AUTHENTICATION_FAILED in extra_info:
+        if ConnectionMessage.AUTHENTICATION_FAILED.value in extra_info:
             self.quit(ExitCode.AUTHENTICATION_FAILED)
-        elif ConnectionMessage.CONNECTION_ERROR in extra_info or not self.completed_startup:
+        elif ConnectionMessage.CONNECTION_ERROR.value in extra_info or not self.completed_startup:
             self.quit(ExitCode.CONNECTION_FAILED)
         else:
             self.quit(ExitCode.FAILURE)
@@ -727,9 +727,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         l(" %s", reason)
         for x in extra_info:
             l(" %s", x)
-        if reason == ConnectionMessage.SERVER_UPGRADE:
+        if reason == ConnectionMessage.SERVER_UPGRADE.value:
             return ExitCode.UPGRADE
-        if ConnectionMessage.AUTHENTICATION_FAILED in extra_info:
+        if ConnectionMessage.AUTHENTICATION_FAILED.value in extra_info:
             return ExitCode.AUTHENTICATION_FAILED
         return ExitCode.OK
 
@@ -880,7 +880,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             log("Error: failed to show GUI for password prompt", exc_info=True)
             return None
 
-    def auth_error(self, code, message, server_message=str(ConnectionMessage.AUTHENTICATION_FAILED)):
+    def auth_error(self, code: int,
+                   message: str,
+                   server_message: str | ConnectionMessage=ConnectionMessage.AUTHENTICATION_FAILED):
         authlog.error("Error: authentication failed:")
         authlog.error(f" {message}")
         self.disconnect_and_quit(code, server_message)

@@ -619,7 +619,7 @@ class PrintClient(SendCommandConnectClient):
         blob = Compressed("print", self.file_data)
         self.send("print", self.filename, blob, *self.command)
         log("print: sending %s as %s for printing", self.filename, blob)
-        self.idle_add(self.send, "disconnect", ConnectionMessage.DONE, "detaching")
+        self.idle_add(self.send, "disconnect", ConnectionMessage.DONE.value, "detaching")
 
     def make_hello(self) -> dict[str, Any]:
         capabilities = super().make_hello()
@@ -640,7 +640,10 @@ class ExitXpraClient(HelloRequestClient):
         }
 
     def do_command(self, caps: typedict) -> None:
-        self.idle_add(self.send, "exit-server", os.environ.get("XPRA_EXIT_MESSAGE", ConnectionMessage.SERVER_EXIT))
+        self.idle_add(self.send,
+                      "exit-server",
+                      os.environ.get("XPRA_EXIT_MESSAGE", ConnectionMessage.SERVER_EXIT.value)
+                      )
 
 
 class StopXpraClient(HelloRequestClient):
@@ -675,7 +678,7 @@ class DetachXpraClient(HelloRequestClient):
         }
 
     def do_command(self, caps: typedict) -> None:
-        self.idle_add(self.send, "disconnect", ConnectionMessage.DONE, "detaching")
+        self.idle_add(self.send, "disconnect", ConnectionMessage.DONE.value, "detaching")
         # not exiting the client here,
         # the server should disconnect us with the response
 

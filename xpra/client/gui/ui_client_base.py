@@ -346,7 +346,7 @@ class UIXpraClient(ClientBaseClass):
         if self.exit_code is None:
             body = "\n".join(info)
             if not self.connection_established:
-                if ConnectionMessage.AUTHENTICATION_FAILED in info:
+                if ConnectionMessage.AUTHENTICATION_FAILED.value in info:
                     title = "Authentication failed"
                     self.exit_code = ExitCode.AUTHENTICATION_FAILED
                 else:
