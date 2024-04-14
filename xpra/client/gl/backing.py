@@ -576,7 +576,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 self.offscreen_fbo = None
                 glDeleteFramebuffers(1, [ofbo])
             textures = self.textures
-            if textures:
+            if len(textures) > 0:
                 self.textures = []
                 glDeleteTextures(textures)
         except Exception as e:
