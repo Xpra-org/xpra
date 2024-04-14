@@ -17,7 +17,7 @@ from queue import Queue
 from typing import Dict, List, Tuple, Any, ByteString, Callable, Optional, Iterable
 
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr
-from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict
+from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict, nicestr
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.bytestreams import SOCKET_TIMEOUT, set_socket_timeout
 from xpra.net.protocol.header import (
@@ -318,7 +318,7 @@ class SocketProtocol:
 
 
     def send_disconnect(self, reasons, done_callback=noop) -> None:
-        packet = ["disconnect"]+[str(x) for x in reasons]
+        packet = ["disconnect"]+[nicestr(x) for x in reasons]
         self.flush_then_close(self.encode, packet, done_callback=done_callback)
 
     def send_now(self, packet : PacketType) -> None:

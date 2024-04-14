@@ -159,7 +159,8 @@ def get_util_logger():
 
 #convenience method based on the strings above:
 def disconnect_is_an_error(reason) -> bool:
-    return reason.find("error")>=0 or (reason.find("timeout")>=0 and reason!=ConnectionMessage.IDLE_TIMEOUT)
+    rstr = nicestr(reason)
+    return rstr.find("error") >= 0 or (rstr.find("timeout") >= 0 and rstr != ConnectionMessage.IDLE_TIMEOUT.value)
 
 
 def dump_exc():

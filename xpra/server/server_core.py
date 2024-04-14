@@ -2008,7 +2008,7 @@ class ServerCore:
 
     def auth_failed(self, proto:SocketProtocol, msg:str) -> None:
         authlog.warn("Warning: authentication failed")
-        authlog.warn(f" {msg}")
+        authlog.warn(f" {nicestr(msg)}")
         self.timeout_add(1000, self.disconnect_client, proto, msg)
 
     def verify_auth(self, proto:SocketProtocol, packet, c:typedict) -> None:
