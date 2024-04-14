@@ -5,8 +5,7 @@
 # This subprocess.Popen code was found here:
 # https://stackoverflow.com/questions/29566330/
 
-#@PydevCodeAnalysisIgnore
-#pylint: disable=unused-argument
+# pylint: disable=unused-argument
 
 import os
 import subprocess
@@ -14,13 +13,14 @@ from ctypes import (
     get_last_error, WinError, WinDLL,  # @UnresolvedImport
     Structure, byref, POINTER, sizeof, create_unicode_buffer,
 )
-from wintypes import BYTE, BOOL, WORD, DWORD, HANDLE, LPWSTR, LPCWSTR, LPVOID   # @UnresolvedImport
+import wintypes
+from wintypes import BYTE, BOOL, WORD, DWORD, LPWSTR, LPCWSTR, LPVOID   # @UnresolvedImport
 
 kernel32 = WinDLL('kernel32', use_last_error=True)
 advapi32 = WinDLL('advapi32', use_last_error=True)
 
 ERROR_INVALID_HANDLE = 0x0006
-INVALID_HANDLE_VALUE = HANDLE(-1).value
+INVALID_HANDLE_VALUE = wintypes.HANDLE(-1).value
 INVALID_DWORD_VALUE = DWORD(-1).value
 
 DEBUG_PROCESS                    = 0x00000001
@@ -71,7 +71,7 @@ LOGON_WITH_PROFILE        = 0x00000001
 LOGON_NETCREDENTIALS_ONLY = 0x00000002
 
 
-class HANDLE(HANDLE):
+class HANDLE(wintypes.HANDLE):
     __slots__ = 'closed',
 
     def __int__(self):
@@ -130,24 +130,26 @@ LPBYTE = POINTER(BYTE)
 
 class STARTUPINFO(Structure):
     """https://msdn.microsoft.com/en-us/library/ms686331"""
-    _fields_ = (('cb',              DWORD),
-                ('lpReserved',      LPWSTR),
-                ('lpDesktop',       LPWSTR),
-                ('lpTitle',         LPWSTR),
-                ('dwX',             DWORD),
-                ('dwY',             DWORD),
-                ('dwXSize',         DWORD),
-                ('dwYSize',         DWORD),
-                ('dwXCountChars',   DWORD),
-                ('dwYCountChars',   DWORD),
-                ('dwFillAttribute', DWORD),
-                ('dwFlags',         DWORD),
-                ('wShowWindow',     WORD),
-                ('cbReserved2',     WORD),
-                ('lpReserved2',     LPBYTE),
-                ('hStdInput',       HANDLE),
-                ('hStdOutput',      HANDLE),
-                ('hStdError',       HANDLE))
+    _fields_ = (
+        ('cb',              DWORD),
+        ('lpReserved',      LPWSTR),
+        ('lpDesktop',       LPWSTR),
+        ('lpTitle',         LPWSTR),
+        ('dwX',             DWORD),
+        ('dwY',             DWORD),
+        ('dwXSize',         DWORD),
+        ('dwYSize',         DWORD),
+        ('dwXCountChars',   DWORD),
+        ('dwYCountChars',   DWORD),
+        ('dwFillAttribute', DWORD),
+        ('dwFlags',         DWORD),
+        ('wShowWindow',     WORD),
+        ('cbReserved2',     WORD),
+        ('lpReserved2',     LPBYTE),
+        ('hStdInput',       HANDLE),
+        ('hStdOutput',      HANDLE),
+        ('hStdError',       HANDLE),
+    )
 
     def __init__(self, **kwds):
         self.cb = sizeof(self)
@@ -162,7 +164,9 @@ PPROC_THREAD_ATTRIBUTE_LIST = POINTER(PROC_THREAD_ATTRIBUTE_LIST)
 
 
 class STARTUPINFOEX(STARTUPINFO):
-    _fields_ = (('lpAttributelist', PPROC_THREAD_ATTRIBUTE_LIST),)
+    _fields_ = (
+        ('lpAttributelist', PPROC_THREAD_ATTRIBUTE_LIST),
+    )
 
 
 LPSTARTUPINFO = POINTER(STARTUPINFO)
