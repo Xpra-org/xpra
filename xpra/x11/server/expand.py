@@ -155,7 +155,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
     def verify_capture(self, ss) -> None:
         pass
 
-    def makeRootWindowModels(self) -> list[EVDIModel, ...]:
+    def makeRootWindowModels(self) -> list[EVDIModel]:
         # TODO: remove root window
         root = get_default_root_window()
         geom = (0, 0, 800, 600)

@@ -43,7 +43,7 @@ class ConfigureGUI(BaseGUIWindow):
         self.warning_labels: list[Gtk.Label] = []
         self.labels: list[Gtk.Label] = []
         self.buttons: list[Gtk.Button] = []
-        self.elements: tuple[str, ...] = []
+        self.elements: tuple[str, ...] = ()
         super().__init__(
             "Configure Xpra's GStreamer Codecs",
             "gstreamer.png",

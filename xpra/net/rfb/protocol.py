@@ -61,12 +61,14 @@ class RFBProtocol:
     def is_closed(self) -> bool:
         return self._closed
 
+    # noinspection PyMethodMayBeStatic
     def is_sending_encrypted(self) -> bool:
         return False
 
     def send_protocol_handshake(self) -> None:
         self.send(b"RFB 003.008\n")
 
+    # noinspection PyMethodMayBeStatic
     def _parse_invalid(self, packet) -> int:
         return len(packet)
 

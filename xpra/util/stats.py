@@ -49,7 +49,10 @@ def absolute_to_diff_values(in_data):
 
 
 def values_to_scaled_values(data: Sequence[float | int],
-                            scale_unit=10, min_scaled_value=10, num_values=20) -> tuple[float, list[float | int | None]]:
+                            scale_unit=10,
+                            min_scaled_value=10,
+                            num_values=20,
+                            ) -> tuple[float, list[float | int | None]]:
     # print("values_to_scaled_values(%s, %s, %s)" % (data, scale_unit, num_values))
     if not data:
         return 0, []

@@ -344,7 +344,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         curr = self.do_get_cursor_data()  # pylint: disable=assignment-from-none
         self.last_cursor_data = curr
 
-        def cmpv(lcd : Iterable | None) -> tuple[Any, ...]:
+        def cmpv(lcd: Iterable | None) -> tuple[Any, ...]:
             if not lcd:
                 return ()
             v = lcd[0]

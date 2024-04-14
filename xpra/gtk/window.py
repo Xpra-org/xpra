@@ -85,16 +85,16 @@ def set_visual(window, alpha=True) -> Gdk.Visual | None:
     alphalog("set_visual(%s, %s) screen=%s, visual=%s", window, alpha, screen, visual)
     # we can't do alpha on win32 with plain GTK,
     # (though we handle it in the opengl backend)
-    l: Callable = alphalog.warn
+    log_fn: Callable = alphalog.warn
     if WIN32 or not first_time("no-rgba"):
-        l = alphalog.debug
+        log_fn = alphalog.debug
     if alpha and visual is None or (not WIN32 and not screen.is_composited()):
-        l("Warning: cannot handle window transparency")
+        log_fn("Warning: cannot handle window transparency")
         if visual is None:
-            l(" no RGBA visual")
+            log_fn(" no RGBA visual")
         else:
             assert not screen.is_composited()
-            l(" screen is not composited")
+            log_fn(" screen is not composited")
         return None
     alphalog("set_visual(%s, %s) using visual %s", window, alpha, visual)
     if visual:
