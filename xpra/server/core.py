@@ -1073,15 +1073,15 @@ class ServerCore:
             self._aliases[i] = key
             i += 1
 
-    def cleanup_all_protocols(self, reason=None, force=False) -> None:
+    def cleanup_all_protocols(self, reason: str | ConnectionMessage = "", force=False) -> None:
         protocols = self.get_all_protocols()
         self.cleanup_protocols(protocols, reason=reason, force=force)
 
     def get_all_protocols(self) -> tuple[SocketProtocol, ...]:
         return tuple(self._potential_protocols)
 
-    def cleanup_protocols(self, protocols, reason=None, force=False) -> None:
-        if reason is None:
+    def cleanup_protocols(self, protocols, reason: str | ConnectionMessage ="", force=False) -> None:
+        if not reason:
             if self._upgrading:
                 reason = ConnectionMessage.SERVER_UPGRADE
             else:
@@ -1863,7 +1863,7 @@ class ServerCore:
     def disconnect_client(self, protocol: SocketProtocol, reason: str | ConnectionMessage, *extra):
         netlog("disconnect_client(%s, %s, %s)", protocol, reason, extra)
         if protocol and not protocol.is_closed():
-            self.disconnect_protocol(protocol, str(reason), *extra)
+            self.disconnect_protocol(protocol, reason, *extra)
 
     def disconnect_protocol(self, protocol: SocketProtocol, *reasons):
         netlog("disconnect_protocol(%s, %s)", protocol, reasons)
@@ -1960,7 +1960,7 @@ class ServerCore:
         remote_version = c.strget("version")
         verr = version_compat_check(remote_version)
         if verr is not None:
-            self.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, "incompatible version: %s" % verr)
+            self.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, f"incompatible version: {verr!r}")
             proto.close()
             return
         # this will call auth_verified if successful
@@ -2022,13 +2022,13 @@ class ServerCore:
         proto.send_now(("challenge", salt, auth_caps or {}, digest, salt_digest, prompt))
         self.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
 
-    def auth_failed(self, proto: SocketProtocol, msg: str) -> None:
+    def auth_failed(self, proto: SocketProtocol, msg: str | ConnectionMessage) -> None:
         authlog.warn("Warning: authentication failed")
         authlog.warn(f" {msg}")
         self.timeout_add(1000, self.disconnect_client, proto, msg)
 
     def verify_auth(self, proto: SocketProtocol, packet, c: typedict) -> None:
-        def auth_failed(msg: str):
+        def auth_failed(msg: str | ConnectionMessage) -> None:
             self.auth_failed(proto, msg)
 
         remote = {}
@@ -2132,7 +2132,7 @@ class ServerCore:
                 self.send_challenge(proto, salt, auth_caps, digest, salt_digest, authenticator.prompt)
                 return
             if not authenticator.authenticate(c):
-                auth_failed(str(ConnectionMessage.AUTHENTICATION_FAILED))
+                auth_failed(ConnectionMessage.AUTHENTICATION_FAILED)
                 return
         client_expects_challenge = c.strget("challenge")
         if client_expects_challenge:

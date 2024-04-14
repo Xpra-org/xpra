@@ -48,6 +48,7 @@ from xpra.os_util import (
 )
 from xpra.server.util import setuidgid
 from xpra.util.system import SIGNAMES
+from xpra.util.str_fn import nicestr
 from xpra.util.io import load_binary_file, is_writable, stderr_print, which
 from xpra.util.env import unsetenv, envbool, osexpand, get_saved_env, get_saved_env_var
 from xpra.common import GROUP
@@ -708,7 +709,7 @@ def request_exit(uri: str) -> bool:
     env["XPRA_CONNECT_TIMEOUT"] = "5"
     # don't log disconnect message
     env["XPRA_LOG_DISCONNECT"] = "0"
-    env["XPRA_EXIT_MESSAGE"] = str(ConnectionMessage.SERVER_UPGRADE)
+    env["XPRA_EXIT_MESSAGE"] = nicestr(ConnectionMessage.SERVER_UPGRADE)
     try:
         p = Popen(cmd, env=env)
         p.wait()
