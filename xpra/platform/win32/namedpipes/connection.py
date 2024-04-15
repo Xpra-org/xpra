@@ -9,7 +9,7 @@
 import time
 import errno
 from ctypes import addressof, byref, c_ulong, c_char_p, c_char, c_void_p, cast, string_at
-from ctypes.wintypes import DWORD
+from ctypes.wintypes import DWORD, HANDLE
 from typing import Any
 
 from xpra.util.str_fn import strtobytes, memoryview_to_bytes
@@ -21,7 +21,7 @@ from xpra.platform.win32.common import (
     IO_ERROR_STR, ERROR_BROKEN_PIPE, ERROR_IO_PENDING,
 )
 from xpra.platform.win32.namedpipes.common import (
-    OVERLAPPED, WAIT_STR, INVALID_HANDLE_VALUE,
+    OVERLAPPED, WAIT_STR, INVALID_HANDLE,
     INFINITE,
     CreateEventA, CreateFileA,
     ReadFile, WriteFile, SetEvent,
@@ -53,7 +53,7 @@ for x in ("WSAENETDOWN", "WSAENETUNREACH", "WSAECONNABORTED", "WSAECONNRESET",
 
 class NamedPipeConnection(Connection):
     def __init__(self, name, pipe_handle, options):
-        log("NamedPipeConnection(%s, %#x, %s)", name, pipe_handle, options)
+        log("NamedPipeConnection(%r, %s, %s)", name, pipe_handle, options)
         super().__init__(name, "named-pipe", options=options)
         self.pipe_handle = pipe_handle
         # noinspection PyTypeChecker,PyCallingNonCallable
@@ -189,16 +189,16 @@ class NamedPipeConnection(Connection):
         return d
 
 
-def connect_to_namedpipe(pipe_name, timeout=10):
-    log("connect_to_namedpipe(%s, %i)", pipe_name, timeout)
+def connect_to_namedpipe(pipe_name: str, timeout=10) -> HANDLE:
+    log("connect_to_namedpipe(%r, %i)", pipe_name, timeout)
     start = time.time()
     while True:
         if time.time() - start >= timeout:
             raise RuntimeError("timeout waiting for named pipe '%s'" % pipe_name)
         pipe_handle = CreateFileA(strtobytes(pipe_name), GENERIC_READ | GENERIC_WRITE,
                                   0, None, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0)
-        log("CreateFileA(%s)=%#x", pipe_name, pipe_handle)
-        if pipe_handle != INVALID_HANDLE_VALUE:
+        log("CreateFileA(%s)=%s", pipe_name, pipe_handle)
+        if pipe_handle != INVALID_HANDLE:
             break
         err = GetLastError()
         log("CreateFileA(..) error=%s", err)

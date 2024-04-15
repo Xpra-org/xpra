@@ -20,7 +20,7 @@ from xpra.platform.win32.common import (
     SECURITY_ATTRIBUTES,
 )
 from xpra.platform.win32.namedpipes.common import (
-    OVERLAPPED, INFINITE, WAIT_STR,
+    OVERLAPPED, INFINITE, WAIT_STR, INVALID_HANDLE,
     SECURITY_DESCRIPTOR, TOKEN_USER, TOKEN_PRIMARY_GROUP,
     CreateEventA, CreateNamedPipeA, ConnectNamedPipe,
     WaitForSingleObject, GetLastError,
@@ -48,7 +48,6 @@ ERROR_INSUFFICIENT_BUFFER = 122
 
 FILE_ALL_ACCESS = 0x1f01ff
 PIPE_ACCEPT_REMOTE_CLIENTS = 0
-INVALID_HANDLE_VALUE = -1
 ERROR_PIPE_CONNECTED = 535
 
 TIMEOUT = 6000
@@ -97,7 +96,7 @@ class NamedPipeListener(Thread):
         log("process=%s", self.token_process.value)
 
     def __repr__(self):
-        return "NamedPipeListener(%s)" % self.pipe_name
+        return "NamedPipeListener(%r)" % self.pipe_name
 
     def stop(self) -> None:
         log("%s.stop()", self)
@@ -111,15 +110,15 @@ class NamedPipeListener(Thread):
             log.error("Error: named pipe '%s'", self.pipe_name, exc_info=True)
         tp = self.token_process
         if tp:
-            self.token_process = HANDLE(0)
+            self.token_process = INVALID_HANDLE
             CloseHandle(tp)
         self.security_attributes = None
         self.security_descriptor = None
 
     def do_run(self) -> None:
-        pipe_handle: HANDLE = HANDLE(INVALID_HANDLE_VALUE)
+        pipe_handle = INVALID_HANDLE
         while not self.exit_loop:
-            if not pipe_handle:
+            if pipe_handle == INVALID_HANDLE:
                 try:
                     pipe_handle = self.CreatePipeHandle()
                 except Exception as e:
@@ -128,8 +127,8 @@ class NamedPipeListener(Thread):
                     log.error(" at path '%s'", self.pipe_name)
                     log.estr(e)
                     return
-                log("CreatePipeHandle()=%#x", pipe_handle)
-                if pipe_handle.value == INVALID_HANDLE_VALUE:
+                log("CreatePipeHandle()=%s", pipe_handle)
+                if pipe_handle == INVALID_HANDLE:
                     log.error("Error: invalid handle for named pipe '%s'", self.pipe_name)
                     err: int = GetLastError()
                     log.error(" '%s' (%i)", FormatMessageSystem(err).rstrip("\n\r."), err)
@@ -160,31 +159,31 @@ class NamedPipeListener(Thread):
                         log.error("Error: cannot connect to named pipe '%s'", self.pipe_name)
                         log.error(" %s", WAIT_STR.get(r, r))
                         CloseHandle(pipe_handle)
-                        pipe_handle = HANDLE(INVALID_HANDLE_VALUE)
+                        pipe_handle = INVALID_HANDLE
                         break
                 else:
                     log.error("Error: cannot connect to named pipe '%s'", self.pipe_name)
                     log.error(" error %s", err)
                     CloseHandle(pipe_handle)
-                    pipe_handle = HANDLE(INVALID_HANDLE_VALUE)
+                    pipe_handle = INVALID_HANDLE
                 if self.exit_loop:
                     break
             # from now on, the pipe_handle will be managed elsewhere:
-            if pipe_handle.value != INVALID_HANDLE_VALUE:
+            if pipe_handle != INVALID_HANDLE:
                 self.new_connection_cb("named-pipe", self, pipe_handle)
-                pipe_handle = HANDLE(INVALID_HANDLE_VALUE)
-        if pipe_handle.value != INVALID_HANDLE_VALUE:
+                pipe_handle = INVALID_HANDLE
+        if pipe_handle.value != INVALID_HANDLE:
             self.close_handle(pipe_handle)
 
     def close_handle(self, pipe_handle: HANDLE) -> None:
         try:
-            log("CloseHandle(%#x)", pipe_handle)
+            log("CloseHandle(%s)", pipe_handle)
             CloseHandle(pipe_handle)
         except Exception:
-            log("CloseHandle(%#x)", pipe_handle, exc_info=True)
+            log("CloseHandle(%s)", pipe_handle, exc_info=True)
 
     def new_connection(self, socktype, listener, pipe_handle: HANDLE) -> None:
-        log.info("new_connection(%s, %s, %#x)", socktype, listener, pipe_handle)
+        log.info("new_connection(%s, %s, %s)", socktype, listener, pipe_handle)
         self.close_handle(pipe_handle)
 
     def CreatePipeHandle(self) -> HANDLE:
