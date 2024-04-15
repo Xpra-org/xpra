@@ -29,35 +29,50 @@ class ServerAuthTest(ServerTestUtil):
     def _test_auth(self, auth="fail", uri_prefix="", exit_code=0, password=None):
         display = self.xvfb.display
         log("starting test server on %s", display)
-        server = self.check_fast_start_server(display, f"--auth={auth}", "--use-display=yes")
-        #we should always be able to get the version:
-        client = self.run_xpra(["version", uri_prefix+display])
-        assert pollwait(client, 5)==0, "version client failed to connect"
+        server_args = ["--bind=noabstract", f"--auth={auth}", "--use-display=yes"]
+        server = self.check_fast_start_server(display, *server_args)
+        # we should always be able to get the version:
+        display_uri = uri_prefix + display
+        client = self.run_xpra(["version", display_uri])
+        assert pollwait(client, 5) == 0, f"version client failed to connect using {display_uri}"
         if client.poll() is None:
             client.terminate()
-        #try to connect
-        cmd = ["info", uri_prefix+display]
+        # try to connect
+        cmd = ["info", display_uri]
         f = None
         try:
             if password:
                 f = self._temp_file(strtobytes(password))
-                cmd += [f"--password-file={f.name}"]
-                cmd += [f"--challenge-handlers=file:filename={f.name}"]
+                filename = os.path.abspath(f.name)
+                cmd += [f"--password-file={filename}"]
+                cmd += [f"--challenge-handlers=file:filename={filename}"]
             client = self.run_xpra(cmd)
             r = pollwait(client, 5)
         finally:
             if f:
                 f.close()
                 self.delete_temp_file(f)
+
+        exit_code_error = r != exit_code
+        if exit_code_error:
+            log.warn("Server Process Pipes:")
+            log.warn(f" for server args={server_args}")
+            self.show_proc_pipes(server)
+            log.warn("Client Process Pipes:")
+            log.warn(f" for client args={cmd}")
+            self.show_proc_pipes(client)
+
         if client.poll() is None:
             client.terminate()
+
         try:
             server.terminate()
         finally:
             sleep(2)
             self.run_xpra(["clean-sockets"])
-        if r!=exit_code:
-            raise RuntimeError(f"{auth!r} test error: expected info client to return {estr(exit_code)} but got {estr(r)}")
+        if exit_code_error:
+            raise RuntimeError(f"{auth!r} test error: expected info client to return {estr(exit_code)}" +
+                               f" but got {estr(r)} for server with args={server_args} and client command: {cmd}")
 
     def test_fail(self):
         self._test_auth("fail", "", ExitCode.CONNECTION_FAILED)
@@ -77,11 +92,14 @@ class ServerAuthTest(ServerTestUtil):
         from xpra.os_util import get_hex_uuid
         password = get_hex_uuid()
         f = self._temp_file(strtobytes(password))
-        self._test_auth("file", "", ExitCode.PASSWORD_REQUIRED)
-        self._test_auth(f"file:filename={f.name}", "", ExitCode.PASSWORD_REQUIRED)
-        self._test_auth(f"file:filename={f.name}", "", ExitCode.OK, password)
-        self._test_auth(f"file:filename={f.name}", "", ExitCode.AUTHENTICATION_FAILED, password+"A")
-        f.close()
+        filename = os.path.abspath(f.name)
+        try:
+            self._test_auth("file", "", ExitCode.PASSWORD_REQUIRED)
+            self._test_auth(f"file:filename={filename}", "", ExitCode.PASSWORD_REQUIRED)
+            self._test_auth(f"file:filename={filename}", "", ExitCode.OK, password)
+            self._test_auth(f"file:filename={filename}", "", ExitCode.AUTHENTICATION_FAILED, password+"A")
+        finally:
+            f.close()
 
     def test_multifile(self):
         from xpra.platform.info import get_username
@@ -91,11 +109,14 @@ class ServerAuthTest(ServerTestUtil):
         displays = ""
         data = "%s|%s|%i|%i|%s||" % (username, password, os.getuid(), os.getgid(), displays)
         f = self._temp_file(strtobytes(data))
-        self._test_auth("multifile", "", ExitCode.PASSWORD_REQUIRED)
-        self._test_auth(f"multifile:filename={f.name}", "", ExitCode.PASSWORD_REQUIRED)
-        self._test_auth(f"multifile:filename={f.name}", "", ExitCode.OK, password)
-        self._test_auth(f"multifile:filename={f.name}", "", ExitCode.AUTHENTICATION_FAILED, password+"A")
-        f.close()
+        filename = os.path.abspath(f.name)
+        try:
+            self._test_auth("multifile", "", ExitCode.PASSWORD_REQUIRED)
+            self._test_auth(f"multifile:filename={filename}", "", ExitCode.PASSWORD_REQUIRED)
+            self._test_auth(f"multifile:filename={filename}", "", ExitCode.OK, password)
+            self._test_auth(f"multifile:filename={filename}", "", ExitCode.AUTHENTICATION_FAILED, password+"A")
+        finally:
+            f.close()
 
 
 def main():

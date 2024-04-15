@@ -1848,7 +1848,7 @@ class ServerCore:
     def disconnect_client(self, protocol:SocketProtocol, reason:Union[str,ConnectionMessage], *extra):
         netlog("disconnect_client(%s, %s, %s)", protocol, reason, extra)
         if protocol and not protocol.is_closed():
-            self.disconnect_protocol(protocol, str(reason), *extra)
+            self.disconnect_protocol(protocol, reason, *extra)
 
     def disconnect_protocol(self, protocol:SocketProtocol, *reasons):
         netlog("disconnect_protocol(%s, %s)", protocol, reasons)

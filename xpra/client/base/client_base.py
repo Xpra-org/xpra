@@ -285,7 +285,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         signal.signal(signal.SIGTERM, os_signal)
         register_SIGUSR_signals(self.idle_add)
 
-    def signal_disconnect_and_quit(self, exit_code:int, reason:str) -> None:
+    def signal_disconnect_and_quit(self, exit_code:int, reason) -> None:
         log("signal_disconnect_and_quit(%s, %s) exit_on_signal=%s", exit_code, reason, self.exit_on_signal)
         if not self.exit_on_signal:
             #if we get another signal, we'll try to exit without idle_add...
@@ -305,7 +305,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         #(non UI thread stuff)
         pass
 
-    def disconnect_and_quit(self, exit_code:int, reason:str) -> None:
+    def disconnect_and_quit(self, exit_code:int, reason) -> None:
         #make sure that we set the exit code early,
         #so the protocol shutdown won't set a different one:
         if self.exit_code is None:
@@ -880,7 +880,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             log("Error: failed to show GUI for password prompt", exc_info=True)
             return None
 
-    def auth_error(self, code, message, server_message=str(ConnectionMessage.AUTHENTICATION_FAILED.value)):
+    def auth_error(self, code, message, server_message=ConnectionMessage.AUTHENTICATION_FAILED):
         authlog.error("Error: authentication failed:")
         authlog.error(f" {message}")
         self.disconnect_and_quit(code, server_message)
