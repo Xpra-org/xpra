@@ -369,9 +369,10 @@ class SSHServer(paramiko.ServerInterface):
                     close()
                     return
                 #log("proc_to_channel(%s, %s) %i bytes: %s", read, send, len(r or b""), ellipsizer(r))
-                if r:
+                while r:
                     try:
-                        channel.sendall(r)
+                        send = send(r)
+                        r = r[sent:]
                     except OSError:
                         log(f"proc_to_channel({read}, {send})", exc_info=True)
                         close()
