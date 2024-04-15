@@ -1526,7 +1526,7 @@ def _do_run_server(script_file: str, cmdline,
     elif proxying:
         app = make_proxy_server()
     elif expanding:
-        app = make_expand_server()
+        app = make_expand_server(mode_attrs)
     else:
         if starting or upgrading_seamless:
             app = make_seamless_server(clobber)
