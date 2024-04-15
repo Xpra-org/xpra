@@ -554,12 +554,12 @@ def do_connect_to(transport, host: str, username: str, password: str,
                     transport.close()
                     raise InitExit(ExitCode.SSH_KEY_FAILURE, f"Unknown SSH host {host!r}")
                 log.info("host key confirmed")
-            if configbool("addkey", ADD_KEY):
+            if configbool("addkey", ADD_KEY) and known_hosts_files:
                 try:
                     if not host_keys_filename:
                         # the first one is the default,
                         # ie: ~/.ssh/known_hosts on posix
-                        host_keys_filename = os.path.expanduser(known_hosts[0])
+                        host_keys_filename = os.path.expanduser(known_hosts_files[0])
                     log(f"adding {keyname()} key for host {host!r} to {host_keys_filename!r}")
                     if not os.path.exists(host_keys_filename):
                         keys_dir = os.path.dirname(host_keys_filename)
