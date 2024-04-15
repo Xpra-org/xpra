@@ -29,7 +29,7 @@ class ServerAuthTest(ServerTestUtil):
     def _test_auth(self, auth="fail", uri_prefix="", exit_code=0, password=None):
         display = self.xvfb.display
         log("starting test server on %s", display)
-        server_args = ["--bind=noabstract", f"--auth={auth}", "--use-display=yes"]
+        server_args = [f"--auth={auth}", "--use-display=yes"]
         server = self.check_fast_start_server(display, *server_args)
         # we should always be able to get the version:
         display_uri = uri_prefix + display

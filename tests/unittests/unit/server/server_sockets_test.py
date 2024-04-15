@@ -327,7 +327,6 @@ class ServerSocketsTest(ServerTestUtil):
             "--socket-dir=%s" % tmpsocketdir1,
             "--socket-dirs=%s" % tmpsocketdir2,
             "--sessions-dir=%s" % tmpsessionsdir,
-            "--bind=noabstract",
         )
         log_gap()
         def t(client_args=(), prefix=DISPLAY_PREFIX, exit_code=ExitCode.OK):
