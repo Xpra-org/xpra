@@ -47,6 +47,11 @@ CLIENT_REMOVE_CAPS = ("cipher", "challenge", "digest", "aliases", "compression",
 CLIENT_REMOVE_CAPS_CHALLENGE = ("cipher", "digest", "aliases", "compression", "lz4", "lz0", "zlib")
 
 
+def number(k, v):
+    return parse_number(int, k, v)
+
+
+# noinspection PyMethodMayBeStatic
 class ProxyInstance:
 
     def __init__(self, session_options,
@@ -237,9 +242,6 @@ class ProxyInstance:
 
     def sanitize_session_options(self, options) -> dict[str, Any]:
         d = {}
-
-        def number(k, v):
-            return parse_number(int, k, v)
 
         OPTION_WHITELIST: dict[str, Callable] = {
             "compression_level": number,
@@ -570,12 +572,14 @@ class ProxyInstance:
             q.put(None)
             self.encode_queue = q
 
+    def delvideo(self, wid: int):
+        ve = self.video_encoders.pop(wid, None)
+        if ve:
+            ve.clean()
+            self.video_encoders_last_used_time.pop(wid, None)
+
     def encode_loop(self) -> None:
         """ thread for slower encoding related work """
-
-        def delvideo(wid: int):
-            self.video_encoders.pop(wid, None)
-            self.video_encoders_last_used_time.pop(wid, None)
 
         while not self.exit:
             packet = self.encode_queue.get()
@@ -586,25 +590,20 @@ class ProxyInstance:
                 if packet_type == "lost-window":
                     wid = packet[1]
                     self.lost_windows.remove(wid)
-                    ve = self.video_encoders.get(wid)
-                    if ve:
-                        delvideo(wid)
-                        ve.clean()
+                    self.delvideo(wid)
                 elif packet_type == "draw":
                     # modify the packet with the video encoder:
                     self.process_draw(packet)
                 elif packet_type == "check-video-timeout":
                     # not a real packet, this is added by the timeout check:
                     wid = packet[1]
-                    ve = self.video_encoders.get(wid)
                     now = monotonic()
-                    idle_time = now - self.video_encoders_last_used_time.get(wid, 0)
-                    if ve and idle_time > VIDEO_TIMEOUT:
+                    idle_time = now - self.video_encoders_last_used_time.get(wid, now)
+                    if idle_time > VIDEO_TIMEOUT:
                         enclog("timing out the video encoder context for window %s", wid)
                         # timeout is confirmed, we are in the encoding thread,
                         # so it is now safe to clean it up:
-                        ve.clean()
-                        delvideo(wid)
+                        self.delvideo(wid)
                 else:
                     enclog.warn("unexpected encode packet: %s", packet_type)
             except Exception:
