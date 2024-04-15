@@ -149,6 +149,7 @@ def force_close_connection(conn) -> None:
         log("close_connection()", exc_info=True)
 
 
+# noinspection PyMethodMayBeStatic
 class ServerCore:
     """
         This is the simplest base class for servers.
@@ -1691,17 +1692,16 @@ class ServerCore:
             from xpra.codecs.icon_util import svg_to_png  # pylint: disable=import-outside-toplevel
             # call svg_to_png via the main thread,
             # and wait for it to complete via an Event:
-            icon: list[bytes, str] = [icon_data, icon_type]
+            icon: list[tuple[bytes, str]] = [(icon_data, icon_type)]
             event = threading.Event()
 
             def convert():
-                icon[0] = svg_to_png("", icon_data, 48, 48)
-                icon[1] = "png"
+                icon[0] = svg_to_png("", icon_data, 48, 48), "png"
                 event.set()
 
             self.idle_add(convert)
             event.wait()
-            icon_data, icon_type = icon
+            icon_data, icon_type = icon[0]
         if icon_type in ("png", "jpeg", "svg", "webp"):
             mime_type = "image/" + icon_type
         else:

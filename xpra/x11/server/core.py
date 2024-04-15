@@ -111,7 +111,7 @@ class X11ServerCore(GTKServerBase):
         self.initial_resolution = None
         self.x11_filter = False
         self.randr_sizes_added: list[tuple[int, int]] = []
-        self.initial_resolutions: tuple[tuple[int, int, int]] = ()
+        self.initial_resolutions: tuple[tuple[int, int, int], ...] = ()
         self.randr = False
         self.randr_exact_size = False
         self.current_keyboard_group = 0

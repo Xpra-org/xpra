@@ -93,6 +93,7 @@ def show_border_help() -> None:
     log.info("  eg: blue")
 
 
+# noinspection PyMethodMayBeStatic
 class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     __gsignals__ = {}
     # add signals from super classes (all no-arg signals)

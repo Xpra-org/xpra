@@ -43,8 +43,9 @@ def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tupl
             if sep != "@":
                 res_part += sep
             break
+    w = h = 0
     if res_part in RESOLUTION_ALIASES:
-        res = RESOLUTION_ALIASES[res_part]
+        w, h = RESOLUTION_ALIASES[res_part]
     else:
         try:
             parts = tuple(int(x) for x in res_part.replace(",", "x").split("X", 1))
@@ -52,10 +53,9 @@ def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tupl
             raise ValueError(f"failed to parse resolution {res_part!r}") from None
         if len(parts) != 2:
             raise ValueError(f"invalid resolution string {res_part!r}")
-        res = parts[0], parts[1]
-    reshz = list(res)
-    reshz.append(int(hz))
-    return tuple(reshz)
+        w = parts[0]
+        h = parts[1]
+    return w, h, int(hz)
 
 
 def parse_resolutions(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tuple | None:
