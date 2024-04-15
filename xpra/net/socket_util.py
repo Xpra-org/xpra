@@ -639,7 +639,7 @@ def setup_local_sockets(bind, socket_dir:str, socket_dirs, session_dir:str,
             if sockpath=="noabstract":
                 log.info(f"ignoring invalid {sockpath!r} bind option, using 'auto'")
                 sockpath = "auto"
-            if sockpath="auto":
+            if sockpath=="auto":
                 assert display_name is not None
                 for sockpath in dotxpra.norm_socket_paths(display_name):
                     sockpaths[sockpath] = dict(options)
