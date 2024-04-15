@@ -61,11 +61,14 @@ def c_attrs(props: dict):
     return (c_int * len(attrs))(*attrs)
 
 
-def get_xdisplay() -> int:
+XDISPLAY = int    # POINTER(struct__XDisplay)
+
+
+def get_xdisplay() -> XDISPLAY:
     ptr = get_display_ptr()
     if not ptr:
         raise RuntimeError("no X11 display registered")
-    return int(cast(ptr, POINTER(struct__XDisplay)).value)
+    return cast(ptr, POINTER(struct__XDisplay))
 
 
 def get_extensions(xdisplay: int) -> tuple[str, ...]:
@@ -121,7 +124,7 @@ class GLXWindowContext(AbstractContextManager):
     def __init__(self, glx_context, xid: int):
         self.context = glx_context
         self.xid = xid
-        self.xdisplay: int = get_xdisplay()
+        self.xdisplay: XDISPLAY = get_xdisplay()
         self.valid: bool = False
 
     def __enter__(self):

@@ -30,7 +30,7 @@ VFB_WAIT = envint("XPRA_VFB_WAIT", 3)
 XVFB_EXTRA_ARGS = os.environ.get("XPRA_XVFB_EXTRA_ARGS", "")
 
 
-def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tuple[int,...] | None:
+def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tuple[int, int, int] | None:
     if not s:
         return None
     s = s.upper()       # ie: 4K60
@@ -38,9 +38,9 @@ def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tupl
     hz = get_refresh_rate_for_value(str(default_refresh_rate), DEFAULT_REFRESH_RATE)//1000
     for sep in ("@", "K", "P"):
         pos = s.find(sep)
-        if 0<pos<len(s)-1:
+        if 0 < pos < len(s)-1:
             res_part, hz = s.split(sep, 1)
-            if sep!="@":
+            if sep != "@":
                 res_part += sep
             break
     if res_part in RESOLUTION_ALIASES:
@@ -50,7 +50,7 @@ def parse_resolution(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tupl
             parts = tuple(int(x) for x in res_part.replace(",", "x").split("X", 1))
         except ValueError:
             raise ValueError(f"failed to parse resolution {res_part!r}") from None
-        if len(parts)!=2:
+        if len(parts) != 2:
             raise ValueError(f"invalid resolution string {res_part!r}")
         res = parts[0], parts[1]
     reshz = list(res)

@@ -58,7 +58,7 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return self.require_challenge
 
-    def get_challenge(self, digests):
+    def get_challenge(self, digests: list[str]):
         assert self.require_challenge
         if "xor" not in digests:
             log.error("Error: kerberos authentication requires the 'xor' digest")

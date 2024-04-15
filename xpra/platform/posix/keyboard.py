@@ -6,6 +6,7 @@
 
 import os
 import json
+from collections.abc import Iterable
 
 from xpra.platform.keyboard_base import KeyboardBase
 from xpra.dbus.helper import DBusHelper, native_to_dbus, dbus_to_native
@@ -51,7 +52,7 @@ class Keyboard(KeyboardBase):
         else:
             self._dbus_gnome_shell_eval_ism(".inputSources", self._store_input_sources)
 
-    def _store_input_sources(self, input_sources) -> None:
+    def _store_input_sources(self, input_sources: Iterable) -> None:
         log("_store_input_sources(%s)", input_sources)
         for layout_info in input_sources.values():
             index = int(layout_info["index"])
@@ -188,6 +189,7 @@ class Keyboard(KeyboardBase):
 
     def get_all_x11_layouts(self) -> dict[str, str]:
         repository = "/usr/share/X11/xkb/rules/base.xml"
+        x11_layouts: dict[str, str] = {}
         if os.path.exists(repository):
             try:
                 import lxml.etree  # pylint: disable=import-outside-toplevel
@@ -200,10 +202,9 @@ class Keyboard(KeyboardBase):
                 except Exception:
                     log.error(f"Error parsing {repository}", exc_info=True)
                 else:
-                    x11_layouts = {}
-                    for layout in tree.xpath("//layout"):
-                        layout = layout.xpath("./configItem/name")[0].text
-                        x11_layouts[layout] = layout
+                    for layout in list(tree.xpath("//layout")):
+                        layout_str = str(layout.xpath("./configItem/name")[0].text)
+                        x11_layouts[layout] = layout_str
                         # for variant in layout.xpath("./variantlist/variant/configItem/name"):
                         #    variant_name = variant.text
                     return x11_layouts
@@ -214,7 +215,6 @@ class Keyboard(KeyboardBase):
             log("get_all_x11_layouts() proc=%s", proc)
             log("get_all_x11_layouts() returncode=%s", proc.returncode)
             if proc.wait() == 0:
-                x11_layouts = {}
                 for line in out.splitlines():
                     layout = line.decode().split("/")[-1]
                     if layout:

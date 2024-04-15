@@ -150,11 +150,10 @@ class RFBProtocol:
         return tuple(x for x in (self._write_thread, self._read_thread) if x is not None)
 
     def get_info(self, *_args) -> dict[str, tuple[int, ...] | dict[str, bool]]:
-        info: dict[str, tuple | dict] = {"protocol": PROTOCOL_VERSION}
-        tinfo = dict[str, bool]
-        for t in self.get_threads():
-            tinfo[t.name] = t.is_alive()
-        info["thread"] = tinfo
+        info: dict[str, tuple | dict] = {
+            "protocol": PROTOCOL_VERSION,
+            "thread": dict((thread.name, thread.is_alive()) for thread in self.get_threads()),
+        }
         return info
 
     def start(self) -> None:

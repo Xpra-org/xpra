@@ -7,6 +7,7 @@
 
 import os
 from typing import Any
+from collections.abc import Callable
 
 from xpra.util.str_fn import strtobytes, bytestostr, hexstr
 from xpra.util.objects import typedict
@@ -144,23 +145,24 @@ class X11ServerBase(X11ServerCore):
             # now we can save values on the display
             # (we cannot access bindings until dbus has started up)
 
-            def _save_int(prop_name, pid):
-                root_prop_set(prop_name, "u32", pid)
+            def _save_int(prop_name, intval):
+                root_prop_set(prop_name, "u32", intval)
 
-            def _save_str(prop_name, s):
-                root_prop_set(prop_name, "latin1", s)
+            def _save_str(prop_name, strval):
+                root_prop_set(prop_name, "latin1", strval)
 
             # DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-B8CDeWmam9,guid=b77f682bd8b57a5cc02f870556cbe9e9
             # DBUS_SESSION_BUS_PID=11406
             # DBUS_SESSION_BUS_WINDOWID=50331649
-            for n, conv, save in (
-                    ("ADDRESS", bytestostr, _save_str),
-                    ("PID", int, _save_int),
-                    ("WINDOW_ID", int, _save_int),
-            ):
-                k = f"DBUS_SESSION_BUS_{n}"
-                v = dbus_env.get(k)
-                if v is None:
+            attributes: list[tuple[str, type, Callable[[str, int | str]]]] = [
+                ("ADDRESS", str, _save_str),
+                ("PID", int, _save_int),
+                ("WINDOW_ID", int, _save_int),
+            ]
+            for name, conv, save in attributes:
+                k = f"DBUS_SESSION_BUS_{name}"
+                v = dbus_env.get(k, "")
+                if not v:
                     continue
                 try:
                     tv = conv(v)

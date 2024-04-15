@@ -329,7 +329,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def get_notification_tray(self):
         return self.tray_widget
 
-    def get_notifier_classes(self) -> tuple[type, ...]:
+    def get_notifier_classes(self) -> list[type]:
         ncs = list(ShadowServerBase.get_notifier_classes(self))
         try:
             from xpra.gtk.notifier import GTKNotifier  # pylint: disable=import-outside-toplevel
@@ -338,7 +338,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             notifylog("get_notifier_classes()", exc_info=True)
             notifylog.warn("Warning: cannot load GTK notifier:")
             notifylog.warn(" %s", e)
-        return tuple(ncs)
+        return ncs
 
     ############################################################################
     # system tray methods, mostly copied from the gtk client...

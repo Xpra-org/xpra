@@ -68,8 +68,8 @@ SEND_INVALID_PACKET = envint("XPRA_SEND_INVALID_PACKET", 0)
 SEND_INVALID_PACKET_DATA = strtobytes(os.environ.get("XPRA_SEND_INVALID_PACKET_DATA", b"ZZinvalid-packetZZ"))
 
 
-def exit_queue() -> Queue[tuple | None]:
-    queue: SimpleQueue[Any] = SimpleQueue()
+def exit_queue() -> SimpleQueue[tuple | None]:
+    queue: SimpleQueue[tuple | None] = SimpleQueue()
     for _ in range(10):  # just 2 should be enough!
         queue.put(None)
     return queue
@@ -112,7 +112,7 @@ class SocketProtocol:
         self._conn = conn
         self._process_packet_cb: Callable[[PacketType], None] = process_packet_cb
         self.make_chunk_header: Callable = self.make_xpra_header
-        self.make_frame_header: Callable[[str, Iterable], ByteString] = self.noframe_header
+        self.make_frame_header: Callable[[str | int, Iterable], ByteString] = self.noframe_header
         self._write_queue: Queue[tuple | None] = Queue(1)
         self._read_queue: Queue[ByteString] = Queue(20)
         self._pre_read = None
@@ -333,12 +333,12 @@ class SocketProtocol:
             raise RuntimeError(f"cannot use send_now when a packet source exists! (set to {self._get_packet_cb})")
         tmp_queue = [packet]
 
-        def packet_cb() -> PacketType:
+        def packet_cb() -> tuple[PacketType]:
             self._get_packet_cb = None
             if not tmp_queue:
                 raise RuntimeError("packet callback used more than once!")
             qpacket = tmp_queue.pop()
-            return (qpacket,)
+            return (qpacket, )
 
         self._get_packet_cb = packet_cb
         self.source_has_more()
@@ -399,7 +399,7 @@ class SocketProtocol:
                 raise
 
     def _add_chunks_to_queue(self, packet_type: str | int,
-                             chunks: Iterable[NetPacketType, ...],
+                             chunks: Iterable[NetPacketType],
                              start_cb: Callable | None = None,
                              end_cb: Callable | None = None,
                              fail_cb: Callable | None = None,
@@ -560,7 +560,7 @@ class SocketProtocol:
         level = self.compression_level
         size_check = LARGE_PACKET_SIZE
         min_comp_size = MIN_COMPRESS_SIZE
-        packet_type = packet[0]
+        packet_type = str(packet[0])
         payload_size = 0
         for i in range(1, len(packet)):
             item = packet[i]
@@ -655,9 +655,9 @@ class SocketProtocol:
             try:
                 cl, cdata = self._compress(main_packet, level)
                 if LOG_RAW_PACKET_SIZE and packet_type != "logging":
-                    log.info(f"         {packet_type:<32}: %i bytes compressed", len(cdata))
+                    log.info(f"         {packet_type!r:<32}: %i bytes compressed", len(cdata))
             except Exception as e:
-                log.error(f"Error compressing {packet_type} packet")
+                log.error(f"Error compressing {packet_type!r} packet")
                 log.estr(e)
                 raise
             packets.append((proto_flags, 0, cl, cdata))
@@ -665,7 +665,7 @@ class SocketProtocol:
             packets.append((proto_flags, 0, 0, main_packet))
         may_log_packet(True, packet_type, packet)
         if LOG_RAW_PACKET_SIZE and packet_type != "logging":
-            log.info(f"sending  {packet_type:<32}: %i bytes", HEADER_SIZE + payload_size)
+            log.info(f"sending  {packet_type!r:<32}: %i bytes", HEADER_SIZE + payload_size)
         return packets
 
     def set_compression_level(self, level: int) -> None:
@@ -1146,7 +1146,9 @@ class SocketProtocol:
             then no matter what, we close the connection and stop the threads.
         """
 
-        def closing_already(packet_encoder: Callable | None, packet_data, flush_callback=noop):
+        def closing_already(packet_encoder: Callable | None = None,
+                            packet_data=None,
+                            flush_callback: Callable = noop) -> None:
             log("flush_then_close%s had already been called, this new request has been ignored",
                 (packet_encoder, packet_data, flush_callback))
 
@@ -1310,14 +1312,13 @@ class SocketProtocol:
         self._read_queue_put = noop
         self._compress = noop
         self._write_lock = None
-        self._source_has_more = noop
         self._conn = None  # should be redundant
         self.source_has_more = noop
 
     def terminate_queue_threads(self) -> None:
         log("terminate_queue_threads()")
         # the format thread will exit:
-        self._get_packet_cb = None
+        self._get_packet_cb = noop
         self._source_has_more.set()
         # make all the queue based threads exit by adding the empty marker:
         # write queue:

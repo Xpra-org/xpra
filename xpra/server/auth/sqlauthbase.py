@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.util.str_fn import csv
-from xpra.util.parsing import parse_simple_dict
+from xpra.util.parsing import parse_str_dict
 from xpra.os_util import getuid, getgid
 from xpra.server.auth.sys_auth_base import SysAuthenticator, SessionData, log
 
@@ -39,18 +39,18 @@ class SQLAuthenticator(SysAuthenticator):
         return self.parse_session_data(data)
 
     def parse_session_data(self, data) -> SessionData | None:
-        displays = []
-        env_options = {}
-        session_options = {}
+        displays: list[str] = []
+        env_options: dict[str, str] = {}
+        session_options: dict[str, str] = {}
         try:
             uid = int(data[0] or "0")
             gid = int(data[1] or "0")
             if len(data) > 2:
                 displays = [x.strip() for x in str(data[2]).split(",")]
             if len(data) > 3:
-                env_options = parse_simple_dict(str(data[3]), ";")
+                env_options = parse_str_dict(str(data[3]), ";")
             if len(data) > 4:
-                session_options = parse_simple_dict(str(data[4]), ";")
+                session_options = parse_str_dict(str(data[4]), ";")
         except Exception as e:
             log("parse_session_data() error on row %s", data, exc_info=True)
             log.error("Error: sqlauth database row parsing problem:")

@@ -119,7 +119,7 @@ class BaseGUIWindow(Gtk.Window):
         hbox = Gtk.HBox()
         hbox.set_vexpand(False)
         self.add_widget(hbox)
-        btnlist = []
+        btnlist: list[Gtk.Button] = []
         for button_label, callback in buttons:
             btn = Gtk.Button.new_with_label(button_label)
             btn.connect("clicked", callback)

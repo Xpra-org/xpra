@@ -69,7 +69,7 @@ def x11_layouts_to_win32_hkl() -> dict[str, int]:
                     log("found keyboard layout '%s' / %#x with variants=%s, code '%s' for kbid=%#x",
                         _layout, kbid, _variants, code, hkli)
                     if _layout not in layout_to_hkl:
-                        layout_to_hkl[_layout] = hkl
+                        layout_to_hkl[_layout] = hkli
                         break
     except Exception:
         log("x11_layouts_to_win32_hkl()", exc_info=True)
@@ -190,7 +190,7 @@ class Keyboard(KeyboardBase):
         layout = ""
         layouts_defs = {}
         variant = ""
-        variants: list[str] = []
+        variants: tuple[str, ...] = ()
         options = ""
         layout_code = 0
         try:
@@ -260,9 +260,11 @@ class Keyboard(KeyboardBase):
             log("GetKeyboardLayout(%i)=%#x", tid, hkl)
             for mask in KMASKS:
                 kbid = hkl & mask
-                if kbid not in WIN32_LAYOUTS:
+                win32_layout = WIN32_LAYOUTS.get(kbid)
+                if not win32_layout:
+                    log(f"unknown win32 layout {kbid}")
                     continue
-                code, _, _, _, layout0, variants = WIN32_LAYOUTS.get(kbid)
+                code, _, _, _, layout0, variants = win32_layout
                 log("found keyboard layout '%s' / %#x with variants=%s, code '%s' for kbid=%i (%#x)",
                     layout0, kbid, variants, code, kbid, hkl)
                 if layout0 not in layouts_defs:
@@ -283,7 +285,7 @@ class Keyboard(KeyboardBase):
             else:
                 log.info(f"keyboard layout {layout!r} ({layout_code:#x})")
             self.last_layout_message = layout
-        return layout, layouts, variant, variants, options
+        return layout, layouts, variant, list(variants), options
 
     def get_keyboard_repeat(self) -> tuple[int, int] | None:
         try:

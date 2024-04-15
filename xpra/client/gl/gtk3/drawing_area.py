@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
 from typing import Any
 from collections.abc import Callable
 
@@ -12,9 +11,6 @@ from xpra.util.str_fn import ellipsizer
 from xpra.client.gl.backing import GLWindowBackingBase
 from xpra.platform.gl_context import GLContext
 from xpra.log import Logger
-
-if not GLContext:
-    raise ImportError("no OpenGL context implementation for %s" % sys.platform)
 
 log = Logger("opengl", "paint")
 

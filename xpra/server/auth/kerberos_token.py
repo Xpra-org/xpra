@@ -33,7 +33,7 @@ class Authenticator(SysAuthenticatorBase):
     def __repr__(self):
         return "kerberos-token"
 
-    def get_challenge(self, digests):
+    def get_challenge(self, digests: list[str]):
         assert not self.challenge_sent
         self.req_challenge(digests, "kerberos")
         self.salt = get_salt()

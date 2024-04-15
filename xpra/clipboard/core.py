@@ -513,7 +513,7 @@ class ClipboardProtocolHelperCore:
                 target, dtype, dformat, wire_encoding, wire_data = packet[3:8]
                 if target:
                     if dformat not in (8, 16, 32):
-                        raise ValueError(f"invalid format '{dformat}' for {dtype=} and wire {wire_encoding=}")
+                        raise ValueError(f"invalid format '{dformat!r}' for type {dtype!r} and wire {wire_encoding=}")
                     target = bytestostr(target)
                     if not must_discard(target):
                         wire_encoding = bytestostr(wire_encoding)

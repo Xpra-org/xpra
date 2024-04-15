@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+from typing import Any
 
 from xpra.common import noerr
 from xpra.util.objects import typedict
@@ -33,13 +34,13 @@ IPV6 = envbool("XPRA_IPV6", False)
 inject_css_overrides()
 
 
-def dpath(caps: typedict, *path):
-    d = caps
+def dpath(caps: typedict, *path) -> Any:
+    d: typedict = caps
     for x in path:
-        d = d.dictget(x)
-        if not d:
+        val = d.dictget(x)
+        if not val:
             return None
-        d = typedict(d)
+        d = typedict(val)
     return d
 
 
@@ -54,7 +55,7 @@ class QRCodeClient(InfoXpraClient):
         # this will also prevent timeouts:
         self._protocol.close()
         self.exit_code = 0
-        addr_types = {}
+        addr_types: dict[tuple[str, int], list[str]] = {}
         for socktype in ("ws", "wss"):
             sockdefs = typedict(sockets.dictget(socktype, {}))
             addresses = sockdefs.tupleget("addresses", ())

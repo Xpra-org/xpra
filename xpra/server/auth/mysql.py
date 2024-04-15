@@ -24,7 +24,7 @@ def url_path_to_dict(path: str) -> dict[str, str]:
     )
     regex = re.compile(pattern)
     m = regex.match(path)
-    return m.groupdict() if m is not None else None
+    return m.groupdict() if m is not None else {}
 
 
 def db_from_uri(uri: str):

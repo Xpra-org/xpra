@@ -622,7 +622,7 @@ def apply_config(opts, mode: str, cmdline: str) -> str:
 def reload_dbus_attributes(display_name: str) -> tuple[int, dict[str, str]]:
     from xpra.log import Logger
     dbuslog = Logger("dbus")
-    session_dir = os.environ.get("XPRA_SESSION_DIR")
+    session_dir = os.environ.get("XPRA_SESSION_DIR", "")
     dbus_pid = load_pid(session_dir, "dbus.pid")
     try:
         dbus_env_data = load_session_file("dbus.env").decode("utf8")

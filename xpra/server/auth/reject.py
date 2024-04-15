@@ -17,7 +17,7 @@ class Authenticator:
     def requires_challenge(self) -> bool:
         return True
 
-    def get_challenge(self, digests) -> tuple[bytes, str]:
+    def get_challenge(self, digests: list[str]) -> tuple[bytes, str]:
         self.challenge_sent = True
         return get_salt(), choose_digest(digests)
 

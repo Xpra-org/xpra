@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@
 from xpra.server.auth.sys_auth_base import parse_uid, parse_gid, SessionData
 from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase
 from xpra.util.str_fn import bytestostr, hexstr
-from xpra.util.parsing import parse_simple_dict
+from xpra.util.parsing import parse_str_dict
 from xpra.util.objects import typedict
 from xpra.net.digest import verify_digest
 
@@ -33,12 +33,12 @@ def parse_auth_line(line: str) -> AuthLine:
         uid = parse_uid(None)
         gid = parse_gid(None)
         displays = []
-    env_options = {}
-    session_options = {}
+    env_options: dict[str, str] = {}
+    session_options: dict[str, str] = {}
     if len(ldata) >= 6:
-        env_options = parse_simple_dict(bytestostr(ldata[5]), ";")
+        env_options = parse_str_dict(bytestostr(ldata[5]), ";")
     if len(ldata) >= 7:
-        session_options = parse_simple_dict(bytestostr(ldata[6]), ";")
+        session_options = parse_str_dict(bytestostr(ldata[6]), ";")
     return username, password, uid, gid, displays, env_options, session_options
 
 

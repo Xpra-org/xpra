@@ -56,10 +56,10 @@ class ZeroconfPublishers:
 
     def __init__(self, listen_on, service_name: str, service_type: str = XPRA_TCP_MDNS_TYPE, text_dict=None):
         log("ZeroconfPublishers%s", (listen_on, service_name, service_type, text_dict))
-        self.services = []
-        self.ports = {}
+        self.services: list[ZeroconfPublisher] = []
+        self.ports: dict[str, set[int]] = {}
 
-        def add_address(host, port, af=socket.AF_INET):
+        def add_address(host: str, port: int, af=socket.AF_INET):
             try:
                 if af == socket.AF_INET6 and host.find("%"):
                     host = host.split("%")[0]
@@ -136,7 +136,7 @@ class ZeroconfPublishers:
 
 
 class ZeroconfPublisher:
-    def __init__(self, address, host, port, service_name, service_type=XPRA_TCP_MDNS_TYPE, text_dict=None):
+    def __init__(self, address, host: str, port: int, service_name: str, service_type=XPRA_TCP_MDNS_TYPE, text_dict=None):
         log("ZeroconfPublisher%s", (address, host, port, service_name, service_type, text_dict))
         self.address = address
         self.host = host

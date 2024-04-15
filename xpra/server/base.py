@@ -207,8 +207,8 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # shutdown / exit commands:
-    def _process_exit_server(self, _proto, packet: PacketType = ()) -> None:
-        reason = ConnectionMessage.SERVER_EXIT
+    def _process_exit_server(self, _proto, packet: PacketType = ("exit-server", )) -> None:
+        reason: ConnectionMessage | str = ConnectionMessage.SERVER_EXIT
         message = "Exiting in response to client request"
         if len(packet) > 1:
             reason = bytestostr(packet[1])
@@ -217,7 +217,7 @@ class ServerBase(ServerBaseClass):
         self.cleanup_all_protocols(reason=reason)
         self.timeout_add(500, self.clean_quit, EXITING_CODE)
 
-    def _process_shutdown_server(self, _proto, _packet: PacketType = ()) -> None:
+    def _process_shutdown_server(self, _proto, _packet: PacketType = ("shutdown-server", )) -> None:
         if not self.client_shutdown:
             log.warn("Warning: ignoring shutdown request")
             return
@@ -500,7 +500,7 @@ class ServerBase(ServerBaseClass):
     def get_server_features(self, server_source=None) -> dict[str, Any]:
         # these are flags that have been added over time with new versions
         # to expose new server features:
-        f = {}
+        f: dict[str, Any] = {}
         for c in SERVER_BASES:
             if c != ServerCore:
                 bf = c.get_server_features(self, server_source)
@@ -575,11 +575,11 @@ class ServerBase(ServerBaseClass):
             ss.send_info_response({"error": err})
             return
 
-        categories = None
+        categories: list[str] = []
         # if len(packet>=2):
         #    uuid = packet[1]
         if len(packet) >= 4:
-            categories = tuple(bytestostr(x) for x in packet[3])
+            categories = [bytestostr(x) for x in packet[3]]
 
         def info_callback(_proto, info):
             assert proto == _proto
@@ -619,7 +619,7 @@ class ServerBase(ServerBaseClass):
         log("ServerBase.get_info%s", (proto, client_uuids))
         start = monotonic()
         if client_uuids:
-            sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
+            sources = tuple(ss for ss in self._server_sources.values() if ss.uuid in client_uuids)
         else:
             sources = tuple(self._server_sources.values())
         log("info-request: sources=%s", sources)
@@ -643,10 +643,10 @@ class ServerBase(ServerBaseClass):
         i.update(self.get_server_features())
         return i
 
-    def do_get_info(self, proto, server_sources=None) -> dict[str, Any]:
+    def do_get_info(self, proto, server_sources=()) -> dict[str, Any]:
         log("ServerBase.do_get_info%s", (proto, server_sources))
         start = monotonic()
-        info = {}
+        info: dict[str, Any] = {}
 
         def up(prefix, d):
             merge_dicts(info, {prefix: d})
@@ -673,7 +673,7 @@ class ServerBase(ServerBaseClass):
                                    if ((p is not proto) and (p not in self._server_sources))),
         }
         # find the server source to report on:
-        n = len(server_sources or [])
+        n = len(server_sources)
         if n == 1:
             ss = server_sources[0]
             up("client", ss.get_info())

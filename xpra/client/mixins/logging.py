@@ -14,6 +14,7 @@ from xpra.util.str_fn import csv, repr_ellipsized
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger, set_global_logging_handler
 from xpra.net.common import PacketType
+from xpra.net.compression import Compressed
 
 log = Logger("client")
 
@@ -85,7 +86,7 @@ class RemoteLogging(StubClientMixin):
         msg = packet[2]
         prefix = "server: "
         if len(packet) >= 4:
-            dtime = packet[3]
+            dtime = int(packet[3])
             prefix += "@%02i.%03i " % ((dtime // 1000) % 60, dtime % 1000)
         try:
             if isinstance(msg, (tuple, list)):
@@ -117,6 +118,7 @@ class RemoteLogging(StubClientMixin):
 
         try:
             dtime = int(1000 * (monotonic() - self.monotonic_start_time))
+            data : str | Compressed
             if args:
                 data = msg % args
             else:

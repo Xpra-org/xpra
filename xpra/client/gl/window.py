@@ -40,7 +40,7 @@ def get_opengl_module_names(opengl="on") -> tuple[str, ...]:
     return "native", "glarea",
 
 
-def get_gl_client_window_module(opengl="on") -> tuple[dict, Any]:
+def get_gl_client_window_module(opengl="on") -> tuple[dict[str, Any], Any]:
     with numpy_import_context("OpenGL", True):
         from importlib import import_module
         try:
@@ -127,9 +127,12 @@ def no_idle_add(fn, *args, **kwargs):
     fn(*args, **kwargs)
 
 
-def test_gl_client_window(gl_client_window_class: Callable, max_window_size=(1024, 1024), pixel_depth=24, show=False):
+def test_gl_client_window(gl_client_window_class: Callable,
+                          max_window_size=(1024, 1024),
+                          pixel_depth=24,
+                          show=False) -> dict[str, int | bool | str]:
     # try to render using a temporary window:
-    draw_result = {}
+    draw_result: dict[str, int | bool | str] = {}
     window = None
     try:
         x, y = -100, -100
@@ -168,7 +171,7 @@ def test_gl_client_window(gl_client_window_class: Callable, max_window_size=(102
         widget = window_backing._backing
         widget.realize()
 
-        def paint_callback(success, message=""):
+        def paint_callback(success: int | bool, message="") -> None:
             log("paint_callback(%s, %s)", success, message)
             draw_result["success"] = success
             if message:
@@ -180,7 +183,7 @@ def test_gl_client_window(gl_client_window_class: Callable, max_window_size=(102
         coding, w, h, stride, icon_data = get_test_gl_icon()
         log("OpenGL: testing draw on %s widget %s with %s : %s", window, widget, coding, pixel_format)
 
-        def draw():
+        def draw() -> bool:
             v = pix.increase()
             img_data = bytes([v % 256] * w * 4 * h)
             options["flush"] = 1

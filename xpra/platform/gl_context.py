@@ -5,11 +5,16 @@
 
 import sys
 from typing import Any
-from collections.abc import Callable
 
 from xpra.platform import platform_import
 
-GLContext: Callable | None = None
+
+class NOGLContext:
+    def __init__(self, alpha=False):
+        raise NotImplementedError()
+
+
+GLContext = NOGLContext
 
 
 def check_support() -> dict[str, Any]:

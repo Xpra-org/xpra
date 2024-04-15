@@ -20,7 +20,7 @@ cdef Display* get_display() noexcept:
     return display
 
 
-def get_display_ptr():
+def get_display_ptr() -> int:
     return int(<uintptr_t> display)
 
 
@@ -32,15 +32,15 @@ cdef int set_display(Display *d) except 1:
     return 0
 
 
-def clear_display():
+def clear_display() -> None:
     global display
     display = NULL
 
 
-def get_display_name():
+def get_display_name() -> str:
     return display_name
 
 
-def set_display_name(name):
+def set_display_name(name: str) -> None:
     global display_name
     display_name = name

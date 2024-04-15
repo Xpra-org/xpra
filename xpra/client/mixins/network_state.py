@@ -86,7 +86,7 @@ class NetworkState(StubClientMixin):
 
     def init(self, opts) -> None:
         self.pings = opts.pings
-        self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit)
+        self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit) or 0
         self.bandwidth_detection = opts.bandwidth_detection
         bandwidthlog("init bandwidth_limit=%s", self.bandwidth_limit)
 

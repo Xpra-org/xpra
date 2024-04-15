@@ -32,7 +32,7 @@ class Authenticator(SysAuthenticatorBase):
     def __repr__(self):
         return "gss"
 
-    def get_challenge(self, digests):
+    def get_challenge(self, digests: list[str]):
         assert not self.challenge_sent
         if "gss" not in digests:
             log.error("Error: client does not support gss authentication")

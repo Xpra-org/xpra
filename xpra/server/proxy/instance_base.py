@@ -8,6 +8,7 @@ import socket
 from time import sleep, time, monotonic
 from queue import SimpleQueue, Queue
 from typing import Any
+from threading import Thread
 from collections.abc import Callable
 
 from xpra.net.net_util import get_network_caps
@@ -70,26 +71,27 @@ class ProxyInstance:
         self.server_protocol = None
         self.server_has_more = False
         # ping handling:
-        self.client_last_ping = 0
-        self.server_last_ping = 0
-        self.client_last_ping_echo = 0
-        self.server_last_ping_echo = 0
-        self.client_last_ping_latency = 0
-        self.server_last_ping_latency = 0
+        self.client_last_ping: float = 0
+        self.server_last_ping: float = 0
+        self.client_last_ping_echo: float = 0
+        self.server_last_ping_echo: float = 0
+        self.client_last_ping_latency: float = 0
+        self.server_last_ping_latency: float = 0
         self.client_ping_timer = 0
         self.server_ping_timer = 0
-        self.client_challenge_packet = None
+        self.client_challenge_packet: tuple = ()
         self.exit = False
-        self.lost_windows = None
-        self.encode_queue = None  # holds draw packets to encode
-        self.encode_thread = None
+        self.lost_windows = set()
+        self.encode_queue = SimpleQueue()  # holds draw packets to encode
+        self.encode_thread: Thread | None = None
         # setup protocol wrappers:
         self.server_packets: Queue[tuple] = Queue(PROXY_QUEUE_SIZE)
         self.client_packets: Queue[tuple] = Queue(PROXY_QUEUE_SIZE)
-        self.video_encoding_defs = None
-        self.video_encoders = None
-        self.video_encoders_last_used_time = None
-        self.video_encoder_types = None
+        self.video_encoding_defs: dict[str, dict[str, list]] = {}
+        self.video_encoders: dict[int, Any] = {}
+        self.video_encoders_dst_formats = ()
+        self.video_encoders_last_used_time = {}
+        self.video_encoder_types: list[str] = []
         self.video_helper = None
 
     def is_alive(self) -> bool:
@@ -113,8 +115,6 @@ class ProxyInstance:
         self.server_protocol.set_compression_level(int(self.session_options.get("compression_level", 0)))
         self.server_protocol.enable_default_encoder()
 
-        self.lost_windows = set()
-        self.encode_queue = SimpleQueue()
         self.encode_thread = start_thread(self.encode_loop, "encode")
 
         self.start_network_threads()
@@ -187,9 +187,9 @@ class ProxyInstance:
         sinfo.update(get_server_info())
         linfo = {}
         if self.client_last_ping_latency:
-            linfo["client"] = int(self.client_last_ping_latency)
+            linfo["client"] = round(self.client_last_ping_latency)
         if self.server_last_ping_latency:
-            linfo["server"] = int(self.server_last_ping_latency)
+            linfo["server"] = round(self.server_last_ping_latency)
         return {
             "proxy": {
                 "version": vparts(XPRA_VERSION, FULL_INFO + 1),
@@ -329,7 +329,7 @@ class ProxyInstance:
             return
         if packet_type == "ping_echo" and self.client_ping_timer and len(packet) >= 7 and packet[6] == self.uuid:
             # this is one of our ping packets:
-            self.client_last_ping_echo = packet[1]
+            self.client_last_ping_echo = float(packet[1])
             self.client_last_ping_latency = 1000 * monotonic() - self.client_last_ping_echo
             log("ping-echo: client latency=%.1fms", self.client_last_ping_latency)
             return
@@ -350,7 +350,9 @@ class ProxyInstance:
     def compressed_marker(self, packet: PacketType, index: int, description: str):
         return self.replace_packet_item(packet, index, Compressed(description, packet[index], can_inline=False))
 
-    def replace_packet_item(self, packet: PacketType, index: int, new_value: Any) -> PacketType:
+    def replace_packet_item(self, packet: PacketType,
+                            index: int,
+                            new_value: Compressed | str | dict) -> PacketType:
         # make the packet data mutable and replace the contents at `index`:
         assert index > 0
         lpacket = list(packet)
@@ -457,7 +459,7 @@ class ProxyInstance:
         elif packet_type == "hello":
             c = typedict(packet[1])
             self.schedule_server_ping()
-            maxw, maxh = c.intpair("max_desktop_size", (4096, 4096))
+            maxw, maxh = c.intpair("max_desktop_size") or (4096, 4096)
             caps = self.filter_server_caps(c)
             # add new encryption caps:
             if self.cipher:
@@ -474,7 +476,7 @@ class ProxyInstance:
             packet = ("hello", caps)
         elif packet_type == "ping_echo" and self.server_ping_timer and len(packet) >= 7 and packet[6] == self.uuid:
             # this is one of our ping packets:
-            self.server_last_ping_echo = packet[1]
+            self.server_last_ping_echo = float(packet[1])
             self.server_last_ping_latency = 1000 * monotonic() - self.server_last_ping_echo
             log("ping-echo: server latency=%.1fms", self.server_last_ping_latency)
             return
@@ -626,7 +628,10 @@ class ProxyInstance:
         rgb_format = client_options.strget("rgb_format")
         enclog("proxy draw: encoding=%s, client_options=%s", encoding, client_options)
 
-        def send_updated(packet: PacketType, encoding, compressed_data, updated_client_options) -> None:
+        def send_updated(packet: PacketType,
+                         encoding: str,
+                         compressed_data: Compressed | bytes,
+                         updated_client_options: dict) -> None:
             # update the packet with actual encoding data used:
             packet = self.replace_packet_item(packet, 6, encoding)
             packet = self.replace_packet_item(packet, 7, compressed_data)
@@ -795,7 +800,7 @@ class ProxyInstance:
 
         self.video_encoding_defs = {}
         self.video_encoders = {}
-        self.video_encoders_dst_formats = []
+        self.video_encoders_dst_formats = ()
         self.video_encoders_last_used_time = {}
         self.video_encoder_types = []
 

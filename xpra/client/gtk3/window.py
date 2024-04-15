@@ -167,13 +167,13 @@ class ClientWindow(GTKClientWindowBase):
             "max_aspect_ratio": wh.ASPECT,
         }
         # these fields can be copied directly to the gdk.Geometry as ints:
-        INT_FIELDS = [
+        INT_FIELDS: list[str] = [
             "min_width", "min_height",
             "max_width", "max_height",
             "base_width", "base_height",
             "width_inc", "height_inc",
         ]
-        ASPECT_FIELDS = {
+        ASPECT_FIELDS: dict[str, str] = {
             "min_aspect_ratio": "min_aspect",
             "max_aspect_ratio": "max_aspect",
         }
@@ -193,7 +193,7 @@ class ClientWindow(GTKClientWindowBase):
                 setattr(geom, k, v)
                 mask |= int(name_to_hint.get(k, 0))
             elif k in ASPECT_FIELDS:
-                field = ASPECT_FIELDS.get(k)
+                field = ASPECT_FIELDS[k]
                 setattr(geom, field, float(v))
                 mask |= int(name_to_hint.get(k, 0))
         gdk_hints = Gdk.WindowHints(mask)

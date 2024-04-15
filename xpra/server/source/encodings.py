@@ -57,10 +57,10 @@ class EncodingsMixin(StubSourceMixin):
         self.lz4 = use("lz4")
 
         # for managing the recalculate_delays work:
-        self.calculate_window_pixels = {}
+        self.calculate_window_pixels: dict[int, int] = {}
         self.calculate_window_ids: set[int] = set()
         self.calculate_timer = 0
-        self.calculate_last_time = 0
+        self.calculate_last_time: float = 0
 
         self.video_helper = getVideoHelper()
         self.cuda_device_context = None
@@ -99,8 +99,8 @@ class EncodingsMixin(StubSourceMixin):
         window_sources = getattr(self, "window_sources", {})
         return tuple(window_sources.values())
 
-    def get_caps(self) -> dict[str, Any]:
-        caps = {}
+    def get_caps(self) -> dict[str, str | int]:
+        caps: dict[str, str | int] = {}
         if "encodings" in self.wants and self.encoding:
             caps["encoding"] = self.encoding
         if "features" in self.wants:
@@ -466,7 +466,7 @@ class EncodingsMixin(StubSourceMixin):
             if encoding not in self.server_encodings:
                 log.error(f"Error: encoding {encoding!r} is not supported by this server")
                 log.error(" server encodings: " + csv(self.server_encodings))
-                encoding = None
+                encoding = ""
         if not encoding:
             encoding = "auto"
         if window_ids is not None:
@@ -488,27 +488,24 @@ class EncodingsMixin(StubSourceMixin):
             self.encoding = encoding
 
     def get_info(self) -> dict[str, Any]:
-        info = {
-            "auto_refresh": self.auto_refresh_delay,
-            "lz4": self.lz4,
+        einfo = {
+            "default": self.default_encoding or "",
+            "defaults": dict(self.default_encoding_options),
+            "client-defaults": dict(self.encoding_options),
         }
         ieo = dict(self.icons_encoding_options)
         ieo.pop("default.icons", None)
-        # encoding:
-        info.update({
+        info: dict[str, Any] = {
+            "auto_refresh": self.auto_refresh_delay,
+            "lz4": self.lz4,
             "encodings": {
                 "": self.encodings,
                 "core": self.core_encodings,
                 "window-icon": self.window_icon_encodings,
             },
             "icons": ieo,
-        })
-        einfo = {
-            "default": self.default_encoding or "",
-            "defaults": dict(self.default_encoding_options),
-            "client-defaults": dict(self.encoding_options),
+            "encoding": einfo,
         }
-        info.setdefault("encoding", {}).update(einfo)
         return info
 
     def set_min_quality(self, min_quality: int) -> None:

@@ -96,7 +96,7 @@ class ConfigureGUI(BaseGUIWindow):
     def set_labels(self, *messages) -> None:
         _set_labels_text(self.labels, *messages)
 
-    def add_buttons(self, *buttons) -> None:
+    def add_buttons(self, *buttons) -> list[Gtk.Button]:
         # remove existing buttons:
         for button in self.buttons:
             self.layout.remove(button)
@@ -109,6 +109,7 @@ class ConfigureGUI(BaseGUIWindow):
             self.buttons.append(button)
             self.layout.put(button, x + 200 * i, 450)
             i += 1
+        return self.buttons
 
     def detect_elements(self, *_args) -> None:
         self.set_warning_labels(

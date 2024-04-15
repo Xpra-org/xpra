@@ -83,7 +83,7 @@ class Authenticator(SysAuthenticator):
             raise RuntimeError("u2f authenticator requires at least one public key")
         self.authenticate_check = self.u2f_check
 
-    def get_challenge(self, digests) -> tuple[bytes, str] | None:
+    def get_challenge(self, digests: list[str]) -> tuple[bytes, str] | None:
         if "u2f" not in digests:
             log.error("Error: client does not support u2f authentication")
             return None

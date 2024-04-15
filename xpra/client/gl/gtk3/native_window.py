@@ -3,15 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
-
 from xpra.os_util import gi_import
 from xpra.client.gl.gtk3.client_window import GLClientWindowBase
 from xpra.client.gl.gtk3.drawing_area import GLDrawingArea
 from xpra.platform.gl_context import GLContext
-
-if not GLContext:
-    raise ImportError("no OpenGL context implementation for %s" % sys.platform)
 
 GObject = gi_import("GObject")
 

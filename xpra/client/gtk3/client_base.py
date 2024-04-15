@@ -36,6 +36,7 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.gtk.gobject import no_arg_signal
 from xpra.gtk.css_overrides import inject_css_overrides
 from xpra.client.gui.ui_client_base import UIXpraClient
+from xpra.client.gui.window_border import WindowBorder
 from xpra.client.base.gobject import GObjectXpraClient
 from xpra.client.gtk3.keyboard_helper import GTKKeyboardHelper
 from xpra.client.mixins.windows import WindowClient
@@ -114,7 +115,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.start_new_command = None
         self.server_commands = None
         self.keyboard_helper_class = GTKKeyboardHelper
-        self.border = None
+        self.border: WindowBorder | None = None
         self.data_send_requests = {}
         # clipboard bits:
         self.clipboard_notification_timer = 0
@@ -169,7 +170,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         UIXpraClient.run(self)
         self.gtk_main()
         log(f"GTKXpraClient.run_main_loop() main loop ended, returning exit_code={self.exit_code}", )
-        return self.exit_code
+        return self.exit_code or ExitCode.OK
 
     def gtk_main(self) -> None:
         log(f"GTKXpraClient.gtk_main() calling {Gtk.main}", )
@@ -232,6 +233,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def start_UI_watcher(self, _client) -> None:
         from xpra.platform.ui_thread_watcher import get_UI_watcher
         self.UI_watcher = get_UI_watcher(self.timeout_add, self.source_remove)
+        assert self.UI_watcher
         self.UI_watcher.start()
 
         # if server supports it, enable UI thread monitoring workaround when needed:
@@ -290,8 +292,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             noerr(pp.terminate)
             for fd_name in ("stdin", "stdout", "stderr"):
                 fd = getattr(pp, fd_name, None)
-                if hasattr(fd, "close"):
-                    noerr(fd.close)
+                close: Callable = getattr(fd, "close", noop)
+                noerr(close)
 
     def get_server_authentication_string(self) -> str:
         p = self._protocol
@@ -468,7 +470,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if size >= 45:
                 log.warn(f"Warning: border size is too large: {size}, clipping it")
                 size = 45
-        from xpra.client.gui.window_border import WindowBorder
         self.border = WindowBorder(enabled, color.red / 65536.0, color.green / 65536.0, color.blue / 65536.0, alpha,
                                    size)
         log("parse_border(%s)=%s", self.border_str, self.border)
@@ -1350,10 +1351,15 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         log(" ClientWindowClass=%s, GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, encoding=%s",
             self.ClientWindowClass, self.GLClientWindowClass,
             self.opengl_enabled, self.mmap_enabled, self.encoding)
-        if self.can_use_opengl(w, h, metadata, override_redirect):
-            return self.GLClientWindowClass, self.ClientWindowClass
-        opengllog(f"OpenGL not available for {w}x{h} {override_redirect=} window {metadata}")
-        return (self.ClientWindowClass,)
+        window_classes: list[type] = []
+        if self.GLClientWindowClass:
+            if self.can_use_opengl(w, h, metadata, override_redirect):
+                window_classes.append(self.GLClientWindowClass)
+            else:
+                opengllog(f"OpenGL not available for {w}x{h} {override_redirect=} window {metadata}")
+        if self.ClientWindowClass:
+            window_classes.append(self.ClientWindowClass)
+        return tuple(window_classes)
 
     def can_use_opengl(self, w: int, h: int, metadata: typedict, override_redirect: bool) -> bool:
         opengllog(f"can_use_opengl {self.GLClientWindowClass=}, {self.opengl_enabled=}, {self.opengl_force=}")
@@ -1430,7 +1436,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         leader_xid = metadata.intget("group-leader-xid", -1)
         log(f"get_group_leader: leader pid={pid}, xid={leader_xid}")
         reftype = "xid"
-        ref = leader_xid
+        ref : str | int = leader_xid
         if ref < 0:
             ci = metadata.strtupleget("class-instance")
             if ci:
@@ -1442,7 +1448,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             else:
                 # no reference to use
                 return None
-        refkey = "%s:%s" % (reftype, ref)
+        refkey = f"{reftype}:{ref}"
         group_leader_window = self._ref_to_group_leader.get(refkey)
         if group_leader_window:
             log("found existing group leader window %s using ref=%s", group_leader_window, refkey)

@@ -8,7 +8,7 @@ import time
 from typing import Any
 
 from xpra.util.objects import typedict
-from xpra.exit_codes import ExitCode
+from xpra.exit_codes import ExitCode, ExitValue
 from xpra.net.compression import Compressed
 from xpra.net.common import PacketHandlerType
 
@@ -27,7 +27,7 @@ class StubClientMixin:
         or using a default configuration object.
         """
 
-    def run(self) -> None:
+    def run(self) -> ExitValue:
         """
         run the main loop.
         """

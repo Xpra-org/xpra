@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -55,7 +55,7 @@ class Authenticator(SysAuthenticatorBase):
     def __repr__(self):
         return "ldap3"
 
-    def get_challenge(self, digests) -> tuple[bytes, str]:
+    def get_challenge(self, digests: list[str]) -> tuple[bytes, str] | None:
         self.req_xor(digests)
         return super().get_challenge(["xor"])
 
@@ -74,7 +74,7 @@ class Authenticator(SysAuthenticatorBase):
                 "SASL": SASL,
                 "NTLM": NTLM,
             }
-            authentication = MECHANISM[self.authentication]
+            authentication: SIMPLE | SASL | NTLM = MECHANISM[self.authentication]
             tls = None
             if self.tls:
                 tls = Tls(validate=self.tls_validate, version=self.tls_version, ca_certs_file=self.cacert)

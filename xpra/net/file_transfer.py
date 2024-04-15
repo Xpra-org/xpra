@@ -165,7 +165,7 @@ class FileTransferAttributes:
         fta = pask(file_transfer)
         self.file_transfer_ask = fta and can_ask
         self.file_transfer = fta or str_to_bool(file_transfer)
-        self.file_size_limit = parse_with_unit("file-size-limit", file_size_limit, "B", min_value=0)
+        self.file_size_limit = parse_with_unit("file-size-limit", file_size_limit, "B", min_value=0) or 0
         self.file_chunks = FILE_CHUNKS_SIZE
         pa = pask(printing)
         self.printing_ask = pa and can_ask

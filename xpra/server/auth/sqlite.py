@@ -7,7 +7,7 @@
 import os
 import sys
 
-from xpra.util.parsing import parse_simple_dict
+from xpra.util.parsing import parse_str_dict
 from xpra.server.auth.sys_auth_base import log, parse_uid, parse_gid, SessionData
 from xpra.server.auth.sqlauthbase import SQLAuthenticator, DatabaseUtilBase, run_dbutil
 
@@ -46,14 +46,14 @@ class Authenticator(SQLAuthenticator):
             uid = parse_uid(data["uid"])
             gid = parse_gid(data["gid"])
             displays: list[str] = []
-            env_options = {}
-            session_options = {}
+            env_options: dict[str, str] = {}
+            session_options: dict[str, str] = {}
             if data["displays"]:
                 displays = [x.strip() for x in str(data["displays"]).split(",") if x.strip()]
             if data["env_options"]:
-                env_options = parse_simple_dict(str(data["env_options"]), ";")
+                env_options = parse_str_dict(str(data["env_options"]), ";")
             if data["session_options"]:
-                session_options = parse_simple_dict(str(data["session_options"]), ";")
+                session_options = parse_str_dict(str(data["session_options"]), ";")
         except Exception as e:
             log("get_sessions() error on row %s", data, exc_info=True)
             log.error("Error: sqlauth database row parsing problem:")

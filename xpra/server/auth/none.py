@@ -16,7 +16,7 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return False
 
-    def get_challenge(self, _digests):
+    def get_challenge(self, _digests: list[str]):
         return None
 
     def get_password(self) -> str:

@@ -5,6 +5,7 @@
 
 import os.path
 import struct
+from typing import Any
 from collections.abc import Callable
 
 from xpra.common import noop
@@ -116,7 +117,7 @@ def add_test_images():
 add_test_images()
 
 
-def create_twin_test_windows(parent: Gtk.Window) -> tuple[dict, list[Gtk.Window]]:
+def create_twin_test_windows(parent: Gtk.Window) -> tuple[dict[str, Any], list[Gtk.Window]]:
     from xpra.gtk.window import add_close_accel
     from xpra.client.gui.fake_client import FakeClient
     from xpra.client.gui.window_border import WindowBorder

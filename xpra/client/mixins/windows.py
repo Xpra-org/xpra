@@ -25,6 +25,7 @@ from xpra.platform.gui import (
     get_double_click_time, get_double_click_distance, get_native_system_tray_classes,
 )
 from xpra.net.common import PacketType
+from xpra.exit_codes import ExitCode, ExitValue
 from xpra.common import WINDOW_NOT_FOUND, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, noerr
 from xpra.platform.paths import get_icon_filename, get_resources_dir, get_python_execfile_command
 from xpra.scripts.config import FALSE_OPTIONS
@@ -97,6 +98,7 @@ def find_signal_watcher_command() -> str:
             if os.path.exists(pcmd):
                 return pcmd
     log.warn("Warning: %r not found", cmd)
+    return ""
 
 
 SIGNAL_WATCHER_COMMAND = find_signal_watcher_command()
@@ -320,12 +322,13 @@ class WindowClient(StubClientMixin):
         # not implemented here (see bindings client)
         pass
 
-    def run(self) -> None:
+    def run(self) -> ExitValue:
         # we decode pixel data in this thread
         self._draw_thread = start_thread(self._draw_thread_loop, "draw")
         if FAKE_SUSPEND_RESUME:
             GLib.timeout_add(FAKE_SUSPEND_RESUME * 1000, self.suspend)
             GLib.timeout_add(FAKE_SUSPEND_RESUME * 1000 * 2, self.resume)
+        return ExitCode.OK
 
     def cleanup(self) -> None:
         log("WindowClient.cleanup()")
@@ -832,7 +835,7 @@ class WindowClient(StubClientMixin):
     # regular windows:
     def _process_new_common(self, packet: PacketType, override_redirect):
         self._ui_event()
-        wid, x, y, w, h = packet[1:6]
+        wid, x, y, w, h = (int(item) for item in packet[1:6])
         assert 0 <= w < 32768 and 0 <= h < 32768
         metadata = self.cook_metadata(True, packet[6])
         metalog("process_new_common: %s, metadata=%s, OR=%s", packet[1:7], metadata, override_redirect)
@@ -1187,7 +1190,7 @@ class WindowClient(StubClientMixin):
             self.set_tray_icon()
 
     def _process_window_move_resize(self, packet: PacketType) -> None:
-        wid, x, y, w, h = packet[1:6]
+        wid, x, y, w, h = (int(item) for item in packet[1:6])
         ax = self.sx(x)
         ay = self.sy(y)
         aw = max(1, self.sx(w))
@@ -1202,7 +1205,9 @@ class WindowClient(StubClientMixin):
             window.move_resize(ax, ay, aw, ah, resize_counter)
 
     def _process_window_resized(self, packet: PacketType) -> None:
-        wid, w, h = packet[1:4]
+        wid = int(packet[1])
+        w = int(packet[2])
+        h = int(packet[3])
         aw = max(1, self.sx(w))
         ah = max(1, self.sy(h))
         resize_counter = -1

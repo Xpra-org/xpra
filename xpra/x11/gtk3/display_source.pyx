@@ -58,7 +58,8 @@ def init_gdk_display_source() -> None:
     #now we can get a display:
     cdef Display *x11_display = gdk_x11_display_get_xdisplay(gdk_display)
     set_display(x11_display)
-    set_display_name(gdk_display_get_name(gdk_display))
+    name = gdk_display_get_name(gdk_display).decode()
+    set_display_name(name)
 
 def close_gdk_display_source() -> None:
     #this triggers the garbage collection of the Display object:

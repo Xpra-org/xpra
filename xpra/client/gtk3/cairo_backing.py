@@ -59,7 +59,7 @@ class CairoBacking(CairoBackingBase):
              rowstride, options), set_image_surface_data, CAIRO_USE_PIXBUF)
         rgb_format = options.strget("rgb_format", "RGB")
         if not CAIRO_USE_PIXBUF:
-            rgb_formats = CAIRO_FORMATS.get(cairo_format)
+            rgb_formats = CAIRO_FORMATS.get(cairo_format, ())
             if rgb_format in rgb_formats:
                 img_surface = ImageSurface(cairo_format, width, height)
                 set_image_surface_data(img_surface, rgb_format, img_data, width, height, rowstride)
