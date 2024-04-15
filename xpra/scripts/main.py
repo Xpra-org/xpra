@@ -1700,9 +1700,10 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode: str):
             app.show_progress(80, "listening for incoming connections")
             from xpra.platform.info import get_username
             from xpra.net.socket_util import (
-                get_network_logger, setup_local_sockets, peek_connection,
+                setup_local_sockets, peek_connection,
                 create_sockets, add_listen_socket, accept_connection,
             )
+            from xpra.log import Logger
             sockets = create_sockets(opts, error_cb)
             # we don't have a display,
             # so we can't automatically create sockets:
@@ -1719,7 +1720,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode: str):
 
             def new_connection(socktype, sock, handle=0):
                 from xpra.util.thread import start_thread
-                netlog = get_network_logger()
+                netlog = Logger("network")
                 netlog("new_connection%s", (socktype, sock, handle))
                 conn = accept_connection(socktype, sock)
                 # start a new thread so that we can sleep doing IO in `peek_connection`:
@@ -1728,7 +1729,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode: str):
 
             def handle_new_connection(conn):
                 # see if this is a redirection:
-                netlog = get_network_logger()
+                netlog = Logger("network")
                 line1 = peek_connection(conn)[1]
                 netlog(f"handle_new_connection({conn}) line1={line1!r}")
                 if line1:
@@ -2744,11 +2745,11 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
             from xpra.platform.win32.wtsapi import find_session
             from xpra.platform.info import get_username
             username = get_username()
-            info = find_session(username)
-            if info:
+            session_info = find_session(username)
+            if session_info:
                 cmd = [
                     "paexec.exe",
-                    "-i", str(info["SessionID"]), "-s",
+                    "-i", str(session_info["SessionID"]), "-s",
                 ]
                 exe = paexec
                 # don't show a cmd window:

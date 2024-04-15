@@ -213,24 +213,24 @@ def get_session_info(session) -> dict[str, Any]:
     return info
 
 
-def get_sessions():
+def get_sessions() -> dict[int, dict[str, Any]]:
     cur = LPSTR(WTS_CURRENT_SERVER_HANDLE)
     h = WTSOpenServerA(cur)
     if not h:
         return {}
     session_info = PWTS_SESSION_INFOA()
     count = DWORD()
-    sessions = {}
+    sessions: dict[int, dict[str, Any]] = {}
     if WTSEnumerateSessionsA(h, 0, 1, byref(session_info), byref(count)):
         for i in range(count.value):
             session = session_info[i]
-            sessions[session.SessionId] = get_session_info(session)
+            sessions[int(session.SessionId)] = get_session_info(session)
         WTSFreeMemory(session_info)
     WTSCloseServer(h)
     return sessions
 
 
-def find_session(username, with_display=True):
+def find_session(username, with_display=True) -> dict:
     if username:
         for sid, info in get_sessions().items():
             if with_display and not info.get("Display"):
@@ -238,7 +238,7 @@ def find_session(username, with_display=True):
             if info.get("UserName", "").lower() == username.lower():
                 info["SessionID"] = sid
                 return info
-    return None
+    return {}
 
 
 def main():
