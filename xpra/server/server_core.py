@@ -2006,13 +2006,13 @@ class ServerCore:
         proto.send_now(("challenge", salt, auth_caps or {}, digest, salt_digest, prompt))
         self.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
 
-    def auth_failed(self, proto:SocketProtocol, msg:str) -> None:
+    def auth_failed(self, proto:SocketProtocol, msg) -> None:
         authlog.warn("Warning: authentication failed")
         authlog.warn(f" {nicestr(msg)}")
         self.timeout_add(1000, self.disconnect_client, proto, msg)
 
     def verify_auth(self, proto:SocketProtocol, packet, c:typedict) -> None:
-        def auth_failed(msg:str):
+        def auth_failed(msg):
             self.auth_failed(proto, msg)
         remote = {}
         for key in ("hostname", "uuid", "session-id", "username", "name"):
@@ -2117,7 +2117,7 @@ class ServerCore:
                 self.send_challenge(proto, salt, auth_caps, digest, salt_digest, authenticator.prompt)
                 return
             if not authenticator.authenticate(c):
-                auth_failed(str(ConnectionMessage.AUTHENTICATION_FAILED))
+                auth_failed(ConnectionMessage.AUTHENTICATION_FAILED)
                 return
         client_expects_challenge = c.strget("challenge") is not None
         if client_expects_challenge:
