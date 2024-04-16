@@ -12,7 +12,7 @@ cdef buffer_context(object obj)
 ctypedef void dealloc_callback(const void *p, size_t l, void *arg)
 
 
-cdef void *memalign(size_t size) nogil
+cdef void *memalign(size_t size) noexcept nogil
 
 
 cdef class MemBuf:

@@ -30,7 +30,7 @@ cdef extern from "memalign.h":
     int MEMALIGN_ALIGNMENT
 
 
-cdef void free_buf(const void *p, size_t l, void *arg):
+cdef void free_buf(const void *p, size_t l, void *arg) noexcept nogil:
     free(<void *>p)
 
 cdef MemBuf getbuf(size_t l, int readonly=1):
@@ -51,7 +51,7 @@ cdef MemBuf makebuf(void *p, size_t l, int readonly=1):
     return MemBuf_init(p, l, &free_buf, NULL, readonly)
 
 
-cdef void *memalign(size_t size) nogil:
+cdef void *memalign(size_t size) noexcept nogil:
     return xmemalign(size)
 
 
