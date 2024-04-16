@@ -18,7 +18,7 @@ BLACKLISTED_HASHES = ("sha1", "md5")
 DEFAULT_SALT_LENGTH = envint("XPRA_DEFAULT_SALT_LENGTH", 64)
 
 
-def get_digests() -> list[str]:
+def get_digests() -> tuple[str, ...]:
     digests = ["xor"]
     digests += [f"hmac+{x}" for x in tuple(reversed(sorted(hashlib.algorithms_available)))
                 if not x.startswith("shake_") and x not in BLACKLISTED_HASHES and getattr(hashlib, x, None) is not None]
@@ -28,7 +28,7 @@ def get_digests() -> list[str]:
         digests.append("des")
     except (ImportError, TypeError):  # pragma: no cover
         pass
-    return digests
+    return tuple(digests)
 
 
 def get_digest_module(digest: str) -> Callable | None:

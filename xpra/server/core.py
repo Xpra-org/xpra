@@ -1377,7 +1377,7 @@ class ServerCore:
             sshlog("ssh_password_authenticate auth_modules(%s, %s)=%s", username, "*" * len(password), auth_modules)
             for auth in auth_modules:
                 # mimic a client challenge:
-                digests = ["xor"]
+                digests = ("xor", )
                 try:
                     salt, digest = auth.get_challenge(digests)
                     salt_digest = auth.choose_salt_digest(digests)

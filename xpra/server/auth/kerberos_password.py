@@ -34,11 +34,11 @@ class Authenticator(SysAuthenticatorBase):
     def __repr__(self):
         return "kerberos-password"
 
-    def get_challenge(self, digests: list[str]):
+    def get_challenge(self, digests: tuple[str, ...]):
         if "xor" not in digests:
             log.error("Error: kerberos authentication requires the 'xor' digest")
             return None
-        return super().get_challenge(["xor"])
+        return super().get_challenge(("xor", ))
 
     def check_password(self, password: str) -> bool:
         try:
@@ -77,7 +77,7 @@ def main(argv) -> int:
         if len(argv) == 5:
             kwargs["realm"] = argv[4]
         a = Authenticator(**kwargs)
-        server_salt, digest = a.get_challenge(["xor"])
+        server_salt, digest = a.get_challenge(("xor", ))
         salt_digest = a.choose_salt_digest(get_digests())
         assert digest == "xor"
         client_salt = get_salt(len(server_salt))

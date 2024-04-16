@@ -55,9 +55,9 @@ class Authenticator(SysAuthenticatorBase):
     def __repr__(self):
         return "ldap3"
 
-    def get_challenge(self, digests: list[str]) -> tuple[bytes, str] | None:
+    def get_challenge(self, digests: tuple[str, ...]) -> tuple[bytes, str] | None:
         self.req_xor(digests)
-        return super().get_challenge(["xor"])
+        return super().get_challenge(("xor", ))
 
     def check_password(self, password: str) -> bool:
         log("check_password(%s)", obsc(password))
@@ -126,7 +126,7 @@ def main(argv) -> int:
         if len(argv) >= 6:
             kwargs["tls"] = argv[5]
         a = Authenticator(**kwargs)
-        server_salt, digest = a.get_challenge(["xor"])
+        server_salt, digest = a.get_challenge(("xor", ))
         salt_digest = a.choose_salt_digest(get_digests())
         client_salt = get_salt(len(server_salt))
         combined_salt = gendigest(salt_digest, client_salt, server_salt)

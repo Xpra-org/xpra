@@ -24,7 +24,7 @@ class Authenticator(SysAuthenticator):
     def get_password(self) -> str:
         return self.password
 
-    def get_challenge(self, digests: list[str]) -> tuple[bytes, str]:
+    def get_challenge(self, digests: tuple[str, ...]) -> tuple[bytes, str]:
         self.req_xor(digests)
         return super().do_get_challenge(["xor"])
 

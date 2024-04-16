@@ -92,7 +92,7 @@ class TestAuth(unittest.TestCase):
         assert a
         if a.requires_challenge():
             try:
-                challenge = a.get_challenge(["invalid-digest"])
+                challenge = a.get_challenge(("invalid-digest", ))
             except Exception:
                 pass
             else:
@@ -166,7 +166,7 @@ class TestAuth(unittest.TestCase):
             a = self._init_auth(mod_name, **kwargs)
             assert a.requires_challenge()
             assert a.get_passwords()
-            salt, mac = a.get_challenge([x for x in get_digests() if x.startswith("hmac")])
+            salt, mac = a.get_challenge(tuple(x for x in get_digests() if x.startswith("hmac")))
             assert salt
             assert mac.startswith("hmac"), "invalid mac: %s" % mac
             client_salt = strtobytes(uuid.uuid4().hex + uuid.uuid4().hex)
@@ -267,7 +267,7 @@ class TestAuth(unittest.TestCase):
         a = self._init_auth("file", filename="foo")
         assert a.requires_challenge()
         try:
-            a.get_challenge(["not-a-valid-digest"])
+            a.get_challenge(("not-a-valid-digest", ))
         except ValueError:
             pass
         a.password_filename = "./this-path-should-not-exist"

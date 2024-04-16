@@ -32,7 +32,7 @@ class Authenticator(SysAuthenticatorBase):
     def __repr__(self):
         return "gss"
 
-    def get_challenge(self, digests: list[str]):
+    def get_challenge(self, digests: tuple[str, ...]):
         assert not self.challenge_sent
         if "gss" not in digests:
             log.error("Error: client does not support gss authentication")
@@ -71,7 +71,7 @@ def main(argv):
         token = argv[2]
         kwargs = {"username": username}
         a = Authenticator(**kwargs)
-        server_salt, digest = a.get_challenge(["gss"])
+        server_salt, digest = a.get_challenge(("gss", ))
         salt_digest = a.choose_salt_digest(get_digests())
         assert digest.startswith("gss:"), "unexpected digest %r" % digest
         client_salt = get_salt(len(server_salt))

@@ -58,12 +58,12 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return self.require_challenge
 
-    def get_challenge(self, digests: list[str]):
+    def get_challenge(self, digests: tuple[str, ...]):
         assert self.require_challenge
         if "xor" not in digests:
             log.error("Error: kerberos authentication requires the 'xor' digest")
             return None
-        return super().get_challenge(["xor"])
+        return super().get_challenge(("xor", ))
 
     def validate_caps(self, caps: typedict) -> bool:
         if not self.require_challenge:

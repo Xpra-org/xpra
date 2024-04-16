@@ -33,7 +33,7 @@ class Authenticator(SysAuthenticatorBase):
     def __repr__(self):
         return "kerberos-token"
 
-    def get_challenge(self, digests: list[str]):
+    def get_challenge(self, digests: tuple[str, ...]):
         assert not self.challenge_sent
         self.req_challenge(digests, "kerberos")
         self.salt = get_salt()
@@ -85,7 +85,7 @@ def main(argv) -> int:
         token = argv[2]
         kwargs = {"username": username}
         a = Authenticator(**kwargs)
-        server_salt, digest = a.get_challenge(["xor"])
+        server_salt, digest = a.get_challenge(("xor", ))
         salt_digest = a.choose_salt_digest(get_digests())
         assert digest == "xor"
         client_salt = get_salt(len(server_salt))
