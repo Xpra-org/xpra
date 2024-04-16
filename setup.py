@@ -1253,6 +1253,8 @@ def build_xpra_conf(install_dir: str):
             with open(target_file, "w", encoding="latin1") as f_out:
                 if f.endswith(".in"):
                     config_data = template % SUBS
+                else:
+                    config_data = template
                 f_out.write(config_data)
     convert_templates()
 
