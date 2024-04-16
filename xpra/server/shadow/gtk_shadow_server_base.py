@@ -62,6 +62,27 @@ def parse_geometries(s) -> list:
     return g
 
 
+def checkitem(title: str, cb=noop, active=False) -> Gtk.CheckMenuItem:
+    check_item = Gtk.CheckMenuItem(label=title)
+    check_item.set_active(active)
+    if cb:
+        check_item.connect("toggled", cb)
+    check_item.show()
+    return check_item
+
+
+def get_icon_image(icon_name: str):
+    from xpra.platform.gui import get_icon_size
+    size = get_icon_size()
+    from xpra.gtk.widget import scaled_image
+    with log.trap_error(f"Error loading image from icon {icon_name!r} with size {size}"):
+        pixbuf = get_icon_pixbuf(icon_name)
+        traylog("get_image(%s, %s) pixbuf=%s", icon_name, size, pixbuf)
+        if not pixbuf:
+            return None
+        return scaled_image(pixbuf, size)
+
+
 class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def __init__(self, attrs: dict[str, str]):
@@ -173,11 +194,10 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def get_root_window_model_class(self) -> type:
         return RootWindowModel
 
-    def get_shadow_monitors(self) -> list:
+    def get_shadow_monitors(self) -> list[tuple[str, int, int, int, int, int]]:
         display = self.root.get_display()
         if not display:
             return []
-        screen = self.root.get_screen()
         n = display.get_n_monitors()
         monitors = []
         for i in range(n):
@@ -190,14 +210,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
                 scale_factor = 1
             else:
                 screenlog("scale factor for monitor %i: %i", i, scale_factor)
-            plug_name = None
-            with SilenceWarningsContext(DeprecationWarning):
-                try:
-                    plug_name = screen.get_monitor_plug_name(i)
-                except Exception:
-                    pass
-            if not plug_name:
-                plug_name = m.get_model()
+            plug_name = m.get_model()
             monitors.append((plug_name, geom.x, geom.y, geom.width, geom.height, scale_factor))
         screenlog("get_shadow_monitors()=%s", monitors)
         return monitors
@@ -229,7 +242,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         else:
             try:
                 geometries = parse_geometries(self.display_options)
-            except Exception:
+            except ValueError:
                 match_str = self.display_options
         log(f"makeRootWindowModels() multi_window={self.multi_window}")
         if not self.multi_window or geometries:
@@ -387,7 +400,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
                         self.readonly = ro
                         self.setting_changed("readonly", ro)
 
-                self.tray_menu.append(self.checkitem("Read-only", cb=readonly_toggled, active=self.readonly))
+                self.tray_menu.append(checkitem("Read-only", cb=readonly_toggled, active=self.readonly))
             self.tray_menu.append(self.traymenuitem("Exit", "quit.png", cb=self.tray_exit_callback))
             self.tray_menu.append(self.traymenuitem("Close Menu", "close.png", cb=self.close_tray_menu))
             # maybe add: session info, clipboard, sharing, etc
@@ -451,27 +464,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         from xpra.gtk.widget import menuitem
         image = None
         if icon_name:
-            from xpra.platform.gui import get_icon_size
-            icon_size = get_icon_size()
-            image = self.get_image(icon_name, icon_size)
+            image = get_icon_image(icon_name)
         return menuitem(title, image, tooltip, cb)
-
-    def checkitem(self, title: str, cb=noop, active=False) -> Gtk.CheckMenuItem:
-        check_item = Gtk.CheckMenuItem(label=title)
-        check_item.set_active(active)
-        if cb:
-            check_item.connect("toggled", cb)
-        check_item.show()
-        return check_item
-
-    def get_image(self, icon_name: str, size: int = 0):
-        from xpra.gtk.widget import scaled_image
-        with log.trap_error(f"Error loading image from icon {icon_name!r} with size {size}"):
-            pixbuf = get_icon_pixbuf(icon_name)
-            traylog("get_image(%s, %s) pixbuf=%s", icon_name, size, pixbuf)
-            if not pixbuf:
-                return None
-            return scaled_image(pixbuf, size)
 
     def tray_menu_deactivated(self, *_args) -> None:
         self.tray_menu_shown = False
