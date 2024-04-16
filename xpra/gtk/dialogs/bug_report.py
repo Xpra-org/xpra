@@ -31,6 +31,25 @@ Gdk = gi_import("Gdk")
 STEP_DELAY = envint("XPRA_BUG_REPORT_STEP_DELAY", 0)
 
 
+def get_pillow_imagegrab_fn() -> Callable:
+    try:
+        from PIL import ImageGrab
+        from io import BytesIO
+    except ImportError as e:
+        log("cannot use Pillow's ImageGrab: %s", e)
+        return noop
+
+    def pillow_imagegrab() -> ScreenshotData:
+        img = ImageGrab.grab()
+        out = BytesIO()
+        img.save(out, format="PNG")
+        pixels = out.getvalue()
+        out.close()
+        return img.width, img.height, "png", img.width * 3, pixels
+
+    return pillow_imagegrab
+
+
 class BugReport:
 
     def __init__(self):
@@ -159,21 +178,7 @@ class BugReport:
             log("failed to load platform specific screenshot code", exc_info=True)
         if take_screenshot_fn == noop:
             # try with Pillow:
-            try:
-                from PIL import ImageGrab
-                from io import BytesIO
-
-                def pillow_imagegrab_screenshot() -> ScreenshotData:
-                    img = ImageGrab.grab()
-                    out = BytesIO()
-                    img.save(out, format="PNG")
-                    v = out.getvalue()
-                    out.close()
-                    return img.width, img.height, "png", img.width * 3, v
-
-                take_screenshot_fn = pillow_imagegrab_screenshot
-            except Exception as e:
-                log("cannot use Pillow's ImageGrab: %s", e)
+            take_screenshot_fn = get_pillow_imagegrab_fn()
         if take_screenshot_fn == noop:
             # default: gtk screen capture
             try:

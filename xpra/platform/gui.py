@@ -9,7 +9,9 @@ import os
 import sys
 import binascii
 from typing import Any
+from collections.abc import Callable
 
+from xpra.common import noop
 from xpra.platform import platform_import
 from xpra.util.str_fn import bytestostr
 from xpra.log import Logger
@@ -327,7 +329,7 @@ def set_window_progress(window, pct: int) -> None:
     """ some platforms can indicate progress for a specific window """
 
 
-take_screenshot = None
+take_screenshot: Callable = noop
 ClientExtras = None
 
 
