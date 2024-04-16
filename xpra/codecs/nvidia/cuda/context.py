@@ -31,9 +31,10 @@ log = Logger("cuda")
 if WIN32 and not os.environ.get("CUDA_PATH") and getattr(sys, "frozen", None) in ("windows_exe", "console_exe", True):
     os.environ["CUDA_PATH"] = get_app_dir()
 
+if is_WSL() and not envbool("XPRA_PYCUDA_WSL", False):
+    raise ImportError("refusing to import pycuda on WSL, use `XPRA_PYCUDA_WSL=1` to override")
+
 with numpy_import_context("CUDA"):
-    if is_WSL() and not envbool("XPRA_PYCUDA_WSL", False):
-        raise ImportError("refusing to import pycuda on WSL, use XPRA_PYCUDA_WSL=1 to override")
     import pycuda
     log(f"loaded pycuda successfully: {pycuda}")
     from pycuda.driver import (
